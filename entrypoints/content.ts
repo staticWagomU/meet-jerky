@@ -25,6 +25,7 @@ const IDLE_COMMIT_MS = 2_000;
 const FLUSH_INTERVAL_MS = 10_000;
 const FLUSH_THRESHOLD = 10;
 const CAPTION_REGION_TIMEOUT_MS = 30_000;
+const REJOIN_GRACE_PERIOD_MS = 120_000; // 2 minutes grace period for rejoin
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ let captionOverlayPanel: HTMLElement | null = null;
 let captionHidden = true;
 
 let meetingEnded = false;
+let rejoinGraceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Total raw entries captured in this session (sent + pending)
 let totalRawCount = 0;
@@ -774,6 +776,12 @@ async function handleMeetingEnd(): Promise<void> {
   if (meetingEnded) return;
   meetingEnded = true;
 
+  // Cancel grace period timer if active (e.g. explicit leave button click)
+  if (rejoinGraceTimer !== null) {
+    clearTimeout(rejoinGraceTimer);
+    rejoinGraceTimer = null;
+  }
+
   // Commit any in-progress block
   commitCurrentBlock();
 
@@ -817,7 +825,13 @@ function onVisibilityChange(): void {
 }
 
 function onBeforeUnload(): void {
-  if (inMeeting) {
+  // Cancel grace period — page is closing, no rejoin possible
+  if (rejoinGraceTimer !== null) {
+    clearTimeout(rejoinGraceTimer);
+    rejoinGraceTimer = null;
+  }
+
+  if (inMeeting || sessionId) {
     // Best-effort flush — synchronous context, so we use sendMessage fire-and-forget
     commitCurrentBlock();
 
@@ -854,11 +868,9 @@ function onBeforeUnload(): void {
 
 // ─── Cleanup ─────────────────────────────────────────────────────────────────
 
-function cleanup(): void {
+/** Pause observers and timers but keep sessionId and counts for possible rejoin. */
+function suspendSession(): void {
   inMeeting = false;
-
-  // NOTE: meetingDetectionTimer is intentionally NOT cleared here
-  // so that re-entry into a meeting (e.g. after network reconnection) can be detected.
 
   stopCaptionGuard();
 
@@ -886,15 +898,65 @@ function cleanup(): void {
   captionLayoutContainer = null;
   captionOverlayPanel = null;
   currentBlock = null;
+
+  removeToggleButton();
+  removeIndicatorPanel();
+
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  window.removeEventListener('beforeunload', onBeforeUnload);
+}
+
+/** Fully end the session and reset all state. */
+function cleanup(): void {
+  suspendSession();
+
   pendingBlocks = [];
   pendingRawEntries = [];
   totalRawCount = 0;
   sessionId = null;
+}
 
-  removeToggleButton();
+// ─── Rejoin Grace Period ────────────────────────────────────────────────────
 
-  document.removeEventListener('visibilitychange', onVisibilityChange);
-  window.removeEventListener('beforeunload', onBeforeUnload);
+function startRejoinGracePeriod(): void {
+  // Flush current data before suspending
+  commitCurrentBlock();
+  flushPendingBlocks();
+
+  suspendSession();
+
+  console.log('[MTC] Left meeting, starting rejoin grace period:', REJOIN_GRACE_PERIOD_MS, 'ms');
+  rejoinGraceTimer = setTimeout(() => {
+    rejoinGraceTimer = null;
+    console.log('[MTC] Grace period expired, ending session:', sessionId);
+    handleMeetingEnd();
+  }, REJOIN_GRACE_PERIOD_MS);
+}
+
+async function onMeetingResumed(): Promise<void> {
+  inMeeting = true;
+  meetingEnded = false;
+
+  console.log('[MTC] Resuming session:', sessionId);
+
+  const captionsEnabled = await enableCaptions();
+  if (!captionsEnabled) {
+    showNotification(
+      'Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。',
+      'warning',
+      8000
+    );
+  }
+
+  startCaptionGuard();
+  startBodyObserver();
+
+  flushTimer = setInterval(() => {
+    commitCurrentBlock();
+    flushPendingBlocks();
+  }, FLUSH_INTERVAL_MS);
+
+  setupExitProtection();
 }
 
 // ─── Meeting Start ───────────────────────────────────────────────────────────
@@ -979,11 +1041,19 @@ function startMeetingDetection(): void {
     const currentlyInMeeting = isInMeeting();
 
     if (!inMeeting && currentlyInMeeting) {
-      // User entered/re-entered the meeting
-      onMeetingDetected();
+      if (rejoinGraceTimer !== null) {
+        // Rejoined within grace period — resume existing session
+        clearTimeout(rejoinGraceTimer);
+        rejoinGraceTimer = null;
+        console.log('[MTC] Rejoin detected within grace period, resuming session:', sessionId);
+        onMeetingResumed();
+      } else {
+        // Fresh entry
+        onMeetingDetected();
+      }
     } else if (inMeeting && !currentlyInMeeting && !meetingEnded) {
-      // User left the meeting (call_end icon disappeared)
-      handleMeetingEnd();
+      // User left the meeting — start grace period instead of ending immediately
+      startRejoinGracePeriod();
     }
   }, POLLING_INTERVAL_MS);
 }
