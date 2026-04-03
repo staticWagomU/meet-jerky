@@ -23,8 +23,10 @@ interface SessionSummary {
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
+const ONBOARDING_KEY = 'onboarding-completed';
+
 // State
-let currentView: 'list' | 'detail' = 'list';
+let currentView: 'list' | 'detail' | 'onboarding' = 'list';
 let currentSessionId: string | null = null;
 
 // --- Message helpers ---
@@ -64,6 +66,44 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 }
 
 // --- Formatting helpers ---
+
+// --- Onboarding ---
+
+function renderOnboarding(): void {
+  currentView = 'onboarding';
+
+  app.innerHTML = `
+    <div class="onboarding">
+      <div class="onboarding-icon">MT</div>
+      <h1 class="onboarding-title">Meet Transcript Clipper</h1>
+      <p class="onboarding-description">
+        この拡張機能は、Google Meetの字幕を自動的に記録・保存します。
+      </p>
+      <div class="onboarding-points">
+        <div class="onboarding-point">
+          <span class="onboarding-point-icon">&#128196;</span>
+          <span>会議中の字幕テキストと発言者名を自動で記録します</span>
+        </div>
+        <div class="onboarding-point">
+          <span class="onboarding-point-icon">&#128274;</span>
+          <span>記録データはお使いのブラウザ内にのみ保存され、外部に送信されることはありません</span>
+        </div>
+        <div class="onboarding-point">
+          <span class="onboarding-point-icon">&#9888;&#65039;</span>
+          <span>ご利用の際は、会議の参加者に字幕を記録していることを事前にお伝えください</span>
+        </div>
+      </div>
+      <button class="onboarding-button" id="onboarding-accept">理解しました</button>
+    </div>
+  `;
+
+  document.getElementById('onboarding-accept')?.addEventListener('click', async () => {
+    await browser.storage.local.set({ [ONBOARDING_KEY]: true });
+    renderLoading();
+    const response = await getSessions();
+    renderSessionList(response.sessions);
+  });
+}
 
 // --- Render functions ---
 
@@ -281,6 +321,11 @@ async function navigateToDetail(sessionId: string): Promise<void> {
 // --- Initialize ---
 
 async function init(): Promise<void> {
+  const result = await browser.storage.local.get(ONBOARDING_KEY);
+  if (!result[ONBOARDING_KEY]) {
+    renderOnboarding();
+    return;
+  }
   renderLoading();
   const response = await getSessions();
   renderSessionList(response.sessions);
