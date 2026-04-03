@@ -9,6 +9,12 @@ import {
   isSystemMessage as checkSystemMessage,
   determineCaptionAction,
 } from '@/utils/helpers';
+import {
+  findCaptionButton,
+  findCaptionRegion,
+  isInMeeting,
+  findLeaveButton,
+} from '@/utils/selectors';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -18,6 +24,7 @@ const CAPTION_MAX_RETRIES = 20;
 const IDLE_COMMIT_MS = 2_000;
 const FLUSH_INTERVAL_MS = 30_000;
 const FLUSH_THRESHOLD = 10;
+const CAPTION_REGION_TIMEOUT_MS = 30_000;
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -108,6 +115,43 @@ function applyCaptionVisibility(): void {
   }
 }
 
+// ─── Notification ───────────────────────────────────────────────────────────
+
+function showNotification(message: string, type: 'info' | 'warning' | 'error' = 'info', durationMs: number = 5000): void {
+  const notification = document.createElement('div');
+  notification.textContent = message;
+
+  const bgColors = {
+    info: '#1a73e8',
+    warning: '#f9ab00',
+    error: '#d93025',
+  };
+
+  Object.assign(notification.style, {
+    position: 'fixed',
+    top: '16px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: '99999',
+    padding: '8px 20px',
+    borderRadius: '8px',
+    backgroundColor: bgColors[type],
+    color: '#fff',
+    fontSize: '13px',
+    fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+    transition: 'opacity 0.3s',
+    opacity: '1',
+  });
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 300);
+  }, durationMs);
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function extractMeetingCode(): string {
@@ -117,20 +161,6 @@ function extractMeetingCode(): string {
 function extractMeetingTitle(): string {
   const titleEl = document.querySelector('.u6vdEc');
   return titleEl?.textContent?.trim() || extractMeetingCode();
-}
-
-function findGoogleSymbolByText(text: string): Element | null {
-  const symbols = document.querySelectorAll('.google-symbols');
-  for (const el of symbols) {
-    if (el.textContent?.trim() === text) {
-      return el;
-    }
-  }
-  return null;
-}
-
-function isInMeeting(): boolean {
-  return findGoogleSymbolByText('call_end') !== null;
 }
 
 function isSystemMessage(text: string): boolean {
@@ -294,18 +324,6 @@ function observeCaptionRegion(region: HTMLElement): void {
   });
 }
 
-function findCaptionRegion(): HTMLElement | null {
-  // Primary selector
-  const primary = document.querySelector<HTMLElement>(
-    'div[role="region"][aria-label="Captions"]'
-  );
-  if (primary) return primary;
-
-  // Fallback
-  const fallback = document.querySelector<HTMLElement>('div[role="region"][tabindex="0"]');
-  return fallback;
-}
-
 function startBodyObserver(): void {
   // Check if caption region already exists
   const existing = findCaptionRegion();
@@ -329,27 +347,13 @@ function startBodyObserver(): void {
 
 // ─── Auto-enable Captions ────────────────────────────────────────────────────
 
-async function enableCaptions(): Promise<void> {
+async function enableCaptions(): Promise<boolean> {
   for (let attempt = 0; attempt < CAPTION_MAX_RETRIES; attempt++) {
-    // Primary: find by google-symbols icon text
-    const icon = findGoogleSymbolByText('closed_caption_off');
-    if (icon) {
-      const btn = icon.closest('button');
-      if (btn) {
-        btn.click();
-        console.log('[MTC] Captions enabled via icon button');
-        return;
-      }
-    }
-
-    // Fallback: aria-label based
-    const fallbackBtn =
-      document.querySelector<HTMLButtonElement>('button[aria-label*="字幕"]') ||
-      document.querySelector<HTMLButtonElement>('button[aria-label*="caption" i]');
-    if (fallbackBtn) {
-      fallbackBtn.click();
-      console.log('[MTC] Captions enabled via aria-label button');
-      return;
+    const btn = findCaptionButton();
+    if (btn) {
+      btn.click();
+      console.log('[MTC] Captions enabled via caption button');
+      return true;
     }
 
     // Wait and retry — Meet loads UI progressively
@@ -357,15 +361,13 @@ async function enableCaptions(): Promise<void> {
   }
 
   console.warn('[MTC] Could not find caption button after max retries');
+  return false;
 }
 
 // ─── Exit Protection ─────────────────────────────────────────────────────────
 
 function attachLeaveButtonListener(): void {
-  const callEndIcon = findGoogleSymbolByText('call_end');
-  if (!callEndIcon) return;
-
-  const leaveBtn = callEndIcon.closest('button');
+  const leaveBtn = findLeaveButton();
   if (!leaveBtn) return;
 
   leaveBtn.addEventListener(
@@ -460,10 +462,8 @@ function onBeforeUnload(): void {
 function cleanup(): void {
   inMeeting = false;
 
-  if (meetingDetectionTimer !== null) {
-    clearInterval(meetingDetectionTimer);
-    meetingDetectionTimer = null;
-  }
+  // NOTE: meetingDetectionTimer is intentionally NOT cleared here
+  // so that re-entry into a meeting (e.g. after network reconnection) can be detected.
 
   if (flushTimer !== null) {
     clearInterval(flushTimer);
@@ -529,10 +529,28 @@ async function onMeetingDetected(): Promise<void> {
   }
 
   // Auto-enable captions
-  await enableCaptions();
+  const captionsEnabled = await enableCaptions();
+  if (!captionsEnabled) {
+    showNotification(
+      'Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。ホストが字幕を無効にしている可能性があります。',
+      'warning',
+      8000
+    );
+  }
 
   // Start observing for caption region
   startBodyObserver();
+
+  // Warn if caption region doesn't appear
+  setTimeout(() => {
+    if (!captionRegion && inMeeting && !meetingEnded) {
+      showNotification(
+        'Meet Transcript Clipper: 字幕領域が検出されませんでした。字幕が有効になっているか確認してください。',
+        'warning',
+        8000
+      );
+    }
+  }, CAPTION_REGION_TIMEOUT_MS);
 
   // Set up periodic flush
   flushTimer = setInterval(() => {
@@ -550,18 +568,18 @@ function startMeetingDetection(): void {
   // Check immediately
   if (isInMeeting()) {
     onMeetingDetected();
-    return;
   }
 
-  // Poll periodically
+  // Poll periodically — keeps running to detect re-entry after disconnection
   meetingDetectionTimer = setInterval(() => {
-    if (!inMeeting && isInMeeting()) {
+    const currentlyInMeeting = isInMeeting();
+
+    if (!inMeeting && currentlyInMeeting) {
+      // User entered/re-entered the meeting
       onMeetingDetected();
-      // Stop polling once meeting is detected
-      if (meetingDetectionTimer !== null) {
-        clearInterval(meetingDetectionTimer);
-        meetingDetectionTimer = null;
-      }
+    } else if (inMeeting && !currentlyInMeeting && !meetingEnded) {
+      // User left the meeting (call_end icon disappeared)
+      handleMeetingEnd();
     }
   }, POLLING_INTERVAL_MS);
 }
