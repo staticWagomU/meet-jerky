@@ -183,6 +183,7 @@ describe('formatSessionAsJson', () => {
       transcript: [
         { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
       ],
+      rawTranscript: [],
     };
     const result = formatSessionAsJson(session);
     const parsed = JSON.parse(result);
@@ -202,6 +203,7 @@ describe('formatSessionAsMarkdown', () => {
       transcript: [
         { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
       ],
+      rawTranscript: [],
     };
     const mockFormatTime = () => '14:30';
     const result = formatSessionAsMarkdown(session, mockFormatTime);
@@ -219,6 +221,7 @@ describe('formatSessionAsMarkdown', () => {
       startTimestamp: '2026-04-03T14:30:00Z',
       endTimestamp: '',
       transcript: [],
+      rawTranscript: [],
     };
     const result = formatSessionAsMarkdown(session);
     expect(result).toContain('# abc-defg-hij');
