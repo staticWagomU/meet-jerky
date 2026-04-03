@@ -925,27 +925,23 @@ function startRejoinGracePeriod(): void {
 
   suspendSession();
 
-  console.log('[MTC] Left meeting, starting rejoin grace period:', REJOIN_GRACE_PERIOD_MS, 'ms');
   rejoinGraceTimer = setTimeout(() => {
     rejoinGraceTimer = null;
-    console.log('[MTC] Grace period expired, ending session:', sessionId);
     handleMeetingEnd();
   }, REJOIN_GRACE_PERIOD_MS);
 }
 
-async function onMeetingResumed(): Promise<void> {
-  inMeeting = true;
-  meetingEnded = false;
+// ─── Meeting Session Setup ───────────────────────────────────────────────────
 
-  console.log('[MTC] Resuming session:', sessionId);
-
+/**
+ * Common setup after entering (or re-entering) a meeting:
+ * enable captions, start the guard, begin observing, and arm timers.
+ * Called by both onMeetingDetected (new session) and onMeetingResumed (rejoin).
+ */
+async function setupMeetingSession(notFoundMessage: string): Promise<void> {
   const captionsEnabled = await enableCaptions();
   if (!captionsEnabled) {
-    showNotification(
-      'Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。',
-      'warning',
-      8000
-    );
+    showNotification(notFoundMessage, 'warning', 8000);
   }
 
   startCaptionGuard();
@@ -957,6 +953,13 @@ async function onMeetingResumed(): Promise<void> {
   }, FLUSH_INTERVAL_MS);
 
   setupExitProtection();
+}
+
+async function onMeetingResumed(): Promise<void> {
+  inMeeting = true;
+  meetingEnded = false;
+
+  await setupMeetingSession('Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。');
 }
 
 // ─── Meeting Start ───────────────────────────────────────────────────────────
@@ -970,44 +973,23 @@ async function onMeetingDetected(): Promise<void> {
   const meetingTitle = extractMeetingTitle();
   const startTimestamp = new Date().toISOString();
 
-  // Generate sessionId on the content script side
   sessionId = crypto.randomUUID();
 
-  console.log('[MTC] Meeting detected:', { meetingCode, meetingTitle, sessionId });
-
-  // Send MEETING_STARTED to background
   try {
     const message: MeetingStartedMessage = {
       type: 'MEETING_STARTED',
-      payload: {
-        sessionId,
-        meetingCode,
-        meetingTitle,
-        startTimestamp,
-      },
+      payload: { sessionId, meetingCode, meetingTitle, startTimestamp },
     };
     await browser.runtime.sendMessage(message);
   } catch (e) {
     console.warn('[MTC] Failed to send MEETING_STARTED:', e);
   }
 
-  // Auto-enable captions
-  const captionsEnabled = await enableCaptions();
-  if (!captionsEnabled) {
-    showNotification(
-      'Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。ホストが字幕を無効にしている可能性があります。',
-      'warning',
-      8000
-    );
-  }
+  await setupMeetingSession(
+    'Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。ホストが字幕を無効にしている可能性があります。',
+  );
 
-  // Guard against accidentally turning off captions
-  startCaptionGuard();
-
-  // Start observing for caption region
-  startBodyObserver();
-
-  // Warn if caption region doesn't appear
+  // Warn if caption region doesn't appear within the timeout
   setTimeout(() => {
     if (!captionRegion && inMeeting && !meetingEnded) {
       showNotification(
@@ -1017,15 +999,6 @@ async function onMeetingDetected(): Promise<void> {
       );
     }
   }, CAPTION_REGION_TIMEOUT_MS);
-
-  // Set up periodic flush
-  flushTimer = setInterval(() => {
-    commitCurrentBlock();
-    flushPendingBlocks();
-  }, FLUSH_INTERVAL_MS);
-
-  // Set up exit protection
-  setupExitProtection();
 }
 
 // ─── Meeting Detection Polling ───────────────────────────────────────────────
