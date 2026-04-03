@@ -183,47 +183,48 @@ interface MeetingSession {
 ## 実装フェーズ
 
 ### Phase 1: 基盤 + IPC + 保存スキーマ
-- [ ] WXT設定の更新（`matches` を `*://meet.google.com/*` に限定）
-- [ ] 既存 `entrypoints/content.ts` にミーティング開始検出を実装（`call_end` アイコンの出現を待つ）
-- [ ] `MeetingSession` / `TranscriptBlock` の型定義を作成
-- [ ] Content Script ↔ Background Script 間のメッセージング基盤を構築
-- [ ] Background Script に `chrome.storage.local` への保存・取得ロジックを実装
-- [ ] `chrome.alarms` で5分間隔タイマー設定
+- [x] WXT設定の更新（`matches` を `*://meet.google.com/*` に限定）
+- [x] 既存 `entrypoints/content.ts` にミーティング開始検出を実装（`call_end` アイコンの出現を待つ）
+- [x] `MeetingSession` / `TranscriptBlock` の型定義を作成
+- [x] Content Script ↔ Background Script 間のメッセージング基盤を構築
+- [x] Background Script に `chrome.storage.local` への保存・取得ロジックを実装
+- [x] `chrome.alarms` で5分間隔タイマー設定
 
 ### Phase 2: 字幕検出 + リアルタイム取得
-- [ ] 字幕ボタンの検出とボタンクリックによる自動有効化
-- [ ] MutationObserver のセットアップ（2段階構造）
+- [x] 字幕ボタンの検出とボタンクリックによる自動有効化
+- [x] MutationObserver のセットアップ（2段階構造）
   - Body監視 → 字幕領域の出現を検出
   - 字幕領域監視 → テキスト変更を検出
-- [ ] 字幕テキストの重複排除ロジック
-- [ ] TranscriptBlock 確定時に Background へ増分送信
+- [x] 字幕テキストの重複排除ロジック
+- [x] TranscriptBlock 確定時に Background へ増分送信
 
 ### Phase 3: 永続化 + 終了時保護
-- [ ] 5分タイマー発火時にバッファを `chrome.storage.local` へ永続化
-- [ ] 退室ボタンへの `click` イベントリスナー追加（`MEETING_ENDED` 送信）
-- [ ] タブ閉じ・ページ遷移時の best effort 保存（3層セーフティネット）
+- [x] 5分タイマー発火時にバッファを `chrome.storage.local` へ永続化
+- [x] 退室ボタンへの `click` イベントリスナー追加（`MEETING_ENDED` 送信）
+- [x] タブ閉じ・ページ遷移時の best effort 保存（3層セーフティネット）
   - Content Script: `visibilitychange` イベント（`hidden` 時に最終フラッシュ）
   - Content Script: `beforeunload` イベント（フォールバック）
   - Background Script: `chrome.tabs.onRemoved` で未保存データを最終保存
-- [ ] セッション保持上限（直近10件）の管理
+- [x] セッション保持上限（直近10件）の管理
 
 ### Phase 4: ポップアップUI
-- [ ] セッション一覧画面（日時、タイトル、会議コード）
-- [ ] 文字起こし詳細画面（話者名、タイムスタンプ、テキスト）
-- [ ] データ削除機能
-- [ ] テキストコピー機能
+- [x] セッション一覧画面（日時、タイトル、会議コード）
+- [x] 文字起こし詳細画面（話者名、タイムスタンプ、テキスト）
+- [x] データ削除機能
+- [x] テキストコピー機能
 
 ### Phase 5: 字幕パネル非表示 & トグル
-- [ ] 字幕領域の CSS 非表示化（`visibility: hidden` / 画面外移動等、DOM更新が維持される方法を検証して採用）
-- [ ] Content Script 側にトグル用フローティングボタンを挿入
-- [ ] トグル状態の管理
+- [x] 字幕領域の CSS 非表示化（`position: absolute; left: -9999px` で画面外移動、DOM更新を維持）
+- [x] Content Script 側にトグル用フローティングボタンを挿入
+- [x] トグル状態の管理
 
 ---
 
 ## 残課題
 
-- [ ] 多言語対応（英語UIでの `aria-label` 対応）
-- [ ] 保存容量の厳密な上限定義・エクスポート機能
+- [x] 多言語対応（英語・日本語・スペイン語・フランス語UIでの `aria-label` 対応）
+- [x] エクスポート機能（Markdown / JSON / テキスト形式でダウンロード）
+- [ ] 保存容量の厳密な上限定義
 - [ ] 2025年2月以降のキャプション履歴UIへの対応検証
-- [ ] 再接続時（ネットワーク切断→復帰）の挙動確認
-- [ ] 字幕未対応状態（ホストが字幕を無効にしている場合）のハンドリング
+- [x] 再接続時（ネットワーク切断→復帰）の挙動対応（ポーリング継続で再入室を自動検出）
+- [x] 字幕未対応状態（ホストが字幕を無効にしている場合）のハンドリング（通知表示）
