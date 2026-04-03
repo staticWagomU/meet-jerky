@@ -112,3 +112,48 @@ export function findLeaveButton(): HTMLButtonElement | null {
     document.querySelector<HTMLButtonElement>('button[aria-label*="退出"]')
   );
 }
+
+/**
+ * Check if captions are currently enabled by inspecting the icon state.
+ * `closed_caption_off` = captions are OFF, `closed_caption` = captions are ON.
+ */
+export function areCaptionsOn(): boolean {
+  const symbols = document.querySelectorAll('.google-symbols');
+  for (const el of symbols) {
+    const text = el.textContent?.trim();
+    if (text === 'closed_caption') return true;
+    if (text === 'closed_caption_off') return false;
+  }
+  return false;
+}
+
+/**
+ * Attempt to enable captions by clicking the caption button.
+ * Retries up to maxRetries times with retryIntervalMs between attempts
+ * to handle Google Meet's progressive UI loading.
+ */
+export async function enableCaptions(
+  maxRetries: number,
+  retryIntervalMs: number,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Check if captions are already on — don't toggle them off!
+    if (areCaptionsOn()) {
+      console.log('[MTC] Captions already enabled, skipping click');
+      return true;
+    }
+
+    const btn = findCaptionButton();
+    if (btn) {
+      btn.click();
+      console.log('[MTC] Captions enabled via caption button');
+      return true;
+    }
+
+    // Wait and retry — Meet loads UI progressively
+    await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
+  }
+
+  console.warn('[MTC] Could not find caption button after max retries');
+  return false;
+}

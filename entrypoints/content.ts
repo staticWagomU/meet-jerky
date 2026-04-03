@@ -14,7 +14,17 @@ import {
   findCaptionRegion,
   isInMeeting,
   findLeaveButton,
+  areCaptionsOn,
+  enableCaptions,
 } from '@/utils/selectors';
+import {
+  isUIElement,
+  extractCaptionData,
+  findLayoutContainer,
+  findCaptionOverlayPanel,
+  COLLAPSE_PROPS,
+} from '@/utils/caption-dom';
+import { showNotification } from '@/utils/notification';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -232,52 +242,6 @@ function removeToggleButton(): void {
 
 // ─── Caption Visibility ──────────────────────────────────────────────────────
 
-/**
- * Walk up from the caption region to find the layout container that
- * actually reserves space in Meet's flex/grid layout.
- * This is the first ancestor whose parent has more than one child
- * (i.e., the element that sits alongside the video area).
- */
-function findLayoutContainer(el: HTMLElement): HTMLElement | null {
-  let current: HTMLElement | null = el;
-  while (current && current !== document.body) {
-    const parent: HTMLElement | null = current.parentElement;
-    if (!parent || parent === document.body) return current;
-    if (parent.children.length > 1) return current;
-    current = parent;
-  }
-  return null;
-}
-
-/**
- * Walk up from the caption region to find the outermost caption overlay panel.
- * In Google Meet's layout, this is a position:absolute container that wraps
- * the entire caption area (e.g., the div with class "fJsklc").
- */
-function findCaptionOverlayPanel(el: HTMLElement): HTMLElement | null {
-  let current: HTMLElement | null = el.parentElement;
-  let found: HTMLElement | null = null;
-  while (current && current !== document.body) {
-    const style = getComputedStyle(current);
-    if (style.position === 'absolute' && current.offsetHeight > 50) {
-      found = current;
-    }
-    // Stop if we reach a very large container (the main viewport)
-    if (current.offsetHeight > window.innerHeight * 0.8) {
-      break;
-    }
-    current = current.parentElement;
-  }
-  return found;
-}
-
-/** CSS properties to zero out on the layout container when collapsing */
-const COLLAPSE_PROPS = [
-  'height', 'min-height', 'max-height',
-  'padding', 'margin', 'border',
-  'flex-basis', 'flex-grow', 'flex-shrink',
-] as const;
-
 function applyCaptionVisibility(): void {
   if (!captionRegion) return;
 
@@ -336,43 +300,6 @@ function applyCaptionVisibility(): void {
       }
     }
   }
-}
-
-// ─── Notification ───────────────────────────────────────────────────────────
-
-function showNotification(message: string, type: 'info' | 'warning' | 'error' = 'info', durationMs: number = 5000): void {
-  const notification = document.createElement('div');
-  notification.textContent = message;
-
-  const bgColors = {
-    info: '#1a73e8',
-    warning: '#f9ab00',
-    error: '#d93025',
-  };
-
-  Object.assign(notification.style, {
-    position: 'fixed',
-    top: '16px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: '99999',
-    padding: '8px 20px',
-    borderRadius: '8px',
-    backgroundColor: bgColors[type],
-    color: '#fff',
-    fontSize: '13px',
-    fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-    transition: 'opacity 0.3s',
-    opacity: '1',
-  });
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.opacity = '0';
-    setTimeout(() => notification.remove(), 300);
-  }, durationMs);
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -446,69 +373,6 @@ async function flushPendingBlocks(): Promise<void> {
 }
 
 // ─── Caption Observation ─────────────────────────────────────────────────────
-
-/**
- * Check if an element is a UI control (button, scroll indicator, etc.)
- * rather than a caption text block.
- */
-function isUIElement(el: HTMLElement): boolean {
-  // Button elements or elements with button role
-  if (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button') return true;
-  // Elements containing Google Material Symbol icons (e.g. "arrow_downward")
-  if (el.querySelector('.google-symbols')) return true;
-  // Elements that are themselves Material Symbol icons
-  if (el.classList.contains('google-symbols')) return true;
-  return false;
-}
-
-function extractCaptionData(region: HTMLElement): { personName: string; text: string } | null {
-  const allChildren = Array.from(region.children);
-
-  const children = allChildren.filter(
-    (el) => !isUIElement(el as HTMLElement),
-  );
-  if (children.length === 0) return null;
-
-  // Find the last block that actually has text content.
-  // Google Meet may append empty container divs after the caption blocks.
-  let lastBlock: HTMLElement | null = null;
-  for (let i = children.length - 1; i >= 0; i--) {
-    const el = children[i] as HTMLElement;
-    if (el.textContent?.trim()) {
-      lastBlock = el;
-      break;
-    }
-  }
-  if (!lastBlock) return null;
-
-  const blockChildren = (Array.from(lastBlock.children) as HTMLElement[]).filter(
-    (el) => !isUIElement(el),
-  );
-
-  if (blockChildren.length === 0) {
-    const text = lastBlock.textContent?.trim() || '';
-    return text ? { personName: '', text } : null;
-  }
-
-  let personName = '';
-  let captionText = '';
-
-  if (blockChildren.length >= 2) {
-    personName = blockChildren[0].textContent?.trim() || '';
-    const textParts: string[] = [];
-    for (let i = 1; i < blockChildren.length; i++) {
-      const t = blockChildren[i].textContent?.trim();
-      if (t) textParts.push(t);
-    }
-    captionText = textParts.join(' ');
-  } else {
-    captionText = blockChildren[0].textContent?.trim() || '';
-  }
-
-  if (!captionText) return null;
-
-  return { personName, text: captionText };
-}
 
 function onCaptionMutation(): void {
   if (!captionRegion) return;
@@ -595,45 +459,6 @@ function startBodyObserver(): void {
     childList: true,
     subtree: true,
   });
-}
-
-// ─── Auto-enable Captions ────────────────────────────────────────────────────
-
-/**
- * Check if captions are currently enabled by inspecting the icon state.
- * `closed_caption_off` = captions are OFF, `closed_caption` = captions are ON.
- */
-function areCaptionsOn(): boolean {
-  const symbols = document.querySelectorAll('.google-symbols');
-  for (const el of symbols) {
-    const text = el.textContent?.trim();
-    if (text === 'closed_caption') return true;
-    if (text === 'closed_caption_off') return false;
-  }
-  return false;
-}
-
-async function enableCaptions(): Promise<boolean> {
-  for (let attempt = 0; attempt < CAPTION_MAX_RETRIES; attempt++) {
-    // Check if captions are already on — don't toggle them off!
-    if (areCaptionsOn()) {
-      console.log('[MTC] Captions already enabled, skipping click');
-      return true;
-    }
-
-    const btn = findCaptionButton();
-    if (btn) {
-      btn.click();
-      console.log('[MTC] Captions enabled via caption button');
-      return true;
-    }
-
-    // Wait and retry — Meet loads UI progressively
-    await new Promise((resolve) => setTimeout(resolve, CAPTION_RETRY_INTERVAL_MS));
-  }
-
-  console.warn('[MTC] Could not find caption button after max retries');
-  return false;
 }
 
 // ─── Caption Guard (click interception) ─────────────────────────────────────
@@ -940,7 +765,7 @@ function startRejoinGracePeriod(): void {
  * Called by both onMeetingDetected (new session) and onMeetingResumed (rejoin).
  */
 async function setupMeetingSession(notFoundMessage: string): Promise<void> {
-  const captionsEnabled = await enableCaptions();
+  const captionsEnabled = await enableCaptions(CAPTION_MAX_RETRIES, CAPTION_RETRY_INTERVAL_MS);
   if (!captionsEnabled) {
     showNotification(notFoundMessage, 'warning', 8000);
   }
