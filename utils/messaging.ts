@@ -1,4 +1,4 @@
-import type { TranscriptBlock } from './types';
+import type { TranscriptBlock, RawCaptionEntry } from './types';
 
 export type MessageType =
   | 'MEETING_STARTED'
@@ -23,6 +23,7 @@ export interface TranscriptUpdateMessage {
   payload: {
     sessionId: string;
     blocks: TranscriptBlock[];
+    rawEntries: RawCaptionEntry[];
   };
 }
 

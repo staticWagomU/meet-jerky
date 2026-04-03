@@ -4,6 +4,12 @@ export interface TranscriptBlock {
   transcriptText: string;
 }
 
+export interface RawCaptionEntry {
+  timestamp: string;
+  personName: string;
+  text: string;
+}
+
 export interface MeetingSession {
   sessionId: string;
   meetingCode: string;
@@ -11,4 +17,5 @@ export interface MeetingSession {
   startTimestamp: string;
   endTimestamp: string;
   transcript: TranscriptBlock[];
+  rawTranscript: RawCaptionEntry[];
 }

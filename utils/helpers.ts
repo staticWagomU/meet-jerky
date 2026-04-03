@@ -1,4 +1,4 @@
-import type { TranscriptBlock, MeetingSession } from './types';
+import type { TranscriptBlock, RawCaptionEntry, MeetingSession } from './types';
 
 /** System messages to filter out */
 const SYSTEM_MESSAGE_PATTERNS = [
@@ -161,6 +161,22 @@ export function extractParticipants(transcript: TranscriptBlock[]): string[] {
     }
   }
   return result;
+}
+
+/**
+ * Format raw caption entries as plain text for export.
+ * Each entry is a raw DOM observation with no deduplication or filtering.
+ */
+export function formatRawTranscriptAsText(
+  rawTranscript: RawCaptionEntry[],
+  formatTimeFn: (iso: string) => string = formatTimeOnly,
+): string {
+  return rawTranscript
+    .map((entry) => {
+      const time = formatTimeFn(entry.timestamp);
+      return `[${time}] ${entry.personName}: ${entry.text}`;
+    })
+    .join('\n');
 }
 
 /** Threshold for text length decrease to detect a reset */

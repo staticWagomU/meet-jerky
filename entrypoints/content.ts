@@ -1,4 +1,4 @@
-import type { TranscriptBlock } from '@/utils/types';
+import type { TranscriptBlock, RawCaptionEntry } from '@/utils/types';
 import type {
   MeetingStartedMessage,
   TranscriptUpdateMessage,
@@ -22,7 +22,7 @@ const POLLING_INTERVAL_MS = 2_000;
 const CAPTION_RETRY_INTERVAL_MS = 1_500;
 const CAPTION_MAX_RETRIES = 20;
 const IDLE_COMMIT_MS = 2_000;
-const FLUSH_INTERVAL_MS = 30_000;
+const FLUSH_INTERVAL_MS = 10_000;
 const FLUSH_THRESHOLD = 10;
 const CAPTION_REGION_TIMEOUT_MS = 30_000;
 
@@ -34,6 +34,7 @@ let meetingDetectionTimer: ReturnType<typeof setInterval> | null = null;
 
 let currentBlock: { personName: string; text: string } | null = null;
 let pendingBlocks: TranscriptBlock[] = [];
+let pendingRawEntries: RawCaptionEntry[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -46,9 +47,132 @@ let captionHidden = true;
 
 let meetingEnded = false;
 
-// ─── Toggle Button ───────────────────────────────────────────────────────────
+// Total raw entries captured in this session (sent + pending)
+let totalRawCount = 0;
+
+// ─── Toggle Button & Recording Indicator ────────────────────────────────────
 
 let toggleButton: HTMLButtonElement | null = null;
+let indicatorPanel: HTMLElement | null = null;
+let indicatorDot: HTMLElement | null = null;
+let indicatorCount: HTMLElement | null = null;
+let manualCaptureButton: HTMLButtonElement | null = null;
+
+const INDICATOR_STYLES = {
+  panel: {
+    position: 'fixed',
+    bottom: '120px',
+    right: '24px',
+    zIndex: '99999',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '6px 12px',
+    borderRadius: '20px',
+    backgroundColor: 'rgba(32, 33, 36, 0.85)',
+    color: '#fff',
+    fontSize: '12px',
+    fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+  },
+  dot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: '#aaa',
+    flexShrink: '0',
+  },
+  manualBtn: {
+    padding: '2px 8px',
+    borderRadius: '10px',
+    border: '1px solid rgba(255,255,255,0.4)',
+    backgroundColor: 'transparent',
+    color: '#fff',
+    fontSize: '11px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+} as const;
+
+function createIndicatorPanel(): void {
+  if (indicatorPanel) return;
+
+  indicatorPanel = document.createElement('div');
+  Object.assign(indicatorPanel.style, INDICATOR_STYLES.panel);
+
+  // Recording dot
+  indicatorDot = document.createElement('span');
+  Object.assign(indicatorDot.style, INDICATOR_STYLES.dot);
+  indicatorPanel.appendChild(indicatorDot);
+
+  // Count label
+  indicatorCount = document.createElement('span');
+  indicatorCount.textContent = 'RAW: 0';
+  indicatorPanel.appendChild(indicatorCount);
+
+  // Manual capture button
+  manualCaptureButton = document.createElement('button');
+  manualCaptureButton.textContent = '手動記録';
+  Object.assign(manualCaptureButton.style, INDICATOR_STYLES.manualBtn);
+  manualCaptureButton.addEventListener('click', manualCapture);
+  indicatorPanel.appendChild(manualCaptureButton);
+
+  document.body.appendChild(indicatorPanel);
+  updateIndicator();
+}
+
+function removeIndicatorPanel(): void {
+  if (indicatorPanel) {
+    indicatorPanel.remove();
+    indicatorPanel = null;
+    indicatorDot = null;
+    indicatorCount = null;
+    manualCaptureButton = null;
+  }
+}
+
+function updateIndicator(): void {
+  if (!indicatorDot || !indicatorCount) return;
+
+  const isRecording = captionObserver !== null && captionRegion !== null;
+  indicatorDot.style.backgroundColor = isRecording ? '#34a853' : '#d93025';
+  indicatorCount.textContent = `RAW: ${totalRawCount}`;
+}
+
+function manualCapture(): void {
+  if (!captionRegion) {
+    // Try to find it again — it may have been recreated by Meet
+    const region = findCaptionRegion();
+    if (region) {
+      observeCaptionRegion(region);
+    } else {
+      showNotification('字幕領域が見つかりません', 'warning', 3000);
+      return;
+    }
+  }
+
+  const data = extractCaptionData(captionRegion!);
+  if (!data) {
+    showNotification('字幕テキストが空です', 'info', 2000);
+    return;
+  }
+
+  pendingRawEntries.push({
+    timestamp: new Date().toISOString(),
+    personName: data.personName,
+    text: data.text,
+  });
+  totalRawCount++;
+  updateIndicator();
+
+  // Brief flash feedback on the button
+  if (manualCaptureButton) {
+    manualCaptureButton.textContent = '記録済';
+    setTimeout(() => {
+      if (manualCaptureButton) manualCaptureButton.textContent = '手動記録';
+    }, 800);
+  }
+}
 
 function createToggleButton(): void {
   if (toggleButton) return;
@@ -96,6 +220,7 @@ function removeToggleButton(): void {
     toggleButton.remove();
     toggleButton = null;
   }
+  removeIndicatorPanel();
 }
 
 // ─── Caption Visibility ──────────────────────────────────────────────────────
@@ -287,10 +412,13 @@ function resetIdleTimer(): void {
 }
 
 async function flushPendingBlocks(): Promise<void> {
-  if (pendingBlocks.length === 0 || !sessionId) return;
+  if (pendingBlocks.length === 0 && pendingRawEntries.length === 0) return;
+  if (!sessionId) return;
 
   const blocksToSend = [...pendingBlocks];
+  const rawToSend = [...pendingRawEntries];
   pendingBlocks = [];
+  pendingRawEntries = [];
 
   try {
     const message: TranscriptUpdateMessage = {
@@ -298,6 +426,7 @@ async function flushPendingBlocks(): Promise<void> {
       payload: {
         sessionId: sessionId,
         blocks: blocksToSend,
+        rawEntries: rawToSend,
       },
     };
     await browser.runtime.sendMessage(message);
@@ -305,6 +434,7 @@ async function flushPendingBlocks(): Promise<void> {
     console.warn('[MTC] Failed to flush pending blocks:', e);
     // Put blocks back for retry
     pendingBlocks = [...blocksToSend, ...pendingBlocks];
+    pendingRawEntries = [...rawToSend, ...pendingRawEntries];
   }
 }
 
@@ -379,6 +509,15 @@ function onCaptionMutation(): void {
   const data = extractCaptionData(captionRegion);
   if (!data) return;
 
+  // Record raw caption observation before any processing
+  pendingRawEntries.push({
+    timestamp: new Date().toISOString(),
+    personName: data.personName,
+    text: data.text,
+  });
+  totalRawCount++;
+  updateIndicator();
+
   const result = determineCaptionAction(currentBlock, data);
 
   switch (result.action) {
@@ -404,11 +543,17 @@ function observeCaptionRegion(region: HTMLElement): void {
   // Apply initial visibility (hidden by default)
   applyCaptionVisibility();
   createToggleButton();
+  createIndicatorPanel();
 
   // Stop body observer since we found the region
   if (bodyObserver) {
     bodyObserver.disconnect();
     bodyObserver = null;
+  }
+
+  // Disconnect previous observer if re-attaching
+  if (captionObserver) {
+    captionObserver.disconnect();
   }
 
   captionObserver = new MutationObserver(() => {
@@ -420,6 +565,8 @@ function observeCaptionRegion(region: HTMLElement): void {
     characterData: true,
     subtree: true,
   });
+
+  updateIndicator();
 }
 
 function startBodyObserver(): void {
@@ -674,12 +821,13 @@ function onBeforeUnload(): void {
     // Best-effort flush — synchronous context, so we use sendMessage fire-and-forget
     commitCurrentBlock();
 
-    if (pendingBlocks.length > 0 && sessionId) {
+    if ((pendingBlocks.length > 0 || pendingRawEntries.length > 0) && sessionId) {
       const message: TranscriptUpdateMessage = {
         type: 'TRANSCRIPT_UPDATE',
         payload: {
           sessionId,
           blocks: [...pendingBlocks],
+          rawEntries: [...pendingRawEntries],
         },
       };
       // Fire and forget — may or may not arrive
@@ -739,6 +887,8 @@ function cleanup(): void {
   captionOverlayPanel = null;
   currentBlock = null;
   pendingBlocks = [];
+  pendingRawEntries = [];
+  totalRawCount = 0;
   sessionId = null;
 
   removeToggleButton();

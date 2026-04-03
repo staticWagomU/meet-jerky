@@ -7,6 +7,7 @@ import {
   formatTranscriptAsText,
   formatSessionAsJson,
   formatSessionAsMarkdown,
+  formatRawTranscriptAsText,
   computeTranscriptDiffs,
   extractParticipants,
 } from '@/utils/helpers';
@@ -211,6 +212,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
         <button class="export-button" id="export-md" title="Markdownでエクスポート">MD</button>
         <button class="export-button" id="export-json" title="JSONでエクスポート">JSON</button>
         <button class="export-button" id="export-txt" title="テキストでエクスポート">TXT</button>
+        <button class="export-button" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
       </div>
       <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
     </div>
@@ -259,6 +261,12 @@ function renderTranscriptDetail(session: MeetingSession): void {
     const txt = formatTranscriptAsText(session.transcript);
     const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split('T')[0]}.txt`;
     downloadFile(txt, filename, 'text/plain');
+  });
+
+  document.getElementById('export-raw')?.addEventListener('click', () => {
+    const raw = formatRawTranscriptAsText(session.rawTranscript ?? []);
+    const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split('T')[0]}_raw.txt`;
+    downloadFile(raw, filename, 'text/plain');
   });
 }
 

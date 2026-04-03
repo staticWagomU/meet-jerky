@@ -1,4 +1,4 @@
-import type { TranscriptBlock, MeetingSession } from '@/utils/types';
+import type { TranscriptBlock, RawCaptionEntry, MeetingSession } from '@/utils/types';
 import type { ExtensionMessage } from '@/utils/messaging';
 
 // --- Storage helper types ---
@@ -130,6 +130,7 @@ export default defineBackground(() => {
               startTimestamp,
               endTimestamp: '',
               transcript: [],
+              rawTranscript: [],
             };
 
             sessionBuffer.set(sessionId, session);
@@ -139,17 +140,21 @@ export default defineBackground(() => {
               tabToSession.set(sender.tab.id, sessionId);
             }
 
-            // Set up periodic persistence alarm (every 5 minutes)
+            // Persist immediately so the session exists in storage
+            // even if no TRANSCRIPT_UPDATE arrives before the worker dies
+            await saveSession(session);
+
+            // Set up periodic persistence alarm (every 1 minute)
             await browser.alarms.create(`persist-${sessionId}`, {
-              periodInMinutes: 5,
+              periodInMinutes: 1,
             });
 
             return { success: true, sessionId };
           }
 
           case 'TRANSCRIPT_UPDATE': {
-            const { sessionId, blocks } = message.payload;
-            console.log('[MTC:BG:DEBUG] TRANSCRIPT_UPDATE received, sessionId:', sessionId, 'blocks:', blocks.length, blocks.map((b: TranscriptBlock) => `${b.personName}: ${b.transcriptText.slice(0, 30)}`));
+            const { sessionId, blocks, rawEntries } = message.payload;
+            console.log('[MTC:BG:DEBUG] TRANSCRIPT_UPDATE received, sessionId:', sessionId, 'blocks:', blocks.length, 'rawEntries:', rawEntries.length);
             const session = sessionBuffer.get(sessionId);
             if (!session) {
               console.warn('[MTC:BG:DEBUG] Session NOT found in buffer! Available sessions:', [...sessionBuffer.keys()]);
@@ -157,7 +162,12 @@ export default defineBackground(() => {
             }
 
             session.transcript.push(...blocks);
-            console.log('[MTC:BG:DEBUG] Session transcript count now:', session.transcript.length);
+            session.rawTranscript.push(...rawEntries);
+            console.log('[MTC:BG:DEBUG] Session transcript count now:', session.transcript.length, 'raw count:', session.rawTranscript.length);
+
+            // Persist to storage on every update so data survives
+            // even if MEETING_ENDED never arrives
+            await saveSession(session);
             return { success: true };
           }
 
