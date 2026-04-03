@@ -226,7 +226,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
 
   // Copy button
   document.getElementById('copy-button')?.addEventListener('click', async () => {
-    const text = formatTranscriptText(session);
+    const text = formatTranscriptAsText(session.transcript);
     try {
       await navigator.clipboard.writeText(text);
       const copyBtn = document.getElementById('copy-button')!;
@@ -256,14 +256,10 @@ function renderTranscriptDetail(session: MeetingSession): void {
   });
 
   document.getElementById('export-txt')?.addEventListener('click', () => {
-    const txt = formatTranscriptText(session);
+    const txt = formatTranscriptAsText(session.transcript);
     const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split('T')[0]}.txt`;
     downloadFile(txt, filename, 'text/plain');
   });
-}
-
-function formatTranscriptText(session: MeetingSession): string {
-  return formatTranscriptAsText(session.transcript);
 }
 
 // --- Navigation ---

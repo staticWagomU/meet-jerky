@@ -6,7 +6,7 @@ import type {
 } from '@/utils/messaging';
 import {
   extractMeetingCodeFromPath,
-  isSystemMessage as checkSystemMessage,
+  isSystemMessage,
   determineCaptionAction,
 } from '@/utils/helpers';
 import {
@@ -116,12 +116,11 @@ function findLayoutContainer(el: HTMLElement): HTMLElement | null {
   return null;
 }
 
-/** CSS properties to force-collapse on the layout container */
+/** CSS properties to zero out on the layout container when collapsing */
 const COLLAPSE_PROPS = [
   'height', 'min-height', 'max-height',
   'padding', 'margin', 'border',
   'flex-basis', 'flex-grow', 'flex-shrink',
-  'overflow',
 ] as const;
 
 function applyCaptionVisibility(): void {
@@ -164,6 +163,7 @@ function applyCaptionVisibility(): void {
       for (const prop of COLLAPSE_PROPS) {
         captionLayoutContainer.style.removeProperty(prop);
       }
+      captionLayoutContainer.style.removeProperty('overflow');
     }
   }
 }
@@ -214,10 +214,6 @@ function extractMeetingCode(): string {
 function extractMeetingTitle(): string {
   const titleEl = document.querySelector('.u6vdEc');
   return titleEl?.textContent?.trim() || extractMeetingCode();
-}
-
-function isSystemMessage(text: string): boolean {
-  return checkSystemMessage(text);
 }
 
 // ─── Block Management ────────────────────────────────────────────────────────
