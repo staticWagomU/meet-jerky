@@ -21,13 +21,12 @@ interface SessionSummary {
   transcriptCount: number;
 }
 
-const app = document.querySelector<HTMLDivElement>('#app')!;
+const app = document.querySelector<HTMLDivElement>('#app');
+if (!app) throw new Error('#app element not found');
 
 const ONBOARDING_KEY = 'onboarding-completed';
 
 // State
-let currentView: 'list' | 'detail' | 'onboarding' = 'list';
-let currentSessionId: string | null = null;
 
 // --- Message helpers ---
 
@@ -70,8 +69,6 @@ function downloadFile(content: string, filename: string, mimeType: string): void
 // --- Onboarding ---
 
 function renderOnboarding(): void {
-  currentView = 'onboarding';
-
   app.innerHTML = `
     <div class="onboarding">
       <div class="onboarding-icon">MT</div>
@@ -112,8 +109,6 @@ function renderLoading(): void {
 }
 
 function renderSessionList(sessions: SessionSummary[]): void {
-  currentView = 'list';
-  currentSessionId = null;
 
   const header = `
     <div class="header">
@@ -186,8 +181,6 @@ function renderSessionList(sessions: SessionSummary[]): void {
 }
 
 function renderTranscriptDetail(session: MeetingSession): void {
-  currentView = 'detail';
-  currentSessionId = session.sessionId;
 
   // Compute diffs to show only new text for same-speaker consecutive entries
   const diffedTranscript = computeTranscriptDiffs(session.transcript);
@@ -271,13 +264,15 @@ function renderTranscriptDetail(session: MeetingSession): void {
     const text = formatTranscriptAsText(session.transcript);
     try {
       await navigator.clipboard.writeText(text);
-      const copyBtn = document.getElementById('copy-button')!;
-      copyBtn.classList.add('copied');
-      copyBtn.textContent = 'コピーしました!';
-      setTimeout(() => {
-        copyBtn.classList.remove('copied');
-        copyBtn.innerHTML = '&#128203; 全文コピー';
-      }, 2000);
+      const copyBtn = document.getElementById('copy-button');
+      if (copyBtn) {
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = 'コピーしました!';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.innerHTML = '&#128203; 全文コピー';
+        }, 2000);
+      }
     } catch {
       // Fallback: should rarely happen in extension popup
       alert('コピーに失敗しました');

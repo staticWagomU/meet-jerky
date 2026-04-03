@@ -18,7 +18,6 @@ import {
   enableCaptions,
 } from '@/utils/selectors';
 import {
-  isUIElement,
   extractCaptionData,
   findLayoutContainer,
   findCaptionOverlayPanel,
@@ -43,7 +42,7 @@ const REJOIN_GRACE_PERIOD_MS = 120_000; // 2 minutes grace period for rejoin
 let sessionId: string | null = null;
 let inMeeting = false;
 let meetingEnded = false;
-let meetingDetectionTimer: ReturnType<typeof setInterval> | null = null;
+// meetingDetectionTimer is intentionally not stored — the interval runs for the page lifetime
 let rejoinGraceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Transcript buffer
@@ -168,7 +167,8 @@ function manualCapture(): void {
     }
   }
 
-  const data = extractCaptionData(captionRegion!);
+  if (!captionRegion) return;
+  const data = extractCaptionData(captionRegion);
   if (!data) {
     showNotification('字幕テキストが空です', 'info', 2000);
     return;
@@ -316,7 +316,7 @@ function extractMeetingTitle(): string {
 // ─── Block Management ────────────────────────────────────────────────────────
 
 function commitCurrentBlock(): void {
-  if (!currentBlock || !currentBlock.text.trim()) return;
+  if (!currentBlock?.text.trim()) return;
   if (isSystemMessage(currentBlock.text)) {
     currentBlock = null;
     return;
@@ -836,7 +836,7 @@ function startMeetingDetection(): void {
   }
 
   // Poll periodically — keeps running to detect re-entry after disconnection
-  meetingDetectionTimer = setInterval(() => {
+  setInterval(() => {
     const currentlyInMeeting = isInMeeting();
 
     if (!inMeeting && currentlyInMeeting) {

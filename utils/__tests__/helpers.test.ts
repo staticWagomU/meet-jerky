@@ -4,7 +4,6 @@ import {
   isSystemMessage,
   escapeHtml,
   determineCaptionAction,
-  TEXT_RESET_THRESHOLD,
   formatTranscriptAsText,
   formatSessionAsJson,
   formatSessionAsMarkdown,

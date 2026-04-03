@@ -1,4 +1,4 @@
-import type { TranscriptBlock, RawCaptionEntry, MeetingSession } from '@/utils/types';
+import type { MeetingSession } from '@/utils/types';
 import type { ExtensionMessage } from '@/utils/messaging';
 
 // --- Storage helper types ---
