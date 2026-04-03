@@ -55,7 +55,7 @@ function createToggleButton(): void {
   toggleButton.textContent = '字幕: 非表示';
   Object.assign(toggleButton.style, {
     position: 'fixed',
-    bottom: '24px',
+    bottom: '80px',
     right: '24px',
     zIndex: '99999',
     padding: '8px 16px',
@@ -100,18 +100,24 @@ function removeToggleButton(): void {
 
 function applyCaptionVisibility(): void {
   if (!captionRegion) return;
+
   if (captionHidden) {
-    Object.assign(captionRegion.style, {
-      position: 'absolute',
-      left: '-9999px',
-      opacity: '0',
-    });
+    // display: none removes the element from layout flow entirely.
+    // MutationObserver still fires on DOM changes for hidden elements,
+    // so transcript capture continues to work.
+    captionRegion.style.display = 'none';
+    // Google Meet's parent container reserves space for captions —
+    // collapse it too so the video area reclaims the space.
+    const parent = captionRegion.parentElement;
+    if (parent && parent !== document.body) {
+      parent.style.display = 'none';
+    }
   } else {
-    Object.assign(captionRegion.style, {
-      position: '',
-      left: '',
-      opacity: '',
-    });
+    captionRegion.style.display = '';
+    const parent = captionRegion.parentElement;
+    if (parent && parent !== document.body) {
+      parent.style.display = '';
+    }
   }
 }
 
@@ -223,11 +229,27 @@ async function flushPendingBlocks(): Promise<void> {
 
 // ─── Caption Observation ─────────────────────────────────────────────────────
 
+/**
+ * Check if an element is a UI control (button, scroll indicator, etc.)
+ * rather than a caption text block.
+ */
+function isUIElement(el: HTMLElement): boolean {
+  // Button elements or elements with button role
+  if (el.tagName === 'BUTTON' || el.getAttribute('role') === 'button') return true;
+  // Elements containing Google Material Symbol icons (e.g. "arrow_downward")
+  if (el.querySelector('.google-symbols')) return true;
+  // Elements that are themselves Material Symbol icons
+  if (el.classList.contains('google-symbols')) return true;
+  return false;
+}
+
 function extractCaptionData(region: HTMLElement): { personName: string; text: string } | null {
   // The caption region contains block containers as direct children.
   // Each block container has a speaker name (in a nested element) and caption text.
-  // We look at the LAST block in the region (the most recent utterance).
-  const children = Array.from(region.children);
+  // Filter out UI elements (scroll buttons, etc.) that are also children of the region.
+  const children = Array.from(region.children).filter(
+    (el) => !isUIElement(el as HTMLElement),
+  );
   if (children.length === 0) return null;
 
   const lastBlock = children[children.length - 1] as HTMLElement;
@@ -244,7 +266,10 @@ function extractCaptionData(region: HTMLElement): { personName: string; text: st
   //     </div>
   //   </div>
   // Since class names are obfuscated, we use structural position.
-  const blockChildren = Array.from(lastBlock.children) as HTMLElement[];
+  // Filter out any UI elements (buttons, icons) that may be nested inside the block.
+  const blockChildren = (Array.from(lastBlock.children) as HTMLElement[]).filter(
+    (el) => !isUIElement(el),
+  );
   if (blockChildren.length === 0) {
     // Might be a flat structure, try textContent
     const text = lastBlock.textContent?.trim() || '';
