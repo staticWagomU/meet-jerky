@@ -84,15 +84,10 @@ const tabToSession = new Map<number, string>();
 
 async function flushAndEndSession(sessionId: string): Promise<void> {
   const session = sessionBuffer.get(sessionId);
-  if (!session) {
-    console.warn('[MTC:BG:DEBUG] flushAndEndSession: session not found in buffer:', sessionId);
-    return;
-  }
+  if (!session) return;
 
-  console.log('[MTC:BG:DEBUG] flushAndEndSession: saving session', sessionId, 'with', session.transcript.length, 'transcript blocks');
   session.endTimestamp = new Date().toISOString();
   await saveSession(session);
-  console.log('[MTC:BG:DEBUG] flushAndEndSession: saveSession completed for', sessionId);
   await browser.alarms.clear(`persist-${sessionId}`);
   sessionBuffer.delete(sessionId);
 
@@ -121,7 +116,6 @@ export default defineBackground(() => {
         switch (message.type) {
           case 'MEETING_STARTED': {
             const { sessionId, meetingCode, meetingTitle, startTimestamp } = message.payload;
-            console.log('[MTC:BG:DEBUG] MEETING_STARTED received:', { sessionId, meetingCode, meetingTitle });
 
             const session: MeetingSession = {
               sessionId,
@@ -154,16 +148,13 @@ export default defineBackground(() => {
 
           case 'TRANSCRIPT_UPDATE': {
             const { sessionId, blocks, rawEntries } = message.payload;
-            console.log('[MTC:BG:DEBUG] TRANSCRIPT_UPDATE received, sessionId:', sessionId, 'blocks:', blocks.length, 'rawEntries:', rawEntries.length);
             const session = sessionBuffer.get(sessionId);
             if (!session) {
-              console.warn('[MTC:BG:DEBUG] Session NOT found in buffer! Available sessions:', [...sessionBuffer.keys()]);
               return { success: false, error: 'Session not found in buffer' };
             }
 
             session.transcript.push(...blocks);
             session.rawTranscript.push(...rawEntries);
-            console.log('[MTC:BG:DEBUG] Session transcript count now:', session.transcript.length, 'raw count:', session.rawTranscript.length);
 
             // Persist to storage on every update so data survives
             // even if MEETING_ENDED never arrives
@@ -173,15 +164,12 @@ export default defineBackground(() => {
 
           case 'MEETING_ENDED': {
             const { sessionId } = message.payload;
-            const endingSession = sessionBuffer.get(sessionId);
-            console.log('[MTC:BG:DEBUG] MEETING_ENDED received, sessionId:', sessionId, 'transcript count before save:', endingSession?.transcript.length ?? 'SESSION NOT FOUND');
             await flushAndEndSession(sessionId);
             return { success: true };
           }
 
           case 'GET_SESSIONS': {
             const index = await loadSessionIndex();
-            console.log('[MTC:BG:DEBUG] GET_SESSIONS, index entries:', index.length);
             // Sort by startTimestamp descending (newest first)
             const sorted = [...index].sort(
               (a, b) =>
@@ -193,18 +181,10 @@ export default defineBackground(() => {
               sorted.map(async (entry) => {
                 const session = await loadSession(entry.sessionId);
                 if (!session) {
-                  console.log('[MTC:BG:DEBUG] GET_SESSIONS: session not found in storage:', entry.sessionId);
-                  return {
-                    ...entry,
-                    transcriptCount: 0,
-                  };
+                  return { ...entry, transcriptCount: 0 };
                 }
                 const { transcript, ...metadata } = session;
-                console.log('[MTC:BG:DEBUG] GET_SESSIONS: session', entry.sessionId, 'transcriptCount:', transcript.length);
-                return {
-                  ...metadata,
-                  transcriptCount: transcript.length,
-                };
+                return { ...metadata, transcriptCount: transcript.length };
               }),
             );
 
