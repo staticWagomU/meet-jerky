@@ -12,6 +12,10 @@
 		"zip": "wxt zip",
 		"zip:firefox": "wxt zip -b firefox",
 		"compile": "tsc --noEmit",
+		"lint": "biome lint .",
+		"lint:fix": "biome lint --write .",
+		"format": "biome format --write .",
+		"check": "biome check --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"postinstall": "wxt prepare"
