@@ -40,6 +40,7 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let bodyObserver: MutationObserver | null = null;
 let captionObserver: MutationObserver | null = null;
 let captionRegion: HTMLElement | null = null;
+let captionLayoutContainer: HTMLElement | null = null;
 let captionHidden = true;
 
 let meetingEnded = false;
@@ -98,25 +99,67 @@ function removeToggleButton(): void {
 
 // ─── Caption Visibility ──────────────────────────────────────────────────────
 
+/**
+ * Walk up from the caption region to find the layout container that
+ * actually reserves space in Meet's flex/grid layout.
+ * This is the first ancestor whose parent has more than one child
+ * (i.e., the element that sits alongside the video area).
+ */
+function findLayoutContainer(el: HTMLElement): HTMLElement | null {
+  let current: HTMLElement | null = el;
+  while (current && current !== document.body) {
+    const parent: HTMLElement | null = current.parentElement;
+    if (!parent || parent === document.body) return current;
+    if (parent.children.length > 1) return current;
+    current = parent;
+  }
+  return null;
+}
+
 function applyCaptionVisibility(): void {
   if (!captionRegion) return;
 
+  if (!captionLayoutContainer) {
+    captionLayoutContainer = findLayoutContainer(captionRegion);
+  }
+
   if (captionHidden) {
-    // display: none removes the element from layout flow entirely.
-    // MutationObserver still fires on DOM changes for hidden elements,
-    // so transcript capture continues to work.
-    captionRegion.style.display = 'none';
-    // Google Meet's parent container reserves space for captions —
-    // collapse it too so the video area reclaims the space.
-    const parent = captionRegion.parentElement;
-    if (parent && parent !== document.body) {
-      parent.style.display = 'none';
+    // IMPORTANT: Do NOT use display:none — Google Meet may stop updating
+    // caption text in the DOM for elements removed from the render tree,
+    // which means MutationObserver never fires.
+    // Instead, move the caption region off-screen so it remains "alive"
+    // and Google Meet continues to push text updates.
+    Object.assign(captionRegion.style, {
+      opacity: '0',
+      pointerEvents: 'none',
+      position: 'fixed',
+      top: '-9999px',
+      left: '-9999px',
+    });
+    // Collapse the layout container so the video area reclaims the space.
+    if (captionLayoutContainer) {
+      Object.assign(captionLayoutContainer.style, {
+        height: '0',
+        minHeight: '0',
+        maxHeight: '0',
+        overflow: 'hidden',
+      });
     }
   } else {
-    captionRegion.style.display = '';
-    const parent = captionRegion.parentElement;
-    if (parent && parent !== document.body) {
-      parent.style.display = '';
+    Object.assign(captionRegion.style, {
+      opacity: '',
+      pointerEvents: '',
+      position: '',
+      top: '',
+      left: '',
+    });
+    if (captionLayoutContainer) {
+      Object.assign(captionLayoutContainer.style, {
+        height: '',
+        minHeight: '',
+        maxHeight: '',
+        overflow: '',
+      });
     }
   }
 }
@@ -176,8 +219,10 @@ function isSystemMessage(text: string): boolean {
 // ─── Block Management ────────────────────────────────────────────────────────
 
 function commitCurrentBlock(): void {
+  console.log('[MTC:DEBUG] commitCurrentBlock called, currentBlock:', currentBlock);
   if (!currentBlock || !currentBlock.text.trim()) return;
   if (isSystemMessage(currentBlock.text)) {
+    console.log('[MTC:DEBUG] Filtered system message:', currentBlock.text);
     currentBlock = null;
     return;
   }
@@ -189,6 +234,7 @@ function commitCurrentBlock(): void {
   };
 
   pendingBlocks.push(block);
+  console.log('[MTC:DEBUG] Block committed:', block.personName, block.transcriptText.slice(0, 50), '| pendingBlocks:', pendingBlocks.length);
   currentBlock = null;
 
   if (pendingBlocks.length >= FLUSH_THRESHOLD) {
@@ -206,6 +252,7 @@ function resetIdleTimer(): void {
 }
 
 async function flushPendingBlocks(): Promise<void> {
+  console.log('[MTC:DEBUG] flushPendingBlocks called, pendingBlocks:', pendingBlocks.length, 'sessionId:', sessionId);
   if (pendingBlocks.length === 0 || !sessionId) return;
 
   const blocksToSend = [...pendingBlocks];
@@ -219,7 +266,9 @@ async function flushPendingBlocks(): Promise<void> {
         blocks: blocksToSend,
       },
     };
-    await browser.runtime.sendMessage(message);
+    console.log('[MTC:DEBUG] Sending TRANSCRIPT_UPDATE, blocks:', blocksToSend.length, blocksToSend.map(b => `${b.personName}: ${b.transcriptText.slice(0, 30)}`));
+    const response = await browser.runtime.sendMessage(message);
+    console.log('[MTC:DEBUG] TRANSCRIPT_UPDATE response:', response);
   } catch (e) {
     console.warn('[MTC] Failed to flush pending blocks:', e);
     // Put blocks back for retry
@@ -303,10 +352,14 @@ function extractCaptionData(region: HTMLElement): { personName: string; text: st
 function onCaptionMutation(): void {
   if (!captionRegion) return;
 
+  console.log('[MTC:DEBUG] onCaptionMutation fired, region children:', captionRegion.children.length);
+
   const data = extractCaptionData(captionRegion);
+  console.log('[MTC:DEBUG] extractCaptionData result:', data);
   if (!data) return;
 
   const result = determineCaptionAction(currentBlock, data);
+  console.log('[MTC:DEBUG] determineCaptionAction:', result.action);
 
   switch (result.action) {
     case 'start':
@@ -327,6 +380,7 @@ function onCaptionMutation(): void {
 
 function observeCaptionRegion(region: HTMLElement): void {
   captionRegion = region;
+  console.log('[MTC:DEBUG] Caption region found:', region.tagName, region.getAttribute('aria-label'), 'children:', region.children.length);
 
   // Apply initial visibility (hidden by default)
   applyCaptionVisibility();
@@ -338,7 +392,8 @@ function observeCaptionRegion(region: HTMLElement): void {
     bodyObserver = null;
   }
 
-  captionObserver = new MutationObserver(() => {
+  captionObserver = new MutationObserver((mutations) => {
+    console.log('[MTC:DEBUG] MutationObserver fired, mutations:', mutations.length);
     onCaptionMutation();
   });
 
@@ -352,11 +407,13 @@ function observeCaptionRegion(region: HTMLElement): void {
 function startBodyObserver(): void {
   // Check if caption region already exists
   const existing = findCaptionRegion();
+  console.log('[MTC:DEBUG] startBodyObserver: existing region:', existing);
   if (existing) {
     observeCaptionRegion(existing);
     return;
   }
 
+  console.log('[MTC:DEBUG] startBodyObserver: setting up MutationObserver on document.body');
   bodyObserver = new MutationObserver(() => {
     const region = findCaptionRegion();
     if (region) {
@@ -372,8 +429,28 @@ function startBodyObserver(): void {
 
 // ─── Auto-enable Captions ────────────────────────────────────────────────────
 
+/**
+ * Check if captions are currently enabled by inspecting the icon state.
+ * `closed_caption_off` = captions are OFF, `closed_caption` = captions are ON.
+ */
+function areCaptionsOn(): boolean {
+  const symbols = document.querySelectorAll('.google-symbols');
+  for (const el of symbols) {
+    const text = el.textContent?.trim();
+    if (text === 'closed_caption') return true;
+    if (text === 'closed_caption_off') return false;
+  }
+  return false;
+}
+
 async function enableCaptions(): Promise<boolean> {
   for (let attempt = 0; attempt < CAPTION_MAX_RETRIES; attempt++) {
+    // Check if captions are already on — don't toggle them off!
+    if (areCaptionsOn()) {
+      console.log('[MTC] Captions already enabled, skipping click');
+      return true;
+    }
+
     const btn = findCaptionButton();
     if (btn) {
       btn.click();
@@ -408,6 +485,8 @@ async function handleMeetingEnd(): Promise<void> {
   if (meetingEnded) return;
   meetingEnded = true;
 
+  console.log('[MTC:DEBUG] handleMeetingEnd called, sessionId:', sessionId, 'currentBlock:', currentBlock, 'pendingBlocks:', pendingBlocks.length);
+
   // Commit any in-progress block
   commitCurrentBlock();
 
@@ -421,7 +500,9 @@ async function handleMeetingEnd(): Promise<void> {
         type: 'MEETING_ENDED',
         payload: { sessionId },
       };
-      await browser.runtime.sendMessage(message);
+      console.log('[MTC:DEBUG] Sending MEETING_ENDED for session:', sessionId);
+      const response = await browser.runtime.sendMessage(message);
+      console.log('[MTC:DEBUG] MEETING_ENDED response:', response);
     } catch (e) {
       console.warn('[MTC] Failed to send MEETING_ENDED:', e);
     }
@@ -434,7 +515,7 @@ function setupExitProtection(): void {
   // Leave button click listener
   attachLeaveButtonListener();
 
-  // Visibility change
+  // Visibility change — flush but do NOT end meeting
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   // Before unload
@@ -443,7 +524,11 @@ function setupExitProtection(): void {
 
 function onVisibilityChange(): void {
   if (document.visibilityState === 'hidden' && inMeeting) {
-    handleMeetingEnd();
+    // Tab became hidden — flush pending blocks as a safety measure,
+    // but do NOT end the meeting. Users frequently switch tabs during meetings.
+    console.log('[MTC:DEBUG] visibilitychange: hidden, flushing pending blocks (NOT ending meeting)');
+    commitCurrentBlock();
+    flushPendingBlocks();
   }
 }
 
@@ -511,6 +596,7 @@ function cleanup(): void {
   }
 
   captionRegion = null;
+  captionLayoutContainer = null;
   currentBlock = null;
   pendingBlocks = [];
   sessionId = null;
@@ -565,6 +651,30 @@ async function onMeetingDetected(): Promise<void> {
 
   // Start observing for caption region
   startBodyObserver();
+
+  // DEBUG: Periodically dump DOM state to find caption region
+  const debugInterval = setInterval(() => {
+    if (!inMeeting || captionRegion) {
+      clearInterval(debugInterval);
+      return;
+    }
+    // Check all role="region" elements
+    const regions = document.querySelectorAll('div[role="region"]');
+    console.log('[MTC:DEBUG] All div[role="region"]:', regions.length, [...regions].map(r => ({
+      ariaLabel: r.getAttribute('aria-label'),
+      tabindex: r.getAttribute('tabindex'),
+      children: r.children.length,
+      text: (r.textContent || '').slice(0, 80),
+    })));
+    // Also check for any element that might contain captions
+    const possibleCaptions = document.querySelectorAll('[aria-label*="caption" i], [aria-label*="字幕"], [aria-label*="subtitle" i]');
+    console.log('[MTC:DEBUG] Elements with caption-like aria-label:', possibleCaptions.length, [...possibleCaptions].map(el => ({
+      tag: el.tagName,
+      role: el.getAttribute('role'),
+      ariaLabel: el.getAttribute('aria-label'),
+      text: (el.textContent || '').slice(0, 80),
+    })));
+  }, 3000);
 
   // Warn if caption region doesn't appear
   setTimeout(() => {
