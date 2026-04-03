@@ -116,6 +116,14 @@ function findLayoutContainer(el: HTMLElement): HTMLElement | null {
   return null;
 }
 
+/** CSS properties to force-collapse on the layout container */
+const COLLAPSE_PROPS = [
+  'height', 'min-height', 'max-height',
+  'padding', 'margin', 'border',
+  'flex-basis', 'flex-grow', 'flex-shrink',
+  'overflow',
+] as const;
+
 function applyCaptionVisibility(): void {
   if (!captionRegion) return;
 
@@ -129,37 +137,33 @@ function applyCaptionVisibility(): void {
     // which means MutationObserver never fires.
     // Instead, move the caption region off-screen so it remains "alive"
     // and Google Meet continues to push text updates.
-    Object.assign(captionRegion.style, {
-      opacity: '0',
-      pointerEvents: 'none',
-      position: 'fixed',
-      top: '-9999px',
-      left: '-9999px',
-    });
+    const rs = captionRegion.style;
+    rs.setProperty('opacity', '0', 'important');
+    rs.setProperty('pointer-events', 'none', 'important');
+    rs.setProperty('position', 'fixed', 'important');
+    rs.setProperty('top', '-9999px', 'important');
+    rs.setProperty('left', '-9999px', 'important');
+
     // Collapse the layout container so the video area reclaims the space.
+    // Use position:absolute to remove it from flex flow entirely,
+    // which also eliminates any flex gap the parent may apply.
     if (captionLayoutContainer) {
-      Object.assign(captionLayoutContainer.style, {
-        height: '0',
-        minHeight: '0',
-        maxHeight: '0',
-        overflow: 'hidden',
-      });
+      const cs = captionLayoutContainer.style;
+      cs.setProperty('position', 'absolute', 'important');
+      for (const prop of COLLAPSE_PROPS) {
+        cs.setProperty(prop, '0', 'important');
+      }
+      cs.setProperty('overflow', 'hidden', 'important');
     }
   } else {
-    Object.assign(captionRegion.style, {
-      opacity: '',
-      pointerEvents: '',
-      position: '',
-      top: '',
-      left: '',
-    });
+    for (const prop of ['opacity', 'pointer-events', 'position', 'top', 'left']) {
+      captionRegion.style.removeProperty(prop);
+    }
     if (captionLayoutContainer) {
-      Object.assign(captionLayoutContainer.style, {
-        height: '',
-        minHeight: '',
-        maxHeight: '',
-        overflow: '',
-      });
+      captionLayoutContainer.style.removeProperty('position');
+      for (const prop of COLLAPSE_PROPS) {
+        captionLayoutContainer.style.removeProperty(prop);
+      }
     }
   }
 }
@@ -293,34 +297,53 @@ function isUIElement(el: HTMLElement): boolean {
 }
 
 function extractCaptionData(region: HTMLElement): { personName: string; text: string } | null {
-  // The caption region contains block containers as direct children.
-  // Each block container has a speaker name (in a nested element) and caption text.
-  // Filter out UI elements (scroll buttons, etc.) that are also children of the region.
-  const children = Array.from(region.children).filter(
+  const allChildren = Array.from(region.children);
+
+  // DEBUG: dump full DOM structure on first few calls
+  console.log('[MTC:DEBUG] extractCaptionData: region children:', allChildren.length,
+    allChildren.map((el, i) => ({
+      i,
+      tag: el.tagName,
+      classes: el.className,
+      isUI: isUIElement(el as HTMLElement),
+      childCount: el.children.length,
+      text: (el.textContent || '').slice(0, 100),
+      innerHTML: (el as HTMLElement).innerHTML.slice(0, 200),
+    }))
+  );
+
+  const children = allChildren.filter(
     (el) => !isUIElement(el as HTMLElement),
   );
   if (children.length === 0) return null;
 
-  const lastBlock = children[children.length - 1] as HTMLElement;
+  // Find the last block that actually has text content.
+  // Google Meet may append empty container divs after the caption blocks.
+  let lastBlock: HTMLElement | null = null;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const el = children[i] as HTMLElement;
+    if (el.textContent?.trim()) {
+      lastBlock = el;
+      break;
+    }
+  }
   if (!lastBlock) return null;
 
-  // Walk through the block to find speaker name and text.
-  // Typically the structure is:
-  //   <div> (block container)
-  //     <div> (speaker name wrapper)
-  //       <span/div> speaker name text
-  //     </div>
-  //     <div> (caption text wrapper)
-  //       <span/div> caption text
-  //     </div>
-  //   </div>
-  // Since class names are obfuscated, we use structural position.
-  // Filter out any UI elements (buttons, icons) that may be nested inside the block.
   const blockChildren = (Array.from(lastBlock.children) as HTMLElement[]).filter(
     (el) => !isUIElement(el),
   );
+
+  console.log('[MTC:DEBUG] extractCaptionData: lastBlock children:', blockChildren.length,
+    blockChildren.map((el, i) => ({
+      i,
+      tag: el.tagName,
+      classes: el.className,
+      childCount: el.children.length,
+      text: (el.textContent || '').slice(0, 100),
+    }))
+  );
+
   if (blockChildren.length === 0) {
-    // Might be a flat structure, try textContent
     const text = lastBlock.textContent?.trim() || '';
     return text ? { personName: '', text } : null;
   }
@@ -329,10 +352,7 @@ function extractCaptionData(region: HTMLElement): { personName: string; text: st
   let captionText = '';
 
   if (blockChildren.length >= 2) {
-    // First child(ren) might be the speaker name, last child is the text
-    // The name element is usually smaller and comes first
     personName = blockChildren[0].textContent?.trim() || '';
-    // Collect text from remaining children
     const textParts: string[] = [];
     for (let i = 1; i < blockChildren.length; i++) {
       const t = blockChildren[i].textContent?.trim();
@@ -340,7 +360,6 @@ function extractCaptionData(region: HTMLElement): { personName: string; text: st
     }
     captionText = textParts.join(' ');
   } else {
-    // Single child - might contain both name and text
     captionText = blockChildren[0].textContent?.trim() || '';
   }
 
