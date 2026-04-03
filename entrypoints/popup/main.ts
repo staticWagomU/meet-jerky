@@ -7,6 +7,8 @@ import {
   formatTranscriptAsText,
   formatSessionAsJson,
   formatSessionAsMarkdown,
+  computeTranscriptDiffs,
+  extractParticipants,
 } from '@/utils/helpers';
 
 interface SessionSummary {
@@ -146,19 +148,19 @@ function renderTranscriptDetail(session: MeetingSession): void {
   currentView = 'detail';
   currentSessionId = session.sessionId;
 
-  // Build a map of speaker -> color index
+  // Compute diffs to show only new text for same-speaker consecutive entries
+  const diffedTranscript = computeTranscriptDiffs(session.transcript);
+
+  // Build participant list and color map
+  const participants = extractParticipants(session.transcript);
   const speakerColors = new Map<string, number>();
-  let colorIndex = 0;
-  for (const block of session.transcript) {
-    if (!speakerColors.has(block.personName)) {
-      speakerColors.set(block.personName, colorIndex % 8);
-      colorIndex++;
-    }
-  }
+  participants.forEach((name, i) => {
+    speakerColors.set(name, i % 8);
+  });
 
   // Group consecutive entries by the same speaker
   const groups: { speaker: string; entries: typeof session.transcript }[] = [];
-  for (const block of session.transcript) {
+  for (const block of diffedTranscript) {
     const lastGroup = groups[groups.length - 1];
     if (lastGroup && lastGroup.speaker === block.personName) {
       lastGroup.entries.push(block);
@@ -196,6 +198,13 @@ function renderTranscriptDetail(session: MeetingSession): void {
       <div class="detail-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</div>
       <div class="detail-meta">${formatDate(session.startTimestamp)}</div>
       ${session.meetingCode ? `<div class="detail-code">${escapeHtml(session.meetingCode)}</div>` : ''}
+    </div>
+    <div class="participants">
+      <span class="participants-label">参加者:</span>
+      ${participants.map((name) => {
+        const colorClass = `speaker-color-${speakerColors.get(name) ?? 0}`;
+        return `<span class="participant-tag ${colorClass}">${escapeHtml(name)}</span>`;
+      }).join('')}
     </div>
     <div class="toolbar">
       <div class="toolbar-group">

@@ -67,12 +67,18 @@ export function formatTranscriptAsText(
   transcript: TranscriptBlock[],
   formatTimeFn: (iso: string) => string = formatTimeOnly,
 ): string {
-  return transcript
+  const diffed = computeTranscriptDiffs(transcript);
+  const participants = extractParticipants(transcript);
+  const header = participants.length > 0
+    ? `参加者: ${participants.join(', ')}\n\n`
+    : '';
+  const body = diffed
     .map((block) => {
       const time = formatTimeFn(block.timestamp);
       return `${block.personName} (${time})\n${block.transcriptText}`;
     })
     .join('\n\n');
+  return header + body;
 }
 
 /**
@@ -101,13 +107,18 @@ export function formatSessionAsMarkdown(
   session: MeetingSession,
   formatTimeFn: (iso: string) => string = formatTimeOnly,
 ): string {
+  const participants = extractParticipants(session.transcript);
+  const diffed = computeTranscriptDiffs(session.transcript);
+
   const header = `# ${session.meetingTitle || session.meetingCode}\n\n` +
     `- **会議コード**: ${session.meetingCode}\n` +
     `- **開始**: ${formatDate(session.startTimestamp)}\n` +
     (session.endTimestamp ? `- **終了**: ${formatDate(session.endTimestamp)}\n` : '') +
-    `- **発言数**: ${session.transcript.length}\n\n---\n\n`;
+    `- **発言数**: ${session.transcript.length}\n` +
+    (participants.length > 0 ? `- **参加者**: ${participants.join(', ')}\n` : '') +
+    `\n---\n\n`;
 
-  const body = session.transcript
+  const body = diffed
     .map((block) => {
       const time = formatTimeFn(block.timestamp);
       return `**${block.personName}** (${time})\n\n${block.transcriptText}`;
@@ -115,6 +126,39 @@ export function formatSessionAsMarkdown(
     .join('\n\n---\n\n');
 
   return header + body;
+}
+
+/**
+ * Compute transcript diffs: for consecutive same-speaker entries,
+ * strip the accumulated prefix so only the new portion is shown.
+ */
+export function computeTranscriptDiffs(transcript: TranscriptBlock[]): TranscriptBlock[] {
+  return transcript.map((block, index) => {
+    if (index === 0) return block;
+    const prev = transcript[index - 1];
+    if (prev.personName === block.personName && block.transcriptText.startsWith(prev.transcriptText)) {
+      const diffText = block.transcriptText.substring(prev.transcriptText.length).trim();
+      if (diffText) {
+        return { ...block, transcriptText: diffText };
+      }
+    }
+    return block;
+  });
+}
+
+/**
+ * Extract unique participant names in order of first appearance.
+ */
+export function extractParticipants(transcript: TranscriptBlock[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const block of transcript) {
+    if (!seen.has(block.personName)) {
+      seen.add(block.personName);
+      result.push(block.personName);
+    }
+  }
+  return result;
 }
 
 /** Threshold for text length decrease to detect a reset */

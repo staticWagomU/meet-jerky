@@ -8,6 +8,8 @@ import {
   formatTranscriptAsText,
   formatSessionAsJson,
   formatSessionAsMarkdown,
+  computeTranscriptDiffs,
+  extractParticipants,
 } from '../helpers';
 
 describe('extractMeetingCodeFromPath', () => {
@@ -151,7 +153,7 @@ describe('determineCaptionAction', () => {
 });
 
 describe('formatTranscriptAsText', () => {
-  it('formats transcript blocks as plain text', () => {
+  it('formats transcript blocks as plain text with participant header', () => {
     const blocks = [
       { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
       { personName: 'Bob', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Hi there' },
@@ -162,7 +164,7 @@ describe('formatTranscriptAsText', () => {
       return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
     };
     const result = formatTranscriptAsText(blocks, mockFormatTime);
-    expect(result).toBe('Alice (14:30)\nHello\n\nBob (14:31)\nHi there');
+    expect(result).toBe('参加者: Alice, Bob\n\nAlice (14:30)\nHello\n\nBob (14:31)\nHi there');
   });
 
   it('returns empty string for empty transcript', () => {
@@ -190,7 +192,7 @@ describe('formatSessionAsJson', () => {
 });
 
 describe('formatSessionAsMarkdown', () => {
-  it('includes meeting title as h1', () => {
+  it('includes meeting title as h1 and participants', () => {
     const session = {
       sessionId: 'test-id',
       meetingCode: 'abc-defg-hij',
@@ -204,6 +206,7 @@ describe('formatSessionAsMarkdown', () => {
     const mockFormatTime = () => '14:30';
     const result = formatSessionAsMarkdown(session, mockFormatTime);
     expect(result).toContain('# Test Meeting');
+    expect(result).toContain('**参加者**: Alice');
     expect(result).toContain('**Alice** (14:30)');
     expect(result).toContain('Hello');
   });
@@ -219,5 +222,91 @@ describe('formatSessionAsMarkdown', () => {
     };
     const result = formatSessionAsMarkdown(session);
     expect(result).toContain('# abc-defg-hij');
+  });
+});
+
+describe('computeTranscriptDiffs', () => {
+  it('returns first entry as-is', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+    ];
+    const result = computeTranscriptDiffs(blocks);
+    expect(result[0].transcriptText).toBe('Hello');
+  });
+
+  it('strips accumulated prefix for same speaker consecutive entries', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'いやー、まだ消えてないなぁ。' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'いやー、まだ消えてないなぁ。 うまくいってない気がするなぁ。' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'いやー、まだ消えてないなぁ。 うまくいってない気がするなぁ。 まだ消えてないね。' },
+    ];
+    const result = computeTranscriptDiffs(blocks);
+    expect(result[0].transcriptText).toBe('いやー、まだ消えてないなぁ。');
+    expect(result[1].transcriptText).toBe('うまくいってない気がするなぁ。');
+    expect(result[2].transcriptText).toBe('まだ消えてないね。');
+  });
+
+  it('does not strip when speaker changes', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello world' },
+      { personName: 'Bob', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Hello world and more' },
+    ];
+    const result = computeTranscriptDiffs(blocks);
+    expect(result[1].transcriptText).toBe('Hello world and more');
+  });
+
+  it('does not strip when text does not start with previous text', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'First sentence.' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Completely different.' },
+    ];
+    const result = computeTranscriptDiffs(blocks);
+    expect(result[1].transcriptText).toBe('Completely different.');
+  });
+
+  it('keeps original text when diff would be empty', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Hello' },
+    ];
+    const result = computeTranscriptDiffs(blocks);
+    expect(result[1].transcriptText).toBe('Hello');
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(computeTranscriptDiffs([])).toEqual([]);
+  });
+
+  it('resets diff tracking after speaker change', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      { personName: 'Bob', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Hi' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:32:00Z', transcriptText: 'Hello again' },
+    ];
+    const result = computeTranscriptDiffs(blocks);
+    expect(result[2].transcriptText).toBe('Hello again');
+  });
+});
+
+describe('extractParticipants', () => {
+  it('extracts unique participants in order of appearance', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      { personName: 'Bob', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Hi' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:32:00Z', transcriptText: 'Bye' },
+    ];
+    expect(extractParticipants(blocks)).toEqual(['Alice', 'Bob']);
+  });
+
+  it('returns empty array for empty transcript', () => {
+    expect(extractParticipants([])).toEqual([]);
+  });
+
+  it('handles single participant', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      { personName: 'Alice', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'World' },
+    ];
+    expect(extractParticipants(blocks)).toEqual(['Alice']);
   });
 });

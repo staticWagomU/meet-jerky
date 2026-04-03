@@ -205,6 +205,41 @@ body {
   font-family: monospace;
 }
 
+/* Participants */
+.participants {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.participants-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.participant-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border-left: 3px solid #e5e7eb;
+}
+
+.speaker-color-0 .participant-tag, .participant-tag.speaker-color-0 { border-left-color: #4285f4; }
+.speaker-color-1 .participant-tag, .participant-tag.speaker-color-1 { border-left-color: #34a853; }
+.speaker-color-2 .participant-tag, .participant-tag.speaker-color-2 { border-left-color: #fbbc04; }
+.speaker-color-3 .participant-tag, .participant-tag.speaker-color-3 { border-left-color: #ea4335; }
+.speaker-color-4 .participant-tag, .participant-tag.speaker-color-4 { border-left-color: #9334e6; }
+.speaker-color-5 .participant-tag, .participant-tag.speaker-color-5 { border-left-color: #e8710a; }
+.speaker-color-6 .participant-tag, .participant-tag.speaker-color-6 { border-left-color: #1aa7b5; }
+.speaker-color-7 .participant-tag, .participant-tag.speaker-color-7 { border-left-color: #d93025; }
+
 /* Toolbar */
 .toolbar {
   display: flex;
