@@ -1,6 +1,6 @@
 {
-  "name": "wxt-starter",
-  "description": "manifest.json description",
+  "name": "meet-transcript-clipper",
+  "description": "Google Meetの文字起こしを自動取得・保存するChrome拡張機能",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,10 +12,13 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
+    "vitest": "^4.1.2",
     "wxt": "^0.20.20"
   }
 }

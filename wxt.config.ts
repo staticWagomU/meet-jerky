@@ -1,4 +1,9 @@
 import { defineConfig } from 'wxt';
 
-// See https://wxt.dev/api/config.html
-export default defineConfig({});
+export default defineConfig({
+  manifest: {
+    name: 'Meet Transcript Clipper',
+    description: 'Google Meetの文字起こしを自動取得・保存するChrome拡張機能',
+    permissions: ['storage', 'alarms', 'activeTab'],
+  },
+});

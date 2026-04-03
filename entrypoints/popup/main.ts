@@ -1,24 +1,236 @@
 import './style.css';
-import typescriptLogo from '@/assets/typescript.svg';
-import wxtLogo from '/wxt.svg';
-import { setupCounter } from '@/components/counter';
+import type { MeetingSession } from '@/utils/types';
+import {
+  formatDate,
+  formatTimeOnly,
+  escapeHtml,
+  formatTranscriptAsText,
+} from '@/utils/helpers';
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://wxt.dev" target="_blank">
-      <img src="${wxtLogo}" class="logo" alt="WXT logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>WXT + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
+interface SessionSummary {
+  sessionId: string;
+  meetingCode: string;
+  meetingTitle: string;
+  startTimestamp: string;
+  endTimestamp: string;
+  transcriptCount: number;
+}
+
+const app = document.querySelector<HTMLDivElement>('#app')!;
+
+// State
+let currentView: 'list' | 'detail' = 'list';
+let currentSessionId: string | null = null;
+
+// --- Message helpers ---
+
+async function getSessions(): Promise<{ sessions: SessionSummary[] }> {
+  return browser.runtime.sendMessage({ type: 'GET_SESSIONS' });
+}
+
+async function getTranscript(
+  sessionId: string,
+): Promise<{ session: MeetingSession }> {
+  return browser.runtime.sendMessage({
+    type: 'GET_TRANSCRIPT',
+    payload: { sessionId },
+  });
+}
+
+async function deleteSession(sessionId: string): Promise<{ success: boolean }> {
+  return browser.runtime.sendMessage({
+    type: 'DELETE_SESSION',
+    payload: { sessionId },
+  });
+}
+
+// --- Formatting helpers ---
+
+// --- Render functions ---
+
+function renderLoading(): void {
+  app.innerHTML = `<div class="loading">読み込み中...</div>`;
+}
+
+function renderSessionList(sessions: SessionSummary[]): void {
+  currentView = 'list';
+  currentSessionId = null;
+
+  const header = `
+    <div class="header">
+      <div class="header-icon">MT</div>
+      <div class="header-title">Meet Transcript Clipper</div>
     </div>
-    <p class="read-the-docs">
-      Click on the WXT and TypeScript logos to learn more
-    </p>
-  </div>
-`;
+  `;
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!);
+  if (sessions.length === 0) {
+    app.innerHTML = `
+      ${header}
+      <div class="empty-state">
+        <div class="empty-state-icon">&#128196;</div>
+        <div class="empty-state-text">保存されたセッションはありません</div>
+      </div>
+    `;
+    return;
+  }
+
+  const listItems = sessions
+    .map(
+      (session) => `
+    <div class="session-item" data-session-id="${escapeHtml(session.sessionId)}">
+      <div class="session-info">
+        <div class="session-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</div>
+        <div class="session-meta">
+          <span class="session-date">${formatDate(session.startTimestamp)}</span>
+          <span class="session-count">${session.transcriptCount}件の発言</span>
+        </div>
+      </div>
+      <button class="delete-button" data-delete-id="${escapeHtml(session.sessionId)}" title="削除">削除</button>
+    </div>
+  `,
+    )
+    .join('');
+
+  app.innerHTML = `
+    ${header}
+    <div class="session-list">${listItems}</div>
+  `;
+
+  // Attach event listeners
+  document.querySelectorAll('.session-item').forEach((item) => {
+    item.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      // Don't navigate when clicking the delete button
+      if (target.closest('.delete-button')) return;
+
+      const sessionId = (item as HTMLElement).dataset.sessionId;
+      if (sessionId) {
+        navigateToDetail(sessionId);
+      }
+    });
+  });
+
+  document.querySelectorAll('.delete-button').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const sessionId = (btn as HTMLElement).dataset.deleteId;
+      if (!sessionId) return;
+
+      const confirmed = confirm('このセッションを削除しますか？');
+      if (!confirmed) return;
+
+      await deleteSession(sessionId);
+      const response = await getSessions();
+      renderSessionList(response.sessions);
+    });
+  });
+}
+
+function renderTranscriptDetail(session: MeetingSession): void {
+  currentView = 'detail';
+  currentSessionId = session.sessionId;
+
+  // Build a map of speaker -> color index
+  const speakerColors = new Map<string, number>();
+  let colorIndex = 0;
+  for (const block of session.transcript) {
+    if (!speakerColors.has(block.personName)) {
+      speakerColors.set(block.personName, colorIndex % 8);
+      colorIndex++;
+    }
+  }
+
+  // Group consecutive entries by the same speaker
+  const groups: { speaker: string; entries: typeof session.transcript }[] = [];
+  for (const block of session.transcript) {
+    const lastGroup = groups[groups.length - 1];
+    if (lastGroup && lastGroup.speaker === block.personName) {
+      lastGroup.entries.push(block);
+    } else {
+      groups.push({ speaker: block.personName, entries: [block] });
+    }
+  }
+
+  const transcriptHtml = groups
+    .map((group) => {
+      const colorClass = `speaker-color-${speakerColors.get(group.speaker) ?? 0}`;
+      const entriesHtml = group.entries
+        .map(
+          (entry) => `
+        <div class="transcript-entry">
+          <div class="transcript-timestamp">${escapeHtml(formatTimeOnly(entry.timestamp))}</div>
+          <div class="transcript-text">${escapeHtml(entry.transcriptText)}</div>
+        </div>
+      `,
+        )
+        .join('');
+
+      return `
+        <div class="transcript-group ${colorClass}">
+          <div class="transcript-speaker">${escapeHtml(group.speaker)}</div>
+          ${entriesHtml}
+        </div>
+      `;
+    })
+    .join('');
+
+  app.innerHTML = `
+    <div class="detail-header">
+      <button class="back-button" id="back-button">&larr; セッション一覧</button>
+      <div class="detail-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</div>
+      <div class="detail-meta">${formatDate(session.startTimestamp)}</div>
+      ${session.meetingCode ? `<div class="detail-code">${escapeHtml(session.meetingCode)}</div>` : ''}
+    </div>
+    <div class="toolbar">
+      <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
+    </div>
+    <div class="transcript-list">${transcriptHtml}</div>
+  `;
+
+  // Back button
+  document.getElementById('back-button')?.addEventListener('click', async () => {
+    renderLoading();
+    const response = await getSessions();
+    renderSessionList(response.sessions);
+  });
+
+  // Copy button
+  document.getElementById('copy-button')?.addEventListener('click', async () => {
+    const text = formatTranscriptText(session);
+    try {
+      await navigator.clipboard.writeText(text);
+      const copyBtn = document.getElementById('copy-button')!;
+      copyBtn.classList.add('copied');
+      copyBtn.textContent = 'コピーしました!';
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.innerHTML = '&#128203; 全文コピー';
+      }, 2000);
+    } catch {
+      // Fallback: should rarely happen in extension popup
+      alert('コピーに失敗しました');
+    }
+  });
+}
+
+function formatTranscriptText(session: MeetingSession): string {
+  return formatTranscriptAsText(session.transcript);
+}
+
+// --- Navigation ---
+
+async function navigateToDetail(sessionId: string): Promise<void> {
+  renderLoading();
+  const response = await getTranscript(sessionId);
+  renderTranscriptDetail(response.session);
+}
+
+// --- Initialize ---
+
+async function init(): Promise<void> {
+  renderLoading();
+  const response = await getSessions();
+  renderSessionList(response.sessions);
+}
+
+init();

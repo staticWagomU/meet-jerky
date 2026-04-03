@@ -1,0 +1,169 @@
+import { describe, it, expect } from 'vitest';
+import {
+  extractMeetingCodeFromPath,
+  isSystemMessage,
+  escapeHtml,
+  determineCaptionAction,
+  TEXT_RESET_THRESHOLD,
+  formatTranscriptAsText,
+} from '../helpers';
+
+describe('extractMeetingCodeFromPath', () => {
+  it('extracts meeting code from standard Meet URL path', () => {
+    expect(extractMeetingCodeFromPath('/abc-defg-hij')).toBe('abc-defg-hij');
+  });
+
+  it('extracts meeting code from path with trailing segments', () => {
+    expect(extractMeetingCodeFromPath('/abc-defg-hij?authuser=0')).toBe('abc-defg-hij');
+  });
+
+  it('returns empty string for non-matching paths', () => {
+    expect(extractMeetingCodeFromPath('/')).toBe('');
+    expect(extractMeetingCodeFromPath('/landing')).toBe('');
+  });
+
+  it('returns empty string for empty path', () => {
+    expect(extractMeetingCodeFromPath('')).toBe('');
+  });
+
+  it('handles paths with additional segments before the code', () => {
+    expect(extractMeetingCodeFromPath('/some/path/abc-defg-hij')).toBe('abc-defg-hij');
+  });
+
+  it('does not match codes with wrong format', () => {
+    // Too many chars in first segment
+    expect(extractMeetingCodeFromPath('/abcd-defg-hij')).toBe('');
+    // Numbers instead of letters
+    expect(extractMeetingCodeFromPath('/123-4567-890')).toBe('');
+    // Uppercase letters
+    expect(extractMeetingCodeFromPath('/ABC-DEFG-HIJ')).toBe('');
+  });
+});
+
+describe('isSystemMessage', () => {
+  it('detects English system messages', () => {
+    expect(isSystemMessage('you left the meeting')).toBe(true);
+    expect(isSystemMessage('John is presenting')).toBe(true);
+    expect(isSystemMessage('Recording has started')).toBe(true);
+    expect(isSystemMessage('Alice joined the meeting')).toBe(true);
+  });
+
+  it('detects Japanese system messages', () => {
+    expect(isSystemMessage('あなたは退出しました')).toBe(true);
+    expect(isSystemMessage('画面を共有しています')).toBe(true);
+    expect(isSystemMessage('録画が開始されました')).toBe(true);
+    expect(isSystemMessage('田中さんが参加しました')).toBe(true);
+  });
+
+  it('returns false for normal caption text', () => {
+    expect(isSystemMessage('Hello, how are you?')).toBe(false);
+    expect(isSystemMessage('今日の議題について話しましょう')).toBe(false);
+    expect(isSystemMessage('')).toBe(false);
+  });
+
+  it('is case-insensitive for English', () => {
+    expect(isSystemMessage('YOU LEFT THE MEETING')).toBe(true);
+    expect(isSystemMessage('Recording Has Started')).toBe(true);
+  });
+});
+
+describe('escapeHtml', () => {
+  it('escapes ampersands', () => {
+    expect(escapeHtml('a & b')).toBe('a &amp; b');
+  });
+
+  it('escapes angle brackets', () => {
+    expect(escapeHtml('<script>alert("xss")</script>')).toBe(
+      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
+    );
+  });
+
+  it('escapes quotes', () => {
+    expect(escapeHtml('"hello" & \'world\'')).toBe('&quot;hello&quot; &amp; &#039;world&#039;');
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(escapeHtml('')).toBe('');
+  });
+
+  it('does not modify safe text', () => {
+    expect(escapeHtml('Hello World 123')).toBe('Hello World 123');
+  });
+});
+
+describe('determineCaptionAction', () => {
+  it('returns start action when no current block exists', () => {
+    const result = determineCaptionAction(null, { personName: 'Alice', text: 'Hello' });
+    expect(result).toEqual({
+      action: 'start',
+      block: { personName: 'Alice', text: 'Hello' },
+    });
+  });
+
+  it('returns update action when same speaker and text changes', () => {
+    const current = { personName: 'Alice', text: 'Hello' };
+    const result = determineCaptionAction(current, { personName: 'Alice', text: 'Hello world' });
+    expect(result).toEqual({
+      action: 'update',
+      block: { personName: 'Alice', text: 'Hello world' },
+    });
+  });
+
+  it('returns commit_and_start when speaker changes', () => {
+    const current = { personName: 'Alice', text: 'Hello' };
+    const result = determineCaptionAction(current, { personName: 'Bob', text: 'Hi there' });
+    expect(result).toEqual({
+      action: 'commit_and_start',
+      commitBlock: { personName: 'Alice', text: 'Hello' },
+      newBlock: { personName: 'Bob', text: 'Hi there' },
+    });
+  });
+
+  it('returns commit_and_start when text decreases by threshold', () => {
+    const longText = 'a'.repeat(300);
+    const current = { personName: 'Alice', text: longText };
+    const result = determineCaptionAction(current, { personName: 'Alice', text: 'Short' });
+    expect(result.action).toBe('commit_and_start');
+  });
+
+  it('returns update when text decreases but below threshold', () => {
+    const current = { personName: 'Alice', text: 'Hello world, this is a test' };
+    const result = determineCaptionAction(current, { personName: 'Alice', text: 'Hello world' });
+    expect(result.action).toBe('update');
+  });
+
+  it('preserves current person name when new data has empty name', () => {
+    const current = { personName: 'Alice', text: 'Hello' };
+    const result = determineCaptionAction(current, { personName: '', text: 'Hello world' });
+    expect(result).toEqual({
+      action: 'update',
+      block: { personName: 'Alice', text: 'Hello world' },
+    });
+  });
+
+  it('does not treat empty-name data as a speaker change', () => {
+    const current = { personName: 'Alice', text: 'Hello' };
+    const result = determineCaptionAction(current, { personName: '', text: 'Hello updated' });
+    expect(result.action).toBe('update');
+  });
+});
+
+describe('formatTranscriptAsText', () => {
+  it('formats transcript blocks as plain text', () => {
+    const blocks = [
+      { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      { personName: 'Bob', timestamp: '2026-04-03T14:31:00Z', transcriptText: 'Hi there' },
+    ];
+    // Use a mock time formatter for deterministic output
+    const mockFormatTime = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+    };
+    const result = formatTranscriptAsText(blocks, mockFormatTime);
+    expect(result).toBe('Alice (14:30)\nHello\n\nBob (14:31)\nHi there');
+  });
+
+  it('returns empty string for empty transcript', () => {
+    expect(formatTranscriptAsText([])).toBe('');
+  });
+});
