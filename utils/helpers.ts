@@ -46,6 +46,7 @@ export function formatDate(isoString: string): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
   });
 }
 
@@ -57,6 +58,7 @@ export function formatTimeOnly(isoString: string): string {
   return date.toLocaleTimeString('ja-JP', {
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
   });
 }
 
