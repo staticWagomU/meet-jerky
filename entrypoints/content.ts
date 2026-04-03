@@ -41,6 +41,7 @@ let bodyObserver: MutationObserver | null = null;
 let captionObserver: MutationObserver | null = null;
 let captionRegion: HTMLElement | null = null;
 let captionLayoutContainer: HTMLElement | null = null;
+let captionOverlayPanel: HTMLElement | null = null;
 let captionHidden = true;
 
 let meetingEnded = false;
@@ -116,6 +117,28 @@ function findLayoutContainer(el: HTMLElement): HTMLElement | null {
   return null;
 }
 
+/**
+ * Walk up from the caption region to find the outermost caption overlay panel.
+ * In Google Meet's layout, this is a position:absolute container that wraps
+ * the entire caption area (e.g., the div with class "fJsklc").
+ */
+function findCaptionOverlayPanel(el: HTMLElement): HTMLElement | null {
+  let current: HTMLElement | null = el.parentElement;
+  let found: HTMLElement | null = null;
+  while (current && current !== document.body) {
+    const style = getComputedStyle(current);
+    if (style.position === 'absolute' && current.offsetHeight > 50) {
+      found = current;
+    }
+    // Stop if we reach a very large container (the main viewport)
+    if (current.offsetHeight > window.innerHeight * 0.8) {
+      break;
+    }
+    current = current.parentElement;
+  }
+  return found;
+}
+
 /** CSS properties to zero out on the layout container when collapsing */
 const COLLAPSE_PROPS = [
   'height', 'min-height', 'max-height',
@@ -128,6 +151,9 @@ function applyCaptionVisibility(): void {
 
   if (!captionLayoutContainer) {
     captionLayoutContainer = findLayoutContainer(captionRegion);
+  }
+  if (!captionOverlayPanel) {
+    captionOverlayPanel = findCaptionOverlayPanel(captionRegion);
   }
 
   if (captionHidden) {
@@ -143,9 +169,7 @@ function applyCaptionVisibility(): void {
     rs.setProperty('top', '-9999px', 'important');
     rs.setProperty('left', '-9999px', 'important');
 
-    // Collapse the layout container so the video area reclaims the space.
-    // Use position:absolute to remove it from flex flow entirely,
-    // which also eliminates any flex gap the parent may apply.
+    // Collapse the inner layout container
     if (captionLayoutContainer) {
       const cs = captionLayoutContainer.style;
       cs.setProperty('position', 'absolute', 'important');
@@ -153,6 +177,15 @@ function applyCaptionVisibility(): void {
         cs.setProperty(prop, '0', 'important');
       }
       cs.setProperty('overflow', 'hidden', 'important');
+    }
+
+    // Collapse the outer overlay panel (position:absolute div wrapping entire caption area)
+    if (captionOverlayPanel) {
+      const ps = captionOverlayPanel.style;
+      ps.setProperty('height', '0', 'important');
+      ps.setProperty('min-height', '0', 'important');
+      ps.setProperty('max-height', '0', 'important');
+      ps.setProperty('overflow', 'hidden', 'important');
     }
   } else {
     for (const prop of ['opacity', 'pointer-events', 'position', 'top', 'left']) {
@@ -164,6 +197,11 @@ function applyCaptionVisibility(): void {
         captionLayoutContainer.style.removeProperty(prop);
       }
       captionLayoutContainer.style.removeProperty('overflow');
+    }
+    if (captionOverlayPanel) {
+      for (const prop of ['height', 'min-height', 'max-height', 'overflow']) {
+        captionOverlayPanel.style.removeProperty(prop);
+      }
     }
   }
 }
@@ -219,10 +257,8 @@ function extractMeetingTitle(): string {
 // ─── Block Management ────────────────────────────────────────────────────────
 
 function commitCurrentBlock(): void {
-  console.log('[MTC:DEBUG] commitCurrentBlock called, currentBlock:', currentBlock);
   if (!currentBlock || !currentBlock.text.trim()) return;
   if (isSystemMessage(currentBlock.text)) {
-    console.log('[MTC:DEBUG] Filtered system message:', currentBlock.text);
     currentBlock = null;
     return;
   }
@@ -234,7 +270,6 @@ function commitCurrentBlock(): void {
   };
 
   pendingBlocks.push(block);
-  console.log('[MTC:DEBUG] Block committed:', block.personName, block.transcriptText.slice(0, 50), '| pendingBlocks:', pendingBlocks.length);
   currentBlock = null;
 
   if (pendingBlocks.length >= FLUSH_THRESHOLD) {
@@ -252,7 +287,6 @@ function resetIdleTimer(): void {
 }
 
 async function flushPendingBlocks(): Promise<void> {
-  console.log('[MTC:DEBUG] flushPendingBlocks called, pendingBlocks:', pendingBlocks.length, 'sessionId:', sessionId);
   if (pendingBlocks.length === 0 || !sessionId) return;
 
   const blocksToSend = [...pendingBlocks];
@@ -266,9 +300,7 @@ async function flushPendingBlocks(): Promise<void> {
         blocks: blocksToSend,
       },
     };
-    console.log('[MTC:DEBUG] Sending TRANSCRIPT_UPDATE, blocks:', blocksToSend.length, blocksToSend.map(b => `${b.personName}: ${b.transcriptText.slice(0, 30)}`));
-    const response = await browser.runtime.sendMessage(message);
-    console.log('[MTC:DEBUG] TRANSCRIPT_UPDATE response:', response);
+    await browser.runtime.sendMessage(message);
   } catch (e) {
     console.warn('[MTC] Failed to flush pending blocks:', e);
     // Put blocks back for retry
@@ -295,19 +327,6 @@ function isUIElement(el: HTMLElement): boolean {
 function extractCaptionData(region: HTMLElement): { personName: string; text: string } | null {
   const allChildren = Array.from(region.children);
 
-  // DEBUG: dump full DOM structure on first few calls
-  console.log('[MTC:DEBUG] extractCaptionData: region children:', allChildren.length,
-    allChildren.map((el, i) => ({
-      i,
-      tag: el.tagName,
-      classes: el.className,
-      isUI: isUIElement(el as HTMLElement),
-      childCount: el.children.length,
-      text: (el.textContent || '').slice(0, 100),
-      innerHTML: (el as HTMLElement).innerHTML.slice(0, 200),
-    }))
-  );
-
   const children = allChildren.filter(
     (el) => !isUIElement(el as HTMLElement),
   );
@@ -327,16 +346,6 @@ function extractCaptionData(region: HTMLElement): { personName: string; text: st
 
   const blockChildren = (Array.from(lastBlock.children) as HTMLElement[]).filter(
     (el) => !isUIElement(el),
-  );
-
-  console.log('[MTC:DEBUG] extractCaptionData: lastBlock children:', blockChildren.length,
-    blockChildren.map((el, i) => ({
-      i,
-      tag: el.tagName,
-      classes: el.className,
-      childCount: el.children.length,
-      text: (el.textContent || '').slice(0, 100),
-    }))
   );
 
   if (blockChildren.length === 0) {
@@ -367,14 +376,10 @@ function extractCaptionData(region: HTMLElement): { personName: string; text: st
 function onCaptionMutation(): void {
   if (!captionRegion) return;
 
-  console.log('[MTC:DEBUG] onCaptionMutation fired, region children:', captionRegion.children.length);
-
   const data = extractCaptionData(captionRegion);
-  console.log('[MTC:DEBUG] extractCaptionData result:', data);
   if (!data) return;
 
   const result = determineCaptionAction(currentBlock, data);
-  console.log('[MTC:DEBUG] determineCaptionAction:', result.action);
 
   switch (result.action) {
     case 'start':
@@ -395,7 +400,6 @@ function onCaptionMutation(): void {
 
 function observeCaptionRegion(region: HTMLElement): void {
   captionRegion = region;
-  console.log('[MTC:DEBUG] Caption region found:', region.tagName, region.getAttribute('aria-label'), 'children:', region.children.length);
 
   // Apply initial visibility (hidden by default)
   applyCaptionVisibility();
@@ -407,8 +411,7 @@ function observeCaptionRegion(region: HTMLElement): void {
     bodyObserver = null;
   }
 
-  captionObserver = new MutationObserver((mutations) => {
-    console.log('[MTC:DEBUG] MutationObserver fired, mutations:', mutations.length);
+  captionObserver = new MutationObserver(() => {
     onCaptionMutation();
   });
 
@@ -422,13 +425,11 @@ function observeCaptionRegion(region: HTMLElement): void {
 function startBodyObserver(): void {
   // Check if caption region already exists
   const existing = findCaptionRegion();
-  console.log('[MTC:DEBUG] startBodyObserver: existing region:', existing);
   if (existing) {
     observeCaptionRegion(existing);
     return;
   }
 
-  console.log('[MTC:DEBUG] startBodyObserver: setting up MutationObserver on document.body');
   bodyObserver = new MutationObserver(() => {
     const region = findCaptionRegion();
     if (region) {
@@ -481,6 +482,132 @@ async function enableCaptions(): Promise<boolean> {
   return false;
 }
 
+// ─── Caption Guard (click interception) ─────────────────────────────────────
+
+let captionGuardActive = false;
+let captionGuardBypass = false;
+let captionConfirmDialog: HTMLElement | null = null;
+
+/**
+ * Check if a click target is inside the caption toggle button.
+ */
+function isCaptionButtonClick(target: HTMLElement): boolean {
+  const btn = target.closest('button');
+  if (!btn) return false;
+  const symbol = btn.querySelector('.google-symbols');
+  if (!symbol) return false;
+  const text = symbol.textContent?.trim();
+  return text === 'closed_caption' || text === 'closed_caption_off';
+}
+
+function dismissConfirmDialog(): void {
+  if (captionConfirmDialog) {
+    captionConfirmDialog.remove();
+    captionConfirmDialog = null;
+  }
+}
+
+/**
+ * Capturing-phase click handler on document.
+ * Intercepts clicks on the caption button when captions are ON,
+ * preventing accidental turn-off.
+ */
+function onCaptionGuardClick(e: MouseEvent): void {
+  if (!inMeeting || meetingEnded) return;
+  if (captionGuardBypass) return;
+  if (!areCaptionsOn()) return;
+
+  const target = e.target as HTMLElement;
+  if (!isCaptionButtonClick(target)) return;
+
+  // Block the click
+  e.stopPropagation();
+  e.preventDefault();
+
+  console.log('[MTC] Caption off click intercepted — showing confirmation');
+  showCaptionGuardConfirm();
+}
+
+function showCaptionGuardConfirm(): void {
+  if (captionConfirmDialog) return;
+
+  const container = document.createElement('div');
+  Object.assign(container.style, {
+    position: 'fixed',
+    top: '16px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: '99999',
+    padding: '12px 20px',
+    borderRadius: '8px',
+    backgroundColor: '#d93025',
+    color: '#fff',
+    fontSize: '13px',
+    fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  });
+
+  const msg = document.createElement('span');
+  msg.textContent = '字幕をOFFにすると録音が停止します。OFFにしますか？';
+  container.appendChild(msg);
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.textContent = 'OFFにする';
+  Object.assign(confirmBtn.style, {
+    padding: '4px 12px',
+    borderRadius: '4px',
+    border: '1px solid #fff',
+    backgroundColor: 'transparent',
+    color: '#fff',
+    fontSize: '13px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  });
+  confirmBtn.addEventListener('click', () => {
+    dismissConfirmDialog();
+    // Bypass the guard for this one click
+    captionGuardBypass = true;
+    const btn = findCaptionButton();
+    if (btn) btn.click();
+    captionGuardBypass = false;
+  });
+  container.appendChild(confirmBtn);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'キャンセル';
+  Object.assign(cancelBtn.style, {
+    padding: '4px 12px',
+    borderRadius: '4px',
+    border: 'none',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    color: '#fff',
+    fontSize: '13px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  });
+  cancelBtn.addEventListener('click', dismissConfirmDialog);
+  container.appendChild(cancelBtn);
+
+  document.body.appendChild(container);
+  captionConfirmDialog = container;
+}
+
+function startCaptionGuard(): void {
+  if (captionGuardActive) return;
+  captionGuardActive = true;
+  document.addEventListener('click', onCaptionGuardClick, true);
+}
+
+function stopCaptionGuard(): void {
+  if (!captionGuardActive) return;
+  captionGuardActive = false;
+  document.removeEventListener('click', onCaptionGuardClick, true);
+  dismissConfirmDialog();
+}
+
 // ─── Exit Protection ─────────────────────────────────────────────────────────
 
 function attachLeaveButtonListener(): void {
@@ -500,8 +627,6 @@ async function handleMeetingEnd(): Promise<void> {
   if (meetingEnded) return;
   meetingEnded = true;
 
-  console.log('[MTC:DEBUG] handleMeetingEnd called, sessionId:', sessionId, 'currentBlock:', currentBlock, 'pendingBlocks:', pendingBlocks.length);
-
   // Commit any in-progress block
   commitCurrentBlock();
 
@@ -515,9 +640,7 @@ async function handleMeetingEnd(): Promise<void> {
         type: 'MEETING_ENDED',
         payload: { sessionId },
       };
-      console.log('[MTC:DEBUG] Sending MEETING_ENDED for session:', sessionId);
-      const response = await browser.runtime.sendMessage(message);
-      console.log('[MTC:DEBUG] MEETING_ENDED response:', response);
+      await browser.runtime.sendMessage(message);
     } catch (e) {
       console.warn('[MTC] Failed to send MEETING_ENDED:', e);
     }
@@ -541,7 +664,6 @@ function onVisibilityChange(): void {
   if (document.visibilityState === 'hidden' && inMeeting) {
     // Tab became hidden — flush pending blocks as a safety measure,
     // but do NOT end the meeting. Users frequently switch tabs during meetings.
-    console.log('[MTC:DEBUG] visibilitychange: hidden, flushing pending blocks (NOT ending meeting)');
     commitCurrentBlock();
     flushPendingBlocks();
   }
@@ -590,6 +712,8 @@ function cleanup(): void {
   // NOTE: meetingDetectionTimer is intentionally NOT cleared here
   // so that re-entry into a meeting (e.g. after network reconnection) can be detected.
 
+  stopCaptionGuard();
+
   if (flushTimer !== null) {
     clearInterval(flushTimer);
     flushTimer = null;
@@ -612,6 +736,7 @@ function cleanup(): void {
 
   captionRegion = null;
   captionLayoutContainer = null;
+  captionOverlayPanel = null;
   currentBlock = null;
   pendingBlocks = [];
   sessionId = null;
@@ -664,32 +789,11 @@ async function onMeetingDetected(): Promise<void> {
     );
   }
 
+  // Guard against accidentally turning off captions
+  startCaptionGuard();
+
   // Start observing for caption region
   startBodyObserver();
-
-  // DEBUG: Periodically dump DOM state to find caption region
-  const debugInterval = setInterval(() => {
-    if (!inMeeting || captionRegion) {
-      clearInterval(debugInterval);
-      return;
-    }
-    // Check all role="region" elements
-    const regions = document.querySelectorAll('div[role="region"]');
-    console.log('[MTC:DEBUG] All div[role="region"]:', regions.length, [...regions].map(r => ({
-      ariaLabel: r.getAttribute('aria-label'),
-      tabindex: r.getAttribute('tabindex'),
-      children: r.children.length,
-      text: (r.textContent || '').slice(0, 80),
-    })));
-    // Also check for any element that might contain captions
-    const possibleCaptions = document.querySelectorAll('[aria-label*="caption" i], [aria-label*="字幕"], [aria-label*="subtitle" i]');
-    console.log('[MTC:DEBUG] Elements with caption-like aria-label:', possibleCaptions.length, [...possibleCaptions].map(el => ({
-      tag: el.tagName,
-      role: el.getAttribute('role'),
-      ariaLabel: el.getAttribute('aria-label'),
-      text: (el.textContent || '').slice(0, 80),
-    })));
-  }, 3000);
 
   // Warn if caption region doesn't appear
   setTimeout(() => {
