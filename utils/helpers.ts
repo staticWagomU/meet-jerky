@@ -1,4 +1,4 @@
-import type { TranscriptBlock } from './types';
+import type { TranscriptBlock, MeetingSession } from './types';
 
 /** System messages to filter out */
 const SYSTEM_MESSAGE_PATTERNS = [
@@ -85,6 +85,36 @@ export function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Format a meeting session as a JSON string for export.
+ */
+export function formatSessionAsJson(session: MeetingSession): string {
+  return JSON.stringify(session, null, 2);
+}
+
+/**
+ * Format a meeting session as Markdown for export.
+ */
+export function formatSessionAsMarkdown(
+  session: MeetingSession,
+  formatTimeFn: (iso: string) => string = formatTimeOnly,
+): string {
+  const header = `# ${session.meetingTitle || session.meetingCode}\n\n` +
+    `- **会議コード**: ${session.meetingCode}\n` +
+    `- **開始**: ${formatDate(session.startTimestamp)}\n` +
+    (session.endTimestamp ? `- **終了**: ${formatDate(session.endTimestamp)}\n` : '') +
+    `- **発言数**: ${session.transcript.length}\n\n---\n\n`;
+
+  const body = session.transcript
+    .map((block) => {
+      const time = formatTimeFn(block.timestamp);
+      return `**${block.personName}** (${time})\n\n${block.transcriptText}`;
+    })
+    .join('\n\n---\n\n');
+
+  return header + body;
 }
 
 /** Threshold for text length decrease to detect a reset */

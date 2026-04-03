@@ -6,6 +6,8 @@ import {
   determineCaptionAction,
   TEXT_RESET_THRESHOLD,
   formatTranscriptAsText,
+  formatSessionAsJson,
+  formatSessionAsMarkdown,
 } from '../helpers';
 
 describe('extractMeetingCodeFromPath', () => {
@@ -165,5 +167,57 @@ describe('formatTranscriptAsText', () => {
 
   it('returns empty string for empty transcript', () => {
     expect(formatTranscriptAsText([])).toBe('');
+  });
+});
+
+describe('formatSessionAsJson', () => {
+  it('formats a session as pretty-printed JSON', () => {
+    const session = {
+      sessionId: 'test-id',
+      meetingCode: 'abc-defg-hij',
+      meetingTitle: 'Test Meeting',
+      startTimestamp: '2026-04-03T14:30:00Z',
+      endTimestamp: '2026-04-03T15:30:00Z',
+      transcript: [
+        { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      ],
+    };
+    const result = formatSessionAsJson(session);
+    const parsed = JSON.parse(result);
+    expect(parsed.sessionId).toBe('test-id');
+    expect(parsed.transcript).toHaveLength(1);
+  });
+});
+
+describe('formatSessionAsMarkdown', () => {
+  it('includes meeting title as h1', () => {
+    const session = {
+      sessionId: 'test-id',
+      meetingCode: 'abc-defg-hij',
+      meetingTitle: 'Test Meeting',
+      startTimestamp: '2026-04-03T14:30:00Z',
+      endTimestamp: '2026-04-03T15:30:00Z',
+      transcript: [
+        { personName: 'Alice', timestamp: '2026-04-03T14:30:00Z', transcriptText: 'Hello' },
+      ],
+    };
+    const mockFormatTime = () => '14:30';
+    const result = formatSessionAsMarkdown(session, mockFormatTime);
+    expect(result).toContain('# Test Meeting');
+    expect(result).toContain('**Alice** (14:30)');
+    expect(result).toContain('Hello');
+  });
+
+  it('falls back to meeting code when no title', () => {
+    const session = {
+      sessionId: 'test-id',
+      meetingCode: 'abc-defg-hij',
+      meetingTitle: '',
+      startTimestamp: '2026-04-03T14:30:00Z',
+      endTimestamp: '',
+      transcript: [],
+    };
+    const result = formatSessionAsMarkdown(session);
+    expect(result).toContain('# abc-defg-hij');
   });
 });

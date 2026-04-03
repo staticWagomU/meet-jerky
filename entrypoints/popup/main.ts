@@ -5,6 +5,8 @@ import {
   formatTimeOnly,
   escapeHtml,
   formatTranscriptAsText,
+  formatSessionAsJson,
+  formatSessionAsMarkdown,
 } from '@/utils/helpers';
 
 interface SessionSummary {
@@ -42,6 +44,20 @@ async function deleteSession(sessionId: string): Promise<{ success: boolean }> {
     type: 'DELETE_SESSION',
     payload: { sessionId },
   });
+}
+
+// --- Download helper ---
+
+function downloadFile(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // --- Formatting helpers ---
@@ -182,6 +198,11 @@ function renderTranscriptDetail(session: MeetingSession): void {
       ${session.meetingCode ? `<div class="detail-code">${escapeHtml(session.meetingCode)}</div>` : ''}
     </div>
     <div class="toolbar">
+      <div class="toolbar-group">
+        <button class="export-button" id="export-md" title="Markdownでエクスポート">MD</button>
+        <button class="export-button" id="export-json" title="JSONでエクスポート">JSON</button>
+        <button class="export-button" id="export-txt" title="テキストでエクスポート">TXT</button>
+      </div>
       <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
     </div>
     <div class="transcript-list">${transcriptHtml}</div>
@@ -210,6 +231,25 @@ function renderTranscriptDetail(session: MeetingSession): void {
       // Fallback: should rarely happen in extension popup
       alert('コピーに失敗しました');
     }
+  });
+
+  // Export buttons
+  document.getElementById('export-md')?.addEventListener('click', () => {
+    const md = formatSessionAsMarkdown(session);
+    const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split('T')[0]}.md`;
+    downloadFile(md, filename, 'text/markdown');
+  });
+
+  document.getElementById('export-json')?.addEventListener('click', () => {
+    const json = formatSessionAsJson(session);
+    const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split('T')[0]}.json`;
+    downloadFile(json, filename, 'application/json');
+  });
+
+  document.getElementById('export-txt')?.addEventListener('click', () => {
+    const txt = formatTranscriptText(session);
+    const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split('T')[0]}.txt`;
+    downloadFile(txt, filename, 'text/plain');
   });
 }
 
