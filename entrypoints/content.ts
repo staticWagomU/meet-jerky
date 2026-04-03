@@ -29,16 +29,22 @@ const REJOIN_GRACE_PERIOD_MS = 120_000; // 2 minutes grace period for rejoin
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
+// Session lifecycle
 let sessionId: string | null = null;
 let inMeeting = false;
+let meetingEnded = false;
 let meetingDetectionTimer: ReturnType<typeof setInterval> | null = null;
+let rejoinGraceTimer: ReturnType<typeof setTimeout> | null = null;
 
+// Transcript buffer
 let currentBlock: { personName: string; text: string } | null = null;
 let pendingBlocks: TranscriptBlock[] = [];
 let pendingRawEntries: RawCaptionEntry[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let totalRawCount = 0; // Total raw entries captured in this session (sent + pending)
 
+// Caption observation
 let bodyObserver: MutationObserver | null = null;
 let captionObserver: MutationObserver | null = null;
 let captionRegion: HTMLElement | null = null;
@@ -46,11 +52,10 @@ let captionLayoutContainer: HTMLElement | null = null;
 let captionOverlayPanel: HTMLElement | null = null;
 let captionHidden = true;
 
-let meetingEnded = false;
-let rejoinGraceTimer: ReturnType<typeof setTimeout> | null = null;
-
-// Total raw entries captured in this session (sent + pending)
-let totalRawCount = 0;
+// Caption guard
+let captionGuardActive = false;
+let captionGuardBypass = false;
+let captionConfirmDialog: HTMLElement | null = null;
 
 // ─── Toggle Button & Recording Indicator ────────────────────────────────────
 
@@ -632,10 +637,6 @@ async function enableCaptions(): Promise<boolean> {
 }
 
 // ─── Caption Guard (click interception) ─────────────────────────────────────
-
-let captionGuardActive = false;
-let captionGuardBypass = false;
-let captionConfirmDialog: HTMLElement | null = null;
 
 /**
  * Check if a click target is inside the caption toggle button.
