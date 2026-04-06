@@ -1,4 +1,4 @@
-import type { TranscriptBlock, RawCaptionEntry, MeetingSession } from "./types";
+import type { MeetingSession, RawCaptionEntry, TranscriptBlock } from "./types";
 
 /** System messages to filter out */
 const SYSTEM_MESSAGE_PATTERNS = [

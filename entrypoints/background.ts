@@ -1,5 +1,5 @@
-import type { MeetingSession } from "@/utils/types";
 import type { ExtensionMessage } from "@/utils/messaging";
+import type { MeetingSession } from "@/utils/types";
 
 // --- Storage helper types ---
 

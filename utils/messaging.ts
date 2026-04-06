@@ -1,4 +1,4 @@
-import type { TranscriptBlock, RawCaptionEntry } from "./types";
+import type { RawCaptionEntry, TranscriptBlock } from "./types";
 
 export type MessageType =
 	| "MEETING_STARTED"

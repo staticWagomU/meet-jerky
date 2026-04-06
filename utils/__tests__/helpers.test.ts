@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	extractMeetingCodeFromPath,
-	isSystemMessage,
-	escapeHtml,
+	computeTranscriptDiffs,
 	determineCaptionAction,
-	formatTranscriptAsText,
+	escapeHtml,
+	extractMeetingCodeFromPath,
+	extractParticipants,
 	formatSessionAsJson,
 	formatSessionAsMarkdown,
-	computeTranscriptDiffs,
-	extractParticipants,
+	formatTranscriptAsText,
+	isSystemMessage,
 } from "../helpers";
 
 describe("extractMeetingCodeFromPath", () => {
