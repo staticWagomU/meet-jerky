@@ -1,4 +1,4 @@
-# Meet Transcript Clipper
+# ミートジャーキー (Meet Jerky)
 
 Google Meetの字幕を自動的に記録・保存するChrome拡張機能です。
 

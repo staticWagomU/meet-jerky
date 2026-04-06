@@ -1,5 +1,5 @@
 {
-	"name": "meet-transcript-clipper",
+	"name": "meet-jerky",
 	"description": "Google Meetの文字起こしを自動取得・保存するChrome拡張機能",
 	"private": true,
 	"version": "0.0.0",

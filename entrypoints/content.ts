@@ -380,7 +380,7 @@ async function flushPendingBlocks(): Promise<void> {
 		};
 		await browser.runtime.sendMessage(message);
 	} catch (e) {
-		console.warn("[MTC] Failed to flush pending blocks:", e);
+		console.warn("[MJ] Failed to flush pending blocks:", e);
 		// Put blocks back for retry
 		pendingBlocks = [...blocksToSend, ...pendingBlocks];
 		pendingRawEntries = [...rawToSend, ...pendingRawEntries];
@@ -474,7 +474,7 @@ function startBodyObserver(): void {
 		// Region was removed (captions toggled off) — clean up stale references
 		if (captionRegion && !captionRegion.isConnected) {
 			console.log(
-				"[MTC] Caption region disconnected — searching for replacement",
+				"[MJ] Caption region disconnected — searching for replacement",
 			);
 			if (captionObserver) {
 				captionObserver.disconnect();
@@ -489,7 +489,7 @@ function startBodyObserver(): void {
 		// Search for a new caption region (appears when user re-enables captions)
 		const region = findCaptionRegion();
 		if (region) {
-			console.log("[MTC] Caption region (re)detected — attaching observer");
+			console.log("[MJ] Caption region (re)detected — attaching observer");
 			observeCaptionRegion(region);
 		}
 	});
@@ -538,7 +538,7 @@ function onCaptionGuardClick(e: MouseEvent): void {
 	e.stopPropagation();
 	e.preventDefault();
 
-	console.log("[MTC] Caption off click intercepted — showing confirmation");
+	console.log("[MJ] Caption off click intercepted — showing confirmation");
 	showCaptionGuardConfirm();
 }
 
@@ -662,7 +662,7 @@ async function handleMeetingEnd(): Promise<void> {
 			};
 			await browser.runtime.sendMessage(message);
 		} catch (e) {
-			console.warn("[MTC] Failed to send MEETING_ENDED:", e);
+			console.warn("[MJ] Failed to send MEETING_ENDED:", e);
 		}
 	}
 
@@ -831,7 +831,7 @@ async function onMeetingResumed(): Promise<void> {
 	meetingEnded = false;
 
 	await setupMeetingSession(
-		"Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。",
+		"ミートジャーキー: 字幕ボタンが見つかりませんでした。",
 	);
 }
 
@@ -855,18 +855,18 @@ async function onMeetingDetected(): Promise<void> {
 		};
 		await browser.runtime.sendMessage(message);
 	} catch (e) {
-		console.warn("[MTC] Failed to send MEETING_STARTED:", e);
+		console.warn("[MJ] Failed to send MEETING_STARTED:", e);
 	}
 
 	await setupMeetingSession(
-		"Meet Transcript Clipper: 字幕ボタンが見つかりませんでした。ホストが字幕を無効にしている可能性があります。",
+		"ミートジャーキー: 字幕ボタンが見つかりませんでした。ホストが字幕を無効にしている可能性があります。",
 	);
 
 	// Warn if caption region doesn't appear within the timeout
 	setTimeout(() => {
 		if (!captionRegion && inMeeting && !meetingEnded) {
 			showNotification(
-				"Meet Transcript Clipper: 字幕領域が検出されませんでした。字幕が有効になっているか確認してください。",
+				"ミートジャーキー: 字幕領域が検出されませんでした。字幕が有効になっているか確認してください。",
 				"warning",
 				8000,
 			);
@@ -892,7 +892,7 @@ function startMeetingDetection(): void {
 				clearTimeout(rejoinGraceTimer);
 				rejoinGraceTimer = null;
 				console.log(
-					"[MTC] Rejoin detected within grace period, resuming session:",
+					"[MJ] Rejoin detected within grace period, resuming session:",
 					sessionId,
 				);
 				onMeetingResumed();
@@ -912,7 +912,7 @@ function startMeetingDetection(): void {
 export default defineContentScript({
 	matches: ["*://meet.google.com/*"],
 	main() {
-		console.log("[MTC] Content script loaded");
+		console.log("[MJ] Content script loaded");
 		startMeetingDetection();
 	},
 });

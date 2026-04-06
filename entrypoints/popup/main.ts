@@ -75,8 +75,8 @@ function downloadFile(
 function renderOnboarding(): void {
 	app.innerHTML = `
     <div class="onboarding">
-      <div class="onboarding-icon">MT</div>
-      <h1 class="onboarding-title">Meet Transcript Clipper</h1>
+      <div class="onboarding-icon">MJ</div>
+      <h1 class="onboarding-title">ミートジャーキー</h1>
       <p class="onboarding-description">
         この拡張機能は、Google Meetの字幕を自動的に記録・保存します。
       </p>
@@ -117,8 +117,8 @@ function renderLoading(): void {
 function renderSessionList(sessions: SessionSummary[]): void {
 	const header = `
     <div class="header">
-      <div class="header-icon">MT</div>
-      <div class="header-title">Meet Transcript Clipper</div>
+      <div class="header-icon">MJ</div>
+      <div class="header-title">ミートジャーキー</div>
     </div>
   `;
 

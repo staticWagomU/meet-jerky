@@ -1,4 +1,4 @@
-# Meet Transcript Clipper - 実装計画
+# ミートジャーキー - 実装計画
 
 ## 概要
 

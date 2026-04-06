@@ -152,14 +152,14 @@ export async function enableCaptions(
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		// Check if captions are already on — don't toggle them off!
 		if (areCaptionsOn()) {
-			console.log("[MTC] Captions already enabled, skipping click");
+			console.log("[MJ] Captions already enabled, skipping click");
 			return true;
 		}
 
 		const btn = findCaptionButton();
 		if (btn) {
 			btn.click();
-			console.log("[MTC] Captions enabled via caption button");
+			console.log("[MJ] Captions enabled via caption button");
 			return true;
 		}
 
@@ -167,6 +167,6 @@ export async function enableCaptions(
 		await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
 	}
 
-	console.warn("[MTC] Could not find caption button after max retries");
+	console.warn("[MJ] Could not find caption button after max retries");
 	return false;
 }
