@@ -315,8 +315,17 @@ function extractMeetingCode(): string {
 }
 
 function extractMeetingTitle(): string {
+	// Strategy 1: Google Meet DOM element with meeting title class
 	const titleEl = document.querySelector(".u6vdEc");
-	return titleEl?.textContent?.trim() || extractMeetingCode();
+	const domTitle = titleEl?.textContent?.trim();
+	if (domTitle) return domTitle;
+
+	// Strategy 2: document.title (typically "Meeting Title - Google Meet")
+	const pageTitle = document.title.replace(/\s*[-–]\s*Google Meet$/, "").trim();
+	if (pageTitle && pageTitle !== "Google Meet") return pageTitle;
+
+	// Fallback: meeting code
+	return extractMeetingCode();
 }
 
 // ─── Block Management ────────────────────────────────────────────────────────
