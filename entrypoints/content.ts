@@ -1,29 +1,29 @@
-import type { TranscriptBlock, RawCaptionEntry } from "@/utils/types";
-import type {
-	MeetingStartedMessage,
-	TranscriptUpdateMessage,
-	MeetingEndedMessage,
-} from "@/utils/messaging";
 import {
+	COLLAPSE_PROPS,
+	extractCaptionData,
+	findCaptionOverlayPanel,
+	findLayoutContainer,
+} from "@/utils/caption-dom";
+import {
+	determineCaptionAction,
 	extractMeetingCodeFromPath,
 	isSystemMessage,
-	determineCaptionAction,
 } from "@/utils/helpers";
+import type {
+	MeetingEndedMessage,
+	MeetingStartedMessage,
+	TranscriptUpdateMessage,
+} from "@/utils/messaging";
+import { showNotification } from "@/utils/notification";
 import {
-	findCaptionButton,
-	findCaptionRegion,
-	isInMeeting,
-	findLeaveButton,
 	areCaptionsOn,
 	enableCaptions,
+	findCaptionButton,
+	findCaptionRegion,
+	findLeaveButton,
+	isInMeeting,
 } from "@/utils/selectors";
-import {
-	extractCaptionData,
-	findLayoutContainer,
-	findCaptionOverlayPanel,
-	COLLAPSE_PROPS,
-} from "@/utils/caption-dom";
-import { showNotification } from "@/utils/notification";
+import type { RawCaptionEntry, TranscriptBlock } from "@/utils/types";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -417,16 +417,18 @@ function onCaptionMutation(): void {
 function observeCaptionRegion(region: HTMLElement): void {
 	captionRegion = region;
 
+	// Reset cached parent containers (they change when region is recreated)
+	captionLayoutContainer = null;
+	captionOverlayPanel = null;
+
 	// Apply initial visibility (hidden by default)
 	applyCaptionVisibility();
 	createToggleButton();
 	createIndicatorPanel();
 
-	// Stop body observer since we found the region
-	if (bodyObserver) {
-		bodyObserver.disconnect();
-		bodyObserver = null;
-	}
+	// Note: bodyObserver is NOT disconnected here — it continues watching
+	// so it can detect a replacement region if the user toggles captions
+	// off and back on (Google Meet removes the old region and creates a new one).
 
 	// Disconnect previous observer if re-attaching
 	if (captionObserver) {
@@ -451,12 +453,34 @@ function startBodyObserver(): void {
 	const existing = findCaptionRegion();
 	if (existing) {
 		observeCaptionRegion(existing);
-		return;
 	}
 
+	// If already running, don't create another
+	if (bodyObserver) return;
+
 	bodyObserver = new MutationObserver(() => {
+		// Fast path: current region is still in the DOM — nothing to do
+		if (captionRegion?.isConnected) return;
+
+		// Region was removed (captions toggled off) — clean up stale references
+		if (captionRegion && !captionRegion.isConnected) {
+			console.log(
+				"[MTC] Caption region disconnected — searching for replacement",
+			);
+			if (captionObserver) {
+				captionObserver.disconnect();
+				captionObserver = null;
+			}
+			captionRegion = null;
+			captionLayoutContainer = null;
+			captionOverlayPanel = null;
+			updateIndicator();
+		}
+
+		// Search for a new caption region (appears when user re-enables captions)
 		const region = findCaptionRegion();
 		if (region) {
+			console.log("[MTC] Caption region (re)detected — attaching observer");
 			observeCaptionRegion(region);
 		}
 	});
