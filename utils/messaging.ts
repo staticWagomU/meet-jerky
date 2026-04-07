@@ -6,7 +6,8 @@ export type MessageType =
 	| "MEETING_ENDED"
 	| "GET_SESSIONS"
 	| "GET_TRANSCRIPT"
-	| "DELETE_SESSION";
+	| "DELETE_SESSION"
+	| "KEEPALIVE";
 
 export interface MeetingStartedMessage {
 	type: "MEETING_STARTED";
@@ -52,10 +53,15 @@ export interface DeleteSessionMessage {
 	};
 }
 
+export interface KeepaliveMessage {
+	type: "KEEPALIVE";
+}
+
 export type ExtensionMessage =
 	| MeetingStartedMessage
 	| TranscriptUpdateMessage
 	| MeetingEndedMessage
 	| GetSessionsMessage
 	| GetTranscriptMessage
-	| DeleteSessionMessage;
+	| DeleteSessionMessage
+	| KeepaliveMessage;

@@ -35,6 +35,7 @@ const FLUSH_INTERVAL_MS = 10_000;
 const FLUSH_THRESHOLD = 10;
 const CAPTION_REGION_TIMEOUT_MS = 30_000;
 const REJOIN_GRACE_PERIOD_MS = 120_000; // 2 minutes grace period for rejoin
+const KEEPALIVE_INTERVAL_MS = 25_000; // Keep service worker alive
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,9 @@ let pendingRawEntries: RawCaptionEntry[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 let totalRawCount = 0; // Total raw entries captured in this session (sent + pending)
+
+// Service worker keepalive
+let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 
 // Caption observation
 let bodyObserver: MutationObserver | null = null;
@@ -380,10 +384,14 @@ async function flushPendingBlocks(): Promise<void> {
 		};
 		const response = await browser.runtime.sendMessage(message);
 
-		// Background may return { success: false } if session was lost
-		// (e.g. service worker restarted and storage lookup also failed)
-		if (response && !response.success) {
-			console.warn("[MJ] Flush rejected by background:", response.error);
+		// Guard against undefined/null response — Chrome MV3 may return
+		// undefined when the service worker restarts mid-message.
+		// Without this check, data is silently discarded.
+		if (!response?.success) {
+			console.warn(
+				"[MJ] Flush failed or no response:",
+				response?.error ?? "undefined response",
+			);
 			pendingBlocks = [...blocksToSend, ...pendingBlocks];
 			pendingRawEntries = [...rawToSend, ...pendingRawEntries];
 		}
@@ -658,8 +666,19 @@ async function handleMeetingEnd(): Promise<void> {
 	// Commit any in-progress block
 	commitCurrentBlock();
 
-	// Flush all pending blocks
+	// Flush all pending blocks — retry once if the first attempt fails
 	await flushPendingBlocks();
+	if (pendingBlocks.length > 0 || pendingRawEntries.length > 0) {
+		console.warn("[MJ] First flush failed at meeting end, retrying...");
+		await new Promise((r) => setTimeout(r, 1000));
+		await flushPendingBlocks();
+	}
+
+	if (pendingBlocks.length > 0 || pendingRawEntries.length > 0) {
+		console.error(
+			`[MJ] Data loss: ${pendingBlocks.length} blocks and ${pendingRawEntries.length} raw entries could not be flushed`,
+		);
+	}
 
 	// Send MEETING_ENDED
 	if (sessionId) {
@@ -750,6 +769,11 @@ function suspendSession(): void {
 
 	stopCaptionGuard();
 
+	if (keepaliveTimer !== null) {
+		clearInterval(keepaliveTimer);
+		keepaliveTimer = null;
+	}
+
 	if (flushTimer !== null) {
 		clearInterval(flushTimer);
 		flushTimer = null;
@@ -830,6 +854,15 @@ async function setupMeetingSession(notFoundMessage: string): Promise<void> {
 		commitCurrentBlock();
 		flushPendingBlocks();
 	}, FLUSH_INTERVAL_MS);
+
+	// Keep the MV3 service worker alive by pinging it periodically.
+	// Without this, Chrome may terminate the worker after ~30s of inactivity
+	// (e.g. between flush intervals when no captions are pending).
+	keepaliveTimer = setInterval(() => {
+		browser.runtime.sendMessage({ type: "KEEPALIVE" }).catch(() => {
+			// Best effort — if this fails, the next flush will restart the worker
+		});
+	}, KEEPALIVE_INTERVAL_MS);
 
 	setupExitProtection();
 }

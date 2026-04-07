@@ -234,6 +234,10 @@ export default defineBackground(() => {
 						return { success: true };
 					}
 
+					case "KEEPALIVE": {
+						return { success: true };
+					}
+
 					default:
 						return { error: "Unknown message type" };
 				}
