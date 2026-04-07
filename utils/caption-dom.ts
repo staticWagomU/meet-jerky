@@ -7,44 +7,30 @@
 /**
  * Check if an element is a UI control (button, scroll indicator, etc.)
  * rather than a caption text block.
+ * Uses only stable signals: tag name, role, inline style, icon font class.
  */
 export function isUIElement(el: HTMLElement): boolean {
 	if (el.tagName === "BUTTON" || el.getAttribute("role") === "button")
 		return true;
 	if (el.querySelector(".google-symbols")) return true;
 	if (el.classList.contains("google-symbols")) return true;
+	if (el.style.display === "none") return true;
 	return false;
 }
 
 /**
- * Extract the current speaker name and caption text from the caption region.
- * Returns null when the region is empty or contains only UI controls.
+ * Extract speaker name and caption text from a single caption block element.
+ * Returns null when the block has no meaningful text.
  */
-export function extractCaptionData(
-	region: HTMLElement,
+function extractBlockData(
+	block: HTMLElement,
 ): { personName: string; text: string } | null {
-	const allChildren = Array.from(region.children);
-	const children = allChildren.filter((el) => !isUIElement(el as HTMLElement));
-	if (children.length === 0) return null;
-
-	// Find the last block that actually has text content.
-	// Google Meet may append empty container divs after the caption blocks.
-	let lastBlock: HTMLElement | null = null;
-	for (let i = children.length - 1; i >= 0; i--) {
-		const el = children[i] as HTMLElement;
-		if (el.textContent?.trim()) {
-			lastBlock = el;
-			break;
-		}
-	}
-	if (!lastBlock) return null;
-
 	const blockChildren = (
-		Array.from(lastBlock.children) as HTMLElement[]
+		Array.from(block.children) as HTMLElement[]
 	).filter((el) => !isUIElement(el));
 
 	if (blockChildren.length === 0) {
-		const text = lastBlock.textContent?.trim() || "";
+		const text = block.textContent?.trim() || "";
 		return text ? { personName: "", text } : null;
 	}
 
@@ -66,6 +52,56 @@ export function extractCaptionData(
 	if (!captionText) return null;
 
 	return { personName, text: captionText };
+}
+
+/**
+ * Filter the region's children to only those that look like caption blocks:
+ * not a UI element, not hidden, and has meaningful text content.
+ */
+function getCaptionBlocks(region: HTMLElement): HTMLElement[] {
+	return (Array.from(region.children) as HTMLElement[]).filter((el) => {
+		if (isUIElement(el)) return false;
+		if (!el.textContent?.trim()) return false;
+		return true;
+	});
+}
+
+/**
+ * Extract the current speaker name and caption text from the caption region.
+ * Returns null when the region is empty or contains only UI controls.
+ * (Kept for backward compatibility — returns only the last block.)
+ */
+export function extractCaptionData(
+	region: HTMLElement,
+): { personName: string; text: string } | null {
+	const blocks = getCaptionBlocks(region);
+	if (blocks.length === 0) return null;
+
+	// Return the last block (preserves original behavior)
+	for (let i = blocks.length - 1; i >= 0; i--) {
+		const data = extractBlockData(blocks[i]);
+		if (data) return data;
+	}
+	return null;
+}
+
+/**
+ * Extract all caption blocks from the region as an array.
+ * Each entry represents a visible speaker's current caption state.
+ * When multiple people speak simultaneously, multiple entries are returned.
+ */
+export function extractAllCaptionData(
+	region: HTMLElement,
+): { personName: string; text: string }[] {
+	const blocks = getCaptionBlocks(region);
+	const results: { personName: string; text: string }[] = [];
+
+	for (const block of blocks) {
+		const data = extractBlockData(block);
+		if (data) results.push(data);
+	}
+
+	return results;
 }
 
 /**

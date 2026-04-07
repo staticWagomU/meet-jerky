@@ -1,5 +1,6 @@
 import {
 	COLLAPSE_PROPS,
+	extractAllCaptionData,
 	extractCaptionData,
 	findCaptionOverlayPanel,
 	findLayoutContainer,
@@ -66,6 +67,7 @@ let captionRegion: HTMLElement | null = null;
 let captionLayoutContainer: HTMLElement | null = null;
 let captionOverlayPanel: HTMLElement | null = null;
 let captionHidden = true;
+let lastSeenCaptions: { personName: string; text: string }[] = [];
 
 // Caption guard
 let captionGuardActive = false;
@@ -410,35 +412,51 @@ async function flushPendingBlocks(): Promise<void> {
 function onCaptionMutation(): void {
 	if (!captionRegion) return;
 
-	const data = extractCaptionData(captionRegion);
-	if (!data) return;
+	const allData = extractAllCaptionData(captionRegion);
+	if (allData.length === 0) return;
 
-	// Record raw caption observation before any processing
-	pendingRawEntries.push({
-		timestamp: new Date().toISOString(),
-		personName: data.personName,
-		text: data.text,
-	});
-	totalRawCount++;
-	updateIndicator();
+	let anyChanged = false;
 
-	const result = determineCaptionAction(currentBlock, data);
+	for (const data of allData) {
+		// Skip blocks that haven't changed since the last mutation
+		const wasSeen = lastSeenCaptions.some(
+			(prev) => prev.personName === data.personName && prev.text === data.text,
+		);
+		if (wasSeen) continue;
 
-	switch (result.action) {
-		case "start":
-			currentBlock = result.block;
-			break;
-		case "commit_and_start":
-			currentBlock = result.commitBlock;
-			commitCurrentBlock();
-			currentBlock = result.newBlock;
-			break;
-		case "update":
-			currentBlock = result.block;
-			break;
+		anyChanged = true;
+
+		// Record raw caption observation before any processing
+		pendingRawEntries.push({
+			timestamp: new Date().toISOString(),
+			personName: data.personName,
+			text: data.text,
+		});
+		totalRawCount++;
+
+		const result = determineCaptionAction(currentBlock, data);
+
+		switch (result.action) {
+			case "start":
+				currentBlock = result.block;
+				break;
+			case "commit_and_start":
+				currentBlock = result.commitBlock;
+				commitCurrentBlock();
+				currentBlock = result.newBlock;
+				break;
+			case "update":
+				currentBlock = result.block;
+				break;
+		}
 	}
 
-	resetIdleTimer();
+	lastSeenCaptions = allData;
+
+	if (anyChanged) {
+		updateIndicator();
+		resetIdleTimer();
+	}
 }
 
 function observeCaptionRegion(region: HTMLElement): void {
@@ -799,6 +817,7 @@ function suspendSession(): void {
 	captionLayoutContainer = null;
 	captionOverlayPanel = null;
 	currentBlock = null;
+	lastSeenCaptions = [];
 
 	removeToggleButton();
 	removeIndicatorPanel();
