@@ -104,6 +104,25 @@ async function flushAndEndSession(sessionId: string): Promise<void> {
 	await enforceSessionLimit(10);
 }
 
+// --- Helper to reload a session from storage into sessionBuffer ---
+
+async function ensureSessionInBuffer(
+	sessionId: string,
+	tabId?: number,
+): Promise<MeetingSession | null> {
+	let session = sessionBuffer.get(sessionId) ?? null;
+	if (!session) {
+		session = await loadSession(sessionId);
+		if (session) {
+			sessionBuffer.set(sessionId, session);
+			if (tabId != null) {
+				tabToSession.set(tabId, sessionId);
+			}
+		}
+	}
+	return session;
+}
+
 // --- Background entry point ---
 
 export default defineBackground(() => {
@@ -151,24 +170,21 @@ export default defineBackground(() => {
 
 					case "TRANSCRIPT_UPDATE": {
 						const { sessionId, blocks, rawEntries } = message.payload;
-						let session = sessionBuffer.get(sessionId);
+						const wasInBuffer = sessionBuffer.has(sessionId);
+						const session = await ensureSessionInBuffer(
+							sessionId,
+							sender.tab?.id ?? undefined,
+						);
 
-						// Service worker may have restarted — reload from storage
 						if (!session) {
-							const stored = await loadSession(sessionId);
-							if (!stored) {
-								return { success: false, error: "Session not found" };
-							}
-							sessionBuffer.set(sessionId, stored);
-							// Re-create the persistence alarm lost on restart
+							return { success: false, error: "Session not found" };
+						}
+
+						// Re-create the persistence alarm lost on service worker restart
+						if (!wasInBuffer) {
 							await browser.alarms.create(`persist-${sessionId}`, {
 								periodInMinutes: 1,
 							});
-							// Restore tab mapping
-							if (sender.tab?.id != null) {
-								tabToSession.set(sender.tab.id, sessionId);
-							}
-							session = stored;
 						}
 
 						session.transcript.push(...blocks);
@@ -182,18 +198,10 @@ export default defineBackground(() => {
 
 					case "MEETING_ENDED": {
 						const { sessionId } = message.payload;
-
-						// Service worker may have restarted — reload from storage
-						if (!sessionBuffer.has(sessionId)) {
-							const stored = await loadSession(sessionId);
-							if (stored) {
-								sessionBuffer.set(sessionId, stored);
-								if (sender.tab?.id != null) {
-									tabToSession.set(sender.tab.id, sessionId);
-								}
-							}
-						}
-
+						await ensureSessionInBuffer(
+							sessionId,
+							sender.tab?.id ?? undefined,
+						);
 						await flushAndEndSession(sessionId);
 						return { success: true };
 					}

@@ -21,8 +21,9 @@ interface SessionSummary {
 	transcriptCount: number;
 }
 
-const app = document.querySelector<HTMLDivElement>("#app");
-if (!app) throw new Error("#app element not found");
+const appElement = document.querySelector<HTMLDivElement>("#app");
+if (!appElement) throw new Error("#app element not found");
+const app = appElement;
 
 const ONBOARDING_KEY = "onboarding-completed";
 
