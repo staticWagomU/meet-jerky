@@ -1,3 +1,9 @@
+/** A single caption observation: speaker name + current text (no timestamp). */
+export interface CaptionData {
+	personName: string;
+	text: string;
+}
+
 export interface TranscriptBlock {
 	personName: string;
 	timestamp: string;

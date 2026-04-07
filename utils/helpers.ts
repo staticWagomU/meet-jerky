@@ -1,4 +1,9 @@
-import type { MeetingSession, RawCaptionEntry, TranscriptBlock } from "./types";
+import type {
+	CaptionData,
+	MeetingSession,
+	RawCaptionEntry,
+	TranscriptBlock,
+} from "./types";
 
 /** System messages to filter out */
 const SYSTEM_MESSAGE_PATTERNS = [
@@ -200,16 +205,16 @@ export const TEXT_RESET_THRESHOLD = 250;
  * Pure logic - no DOM or side effects.
  */
 export function determineCaptionAction(
-	currentBlock: { personName: string; text: string } | null,
-	newData: { personName: string; text: string },
+	currentBlock: CaptionData | null,
+	newData: CaptionData,
 ):
-	| { action: "start"; block: { personName: string; text: string } }
+	| { action: "start"; block: CaptionData }
 	| {
 			action: "commit_and_start";
-			commitBlock: { personName: string; text: string };
-			newBlock: { personName: string; text: string };
+			commitBlock: CaptionData;
+			newBlock: CaptionData;
 	  }
-	| { action: "update"; block: { personName: string; text: string } } {
+	| { action: "update"; block: CaptionData } {
 	if (!currentBlock) {
 		return {
 			action: "start",

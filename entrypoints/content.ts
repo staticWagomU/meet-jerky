@@ -24,7 +24,11 @@ import {
 	findLeaveButton,
 	isInMeeting,
 } from "@/utils/selectors";
-import type { RawCaptionEntry, TranscriptBlock } from "@/utils/types";
+import type {
+	CaptionData,
+	RawCaptionEntry,
+	TranscriptBlock,
+} from "@/utils/types";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -50,7 +54,7 @@ let meetingEnded = false;
 let rejoinGraceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Transcript buffer
-let currentBlock: { personName: string; text: string } | null = null;
+let currentBlock: CaptionData | null = null;
 let pendingBlocks: TranscriptBlock[] = [];
 let pendingRawEntries: RawCaptionEntry[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
@@ -67,7 +71,7 @@ let captionRegion: HTMLElement | null = null;
 let captionLayoutContainer: HTMLElement | null = null;
 let captionOverlayPanel: HTMLElement | null = null;
 let captionHidden = true;
-let lastSeenCaptions: { personName: string; text: string }[] = [];
+let lastSeenCaptions: CaptionData[] = [];
 
 // Caption guard
 let captionGuardActive = false;

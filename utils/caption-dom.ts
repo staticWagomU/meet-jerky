@@ -4,6 +4,8 @@
  * and return results without accessing any module-level state.
  */
 
+import type { CaptionData } from "./types";
+
 /**
  * Check if an element is a UI control (button, scroll indicator, etc.)
  * rather than a caption text block.
@@ -24,7 +26,7 @@ export function isUIElement(el: HTMLElement): boolean {
  */
 function extractBlockData(
 	block: HTMLElement,
-): { personName: string; text: string } | null {
+): CaptionData | null {
 	const blockChildren = (
 		Array.from(block.children) as HTMLElement[]
 	).filter((el) => !isUIElement(el));
@@ -73,7 +75,7 @@ function getCaptionBlocks(region: HTMLElement): HTMLElement[] {
  */
 export function extractCaptionData(
 	region: HTMLElement,
-): { personName: string; text: string } | null {
+): CaptionData | null {
 	const blocks = getCaptionBlocks(region);
 	if (blocks.length === 0) return null;
 
@@ -92,9 +94,9 @@ export function extractCaptionData(
  */
 export function extractAllCaptionData(
 	region: HTMLElement,
-): { personName: string; text: string }[] {
+): CaptionData[] {
 	const blocks = getCaptionBlocks(region);
-	const results: { personName: string; text: string }[] = [];
+	const results: CaptionData[] = [];
 
 	for (const block of blocks) {
 		const data = extractBlockData(block);
