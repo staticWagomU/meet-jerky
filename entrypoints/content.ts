@@ -36,6 +36,8 @@ const FLUSH_THRESHOLD = 10;
 const CAPTION_REGION_TIMEOUT_MS = 30_000;
 const REJOIN_GRACE_PERIOD_MS = 120_000; // 2 minutes grace period for rejoin
 const KEEPALIVE_INTERVAL_MS = 25_000; // Keep service worker alive
+const MEETING_START_MAX_RETRIES = 3;
+const MEETING_START_RETRY_MS = 1_000;
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -717,46 +719,45 @@ function onVisibilityChange(): void {
 }
 
 function onBeforeUnload(): void {
-	// Cancel grace period — page is closing, no rejoin possible
 	if (rejoinGraceTimer !== null) {
 		clearTimeout(rejoinGraceTimer);
 		rejoinGraceTimer = null;
 	}
 
-	if (inMeeting || sessionId) {
-		// Best-effort flush — synchronous context, so we use sendMessage fire-and-forget
-		commitCurrentBlock();
+	if (!inMeeting && !sessionId) return;
 
-		if (
-			(pendingBlocks.length > 0 || pendingRawEntries.length > 0) &&
-			sessionId
-		) {
-			const message: TranscriptUpdateMessage = {
-				type: "TRANSCRIPT_UPDATE",
-				payload: {
-					sessionId,
-					blocks: [...pendingBlocks],
-					rawEntries: [...pendingRawEntries],
-				},
-			};
-			// Fire and forget — may or may not arrive
-			try {
-				browser.runtime.sendMessage(message);
-			} catch {
-				// Best effort
-			}
+	commitCurrentBlock();
+
+	// Send TRANSCRIPT_UPDATE first, then MEETING_ENDED
+	// Both are fire-and-forget in beforeunload, but ordering matters
+	if (
+		(pendingBlocks.length > 0 || pendingRawEntries.length > 0) &&
+		sessionId
+	) {
+		const updateMessage: TranscriptUpdateMessage = {
+			type: "TRANSCRIPT_UPDATE",
+			payload: {
+				sessionId,
+				blocks: [...pendingBlocks],
+				rawEntries: [...pendingRawEntries],
+			},
+		};
+		try {
+			browser.runtime.sendMessage(updateMessage);
+		} catch {
+			// Best effort
 		}
+	}
 
-		if (sessionId) {
-			const endMessage: MeetingEndedMessage = {
-				type: "MEETING_ENDED",
-				payload: { sessionId },
-			};
-			try {
-				browser.runtime.sendMessage(endMessage);
-			} catch {
-				// Best effort
-			}
+	if (sessionId) {
+		const endMessage: MeetingEndedMessage = {
+			type: "MEETING_ENDED",
+			payload: { sessionId },
+		};
+		try {
+			browser.runtime.sendMessage(endMessage);
+		} catch {
+			// Best effort
 		}
 	}
 }
@@ -889,14 +890,36 @@ async function onMeetingDetected(): Promise<void> {
 
 	sessionId = crypto.randomUUID();
 
-	try {
-		const message: MeetingStartedMessage = {
-			type: "MEETING_STARTED",
-			payload: { sessionId, meetingCode, meetingTitle, startTimestamp },
-		};
-		await browser.runtime.sendMessage(message);
-	} catch (e) {
-		console.warn("[MJ] Failed to send MEETING_STARTED:", e);
+	// Retry MEETING_STARTED up to 3 times
+	const message: MeetingStartedMessage = {
+		type: "MEETING_STARTED",
+		payload: { sessionId, meetingCode, meetingTitle, startTimestamp },
+	};
+
+	let started = false;
+	for (let attempt = 0; attempt < MEETING_START_MAX_RETRIES; attempt++) {
+		try {
+			const response = await browser.runtime.sendMessage(message);
+			if (response?.success) {
+				started = true;
+				break;
+			}
+		} catch (e) {
+			console.warn(`[MJ] MEETING_STARTED attempt ${attempt + 1} failed:`, e);
+		}
+		if (attempt < MEETING_START_MAX_RETRIES - 1) {
+			await new Promise((r) => setTimeout(r, MEETING_START_RETRY_MS));
+		}
+	}
+
+	if (!started) {
+		showNotification(
+			"ミートジャーキー: セッション開始に失敗しました。ページを再読み込みしてください。",
+			"error",
+			10000,
+		);
+		cleanup();
+		return;
 	}
 
 	await setupMeetingSession(

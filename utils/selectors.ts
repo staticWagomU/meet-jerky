@@ -87,10 +87,26 @@ export function findCaptionRegion(): HTMLElement | null {
 		if (region) return region;
 	}
 
-	// Fallback: tabindex-based
-	return document.querySelector<HTMLElement>(
+	// Narrower fallback: region with tabindex="0" that contains caption-like structure
+	// (multiple child divs, no interactive elements like buttons as direct children)
+	const candidates = document.querySelectorAll<HTMLElement>(
 		'div[role="region"][tabindex="0"]',
 	);
+	for (const candidate of candidates) {
+		// Caption regions typically have child divs with text content and no form controls
+		const children = Array.from(candidate.children);
+		const hasTextChildren = children.some(
+			(child) => child.tagName === "DIV" && child.textContent?.trim(),
+		);
+		const hasFormControls = candidate.querySelector(
+			"input, select, textarea",
+		);
+		if (hasTextChildren && !hasFormControls) {
+			return candidate;
+		}
+	}
+
+	return null;
 }
 
 /**
@@ -150,7 +166,6 @@ export async function enableCaptions(
 	retryIntervalMs: number,
 ): Promise<boolean> {
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
-		// Check if captions are already on — don't toggle them off!
 		if (areCaptionsOn()) {
 			console.log("[MJ] Captions already enabled, skipping click");
 			return true;
@@ -159,14 +174,20 @@ export async function enableCaptions(
 		const btn = findCaptionButton();
 		if (btn) {
 			btn.click();
-			console.log("[MJ] Captions enabled via caption button");
-			return true;
+			// Wait briefly and verify captions actually turned on
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			if (areCaptionsOn()) {
+				console.log("[MJ] Captions enabled via caption button");
+				return true;
+			}
+			console.warn(
+				"[MJ] Caption button clicked but captions not yet on, retrying...",
+			);
 		}
 
-		// Wait and retry — Meet loads UI progressively
 		await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));
 	}
 
-	console.warn("[MJ] Could not find caption button after max retries");
+	console.warn("[MJ] Could not enable captions after max retries");
 	return false;
 }

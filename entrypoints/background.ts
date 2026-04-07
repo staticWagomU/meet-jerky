@@ -77,10 +77,25 @@ async function enforceSessionLimit(maxSessions: number): Promise<void> {
 	}
 }
 
+const MAX_STORED_SESSIONS = 10;
+
 // --- In-memory state ---
 
 const sessionBuffer = new Map<string, MeetingSession>();
 const tabToSession = new Map<number, string>();
+const endedSessions = new Set<string>();
+
+// --- In-memory cleanup helpers ---
+
+/** Remove the tab → session mapping for a given sessionId. */
+function removeTabMapping(sessionId: string): void {
+	for (const [tabId, sid] of tabToSession.entries()) {
+		if (sid === sessionId) {
+			tabToSession.delete(tabId);
+			break;
+		}
+	}
+}
 
 // --- Helper to flush and end a session ---
 
@@ -92,16 +107,9 @@ async function flushAndEndSession(sessionId: string): Promise<void> {
 	await saveSession(session);
 	await browser.alarms.clear(`persist-${sessionId}`);
 	sessionBuffer.delete(sessionId);
+	removeTabMapping(sessionId);
 
-	// Clean up tab mapping
-	for (const [tabId, sid] of tabToSession.entries()) {
-		if (sid === sessionId) {
-			tabToSession.delete(tabId);
-			break;
-		}
-	}
-
-	await enforceSessionLimit(10);
+	await enforceSessionLimit(MAX_STORED_SESSIONS);
 }
 
 // --- Helper to reload a session from storage into sessionBuffer ---
@@ -170,6 +178,12 @@ export default defineBackground(() => {
 
 					case "TRANSCRIPT_UPDATE": {
 						const { sessionId, blocks, rawEntries } = message.payload;
+
+						// Reject updates for sessions that have already ended
+						if (endedSessions.has(sessionId)) {
+							return { success: false, error: "Session already ended" };
+						}
+
 						const wasInBuffer = sessionBuffer.has(sessionId);
 						const session = await ensureSessionInBuffer(
 							sessionId,
@@ -198,6 +212,7 @@ export default defineBackground(() => {
 
 					case "MEETING_ENDED": {
 						const { sessionId } = message.payload;
+						endedSessions.add(sessionId);
 						await ensureSessionInBuffer(
 							sessionId,
 							sender.tab?.id ?? undefined,
@@ -222,7 +237,7 @@ export default defineBackground(() => {
 								if (!session) {
 									return { ...entry, transcriptCount: 0 };
 								}
-								const { transcript, ...metadata } = session;
+								const { transcript, rawTranscript, ...metadata } = session;
 								return { ...metadata, transcriptCount: transcript.length };
 							}),
 						);
@@ -238,6 +253,13 @@ export default defineBackground(() => {
 
 					case "DELETE_SESSION": {
 						const { sessionId } = message.payload;
+
+						// Clear in-memory state if session is active
+						sessionBuffer.delete(sessionId);
+						await browser.alarms.clear(`persist-${sessionId}`);
+						removeTabMapping(sessionId);
+						endedSessions.add(sessionId); // Prevent re-creation from late updates
+
 						await deleteSessionFromStorage(sessionId);
 						return { success: true };
 					}

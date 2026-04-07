@@ -1,12 +1,23 @@
+const activeNotifications = new Map<string, HTMLElement>();
+
 /**
  * Show a dismissing toast notification in the top-center of the page.
  * Uses opacity fade-out rather than display:none to avoid layout shifts.
+ * Deduplicates: if a notification with the same message is already showing,
+ * the old one is dismissed before the new one appears.
  */
 export function showNotification(
 	message: string,
 	type: "info" | "warning" | "error" = "info",
 	durationMs: number = 5000,
 ): void {
+	// Deduplicate: dismiss existing notification with same message
+	const existing = activeNotifications.get(message);
+	if (existing) {
+		existing.remove();
+		activeNotifications.delete(message);
+	}
+
 	const notification = document.createElement("div");
 	notification.textContent = message;
 
@@ -34,9 +45,13 @@ export function showNotification(
 	});
 
 	document.body.appendChild(notification);
+	activeNotifications.set(message, notification);
 
 	setTimeout(() => {
 		notification.style.opacity = "0";
-		setTimeout(() => notification.remove(), 300);
+		setTimeout(() => {
+			notification.remove();
+			activeNotifications.delete(message);
+		}, 300);
 	}, durationMs);
 }
