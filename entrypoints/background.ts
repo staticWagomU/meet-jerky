@@ -151,9 +151,24 @@ export default defineBackground(() => {
 
 					case "TRANSCRIPT_UPDATE": {
 						const { sessionId, blocks, rawEntries } = message.payload;
-						const session = sessionBuffer.get(sessionId);
+						let session = sessionBuffer.get(sessionId);
+
+						// Service worker may have restarted — reload from storage
 						if (!session) {
-							return { success: false, error: "Session not found in buffer" };
+							const stored = await loadSession(sessionId);
+							if (!stored) {
+								return { success: false, error: "Session not found" };
+							}
+							sessionBuffer.set(sessionId, stored);
+							// Re-create the persistence alarm lost on restart
+							await browser.alarms.create(`persist-${sessionId}`, {
+								periodInMinutes: 1,
+							});
+							// Restore tab mapping
+							if (sender.tab?.id != null) {
+								tabToSession.set(sender.tab.id, sessionId);
+							}
+							session = stored;
 						}
 
 						session.transcript.push(...blocks);
@@ -167,6 +182,18 @@ export default defineBackground(() => {
 
 					case "MEETING_ENDED": {
 						const { sessionId } = message.payload;
+
+						// Service worker may have restarted — reload from storage
+						if (!sessionBuffer.has(sessionId)) {
+							const stored = await loadSession(sessionId);
+							if (stored) {
+								sessionBuffer.set(sessionId, stored);
+								if (sender.tab?.id != null) {
+									tabToSession.set(sender.tab.id, sessionId);
+								}
+							}
+						}
+
 						await flushAndEndSession(sessionId);
 						return { success: true };
 					}

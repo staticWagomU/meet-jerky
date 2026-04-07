@@ -378,7 +378,15 @@ async function flushPendingBlocks(): Promise<void> {
 				rawEntries: rawToSend,
 			},
 		};
-		await browser.runtime.sendMessage(message);
+		const response = await browser.runtime.sendMessage(message);
+
+		// Background may return { success: false } if session was lost
+		// (e.g. service worker restarted and storage lookup also failed)
+		if (response && !response.success) {
+			console.warn("[MJ] Flush rejected by background:", response.error);
+			pendingBlocks = [...blocksToSend, ...pendingBlocks];
+			pendingRawEntries = [...rawToSend, ...pendingRawEntries];
+		}
 	} catch (e) {
 		console.warn("[MJ] Failed to flush pending blocks:", e);
 		// Put blocks back for retry
