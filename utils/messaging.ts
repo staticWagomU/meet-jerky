@@ -7,6 +7,7 @@ export type MessageType =
 	| "GET_SESSIONS"
 	| "GET_TRANSCRIPT"
 	| "DELETE_SESSION"
+	| "UPDATE_SESSION_TITLE"
 	| "KEEPALIVE";
 
 export interface MeetingStartedMessage {
@@ -53,6 +54,14 @@ export interface DeleteSessionMessage {
 	};
 }
 
+export interface UpdateSessionTitleMessage {
+	type: "UPDATE_SESSION_TITLE";
+	payload: {
+		sessionId: string;
+		meetingTitle: string;
+	};
+}
+
 export interface KeepaliveMessage {
 	type: "KEEPALIVE";
 }
@@ -64,4 +73,5 @@ export type ExtensionMessage =
 	| GetSessionsMessage
 	| GetTranscriptMessage
 	| DeleteSessionMessage
+	| UpdateSessionTitleMessage
 	| KeepaliveMessage;

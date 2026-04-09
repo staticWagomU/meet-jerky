@@ -98,6 +98,13 @@ body {
 	min-width: 0;
 }
 
+.session-title-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
 .session-title {
 	font-size: 14px;
 	font-weight: 500;
@@ -186,11 +193,17 @@ body {
 	flex-shrink: 0;
 }
 
+.detail-title-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 4px;
+}
+
 .detail-title {
 	font-size: 15px;
 	font-weight: 600;
 	color: #1a1a1a;
-	margin-top: 4px;
 }
 
 .detail-meta {
@@ -204,6 +217,65 @@ body {
 	color: #9ca3af;
 	margin-top: 2px;
 	font-family: monospace;
+}
+
+/* Edit title */
+.edit-title-button {
+	background: none;
+	border: none;
+	color: #9ca3af;
+	cursor: pointer;
+	padding: 0 2px;
+	font-size: 13px;
+	line-height: 1;
+	flex-shrink: 0;
+	transition: color 0.15s;
+}
+
+.edit-title-button:hover {
+	color: #4285f4;
+}
+
+.edit-title-input {
+	flex: 1;
+	min-width: 0;
+	padding: 2px 6px;
+	border: 1px solid #4285f4;
+	border-radius: 4px;
+	font-size: 13px;
+	font-family: inherit;
+	color: #1a1a1a;
+	outline: none;
+}
+
+.edit-title-save,
+.edit-title-cancel {
+	padding: 2px 8px;
+	border: none;
+	border-radius: 4px;
+	font-size: 11px;
+	font-family: inherit;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background-color 0.15s;
+}
+
+.edit-title-save {
+	background-color: #4285f4;
+	color: #fff;
+}
+
+.edit-title-save:hover {
+	background-color: #3367d6;
+}
+
+.edit-title-cancel {
+	background-color: #f3f4f6;
+	color: #6b7280;
+}
+
+.edit-title-cancel:hover {
+	background-color: #e5e7eb;
 }
 
 /* Participants */

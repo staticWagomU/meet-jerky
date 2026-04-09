@@ -51,6 +51,88 @@ async function deleteSession(sessionId: string): Promise<{ success: boolean }> {
 	});
 }
 
+async function updateSessionTitle(
+	sessionId: string,
+	meetingTitle: string,
+): Promise<{ success: boolean }> {
+	return browser.runtime.sendMessage({
+		type: "UPDATE_SESSION_TITLE",
+		payload: { sessionId, meetingTitle },
+	});
+}
+
+// --- Inline title edit ---
+
+function startInlineEdit(
+	container: HTMLElement,
+	currentTitle: string,
+	onSave: (newTitle: string) => Promise<void>,
+): void {
+	const originalHtml = container.innerHTML;
+
+	const input = document.createElement("input");
+	input.type = "text";
+	input.value = currentTitle;
+	input.className = "edit-title-input";
+
+	const saveBtn = document.createElement("button");
+	saveBtn.textContent = "OK";
+	saveBtn.className = "edit-title-save";
+
+	const cancelBtn = document.createElement("button");
+	cancelBtn.textContent = "Cancel";
+	cancelBtn.className = "edit-title-cancel";
+
+	container.innerHTML = "";
+	container.appendChild(input);
+	container.appendChild(saveBtn);
+	container.appendChild(cancelBtn);
+
+	input.focus();
+	input.select();
+
+	let saved = false;
+
+	const save = async () => {
+		if (saved) return;
+		saved = true;
+		const newTitle = input.value.trim();
+		if (newTitle && newTitle !== currentTitle) {
+			await onSave(newTitle);
+		} else {
+			container.innerHTML = originalHtml;
+		}
+	};
+
+	const cancel = () => {
+		if (saved) return;
+		saved = true;
+		container.innerHTML = originalHtml;
+	};
+
+	saveBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		save();
+	});
+
+	cancelBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		cancel();
+	});
+
+	input.addEventListener("keydown", (e) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			save();
+		} else if (e.key === "Escape") {
+			e.preventDefault();
+			cancel();
+		}
+	});
+
+	input.addEventListener("click", (e) => e.stopPropagation());
+}
+
 // --- Download helper ---
 
 function downloadFile(
@@ -139,7 +221,10 @@ function renderSessionList(sessions: SessionSummary[]): void {
 			(session) => `
     <div class="session-item" data-session-id="${escapeHtml(session.sessionId)}">
       <div class="session-info">
-        <div class="session-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</div>
+        <div class="session-title-row">
+          <span class="session-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</span>
+          <button class="edit-title-button" data-edit-id="${escapeHtml(session.sessionId)}" title="タイトルを編集">&#9998;</button>
+        </div>
         <div class="session-meta">
           <span class="session-date">${formatDate(session.startTimestamp)}</span>
           <span class="session-count">${session.transcriptCount}件の発言</span>
@@ -160,13 +245,34 @@ function renderSessionList(sessions: SessionSummary[]): void {
 	document.querySelectorAll(".session-item").forEach((item) => {
 		item.addEventListener("click", (e) => {
 			const target = e.target as HTMLElement;
-			// Don't navigate when clicking the delete button
-			if (target.closest(".delete-button")) return;
+			// Don't navigate when clicking the delete or edit button
+			if (target.closest(".delete-button") || target.closest(".edit-title-button")) return;
 
 			const sessionId = (item as HTMLElement).dataset.sessionId;
 			if (sessionId) {
 				navigateToDetail(sessionId);
 			}
+		});
+	});
+
+	document.querySelectorAll(".edit-title-button").forEach((btn) => {
+		btn.addEventListener("click", (e) => {
+			e.stopPropagation();
+			const sessionId = (btn as HTMLElement).dataset.editId;
+			if (!sessionId) return;
+
+			const titleRow = btn.closest(".session-title-row");
+			if (!titleRow) return;
+
+			const titleSpan = titleRow.querySelector(".session-title") as HTMLElement;
+			if (!titleSpan) return;
+
+			const currentTitle = titleSpan.textContent ?? "";
+			startInlineEdit(titleRow as HTMLElement, currentTitle, async (newTitle) => {
+				await updateSessionTitle(sessionId, newTitle);
+				const response = await getSessions();
+				renderSessionList(response.sessions);
+			});
 		});
 	});
 
@@ -234,7 +340,10 @@ function renderTranscriptDetail(session: MeetingSession): void {
 	app.innerHTML = `
     <div class="detail-header">
       <button class="back-button" id="back-button">&larr; セッション一覧</button>
-      <div class="detail-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</div>
+      <div class="detail-title-row">
+        <span class="detail-title" id="detail-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</span>
+        <button class="edit-title-button" id="edit-detail-title" title="タイトルを編集">&#9998;</button>
+      </div>
       <div class="detail-meta">${formatDate(session.startTimestamp)}</div>
       ${session.meetingCode ? `<div class="detail-code">${escapeHtml(session.meetingCode)}</div>` : ""}
     </div>
@@ -266,6 +375,23 @@ function renderTranscriptDetail(session: MeetingSession): void {
 			renderLoading();
 			const response = await getSessions();
 			renderSessionList(response.sessions);
+		});
+
+	// Edit detail title
+	document
+		.getElementById("edit-detail-title")
+		?.addEventListener("click", () => {
+			const titleRow = document.querySelector(".detail-title-row");
+			const titleSpan = document.getElementById("detail-title");
+			if (!titleRow || !titleSpan) return;
+
+			const currentTitle = titleSpan.textContent ?? "";
+			startInlineEdit(titleRow as HTMLElement, currentTitle, async (newTitle) => {
+				await updateSessionTitle(session.sessionId, newTitle);
+				// Re-render detail with updated session
+				const response = await getTranscript(session.sessionId);
+				renderTranscriptDetail(response.session);
+			});
 		});
 
 	// Copy button

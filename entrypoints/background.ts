@@ -264,6 +264,26 @@ export default defineBackground(() => {
 						return { success: true };
 					}
 
+					case "UPDATE_SESSION_TITLE": {
+						const { sessionId, meetingTitle } = message.payload;
+
+						// Update in-memory buffer if present
+						const buffered = sessionBuffer.get(sessionId);
+						if (buffered) {
+							buffered.meetingTitle = meetingTitle;
+						}
+
+						// Update persisted session data
+						const stored = await loadSession(sessionId);
+						if (!stored) {
+							return { success: false, error: "Session not found" };
+						}
+						stored.meetingTitle = meetingTitle;
+						await saveSession(stored);
+
+						return { success: true };
+					}
+
 					case "KEEPALIVE": {
 						return { success: true };
 					}
