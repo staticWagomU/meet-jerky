@@ -2,8 +2,7 @@ import {
 	COLLAPSE_PROPS,
 	extractAllCaptionData,
 	extractCaptionData,
-	findCaptionOverlayPanel,
-	findLayoutContainer,
+	findCaptionAncestors,
 } from "@/utils/caption-dom";
 import {
 	determineCaptionAction,
@@ -68,8 +67,7 @@ let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 let bodyObserver: MutationObserver | null = null;
 let captionObserver: MutationObserver | null = null;
 let captionRegion: HTMLElement | null = null;
-let captionLayoutContainer: HTMLElement | null = null;
-let captionOverlayPanel: HTMLElement | null = null;
+let captionAncestors: HTMLElement[] = [];
 let captionHidden = true;
 let lastSeenCaptions: CaptionData[] = [];
 
@@ -257,11 +255,8 @@ function removeToggleButton(): void {
 function applyCaptionVisibility(): void {
 	if (!captionRegion) return;
 
-	if (!captionLayoutContainer) {
-		captionLayoutContainer = findLayoutContainer(captionRegion);
-	}
-	if (!captionOverlayPanel) {
-		captionOverlayPanel = findCaptionOverlayPanel(captionRegion);
+	if (captionAncestors.length === 0) {
+		captionAncestors = findCaptionAncestors(captionRegion);
 	}
 
 	if (captionHidden) {
@@ -277,23 +272,18 @@ function applyCaptionVisibility(): void {
 		rs.setProperty("top", "-9999px", "important");
 		rs.setProperty("left", "-9999px", "important");
 
-		// Collapse the inner layout container
-		if (captionLayoutContainer) {
-			const cs = captionLayoutContainer.style;
-			cs.setProperty("position", "absolute", "important");
+		// Collapse ALL ancestor containers between captionRegion and the
+		// main viewport. This is more robust than targeting specific
+		// containers because Google Meet may restructure the DOM at any time.
+		// position:absolute removes each ancestor from the normal document
+		// flow, so the parent's flex/grid gap no longer applies to it.
+		for (const ancestor of captionAncestors) {
+			const s = ancestor.style;
+			s.setProperty("position", "absolute", "important");
 			for (const prop of COLLAPSE_PROPS) {
-				cs.setProperty(prop, "0", "important");
+				s.setProperty(prop, "0", "important");
 			}
-			cs.setProperty("overflow", "hidden", "important");
-		}
-
-		// Collapse the outer overlay panel (position:absolute div wrapping entire caption area)
-		if (captionOverlayPanel) {
-			const ps = captionOverlayPanel.style;
-			ps.setProperty("height", "0", "important");
-			ps.setProperty("min-height", "0", "important");
-			ps.setProperty("max-height", "0", "important");
-			ps.setProperty("overflow", "hidden", "important");
+			s.setProperty("overflow", "hidden", "important");
 		}
 	} else {
 		for (const prop of [
@@ -305,17 +295,12 @@ function applyCaptionVisibility(): void {
 		]) {
 			captionRegion.style.removeProperty(prop);
 		}
-		if (captionLayoutContainer) {
-			captionLayoutContainer.style.removeProperty("position");
+		for (const ancestor of captionAncestors) {
+			ancestor.style.removeProperty("position");
 			for (const prop of COLLAPSE_PROPS) {
-				captionLayoutContainer.style.removeProperty(prop);
+				ancestor.style.removeProperty(prop);
 			}
-			captionLayoutContainer.style.removeProperty("overflow");
-		}
-		if (captionOverlayPanel) {
-			for (const prop of ["height", "min-height", "max-height", "overflow"]) {
-				captionOverlayPanel.style.removeProperty(prop);
-			}
+			ancestor.style.removeProperty("overflow");
 		}
 	}
 }
@@ -466,9 +451,8 @@ function onCaptionMutation(): void {
 function observeCaptionRegion(region: HTMLElement): void {
 	captionRegion = region;
 
-	// Reset cached parent containers (they change when region is recreated)
-	captionLayoutContainer = null;
-	captionOverlayPanel = null;
+	// Reset cached ancestors (they change when region is recreated)
+	captionAncestors = [];
 
 	// Apply initial visibility (hidden by default)
 	applyCaptionVisibility();
@@ -521,8 +505,7 @@ function startBodyObserver(): void {
 				captionObserver = null;
 			}
 			captionRegion = null;
-			captionLayoutContainer = null;
-			captionOverlayPanel = null;
+			captionAncestors = [];
 			updateIndicator();
 		}
 
@@ -818,8 +801,7 @@ function suspendSession(): void {
 	}
 
 	captionRegion = null;
-	captionLayoutContainer = null;
-	captionOverlayPanel = null;
+	captionAncestors = [];
 	currentBlock = null;
 	lastSeenCaptions = [];
 

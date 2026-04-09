@@ -145,11 +145,36 @@ export function findCaptionOverlayPanel(el: HTMLElement): HTMLElement | null {
 	return found;
 }
 
-/** CSS properties to zero out on the layout container when collapsing */
+/**
+ * Collect all ancestor elements between the caption region and the main
+ * viewport boundary. Used to comprehensively collapse every container
+ * that could reserve space for captions, regardless of DOM structure
+ * changes by Google Meet.
+ *
+ * Stops before reaching an element taller than 80% of the viewport height,
+ * which is assumed to be the main layout container holding the video area.
+ */
+export function findCaptionAncestors(el: HTMLElement): HTMLElement[] {
+	const ancestors: HTMLElement[] = [];
+	let current: HTMLElement | null = el.parentElement;
+	while (current && current !== document.body) {
+		if (current.offsetHeight > window.innerHeight * 0.8) {
+			break;
+		}
+		ancestors.push(current);
+		current = current.parentElement;
+	}
+	return ancestors;
+}
+
+/** CSS properties to zero out on caption ancestors when collapsing */
 export const COLLAPSE_PROPS = [
 	"height",
 	"min-height",
 	"max-height",
+	"width",
+	"min-width",
+	"max-width",
 	"padding",
 	"margin",
 	"border",
