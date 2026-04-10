@@ -146,23 +146,25 @@ export function findCaptionOverlayPanel(el: HTMLElement): HTMLElement | null {
 }
 
 /**
- * Collect all ancestor elements between the caption region and the main
- * viewport boundary. Used to comprehensively collapse every container
- * that could reserve space for captions, regardless of DOM structure
- * changes by Google Meet.
+ * Collect ancestor elements between the caption region and the layout
+ * boundary. The layout boundary is where the caption-specific container
+ * tree joins the main layout — i.e., the first ancestor whose parent
+ * has multiple children (the video area is one of those siblings).
  *
- * Stops before reaching an element taller than 80% of the viewport height,
- * which is assumed to be the main layout container holding the video area.
+ * By stopping at this boundary (inclusive), we collapse all caption-only
+ * wrappers without affecting shared containers that also hold the video.
  */
 export function findCaptionAncestors(el: HTMLElement): HTMLElement[] {
 	const ancestors: HTMLElement[] = [];
 	let current: HTMLElement | null = el.parentElement;
 	while (current && current !== document.body) {
-		if (current.offsetHeight > window.innerHeight * 0.8) {
-			break;
-		}
 		ancestors.push(current);
-		current = current.parentElement;
+		const parent = current.parentElement;
+		if (!parent || parent === document.body) break;
+		// Stop after the element whose parent has multiple children —
+		// that parent is shared with the video area and must not be touched.
+		if (parent.children.length > 1) break;
+		current = parent;
 	}
 	return ancestors;
 }

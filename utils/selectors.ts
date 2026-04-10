@@ -180,9 +180,7 @@ export async function enableCaptions(
 				console.log("[MJ] Captions enabled via caption button");
 				return true;
 			}
-			console.warn(
-				"[MJ] Caption button clicked but captions not yet on, retrying...",
-			);
+			// Captions not yet on after click — will retry on next iteration
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, retryIntervalMs));

@@ -272,11 +272,8 @@ function applyCaptionVisibility(): void {
 		rs.setProperty("top", "-9999px", "important");
 		rs.setProperty("left", "-9999px", "important");
 
-		// Collapse ALL ancestor containers between captionRegion and the
-		// main viewport. This is more robust than targeting specific
-		// containers because Google Meet may restructure the DOM at any time.
-		// position:absolute removes each ancestor from the normal document
-		// flow, so the parent's flex/grid gap no longer applies to it.
+		// Collapse ancestor containers up to (and including) the layout
+		// boundary — the element whose parent is shared with the video area.
 		for (const ancestor of captionAncestors) {
 			const s = ancestor.style;
 			s.setProperty("position", "absolute", "important");
@@ -451,7 +448,7 @@ function onCaptionMutation(): void {
 function observeCaptionRegion(region: HTMLElement): void {
 	captionRegion = region;
 
-	// Reset cached ancestors (they change when region is recreated)
+	// Reset cached parent containers (they change when region is recreated)
 	captionAncestors = [];
 
 	// Apply initial visibility (hidden by default)
