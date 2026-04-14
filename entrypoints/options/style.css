@@ -234,8 +234,9 @@ body {
 	border: 1px solid #e5e7eb;
 	border-radius: 6px;
 	font-size: 13px;
-	font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas,
-		"DejaVu Sans Mono", monospace;
+	font-family:
+		"SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono",
+		monospace;
 	color: #1a1a1a;
 	background-color: #ffffff;
 	line-height: 1.6;
@@ -315,8 +316,9 @@ body {
 	border: 1px solid #e5e7eb;
 	border-radius: 6px;
 	font-size: 13px;
-	font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas,
-		"DejaVu Sans Mono", monospace;
+	font-family:
+		"SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono",
+		monospace;
 	color: #374151;
 	line-height: 1.6;
 	white-space: pre-wrap;

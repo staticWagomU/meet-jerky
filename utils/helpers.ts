@@ -123,7 +123,11 @@ export function getSessionDisplayTitle(session: {
  * Example: "MyMeeting_2026-04-03.md", "abc-defg-hij_2026-04-03_raw.txt"
  */
 export function buildExportFilename(
-	session: { meetingTitle: string; meetingCode: string; startTimestamp: string },
+	session: {
+		meetingTitle: string;
+		meetingCode: string;
+		startTimestamp: string;
+	},
 	extension: string,
 	suffix?: string,
 ): string {

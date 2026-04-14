@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-	type TemplateContext,
 	buildTemplateContext,
 	expandTemplate,
 	formatDuration,
 	generateMinutes,
+	type TemplateContext,
 } from "../template";
 import type { MeetingSession } from "../types";
 
@@ -93,10 +93,7 @@ describe("expandTemplate", () => {
 	});
 
 	it("未知の変数 {{unknown}} は空文字列に置き換わる", () => {
-		const result = expandTemplate(
-			"前{{unknown}}後",
-			baseContext,
-		);
+		const result = expandTemplate("前{{unknown}}後", baseContext);
 		expect(result).toBe("前後");
 	});
 
@@ -116,9 +113,7 @@ describe("expandTemplate", () => {
 			title: '<script>alert("xss")</script> & "引用符"',
 		};
 		const result = expandTemplate("タイトル: {{title}}", contextWithSpecial);
-		expect(result).toBe(
-			'タイトル: <script>alert("xss")</script> & "引用符"',
-		);
+		expect(result).toBe('タイトル: <script>alert("xss")</script> & "引用符"');
 	});
 });
 
@@ -196,17 +191,13 @@ describe("buildTemplateContext", () => {
 	it('startTime が "HH:MM" 形式（秒なし）でフォーマットされる', () => {
 		const session = createTestSession();
 		const ctx = buildTemplateContext(session);
-		expect(ctx.startTime).toBe(
-			expectedTimeHHMM("2026-04-14T10:00:00.000Z"),
-		);
+		expect(ctx.startTime).toBe(expectedTimeHHMM("2026-04-14T10:00:00.000Z"));
 	});
 
 	it('endTime が "HH:MM" 形式（秒なし）でフォーマットされる', () => {
 		const session = createTestSession();
 		const ctx = buildTemplateContext(session);
-		expect(ctx.endTime).toBe(
-			expectedTimeHHMM("2026-04-14T11:30:00.000Z"),
-		);
+		expect(ctx.endTime).toBe(expectedTimeHHMM("2026-04-14T11:30:00.000Z"));
 	});
 
 	it("duration が正しく計算される", () => {

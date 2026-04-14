@@ -3,8 +3,8 @@ import { showNotification } from "@/utils/notification";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
 import {
 	DEFAULT_MINUTES_TEMPLATE,
-	type TemplateContext,
 	expandTemplate,
+	type TemplateContext,
 } from "@/utils/template";
 import type { UserSettings } from "@/utils/types";
 
