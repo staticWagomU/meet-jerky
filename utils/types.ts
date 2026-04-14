@@ -25,3 +25,13 @@ export interface MeetingSession {
 	transcript: TranscriptBlock[];
 	rawTranscript: RawCaptionEntry[];
 }
+
+export interface UserSettings {
+	retention: {
+		mode: "count" | "days";
+		maxCount: number;
+		maxDays: number;
+	};
+	google: { authenticated: boolean };
+	template: { minutesTemplate: string; customPrompt: string };
+}

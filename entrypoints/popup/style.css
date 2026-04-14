@@ -53,6 +53,23 @@ body {
 	color: #1a1a1a;
 }
 
+.settings-link {
+	margin-left: auto;
+	background: none;
+	border: none;
+	font-size: 18px;
+	color: #6b7280;
+	cursor: pointer;
+	padding: 2px 4px;
+	line-height: 1;
+	flex-shrink: 0;
+	transition: opacity 0.15s;
+}
+
+.settings-link:hover {
+	opacity: 0.6;
+}
+
 /* Back button */
 .back-button {
 	background: none;

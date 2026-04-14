@@ -732,10 +732,7 @@ function onBeforeUnload(): void {
 
 	// Send TRANSCRIPT_UPDATE first, then MEETING_ENDED
 	// Both are fire-and-forget in beforeunload, but ordering matters
-	if (
-		(pendingBlocks.length > 0 || pendingRawEntries.length > 0) &&
-		sessionId
-	) {
+	if ((pendingBlocks.length > 0 || pendingRawEntries.length > 0) && sessionId) {
 		const updateMessage: TranscriptUpdateMessage = {
 			type: "TRANSCRIPT_UPDATE",
 			payload: {

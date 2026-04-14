@@ -1,5 +1,6 @@
 import "./style.css";
 import {
+	buildExportFilename,
 	computeTranscriptDiffs,
 	escapeHtml,
 	extractParticipants,
@@ -9,6 +10,7 @@ import {
 	formatSessionAsMarkdown,
 	formatTimeOnly,
 	formatTranscriptAsText,
+	getSessionDisplayTitle,
 } from "@/utils/helpers";
 import type { MeetingSession } from "@/utils/types";
 
@@ -202,6 +204,7 @@ function renderSessionList(sessions: SessionSummary[]): void {
     <div class="header">
       <div class="header-icon">MJ</div>
       <div class="header-title">ミートジャーキー</div>
+      <button id="settings-link" class="settings-link" title="設定">&#9881;</button>
     </div>
   `;
 
@@ -213,6 +216,9 @@ function renderSessionList(sessions: SessionSummary[]): void {
         <div class="empty-state-text">保存されたセッションはありません</div>
       </div>
     `;
+		document.getElementById("settings-link")?.addEventListener("click", () => {
+			browser.runtime.openOptionsPage();
+		});
 		return;
 	}
 
@@ -222,7 +228,7 @@ function renderSessionList(sessions: SessionSummary[]): void {
     <div class="session-item" data-session-id="${escapeHtml(session.sessionId)}">
       <div class="session-info">
         <div class="session-title-row">
-          <span class="session-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</span>
+          <span class="session-title">${escapeHtml(getSessionDisplayTitle(session))}</span>
           <button class="edit-title-button" data-edit-id="${escapeHtml(session.sessionId)}" title="タイトルを編集">&#9998;</button>
         </div>
         <div class="session-meta">
@@ -246,7 +252,11 @@ function renderSessionList(sessions: SessionSummary[]): void {
 		item.addEventListener("click", (e) => {
 			const target = e.target as HTMLElement;
 			// Don't navigate when clicking the delete or edit button
-			if (target.closest(".delete-button") || target.closest(".edit-title-button")) return;
+			if (
+				target.closest(".delete-button") ||
+				target.closest(".edit-title-button")
+			)
+				return;
 
 			const sessionId = (item as HTMLElement).dataset.sessionId;
 			if (sessionId) {
@@ -268,11 +278,15 @@ function renderSessionList(sessions: SessionSummary[]): void {
 			if (!titleSpan) return;
 
 			const currentTitle = titleSpan.textContent ?? "";
-			startInlineEdit(titleRow as HTMLElement, currentTitle, async (newTitle) => {
-				await updateSessionTitle(sessionId, newTitle);
-				const response = await getSessions();
-				renderSessionList(response.sessions);
-			});
+			startInlineEdit(
+				titleRow as HTMLElement,
+				currentTitle,
+				async (newTitle) => {
+					await updateSessionTitle(sessionId, newTitle);
+					const response = await getSessions();
+					renderSessionList(response.sessions);
+				},
+			);
 		});
 	});
 
@@ -289,6 +303,10 @@ function renderSessionList(sessions: SessionSummary[]): void {
 			const response = await getSessions();
 			renderSessionList(response.sessions);
 		});
+	});
+
+	document.getElementById("settings-link")?.addEventListener("click", () => {
+		browser.runtime.openOptionsPage();
 	});
 }
 
@@ -341,7 +359,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
     <div class="detail-header">
       <button class="back-button" id="back-button">&larr; セッション一覧</button>
       <div class="detail-title-row">
-        <span class="detail-title" id="detail-title">${escapeHtml(session.meetingTitle || session.meetingCode)}</span>
+        <span class="detail-title" id="detail-title">${escapeHtml(getSessionDisplayTitle(session))}</span>
         <button class="edit-title-button" id="edit-detail-title" title="タイトルを編集">&#9998;</button>
       </div>
       <div class="detail-meta">${formatDate(session.startTimestamp)}</div>
@@ -386,12 +404,16 @@ function renderTranscriptDetail(session: MeetingSession): void {
 			if (!titleRow || !titleSpan) return;
 
 			const currentTitle = titleSpan.textContent ?? "";
-			startInlineEdit(titleRow as HTMLElement, currentTitle, async (newTitle) => {
-				await updateSessionTitle(session.sessionId, newTitle);
-				// Re-render detail with updated session
-				const response = await getTranscript(session.sessionId);
-				renderTranscriptDetail(response.session);
-			});
+			startInlineEdit(
+				titleRow as HTMLElement,
+				currentTitle,
+				async (newTitle) => {
+					await updateSessionTitle(session.sessionId, newTitle);
+					// Re-render detail with updated session
+					const response = await getTranscript(session.sessionId);
+					renderTranscriptDetail(response.session);
+				},
+			);
 		});
 
 	// Copy button
@@ -419,27 +441,28 @@ function renderTranscriptDetail(session: MeetingSession): void {
 	// Export buttons
 	document.getElementById("export-md")?.addEventListener("click", () => {
 		const md = formatSessionAsMarkdown(session);
-		const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split("T")[0]}.md`;
+		const filename = buildExportFilename(session, "md");
 		downloadFile(md, filename, "text/markdown");
 	});
 
 	document.getElementById("export-json")?.addEventListener("click", () => {
 		const json = formatSessionAsJson(session);
-		const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split("T")[0]}.json`;
+		const filename = buildExportFilename(session, "json");
 		downloadFile(json, filename, "application/json");
 	});
 
 	document.getElementById("export-txt")?.addEventListener("click", () => {
 		const txt = formatTranscriptAsText(session.transcript);
-		const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split("T")[0]}.txt`;
+		const filename = buildExportFilename(session, "txt");
 		downloadFile(txt, filename, "text/plain");
 	});
 
 	document.getElementById("export-raw")?.addEventListener("click", () => {
 		const raw = formatRawTranscriptAsText(session.rawTranscript ?? []);
-		const filename = `${session.meetingTitle || session.meetingCode}_${session.startTimestamp.split("T")[0]}_raw.txt`;
+		const filename = buildExportFilename(session, "txt", "raw");
 		downloadFile(raw, filename, "text/plain");
 	});
+
 }
 
 // --- Navigation ---

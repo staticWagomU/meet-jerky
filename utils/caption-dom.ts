@@ -24,12 +24,10 @@ export function isUIElement(el: HTMLElement): boolean {
  * Extract speaker name and caption text from a single caption block element.
  * Returns null when the block has no meaningful text.
  */
-function extractBlockData(
-	block: HTMLElement,
-): CaptionData | null {
-	const blockChildren = (
-		Array.from(block.children) as HTMLElement[]
-	).filter((el) => !isUIElement(el));
+function extractBlockData(block: HTMLElement): CaptionData | null {
+	const blockChildren = (Array.from(block.children) as HTMLElement[]).filter(
+		(el) => !isUIElement(el),
+	);
 
 	if (blockChildren.length === 0) {
 		const text = block.textContent?.trim() || "";
@@ -73,9 +71,7 @@ function getCaptionBlocks(region: HTMLElement): HTMLElement[] {
  * Returns null when the region is empty or contains only UI controls.
  * (Kept for backward compatibility — returns only the last block.)
  */
-export function extractCaptionData(
-	region: HTMLElement,
-): CaptionData | null {
+export function extractCaptionData(region: HTMLElement): CaptionData | null {
 	const blocks = getCaptionBlocks(region);
 	if (blocks.length === 0) return null;
 
@@ -92,9 +88,7 @@ export function extractCaptionData(
  * Each entry represents a visible speaker's current caption state.
  * When multiple people speak simultaneously, multiple entries are returned.
  */
-export function extractAllCaptionData(
-	region: HTMLElement,
-): CaptionData[] {
+export function extractAllCaptionData(region: HTMLElement): CaptionData[] {
 	const blocks = getCaptionBlocks(region);
 	const results: CaptionData[] = [];
 

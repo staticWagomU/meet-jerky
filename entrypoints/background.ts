@@ -1,20 +1,9 @@
+import { idbDeleteSession, idbLoadSession, idbSaveSession } from "@/utils/idb";
 import type { ExtensionMessage } from "@/utils/messaging";
+import type { SessionIndexEntry } from "@/utils/retention";
+import { enforceRetentionPolicy } from "@/utils/retention";
+import { SETTINGS_STORAGE_KEY } from "@/utils/settings";
 import type { MeetingSession } from "@/utils/types";
-import {
-	idbDeleteSession,
-	idbLoadSession,
-	idbSaveSession,
-} from "@/utils/idb";
-
-// --- Storage helper types ---
-
-interface SessionIndexEntry {
-	sessionId: string;
-	meetingCode: string;
-	meetingTitle: string;
-	startTimestamp: string;
-	endTimestamp: string;
-}
 
 // --- Storage helpers ---
 
@@ -62,24 +51,9 @@ async function deleteSessionFromStorage(sessionId: string): Promise<void> {
 	await saveSessionIndex(filtered);
 }
 
-async function enforceSessionLimit(maxSessions: number): Promise<void> {
-	const index = await loadSessionIndex();
-	if (index.length <= maxSessions) return;
+// --- Retention dependency wiring ---
 
-	// Sort by startTimestamp ascending (oldest first)
-	const sorted = [...index].sort(
-		(a, b) =>
-			new Date(a.startTimestamp).getTime() -
-			new Date(b.startTimestamp).getTime(),
-	);
-
-	const toDelete = sorted.slice(0, sorted.length - maxSessions);
-	for (const entry of toDelete) {
-		await deleteSessionFromStorage(entry.sessionId);
-	}
-}
-
-const MAX_STORED_SESSIONS = 10;
+const retentionDeps = { loadSessionIndex, deleteSessionFromStorage };
 
 // --- In-memory state ---
 
@@ -111,7 +85,7 @@ async function flushAndEndSession(sessionId: string): Promise<void> {
 	sessionBuffer.delete(sessionId);
 	removeTabMapping(sessionId);
 
-	await enforceSessionLimit(MAX_STORED_SESSIONS);
+	await enforceRetentionPolicy(retentionDeps);
 }
 
 // --- Helper to reload a session from storage into sessionBuffer ---
@@ -164,6 +138,17 @@ async function migrateStorageLocalToIDB(): Promise<void> {
 export default defineBackground(() => {
 	// Migrate existing data on first startup after update
 	migrateStorageLocalToIDB().catch(() => {});
+
+	// Service Worker 起動時にクリーンアップ実行
+	enforceRetentionPolicy(retentionDeps).catch(() => {});
+
+	// 設定変更を監視し、即座にクリーンアップを実行
+	browser.storage.onChanged.addListener(async (changes, areaName) => {
+		if (areaName !== "local") return;
+		if (!changes[SETTINGS_STORAGE_KEY]) return;
+
+		await enforceRetentionPolicy(retentionDeps);
+	});
 
 	// Message handler
 	browser.runtime.onMessage.addListener(
@@ -244,10 +229,7 @@ export default defineBackground(() => {
 					case "MEETING_ENDED": {
 						const { sessionId } = message.payload;
 						endedSessions.add(sessionId);
-						await ensureSessionInBuffer(
-							sessionId,
-							sender.tab?.id ?? undefined,
-						);
+						await ensureSessionInBuffer(sessionId, sender.tab?.id ?? undefined);
 						await flushAndEndSession(sessionId);
 						return { success: true };
 					}

@@ -10,10 +10,7 @@ import {
  * Helper: build a caption block mimicking Google Meet's structure.
  * Structure: <div><div>[img + <div><span>name</span></div>]</div><div>text</div></div>
  */
-function buildCaptionBlock(
-	personName: string,
-	text: string,
-): HTMLElement {
+function buildCaptionBlock(personName: string, text: string): HTMLElement {
 	const block = document.createElement("div");
 
 	// Speaker info container

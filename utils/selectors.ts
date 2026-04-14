@@ -98,9 +98,7 @@ export function findCaptionRegion(): HTMLElement | null {
 		const hasTextChildren = children.some(
 			(child) => child.tagName === "DIV" && child.textContent?.trim(),
 		);
-		const hasFormControls = candidate.querySelector(
-			"input, select, textarea",
-		);
+		const hasFormControls = candidate.querySelector("input, select, textarea");
 		if (hasTextChildren && !hasFormControls) {
 			return candidate;
 		}
