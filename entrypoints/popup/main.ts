@@ -12,6 +12,8 @@ import {
 	formatTranscriptAsText,
 	getSessionDisplayTitle,
 } from "@/utils/helpers";
+import { loadSettings } from "@/utils/settings";
+import { generateMinutes } from "@/utils/template";
 import type { MeetingSession } from "@/utils/types";
 
 interface SessionSummary {
@@ -380,6 +382,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
         <button class="export-button" id="export-json" title="JSONでエクスポート">JSON</button>
         <button class="export-button" id="export-txt" title="テキストでエクスポート">TXT</button>
         <button class="export-button" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
+        <button class="export-button" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
       </div>
       <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
     </div>
@@ -463,6 +466,17 @@ function renderTranscriptDetail(session: MeetingSession): void {
 		downloadFile(raw, filename, "text/plain");
 	});
 
+	document
+		.getElementById("export-minutes")
+		?.addEventListener("click", async () => {
+			const settings = await loadSettings();
+			const minutes = generateMinutes(
+				session,
+				settings.template.minutesTemplate,
+			);
+			const filename = buildExportFilename(session, "md", "minutes");
+			downloadFile(minutes, filename, "text/markdown");
+		});
 }
 
 // --- Navigation ---

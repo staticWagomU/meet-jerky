@@ -1,3 +1,4 @@
+import { DEFAULT_MINUTES_TEMPLATE } from "./template";
 import type { UserSettings } from "./types";
 
 export const SETTINGS_STORAGE_KEY = "user-settings";
@@ -9,7 +10,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
 		maxDays: 30,
 	},
 	google: { authenticated: false },
-	template: { minutesTemplate: "", customPrompt: "" },
+	template: { minutesTemplate: DEFAULT_MINUTES_TEMPLATE, customPrompt: "" },
 };
 
 /** Recursive partial type for UserSettings. */

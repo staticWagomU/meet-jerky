@@ -6,6 +6,7 @@ import {
 	SETTINGS_STORAGE_KEY,
 	saveSettings,
 } from "../settings";
+import { DEFAULT_MINUTES_TEMPLATE } from "../template";
 
 const mockGet = vi.fn();
 const mockSet = vi.fn();
@@ -33,7 +34,9 @@ describe("DEFAULT_SETTINGS", () => {
 		expect(DEFAULT_SETTINGS.retention.maxCount).toBe(10);
 		expect(DEFAULT_SETTINGS.retention.maxDays).toBe(30);
 		expect(DEFAULT_SETTINGS.google.authenticated).toBe(false);
-		expect(DEFAULT_SETTINGS.template.minutesTemplate).toBe("");
+		expect(DEFAULT_SETTINGS.template.minutesTemplate).toBe(
+			DEFAULT_MINUTES_TEMPLATE,
+		);
 		expect(DEFAULT_SETTINGS.template.customPrompt).toBe("");
 	});
 });
@@ -92,7 +95,7 @@ describe("mergeSettings", () => {
 		);
 		expect(result.google.authenticated).toBe(true);
 		expect(result.template.customPrompt).toBe("カスタムプロンプト");
-		expect(result.template.minutesTemplate).toBe("");
+		expect(result.template.minutesTemplate).toBe(DEFAULT_MINUTES_TEMPLATE);
 		expect(result.retention).toEqual(DEFAULT_SETTINGS.retention);
 	});
 });

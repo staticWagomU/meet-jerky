@@ -227,6 +227,104 @@ body {
 	text-align: center;
 }
 
+/* Template textarea */
+.template-textarea {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 13px;
+	font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas,
+		"DejaVu Sans Mono", monospace;
+	color: #1a1a1a;
+	background-color: #ffffff;
+	line-height: 1.6;
+	resize: vertical;
+	outline: none;
+	transition: border-color 0.15s;
+	tab-size: 2;
+}
+
+.template-textarea:focus {
+	border-color: #4285f4;
+	box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
+}
+
+/* Template variables */
+.template-variables {
+	margin-bottom: 12px;
+	padding: 12px;
+	background-color: #fafafa;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+}
+
+.template-variables-list {
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #374151;
+}
+
+.template-variables-list code {
+	font-size: 12px;
+	font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+	background-color: #eef2ff;
+	color: #4285f4;
+	padding: 1px 4px;
+	border-radius: 3px;
+}
+
+/* Template actions */
+.template-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 8px;
+	margin-bottom: 8px;
+}
+
+.template-action-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px 14px;
+	background-color: #f3f4f6;
+	color: #374151;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	font-family: inherit;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.template-action-button:hover {
+	background-color: #e5e7eb;
+	border-color: #d1d5db;
+}
+
+/* Template preview */
+.template-preview {
+	margin-top: 8px;
+	padding: 12px;
+	background-color: #fafafa;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 13px;
+	font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas,
+		"DejaVu Sans Mono", monospace;
+	color: #374151;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	max-height: 400px;
+	overflow-y: auto;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
 	#app {

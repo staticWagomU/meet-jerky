@@ -1,6 +1,11 @@
 import "./style.css";
 import { showNotification } from "@/utils/notification";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
+import {
+	DEFAULT_MINUTES_TEMPLATE,
+	type TemplateContext,
+	expandTemplate,
+} from "@/utils/template";
 import type { UserSettings } from "@/utils/types";
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
@@ -29,10 +34,8 @@ function render(): void {
 		buildPlaceholderCard("Google 連携", "今後のアップデートで追加予定"),
 	);
 
-	// Template placeholder
-	app.appendChild(
-		buildPlaceholderCard("テンプレート設定", "今後のアップデートで追加予定"),
-	);
+	// Template editing card
+	app.appendChild(buildTemplateCard());
 
 	// Save button
 	const footer = document.createElement("div");
@@ -228,6 +231,133 @@ function buildNumberInput(
 	wrapper.appendChild(suffix);
 
 	return { wrapper, input, suffix };
+}
+
+function buildSampleContext(): TemplateContext {
+	return {
+		title: "週次定例ミーティング",
+		code: "abc-defg-hij",
+		date: "2026年4月14日",
+		startTime: "10:00",
+		endTime: "11:30",
+		duration: "1時間30分",
+		participants: "田中太郎, 鈴木花子, 佐藤一郎",
+		participantCount: "3",
+		transcriptCount: "42",
+		transcript:
+			"**田中太郎** (10:00:15)\nそれでは定例を始めます。\n\n**鈴木花子** (10:01:02)\n今週の進捗を報告します。",
+	};
+}
+
+const TEMPLATE_VARIABLES: { name: string; description: string }[] = [
+	{ name: "title", description: "会議タイトル" },
+	{ name: "code", description: "Meet コード" },
+	{ name: "date", description: "開始日（YYYY年MM月DD日）" },
+	{ name: "startTime", description: "開始時刻（HH:MM）" },
+	{ name: "endTime", description: "終了時刻（HH:MM）" },
+	{ name: "duration", description: "所要時間" },
+	{ name: "participants", description: "参加者（カンマ区切り）" },
+	{ name: "participantCount", description: "参加者数" },
+	{ name: "transcriptCount", description: "発言ブロック数" },
+	{ name: "transcript", description: "書き起こし本文" },
+];
+
+function buildTemplateCard(): HTMLDivElement {
+	const card = document.createElement("div");
+	card.className = "card";
+
+	const title = document.createElement("div");
+	title.className = "card-title";
+	title.textContent = "テンプレート設定";
+	card.appendChild(title);
+
+	// Description
+	const desc = document.createElement("div");
+	desc.className = "form-label";
+	desc.textContent =
+		"議事録エクスポート時に使用するテンプレートを編集できます。";
+	card.appendChild(desc);
+
+	// Variable reference
+	const varsSection = document.createElement("div");
+	varsSection.className = "template-variables";
+
+	const varsTitle = document.createElement("div");
+	varsTitle.className = "form-label";
+	varsTitle.textContent = "利用可能な変数:";
+	varsSection.appendChild(varsTitle);
+
+	const varsList = document.createElement("ul");
+	varsList.className = "template-variables-list";
+	for (const v of TEMPLATE_VARIABLES) {
+		const li = document.createElement("li");
+		const code = document.createElement("code");
+		code.textContent = `{{${v.name}}}`;
+		li.appendChild(code);
+		li.appendChild(document.createTextNode(` — ${v.description}`));
+		varsList.appendChild(li);
+	}
+	varsSection.appendChild(varsList);
+	card.appendChild(varsSection);
+
+	// Textarea
+	const formGroup = document.createElement("div");
+	formGroup.className = "form-group";
+
+	const textarea = document.createElement("textarea");
+	textarea.className = "template-textarea";
+	textarea.rows = 15;
+	textarea.value = currentSettings.template.minutesTemplate;
+	textarea.addEventListener("input", () => {
+		currentSettings.template.minutesTemplate = textarea.value;
+	});
+	formGroup.appendChild(textarea);
+	card.appendChild(formGroup);
+
+	// Actions row
+	const actions = document.createElement("div");
+	actions.className = "template-actions";
+
+	const resetBtn = document.createElement("button");
+	resetBtn.className = "template-action-button";
+	resetBtn.textContent = "デフォルトに戻す";
+	resetBtn.addEventListener("click", () => {
+		textarea.value = DEFAULT_MINUTES_TEMPLATE;
+		currentSettings.template.minutesTemplate = DEFAULT_MINUTES_TEMPLATE;
+	});
+	actions.appendChild(resetBtn);
+
+	const previewBtn = document.createElement("button");
+	previewBtn.className = "template-action-button";
+	previewBtn.textContent = "プレビュー";
+	previewBtn.addEventListener("click", () => {
+		const previewArea = card.querySelector(
+			".template-preview",
+		) as HTMLElement | null;
+		if (previewArea) {
+			if (previewArea.style.display === "none") {
+				const context = buildSampleContext();
+				const result = expandTemplate(textarea.value, context);
+				previewArea.textContent = result;
+				previewArea.style.display = "block";
+				previewBtn.textContent = "プレビューを閉じる";
+			} else {
+				previewArea.style.display = "none";
+				previewBtn.textContent = "プレビュー";
+			}
+		}
+	});
+	actions.appendChild(previewBtn);
+
+	card.appendChild(actions);
+
+	// Preview area (hidden by default)
+	const preview = document.createElement("pre");
+	preview.className = "template-preview";
+	preview.style.display = "none";
+	card.appendChild(preview);
+
+	return card;
 }
 
 function buildPlaceholderCard(
