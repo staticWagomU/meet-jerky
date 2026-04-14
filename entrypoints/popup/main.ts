@@ -1,4 +1,10 @@
 import "./style.css";
+import { getAuthToken } from "@/utils/google-auth";
+import {
+	createSpreadsheet,
+	writeMinutesSheet,
+	writeRawLogSheet,
+} from "@/utils/google-sheets";
 import {
 	buildExportFilename,
 	computeTranscriptDiffs,
@@ -384,6 +390,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
         <button class="export-button" id="export-txt" title="テキストでエクスポート">TXT</button>
         <button class="export-button" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
         <button class="export-button" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
+        <button class="export-button export-sheets-btn" id="export-sheets" title="Google Sheetsにエクスポート">&#128202; Sheets</button>
       </div>
       <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
     </div>
@@ -481,6 +488,79 @@ function attachExportHandlers(session: MeetingSession): void {
 			);
 			const filename = buildExportFilename(session, "md", "minutes");
 			downloadFile(minutes, filename, "text/markdown");
+		});
+
+	document
+		.getElementById("export-sheets")
+		?.addEventListener("click", async () => {
+			const sheetsBtn = document.getElementById(
+				"export-sheets",
+			) as HTMLButtonElement | null;
+			if (!sheetsBtn) return;
+
+			const token = await getAuthToken();
+			if (!token) {
+				sheetsBtn.textContent = "要ログイン";
+				sheetsBtn.classList.add("export-sheets-error");
+				setTimeout(() => {
+					sheetsBtn.innerHTML = "&#128202; Sheets";
+					sheetsBtn.classList.remove("export-sheets-error");
+				}, 2000);
+				browser.runtime.openOptionsPage();
+				return;
+			}
+
+			try {
+				sheetsBtn.disabled = true;
+				sheetsBtn.textContent = "作成中...";
+				sheetsBtn.classList.add("export-sheets-loading");
+
+				const settings = await loadSettings();
+				const minutes = generateMinutes(
+					session,
+					settings.template.minutesTemplate,
+				);
+				const title = getSessionDisplayTitle(session);
+
+				const { spreadsheetId, spreadsheetUrl } = await createSpreadsheet(
+					token,
+					title,
+				);
+				await writeMinutesSheet(token, spreadsheetId, minutes);
+				await writeRawLogSheet(
+					token,
+					spreadsheetId,
+					session.rawTranscript ?? [],
+				);
+
+				sheetsBtn.classList.remove("export-sheets-loading");
+				sheetsBtn.classList.add("export-sheets-success");
+				sheetsBtn.disabled = false;
+				sheetsBtn.innerHTML = "&#10003; 完了";
+				sheetsBtn.addEventListener(
+					"click",
+					(e) => {
+						e.stopPropagation();
+						window.open(spreadsheetUrl, "_blank");
+					},
+					{ once: true },
+				);
+
+				setTimeout(() => {
+					if (sheetsBtn.classList.contains("export-sheets-success")) {
+						sheetsBtn.innerHTML = `<a href="${spreadsheetUrl}" target="_blank" class="sheets-link">&#128279; 開く</a>`;
+					}
+				}, 1500);
+			} catch {
+				sheetsBtn.disabled = false;
+				sheetsBtn.classList.remove("export-sheets-loading");
+				sheetsBtn.classList.add("export-sheets-error");
+				sheetsBtn.textContent = "エラー";
+				setTimeout(() => {
+					sheetsBtn.innerHTML = "&#128202; Sheets";
+					sheetsBtn.classList.remove("export-sheets-error");
+				}, 2000);
+			}
 		});
 }
 

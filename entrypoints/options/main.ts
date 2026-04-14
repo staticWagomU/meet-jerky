@@ -1,4 +1,5 @@
 import "./style.css";
+import { authenticate, getAuthToken, revokeToken } from "@/utils/google-auth";
 import { showNotification } from "@/utils/notification";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
 import {
@@ -29,10 +30,8 @@ function render(): void {
 	// Session management card
 	app.appendChild(buildRetentionCard());
 
-	// Google integration placeholder
-	app.appendChild(
-		buildPlaceholderCard("Google 連携", "今後のアップデートで追加予定"),
-	);
+	// Google integration card
+	app.appendChild(buildGoogleCard());
 
 	// Template editing card
 	app.appendChild(buildTemplateCard());
@@ -154,6 +153,128 @@ function buildRetentionCard(): HTMLDivElement {
 	card.appendChild(formGroup);
 
 	return card;
+}
+
+function buildGoogleCard(): HTMLDivElement {
+	const card = document.createElement("div");
+	card.className = "card";
+
+	const titleEl = document.createElement("div");
+	titleEl.className = "card-title";
+	titleEl.innerHTML = "&#128279; Google 連携";
+	card.appendChild(titleEl);
+
+	const statusRow = document.createElement("div");
+	statusRow.className = "google-status-row";
+	statusRow.id = "google-status-row";
+
+	const statusIndicator = document.createElement("span");
+	statusIndicator.className = "google-status";
+	statusIndicator.id = "google-status";
+	statusIndicator.textContent = "確認中...";
+	statusRow.appendChild(statusIndicator);
+	card.appendChild(statusRow);
+
+	const actionsRow = document.createElement("div");
+	actionsRow.className = "google-actions";
+
+	const loginBtn = document.createElement("button");
+	loginBtn.className = "google-login-button";
+	loginBtn.id = "google-login-btn";
+	loginBtn.textContent = "Google アカウントでログイン";
+	loginBtn.style.display = "none";
+	actionsRow.appendChild(loginBtn);
+
+	const logoutBtn = document.createElement("button");
+	logoutBtn.className = "google-logout-button";
+	logoutBtn.id = "google-logout-btn";
+	logoutBtn.textContent = "連携解除";
+	logoutBtn.style.display = "none";
+	actionsRow.appendChild(logoutBtn);
+
+	card.appendChild(actionsRow);
+
+	// Check auth status and update UI
+	checkAndUpdateGoogleStatus();
+
+	loginBtn.addEventListener("click", async () => {
+		try {
+			loginBtn.disabled = true;
+			loginBtn.textContent = "認証中...";
+			await authenticate();
+			currentSettings.google.authenticated = true;
+			await saveSettings(currentSettings);
+			updateGoogleStatusUI(true);
+			showNotification("Google アカウントを連携しました", "info");
+		} catch {
+			showNotification("Google 認証に失敗しました", "error");
+			loginBtn.disabled = false;
+			loginBtn.textContent = "Google アカウントでログイン";
+		}
+	});
+
+	logoutBtn.addEventListener("click", async () => {
+		try {
+			logoutBtn.disabled = true;
+			logoutBtn.textContent = "解除中...";
+			const token = await getAuthToken();
+			if (token) {
+				await revokeToken(token);
+			}
+			currentSettings.google.authenticated = false;
+			await saveSettings(currentSettings);
+			updateGoogleStatusUI(false);
+			showNotification("Google 連携を解除しました", "info");
+		} catch {
+			showNotification("連携解除に失敗しました", "error");
+			logoutBtn.disabled = false;
+			logoutBtn.textContent = "連携解除";
+		}
+	});
+
+	return card;
+}
+
+async function checkAndUpdateGoogleStatus(): Promise<void> {
+	const token = await getAuthToken();
+	const isAuthenticated = token !== null;
+	if (isAuthenticated !== currentSettings.google.authenticated) {
+		currentSettings.google.authenticated = isAuthenticated;
+		await saveSettings(currentSettings);
+	}
+	updateGoogleStatusUI(isAuthenticated);
+}
+
+function updateGoogleStatusUI(authenticated: boolean): void {
+	const statusEl = document.getElementById("google-status");
+	const loginBtn = document.getElementById(
+		"google-login-btn",
+	) as HTMLButtonElement | null;
+	const logoutBtn = document.getElementById(
+		"google-logout-btn",
+	) as HTMLButtonElement | null;
+
+	if (statusEl) {
+		if (authenticated) {
+			statusEl.textContent = "接続済み";
+			statusEl.className = "google-status google-status-connected";
+		} else {
+			statusEl.textContent = "未接続";
+			statusEl.className = "google-status google-status-disconnected";
+		}
+	}
+
+	if (loginBtn) {
+		loginBtn.style.display = authenticated ? "none" : "inline-flex";
+		loginBtn.disabled = false;
+		loginBtn.textContent = "Google アカウントでログイン";
+	}
+
+	if (logoutBtn) {
+		logoutBtn.style.display = authenticated ? "inline-flex" : "none";
+		logoutBtn.disabled = false;
+		logoutBtn.textContent = "連携解除";
+	}
 }
 
 interface RadioItemResult {
@@ -356,29 +477,6 @@ function buildTemplateCard(): HTMLDivElement {
 	preview.className = "template-preview";
 	preview.style.display = "none";
 	card.appendChild(preview);
-
-	return card;
-}
-
-function buildPlaceholderCard(
-	titleText: string,
-	message: string,
-): HTMLDivElement {
-	const card = document.createElement("div");
-	card.className = "card";
-
-	const title = document.createElement("div");
-	title.className = "card-title";
-	title.textContent = titleText;
-	card.appendChild(title);
-
-	const placeholder = document.createElement("div");
-	placeholder.className = "placeholder-content";
-	placeholder.innerHTML = `
-		<span class="placeholder-icon">🔒</span>
-		<span>${message}</span>
-	`;
-	card.appendChild(placeholder);
 
 	return card;
 }

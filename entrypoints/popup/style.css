@@ -391,6 +391,38 @@ body {
 	border-color: #d1d5db;
 }
 
+/* Sheets export button states */
+.export-sheets-btn {
+	font-family: inherit;
+}
+
+.export-sheets-loading {
+	opacity: 0.7;
+	cursor: wait;
+}
+
+.export-sheets-success {
+	background-color: #34a853;
+	color: #fff;
+	border-color: #34a853;
+}
+
+.export-sheets-error {
+	background-color: #fef2f2;
+	color: #ef4444;
+	border-color: #fecaca;
+}
+
+.sheets-link {
+	color: inherit;
+	text-decoration: none;
+	font-size: 11px;
+}
+
+.sheets-link:hover {
+	text-decoration: underline;
+}
+
 .copy-button {
 	display: inline-flex;
 	align-items: center;

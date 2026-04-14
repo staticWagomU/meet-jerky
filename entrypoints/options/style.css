@@ -203,6 +203,96 @@ body {
 	background-color: #2a56c6;
 }
 
+/* Google integration */
+.google-status-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.google-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	padding: 4px 12px;
+	border-radius: 12px;
+}
+
+.google-status-connected {
+	background-color: #ecfdf5;
+	color: #059669;
+}
+
+.google-status-connected::before {
+	content: "\2713";
+	font-weight: 700;
+}
+
+.google-status-disconnected {
+	background-color: #f3f4f6;
+	color: #9ca3af;
+}
+
+.google-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.google-login-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 8px 16px;
+	background-color: #4285f4;
+	color: #ffffff;
+	border: none;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	font-family: inherit;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.google-login-button:hover {
+	background-color: #3367d6;
+}
+
+.google-login-button:disabled {
+	opacity: 0.7;
+	cursor: wait;
+}
+
+.google-logout-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 8px 16px;
+	background-color: #f3f4f6;
+	color: #374151;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	font-family: inherit;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.google-logout-button:hover {
+	background-color: #e5e7eb;
+	border-color: #d1d5db;
+}
+
+.google-logout-button:disabled {
+	opacity: 0.7;
+	cursor: wait;
+}
+
 /* Placeholder section */
 .placeholder-content {
 	display: flex;
