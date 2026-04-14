@@ -35,34 +35,35 @@ const ONBOARDING_KEY = "onboarding-completed";
 
 // --- Message helpers ---
 
+async function sendMsg<T>(
+	type: string,
+	payload?: Record<string, unknown>,
+): Promise<T> {
+	return browser.runtime.sendMessage({
+		type,
+		...(payload && { payload }),
+	}) as Promise<T>;
+}
+
 async function getSessions(): Promise<{ sessions: SessionSummary[] }> {
-	return browser.runtime.sendMessage({ type: "GET_SESSIONS" });
+	return sendMsg("GET_SESSIONS");
 }
 
 async function getTranscript(
 	sessionId: string,
 ): Promise<{ session: MeetingSession }> {
-	return browser.runtime.sendMessage({
-		type: "GET_TRANSCRIPT",
-		payload: { sessionId },
-	});
+	return sendMsg("GET_TRANSCRIPT", { sessionId });
 }
 
 async function deleteSession(sessionId: string): Promise<{ success: boolean }> {
-	return browser.runtime.sendMessage({
-		type: "DELETE_SESSION",
-		payload: { sessionId },
-	});
+	return sendMsg("DELETE_SESSION", { sessionId });
 }
 
 async function updateSessionTitle(
 	sessionId: string,
 	meetingTitle: string,
 ): Promise<{ success: boolean }> {
-	return browser.runtime.sendMessage({
-		type: "UPDATE_SESSION_TITLE",
-		payload: { sessionId, meetingTitle },
-	});
+	return sendMsg("UPDATE_SESSION_TITLE", { sessionId, meetingTitle });
 }
 
 // --- Inline title edit ---
@@ -419,6 +420,10 @@ function renderTranscriptDetail(session: MeetingSession): void {
 			);
 		});
 
+	attachExportHandlers(session);
+}
+
+function attachExportHandlers(session: MeetingSession): void {
 	// Copy button
 	document
 		.getElementById("copy-button")
