@@ -109,6 +109,31 @@ export function formatSessionAsJson(session: MeetingSession): string {
 }
 
 /**
+ * Get the display title for a session: meetingTitle if available, otherwise meetingCode.
+ */
+export function getSessionDisplayTitle(session: {
+	meetingTitle: string;
+	meetingCode: string;
+}): string {
+	return session.meetingTitle || session.meetingCode;
+}
+
+/**
+ * Build an export filename from a session's title/code and start date.
+ * Example: "MyMeeting_2026-04-03.md", "abc-defg-hij_2026-04-03_raw.txt"
+ */
+export function buildExportFilename(
+	session: { meetingTitle: string; meetingCode: string; startTimestamp: string },
+	extension: string,
+	suffix?: string,
+): string {
+	const base = getSessionDisplayTitle(session);
+	const date = session.startTimestamp.split("T")[0];
+	const suffixPart = suffix ? `_${suffix}` : "";
+	return `${base}_${date}${suffixPart}.${extension}`;
+}
+
+/**
  * Format a meeting session as Markdown for export.
  */
 export function formatSessionAsMarkdown(
@@ -119,7 +144,7 @@ export function formatSessionAsMarkdown(
 	const diffed = computeTranscriptDiffs(session.transcript);
 
 	const header =
-		`# ${session.meetingTitle || session.meetingCode}\n\n` +
+		`# ${getSessionDisplayTitle(session)}\n\n` +
 		`- **会議コード**: ${session.meetingCode}\n` +
 		`- **開始**: ${formatDate(session.startTimestamp)}\n` +
 		(session.endTimestamp
