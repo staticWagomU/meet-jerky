@@ -2,6 +2,8 @@
  * Google Sheets API v4 helpers using fetch().
  */
 
+import type { RawCaptionEntry } from "./types";
+
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
 /**
@@ -84,7 +86,7 @@ export async function writeMinutesSheet(
 export async function writeRawLogSheet(
 	token: string,
 	spreadsheetId: string,
-	rawEntries: Array<{ timestamp: string; personName: string; text: string }>,
+	rawEntries: RawCaptionEntry[],
 ): Promise<void> {
 	const header = ["タイムスタンプ", "発言者", "テキスト"];
 	const rows = [
