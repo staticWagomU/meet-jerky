@@ -1,5 +1,10 @@
 import type { ExtensionMessage } from "@/utils/messaging";
 import type { MeetingSession } from "@/utils/types";
+import {
+	idbDeleteSession,
+	idbLoadSession,
+	idbSaveSession,
+} from "@/utils/idb";
 
 // --- Storage helper types ---
 
@@ -23,9 +28,9 @@ async function saveSessionIndex(index: SessionIndexEntry[]): Promise<void> {
 }
 
 async function saveSession(session: MeetingSession): Promise<void> {
-	const storageKey = `session-${session.sessionId}`;
-	await browser.storage.local.set({ [storageKey]: session });
+	await idbSaveSession(session);
 
+	// Keep lightweight index in storage.local for quick popup listing
 	const index = await loadSessionIndex();
 	const entry: SessionIndexEntry = {
 		sessionId: session.sessionId,
@@ -46,14 +51,11 @@ async function saveSession(session: MeetingSession): Promise<void> {
 }
 
 async function loadSession(sessionId: string): Promise<MeetingSession | null> {
-	const storageKey = `session-${sessionId}`;
-	const result = await browser.storage.local.get(storageKey);
-	return (result[storageKey] as MeetingSession) ?? null;
+	return idbLoadSession(sessionId);
 }
 
 async function deleteSessionFromStorage(sessionId: string): Promise<void> {
-	const storageKey = `session-${sessionId}`;
-	await browser.storage.local.remove(storageKey);
+	await idbDeleteSession(sessionId);
 
 	const index = await loadSessionIndex();
 	const filtered = index.filter((e) => e.sessionId !== sessionId);
@@ -131,9 +133,38 @@ async function ensureSessionInBuffer(
 	return session;
 }
 
+// --- Migration from storage.local to IndexedDB ---
+
+async function migrateStorageLocalToIDB(): Promise<void> {
+	const { "idb-migrated": migrated } =
+		await browser.storage.local.get("idb-migrated");
+	if (migrated) return;
+
+	const all = await browser.storage.local.get(null);
+	const sessionKeys = Object.keys(all).filter(
+		(k) => k.startsWith("session-") && k !== "sessions-index",
+	);
+
+	for (const key of sessionKeys) {
+		const session = all[key] as MeetingSession;
+		if (session?.sessionId) {
+			await idbSaveSession(session);
+		}
+	}
+
+	// Remove migrated session data from storage.local
+	if (sessionKeys.length > 0) {
+		await browser.storage.local.remove(sessionKeys);
+	}
+	await browser.storage.local.set({ "idb-migrated": true });
+}
+
 // --- Background entry point ---
 
 export default defineBackground(() => {
+	// Migrate existing data on first startup after update
+	migrateStorageLocalToIDB().catch(() => {});
+
 	// Message handler
 	browser.runtime.onMessage.addListener(
 		(
