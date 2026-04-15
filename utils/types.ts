@@ -39,5 +39,6 @@ export interface UserSettings {
 	ai: {
 		provider: AIProvider;
 		apiKey: string;
+		model: string;
 	};
 }

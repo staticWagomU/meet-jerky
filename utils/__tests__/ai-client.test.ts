@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	DEFAULT_CUSTOM_PROMPT,
+	DEFAULT_MODELS,
 	summarizeTranscript,
 } from "../ai-client";
 
@@ -20,7 +21,7 @@ afterEach(() => {
 describe("summarizeTranscript", () => {
 	it("APIキー未設定時にエラーをスローする", async () => {
 		await expect(
-			summarizeTranscript("openai", "", "test", "test"),
+			summarizeTranscript("openai", "", "test", "test", "gpt-4o-mini"),
 		).rejects.toThrowError("APIキーが設定されていません");
 	});
 
@@ -33,12 +34,28 @@ describe("summarizeTranscript", () => {
 			text: async () => "",
 		});
 
-		await summarizeTranscript("openai", "sk-test", "", "テスト文字起こし");
+		await summarizeTranscript("openai", "sk-test", "", "テスト文字起こし", "gpt-4o-mini");
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 		const [, options] = mockFetch.mock.calls[0];
 		const body = JSON.parse(options.body);
 		expect(body.messages[0].content).toBe(DEFAULT_CUSTOM_PROMPT);
+	});
+
+	it("空のモデル名でDEFAULT_MODELSにフォールバックする", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				choices: [{ message: { content: "要約結果" } }],
+			}),
+			text: async () => "",
+		});
+
+		await summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし", "");
+
+		const [, options] = mockFetch.mock.calls[0];
+		const body = JSON.parse(options.body);
+		expect(body.model).toBe(DEFAULT_MODELS.openai);
 	});
 });
 
@@ -59,6 +76,7 @@ describe("OpenAI provider", () => {
 			"sk-test-key",
 			"カスタムプロンプト",
 			"文字起こしテキスト",
+			"gpt-4o-mini",
 		);
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -97,6 +115,7 @@ describe("OpenAI provider", () => {
 			"sk-test-key",
 			"プロンプト",
 			"文字起こし",
+			"gpt-4o-mini",
 		);
 
 		expect(result).toBe("要約結果テキスト");
@@ -110,7 +129,7 @@ describe("OpenAI provider", () => {
 		});
 
 		await expect(
-			summarizeTranscript("openai", "sk-bad-key", "プロンプト", "文字起こし"),
+			summarizeTranscript("openai", "sk-bad-key", "プロンプト", "文字起こし", "gpt-4o-mini"),
 		).rejects.toThrowError("OpenAI API error (401): Unauthorized");
 	});
 });
@@ -132,6 +151,7 @@ describe("Anthropic provider", () => {
 			"sk-ant-test-key",
 			"カスタムプロンプト",
 			"文字起こしテキスト",
+			"claude-sonnet-4-5-20250514",
 		);
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -175,6 +195,7 @@ describe("Anthropic provider", () => {
 			"sk-ant-test",
 			"プロンプト",
 			"文字起こし",
+			"claude-sonnet-4-5-20250514",
 		);
 
 		expect(result).toBe("Anthropic要約結果");
@@ -193,6 +214,7 @@ describe("Anthropic provider", () => {
 				"sk-ant-bad",
 				"プロンプト",
 				"文字起こし",
+				"claude-sonnet-4-5-20250514",
 			),
 		).rejects.toThrowError("Anthropic API error (429): Rate limited");
 	});
@@ -215,14 +237,15 @@ describe("Gemini provider", () => {
 			"gemini-api-key-123",
 			"カスタムプロンプト",
 			"文字起こしテキスト",
+			"gemini-2.5-flash",
 		);
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 		const [url, options] = mockFetch.mock.calls[0];
 
-		// URLにAPIキーが含まれることを検証
+		// URLにAPIキーとモデル名が含まれることを検証
 		expect(url).toBe(
-			"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=gemini-api-key-123",
+			"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=gemini-api-key-123",
 		);
 
 		// HTTPメソッド検証
@@ -255,6 +278,7 @@ describe("Gemini provider", () => {
 			"gemini-key",
 			"プロンプト",
 			"文字起こし",
+			"gemini-2.5-flash",
 		);
 
 		expect(result).toBe("Gemini要約結果");
@@ -268,7 +292,7 @@ describe("Gemini provider", () => {
 		});
 
 		await expect(
-			summarizeTranscript("gemini", "gemini-bad-key", "プロンプト", "文字起こし"),
+			summarizeTranscript("gemini", "gemini-bad-key", "プロンプト", "文字起こし", "gemini-2.5-flash"),
 		).rejects.toThrowError("Gemini API error (403): Forbidden");
 	});
 });
@@ -280,7 +304,7 @@ describe("エッジケース", () => {
 		mockFetch.mockRejectedValue(new TypeError("Failed to fetch"));
 
 		await expect(
-			summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし"),
+			summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし", "gpt-4o-mini"),
 		).rejects.toThrow();
 	});
 
@@ -293,7 +317,7 @@ describe("エッジケース", () => {
 
 		// 空のchoices配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
-			summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし"),
+			summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし", "gpt-4o-mini"),
 		).rejects.toThrowError("OpenAI: レスポンスが不正です");
 	});
 
@@ -306,7 +330,7 @@ describe("エッジケース", () => {
 
 		// 空のcontent配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
-			summarizeTranscript("anthropic", "sk-ant-test", "プロンプト", "文字起こし"),
+			summarizeTranscript("anthropic", "sk-ant-test", "プロンプト", "文字起こし", "claude-sonnet-4-5-20250514"),
 		).rejects.toThrowError("Anthropic: レスポンスが不正です");
 	});
 
@@ -319,7 +343,7 @@ describe("エッジケース", () => {
 
 		// 空のcandidates配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
-			summarizeTranscript("gemini", "gemini-key", "プロンプト", "文字起こし"),
+			summarizeTranscript("gemini", "gemini-key", "プロンプト", "文字起こし", "gemini-2.5-flash"),
 		).rejects.toThrowError("Gemini: レスポンスが不正です");
 	});
 });

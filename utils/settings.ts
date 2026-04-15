@@ -1,4 +1,4 @@
-import { DEFAULT_CUSTOM_PROMPT } from "./ai-client";
+import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODELS } from "./ai-client";
 import { DEFAULT_MINUTES_TEMPLATE } from "./template";
 import type { UserSettings } from "./types";
 
@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
 	ai: {
 		provider: "anthropic",
 		apiKey: "",
+		model: DEFAULT_MODELS.anthropic,
 	},
 };
 

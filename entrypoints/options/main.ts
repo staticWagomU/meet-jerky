@@ -1,5 +1,5 @@
 import "./style.css";
-import { DEFAULT_CUSTOM_PROMPT } from "@/utils/ai-client";
+import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODELS } from "@/utils/ai-client";
 import { authenticate, getAuthToken, revokeToken } from "@/utils/google-auth";
 import { showNotification } from "@/utils/notification";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
@@ -210,8 +210,10 @@ function buildGoogleCard(): HTMLDivElement {
 			await saveSettings(currentSettings);
 			updateGoogleStatusUI(true);
 			showNotification("Google アカウントを連携しました", "info");
-		} catch {
-			showNotification("Google 認証に失敗しました", "error");
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			console.error("Google OAuth error:", msg);
+			showNotification(`Google 認証に失敗しました: ${msg}`, "error");
 			loginBtn.disabled = false;
 			loginBtn.textContent = "Google アカウントでログイン";
 		}
@@ -229,8 +231,10 @@ function buildGoogleCard(): HTMLDivElement {
 			await saveSettings(currentSettings);
 			updateGoogleStatusUI(false);
 			showNotification("Google 連携を解除しました", "info");
-		} catch {
-			showNotification("連携解除に失敗しました", "error");
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			console.error("Google logout error:", msg);
+			showNotification(`Google 連携の解除に失敗しました: ${msg}`, "error");
 			logoutBtn.disabled = false;
 			logoutBtn.textContent = "連携解除";
 		}
@@ -542,6 +546,11 @@ function buildAICard(): HTMLDivElement {
 		item.radio.addEventListener("change", () => {
 			if (item.radio.checked) {
 				currentSettings.ai.provider = providerValue;
+				currentSettings.ai.model = DEFAULT_MODELS[providerValue];
+				const modelInput = card.querySelector<HTMLInputElement>("#ai-model-input");
+				if (modelInput) {
+					modelInput.value = DEFAULT_MODELS[providerValue];
+				}
 				for (const other of allItems) {
 					other.wrapper.classList.remove("selected");
 				}
@@ -553,7 +562,35 @@ function buildAICard(): HTMLDivElement {
 	providerGroup.appendChild(radioGroup);
 	card.appendChild(providerGroup);
 
-	// Section 2: API Key
+	// Section 2: Model name
+	const modelGroup = document.createElement("div");
+	modelGroup.className = "form-group";
+
+	const modelLabel = document.createElement("div");
+	modelLabel.className = "form-label";
+	modelLabel.textContent = "モデル名";
+	modelGroup.appendChild(modelLabel);
+
+	const modelInput = document.createElement("input");
+	modelInput.type = "text";
+	modelInput.id = "ai-model-input";
+	modelInput.className = "api-key-input";
+	modelInput.placeholder = "例: gemini-2.5-flash, gpt-4o-mini";
+	modelInput.value = currentSettings.ai.model;
+	modelInput.addEventListener("input", () => {
+		currentSettings.ai.model = modelInput.value;
+	});
+	modelGroup.appendChild(modelInput);
+
+	const modelHelp = document.createElement("div");
+	modelHelp.className = "help-text";
+	modelHelp.textContent =
+		"使用するモデル名を指定できます。プロバイダ切替時はデフォルト値に戻ります。";
+	modelGroup.appendChild(modelHelp);
+
+	card.appendChild(modelGroup);
+
+	// Section 3: API Key
 	const apiKeyGroup = document.createElement("div");
 	apiKeyGroup.className = "form-group";
 
@@ -600,7 +637,7 @@ function buildAICard(): HTMLDivElement {
 
 	card.appendChild(apiKeyGroup);
 
-	// Section 3: Custom Prompt
+	// Section 4: Custom Prompt
 	const promptGroup = document.createElement("div");
 	promptGroup.className = "form-group";
 

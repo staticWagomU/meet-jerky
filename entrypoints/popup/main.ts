@@ -384,16 +384,18 @@ function renderTranscriptDetail(session: MeetingSession): void {
 				.join("")}
     </div>
     <div class="toolbar">
-      <div class="toolbar-group">
-        <button class="export-button" id="export-md" title="Markdownでエクスポート">MD</button>
-        <button class="export-button" id="export-json" title="JSONでエクスポート">JSON</button>
-        <button class="export-button" id="export-txt" title="テキストでエクスポート">TXT</button>
-        <button class="export-button" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
-        <button class="export-button" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
-        <button class="export-button export-docs-btn" id="export-docs" title="Google Docsにエクスポート">&#128196; Docs</button>
-        <button class="export-button ai-summary-button" id="ai-summary-btn" title="AIで要約を生成">&#10024; AI要約</button>
+      <div class="toolbar-formats">
+        <button class="format-btn" id="export-md" title="Markdownでエクスポート">MD</button>
+        <button class="format-btn" id="export-json" title="JSONでエクスポート">JSON</button>
+        <button class="format-btn" id="export-txt" title="テキストでエクスポート">TXT</button>
+        <button class="format-btn" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
+        <button class="format-btn" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
+        <button class="format-btn docs-btn" id="export-docs" title="Google Docsにエクスポート">Docs</button>
       </div>
-      <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
+      <div class="toolbar-actions">
+        <button class="action-btn ai-btn" id="ai-summary-btn" title="AIで要約を生成">AI要約</button>
+        <button class="action-btn copy-btn" id="copy-button">全文コピー</button>
+      </div>
     </div>
     <div class="ai-summary-result" style="display:none">
       <div class="ai-summary-header">
@@ -453,7 +455,7 @@ function attachExportHandlers(session: MeetingSession): void {
 					copyBtn.textContent = "コピーしました!";
 					setTimeout(() => {
 						copyBtn.classList.remove("copied");
-						copyBtn.innerHTML = "&#128203; 全文コピー";
+						copyBtn.textContent = "全文コピー";
 					}, 2000);
 				}
 			} catch {
@@ -512,7 +514,7 @@ function attachExportHandlers(session: MeetingSession): void {
 				docsBtn.textContent = "要ログイン";
 				docsBtn.classList.add("export-docs-error");
 				setTimeout(() => {
-					docsBtn.innerHTML = "&#128196; Docs";
+					docsBtn.textContent = "Docs";
 					docsBtn.classList.remove("export-docs-error");
 				}, 2000);
 				if (
@@ -569,7 +571,7 @@ function attachExportHandlers(session: MeetingSession): void {
 				docsBtn.innerHTML = `<a href="${documentUrl}" target="_blank" style="color:white;text-decoration:none;">開く</a>`;
 
 				setTimeout(() => {
-					docsBtn.innerHTML = "&#128196; Docs";
+					docsBtn.textContent = "Docs";
 					docsBtn.classList.remove("export-docs-success");
 				}, 5000);
 			} catch (err) {
@@ -579,7 +581,7 @@ function attachExportHandlers(session: MeetingSession): void {
 				docsBtn.classList.add("export-docs-error");
 				docsBtn.textContent = "エラー";
 				setTimeout(() => {
-					docsBtn.innerHTML = "&#128196; Docs";
+					docsBtn.textContent = "Docs";
 					docsBtn.classList.remove("export-docs-error");
 				}, 3000);
 			}
@@ -602,7 +604,7 @@ function attachExportHandlers(session: MeetingSession): void {
 				return;
 			}
 
-			aiBtn.textContent = "\u23F3 生成中...";
+			aiBtn.textContent = "生成中...";
 			aiBtn.classList.add("loading");
 			aiBtn.disabled = true;
 
@@ -620,6 +622,7 @@ function attachExportHandlers(session: MeetingSession): void {
 					settings.ai.apiKey,
 					settings.template.customPrompt,
 					transcriptText,
+					settings.ai.model,
 				);
 
 				if (resultContainer && contentEl) {
@@ -627,17 +630,17 @@ function attachExportHandlers(session: MeetingSession): void {
 					resultContainer.style.display = "block";
 				}
 
-				aiBtn.textContent = "\u2705 生成完了";
+				aiBtn.textContent = "生成完了";
 				aiBtn.classList.remove("loading");
 				aiBtn.classList.add("success");
 
 				setTimeout(() => {
-					aiBtn.innerHTML = "&#10024; AI要約";
+					aiBtn.textContent = "AI要約";
 					aiBtn.classList.remove("success");
 					aiBtn.disabled = false;
 				}, 2000);
 			} catch (err) {
-				aiBtn.textContent = "\u274C エラー";
+				aiBtn.textContent = "エラー";
 				aiBtn.classList.remove("loading");
 				aiBtn.classList.add("error");
 				console.error("AI summary error:", err);
@@ -648,7 +651,7 @@ function attachExportHandlers(session: MeetingSession): void {
 				}
 
 				setTimeout(() => {
-					aiBtn.innerHTML = "&#10024; AI要約";
+					aiBtn.textContent = "AI要約";
 					aiBtn.classList.remove("error");
 					aiBtn.disabled = false;
 				}, 3000);

@@ -1,5 +1,11 @@
 import type { AIProvider } from "./types";
 
+export const DEFAULT_MODELS: Record<AIProvider, string> = {
+	openai: "gpt-4o-mini",
+	anthropic: "claude-sonnet-4-5-20250514",
+	gemini: "gemini-2.5-flash",
+};
+
 export const DEFAULT_CUSTOM_PROMPT = `以下のミーティングの文字起こしを分析し、次の形式で出力してください：
 
 ## 要約
@@ -16,19 +22,21 @@ export async function summarizeTranscript(
 	apiKey: string,
 	prompt: string,
 	transcriptText: string,
+	model: string,
 ): Promise<string> {
 	if (!apiKey) {
 		throw new Error("APIキーが設定されていません");
 	}
 	const effectivePrompt = prompt || DEFAULT_CUSTOM_PROMPT;
+	const effectiveModel = model || DEFAULT_MODELS[provider];
 
 	switch (provider) {
 		case "openai":
-			return callOpenAI(apiKey, effectivePrompt, transcriptText);
+			return callOpenAI(apiKey, effectivePrompt, transcriptText, effectiveModel);
 		case "anthropic":
-			return callAnthropic(apiKey, effectivePrompt, transcriptText);
+			return callAnthropic(apiKey, effectivePrompt, transcriptText, effectiveModel);
 		case "gemini":
-			return callGemini(apiKey, effectivePrompt, transcriptText);
+			return callGemini(apiKey, effectivePrompt, transcriptText, effectiveModel);
 	}
 }
 
@@ -36,6 +44,7 @@ async function callOpenAI(
 	apiKey: string,
 	prompt: string,
 	transcript: string,
+	model: string,
 ): Promise<string> {
 	const response = await fetch("https://api.openai.com/v1/chat/completions", {
 		method: "POST",
@@ -44,7 +53,7 @@ async function callOpenAI(
 			Authorization: `Bearer ${apiKey}`,
 		},
 		body: JSON.stringify({
-			model: "gpt-4o-mini",
+			model,
 			messages: [
 				{ role: "system", content: prompt },
 				{ role: "user", content: transcript },
@@ -69,6 +78,7 @@ async function callAnthropic(
 	apiKey: string,
 	prompt: string,
 	transcript: string,
+	model: string,
 ): Promise<string> {
 	const response = await fetch("https://api.anthropic.com/v1/messages", {
 		method: "POST",
@@ -79,7 +89,7 @@ async function callAnthropic(
 			"anthropic-dangerous-direct-browser-access": "true",
 		},
 		body: JSON.stringify({
-			model: "claude-sonnet-4-5-20250514",
+			model,
 			max_tokens: 4096,
 			system: prompt,
 			messages: [{ role: "user", content: transcript }],
@@ -103,9 +113,10 @@ async function callGemini(
 	apiKey: string,
 	prompt: string,
 	transcript: string,
+	model: string,
 ): Promise<string> {
 	const response = await fetch(
-		`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+		`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
 		{
 			method: "POST",
 			headers: {
