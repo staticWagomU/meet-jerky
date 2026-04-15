@@ -321,6 +321,130 @@ describe("Gemini provider", () => {
 	});
 });
 
+// --- メモパラメータ ---
+
+describe("メモパラメータ", () => {
+	it("メモが指定された場合、ユーザーメッセージにメモが含まれる（OpenAI）", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				choices: [{ message: { content: "要約結果" } }],
+			}),
+			text: async () => "",
+		});
+
+		await summarizeTranscript(
+			"openai",
+			"sk-test",
+			"プロンプト",
+			"文字起こし",
+			"gpt-4o-mini",
+			"会議の感想メモ",
+		);
+
+		const [, options] = mockFetch.mock.calls[0];
+		const body = JSON.parse(options.body);
+		const userContent = body.messages[1].content;
+		expect(userContent).toContain("文字起こし");
+		expect(userContent).toContain("会議の感想メモ");
+	});
+
+	it("メモが指定された場合、ユーザーメッセージにメモが含まれる（Anthropic）", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				content: [{ text: "要約結果" }],
+			}),
+			text: async () => "",
+		});
+
+		await summarizeTranscript(
+			"anthropic",
+			"sk-ant-test",
+			"プロンプト",
+			"文字起こし",
+			"claude-sonnet-4-5-20250514",
+			"自分のメモ",
+		);
+
+		const [, options] = mockFetch.mock.calls[0];
+		const body = JSON.parse(options.body);
+		const userContent = body.messages[0].content;
+		expect(userContent).toContain("文字起こし");
+		expect(userContent).toContain("自分のメモ");
+	});
+
+	it("メモが指定された場合、ユーザーメッセージにメモが含まれる（Gemini）", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				candidates: [{ content: { parts: [{ text: "要約結果" }] } }],
+			}),
+			text: async () => "",
+		});
+
+		await summarizeTranscript(
+			"gemini",
+			"gemini-key",
+			"プロンプト",
+			"文字起こし",
+			"gemini-2.5-flash",
+			"Gemini用メモ",
+		);
+
+		const [, options] = mockFetch.mock.calls[0];
+		const body = JSON.parse(options.body);
+		const userContent = body.contents[0].parts[0].text;
+		expect(userContent).toContain("文字起こし");
+		expect(userContent).toContain("Gemini用メモ");
+	});
+
+	it("メモが空文字の場合、従来通りトランスクリプトのみ送信される", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				choices: [{ message: { content: "要約結果" } }],
+			}),
+			text: async () => "",
+		});
+
+		await summarizeTranscript(
+			"openai",
+			"sk-test",
+			"プロンプト",
+			"文字起こし",
+			"gpt-4o-mini",
+			"",
+		);
+
+		const [, options] = mockFetch.mock.calls[0];
+		const body = JSON.parse(options.body);
+		expect(body.messages[1].content).toBe("文字起こし");
+	});
+
+	it("メモが未指定の場合、従来通りトランスクリプトのみ送信される", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				choices: [{ message: { content: "要約結果" } }],
+			}),
+			text: async () => "",
+		});
+
+		await summarizeTranscript(
+			"openai",
+			"sk-test",
+			"プロンプト",
+			"文字起こし",
+			"gpt-4o-mini",
+		);
+
+		const [, options] = mockFetch.mock.calls[0];
+		const body = JSON.parse(options.body);
+		expect(body.messages[1].content).toBe("文字起こし");
+	});
+});
+
 // --- エッジケース ---
 
 describe("エッジケース", () => {

@@ -398,6 +398,9 @@ function renderTranscriptDetail(session: MeetingSession): void {
         <button class="action-btn copy-btn" id="copy-button">全文コピー</button>
       </div>
     </div>
+    <div class="ai-memo-section">
+      <textarea class="ai-memo-input" id="ai-memo-input" placeholder="メモを入力（任意）：会議中に気づいたこと、補足情報など" rows="3"></textarea>
+    </div>
     <div class="ai-summary-result" style="display:none">
       <div class="ai-summary-header">
         <span class="ai-summary-title">AI要約</span>
@@ -637,12 +640,17 @@ function attachExportHandlers(session: MeetingSession): void {
 
 			try {
 				const transcriptText = formatTranscriptAsText(session.transcript);
+				const memoInput = document.getElementById(
+					"ai-memo-input",
+				) as HTMLTextAreaElement | null;
+				const memo = memoInput?.value.trim() || "";
 				const result = await summarizeTranscript(
 					settings.ai.provider,
 					settings.ai.apiKey,
 					settings.template.customPrompt,
 					transcriptText,
 					settings.ai.model,
+					memo,
 				);
 
 				if (resultContainer && contentEl) {

@@ -17,41 +17,41 @@ export const DEFAULT_CUSTOM_PROMPT = `以下のミーティングの文字起こ
 ## TODO
 - アクションアイテムを記載（担当者がわかれば併記）`;
 
+export function buildUserContent(
+	transcriptText: string,
+	memo?: string,
+): string {
+	if (!memo) return transcriptText;
+	return `${transcriptText}\n\n---\n\nユーザーメモ:\n${memo}`;
+}
+
 export async function summarizeTranscript(
 	provider: AIProvider,
 	apiKey: string,
 	prompt: string,
 	transcriptText: string,
 	model: string,
+	memo?: string,
 ): Promise<string> {
 	if (!apiKey) {
 		throw new Error("APIキーが設定されていません");
 	}
 	const effectivePrompt = prompt || DEFAULT_CUSTOM_PROMPT;
 	const effectiveModel = model || DEFAULT_MODELS[provider];
+	const userContent = buildUserContent(transcriptText, memo);
 
 	switch (provider) {
 		case "openai":
-			return callOpenAI(
-				apiKey,
-				effectivePrompt,
-				transcriptText,
-				effectiveModel,
-			);
+			return callOpenAI(apiKey, effectivePrompt, userContent, effectiveModel);
 		case "anthropic":
 			return callAnthropic(
 				apiKey,
 				effectivePrompt,
-				transcriptText,
+				userContent,
 				effectiveModel,
 			);
 		case "gemini":
-			return callGemini(
-				apiKey,
-				effectivePrompt,
-				transcriptText,
-				effectiveModel,
-			);
+			return callGemini(apiKey, effectivePrompt, userContent, effectiveModel);
 	}
 }
 

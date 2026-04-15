@@ -583,6 +583,37 @@ body {
 	color: #1e8e3e;
 }
 
+/* ─── AI Memo input ─── */
+
+.ai-memo-section {
+	margin: 8px 16px 0;
+}
+
+.ai-memo-input {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--text-primary);
+	background: #fff;
+	resize: vertical;
+	transition: border-color var(--transition), box-shadow var(--transition);
+	box-sizing: border-box;
+}
+
+.ai-memo-input::placeholder {
+	color: var(--text-tertiary);
+}
+
+.ai-memo-input:focus {
+	outline: none;
+	border-color: var(--blue);
+	box-shadow: 0 0 0 2px var(--blue-tint);
+}
+
 /* ─── AI Summary panel ─── */
 
 .ai-summary-result {
