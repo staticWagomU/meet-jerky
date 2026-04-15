@@ -2,11 +2,9 @@ import "./style.css";
 import { summarizeTranscript } from "@/utils/ai-client";
 import { getAuthToken } from "@/utils/google-auth";
 import {
-	addAndWriteAISummarySheet,
-	createSpreadsheet,
-	writeMinutesSheet,
-	writeRawLogSheet,
-} from "@/utils/google-sheets";
+	createDocument,
+	writeDocumentContent,
+} from "@/utils/google-docs";
 import {
 	buildExportFilename,
 	computeTranscriptDiffs,
@@ -392,7 +390,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
         <button class="export-button" id="export-txt" title="テキストでエクスポート">TXT</button>
         <button class="export-button" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
         <button class="export-button" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
-        <button class="export-button export-sheets-btn" id="export-sheets" title="Google Sheetsにエクスポート">&#128202; Sheets</button>
+        <button class="export-button export-docs-btn" id="export-docs" title="Google Docsにエクスポート">&#128196; Docs</button>
         <button class="export-button ai-summary-button" id="ai-summary-btn" title="AIで要約を生成">&#10024; AI要約</button>
       </div>
       <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
@@ -502,84 +500,88 @@ function attachExportHandlers(session: MeetingSession): void {
 		});
 
 	document
-		.getElementById("export-sheets")
+		.getElementById("export-docs")
 		?.addEventListener("click", async () => {
-			const sheetsBtn = document.getElementById(
-				"export-sheets",
+			const docsBtn = document.getElementById(
+				"export-docs",
 			) as HTMLButtonElement | null;
-			if (!sheetsBtn) return;
+			if (!docsBtn) return;
 
 			const token = await getAuthToken();
 			if (!token) {
-				sheetsBtn.textContent = "要ログイン";
-				sheetsBtn.classList.add("export-sheets-error");
+				docsBtn.textContent = "要ログイン";
+				docsBtn.classList.add("export-docs-error");
 				setTimeout(() => {
-					sheetsBtn.innerHTML = "&#128202; Sheets";
-					sheetsBtn.classList.remove("export-sheets-error");
+					docsBtn.innerHTML = "&#128196; Docs";
+					docsBtn.classList.remove("export-docs-error");
 				}, 2000);
-				browser.runtime.openOptionsPage();
+				if (
+					confirm(
+						"Googleアカウントでのログインが必要です。設定画面を開きますか？",
+					)
+				) {
+					browser.runtime.openOptionsPage();
+				}
 				return;
 			}
 
 			try {
-				sheetsBtn.disabled = true;
-				sheetsBtn.textContent = "作成中...";
-				sheetsBtn.classList.add("export-sheets-loading");
+				docsBtn.disabled = true;
+				docsBtn.textContent = "作成中...";
+				docsBtn.classList.add("export-docs-loading");
 
 				const settings = await loadSettings();
+				const title = getSessionDisplayTitle(session);
+
+				// Generate minutes from template
 				const minutes = generateMinutes(
 					session,
 					settings.template.minutesTemplate,
 				);
-				const title = getSessionDisplayTitle(session);
 
-				const { spreadsheetId, spreadsheetUrl } = await createSpreadsheet(
-					token,
-					title,
-				);
-				await writeMinutesSheet(token, spreadsheetId, minutes);
-				await writeRawLogSheet(
-					token,
-					spreadsheetId,
-					session.rawTranscript ?? [],
-				);
+				// Build document content
+				let content = "";
 
-				// Write AI summary sheet if summary result is available
-				const summaryContentEl = document.querySelector(
-					".ai-summary-content",
-				) as HTMLElement | null;
-				const summaryText = summaryContentEl?.textContent ?? "";
+				// Check if AI summary exists in the popup
+				const summaryText =
+					document.querySelector(".ai-summary-content")?.textContent ?? "";
 				if (summaryText) {
-					await addAndWriteAISummarySheet(token, spreadsheetId, summaryText);
+					content += "AI 要約\n";
+					content += `${"━".repeat(40)}\n\n`;
+					content += `${summaryText}\n\n`;
+					content += `${"━".repeat(40)}\n\n`;
 				}
 
-				sheetsBtn.classList.remove("export-sheets-loading");
-				sheetsBtn.classList.add("export-sheets-success");
-				sheetsBtn.disabled = false;
-				sheetsBtn.innerHTML = "&#10003; 完了";
-				sheetsBtn.addEventListener(
-					"click",
-					(e) => {
-						e.stopPropagation();
-						window.open(spreadsheetUrl, "_blank");
-					},
-					{ once: true },
+				// Add the minutes content (template-expanded transcript)
+				content += minutes;
+
+				// Create document and write content
+				const { documentId, documentUrl } = await createDocument(
+					token,
+					`${title} - 議事録`,
 				);
+				await writeDocumentContent(token, documentId, content);
+
+				// Success state with link
+				docsBtn.classList.remove("export-docs-loading");
+				docsBtn.classList.add("export-docs-success");
+				docsBtn.disabled = false;
+				docsBtn.innerHTML = `<a href="${documentUrl}" target="_blank" style="color:white;text-decoration:none;">開く</a>`;
 
 				setTimeout(() => {
-					if (sheetsBtn.classList.contains("export-sheets-success")) {
-						sheetsBtn.innerHTML = `<a href="${spreadsheetUrl}" target="_blank" class="sheets-link">&#128279; 開く</a>`;
-					}
-				}, 1500);
-			} catch {
-				sheetsBtn.disabled = false;
-				sheetsBtn.classList.remove("export-sheets-loading");
-				sheetsBtn.classList.add("export-sheets-error");
-				sheetsBtn.textContent = "エラー";
+					docsBtn.innerHTML = "&#128196; Docs";
+					docsBtn.classList.remove("export-docs-success");
+				}, 5000);
+			} catch (err) {
+				console.error("Docs export error:", err);
+				docsBtn.disabled = false;
+				docsBtn.classList.remove("export-docs-loading");
+				docsBtn.classList.add("export-docs-error");
+				docsBtn.textContent = "エラー";
 				setTimeout(() => {
-					sheetsBtn.innerHTML = "&#128202; Sheets";
-					sheetsBtn.classList.remove("export-sheets-error");
-				}, 2000);
+					docsBtn.innerHTML = "&#128196; Docs";
+					docsBtn.classList.remove("export-docs-error");
+				}, 3000);
 			}
 		});
 
