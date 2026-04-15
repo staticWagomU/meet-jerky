@@ -149,7 +149,10 @@ export async function getAuthToken(): Promise<string | null> {
 				}
 
 				const expiresAt = result[OAUTH_EXPIRES_AT_KEY];
-				if (typeof expiresAt === "number" && Date.now() + EXPIRATION_BUFFER_MS >= expiresAt) {
+				if (
+					typeof expiresAt === "number" &&
+					Date.now() + EXPIRATION_BUFFER_MS >= expiresAt
+				) {
 					// Token expired or about to expire — clean up and return null
 					chrome.storage.local.remove([OAUTH_TOKEN_KEY, OAUTH_EXPIRES_AT_KEY]);
 					resolve(null);

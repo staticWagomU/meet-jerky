@@ -240,8 +240,9 @@ describe("revokeToken", () => {
 			},
 		);
 
-		const { revokeToken, OAUTH_TOKEN_KEY, OAUTH_EXPIRES_AT_KEY } =
-			await import("../google-auth");
+		const { revokeToken, OAUTH_TOKEN_KEY, OAUTH_EXPIRES_AT_KEY } = await import(
+			"../google-auth"
+		);
 		await revokeToken("test-token");
 
 		expect(mockFetch).toHaveBeenCalledWith(

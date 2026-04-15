@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	DocsApiError,
 	createDocument,
+	DocsApiError,
 	writeDocumentContent,
 } from "../google-docs";
 
