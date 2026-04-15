@@ -1,9 +1,4 @@
-import {
-	COLLAPSE_PROPS,
-	extractAllCaptionData,
-	extractCaptionData,
-	findCaptionAncestors,
-} from "@/utils/caption-dom";
+import { extractAllCaptionData, extractCaptionData } from "@/utils/caption-dom";
 import {
 	determineCaptionAction,
 	extractMeetingCodeFromPath,
@@ -67,8 +62,6 @@ let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
 let bodyObserver: MutationObserver | null = null;
 let captionObserver: MutationObserver | null = null;
 let captionRegion: HTMLElement | null = null;
-let captionAncestors: HTMLElement[] = [];
-let captionHidden = true;
 let lastSeenCaptions: CaptionData[] = [];
 
 // Caption guard
@@ -76,9 +69,8 @@ let captionGuardActive = false;
 let captionGuardBypass = false;
 let captionConfirmDialog: HTMLElement | null = null;
 
-// ─── Toggle Button & Recording Indicator ────────────────────────────────────
+// ─── Recording Indicator ────────────────────────────────────────────────────
 
-let toggleButton: HTMLButtonElement | null = null;
 let indicatorPanel: HTMLElement | null = null;
 let indicatorDot: HTMLElement | null = null;
 let indicatorCount: HTMLElement | null = null;
@@ -198,107 +190,6 @@ function manualCapture(): void {
 		setTimeout(() => {
 			if (manualCaptureButton) manualCaptureButton.textContent = "手動記録";
 		}, 800);
-	}
-}
-
-function createToggleButton(): void {
-	if (toggleButton) return;
-
-	toggleButton = document.createElement("button");
-	toggleButton.textContent = "字幕: 非表示";
-	Object.assign(toggleButton.style, {
-		position: "fixed",
-		bottom: "80px",
-		right: "24px",
-		zIndex: "99999",
-		padding: "8px 16px",
-		borderRadius: "20px",
-		border: "none",
-		backgroundColor: "#1a73e8",
-		color: "#fff",
-		fontSize: "13px",
-		fontFamily: '"Google Sans", Roboto, Arial, sans-serif',
-		cursor: "pointer",
-		boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-		transition: "opacity 0.2s",
-		opacity: "0.85",
-	});
-
-	toggleButton.addEventListener("mouseenter", () => {
-		if (toggleButton) toggleButton.style.opacity = "1";
-	});
-	toggleButton.addEventListener("mouseleave", () => {
-		if (toggleButton) toggleButton.style.opacity = "0.85";
-	});
-
-	toggleButton.addEventListener("click", () => {
-		captionHidden = !captionHidden;
-		applyCaptionVisibility();
-		if (toggleButton) {
-			toggleButton.textContent = captionHidden ? "字幕: 非表示" : "字幕: 表示";
-		}
-	});
-
-	document.body.appendChild(toggleButton);
-}
-
-function removeToggleButton(): void {
-	if (toggleButton) {
-		toggleButton.remove();
-		toggleButton = null;
-	}
-	removeIndicatorPanel();
-}
-
-// ─── Caption Visibility ──────────────────────────────────────────────────────
-
-function applyCaptionVisibility(): void {
-	if (!captionRegion) return;
-
-	if (captionAncestors.length === 0) {
-		captionAncestors = findCaptionAncestors(captionRegion);
-	}
-
-	if (captionHidden) {
-		// IMPORTANT: Do NOT use display:none — Google Meet may stop updating
-		// caption text in the DOM for elements removed from the render tree,
-		// which means MutationObserver never fires.
-		// Instead, move the caption region off-screen so it remains "alive"
-		// and Google Meet continues to push text updates.
-		const rs = captionRegion.style;
-		rs.setProperty("opacity", "0", "important");
-		rs.setProperty("pointer-events", "none", "important");
-		rs.setProperty("position", "fixed", "important");
-		rs.setProperty("top", "-9999px", "important");
-		rs.setProperty("left", "-9999px", "important");
-
-		// Collapse ancestor containers up to (and including) the layout
-		// boundary — the element whose parent is shared with the video area.
-		for (const ancestor of captionAncestors) {
-			const s = ancestor.style;
-			s.setProperty("position", "absolute", "important");
-			for (const prop of COLLAPSE_PROPS) {
-				s.setProperty(prop, "0", "important");
-			}
-			s.setProperty("overflow", "hidden", "important");
-		}
-	} else {
-		for (const prop of [
-			"opacity",
-			"pointer-events",
-			"position",
-			"top",
-			"left",
-		]) {
-			captionRegion.style.removeProperty(prop);
-		}
-		for (const ancestor of captionAncestors) {
-			ancestor.style.removeProperty("position");
-			for (const prop of COLLAPSE_PROPS) {
-				ancestor.style.removeProperty(prop);
-			}
-			ancestor.style.removeProperty("overflow");
-		}
 	}
 }
 
@@ -448,12 +339,6 @@ function onCaptionMutation(): void {
 function observeCaptionRegion(region: HTMLElement): void {
 	captionRegion = region;
 
-	// Reset cached parent containers (they change when region is recreated)
-	captionAncestors = [];
-
-	// Apply initial visibility (hidden by default)
-	applyCaptionVisibility();
-	createToggleButton();
 	createIndicatorPanel();
 
 	// Note: bodyObserver is NOT disconnected here — it continues watching
@@ -502,7 +387,6 @@ function startBodyObserver(): void {
 				captionObserver = null;
 			}
 			captionRegion = null;
-			captionAncestors = [];
 			updateIndicator();
 		}
 
@@ -795,11 +679,9 @@ function suspendSession(): void {
 	}
 
 	captionRegion = null;
-	captionAncestors = [];
 	currentBlock = null;
 	lastSeenCaptions = [];
 
-	removeToggleButton();
 	removeIndicatorPanel();
 
 	document.removeEventListener("visibilitychange", onVisibilityChange);

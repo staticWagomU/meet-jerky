@@ -214,6 +214,47 @@ body {
 	vertical-align: middle;
 }
 
+/* ─── Recording badge ─── */
+
+.recording-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 1px 8px 1px 6px;
+	background-color: var(--green-tint);
+	color: #1e8e3e;
+	border-radius: var(--radius-pill);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.recording-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background-color: var(--green);
+	animation: recording-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes recording-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.3;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.recording-dot {
+		animation: none;
+	}
+}
+
 .delete-button {
 	background: none;
 	border: 1px solid transparent;
@@ -540,8 +581,13 @@ body {
 }
 
 @keyframes pulse-loading {
-	0%, 100% { opacity: 0.7; }
-	50% { opacity: 0.4; }
+	0%,
+	100% {
+		opacity: 0.7;
+	}
+	50% {
+		opacity: 0.4;
+	}
 }
 
 .export-docs-success {
