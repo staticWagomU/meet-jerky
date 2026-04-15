@@ -109,7 +109,9 @@ body {
 	border-radius: 50%;
 	line-height: 1;
 	flex-shrink: 0;
-	transition: background-color var(--transition), color var(--transition);
+	transition:
+		background-color var(--transition),
+		color var(--transition);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -551,6 +553,8 @@ body {
 .ai-btn.loading {
 	opacity: 0.6;
 	cursor: wait;
+	padding: 8px 12px;
+	flex: 1;
 }
 
 .ai-btn.success {
@@ -783,7 +787,9 @@ body {
 	font-weight: 600;
 	font-family: inherit;
 	cursor: pointer;
-	transition: background-color var(--transition), box-shadow var(--transition);
+	transition:
+		background-color var(--transition),
+		box-shadow var(--transition);
 	margin-top: auto;
 }
 
