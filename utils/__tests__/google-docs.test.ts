@@ -1,5 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createDocument, writeDocumentContent } from "../google-docs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	DocsApiError,
+	createDocument,
+	writeDocumentContent,
+} from "../google-docs";
 
 describe("google-docs", () => {
 	const mockFetch = vi.fn();
@@ -40,16 +44,39 @@ describe("google-docs", () => {
 			);
 		});
 
-		it("APIエラー時に適切なエラーをスローする", async () => {
+		it("APIエラー時にDocsApiErrorをスローしstatusプロパティを持つ", async () => {
 			mockFetch.mockResolvedValue({
 				ok: false,
 				status: 403,
 				text: async () => "Forbidden",
 			});
 
-			await expect(createDocument("token", "title")).rejects.toThrow(
-				"Docs API error (403): Forbidden",
-			);
+			try {
+				await createDocument("token", "title");
+				expect.fail("Should have thrown");
+			} catch (err) {
+				expect(err).toBeInstanceOf(DocsApiError);
+				expect((err as DocsApiError).status).toBe(403);
+				expect((err as DocsApiError).message).toBe(
+					"Docs API error (403): Forbidden",
+				);
+			}
+		});
+
+		it("401エラー時にDocsApiErrorのstatusが401になる", async () => {
+			mockFetch.mockResolvedValue({
+				ok: false,
+				status: 401,
+				text: async () => "Unauthorized",
+			});
+
+			try {
+				await createDocument("expired-token", "title");
+				expect.fail("Should have thrown");
+			} catch (err) {
+				expect(err).toBeInstanceOf(DocsApiError);
+				expect((err as DocsApiError).status).toBe(401);
+			}
 		});
 	});
 
@@ -81,16 +108,20 @@ describe("google-docs", () => {
 			);
 		});
 
-		it("APIエラー時に適切なエラーをスローする", async () => {
+		it("APIエラー時にDocsApiErrorをスローする", async () => {
 			mockFetch.mockResolvedValue({
 				ok: false,
 				status: 500,
 				text: async () => "Internal Server Error",
 			});
 
-			await expect(
-				writeDocumentContent("token", "doc-123", "content"),
-			).rejects.toThrow("Docs API error (500): Internal Server Error");
+			try {
+				await writeDocumentContent("token", "doc-123", "content");
+				expect.fail("Should have thrown");
+			} catch (err) {
+				expect(err).toBeInstanceOf(DocsApiError);
+				expect((err as DocsApiError).status).toBe(500);
+			}
 		});
 
 		it("日本語コンテンツを正しく送信する", async () => {

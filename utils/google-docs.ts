@@ -5,6 +5,19 @@
 const DOCS_API_BASE = "https://docs.googleapis.com/v1/documents";
 
 /**
+ * Custom error class for Docs API errors, exposing the HTTP status code.
+ */
+export class DocsApiError extends Error {
+	readonly status: number;
+
+	constructor(status: number, body: string) {
+		super(`Docs API error (${status}): ${body}`);
+		this.name = "DocsApiError";
+		this.status = status;
+	}
+}
+
+/**
  * Helper for authorized fetch against the Docs API.
  * Throws on non-OK responses with the error message from the API.
  */
@@ -23,7 +36,7 @@ async function docsApiFetch(
 	});
 	if (!res.ok) {
 		const body = await res.text();
-		throw new Error(`Docs API error (${res.status}): ${body}`);
+		throw new DocsApiError(res.status, body);
 	}
 	return res;
 }

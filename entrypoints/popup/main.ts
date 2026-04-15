@@ -1,7 +1,8 @@
 import "./style.css";
 import { summarizeTranscript } from "@/utils/ai-client";
-import { getAuthToken } from "@/utils/google-auth";
+import { authenticate, getAuthToken } from "@/utils/google-auth";
 import {
+	DocsApiError,
 	createDocument,
 	writeDocumentContent,
 } from "@/utils/google-docs";
@@ -509,22 +510,27 @@ function attachExportHandlers(session: MeetingSession): void {
 			) as HTMLButtonElement | null;
 			if (!docsBtn) return;
 
-			const token = await getAuthToken();
+			let token = await getAuthToken();
 			if (!token) {
-				docsBtn.textContent = "要ログイン";
-				docsBtn.classList.add("export-docs-error");
-				setTimeout(() => {
-					docsBtn.textContent = "Docs";
-					docsBtn.classList.remove("export-docs-error");
-				}, 2000);
-				if (
-					confirm(
-						"Googleアカウントでのログインが必要です。設定画面を開きますか？",
-					)
-				) {
-					browser.runtime.openOptionsPage();
+				// Token missing or expired — try to re-authenticate inline
+				try {
+					token = await authenticate();
+				} catch {
+					docsBtn.textContent = "要ログイン";
+					docsBtn.classList.add("export-docs-error");
+					setTimeout(() => {
+						docsBtn.textContent = "Docs";
+						docsBtn.classList.remove("export-docs-error");
+					}, 2000);
+					if (
+						confirm(
+							"Googleアカウントでのログインが必要です。設定画面を開きますか？",
+						)
+					) {
+						browser.runtime.openOptionsPage();
+					}
+					return;
 				}
-				return;
 			}
 
 			try {
@@ -557,12 +563,28 @@ function attachExportHandlers(session: MeetingSession): void {
 				// Add the minutes content (template-expanded transcript)
 				content += minutes;
 
-				// Create document and write content
-				const { documentId, documentUrl } = await createDocument(
-					token,
-					`${title} - 議事録`,
-				);
-				await writeDocumentContent(token, documentId, content);
+				// Create document and write content — retry once on 401
+				const exportToDocs = async (authToken: string) => {
+					const { documentId, documentUrl } = await createDocument(
+						authToken,
+						`${title} - 議事録`,
+					);
+					await writeDocumentContent(authToken, documentId, content);
+					return documentUrl;
+				};
+
+				let documentUrl: string;
+				try {
+					documentUrl = await exportToDocs(token);
+				} catch (err) {
+					if (err instanceof DocsApiError && err.status === 401) {
+						// Token was revoked server-side — re-authenticate and retry once
+						token = await authenticate();
+						documentUrl = await exportToDocs(token);
+					} else {
+						throw err;
+					}
+				}
 
 				// Success state with link
 				docsBtn.classList.remove("export-docs-loading");
@@ -596,9 +618,7 @@ function attachExportHandlers(session: MeetingSession): void {
 			const settings = await loadSettings();
 
 			if (!settings.ai.apiKey) {
-				if (
-					confirm("APIキーが設定されていません。設定画面を開きますか？")
-				) {
+				if (confirm("APIキーが設定されていません。設定画面を開きますか？")) {
 					browser.runtime.openOptionsPage();
 				}
 				return;

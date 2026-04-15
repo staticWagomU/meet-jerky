@@ -27,20 +27,20 @@ declare namespace chrome {
 				keys: string | string[],
 				callback: (result: Record<string, unknown>) => void,
 			): void;
-			function set(
-				items: Record<string, unknown>,
-				callback?: () => void,
-			): void;
-			function remove(
-				keys: string | string[],
-				callback?: () => void,
-			): void;
+			function set(items: Record<string, unknown>, callback?: () => void): void;
+			function remove(keys: string | string[], callback?: () => void): void;
 		}
 	}
 }
 
 /** Storage key used to persist the OAuth token in chrome.storage.local. */
 export const OAUTH_TOKEN_KEY = "google-oauth-token";
+
+/** Storage key used to persist the token expiration timestamp. */
+export const OAUTH_EXPIRES_AT_KEY = "google-oauth-token-expires-at";
+
+/** Buffer time (ms) before actual expiration to consider token expired. */
+const EXPIRATION_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Get an OAuth token interactively (shows login UI if needed).
@@ -80,27 +80,33 @@ export async function authenticate(): Promise<string> {
 				const url = new URL(responseUrl);
 				const hashParams = new URLSearchParams(url.hash.substring(1));
 				const accessToken = hashParams.get("access_token");
+				const expiresIn = hashParams.get("expires_in");
 
 				if (!accessToken) {
 					reject(new Error("アクセストークンを取得できませんでした"));
 					return;
 				}
 
-				chrome.storage.local.set(
-					{ [OAUTH_TOKEN_KEY]: accessToken },
-					() => {
-						if (chrome.runtime.lastError) {
-							reject(
-								new Error(
-									chrome.runtime.lastError?.message ??
-										"トークンの保存に失敗しました",
-								),
-							);
-							return;
-						}
-						resolve(accessToken);
-					},
-				);
+				const storageItems: Record<string, unknown> = {
+					[OAUTH_TOKEN_KEY]: accessToken,
+				};
+				if (expiresIn) {
+					storageItems[OAUTH_EXPIRES_AT_KEY] =
+						Date.now() + Number(expiresIn) * 1000;
+				}
+
+				chrome.storage.local.set(storageItems, () => {
+					if (chrome.runtime.lastError) {
+						reject(
+							new Error(
+								chrome.runtime.lastError?.message ??
+									"トークンの保存に失敗しました",
+							),
+						);
+						return;
+					}
+					resolve(accessToken);
+				});
 			},
 		);
 	});
@@ -110,17 +116,14 @@ export async function authenticate(): Promise<string> {
  * Remove stored token and revoke it on Google's side.
  */
 export async function revokeToken(token: string): Promise<void> {
-	await fetch(
-		`https://accounts.google.com/o/oauth2/revoke?token=${token}`,
-	);
+	await fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`);
 
 	return new Promise<void>((resolve, reject) => {
-		chrome.storage.local.remove(OAUTH_TOKEN_KEY, () => {
+		chrome.storage.local.remove([OAUTH_TOKEN_KEY, OAUTH_EXPIRES_AT_KEY], () => {
 			if (chrome.runtime.lastError) {
 				reject(
 					new Error(
-						chrome.runtime.lastError?.message ??
-							"トークンの削除に失敗しました",
+						chrome.runtime.lastError?.message ?? "トークンの削除に失敗しました",
 					),
 				);
 				return;
@@ -136,13 +139,25 @@ export async function revokeToken(token: string): Promise<void> {
  */
 export async function getAuthToken(): Promise<string | null> {
 	return new Promise<string | null>((resolve) => {
-		chrome.storage.local.get(OAUTH_TOKEN_KEY, (result) => {
-			const token = result[OAUTH_TOKEN_KEY];
-			if (typeof token === "string" && token) {
+		chrome.storage.local.get(
+			[OAUTH_TOKEN_KEY, OAUTH_EXPIRES_AT_KEY],
+			(result) => {
+				const token = result[OAUTH_TOKEN_KEY];
+				if (typeof token !== "string" || !token) {
+					resolve(null);
+					return;
+				}
+
+				const expiresAt = result[OAUTH_EXPIRES_AT_KEY];
+				if (typeof expiresAt === "number" && Date.now() + EXPIRATION_BUFFER_MS >= expiresAt) {
+					// Token expired or about to expire — clean up and return null
+					chrome.storage.local.remove([OAUTH_TOKEN_KEY, OAUTH_EXPIRES_AT_KEY]);
+					resolve(null);
+					return;
+				}
+
 				resolve(token);
-			} else {
-				resolve(null);
-			}
-		});
+			},
+		);
 	});
 }
