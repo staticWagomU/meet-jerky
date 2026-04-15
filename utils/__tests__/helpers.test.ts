@@ -9,6 +9,7 @@ import {
 	formatSessionAsMarkdown,
 	formatTranscriptAsText,
 	isSystemMessage,
+	trimAccumulatedPrefix,
 } from "../helpers";
 
 describe("extractMeetingCodeFromPath", () => {
@@ -288,7 +289,7 @@ describe("computeTranscriptDiffs", () => {
 		expect(result[0].transcriptText).toBe("Hello");
 	});
 
-	it("strips accumulated prefix for same speaker consecutive entries", () => {
+	it("absorbs prefix-chain entries, keeping only the longest version", () => {
 		const blocks = [
 			{
 				personName: "Alice",
@@ -309,9 +310,11 @@ describe("computeTranscriptDiffs", () => {
 			},
 		];
 		const result = computeTranscriptDiffs(blocks);
-		expect(result[0].transcriptText).toBe("いやー、まだ消えてないなぁ。");
-		expect(result[1].transcriptText).toBe("うまくいってない気がするなぁ。");
-		expect(result[2].transcriptText).toBe("まだ消えてないね。");
+		// All shorter entries are absorbed by the longest accumulated version
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toBe(
+			"いやー、まだ消えてないなぁ。 うまくいってない気がするなぁ。 まだ消えてないね。",
+		);
 	});
 
 	it("does not strip when speaker changes", () => {
@@ -348,7 +351,7 @@ describe("computeTranscriptDiffs", () => {
 		expect(result[1].transcriptText).toBe("Completely different.");
 	});
 
-	it("keeps original text when diff would be empty", () => {
+	it("removes exact duplicate same-speaker entries (absorption)", () => {
 		const blocks = [
 			{
 				personName: "Alice",
@@ -362,7 +365,8 @@ describe("computeTranscriptDiffs", () => {
 			},
 		];
 		const result = computeTranscriptDiffs(blocks);
-		expect(result[1].transcriptText).toBe("Hello");
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toBe("Hello");
 	});
 
 	it("returns empty array for empty input", () => {
@@ -432,5 +436,197 @@ describe("extractParticipants", () => {
 			},
 		];
 		expect(extractParticipants(blocks)).toEqual(["Alice"]);
+	});
+});
+
+// ─── computeTranscriptDiffs: 重複除去強化テスト ─────────────────────────────
+
+describe("computeTranscriptDiffs — absorption", () => {
+	const t = "2026-04-03T14:30:00Z";
+
+	it("removes exact duplicate consecutive entries for same speaker", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "Hello world" },
+			{ personName: "A", timestamp: t, transcriptText: "Hello world" },
+			{ personName: "A", timestamp: t, transcriptText: "Hello world" },
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toBe("Hello world");
+	});
+
+	it("removes entries whose text is a substring of a later same-speaker entry", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "先行状況としては？" },
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "返答待ちが今のところ3名います。",
+			},
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText:
+					"先行状況としては？ 返答待ちが今のところ3名います。 引き続きやっていきます。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		// Short fragments absorbed by the accumulated version
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toBe(
+			"先行状況としては？ 返答待ちが今のところ3名います。 引き続きやっていきます。",
+		);
+	});
+
+	it("removes entries absorbed by LCP (speech recognition refined ending)", () => {
+		// Speech recognition changes "です。" to "ですね。" in a later version
+		const blocks = [
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "大阪のAWSとかコンテナの構築経験豊富な方です。",
+			},
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText:
+					"大阪のAWSとかコンテナの構築経験豊富な方ですね。昨日オファーを出しました。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toBe(
+			"大阪のAWSとかコンテナの構築経験豊富な方ですね。昨日オファーを出しました。",
+		);
+	});
+
+	it("handles real-world pattern: fragments + accumulated versions", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "画面注意します。" },
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "早速最近教えてもらったノートブック。",
+			},
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText:
+					"画面注意します。 早速最近教えてもらったノートブックめっちゃ対応してます。",
+			},
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText:
+					"画面注意します。 早速最近教えてもらったノートブックめっちゃ対応してます。 ありがとうございます。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		// All shorter entries are absorbed; only longest remains
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toContain("ありがとうございます。");
+	});
+
+	it("does not absorb across speaker boundaries", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "Hello" },
+			{ personName: "B", timestamp: t, transcriptText: "Hello world" },
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(2);
+		expect(result[0].transcriptText).toBe("Hello");
+		expect(result[1].transcriptText).toBe("Hello world");
+	});
+
+	it("does not absorb across non-consecutive same-speaker groups", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "Hello" },
+			{ personName: "B", timestamp: t, transcriptText: "Interjection" },
+			{ personName: "A", timestamp: t, transcriptText: "Hello world" },
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(3);
+		expect(result[0].transcriptText).toBe("Hello");
+		expect(result[2].transcriptText).toBe("Hello world");
+	});
+
+	it("keeps entries that are genuinely different content from same speaker", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "最初の話題。" },
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "全く別の話題について。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(2);
+	});
+
+	it("combines absorption with prefix diff for remaining entries", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "Hello" },
+			{ personName: "A", timestamp: t, transcriptText: "Hello world" },
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "Hello world and more",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		// [0] absorbed by [1] (prefix), [1] absorbed by [2] (prefix)
+		// Only [2] remains
+		expect(result).toHaveLength(1);
+		expect(result[0].transcriptText).toBe("Hello world and more");
+	});
+});
+
+// ─── trimAccumulatedPrefix テスト ────────────────────────────────────────────
+
+describe("trimAccumulatedPrefix", () => {
+	it("returns original text with skip=false when no lastDomText", () => {
+		const result = trimAccumulatedPrefix("Hello world", undefined);
+		expect(result).toEqual({ text: "Hello world", skip: false });
+	});
+
+	it("returns skip=true for exact match", () => {
+		const result = trimAccumulatedPrefix("Hello world", "Hello world");
+		expect(result).toEqual({ text: "Hello world", skip: true });
+	});
+
+	it("strips prefix and returns only new portion", () => {
+		const result = trimAccumulatedPrefix(
+			"Hello world more text",
+			"Hello world",
+		);
+		expect(result).toEqual({ text: "more text", skip: false });
+	});
+
+	it("returns skip=true when new text is prefix with only whitespace diff", () => {
+		const result = trimAccumulatedPrefix("Hello world ", "Hello world");
+		expect(result).toEqual({ text: "Hello world ", skip: true });
+	});
+
+	it("passes through unrelated text unchanged", () => {
+		const result = trimAccumulatedPrefix("Goodbye", "Hello world");
+		expect(result).toEqual({ text: "Goodbye", skip: false });
+	});
+
+	it("handles Japanese text correctly", () => {
+		const result = trimAccumulatedPrefix(
+			"先行状況としては？ 返答待ちです。",
+			"先行状況としては？",
+		);
+		expect(result).toEqual({ text: "返答待ちです。", skip: false });
+	});
+
+	it("strips prefix across long accumulated text", () => {
+		const committed = "これは長い文章の最初の部分です。";
+		const full = `${committed} そして続きがここにあります。`;
+		const result = trimAccumulatedPrefix(full, committed);
+		expect(result).toEqual({
+			text: "そして続きがここにあります。",
+			skip: false,
+		});
 	});
 });

@@ -3,6 +3,7 @@ import {
 	determineCaptionAction,
 	extractMeetingCodeFromPath,
 	isSystemMessage,
+	trimAccumulatedPrefix,
 } from "@/utils/helpers";
 import type {
 	MeetingEndedMessage,
@@ -63,6 +64,10 @@ let bodyObserver: MutationObserver | null = null;
 let captionObserver: MutationObserver | null = null;
 let captionRegion: HTMLElement | null = null;
 let lastSeenCaptions: CaptionData[] = [];
+
+// Accumulated text tracking — stores the last observed full DOM text per speaker
+// to prevent re-recording already-committed content after idle timer commits.
+let lastDomTextBySpeaker: Map<string, string> = new Map();
 
 // Caption guard
 let captionGuardActive = false;
@@ -311,7 +316,27 @@ function onCaptionMutation(): void {
 		});
 		totalRawCount++;
 
-		const result = determineCaptionAction(currentBlock, data);
+		// Deduplicate against already-committed content for this speaker.
+		// When the idle timer commits a block and Google Meet re-renders
+		// the accumulated DOM text, we strip the already-committed prefix
+		// so only new content is recorded.
+		let dataToProcess: CaptionData = data;
+		const isNewSpeakerBlock =
+			currentBlock === null || currentBlock.personName !== data.personName;
+		if (isNewSpeakerBlock) {
+			const trimResult = trimAccumulatedPrefix(
+				data.text,
+				lastDomTextBySpeaker.get(data.personName),
+			);
+			if (trimResult.skip) {
+				lastDomTextBySpeaker.set(data.personName, data.text);
+				continue;
+			}
+			dataToProcess = { personName: data.personName, text: trimResult.text };
+		}
+		lastDomTextBySpeaker.set(data.personName, data.text);
+
+		const result = determineCaptionAction(currentBlock, dataToProcess);
 
 		switch (result.action) {
 			case "start":
@@ -681,6 +706,7 @@ function suspendSession(): void {
 	captionRegion = null;
 	currentBlock = null;
 	lastSeenCaptions = [];
+	lastDomTextBySpeaker = new Map();
 
 	removeIndicatorPanel();
 
