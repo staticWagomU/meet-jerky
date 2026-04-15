@@ -2,8 +2,8 @@ import "./style.css";
 import { summarizeTranscript } from "@/utils/ai-client";
 import { authenticate, getAuthToken } from "@/utils/google-auth";
 import {
-	DocsApiError,
 	createDocument,
+	DocsApiError,
 	writeDocumentContent,
 } from "@/utils/google-docs";
 import {
@@ -37,8 +37,6 @@ if (!appElement) throw new Error("#app element not found");
 const app = appElement;
 
 const ONBOARDING_KEY = "onboarding-completed";
-
-// State
 
 // --- Message helpers ---
 
@@ -163,7 +161,28 @@ function downloadFile(
 	URL.revokeObjectURL(url);
 }
 
-// --- Formatting helpers ---
+// --- Temporary button state helper ---
+
+function showTemporaryButtonState(
+	btn: HTMLButtonElement,
+	text: string,
+	className: string,
+	duration: number,
+	originalText: string,
+	onRevert?: () => void,
+): void {
+	if (className) {
+		btn.classList.add(className);
+	}
+	btn.textContent = text;
+	setTimeout(() => {
+		if (className) {
+			btn.classList.remove(className);
+		}
+		btn.textContent = originalText;
+		onRevert?.();
+	}, duration);
+}
 
 // --- Onboarding ---
 
@@ -226,15 +245,10 @@ function renderSessionList(sessions: SessionSummary[]): void {
         <div class="empty-state-text">保存されたセッションはありません</div>
       </div>
     `;
-		document.getElementById("settings-link")?.addEventListener("click", () => {
-			browser.runtime.openOptionsPage();
-		});
-		return;
-	}
-
-	const listItems = sessions
-		.map(
-			(session) => `
+	} else {
+		const listItems = sessions
+			.map(
+				(session) => `
     <div class="session-item" data-session-id="${escapeHtml(session.sessionId)}">
       <div class="session-info">
         <div class="session-title-row">
@@ -249,78 +263,87 @@ function renderSessionList(sessions: SessionSummary[]): void {
       <button class="delete-button" data-delete-id="${escapeHtml(session.sessionId)}" title="削除">削除</button>
     </div>
   `,
-		)
-		.join("");
+			)
+			.join("");
 
-	app.innerHTML = `
+		app.innerHTML = `
     ${header}
     <div class="session-list">${listItems}</div>
   `;
 
-	// Attach event listeners
-	document.querySelectorAll(".session-item").forEach((item) => {
-		item.addEventListener("click", (e) => {
-			const target = e.target as HTMLElement;
-			// Don't navigate when clicking the delete or edit button
-			if (
-				target.closest(".delete-button") ||
-				target.closest(".edit-title-button")
-			)
-				return;
+		// Attach event listeners
+		document.querySelectorAll(".session-item").forEach((item) => {
+			item.addEventListener("click", (e) => {
+				const target = e.target as HTMLElement;
+				// Don't navigate when clicking the delete or edit button
+				if (
+					target.closest(".delete-button") ||
+					target.closest(".edit-title-button")
+				)
+					return;
 
-			const sessionId = (item as HTMLElement).dataset.sessionId;
-			if (sessionId) {
-				navigateToDetail(sessionId);
-			}
+				const sessionId = (item as HTMLElement).dataset.sessionId;
+				if (sessionId) {
+					navigateToDetail(sessionId);
+				}
+			});
 		});
-	});
 
-	document.querySelectorAll(".edit-title-button").forEach((btn) => {
-		btn.addEventListener("click", (e) => {
-			e.stopPropagation();
-			const sessionId = (btn as HTMLElement).dataset.editId;
-			if (!sessionId) return;
+		document.querySelectorAll(".edit-title-button").forEach((btn) => {
+			btn.addEventListener("click", (e) => {
+				e.stopPropagation();
+				const sessionId = (btn as HTMLElement).dataset.editId;
+				if (!sessionId) return;
 
-			const titleRow = btn.closest(".session-title-row");
-			if (!titleRow) return;
+				const titleRow = btn.closest(".session-title-row");
+				if (!titleRow) return;
 
-			const titleSpan = titleRow.querySelector(".session-title") as HTMLElement;
-			if (!titleSpan) return;
+				const titleSpan = titleRow.querySelector(
+					".session-title",
+				) as HTMLElement;
+				if (!titleSpan) return;
 
-			const currentTitle = titleSpan.textContent ?? "";
-			startInlineEdit(
-				titleRow as HTMLElement,
-				currentTitle,
-				async (newTitle) => {
-					await updateSessionTitle(sessionId, newTitle);
-					const response = await getSessions();
-					renderSessionList(response.sessions);
-				},
-			);
+				const currentTitle = titleSpan.textContent ?? "";
+				startInlineEdit(
+					titleRow as HTMLElement,
+					currentTitle,
+					async (newTitle) => {
+						await updateSessionTitle(sessionId, newTitle);
+						const response = await getSessions();
+						renderSessionList(response.sessions);
+					},
+				);
+			});
 		});
-	});
 
-	document.querySelectorAll(".delete-button").forEach((btn) => {
-		btn.addEventListener("click", async (e) => {
-			e.stopPropagation();
-			const sessionId = (btn as HTMLElement).dataset.deleteId;
-			if (!sessionId) return;
+		document.querySelectorAll(".delete-button").forEach((btn) => {
+			btn.addEventListener("click", async (e) => {
+				e.stopPropagation();
+				const sessionId = (btn as HTMLElement).dataset.deleteId;
+				if (!sessionId) return;
 
-			const confirmed = confirm("このセッションを削除しますか？");
-			if (!confirmed) return;
+				const confirmed = confirm("このセッションを削除しますか？");
+				if (!confirmed) return;
 
-			await deleteSession(sessionId);
-			const response = await getSessions();
-			renderSessionList(response.sessions);
+				await deleteSession(sessionId);
+				const response = await getSessions();
+				renderSessionList(response.sessions);
+			});
 		});
-	});
+	}
 
 	document.getElementById("settings-link")?.addEventListener("click", () => {
 		browser.runtime.openOptionsPage();
 	});
 }
 
-function renderTranscriptDetail(session: MeetingSession): void {
+// --- Transcript detail sub-functions ---
+
+function buildTranscriptHtml(session: MeetingSession): {
+	html: string;
+	participants: string[];
+	speakerColors: Map<string, number>;
+} {
 	// Compute diffs to show only new text for same-speaker consecutive entries
 	const diffedTranscript = computeTranscriptDiffs(session.transcript);
 
@@ -342,7 +365,7 @@ function renderTranscriptDetail(session: MeetingSession): void {
 		}
 	}
 
-	const transcriptHtml = groups
+	const html = groups
 		.map((group) => {
 			const colorClass = `speaker-color-${speakerColors.get(group.speaker) ?? 0}`;
 			const entriesHtml = group.entries
@@ -365,7 +388,16 @@ function renderTranscriptDetail(session: MeetingSession): void {
 		})
 		.join("");
 
-	app.innerHTML = `
+	return { html, participants, speakerColors };
+}
+
+function buildDetailPageHtml(
+	session: MeetingSession,
+	transcriptHtml: string,
+	participants: string[],
+	speakerColors: Map<string, number>,
+): string {
+	return `
     <div class="detail-header">
       <button class="back-button" id="back-button">&larr; セッション一覧</button>
       <div class="detail-title-row">
@@ -411,6 +443,21 @@ function renderTranscriptDetail(session: MeetingSession): void {
     </div>
     <div class="transcript-list">${transcriptHtml}</div>
   `;
+}
+
+function renderTranscriptDetail(session: MeetingSession): void {
+	const {
+		html: transcriptHtml,
+		participants,
+		speakerColors,
+	} = buildTranscriptHtml(session);
+
+	app.innerHTML = buildDetailPageHtml(
+		session,
+		transcriptHtml,
+		participants,
+		speakerColors,
+	);
 
 	// Back button
 	document
@@ -445,6 +492,114 @@ function renderTranscriptDetail(session: MeetingSession): void {
 	attachExportHandlers(session);
 }
 
+// --- Google Docs export handler ---
+
+async function handleDocsExport(session: MeetingSession): Promise<void> {
+	const docsBtn = document.getElementById(
+		"export-docs",
+	) as HTMLButtonElement | null;
+	if (!docsBtn) return;
+
+	let token = await getAuthToken();
+	if (!token) {
+		// Token missing or expired — try to re-authenticate inline
+		try {
+			token = await authenticate();
+		} catch {
+			showTemporaryButtonState(
+				docsBtn,
+				"要ログイン",
+				"export-docs-error",
+				2000,
+				"Docs",
+			);
+			if (
+				confirm(
+					"Googleアカウントでのログインが必要です。設定画面を開きますか？",
+				)
+			) {
+				browser.runtime.openOptionsPage();
+			}
+			return;
+		}
+	}
+
+	try {
+		docsBtn.disabled = true;
+		docsBtn.textContent = "作成中...";
+		docsBtn.classList.add("export-docs-loading");
+
+		const settings = await loadSettings();
+		const title = getSessionDisplayTitle(session);
+
+		// Generate minutes from template
+		const minutes = generateMinutes(session, settings.template.minutesTemplate);
+
+		// Build document content
+		let content = "";
+
+		// Check if AI summary exists in the popup
+		const summaryText =
+			document.querySelector(".ai-summary-content")?.textContent ?? "";
+		if (summaryText) {
+			content += "AI 要約\n";
+			content += `${"━".repeat(40)}\n\n`;
+			content += `${summaryText}\n\n`;
+			content += `${"━".repeat(40)}\n\n`;
+		}
+
+		// Add the minutes content (template-expanded transcript)
+		content += minutes;
+
+		// Create document and write content — retry once on 401
+		const exportToDocs = async (authToken: string) => {
+			const { documentId, documentUrl } = await createDocument(
+				authToken,
+				`${title} - 議事録`,
+			);
+			await writeDocumentContent(authToken, documentId, content);
+			return documentUrl;
+		};
+
+		let documentUrl: string;
+		try {
+			documentUrl = await exportToDocs(token);
+		} catch (err) {
+			if (err instanceof DocsApiError && err.status === 401) {
+				// Token was revoked server-side — re-authenticate and retry once
+				token = await authenticate();
+				documentUrl = await exportToDocs(token);
+			} else {
+				throw err;
+			}
+		}
+
+		// Success state with link — uses innerHTML so not suitable for showTemporaryButtonState
+		docsBtn.classList.remove("export-docs-loading");
+		docsBtn.classList.add("export-docs-success");
+		docsBtn.disabled = false;
+		docsBtn.innerHTML = `<a href="${documentUrl}" target="_blank" style="color:white;text-decoration:none;">開く</a>`;
+
+		setTimeout(() => {
+			docsBtn.textContent = "Docs";
+			docsBtn.classList.remove("export-docs-success");
+		}, 5000);
+	} catch (err) {
+		console.error("Docs export error:", err);
+		docsBtn.disabled = false;
+		docsBtn.classList.remove("export-docs-loading");
+		showTemporaryButtonState(
+			docsBtn,
+			"エラー",
+			"export-docs-error",
+			3000,
+			"Docs",
+		);
+	}
+}
+
+// --- Export handlers ---
+
 function attachExportHandlers(session: MeetingSession): void {
 	// Copy button
 	document
@@ -453,14 +608,17 @@ function attachExportHandlers(session: MeetingSession): void {
 			const text = formatTranscriptAsText(session.transcript);
 			try {
 				await navigator.clipboard.writeText(text);
-				const copyBtn = document.getElementById("copy-button");
+				const copyBtn = document.getElementById(
+					"copy-button",
+				) as HTMLButtonElement | null;
 				if (copyBtn) {
-					copyBtn.classList.add("copied");
-					copyBtn.textContent = "コピーしました!";
-					setTimeout(() => {
-						copyBtn.classList.remove("copied");
-						copyBtn.textContent = "全文コピー";
-					}, 2000);
+					showTemporaryButtonState(
+						copyBtn,
+						"コピーしました!",
+						"copied",
+						2000,
+						"全文コピー",
+					);
 				}
 			} catch {
 				// Fallback: should rarely happen in extension popup
@@ -507,110 +665,7 @@ function attachExportHandlers(session: MeetingSession): void {
 
 	document
 		.getElementById("export-docs")
-		?.addEventListener("click", async () => {
-			const docsBtn = document.getElementById(
-				"export-docs",
-			) as HTMLButtonElement | null;
-			if (!docsBtn) return;
-
-			let token = await getAuthToken();
-			if (!token) {
-				// Token missing or expired — try to re-authenticate inline
-				try {
-					token = await authenticate();
-				} catch {
-					docsBtn.textContent = "要ログイン";
-					docsBtn.classList.add("export-docs-error");
-					setTimeout(() => {
-						docsBtn.textContent = "Docs";
-						docsBtn.classList.remove("export-docs-error");
-					}, 2000);
-					if (
-						confirm(
-							"Googleアカウントでのログインが必要です。設定画面を開きますか？",
-						)
-					) {
-						browser.runtime.openOptionsPage();
-					}
-					return;
-				}
-			}
-
-			try {
-				docsBtn.disabled = true;
-				docsBtn.textContent = "作成中...";
-				docsBtn.classList.add("export-docs-loading");
-
-				const settings = await loadSettings();
-				const title = getSessionDisplayTitle(session);
-
-				// Generate minutes from template
-				const minutes = generateMinutes(
-					session,
-					settings.template.minutesTemplate,
-				);
-
-				// Build document content
-				let content = "";
-
-				// Check if AI summary exists in the popup
-				const summaryText =
-					document.querySelector(".ai-summary-content")?.textContent ?? "";
-				if (summaryText) {
-					content += "AI 要約\n";
-					content += `${"━".repeat(40)}\n\n`;
-					content += `${summaryText}\n\n`;
-					content += `${"━".repeat(40)}\n\n`;
-				}
-
-				// Add the minutes content (template-expanded transcript)
-				content += minutes;
-
-				// Create document and write content — retry once on 401
-				const exportToDocs = async (authToken: string) => {
-					const { documentId, documentUrl } = await createDocument(
-						authToken,
-						`${title} - 議事録`,
-					);
-					await writeDocumentContent(authToken, documentId, content);
-					return documentUrl;
-				};
-
-				let documentUrl: string;
-				try {
-					documentUrl = await exportToDocs(token);
-				} catch (err) {
-					if (err instanceof DocsApiError && err.status === 401) {
-						// Token was revoked server-side — re-authenticate and retry once
-						token = await authenticate();
-						documentUrl = await exportToDocs(token);
-					} else {
-						throw err;
-					}
-				}
-
-				// Success state with link
-				docsBtn.classList.remove("export-docs-loading");
-				docsBtn.classList.add("export-docs-success");
-				docsBtn.disabled = false;
-				docsBtn.innerHTML = `<a href="${documentUrl}" target="_blank" style="color:white;text-decoration:none;">開く</a>`;
-
-				setTimeout(() => {
-					docsBtn.textContent = "Docs";
-					docsBtn.classList.remove("export-docs-success");
-				}, 5000);
-			} catch (err) {
-				console.error("Docs export error:", err);
-				docsBtn.disabled = false;
-				docsBtn.classList.remove("export-docs-loading");
-				docsBtn.classList.add("export-docs-error");
-				docsBtn.textContent = "エラー";
-				setTimeout(() => {
-					docsBtn.textContent = "Docs";
-					docsBtn.classList.remove("export-docs-error");
-				}, 3000);
-			}
-		});
+		?.addEventListener("click", () => handleDocsExport(session));
 
 	// AI Summary button
 	const aiBtn = document.getElementById(
@@ -658,19 +713,19 @@ function attachExportHandlers(session: MeetingSession): void {
 					resultContainer.style.display = "block";
 				}
 
-				aiBtn.textContent = "生成完了";
 				aiBtn.classList.remove("loading");
-				aiBtn.classList.add("success");
-
-				setTimeout(() => {
-					aiBtn.textContent = "AI要約";
-					aiBtn.classList.remove("success");
-					aiBtn.disabled = false;
-				}, 2000);
+				showTemporaryButtonState(
+					aiBtn,
+					"生成完了",
+					"success",
+					2000,
+					"AI要約",
+					() => {
+						aiBtn.disabled = false;
+					},
+				);
 			} catch (err) {
-				aiBtn.textContent = "エラー";
 				aiBtn.classList.remove("loading");
-				aiBtn.classList.add("error");
 				console.error("AI summary error:", err);
 
 				if (resultContainer && contentEl) {
@@ -678,11 +733,16 @@ function attachExportHandlers(session: MeetingSession): void {
 					resultContainer.style.display = "block";
 				}
 
-				setTimeout(() => {
-					aiBtn.textContent = "AI要約";
-					aiBtn.classList.remove("error");
-					aiBtn.disabled = false;
-				}, 3000);
+				showTemporaryButtonState(
+					aiBtn,
+					"エラー",
+					"error",
+					3000,
+					"AI要約",
+					() => {
+						aiBtn.disabled = false;
+					},
+				);
 			}
 		});
 	}
@@ -701,11 +761,7 @@ function attachExportHandlers(session: MeetingSession): void {
 
 			try {
 				await navigator.clipboard.writeText(contentEl.textContent ?? "");
-				const originalText = copyBtn.textContent;
-				copyBtn.textContent = "コピー済み!";
-				setTimeout(() => {
-					copyBtn.textContent = originalText;
-				}, 1500);
+				showTemporaryButtonState(copyBtn, "コピー済み!", "", 1500, "コピー");
 			} catch {
 				alert("コピーに失敗しました");
 			}
