@@ -140,10 +140,14 @@ describe("getAuthToken", () => {
 });
 
 describe("revokeToken", () => {
-	it("fetchでrevokeを呼びstorageからトークンを削除する", async () => {
-		const mockFetch = vi.fn().mockResolvedValue(new Response());
-		vi.stubGlobal("fetch", mockFetch);
+	let mockFetch: ReturnType<typeof vi.fn>;
 
+	beforeEach(() => {
+		mockFetch = vi.fn().mockResolvedValue(new Response());
+		vi.stubGlobal("fetch", mockFetch);
+	});
+
+	it("fetchでrevokeを呼びstorageからトークンを削除する", async () => {
 		chromeMock.storage.local.remove.mockImplementation(
 			(_keys: unknown, callback?: () => void) => {
 				callback?.();
@@ -163,9 +167,6 @@ describe("revokeToken", () => {
 	});
 
 	it("storage.local.remove時にlastErrorがセットされている場合にリジェクトする", async () => {
-		const mockFetch = vi.fn().mockResolvedValue(new Response());
-		vi.stubGlobal("fetch", mockFetch);
-
 		chromeMock.storage.local.remove.mockImplementation(
 			(_keys: unknown, callback?: () => void) => {
 				chromeMock.runtime.lastError = {
