@@ -8,7 +8,7 @@ const activeNotifications = new Map<string, HTMLElement>();
  */
 export function showNotification(
 	message: string,
-	type: "info" | "warning" | "error" = "info",
+	type: "info" | "warning" | "error" | "success" = "info",
 	durationMs: number = 5000,
 ): void {
 	// Deduplicate: dismiss existing notification with same message
@@ -25,6 +25,7 @@ export function showNotification(
 		info: "#1a73e8",
 		warning: "#f9ab00",
 		error: "#d93025",
+		success: "#1e8e3e",
 	};
 
 	Object.assign(notification.style, {

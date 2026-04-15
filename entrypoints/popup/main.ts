@@ -6,6 +6,7 @@ import {
 	DocsApiError,
 	writeDocumentContent,
 } from "@/utils/google-docs";
+import { showNotification } from "@/utils/notification";
 import {
 	buildExportFilename,
 	computeTranscriptDiffs,
@@ -407,6 +408,7 @@ function buildDetailPageHtml(
       <div class="detail-meta">${formatDate(session.startTimestamp)}</div>
       ${session.meetingCode ? `<div class="detail-code">${escapeHtml(session.meetingCode)}</div>` : ""}
     </div>
+    <div class="detail-content">
     <div class="participants">
       <span class="participants-label">参加者:</span>
       ${participants
@@ -422,8 +424,13 @@ function buildDetailPageHtml(
         <button class="format-btn" id="export-json" title="JSONでエクスポート">JSON</button>
         <button class="format-btn" id="export-txt" title="テキストでエクスポート">TXT</button>
         <button class="format-btn" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
-        <button class="format-btn" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
-        <button class="format-btn docs-btn" id="export-docs" title="Google Docsにエクスポート">Docs</button>
+        <div class="minutes-export-wrapper">
+          <button class="format-btn minutes-btn" id="minutes-toggle" title="議事録をエクスポート">議事録</button>
+          <div class="minutes-export-menu" id="minutes-export-menu">
+            <button class="minutes-menu-item" id="minutes-export-md">MDファイル</button>
+            <button class="minutes-menu-item" id="minutes-export-docs">Google Docs</button>
+          </div>
+        </div>
       </div>
       <div class="toolbar-actions">
         <button class="action-btn ai-btn" id="ai-summary-btn" title="AIで要約を生成">AI要約</button>
@@ -442,6 +449,7 @@ function buildDetailPageHtml(
       <div class="ai-summary-content"></div>
     </div>
     <div class="transcript-list">${transcriptHtml}</div>
+    </div>
   `;
 }
 
@@ -492,26 +500,43 @@ function renderTranscriptDetail(session: MeetingSession): void {
 	attachExportHandlers(session);
 }
 
+// --- Shared minutes content builder ---
+
+async function buildMinutesContent(session: MeetingSession): Promise<string> {
+	const settings = await loadSettings();
+	const minutes = generateMinutes(session, settings.template.minutesTemplate);
+
+	let content = "";
+
+	// Include AI summary if it exists in the popup
+	const summaryText =
+		document.querySelector(".ai-summary-content")?.textContent ?? "";
+	if (summaryText) {
+		content += "## AI 要約\n\n";
+		content += `${summaryText}\n\n---\n\n`;
+	}
+
+	content += minutes;
+	return content;
+}
+
 // --- Google Docs export handler ---
 
-async function handleDocsExport(session: MeetingSession): Promise<void> {
-	const docsBtn = document.getElementById(
-		"export-docs",
-	) as HTMLButtonElement | null;
-	if (!docsBtn) return;
-
+async function handleDocsExport(
+	session: MeetingSession,
+	docsBtn: HTMLButtonElement,
+): Promise<void> {
 	let token = await getAuthToken();
 	if (!token) {
-		// Token missing or expired — try to re-authenticate inline
 		try {
 			token = await authenticate();
 		} catch {
 			showTemporaryButtonState(
 				docsBtn,
 				"要ログイン",
-				"export-docs-error",
+				"export-error",
 				2000,
-				"Docs",
+				"Google Docs",
 			);
 			if (
 				confirm(
@@ -529,29 +554,9 @@ async function handleDocsExport(session: MeetingSession): Promise<void> {
 		docsBtn.textContent = "作成中...";
 		docsBtn.classList.add("export-docs-loading");
 
-		const settings = await loadSettings();
 		const title = getSessionDisplayTitle(session);
+		const content = await buildMinutesContent(session);
 
-		// Generate minutes from template
-		const minutes = generateMinutes(session, settings.template.minutesTemplate);
-
-		// Build document content
-		let content = "";
-
-		// Check if AI summary exists in the popup
-		const summaryText =
-			document.querySelector(".ai-summary-content")?.textContent ?? "";
-		if (summaryText) {
-			content += "AI 要約\n";
-			content += `${"━".repeat(40)}\n\n`;
-			content += `${summaryText}\n\n`;
-			content += `${"━".repeat(40)}\n\n`;
-		}
-
-		// Add the minutes content (template-expanded transcript)
-		content += minutes;
-
-		// Create document and write content — retry once on 401
 		const exportToDocs = async (authToken: string) => {
 			const { documentId, documentUrl } = await createDocument(
 				authToken,
@@ -566,7 +571,6 @@ async function handleDocsExport(session: MeetingSession): Promise<void> {
 			documentUrl = await exportToDocs(token);
 		} catch (err) {
 			if (err instanceof DocsApiError && err.status === 401) {
-				// Token was revoked server-side — re-authenticate and retry once
 				token = await authenticate();
 				documentUrl = await exportToDocs(token);
 			} else {
@@ -574,14 +578,17 @@ async function handleDocsExport(session: MeetingSession): Promise<void> {
 			}
 		}
 
-		// Success state with link — uses innerHTML so not suitable for showTemporaryButtonState
+		window.open(documentUrl, "_blank");
+
 		docsBtn.classList.remove("export-docs-loading");
 		docsBtn.classList.add("export-docs-success");
 		docsBtn.disabled = false;
-		docsBtn.innerHTML = `<a href="${documentUrl}" target="_blank" style="color:white;text-decoration:none;">開く</a>`;
+		docsBtn.textContent = "✓ 作成完了";
+
+		showNotification("Google Docsに議事録を作成しました", "success");
 
 		setTimeout(() => {
-			docsBtn.textContent = "Docs";
+			docsBtn.textContent = "Google Docs";
 			docsBtn.classList.remove("export-docs-success");
 		}, 5000);
 	} catch (err) {
@@ -591,9 +598,9 @@ async function handleDocsExport(session: MeetingSession): Promise<void> {
 		showTemporaryButtonState(
 			docsBtn,
 			"エラー",
-			"export-docs-error",
+			"export-error",
 			3000,
-			"Docs",
+			"Google Docs",
 		);
 	}
 }
@@ -651,21 +658,44 @@ function attachExportHandlers(session: MeetingSession): void {
 		downloadFile(raw, filename, "text/plain");
 	});
 
+	// Minutes dropdown toggle
+	const minutesToggle = document.getElementById("minutes-toggle");
+	const minutesMenu = document.getElementById("minutes-export-menu");
+
+	minutesToggle?.addEventListener("click", (e) => {
+		e.stopPropagation();
+		minutesMenu?.classList.toggle("open");
+	});
+
+	// Close menu on outside click
+	document.addEventListener("click", () => {
+		minutesMenu?.classList.remove("open");
+	});
+
+	minutesMenu?.addEventListener("click", (e) => {
+		e.stopPropagation();
+	});
+
+	// Minutes → MD file
 	document
-		.getElementById("export-minutes")
+		.getElementById("minutes-export-md")
 		?.addEventListener("click", async () => {
-			const settings = await loadSettings();
-			const minutes = generateMinutes(
-				session,
-				settings.template.minutesTemplate,
-			);
+			minutesMenu?.classList.remove("open");
+			const content = await buildMinutesContent(session);
 			const filename = buildExportFilename(session, "md", "minutes");
-			downloadFile(minutes, filename, "text/markdown");
+			downloadFile(content, filename, "text/markdown");
 		});
 
+	// Minutes → Google Docs
 	document
-		.getElementById("export-docs")
-		?.addEventListener("click", () => handleDocsExport(session));
+		.getElementById("minutes-export-docs")
+		?.addEventListener("click", () => {
+			minutesMenu?.classList.remove("open");
+			const docsBtn = document.getElementById(
+				"minutes-export-docs",
+			) as HTMLButtonElement;
+			handleDocsExport(session, docsBtn);
+		});
 
 	// AI Summary button
 	const aiBtn = document.getElementById(
