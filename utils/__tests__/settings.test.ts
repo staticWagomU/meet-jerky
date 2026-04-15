@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CUSTOM_PROMPT } from "../ai-client";
 import {
 	DEFAULT_SETTINGS,
 	loadSettings,
@@ -6,7 +7,6 @@ import {
 	SETTINGS_STORAGE_KEY,
 	saveSettings,
 } from "../settings";
-import { DEFAULT_CUSTOM_PROMPT } from "../ai-client";
 import { DEFAULT_MINUTES_TEMPLATE } from "../template";
 
 const mockGet = vi.fn();

@@ -32,11 +32,26 @@ export async function summarizeTranscript(
 
 	switch (provider) {
 		case "openai":
-			return callOpenAI(apiKey, effectivePrompt, transcriptText, effectiveModel);
+			return callOpenAI(
+				apiKey,
+				effectivePrompt,
+				transcriptText,
+				effectiveModel,
+			);
 		case "anthropic":
-			return callAnthropic(apiKey, effectivePrompt, transcriptText, effectiveModel);
+			return callAnthropic(
+				apiKey,
+				effectivePrompt,
+				transcriptText,
+				effectiveModel,
+			);
 		case "gemini":
-			return callGemini(apiKey, effectivePrompt, transcriptText, effectiveModel);
+			return callGemini(
+				apiKey,
+				effectivePrompt,
+				transcriptText,
+				effectiveModel,
+			);
 	}
 }
 

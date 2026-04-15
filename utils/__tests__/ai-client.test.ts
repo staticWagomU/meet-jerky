@@ -34,7 +34,13 @@ describe("summarizeTranscript", () => {
 			text: async () => "",
 		});
 
-		await summarizeTranscript("openai", "sk-test", "", "テスト文字起こし", "gpt-4o-mini");
+		await summarizeTranscript(
+			"openai",
+			"sk-test",
+			"",
+			"テスト文字起こし",
+			"gpt-4o-mini",
+		);
 
 		expect(mockFetch).toHaveBeenCalledTimes(1);
 		const [, options] = mockFetch.mock.calls[0];
@@ -51,7 +57,13 @@ describe("summarizeTranscript", () => {
 			text: async () => "",
 		});
 
-		await summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし", "");
+		await summarizeTranscript(
+			"openai",
+			"sk-test",
+			"プロンプト",
+			"文字起こし",
+			"",
+		);
 
 		const [, options] = mockFetch.mock.calls[0];
 		const body = JSON.parse(options.body);
@@ -129,7 +141,13 @@ describe("OpenAI provider", () => {
 		});
 
 		await expect(
-			summarizeTranscript("openai", "sk-bad-key", "プロンプト", "文字起こし", "gpt-4o-mini"),
+			summarizeTranscript(
+				"openai",
+				"sk-bad-key",
+				"プロンプト",
+				"文字起こし",
+				"gpt-4o-mini",
+			),
 		).rejects.toThrowError("OpenAI API error (401): Unauthorized");
 	});
 });
@@ -292,7 +310,13 @@ describe("Gemini provider", () => {
 		});
 
 		await expect(
-			summarizeTranscript("gemini", "gemini-bad-key", "プロンプト", "文字起こし", "gemini-2.5-flash"),
+			summarizeTranscript(
+				"gemini",
+				"gemini-bad-key",
+				"プロンプト",
+				"文字起こし",
+				"gemini-2.5-flash",
+			),
 		).rejects.toThrowError("Gemini API error (403): Forbidden");
 	});
 });
@@ -304,7 +328,13 @@ describe("エッジケース", () => {
 		mockFetch.mockRejectedValue(new TypeError("Failed to fetch"));
 
 		await expect(
-			summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし", "gpt-4o-mini"),
+			summarizeTranscript(
+				"openai",
+				"sk-test",
+				"プロンプト",
+				"文字起こし",
+				"gpt-4o-mini",
+			),
 		).rejects.toThrow();
 	});
 
@@ -317,7 +347,13 @@ describe("エッジケース", () => {
 
 		// 空のchoices配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
-			summarizeTranscript("openai", "sk-test", "プロンプト", "文字起こし", "gpt-4o-mini"),
+			summarizeTranscript(
+				"openai",
+				"sk-test",
+				"プロンプト",
+				"文字起こし",
+				"gpt-4o-mini",
+			),
 		).rejects.toThrowError("OpenAI: レスポンスが不正です");
 	});
 
@@ -330,7 +366,13 @@ describe("エッジケース", () => {
 
 		// 空のcontent配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
-			summarizeTranscript("anthropic", "sk-ant-test", "プロンプト", "文字起こし", "claude-sonnet-4-5-20250514"),
+			summarizeTranscript(
+				"anthropic",
+				"sk-ant-test",
+				"プロンプト",
+				"文字起こし",
+				"claude-sonnet-4-5-20250514",
+			),
 		).rejects.toThrowError("Anthropic: レスポンスが不正です");
 	});
 
@@ -343,7 +385,13 @@ describe("エッジケース", () => {
 
 		// 空のcandidates配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
-			summarizeTranscript("gemini", "gemini-key", "プロンプト", "文字起こし", "gemini-2.5-flash"),
+			summarizeTranscript(
+				"gemini",
+				"gemini-key",
+				"プロンプト",
+				"文字起こし",
+				"gemini-2.5-flash",
+			),
 		).rejects.toThrowError("Gemini: レスポンスが不正です");
 	});
 });

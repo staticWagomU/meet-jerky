@@ -547,7 +547,8 @@ function buildAICard(): HTMLDivElement {
 			if (item.radio.checked) {
 				currentSettings.ai.provider = providerValue;
 				currentSettings.ai.model = DEFAULT_MODELS[providerValue];
-				const modelInput = card.querySelector<HTMLInputElement>("#ai-model-input");
+				const modelInput =
+					card.querySelector<HTMLInputElement>("#ai-model-input");
 				if (modelInput) {
 					modelInput.value = DEFAULT_MODELS[providerValue];
 				}
