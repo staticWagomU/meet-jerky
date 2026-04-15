@@ -16,6 +16,50 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
+// --- Mock response factories ---
+
+function mockOpenAIResponse(content: string) {
+	return {
+		ok: true,
+		json: async () => ({ choices: [{ message: { content } }] }),
+		text: async () => "",
+	};
+}
+
+function mockAnthropicResponse(content: string) {
+	return {
+		ok: true,
+		json: async () => ({ content: [{ text: content }] }),
+		text: async () => "",
+	};
+}
+
+function mockGeminiResponse(content: string) {
+	return {
+		ok: true,
+		json: async () => ({
+			candidates: [{ content: { parts: [{ text: content }] } }],
+		}),
+		text: async () => "",
+	};
+}
+
+function mockErrorResponse(status: number, text: string) {
+	return {
+		ok: false,
+		status,
+		text: async () => text,
+	};
+}
+
+function mockEmptyJsonResponse(json: unknown) {
+	return {
+		ok: true,
+		json: async () => json,
+		text: async () => "",
+	};
+}
+
 // --- summarizeTranscript ---
 
 describe("summarizeTranscript", () => {
@@ -26,13 +70,7 @@ describe("summarizeTranscript", () => {
 	});
 
 	it("空のプロンプトでDEFAULT_CUSTOM_PROMPTにフォールバックする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果"));
 
 		await summarizeTranscript(
 			"openai",
@@ -49,13 +87,7 @@ describe("summarizeTranscript", () => {
 	});
 
 	it("空のモデル名でDEFAULT_MODELSにフォールバックする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果"));
 
 		await summarizeTranscript(
 			"openai",
@@ -75,13 +107,7 @@ describe("summarizeTranscript", () => {
 
 describe("OpenAI provider", () => {
 	it("正しいエンドポイントとヘッダーでリクエストする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果"));
 
 		await summarizeTranscript(
 			"openai",
@@ -114,13 +140,7 @@ describe("OpenAI provider", () => {
 	});
 
 	it("API成功時にレスポンステキストを返す", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果テキスト" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果テキスト"));
 
 		const result = await summarizeTranscript(
 			"openai",
@@ -134,11 +154,7 @@ describe("OpenAI provider", () => {
 	});
 
 	it("APIエラー時に適切なエラーメッセージをスローする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: false,
-			status: 401,
-			text: async () => "Unauthorized",
-		});
+		mockFetch.mockResolvedValue(mockErrorResponse(401, "Unauthorized"));
 
 		await expect(
 			summarizeTranscript(
@@ -156,13 +172,7 @@ describe("OpenAI provider", () => {
 
 describe("Anthropic provider", () => {
 	it("正しいエンドポイントとヘッダーでリクエストする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				content: [{ text: "要約結果" }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockAnthropicResponse("要約結果"));
 
 		await summarizeTranscript(
 			"anthropic",
@@ -200,13 +210,7 @@ describe("Anthropic provider", () => {
 	});
 
 	it("API成功時にレスポンステキストを返す", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				content: [{ text: "Anthropic要約結果" }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockAnthropicResponse("Anthropic要約結果"));
 
 		const result = await summarizeTranscript(
 			"anthropic",
@@ -220,11 +224,7 @@ describe("Anthropic provider", () => {
 	});
 
 	it("APIエラー時に適切なエラーメッセージをスローする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: false,
-			status: 429,
-			text: async () => "Rate limited",
-		});
+		mockFetch.mockResolvedValue(mockErrorResponse(429, "Rate limited"));
 
 		await expect(
 			summarizeTranscript(
@@ -242,13 +242,7 @@ describe("Anthropic provider", () => {
 
 describe("Gemini provider", () => {
 	it("APIキーをURLパラメータに含めてリクエストする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				candidates: [{ content: { parts: [{ text: "要約結果" }] } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockGeminiResponse("要約結果"));
 
 		await summarizeTranscript(
 			"gemini",
@@ -283,13 +277,7 @@ describe("Gemini provider", () => {
 	});
 
 	it("API成功時にレスポンステキストを返す", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				candidates: [{ content: { parts: [{ text: "Gemini要約結果" }] } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockGeminiResponse("Gemini要約結果"));
 
 		const result = await summarizeTranscript(
 			"gemini",
@@ -303,11 +291,7 @@ describe("Gemini provider", () => {
 	});
 
 	it("APIエラー時に適切なエラーメッセージをスローする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: false,
-			status: 403,
-			text: async () => "Forbidden",
-		});
+		mockFetch.mockResolvedValue(mockErrorResponse(403, "Forbidden"));
 
 		await expect(
 			summarizeTranscript(
@@ -325,13 +309,7 @@ describe("Gemini provider", () => {
 
 describe("メモパラメータ", () => {
 	it("メモが指定された場合、ユーザーメッセージにメモが含まれる（OpenAI）", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果"));
 
 		await summarizeTranscript(
 			"openai",
@@ -350,13 +328,7 @@ describe("メモパラメータ", () => {
 	});
 
 	it("メモが指定された場合、ユーザーメッセージにメモが含まれる（Anthropic）", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				content: [{ text: "要約結果" }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockAnthropicResponse("要約結果"));
 
 		await summarizeTranscript(
 			"anthropic",
@@ -375,13 +347,7 @@ describe("メモパラメータ", () => {
 	});
 
 	it("メモが指定された場合、ユーザーメッセージにメモが含まれる（Gemini）", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				candidates: [{ content: { parts: [{ text: "要約結果" }] } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockGeminiResponse("要約結果"));
 
 		await summarizeTranscript(
 			"gemini",
@@ -400,13 +366,7 @@ describe("メモパラメータ", () => {
 	});
 
 	it("メモが空文字の場合、従来通りトランスクリプトのみ送信される", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果"));
 
 		await summarizeTranscript(
 			"openai",
@@ -423,13 +383,7 @@ describe("メモパラメータ", () => {
 	});
 
 	it("メモが未指定の場合、従来通りトランスクリプトのみ送信される", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				choices: [{ message: { content: "要約結果" } }],
-			}),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockOpenAIResponse("要約結果"));
 
 		await summarizeTranscript(
 			"openai",
@@ -463,11 +417,7 @@ describe("エッジケース", () => {
 	});
 
 	it("OpenAI: 空のchoices配列で適切にエラーハンドリングする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({ choices: [] }),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockEmptyJsonResponse({ choices: [] }));
 
 		// 空のchoices配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
@@ -482,11 +432,7 @@ describe("エッジケース", () => {
 	});
 
 	it("Anthropic: 空のcontent配列で適切にエラーハンドリングする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({ content: [] }),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockEmptyJsonResponse({ content: [] }));
 
 		// 空のcontent配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(
@@ -501,11 +447,7 @@ describe("エッジケース", () => {
 	});
 
 	it("Gemini: 空のcandidates配列で適切にエラーハンドリングする", async () => {
-		mockFetch.mockResolvedValue({
-			ok: true,
-			json: async () => ({ candidates: [] }),
-			text: async () => "",
-		});
+		mockFetch.mockResolvedValue(mockEmptyJsonResponse({ candidates: [] }));
 
 		// 空のcandidates配列はTypeErrorではなく、わかりやすいエラーメッセージをスローすべき
 		await expect(

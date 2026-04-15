@@ -55,38 +55,57 @@ export async function summarizeTranscript(
 	}
 }
 
+interface ProviderConfig {
+	url: string;
+	headers: Record<string, string>;
+	body: Record<string, unknown>;
+	extractText: (data: unknown) => string | undefined;
+	errorPrefix: string;
+}
+
+async function callProvider(config: ProviderConfig): Promise<string> {
+	const response = await fetch(config.url, {
+		method: "POST",
+		headers: config.headers,
+		body: JSON.stringify(config.body),
+	});
+	if (!response.ok) {
+		const text = await response.text();
+		throw new Error(
+			`${config.errorPrefix} API error (${response.status}): ${text}`,
+		);
+	}
+	const data = await response.json();
+	const text = config.extractText(data);
+	if (!text) {
+		throw new Error(`${config.errorPrefix}: レスポンスが不正です`);
+	}
+	return text;
+}
+
 async function callOpenAI(
 	apiKey: string,
 	prompt: string,
 	transcript: string,
 	model: string,
 ): Promise<string> {
-	const response = await fetch("https://api.openai.com/v1/chat/completions", {
-		method: "POST",
+	return callProvider({
+		url: "https://api.openai.com/v1/chat/completions",
 		headers: {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${apiKey}`,
 		},
-		body: JSON.stringify({
+		body: {
 			model,
 			messages: [
 				{ role: "system", content: prompt },
 				{ role: "user", content: transcript },
 			],
-		}),
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: provider-specific JSON response
+		extractText: (data: any) => data.choices?.[0]?.message?.content,
+		errorPrefix: "OpenAI",
 	});
-
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(`OpenAI API error (${response.status}): ${text}`);
-	}
-
-	const data = await response.json();
-	const text = data.choices?.[0]?.message?.content;
-	if (!text) {
-		throw new Error("OpenAI: レスポンスが不正です");
-	}
-	return text;
 }
 
 async function callAnthropic(
@@ -95,33 +114,24 @@ async function callAnthropic(
 	transcript: string,
 	model: string,
 ): Promise<string> {
-	const response = await fetch("https://api.anthropic.com/v1/messages", {
-		method: "POST",
+	return callProvider({
+		url: "https://api.anthropic.com/v1/messages",
 		headers: {
 			"Content-Type": "application/json",
 			"x-api-key": apiKey,
 			"anthropic-version": "2023-06-01",
 			"anthropic-dangerous-direct-browser-access": "true",
 		},
-		body: JSON.stringify({
+		body: {
 			model,
 			max_tokens: 4096,
 			system: prompt,
 			messages: [{ role: "user", content: transcript }],
-		}),
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: provider-specific JSON response
+		extractText: (data: any) => data.content?.[0]?.text,
+		errorPrefix: "Anthropic",
 	});
-
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(`Anthropic API error (${response.status}): ${text}`);
-	}
-
-	const data = await response.json();
-	const text = data.content?.[0]?.text;
-	if (!text) {
-		throw new Error("Anthropic: レスポンスが不正です");
-	}
-	return text;
 }
 
 async function callGemini(
@@ -130,29 +140,17 @@ async function callGemini(
 	transcript: string,
 	model: string,
 ): Promise<string> {
-	const response = await fetch(
-		`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-		{
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				systemInstruction: { parts: [{ text: prompt }] },
-				contents: [{ parts: [{ text: transcript }] }],
-			}),
+	return callProvider({
+		url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+		headers: {
+			"Content-Type": "application/json",
 		},
-	);
-
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(`Gemini API error (${response.status}): ${text}`);
-	}
-
-	const data = await response.json();
-	const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-	if (!text) {
-		throw new Error("Gemini: レスポンスが不正です");
-	}
-	return text;
+		body: {
+			systemInstruction: { parts: [{ text: prompt }] },
+			contents: [{ parts: [{ text: transcript }] }],
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: provider-specific JSON response
+		extractText: (data: any) => data.candidates?.[0]?.content?.parts?.[0]?.text,
+		errorPrefix: "Gemini",
+	});
 }
