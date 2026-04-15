@@ -10,10 +10,10 @@ export default defineConfig({
 			client_id:
 				process.env.VITE_GOOGLE_OAUTH_CLIENT_ID ??
 				"YOUR_CLIENT_ID.apps.googleusercontent.com",
-			scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+			scopes: ["https://www.googleapis.com/auth/documents"],
 		},
 		host_permissions: [
-			"https://sheets.googleapis.com/*",
+			"https://docs.googleapis.com/*",
 			"https://api.openai.com/*",
 			"https://api.anthropic.com/*",
 			"https://generativelanguage.googleapis.com/*",
