@@ -1,6 +1,8 @@
 import "./style.css";
+import { summarizeTranscript } from "@/utils/ai-client";
 import { getAuthToken } from "@/utils/google-auth";
 import {
+	addAndWriteAISummarySheet,
 	createSpreadsheet,
 	writeMinutesSheet,
 	writeRawLogSheet,
@@ -391,8 +393,17 @@ function renderTranscriptDetail(session: MeetingSession): void {
         <button class="export-button" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
         <button class="export-button" id="export-minutes" title="議事録テンプレートでエクスポート">議事録</button>
         <button class="export-button export-sheets-btn" id="export-sheets" title="Google Sheetsにエクスポート">&#128202; Sheets</button>
+        <button class="export-button ai-summary-button" id="ai-summary-btn" title="AIで要約を生成">&#10024; AI要約</button>
       </div>
       <button class="copy-button" id="copy-button">&#128203; 全文コピー</button>
+    </div>
+    <div class="ai-summary-result" style="display:none">
+      <div class="ai-summary-header">
+        <span class="ai-summary-title">AI要約</span>
+        <button class="ai-summary-copy">コピー</button>
+        <button class="ai-summary-close">&#10005;</button>
+      </div>
+      <div class="ai-summary-content"></div>
     </div>
     <div class="transcript-list">${transcriptHtml}</div>
   `;
@@ -533,6 +544,15 @@ function attachExportHandlers(session: MeetingSession): void {
 					session.rawTranscript ?? [],
 				);
 
+				// Write AI summary sheet if summary result is available
+				const summaryContentEl = document.querySelector(
+					".ai-summary-content",
+				) as HTMLElement | null;
+				const summaryText = summaryContentEl?.textContent ?? "";
+				if (summaryText) {
+					await addAndWriteAISummarySheet(token, spreadsheetId, summaryText);
+				}
+
 				sheetsBtn.classList.remove("export-sheets-loading");
 				sheetsBtn.classList.add("export-sheets-success");
 				sheetsBtn.disabled = false;
@@ -562,6 +582,111 @@ function attachExportHandlers(session: MeetingSession): void {
 				}, 2000);
 			}
 		});
+
+	// AI Summary button
+	const aiBtn = document.getElementById(
+		"ai-summary-btn",
+	) as HTMLButtonElement | null;
+	if (aiBtn) {
+		aiBtn.addEventListener("click", async () => {
+			const settings = await loadSettings();
+
+			if (!settings.ai.apiKey) {
+				if (
+					confirm("APIキーが設定されていません。設定画面を開きますか？")
+				) {
+					browser.runtime.openOptionsPage();
+				}
+				return;
+			}
+
+			aiBtn.textContent = "\u23F3 生成中...";
+			aiBtn.classList.add("loading");
+			aiBtn.disabled = true;
+
+			const resultContainer = document.querySelector(
+				".ai-summary-result",
+			) as HTMLElement | null;
+			const contentEl = document.querySelector(
+				".ai-summary-content",
+			) as HTMLElement | null;
+
+			try {
+				const transcriptText = formatTranscriptAsText(session.transcript);
+				const result = await summarizeTranscript(
+					settings.ai.provider,
+					settings.ai.apiKey,
+					settings.template.customPrompt,
+					transcriptText,
+				);
+
+				if (resultContainer && contentEl) {
+					contentEl.textContent = result;
+					resultContainer.style.display = "block";
+				}
+
+				aiBtn.textContent = "\u2705 生成完了";
+				aiBtn.classList.remove("loading");
+				aiBtn.classList.add("success");
+
+				setTimeout(() => {
+					aiBtn.innerHTML = "&#10024; AI要約";
+					aiBtn.classList.remove("success");
+					aiBtn.disabled = false;
+				}, 2000);
+			} catch (err) {
+				aiBtn.textContent = "\u274C エラー";
+				aiBtn.classList.remove("loading");
+				aiBtn.classList.add("error");
+				console.error("AI summary error:", err);
+
+				if (resultContainer && contentEl) {
+					contentEl.textContent = `エラー: ${err instanceof Error ? err.message : String(err)}`;
+					resultContainer.style.display = "block";
+				}
+
+				setTimeout(() => {
+					aiBtn.innerHTML = "&#10024; AI要約";
+					aiBtn.classList.remove("error");
+					aiBtn.disabled = false;
+				}, 3000);
+			}
+		});
+	}
+
+	// AI Summary copy button
+	document
+		.querySelector(".ai-summary-copy")
+		?.addEventListener("click", async () => {
+			const contentEl = document.querySelector(
+				".ai-summary-content",
+			) as HTMLElement | null;
+			const copyBtn = document.querySelector(
+				".ai-summary-copy",
+			) as HTMLButtonElement | null;
+			if (!contentEl || !copyBtn) return;
+
+			try {
+				await navigator.clipboard.writeText(contentEl.textContent ?? "");
+				const originalText = copyBtn.textContent;
+				copyBtn.textContent = "コピー済み!";
+				setTimeout(() => {
+					copyBtn.textContent = originalText;
+				}, 1500);
+			} catch {
+				alert("コピーに失敗しました");
+			}
+		});
+
+	// AI Summary close button
+	document.querySelector(".ai-summary-close")?.addEventListener("click", () => {
+		const resultContainer = document.querySelector(
+			".ai-summary-result",
+		) as HTMLElement | null;
+		if (resultContainer) {
+			resultContainer.style.display = "none";
+		}
+	});
 }
 
 // --- Navigation ---

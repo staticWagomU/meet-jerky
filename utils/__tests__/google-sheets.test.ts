@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	addAndWriteAISummarySheet,
 	createSpreadsheet,
 	writeMinutesSheet,
 	writeRawLogSheet,
@@ -219,5 +220,88 @@ describe("Authorizationヘッダー", () => {
 
 		const [, options] = mockFetch.mock.calls[0];
 		expect(options.headers.Authorization).toBe("Bearer my-secret-token");
+	});
+});
+
+// --- addAndWriteAISummarySheet ---
+
+describe("addAndWriteAISummarySheet", () => {
+	it("AI要約シートを追加して内容を書き込む", async () => {
+		// 1回目: batchUpdate (addSheet), 2回目: values update
+		mockFetch
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({}),
+				text: async () => "",
+			})
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({}),
+				text: async () => "",
+			});
+
+		await addAndWriteAISummarySheet(
+			"test-token",
+			"spreadsheet-id",
+			"要約行1\n要約行2\n要約行3",
+		);
+
+		expect(mockFetch).toHaveBeenCalledTimes(2);
+
+		// 1回目のリクエスト: batchUpdate (addSheet)
+		const [url1, options1] = mockFetch.mock.calls[0];
+		expect(url1).toContain("spreadsheet-id:batchUpdate");
+		expect(options1.method).toBe("POST");
+		const body1 = JSON.parse(options1.body);
+		expect(body1.requests[0].addSheet.properties.title).toBe("AI要約");
+
+		// 2回目のリクエスト: values update
+		const [url2, options2] = mockFetch.mock.calls[1];
+		expect(url2).toContain(encodeURIComponent("AI要約!A1"));
+		expect(url2).toContain("spreadsheet-id");
+		expect(url2).toContain("valueInputOption=RAW");
+		expect(options2.method).toBe("PUT");
+
+		const body2 = JSON.parse(options2.body);
+		expect(body2.values).toEqual([["要約行1"], ["要約行2"], ["要約行3"]]);
+	});
+
+	it("batchUpdate APIエラー時にエラーをスローする", async () => {
+		mockFetch.mockResolvedValue({
+			ok: false,
+			status: 500,
+			text: async () => "Internal Server Error",
+		});
+
+		await expect(
+			addAndWriteAISummarySheet(
+				"test-token",
+				"spreadsheet-id",
+				"要約テキスト",
+			),
+		).rejects.toThrowError("Sheets API error (500): Internal Server Error");
+	});
+
+	it("values update APIエラー時にエラーをスローする", async () => {
+		// 1回目(batchUpdate)は成功、2回目(values update)は失敗
+		mockFetch
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({}),
+				text: async () => "",
+			})
+			.mockResolvedValueOnce({
+				ok: false,
+				status: 403,
+				text: async () => "Forbidden",
+			});
+
+		await expect(
+			addAndWriteAISummarySheet(
+				"test-token",
+				"spreadsheet-id",
+				"要約テキスト",
+			),
+		).rejects.toThrowError("Sheets API error (403): Forbidden");
 	});
 });

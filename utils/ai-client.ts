@@ -1,3 +1,5 @@
+import type { AIProvider } from "./types";
+
 export const DEFAULT_CUSTOM_PROMPT = `以下のミーティングの文字起こしを分析し、次の形式で出力してください：
 
 ## 要約
@@ -8,8 +10,6 @@ export const DEFAULT_CUSTOM_PROMPT = `以下のミーティングの文字起こ
 
 ## TODO
 - アクションアイテムを記載（担当者がわかれば併記）`;
-
-export type AIProvider = "openai" | "anthropic" | "gemini";
 
 export async function summarizeTranscript(
 	provider: AIProvider,

@@ -107,3 +107,39 @@ export async function writeRawLogSheet(
 		},
 	);
 }
+
+/**
+ * Add an "AI要約" sheet tab to an existing spreadsheet and write summary text.
+ * Each line of summaryText becomes a row in column A.
+ */
+export async function addAndWriteAISummarySheet(
+	token: string,
+	spreadsheetId: string,
+	summaryText: string,
+): Promise<void> {
+	// Add new sheet tab
+	await sheetsApiFetch(`${SHEETS_API}/${spreadsheetId}:batchUpdate`, token, {
+		method: "POST",
+		body: JSON.stringify({
+			requests: [
+				{
+					addSheet: {
+						properties: { title: "AI要約" },
+					},
+				},
+			],
+		}),
+	});
+
+	// Write summary content
+	const rows = summaryText.split("\n").map((line) => [line]);
+	const range = encodeURIComponent("AI要約!A1");
+	await sheetsApiFetch(
+		`${SHEETS_API}/${spreadsheetId}/values/${range}?valueInputOption=RAW`,
+		token,
+		{
+			method: "PUT",
+			body: JSON.stringify({ values: rows }),
+		},
+	);
+}

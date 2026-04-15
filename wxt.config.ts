@@ -12,6 +12,11 @@ export default defineConfig({
 				"YOUR_CLIENT_ID.apps.googleusercontent.com",
 			scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 		},
-		host_permissions: ["https://sheets.googleapis.com/*"],
+		host_permissions: [
+			"https://sheets.googleapis.com/*",
+			"https://api.openai.com/*",
+			"https://api.anthropic.com/*",
+			"https://generativelanguage.googleapis.com/*",
+		],
 	},
 });

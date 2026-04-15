@@ -1,4 +1,5 @@
 import "./style.css";
+import { DEFAULT_CUSTOM_PROMPT } from "@/utils/ai-client";
 import { authenticate, getAuthToken, revokeToken } from "@/utils/google-auth";
 import { showNotification } from "@/utils/notification";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
@@ -7,7 +8,7 @@ import {
 	expandTemplate,
 	type TemplateContext,
 } from "@/utils/template";
-import type { UserSettings } from "@/utils/types";
+import type { AIProvider, UserSettings } from "@/utils/types";
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
 if (!appElement) throw new Error("#app element not found");
@@ -35,6 +36,9 @@ function render(): void {
 
 	// Template editing card
 	app.appendChild(buildTemplateCard());
+
+	// AI integration card
+	app.appendChild(buildAICard());
 
 	// Save button
 	const footer = document.createElement("div");
@@ -477,6 +481,195 @@ function buildTemplateCard(): HTMLDivElement {
 	preview.className = "template-preview";
 	preview.style.display = "none";
 	card.appendChild(preview);
+
+	return card;
+}
+
+function buildAICard(): HTMLDivElement {
+	const card = document.createElement("div");
+	card.className = "card";
+
+	const title = document.createElement("div");
+	title.className = "card-title";
+	title.textContent = "✨ AI連携";
+	card.appendChild(title);
+
+	// Section 1: Provider selection
+	const providerGroup = document.createElement("div");
+	providerGroup.className = "form-group";
+
+	const providerLabel = document.createElement("div");
+	providerLabel.className = "form-label";
+	providerLabel.textContent = "プロバイダ選択";
+	providerGroup.appendChild(providerLabel);
+
+	const radioGroup = document.createElement("div");
+	radioGroup.className = "radio-group";
+
+	const openaiItem = buildRadioItem(
+		"ai-provider",
+		"openai",
+		"OpenAI (GPT-4o mini)",
+		"OpenAIのGPT-4o miniモデルを使用します",
+		currentSettings.ai.provider === "openai",
+	);
+	radioGroup.appendChild(openaiItem.wrapper);
+
+	const anthropicItem = buildRadioItem(
+		"ai-provider",
+		"anthropic",
+		"Anthropic (Claude)",
+		"AnthropicのClaudeモデルを使用します",
+		currentSettings.ai.provider === "anthropic",
+	);
+	radioGroup.appendChild(anthropicItem.wrapper);
+
+	const geminiItem = buildRadioItem(
+		"ai-provider",
+		"gemini",
+		"Google Gemini (Flash)",
+		"Google GeminiのFlashモデルを使用します",
+		currentSettings.ai.provider === "gemini",
+	);
+	radioGroup.appendChild(geminiItem.wrapper);
+
+	const allItems = [openaiItem, anthropicItem, geminiItem];
+	const providerValues: AIProvider[] = ["openai", "anthropic", "gemini"];
+
+	for (let i = 0; i < allItems.length; i++) {
+		const item = allItems[i];
+		const providerValue = providerValues[i];
+		item.radio.addEventListener("change", () => {
+			if (item.radio.checked) {
+				currentSettings.ai.provider = providerValue;
+				for (const other of allItems) {
+					other.wrapper.classList.remove("selected");
+				}
+				item.wrapper.classList.add("selected");
+			}
+		});
+	}
+
+	providerGroup.appendChild(radioGroup);
+	card.appendChild(providerGroup);
+
+	// Section 2: API Key
+	const apiKeyGroup = document.createElement("div");
+	apiKeyGroup.className = "form-group";
+
+	const apiKeyLabel = document.createElement("div");
+	apiKeyLabel.className = "form-label";
+	apiKeyLabel.textContent = "APIキー";
+	apiKeyGroup.appendChild(apiKeyLabel);
+
+	const apiKeyContainer = document.createElement("div");
+	apiKeyContainer.className = "api-key-container";
+
+	const apiKeyInput = document.createElement("input");
+	apiKeyInput.type = "password";
+	apiKeyInput.className = "api-key-input";
+	apiKeyInput.placeholder = "sk-... / sk-ant-... / AIza...";
+	apiKeyInput.value = currentSettings.ai.apiKey;
+	apiKeyInput.addEventListener("input", () => {
+		currentSettings.ai.apiKey = apiKeyInput.value;
+	});
+	apiKeyContainer.appendChild(apiKeyInput);
+
+	const toggleBtn = document.createElement("button");
+	toggleBtn.type = "button";
+	toggleBtn.className = "api-key-toggle";
+	toggleBtn.textContent = "👁";
+	toggleBtn.addEventListener("click", () => {
+		if (apiKeyInput.type === "password") {
+			apiKeyInput.type = "text";
+			toggleBtn.textContent = "👁‍🗨";
+		} else {
+			apiKeyInput.type = "password";
+			toggleBtn.textContent = "👁";
+		}
+	});
+	apiKeyContainer.appendChild(toggleBtn);
+
+	apiKeyGroup.appendChild(apiKeyContainer);
+
+	const apiKeyHelp = document.createElement("div");
+	apiKeyHelp.className = "help-text";
+	apiKeyHelp.textContent =
+		"選択したプロバイダのAPIキーを入力してください。キーはローカルに保存され、外部に送信されません。";
+	apiKeyGroup.appendChild(apiKeyHelp);
+
+	card.appendChild(apiKeyGroup);
+
+	// Section 3: Custom Prompt
+	const promptGroup = document.createElement("div");
+	promptGroup.className = "form-group";
+
+	const promptLabel = document.createElement("div");
+	promptLabel.className = "form-label";
+	promptLabel.textContent = "カスタムプロンプト";
+	promptGroup.appendChild(promptLabel);
+
+	const promptTextarea = document.createElement("textarea");
+	promptTextarea.className = "prompt-textarea";
+	promptTextarea.rows = 10;
+	promptTextarea.value = currentSettings.template.customPrompt;
+	promptTextarea.addEventListener("input", () => {
+		currentSettings.template.customPrompt = promptTextarea.value;
+	});
+	promptGroup.appendChild(promptTextarea);
+
+	// Prompt actions
+	const promptActions = document.createElement("div");
+	promptActions.className = "prompt-actions";
+
+	const previewBtn = document.createElement("button");
+	previewBtn.type = "button";
+	previewBtn.className = "template-action-button";
+	previewBtn.textContent = "プレビュー";
+	previewBtn.addEventListener("click", () => {
+		const previewArea = card.querySelector(
+			".prompt-preview",
+		) as HTMLElement | null;
+		if (previewArea) {
+			if (previewArea.style.display === "none") {
+				const sampleTranscript =
+					"田中: 今日の議題について確認しましょう。\n鈴木: はい、プロジェクトの進捗報告をお願いします。\n田中: 了解です。まず開発チームの状況からお伝えします。";
+				previewArea.textContent = `[システムプロンプト]\n${promptTextarea.value}\n\n[文字起こし（サンプル）]\n${sampleTranscript}`;
+				previewArea.style.display = "block";
+				previewBtn.textContent = "プレビューを閉じる";
+			} else {
+				previewArea.style.display = "none";
+				previewBtn.textContent = "プレビュー";
+			}
+		}
+	});
+	promptActions.appendChild(previewBtn);
+
+	const resetBtn = document.createElement("button");
+	resetBtn.type = "button";
+	resetBtn.className = "template-action-button";
+	resetBtn.textContent = "リセット";
+	resetBtn.addEventListener("click", () => {
+		promptTextarea.value = DEFAULT_CUSTOM_PROMPT;
+		currentSettings.template.customPrompt = DEFAULT_CUSTOM_PROMPT;
+	});
+	promptActions.appendChild(resetBtn);
+
+	promptGroup.appendChild(promptActions);
+
+	// Preview area (hidden by default)
+	const preview = document.createElement("pre");
+	preview.className = "prompt-preview";
+	preview.style.display = "none";
+	promptGroup.appendChild(preview);
+
+	const promptHelp = document.createElement("div");
+	promptHelp.className = "help-text";
+	promptHelp.textContent =
+		"AIに送信される指示プロンプトです。文字起こしテキストは自動的に追加されます。";
+	promptGroup.appendChild(promptHelp);
+
+	card.appendChild(promptGroup);
 
 	return card;
 }

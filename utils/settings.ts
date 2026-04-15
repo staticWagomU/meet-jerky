@@ -1,3 +1,4 @@
+import { DEFAULT_CUSTOM_PROMPT } from "./ai-client";
 import { DEFAULT_MINUTES_TEMPLATE } from "./template";
 import type { UserSettings } from "./types";
 
@@ -10,7 +11,14 @@ export const DEFAULT_SETTINGS: UserSettings = {
 		maxDays: 30,
 	},
 	google: { authenticated: false },
-	template: { minutesTemplate: DEFAULT_MINUTES_TEMPLATE, customPrompt: "" },
+	template: {
+		minutesTemplate: DEFAULT_MINUTES_TEMPLATE,
+		customPrompt: DEFAULT_CUSTOM_PROMPT,
+	},
+	ai: {
+		provider: "anthropic",
+		apiKey: "",
+	},
 };
 
 /** Recursive partial type for UserSettings. */
