@@ -6,6 +6,7 @@ import {
 	SETTINGS_STORAGE_KEY,
 	saveSettings,
 } from "../settings";
+import { DEFAULT_CUSTOM_PROMPT } from "../ai-client";
 import { DEFAULT_MINUTES_TEMPLATE } from "../template";
 
 const mockGet = vi.fn();
@@ -37,7 +38,7 @@ describe("DEFAULT_SETTINGS", () => {
 		expect(DEFAULT_SETTINGS.template.minutesTemplate).toBe(
 			DEFAULT_MINUTES_TEMPLATE,
 		);
-		expect(DEFAULT_SETTINGS.template.customPrompt).toBe("");
+		expect(DEFAULT_SETTINGS.template.customPrompt).toBe(DEFAULT_CUSTOM_PROMPT);
 	});
 });
 
@@ -134,5 +135,48 @@ describe("saveSettings", () => {
 		expect(mockSet).toHaveBeenCalledWith({
 			[SETTINGS_STORAGE_KEY]: settings,
 		});
+	});
+});
+
+// --- ai設定 ---
+
+describe("DEFAULT_SETTINGSのai設定", () => {
+	it("DEFAULT_SETTINGSにai設定が含まれる", () => {
+		expect(DEFAULT_SETTINGS.ai).toBeDefined();
+		expect(DEFAULT_SETTINGS.ai.provider).toBe("anthropic");
+		expect(DEFAULT_SETTINGS.ai.apiKey).toBe("");
+	});
+
+	it("DEFAULT_SETTINGSのcustomPromptがDEFAULT_CUSTOM_PROMPTと一致する", () => {
+		expect(DEFAULT_SETTINGS.template.customPrompt).toBe(DEFAULT_CUSTOM_PROMPT);
+	});
+});
+
+describe("mergeSettingsのai設定マージ", () => {
+	it("ai.providerのみ変更した場合、apiKeyはデフォルト値が保持される", () => {
+		const result = mergeSettings(
+			{ ai: { provider: "openai" } },
+			DEFAULT_SETTINGS,
+		);
+		expect(result.ai.provider).toBe("openai");
+		expect(result.ai.apiKey).toBe("");
+	});
+
+	it("ai.apiKeyのみ変更した場合、providerはデフォルト値が保持される", () => {
+		const result = mergeSettings(
+			{ ai: { apiKey: "sk-test-key" } },
+			DEFAULT_SETTINGS,
+		);
+		expect(result.ai.provider).toBe("anthropic");
+		expect(result.ai.apiKey).toBe("sk-test-key");
+	});
+
+	it("ai設定全体を変更した場合、正しくマージされる", () => {
+		const result = mergeSettings(
+			{ ai: { provider: "gemini", apiKey: "gemini-key-123" } },
+			DEFAULT_SETTINGS,
+		);
+		expect(result.ai.provider).toBe("gemini");
+		expect(result.ai.apiKey).toBe("gemini-key-123");
 	});
 });
