@@ -2,11 +2,11 @@ import "./style.css";
 import { summarizeTranscript } from "@/utils/ai-client";
 import { authenticate, getAuthToken } from "@/utils/google-auth";
 import {
+	batchUpdateDocument,
 	createDocument,
 	DocsApiError,
 	writeDocumentContent,
 } from "@/utils/google-docs";
-import { showNotification } from "@/utils/notification";
 import {
 	buildExportFilename,
 	computeTranscriptDiffs,
@@ -20,6 +20,7 @@ import {
 	formatTranscriptAsText,
 	getSessionDisplayTitle,
 } from "@/utils/helpers";
+import { showNotification } from "@/utils/notification";
 import { loadSettings } from "@/utils/settings";
 import { generateMinutes } from "@/utils/template";
 import type { MeetingSession } from "@/utils/types";
@@ -254,6 +255,7 @@ function renderSessionList(sessions: SessionSummary[]): void {
       <div class="session-info">
         <div class="session-title-row">
           <span class="session-title">${escapeHtml(getSessionDisplayTitle(session))}</span>
+          ${session.endTimestamp === "" ? '<span class="recording-badge"><span class="recording-dot"></span>記録中</span>' : ""}
           <button class="edit-title-button" data-edit-id="${escapeHtml(session.sessionId)}" title="タイトルを編集">&#9998;</button>
         </div>
         <div class="session-meta">
@@ -555,14 +557,72 @@ async function handleDocsExport(
 		docsBtn.classList.add("export-docs-loading");
 
 		const title = getSessionDisplayTitle(session);
-		const content = await buildMinutesContent(session);
+		const summaryText =
+			document.querySelector(".ai-summary-content")?.textContent ?? "";
+		const settings = await loadSettings();
+		const minutes = generateMinutes(
+			session,
+			settings.template.minutesTemplate,
+		);
 
 		const exportToDocs = async (authToken: string) => {
-			const { documentId, documentUrl } = await createDocument(
-				authToken,
-				`${title} - 議事録`,
-			);
-			await writeDocumentContent(authToken, documentId, content);
+			const { documentId, documentUrl, defaultTabId } =
+				await createDocument(authToken, `${title} - 議事録`);
+
+			if (summaryText && defaultTabId) {
+				// Tabbed export: 要約タブ + 文字起こしタブ
+				const response = await batchUpdateDocument(
+					authToken,
+					documentId,
+					[
+						{
+							updateDocumentTabProperties: {
+								tabProperties: {
+									tabId: defaultTabId,
+									title: "要約",
+								},
+								fields: "title",
+							},
+						},
+						{
+							insertText: {
+								location: {
+									index: 1,
+									tabId: defaultTabId,
+								},
+								text: `## AI 要約\n\n${summaryText}`,
+							},
+						},
+						{
+							addDocumentTab: {
+								tabProperties: { title: "文字起こし" },
+							},
+						},
+					],
+				);
+
+				const transcriptTabId = response.replies
+					.map((r) => r.addDocumentTab?.tabProperties?.tabId)
+					.find((id) => id);
+
+				if (transcriptTabId) {
+					await writeDocumentContent(
+						authToken,
+						documentId,
+						minutes,
+						transcriptTabId,
+					);
+				}
+			} else {
+				// Single tab: combine summary + minutes
+				let content = "";
+				if (summaryText) {
+					content += `## AI 要約\n\n${summaryText}\n\n---\n\n`;
+				}
+				content += minutes;
+				await writeDocumentContent(authToken, documentId, content);
+			}
+
 			return documentUrl;
 		};
 
