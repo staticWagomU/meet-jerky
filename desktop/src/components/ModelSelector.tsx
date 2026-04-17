@@ -2,17 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-
-interface ModelInfo {
-  name: string;
-  displayName: string;
-  sizeMb: number;
-  url: string;
-}
-
-interface DownloadProgressPayload {
-  progress: number;
-}
+import type { ModelInfo, DownloadProgressPayload } from "../types";
 
 interface ModelSelectorProps {
   selectedModel: string;

@@ -1,17 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
-
-export interface TranscriptSegment {
-  text: string;
-  startMs: number;
-  endMs: number;
-  speaker?: string; // "自分" (mic) or "相手" (system audio)
-  isError?: boolean;
-}
-
-interface TranscriptionErrorPayload {
-  error: string;
-}
+import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 
 function formatTimestamp(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
