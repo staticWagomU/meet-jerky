@@ -21,6 +21,7 @@ export function TranscriptDisplay({
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const userScrolledRef = useRef(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   // Listen to transcription-result events
   useEffect(() => {
@@ -80,8 +81,41 @@ export function TranscriptDisplay({
     }
   }, []);
 
+  const handleCopyAll = useCallback(async () => {
+    const text = segments
+      .filter((seg) => !seg.isError)
+      .map((seg) => {
+        const time = `[${formatTimestamp(seg.startMs)}]`;
+        const speaker = seg.speaker ? `${seg.speaker}: ` : "";
+        return `${time} ${speaker}${seg.text}`;
+      })
+      .join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    } catch (e) {
+      console.error("コピーに失敗しました:", e);
+    }
+  }, [segments]);
+
   return (
     <div className="transcript-display-wrapper">
+      {segments.length > 0 && (
+        <div className="transcript-toolbar">
+          <span className="transcript-segment-count">
+            {segments.length} 件
+          </span>
+          <button
+            type="button"
+            className="copy-btn"
+            onClick={handleCopyAll}
+          >
+            {copyFeedback ? "コピー済み" : "コピー"}
+          </button>
+        </div>
+      )}
       <div
         ref={containerRef}
         className="transcript-display"

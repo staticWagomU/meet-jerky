@@ -1,4 +1,5 @@
 mod audio;
+mod settings;
 mod system_audio;
 mod transcript;
 mod transcription;
@@ -84,6 +85,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(audio::AudioStateHandle::new())
         .manage(transcription::TranscriptionStateHandle::new())
+        .manage(settings::SettingsStateHandle::new())
         .invoke_handler(tauri::generate_handler![
             audio::list_audio_devices,
             audio::start_recording,
@@ -95,6 +97,12 @@ pub fn run() {
             transcription::download_model,
             transcription::start_transcription,
             transcription::stop_transcription,
+            settings::get_settings,
+            settings::update_settings,
+            settings::get_default_output_directory,
+            settings::select_output_directory,
+            settings::check_microphone_permission,
+            settings::check_screen_recording_permission,
         ])
         .setup(|app| {
             setup_tray(app)?;

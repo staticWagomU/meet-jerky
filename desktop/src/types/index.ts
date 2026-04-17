@@ -30,3 +30,13 @@ export interface ModelInfo {
 export interface DownloadProgressPayload {
   progress: number;
 }
+
+export type TranscriptionEngineType = "local" | "cloud";
+
+export interface AppSettings {
+  transcriptionEngine: TranscriptionEngineType;
+  whisperModel: string;
+  microphoneDeviceId: string | null;
+  language: string;
+  outputDirectory: string | null;
+}

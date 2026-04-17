@@ -67,6 +67,26 @@
   /* Transcript empty */
   --transcript-empty-color: #aaa;
 
+  /* Permission banner */
+  --permission-banner-bg: rgba(234, 179, 8, 0.1);
+  --permission-banner-border: #eab308;
+  --permission-banner-color: #92400e;
+
+  /* Toast */
+  --toast-bg: #1f2937;
+  --toast-color: #f9fafb;
+
+  /* Settings */
+  --settings-note-color: #9ca3af;
+
+  /* Meeting */
+  --meeting-timer-color: #dc2626;
+
+  /* Copy button */
+  --copy-btn-bg: transparent;
+  --copy-btn-border: #d1d5db;
+  --copy-btn-color: #6b7280;
+
   color: var(--color-text);
   background-color: var(--color-bg);
 }
@@ -113,6 +133,21 @@
     --transcript-timestamp-color: #999;
 
     --transcript-empty-color: #666;
+
+    --permission-banner-bg: rgba(234, 179, 8, 0.12);
+    --permission-banner-border: #ca8a04;
+    --permission-banner-color: #fbbf24;
+
+    --toast-bg: #374151;
+    --toast-color: #f9fafb;
+
+    --settings-note-color: #6b7280;
+
+    --meeting-timer-color: #ef4444;
+
+    --copy-btn-bg: transparent;
+    --copy-btn-border: #4b5563;
+    --copy-btn-color: #9ca3af;
   }
 }
 
@@ -511,4 +546,290 @@
   cursor: pointer;
   color: var(--scroll-btn-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================
+   Transcript Toolbar (copy, count)
+   =========================== */
+
+.transcript-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: var(--color-surface);
+}
+
+.transcript-segment-count {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.copy-btn {
+  padding: 0.2em 0.6em;
+  border: 1px solid var(--copy-btn-border);
+  border-radius: 4px;
+  background: var(--copy-btn-bg);
+  color: var(--copy-btn-color);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.copy-btn:hover {
+  background-color: var(--color-surface);
+}
+
+/* ===========================
+   Meeting Button & Timer
+   =========================== */
+
+.meeting-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 0;
+}
+
+.meeting-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7em 1.5em;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background-color: #16a34a;
+  transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.meeting-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.meeting-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.meeting-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.meeting-btn-active {
+  background-color: #dc2626;
+}
+
+.meeting-timer {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--meeting-timer-color);
+}
+
+/* ===========================
+   Permission Banner
+   =========================== */
+
+.permission-banner {
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.permission-banner-warning {
+  background-color: var(--permission-banner-bg);
+  border: 1px solid var(--permission-banner-border);
+  color: var(--permission-banner-color);
+}
+
+.permission-banner-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.permission-banner-body {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.permission-banner-body p {
+  margin: 0.2rem 0;
+}
+
+.permission-banner .control-btn {
+  margin-top: 0.4rem;
+}
+
+/* ===========================
+   Settings View
+   =========================== */
+
+.settings-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 600px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.settings-section:last-of-type {
+  border-bottom: none;
+}
+
+.settings-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-heading-secondary);
+  margin: 0;
+}
+
+.settings-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.settings-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.settings-radio-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-note {
+  font-size: 0.7rem;
+  color: var(--settings-note-color);
+  margin-left: 0.3rem;
+}
+
+.settings-select {
+  padding: 0.4em 0.6em;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  max-width: 300px;
+}
+
+.settings-output-dir {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.settings-output-path {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  word-break: break-all;
+  padding: 0.3em 0.5em;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.settings-output-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.settings-permissions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.settings-permission-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.settings-permission-label {
+  font-weight: 500;
+  min-width: 5em;
+}
+
+.settings-permission-badge {
+  font-size: 0.75rem;
+  padding: 0.1em 0.5em;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.permission-granted {
+  background-color: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.permission-denied {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.permission-undetermined {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #b08000;
+}
+
+.settings-actions {
+  padding: 0.5rem 0;
+}
+
+.settings-save-btn {
+  padding: 0.5em 1.5em;
+  font-size: 0.9rem;
+}
+
+/* ===========================
+   Toast Notification
+   =========================== */
+
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.6em 1.2em;
+  background-color: var(--toast-bg);
+  color: var(--toast-color);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: toast-slide-up 0.3s ease-out;
+}
+
+@keyframes toast-slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
