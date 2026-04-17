@@ -3,6 +3,20 @@ use std::path::PathBuf;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 
+fn deserialize_engine_type_with_fallback<'de, D>(
+    deserializer: D,
+) -> Result<TranscriptionEngineType, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = String::deserialize(deserializer)?;
+    match value.as_str() {
+        "local" => Ok(TranscriptionEngineType::Local),
+        "cloud" => Ok(TranscriptionEngineType::Cloud),
+        _ => Ok(TranscriptionEngineType::Local),
+    }
+}
+
 // ─────────────────────────────────────────────
 // データ型
 // ─────────────────────────────────────────────
@@ -20,6 +34,7 @@ pub enum TranscriptionEngineType {
 #[serde(rename_all = "camelCase", default)]
 pub struct AppSettings {
     /// 文字起こしエンジン ("local" or "cloud")
+    #[serde(deserialize_with = "deserialize_engine_type_with_fallback")]
     pub transcription_engine: TranscriptionEngineType,
 
     /// Whisper モデル名 ("tiny", "base", "small", "medium", "large-v3")
@@ -333,5 +348,52 @@ mod tests {
         assert!(settings.microphone_device_id.is_none());
         assert_eq!(settings.language, "auto");
         assert!(settings.output_directory.is_none());
+    }
+
+    #[test]
+    fn test_deserialization_ignores_unknown_fields() {
+        // Simulates a settings file from a newer version with additional fields
+        let json = r#"{
+            "transcriptionEngine": "local",
+            "whisperModel": "small",
+            "microphoneDeviceId": null,
+            "language": "auto",
+            "outputDirectory": null,
+            "apiKey": "sk-test-12345",
+            "cloudProvider": "openai",
+            "newFeatureFlag": true
+        }"#;
+        let settings: AppSettings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Local);
+        assert_eq!(settings.whisper_model, "small");
+        assert_eq!(settings.language, "auto");
+    }
+
+    #[test]
+    fn test_load_recovers_valid_fields_from_partially_invalid_json() {
+        // JSON with an invalid enum value for transcriptionEngine,
+        // but valid values for all other fields.
+        // Currently, serde will fail on the invalid enum, causing ALL fields
+        // to fall back to defaults — even the valid ones.
+        let json = r#"{
+            "transcriptionEngine": "invalid_engine",
+            "whisperModel": "medium",
+            "microphoneDeviceId": "my-device",
+            "language": "ja",
+            "outputDirectory": "/custom/path"
+        }"#;
+
+        // We want the system to recover: use default for the invalid field,
+        // but preserve the valid fields
+        let settings: AppSettings = serde_json::from_str(json)
+            .unwrap_or_else(|_| {
+                // This is what load() does — but it loses ALL valid fields
+                AppSettings::default()
+            });
+
+        // This assertion will FAIL because unwrap_or_else returns ALL defaults
+        // when serde fails on the invalid enum
+        assert_eq!(settings.whisper_model, "medium");
+        assert_eq!(settings.language, "ja");
     }
 }
