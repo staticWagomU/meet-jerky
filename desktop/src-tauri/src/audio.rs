@@ -1,0 +1,402 @@
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use parking_lot::Mutex;
+use ringbuf::{
+    traits::{Producer, Split},
+    HeapRb,
+};
+use serde_json::json;
+use tauri::Emitter;
+
+/// フロントエンドに返すオーディオデバイス情報
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct AudioDevice {
+    pub name: String,
+    pub id: String,
+}
+
+// ─────────────────────────────────────────────
+// AudioCapture トレイト
+// ─────────────────────────────────────────────
+
+/// 音声キャプチャの抽象化。マイク(cpal)やシステム音声(ScreenCaptureKit)が実装する。
+#[allow(dead_code)]
+pub trait AudioCapture: Send {
+    /// キャプチャ開始
+    fn start(&mut self, app_handle: tauri::AppHandle) -> Result<(), String>;
+    /// キャプチャ停止
+    fn stop(&mut self) -> Result<(), String>;
+    /// リングバッファの消費者を取得
+    fn take_consumer(&mut self) -> Option<ringbuf::HeapCons<f32>>;
+    /// サンプルレート取得
+    fn sample_rate(&self) -> Option<u32>;
+    /// ソース名 ("microphone" or "system_audio")
+    fn source_name(&self) -> &str;
+    /// 現在のRMSレベル (0.0-1.0)
+    fn current_level(&self) -> f32;
+    /// キャプチャ中かどうか
+    fn is_running(&self) -> bool;
+}
+
+// ─────────────────────────────────────────────
+// CpalMicCapture
+// ─────────────────────────────────────────────
+
+/// cpal を使ったマイク入力キャプチャ
+pub struct CpalMicCapture {
+    device_id: Option<String>,
+    stream: Option<cpal::Stream>,
+    consumer: Option<ringbuf::HeapCons<f32>>,
+    sample_rate: Option<u32>,
+    level: Arc<AtomicU32>,
+    running: Arc<AtomicBool>,
+    level_thread: Option<std::thread::JoinHandle<()>>,
+}
+
+// cpal::Stream は macOS では Send ではないが、CpalMicCapture は
+// Mutex で保護され、stream へのアクセスは常に排他的なので安全。
+unsafe impl Send for CpalMicCapture {}
+
+impl CpalMicCapture {
+    pub fn new(device_id: Option<String>) -> Self {
+        Self {
+            device_id,
+            stream: None,
+            consumer: None,
+            sample_rate: None,
+            level: Arc::new(AtomicU32::new(0)),
+            running: Arc::new(AtomicBool::new(false)),
+            level_thread: None,
+        }
+    }
+}
+
+impl AudioCapture for CpalMicCapture {
+    fn start(&mut self, app_handle: tauri::AppHandle) -> Result<(), String> {
+        // 既にキャプチャ中なら停止してから再開する
+        if self.stream.is_some() {
+            self.stop()?;
+        }
+
+        let host = cpal::default_host();
+
+        // デバイスの選択
+        let device = match &self.device_id {
+            Some(id) => {
+                let mut found = None;
+                let devices = host
+                    .input_devices()
+                    .map_err(|e| format!("入力デバイスの列挙に失敗しました: {e}"))?;
+                for d in devices {
+                    if let Ok(device_id) = d.id() {
+                        if device_id.to_string() == *id {
+                            found = Some(d);
+                            break;
+                        }
+                    }
+                }
+                found.ok_or_else(|| format!("デバイスが見つかりません: {id}"))?
+            }
+            None => host
+                .default_input_device()
+                .ok_or_else(|| "デフォルト入力デバイスがありません".to_string())?,
+        };
+
+        let config = device
+            .default_input_config()
+            .map_err(|e| format!("デフォルト入力設定の取得に失敗しました: {e}"))?;
+
+        let channels = config.channels() as usize;
+        let device_sample_rate = config.sample_rate();
+        self.sample_rate = Some(device_sample_rate);
+
+        // リングバッファ: 16kHz mono で約5秒分 = 80000サンプル
+        // 実際のサンプルレートが異なる場合でも十分なサイズを確保
+        let buffer_size = 80_000usize;
+        let rb = HeapRb::<f32>::new(buffer_size);
+        let (producer, consumer) = rb.split();
+        let producer = Arc::new(Mutex::new(producer));
+
+        let level = Arc::new(AtomicU32::new(0));
+        let running = Arc::new(AtomicBool::new(true));
+
+        self.level = Arc::clone(&level);
+        self.running = Arc::clone(&running);
+        self.consumer = Some(consumer);
+
+        // オーディオコールバック用のクローン
+        let level_for_callback = Arc::clone(&level);
+        let producer_for_callback = Arc::clone(&producer);
+
+        let err_fn = |err: cpal::StreamError| {
+            eprintln!("オーディオストリームエラー: {err}");
+        };
+
+        // f32 フォーマットでストリームを構築
+        let stream_config: cpal::StreamConfig = config.into();
+        let stream = device
+            .build_input_stream(
+                &stream_config,
+                move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                    // モノラルに変換（RMS計算とリングバッファ書き込みの両方で使用）
+                    let mono_samples: Vec<f32> = data
+                        .chunks(channels)
+                        .map(|chunk| chunk.iter().sum::<f32>() / channels as f32)
+                        .collect();
+
+                    let rms = calculate_rms(&mono_samples);
+                    level_for_callback.store(rms.to_bits(), Ordering::Relaxed);
+
+                    // モノラルサンプルをリングバッファに書き込む
+                    // parking_lot::Mutex::try_lock はリアルタイムスレッドで
+                    // ブロックを回避するために使用
+                    if let Some(mut guard) = producer_for_callback.try_lock() {
+                        for &sample in &mono_samples {
+                            // バッファが満杯の場合は古いサンプルを捨てる（書き込まない）
+                            let _ = guard.try_push(sample);
+                        }
+                    }
+                },
+                err_fn,
+                None, // タイムアウトなし
+            )
+            .map_err(|e| format!("入力ストリームの構築に失敗しました: {e}"))?;
+
+        stream
+            .play()
+            .map_err(|e| format!("ストリームの開始に失敗しました: {e}"))?;
+
+        self.stream = Some(stream);
+
+        // バックグラウンドスレッドで audio-level イベントを送信
+        let level_for_emitter = Arc::clone(&level);
+        let running_for_emitter = Arc::clone(&running);
+        let handle = std::thread::spawn(move || {
+            while running_for_emitter.load(Ordering::SeqCst) {
+                let bits = level_for_emitter.load(Ordering::Relaxed);
+                let level_value = f32::from_bits(bits);
+                let _ = app_handle.emit("audio-level", json!({ "level": level_value, "source": "microphone" }));
+                std::thread::sleep(Duration::from_millis(100));
+            }
+        });
+        self.level_thread = Some(handle);
+
+        Ok(())
+    }
+
+    fn stop(&mut self) -> Result<(), String> {
+        // running フラグをオフにしてレベル送信スレッドを停止
+        self.running.store(false, Ordering::SeqCst);
+
+        // ストリームをドロップして録音を停止
+        self.stream = None;
+        self.consumer = None;
+        self.sample_rate = None;
+
+        // レベルをリセット（0.0f32 のビットパターンは 0u32）
+        self.level.store(0, Ordering::Relaxed);
+
+        // レベル送信スレッドの終了を待つ
+        if let Some(handle) = self.level_thread.take() {
+            let _ = handle.join();
+        }
+
+        Ok(())
+    }
+
+    fn take_consumer(&mut self) -> Option<ringbuf::HeapCons<f32>> {
+        self.consumer.take()
+    }
+
+    fn sample_rate(&self) -> Option<u32> {
+        self.sample_rate
+    }
+
+    fn source_name(&self) -> &str {
+        "microphone"
+    }
+
+    fn current_level(&self) -> f32 {
+        f32::from_bits(self.level.load(Ordering::Relaxed))
+    }
+
+    fn is_running(&self) -> bool {
+        self.running.load(Ordering::SeqCst)
+    }
+}
+
+// ─────────────────────────────────────────────
+// AudioStateHandle (Tauri managed state)
+// ─────────────────────────────────────────────
+
+/// 録音中の内部状態
+pub struct AudioStateInner {
+    pub microphone: Option<CpalMicCapture>,
+}
+
+/// Tauri managed state として使うハンドル
+pub struct AudioStateHandle(pub(crate) Mutex<AudioStateInner>);
+
+impl AudioStateHandle {
+    pub fn new() -> Self {
+        Self(Mutex::new(AudioStateInner {
+            microphone: None,
+        }))
+    }
+}
+
+/// 利用可能な入力デバイスを列挙する
+#[tauri::command]
+pub fn list_audio_devices() -> Result<Vec<AudioDevice>, String> {
+    let host = cpal::default_host();
+    let devices = host
+        .input_devices()
+        .map_err(|e| format!("入力デバイスの列挙に失敗しました: {e}"))?;
+
+    let mut result = Vec::new();
+    for (index, device) in devices.enumerate() {
+        let name = device
+            .description()
+            .map(|desc| desc.name().to_string())
+            .unwrap_or_else(|_| format!("Unknown Device {index}"));
+        let id = device
+            .id()
+            .map(|device_id| device_id.to_string())
+            .unwrap_or_else(|_| name.clone());
+        result.push(AudioDevice { name, id });
+    }
+
+    Ok(result)
+}
+
+/// 録音を開始する
+///
+/// `device_id` が `None` の場合はデフォルトの入力デバイスを使用する。
+/// 録音中は ~100ms ごとに `audio-level` イベントをフロントエンドに送信する。
+#[tauri::command]
+pub fn start_recording(
+    device_id: Option<String>,
+    state: tauri::State<'_, AudioStateHandle>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let mut inner = state.0.lock();
+
+    // 既に録音中なら停止してから再開する
+    if let Some(ref mut mic) = inner.microphone {
+        mic.stop()?;
+    }
+
+    let mut mic = CpalMicCapture::new(device_id);
+    mic.start(app)?;
+    inner.microphone = Some(mic);
+
+    Ok(())
+}
+
+/// PCMサンプルからRMSレベルを計算 (0.0〜1.0)
+pub fn calculate_rms(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+    let sum: f32 = samples.iter().map(|s| s * s).sum();
+    let rms = (sum / samples.len() as f32).sqrt();
+    if rms.is_nan() {
+        return 0.0;
+    }
+    rms.clamp(0.0, 1.0)
+}
+
+/// 録音を停止する
+#[tauri::command]
+pub fn stop_recording(state: tauri::State<'_, AudioStateHandle>) -> Result<(), String> {
+    let mut inner = state.0.lock();
+
+    if let Some(ref mut mic) = inner.microphone {
+        mic.stop()?;
+    }
+    inner.microphone = None;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rms_silence() {
+        let samples = vec![0.0f32; 100];
+        assert_eq!(calculate_rms(&samples), 0.0);
+    }
+
+    #[test]
+    fn test_rms_full_scale() {
+        let samples = vec![1.0f32; 100];
+        assert!((calculate_rms(&samples) - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_rms_known_value() {
+        let samples = vec![1.0f32, -1.0, 1.0, -1.0];
+        assert!((calculate_rms(&samples) - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_rms_half_amplitude() {
+        let samples = vec![0.5f32; 100];
+        assert!((calculate_rms(&samples) - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_rms_empty_samples() {
+        let samples: Vec<f32> = vec![];
+        assert_eq!(calculate_rms(&samples), 0.0);
+    }
+
+    #[test]
+    fn test_rms_clamped_to_one() {
+        let samples = vec![2.0f32; 100];
+        assert_eq!(calculate_rms(&samples), 1.0);
+    }
+
+    #[test]
+    fn test_rms_nan_samples() {
+        let samples = vec![f32::NAN, 0.5, 0.5];
+        let result = calculate_rms(&samples);
+        assert!(!result.is_nan(), "RMS should not be NaN");
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn test_rms_infinity_samples() {
+        let samples = vec![f32::INFINITY, 0.5];
+        let result = calculate_rms(&samples);
+        assert!(!result.is_infinite(), "RMS should not be Infinity");
+        assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn test_audio_state_initial() {
+        let state = AudioStateHandle::new();
+        let inner = state.0.lock();
+        assert!(inner.microphone.is_none());
+    }
+
+    #[test]
+    fn test_cpal_mic_capture_initial_state() {
+        let capture = CpalMicCapture::new(None);
+        assert_eq!(capture.source_name(), "microphone");
+        assert!(!capture.is_running());
+        assert!(capture.sample_rate().is_none());
+        assert_eq!(capture.current_level(), 0.0);
+    }
+
+    #[test]
+    fn test_cpal_mic_consumer_none_before_start() {
+        let mut capture = CpalMicCapture::new(None);
+        assert!(capture.take_consumer().is_none());
+    }
+}

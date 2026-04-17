@@ -1,3 +1,5 @@
+mod audio;
+
 use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
@@ -77,6 +79,12 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(audio::AudioStateHandle::new())
+        .invoke_handler(tauri::generate_handler![
+            audio::list_audio_devices,
+            audio::start_recording,
+            audio::stop_recording,
+        ])
         .setup(|app| {
             setup_tray(app)?;
             Ok(())

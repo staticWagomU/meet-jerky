@@ -1,7 +1,119 @@
+import { useState, useEffect, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { useQuery } from "@tanstack/react-query";
+import { AudioLevelMeter } from "../components/AudioLevelMeter";
+
+/** invoke のエラーを文字列として返すヘルパー */
+function toErrorMessage(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
+interface AudioDevice {
+  name: string;
+  id: string;
+}
+
+interface AudioLevelPayload {
+  source: "microphone" | "system_audio";
+  level: number;
+}
+
 export function TranscriptView() {
+  const [isMicRecording, setIsMicRecording] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
+
+  const { data: devices } = useQuery<AudioDevice[]>({
+    queryKey: ["audioDevices"],
+    queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
+  });
+
+  // Route audio-level events by source
+  useEffect(() => {
+    const unlistenPromise = listen<AudioLevelPayload>(
+      "audio-level",
+      (event) => {
+        if (event.payload.source === "microphone") {
+          setMicLevel(event.payload.level);
+        }
+      },
+    );
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  const handleToggleMicRecording = useCallback(async () => {
+    try {
+      if (isMicRecording) {
+        await invoke("stop_recording");
+        setIsMicRecording(false);
+        setMicLevel(0);
+      } else {
+        if (selectedDeviceId) {
+          await invoke("start_recording", { deviceId: selectedDeviceId });
+        } else {
+          await invoke("start_recording");
+        }
+        setIsMicRecording(true);
+      }
+    } catch (e) {
+      console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
+    }
+  }, [isMicRecording, selectedDeviceId]);
+
   return (
     <div className="transcript-view">
-      <p>文字起こし画面（準備中）</p>
+      {/* Microphone section */}
+      <div className="audio-source-section">
+        <div className="audio-source-header">マイク</div>
+        <div className="controls-row">
+          <div className="device-selector">
+            <select
+              id="device-select"
+              value={selectedDeviceId}
+              onChange={(e) => setSelectedDeviceId(e.target.value)}
+              disabled={isMicRecording}
+              className="device-select"
+            >
+              <option value="">デフォルト</option>
+              {devices?.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleMicRecording}
+            className={`control-btn ${isMicRecording ? "control-btn-stop" : "control-btn-record"}`}
+          >
+            <span
+              className={`rec-indicator ${isMicRecording ? "rec-indicator-active" : ""}`}
+            />
+            {isMicRecording ? "録音停止" : "録音開始"}
+          </button>
+        </div>
+        <div className="level-meter-row">
+          <span className="level-label">レベル</span>
+          <div className="level-meter-bar">
+            <AudioLevelMeter level={micLevel} />
+          </div>
+          <span className="level-label">{Math.round(micLevel * 100)}%</span>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   );
 }
