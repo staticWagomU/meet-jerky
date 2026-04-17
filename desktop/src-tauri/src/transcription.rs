@@ -24,7 +24,7 @@ pub struct TranscriptionSegment {
     pub start_ms: i64,
     pub end_ms: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub speaker: Option<String>,
+    pub speaker: Option<String>, // "自分" (mic) or "相手" (system audio)
 }
 
 /// 利用可能なモデルの情報
@@ -346,10 +346,16 @@ pub async fn download_model(
     Ok(result.to_string_lossy().to_string())
 }
 
-/// 文字起こしを開始する（マイク音声）
+/// 文字起こしを開始する
+///
+/// `source` パラメータ:
+/// - `Some("microphone")`: マイクのみ
+/// - `Some("system_audio")`: システム音声のみ
+/// - `None` または `Some("both")`: 両方（デュアルストリーム）
 #[tauri::command]
 pub fn start_transcription(
     model_name: String,
+    source: Option<String>,
     audio_state: tauri::State<'_, crate::audio::AudioStateHandle>,
     transcription_state: tauri::State<'_, TranscriptionStateHandle>,
     app: tauri::AppHandle,
@@ -376,30 +382,67 @@ pub fn start_transcription(
     let running = manager.running_flag();
     running.store(true, Ordering::SeqCst);
 
+    let source_str = source.as_deref().unwrap_or("both");
+
+    let use_mic = source_str == "microphone" || source_str == "both";
+    let use_system = source_str == "system_audio" || source_str == "both";
+
+    let mut spawned_any = false;
+
     // マイク用の文字起こしスレッド
-    if let Some(mic_sample_rate) = audio_state.get_sample_rate() {
-        if let Some(mic_consumer) = audio_state.take_consumer() {
-            let engine_clone = Arc::clone(&engine);
-            let running_clone = Arc::clone(&running);
-            let app_clone = app.clone();
+    if use_mic {
+        if let Some(mic_sample_rate) = audio_state.get_sample_rate() {
+            if let Some(mic_consumer) = audio_state.take_consumer() {
+                let engine_clone = Arc::clone(&engine);
+                let running_clone = Arc::clone(&running);
+                let app_clone = app.clone();
+                let speaker = Some("自分".to_string());
 
-            std::thread::spawn(move || {
-                run_transcription_loop(
-                    mic_consumer,
-                    engine_clone,
-                    mic_sample_rate,
-                    running_clone,
-                    app_clone,
-                    Some("自分".to_string()),
-                );
-            });
-
-            return Ok(());
+                std::thread::spawn(move || {
+                    run_transcription_loop(
+                        mic_consumer,
+                        engine_clone,
+                        mic_sample_rate,
+                        running_clone,
+                        app_clone,
+                        speaker,
+                    );
+                });
+                spawned_any = true;
+            }
         }
     }
 
-    running.store(false, Ordering::SeqCst);
-    Err("音声ソースが利用可能ではありません。録音を先に開始してください。".to_string())
+    // システム音声用の文字起こしスレッド
+    if use_system {
+        if let Some(sys_sample_rate) = audio_state.get_system_audio_sample_rate() {
+            if let Some(sys_consumer) = audio_state.take_system_audio_consumer() {
+                let engine_clone = Arc::clone(&engine);
+                let running_clone = Arc::clone(&running);
+                let app_clone = app.clone();
+                let speaker = Some("相手".to_string());
+
+                std::thread::spawn(move || {
+                    run_transcription_loop(
+                        sys_consumer,
+                        engine_clone,
+                        sys_sample_rate,
+                        running_clone,
+                        app_clone,
+                        speaker,
+                    );
+                });
+                spawned_any = true;
+            }
+        }
+    }
+
+    if !spawned_any {
+        running.store(false, Ordering::SeqCst);
+        return Err("音声ソースが利用可能ではありません。録音を先に開始してください。".to_string());
+    }
+
+    Ok(())
 }
 
 /// 文字起こしを停止する
@@ -437,6 +480,9 @@ fn sinc_params() -> SincInterpolationParameters {
 const RESAMPLE_CHUNK_SIZE: usize = 1024;
 
 /// オーディオサンプルを source_rate から target_rate にリサンプルする。
+///
+/// rubato の SincFixedIn を使用した高品質なリサンプリングを行う。
+/// source_rate == target_rate の場合はコピーを返し、空入力には空出力を返す。
 #[allow(dead_code)]
 pub fn resample_audio(
     samples: &[f32],
@@ -490,11 +536,13 @@ pub fn resample_audio(
 
         pos = end;
 
+        // ゼロパディングした場合は最後のチャンクなのでループ終了
         if was_padded {
             break;
         }
     }
 
+    // 入力長に基づいた期待出力長でトリミング
     let expected_len =
         (samples.len() as f64 * target_rate as f64 / source_rate as f64).round() as usize;
     output.truncate(expected_len);
@@ -510,7 +558,7 @@ pub fn resample_audio(
 const CHUNK_DURATION_SECS: f64 = 5.0;
 
 /// 16kHz での5秒分のサンプル数
-const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize;
+const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
 
 fn run_transcription_loop(
     mut consumer: ringbuf::HeapCons<f32>,
@@ -520,6 +568,7 @@ fn run_transcription_loop(
     app: tauri::AppHandle,
     speaker: Option<String>,
 ) {
+    // リサンプラーの設定（device_sample_rate → 16kHz）
     let needs_resample = device_sample_rate != WHISPER_SAMPLE_RATE;
     let mut resampler = if needs_resample {
         match SincFixedIn::<f32>::new(
@@ -527,7 +576,7 @@ fn run_transcription_loop(
             2.0,
             sinc_params(),
             RESAMPLE_CHUNK_SIZE,
-            1,
+            1, // チャンネル数（モノラル）
         ) {
             Ok(r) => Some(r),
             Err(e) => {
@@ -549,6 +598,7 @@ fn run_transcription_loop(
     let mut chunk_count: u64 = 0;
 
     while running.load(Ordering::SeqCst) {
+        // 1. リングバッファからサンプルを読み取る
         let available = consumer.occupied_len();
         if available == 0 {
             std::thread::sleep(Duration::from_millis(50));
@@ -565,9 +615,11 @@ fn run_transcription_loop(
 
         let samples = &read_buffer[..read_count];
 
+        // 2. リサンプリング（必要な場合）
         if let Some(ref mut resampler) = resampler {
             resample_input_buffer.extend_from_slice(samples);
 
+            // リサンプラーのチャンクサイズ分たまったら処理
             let chunk_size = resampler.input_frames_next();
             while resample_input_buffer.len() >= chunk_size {
                 let input_chunk: Vec<f32> =
@@ -586,9 +638,11 @@ fn run_transcription_loop(
                 }
             }
         } else {
+            // リサンプリング不要（既に16kHz）
             accumulation_buffer.extend_from_slice(samples);
         }
 
+        // 3. チャンクが十分に蓄積されたら推論を実行
         if accumulation_buffer.len() >= CHUNK_SAMPLES {
             let chunk: Vec<f32> = accumulation_buffer.drain(..CHUNK_SAMPLES).collect();
             chunk_count += 1;
@@ -597,6 +651,7 @@ fn run_transcription_loop(
                 Ok(segments) => {
                     for segment in segments {
                         if !segment.text.is_empty() {
+                            // タイムスタンプをグローバルオフセットに調整
                             let offset_ms =
                                 (chunk_count - 1) as i64 * (CHUNK_DURATION_SECS * 1000.0) as i64;
                             let adjusted = TranscriptionSegment {
@@ -619,8 +674,11 @@ fn run_transcription_loop(
             }
         }
 
+        // 4. ビジーウェイトを回避
         std::thread::sleep(Duration::from_millis(50));
     }
+
+    // ループ終了 - consumer はここでドロップされる
 }
 
 // ─────────────────────────────────────────────
@@ -652,6 +710,8 @@ mod tests {
 
     #[test]
     fn test_model_not_downloaded_initially() {
+        // ダウンロードしていないモデルは false を返すべき
+        // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
         let manager =
             ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
         assert!(!manager.is_model_downloaded("small"));
@@ -659,6 +719,7 @@ mod tests {
 
     #[test]
     fn test_transcription_segment_serialization() {
+        // speaker: None の場合、JSONに speaker フィールドが含まれないことを確認
         let segment = TranscriptionSegment {
             text: "hello".to_string(),
             start_ms: 1000,
@@ -671,6 +732,7 @@ mod tests {
         assert!(!json.contains("start_ms"));
         assert!(!json.contains("speaker"), "speaker: None should be skipped in JSON");
 
+        // speaker: Some("自分") の場合、JSONに speaker フィールドが含まれることを確認
         let segment_with_speaker = TranscriptionSegment {
             text: "hello".to_string(),
             start_ms: 1000,
@@ -681,8 +743,13 @@ mod tests {
         assert!(json_with_speaker.contains("\"speaker\":\"自分\""), "speaker: Some(\"自分\") should appear in JSON");
     }
 
+    // ─────────────────────────────────────────
+    // resample_audio テスト
+    // ─────────────────────────────────────────
+
     #[test]
     fn test_resample_same_rate() {
+        // 16kHz -> 16kHz: 同一レートではそのままコピーが返る
         let input: Vec<f32> = (0..1600).map(|i| (i as f32 / 1600.0).sin()).collect();
         let output = resample_audio(&input, 16000, 16000).unwrap();
         assert_eq!(output.len(), input.len());
@@ -691,8 +758,10 @@ mod tests {
 
     #[test]
     fn test_resample_downsample_length() {
-        let input: Vec<f32> = vec![0.0; 48000];
+        // 48kHz -> 16kHz: サンプル数がおよそ 1/3 になる
+        let input: Vec<f32> = vec![0.0; 48000]; // 1秒分 @ 48kHz
         let output = resample_audio(&input, 48000, 16000).unwrap();
+        // リサンプラーのエッジ効果を許容
         assert!(
             (output.len() as f32 - 16000.0).abs() < 200.0,
             "Expected ~16000 samples, got {}",
@@ -708,6 +777,7 @@ mod tests {
 
     #[test]
     fn test_resample_preserves_silence() {
+        // 無音入力は無音出力になるべき
         let input: Vec<f32> = vec![0.0; 4800];
         let output = resample_audio(&input, 48000, 16000).unwrap();
         assert!(

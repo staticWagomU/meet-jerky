@@ -1,4 +1,5 @@
 mod audio;
+mod system_audio;
 mod transcript;
 mod transcription;
 
@@ -87,6 +88,8 @@ pub fn run() {
             audio::list_audio_devices,
             audio::start_recording,
             audio::stop_recording,
+            system_audio::start_system_audio,
+            system_audio::stop_system_audio,
             transcription::list_models,
             transcription::is_model_downloaded,
             transcription::download_model,

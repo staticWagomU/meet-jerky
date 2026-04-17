@@ -233,18 +233,27 @@ impl AudioCapture for CpalMicCapture {
 // ─────────────────────────────────────────────
 
 /// 録音中の内部状態
+///
+/// 名前付きフィールドで各キャプチャソースを保持する。
 pub struct AudioStateInner {
     pub microphone: Option<CpalMicCapture>,
+    pub system_audio: Option<Box<dyn AudioCapture>>,
 }
 
 /// Tauri managed state として使うハンドル
-pub struct AudioStateHandle(pub(crate) Mutex<AudioStateInner>);
+pub struct AudioStateHandle(Mutex<AudioStateInner>);
 
 impl AudioStateHandle {
     pub fn new() -> Self {
         Self(Mutex::new(AudioStateInner {
             microphone: None,
+            system_audio: None,
         }))
+    }
+
+    /// 内部状態のロックを取得する
+    pub fn lock_inner(&self) -> parking_lot::MutexGuard<'_, AudioStateInner> {
+        self.0.lock()
     }
 
     /// マイクの現在のサンプルレートを取得する
@@ -260,6 +269,24 @@ impl AudioStateHandle {
             .microphone
             .as_mut()
             .and_then(|mic| mic.take_consumer())
+    }
+
+    /// システム音声のサンプルレートを取得する
+    pub fn get_system_audio_sample_rate(&self) -> Option<u32> {
+        let inner = self.0.lock();
+        inner
+            .system_audio
+            .as_ref()
+            .and_then(|sys| sys.sample_rate())
+    }
+
+    /// システム音声のリングバッファのコンシューマを取り出す（所有権の移動）
+    pub fn take_system_audio_consumer(&self) -> Option<ringbuf::HeapCons<f32>> {
+        let mut inner = self.0.lock();
+        inner
+            .system_audio
+            .as_mut()
+            .and_then(|sys| sys.take_consumer())
     }
 }
 
@@ -343,42 +370,49 @@ mod tests {
 
     #[test]
     fn test_rms_silence() {
+        // All zeros should give 0.0
         let samples = vec![0.0f32; 100];
         assert_eq!(calculate_rms(&samples), 0.0);
     }
 
     #[test]
     fn test_rms_full_scale() {
+        // All 1.0 should give 1.0
         let samples = vec![1.0f32; 100];
         assert!((calculate_rms(&samples) - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn test_rms_known_value() {
+        // A sine-like pattern: RMS of [1, -1, 1, -1] should be 1.0
         let samples = vec![1.0f32, -1.0, 1.0, -1.0];
         assert!((calculate_rms(&samples) - 1.0).abs() < f32::EPSILON);
     }
 
     #[test]
     fn test_rms_half_amplitude() {
+        // All 0.5 should give 0.5
         let samples = vec![0.5f32; 100];
         assert!((calculate_rms(&samples) - 0.5).abs() < 0.001);
     }
 
     #[test]
     fn test_rms_empty_samples() {
+        // Empty input should return 0.0 (not NaN or panic)
         let samples: Vec<f32> = vec![];
         assert_eq!(calculate_rms(&samples), 0.0);
     }
 
     #[test]
     fn test_rms_clamped_to_one() {
+        // Values > 1.0 should still produce a clamped result
         let samples = vec![2.0f32; 100];
         assert_eq!(calculate_rms(&samples), 1.0);
     }
 
     #[test]
     fn test_rms_nan_samples() {
+        // NaN in input should return 0.0, not propagate NaN
         let samples = vec![f32::NAN, 0.5, 0.5];
         let result = calculate_rms(&samples);
         assert!(!result.is_nan(), "RMS should not be NaN");
@@ -387,6 +421,7 @@ mod tests {
 
     #[test]
     fn test_rms_infinity_samples() {
+        // Infinity in input should return 1.0 (clamped), not Inf
         let samples = vec![f32::INFINITY, 0.5];
         let result = calculate_rms(&samples);
         assert!(!result.is_infinite(), "RMS should not be Infinity");
@@ -397,7 +432,10 @@ mod tests {
     fn test_audio_state_initial() {
         let state = AudioStateHandle::new();
         let inner = state.0.lock();
+        // 初期状態ではマイクが存在しないこと
         assert!(inner.microphone.is_none());
+        // システム音声も存在しないこと
+        assert!(inner.system_audio.is_none());
     }
 
     #[test]
@@ -410,8 +448,28 @@ mod tests {
     }
 
     #[test]
+    fn test_audio_state_dual_stream_independence() {
+        // マイクとシステム音声のスロットが独立していることを確認
+        let state = AudioStateHandle::new();
+        {
+            let mut inner = state.lock_inner();
+            // マイクだけセットしてもシステム音声には影響しない
+            inner.microphone = Some(CpalMicCapture::new(None));
+            assert!(inner.microphone.is_some());
+            assert!(inner.system_audio.is_none());
+        }
+        {
+            let inner = state.lock_inner();
+            // マイクはセット済み、システム音声はまだ None
+            assert!(inner.microphone.is_some());
+            assert!(inner.system_audio.is_none());
+        }
+    }
+
+    #[test]
     fn test_cpal_mic_consumer_none_before_start() {
         let mut capture = CpalMicCapture::new(None);
+        // start() 前は consumer が None であること
         assert!(capture.take_consumer().is_none());
     }
 }

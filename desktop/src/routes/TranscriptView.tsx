@@ -28,8 +28,10 @@ interface AudioLevelPayload {
 
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
+  const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
+  const [systemAudioLevel, setSystemAudioLevel] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("small");
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
@@ -54,6 +56,8 @@ export function TranscriptView() {
       (event) => {
         if (event.payload.source === "microphone") {
           setMicLevel(event.payload.level);
+        } else if (event.payload.source === "system_audio") {
+          setSystemAudioLevel(event.payload.level);
         }
       },
     );
@@ -63,13 +67,16 @@ export function TranscriptView() {
     };
   }, []);
 
+  const isAnySourceRecording = isMicRecording || isSystemAudioRecording;
+
   const handleToggleMicRecording = useCallback(async () => {
     try {
       if (isMicRecording) {
         await invoke("stop_recording");
         setIsMicRecording(false);
         setMicLevel(0);
-        if (isTranscribing) {
+        // If no source is recording, stop transcription too
+        if (!isSystemAudioRecording && isTranscribing) {
           await invoke("stop_transcription");
           setIsTranscribing(false);
         }
@@ -84,7 +91,27 @@ export function TranscriptView() {
     } catch (e) {
       console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
     }
-  }, [isMicRecording, isTranscribing, selectedDeviceId]);
+  }, [isMicRecording, isSystemAudioRecording, isTranscribing, selectedDeviceId]);
+
+  const handleToggleSystemAudio = useCallback(async () => {
+    try {
+      if (isSystemAudioRecording) {
+        await invoke("stop_system_audio");
+        setIsSystemAudioRecording(false);
+        setSystemAudioLevel(0);
+        // If no source is recording, stop transcription too
+        if (!isMicRecording && isTranscribing) {
+          await invoke("stop_transcription");
+          setIsTranscribing(false);
+        }
+      } else {
+        await invoke("start_system_audio");
+        setIsSystemAudioRecording(true);
+      }
+    } catch (e) {
+      console.error("システム音声操作に失敗しました:", toErrorMessage(e));
+    }
+  }, [isSystemAudioRecording, isMicRecording, isTranscribing]);
 
   const handleToggleTranscription = useCallback(async () => {
     try {
@@ -109,7 +136,7 @@ export function TranscriptView() {
   }, []);
 
   const canStartTranscription =
-    isMicRecording && !!isModelDownloaded && !isTranscribing;
+    isAnySourceRecording && !!isModelDownloaded && !isTranscribing;
 
   return (
     <div className="transcript-view">
@@ -150,6 +177,35 @@ export function TranscriptView() {
             <AudioLevelMeter level={micLevel} />
           </div>
           <span className="level-label">{Math.round(micLevel * 100)}%</span>
+        </div>
+      </div>
+
+      {/* System audio section */}
+      <div className="audio-source-section">
+        <div className="audio-source-header">システム音声</div>
+        <div className="controls-row">
+          <button
+            type="button"
+            onClick={handleToggleSystemAudio}
+            className={`control-btn ${isSystemAudioRecording ? "control-btn-stop" : "control-btn-capture"}`}
+          >
+            <span
+              className={`rec-indicator ${isSystemAudioRecording ? "rec-indicator-active" : ""}`}
+            />
+            {isSystemAudioRecording ? "キャプチャ停止" : "キャプチャ開始"}
+          </button>
+        </div>
+        <div className="level-meter-row">
+          <span className="level-label">レベル</span>
+          <div className="level-meter-bar">
+            <AudioLevelMeter level={systemAudioLevel} />
+          </div>
+          <span className="level-label">
+            {Math.round(systemAudioLevel * 100)}%
+          </span>
+        </div>
+        <div className="system-audio-note">
+          macOSの画面収録の許可が必要です
         </div>
       </div>
 
