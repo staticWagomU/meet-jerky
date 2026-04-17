@@ -246,6 +246,21 @@ impl AudioStateHandle {
             microphone: None,
         }))
     }
+
+    /// マイクの現在のサンプルレートを取得する
+    pub fn get_sample_rate(&self) -> Option<u32> {
+        let inner = self.0.lock();
+        inner.microphone.as_ref().and_then(|mic| mic.sample_rate())
+    }
+
+    /// マイクのリングバッファのコンシューマを取り出す（所有権の移動）
+    pub fn take_consumer(&self) -> Option<ringbuf::HeapCons<f32>> {
+        let mut inner = self.0.lock();
+        inner
+            .microphone
+            .as_mut()
+            .and_then(|mic| mic.take_consumer())
+    }
 }
 
 /// 利用可能な入力デバイスを列挙する

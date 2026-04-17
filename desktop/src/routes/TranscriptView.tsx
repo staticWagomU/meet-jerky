@@ -3,6 +3,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useQuery } from "@tanstack/react-query";
 import { AudioLevelMeter } from "../components/AudioLevelMeter";
+import {
+  TranscriptDisplay,
+  type TranscriptSegment,
+} from "../components/TranscriptDisplay";
+import { ModelSelector } from "../components/ModelSelector";
 
 /** invoke のエラーを文字列として返すヘルパー */
 function toErrorMessage(e: unknown): string {
@@ -23,12 +28,23 @@ interface AudioLevelPayload {
 
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<string>("small");
+  const [segments, setSegments] = useState<TranscriptSegment[]>([]);
 
   const { data: devices } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
+  });
+
+  // Check if selected model is downloaded
+  const { data: isModelDownloaded } = useQuery<boolean>({
+    queryKey: ["modelDownloaded", selectedModel],
+    queryFn: () =>
+      invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
+    enabled: !!selectedModel,
   });
 
   // Route audio-level events by source
@@ -53,6 +69,10 @@ export function TranscriptView() {
         await invoke("stop_recording");
         setIsMicRecording(false);
         setMicLevel(0);
+        if (isTranscribing) {
+          await invoke("stop_transcription");
+          setIsTranscribing(false);
+        }
       } else {
         if (selectedDeviceId) {
           await invoke("start_recording", { deviceId: selectedDeviceId });
@@ -64,7 +84,32 @@ export function TranscriptView() {
     } catch (e) {
       console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
     }
-  }, [isMicRecording, selectedDeviceId]);
+  }, [isMicRecording, isTranscribing, selectedDeviceId]);
+
+  const handleToggleTranscription = useCallback(async () => {
+    try {
+      if (isTranscribing) {
+        await invoke("stop_transcription");
+        setIsTranscribing(false);
+      } else {
+        await invoke("start_transcription", { modelName: selectedModel });
+        setIsTranscribing(true);
+      }
+    } catch (e) {
+      console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
+    }
+  }, [isTranscribing, selectedModel]);
+
+  const handleNewSegment = useCallback((segment: TranscriptSegment) => {
+    setSegments((prev) => [...prev, segment]);
+  }, []);
+
+  const handleClearTranscript = useCallback(() => {
+    setSegments([]);
+  }, []);
+
+  const canStartTranscription =
+    isMicRecording && !!isModelDownloaded && !isTranscribing;
 
   return (
     <div className="transcript-view">
@@ -107,6 +152,41 @@ export function TranscriptView() {
           <span className="level-label">{Math.round(micLevel * 100)}%</span>
         </div>
       </div>
+
+      <div className="section-divider" />
+
+      {/* Transcription controls */}
+      <div className="controls-row">
+        <ModelSelector
+          selectedModel={selectedModel}
+          onSelectModel={setSelectedModel}
+          disabled={isTranscribing}
+        />
+      </div>
+
+      <div className="controls-row">
+        <button
+          type="button"
+          onClick={handleToggleTranscription}
+          disabled={!canStartTranscription && !isTranscribing}
+          className={`control-btn ${isTranscribing ? "control-btn-transcribing" : "control-btn-transcribe"}`}
+        >
+          {isTranscribing ? "文字起こし停止" : "文字起こし開始"}
+        </button>
+
+        {segments.length > 0 && (
+          <button
+            type="button"
+            onClick={handleClearTranscript}
+            className="control-btn control-btn-clear"
+          >
+            クリア
+          </button>
+        )}
+      </div>
+
+      {/* Transcript display */}
+      <TranscriptDisplay segments={segments} onNewSegment={handleNewSegment} />
 
       <style>{`
         @keyframes pulse {

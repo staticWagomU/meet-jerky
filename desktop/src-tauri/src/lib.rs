@@ -1,4 +1,6 @@
 mod audio;
+mod transcript;
+mod transcription;
 
 use tauri::{
     image::Image,
@@ -80,10 +82,16 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(audio::AudioStateHandle::new())
+        .manage(transcription::TranscriptionStateHandle::new())
         .invoke_handler(tauri::generate_handler![
             audio::list_audio_devices,
             audio::start_recording,
             audio::stop_recording,
+            transcription::list_models,
+            transcription::is_model_downloaded,
+            transcription::download_model,
+            transcription::start_transcription,
+            transcription::stop_transcription,
         ])
         .setup(|app| {
             setup_tray(app)?;
