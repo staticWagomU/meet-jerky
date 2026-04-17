@@ -1,22 +1,7 @@
-import { useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { useQuery } from "@tanstack/react-query";
+import { usePermissions } from "../hooks/usePermissions";
 
 export function PermissionBanner() {
-  const { data: micPermission, refetch: refetchMic } = useQuery<string>({
-    queryKey: ["microphonePermission"],
-    queryFn: () => invoke<string>("check_microphone_permission"),
-  });
-
-  const { data: screenPermission, refetch: refetchScreen } = useQuery<string>({
-    queryKey: ["screenRecordingPermission"],
-    queryFn: () => invoke<string>("check_screen_recording_permission"),
-  });
-
-  const handleRecheck = useCallback(() => {
-    refetchMic();
-    refetchScreen();
-  }, [refetchMic, refetchScreen]);
+  const { micPermission, screenPermission, refetchAll } = usePermissions();
 
   const micNeedsAttention =
     micPermission === "denied" || micPermission === "undetermined";
@@ -53,7 +38,7 @@ export function PermissionBanner() {
       <button
         type="button"
         className="control-btn control-btn-clear"
-        onClick={handleRecheck}
+        onClick={refetchAll}
       >
         再チェック
       </button>

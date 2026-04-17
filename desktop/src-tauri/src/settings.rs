@@ -373,8 +373,8 @@ mod tests {
     fn test_load_recovers_valid_fields_from_partially_invalid_json() {
         // JSON with an invalid enum value for transcriptionEngine,
         // but valid values for all other fields.
-        // Currently, serde will fail on the invalid enum, causing ALL fields
-        // to fall back to defaults — even the valid ones.
+        // The custom deserializer (deserialize_engine_type_with_fallback) handles
+        // the invalid enum value gracefully by falling back to Local.
         let json = r#"{
             "transcriptionEngine": "invalid_engine",
             "whisperModel": "medium",
@@ -383,16 +383,17 @@ mod tests {
             "outputDirectory": "/custom/path"
         }"#;
 
-        // We want the system to recover: use default for the invalid field,
-        // but preserve the valid fields
+        // The custom deserializer allows serde to succeed even with an invalid
+        // engine value — the invalid field falls back to Local while all other
+        // valid fields are preserved.
         let settings: AppSettings = serde_json::from_str(json)
             .unwrap_or_else(|_| {
-                // This is what load() does — but it loses ALL valid fields
                 AppSettings::default()
             });
 
-        // This assertion will FAIL because unwrap_or_else returns ALL defaults
-        // when serde fails on the invalid enum
+        // The custom deserializer means serde_json::from_str succeeds,
+        // so valid fields are preserved correctly.
+        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Local);
         assert_eq!(settings.whisper_model, "medium");
         assert_eq!(settings.language, "ja");
     }

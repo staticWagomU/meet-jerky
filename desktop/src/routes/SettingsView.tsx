@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
+import { usePermissions } from "../hooks/usePermissions";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -37,15 +38,7 @@ export function SettingsView() {
     queryFn: () => invoke<string>("get_default_output_directory"),
   });
 
-  const { data: micPermission, refetch: refetchMicPermission } = useQuery<string>({
-    queryKey: ["microphonePermission"],
-    queryFn: () => invoke<string>("check_microphone_permission"),
-  });
-
-  const { data: screenPermission, refetch: refetchScreenPermission } = useQuery<string>({
-    queryKey: ["screenRecordingPermission"],
-    queryFn: () => invoke<string>("check_screen_recording_permission"),
-  });
+  const { micPermission, screenPermission, refetchAll: refetchPermissions } = usePermissions();
 
   const updateMutation = useMutation({
     mutationFn: (newSettings: AppSettings) =>
@@ -92,11 +85,6 @@ export function SettingsView() {
       setLocalSettings({ ...localSettings, outputDirectory: null });
     }
   }, [localSettings]);
-
-  const handleRecheckPermissions = useCallback(() => {
-    refetchMicPermission();
-    refetchScreenPermission();
-  }, [refetchMicPermission, refetchScreenPermission]);
 
   if (isLoadingSettings || !localSettings) {
     return <div className="settings-view">読み込み中...</div>;
@@ -237,7 +225,7 @@ export function SettingsView() {
           <button
             type="button"
             className="control-btn control-btn-clear"
-            onClick={handleRecheckPermissions}
+            onClick={refetchPermissions}
           >
             再チェック
           </button>
