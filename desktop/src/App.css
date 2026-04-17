@@ -1,0 +1,491 @@
+:root {
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+
+  color: #0f0f0f;
+  background-color: #f6f6f6;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+.container {
+  margin: 0;
+  padding: 1rem;
+}
+
+.nav {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 1rem;
+}
+
+.nav-link {
+  padding: 0.4em 0.8em;
+  border-radius: 6px;
+  font-weight: 500;
+  color: #0f0f0f;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+  background-color: #e0e0e0;
+}
+
+.nav-link[data-status="active"] {
+  background-color: #396cd8;
+  color: #ffffff;
+}
+
+/* TranscriptView layout */
+.transcript-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: calc(100vh - 5rem);
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.device-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Model selector */
+.model-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.model-status-ready {
+  font-size: 0.75rem;
+  color: #16a34a;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.download-btn {
+  padding: 0.3em 0.6em;
+  border: 1px solid #396cd8;
+  border-radius: 4px;
+  background: #396cd8;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.download-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.download-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 80px;
+}
+
+.download-progress-bar {
+  flex: 1;
+  height: 6px;
+  background-color: #ddd;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.download-progress-fill {
+  height: 100%;
+  background-color: #396cd8;
+  border-radius: 3px;
+  transition: width 200ms ease-out;
+}
+
+.download-progress-text {
+  font-size: 0.7rem;
+  color: #888;
+  white-space: nowrap;
+  min-width: 2.5em;
+  text-align: right;
+}
+
+/* Control buttons */
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4em 0.8em;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  transition: background-color 0.2s, opacity 0.2s;
+  white-space: nowrap;
+}
+
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.control-btn-record {
+  background-color: #16a34a;
+}
+
+.control-btn-stop {
+  background-color: #dc2626;
+}
+
+.control-btn-transcribe {
+  background-color: #396cd8;
+}
+
+.control-btn-transcribing {
+  background-color: #9333ea;
+}
+
+.control-btn-capture {
+  background-color: #0891b2;
+}
+
+.control-btn-clear {
+  background-color: transparent;
+  color: #888;
+  border: 1px solid #ccc;
+  font-weight: 500;
+}
+
+.rec-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ef4444;
+}
+
+.rec-indicator-active {
+  border-radius: 2px;
+  background-color: #fff;
+  animation: pulse 1.2s infinite;
+}
+
+/* Audio source sections */
+.audio-source-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.4rem 0;
+}
+
+.audio-source-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.section-divider {
+  border-top: 1px solid #e0e0e0;
+  margin: 0.2rem 0;
+}
+
+.system-audio-note {
+  font-size: 0.7rem;
+  color: #b08000;
+  background-color: rgba(234, 179, 8, 0.1);
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+}
+
+/* Level meter row */
+.level-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.level-label {
+  white-space: nowrap;
+}
+
+.level-meter-bar {
+  flex: 1;
+}
+
+/* Audio level meter */
+.audio-meter-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.audio-meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 100ms ease-out, background-color 100ms ease-out;
+}
+
+/* Device select */
+.device-select {
+  flex: 1;
+  padding: 0.4em 0.6em;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 0.85rem;
+}
+
+.device-select:disabled {
+  background-color: #eee;
+}
+
+/* Model select */
+.model-select-label {
+  font-weight: 500;
+}
+
+.model-select {
+  flex: 1;
+  padding: 0.4em 0.6em;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  font-size: 0.9rem;
+}
+
+.model-select:disabled {
+  background-color: #eee;
+}
+
+/* Transcript display */
+.transcript-display-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.transcript-display {
+  height: 100%;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.transcript-empty {
+  color: #aaa;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 2rem 0.5rem;
+}
+
+.transcript-segment {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.transcript-timestamp {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: #888;
+  white-space: nowrap;
+  padding-top: 0.1em;
+  flex-shrink: 0;
+}
+
+.transcript-text {
+  flex: 1;
+  word-break: break-word;
+}
+
+/* Speaker-specific segment colors */
+.transcript-segment-error {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.transcript-speaker-self {
+  background-color: rgba(20, 184, 166, 0.08);
+  border-left: 3px solid #14b8a6;
+  padding-left: 0.4rem;
+}
+
+.transcript-speaker-other {
+  background-color: rgba(234, 138, 50, 0.08);
+  border-left: 3px solid #ea8a32;
+  padding-left: 0.4rem;
+}
+
+.transcript-speaker-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 0.1em;
+}
+
+.speaker-label-self {
+  color: #0d9488;
+}
+
+.speaker-label-other {
+  color: #c2410c;
+}
+
+.scroll-to-bottom-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 0.2em 0.6em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.7rem;
+  cursor: pointer;
+  color: #555;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f6f6f6;
+    background-color: #2f2f2f;
+  }
+
+  .nav {
+    border-bottom-color: #444;
+  }
+
+  .nav-link {
+    color: #f6f6f6;
+  }
+
+  .nav-link:hover {
+    background-color: #444;
+  }
+
+  .nav-link[data-status="active"] {
+    background-color: #396cd8;
+    color: #ffffff;
+  }
+
+  .transcript-display-wrapper {
+    border-color: #444;
+  }
+
+  .transcript-segment {
+    border-bottom-color: #3a3a3a;
+  }
+
+  .transcript-timestamp {
+    color: #999;
+  }
+
+  .transcript-empty {
+    color: #666;
+  }
+
+  .scroll-to-bottom-btn {
+    background: rgba(50, 50, 50, 0.9);
+    border-color: #555;
+    color: #ccc;
+  }
+
+  .control-btn-clear {
+    color: #aaa;
+    border-color: #555;
+  }
+
+  .download-progress-bar {
+    background-color: #444;
+  }
+
+  .model-selector select,
+  .device-selector select,
+  .device-select,
+  .model-select {
+    background-color: #3a3a3a;
+    color: #f6f6f6;
+    border-color: #555;
+  }
+
+  .model-selector select:disabled,
+  .device-selector select:disabled,
+  .device-select:disabled,
+  .model-select:disabled {
+    background-color: #333;
+  }
+
+  .audio-meter-container {
+    background-color: #3a3a3a;
+  }
+
+  .audio-source-header {
+    color: #bbb;
+  }
+
+  .section-divider {
+    border-top-color: #444;
+  }
+
+  .system-audio-note {
+    color: #eab308;
+    background-color: rgba(234, 179, 8, 0.1);
+  }
+
+  .transcript-segment-error {
+    background-color: rgba(220, 38, 38, 0.15);
+    color: #ef4444;
+  }
+
+  .transcript-speaker-self {
+    background-color: rgba(20, 184, 166, 0.1);
+    border-left-color: #14b8a6;
+  }
+
+  .transcript-speaker-other {
+    background-color: rgba(234, 138, 50, 0.1);
+    border-left-color: #ea8a32;
+  }
+
+  .speaker-label-self {
+    color: #2dd4bf;
+  }
+
+  .speaker-label-other {
+    color: #fb923c;
+  }
+}

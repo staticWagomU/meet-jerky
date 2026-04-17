@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Meet Jerky はマイク音声を文字起こしするためにマイクへのアクセスが必要です。</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Meet Jerky はシステム音声をキャプチャするために画面録音の権限が必要です。</string>
+</dict>
+</plist>
