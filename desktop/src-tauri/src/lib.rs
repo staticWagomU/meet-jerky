@@ -1,4 +1,5 @@
 mod audio;
+mod markdown;
 mod settings;
 mod system_audio;
 mod transcript;
