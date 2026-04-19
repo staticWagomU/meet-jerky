@@ -72,4 +72,21 @@ mod tests {
         let first_line = contents.lines().next().unwrap();
         assert_eq!(first_line, "# 会議メモ - 2024-04-17 14:50");
     }
+
+    #[test]
+    fn save_session_markdown_writes_segment_line() {
+        // started_at = 1_713_333_000 UTC = 14:50:00 JST, offset 15s -> 14:50:15
+        let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+        session.append_segment("自分".into(), 15, "hello".into());
+        let dir = tempdir().unwrap();
+
+        let path = save_session_markdown(dir.path(), &session, jst()).unwrap();
+
+        let contents = fs::read_to_string(&path).unwrap();
+        assert!(
+            contents.contains("**[14:50:15] 自分:** hello"),
+            "segment line missing. contents=\n{}",
+            contents
+        );
+    }
 }
