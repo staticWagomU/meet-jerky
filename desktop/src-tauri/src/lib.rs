@@ -1,5 +1,7 @@
 mod audio;
+mod datetime_fmt;
 mod markdown;
+mod session;
 mod settings;
 mod system_audio;
 mod transcript;
