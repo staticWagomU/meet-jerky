@@ -49,6 +49,22 @@ pub fn save_session_markdown(
     Ok(path)
 }
 
+/// `dir` 配下の `.md` 拡張子ファイルを一覧する。
+///
+/// 返却順は安定化のため昇順ソート済み。
+pub fn list_session_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
+    let mut out = Vec::new();
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) == Some("md") {
+            out.push(path);
+        }
+    }
+    out.sort();
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,6 +87,24 @@ mod tests {
         let contents = fs::read_to_string(&path).unwrap();
         let first_line = contents.lines().next().unwrap();
         assert_eq!(first_line, "# 会議メモ - 2024-04-17 14:50");
+    }
+
+    #[test]
+    fn list_session_files_returns_only_md_files() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("a.md"), "a").unwrap();
+        fs::write(dir.path().join("b.md"), "b").unwrap();
+        fs::write(dir.path().join("note.txt"), "ignore me").unwrap();
+
+        let files = list_session_files(dir.path()).unwrap();
+
+        assert_eq!(files.len(), 2, "should list only .md files, got {:?}", files);
+        let names: Vec<String> = files
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert!(names.contains(&"a.md".to_string()));
+        assert!(names.contains(&"b.md".to_string()));
     }
 
     #[test]
