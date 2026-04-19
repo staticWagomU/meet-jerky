@@ -22,7 +22,13 @@ pub struct SessionSegment {
 
 /// セッションをMarkdown形式の文字列に整形する。
 pub fn format_session_markdown(meta: &SessionMeta, segments: &[SessionSegment]) -> String {
-    let mut out = format!("# {} - {}\n\n", meta.title, meta.started_at_display);
+    let header = format!("# {} - {}\n", meta.title, meta.started_at_display);
+    if segments.is_empty() {
+        return header;
+    }
+
+    let mut out = header;
+    out.push('\n');
     let lines: Vec<String> = segments
         .iter()
         .map(|s| format!("**[{}] {}:** {}", s.timestamp_display, s.speaker, s.text))
@@ -59,6 +65,19 @@ mod tests {
         ];
 
         let expected = "# 会議メモ - 2026-04-17 14:30\n\n**[14:30:05] 相手:** それでは始めましょう。\n**[14:30:12] 自分:** よろしくお願いします。";
+        assert_eq!(format_session_markdown(&meta, &segments), expected);
+    }
+
+    #[test]
+    fn test_format_session_markdown_empty_segments_produces_header_only() {
+        // セグメントが空の場合、ヘッダのみを出力し、末尾に余分な空行やセグメント行を付けない。
+        let meta = SessionMeta {
+            title: "会議メモ".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments: Vec<SessionSegment> = Vec::new();
+
+        let expected = "# 会議メモ - 2026-04-17 14:30\n";
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
 }
