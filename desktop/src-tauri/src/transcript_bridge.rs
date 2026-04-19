@@ -69,6 +69,30 @@ mod tests {
     }
 
     #[test]
+    fn offset_saturates_to_zero_when_segment_time_precedes_session_start() {
+        // ストリーム開始時刻 < セッション開始時刻（clock 調整・先行バッファ等で起こり得る）
+        // このとき負のオフセットにせず 0 に飽和させる（堅牢性のため）。
+        let segment = TranscriptionSegment {
+            text: "early".to_string(),
+            start_ms: 0,
+            end_ms: 100,
+            speaker: Some("自分".to_string()),
+        };
+        let (_, offset, _) = segment_to_append_args(&segment, 1000, 990);
+        assert_eq!(offset, 0, "clock 逆転時は offset は 0 に飽和する");
+
+        // 負の start_ms も安全側に倒す
+        let neg_segment = TranscriptionSegment {
+            text: "neg".to_string(),
+            start_ms: -5_000,
+            end_ms: 0,
+            speaker: Some("自分".to_string()),
+        };
+        let (_, offset, _) = segment_to_append_args(&neg_segment, 1000, 1000);
+        assert_eq!(offset, 0, "負の start_ms も 0 に飽和する");
+    }
+
+    #[test]
     fn happy_path_forwards_text_and_computes_offset() {
         // セッション開始: 1000s, ストリーム開始: 1040s, セグメント start: 2000ms
         // => セグメント絶対時刻 = 1042s, セッション開始からのオフセット = 42s
