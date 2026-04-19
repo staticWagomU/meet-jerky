@@ -39,4 +39,12 @@ mod tests {
         let s = format_segment_timestamp_with_offset(1_713_333_015, jst());
         assert_eq!(s, "14:50:15");
     }
+
+    #[test]
+    fn test_format_session_header_timestamp_crosses_midnight_in_jst() {
+        // 1_713_369_585 UTC = 2024-04-17 15:59:45 UTC。JST(+9h)では翌日 2024-04-18 00:59。
+        // 日付がUTCとJSTで異なる境界ケースで、日付もオフセット込みで繰り上がることを確認する。
+        let s = format_session_header_timestamp_with_offset(1_713_369_585, jst());
+        assert_eq!(s, "2024-04-18 00:59");
+    }
 }
