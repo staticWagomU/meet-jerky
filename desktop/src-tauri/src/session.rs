@@ -39,6 +39,18 @@ impl Session {
             text,
         });
     }
+
+    pub fn finalize(&mut self, ended_at: u64) {
+        self.ended_at = Some(ended_at);
+    }
+
+    pub fn is_finalized(&self) -> bool {
+        self.ended_at.is_some()
+    }
+
+    pub fn duration_secs(&self) -> Option<u64> {
+        self.ended_at.map(|end| end - self.started_at)
+    }
 }
 
 #[cfg(test)]
@@ -53,6 +65,19 @@ mod tests {
         assert_eq!(session.started_at, 1000);
         assert!(session.segments.is_empty());
         assert_eq!(session.ended_at, None);
+    }
+
+    #[test]
+    fn finalize_sets_ended_at_and_duration_secs_reports_elapsed() {
+        let mut session = Session::start("title".into(), 1000);
+        assert!(!session.is_finalized());
+        assert_eq!(session.duration_secs(), None);
+
+        session.finalize(1300);
+
+        assert!(session.is_finalized());
+        assert_eq!(session.ended_at, Some(1300));
+        assert_eq!(session.duration_secs(), Some(300));
     }
 
     #[test]
