@@ -2,9 +2,11 @@ mod audio;
 mod datetime_fmt;
 mod markdown;
 mod session;
+mod session_store;
 mod settings;
 mod system_audio;
 mod transcript;
+mod transcript_bridge;
 mod transcription;
 
 use tauri::{
