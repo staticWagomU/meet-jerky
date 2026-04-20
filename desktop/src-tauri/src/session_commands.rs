@@ -11,6 +11,19 @@ use crate::session_manager::SessionManager;
 use crate::session_store;
 
 // ─────────────────────────────────────────────
+// start_session
+// ─────────────────────────────────────────────
+
+/// テスト可能な start_session 実装本体。
+pub fn start_session_inner(
+    manager: &SessionManager,
+    title: String,
+    started_at: u64,
+) -> Result<(), String> {
+    manager.start(title, started_at).map_err(|e| e.to_string())
+}
+
+// ─────────────────────────────────────────────
 // finalize_and_save_session
 // ─────────────────────────────────────────────
 
@@ -87,5 +100,30 @@ mod tests {
         .expect_err("idle manager should error");
 
         assert_eq!(err, "no active session");
+    }
+
+    // Cycle 3a: start_session_inner でアイドルマネージャが活性化される
+    #[test]
+    fn start_session_inner_activates_idle_manager() {
+        let manager = SessionManager::new();
+        assert!(!manager.is_active());
+
+        start_session_inner(&manager, "会議".into(), 100).expect("start should succeed");
+
+        assert!(manager.is_active());
+        assert_eq!(manager.current_title(), Some("会議".into()));
+    }
+
+    // Cycle 3b: 既に活性なら "session already active" エラー
+    #[test]
+    fn start_session_inner_errors_when_already_active() {
+        let manager = SessionManager::new();
+        start_session_inner(&manager, "first".into(), 100).expect("first start");
+
+        let err = start_session_inner(&manager, "second".into(), 200)
+            .expect_err("second start should error");
+
+        assert_eq!(err, "session already active");
+        assert_eq!(manager.current_title(), Some("first".into()));
     }
 }
