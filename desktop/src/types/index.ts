@@ -29,6 +29,12 @@ export interface ModelInfo {
 
 export interface DownloadProgressPayload {
   progress: number;
+  model: string;
+}
+
+export interface DownloadErrorPayload {
+  model: string;
+  message: string;
 }
 
 export type TranscriptionEngineType = "local" | "cloud";
