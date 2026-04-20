@@ -143,12 +143,14 @@ impl ModelManager {
         self.get_model_path(model_name).exists()
     }
 
-    /// Hugging Face からモデルをダウンロードする
+    /// Hugging Face からモデルをストリーミングダウンロードする
     pub fn download_model(
         &self,
         model_name: &str,
         on_progress: impl Fn(f64),
     ) -> Result<PathBuf, String> {
+        use std::io::{Read, Write};
+
         let url = format!(
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{model_name}.bin"
         );
@@ -162,7 +164,10 @@ impl ModelManager {
 
         on_progress(0.0);
 
-        let response = reqwest::blocking::Client::new()
+        let response = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(1800))
+            .build()
+            .map_err(|e| format!("HTTPクライアントの作成に失敗しました: {e}"))?
             .get(&url)
             .send()
             .map_err(|e| format!("モデルのダウンロードリクエストに失敗しました: {e}"))?;
@@ -174,16 +179,38 @@ impl ModelManager {
             ));
         }
 
-        let bytes = response
-            .bytes()
-            .map_err(|e| format!("モデルデータの受信に失敗しました: {e}"))?;
+        let total_size = response.content_length();
 
-        on_progress(0.5);
-
-        // 一時ファイルに書き込んでからリネーム（ダウンロード中断対策）
+        // 一時ファイルにストリーミング書き込み
         let tmp_path = model_path.with_extension("bin.tmp");
-        std::fs::write(&tmp_path, &bytes)
-            .map_err(|e| format!("モデルファイルの書き込みに失敗しました: {e}"))?;
+        let mut file = std::fs::File::create(&tmp_path)
+            .map_err(|e| format!("一時ファイルの作成に失敗しました: {e}"))?;
+
+        let mut downloaded: u64 = 0;
+        let mut buf = vec![0u8; 64 * 1024]; // 64KB チャンク
+        let mut reader = response;
+
+        loop {
+            let bytes_read = reader
+                .read(&mut buf)
+                .map_err(|e| format!("モデルデータの受信に失敗しました: {e}"))?;
+            if bytes_read == 0 {
+                break;
+            }
+            file.write_all(&buf[..bytes_read])
+                .map_err(|e| format!("モデルファイルの書き込みに失敗しました: {e}"))?;
+            downloaded += bytes_read as u64;
+
+            if let Some(total) = total_size {
+                on_progress(downloaded as f64 / total as f64);
+            }
+        }
+
+        file.flush()
+            .map_err(|e| format!("ファイルのフラッシュに失敗しました: {e}"))?;
+        drop(file);
+
+        // ダウンロード完了後にリネーム（中断対策）
         std::fs::rename(&tmp_path, &model_path)
             .map_err(|e| format!("モデルファイルのリネームに失敗しました: {e}"))?;
 
