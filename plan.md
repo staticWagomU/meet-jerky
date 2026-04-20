@@ -270,6 +270,48 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 ## 進捗ログ・気付き
 
+### 2026-04-21: Loop G - Phase 6 クラウド URL/Header ビルダ + 設定画面 API キー入力（並列2トラック）
+- Track A commit: `c8cb9be`（`feat(cloud-whisper): add URL and Authorization header builders (pure core)`、`cloud_whisper.rs` 1ファイル、純関数 2 個 + テスト 3 件）
+- Track B commit: `5fb34b4`（`feat(settings-ui): enable cloud engine radio and add api key input`、`SettingsView.tsx` 1ファイル、+33/-4 行）
+- 累積テスト: **Rust 79 緑**（Loop F の 76 → 79、Track A +3）、フロント `bun run build` 緑
+- ビルド検証: `cargo test --package meet-jerky --lib` 79 passed、`cargo check` 既存 2 warning のみ、`bun run build` (tsc + vite) 184 modules transformed / 572ms
+- Phase 6 の 2 本目: 純関数層を 2 関数分厚くしつつ、UI のクラウド選択パスを開通。HTTP 副作用は次ループへ温存
+
+#### Track A: `build_whisper_api_url` / `build_whisper_authorization_header`（原義 TDD 3 サイクル）
+- **設計**: `cloud_whisper.rs` に `pub fn build_whisper_api_url(base_url: &str) -> String` と `pub fn build_whisper_authorization_header(api_key: &str) -> String` を追加。副作用ゼロ、`format!` + `trim_end_matches('/')` のみ。これで次ループの HTTP アダプタが綺麗な接合点を得る
+- **Cycle 1 (Red/Green)**: `build_whisper_api_url("https://api.openai.com/v1")` → 末尾エンドポイント結合テスト。Green は `format!("{base_url}/audio/transcriptions")` の 1 行のみ。**trim をあえて先回りしなかった**のが今回の肝
+- **Cycle 2 (Red/Green)**: 末尾スラッシュ入りの base_url を渡すテスト。期待どおり `"https://api.openai.com/v1//audio/transcriptions"` vs `"https://api.openai.com/v1/audio/transcriptions"` の assertion 不一致で**真の Red** になった。Green で `trim_end_matches('/')` を追加
+- **Cycle 3 (Red/Green)**: `build_whisper_authorization_header("sk-xxx")` → `"Bearer sk-xxx"`。`format!("Bearer {api_key}")` で Green
+- **Refactor は全サイクルでスキップ**（1-2 行関数に磨く余地なし）
+
+#### 「Cycle 1 Green 最小化」規律の初成功
+過去 3 ループ連続（Loop 4B / Loop D Track A / Loop F Track A）で「Cycle 1 Green の先回り実装 → Cycle 2/3 が characterization に堕ちる」パターンを繰り返していたが、Loop G Track A で**初めて真の Red を 3 サイクル連続で再現できた**。
+- **決め手**: 依頼プロンプトに「Cycle 1 Green は Cycle 1 のテスト入力だけで通る最短実装に絞る。末尾スラッシュ正規化など Cycle 2 のテストでしか暴かれない挙動を絶対に先回りしない」という明示指示を入れ、さらに「もし Cycle 2 Red が Cycle 1 Green のまま通ってしまったら Cycle 1 実装を巻き戻して Red を再現する」救済ルールを書き込んだ
+- **教訓**: サブエージェントは誠実に指示に従う。規律違反は「サブエージェントの不備」ではなく「リーダー側プロンプトの曖昧さ」の結果なので、**プロンプト側で規律を前倒しに言語化**するのが再発防止の主戦場だったという仮説が裏付けられた
+- **今後のテンプレ化**: 他の TDD 依頼でも Cycle 1 Green 最小化条項 + 救済ルールを貼る運用を標準にする
+
+#### Track B: 設定画面のクラウド選択 + API キー入力（フロント、テスト基盤なしのため build 緑検証）
+- **設計**: `localSettings.transcriptionEngine === "cloud"` のとき **だけ** API キー入力セクションを表示する条件レンダリング。ラジオ側は `disabled` を剥がし、`checked`/`onChange` をローカルと同じ制御式に統一
+- **input 型**: `type="password"`、`autoComplete="off"`、placeholder `sk-...`。reveal トグルは将来拡張としてコメントのみ残置
+- **空文字列 → undefined の丸め**: onChange 側で `value === "" ? undefined : value` に変換。これにより JSON.stringify ベースの `hasChanges` 比較が誤検出されない（Rust 側 Option<None> とシリアライゼーション不在が同一扱い）
+- **関数形式 setState の混入**: サブエージェントが `setLocalSettings((prev) => ...)` を使ったが、既存コードベースは一貫して直接形式 `setLocalSettings({ ...localSettings, ... })`。動作は同等だが様式が混在している状態。次ループで統一する `tidy:later` 候補
+- **CSS 無変更**: 既存 `.settings-select` / `.settings-note` / `.settings-section-title` がそのまま password input にも効く
+
+#### Loop G の学び
+1. **「真の Red」規律の初成功**: プロンプト側で Cycle 1 Green 最小化を前倒しに指示することで、Track A は 3 サイクル全てで真の Red を再現できた。規律は「コード側」ではなく「依頼文書側」で担保するのが実効的と確認。次ループ以降の TDD 依頼にもこの条項をテンプレ化する
+2. **Cargo パッケージ名の罠**: 指示では `--package meet-jerky-lib` と書いたが、実体は `meet-jerky`（ライブラリターゲット名が `meet_jerky_lib`）。サブエージェントは `cargo test --package meet-jerky --lib` に読み替えてくれたが、今後のテスト依頼では**正しいパッケージ名 `meet-jerky` + `--lib` フラグ**で指示する
+3. **純関数 1-2 行 × 2 個 だけでも Phase 進行が前進**: Track A は合計 3 行の実装しか増えていないが、次ループの HTTP 副作用アダプタで接合点として活用できる。「小さく積む」効用の具体例。大物 `reqwest::blocking::Client` コードを一気に書こうとせず、URL と Header を先に純関数で固定する判断は正しかった
+4. **フロントテスト基盤の不在が Loop B/E/G と 3 ループ続いた**: そろそろ vitest + RTL 導入の ROI が高くなってきた。Phase 6 残り（リトライ / フォールバック UI / トースト通知）で UI ロジックが厚くなる前に基盤を入れるか、専用ループで扱う候補
+
+#### 残タスク（Phase 6）
+- **HTTP 呼び出し層**: `reqwest::blocking::Client` で `/v1/audio/transcriptions` に multipart POST する薄いアダプタ関数 + `CloudWhisperEngine` が `TranscriptionEngine` trait を実装する本丸。`mockito` 等のモック導入 or contract test 方針を先に決める
+- **multipart Form 組み立て**: `reqwest::multipart::Form` は内部状態を持ち純関数テストに向かない → contract 的なテスト（形式不変条件）か、小さな fixture で build して `Content-Type` 等を observe する方式を選定
+- **エンジン選択 dispatch**: `transcription.rs::start_transcription` で `settings.transcription_engine` を読んで Local/Cloud を分岐させる。ラジオが UI で有効化されたため、選択が意味を持つ
+- **API キーの暗号化保存**: `keyring` クレート等で macOS Keychain / Windows Credential Manager に書き換え。現状は平文 Option<String>
+- **`tidy:later`: `setLocalSettings` の関数形式 vs 直接形式の混在**: SettingsView.tsx 内で様式が混在。次ループで統一
+- **ネットワークエラー時のフォールバック/リトライ**: 単独ループ推奨
+- **API コスト概算表示**: オプショナル、最終化
+
 ### 2026-04-21: Loop F - Phase 6 クラウド Whisper 純関数コア + Settings `api_key` 拡張（並列2トラック）
 - Track A commit: `0a0d933`（`feat(cloud-whisper): add verbose-json response parser (pure core)`、新規 `cloud_whisper.rs` + `lib.rs` mod 追加）
 - Track B commit: `2319648`（`feat(settings): add api_key field for cloud engine`、`settings.rs` + TS 型 mirror）
