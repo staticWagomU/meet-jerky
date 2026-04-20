@@ -189,9 +189,9 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 - [x] Markdown保存（ディレクトリへのファイル書き出し）
 - [x] TranscriptSegment → SessionSegment 変換ブリッジ
 - [x] リアルタイム書き出し（アプリ落ちても途中まで残る）
-- [ ] Tauri コマンド配線（start_session / append / finalize）
-- [ ] セッション一覧画面（過去の文字起こし履歴）
-- [ ] ファイルを開く / フォルダを開くボタン
+- [x] Tauri コマンド配線（start_session / append / finalize）
+- [x] セッション一覧画面（過去の文字起こし履歴）
+- [x] ファイルを開く / フォルダを開くボタン
 
 **成果物**: 会議後にMarkdownファイルが自動生成されるアプリ
 
@@ -269,6 +269,26 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 ---
 
 ## 進捗ログ・気付き
+
+### 2026-04-20: Loop B - セッション一覧UI (Phase 5)
+- commits: `5e4e2f3`
+- 採用プラグイン: `@tauri-apps/plugin-opener` (既にプロジェクト導入済み)
+  - `openPath(path)`: OSデフォルトアプリで .md ファイルを開く
+  - `revealItemInDir(path)`: ファインダ/エクスプローラでファイルをハイライト表示
+  - capabilities/default.json に `opener:allow-open-path` を追加（`opener:default` だけでは reveal 用パスが通らない）
+- 実装:
+  - `desktop/src/hooks/useSessionList.ts`: TanStack Query で `invoke('list_session_summaries_cmd')` をラップ
+  - `desktop/src/routes/SessionList.tsx`: 履歴一覧 + 行ごとに「ファイルを開く」「フォルダを開く」ボタン
+  - `desktop/src/App.tsx` のナビゲーションに「履歴」リンクを追加し `/sessions` へ遷移
+  - `desktop/src/App.css` に `.session-list-*` クラスを追加
+- 気付き:
+  1. **フロントエンドのテストインフラが存在しない**（vitest/RTL なし）ため、原義のTDD Red/Green は実施不能。代替として `bun run build` (tsc + vite) と `cargo check` を緑にして擬似検証。今後フロント側で自動テストが欲しくなるなら vitest 導入は別ループで提案
+  2. **sub-agent がストール**した（600s タイムアウト、CSS 追加直前）。原因不明だが、途中成果物は作業ツリーに残っていたため、リーダー側で引き継いでCSS追加→build検証→コミットで完遂。並列実行時はこの「中途半端な作業ツリー」を拾える前提で動く
+  3. **`plugin-opener` は Tauri v2 の公式プラグイン**。`invoke('plugin:opener|openPath')` を直に呼ぶ代わりに `@tauri-apps/plugin-opener` の型付き API を使えた。プラグイン選定は Cargo.toml / package.json 両方に既に入っていたため追加作業不要
+- 残タスク:
+  - セッション一覧を開くたびに refetch するか TanStack Query のキャッシュ戦略を決める（現状は stale-while-revalidate のデフォルト）
+  - 「フォルダを開く」で `reveal` 失敗時のユーザー向けトースト（現状は console.error）
+  - 一覧から行削除（ファイル削除）機能 — 将来タスク
 
 ### 2026-04-20: Loop A - インクリメンタル書き出し (Phase 5)
 - commits: `25e66df`, `248c629`, `ffea865`, `258c272`, `b87874d`, `2e742ac`, `ed821d1`
