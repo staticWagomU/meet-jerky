@@ -734,15 +734,15 @@ pub fn start_transcription(
                 };
 
                 std::thread::spawn(move || {
-                    run_transcription_loop(
-                        mic_consumer,
-                        engine_clone,
+                    run_transcription_loop(TranscriptionLoopConfig {
+                        consumer: mic_consumer,
+                        engine: engine_clone,
                         stream_config,
-                        running_clone,
-                        app_clone,
-                        sm_clone,
+                        running: running_clone,
+                        app: app_clone,
+                        session_manager: sm_clone,
                         stream_started_at_secs,
-                    );
+                    });
                 });
                 spawned_any = true;
             }
@@ -764,15 +764,15 @@ pub fn start_transcription(
                 };
 
                 std::thread::spawn(move || {
-                    run_transcription_loop(
-                        sys_consumer,
-                        engine_clone,
+                    run_transcription_loop(TranscriptionLoopConfig {
+                        consumer: sys_consumer,
+                        engine: engine_clone,
                         stream_config,
-                        running_clone,
-                        app_clone,
-                        sm_clone,
+                        running: running_clone,
+                        app: app_clone,
+                        session_manager: sm_clone,
                         stream_started_at_secs,
-                    );
+                    });
                 });
                 spawned_any = true;
             }
@@ -902,15 +902,27 @@ const CHUNK_DURATION_SECS: f64 = 5.0;
 /// 16kHz での5秒分のサンプル数
 const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
 
-fn run_transcription_loop(
-    mut consumer: ringbuf::HeapCons<f32>,
+struct TranscriptionLoopConfig {
+    consumer: ringbuf::HeapCons<f32>,
     engine: Arc<dyn TranscriptionEngine>,
     stream_config: StreamConfig,
     running: Arc<AtomicBool>,
     app: tauri::AppHandle,
     session_manager: Arc<crate::session_manager::SessionManager>,
     stream_started_at_secs: u64,
-) {
+}
+
+fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
+    let TranscriptionLoopConfig {
+        mut consumer,
+        engine,
+        stream_config,
+        running,
+        app,
+        session_manager,
+        stream_started_at_secs,
+    } = cfg;
+
     let mut stream = match Arc::clone(&engine).start_stream(stream_config) {
         Ok(s) => s,
         Err(e) => {
