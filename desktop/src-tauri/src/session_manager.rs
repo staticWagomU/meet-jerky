@@ -159,6 +159,16 @@ mod tests {
         FixedOffset::east_opt(9 * 3600).unwrap()
     }
 
+    /// 指定ディレクトリ直下の `.md` ファイルを列挙する。
+    fn list_md_files(dir: &std::path::Path) -> Vec<PathBuf> {
+        std::fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+            .collect()
+    }
+
     #[test]
     fn append_writes_segment_to_disk_when_started_with_output() {
         let manager = SessionManager::new();
@@ -176,13 +186,7 @@ mod tests {
             .append("自分".into(), 15, "hello".into())
             .expect("append should succeed");
 
-        // 活性中のファイル名を推測するため、ディレクトリを走査して .md を探す。
-        let files: Vec<_> = std::fs::read_dir(dir.path())
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
-            .collect();
+        let files = list_md_files(dir.path());
         assert_eq!(files.len(), 1, "exactly one .md should exist: {:?}", files);
 
         let contents = std::fs::read_to_string(&files[0]).unwrap();
@@ -209,12 +213,7 @@ mod tests {
         manager.append("自分".into(), 5, "一言目".into()).unwrap();
         manager.append("相手".into(), 12, "二言目".into()).unwrap();
 
-        let files: Vec<_> = std::fs::read_dir(dir.path())
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
-            .collect();
+        let files = list_md_files(dir.path());
         assert_eq!(files.len(), 1);
         let contents = std::fs::read_to_string(&files[0]).unwrap();
 
@@ -247,12 +246,7 @@ mod tests {
         manager.append("自分".into(), 5, "一言目".into()).unwrap();
         manager.append("相手".into(), 12, "二言目".into()).unwrap();
 
-        let files_before: Vec<_> = std::fs::read_dir(dir.path())
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
-            .collect();
+        let files_before = list_md_files(dir.path());
         assert_eq!(files_before.len(), 1);
         let path = files_before[0].clone();
         let before = std::fs::read_to_string(&path).unwrap();
