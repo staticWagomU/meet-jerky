@@ -173,6 +173,19 @@ mod tests {
     }
 
     #[test]
+    fn list_session_summaries_sorted_newest_first() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("100-0.md"), "# 会議メモ - 2024-01-01 00:01\n").unwrap();
+        fs::write(dir.path().join("200-0.md"), "# 会議メモ - 2024-01-01 00:02\n").unwrap();
+        fs::write(dir.path().join("50-0.md"), "# 会議メモ - 2024-01-01 00:00\n").unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        let secs: Vec<u64> = summaries.iter().map(|s| s.started_at_secs).collect();
+        assert_eq!(secs, vec![200, 100, 50]);
+    }
+
+    #[test]
     fn save_session_markdown_writes_segment_line() {
         // started_at = 1_713_333_000 UTC = 14:50:00 JST, offset 15s -> 14:50:15
         let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
