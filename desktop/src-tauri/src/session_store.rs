@@ -4,6 +4,7 @@
 //! リアルタイム追記や Tauri コマンド化は本ループのスコープ外。
 
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use chrono::FixedOffset;
@@ -47,6 +48,50 @@ pub fn save_session_markdown(
     let path = dir.join(format!("{}.md", session.id));
     fs::write(&path, body)?;
     Ok(path)
+}
+
+/// 保存済みセッションの一覧用メタデータ。
+///
+/// ファイル本体を全て読まずに、UI が一覧表示するために必要な情報を提供する。
+/// - `started_at_secs` はファイル名先頭（`<started_at>-<seq>.md`）から復元。
+/// - `title` はファイル先頭行 `# ...` の `# ` を除いた残り全体（日付を含む）。
+///   日付を分離しない方針: 呼び出し側が素のヘッダ文字列をそのまま見せれば十分。
+#[derive(Debug, Clone, PartialEq)]
+pub struct SessionSummary {
+    pub path: PathBuf,
+    pub started_at_secs: u64,
+    pub title: String,
+}
+
+/// `dir` 配下の `.md` ファイルを走査し、サマリーを新しい順に返す。
+///
+/// ファイル名プレフィックスが数値として解釈できないものは無視する（エラーにしない）。
+pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>> {
+    let mut out = Vec::new();
+    for path in list_session_files(dir)? {
+        let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        let prefix = stem.split('-').next().unwrap_or("");
+        let Ok(started_at_secs) = prefix.parse::<u64>() else {
+            continue;
+        };
+
+        let file = fs::File::open(&path)?;
+        let mut reader = BufReader::new(file);
+        let mut first_line = String::new();
+        reader.read_line(&mut first_line)?;
+        let trimmed = first_line.trim_end_matches(['\n', '\r']);
+        let title = trimmed.strip_prefix("# ").unwrap_or(trimmed).to_string();
+
+        out.push(SessionSummary {
+            path,
+            started_at_secs,
+            title,
+        });
+    }
+    out.sort_by(|a, b| b.started_at_secs.cmp(&a.started_at_secs));
+    Ok(out)
 }
 
 /// `dir` 配下の `.md` 拡張子ファイルを一覧する。
@@ -105,6 +150,26 @@ mod tests {
             .collect();
         assert!(names.contains(&"a.md".to_string()));
         assert!(names.contains(&"b.md".to_string()));
+    }
+
+    #[test]
+    fn list_session_summaries_returns_single_summary_with_metadata() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("100-0.md"),
+            "# 会議メモ - 2024-04-17 14:50\n",
+        )
+        .unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].started_at_secs, 100);
+        assert_eq!(summaries[0].title, "会議メモ - 2024-04-17 14:50");
+        assert_eq!(
+            summaries[0].path.file_name().unwrap().to_string_lossy(),
+            "100-0.md"
+        );
     }
 
     #[test]
