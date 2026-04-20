@@ -190,6 +190,11 @@ export function SettingsView() {
           <span className="settings-note">
             OpenAI Whisper API 用。現在は平文保存（Keychain 対応予定）
           </span>
+          {(!localSettings.apiKey || localSettings.apiKey.trim() === "") && (
+            <span className="settings-warning">
+              ⚠ API キーが未設定です。クラウド文字起こしには OpenAI API キーが必要です。
+            </span>
+          )}
         </div>
       )}
 

@@ -742,6 +742,13 @@
   margin-left: 0.3rem;
 }
 
+.settings-warning {
+  font-size: 0.75rem;
+  color: #d33;
+  margin-top: 0.4rem;
+  display: block;
+}
+
 .settings-select {
   padding: 0.4em 0.6em;
   border-radius: 6px;
