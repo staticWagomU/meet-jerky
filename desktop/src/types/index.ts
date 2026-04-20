@@ -37,6 +37,14 @@ export interface DownloadErrorPayload {
   message: string;
 }
 
+export interface StartSessionArgs {
+  title: string;
+}
+
+export interface FinalizeSessionResult {
+  path: string;
+}
+
 export type TranscriptionEngineType =
   | "whisper"
   | "appleSpeech"

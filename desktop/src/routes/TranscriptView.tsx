@@ -12,6 +12,7 @@ import { SystemAudioSection } from "../components/SystemAudioSection";
 import { TranscriptionControls } from "../components/TranscriptionControls";
 import { TranscriptDisplay } from "../components/TranscriptDisplay";
 import { PermissionBanner } from "../components/PermissionBanner";
+import { startSession, finalizeAndSaveSession } from "../hooks/useSession";
 
 /** invoke のエラーを文字列として返すヘルパー */
 function toErrorMessage(e: unknown): string {
@@ -47,6 +48,10 @@ export function TranscriptView() {
   const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Session wiring state
+  const [meetingError, setMeetingError] = useState<string | null>(null);
+  const [lastSavedPath, setLastSavedPath] = useState<string | null>(null);
 
   const { data: devices } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
@@ -102,9 +107,9 @@ export function TranscriptView() {
   const isAnySourceRecording = isMicRecording || isSystemAudioRecording;
 
   const handleToggleMeeting = useCallback(async () => {
-    try {
-      if (isMeetingActive) {
-        // STOP: stop transcription, then stop audio sources
+    if (isMeetingActive) {
+      // STOP: stop transcription, then stop audio sources, then finalize session
+      try {
         if (isTranscribing) {
           await invoke("stop_transcription");
           setIsTranscribing(false);
@@ -122,27 +127,61 @@ export function TranscriptView() {
         setIsMeetingActive(false);
         setMeetingStartTime(null);
         setElapsedTime(0);
-      } else {
-        // START: start mic, start system audio, then start transcription
-        if (selectedDeviceId) {
-          await invoke("start_recording", { deviceId: selectedDeviceId });
-        } else {
-          await invoke("start_recording");
-        }
-        setIsMicRecording(true);
-
-        await invoke("start_system_audio");
-        setIsSystemAudioRecording(true);
-
-        await invoke("start_transcription", { modelName: selectedModel });
-        setIsTranscribing(true);
-
-        const now = Date.now();
-        setMeetingStartTime(now);
-        setIsMeetingActive(true);
+      } catch (e) {
+        const msg = toErrorMessage(e);
+        console.error("会議停止に失敗しました:", msg);
+        setMeetingError(`会議停止に失敗しました: ${msg}`);
+        return;
       }
+
+      // 録音停止は完了している。finalize 失敗時はユーザに通知するだけ。
+      try {
+        const savedPath = await finalizeAndSaveSession();
+        setLastSavedPath(savedPath);
+        setMeetingError(null);
+      } catch (e) {
+        const msg = toErrorMessage(e);
+        console.error("セッション保存に失敗しました:", msg);
+        setMeetingError(`セッション保存に失敗しました: ${msg}`);
+      }
+      return;
+    }
+
+    // START: session 開始 → mic → system audio → transcription
+    const title = `会議 ${new Date().toLocaleString("ja-JP")}`;
+    try {
+      await startSession(title);
     } catch (e) {
-      console.error("会議操作に失敗しました:", toErrorMessage(e));
+      const msg = toErrorMessage(e);
+      console.error("セッション開始に失敗しました:", msg);
+      setMeetingError(`セッション開始に失敗しました: ${msg}`);
+      // session 開始失敗時は録音を開始しない (rollback 不要)
+      return;
+    }
+
+    try {
+      if (selectedDeviceId) {
+        await invoke("start_recording", { deviceId: selectedDeviceId });
+      } else {
+        await invoke("start_recording");
+      }
+      setIsMicRecording(true);
+
+      await invoke("start_system_audio");
+      setIsSystemAudioRecording(true);
+
+      await invoke("start_transcription", { modelName: selectedModel });
+      setIsTranscribing(true);
+
+      const now = Date.now();
+      setMeetingStartTime(now);
+      setIsMeetingActive(true);
+      setMeetingError(null);
+      setLastSavedPath(null);
+    } catch (e) {
+      const msg = toErrorMessage(e);
+      console.error("会議開始に失敗しました:", msg);
+      setMeetingError(`会議開始に失敗しました: ${msg}`);
     }
   }, [
     isMeetingActive,
@@ -245,6 +284,14 @@ export function TranscriptView() {
           <span className="meeting-timer">
             {formatElapsedTime(elapsedTime)}
           </span>
+        )}
+        {meetingError && (
+          <p className="meeting-error" role="alert">
+            {meetingError}
+          </p>
+        )}
+        {lastSavedPath && (
+          <p className="meeting-saved-path">保存先: {lastSavedPath}</p>
         )}
       </div>
 
