@@ -25,6 +25,31 @@ pub fn build_whisper_authorization_header(api_key: &str) -> String {
     format!("Bearer {api_key}")
 }
 
+#[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+pub struct WhisperRequestParams {
+    pub model: String,
+    pub language: Option<String>,
+    pub response_format: String,
+    pub temperature: f32,
+}
+
+#[allow(dead_code)]
+pub fn build_whisper_request_params(
+    model: &str,
+    language: Option<&str>,
+) -> Result<WhisperRequestParams, String> {
+    if model.is_empty() {
+        return Err("model must not be empty".to_string());
+    }
+    Ok(WhisperRequestParams {
+        model: model.to_string(),
+        language: language.map(|s| s.to_string()),
+        response_format: "verbose_json".to_string(),
+        temperature: 0.0,
+    })
+}
+
 #[allow(dead_code)]
 pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSegment>, String> {
     let response: VerboseResponse = serde_json::from_str(body)
@@ -116,5 +141,47 @@ mod tests {
         let header = build_whisper_authorization_header("sk-xxx");
 
         assert_eq!(header, "Bearer sk-xxx");
+    }
+
+    #[test]
+    fn build_whisper_request_params_with_ja_language() {
+        let params = build_whisper_request_params("small", Some("ja")).expect("should build");
+
+        assert_eq!(
+            params,
+            WhisperRequestParams {
+                model: "small".to_string(),
+                language: Some("ja".to_string()),
+                response_format: "verbose_json".to_string(),
+                temperature: 0.0,
+            }
+        );
+    }
+
+    #[test]
+    fn build_whisper_request_params_with_en_language_tiny_model() {
+        let params = build_whisper_request_params("tiny", Some("en")).expect("should build");
+
+        assert_eq!(
+            params,
+            WhisperRequestParams {
+                model: "tiny".to_string(),
+                language: Some("en".to_string()),
+                response_format: "verbose_json".to_string(),
+                temperature: 0.0,
+            }
+        );
+    }
+
+    #[test]
+    fn build_whisper_request_params_rejects_empty_model() {
+        let result = build_whisper_request_params("", Some("ja"));
+
+        assert!(result.is_err(), "expected Err for empty model");
+        let msg = result.unwrap_err();
+        assert!(
+            msg.contains("model"),
+            "error message should mention 'model', got: {msg}"
+        );
     }
 }
