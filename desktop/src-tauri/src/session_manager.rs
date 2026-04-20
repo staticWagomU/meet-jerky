@@ -1,4 +1,7 @@
 use crate::session::Session;
+use crate::session_store;
+use chrono::FixedOffset;
+use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard};
 
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -9,8 +12,22 @@ pub enum SessionManagerError {
     NotActive,
 }
 
+/// 活性セッションの状態。
+///
+/// `output` が `Some` の場合、`append`/`finalize` ごとに対応ファイルへ全文書き出しを行う
+/// （インクリメンタル書き出し）。`None` の場合は in-memory のみで動作する。
+struct ActiveSession {
+    session: Session,
+    output: Option<ActiveOutput>,
+}
+
+struct ActiveOutput {
+    path: PathBuf,
+    offset: FixedOffset,
+}
+
 pub struct SessionManager {
-    current: Mutex<Option<Session>>,
+    current: Mutex<Option<ActiveSession>>,
 }
 
 impl SessionManager {
@@ -20,16 +37,44 @@ impl SessionManager {
         }
     }
 
-    fn lock(&self) -> MutexGuard<'_, Option<Session>> {
+    fn lock(&self) -> MutexGuard<'_, Option<ActiveSession>> {
         self.current.lock().expect("session manager mutex poisoned")
     }
 
+    /// in-memory のみでセッションを開始する。ディスク書き出しは行わない。
     pub fn start(&self, title: String, started_at: u64) -> Result<(), SessionManagerError> {
         let mut guard = self.lock();
         if guard.is_some() {
             return Err(SessionManagerError::AlreadyActive);
         }
-        *guard = Some(Session::start(title, started_at));
+        *guard = Some(ActiveSession {
+            session: Session::start(title, started_at),
+            output: None,
+        });
+        Ok(())
+    }
+
+    /// 出力ディレクトリとタイムゾーンを指定して開始する。
+    ///
+    /// `append` / `finalize` のたびに `<output_dir>/<session_id>.md` を上書きするため、
+    /// アプリが `finalize` 前にクラッシュしても途中までの transcript がディスクに残る。
+    pub fn start_with_output(
+        &self,
+        title: String,
+        started_at: u64,
+        output_dir: PathBuf,
+        offset: FixedOffset,
+    ) -> Result<(), SessionManagerError> {
+        let mut guard = self.lock();
+        if guard.is_some() {
+            return Err(SessionManagerError::AlreadyActive);
+        }
+        let session = Session::start(title, started_at);
+        let path = session_store::path_for_session(&output_dir, &session);
+        *guard = Some(ActiveSession {
+            session,
+            output: Some(ActiveOutput { path, offset }),
+        });
         Ok(())
     }
 
@@ -41,8 +86,22 @@ impl SessionManager {
     ) -> Result<(), SessionManagerError> {
         let mut guard = self.lock();
         match guard.as_mut() {
-            Some(session) => {
-                session.append_segment(speaker, offset_secs, text);
+            Some(active) => {
+                active.session.append_segment(speaker, offset_secs, text);
+                if let Some(output) = &active.output {
+                    // ディスク書き出しエラーは in-memory の一貫性を壊さないよう、ログに留める。
+                    // Phase 5 時点では tracing 未導入のため eprintln で暫定対応。
+                    if let Err(err) = session_store::write_session_markdown_to(
+                        &output.path,
+                        &active.session,
+                        output.offset,
+                    ) {
+                        eprintln!(
+                            "[session_manager] failed to persist session to {:?}: {}",
+                            output.path, err
+                        );
+                    }
+                }
                 Ok(())
             }
             None => Err(SessionManagerError::NotActive),
@@ -52,9 +111,21 @@ impl SessionManager {
     pub fn finalize(&self, ended_at: u64) -> Result<Session, SessionManagerError> {
         let mut guard = self.lock();
         match guard.take() {
-            Some(mut session) => {
-                session.finalize(ended_at);
-                Ok(session)
+            Some(mut active) => {
+                active.session.finalize(ended_at);
+                if let Some(output) = &active.output {
+                    if let Err(err) = session_store::write_session_markdown_to(
+                        &output.path,
+                        &active.session,
+                        output.offset,
+                    ) {
+                        eprintln!(
+                            "[session_manager] failed to persist finalized session to {:?}: {}",
+                            output.path, err
+                        );
+                    }
+                }
+                Ok(active.session)
             }
             None => Err(SessionManagerError::NotActive),
         }
@@ -65,11 +136,11 @@ impl SessionManager {
     }
 
     pub fn current_title(&self) -> Option<String> {
-        self.lock().as_ref().map(|s| s.title.clone())
+        self.lock().as_ref().map(|a| a.session.title.clone())
     }
 
     pub fn current_segment_count(&self) -> Option<usize> {
-        self.lock().as_ref().map(|s| s.segments.len())
+        self.lock().as_ref().map(|a| a.session.segments.len())
     }
 }
 

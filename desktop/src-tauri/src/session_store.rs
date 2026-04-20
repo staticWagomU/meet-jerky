@@ -16,14 +16,28 @@ use crate::datetime_fmt::{
 use crate::markdown::{self, SessionMeta};
 use crate::session::Session;
 
-/// 完了済みセッションを `<session_id>.md` として `dir` に書き出す。
+/// セッションを保存するファイルパスを決定する。
 ///
-/// 表示用タイムスタンプは `offset` を用いて内部で整形するため、呼び出し側はタイムゾーンだけ渡す。
-pub fn save_session_markdown(
-    dir: &Path,
+/// `<dir>/<session_id>.md` となり、`session_id` は `<started_at_secs>-<seq>` 形式。
+pub fn path_for_session(dir: &Path, session: &Session) -> PathBuf {
+    dir.join(format!("{}.md", session.id))
+}
+
+/// 指定パスに現在のセッション内容を Markdown として書き出す（全文上書き）。
+///
+/// インクリメンタル書き出し（append ごとの rewrite）と finalize 時の最終書き出しの両方から
+/// 呼ぶことを想定。
+pub fn write_session_markdown_to(
+    path: &Path,
     session: &Session,
     offset: FixedOffset,
-) -> std::io::Result<PathBuf> {
+) -> std::io::Result<()> {
+    let body = render_session_markdown(session, offset);
+    fs::write(path, body)
+}
+
+/// セッションを Markdown 文字列に整形する内部ヘルパー。
+fn render_session_markdown(session: &Session, offset: FixedOffset) -> String {
     let header_display =
         format_session_header_timestamp_with_offset(session.started_at as i64, offset);
     let meta = SessionMeta {
@@ -44,10 +58,19 @@ pub fn save_session_markdown(
         })
         .collect();
 
-    let body = markdown::format_session_markdown(&meta, &segments);
+    markdown::format_session_markdown(&meta, &segments)
+}
 
-    let path = dir.join(format!("{}.md", session.id));
-    fs::write(&path, body)?;
+/// 完了済みセッションを `<session_id>.md` として `dir` に書き出す。
+///
+/// 表示用タイムスタンプは `offset` を用いて内部で整形するため、呼び出し側はタイムゾーンだけ渡す。
+pub fn save_session_markdown(
+    dir: &Path,
+    session: &Session,
+    offset: FixedOffset,
+) -> std::io::Result<PathBuf> {
+    let path = path_for_session(dir, session);
+    write_session_markdown_to(&path, session, offset)?;
     Ok(path)
 }
 
