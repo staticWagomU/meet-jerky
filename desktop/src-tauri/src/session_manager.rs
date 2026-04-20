@@ -88,20 +88,7 @@ impl SessionManager {
         match guard.as_mut() {
             Some(active) => {
                 active.session.append_segment(speaker, offset_secs, text);
-                if let Some(output) = &active.output {
-                    // ディスク書き出しエラーは in-memory の一貫性を壊さないよう、ログに留める。
-                    // Phase 5 時点では tracing 未導入のため eprintln で暫定対応。
-                    if let Err(err) = session_store::write_session_markdown_to(
-                        &output.path,
-                        &active.session,
-                        output.offset,
-                    ) {
-                        eprintln!(
-                            "[session_manager] failed to persist session to {:?}: {}",
-                            output.path, err
-                        );
-                    }
-                }
+                persist_if_configured(active, "append");
                 Ok(())
             }
             None => Err(SessionManagerError::NotActive),
@@ -113,18 +100,7 @@ impl SessionManager {
         match guard.take() {
             Some(mut active) => {
                 active.session.finalize(ended_at);
-                if let Some(output) = &active.output {
-                    if let Err(err) = session_store::write_session_markdown_to(
-                        &output.path,
-                        &active.session,
-                        output.offset,
-                    ) {
-                        eprintln!(
-                            "[session_manager] failed to persist finalized session to {:?}: {}",
-                            output.path, err
-                        );
-                    }
-                }
+                persist_if_configured(&active, "finalize");
                 Ok(active.session)
             }
             None => Err(SessionManagerError::NotActive),
@@ -147,6 +123,26 @@ impl SessionManager {
 impl Default for SessionManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// 出力設定がある場合のみ、現在のセッションを Markdown としてディスクへ書き出す。
+///
+/// ディスク書き出しエラーは in-memory の一貫性を壊さないよう、ログに留めて無視する。
+/// Phase 5 時点では tracing 未導入のため eprintln で暫定対応。
+/// `phase` は append/finalize などの呼び出し文脈をログに残すためのラベル。
+fn persist_if_configured(active: &ActiveSession, phase: &str) {
+    if let Some(output) = &active.output {
+        if let Err(err) = session_store::write_session_markdown_to(
+            &output.path,
+            &active.session,
+            output.offset,
+        ) {
+            eprintln!(
+                "[session_manager] failed to persist session on {} to {:?}: {}",
+                phase, output.path, err
+            );
+        }
     }
 }
 
