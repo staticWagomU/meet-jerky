@@ -2,6 +2,7 @@ mod audio;
 mod datetime_fmt;
 mod markdown;
 mod session;
+mod session_commands;
 mod session_manager;
 mod session_store;
 mod settings;

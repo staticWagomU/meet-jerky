@@ -8,6 +8,7 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use chrono::FixedOffset;
+use serde::Serialize;
 
 use crate::datetime_fmt::{
     format_segment_timestamp_with_offset, format_session_header_timestamp_with_offset,
@@ -56,7 +57,8 @@ pub fn save_session_markdown(
 /// - `started_at_secs` はファイル名先頭（`<started_at>-<seq>.md`）から復元。
 /// - `title` はファイル先頭行 `# ...` の `# ` を除いた残り全体（日付を含む）。
 ///   日付を分離しない方針: 呼び出し側が素のヘッダ文字列をそのまま見せれば十分。
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SessionSummary {
     pub path: PathBuf,
     pub started_at_secs: u64,
