@@ -194,6 +194,43 @@ mod tests {
     }
 
     #[test]
+    fn second_append_preserves_first_segment_on_disk() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        manager
+            .start_with_output(
+                "会議メモ".into(),
+                1_713_333_000,
+                dir.path().to_path_buf(),
+                jst(),
+            )
+            .expect("start should succeed");
+
+        manager.append("自分".into(), 5, "一言目".into()).unwrap();
+        manager.append("相手".into(), 12, "二言目".into()).unwrap();
+
+        let files: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+            .collect();
+        assert_eq!(files.len(), 1);
+        let contents = std::fs::read_to_string(&files[0]).unwrap();
+
+        assert!(
+            contents.contains("**[14:50:05] 自分:** 一言目"),
+            "first segment lost. contents=\n{}",
+            contents
+        );
+        assert!(
+            contents.contains("**[14:50:12] 相手:** 二言目"),
+            "second segment missing. contents=\n{}",
+            contents
+        );
+    }
+
+    #[test]
     fn new_has_no_active_session_and_start_activates_it() {
         let manager = SessionManager::new();
         assert!(!manager.is_active());
