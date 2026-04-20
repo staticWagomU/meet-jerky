@@ -231,6 +231,51 @@ mod tests {
     }
 
     #[test]
+    fn finalize_disk_contents_match_in_memory_session() {
+        // append 後と finalize 後でディスク内容が同一であることで、
+        // "最終保存 = 最後の append 時点 + finalize マーク" が成立することを示す。
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        manager
+            .start_with_output(
+                "会議メモ".into(),
+                1_713_333_000,
+                dir.path().to_path_buf(),
+                jst(),
+            )
+            .expect("start should succeed");
+        manager.append("自分".into(), 5, "一言目".into()).unwrap();
+        manager.append("相手".into(), 12, "二言目".into()).unwrap();
+
+        let files_before: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+            .collect();
+        assert_eq!(files_before.len(), 1);
+        let path = files_before[0].clone();
+        let before = std::fs::read_to_string(&path).unwrap();
+
+        let session = manager.finalize(1_713_333_100).expect("finalize");
+        let after = std::fs::read_to_string(&path).unwrap();
+
+        // 全セグメントがディスクに残っている
+        assert!(after.contains("**[14:50:05] 自分:** 一言目"));
+        assert!(after.contains("**[14:50:12] 相手:** 二言目"));
+        // finalize 時点で最後の append と同じ内容が保持されている
+        // （現状 finalize では ended_at は markdown に出さないため一致するはず）
+        assert_eq!(
+            before, after,
+            "finalize should leave last-append contents intact"
+        );
+        // in-memory session と segments が一致
+        assert_eq!(session.segments.len(), 2);
+        assert_eq!(session.segments[0].text, "一言目");
+        assert_eq!(session.segments[1].text, "二言目");
+    }
+
+    #[test]
     fn new_has_no_active_session_and_start_activates_it() {
         let manager = SessionManager::new();
         assert!(!manager.is_active());
