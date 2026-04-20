@@ -334,6 +334,16 @@ impl TranscriptionStateHandle {
 // Tauri コマンド
 // ─────────────────────────────────────────────
 
+/// `model-download-progress` イベントの payload を組み立てる（純粋関数）
+fn build_download_progress_payload(progress: f64, model: &str) -> serde_json::Value {
+    serde_json::json!({ "progress": progress, "model": model })
+}
+
+/// `model-download-error` イベントの payload を組み立てる（純粋関数）
+fn build_download_error_payload(model: &str, message: &str) -> serde_json::Value {
+    serde_json::json!({ "model": model, "message": message })
+}
+
 /// 利用可能なモデル一覧を返す
 #[tauri::command]
 pub fn list_models() -> Vec<ModelInfo> {
@@ -348,29 +358,48 @@ pub fn is_model_downloaded(model_name: String) -> bool {
 }
 
 /// モデルをダウンロードする（プログレスイベントを送信）
+///
+/// 失敗時は Result で Err を返すことに加え、`model-download-error` を emit する。
+/// 既存の `invoke` catch 経路に加えて listen 側でも統一的にハンドリングできるようにする。
 #[tauri::command]
 pub async fn download_model(
     model_name: String,
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let model_name_for_progress = model_name.clone();
-    let app_clone = app.clone();
+    let app_for_progress = app.clone();
 
     // ダウンロードはブロッキングI/Oなので専用スレッドで実行
-    let result = tokio::task::spawn_blocking(move || {
+    let join_result = tokio::task::spawn_blocking(move || {
         let manager = ModelManager::new();
         let model_name_ref = model_name_for_progress.clone();
         manager.download_model(&model_name_for_progress, move |progress| {
-            let _ = app_clone.emit(
+            let _ = app_for_progress.emit(
                 "model-download-progress",
-                serde_json::json!({ "progress": progress, "model": &model_name_ref }),
+                build_download_progress_payload(progress, &model_name_ref),
             );
         })
     })
     .await
-    .map_err(|e| format!("ダウンロードタスクの実行に失敗しました: {e}"))??;
+    .map_err(|e| format!("ダウンロードタスクの実行に失敗しました: {e}"));
 
-    Ok(result.to_string_lossy().to_string())
+    match join_result {
+        Ok(Ok(path)) => Ok(path.to_string_lossy().to_string()),
+        Ok(Err(msg)) => {
+            let _ = app.emit(
+                "model-download-error",
+                build_download_error_payload(&model_name, &msg),
+            );
+            Err(msg)
+        }
+        Err(msg) => {
+            let _ = app.emit(
+                "model-download-error",
+                build_download_error_payload(&model_name, &msg),
+            );
+            Err(msg)
+        }
+    }
 }
 
 /// 文字起こしを開始する
@@ -742,6 +771,26 @@ mod tests {
         let manager =
             ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
         assert!(!manager.is_model_downloaded("small"));
+    }
+
+    #[test]
+    fn test_download_progress_payload_serialization() {
+        // 既存 progress イベントの payload 形を固定化（回帰防止）。
+        // 型側 DownloadProgressPayload { progress, model } と噛み合う形を保証する。
+        let payload = build_download_progress_payload(0.5, "small");
+        let s = payload.to_string();
+        assert!(s.contains("\"progress\":0.5"), "got: {s}");
+        assert!(s.contains("\"model\":\"small\""), "got: {s}");
+    }
+
+    #[test]
+    fn test_download_error_payload_serialization() {
+        // model-download-error の payload は { model, message } のフラットキー。
+        // TypeScript 側 DownloadErrorPayload と噛み合う形を保証する。
+        let payload = build_download_error_payload("small", "HTTP 404");
+        let s = payload.to_string();
+        assert!(s.contains("\"model\":\"small\""), "got: {s}");
+        assert!(s.contains("\"message\":\"HTTP 404\""), "got: {s}");
     }
 
     #[test]
