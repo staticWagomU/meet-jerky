@@ -71,4 +71,21 @@ mod tests {
         assert_eq!(first_line, "# 会議メモ - 2024-04-17 14:50");
         assert!(!manager.is_active(), "manager should be cleared after finalize");
     }
+
+    // Cycle 2: アイドル状態での finalize はエラー文字列を返す
+    #[test]
+    fn finalize_and_save_session_inner_returns_error_when_idle() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+
+        let err = finalize_and_save_session_inner(
+            &manager,
+            dir.path(),
+            1_713_333_100,
+            jst(),
+        )
+        .expect_err("idle manager should error");
+
+        assert_eq!(err, "no active session");
+    }
 }
