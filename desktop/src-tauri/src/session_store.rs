@@ -186,6 +186,18 @@ mod tests {
     }
 
     #[test]
+    fn list_session_summaries_skips_unparsable_prefixes() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("100-0.md"), "# 会議メモ - 2024-04-17 14:50\n").unwrap();
+        fs::write(dir.path().join("notes.md"), "# メモ - 自由記述\n").unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].started_at_secs, 100);
+    }
+
+    #[test]
     fn save_session_markdown_writes_segment_line() {
         // started_at = 1_713_333_000 UTC = 14:50:00 JST, offset 15s -> 14:50:15
         let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
