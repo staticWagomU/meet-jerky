@@ -8,6 +8,9 @@ function App() {
         <Link to="/" className="nav-link">
           文字起こし
         </Link>
+        <Link to="/sessions" className="nav-link">
+          履歴
+        </Link>
         <Link to="/settings" className="nav-link">
           設定
         </Link>
