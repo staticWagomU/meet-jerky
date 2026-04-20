@@ -45,6 +45,17 @@ impl SessionManager {
         }
     }
 
+    pub fn finalize(&self, ended_at: u64) -> Result<Session, SessionManagerError> {
+        let mut guard = self.current.lock().unwrap();
+        match guard.take() {
+            Some(mut session) => {
+                session.finalize(ended_at);
+                Ok(session)
+            }
+            None => Err(SessionManagerError::NotActive),
+        }
+    }
+
     pub fn is_active(&self) -> bool {
         self.current.lock().unwrap().is_some()
     }
@@ -76,6 +87,25 @@ mod tests {
         manager.start("meeting".into(), 100).expect("start should succeed");
 
         assert!(manager.is_active());
+    }
+
+    #[test]
+    fn finalize_clears_state_and_subsequent_finalize_errors() {
+        let manager = SessionManager::new();
+        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+
+        let session = manager.finalize(200).expect("finalize should succeed");
+
+        assert_eq!(session.title, "meeting");
+        assert_eq!(session.ended_at, Some(200));
+        assert_eq!(session.segments.len(), 1);
+        assert!(!manager.is_active());
+
+        let err = manager.finalize(300).expect_err("second finalize should fail");
+        assert_eq!(err, SessionManagerError::NotActive);
     }
 
     #[test]
