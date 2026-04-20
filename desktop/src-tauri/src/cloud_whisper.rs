@@ -50,6 +50,31 @@ pub fn build_whisper_request_params(
     })
 }
 
+#[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
+pub struct WhisperHttpRequestDescriptor {
+    pub url: String,
+    pub auth_header: String,
+    pub params: WhisperRequestParams,
+}
+
+#[allow(dead_code)]
+pub fn build_whisper_http_request_descriptor(
+    base_url: &str,
+    api_key: &str,
+    model: &str,
+    language: Option<&str>,
+) -> Result<WhisperHttpRequestDescriptor, String> {
+    let url = build_whisper_api_url(base_url);
+    let auth_header = build_whisper_authorization_header(api_key);
+    let params = build_whisper_request_params(model, language)?;
+    Ok(WhisperHttpRequestDescriptor {
+        url,
+        auth_header,
+        params,
+    })
+}
+
 #[allow(dead_code)]
 pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSegment>, String> {
     let response: VerboseResponse = serde_json::from_str(body)
@@ -182,6 +207,73 @@ mod tests {
         assert!(
             msg.contains("model"),
             "error message should mention 'model', got: {msg}"
+        );
+    }
+
+    #[test]
+    fn build_descriptor_propagates_empty_model_error() {
+        let result = build_whisper_http_request_descriptor(
+            "https://api.openai.com/v1",
+            "sk-x",
+            "",
+            Some("ja"),
+        );
+
+        assert!(result.is_err(), "expected Err for empty model");
+        let msg = result.unwrap_err();
+        assert!(
+            msg.contains("model"),
+            "error message should mention 'model', got: {msg}"
+        );
+    }
+
+    #[test]
+    fn build_descriptor_with_tiny_model_and_trailing_slash_base_url() {
+        let descriptor = build_whisper_http_request_descriptor(
+            "https://api.openai.com/v1/",
+            "sk-other",
+            "tiny",
+            None,
+        )
+        .expect("should build descriptor");
+
+        assert_eq!(
+            descriptor,
+            WhisperHttpRequestDescriptor {
+                url: "https://api.openai.com/v1/audio/transcriptions".to_string(),
+                auth_header: "Bearer sk-other".to_string(),
+                params: WhisperRequestParams {
+                    model: "tiny".to_string(),
+                    language: None,
+                    response_format: "verbose_json".to_string(),
+                    temperature: 0.0,
+                },
+            }
+        );
+    }
+
+    #[test]
+    fn build_descriptor_with_ja_language() {
+        let descriptor = build_whisper_http_request_descriptor(
+            "https://api.openai.com/v1",
+            "sk-test-abc",
+            "small",
+            Some("ja"),
+        )
+        .expect("should build descriptor");
+
+        assert_eq!(
+            descriptor,
+            WhisperHttpRequestDescriptor {
+                url: "https://api.openai.com/v1/audio/transcriptions".to_string(),
+                auth_header: "Bearer sk-test-abc".to_string(),
+                params: WhisperRequestParams {
+                    model: "small".to_string(),
+                    language: Some("ja".to_string()),
+                    response_format: "verbose_json".to_string(),
+                    temperature: 0.0,
+                },
+            }
         );
     }
 }
