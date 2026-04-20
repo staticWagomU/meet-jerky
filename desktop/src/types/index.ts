@@ -56,6 +56,7 @@ export interface AppSettings {
   microphoneDeviceId: string | null;
   language: string;
   outputDirectory: string | null;
+  apiKey?: string;
 }
 
 /// `meeting-app-detected` Tauri イベントの payload。

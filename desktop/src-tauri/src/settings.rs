@@ -66,6 +66,10 @@ pub struct AppSettings {
 
     /// 出力ディレクトリ (None = デフォルトディレクトリ)
     pub output_directory: Option<String>,
+
+    /// クラウドエンジンの API キー (None = 未設定)
+    #[serde(default)]
+    pub api_key: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -76,6 +80,7 @@ impl Default for AppSettings {
             microphone_device_id: None,
             language: "auto".to_string(),
             output_directory: None,
+            api_key: None,
         }
     }
 }
@@ -340,6 +345,7 @@ mod tests {
             microphone_device_id: Some("test-device".to_string()),
             language: "ja".to_string(),
             output_directory: Some("/tmp/test".to_string()),
+            api_key: None,
         };
 
         // 直接ファイルに書き込んでラウンドトリップをテスト
@@ -439,6 +445,39 @@ mod tests {
         );
         assert_eq!(settings.whisper_model, "small");
         assert_eq!(settings.language, "auto");
+    }
+
+    #[test]
+    fn test_api_key_default_is_none() {
+        let settings = AppSettings::default();
+        assert!(settings.api_key.is_none());
+    }
+
+    #[test]
+    fn test_api_key_serialization_roundtrip() {
+        let settings = AppSettings {
+            api_key: Some("sk-abc123".to_string()),
+            ..AppSettings::default()
+        };
+        let json = serde_json::to_string(&settings).unwrap();
+        assert!(json.contains("\"apiKey\""));
+        assert!(json.contains("sk-abc123"));
+
+        let deserialized: AppSettings = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.api_key, Some("sk-abc123".to_string()));
+    }
+
+    #[test]
+    fn test_api_key_missing_in_json_defaults_to_none() {
+        let json = r#"{
+            "transcriptionEngine": "local",
+            "whisperModel": "small",
+            "microphoneDeviceId": null,
+            "language": "auto",
+            "outputDirectory": null
+        }"#;
+        let settings: AppSettings = serde_json::from_str(json).unwrap();
+        assert!(settings.api_key.is_none());
     }
 
     #[test]
