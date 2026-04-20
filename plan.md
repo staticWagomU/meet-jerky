@@ -188,7 +188,7 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
   ```
 - [x] Markdown保存（ディレクトリへのファイル書き出し）
 - [x] TranscriptSegment → SessionSegment 変換ブリッジ
-- [ ] リアルタイム書き出し（アプリ落ちても途中まで残る）← セッション単位で終了時保存は完成、インクリメンタル書き出しは未対応
+- [x] リアルタイム書き出し（アプリ落ちても途中まで残る）
 - [ ] Tauri コマンド配線（start_session / append / finalize）
 - [ ] セッション一覧画面（過去の文字起こし履歴）
 - [ ] ファイルを開く / フォルダを開くボタン
@@ -269,6 +269,40 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 ---
 
 ## 進捗ログ・気付き
+
+### 2026-04-20: Loop A - インクリメンタル書き出し (Phase 5)
+- commits: `25e66df`, `248c629`, `ffea865`, `258c272`, `b87874d`, `2e742ac`, `ed821d1`
+- 設計判断: **全文上書き戦略**を採用。append / finalize のたびに対応 `.md` ファイルを
+  `write` で完全に書き直す。Markdown は小さく、append のレートも人間の発話速度
+  （毎秒数回が上限）なので最適化は不要。ファイル追記（open+seek+write）より
+  クラッシュ耐性が高く（partial write の窓が短い）、フォーマッタが純粋関数のままで済む。
+  SessionManager に `Option<ActiveOutput>` を持たせ、`start_with_output` で構成された
+  セッションのみ書き出しを発火させる設計にしたため、既存の in-memory 専用テスト
+  （Loop 4 由来の4テスト）は触らずに済んだ。
+- 気付き:
+  1. **書き出しパスの一元化**: `session_store::path_for_session` と
+     `write_session_markdown_to` を factor out することで、`SessionManager` と
+     `save_session_markdown` の両方が同じパス計算を共有。path 不一致による
+     "finalize 時にファイルが 2 つできる" バグの余地を排除できた。
+  2. **Tauri 境界の signature 変更は `_inner` パターンで安全に**: `start_session_inner`
+     に `output_dir: &Path` と `offset: FixedOffset` を足したが、純粋関数のため
+     テストだけ更新すれば Tauri コマンド側は state から resolve するだけで済む。
+     `_inner` パターンの拡張容易性を改めて確認。
+  3. **ディスク書き込みエラーは in-memory 優先で握り潰す**: append のたびに
+     `write_session_markdown_to` が `io::Error` を返す可能性があるが、これで
+     `SessionManager::append` が失敗扱いになると in-memory session との状態が
+     乖離する。`eprintln!` でログしつつ `Ok(())` を返す方針にした。将来 tracing
+     導入時に差し替える。
+- 残タスク / 将来検討:
+  - **書き込みエラー処理**: 現状 `eprintln!`。tracing 導入後に構造化ログへ移行。
+  - **fsync**: クラッシュ耐性を強化するなら `File::sync_all` を検討。Markdown
+    書き出しは人間のタイピング速度なのでコスト許容範囲だが、macOS の APFS は
+    デフォルトで十分安全なので優先度低。
+  - **並行書き込み**: 現在はロック下で同期書き出し。毎回 1〜数 KB なので
+    ブロッキングは無視できるが、将来モデル推論とファイル I/O を分離する場合は
+    channel ベースのライタータスクを検討。
+  - **Tauri コマンド側の直接テスト**: `start_session` Tauri コマンド（state 経由）の
+    自動テストは引き続き未実装。`_inner` が十分広いカバレッジを持つので当面不要。
 
 ### 2026-04-20: Phase 5 セッション試合の総括（5ループ完走）
 
