@@ -29,12 +29,32 @@ impl SessionManager {
         Ok(())
     }
 
+    pub fn append(
+        &self,
+        speaker: String,
+        offset_secs: u64,
+        text: String,
+    ) -> Result<(), SessionManagerError> {
+        let mut guard = self.current.lock().unwrap();
+        match guard.as_mut() {
+            Some(session) => {
+                session.append_segment(speaker, offset_secs, text);
+                Ok(())
+            }
+            None => Err(SessionManagerError::NotActive),
+        }
+    }
+
     pub fn is_active(&self) -> bool {
         self.current.lock().unwrap().is_some()
     }
 
     pub fn current_title(&self) -> Option<String> {
         self.current.lock().unwrap().as_ref().map(|s| s.title.clone())
+    }
+
+    pub fn current_segment_count(&self) -> Option<usize> {
+        self.current.lock().unwrap().as_ref().map(|s| s.segments.len())
     }
 }
 
@@ -56,6 +76,23 @@ mod tests {
         manager.start("meeting".into(), 100).expect("start should succeed");
 
         assert!(manager.is_active());
+    }
+
+    #[test]
+    fn append_without_start_returns_not_active_and_append_after_start_retains_segment() {
+        let manager = SessionManager::new();
+
+        let err = manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect_err("append before start should fail");
+        assert_eq!(err, SessionManagerError::NotActive);
+
+        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed after start");
+
+        assert_eq!(manager.current_segment_count(), Some(1));
     }
 
     #[test]
