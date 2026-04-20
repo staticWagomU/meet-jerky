@@ -270,6 +270,40 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 ## 進捗ログ・気付き
 
+### 2026-04-21: Loop E - Phase 5 UX 配線 + `run_transcription_loop` Config struct 化（並列2トラック）
+- Track A commit: `4b86d43`（`feat(session): wire start_session/finalize invokes to meeting toggle`、フロント3ファイル + 新規 `useSession.ts`）
+- Track B commit: `afd8399`（`refactor(transcription): group run_transcription_loop args into TranscriptionLoopConfig`、Rust 1ファイル）
+- 累積テスト: **Rust 70緑維持**（Track B は純構造変換、件数不変）、フロント `bun run build` 緑
+- ビルド検証: `cargo check` 既存2警告のみ（session_manager dead_code、新規警告ゼロ）+ `bun run build` (tsc + vite) 緑
+- Phase 5 の「フロント UX 縦串」がこれで完成。Loop D 残タスクだった `start_session` / `finalize_and_save_session` の invoke 配線が解消
+
+#### Track A: Phase 5 UX 配線（TranscriptView → SessionManager）
+- **設計**: `handleToggleMeeting` の最外側に session 境界を挟む。既存 mic → system audio → transcription の直列 start/stop は touch せず、START 前と STOP 後に 1 呼び出しずつ追加するだけの最小パッチ
+  - START 側: `await startSession(title)` が失敗したら audio は起動せず `return`（完全ロールバック）。成功後だけ既存シーケンスを走らせる
+  - STOP 側: 既存の停止シーケンス（stop_transcription → stop_system_audio → stop_recording）を**先に**完遂してから `finalizeAndSaveSession()` を呼ぶ。finalize が失敗しても録音停止は不可逆なので `isMeetingActive=false` は維持し、エラーメッセージだけ UI に通知
+  - この START/STOP 非対称性は SessionManager の「start-then-finalize 各1回」不変条件をフロントが尊重した結果
+- **新規 hook**: `desktop/src/hooks/useSession.ts` に `startSession(title): Promise<void>` と `finalizeAndSaveSession(): Promise<string>` の薄い invoke ラッパを置いた。`useSessionList` と違って cache 対象ではないので `useQuery` ではなく純関数 export
+- **型定義**: `desktop/src/types/index.ts` に `StartSessionArgs` / `FinalizeSessionResult` interface を追加。ただし Tauri v2 の `InvokeArgs = Record<string, unknown>` 制約で interface 型を `invoke(cmd, args)` に直接渡すと TS2345（index signature 欠落）が出る → 匿名オブジェクト `{ title }` で推論させるのが正攻法。**この落とし穴は今後の invoke 配線で再発する匂いがある**
+- **UI**: `meeting-control` div 内に `meeting-error` と `meeting-saved-path` の段落を追加。最小表示で既存 CSS 依存なし
+- **フロントのテスト基盤が未導入なので原義 TDD Red/Green は実施不能**。Loop B 同様に `bun run build` (tsc + vite) + `cargo check` の二段検証に切替。境界側（Rust の `session_commands.rs`）には既存テストがあるので配線ミスは型エラーとして弾ける
+
+#### Track B: `run_transcription_loop` の Config struct 化（Tidy First）
+- **設計**: 引数 8 個 → `TranscriptionLoopConfig` に寄せる純機械変換。struct は private（関数内部の関心事）、フィールド順は元のシグネチャと完全一致で diff 最小化
+- **関数本体は不変**: `fn run_transcription_loop(cfg: TranscriptionLoopConfig)` で受け取り、冒頭で destructuring 分配するだけ。シャドウイング `let TranscriptionLoopConfig { mut consumer, engine, ... } = cfg;` で元の `mut consumer` 修飾も保持
+  - 最初は `consumer: mut consumer` の long form を想定していたが、Rust の `non_shorthand_field_patterns` warning を避けるため shorthand `mut consumer` に修正（セマンティクス同一）
+- **呼び出し箇所 2 つ**（mic/sys、`start_transcription` 内）を struct literal 構築に統一。共通フィールド（`engine, running, app, session_manager, stream_started_at_secs`）が同一値だと視覚的に分かりやすくなった
+- **安全ネット**: `run_transcription_loop` を直接叩く単体テストはゼロだが、70 件の既存テストが compile/型チェック経由で struct 定義の正当性を保証。cargo check + cargo test で behavior 不変を確認
+
+#### Loop E の学び
+1. **並列 Track の境界再確認**: Track A = `desktop/src/**`（フロント）+ 新規 `useSession.ts`、Track B = `desktop/src-tauri/src/transcription.rs` のみ。Loop D と同じ「ファイル完全独立」パターンが commit 2 本を順序気にせず出せる条件。今後も「フロント vs Rust 内部関数」の二分法は安全な並列軸として使える
+2. **Tauri v2 の `invoke` 型落とし穴**: 独自 interface を `invoke<T>(cmd, args: Interface)` に渡すと index signature 不足で通らない。匿名オブジェクトリテラル（`{ title }`）で推論させるか、`Record<string, unknown>` を extend した型にする必要がある。今後の invoke 配線のたびに再発しうる → `useSession.ts` パターン（ラッパ関数で args をコンストラクトして内部で `invoke` を呼ぶ）を標準として徹底するのが再発防止策
+3. **「plan.md の tidy:later を拾う」習慣の価値**: Loop D 時点で `run_transcription_loop` の 8 引数を明示的に tidy:later に登録していたおかげで、Loop E の Track B は explore フェーズがほぼ 0 秒で済んだ。今後も loop ログに「今回やらなかった tidy 候補」を書き残す方針を維持する
+
+#### 残タスク
+- **Phase 5 全項目チェック済み** — 残課題は Phase 6（クラウド API）へ
+- **トースト通知の統一化**: Loop B の `revealItemInDir` 失敗と Loop E の finalize 失敗で「ユーザ通知手段」が散在（console.error / 段落表示）。将来的に `useToast` 的な共通レイヤを作ると UX が揃う（Phase 6 と同ループで検討）
+- **`stream_started_at_secs` の厳密化**: Loop D から引き続き「capture 開始時刻との微小ズレ」は未解決。Phase 6 で audio capture 層に timestamp を返させる経路を検討
+
 ### 2026-04-20: Loop D - live loop → SessionManager::append 配線 + モデルDLエラー系整合（並列2トラック）
 - Track A commits: `f6babc9`, `5347c75`, `16a4f43`, `21b9c0a`（3 TDDサイクル + wiring、3テスト追加）
 - Track B commits: `c0462b1`, `66a6fdb`, `a41736e`（型整合 + Rust 側 emit + フロント購読、2テスト追加）
