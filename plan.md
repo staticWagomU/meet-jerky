@@ -270,6 +270,47 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 ## 進捗ログ・気付き
 
+### 2026-04-21: Loop I - Phase 6 純関数合成 descriptor + クラウド選択時の API キー警告（並列2トラック）
+- Track A commit: `3e1cc1d`（`feat(cloud-whisper): add build_whisper_http_request_descriptor composition`、`cloud_whisper.rs` 1ファイル、+92 行、構造体 + 合成関数 + テスト 3 件）
+- Track B commit: `2b6b818`（`feat(settings-ui): warn when cloud engine selected with empty api key`、`SettingsView.tsx` + `App.css`、+12 行）
+- 累積テスト: **Rust 85 緑**（Loop H の 82 → 85、Track A +3）、フロント `bun run build` 緑
+- ビルド検証: `cargo test --package meet-jerky --lib` 85 passed、`cargo check` 既存 2 warning のみ、`bun run build` 184 modules / 緑
+- Phase 6 純関数コアの**合成層**が確立。HTTP 副作用層はこの descriptor を受け取って `reqwest::Client` に流すだけの薄い形に収まる設計が見えた
+
+#### Track A: `build_whisper_http_request_descriptor` 合成関数（Fake It + Triangulation + 救済ルール初発動）
+- **設計**: `WhisperHttpRequestDescriptor { url: String, auth_header: String, params: WhisperRequestParams }` を追加。`build_whisper_http_request_descriptor(base_url, api_key, model, language)` が既存 3 純関数を合成して descriptor を返す「薄い中間層」
+- **Cycle 1 (Red/Green) - Fake It**: 引数を `_base_url`, `_api_key`, `_model`, `_language` の `_` prefix で未使用明示。期待値ハードコードの struct リテラルを `Ok(...)` で返す
+- **Cycle 2 (Red/Green) - Triangulation**: 異なる入力（末尾スラッシュ付き base_url + `"tiny"` model + `None` language + `"sk-other"` api key）で 4 フィールド全不一致の **真の Red**。Green で `_` を外し 3 純関数を合成。末尾スラッシュ正規化は `build_whisper_api_url` 側の責務なので合成層に追加処理ゼロ
+- **Cycle 3 (Red/Green) - 救済ルール初発動**: Err 透過テストを追加したが、Cycle 2 Green の `?` が既に正しく Err を透過しているため **テストが即 ok（characterization 化）**。救済ルールに従い Cycle 2 Green を `.unwrap()` に巻き戻して `panicked at ... "model must not be empty"` の panic Red を再現 → `?` に戻す。これで「Err 透過が実装されている」ことを**テストが駆動した**記録を残せた
+- **Refactor は全サイクルでスキップ**
+
+#### 救済ルールの実戦価値
+Loop G / H で確立した「Cycle N Red が Cycle (N-1) Green のまま通ってしまったら巻き戻す」救済ルールが初めて実戦発動した。
+- **何が検証されたか**: Cycle 3 は本質的に「合成層が `?` で Err を透過する契約」を固定化したいテスト。`?` 演算子のおかげで実装コストは 1 文字だが、テストを書くときに「既に通る」＝「契約が暗黙的に満たされている」状態になりやすい。巻き戻しを挟むことで、契約が**明示的にテスト駆動で確立された**記録になる（将来 `?` を誤って `.unwrap()` や `.expect()` に変えると panic で Red になる。回帰ネットとして有効）
+- **サブエージェントの誠実性**: 「テストが即通った」という事実を隠さずに報告し、救済ルールを適用したプロセスを記述してくれた。プロンプト側でルールを言語化しておけば、サブエージェントが無理に真の Red を偽装することなく、健全に規律を守れる
+- **`.unwrap()` による Red シミュレーション**は Rust の `Result` を扱う TDD で**再利用可能なパターン**。エラー透過契約のテスト駆動テンプレートとして今後も使える
+
+#### Track B: クラウド選択 + API キー未入力時の警告
+- **設計**: `SettingsView.tsx` の API キー入力セクション（`transcriptionEngine === "cloud"` 内）で、`!apiKey || apiKey.trim() === ""` 時に警告 span を表示。「⚠ API キーが未設定です。クラウド文字起こしには OpenAI API キーが必要です。」
+- **CSS**: 新規 `.settings-warning` クラス（`color: #d33`, `font-size: 0.75rem`）。色は既存 `.download-error` から踏襲し、パレットを増やさない。意味論的に「設定画面の警告」なので専用クラスに分離（`.download-error` を直接流用すると用途が曖昧になる）
+- **Non-blocking 方針**: 保存動作は止めず、警告表示のみ。将来「保存ボタン無効化」や「ローカル自動フォールバック」を選択肢として残す（UX 意図を今の段階で狭めない判断）
+- **バリデーション粒度**: `sk-` 始まりなどの形式検証はしない。プレフィックス形式検査はサーバ応答で実リトライ→エラー扱いのほうがシグナルが正確（契約の真実を HTTP 応答側に置く方針）
+
+#### Loop I の学び
+1. **救済ルールが完成した**: Loop G（規律明示）→ Loop H（Fake It + Triangulation 成功）→ Loop I（救済ルール初発動、透過契約テスト駆動）と 3 ループで TDD 運用サイクルが成熟。この一連の経験は **Rust の `?` 演算子と TDD の緊張関係の解消**という一般解に昇華できる
+2. **合成関数は TDD で固定化する価値がある**: 合成層は実装が 4 行程度で tiny だが、「どの純関数を呼ぶか」「エラーをどう伝搬するか」という**契約**がテストで明示される。次に HTTP 層を書くときに descriptor の出力を信頼できる
+3. **フロントテスト基盤不在の影響**: Loop I で**5 連続「フロントは build 緑で代替」**。そろそろ vitest + RTL 導入を単独ループで挟む判断タイミング。次か次次ループで検討
+4. **警告 UI のデザイン原則**: non-blocking を貫くとユーザの自由度が高まる。代わりに「ローカル/クラウド切り替え時の自動フォールバック」や「保存後の contextual help」など別軸で UX を補強する選択肢が広がる
+
+#### 残タスク（Phase 6）
+- **HTTP 副作用層**: いよいよ本丸。`build_whisper_http_request_descriptor` 出力を `reqwest::blocking::Client` + `multipart::Form` に流す `call_whisper_api(descriptor, audio_bytes) -> Result<String, String>` を書く。**モック戦略判断**: `mockito` / `wiremock` / `httpmock` / 契約テスト（`Request` オブジェクト観測）の選定ループが別途必要
+- **multipart Form 組み立て**: `reqwest::multipart::Form` は内部状態観測が難しいので、`Client::post(...).build()?` で `reqwest::blocking::Request` を構築し `url()`, `method()`, `headers()` で契約検証する純関数的アプローチが最有力
+- **エンジン選択 dispatch**: `transcription.rs::start_transcription` で `settings.transcription_engine` を読んで Local/Cloud を分岐
+- **API キーの暗号化保存**: `keyring` クレート導入、Keychain / Credential Manager 経由化
+- **ネットワークエラー時のフォールバック/リトライ**: 単独ループ推奨
+- **API コスト概算表示**: オプショナル、最終化
+- **フロントテスト基盤**: vitest + RTL 導入（Loop B/E/G/H/I で 5 連続「テスト基盤なし」を記録、導入機熟す）
+
 ### 2026-04-21: Loop H - Phase 6 `build_whisper_request_params` + setLocalSettings 様式統一（並列2トラック）
 - Track A commit: `080d256`（`feat(cloud-whisper): add build_whisper_request_params with validation`、`cloud_whisper.rs` 1ファイル、構造体 + 関数 + テスト 3 件）
 - Track B commit: `24031d3`（`refactor(settings-ui): unify setLocalSettings to direct-form style`、`SettingsView.tsx` 1ファイル、+4/-3 行）
