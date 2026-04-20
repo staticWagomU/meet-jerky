@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use chrono::FixedOffset;
 
 use crate::session_manager::SessionManager;
-use crate::session_store;
+use crate::session_store::{self, SessionSummary};
 
 // ─────────────────────────────────────────────
 // start_session
@@ -42,6 +42,21 @@ pub fn finalize_and_save_session_inner(
 
     session_store::save_session_markdown(output_dir, &session, offset)
         .map_err(|e| format!("セッションファイルの書き込みに失敗しました: {e}"))
+}
+
+// ─────────────────────────────────────────────
+// list_session_summaries
+// ─────────────────────────────────────────────
+
+/// テスト可能な list_session_summaries 実装本体。
+///
+/// 初回起動時などでディレクトリが存在しないケースはエラーにせず空配列を返す。
+pub fn list_session_summaries_inner(output_dir: &Path) -> Result<Vec<SessionSummary>, String> {
+    if !output_dir.exists() {
+        return Ok(Vec::new());
+    }
+    session_store::list_session_summaries(output_dir)
+        .map_err(|e| format!("セッション一覧の取得に失敗しました: {e}"))
 }
 
 // ─────────────────────────────────────────────
@@ -125,5 +140,34 @@ mod tests {
 
         assert_eq!(err, "session already active");
         assert_eq!(manager.current_title(), Some("first".into()));
+    }
+
+    // Cycle 4: list_session_summaries_inner が保存済みファイルを返す (スモーク)
+    #[test]
+    fn list_session_summaries_inner_returns_saved_summary() {
+        let dir = tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("100-0.md"),
+            "# 会議メモ - 2024-04-17 14:50\n",
+        )
+        .unwrap();
+
+        let summaries = list_session_summaries_inner(dir.path()).expect("listing should succeed");
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].started_at_secs, 100);
+        assert_eq!(summaries[0].title, "会議メモ - 2024-04-17 14:50");
+    }
+
+    // 存在しないディレクトリは空配列を返す (初回起動時の UX)
+    #[test]
+    fn list_session_summaries_inner_returns_empty_for_missing_dir() {
+        let dir = tempdir().unwrap();
+        let missing = dir.path().join("does_not_exist");
+
+        let summaries =
+            list_session_summaries_inner(&missing).expect("missing dir should not error");
+
+        assert!(summaries.is_empty());
     }
 }
