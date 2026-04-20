@@ -270,6 +270,41 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 ## 進捗ログ・気付き
 
+### 2026-04-21: Loop F - Phase 6 クラウド Whisper 純関数コア + Settings `api_key` 拡張（並列2トラック）
+- Track A commit: `0a0d933`（`feat(cloud-whisper): add verbose-json response parser (pure core)`、新規 `cloud_whisper.rs` + `lib.rs` mod 追加）
+- Track B commit: `2319648`（`feat(settings): add api_key field for cloud engine`、`settings.rs` + TS 型 mirror）
+- 累積テスト: **76 緑**（Loop E の 70 → 76、各 Track +3 ずつ）
+- ビルド検証: `cargo check` 既存2警告のみ（Track A の `parse_whisper_verbose_response` は `#[allow(dead_code)]` で warning 抑制）+ `bun run build` (tsc + vite) 緑
+- Phase 6 の 1 本目: 「HTTP 副作用を触らず純関数コアだけ落とす」アプローチで TDD 主導できた
+
+#### Track A: OpenAI Whisper verbose_json パーサ（原義 TDD 3 サイクル）
+- **設計**: `parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSegment>, String>` を pure function として cloud_whisper.rs に新設。`#[derive(Deserialize)]` DTO (`VerboseResponse` / `VerboseSegment`) で serde_json 経由に寄せ、ベクタ変換時に `(start * 1000.0).round() as i64` で秒→ms 変換。`speaker` は常に `None`（呼び出し元が mic/sys 相当のラベリングを付与する既存 TranscriptionEngine の慣例に揃えた）
+- **Cycle 1 Red/Green**: 真の Red（関数未定義）→ DTO + map で Green → Refactor スキップ（既に最小）
+- **Cycle 2/3 characterization 化の再発**: Cycle 2（不正 JSON → Err）と Cycle 3（空 segments → Ok with empty Vec）は Cycle 1 Green の `serde_json::from_str(...).map_err(...)?` が両者の期待挙動を同時に満たし、真の Red にならず特性付けテストとして固定化された
+  - **Loop D Track A / Loop 4B でも記録済みの同じ落とし穴**。3 回目の再発なので規律レベルを一段上げる: 次ループ以降は Cycle 1 の Green を「テスト 1 本だけが通る最小実装」に切り詰め、エラーハンドリングや空ケースを Cycle 2/3 で初めて実装する順序を徹底する
+- **HTTP 未配線**: `reqwest` を使った実 API 呼び出し / `TranscriptionEngine` trait 実装は次ループに送った。純関数層で validation を固定してから副作用層を足す方針は Phase 5 Loop 1 の「chrono を先送り」と同じ
+- **型の齟齬発見**: plan 依頼時は `start_ms: u64` を想定していたが、既存 `TranscriptionSegment` の実体は `i64`。サブエージェントが existing 型を尊重して `as i64` に合わせた。Loop 2 で「サブエージェントが依頼側の手計算エラーを直した」事例に続く、2 回目の「型/データ実体を実ソースに寄せる」修正
+
+#### Track B: `AppSettings.api_key` 追加（TDD 1 サイクル）
+- **設計**: `pub api_key: Option<String>` を `output_directory` の直後に追加、`#[serde(default)]` で後方互換。`Default` impl にも `api_key: None` を追記
+- **Cycle 1**: Red（no field 'api_key'）→ Green（field 追加 + 既存 `test_save_and_load_roundtrip` の struct literal にも `api_key: None` 追記）→ Refactor なし
+- **TS mirror**: `AppSettings.apiKey?: string` を optional で追加。Tauri serde → TS 型の parity を保つ既存パターンどおり
+- **鍵の暗号化は未対応**: 平文で Option<String> に保持する中間段階。Keychain / Credential Manager 経由の保存は別ループ（Phase 6 の次段）で扱う。現段階で `api_key` を読む呼び出し元もないため、セキュリティ・リスクは増えていない
+
+#### Loop F の学び（再確認含む）
+1. **「真の Red」規律の三度目の敗北**: Cycle 1 Green で実装が先回りすると後続サイクルが特性付けテストに堕ちる問題が Loop 4B / Loop D Track A / Loop F Track A と三連続。サブエージェントは誠実に自己報告してくれるので、運用としては「plan 側で Cycle 1 の Green を『テスト1本が通る最小解』に限定する」明示指示が再発防止の主戦場。次ループから試行
+2. **`#[serde(default)]` フィールド単位パターンの便利さ**: struct 全体 `#[serde(default)]` は `Default` impl を要求するが、フィールド単位なら局所化でき、既存の `settings.json` 読み込みを壊さない鉄板手順。今後 `AppSettings` を拡張するたびに新フィールドへ付与していくテンプレにする
+3. **並列トラックの観測窓としてのテスト件数**: Track B の "before: 71" が Track A の Cycle 1 完了（70→71）と時間的に一致していた。並列実行下では「テスト数」が他トラックの進行度を推測する間接指標になる。将来、依存が強いトラック並列で同期点が必要になったら利用できる観測軸
+4. **`cloud_whisper.rs` を `lib.rs` に mod 登録するだけの 1 行追加**: Track A のみ `lib.rs` を触り、Track B は避ける設計にしたことで 3 フェーズの並列中に 1 度もマージ衝突が起きなかった。Loop D/E に続き「新規ファイル mod 登録の責務はファイルを作るトラックに集約」パターンの再確認
+
+#### 残タスク（Phase 6）
+- **HTTP 呼び出し層**: `reqwest` で `/v1/audio/transcriptions` に multipart POST する `CloudWhisperEngine` 実装。`TranscriptionEngine` trait に impl。タイムアウト / リトライ戦略は後段
+- **エンジン選択 dispatch**: `transcription.rs::start_transcription` で `SettingsStateHandle` の `transcription_engine` を参照し、Cloud なら `CloudWhisperEngine`、Local なら既存 `WhisperLocal` を組み立てる分岐（現状は Local 一択）
+- **API キーの安全保存**: `keyring` クレート等で macOS Keychain / Windows Credential Manager に書き換え。現状の平文 `api_key: Option<String>` は中間段階
+- **設定画面の有効化**: `SettingsView.tsx` の「クラウド」ラジオは現在 disabled。engine 選択が実装されたら解除
+- **ネットワークエラー時のフォールバック / リトライ**: Phase 6 末尾の大物、単独ループ推奨
+- **API コスト概算表示**: オプショナル、最終化
+
 ### 2026-04-21: Loop E - Phase 5 UX 配線 + `run_transcription_loop` Config struct 化（並列2トラック）
 - Track A commit: `4b86d43`（`feat(session): wire start_session/finalize invokes to meeting toggle`、フロント3ファイル + 新規 `useSession.ts`）
 - Track B commit: `afd8399`（`refactor(transcription): group run_transcription_loop args into TranscriptionLoopConfig`、Rust 1ファイル）
