@@ -282,6 +282,20 @@
   text-align: right;
 }
 
+.download-status-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.download-error {
+  font-size: 0.75rem;
+  color: #d33;
+  max-width: 22em;
+  overflow-wrap: anywhere;
+}
+
 /* ===========================
    Control Buttons
    =========================== */

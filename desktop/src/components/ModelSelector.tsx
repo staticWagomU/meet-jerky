@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ModelInfo, DownloadProgressPayload } from "../types";
+import type {
+  ModelInfo,
+  DownloadProgressPayload,
+  DownloadErrorPayload,
+} from "../types";
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -17,6 +21,7 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: models } = useQuery<ModelInfo[]>({
@@ -48,13 +53,35 @@ export function ModelSelector({
     };
   }, [downloadingModel, queryClient]);
 
+  // Listen for download error events emitted by the backend.
+  // `invoke` の catch でも同じ文字列は拾えるが、長時間 DL 中の切断などは
+  // Tauri 側の Err を先に emit で受け取った方が UI 反映が早い。
+  useEffect(() => {
+    const unlistenPromise = listen<DownloadErrorPayload>(
+      "model-download-error",
+      (event) => {
+        setDownloadError(event.payload.message);
+        setDownloadingModel(null);
+        setDownloadProgress(0);
+      },
+    );
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
   const handleDownload = async (modelName: string) => {
     setDownloadingModel(modelName);
     setDownloadProgress(0);
+    setDownloadError(null);
     try {
       await invoke("download_model", { modelName });
     } catch (e) {
+      // emit 側で既に state を更新している可能性が高いが、
+      // emit が届かなかった場合に備えて catch でも冪等に更新する。
       console.error("モデルのダウンロードに失敗しました:", e);
+      setDownloadError(typeof e === "string" ? e : String(e));
       setDownloadingModel(null);
       setDownloadProgress(0);
     }
@@ -80,6 +107,7 @@ export function ModelSelector({
         selectedModel={selectedModel}
         downloadingModel={downloadingModel}
         downloadProgress={downloadProgress}
+        downloadError={downloadError}
         disabled={disabled}
         onDownload={handleDownload}
       />
@@ -99,6 +127,7 @@ interface DownloadStatusProps {
   selectedModel: string;
   downloadingModel: string | null;
   downloadProgress: number;
+  downloadError: string | null;
   disabled: boolean;
   onDownload: (modelName: string) => void;
 }
@@ -107,6 +136,7 @@ function DownloadStatus({
   selectedModel,
   downloadingModel,
   downloadProgress,
+  downloadError,
   disabled,
   onDownload,
 }: DownloadStatusProps) {
@@ -140,13 +170,20 @@ function DownloadStatus({
   }
 
   return (
-    <button
-      type="button"
-      className="download-btn"
-      onClick={() => onDownload(selectedModel)}
-      disabled={disabled || downloadingModel !== null}
-    >
-      DL
-    </button>
+    <div className="download-status-wrapper">
+      <button
+        type="button"
+        className="download-btn"
+        onClick={() => onDownload(selectedModel)}
+        disabled={disabled || downloadingModel !== null}
+      >
+        DL
+      </button>
+      {downloadError && (
+        <span className="download-error" role="alert">
+          {downloadError}
+        </span>
+      )}
+    </div>
   );
 }
