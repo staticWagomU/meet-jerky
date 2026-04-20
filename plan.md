@@ -168,7 +168,7 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
   - [x] 自動スクロール
   - [x] テキスト選択・コピー
 - [x] 権限未設定時のガイダンスUI（macOS画面録音権限）
-- [ ] モデルダウンロード状態表示 ← 進捗イベントは発火済み、UI側の購読が残タスク
+- [x] モデルダウンロード状態表示（進捗バー + エラー表示、Loop D で完了）
 
 **成果物**: 完成度の高いmacOS版アプリ
 
@@ -269,6 +269,44 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 ---
 
 ## 進捗ログ・気付き
+
+### 2026-04-20: Loop D - live loop → SessionManager::append 配線 + モデルDLエラー系整合（並列2トラック）
+- Track A commits: `f6babc9`, `5347c75`, `16a4f43`, `21b9c0a`（3 TDDサイクル + wiring、3テスト追加）
+- Track B commits: `c0462b1`, `66a6fdb`, `a41736e`（型整合 + Rust 側 emit + フロント購読、2テスト追加）
+- 累積テスト: **70緑**（Loop C の 61 → 70）
+- ビルド検証: `cargo check`（警告増なし：既存 2 件のみ）+ `bun run build`（tsc + vite 緑）
+- Phase 6 (Tidy After): 追加の tidying 不要。両Track が編集対象ファイル完全独立、関心事分離
+
+#### Track A: live loop → SessionManager::append 配線（Rust 側のみ）
+- **設計**: `transcript_bridge::build_append_args_for_emission` を純粋ヘルパーとして切り出し、TDD Red/Green/Refactor で固定化。worker から薄く呼ぶ
+  - signature: `fn(&TranscriptionSegment, Option<u64>, u64) -> Option<(String, u64, String)>`
+  - session 未開始時は None → append スキップ（worker は emit のみ継続）
+- **構造変更**: `SessionManager` を `Arc<SessionManager>` として `.manage()`。worker スレッドに跨った共有を可能化
+  - `lib.rs` / `session_commands.rs` / `transcription.rs` の 3 点で `tauri::State<'_, Arc<SessionManager>>` に一貫変更
+- **新規 getter**: `SessionManager::current_started_at_secs() -> Option<u64>` — worker が session 開始時刻を取れるよう expose
+- **TDD サイクル自己批評**: Cycle 2-3 が characterization test（既存 `segment_to_append_args` を固定化するだけ）になった。真の Red は Cycle 1 のみ。Loop 4B と同じ「Cycle 1 で実装が進みすぎると以降が Red にならない」問題が再発。次回以降は Cycle 1 を最小限に絞る規律を維持
+- **残タスク**:
+  - フロント側 (`TranscriptView.tsx` など) に `start_session` / `finalize_and_save_session` の `invoke` 配線がまだ無い。セッション開始 → 録音開始 → 停止 → finalize の UX 線を次 Loop で結ぶ
+  - `run_transcription_loop` の引数が 8 個に増加 → Config struct 化は `tidy:later` 候補
+  - `stream_started_at_secs` が "start_transcription 呼出時の now" なので、厳密には audio 層の capture 開始時刻と微小ズレあり。2 worker 間では同値共有のため現状は実害なし
+
+#### Track B: モデルDL進捗系の整合（型修正 + エラーイベント）
+- **Rust→TS 型不整合**: `DownloadProgressPayload` に `model: string` が欠落していた（Rust 側 emit は含む）。型追加で安全化
+- **新規イベント**: `model-download-error` を `download_model` Tauri コマンドの Err 経路で emit
+  - payload: `{ model: string; message: string }`
+  - `DownloadErrorPayload` 型を TS 側に追加
+- **純粋関数化**: `build_download_progress_payload` / `build_download_error_payload` を切り出し Red/Green でシリアライゼーション固定
+- **UI**: `ModelSelector.tsx` で `model-download-error` listen、`downloadError` state + `.download-error` CSS で赤字表示。失敗時は `downloadingModel` リセット
+- **serde 命名**: `serde_json::json!` マクロ直書きのため rename_all 対象外。キーはリテラル `progress` / `model` / `message` とフラット。将来 struct 化しても camelCase 不要
+- **残タスク**:
+  - DL エラーメッセージの i18n / カテゴリ化（ネットワーク切断 vs HTTP エラー vs ディスク書込失敗など）
+  - 自動リトライ / リトライヒストリ UI
+  - Track A 配線完了後、`download_model` → `load_model` → `start_transcription` → `start_session` のハッピーパス統合テスト
+
+#### Loop D の学び
+1. **並列 Track 設計の成功事例**: 編集対象ファイルが Rust 層・TS 層・Rust 純粋関数層で完全独立していたため、commit 7本がインターリーブしても競合ゼロ。「独立ファイルは並列安全」の過去ログ（Loop 2, Loop 4）を再確認
+2. **Phase 6 (Tidy After) が無追加になるのは良サイン**: 並列前の Explore 段階で「Tidy First 候補」を両 Track とも軽量に抑えたため、統合後の整理が不要になった
+3. **`Arc<SessionManager>` 化は破壊的構造変更だが副作用なし**: `tauri::State<'_, T>` の T を差し替えるだけで、既存テストは `&SessionManager` 経由のまま動いた。`Arc::manage` パターンは今後も worker 跨ぎの state で採用
 
 ### 2026-04-20: Loop B - セッション一覧UI (Phase 5)
 - commits: `5e4e2f3`
