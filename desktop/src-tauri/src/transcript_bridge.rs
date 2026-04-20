@@ -109,6 +109,22 @@ mod tests {
     }
 
     #[test]
+    fn build_append_args_saturates_offset_when_stream_precedes_session() {
+        // 境界: stream_started_at_secs < session_started_at_secs のケース。
+        // このヘルパーは segment_to_append_args の saturating 挙動をそのまま
+        // 引き継ぐべきで、独立した clamp 実装を挟まない。
+        let segment = TranscriptionSegment {
+            text: "early".into(),
+            start_ms: 0,
+            end_ms: 100,
+            speaker: Some("相手".into()),
+        };
+        let result = build_append_args_for_emission(&segment, Some(1000), 990)
+            .expect("Some 系統の結果が返る");
+        assert_eq!(result.1, 0, "clock 逆転時でも負の offset にはせず 0 に飽和する");
+    }
+
+    #[test]
     fn build_append_args_returns_some_with_same_values_as_segment_to_append_args() {
         // Some(started) が渡されたときは segment_to_append_args と同じ結果を
         // Some で包んで返す（二重実装になっていないことの回帰防止）。
