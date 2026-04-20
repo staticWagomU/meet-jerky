@@ -19,6 +19,22 @@ pub fn segment_to_append_args(
     (speaker, offset, segment.text.clone())
 }
 
+/// セグメント emit 直前に、`SessionManager::append` に渡す引数を計算するヘルパー。
+///
+/// - `session_started_at_secs == None` → `None` を返し、呼び出し側に append をスキップさせる
+/// - `Some(started)` → `segment_to_append_args` と同じ 3 つ組を `Some` で返す
+///
+/// live loop 側の条件分岐をこの純粋関数に閉じ込めることで、
+/// 「未開始時に append を呼ばない」挙動をユニットテストで保証する。
+pub fn build_append_args_for_emission(
+    segment: &TranscriptionSegment,
+    session_started_at_secs: Option<u64>,
+    stream_started_at_secs: u64,
+) -> Option<(String, u64, String)> {
+    let started = session_started_at_secs?;
+    Some(segment_to_append_args(segment, started, stream_started_at_secs))
+}
+
 /// 話者ラベルを正規化する。
 ///
 /// - 前後の空白をトリム
@@ -90,6 +106,15 @@ mod tests {
         };
         let (_, offset, _) = segment_to_append_args(&neg_segment, 1000, 1000);
         assert_eq!(offset, 0, "負の start_ms も 0 に飽和する");
+    }
+
+    #[test]
+    fn build_append_args_returns_none_when_session_not_started() {
+        // セッション未開始時 (session_started_at_secs == None) は append をスキップしたい。
+        // live loop 側が「None なら呼ばない」と条件分岐できるよう、このヘルパーが None を返す。
+        let segment = sample_segment();
+        let result = build_append_args_for_emission(&segment, None, 1000);
+        assert!(result.is_none(), "session 未開始時は None を返す");
     }
 
     #[test]
