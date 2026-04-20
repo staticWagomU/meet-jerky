@@ -1,5 +1,5 @@
 use crate::session::Session;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum SessionManagerError {
@@ -20,8 +20,12 @@ impl SessionManager {
         }
     }
 
+    fn lock(&self) -> MutexGuard<'_, Option<Session>> {
+        self.current.lock().expect("session manager mutex poisoned")
+    }
+
     pub fn start(&self, title: String, started_at: u64) -> Result<(), SessionManagerError> {
-        let mut guard = self.current.lock().unwrap();
+        let mut guard = self.lock();
         if guard.is_some() {
             return Err(SessionManagerError::AlreadyActive);
         }
@@ -35,7 +39,7 @@ impl SessionManager {
         offset_secs: u64,
         text: String,
     ) -> Result<(), SessionManagerError> {
-        let mut guard = self.current.lock().unwrap();
+        let mut guard = self.lock();
         match guard.as_mut() {
             Some(session) => {
                 session.append_segment(speaker, offset_secs, text);
@@ -46,7 +50,7 @@ impl SessionManager {
     }
 
     pub fn finalize(&self, ended_at: u64) -> Result<Session, SessionManagerError> {
-        let mut guard = self.current.lock().unwrap();
+        let mut guard = self.lock();
         match guard.take() {
             Some(mut session) => {
                 session.finalize(ended_at);
@@ -57,15 +61,15 @@ impl SessionManager {
     }
 
     pub fn is_active(&self) -> bool {
-        self.current.lock().unwrap().is_some()
+        self.lock().is_some()
     }
 
     pub fn current_title(&self) -> Option<String> {
-        self.current.lock().unwrap().as_ref().map(|s| s.title.clone())
+        self.lock().as_ref().map(|s| s.title.clone())
     }
 
     pub fn current_segment_count(&self) -> Option<usize> {
-        self.current.lock().unwrap().as_ref().map(|s| s.segments.len())
+        self.lock().as_ref().map(|s| s.segments.len())
     }
 }
 
