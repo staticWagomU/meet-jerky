@@ -414,6 +414,7 @@ pub fn start_transcription(
     source: Option<String>,
     audio_state: tauri::State<'_, crate::audio::AudioStateHandle>,
     transcription_state: tauri::State<'_, TranscriptionStateHandle>,
+    session_manager: tauri::State<'_, Arc<crate::session_manager::SessionManager>>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let mut manager = transcription_state.0.lock();
@@ -445,6 +446,16 @@ pub fn start_transcription(
 
     let mut spawned_any = false;
 
+    // live loop に渡す SessionManager の Arc と、ストリーム基準時刻 (now)。
+    // stream_started_at_secs はマイク/システム両 worker で共通の基準として用い、
+    // セグメントの絶対時刻 (= offset 算出の起点) を決定する。
+    let session_manager_arc: Arc<crate::session_manager::SessionManager> =
+        Arc::clone(session_manager.inner());
+    let stream_started_at_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
     // マイク用の文字起こしスレッド
     if use_mic {
         if let Some(mic_sample_rate) = audio_state.get_sample_rate() {
@@ -453,6 +464,7 @@ pub fn start_transcription(
                 let running_clone = Arc::clone(&running);
                 let app_clone = app.clone();
                 let speaker = Some("自分".to_string());
+                let sm_clone = Arc::clone(&session_manager_arc);
 
                 std::thread::spawn(move || {
                     run_transcription_loop(
@@ -462,6 +474,8 @@ pub fn start_transcription(
                         running_clone,
                         app_clone,
                         speaker,
+                        sm_clone,
+                        stream_started_at_secs,
                     );
                 });
                 spawned_any = true;
@@ -477,6 +491,7 @@ pub fn start_transcription(
                 let running_clone = Arc::clone(&running);
                 let app_clone = app.clone();
                 let speaker = Some("相手".to_string());
+                let sm_clone = Arc::clone(&session_manager_arc);
 
                 std::thread::spawn(move || {
                     run_transcription_loop(
@@ -486,6 +501,8 @@ pub fn start_transcription(
                         running_clone,
                         app_clone,
                         speaker,
+                        sm_clone,
+                        stream_started_at_secs,
                     );
                 });
                 spawned_any = true;
@@ -623,6 +640,8 @@ fn run_transcription_loop(
     running: Arc<AtomicBool>,
     app: tauri::AppHandle,
     speaker: Option<String>,
+    session_manager: Arc<crate::session_manager::SessionManager>,
+    stream_started_at_secs: u64,
 ) {
     // リサンプラーの設定（device_sample_rate → 16kHz）
     let needs_resample = device_sample_rate != WHISPER_SAMPLE_RATE;
@@ -717,6 +736,24 @@ fn run_transcription_loop(
                                 speaker: speaker.clone(),
                             };
                             let _ = app.emit("transcription-result", &adjusted);
+
+                            // セッションが開始済みなら SessionManager に append する。
+                            // append 失敗 (NotActive など) は live loop を止めず、ログだけ残す。
+                            let session_started_at_secs =
+                                session_manager.current_started_at_secs();
+                            if let Some((sp, off, tx)) =
+                                crate::transcript_bridge::build_append_args_for_emission(
+                                    &adjusted,
+                                    session_started_at_secs,
+                                    stream_started_at_secs,
+                                )
+                            {
+                                if let Err(e) = session_manager.append(sp, off, tx) {
+                                    eprintln!(
+                                        "[transcription] session_manager.append failed: {e}"
+                                    );
+                                }
+                            }
                         }
                     }
                 }

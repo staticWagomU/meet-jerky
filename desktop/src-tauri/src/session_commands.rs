@@ -4,6 +4,7 @@
 //! `#[tauri::command]` は State / 現在時刻取得などの周辺をまとめるだけの薄いラッパーにする。
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::FixedOffset;
@@ -64,12 +65,12 @@ pub fn start_session_inner(
 #[tauri::command]
 pub fn start_session(
     title: String,
-    state: tauri::State<'_, SessionManager>,
+    state: tauri::State<'_, Arc<SessionManager>>,
     settings_state: tauri::State<'_, SettingsStateHandle>,
 ) -> Result<(), String> {
     let output_dir = resolve_output_directory(settings_state.inner());
     start_session_inner(
-        state.inner(),
+        state.inner().as_ref(),
         title,
         now_unix_secs(),
         &output_dir,
@@ -100,12 +101,12 @@ pub fn finalize_and_save_session_inner(
 
 #[tauri::command]
 pub fn finalize_and_save_session(
-    state: tauri::State<'_, SessionManager>,
+    state: tauri::State<'_, Arc<SessionManager>>,
     settings_state: tauri::State<'_, SettingsStateHandle>,
 ) -> Result<PathBuf, String> {
     let output_dir = resolve_output_directory(settings_state.inner());
     finalize_and_save_session_inner(
-        state.inner(),
+        state.inner().as_ref(),
         &output_dir,
         now_unix_secs(),
         default_offset(),

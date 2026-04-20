@@ -118,6 +118,14 @@ impl SessionManager {
     pub fn current_segment_count(&self) -> Option<usize> {
         self.lock().as_ref().map(|a| a.session.segments.len())
     }
+
+    /// 活性セッションの `started_at` (unix 秒)。非活性時は `None`。
+    ///
+    /// ライブ loop 側で「セッションが開始していれば offset を計算して append」、
+    /// 未開始なら skip する判定に使う。
+    pub fn current_started_at_secs(&self) -> Option<u64> {
+        self.lock().as_ref().map(|a| a.session.started_at)
+    }
 }
 
 impl Default for SessionManager {

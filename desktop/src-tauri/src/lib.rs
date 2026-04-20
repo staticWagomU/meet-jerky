@@ -93,7 +93,7 @@ pub fn run() {
         .manage(audio::AudioStateHandle::new())
         .manage(transcription::TranscriptionStateHandle::new())
         .manage(settings::SettingsStateHandle::new())
-        .manage(session_manager::SessionManager::new())
+        .manage(std::sync::Arc::new(session_manager::SessionManager::new()))
         .invoke_handler(tauri::generate_handler![
             audio::list_audio_devices,
             audio::start_recording,
