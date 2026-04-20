@@ -270,6 +270,53 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 ## 進捗ログ・気付き
 
+### 2026-04-21: Loop H - Phase 6 `build_whisper_request_params` + setLocalSettings 様式統一（並列2トラック）
+- Track A commit: `080d256`（`feat(cloud-whisper): add build_whisper_request_params with validation`、`cloud_whisper.rs` 1ファイル、構造体 + 関数 + テスト 3 件）
+- Track B commit: `24031d3`（`refactor(settings-ui): unify setLocalSettings to direct-form style`、`SettingsView.tsx` 1ファイル、+4/-3 行）
+- 累積テスト: **Rust 82 緑**（Loop G の 79 → 82、Track A +3）、フロント `bun run build` 緑
+- ビルド検証: `cargo test --package meet-jerky --lib` 82 passed、`cargo check` 既存 2 warning のみ（追加 warning ゼロ）、`bun run build` 184 modules / 639ms
+- Phase 6 純関数コアが 3 関数 + 1 構造体 + 1 パーサに到達。HTTP 副作用層の接合点が揃った
+
+#### Track A: `build_whisper_request_params`（Fake It + Triangulation 3 サイクル）
+- **設計**: `WhisperRequestParams { model, language, response_format, temperature }` 構造体 + `build_whisper_request_params(model: &str, language: Option<&str>) -> Result<WhisperRequestParams, String>` を `cloud_whisper.rs` に追加。`response_format` は `"verbose_json"` 固定（Loop F の verbose_json パーサと自然に組み合わさる）、`temperature` は `0.0` 固定（音声認識で安定性最優先、決定論的出力）
+- **Cycle 1 (Red/Green) - Fake It**: テスト入力 `("small", Some("ja"))` に対し、引数を `_model` / `_language` の `_` プレフィックス付きで**未使用明示**し、期待値と一致する struct リテラルをハードコード返却。これがサブエージェント側で忠実に実行されたのが今回の白眉
+- **Cycle 2 (Red/Green) - Triangulation**: テスト入力 `("tiny", Some("en"))` は Cycle 1 のハードコード `"small"` / `Some("ja")` と一致しないため **assertion_eq で真の Red**（`left: "small" right: "tiny"`）。Green で `_` を外して `model.to_string()` と `language.map(|s| s.to_string())` に一般化
+- **Cycle 3 (Red/Green) - バリデーション**: テスト入力 `("", Some("ja"))` に対し Err 期待。Cycle 2 Green は空文字でも Ok を返すので Result variant 不一致で**真の Red**。冒頭に `if model.is_empty() { return Err("model must not be empty".to_string()); }` を追加
+- **Refactor は 3 サイクル全てスキップ**（関数は 10 行未満、抽象余地なし）
+- `#[allow(dead_code)]` を struct と関数に付与（lib 内未使用 warning 抑制、将来 HTTP 層から配線時に外す）
+- `#[derive(PartialEq)]` は f32 と両立（`f32: PartialEq`）、`Eq` は derive 不可なので注意
+
+#### 「Fake It + Triangulation」規律の完全成功（Loop G に続く 2 連続）
+- **決め手 1: プロンプトで `_model` / `_prefix` を明示指示**: 「引数を `_` 付きで未使用にすることが正しい Fake It」と書いたことで、サブエージェントは過剰実装の誘惑を回避できた
+- **決め手 2: Cycle 2 で異なる入力を三角測量として指示**: 単なる「他のテスト」ではなく、「Cycle 1 ハードコードでは通らない入力」を明示。これで Cycle 2 Red が assertion_eq の **diff 表示** で強制失敗する設計
+- **決め手 3: Cycle 3 のエラー variant 差異**: Result の Ok/Err 違いは assertion_eq で確実に Red を作れる。バリデーション TDD の定型パターンとして今後も再利用可
+- **総括**: Loop G の「Cycle 1 Green 最小化」から一歩進めて、Loop H では「Cycle 1 Green は入力無視でハードコード、Cycle 2 で初めてパラメータ化」という Kent Beck 原典の "Fake It" を忠実に実演できた。**サブエージェント経由の TDD で `_prefix` + triangulation は再利用すべきテンプレート**
+
+#### Track B: `setLocalSettings` 関数形式 → 直接形式への統一（tidy）
+- **背景**: Loop G Track B で追加した API キー input の onChange が `setLocalSettings((prev) => prev ? { ...prev, ... } : prev)` の関数形式を採用していたが、他の全ての onChange は `setLocalSettings({ ...localSettings, ... })` の直接形式。様式混在を解消
+- **安全性の根拠**: render 時点で `if (isLoadingSettings || !localSettings) return <...>` の early return が通過しているので、`localSettings` は必ず non-null。関数形式の `prev ? ... : prev` ガードは**到達不能分岐**であり直接形式と完全等価
+- **診断的副産物**: 「Loop G で関数形式を採用したのは null ガードを明示したかっただけで、実際には冗長だった」というサブエージェント側の観察が出た。**tidy loop が設計議論を誘発する**好例。構造変更のためだけと思っていたら「設計意図の再検討」も得られた
+- 振る舞い不変は tsc + vite build 緑で担保
+
+#### Loop H の学び
+1. **Fake It + Triangulation の dispatch テンプレート**: サブエージェント経由の TDD で原義を貫くには、プロンプトに以下を必ず含めるテンプレが確立した：
+   - Cycle 1 Green は引数を `_` prefix で未使用明示してハードコード
+   - Cycle 2 は Cycle 1 ハードコードが通らない異なる入力
+   - Cycle 3 は Ok/Err variant 差異など明確な Red 要因
+   - 「もし Cycle N Red が Cycle (N-1) Green のまま通ってしまったら巻き戻す」救済ルール
+2. **Tidy Loop が設計議論を誘発する価値**: Track B の tidy 経由で「関数形式は冗長」「non-nullable 化のリファクタ候補」という設計知見が得られた。純粋な構造変更でも**ディスカバリーの場**として機能する。今後も tidy:later を溜めて定期回収する運用を維持
+3. **累積 82 テストで純関数層の安定感が可視化**: Phase 6 の「純関数から攻める」戦略が 4 関数 + 1 構造体まで膨らんだ。HTTP 副作用を足すときに、これらが**契約の固定点**として機能する。純関数テストは mock 設計が要らないので高速かつ decisive
+4. **`#[derive(PartialEq)]` と f32 の両立**: `Eq` を derive したくなる衝動を抑えること。`PartialEq` のみで十分（浮動小数点比較の精度問題は temperature 固定値 0.0 なので実害なし）
+
+#### 残タスク（Phase 6）
+- **HTTP 呼び出し層**: `reqwest::blocking::Client` で multipart POST、`CloudWhisperEngine` が `TranscriptionEngine` trait を実装する本丸。`mockito` / `wiremock` / `httpmock` のモック選定が先。契約テスト / 記録リプレイ等の方針も判断
+- **multipart Form 組み立て**: `reqwest::multipart::Form` の内部状態観測の不利を踏まえ、小さな fixture の boundary 検証等で契約固定化を検討
+- **エンジン選択 dispatch**: `transcription.rs::start_transcription` で `settings.transcription_engine` を読んで Local/Cloud を分岐
+- **API キーの暗号化保存**: `keyring` クレート導入、Keychain / Credential Manager 経由化
+- **ネットワークエラー時のフォールバック/リトライ**: 単独ループ推奨
+- **API コスト概算表示**: オプショナル、最終化
+- **フロントテスト基盤**: vitest + RTL 導入は別ループ（Loop B/E/G/H で 4 連続「テスト基盤なし」を記録）
+
 ### 2026-04-21: Loop G - Phase 6 クラウド URL/Header ビルダ + 設定画面 API キー入力（並列2トラック）
 - Track A commit: `c8cb9be`（`feat(cloud-whisper): add URL and Authorization header builders (pure core)`、`cloud_whisper.rs` 1ファイル、純関数 2 個 + テスト 3 件）
 - Track B commit: `5fb34b4`（`feat(settings-ui): enable cloud engine radio and add api key input`、`SettingsView.tsx` 1ファイル、+33/-4 行）
