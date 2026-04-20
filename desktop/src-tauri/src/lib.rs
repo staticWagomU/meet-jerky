@@ -93,6 +93,7 @@ pub fn run() {
         .manage(audio::AudioStateHandle::new())
         .manage(transcription::TranscriptionStateHandle::new())
         .manage(settings::SettingsStateHandle::new())
+        .manage(session_manager::SessionManager::new())
         .invoke_handler(tauri::generate_handler![
             audio::list_audio_devices,
             audio::start_recording,
@@ -110,6 +111,9 @@ pub fn run() {
             settings::select_output_directory,
             settings::check_microphone_permission,
             settings::check_screen_recording_permission,
+            session_commands::start_session,
+            session_commands::finalize_and_save_session,
+            session_commands::list_session_summaries_cmd,
         ])
         .setup(|app| {
             setup_tray(app)?;

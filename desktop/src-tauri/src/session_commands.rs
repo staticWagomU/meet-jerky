@@ -4,11 +4,39 @@
 //! `#[tauri::command]` は State / 現在時刻取得などの周辺をまとめるだけの薄いラッパーにする。
 
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::FixedOffset;
 
 use crate::session_manager::SessionManager;
 use crate::session_store::{self, SessionSummary};
+use crate::settings::{default_output_directory, SettingsStateHandle};
+
+/// 現在時刻 (unix 秒) を取得。`SystemTime::now` の逆行時は 0 を返すが、
+/// 実用上ここに来るケースは無い。
+fn now_unix_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Phase 5 時点で採用する表示タイムゾーン (JST 固定)。
+///
+/// 将来ユーザー設定化する際はここを差し替えれば良い。
+fn default_offset() -> FixedOffset {
+    FixedOffset::east_opt(9 * 3600).expect("JST offset is always valid")
+}
+
+/// 設定から出力ディレクトリを解決する。未設定 or 空文字の場合は
+/// アプリ既定ディレクトリを使う。
+fn resolve_output_directory(settings_state: &SettingsStateHandle) -> PathBuf {
+    let settings = settings_state.0.lock();
+    match settings.output_directory.as_deref() {
+        Some(dir) if !dir.is_empty() => PathBuf::from(dir),
+        _ => default_output_directory(),
+    }
+}
 
 // ─────────────────────────────────────────────
 // start_session
@@ -21,6 +49,14 @@ pub fn start_session_inner(
     started_at: u64,
 ) -> Result<(), String> {
     manager.start(title, started_at).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn start_session(
+    title: String,
+    state: tauri::State<'_, SessionManager>,
+) -> Result<(), String> {
+    start_session_inner(state.inner(), title, now_unix_secs())
 }
 
 // ─────────────────────────────────────────────
@@ -44,6 +80,20 @@ pub fn finalize_and_save_session_inner(
         .map_err(|e| format!("セッションファイルの書き込みに失敗しました: {e}"))
 }
 
+#[tauri::command]
+pub fn finalize_and_save_session(
+    state: tauri::State<'_, SessionManager>,
+    settings_state: tauri::State<'_, SettingsStateHandle>,
+) -> Result<PathBuf, String> {
+    let output_dir = resolve_output_directory(settings_state.inner());
+    finalize_and_save_session_inner(
+        state.inner(),
+        &output_dir,
+        now_unix_secs(),
+        default_offset(),
+    )
+}
+
 // ─────────────────────────────────────────────
 // list_session_summaries
 // ─────────────────────────────────────────────
@@ -57,6 +107,14 @@ pub fn list_session_summaries_inner(output_dir: &Path) -> Result<Vec<SessionSumm
     }
     session_store::list_session_summaries(output_dir)
         .map_err(|e| format!("セッション一覧の取得に失敗しました: {e}"))
+}
+
+#[tauri::command]
+pub fn list_session_summaries_cmd(
+    settings_state: tauri::State<'_, SettingsStateHandle>,
+) -> Result<Vec<SessionSummary>, String> {
+    let output_dir = resolve_output_directory(settings_state.inner());
+    list_session_summaries_inner(&output_dir)
 }
 
 // ─────────────────────────────────────────────
