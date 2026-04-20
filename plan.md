@@ -155,20 +155,20 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 **ゴール**: バックオフィスメンバーが迷わず使えるUI
 
-- [ ] 録音開始/停止ボタン（トレイメニュー + ウィンドウ内）
-- [ ] 設定画面
-  - [ ] 文字起こしエンジン選択（ローカル / クラウド）
-  - [ ] Whisperモデル選択（small / medium / large-v3）
-  - [ ] マイクデバイス選択
-  - [ ] クラウドAPIキー入力・保存（暗号化）
-  - [ ] 出力先ディレクトリ設定
-  - [ ] 言語設定（日本語 / 英語 / 自動検出）
-- [ ] リアルタイム文字起こし画面
-  - [ ] 話者別色分け
-  - [ ] 自動スクロール
-  - [ ] テキスト選択・コピー
-- [ ] 権限未設定時のガイダンスUI（macOS画面録音権限）
-- [ ] モデルダウンロード状態表示
+- [x] 録音開始/停止ボタン（トレイメニュー + ウィンドウ内）
+- [x] 設定画面
+  - [x] 文字起こしエンジン選択（ローカル / クラウド）
+  - [x] Whisperモデル選択（small / medium / large-v3）
+  - [x] マイクデバイス選択
+  - [ ] クラウドAPIキー入力・保存（暗号化） ← Phase 6で実装
+  - [x] 出力先ディレクトリ設定
+  - [x] 言語設定（日本語 / 英語 / 自動検出）
+- [x] リアルタイム文字起こし画面
+  - [x] 話者別色分け
+  - [x] 自動スクロール
+  - [x] テキスト選択・コピー
+- [x] 権限未設定時のガイダンスUI（macOS画面録音権限）
+- [ ] モデルダウンロード状態表示 ← 進捗イベントは発火済み、UI側の購読が残タスク
 
 **成果物**: 完成度の高いmacOS版アプリ
 
@@ -178,15 +178,18 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 **ゴール**: 会議終了後にタイムスタンプ付きMarkdownファイルが保存される
 
-- [ ] セッション管理（録音開始〜停止を1セッションとして管理）
-- [ ] Markdownフォーマッタ実装
+- [x] セッション管理（録音開始〜停止を1セッションとして管理）※データ型＋ライフサイクル完成、UI配線は残
+- [x] Markdownフォーマッタ実装
   ```markdown
   # 会議メモ - 2026-04-17 14:30
 
   **[14:30:05] 相手:** それでは始めましょう。
   **[14:30:12] 自分:** よろしくお願いします。
   ```
-- [ ] リアルタイム書き出し（アプリ落ちても途中まで残る）
+- [x] Markdown保存（ディレクトリへのファイル書き出し）
+- [x] TranscriptSegment → SessionSegment 変換ブリッジ
+- [ ] リアルタイム書き出し（アプリ落ちても途中まで残る）← セッション単位で終了時保存は完成、インクリメンタル書き出しは未対応
+- [ ] Tauri コマンド配線（start_session / append / finalize）
 - [ ] セッション一覧画面（過去の文字起こし履歴）
 - [ ] ファイルを開く / フォルダを開くボタン
 
@@ -262,3 +265,69 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 4. Phase 3で本丸のシステム音声キャプチャに取り組む
 5. Phase 4-5でUI/出力を磨く
 6. Phase 6-8で横展開（クラウド・Windows・配布）
+
+---
+
+## 進捗ログ・気付き
+
+### 2026-04-20: Phase 5 セッション試合の総括（5ループ完走）
+
+#### サマリー
+- **合計 21 コミット、19 テスト追加（42→61）、全緑維持**
+- 新規モジュール 6 つ: `markdown.rs`, `datetime_fmt.rs`, `session.rs`, `session_store.rs`, `transcript_bridge.rs`, `session_manager.rs`, `session_commands.rs`
+- 追加 crate: `chrono`, `thiserror`, `tempfile`(dev-only)
+- Phase 5 バックエンド層は実質完成、残るはライブパイプラインとの配線 + フロント連携
+
+#### 並列TDDの学び
+1. **独立ファイル作成は並列安全**。共有ファイル（`lib.rs`）へのmod追記もアルファベット順なら衝突しにくい
+2. **並列でテストが一瞬壊れる状態**が発生しうる（Loop 2B実行中にSession未実装）。依存関係がある場合は直列化を検討
+3. **サブエージェントが依頼側の手計算エラーを検証で修正した事例**（Loop 2B、epoch秒→JST時刻）。"期待値を独立計算する"TDD規律が実働
+4. **自己批評も出てくる**（Loop 4B: Cycle 1実装が過剰で真のRedを作り損ねた）。サブエージェントの誠実な報告を評価
+5. **Tauri境界のテスト難は `_inner`パターンで突破**可能（Loop 5）
+
+#### 2026-04-20: Phase 4実態同期 + Phase 5 TDD開始
+- Phase 4のチェックボックスを実態に同期（11/12完了、クラウドAPIキーはPhase 6へ、モデルDL進捗UIは残タスク）
+- 直近コミット `12601a0`, `a0d579b` でUI仕上げがほぼ完了していたがplan.mdが未更新だった → 今後は実装完了時にチェックボックスを必ず更新するルールを追加
+- Phase 5 Markdownフォーマッタから原義TDD（Red→Green→Refactor）で着手
+
+### Loop 5: Tauriコマンド配線（単独トラック）
+- commits: `ba89a3b`, `8ae0942`, `01437ce`, `023cf00`, `cf37a28`（6テスト追加、`session_commands.rs` 新設）
+- **設計パターン**: `_inner`（純粋・テスト可）＋ `#[tauri::command]`（薄いアダプタ）に分離。Tauri境界のユニットテスト難を回避
+- 公開コマンド: `start_session` / `finalize_and_save_session` / `list_session_summaries_cmd`。`append` は内部呼び出し専用（フロントから直接叩く必要なし）
+- `SessionSummary` は `#[derive(Serialize)]` + `camelCase` でフロント側に `{ path, startedAtSecs, title }` として渡る
+- **残タスク**: `transcription.rs` の live loop から `SessionManager::append` を呼ぶ配線。Phase 3の音声パイプライン安定性を尊重し、次セッション以降で専用設計
+- **設計注意**: timezoneがJSTハードコード（`FixedOffset::east_opt(9*3600)`）。将来OSロケール依存に
+
+### Loop 4: SessionManager + セッションサマリー（並列2トラック）
+- Track A commits: `8f654bc`, `9faa7ad`, `cf05d73`, `7a929bd`, `58d09e8`（`session_manager.rs`、thiserror追加、4テスト+1refactor）
+- Track B commits: `6db21a0`, `6cf634a`, `b5a68d8`（`session_store.rs` に `list_session_summaries` 追加、3テスト）
+- **気付き**: SessionManagerのMutexロックパターン6箇所をヘルパーに集約する自発的Refactor。poison時のメッセージも `expect("session manager mutex poisoned")` に改善
+- **自己批評（Track B）**: Cycle 1で過剰実装（sort+defensive parse）したためCycle 2/3がそれぞれ真のRedにならなかった。strict TDDの規律として要反省。テスト自体は回帰ネットとして有効だが、次回はCycle 1を最小限に絞る
+- `SessionManagerError` は `serde::Serialize` 未実装 → Tauriコマンド境界で必要
+- 累積55テスト全緑
+
+### Loop 3: 永続化 + TranscriptSegment変換（並列2トラック）
+- Track A commits: `c6efc36`, `c66e8b5`, `08ba564`（`session_store.rs`、tempfile追加、3テスト）
+- Track B commits: `b685332`, `f0c8ed4`, `9ab39b5`（`transcript_bridge.rs`、3テスト）
+- **重要発見**: `TranscriptionSegment.start_ms` は**ストリーム相対**時刻でunix wall-clockではない → wiring層で `stream_started_at_secs` を別途渡す必要あり
+- **設計判断**: 時刻逆転時はoffsetを0に飽和させる（エラーにせず、データを失わない）。"バグ"ではなく"データ"として扱う
+- `session_store` は段階的ではなく **終了時一括書き出し** のみ実装。インクリメンタル書き出しは別ループへ
+- 累積48テスト全緑
+
+### Loop 2: セッション型 + datetime整形（並列2トラック）
+- Track A commits: `9acf313`, `6d19642`, `e65198b`（`session.rs`、3テスト）
+- Track B commits: `98c8943`, `5009018`, `56a429a`（`datetime_fmt.rs` + chrono追加、3テスト）
+- **気付き**: 並列TDDでは独立ファイルは安全、共有ファイル（`lib.rs`）は単行追記ならアルファベット順でマージ可能だった（衝突なし）
+- **気付き**: サブエージェントが依頼側の手計算エラー（epoch秒の時刻）を検証時に修正。TDDのRedフェーズで「期待値を独立計算する」規律が機能した
+- **気付き**: Track B実行中は `session.rs` 未実装でフルテスト不能の一瞬があった → Track BはTrack A完了後に流すほうが安全だったかも。次の並列では依存関係を見る
+- ID生成: uuid未導入のため `AtomicU64 + started_at` の暫定ID。永続化層で uuid 切替を検討
+- 累積42テスト全緑
+
+### Loop 1: Markdownフォーマッタ（Phase 5 最初の縦串）
+- commit `7278f5f`（happy path）, `1afd65a`（空セグメント）— 2テスト追加、36テスト全緑
+- **設計判断**: `format_session_markdown` は純粋関数。datetime整形は呼び出し元の責務とし、`chrono`/`time` 追加を先送り → 設計余地を残したまま前進できた
+- **Markdownエスケープ方針は未定** — ユーザー入力（title, text）に `#`, `*`, 改行が混入した場合の扱い。次ループで方針決定
+- **Phase 5 追加タスク**:
+  - [ ] datetime整形ヘルパー（`format_started_at`, `format_segment_timestamp`）— `chrono` or `time` のどちらを採用するか決める
+  - [ ] Markdownエスケープ方針の定義
+  - [ ] マルチライン `text` の取り扱い（改行・インデント）
