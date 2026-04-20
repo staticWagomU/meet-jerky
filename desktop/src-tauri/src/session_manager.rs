@@ -32,6 +32,10 @@ impl SessionManager {
     pub fn is_active(&self) -> bool {
         self.current.lock().unwrap().is_some()
     }
+
+    pub fn current_title(&self) -> Option<String> {
+        self.current.lock().unwrap().as_ref().map(|s| s.title.clone())
+    }
 }
 
 impl Default for SessionManager {
@@ -52,5 +56,16 @@ mod tests {
         manager.start("meeting".into(), 100).expect("start should succeed");
 
         assert!(manager.is_active());
+    }
+
+    #[test]
+    fn start_twice_returns_already_active_and_retains_first_session() {
+        let manager = SessionManager::new();
+        manager.start("first".into(), 100).expect("first start should succeed");
+
+        let err = manager.start("second".into(), 200).expect_err("second start should fail");
+
+        assert_eq!(err, SessionManagerError::AlreadyActive);
+        assert_eq!(manager.current_title(), Some("first".into()));
     }
 }
