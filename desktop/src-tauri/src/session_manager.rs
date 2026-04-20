@@ -153,6 +153,45 @@ impl Default for SessionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
+
+    fn jst() -> FixedOffset {
+        FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+
+    #[test]
+    fn append_writes_segment_to_disk_when_started_with_output() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        manager
+            .start_with_output(
+                "会議メモ".into(),
+                1_713_333_000, // 2024-04-17 14:50 JST
+                dir.path().to_path_buf(),
+                jst(),
+            )
+            .expect("start should succeed");
+
+        manager
+            .append("自分".into(), 15, "hello".into())
+            .expect("append should succeed");
+
+        // 活性中のファイル名を推測するため、ディレクトリを走査して .md を探す。
+        let files: Vec<_> = std::fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+            .collect();
+        assert_eq!(files.len(), 1, "exactly one .md should exist: {:?}", files);
+
+        let contents = std::fs::read_to_string(&files[0]).unwrap();
+        assert!(
+            contents.contains("**[14:50:15] 自分:** hello"),
+            "segment line missing after append. contents=\n{}",
+            contents
+        );
+    }
 
     #[test]
     fn new_has_no_active_session_and_start_activates_it() {
