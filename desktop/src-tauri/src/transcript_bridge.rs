@@ -109,6 +109,21 @@ mod tests {
     }
 
     #[test]
+    fn build_append_args_returns_some_with_same_values_as_segment_to_append_args() {
+        // Some(started) が渡されたときは segment_to_append_args と同じ結果を
+        // Some で包んで返す（二重実装になっていないことの回帰防止）。
+        let segment = sample_segment();
+        let expected = segment_to_append_args(&segment, 1000, 1040);
+        let actual = build_append_args_for_emission(&segment, Some(1000), 1040)
+            .expect("session 開始済みなら Some を返す");
+        assert_eq!(actual, expected);
+        // 具体値でも確認（happy path の値）
+        assert_eq!(actual.0, "自分");
+        assert_eq!(actual.1, 42);
+        assert_eq!(actual.2, "こんにちは");
+    }
+
+    #[test]
     fn build_append_args_returns_none_when_session_not_started() {
         // セッション未開始時 (session_started_at_secs == None) は append をスキップしたい。
         // live loop 側が「None なら呼ばない」と条件分岐できるよう、このヘルパーが None を返す。
