@@ -15,6 +15,17 @@ struct VerboseSegment {
 }
 
 #[allow(dead_code)]
+pub fn build_whisper_api_url(base_url: &str) -> String {
+    let trimmed = base_url.trim_end_matches('/');
+    format!("{trimmed}/audio/transcriptions")
+}
+
+#[allow(dead_code)]
+pub fn build_whisper_authorization_header(api_key: &str) -> String {
+    format!("Bearer {api_key}")
+}
+
+#[allow(dead_code)]
 pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSegment>, String> {
     let response: VerboseResponse = serde_json::from_str(body)
         .map_err(|e| format!("cloud whisper parse error: {e}"))?;
@@ -84,5 +95,26 @@ mod tests {
         let segments = parse_whisper_verbose_response(body).expect("should parse");
 
         assert!(segments.is_empty());
+    }
+
+    #[test]
+    fn build_whisper_api_url_appends_transcriptions_path() {
+        let url = build_whisper_api_url("https://api.openai.com/v1");
+
+        assert_eq!(url, "https://api.openai.com/v1/audio/transcriptions");
+    }
+
+    #[test]
+    fn build_whisper_api_url_normalizes_trailing_slash() {
+        let url = build_whisper_api_url("https://api.openai.com/v1/");
+
+        assert_eq!(url, "https://api.openai.com/v1/audio/transcriptions");
+    }
+
+    #[test]
+    fn build_whisper_authorization_header_returns_bearer_form() {
+        let header = build_whisper_authorization_header("sk-xxx");
+
+        assert_eq!(header, "Bearer sk-xxx");
     }
 }
