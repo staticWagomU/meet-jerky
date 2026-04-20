@@ -43,20 +43,38 @@ fn resolve_output_directory(settings_state: &SettingsStateHandle) -> PathBuf {
 // ─────────────────────────────────────────────
 
 /// テスト可能な start_session 実装本体。
+///
+/// 開始時に出力ディレクトリとタイムゾーンを確定させ、以降 `SessionManager::append` の
+/// たびに Markdown ファイルを全文上書きする（インクリメンタル書き出し）。
+/// アプリが finalize 前にクラッシュしても途中までの transcript がディスクに残る。
 pub fn start_session_inner(
     manager: &SessionManager,
     title: String,
     started_at: u64,
+    output_dir: &Path,
+    offset: FixedOffset,
 ) -> Result<(), String> {
-    manager.start(title, started_at).map_err(|e| e.to_string())
+    std::fs::create_dir_all(output_dir)
+        .map_err(|e| format!("出力ディレクトリの作成に失敗しました: {e}"))?;
+    manager
+        .start_with_output(title, started_at, output_dir.to_path_buf(), offset)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn start_session(
     title: String,
     state: tauri::State<'_, SessionManager>,
+    settings_state: tauri::State<'_, SettingsStateHandle>,
 ) -> Result<(), String> {
-    start_session_inner(state.inner(), title, now_unix_secs())
+    let output_dir = resolve_output_directory(settings_state.inner());
+    start_session_inner(
+        state.inner(),
+        title,
+        now_unix_secs(),
+        &output_dir,
+        default_offset(),
+    )
 }
 
 // ─────────────────────────────────────────────
@@ -179,9 +197,11 @@ mod tests {
     #[test]
     fn start_session_inner_activates_idle_manager() {
         let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
         assert!(!manager.is_active());
 
-        start_session_inner(&manager, "会議".into(), 100).expect("start should succeed");
+        start_session_inner(&manager, "会議".into(), 100, dir.path(), jst())
+            .expect("start should succeed");
 
         assert!(manager.is_active());
         assert_eq!(manager.current_title(), Some("会議".into()));
@@ -191,13 +211,29 @@ mod tests {
     #[test]
     fn start_session_inner_errors_when_already_active() {
         let manager = SessionManager::new();
-        start_session_inner(&manager, "first".into(), 100).expect("first start");
+        let dir = tempdir().unwrap();
+        start_session_inner(&manager, "first".into(), 100, dir.path(), jst())
+            .expect("first start");
 
-        let err = start_session_inner(&manager, "second".into(), 200)
+        let err = start_session_inner(&manager, "second".into(), 200, dir.path(), jst())
             .expect_err("second start should error");
 
         assert_eq!(err, "session already active");
         assert_eq!(manager.current_title(), Some("first".into()));
+    }
+
+    // start_session_inner が存在しないディレクトリを作成する
+    #[test]
+    fn start_session_inner_creates_output_directory_when_missing() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        let nested = dir.path().join("nested/deep");
+        assert!(!nested.exists());
+
+        start_session_inner(&manager, "会議".into(), 100, &nested, jst())
+            .expect("start should succeed even when dir is missing");
+
+        assert!(nested.exists(), "start should create the output directory");
     }
 
     // Cycle 4: list_session_summaries_inner が保存済みファイルを返す (スモーク)
