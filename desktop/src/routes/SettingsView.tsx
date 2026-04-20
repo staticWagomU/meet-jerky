@@ -178,9 +178,10 @@ export function SettingsView() {
             value={localSettings.apiKey ?? ""}
             onChange={(e) => {
               const value = e.target.value;
-              setLocalSettings((prev) =>
-                prev ? { ...prev, apiKey: value === "" ? undefined : value } : prev,
-              );
+              setLocalSettings({
+                ...localSettings,
+                apiKey: value === "" ? undefined : value,
+              });
             }}
             className="settings-select"
             placeholder="sk-..."
