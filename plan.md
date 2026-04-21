@@ -270,6 +270,48 @@ ScreenCaptureKitよりAVAudioEngineのほうがシンプル。
 
 ## 進捗ログ・気付き
 
+### 2026-04-21: Loop J - Phase 6 multipart text fields ビルダー + HTTP エラー分類器（並列2トラック）
+- Track A commits: `4a9fc9a`, `29702a1`, `7733de2`（`feat(cloud-whisper): add build_whisper_multipart_text_fields` 系 3 サイクル、`cloud_whisper.rs` のみ編集）
+- Track B commits: `cb1c4ab`, `73f532f`, `cbeae85`（`feat(cloud-whisper-errors): ...` 系 3 サイクル、新規 `cloud_whisper_errors.rs` + `lib.rs` 1 行追加）
+- 累積テスト: **Rust 91 緑**（Loop I の 85 → 91、Track A +3, Track B +3）
+- ビルド検証: `cargo test --package meet-jerky --lib` 91 passed、既存 warning 2 件維持（Track A の新関数に `#[allow(dead_code)]` 付与）
+- Phase 6 純関数コアが **5 関数 + 3 構造体 + 1 enum + 19 テスト** に到達。HTTP 副作用層に入る直前の「接合点」が全て揃った
+
+#### Track A: `build_whisper_multipart_text_fields`（Fake It + Triangulation 3 サイクル、救済ルール未発動）
+- **設計**: `pub fn build_whisper_multipart_text_fields(descriptor: &WhisperHttpRequestDescriptor) -> Vec<(&'static str, String)>` を `cloud_whisper.rs` に追加。multipart form の text 部（model/response_format/temperature/language）を順序確定で返す純関数。file 部（audio bytes）は HTTP 層の責務として分離
+- **Cycle 1 (Fake It)**: 引数を `_descriptor` prefix で未使用明示し、期待値と一致する `Vec<(&'static str, String)>` リテラルをハードコード返却
+- **Cycle 2 (Triangulation)**: `("tiny", Some("en"))` で descriptor 構築 → Cycle 1 のハードコード `"small"/"ja"` と不一致で **真の Red** → `_` を外し `descriptor.params.model.clone()` / `.language.clone()` に一般化
+- **Cycle 3 (language: None)**: Cycle 2 Green が `unwrap_or_default()` で `("language", "")` を返したため、期待値 3 要素（language 無し）vs 実際 4 要素で **真の Red** → `if let Some(lang) = &descriptor.params.language { fields.push(("language", lang.clone())); }` で Green
+- **Refactor は全サイクルでスキップ**
+- **サプライズ 1**: `0.0_f32.to_string()` は `"0"` を返す（`"0.0"` ではない）。サブエージェントが rustc の tiny プログラムで事前検証してから Cycle 1 の期待値を固定。**事前検証で Red を「正しい理由」で失敗させる規律が機能**
+
+#### Track B: `classify_cloud_whisper_error`（3 サイクル全てコンパイルエラー Red、救済ルール未発動）
+- **設計**: 新規 `cloud_whisper_errors.rs` に `enum CloudWhisperError { InvalidApiKey, RateLimited, ServerError, Other { status: u16, message: String } }` + `pub fn classify_cloud_whisper_error(status: u16, body: &str) -> CloudWhisperError`。`lib.rs` にはアルファベット順で `mod cloud_whisper_errors;` を追加
+- **Cycle 1 (Fake It 401)**: 関数/enum 未定義の**コンパイルエラー Red** → `InvalidApiKey` variant のみ定義、本体ハードコード返却
+- **Cycle 2 (Triangulate 429)**: `RateLimited` variant 欠落の**コンパイルエラー Red** → variant 追加 + `match status { 401 => ..., 429 => ..., _ => InvalidApiKey }`（catch-all は Cycle 1 との互換）
+- **Cycle 3 (ServerError range + Other)**: `ServerError` と `Other` variant 欠落の**コンパイルエラー Red** → `match status { 401 => ..., 429 => ..., 500..=599 => ServerError, _ => Other { status, message: body.to_string() } }` で Green
+- **重要な発見**: **enum 拡張 TDD はコンパイラが Red を出してくれる**ため、assertion_eq に頼らずとも真の Red が自動的に確保される。救済ルールをわざわざ発動する余地が無く、高速にサイクルが回る**定石パターン**として記録
+
+#### 並列実行の生々しい挙動（救済ルール不要でも発生した干渉）
+- Track A Cycle 2 のステージング中に、Track B の Cycle 1 commit（`cb1c4ab`、`lib.rs` + `cloud_whisper_errors.rs`）が先に着地。Track A の最初の Cycle 2 commit 試行が `lib.rs` 変更まで巻き込んでしまった
+- **自己修復**: Track A サブエージェントが `git show --stat` で異常を検知 → `git reset --soft HEAD^` でコミット巻き戻し → `lib.rs` を unstage → `cloud_whisper.rs` のみ再ステージ → 再 commit（`29702a1`）
+- **教訓**: 並列 Track で「新規ファイルを追加する Track」と「既存ファイルを触る Track」が同時走行すると、`git add -A` 系の広域ステージングが事故の温床。**個別ファイル指定 `git add <path>` を徹底**するか、ステージング前に `git status` を読む工程を入れる運用が安全。サブエージェント側が自己検知 + `reset --soft` で復旧できたのは**誠実性の証左**
+
+#### Loop J の学び
+1. **enum 拡張は TDD 最速パターン**: 新 variant を要求するテストはコンパイラ Red を即座に引き起こすため、「真の Red が本当に Red か」の判定コストが原理的にゼロ。`Result` の Err variant / `Option` の Some 追加 / trait 実装追加も同類。今後 Rust で enum 系 TDD を書く際の**第一選択テンプレート**として記録
+2. **`.to_string()` の数値表現は事前検証必須**: `0.0_f32.to_string() == "0"` のような処理系依存の挙動は、Cycle 1 期待値固定の前に**最小プログラムで確認**する規律が TDD の基礎。今回サブエージェントが自発的に rustc probe したのは模範事例
+3. **並列 Track の staging 事故パターン**: 「新規ファイル追加 + `lib.rs` 登録」 vs 「既存ファイル編集のみ」の組み合わせは、`git add .` / `git add -A` で片側が他方の変更を巻き込む可能性がある。**個別パス指定ステージング**を今後のサブエージェント指示に明記する（`git add desktop/src-tauri/src/cloud_whisper.rs` のように）
+4. **match + range パターン + struct variant 束縛**: `500..=599 => ServerError, _ => Other { status, message: body.to_string() }` は if-else チェーンより明確にドメイン形状（status → variant のルックアップ表）を表す。Rust `match` の表現力がドメインモデリング段階で効く実例
+5. **Phase 6 純関数層の「接合点」が揃った**: URL ビルダー / Auth ヘッダ / Request Params / HTTP Descriptor / Multipart Text Fields / Verbose JSON Parser / Error Classifier の 7 純関数 + 3 構造体 + 1 enum が揃い、HTTP 副作用層は **「この純関数群を呼ぶだけ」** の薄いアダプタに収まる設計余白ができた。次ループは本丸の `call_whisper_api(descriptor, audio_bytes) -> Result<String, String>` に突入できる
+
+#### 残タスク（Phase 6）
+- **HTTP 呼び出し層**: いよいよ本丸。`reqwest::blocking::Client` で multipart POST + レスポンスパース + エラー分類器配線。**モック戦略判断**（`mockito` / `wiremock` / `httpmock` / 契約テスト）は単独ループで扱う候補
+- **エンジン選択 dispatch**: `transcription.rs::start_transcription` で `settings.transcription_engine` を読んで Local/Cloud を分岐
+- **API キーの暗号化保存**: `keyring` クレート導入、Keychain / Credential Manager 経由化
+- **リトライ/フォールバック UI**: `CloudWhisperError` variant ごとにポリシー分岐（InvalidApiKey → 即エラー UI、RateLimited → 指数バックオフ、ServerError → 数回リトライ、Other → ユーザ通知）
+- **API コスト概算表示**: オプショナル、最終化
+- **フロントテスト基盤**: vitest + RTL 導入（Loop B/E/G/H/I/J で 6 連続「テスト基盤なし」を記録）
+
 ### 2026-04-21: Loop I - Phase 6 純関数合成 descriptor + クラウド選択時の API キー警告（並列2トラック）
 - Track A commit: `3e1cc1d`（`feat(cloud-whisper): add build_whisper_http_request_descriptor composition`、`cloud_whisper.rs` 1ファイル、+92 行、構造体 + 合成関数 + テスト 3 件）
 - Track B commit: `2b6b818`（`feat(settings-ui): warn when cloud engine selected with empty api key`、`SettingsView.tsx` + `App.css`、+12 行）
