@@ -3,14 +3,20 @@
 pub enum CloudWhisperError {
     InvalidApiKey,
     RateLimited,
+    ServerError,
+    Other { status: u16, message: String },
 }
 
 #[allow(dead_code)]
-pub fn classify_cloud_whisper_error(status: u16, _body: &str) -> CloudWhisperError {
+pub fn classify_cloud_whisper_error(status: u16, body: &str) -> CloudWhisperError {
     match status {
         401 => CloudWhisperError::InvalidApiKey,
         429 => CloudWhisperError::RateLimited,
-        _ => CloudWhisperError::InvalidApiKey,
+        500..=599 => CloudWhisperError::ServerError,
+        _ => CloudWhisperError::Other {
+            status,
+            message: body.to_string(),
+        },
     }
 }
 
@@ -31,6 +37,25 @@ mod tests {
         assert_eq!(
             classify_cloud_whisper_error(429, ""),
             CloudWhisperError::RateLimited
+        );
+    }
+
+    #[test]
+    fn classify_server_and_other_errors() {
+        assert_eq!(
+            classify_cloud_whisper_error(500, ""),
+            CloudWhisperError::ServerError
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(599, ""),
+            CloudWhisperError::ServerError
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(400, "bad request body"),
+            CloudWhisperError::Other {
+                status: 400,
+                message: "bad request body".to_string(),
+            }
         );
     }
 }
