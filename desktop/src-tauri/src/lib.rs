@@ -2,6 +2,7 @@ mod app_detection;
 mod apple_speech;
 mod audio;
 mod cloud_whisper;
+mod cloud_whisper_errors;
 mod datetime_fmt;
 mod markdown;
 mod openai_realtime;

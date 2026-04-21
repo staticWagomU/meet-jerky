@@ -2,11 +2,16 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CloudWhisperError {
     InvalidApiKey,
+    RateLimited,
 }
 
 #[allow(dead_code)]
-pub fn classify_cloud_whisper_error(_status: u16, _body: &str) -> CloudWhisperError {
-    CloudWhisperError::InvalidApiKey
+pub fn classify_cloud_whisper_error(status: u16, _body: &str) -> CloudWhisperError {
+    match status {
+        401 => CloudWhisperError::InvalidApiKey,
+        429 => CloudWhisperError::RateLimited,
+        _ => CloudWhisperError::InvalidApiKey,
+    }
 }
 
 #[cfg(test)]
@@ -18,6 +23,14 @@ mod tests {
         assert_eq!(
             classify_cloud_whisper_error(401, "some body"),
             CloudWhisperError::InvalidApiKey
+        );
+    }
+
+    #[test]
+    fn classify_429_returns_rate_limited() {
+        assert_eq!(
+            classify_cloud_whisper_error(429, ""),
+            CloudWhisperError::RateLimited
         );
     }
 }
