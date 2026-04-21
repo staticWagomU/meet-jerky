@@ -75,6 +75,17 @@ pub fn build_whisper_http_request_descriptor(
     })
 }
 
+pub fn build_whisper_multipart_text_fields(
+    _descriptor: &WhisperHttpRequestDescriptor,
+) -> Vec<(&'static str, String)> {
+    vec![
+        ("model", "small".to_string()),
+        ("response_format", "verbose_json".to_string()),
+        ("temperature", "0".to_string()),
+        ("language", "ja".to_string()),
+    ]
+}
+
 #[allow(dead_code)]
 pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSegment>, String> {
     let response: VerboseResponse = serde_json::from_str(body)
@@ -249,6 +260,29 @@ mod tests {
                     temperature: 0.0,
                 },
             }
+        );
+    }
+
+    #[test]
+    fn build_multipart_text_fields_with_small_model_and_ja_language() {
+        let descriptor = build_whisper_http_request_descriptor(
+            "https://api.openai.com/v1",
+            "sk-x",
+            "small",
+            Some("ja"),
+        )
+        .expect("should build descriptor");
+
+        let fields = build_whisper_multipart_text_fields(&descriptor);
+
+        assert_eq!(
+            fields,
+            vec![
+                ("model", "small".to_string()),
+                ("response_format", "verbose_json".to_string()),
+                ("temperature", "0".to_string()),
+                ("language", "ja".to_string()),
+            ]
         );
     }
 
