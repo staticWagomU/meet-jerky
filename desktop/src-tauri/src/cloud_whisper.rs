@@ -76,13 +76,16 @@ pub fn build_whisper_http_request_descriptor(
 }
 
 pub fn build_whisper_multipart_text_fields(
-    _descriptor: &WhisperHttpRequestDescriptor,
+    descriptor: &WhisperHttpRequestDescriptor,
 ) -> Vec<(&'static str, String)> {
     vec![
-        ("model", "small".to_string()),
+        ("model", descriptor.params.model.clone()),
         ("response_format", "verbose_json".to_string()),
         ("temperature", "0".to_string()),
-        ("language", "ja".to_string()),
+        (
+            "language",
+            descriptor.params.language.clone().unwrap_or_default(),
+        ),
     ]
 }
 
@@ -282,6 +285,29 @@ mod tests {
                 ("response_format", "verbose_json".to_string()),
                 ("temperature", "0".to_string()),
                 ("language", "ja".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn build_multipart_text_fields_with_tiny_model_and_en_language() {
+        let descriptor = build_whisper_http_request_descriptor(
+            "https://api.openai.com/v1",
+            "sk-x",
+            "tiny",
+            Some("en"),
+        )
+        .expect("should build descriptor");
+
+        let fields = build_whisper_multipart_text_fields(&descriptor);
+
+        assert_eq!(
+            fields,
+            vec![
+                ("model", "tiny".to_string()),
+                ("response_format", "verbose_json".to_string()),
+                ("temperature", "0".to_string()),
+                ("language", "en".to_string()),
             ]
         );
     }
