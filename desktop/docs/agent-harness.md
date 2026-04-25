@@ -80,6 +80,34 @@
 8. 問題がなければ `main` にコミットする。
 9. 次の改善ループへ進む。
 
+## 最小補助スクリプト
+
+以下のスクリプトは、メインエージェントの判断を補助する薄いラッパーとして使う。
+判断責任をスクリプトへ丸投げせず、差分レビュー、検証結果の解釈、コミット可否判断はメインエージェントが行う。
+
+- `scripts/agent-start-research.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
+  - 調査担当を `tmux new-session` と `codex exec` で起動する。
+  - reasoning level は `low`。
+  - `-o` で最終出力を `logs/agent/<SESSION>.txt` に保存する。
+- `scripts/agent-start-worker.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
+  - 作業担当を `tmux new-session` と `codex exec` で起動する。
+  - reasoning level は `medium`。
+  - `-o` で最終出力を保存する。
+- `scripts/agent-tail-output.sh SESSION [LINES]`
+  - 保存済み最終出力と、実行中なら tmux pane 出力を確認する。
+- `scripts/agent-watch.sh [PREFIX]`
+  - git状態、tmuxセッション、保存済み出力ファイルを一覧する。
+- `scripts/agent-verify.sh [PATH ...]`
+  - `git diff --check` と `npm run build` を実行する。
+  - `cmake` がある場合のみ `cargo test --manifest-path src-tauri/Cargo.toml` を実行する。
+  - `cmake` が無い環境では `whisper-rs-sys` がビルドできないため Rust 全体テストを skip する。
+- `scripts/agent-commit.sh COMMIT_MESSAGE [PATH ...]`
+  - コミット前の status と diff stat を表示し、指定 path を stage してコミットする。
+  - path 未指定時は tracked file の変更だけを stage する。
+- `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
+  - 後継メインエージェントを `tmux new-session` で起動する。
+  - 後継プロンプトは `PROMPT_FILE` に具体的な引き継ぎ内容を書いて渡す。
+
 ## 引き継ぎ
 
 メインエージェントのコンテキストが多くなってきたと近似判断したら、止まる前に後継メインエージェントを起動する。
@@ -87,4 +115,3 @@
 後継メインエージェントには、目的、進行中セッション、未完了タスク、直近の判断、参照すべきログ、停止すべき旧メインセッションを明確に伝える。
 
 後継メインエージェントへ引き継いだら、旧メインエージェントを終了するよう明示する。メインエージェントを増殖させない。
-

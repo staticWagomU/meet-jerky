@@ -193,3 +193,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。
+
+### Harness: minimal autonomous scripts and main prompt
+
+- 開始日時: 2026-04-26 07:12 JST
+- 担当セッション: main
+- 役割: 実装担当
+- 作業範囲: `scripts/agent-*.sh`, `docs/autonomous-main-prompt.md`, `docs/agent-harness.md`, `AGENT_LOG.md`
+- 指示内容: 自律改善を止めずに回すため、最低限必要な tmux/Codex 補助スクリプトと、新しいメインエージェント用プロンプトを作成する。
+- 結果: 調査担当起動、作業担当起動、出力確認、状態監視、検証、コミット、後継メイン起動を補助するスクリプトを追加。新しい自律メインプロンプトを `docs/autonomous-main-prompt.md` に追加し、`docs/agent-harness.md` にスクリプト一覧と用途を追記した。
+- 変更ファイル: `scripts/agent-common.sh`, `scripts/agent-start-research.sh`, `scripts/agent-start-worker.sh`, `scripts/agent-tail-output.sh`, `scripts/agent-watch.sh`, `scripts/agent-verify.sh`, `scripts/agent-commit.sh`, `scripts/agent-handoff-main.sh`, `docs/autonomous-main-prompt.md`, `docs/agent-harness.md`, `AGENT_LOG.md`
+- 検証結果: `bash -n scripts/agent-*.sh` は成功。`chmod +x scripts/agent-*.sh` を実行済み。`scripts/agent-watch.sh mj-` は成功。`git diff --check -- scripts docs/autonomous-main-prompt.md docs/agent-harness.md AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`scripts/agent-verify.sh scripts docs/autonomous-main-prompt.md docs/agent-harness.md AGENT_LOG.md` は成功し、`cmake` 不在のため Rust 全体テストは想定どおり skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 差分レビュー後にコミットする。
