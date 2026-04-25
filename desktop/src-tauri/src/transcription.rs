@@ -469,6 +469,9 @@ impl ModelManager {
 
 pub struct TranscriptionManager {
     engine: Option<Arc<dyn TranscriptionEngine>>,
+    /// 現在ロード中のエンジン種別と、Whisper の場合のモデル名。
+    /// 同じ条件での再 ensure_engine 呼び出しでは再初期化をスキップする。
+    loaded_engine_signature: Option<(crate::settings::TranscriptionEngineType, String)>,
     running: Arc<AtomicBool>,
     model_manager: ModelManager,
 }
@@ -477,12 +480,14 @@ impl TranscriptionManager {
     pub fn new() -> Self {
         Self {
             engine: None,
+            loaded_engine_signature: None,
             running: Arc::new(AtomicBool::new(false)),
             model_manager: ModelManager::new(),
         }
     }
 
-    /// エンジンが読み込まれているか
+    /// エンジンが読み込まれているか (テスト用 / 内部診断用)
+    #[cfg(test)]
     pub fn is_engine_loaded(&self) -> bool {
         self.engine.is_some()
     }
@@ -492,7 +497,7 @@ impl TranscriptionManager {
         self.running.load(Ordering::SeqCst)
     }
 
-    /// モデルを読み込む（まだ読み込まれていない場合）
+    /// Whisper モデルを読み込む（まだ読み込まれていない場合）
     pub fn load_model(&mut self, model_name: &str) -> Result<(), String> {
         let model_path = self.model_manager.get_model_path(model_name);
         if !model_path.exists() {
@@ -506,6 +511,47 @@ impl TranscriptionManager {
             .ok_or_else(|| "モデルパスの変換に失敗しました".to_string())?;
         let engine = WhisperLocal::new(path_str)?;
         self.engine = Some(Arc::new(engine));
+        Ok(())
+    }
+
+    /// 設定で選択されたエンジンに切り替える。
+    ///
+    /// 同じエンジン種別 (Whisper の場合は同じモデル名) が既に読み込まれていれば
+    /// 何もしない。条件が変わった場合は古いエンジンを破棄して新しいエンジンを
+    /// 初期化する。
+    ///
+    /// `whisper_model` は Whisper を選んだ時のみ参照される。
+    pub fn ensure_engine(
+        &mut self,
+        engine_type: &crate::settings::TranscriptionEngineType,
+        whisper_model: &str,
+    ) -> Result<(), String> {
+        use crate::settings::TranscriptionEngineType;
+
+        // 既にロード済みなら早期 return。Whisper は model 名一致が条件、
+        // それ以外は engine 種別一致のみで判定。
+        let signature = (engine_type.clone(), whisper_model.to_string());
+        if self.engine.is_some() && self.loaded_engine_signature.as_ref() == Some(&signature) {
+            return Ok(());
+        }
+
+        match engine_type {
+            TranscriptionEngineType::Whisper => {
+                self.load_model(whisper_model)?;
+            }
+            TranscriptionEngineType::AppleSpeech => {
+                let engine = crate::apple_speech::AppleSpeechEngine::new()?;
+                self.engine = Some(Arc::new(engine));
+            }
+            TranscriptionEngineType::OpenAIRealtime => {
+                return Err(
+                    "OpenAI Realtime API はまだ実装されていません。次のリリースで対応します。"
+                        .to_string(),
+                );
+            }
+        }
+
+        self.loaded_engine_signature = Some(signature);
         Ok(())
     }
 
@@ -610,12 +656,16 @@ pub async fn download_model(
 /// - `Some("microphone")`: マイクのみ
 /// - `Some("system_audio")`: システム音声のみ
 /// - `None` または `Some("both")`: 両方（デュアルストリーム）
+///
+/// `model_name` は Whisper を選択した時のみ使われる。Apple SpeechAnalyzer 等
+/// 別エンジンを選んだ場合は無視される (引数互換のため残している)。
 #[tauri::command]
 pub fn start_transcription(
     model_name: String,
     source: Option<String>,
     audio_state: tauri::State<'_, crate::audio::AudioStateHandle>,
     transcription_state: tauri::State<'_, TranscriptionStateHandle>,
+    settings_state: tauri::State<'_, crate::settings::SettingsStateHandle>,
     session_manager: tauri::State<'_, Arc<crate::session_manager::SessionManager>>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -625,10 +675,19 @@ pub fn start_transcription(
         return Err("文字起こしは既に実行中です".to_string());
     }
 
-    // モデルを読み込む（まだの場合）
-    if !manager.is_engine_loaded() {
-        manager.load_model(&model_name)?;
-    }
+    // 設定からエンジン種別を読み取り、必要ならエンジンを切り替える。
+    // 引数の `model_name` は Whisper の場合に優先採用 (UI から選択された値を反映)。
+    let (engine_type, whisper_model) = {
+        let settings = settings_state.0.lock();
+        let model = if model_name.is_empty() {
+            settings.whisper_model.clone()
+        } else {
+            model_name.clone()
+        };
+        (settings.transcription_engine.clone(), model)
+    };
+
+    manager.ensure_engine(&engine_type, &whisper_model)?;
 
     // エンジンの Arc クローンを取得（所有権を移動せずスレッドに渡す）
     let engine = Arc::clone(
@@ -1226,5 +1285,42 @@ mod tests {
         // モックは feed 回数を必ずカウントする
         assert_eq!(feeds.load(Ordering::SeqCst), 2);
         assert_eq!(samples.load(Ordering::SeqCst), 3);
+    }
+
+    // ─────────────────────────────────────────
+    // ensure_engine — エンジン種別ディスパッチ / 再ロード抑制
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn test_ensure_engine_apple_speech_errors_off_macos() {
+        // 非 macOS では AppleSpeech は使えないので明示エラー。
+        // Whisper 側の実装に切り替えてくださいというヒント文言を含む。
+        // (macOS テスト環境ではこのテストは失敗するので skip する)
+        if cfg!(target_os = "macos") {
+            return;
+        }
+        let mut manager = TranscriptionManager::new();
+        let err = manager
+            .ensure_engine(
+                &crate::settings::TranscriptionEngineType::AppleSpeech,
+                "small",
+            )
+            .unwrap_err();
+        assert!(err.contains("macOS"));
+    }
+
+    #[test]
+    fn test_ensure_engine_openai_returns_not_implemented() {
+        // OpenAI Realtime はまだ未実装。明確なエラー文言を返すこと。
+        let mut manager = TranscriptionManager::new();
+        let err = manager
+            .ensure_engine(
+                &crate::settings::TranscriptionEngineType::OpenAIRealtime,
+                "small",
+            )
+            .unwrap_err();
+        assert!(err.contains("OpenAI Realtime"));
+        // エンジンは未ロードのまま
+        assert!(!manager.is_engine_loaded());
     }
 }

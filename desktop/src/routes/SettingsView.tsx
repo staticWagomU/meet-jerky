@@ -113,15 +113,21 @@ export function SettingsView() {
             />
             <span>ローカル (Whisper)</span>
           </label>
-          <label className="settings-radio-label settings-radio-disabled">
+          <label className="settings-radio-label">
             <input
               type="radio"
               name="engine"
               value="appleSpeech"
-              disabled
+              checked={localSettings.transcriptionEngine === "appleSpeech"}
+              onChange={() =>
+                setLocalSettings({
+                  ...localSettings,
+                  transcriptionEngine: "appleSpeech" as TranscriptionEngineType,
+                })
+              }
             />
             <span>macOS SpeechAnalyzer</span>
-            <span className="settings-note">次のリリースで対応</span>
+            <span className="settings-note">macOS 26+ 専用</span>
           </label>
           <label className="settings-radio-label settings-radio-disabled">
             <input

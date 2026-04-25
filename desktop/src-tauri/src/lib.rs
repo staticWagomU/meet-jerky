@@ -1,3 +1,4 @@
+mod apple_speech;
 mod audio;
 mod datetime_fmt;
 mod markdown;
