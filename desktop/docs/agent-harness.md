@@ -107,6 +107,18 @@
 - `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
   - 後継メインエージェントを `tmux new-session` で起動する。
   - 後継プロンプトは `PROMPT_FILE` に具体的な引き継ぎ内容を書いて渡す。
+- `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+  - メインセッションが存在するかを定期確認し、存在しなければ `agent-handoff-main.sh` で起動する。
+  - 判断・実装・コミットは行わない。
+  - 標準では `mj-main` を `docs/autonomous-main-prompt.md` で起動し、600秒間隔で確認する。
+- `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+  - watchdog 自体を `tmux new-session` で起動する。
+  - 標準では `mj-watchdog` セッションを起動する。
+
+## 初回起動
+
+人間が10分ごとに確認する代わりに watchdog を使う場合は、最初のCodexセッションに `docs/autonomous-start-prompt.md` の内容を流す。
+このプロンプトは `mj-watchdog` を起動し、watchdog が `mj-main` を維持する状態を作る。
 
 ## 引き継ぎ
 

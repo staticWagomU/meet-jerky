@@ -33,6 +33,14 @@
 - `scripts/agent-verify.sh [PATH ...]`
 - `scripts/agent-commit.sh COMMIT_MESSAGE [PATH ...]`
 - `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
+- `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+- `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+
+watchdog方針:
+- `mj-watchdog` は `mj-main` が存在しない場合に再起動するだけの係。
+- watchdog に判断、実装、差分修正、コミットを任せない。
+- メインエージェントである自分は、watchdogが存在していても通常どおり改善ループ、worker監視、レビュー、検証、コミットを行う。
+- 自分が後継メインを起動して終了する場合、`mj-watchdog` と役割が衝突しないよう、後継セッション名と引き継ぎ内容を明確にする。
 
 開始時の手順:
 1. 必須ドキュメントを読む。
@@ -69,6 +77,7 @@
 - 課金操作、認証変更、破壊的操作なしでは進めない場合。
 - 後継メインエージェントへ引き継いだ場合。
 - リポジトリ外の問題で継続不能な場合。ただし、可能な限りログへ状況と次アクションを残す。
+- watchdogにより自分が再起動される運用中でも、final answerで通常終了せず、次の改善ループか後継引き継ぎへ進む。
 
 コンテキスト引き継ぎ:
 - コンテキストが肥大化した、または複数ループ分の判断履歴で見通しが悪くなったと判断したら、早めに後継メインを起動する。

@@ -207,3 +207,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 差分レビュー後にコミットする。
+
+### Harness: watchdog startup support
+
+- 開始日時: 2026-04-26 07:30 JST
+- 担当セッション: main
+- 役割: 実装担当
+- 作業範囲: `scripts/agent-watchdog.sh`, `scripts/agent-start-watchdog.sh`, `docs/autonomous-start-prompt.md`, `docs/autonomous-main-prompt.md`, `docs/agent-harness.md`, `AGENT_LOG.md`
+- 指示内容: 人間が10分ごとに別セッションを確認しなくても自律運用を継続できるよう、watchdog スクリプトと最初に流すべきプロンプトを追加する。
+- 結果: `mj-main` が存在しない場合に `agent-handoff-main.sh` で再起動する watchdog と、watchdog 自体を tmux セッションで起動するスクリプトを追加。初回ブートストラップ用プロンプトを `docs/autonomous-start-prompt.md` に追加し、メインプロンプトとハーネス文書に watchdog 方針を追記した。
+- 変更ファイル: `scripts/agent-watchdog.sh`, `scripts/agent-start-watchdog.sh`, `docs/autonomous-start-prompt.md`, `docs/autonomous-main-prompt.md`, `docs/agent-harness.md`, `AGENT_LOG.md`
+- 検証結果: `chmod +x scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh` を実行済み。`bash -n scripts/agent-*.sh` は成功。`scripts/agent-watch.sh mj-` は成功。`git diff --check -- scripts docs/autonomous-start-prompt.md docs/autonomous-main-prompt.md docs/agent-harness.md AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`scripts/agent-verify.sh scripts docs/autonomous-start-prompt.md docs/autonomous-main-prompt.md docs/agent-harness.md AGENT_LOG.md` は成功し、`cmake` 不在のため Rust 全体テストは想定どおり skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 差分レビュー後にコミットする。
