@@ -42,7 +42,8 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "entitlements": null
+      "entitlements": null,
+      "minimumSystemVersion": "26.0"
     }
   }
 }
