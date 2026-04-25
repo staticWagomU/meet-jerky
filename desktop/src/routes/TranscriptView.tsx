@@ -12,7 +12,11 @@ import { SystemAudioSection } from "../components/SystemAudioSection";
 import { TranscriptionControls } from "../components/TranscriptionControls";
 import { TranscriptDisplay } from "../components/TranscriptDisplay";
 import { PermissionBanner } from "../components/PermissionBanner";
-import { startSession, finalizeAndSaveSession } from "../hooks/useSession";
+import {
+  startSession,
+  finalizeAndSaveSession,
+  discardSession,
+} from "../hooks/useSession";
 
 /** invoke のエラーを文字列として返すヘルパー */
 function toErrorMessage(e: unknown): string {
@@ -149,8 +153,14 @@ export function TranscriptView() {
 
     // START: session 開始 → mic → system audio → transcription
     const title = `会議 ${new Date().toLocaleString("ja-JP")}`;
+    let sessionStarted = false;
+    let micStarted = false;
+    let systemAudioStarted = false;
+    let transcriptionStarted = false;
+
     try {
       await startSession(title);
+      sessionStarted = true;
     } catch (e) {
       const msg = toErrorMessage(e);
       console.error("セッション開始に失敗しました:", msg);
@@ -165,12 +175,15 @@ export function TranscriptView() {
       } else {
         await invoke("start_recording");
       }
+      micStarted = true;
       setIsMicRecording(true);
 
       await invoke("start_system_audio");
+      systemAudioStarted = true;
       setIsSystemAudioRecording(true);
 
       await invoke("start_transcription", { modelName: selectedModel });
+      transcriptionStarted = true;
       setIsTranscribing(true);
 
       const now = Date.now();
@@ -181,6 +194,46 @@ export function TranscriptView() {
     } catch (e) {
       const msg = toErrorMessage(e);
       console.error("会議開始に失敗しました:", msg);
+      if (transcriptionStarted) {
+        await invoke("stop_transcription").catch((rollbackError) => {
+          console.error(
+            "文字起こしロールバックに失敗しました:",
+            toErrorMessage(rollbackError),
+          );
+        });
+      }
+      if (systemAudioStarted) {
+        await invoke("stop_system_audio").catch((rollbackError) => {
+          console.error(
+            "システム音声ロールバックに失敗しました:",
+            toErrorMessage(rollbackError),
+          );
+        });
+      }
+      if (micStarted) {
+        await invoke("stop_recording").catch((rollbackError) => {
+          console.error(
+            "マイク録音ロールバックに失敗しました:",
+            toErrorMessage(rollbackError),
+          );
+        });
+      }
+      if (sessionStarted) {
+        await discardSession().catch((rollbackError) => {
+          console.error(
+            "セッション破棄に失敗しました:",
+            toErrorMessage(rollbackError),
+          );
+        });
+      }
+      setIsTranscribing(false);
+      setIsSystemAudioRecording(false);
+      setIsMicRecording(false);
+      setSystemAudioLevel(0);
+      setMicLevel(0);
+      setIsMeetingActive(false);
+      setMeetingStartTime(null);
+      setElapsedTime(0);
       setMeetingError(`会議開始に失敗しました: ${msg}`);
     }
   }, [

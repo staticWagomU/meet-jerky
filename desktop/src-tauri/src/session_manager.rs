@@ -107,6 +107,18 @@ impl SessionManager {
         }
     }
 
+    /// 活性セッションを保存せず破棄する。
+    ///
+    /// 会議開始シーケンスの途中で音声取得や文字起こし開始に失敗した場合、
+    /// 空の履歴ファイルを残さずに `session already active` 状態を解消するために使う。
+    pub fn discard(&self) -> Result<(), SessionManagerError> {
+        let mut guard = self.lock();
+        match guard.take() {
+            Some(_) => Ok(()),
+            None => Err(SessionManagerError::NotActive),
+        }
+    }
+
     pub fn is_active(&self) -> bool {
         self.lock().is_some()
     }
@@ -299,6 +311,28 @@ mod tests {
         assert!(!manager.is_active());
 
         let err = manager.finalize(300).expect_err("second finalize should fail");
+        assert_eq!(err, SessionManagerError::NotActive);
+    }
+
+    #[test]
+    fn discard_clears_active_session_without_finalizing() {
+        let manager = SessionManager::new();
+        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+
+        manager.discard().expect("discard should succeed");
+
+        assert!(!manager.is_active());
+        let err = manager.finalize(200).expect_err("finalize after discard should fail");
+        assert_eq!(err, SessionManagerError::NotActive);
+    }
+
+    #[test]
+    fn discard_when_idle_returns_not_active() {
+        let manager = SessionManager::new();
+        let err = manager.discard().expect_err("idle discard should fail");
         assert_eq!(err, SessionManagerError::NotActive);
     }
 

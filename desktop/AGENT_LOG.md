@@ -61,9 +61,37 @@
 - 役割: 調査担当エージェント
 - 作業範囲: `desktop/` 配下のコード調査のみ。コード変更は禁止。
 - 指示内容: `mj-research-20260425-1` と同じ。最終出力を `/tmp/mj-research-20260425-2.txt` に保存する。
-- 結果: 実行中。
+- 結果: 失敗。`codex exec` に渡した `-a never` の位置が不正で、調査に入る前に終了した。
 - 変更ファイル: なし。
-- 検証結果: 未完了。
+- 検証結果: なし。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `codex exec` はこの位置の `-a` を受け付けなかった。approval 指定はグローバルオプション `codex --ask-for-approval never exec ...` として渡す必要がある。
+- 次アクション: `mj-research-20260425-3` を正しい CLI 指定で起動する。
+
+### Research task: mj-research-20260425-3
+
+- 開始日時: 2026-04-25 23:09 JST
+- 担当セッション: `mj-research-20260425-3`
+- 役割: 調査担当エージェント
+- 作業範囲: `desktop/` 配下のコード調査のみ。コード変更は禁止。
+- 指示内容: 高価値な改善候補、リスク、影響範囲、推奨タスク分解、検証方法を報告する。最終出力を `/tmp/mj-research-20260425-3.txt` に保存する。
+- 結果: 完了。候補は、権限チェック実装、会議検知のブラウザURL/既起動アプリ拡張、開始失敗時ロールバック、設定UIのクラウド/Realtime整理、低遅延化ベンチ、Apple SpeechAnalyzer 実機検証。
+- 変更ファイル: なし。
+- 検証結果: 調査のみのためコード検証なし。
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
-- 次アクション: 出力ファイルと pane を監視して、次の改善候補を選定する。
+- 次アクション: 調査結果とメイン側の判断が一致したため、開始失敗時ロールバックを先に実装する。調査セッションは出力回収後に停止済み。
+
+### Fix: rollback failed meeting start
+
+- 開始日時: 2026-04-25 23:12 JST
+- 担当セッション: main
+- 役割: 実装担当
+- 作業範囲: `src-tauri/src/session_manager.rs`, `src-tauri/src/session_commands.rs`, `src-tauri/src/lib.rs`, `src/hooks/useSession.ts`, `src/routes/TranscriptView.tsx`
+- 指示内容: 会議開始シーケンスの途中でマイク、システム音声、文字起こし開始のいずれかが失敗しても、録音・文字起こし・活性セッションが残らないようにする。
+- 結果: 保存せずに活性セッションを破棄する `discard_session` コマンドを追加。フロントの会議開始処理で開始済みリソースを記録し、失敗時に文字起こし、システム音声、マイク、セッションの順でロールバックするようにした。
+- 変更ファイル: `src-tauri/src/session_manager.rs`, `src-tauri/src/session_commands.rs`, `src-tauri/src/lib.rs`, `src/hooks/useSession.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` は 110 passed。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 差分をレビューし、問題なければ日本語 Conventional Commits 形式で main にコミットする。

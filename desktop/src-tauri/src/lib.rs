@@ -123,6 +123,7 @@ pub fn run() {
             secret_store::has_openai_api_key,
             session_commands::start_session,
             session_commands::finalize_and_save_session,
+            session_commands::discard_session,
             session_commands::list_session_summaries_cmd,
         ])
         .setup(|app| {

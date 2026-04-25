@@ -114,6 +114,22 @@ pub fn finalize_and_save_session(
 }
 
 // ─────────────────────────────────────────────
+// discard_session
+// ─────────────────────────────────────────────
+
+/// テスト可能な discard_session 実装本体。
+///
+/// 開始途中で失敗した会議を保存せず破棄し、次の開始を妨げる活性セッションを残さない。
+pub fn discard_session_inner(manager: &SessionManager) -> Result<(), String> {
+    manager.discard().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn discard_session(state: tauri::State<'_, Arc<SessionManager>>) -> Result<(), String> {
+    discard_session_inner(state.inner().as_ref())
+}
+
+// ─────────────────────────────────────────────
 // list_session_summaries
 // ─────────────────────────────────────────────
 
@@ -147,6 +163,15 @@ mod tests {
 
     fn jst() -> FixedOffset {
         FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+
+    fn list_md_files(dir: &Path) -> Vec<PathBuf> {
+        std::fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+            .collect()
     }
 
     // Cycle 1: finalize_and_save_session_inner が活性セッションを書き出せる
@@ -191,6 +216,31 @@ mod tests {
         )
         .expect_err("idle manager should error");
 
+        assert_eq!(err, "no active session");
+    }
+
+    #[test]
+    fn discard_session_inner_clears_active_session_without_writing_file() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        start_session_inner(&manager, "会議".into(), 100, dir.path(), jst())
+            .expect("start should succeed");
+
+        discard_session_inner(&manager).expect("discard should succeed");
+
+        assert!(!manager.is_active());
+        let files = list_md_files(dir.path());
+        assert!(
+            files.is_empty(),
+            "discard without appended transcript should not create files: {:?}",
+            files
+        );
+    }
+
+    #[test]
+    fn discard_session_inner_returns_error_when_idle() {
+        let manager = SessionManager::new();
+        let err = discard_session_inner(&manager).expect_err("idle discard should error");
         assert_eq!(err, "no active session");
     }
 

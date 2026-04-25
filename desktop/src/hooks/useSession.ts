@@ -19,3 +19,7 @@ export async function finalizeAndSaveSession(): Promise<string> {
   // 文字列化されるためフロントでは string として受け取れる。
   return await invoke<string>("finalize_and_save_session");
 }
+
+export async function discardSession(): Promise<void> {
+  await invoke<void>("discard_session");
+}
