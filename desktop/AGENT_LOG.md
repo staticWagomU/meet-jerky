@@ -137,3 +137,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` の再ビルドで `cmake` が見つからず失敗。コード差分起因の失敗ではなく環境ツール不足だが、Rust対象テストはこのループでは完走できていない。
 - 次アクション: 差分をレビューし、検証制約を明記したうえでコミット可否を判断する。
+
+### Worker task: microphone sample format support
+
+- 開始日時: 2026-04-25 23:43 JST
+- 担当セッション: `mj-worker-mic-format-20260425-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/audio.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `CpalMicCapture::start` が f32 入力ストリーム前提で失敗しないよう、`SupportedStreamConfig::sample_format()` に応じて `f32`/`i16`/`u16` 等の入力を安全に f32 mono へ正規化し、リングバッファと RMS に流す。既存 audio-level payload と source 名は変更しない。新規依存追加なし。コミット禁止。
+- 結果: `sample_format` 分岐と共通 `build_mic_input_stream` ヘルパーを追加し、cpal の PCM 系 `f32`/`f64`/signed/unsigned integer 入力を f32 mono 化して処理するよう変更。DSD と未知の sample format は明確な未対応エラーにした。コールバック内は非ブロッキング `try_lock` のままで、既存の `Vec` 確保を避けて RMS とリングバッファ書き込みを単一走査にした。正規化と mono 化のユニットテストを追加。
+- 変更ファイル: `src-tauri/src/audio.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/audio.rs` は成功。`git diff --check -- src-tauri/src/audio.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` および `/opt/homebrew/bin/cmake`/`/usr/local/bin/cmake` の確認でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml` を再実行し、実機または仮想入力で i16/u16 既定マイクの start_recording を確認する。

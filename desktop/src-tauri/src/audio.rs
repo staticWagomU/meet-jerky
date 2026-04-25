@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{FromSample, Sample, SampleFormat, SizedSample};
 use parking_lot::Mutex;
 use ringbuf::{
     traits::{Producer, Split},
@@ -74,6 +75,202 @@ impl CpalMicCapture {
     }
 }
 
+fn build_mic_input_stream_for_format<E>(
+    sample_format: SampleFormat,
+    device: &cpal::Device,
+    stream_config: &cpal::StreamConfig,
+    channels: usize,
+    level: Arc<AtomicU32>,
+    producer: Arc<Mutex<ringbuf::HeapProd<f32>>>,
+    err_fn: E,
+) -> Result<cpal::Stream, String>
+where
+    E: FnMut(cpal::StreamError) + Send + 'static,
+{
+    match sample_format {
+        SampleFormat::F32 => build_mic_input_stream::<f32, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::F64 => build_mic_input_stream::<f64, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::I8 => build_mic_input_stream::<i8, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::I16 => build_mic_input_stream::<i16, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::I24 => build_mic_input_stream::<cpal::I24, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::I32 => build_mic_input_stream::<i32, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::I64 => build_mic_input_stream::<i64, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::U8 => build_mic_input_stream::<u8, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::U16 => build_mic_input_stream::<u16, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::U24 => build_mic_input_stream::<cpal::U24, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::U32 => build_mic_input_stream::<u32, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::U64 => build_mic_input_stream::<u64, E>(
+            device,
+            stream_config,
+            channels,
+            level,
+            producer,
+            err_fn,
+        ),
+        SampleFormat::DsdU8 | SampleFormat::DsdU16 | SampleFormat::DsdU32 => {
+            Err(format!("未対応の入力サンプル形式です: {sample_format}"))
+        }
+        _ => Err(format!("未対応の入力サンプル形式です: {sample_format}")),
+    }
+}
+
+fn build_mic_input_stream<T, E>(
+    device: &cpal::Device,
+    stream_config: &cpal::StreamConfig,
+    channels: usize,
+    level: Arc<AtomicU32>,
+    producer: Arc<Mutex<ringbuf::HeapProd<f32>>>,
+    err_fn: E,
+) -> Result<cpal::Stream, String>
+where
+    T: SizedSample,
+    f32: FromSample<T>,
+    E: FnMut(cpal::StreamError) + Send + 'static,
+{
+    device
+        .build_input_stream(
+            stream_config,
+            move |data: &[T], _: &cpal::InputCallbackInfo| {
+                let mut sum_squares = 0.0f32;
+                let mut sample_count = 0usize;
+                let mut producer_guard = producer.try_lock();
+
+                for_each_mono_sample(data, channels, |sample| {
+                    sum_squares += sample * sample;
+                    sample_count += 1;
+
+                    if let Some(guard) = producer_guard.as_mut() {
+                        // バッファが満杯の場合は古いサンプルを捨てる（書き込まない）
+                        let _ = guard.try_push(sample);
+                    }
+                });
+
+                let rms = calculate_rms_from_sum(sum_squares, sample_count);
+                level.store(rms.to_bits(), Ordering::Relaxed);
+            },
+            err_fn,
+            None, // タイムアウトなし
+        )
+        .map_err(|e| e.to_string())
+}
+
+fn for_each_mono_sample<T, F>(data: &[T], channels: usize, mut on_sample: F)
+where
+    T: Copy,
+    f32: FromSample<T>,
+    F: FnMut(f32),
+{
+    if channels == 0 {
+        return;
+    }
+
+    for frame in data.chunks(channels) {
+        let mono = frame
+            .iter()
+            .copied()
+            .map(normalize_sample_to_f32)
+            .sum::<f32>()
+            / frame.len() as f32;
+        on_sample(mono);
+    }
+}
+
+fn normalize_sample_to_f32<T>(sample: T) -> f32
+where
+    f32: FromSample<T>,
+{
+    f32::from_sample(sample)
+}
+
+fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32 {
+    if sample_count == 0 {
+        return 0.0;
+    }
+
+    let rms = (sum_squares / sample_count as f32).sqrt();
+    if rms.is_nan() {
+        return 0.0;
+    }
+    rms.clamp(0.0, 1.0)
+}
+
 impl AudioCapture for CpalMicCapture {
     fn start(&mut self, app_handle: tauri::AppHandle) -> Result<(), String> {
         // 既にキャプチャ中なら停止してから再開する
@@ -109,6 +306,7 @@ impl AudioCapture for CpalMicCapture {
             .default_input_config()
             .map_err(|e| format!("デフォルト入力設定の取得に失敗しました: {e}"))?;
 
+        let sample_format = config.sample_format();
         let channels = config.channels() as usize;
         let device_sample_rate = config.sample_rate();
         self.sample_rate = Some(device_sample_rate);
@@ -135,35 +333,17 @@ impl AudioCapture for CpalMicCapture {
             eprintln!("オーディオストリームエラー: {err}");
         };
 
-        // f32 フォーマットでストリームを構築
         let stream_config: cpal::StreamConfig = config.into();
-        let stream = device
-            .build_input_stream(
-                &stream_config,
-                move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                    // モノラルに変換（RMS計算とリングバッファ書き込みの両方で使用）
-                    let mono_samples: Vec<f32> = data
-                        .chunks(channels)
-                        .map(|chunk| chunk.iter().sum::<f32>() / channels as f32)
-                        .collect();
-
-                    let rms = calculate_rms(&mono_samples);
-                    level_for_callback.store(rms.to_bits(), Ordering::Relaxed);
-
-                    // モノラルサンプルをリングバッファに書き込む
-                    // parking_lot::Mutex::try_lock はリアルタイムスレッドで
-                    // ブロックを回避するために使用
-                    if let Some(mut guard) = producer_for_callback.try_lock() {
-                        for &sample in &mono_samples {
-                            // バッファが満杯の場合は古いサンプルを捨てる（書き込まない）
-                            let _ = guard.try_push(sample);
-                        }
-                    }
-                },
-                err_fn,
-                None, // タイムアウトなし
-            )
-            .map_err(|e| format!("入力ストリームの構築に失敗しました: {e}"))?;
+        let stream = build_mic_input_stream_for_format(
+            sample_format,
+            &device,
+            &stream_config,
+            channels,
+            level_for_callback,
+            producer_for_callback,
+            err_fn,
+        )
+        .map_err(|e| format!("入力ストリームの構築に失敗しました: {e}"))?;
 
         stream
             .play()
@@ -178,7 +358,10 @@ impl AudioCapture for CpalMicCapture {
             while running_for_emitter.load(Ordering::SeqCst) {
                 let bits = level_for_emitter.load(Ordering::Relaxed);
                 let level_value = f32::from_bits(bits);
-                let _ = app_handle.emit("audio-level", json!({ "level": level_value, "source": "microphone" }));
+                let _ = app_handle.emit(
+                    "audio-level",
+                    json!({ "level": level_value, "source": "microphone" }),
+                );
                 std::thread::sleep(Duration::from_millis(100));
             }
         });
@@ -340,15 +523,8 @@ pub fn start_recording(
 
 /// PCMサンプルからRMSレベルを計算 (0.0〜1.0)
 pub fn calculate_rms(samples: &[f32]) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
     let sum: f32 = samples.iter().map(|s| s * s).sum();
-    let rms = (sum / samples.len() as f32).sqrt();
-    if rms.is_nan() {
-        return 0.0;
-    }
-    rms.clamp(0.0, 1.0)
+    calculate_rms_from_sum(sum, samples.len())
 }
 
 /// 録音を停止する
@@ -367,6 +543,13 @@ pub fn stop_recording(state: tauri::State<'_, AudioStateHandle>) -> Result<(), S
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_close(actual: f32, expected: f32, epsilon: f32) {
+        assert!(
+            (actual - expected).abs() <= epsilon,
+            "actual={actual}, expected={expected}, epsilon={epsilon}"
+        );
+    }
 
     #[test]
     fn test_rms_silence() {
@@ -426,6 +609,58 @@ mod tests {
         let result = calculate_rms(&samples);
         assert!(!result.is_infinite(), "RMS should not be Infinity");
         assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn test_normalize_sample_to_f32_for_i16() {
+        assert_close(normalize_sample_to_f32(0i16), 0.0, f32::EPSILON);
+        assert_close(normalize_sample_to_f32(i16::MIN), -1.0, f32::EPSILON);
+        assert!(normalize_sample_to_f32(i16::MAX) > 0.999);
+    }
+
+    #[test]
+    fn test_normalize_sample_to_f32_for_u16() {
+        assert_close(normalize_sample_to_f32(32768u16), 0.0, f32::EPSILON);
+        assert_close(normalize_sample_to_f32(u16::MIN), -1.0, f32::EPSILON);
+        assert!(normalize_sample_to_f32(u16::MAX) > 0.999);
+    }
+
+    #[test]
+    fn test_for_each_mono_sample_keeps_f32_mono() {
+        let mut mono = Vec::new();
+        for_each_mono_sample(&[0.25f32, -0.75], 1, |sample| mono.push(sample));
+        assert_eq!(mono, vec![0.25, -0.75]);
+    }
+
+    #[test]
+    fn test_for_each_mono_sample_averages_i16_stereo() {
+        let mut mono = Vec::new();
+        for_each_mono_sample(&[i16::MAX, i16::MAX, i16::MIN, i16::MIN], 2, |sample| {
+            mono.push(sample)
+        });
+
+        assert_eq!(mono.len(), 2);
+        assert!(mono[0] > 0.999);
+        assert_close(mono[1], -1.0, f32::EPSILON);
+    }
+
+    #[test]
+    fn test_for_each_mono_sample_averages_u16_stereo_around_equilibrium() {
+        let mut mono = Vec::new();
+        for_each_mono_sample(&[u16::MIN, u16::MAX, 32768u16, 32768u16], 2, |sample| {
+            mono.push(sample)
+        });
+
+        assert_eq!(mono.len(), 2);
+        assert_close(mono[0], 0.0, 0.0001);
+        assert_close(mono[1], 0.0, f32::EPSILON);
+    }
+
+    #[test]
+    fn test_for_each_mono_sample_ignores_zero_channels() {
+        let mut mono = Vec::new();
+        for_each_mono_sample(&[1.0f32, -1.0], 0, |sample| mono.push(sample));
+        assert!(mono.is_empty());
     }
 
     #[test]
