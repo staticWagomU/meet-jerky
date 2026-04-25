@@ -56,7 +56,9 @@ public final class SpeechBridge: @unchecked Sendable {
         self.transcriber = SpeechTranscriber(
             locale: locale,
             transcriptionOptions: [],
-            reportingOptions: [.volatileResults, .frequentFinalization],
+            // `.frequentFinalization` は手元の macOS 26 SDK には存在しない。
+            // 低遅延の暫定策として volatile results を有効にし、SDK 互換性を優先する。
+            reportingOptions: [.volatileResults],
             attributeOptions: [.audioTimeRange]
         )
 
