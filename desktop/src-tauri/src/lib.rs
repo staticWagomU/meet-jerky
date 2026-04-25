@@ -2,6 +2,8 @@ mod apple_speech;
 mod audio;
 mod datetime_fmt;
 mod markdown;
+mod openai_realtime;
+mod secret_store;
 mod session;
 mod session_commands;
 mod session_manager;
@@ -112,6 +114,9 @@ pub fn run() {
             settings::select_output_directory,
             settings::check_microphone_permission,
             settings::check_screen_recording_permission,
+            secret_store::set_openai_api_key,
+            secret_store::clear_openai_api_key,
+            secret_store::has_openai_api_key,
             session_commands::start_session,
             session_commands::finalize_and_save_session,
             session_commands::list_session_summaries_cmd,
