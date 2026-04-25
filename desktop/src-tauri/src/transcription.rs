@@ -544,10 +544,12 @@ impl TranscriptionManager {
                 self.engine = Some(Arc::new(engine));
             }
             TranscriptionEngineType::OpenAIRealtime => {
-                return Err(
-                    "OpenAI Realtime API はまだ実装されていません。次のリリースで対応します。"
-                        .to_string(),
+                // モデル名は今のところ固定値 (将来的には設定で切り替え可能にする)。
+                // gpt-4o-mini-transcribe は安価でレイテンシが低い。
+                let engine = crate::openai_realtime::OpenAIRealtimeEngine::new(
+                    "gpt-4o-mini-transcribe",
                 );
+                self.engine = Some(Arc::new(engine));
             }
         }
 
@@ -1310,17 +1312,16 @@ mod tests {
     }
 
     #[test]
-    fn test_ensure_engine_openai_returns_not_implemented() {
-        // OpenAI Realtime はまだ未実装。明確なエラー文言を返すこと。
+    fn test_ensure_engine_openai_loads_engine_without_api_key_check() {
+        // OpenAI エンジンは start_stream 時に Keychain から API キーを取得するので、
+        // ensure_engine 自体は成功する。実 WebSocket 接続は start_stream まで遅延する。
         let mut manager = TranscriptionManager::new();
-        let err = manager
+        manager
             .ensure_engine(
                 &crate::settings::TranscriptionEngineType::OpenAIRealtime,
                 "small",
             )
-            .unwrap_err();
-        assert!(err.contains("OpenAI Realtime"));
-        // エンジンは未ロードのまま
-        assert!(!manager.is_engine_loaded());
+            .expect("OpenAI エンジンの ensure_engine は同期的には成功する");
+        assert!(manager.is_engine_loaded());
     }
 }

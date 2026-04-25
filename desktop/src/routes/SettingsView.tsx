@@ -129,18 +129,29 @@ export function SettingsView() {
             <span>macOS SpeechAnalyzer</span>
             <span className="settings-note">macOS 26+ 専用</span>
           </label>
-          <label className="settings-radio-label settings-radio-disabled">
+          <label className="settings-radio-label">
             <input
               type="radio"
               name="engine"
               value="openAIRealtime"
-              disabled
+              checked={localSettings.transcriptionEngine === "openAIRealtime"}
+              onChange={() =>
+                setLocalSettings({
+                  ...localSettings,
+                  transcriptionEngine: "openAIRealtime" as TranscriptionEngineType,
+                })
+              }
             />
             <span>OpenAI Realtime API</span>
-            <span className="settings-note">次のリリースで対応</span>
+            <span className="settings-note">API キーが必要</span>
           </label>
         </div>
       </div>
+
+      {/* OpenAI API キー */}
+      {localSettings.transcriptionEngine === "openAIRealtime" && (
+        <OpenAIApiKeySection showToast={showToast} />
+      )}
 
       {/* Whisperモデル */}
       <div className="settings-section">
@@ -277,4 +288,78 @@ function PermissionBadge({ status }: { status: string | undefined }) {
     return <span className="settings-permission-badge permission-denied">拒否</span>;
   }
   return <span className="settings-permission-badge permission-undetermined">未確認</span>;
+}
+
+function OpenAIApiKeySection({
+  showToast,
+}: {
+  showToast: (msg: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [keyInput, setKeyInput] = useState("");
+
+  const { data: hasKey } = useQuery<boolean>({
+    queryKey: ["openaiApiKey", "has"],
+    queryFn: () => invoke<boolean>("has_openai_api_key"),
+  });
+
+  const setMutation = useMutation({
+    mutationFn: (apiKey: string) => invoke("set_openai_api_key", { apiKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["openaiApiKey", "has"] });
+      setKeyInput("");
+      showToast("API キーを保存しました");
+    },
+    onError: (e) => showToast(`API キーの保存に失敗しました: ${e}`),
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: () => invoke("clear_openai_api_key"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["openaiApiKey", "has"] });
+      showToast("API キーを削除しました");
+    },
+    onError: (e) => showToast(`API キーの削除に失敗しました: ${e}`),
+  });
+
+  return (
+    <div className="settings-section">
+      <h3 className="settings-section-title">OpenAI API キー</h3>
+      <p className="settings-note">
+        Keychain に安全に保存され、ブラウザ・ログには出力されません。
+      </p>
+      <div className="settings-api-key">
+        <input
+          type="password"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={hasKey ? "登録済み (再入力で上書き)" : "sk-..."}
+          value={keyInput}
+          onChange={(e) => setKeyInput(e.target.value)}
+          className="settings-input"
+        />
+        <div className="settings-api-key-actions">
+          <button
+            type="button"
+            className="control-btn control-btn-transcribe"
+            disabled={!keyInput.trim() || setMutation.isPending}
+            onClick={() => setMutation.mutate(keyInput.trim())}
+          >
+            {setMutation.isPending ? "保存中..." : "保存"}
+          </button>
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            disabled={!hasKey || clearMutation.isPending}
+            onClick={() => clearMutation.mutate()}
+          >
+            削除
+          </button>
+        </div>
+        <div className="settings-api-key-status">
+          状態: {hasKey === undefined ? "確認中..." : hasKey ? "登録済み" : "未登録"}
+        </div>
+      </div>
+    </div>
+  );
 }
