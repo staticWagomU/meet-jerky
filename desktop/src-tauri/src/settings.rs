@@ -10,11 +10,7 @@ where
     D: serde::Deserializer<'de>,
 {
     let value = String::deserialize(deserializer)?;
-    match value.as_str() {
-        "local" => Ok(TranscriptionEngineType::Local),
-        "cloud" => Ok(TranscriptionEngineType::Cloud),
-        _ => Ok(TranscriptionEngineType::Local),
-    }
+    Ok(TranscriptionEngineType::from_legacy_str(&value))
 }
 
 // ─────────────────────────────────────────────
@@ -22,11 +18,33 @@ where
 // ─────────────────────────────────────────────
 
 /// 文字起こしエンジンの種類
+///
+/// 旧設定ファイルの値とのマッピング:
+/// - `"local"` → `Whisper` (ローカル Whisper モデル)
+/// - `"cloud"` → `OpenAIRealtime` (旧 "cloud" 一括が新 "openAIRealtime" に対応)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum TranscriptionEngineType {
-    Local,
-    Cloud,
+    /// ローカル Whisper モデル (whisper-rs / GGML)
+    Whisper,
+    /// macOS 内蔵 SpeechAnalyzer (実装は次 PR)
+    AppleSpeech,
+    /// OpenAI Realtime API (実装は次 PR)
+    OpenAIRealtime,
+}
+
+impl TranscriptionEngineType {
+    /// 過去の設定ファイル値を含めて、文字列から enum に変換する。
+    /// 未知の値は `Whisper` にフォールバックする。
+    pub fn from_legacy_str(value: &str) -> Self {
+        match value {
+            // 旧名 → 新名のマイグレーション
+            "local" | "whisper" => Self::Whisper,
+            "cloud" | "openAIRealtime" | "openai_realtime" => Self::OpenAIRealtime,
+            "appleSpeech" | "apple_speech" => Self::AppleSpeech,
+            _ => Self::Whisper,
+        }
+    }
 }
 
 /// アプリケーション設定
@@ -53,7 +71,7 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            transcription_engine: TranscriptionEngineType::Local,
+            transcription_engine: TranscriptionEngineType::Whisper,
             whisper_model: "small".to_string(),
             microphone_device_id: None,
             language: "auto".to_string(),
@@ -195,7 +213,10 @@ mod tests {
     #[test]
     fn test_default_settings() {
         let settings = AppSettings::default();
-        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Local);
+        assert_eq!(
+            settings.transcription_engine,
+            TranscriptionEngineType::Whisper
+        );
         assert_eq!(settings.whisper_model, "small");
         assert!(settings.microphone_device_id.is_none());
         assert_eq!(settings.language, "auto");
@@ -233,7 +254,8 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialization_camel_case() {
+    fn test_deserialization_camel_case_with_legacy_value() {
+        // 旧 "cloud" 値は OpenAIRealtime にマイグレーションされる
         let json = r#"{
             "transcriptionEngine": "cloud",
             "whisperModel": "tiny",
@@ -242,7 +264,10 @@ mod tests {
             "outputDirectory": "/tmp/output"
         }"#;
         let settings: AppSettings = serde_json::from_str(json).unwrap();
-        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Cloud);
+        assert_eq!(
+            settings.transcription_engine,
+            TranscriptionEngineType::OpenAIRealtime
+        );
         assert_eq!(settings.whisper_model, "tiny");
         assert_eq!(settings.microphone_device_id, Some("device-1".to_string()));
         assert_eq!(settings.language, "ja");
@@ -262,9 +287,44 @@ mod tests {
             "outputDirectory": null
         }"#;
         let settings: AppSettings = serde_json::from_str(json).unwrap();
-        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Local);
+        // 旧 "local" 値は Whisper にマイグレーションされる
+        assert_eq!(
+            settings.transcription_engine,
+            TranscriptionEngineType::Whisper
+        );
         assert!(settings.microphone_device_id.is_none());
         assert!(settings.output_directory.is_none());
+    }
+
+    #[test]
+    fn test_engine_type_legacy_value_migration() {
+        // 旧設定値 → 新 enum へのマッピングを集約して固定化する
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("local"),
+            TranscriptionEngineType::Whisper
+        );
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("cloud"),
+            TranscriptionEngineType::OpenAIRealtime
+        );
+        // 新名 (camelCase / snake_case 両方) も受理する
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("whisper"),
+            TranscriptionEngineType::Whisper
+        );
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("openAIRealtime"),
+            TranscriptionEngineType::OpenAIRealtime
+        );
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("appleSpeech"),
+            TranscriptionEngineType::AppleSpeech
+        );
+        // 未知の値は Whisper にフォールバック
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("unknown"),
+            TranscriptionEngineType::Whisper
+        );
     }
 
     #[test]
@@ -275,7 +335,7 @@ mod tests {
         let path = tmp_dir.join("settings.json");
 
         let settings = AppSettings {
-            transcription_engine: TranscriptionEngineType::Cloud,
+            transcription_engine: TranscriptionEngineType::OpenAIRealtime,
             whisper_model: "medium".to_string(),
             microphone_device_id: Some("test-device".to_string()),
             language: "ja".to_string(),
@@ -288,7 +348,10 @@ mod tests {
 
         let loaded: AppSettings =
             serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
-        assert_eq!(loaded.transcription_engine, TranscriptionEngineType::Cloud);
+        assert_eq!(
+            loaded.transcription_engine,
+            TranscriptionEngineType::OpenAIRealtime
+        );
         assert_eq!(loaded.whisper_model, "medium");
         assert_eq!(
             loaded.microphone_device_id,
@@ -313,14 +376,18 @@ mod tests {
 
     #[test]
     fn test_engine_type_serialization() {
-        let local = TranscriptionEngineType::Local;
-        let cloud = TranscriptionEngineType::Cloud;
+        // serde の rename_all = "camelCase" によるシリアライズ表現を固定化する。
+        // ファイル形式が安定であることをユーザーへの暗黙の契約として保証する。
+        let whisper = TranscriptionEngineType::Whisper;
+        let apple = TranscriptionEngineType::AppleSpeech;
+        let openai = TranscriptionEngineType::OpenAIRealtime;
 
-        let local_json = serde_json::to_string(&local).unwrap();
-        let cloud_json = serde_json::to_string(&cloud).unwrap();
-
-        assert_eq!(local_json, "\"local\"");
-        assert_eq!(cloud_json, "\"cloud\"");
+        assert_eq!(serde_json::to_string(&whisper).unwrap(), "\"whisper\"");
+        assert_eq!(serde_json::to_string(&apple).unwrap(), "\"appleSpeech\"");
+        assert_eq!(
+            serde_json::to_string(&openai).unwrap(),
+            "\"openAIRealtime\""
+        );
     }
 
     #[test]
@@ -335,16 +402,18 @@ mod tests {
 
     #[test]
     fn test_deserialization_with_missing_fields_uses_defaults() {
-        // JSON with only some fields — simulates older config or manually edited file
+        // JSON with only some fields — simulates older config or manually edited file.
+        // 旧 "cloud" 値はマイグレーションで OpenAIRealtime になる。
         let json = r#"{
             "transcriptionEngine": "cloud",
             "whisperModel": "medium"
         }"#;
         let settings: AppSettings = serde_json::from_str(json).unwrap();
-        // Existing fields should be preserved
-        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Cloud);
+        assert_eq!(
+            settings.transcription_engine,
+            TranscriptionEngineType::OpenAIRealtime
+        );
         assert_eq!(settings.whisper_model, "medium");
-        // Missing fields should use defaults
         assert!(settings.microphone_device_id.is_none());
         assert_eq!(settings.language, "auto");
         assert!(settings.output_directory.is_none());
@@ -364,7 +433,10 @@ mod tests {
             "newFeatureFlag": true
         }"#;
         let settings: AppSettings = serde_json::from_str(json).unwrap();
-        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Local);
+        assert_eq!(
+            settings.transcription_engine,
+            TranscriptionEngineType::Whisper
+        );
         assert_eq!(settings.whisper_model, "small");
         assert_eq!(settings.language, "auto");
     }
@@ -393,7 +465,10 @@ mod tests {
 
         // The custom deserializer means serde_json::from_str succeeds,
         // so valid fields are preserved correctly.
-        assert_eq!(settings.transcription_engine, TranscriptionEngineType::Local);
+        assert_eq!(
+            settings.transcription_engine,
+            TranscriptionEngineType::Whisper
+        );
         assert_eq!(settings.whisper_model, "medium");
         assert_eq!(settings.language, "ja");
     }
