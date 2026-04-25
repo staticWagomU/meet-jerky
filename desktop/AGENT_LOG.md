@@ -109,3 +109,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` は既存の未整形ファイル全体にも差分を出したため、今回触った `build.rs` と `settings.rs` のみ `rustfmt` で整形して再確認した。
 - 次アクション: 差分をレビューし、問題なければ日本語 Conventional Commits 形式で main にコミットする。
+
+### Fix: remove legacy cloud settings UI
+
+- 開始日時: 2026-04-25 23:30 JST
+- 担当セッション: main
+- 役割: 実装担当
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/types/index.ts`
+- 指示内容: Rust 側では旧 `"cloud"` 設定値が `OpenAIRealtime` にマイグレーションされるため、UI に残っている旧クラウド/OpenAI Whisper API 選択肢と平文 API キー欄を削除し、課金API利用の透明性を高める。
+- 結果: 設定画面から旧 `cloud` 選択肢と平文 API キー入力欄を削除。TypeScript の `TranscriptionEngineType` からも `"cloud"` を外し、OpenAI 利用時は Keychain 保存の `openAIRealtime` 導線に統一した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/types/index.ts`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` は 111 passed。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 差分をレビューし、問題なければ日本語 Conventional Commits 形式で main にコミットする。

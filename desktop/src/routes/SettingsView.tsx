@@ -133,21 +133,6 @@ export function SettingsView() {
             <input
               type="radio"
               name="engine"
-              value="cloud"
-              checked={localSettings.transcriptionEngine === "cloud"}
-              onChange={() =>
-                setLocalSettings({
-                  ...localSettings,
-                  transcriptionEngine: "cloud" as TranscriptionEngineType,
-                })
-              }
-            />
-            <span>クラウド (OpenAI Whisper API)</span>
-          </label>
-          <label className="settings-radio-label">
-            <input
-              type="radio"
-              name="engine"
               value="openAIRealtime"
               checked={localSettings.transcriptionEngine === "openAIRealtime"}
               onChange={() =>
@@ -167,37 +152,6 @@ export function SettingsView() {
       {localSettings.transcriptionEngine === "openAIRealtime" && (
         <OpenAIApiKeySection showToast={showToast} />
       )}
-
-      {/* API キー（クラウドエンジン選択時のみ） */}
-      {localSettings.transcriptionEngine === "cloud" && (
-        <div className="settings-section">
-          <h3 className="settings-section-title">OpenAI API キー</h3>
-          {/* TODO: 将来的に reveal トグル（目アイコン）を追加し、Keychain 連携で平文保存を廃止する */}
-          <input
-            type="password"
-            value={localSettings.apiKey ?? ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalSettings({
-                ...localSettings,
-                apiKey: value === "" ? undefined : value,
-              });
-            }}
-            className="settings-select"
-            placeholder="sk-..."
-            autoComplete="off"
-          />
-          <span className="settings-note">
-            OpenAI Whisper API 用。現在は平文保存（Keychain 対応予定）
-          </span>
-          {(!localSettings.apiKey || localSettings.apiKey.trim() === "") && (
-            <span className="settings-warning">
-              ⚠ API キーが未設定です。クラウド文字起こしには OpenAI API キーが必要です。
-            </span>
-          )}
-        </div>
-      )}
-
 
       {/* Whisperモデル */}
       <div className="settings-section">
