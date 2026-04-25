@@ -179,3 +179,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml` を再実行し、片方の stream 初期化失敗時に consumer が消費されないことを実機またはモック可能な構成で確認する。
+
+### Worker task: manual toggle error visibility
+
+- 開始日時: 2026-04-26 00:09 JST
+- 担当セッション: `mj-worker-manual-error-ui-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: 手動の「マイク録音」「システム音声」「文字起こし」トグル失敗が console.error のみで画面表示されない問題を修正し、既存の `meetingError` 表示へ `toErrorMessage` 由来の失敗理由を出す。成功時はその操作に関係する古いエラーのみ消し、会議開始/停止ロールバック処理や保存先表示を壊さない。新規依存追加なし。コミット禁止。
+- 結果: 手動トグル3種の catch で操作別の `meetingError` を設定するよう変更。成功時は操作別エラー接頭辞に一致する既存 `meetingError` だけを消すヘルパーを追加し、保存失敗など別文脈のエラーや `lastSavedPath` は不必要に変更しないようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` は素の PATH では `npm` が見つからず失敗。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。

@@ -25,6 +25,21 @@ function toErrorMessage(e: unknown): string {
   return String(e);
 }
 
+const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
+const SYSTEM_AUDIO_ERROR_PREFIX = "システム音声操作に失敗しました:";
+const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
+
+function formatOperationError(prefix: string, e: unknown): string {
+  return `${prefix} ${toErrorMessage(e)}`;
+}
+
+function clearRelatedMeetingError(
+  currentError: string | null,
+  prefix: string,
+): string | null {
+  return currentError?.startsWith(prefix) ? null : currentError;
+}
+
 /** 経過時間をフォーマットする */
 function formatElapsedTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -264,8 +279,13 @@ export function TranscriptView() {
         }
         setIsMicRecording(true);
       }
+      setMeetingError((currentError) =>
+        clearRelatedMeetingError(currentError, MIC_RECORDING_ERROR_PREFIX),
+      );
     } catch (e) {
+      const msg = formatOperationError(MIC_RECORDING_ERROR_PREFIX, e);
       console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
+      setMeetingError(msg);
     }
   }, [isMicRecording, isSystemAudioRecording, isTranscribing, selectedDeviceId]);
 
@@ -284,8 +304,13 @@ export function TranscriptView() {
         await invoke("start_system_audio");
         setIsSystemAudioRecording(true);
       }
+      setMeetingError((currentError) =>
+        clearRelatedMeetingError(currentError, SYSTEM_AUDIO_ERROR_PREFIX),
+      );
     } catch (e) {
+      const msg = formatOperationError(SYSTEM_AUDIO_ERROR_PREFIX, e);
       console.error("システム音声操作に失敗しました:", toErrorMessage(e));
+      setMeetingError(msg);
     }
   }, [isSystemAudioRecording, isMicRecording, isTranscribing]);
 
@@ -298,8 +323,13 @@ export function TranscriptView() {
         await invoke("start_transcription", { modelName: selectedModel });
         setIsTranscribing(true);
       }
+      setMeetingError((currentError) =>
+        clearRelatedMeetingError(currentError, TRANSCRIPTION_ERROR_PREFIX),
+      );
     } catch (e) {
+      const msg = formatOperationError(TRANSCRIPTION_ERROR_PREFIX, e);
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
+      setMeetingError(msg);
     }
   }, [isTranscribing, selectedModel]);
 
