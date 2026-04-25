@@ -1,12 +1,12 @@
-//! Zoom / Microsoft Teams 等の会議アプリ起動を検知して、ユーザーに
+//! Zoom / Microsoft Teams 等の会議アプリ起動・起動済み状態を検知して、ユーザーに
 //! 「記録を開始しますか?」の通知 + フロントエンドへのイベント通知を行う。
 //!
 //! macOS 限定。`swift/AppDetectionBridge.swift` 経由で `NSWorkspace` を
 //! 監視する。
 //!
 //! 通知のフロー:
-//! 1. アプリ起動時に `start()` を呼ぶ → Swift 側 `NSWorkspace` Observer 登録
-//! 2. 対象アプリが起動 → Swift コールバックが Rust に上がる
+//! 1. アプリ起動時に `start()` を呼ぶ → Swift 側 `NSWorkspace` Observer 登録 + 初回スキャン
+//! 2. 対象アプリが起動中、または起動する → Swift コールバックが Rust に上がる
 //! 3. Rust 側で:
 //!    - スロットリング (同一 bundle は 60 秒以内に再通知しない)
 //!    - macOS 通知センターに通知を出す
@@ -116,13 +116,7 @@ fn show_notification(app: &AppHandle, app_name: &str) {
     let title = "Meet Jerky";
     let body = format!("{app_name} を検出しました。クリックで記録を開始します。");
 
-    if let Err(e) = app
-        .notification()
-        .builder()
-        .title(title)
-        .body(&body)
-        .show()
-    {
+    if let Err(e) = app.notification().builder().title(title).body(&body).show() {
         eprintln!("[app_detection] notification show failed: {e}");
     }
 }
@@ -137,11 +131,8 @@ mod macos {
 
     use super::{handle_detection, WATCHED_BUNDLE_IDS};
 
-    type DetectionCallback = extern "C" fn(
-        bundle_id: *const c_char,
-        app_name: *const c_char,
-        user_data: *mut c_void,
-    );
+    type DetectionCallback =
+        extern "C" fn(bundle_id: *const c_char, app_name: *const c_char, user_data: *mut c_void);
 
     extern "C" {
         fn meet_jerky_app_detection_start(
@@ -164,8 +155,12 @@ mod macos {
         }
         // Safety: Swift 側でコールバック呼び出しの間だけ valid な C 文字列。
         // ここでスコープを抜ける前に String にコピーする。
-        let bundle = unsafe { CStr::from_ptr(bundle_id) }.to_string_lossy().into_owned();
-        let name = unsafe { CStr::from_ptr(app_name) }.to_string_lossy().into_owned();
+        let bundle = unsafe { CStr::from_ptr(bundle_id) }
+            .to_string_lossy()
+            .into_owned();
+        let name = unsafe { CStr::from_ptr(app_name) }
+            .to_string_lossy()
+            .into_owned();
 
         // 通知発火・イベント emit は別スレッドで実行する。
         // NSWorkspace コールバックは main thread で呼ばれるので、
@@ -179,8 +174,7 @@ mod macos {
     pub fn start_detection() {
         // 監視対象を JSON 配列にして Swift に渡す
         let bundle_ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _)| *id).collect();
-        let json = serde_json::to_string(&bundle_ids)
-            .expect("static ID array should serialize");
+        let json = serde_json::to_string(&bundle_ids).expect("static ID array should serialize");
         let c_json = match CString::new(json) {
             Ok(s) => s,
             Err(e) => {
@@ -211,7 +205,10 @@ mod tests {
     fn watched_bundle_ids_includes_zoom_and_teams() {
         // 監視対象が抜け落ちないように回帰防止する
         let ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _)| *id).collect();
-        assert!(ids.contains(&"us.zoom.xos"), "Zoom Bundle ID が抜けています");
+        assert!(
+            ids.contains(&"us.zoom.xos"),
+            "Zoom Bundle ID が抜けています"
+        );
         assert!(
             ids.contains(&"com.microsoft.teams2") || ids.contains(&"com.microsoft.teams"),
             "Teams Bundle ID (新旧どちらか) が抜けています"

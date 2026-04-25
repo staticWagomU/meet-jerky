@@ -123,3 +123,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 差分をレビューし、問題なければ日本語 Conventional Commits 形式で main にコミットする。
+
+### Worker task: existing meeting app scan
+
+- 開始日時: 2026-04-25 23:33 JST
+- 担当セッション: `mj-worker-app-detection-20260425-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `src-tauri/src/app_detection.rs`
+- 指示内容: コミット禁止。会議アプリ検知で、アプリ起動後に監視開始した場合でも既に起動中の Zoom / Microsoft Teams を初回スキャンで検知できるようにする。既存のスロットリングとイベント payload の整合性を壊さない。
+- 結果: Swift 側で Observer 登録後に `NSWorkspace.shared.runningApplications` を走査して既起動アプリを既存 callback に流す実装を追加。Rust 側コメントを起動済み検知に合わせて更新。メイン側で `app_detection.rs` に `rustfmt` を適用した。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: 作業担当内では `git diff --check` と `swiftc -parse src-tauri/swift/AppDetectionBridge.swift` が成功。作業担当内の `cargo fmt` は PATH に `cargo` がなく失敗。メイン側で `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs`、`swiftc -parse src-tauri/swift/AppDetectionBridge.swift`、`git diff --check -- desktop/src-tauri/swift/AppDetectionBridge.swift desktop/src-tauri/src/app_detection.rs`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` の再ビルドで `cmake` が見つからず失敗。コード差分起因の失敗ではなく環境ツール不足だが、Rust対象テストはこのループでは完走できていない。
+- 次アクション: 差分をレビューし、検証制約を明記したうえでコミット可否を判断する。

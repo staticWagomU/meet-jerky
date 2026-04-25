@@ -6,7 +6,8 @@
 //   `meet_jerky_app_detection_start` を呼ぶ。
 // - Swift 側は `NSWorkspace.didLaunchApplicationNotification` を購読し、
 //   一致する Bundle ID が起動するたびに Rust の C コールバックを呼ぶ。
-// - 既に起動中のアプリは重複検知を避けるため通知しない (起動イベントのみ)。
+// - 監視開始時点で既に起動中の対象アプリも初回スキャンで同じ
+//   C コールバックに流す。重複通知の抑制は Rust 側のスロットリングに任せる。
 //
 // ライフサイクル:
 // - シングルトン `AppDetector.instance` で Observer の所有権を保持する。
@@ -85,6 +86,14 @@ public final class AppDetector: @unchecked Sendable {
             self.handle(app: app)
         }
         observers.append(didLaunch)
+
+        scanRunningApplications()
+    }
+
+    private func scanRunningApplications() {
+        for app in NSWorkspace.shared.runningApplications {
+            handle(app: app)
+        }
     }
 
     private func handle(app: NSRunningApplication) {
