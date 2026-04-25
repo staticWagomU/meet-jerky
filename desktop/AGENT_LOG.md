@@ -95,3 +95,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 差分をレビューし、問題なければ日本語 Conventional Commits 形式で main にコミットする。
+
+### Fix: native permission checks
+
+- 開始日時: 2026-04-25 23:22 JST
+- 担当セッション: main
+- 役割: 実装担当
+- 作業範囲: `src-tauri/swift/PrivacyBridge.swift`, `src-tauri/src/settings.rs`, `src-tauri/build.rs`
+- 指示内容: 調査担当の最上位候補である権限チェック TODO を、課金や新規依存なしで実装する。
+- 結果: Swift C ABI bridge を追加し、マイクは `AVCaptureDevice.authorizationStatus(for: .audio)`、画面収録は `CGPreflightScreenCaptureAccess()` で現在状態を返すようにした。Rust 側は `"granted"`, `"denied"`, `"undetermined"` に正規化する。画面収録は自動プロンプトを出さず、未許可時は既存 `PermissionBanner` の案内に任せる。
+- 変更ファイル: `src-tauri/swift/PrivacyBridge.swift`, `src-tauri/src/settings.rs`, `src-tauri/build.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/build.rs src-tauri/src/settings.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` は 111 passed。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` は既存の未整形ファイル全体にも差分を出したため、今回触った `build.rs` と `settings.rs` のみ `rustfmt` で整形して再確認した。
+- 次アクション: 差分をレビューし、問題なければ日本語 Conventional Commits 形式で main にコミットする。

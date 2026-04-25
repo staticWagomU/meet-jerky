@@ -190,21 +190,64 @@ pub fn select_output_directory() -> Option<String> {
 // パーミッションチェック
 // ─────────────────────────────────────────────
 
+const PERMISSION_UNDETERMINED: i32 = 0;
+const PERMISSION_DENIED: i32 = 1;
+const PERMISSION_GRANTED: i32 = 2;
+
+fn permission_status_to_string(status: i32) -> String {
+    match status {
+        PERMISSION_UNDETERMINED => "undetermined",
+        PERMISSION_GRANTED => "granted",
+        PERMISSION_DENIED => "denied",
+        _ => "denied",
+    }
+    .to_string()
+}
+
 /// マイクのパーミッション状態を返す ("granted", "denied", "undetermined")
 #[tauri::command]
 pub fn check_microphone_permission() -> String {
-    // TODO: macOS では AVCaptureDevice::authorizationStatus(for: .audio) を使用して
-    //       実際のパーミッション状態をチェックする。objc2 クレートを使うか、
-    //       CoreAudio API を呼び出す実装に置き換える。
-    "granted".to_string()
+    #[cfg(target_os = "macos")]
+    {
+        return permission_status_to_string(macos_permissions::microphone_permission_status());
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        "granted".to_string()
+    }
 }
 
 /// 画面録画のパーミッション状態を返す ("granted", "denied")
 #[tauri::command]
 pub fn check_screen_recording_permission() -> String {
-    // TODO: macOS では CGPreflightScreenCaptureAccess() / CGRequestScreenCaptureAccess() を
-    //       使用して実際のパーミッション状態をチェックする。
-    "granted".to_string()
+    #[cfg(target_os = "macos")]
+    {
+        return permission_status_to_string(macos_permissions::screen_recording_permission_status());
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        "granted".to_string()
+    }
+}
+
+#[cfg(target_os = "macos")]
+mod macos_permissions {
+    extern "C" {
+        fn meet_jerky_microphone_permission_status() -> i32;
+        fn meet_jerky_screen_recording_permission_status() -> i32;
+    }
+
+    pub fn microphone_permission_status() -> i32 {
+        // Safety: Swift bridge exposes a process-local C ABI function with no arguments.
+        unsafe { meet_jerky_microphone_permission_status() }
+    }
+
+    pub fn screen_recording_permission_status() -> i32 {
+        // Safety: Swift bridge exposes a process-local C ABI function with no arguments.
+        unsafe { meet_jerky_screen_recording_permission_status() }
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -245,6 +288,17 @@ mod tests {
     }
 
     #[test]
+    fn test_permission_status_to_string_maps_known_values() {
+        assert_eq!(
+            permission_status_to_string(PERMISSION_UNDETERMINED),
+            "undetermined"
+        );
+        assert_eq!(permission_status_to_string(PERMISSION_DENIED), "denied");
+        assert_eq!(permission_status_to_string(PERMISSION_GRANTED), "granted");
+        assert_eq!(permission_status_to_string(99), "denied");
+    }
+
+    #[test]
     fn test_serialization_camel_case() {
         let settings = AppSettings::default();
         let json = serde_json::to_string(&settings).unwrap();
@@ -276,10 +330,7 @@ mod tests {
         assert_eq!(settings.whisper_model, "tiny");
         assert_eq!(settings.microphone_device_id, Some("device-1".to_string()));
         assert_eq!(settings.language, "ja");
-        assert_eq!(
-            settings.output_directory,
-            Some("/tmp/output".to_string())
-        );
+        assert_eq!(settings.output_directory, Some("/tmp/output".to_string()));
     }
 
     #[test]
@@ -359,10 +410,7 @@ mod tests {
             TranscriptionEngineType::OpenAIRealtime
         );
         assert_eq!(loaded.whisper_model, "medium");
-        assert_eq!(
-            loaded.microphone_device_id,
-            Some("test-device".to_string())
-        );
+        assert_eq!(loaded.microphone_device_id, Some("test-device".to_string()));
         assert_eq!(loaded.language, "ja");
         assert_eq!(loaded.output_directory, Some("/tmp/test".to_string()));
 
@@ -497,10 +545,8 @@ mod tests {
         // The custom deserializer allows serde to succeed even with an invalid
         // engine value — the invalid field falls back to Local while all other
         // valid fields are preserved.
-        let settings: AppSettings = serde_json::from_str(json)
-            .unwrap_or_else(|_| {
-                AppSettings::default()
-            });
+        let settings: AppSettings =
+            serde_json::from_str(json).unwrap_or_else(|_| AppSettings::default());
 
         // The custom deserializer means serde_json::from_str succeeds,
         // so valid fields are preserved correctly.

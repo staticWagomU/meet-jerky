@@ -65,7 +65,9 @@ fn build_swift_bridges() {
         cmd.arg(src);
     }
 
-    let status = cmd.status().expect("failed to spawn swiftc — is Xcode installed?");
+    let status = cmd
+        .status()
+        .expect("failed to spawn swiftc — is Xcode installed?");
     if !status.success() {
         panic!("swiftc failed with status {status}");
     }
@@ -78,6 +80,7 @@ fn build_swift_bridges() {
     println!("cargo:rustc-link-lib=framework=Speech");
     println!("cargo:rustc-link-lib=framework=AVFoundation");
     println!("cargo:rustc-link-lib=framework=CoreMedia");
+    println!("cargo:rustc-link-lib=framework=CoreGraphics");
     println!("cargo:rustc-link-lib=framework=Foundation");
     println!("cargo:rustc-link-lib=framework=AppKit");
 
