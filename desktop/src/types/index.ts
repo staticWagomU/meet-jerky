@@ -49,3 +49,10 @@ export interface AppSettings {
   language: string;
   outputDirectory: string | null;
 }
+
+/// `meeting-app-detected` Tauri イベントの payload。
+/// Zoom / Teams 等が起動したときに Rust 側から発火する。
+export interface MeetingAppDetectedPayload {
+  bundleId: string;
+  appName: string;
+}

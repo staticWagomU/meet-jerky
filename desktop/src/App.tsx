@@ -1,9 +1,11 @@
 import { Link, Outlet } from "@tanstack/react-router";
+import { MeetingDetectedBanner } from "./components/MeetingDetectedBanner";
 import "./App.css";
 
 function App() {
   return (
     <main className="container">
+      <MeetingDetectedBanner />
       <nav className="nav">
         <Link to="/" className="nav-link">
           文字起こし

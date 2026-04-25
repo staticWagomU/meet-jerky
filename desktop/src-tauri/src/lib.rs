@@ -1,3 +1,4 @@
+mod app_detection;
 mod apple_speech;
 mod audio;
 mod datetime_fmt;
@@ -93,6 +94,7 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(audio::AudioStateHandle::new())
         .manage(transcription::TranscriptionStateHandle::new())
         .manage(settings::SettingsStateHandle::new())
@@ -123,6 +125,8 @@ pub fn run() {
         ])
         .setup(|app| {
             setup_tray(app)?;
+            // 会議アプリの起動検知を開始する。macOS 以外では noop。
+            app_detection::start(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
