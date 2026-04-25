@@ -151,3 +151,31 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` および `/opt/homebrew/bin/cmake`/`/usr/local/bin/cmake` の確認でも見つからなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml` を再実行し、実機または仮想入力で i16/u16 既定マイクの start_recording を確認する。
+
+### Worker task: transcription stream start synchronization
+
+- 開始日時: 2026-04-25 23:58 JST
+- 担当セッション: `mj-worker-transcription-start-20260425-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `start_transcription` 成功後に worker 内の `TranscriptionEngine::start_stream` が失敗して UI/会議状態が成功扱いになる不整合を修正する。stream 初期化失敗は invoke の `Err` として同期的に返し、feed/finalize など実行中エラーの `transcription-error` event は維持する。新規依存追加なし。コミット禁止。
+- 結果: `start_transcription` 側で consumer 取得後、worker spawn 前に source ごとの `start_stream` を実行するよう変更。成功した `Box<dyn TranscriptionStream>` を `TranscriptionLoopConfig` に入れて worker thread へ move する構造にした。マイク/システム音声それぞれの stream 初期化失敗は source 名付きの `Err` で返し、worker 内の start_stream 失敗イベント経路は削除した。`running` flag は worker 候補が1つ以上用意できてから true にするよう変更し、speaker ラベル、session append、`stream_started_at_secs` の共有基準は維持した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` および `/opt/homebrew/bin/cmake`/`/usr/local/bin/cmake` の確認でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml` を再実行し、OpenAI Realtime や Apple Speech など start_stream で外部初期化するエンジンの失敗時に会議開始ロールバックが走ることを実機で確認する。
+
+### Worker task: transcription consumer preservation on stream init failure
+
+- 開始日時: 2026-04-26 00:02 JST
+- 担当セッション: `mj-worker-transcription-start-fix-20260425-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`（この追加修正のログ追記のみ）
+- 指示内容: `start_transcription` 内で同期的に `start_stream` する方針を維持しつつ、全対象 source の stream 初期化が成功する前に `take_consumer()` しない構造へ調整する。`source=both` で片方の sample_rate/consumer がない場合も利用可能な source があれば開始できる挙動を維持する。新規依存追加なし。コミット禁止。
+- 結果: sample_rate がある source について先に `TranscriptionStream` を `PendingTranscriptionStream` として作成し、全 stream 初期化成功後に consumer を取得して worker config を組み立てる二段階構造に変更した。stream 初期化失敗時は consumer 未取得のまま `Err` を返す。consumer が取得できない source は既存挙動どおり開始対象から外し、speaker ラベル、session append、running flag、`transcription-error` event の方針は維持した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml` を再実行し、片方の stream 初期化失敗時に consumer が消費されないことを実機またはモック可能な構成で確認する。

@@ -501,9 +501,7 @@ impl TranscriptionManager {
     pub fn load_model(&mut self, model_name: &str) -> Result<(), String> {
         let model_path = self.model_manager.get_model_path(model_name);
         if !model_path.exists() {
-            return Err(format!(
-                "モデルがダウンロードされていません: {model_name}"
-            ));
+            return Err(format!("モデルがダウンロードされていません: {model_name}"));
         }
 
         let path_str = model_path
@@ -546,9 +544,8 @@ impl TranscriptionManager {
             TranscriptionEngineType::OpenAIRealtime => {
                 // モデル名は今のところ固定値 (将来的には設定で切り替え可能にする)。
                 // gpt-4o-mini-transcribe は安価でレイテンシが低い。
-                let engine = crate::openai_realtime::OpenAIRealtimeEngine::new(
-                    "gpt-4o-mini-transcribe",
-                );
+                let engine =
+                    crate::openai_realtime::OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
                 self.engine = Some(Arc::new(engine));
             }
         }
@@ -612,10 +609,7 @@ pub fn is_model_downloaded(model_name: String) -> bool {
 /// 失敗時は Result で Err を返すことに加え、`model-download-error` を emit する。
 /// 既存の `invoke` catch 経路に加えて listen 側でも統一的にハンドリングできるようにする。
 #[tauri::command]
-pub async fn download_model(
-    model_name: String,
-    app: tauri::AppHandle,
-) -> Result<String, String> {
+pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result<String, String> {
     let model_name_for_progress = model_name.clone();
     let app_for_progress = app.clone();
 
@@ -700,14 +694,13 @@ pub fn start_transcription(
     );
 
     let running = manager.running_flag();
-    running.store(true, Ordering::SeqCst);
 
     let source_str = source.as_deref().unwrap_or("both");
 
     let use_mic = source_str == "microphone" || source_str == "both";
     let use_system = source_str == "system_audio" || source_str == "both";
 
-    let mut spawned_any = false;
+    let mut pending_streams = Vec::new();
 
     // live loop に渡す SessionManager の Arc と、ストリーム基準時刻 (now)。
     // stream_started_at_secs はマイク/システム両 worker で共通の基準として用い、
@@ -722,66 +715,74 @@ pub fn start_transcription(
     // マイク用の文字起こしスレッド
     if use_mic {
         if let Some(mic_sample_rate) = audio_state.get_sample_rate() {
-            if let Some(mic_consumer) = audio_state.take_consumer() {
-                let engine_clone = Arc::clone(&engine);
-                let running_clone = Arc::clone(&running);
-                let app_clone = app.clone();
-                let sm_clone = Arc::clone(&session_manager_arc);
-                let stream_config = StreamConfig {
-                    sample_rate: mic_sample_rate,
-                    speaker: Some("自分".to_string()),
-                    language: None,
-                };
+            let stream_config = StreamConfig {
+                sample_rate: mic_sample_rate,
+                speaker: Some("自分".to_string()),
+                language: None,
+            };
+            let stream = Arc::clone(&engine)
+                .start_stream(stream_config)
+                .map_err(|e| {
+                    format!("マイク音声の文字起こしストリーム初期化に失敗しました: {e}")
+                })?;
 
-                std::thread::spawn(move || {
-                    run_transcription_loop(TranscriptionLoopConfig {
-                        consumer: mic_consumer,
-                        engine: engine_clone,
-                        stream_config,
-                        running: running_clone,
-                        app: app_clone,
-                        session_manager: sm_clone,
-                        stream_started_at_secs,
-                    });
-                });
-                spawned_any = true;
-            }
+            pending_streams.push(PendingTranscriptionStream {
+                source: TranscriptionSource::Microphone,
+                stream,
+            });
         }
     }
 
     // システム音声用の文字起こしスレッド
     if use_system {
         if let Some(sys_sample_rate) = audio_state.get_system_audio_sample_rate() {
-            if let Some(sys_consumer) = audio_state.take_system_audio_consumer() {
-                let engine_clone = Arc::clone(&engine);
-                let running_clone = Arc::clone(&running);
-                let app_clone = app.clone();
-                let sm_clone = Arc::clone(&session_manager_arc);
-                let stream_config = StreamConfig {
-                    sample_rate: sys_sample_rate,
-                    speaker: Some("相手".to_string()),
-                    language: None,
-                };
+            let stream_config = StreamConfig {
+                sample_rate: sys_sample_rate,
+                speaker: Some("相手".to_string()),
+                language: None,
+            };
+            let stream = Arc::clone(&engine)
+                .start_stream(stream_config)
+                .map_err(|e| {
+                    format!("システム音声の文字起こしストリーム初期化に失敗しました: {e}")
+                })?;
 
-                std::thread::spawn(move || {
-                    run_transcription_loop(TranscriptionLoopConfig {
-                        consumer: sys_consumer,
-                        engine: engine_clone,
-                        stream_config,
-                        running: running_clone,
-                        app: app_clone,
-                        session_manager: sm_clone,
-                        stream_started_at_secs,
-                    });
-                });
-                spawned_any = true;
-            }
+            pending_streams.push(PendingTranscriptionStream {
+                source: TranscriptionSource::SystemAudio,
+                stream,
+            });
         }
     }
 
-    if !spawned_any {
-        running.store(false, Ordering::SeqCst);
+    let mut workers = Vec::new();
+    for pending in pending_streams {
+        let consumer = match pending.source {
+            TranscriptionSource::Microphone => audio_state.take_consumer(),
+            TranscriptionSource::SystemAudio => audio_state.take_system_audio_consumer(),
+        };
+
+        if let Some(consumer) = consumer {
+            workers.push(TranscriptionLoopConfig {
+                consumer,
+                stream: pending.stream,
+                running: Arc::clone(&running),
+                app: app.clone(),
+                session_manager: Arc::clone(&session_manager_arc),
+                stream_started_at_secs,
+            });
+        }
+    }
+
+    if workers.is_empty() {
         return Err("音声ソースが利用可能ではありません。録音を先に開始してください。".to_string());
+    }
+
+    running.store(true, Ordering::SeqCst);
+
+    for worker in workers {
+        std::thread::spawn(move || {
+            run_transcription_loop(worker);
+        });
     }
 
     Ok(())
@@ -789,9 +790,7 @@ pub fn start_transcription(
 
 /// 文字起こしを停止する
 #[tauri::command]
-pub fn stop_transcription(
-    state: tauri::State<'_, TranscriptionStateHandle>,
-) -> Result<(), String> {
+pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> Result<(), String> {
     let mut manager = state.0.lock();
     if !manager.is_running() {
         return Err("文字起こしは実行されていません".to_string());
@@ -902,10 +901,19 @@ const CHUNK_DURATION_SECS: f64 = 5.0;
 /// 16kHz での5秒分のサンプル数
 const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
 
+enum TranscriptionSource {
+    Microphone,
+    SystemAudio,
+}
+
+struct PendingTranscriptionStream {
+    source: TranscriptionSource,
+    stream: Box<dyn TranscriptionStream>,
+}
+
 struct TranscriptionLoopConfig {
     consumer: ringbuf::HeapCons<f32>,
-    engine: Arc<dyn TranscriptionEngine>,
-    stream_config: StreamConfig,
+    stream: Box<dyn TranscriptionStream>,
     running: Arc<AtomicBool>,
     app: tauri::AppHandle,
     session_manager: Arc<crate::session_manager::SessionManager>,
@@ -915,25 +923,12 @@ struct TranscriptionLoopConfig {
 fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
     let TranscriptionLoopConfig {
         mut consumer,
-        engine,
-        stream_config,
+        mut stream,
         running,
         app,
         session_manager,
         stream_started_at_secs,
     } = cfg;
-
-    let mut stream = match Arc::clone(&engine).start_stream(stream_config) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("文字起こしストリームの初期化に失敗しました: {e}");
-            let _ = app.emit(
-                "transcription-error",
-                serde_json::json!({ "error": e }),
-            );
-            return;
-        }
-    };
 
     let mut read_buffer: Vec<f32> = vec![0.0; 4096];
 
@@ -956,10 +951,7 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
 
         if let Err(e) = stream.feed(samples) {
             eprintln!("文字起こしエラー: {e}");
-            let _ = app.emit(
-                "transcription-error",
-                serde_json::json!({ "error": e }),
-            );
+            let _ = app.emit("transcription-error", serde_json::json!({ "error": e }));
         }
 
         emit_segments(
@@ -979,10 +971,7 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
         }
         Err(e) => {
             eprintln!("文字起こしの finalize に失敗しました: {e}");
-            let _ = app.emit(
-                "transcription-error",
-                serde_json::json!({ "error": e }),
-            );
+            let _ = app.emit("transcription-error", serde_json::json!({ "error": e }));
         }
     }
 }
@@ -1045,8 +1034,7 @@ mod tests {
     fn test_model_not_downloaded_initially() {
         // ダウンロードしていないモデルは false を返すべき
         // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
-        let manager =
-            ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
+        let manager = ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
         assert!(!manager.is_model_downloaded("small"));
     }
 
@@ -1083,7 +1071,10 @@ mod tests {
         assert!(json.contains("startMs"));
         assert!(json.contains("endMs"));
         assert!(!json.contains("start_ms"));
-        assert!(!json.contains("speaker"), "speaker: None should be skipped in JSON");
+        assert!(
+            !json.contains("speaker"),
+            "speaker: None should be skipped in JSON"
+        );
 
         // speaker: Some("自分") の場合、JSONに speaker フィールドが含まれることを確認
         let segment_with_speaker = TranscriptionSegment {
@@ -1093,7 +1084,10 @@ mod tests {
             speaker: Some("自分".to_string()),
         };
         let json_with_speaker = serde_json::to_string(&segment_with_speaker).unwrap();
-        assert!(json_with_speaker.contains("\"speaker\":\"自分\""), "speaker: Some(\"自分\") should appear in JSON");
+        assert!(
+            json_with_speaker.contains("\"speaker\":\"自分\""),
+            "speaker: Some(\"自分\") should appear in JSON"
+        );
     }
 
     // ─────────────────────────────────────────
@@ -1181,8 +1175,7 @@ mod tests {
     impl TranscriptionStream for MockStream {
         fn feed(&mut self, samples: &[f32]) -> Result<(), String> {
             self.feeds_seen.fetch_add(1, Ordering::SeqCst);
-            self.samples_seen
-                .fetch_add(samples.len(), Ordering::SeqCst);
+            self.samples_seen.fetch_add(samples.len(), Ordering::SeqCst);
             self.pending.push(TranscriptionSegment {
                 text: format!("feed-{}", self.feeds_seen.load(Ordering::SeqCst)),
                 start_ms: 0,
