@@ -102,12 +102,12 @@ export function SettingsView() {
             <input
               type="radio"
               name="engine"
-              value="local"
-              checked={localSettings.transcriptionEngine === "local"}
+              value="whisper"
+              checked={localSettings.transcriptionEngine === "whisper"}
               onChange={() =>
                 setLocalSettings({
                   ...localSettings,
-                  transcriptionEngine: "local" as TranscriptionEngineType,
+                  transcriptionEngine: "whisper" as TranscriptionEngineType,
                 })
               }
             />
@@ -117,11 +117,21 @@ export function SettingsView() {
             <input
               type="radio"
               name="engine"
-              value="cloud"
+              value="appleSpeech"
               disabled
             />
-            <span>クラウド</span>
-            <span className="settings-note">Phase 6で対応</span>
+            <span>macOS SpeechAnalyzer</span>
+            <span className="settings-note">次のリリースで対応</span>
+          </label>
+          <label className="settings-radio-label settings-radio-disabled">
+            <input
+              type="radio"
+              name="engine"
+              value="openAIRealtime"
+              disabled
+            />
+            <span>OpenAI Realtime API</span>
+            <span className="settings-note">次のリリースで対応</span>
           </label>
         </div>
       </div>

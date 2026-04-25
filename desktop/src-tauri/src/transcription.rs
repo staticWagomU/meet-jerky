@@ -38,11 +38,50 @@ pub struct ModelInfo {
 }
 
 // ─────────────────────────────────────────────
-// TranscriptionEngine トレイト
+// TranscriptionEngine / TranscriptionStream トレイト
 // ─────────────────────────────────────────────
 
+/// 1 つのストリーミング文字起こしセッションの設定。
+#[derive(Debug, Clone)]
+pub struct StreamConfig {
+    /// 入力音声のサンプルレート。エンジン内部で必要に応じてリサンプルする。
+    pub sample_rate: u32,
+    /// 出力セグメントに付与する話者ラベル ("自分" / "相手" など)。
+    pub speaker: Option<String>,
+    /// 言語ヒント ("ja" / "en" / "auto")。エンジンが解釈する。
+    pub language: Option<String>,
+}
+
+/// マイク / システム音声など、複数の音声ソースに対する文字起こしを行う
+/// エンジンのファクトリ。
+///
+/// `start_stream` は呼び出すたびに独立した `TranscriptionStream` を返し、
+/// 並行して複数のストリームを動かせる必要がある (マイク + システム音声)。
 pub trait TranscriptionEngine: Send + Sync {
-    fn transcribe(&self, audio: &[f32]) -> Result<Vec<TranscriptionSegment>, String>;
+    fn start_stream(
+        self: Arc<Self>,
+        config: StreamConfig,
+    ) -> Result<Box<dyn TranscriptionStream>, String>;
+}
+
+/// ストリーミング文字起こしの 1 セッションを表す。
+///
+/// 呼び出し元は raw PCM サンプルを `feed` で送り込み、確定した
+/// セグメントを `drain_segments` で非同期に取り出す。`finalize` で
+/// 残りのバッファをフラッシュして最終セグメントを得る。
+///
+/// 実装はサンプルレート変換やチャンク化、API 呼び出しなどの
+/// エンジン固有の責務をすべて内部に閉じ込める。
+pub trait TranscriptionStream: Send {
+    /// `StreamConfig::sample_rate` で指定したレートのサンプルを送り込む。
+    fn feed(&mut self, samples: &[f32]) -> Result<(), String>;
+
+    /// これまでに確定したセグメントを取り出す (非ブロッキング)。
+    fn drain_segments(&mut self) -> Vec<TranscriptionSegment>;
+
+    /// 残りのバッファを処理し、最終セグメントを返す。
+    /// 呼び出し後はストリームを使わない。
+    fn finalize(self: Box<Self>) -> Result<Vec<TranscriptionSegment>, String>;
 }
 
 // ─────────────────────────────────────────────
@@ -50,26 +89,28 @@ pub trait TranscriptionEngine: Send + Sync {
 // ─────────────────────────────────────────────
 
 pub struct WhisperLocal {
-    ctx: WhisperContext,
+    ctx: Arc<WhisperContext>,
 }
 
 impl WhisperLocal {
     pub fn new(model_path: &str) -> Result<Self, String> {
         let ctx = WhisperContext::new_with_params(model_path, WhisperContextParameters::default())
             .map_err(|e| format!("Whisper モデルの読み込みに失敗しました: {e}"))?;
-        Ok(Self { ctx })
+        Ok(Self { ctx: Arc::new(ctx) })
     }
-}
 
-impl TranscriptionEngine for WhisperLocal {
-    fn transcribe(&self, audio: &[f32]) -> Result<Vec<TranscriptionSegment>, String> {
-        let mut state = self
-            .ctx
+    /// 1 チャンク (16kHz, モノラル) を Whisper で推論する。
+    fn transcribe_chunk(
+        ctx: &WhisperContext,
+        audio: &[f32],
+        language: &str,
+    ) -> Result<Vec<TranscriptionSegment>, String> {
+        let mut state = ctx
             .create_state()
             .map_err(|e| format!("WhisperState の作成に失敗しました: {e}"))?;
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-        params.set_language(Some("auto"));
+        params.set_language(Some(language));
         params.set_translate(false);
         params.set_print_progress(false);
         params.set_print_realtime(false);
@@ -82,7 +123,7 @@ impl TranscriptionEngine for WhisperLocal {
             .map_err(|e| format!("Whisper 推論に失敗しました: {e}"))?;
 
         let num_segments = state.full_n_segments();
-        let mut segments = Vec::new();
+        let mut segments = Vec::with_capacity(num_segments as usize);
 
         for i in 0..num_segments {
             let segment = match state.get_segment(i) {
@@ -109,6 +150,167 @@ impl TranscriptionEngine for WhisperLocal {
         }
 
         Ok(segments)
+    }
+}
+
+impl TranscriptionEngine for WhisperLocal {
+    fn start_stream(
+        self: Arc<Self>,
+        config: StreamConfig,
+    ) -> Result<Box<dyn TranscriptionStream>, String> {
+        let stream = WhisperStream::new(Arc::clone(&self.ctx), config)?;
+        Ok(Box::new(stream))
+    }
+}
+
+// ─────────────────────────────────────────────
+// WhisperStream — Whisper 用ストリーミング実装
+// ─────────────────────────────────────────────
+
+/// Whisper 用のストリーミング実装。
+///
+/// 内部で次の処理を行う:
+/// - 入力サンプルを 16kHz にリサンプル
+/// - 5 秒分たまったら推論を実行
+/// - 結果セグメントにストリーム基準のグローバルオフセットを付与
+///
+/// `drain_segments` は確定済みセグメントを取り出す。
+pub struct WhisperStream {
+    ctx: Arc<WhisperContext>,
+    speaker: Option<String>,
+    language: String,
+    needs_resample: bool,
+    resampler: Option<SincFixedIn<f32>>,
+    resample_input_buffer: Vec<f32>,
+    accumulation_buffer: Vec<f32>,
+    pending_segments: Vec<TranscriptionSegment>,
+    chunk_count: u64,
+}
+
+impl WhisperStream {
+    fn new(ctx: Arc<WhisperContext>, config: StreamConfig) -> Result<Self, String> {
+        let needs_resample = config.sample_rate != WHISPER_SAMPLE_RATE;
+        let resampler = if needs_resample {
+            Some(
+                SincFixedIn::<f32>::new(
+                    WHISPER_SAMPLE_RATE as f64 / config.sample_rate as f64,
+                    2.0,
+                    sinc_params(),
+                    RESAMPLE_CHUNK_SIZE,
+                    1, // モノラル
+                )
+                .map_err(|e| format!("リサンプラーの作成に失敗しました: {e}"))?,
+            )
+        } else {
+            None
+        };
+
+        let language = config.language.unwrap_or_else(|| "auto".to_string());
+
+        Ok(Self {
+            ctx,
+            speaker: config.speaker,
+            language,
+            needs_resample,
+            resampler,
+            resample_input_buffer: Vec::with_capacity(RESAMPLE_CHUNK_SIZE * 2),
+            accumulation_buffer: Vec::with_capacity(CHUNK_SAMPLES * 2),
+            pending_segments: Vec::new(),
+            chunk_count: 0,
+        })
+    }
+
+    /// 5 秒チャンクが溜まっていれば推論し、`pending_segments` に積む。
+    fn flush_full_chunks(&mut self) -> Result<(), String> {
+        while self.accumulation_buffer.len() >= CHUNK_SAMPLES {
+            let chunk: Vec<f32> = self.accumulation_buffer.drain(..CHUNK_SAMPLES).collect();
+            self.run_inference(&chunk)?;
+        }
+        Ok(())
+    }
+
+    fn run_inference(&mut self, chunk: &[f32]) -> Result<(), String> {
+        self.chunk_count += 1;
+        let segments = WhisperLocal::transcribe_chunk(&self.ctx, chunk, &self.language)?;
+        let offset_ms = (self.chunk_count - 1) as i64 * (CHUNK_DURATION_SECS * 1000.0) as i64;
+        for seg in segments {
+            if seg.text.is_empty() {
+                continue;
+            }
+            self.pending_segments.push(TranscriptionSegment {
+                text: seg.text,
+                start_ms: seg.start_ms + offset_ms,
+                end_ms: seg.end_ms + offset_ms,
+                speaker: self.speaker.clone(),
+            });
+        }
+        Ok(())
+    }
+}
+
+impl TranscriptionStream for WhisperStream {
+    fn feed(&mut self, samples: &[f32]) -> Result<(), String> {
+        if samples.is_empty() {
+            return Ok(());
+        }
+
+        if self.needs_resample {
+            self.resample_input_buffer.extend_from_slice(samples);
+
+            // resampler は所有権を一時的に取り出して借用問題を回避する
+            let mut resampler = self.resampler.take().expect("resampler must exist");
+            let result = (|| -> Result<(), String> {
+                let chunk_size = resampler.input_frames_next();
+                while self.resample_input_buffer.len() >= chunk_size {
+                    let input_chunk: Vec<f32> =
+                        self.resample_input_buffer.drain(..chunk_size).collect();
+                    let input_refs: Vec<&[f32]> = vec![&input_chunk];
+                    match resampler.process(&input_refs, None) {
+                        Ok(output) => {
+                            if let Some(channel) = output.first() {
+                                self.accumulation_buffer.extend_from_slice(channel);
+                            }
+                        }
+                        Err(e) => return Err(format!("リサンプリングエラー: {e}")),
+                    }
+                }
+                Ok(())
+            })();
+            self.resampler = Some(resampler);
+            result?;
+        } else {
+            self.accumulation_buffer.extend_from_slice(samples);
+        }
+
+        self.flush_full_chunks()
+    }
+
+    fn drain_segments(&mut self) -> Vec<TranscriptionSegment> {
+        std::mem::take(&mut self.pending_segments)
+    }
+
+    fn finalize(mut self: Box<Self>) -> Result<Vec<TranscriptionSegment>, String> {
+        // 残ったリサンプリング入力はゼロパディングして処理し切る
+        if self.needs_resample && !self.resample_input_buffer.is_empty() {
+            let mut resampler = self.resampler.take().expect("resampler must exist");
+            let chunk_size = resampler.input_frames_next();
+            let mut input_chunk = std::mem::take(&mut self.resample_input_buffer);
+            input_chunk.resize(chunk_size, 0.0);
+            let input_refs: Vec<&[f32]> = vec![&input_chunk];
+            if let Ok(output) = resampler.process(&input_refs, None) {
+                if let Some(channel) = output.first() {
+                    self.accumulation_buffer.extend_from_slice(channel);
+                }
+            }
+        }
+
+        // 5 秒未満の最終チャンクも推論する
+        if !self.accumulation_buffer.is_empty() {
+            let chunk = std::mem::take(&mut self.accumulation_buffer);
+            self.run_inference(&chunk)?;
+        }
+
+        Ok(std::mem::take(&mut self.pending_segments))
     }
 }
 
@@ -463,17 +665,20 @@ pub fn start_transcription(
                 let engine_clone = Arc::clone(&engine);
                 let running_clone = Arc::clone(&running);
                 let app_clone = app.clone();
-                let speaker = Some("自分".to_string());
                 let sm_clone = Arc::clone(&session_manager_arc);
+                let stream_config = StreamConfig {
+                    sample_rate: mic_sample_rate,
+                    speaker: Some("自分".to_string()),
+                    language: None,
+                };
 
                 std::thread::spawn(move || {
                     run_transcription_loop(
                         mic_consumer,
                         engine_clone,
-                        mic_sample_rate,
+                        stream_config,
                         running_clone,
                         app_clone,
-                        speaker,
                         sm_clone,
                         stream_started_at_secs,
                     );
@@ -490,17 +695,20 @@ pub fn start_transcription(
                 let engine_clone = Arc::clone(&engine);
                 let running_clone = Arc::clone(&running);
                 let app_clone = app.clone();
-                let speaker = Some("相手".to_string());
                 let sm_clone = Arc::clone(&session_manager_arc);
+                let stream_config = StreamConfig {
+                    sample_rate: sys_sample_rate,
+                    speaker: Some("相手".to_string()),
+                    language: None,
+                };
 
                 std::thread::spawn(move || {
                     run_transcription_loop(
                         sys_consumer,
                         engine_clone,
-                        sys_sample_rate,
+                        stream_config,
                         running_clone,
                         app_clone,
-                        speaker,
                         sm_clone,
                         stream_started_at_secs,
                     );
@@ -636,44 +844,27 @@ const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) 
 fn run_transcription_loop(
     mut consumer: ringbuf::HeapCons<f32>,
     engine: Arc<dyn TranscriptionEngine>,
-    device_sample_rate: u32,
+    stream_config: StreamConfig,
     running: Arc<AtomicBool>,
     app: tauri::AppHandle,
-    speaker: Option<String>,
     session_manager: Arc<crate::session_manager::SessionManager>,
     stream_started_at_secs: u64,
 ) {
-    // リサンプラーの設定（device_sample_rate → 16kHz）
-    let needs_resample = device_sample_rate != WHISPER_SAMPLE_RATE;
-    let mut resampler = if needs_resample {
-        match SincFixedIn::<f32>::new(
-            WHISPER_SAMPLE_RATE as f64 / device_sample_rate as f64,
-            2.0,
-            sinc_params(),
-            RESAMPLE_CHUNK_SIZE,
-            1, // チャンネル数（モノラル）
-        ) {
-            Ok(r) => Some(r),
-            Err(e) => {
-                eprintln!("リサンプラーの作成に失敗しました: {e}");
-                let _ = app.emit(
-                    "transcription-error",
-                    serde_json::json!({ "error": format!("リサンプラーの作成に失敗しました: {e}") }),
-                );
-                return;
-            }
+    let mut stream = match Arc::clone(&engine).start_stream(stream_config) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("文字起こしストリームの初期化に失敗しました: {e}");
+            let _ = app.emit(
+                "transcription-error",
+                serde_json::json!({ "error": e }),
+            );
+            return;
         }
-    } else {
-        None
     };
 
-    let mut accumulation_buffer: Vec<f32> = Vec::with_capacity(CHUNK_SAMPLES);
     let mut read_buffer: Vec<f32> = vec![0.0; 4096];
-    let mut resample_input_buffer: Vec<f32> = Vec::with_capacity(RESAMPLE_CHUNK_SIZE);
-    let mut chunk_count: u64 = 0;
 
     while running.load(Ordering::SeqCst) {
-        // 1. リングバッファからサンプルを読み取る
         let available = consumer.occupied_len();
         if available == 0 {
             std::thread::sleep(Duration::from_millis(50));
@@ -690,88 +881,64 @@ fn run_transcription_loop(
 
         let samples = &read_buffer[..read_count];
 
-        // 2. リサンプリング（必要な場合）
-        if let Some(ref mut resampler) = resampler {
-            resample_input_buffer.extend_from_slice(samples);
-
-            // リサンプラーのチャンクサイズ分たまったら処理
-            let chunk_size = resampler.input_frames_next();
-            while resample_input_buffer.len() >= chunk_size {
-                let input_chunk: Vec<f32> =
-                    resample_input_buffer.drain(..chunk_size).collect();
-                let input_refs: Vec<&[f32]> = vec![&input_chunk];
-
-                match resampler.process(&input_refs, None) {
-                    Ok(output) => {
-                        if let Some(channel) = output.first() {
-                            accumulation_buffer.extend_from_slice(channel);
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("リサンプリングエラー: {e}");
-                    }
-                }
-            }
-        } else {
-            // リサンプリング不要（既に16kHz）
-            accumulation_buffer.extend_from_slice(samples);
+        if let Err(e) = stream.feed(samples) {
+            eprintln!("文字起こしエラー: {e}");
+            let _ = app.emit(
+                "transcription-error",
+                serde_json::json!({ "error": e }),
+            );
         }
 
-        // 3. チャンクが十分に蓄積されたら推論を実行
-        if accumulation_buffer.len() >= CHUNK_SAMPLES {
-            let chunk: Vec<f32> = accumulation_buffer.drain(..CHUNK_SAMPLES).collect();
-            chunk_count += 1;
+        emit_segments(
+            stream.drain_segments(),
+            &app,
+            &session_manager,
+            stream_started_at_secs,
+        );
 
-            match engine.transcribe(&chunk) {
-                Ok(segments) => {
-                    for segment in segments {
-                        if !segment.text.is_empty() {
-                            // タイムスタンプをグローバルオフセットに調整
-                            let offset_ms =
-                                (chunk_count - 1) as i64 * (CHUNK_DURATION_SECS * 1000.0) as i64;
-                            let adjusted = TranscriptionSegment {
-                                text: segment.text,
-                                start_ms: segment.start_ms + offset_ms,
-                                end_ms: segment.end_ms + offset_ms,
-                                speaker: speaker.clone(),
-                            };
-                            let _ = app.emit("transcription-result", &adjusted);
-
-                            // セッションが開始済みなら SessionManager に append する。
-                            // append 失敗 (NotActive など) は live loop を止めず、ログだけ残す。
-                            let session_started_at_secs =
-                                session_manager.current_started_at_secs();
-                            if let Some((sp, off, tx)) =
-                                crate::transcript_bridge::build_append_args_for_emission(
-                                    &adjusted,
-                                    session_started_at_secs,
-                                    stream_started_at_secs,
-                                )
-                            {
-                                if let Err(e) = session_manager.append(sp, off, tx) {
-                                    eprintln!(
-                                        "[transcription] session_manager.append failed: {e}"
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    eprintln!("文字起こしエラー: {e}");
-                    let _ = app.emit(
-                        "transcription-error",
-                        serde_json::json!({ "error": e }),
-                    );
-                }
-            }
-        }
-
-        // 4. ビジーウェイトを回避
         std::thread::sleep(Duration::from_millis(50));
     }
 
-    // ループ終了 - consumer はここでドロップされる
+    // 停止フラグが立ったら、残ったバッファをフラッシュして最終セグメントを emit する。
+    match stream.finalize() {
+        Ok(remaining) => {
+            emit_segments(remaining, &app, &session_manager, stream_started_at_secs);
+        }
+        Err(e) => {
+            eprintln!("文字起こしの finalize に失敗しました: {e}");
+            let _ = app.emit(
+                "transcription-error",
+                serde_json::json!({ "error": e }),
+            );
+        }
+    }
+}
+
+/// セグメントを Tauri イベントとして emit し、セッションが開始済みであれば
+/// `SessionManager` にも append する。
+fn emit_segments(
+    segments: Vec<TranscriptionSegment>,
+    app: &tauri::AppHandle,
+    session_manager: &Arc<crate::session_manager::SessionManager>,
+    stream_started_at_secs: u64,
+) {
+    for segment in segments {
+        if segment.text.is_empty() {
+            continue;
+        }
+        let _ = app.emit("transcription-result", &segment);
+
+        let session_started_at_secs = session_manager.current_started_at_secs();
+        if let Some((sp, off, tx)) = crate::transcript_bridge::build_append_args_for_emission(
+            &segment,
+            session_started_at_secs,
+            stream_started_at_secs,
+        ) {
+            if let Err(e) = session_manager.append(sp, off, tx) {
+                eprintln!("[transcription] session_manager.append failed: {e}");
+            }
+        }
+    }
 }
 
 // ─────────────────────────────────────────────
@@ -898,5 +1065,166 @@ mod tests {
             "Silent input should produce silent output, max abs value: {}",
             output.iter().map(|s| s.abs()).fold(0.0f32, f32::max)
         );
+    }
+
+    // ─────────────────────────────────────────
+    // TranscriptionEngine / TranscriptionStream trait テスト
+    // ─────────────────────────────────────────
+    //
+    // Whisper の実モデルをロードせずに trait の振る舞いを検証する。
+    // モックエンジンが受け取ったサンプル数とライフサイクル (feed → drain →
+    // finalize) を記録し、新 trait の契約が壊れていないことを確認する。
+
+    use std::sync::atomic::AtomicUsize;
+
+    /// テスト用モックエンジン。`feed` で受け取ったサンプル合計を記録し、
+    /// `feed` 1 回ごとに 1 セグメントを出す。`finalize` 時には特殊セグメントを 1 つ追加する。
+    struct MockEngine {
+        feeds_seen: Arc<AtomicUsize>,
+        samples_seen: Arc<AtomicUsize>,
+    }
+
+    struct MockStream {
+        speaker: Option<String>,
+        feeds_seen: Arc<AtomicUsize>,
+        samples_seen: Arc<AtomicUsize>,
+        pending: Vec<TranscriptionSegment>,
+    }
+
+    impl TranscriptionEngine for MockEngine {
+        fn start_stream(
+            self: Arc<Self>,
+            config: StreamConfig,
+        ) -> Result<Box<dyn TranscriptionStream>, String> {
+            Ok(Box::new(MockStream {
+                speaker: config.speaker,
+                feeds_seen: Arc::clone(&self.feeds_seen),
+                samples_seen: Arc::clone(&self.samples_seen),
+                pending: Vec::new(),
+            }))
+        }
+    }
+
+    impl TranscriptionStream for MockStream {
+        fn feed(&mut self, samples: &[f32]) -> Result<(), String> {
+            self.feeds_seen.fetch_add(1, Ordering::SeqCst);
+            self.samples_seen
+                .fetch_add(samples.len(), Ordering::SeqCst);
+            self.pending.push(TranscriptionSegment {
+                text: format!("feed-{}", self.feeds_seen.load(Ordering::SeqCst)),
+                start_ms: 0,
+                end_ms: 100,
+                speaker: self.speaker.clone(),
+            });
+            Ok(())
+        }
+
+        fn drain_segments(&mut self) -> Vec<TranscriptionSegment> {
+            std::mem::take(&mut self.pending)
+        }
+
+        fn finalize(mut self: Box<Self>) -> Result<Vec<TranscriptionSegment>, String> {
+            self.pending.push(TranscriptionSegment {
+                text: "finalized".to_string(),
+                start_ms: 0,
+                end_ms: 0,
+                speaker: self.speaker.clone(),
+            });
+            Ok(std::mem::take(&mut self.pending))
+        }
+    }
+
+    #[test]
+    fn test_stream_lifecycle_feed_drain_finalize() {
+        let feeds = Arc::new(AtomicUsize::new(0));
+        let samples = Arc::new(AtomicUsize::new(0));
+        let engine: Arc<dyn TranscriptionEngine> = Arc::new(MockEngine {
+            feeds_seen: Arc::clone(&feeds),
+            samples_seen: Arc::clone(&samples),
+        });
+
+        let mut stream = Arc::clone(&engine)
+            .start_stream(StreamConfig {
+                sample_rate: 16_000,
+                speaker: Some("自分".to_string()),
+                language: Some("ja".to_string()),
+            })
+            .expect("start_stream should succeed");
+
+        // feed を 2 回実行
+        stream.feed(&vec![0.0_f32; 100]).unwrap();
+        stream.feed(&vec![0.0_f32; 200]).unwrap();
+        assert_eq!(feeds.load(Ordering::SeqCst), 2);
+        assert_eq!(samples.load(Ordering::SeqCst), 300);
+
+        // drain で 2 セグメント取り出す
+        let drained = stream.drain_segments();
+        assert_eq!(drained.len(), 2);
+        assert!(drained.iter().all(|s| s.speaker.as_deref() == Some("自分")));
+
+        // 連続 drain は空
+        assert!(stream.drain_segments().is_empty());
+
+        // finalize で残りの finalized セグメントが 1 つ返る
+        let final_segments = stream.finalize().unwrap();
+        assert_eq!(final_segments.len(), 1);
+        assert_eq!(final_segments[0].text, "finalized");
+    }
+
+    #[test]
+    fn test_stream_config_speaker_propagates_to_segments() {
+        // start_stream に渡した speaker が、各 stream のセグメントに反映される。
+        // マイク (自分) とシステム音声 (相手) を別ストリームで動かす運用の前提。
+        let engine: Arc<dyn TranscriptionEngine> = Arc::new(MockEngine {
+            feeds_seen: Arc::new(AtomicUsize::new(0)),
+            samples_seen: Arc::new(AtomicUsize::new(0)),
+        });
+
+        let mut mic = Arc::clone(&engine)
+            .start_stream(StreamConfig {
+                sample_rate: 16_000,
+                speaker: Some("自分".to_string()),
+                language: None,
+            })
+            .unwrap();
+        let mut sys = Arc::clone(&engine)
+            .start_stream(StreamConfig {
+                sample_rate: 16_000,
+                speaker: Some("相手".to_string()),
+                language: None,
+            })
+            .unwrap();
+
+        mic.feed(&[0.0; 10]).unwrap();
+        sys.feed(&[0.0; 10]).unwrap();
+
+        let mic_segs = mic.drain_segments();
+        let sys_segs = sys.drain_segments();
+        assert_eq!(mic_segs[0].speaker.as_deref(), Some("自分"));
+        assert_eq!(sys_segs[0].speaker.as_deref(), Some("相手"));
+    }
+
+    #[test]
+    fn test_feed_empty_samples_is_noop_in_mock() {
+        // 空 feed でもエラーにならず、後続の feed が引き続き動くこと
+        let feeds = Arc::new(AtomicUsize::new(0));
+        let samples = Arc::new(AtomicUsize::new(0));
+        let engine: Arc<dyn TranscriptionEngine> = Arc::new(MockEngine {
+            feeds_seen: Arc::clone(&feeds),
+            samples_seen: Arc::clone(&samples),
+        });
+        let mut stream = engine
+            .start_stream(StreamConfig {
+                sample_rate: 16_000,
+                speaker: None,
+                language: None,
+            })
+            .unwrap();
+
+        stream.feed(&[]).unwrap();
+        stream.feed(&[1.0, 2.0, 3.0]).unwrap();
+        // モックは feed 回数を必ずカウントする
+        assert_eq!(feeds.load(Ordering::SeqCst), 2);
+        assert_eq!(samples.load(Ordering::SeqCst), 3);
     }
 }

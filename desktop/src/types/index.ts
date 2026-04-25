@@ -37,7 +37,10 @@ export interface DownloadErrorPayload {
   message: string;
 }
 
-export type TranscriptionEngineType = "local" | "cloud";
+export type TranscriptionEngineType =
+  | "whisper"
+  | "appleSpeech"
+  | "openAIRealtime";
 
 export interface AppSettings {
   transcriptionEngine: TranscriptionEngineType;
