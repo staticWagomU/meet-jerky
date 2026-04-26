@@ -1369,3 +1369,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 clipboard 書き込みは未実機確認。
 - 次アクション: clipboard コピー中表示を実機で確認する。
+
+### Main task: guard settings save handler while pending
+
+- 開始日時: 2026-04-27 04:55 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定保存ボタンの state 更新前連打でも `update_settings` を二重起動しないようにする。
+- 結果: `handleSave` の先頭で `updateMutation.isPending` を確認し、保存中なら即 return するようにした。既存の disabled 表示と「保存中...」表示は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実設定保存は未実機確認。
+- 次アクション: 設定保存中の二重クリック挙動を実機で確認する。

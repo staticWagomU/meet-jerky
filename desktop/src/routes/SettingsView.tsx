@@ -119,6 +119,9 @@ export function SettingsView() {
   }, []);
 
   const handleSave = useCallback(() => {
+    if (updateMutation.isPending) {
+      return;
+    }
     if (localSettings) {
       updateMutation.mutate(localSettings);
     }
