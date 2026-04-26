@@ -91,6 +91,9 @@ export function TranscriptView() {
   // Session wiring state
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [lastSavedPath, setLastSavedPath] = useState<string | null>(null);
+  const [audioLevelListenerError, setAudioLevelListenerError] = useState<
+    string | null
+  >(null);
 
   const {
     data: devices,
@@ -112,19 +115,38 @@ export function TranscriptView() {
 
   // Route audio-level events by source
   useEffect(() => {
-    const unlistenPromise = listen<AudioLevelPayload>(
-      "audio-level",
-      (event) => {
-        if (event.payload.source === "microphone") {
-          setMicLevel(event.payload.level);
-        } else if (event.payload.source === "system_audio") {
-          setSystemAudioLevel(event.payload.level);
+    let disposed = false;
+    const unlistenPromise = listen<AudioLevelPayload>("audio-level", (event) => {
+      if (event.payload.source === "microphone") {
+        setMicLevel(event.payload.level);
+      } else if (event.payload.source === "system_audio") {
+        setSystemAudioLevel(event.payload.level);
+      }
+    })
+      .then((unlisten) => {
+        if (!disposed) {
+          setAudioLevelListenerError(null);
         }
-      },
-    );
+        return unlisten;
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("音声レベル監視の開始に失敗しました:", msg);
+          setAudioLevelListenerError(
+            `音声レベル監視の開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error("音声レベル監視の解除に失敗しました:", toErrorMessage(e));
+        });
     };
   }, []);
 
@@ -430,6 +452,11 @@ export function TranscriptView() {
         {modelDownloadedError && (
           <p className="meeting-error" role="alert">
             モデル状態の確認に失敗しました: {String(modelDownloadedError)}
+          </p>
+        )}
+        {audioLevelListenerError && (
+          <p className="meeting-error" role="alert">
+            {audioLevelListenerError}
           </p>
         )}
         {lastSavedPath && (

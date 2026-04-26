@@ -753,3 +753,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
 - 次アクション: URL provider boundary を設計する際は標準 URL parser 利用可否も再評価する。
+
+### Main task: show audio level listener errors
+
+- 開始日時: 2026-04-27 04:23 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: Transcript 画面で `audio-level` event の購読開始に失敗した場合、音声レベル表示だけが沈黙せず、ユーザーに監視開始失敗を表示する。
+- 結果: `audio-level` listener の Promise を成功/失敗で明示処理し、購読開始失敗時は既存の `meeting-error` 表示へ「音声レベル監視の開始に失敗しました」を出すようにした。unmount 時の解除失敗も console に記録し、購読成功時はエラーを clear する。録音・文字起こしの開始停止処理は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Tauri event 購読失敗の実機再現は未実機確認。
+- 次アクション: 録音/文字起こし操作の部分失敗時に stale state が残らないか引き続き確認する。
