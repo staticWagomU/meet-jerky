@@ -80,7 +80,11 @@ export function SessionList() {
   }, []);
 
   if (isLoading) {
-    return <div className="session-list">読み込み中...</div>;
+    return (
+      <div className="session-list" role="status">
+        読み込み中...
+      </div>
+    );
   }
 
   if (error) {
@@ -124,7 +128,9 @@ export function SessionList() {
       )}
 
       {sessions.length === 0 ? (
-        <p className="session-list-empty">履歴がまだありません</p>
+        <p className="session-list-empty" role="status">
+          履歴がまだありません
+        </p>
       ) : (
         <ul className="session-list-items">
           {sessions.map((session) => (
