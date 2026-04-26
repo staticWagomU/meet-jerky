@@ -596,7 +596,11 @@ function OpenAIApiKeySection({
             {clearMutation.isPending ? "削除中..." : "削除"}
           </button>
         </div>
-        <div className="settings-api-key-status">
+        <div
+          className="settings-api-key-status"
+          role="status"
+          aria-live="polite"
+        >
           状態:{" "}
           {isFetchingHasKey
             ? "確認中..."
