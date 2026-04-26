@@ -289,7 +289,9 @@ export function TranscriptDisplay({
             type="button"
             className="copy-btn"
             aria-label={
-              isCopying
+              copyableSegmentsCount === 0
+                ? "コピーできる文字起こしはありません"
+                : isCopying
                 ? `文字起こし ${copyableSegmentsCount} 件をコピー中`
                 : copyFeedback
                   ? `文字起こし ${copyableSegmentsCount} 件をコピー済み`
