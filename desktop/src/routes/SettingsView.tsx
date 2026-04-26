@@ -425,7 +425,9 @@ export function SettingsView() {
 
       {/* トースト通知 */}
       {toastMessage && (
-        <div className="toast">{toastMessage}</div>
+        <div className="toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
       )}
     </div>
   );
