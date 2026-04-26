@@ -133,6 +133,13 @@ function getMeetingStartBlockedReason(
   return null;
 }
 
+function getAudioSourceCount(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): number {
+  return Number(isMicRecording) + Number(isSystemAudioRecording);
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -621,6 +628,10 @@ export function TranscriptView() {
     isModelDownloaded,
     modelDownloadedError,
   );
+  const audioSourceCount = getAudioSourceCount(
+    isMicRecording,
+    isSystemAudioRecording,
+  );
 
   return (
     <div className="transcript-view">
@@ -650,6 +661,29 @@ export function TranscriptView() {
             {formatElapsedTime(elapsedTime)}
           </span>
         )}
+        <div className="meeting-status-strip" role="status">
+          <span
+            className={`meeting-status-pill ${
+              isMeetingActive
+                ? "meeting-status-pill-active"
+                : "meeting-status-pill-idle"
+            }`}
+          >
+            {isMeetingActive ? "記録中" : "待機中"}
+          </span>
+          <span
+            className={`meeting-status-pill ${
+              isTranscribing
+                ? "meeting-status-pill-active"
+                : "meeting-status-pill-idle"
+            }`}
+          >
+            {isTranscribing ? "文字起こし中" : "文字起こし停止"}
+          </span>
+          <span className="meeting-status-pill meeting-status-pill-neutral">
+            音声 {audioSourceCount}/2
+          </span>
+        </div>
         {meetingError && (
           <p className="meeting-error" role="alert">
             {meetingError}

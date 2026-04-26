@@ -89,6 +89,12 @@
 
   /* Meeting */
   --meeting-timer-color: #dc2626;
+  --meeting-status-active-bg: rgba(22, 163, 74, 0.12);
+  --meeting-status-active-color: #15803d;
+  --meeting-status-idle-bg: rgba(107, 114, 128, 0.1);
+  --meeting-status-idle-color: #6b7280;
+  --meeting-status-neutral-bg: rgba(57, 108, 216, 0.08);
+  --meeting-status-neutral-color: #315fbf;
 
   /* Copy button */
   --copy-btn-bg: transparent;
@@ -159,6 +165,12 @@
     --settings-note-color: #6b7280;
 
     --meeting-timer-color: #ef4444;
+    --meeting-status-active-bg: rgba(34, 197, 94, 0.16);
+    --meeting-status-active-color: #86efac;
+    --meeting-status-idle-bg: rgba(156, 163, 175, 0.12);
+    --meeting-status-idle-color: #9ca3af;
+    --meeting-status-neutral-bg: rgba(96, 165, 250, 0.14);
+    --meeting-status-neutral-color: #93c5fd;
 
     --copy-btn-bg: transparent;
     --copy-btn-border: #4b5563;
@@ -715,6 +727,37 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--meeting-timer-color);
+}
+
+.meeting-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.meeting-status-pill {
+  border-radius: 4px;
+  padding: 0.16rem 0.45rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.meeting-status-pill-active {
+  color: var(--meeting-status-active-color);
+  background-color: var(--meeting-status-active-bg);
+}
+
+.meeting-status-pill-idle {
+  color: var(--meeting-status-idle-color);
+  background-color: var(--meeting-status-idle-bg);
+}
+
+.meeting-status-pill-neutral {
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
 }
 
 /* ===========================
