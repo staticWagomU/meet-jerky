@@ -1495,3 +1495,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。認証情報変更・Keychain 操作は実施していない。
 - 次アクション: API キー保存/削除の実機挙動は必要時のみ確認する。認証情報変更は行わず次の改善候補を調査する。
+
+### Main task: ignore settings toast updates after unmount
+
+- 開始日時: 2026-04-27 05:36 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の mutation 完了や timeout がアンマウント後に toast state を更新しないようにする。
+- 結果: `isMountedRef` を追加し、`showToast` と timeout callback がアンマウント後は state 更新しないようにした。unmount cleanup では timeout を clear したうえで ref も null に戻すようにした。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実画面遷移中の mutation 完了タイミングは未実機確認。
+- 次アクション: 設定画面遷移中の toast cleanup を実機/モックで確認する。次の改善候補を調査する。
