@@ -174,6 +174,21 @@ function getAiTransmissionStatusLabel(
   return "なし";
 }
 
+function getEngineStatusLabel(
+  engine: TranscriptionEngineType | undefined,
+): string {
+  if (!engine) {
+    return "確認中";
+  }
+  if (engine === "appleSpeech") {
+    return "Apple Speech";
+  }
+  if (engine === "openAIRealtime") {
+    return "OpenAI";
+  }
+  return "Whisper";
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -694,6 +709,7 @@ export function TranscriptView() {
   const aiTransmissionStatusLabel = getAiTransmissionStatusLabel(
     settings?.transcriptionEngine,
   );
+  const engineStatusLabel = getEngineStatusLabel(settings?.transcriptionEngine);
 
   return (
     <div className="transcript-view">
@@ -752,6 +768,9 @@ export function TranscriptView() {
           </span>
           <span className="meeting-status-pill meeting-status-pill-neutral">
             音声 {audioSourceStatusLabel}
+          </span>
+          <span className="meeting-status-pill meeting-status-pill-neutral">
+            エンジン {engineStatusLabel}
           </span>
           <span className="meeting-status-pill meeting-status-pill-neutral">
             AI送信 {aiTransmissionStatusLabel}

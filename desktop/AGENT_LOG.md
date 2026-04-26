@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: show transcription engine in meeting strip
+
+- 開始日時: 2026-04-27 07:05 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中の compact status strip で、現在の文字起こし方式を短く確認できるようにする。
+- 結果: 設定の文字起こしエンジンに応じて、status strip に `エンジン Whisper` / `エンジン Apple Speech` / `エンジン OpenAI` / `エンジン 確認中` を表示するようにした。録音、文字起こし invoke、エンジン設定、API 認証情報は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と各エンジンの実機開始は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: hide Whisper model selector for non-Whisper engines
 
 - 開始日時: 2026-04-27 07:03 JST
