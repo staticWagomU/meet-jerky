@@ -79,6 +79,7 @@ export function MeetingDetectedBanner() {
           <button
             type="button"
             className="control-btn control-btn-transcribe"
+            aria-label={`${displayName} の記録状態を確認`}
             onClick={() => {
               navigate({ to: "/" });
               setDetected(null);
