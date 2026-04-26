@@ -668,7 +668,13 @@ function OpenAIApiKeySection({
             aria-label={
               clearMutation.isPending
                 ? "OpenAI API キーを削除中"
-                : "OpenAI API キーを削除"
+                : isFetchingHasKey
+                  ? "OpenAI API キー状態を確認中"
+                  : hasKeyError
+                    ? "OpenAI API キー状態を確認できないため削除できません"
+                    : hasKey
+                      ? "OpenAI API キーを削除"
+                      : "削除できる OpenAI API キーはありません"
             }
           >
             {clearMutation.isPending ? "削除中..." : "削除"}
