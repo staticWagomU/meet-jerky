@@ -176,7 +176,10 @@ impl TranscriptionEngine for WhisperLocal {
 ///
 /// `drain_segments` は確定済みセグメントを取り出す。
 pub struct WhisperStream {
+    #[cfg(not(test))]
     ctx: Arc<WhisperContext>,
+    #[cfg(test)]
+    ctx: Option<Arc<WhisperContext>>,
     speaker: Option<String>,
     language: String,
     needs_resample: bool,
@@ -208,7 +211,10 @@ impl WhisperStream {
         let language = config.language.unwrap_or_else(|| "auto".to_string());
 
         Ok(Self {
+            #[cfg(not(test))]
             ctx,
+            #[cfg(test)]
+            ctx: Some(ctx),
             speaker: config.speaker,
             language,
             needs_resample,
@@ -231,7 +237,15 @@ impl WhisperStream {
 
     fn run_inference(&mut self, chunk: &[f32]) -> Result<(), String> {
         self.chunk_count += 1;
+        #[cfg(not(test))]
         let segments = WhisperLocal::transcribe_chunk(&self.ctx, chunk, &self.language)?;
+        #[cfg(test)]
+        let segments = {
+            let ctx = self.ctx.as_ref().ok_or_else(|| {
+                "WhisperContext がテストストリームに設定されていません".to_string()
+            })?;
+            WhisperLocal::transcribe_chunk(ctx, chunk, &self.language)?
+        };
         let offset_ms = (self.chunk_count - 1) as i64 * (CHUNK_DURATION_SECS * 1000.0) as i64;
         for seg in segments {
             if seg.text.is_empty() {
@@ -258,7 +272,10 @@ impl TranscriptionStream for WhisperStream {
             self.resample_input_buffer.extend_from_slice(samples);
 
             // resampler は所有権を一時的に取り出して借用問題を回避する
-            let mut resampler = self.resampler.take().expect("resampler must exist");
+            let mut resampler = self.resampler.take().ok_or_else(|| {
+                "リサンプラー状態が利用できません: リサンプリングが必要ですが内部状態がありません"
+                    .to_string()
+            })?;
             let result = (|| -> Result<(), String> {
                 let chunk_size = resampler.input_frames_next();
                 while self.resample_input_buffer.len() >= chunk_size {
@@ -292,7 +309,10 @@ impl TranscriptionStream for WhisperStream {
     fn finalize(mut self: Box<Self>) -> Result<Vec<TranscriptionSegment>, String> {
         // 残ったリサンプリング入力はゼロパディングして処理し切る
         if self.needs_resample && !self.resample_input_buffer.is_empty() {
-            let mut resampler = self.resampler.take().expect("resampler must exist");
+            let mut resampler = self.resampler.take().ok_or_else(|| {
+                "リサンプラー状態が利用できません: リサンプリングが必要ですが内部状態がありません"
+                    .to_string()
+            })?;
             let chunk_size = resampler.input_frames_next();
             let mut input_chunk = std::mem::take(&mut self.resample_input_buffer);
             input_chunk.resize(chunk_size, 0.0);
@@ -1011,6 +1031,20 @@ fn emit_segments(
 mod tests {
     use super::*;
 
+    fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
+        WhisperStream {
+            ctx: None,
+            speaker: None,
+            language: "ja".to_string(),
+            needs_resample: true,
+            resampler: None,
+            resample_input_buffer,
+            accumulation_buffer: Vec::new(),
+            pending_segments: Vec::new(),
+            chunk_count: 0,
+        }
+    }
+
     #[test]
     fn test_list_available_models_not_empty() {
         let models = ModelManager::list_available_models();
@@ -1132,6 +1166,20 @@ mod tests {
             "Silent input should produce silent output, max abs value: {}",
             output.iter().map(|s| s.abs()).fold(0.0f32, f32::max)
         );
+    }
+
+    #[test]
+    fn test_whisper_stream_feed_errors_when_resampler_state_missing() {
+        let mut stream = stream_with_missing_resampler(Vec::new());
+        let err = stream.feed(&[0.0]).unwrap_err();
+        assert!(err.contains("リサンプラー状態が利用できません"));
+    }
+
+    #[test]
+    fn test_whisper_stream_finalize_errors_when_resampler_state_missing() {
+        let stream = stream_with_missing_resampler(vec![0.0]);
+        let err = Box::new(stream).finalize().unwrap_err();
+        assert!(err.contains("リサンプラー状態が利用できません"));
     }
 
     // ─────────────────────────────────────────

@@ -347,3 +347,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml session_manager` を再実行する。
+
+### Worker task: return error for missing Whisper resampler state
+
+- 開始日時: 2026-04-26 21:08 JST
+- 担当セッション: `mj-worker-resampler-expect-20260426-3`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `WhisperStream::feed` 付近と `finalize` 付近の `expect("resampler must exist")` を panic しない `Err` に変換し、`needs_resample == true` かつ `resampler == None` で feed/finalize が panic せず Err を返す単体テストを追加する。新規依存追加なし。コミット禁止。
+- 結果: `feed` と `finalize` のリサンプラー取得を `ok_or_else` に変更し、エラー文に「リサンプラー状態が利用できません」を含めた。実モデルを読まず異常状態だけを検証できるよう、テストビルド時のみ `WhisperStream` の `ctx` を `Option<Arc<WhisperContext>>` として扱い、`resampler == None` の feed/finalize が Err を返す単体テストを追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml whisper_stream` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。main 側の再確認でも `rustfmt --check`、`git diff --check`、`npm run build`、`scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。エラーは `failed to execute command: No such file or directory (os error 2)` および `is cmake not installed?`。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml whisper_stream` を再実行する。
