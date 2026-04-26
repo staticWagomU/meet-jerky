@@ -41,7 +41,12 @@ export function ModelSelector({
     downloadingModelRef.current = downloadingModel;
   }, [downloadingModel]);
 
-  const { data: models, error: modelsError } = useQuery<ModelInfo[]>({
+  const {
+    data: models,
+    error: modelsError,
+    isFetching: isFetchingModels,
+    refetch: refetchModels,
+  } = useQuery<ModelInfo[]>({
     queryKey: ["models"],
     queryFn: () => invoke<ModelInfo[]>("list_models"),
   });
@@ -200,9 +205,19 @@ export function ModelSelector({
         </span>
       )}
       {modelsError ? (
-        <span className="download-error" role="alert">
-          モデル一覧の取得に失敗しました: {String(modelsError)}
-        </span>
+        <div className="download-status-wrapper">
+          <span className="download-error" role="alert">
+            モデル一覧の取得に失敗しました: {String(modelsError)}
+          </span>
+          <button
+            type="button"
+            className="download-btn"
+            onClick={() => refetchModels()}
+            disabled={isFetchingModels}
+          >
+            {isFetchingModels ? "取得中..." : "再取得"}
+          </button>
+        </div>
       ) : (
         <DownloadStatus
           selectedModel={selectedModel}

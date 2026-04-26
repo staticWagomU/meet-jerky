@@ -1187,3 +1187,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 Tauri イベント配送タイミングは未実機確認。
 - 次アクション: イベント listener の unmount guard 方針を維持しつつ、次の状態透明性/検知改善候補を確認する。
+
+### Main task: add retry state for model list loading failure
+
+- 開始日時: 2026-04-27 04:36 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデル一覧取得失敗時に再取得導線と取得中状態を表示する。
+- 結果: `models` query の `isFetching` / `refetch` を使い、モデル一覧取得失敗時に「再取得」ボタンを表示し、再取得中は disabled かつ「取得中...」へ切り替えるようにした。モデルDLやモデル状態確認の挙動は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実バックエンドのモデル一覧取得失敗状態は未実機確認。
+- 次アクション: モデル状態確認失敗時にも再取得導線が必要か確認する。
