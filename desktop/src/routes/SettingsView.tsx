@@ -194,6 +194,7 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">Whisperモデル</h3>
         <select
+          aria-label="Whisperモデル"
           value={localSettings.whisperModel}
           onChange={(e) =>
             setLocalSettings({ ...localSettings, whisperModel: e.target.value })
@@ -212,6 +213,7 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">マイクデバイス</h3>
         <select
+          aria-label="マイクデバイス"
           value={localSettings.microphoneDeviceId ?? ""}
           onChange={(e) =>
             setLocalSettings({
@@ -246,6 +248,7 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">言語</h3>
         <select
+          aria-label="言語"
           value={localSettings.language}
           onChange={(e) =>
             setLocalSettings({ ...localSettings, language: e.target.value })

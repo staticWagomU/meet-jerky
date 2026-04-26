@@ -963,3 +963,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。支援技術での読み上げ確認は未実機確認。
 - 次アクション: 権限説明の実機表示と VoiceOver 読み上げを確認する。
+
+### Main task: label settings select controls
+
+- 開始日時: 2026-04-27 06:32 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の select control が支援技術で何の選択肢か分かるよう、明示的な accessible name を付ける。
+- 結果: Whisper モデル、マイクデバイス、言語の select に `aria-label` を追加した。表示文言、保存処理、選択肢、設定値の保存形式は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。VoiceOver での読み上げ確認は未実機確認。
+- 次アクション: 他画面の select/button でも accessible name の抜けを確認する。
