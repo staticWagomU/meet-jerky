@@ -340,7 +340,11 @@ function DownloadStatus({
         <button
           type="button"
           className="download-btn"
-          aria-label={`${selectedModel} のモデル状態を再確認`}
+          aria-label={
+            isFetchingDownloaded
+              ? `${selectedModel} のモデル状態を確認中`
+              : `${selectedModel} のモデル状態を再確認`
+          }
           onClick={() => refetchDownloaded()}
           disabled={isFetchingDownloaded}
         >
