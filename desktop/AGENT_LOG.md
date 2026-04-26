@@ -1453,3 +1453,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 audio-level event の不正値混入は未実機確認。
 - 次アクション: audio-level event の異常値表示を実機/モックで確認する。次の改善候補を調査する。
+
+### Main task: guard output directory picker with a ref
+
+- 開始日時: 2026-04-27 05:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 出力先フォルダ選択ダイアログの state 反映前連打でも `select_output_directory` を二重起動しないようにする。
+- 結果: `isSelectingOutputDirectoryRef` を追加し、handler 入口で同期的に pending を確定してから `select_output_directory` を呼ぶようにした。既存の disabled 表示と「選択中...」表示は維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS の実フォルダ選択ダイアログは未実機確認。
+- 次アクション: 出力先フォルダ選択の実機挙動を確認する。次の改善候補を調査する。

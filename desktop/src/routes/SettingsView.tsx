@@ -26,6 +26,7 @@ export function SettingsView() {
   const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
   const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
     useState(false);
+  const isSelectingOutputDirectoryRef = useRef(false);
 
   const {
     data: settings,
@@ -128,9 +129,10 @@ export function SettingsView() {
   }, [localSettings, updateMutation]);
 
   const handleSelectOutputDirectory = useCallback(async () => {
-    if (isSelectingOutputDirectory) {
+    if (isSelectingOutputDirectory || isSelectingOutputDirectoryRef.current) {
       return;
     }
+    isSelectingOutputDirectoryRef.current = true;
     setIsSelectingOutputDirectory(true);
     try {
       const selected = await invoke<string | null>("select_output_directory");
@@ -141,6 +143,7 @@ export function SettingsView() {
       console.error("フォルダ選択に失敗しました:", e);
       showToast(`フォルダ選択に失敗しました: ${String(e)}`);
     } finally {
+      isSelectingOutputDirectoryRef.current = false;
       setIsSelectingOutputDirectory(false);
     }
   }, [isSelectingOutputDirectory, localSettings, showToast]);
