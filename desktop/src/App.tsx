@@ -6,7 +6,7 @@ function App() {
   return (
     <main className="container">
       <MeetingDetectedBanner />
-      <nav className="nav">
+      <nav className="nav" aria-label="主要ナビゲーション">
         <Link to="/" className="nav-link">
           文字起こし
         </Link>
