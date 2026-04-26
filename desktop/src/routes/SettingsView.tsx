@@ -442,6 +442,11 @@ export function SettingsView() {
 
       {/* 保存ボタン */}
       <div className="settings-actions">
+        {hasChanges && (
+          <span className="settings-unsaved-status" role="status">
+            未保存の変更があります
+          </span>
+        )}
         <button
           type="button"
           className="control-btn control-btn-transcribe settings-save-btn"

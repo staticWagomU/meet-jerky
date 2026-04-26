@@ -1052,7 +1052,20 @@
 }
 
 .settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   padding: 0.5rem 0;
+}
+
+.settings-unsaved-status {
+  color: var(--system-audio-note-color);
+  background-color: var(--system-audio-note-bg);
+  border-radius: 4px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .settings-save-btn {
