@@ -39,9 +39,22 @@ export function PermissionBanner() {
       : screenPermission === "denied"
         ? "未許可"
         : "未確認";
+  const permissionSummaryLabel = [
+    "録音権限状態",
+    micNeedsAttention ? `マイク 自分トラック ${micStatusLabel}` : null,
+    screenNeedsAttention
+      ? `画面収録 相手側トラック ${screenStatusLabel}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("、");
 
   return (
-    <div className="permission-banner permission-banner-warning" role="alert">
+    <div
+      className="permission-banner permission-banner-warning"
+      role="alert"
+      aria-label={permissionSummaryLabel}
+    >
       <div className="permission-banner-title">
         {isCheckingPermissions
           ? "権限状態を確認中です"
