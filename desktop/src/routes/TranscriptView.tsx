@@ -793,6 +793,13 @@ export function TranscriptView() {
           disabled={
             isMeetingOperationPending || (!canStartMeeting && !isMeetingActive)
           }
+          aria-label={
+            isMeetingOperationPending
+              ? "会議記録を処理中"
+              : isMeetingActive
+                ? "会議記録を終了"
+                : "会議記録を開始"
+          }
           aria-describedby={
             meetingStartBlockedReason ? MEETING_START_BLOCKED_REASON_ID : undefined
           }
