@@ -1215,3 +1215,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実バックエンドのモデル状態確認失敗は未実機確認。
 - 次アクション: モデル関連の再取得 UI を実機で確認する。
+
+### Main task: sanitize system audio f32 PCM samples
+
+- 開始日時: 2026-04-27 04:39 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 指示内容: システム音声 f32 PCM 変換で NaN/Infinity や範囲外値をそのまま文字起こし側へ流さないようにする。
+- 結果: f32 PCM サンプルをモノラル化する前に、非有限値は 0.0、範囲外値は [-1.0, 1.0] に丸める `sanitize_pcm_sample` を追加した。mono / multi-channel の両方で sanitize されることを純粋関数テストに追加した。
+- 変更ファイル: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 検証結果: 初回 `rustfmt --edition 2021 --check src-tauri/src/system_audio.rs` はテスト断言 1 箇所の折り返し差分で失敗したため整形指摘を反映。再実行した `git diff --check -- src-tauri/src/system_audio.rs AGENT_LOG.md` は成功。再実行した `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/system_audio.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/system_audio.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ScreenCaptureKit 実機 audio format 差分は未実機確認。Rust cargo 検証は `cmake` 不在制約に注意する。
+- 次アクション: `cmake` あり環境で system_audio の Rust テストを再実行する。

@@ -39,6 +39,14 @@ fn read_f32_ne(sample_bytes: &[u8]) -> f32 {
     ])
 }
 
+fn sanitize_pcm_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
 fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32> {
     if channels == 0 {
         return Vec::new();
@@ -52,6 +60,7 @@ fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32> {
         return data
             .chunks_exact(F32_SAMPLE_BYTES)
             .map(read_f32_ne)
+            .map(sanitize_pcm_sample)
             .collect();
     }
 
@@ -61,6 +70,7 @@ fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32> {
                 .chunks_exact(F32_SAMPLE_BYTES)
                 .take(channels)
                 .map(read_f32_ne)
+                .map(sanitize_pcm_sample)
                 .sum::<f32>();
             sum / channels as f32
         })
@@ -390,5 +400,22 @@ mod tests {
         data.extend_from_slice(&[9, 8]);
 
         assert_eq!(f32_pcm_bytes_to_mono(&data, 2), vec![0.5]);
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_sanitizes_invalid_samples() {
+        let data = pcm_bytes(&[f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 2.0, -2.0]);
+
+        assert_eq!(
+            f32_pcm_bytes_to_mono(&data, 1),
+            vec![0.0, 0.0, 0.0, 1.0, -1.0]
+        );
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_sanitizes_before_downmix() {
+        let data = pcm_bytes(&[f32::NAN, 1.0, 2.0, -2.0]);
+
+        assert_eq!(f32_pcm_bytes_to_mono(&data, 2), vec![0.5, 0.0]);
     }
 }
