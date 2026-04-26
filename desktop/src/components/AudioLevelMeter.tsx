@@ -19,7 +19,7 @@ function getLevelColor(level: number): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function sanitizeLevel(level: number): number {
+export function sanitizeAudioLevelForDisplay(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
   }
@@ -27,7 +27,7 @@ function sanitizeLevel(level: number): number {
 }
 
 export function AudioLevelMeter({ level }: AudioLevelMeterProps) {
-  const clampedLevel = sanitizeLevel(level);
+  const clampedLevel = sanitizeAudioLevelForDisplay(level);
   const percentage = clampedLevel * 100;
   const color = getLevelColor(clampedLevel);
 

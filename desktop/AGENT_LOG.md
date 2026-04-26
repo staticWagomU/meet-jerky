@@ -1537,3 +1537,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実モデルDL中の画面遷移は未実施。
 - 次アクション: 実モデルDL中の画面遷移と異常進捗表示を必要時に実機/モックで確認する。次の改善候補を調査する。
+
+### Main task: sanitize audio level labels
+
+- 開始日時: 2026-04-27 05:50 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/AudioLevelMeter.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: AudioLevelMeter 直下のバーだけでなく、マイク/システム音声のパーセントラベルにも NaN/Infinity/範囲外値を表示しないようにする。
+- 結果: 表示用の `sanitizeAudioLevelForDisplay` を export し、AudioLevelMeter と両音声セクションの数値ラベルで共有するようにした。非有限値は 0、範囲外値は 0..1 に丸める。
+- 変更ファイル: `src/components/AudioLevelMeter.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/AudioLevelMeter.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/AudioLevelMeter.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。異常音声レベルの実 event は未実機確認。
+- 次アクション: 異常音声レベルの UI 表示を必要時にモックで確認する。次の改善候補を調査する。

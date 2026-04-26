@@ -1,5 +1,8 @@
 import type { AudioDevice } from "../types";
-import { AudioLevelMeter } from "./AudioLevelMeter";
+import {
+  AudioLevelMeter,
+  sanitizeAudioLevelForDisplay,
+} from "./AudioLevelMeter";
 
 interface MicrophoneSectionProps {
   isMicRecording: boolean;
@@ -26,6 +29,10 @@ export function MicrophoneSection({
   onRetryDevices,
   onToggleRecording,
 }: MicrophoneSectionProps) {
+  const micLevelPercent = Math.round(
+    sanitizeAudioLevelForDisplay(micLevel) * 100,
+  );
+
   return (
     <div className="audio-source-section">
       <div className="audio-source-header">マイク</div>
@@ -83,7 +90,7 @@ export function MicrophoneSection({
         <div className="level-meter-bar">
           <AudioLevelMeter level={micLevel} />
         </div>
-        <span className="level-label">{Math.round(micLevel * 100)}%</span>
+        <span className="level-label">{micLevelPercent}%</span>
       </div>
     </div>
   );
