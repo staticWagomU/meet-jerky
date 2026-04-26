@@ -1972,6 +1972,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。モデルダウンロード実行は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: label transcript copy count
+
+- 開始日時: 2026-04-27 09:02 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしコピー操作で、支援技術にコピー対象件数が伝わるようにする。
+- 結果: copy button に `aria-label` を追加し、コピー可能な文字起こし件数を含めた。表示文言、コピー対象の抽出、clipboard 書き込み処理は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。clipboard 実操作は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST

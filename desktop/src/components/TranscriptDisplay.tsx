@@ -277,6 +277,7 @@ export function TranscriptDisplay({
           <button
             type="button"
             className="copy-btn"
+            aria-label={`文字起こし ${copyableSegmentsCount} 件をコピー`}
             onClick={handleCopyAll}
             disabled={copyableSegmentsCount === 0 || isCopying}
           >
