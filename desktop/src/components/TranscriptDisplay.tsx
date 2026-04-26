@@ -302,6 +302,9 @@ export function TranscriptDisplay({
       <div
         ref={containerRef}
         className="transcript-display"
+        role="log"
+        aria-label="文字起こしログ"
+        aria-relevant="additions text"
         onScroll={handleScroll}
       >
         {segments.length === 0 ? (
