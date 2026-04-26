@@ -137,6 +137,9 @@ export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isMicOperationPending, setIsMicOperationPending] = useState(false);
+  const [isSystemAudioOperationPending, setIsSystemAudioOperationPending] =
+    useState(false);
   const [isMeetingOperationPending, setIsMeetingOperationPending] =
     useState(false);
   const [isTranscriptionOperationPending, setIsTranscriptionOperationPending] =
@@ -393,6 +396,15 @@ export function TranscriptView() {
   ]);
 
   const handleToggleMicRecording = useCallback(async () => {
+    if (
+      isMicOperationPending ||
+      isSystemAudioOperationPending ||
+      isMeetingOperationPending ||
+      isTranscriptionOperationPending
+    ) {
+      return;
+    }
+    setIsMicOperationPending(true);
     try {
       if (isMicRecording) {
         await invoke("stop_recording");
@@ -418,8 +430,14 @@ export function TranscriptView() {
       const msg = formatOperationError(MIC_RECORDING_ERROR_PREFIX, e);
       console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
+    } finally {
+      setIsMicOperationPending(false);
     }
   }, [
+    isMicOperationPending,
+    isSystemAudioOperationPending,
+    isMeetingOperationPending,
+    isTranscriptionOperationPending,
     isMicRecording,
     isSystemAudioRecording,
     isTranscribing,
@@ -427,6 +445,15 @@ export function TranscriptView() {
   ]);
 
   const handleToggleSystemAudio = useCallback(async () => {
+    if (
+      isSystemAudioOperationPending ||
+      isMicOperationPending ||
+      isMeetingOperationPending ||
+      isTranscriptionOperationPending
+    ) {
+      return;
+    }
+    setIsSystemAudioOperationPending(true);
     try {
       if (isSystemAudioRecording) {
         await invoke("stop_system_audio");
@@ -448,8 +475,18 @@ export function TranscriptView() {
       const msg = formatOperationError(SYSTEM_AUDIO_ERROR_PREFIX, e);
       console.error("システム音声操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
+    } finally {
+      setIsSystemAudioOperationPending(false);
     }
-  }, [isSystemAudioRecording, isMicRecording, isTranscribing]);
+  }, [
+    isSystemAudioOperationPending,
+    isMicOperationPending,
+    isMeetingOperationPending,
+    isTranscriptionOperationPending,
+    isSystemAudioRecording,
+    isMicRecording,
+    isTranscribing,
+  ]);
 
   const handleToggleTranscription = useCallback(async () => {
     if (isTranscriptionOperationPending) {
@@ -536,6 +573,11 @@ export function TranscriptView() {
     isModelDownloaded,
     modelDownloadedError,
   );
+  const isAudioSourceOperationPending =
+    isMicOperationPending ||
+    isSystemAudioOperationPending ||
+    isMeetingOperationPending ||
+    isTranscriptionOperationPending;
 
   const transcriptionSourceStatus = getTranscriptionSourceStatus(
     isTranscribing,
@@ -611,6 +653,7 @@ export function TranscriptView() {
         audioDevices={devices}
         audioDevicesError={devicesError}
         isReloadingAudioDevices={isFetchingDevices}
+        isOperationPending={isAudioSourceOperationPending}
         onDeviceChange={setSelectedDeviceId}
         onRetryDevices={() => refetchDevices()}
         onToggleRecording={handleToggleMicRecording}
@@ -619,6 +662,7 @@ export function TranscriptView() {
       <SystemAudioSection
         isSystemAudioRecording={isSystemAudioRecording}
         systemAudioLevel={systemAudioLevel}
+        isOperationPending={isAudioSourceOperationPending}
         onToggleSystemAudio={handleToggleSystemAudio}
       />
 

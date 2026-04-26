@@ -8,6 +8,7 @@ interface MicrophoneSectionProps {
   audioDevices: AudioDevice[] | undefined;
   audioDevicesError: unknown;
   isReloadingAudioDevices: boolean;
+  isOperationPending: boolean;
   onDeviceChange: (deviceId: string) => void;
   onRetryDevices: () => void;
   onToggleRecording: () => void;
@@ -20,6 +21,7 @@ export function MicrophoneSection({
   audioDevices,
   audioDevicesError,
   isReloadingAudioDevices,
+  isOperationPending,
   onDeviceChange,
   onRetryDevices,
   onToggleRecording,
@@ -34,7 +36,7 @@ export function MicrophoneSection({
             aria-label="マイクデバイス"
             value={selectedDeviceId}
             onChange={(e) => onDeviceChange(e.target.value)}
-            disabled={isMicRecording}
+            disabled={isMicRecording || isOperationPending}
             className="device-select"
           >
             <option value="">デフォルト</option>
@@ -48,12 +50,17 @@ export function MicrophoneSection({
         <button
           type="button"
           onClick={onToggleRecording}
+          disabled={isOperationPending}
           className={`control-btn ${isMicRecording ? "control-btn-stop" : "control-btn-record"}`}
         >
           <span
             className={`rec-indicator ${isMicRecording ? "rec-indicator-active" : ""}`}
           />
-          {isMicRecording ? "録音停止" : "録音開始"}
+          {isOperationPending
+            ? "処理中..."
+            : isMicRecording
+              ? "録音停止"
+              : "録音開始"}
         </button>
       </div>
       {Boolean(audioDevicesError) && (

@@ -1103,3 +1103,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 macOS 会議開始/終了の二重クリック挙動は未実機確認。
 - 次アクション: 個別のマイク/システム音声トグルにも同種の二重実行防止が必要か確認する。
+
+### Main task: guard audio source toggles while operations are pending
+
+- 開始日時: 2026-04-27 04:28 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: マイク録音/システム音声キャプチャの async 操作中に同じボタンを連打できず、共有状態を触る会議/文字起こし操作中にも音声トグルを押せないようにする。
+- 結果: マイク録音とシステム音声の操作中フラグを追加し、どちらかの音声ソース操作中は両方の音声トグルを disabled にして文言を「処理中...」へ切り替えるようにした。会議開始/終了中と文字起こし開始/停止中も個別音声トグルとマイクデバイス選択を disabled にする。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 macOS マイク/システム音声開始停止の二重クリック挙動は未実機確認。
+- 次アクション: 録音画面の操作中表示を実機で確認する。

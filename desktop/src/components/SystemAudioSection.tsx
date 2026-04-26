@@ -3,12 +3,14 @@ import { AudioLevelMeter } from "./AudioLevelMeter";
 interface SystemAudioSectionProps {
   isSystemAudioRecording: boolean;
   systemAudioLevel: number;
+  isOperationPending: boolean;
   onToggleSystemAudio: () => void;
 }
 
 export function SystemAudioSection({
   isSystemAudioRecording,
   systemAudioLevel,
+  isOperationPending,
   onToggleSystemAudio,
 }: SystemAudioSectionProps) {
   return (
@@ -18,12 +20,17 @@ export function SystemAudioSection({
         <button
           type="button"
           onClick={onToggleSystemAudio}
+          disabled={isOperationPending}
           className={`control-btn ${isSystemAudioRecording ? "control-btn-stop" : "control-btn-capture"}`}
         >
           <span
             className={`rec-indicator ${isSystemAudioRecording ? "rec-indicator-active" : ""}`}
           />
-          {isSystemAudioRecording ? "キャプチャ停止" : "キャプチャ開始"}
+          {isOperationPending
+            ? "処理中..."
+            : isSystemAudioRecording
+              ? "キャプチャ停止"
+              : "キャプチャ開始"}
         </button>
       </div>
       <div className="level-meter-row">
