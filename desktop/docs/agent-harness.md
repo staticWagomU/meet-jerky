@@ -107,11 +107,14 @@
 - `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
   - 後継メインエージェントを `tmux new-session` で起動する。
   - 後継プロンプトは `PROMPT_FILE` に具体的な引き継ぎ内容を書いて渡す。
-- `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+- `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
   - メインセッションが存在するかを定期確認し、存在しなければ `agent-handoff-main.sh` で起動する。
-  - 判断・実装・コミットは行わない。
+  - メインセッションが入力待ちに見える場合、定型の継続指示だけを送る。
+  - 判断・実装・差分修正・検証解釈・コミットは行わない。
   - 標準では `mj-main` を `docs/autonomous-main-prompt.md` で起動し、600秒間隔で確認する。
-- `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+  - 継続指示は `docs/autonomous-main-prompt.md` へ戻す nudge に限定し、改善対象の判断、差分修正、検証解釈、コミット判断は行わない。
+  - 標準の nudge cooldown は600秒。`MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS` で上書きできる。
+- `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
   - watchdog 自体を `tmux new-session` で起動する。
   - 標準では `mj-watchdog` セッションを起動する。
 

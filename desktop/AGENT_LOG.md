@@ -277,3 +277,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の対象テストと `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。
+
+### Harness: watchdog idle continuation nudge
+
+- 開始日時: 2026-04-26 20:45 JST
+- 担当セッション: bootstrap
+- 役割: ブートストラップ担当
+- 作業範囲: `scripts/agent-watchdog.sh`, `scripts/agent-start-watchdog.sh`, `docs/agent-harness.md`, `docs/autonomous-main-prompt.md`, `AGENT_LOG.md`
+- 指示内容: `mj-main` が tmux セッションとして存在していても入力待ちで停止する弱点を自律的に改善する。watchdog には判断、実装、差分修正、検証解釈、コミット判断をさせず、入力待ちに見える場合の定型継続指示に限定する。
+- 結果: watchdog が `mj-main` の pane を確認し、`Working` ではなく入力プロンプトが見える場合に `docs/autonomous-main-prompt.md` へ戻す定型 nudge を送るようにした。nudge は cooldown 付きで、標準600秒、`MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS` または第4引数で変更可能。watchdog 起動スクリプトと運用ドキュメントも更新した。既存 `mj-watchdog` を再起動し、新しい nudge cooldown 付き watchdog が `mj-main` を監視していることを確認した。
+- 変更ファイル: `scripts/agent-watchdog.sh`, `scripts/agent-start-watchdog.sh`, `docs/agent-harness.md`, `docs/autonomous-main-prompt.md`, `AGENT_LOG.md`
+- 検証結果: `bash -n scripts/agent-*.sh` は成功。`git diff --check -- scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh docs/agent-harness.md docs/autonomous-main-prompt.md AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh docs/agent-harness.md docs/autonomous-main-prompt.md AGENT_LOG.md` は成功し、`cmake` 不在のため Rust 全体テストは想定どおり skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `mj-main` が worker 差分を分離して処理中のため、このハーネス差分だけをコミットする。

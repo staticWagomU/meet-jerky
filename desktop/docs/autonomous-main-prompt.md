@@ -33,12 +33,13 @@
 - `scripts/agent-verify.sh [PATH ...]`
 - `scripts/agent-commit.sh COMMIT_MESSAGE [PATH ...]`
 - `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
-- `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
-- `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS]`
+- `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
+- `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
 
 watchdog方針:
 - `mj-watchdog` は `mj-main` が存在しない場合に再起動するだけの係。
-- watchdog に判断、実装、差分修正、コミットを任せない。
+- `mj-watchdog` は `mj-main` が入力待ちに見える場合、定型の継続指示を送ってよい。
+- watchdog に判断、実装、差分修正、検証解釈、コミットを任せない。
 - メインエージェントである自分は、watchdogが存在していても通常どおり改善ループ、worker監視、レビュー、検証、コミットを行う。
 - 自分が後継メインを起動して終了する場合、`mj-watchdog` と役割が衝突しないよう、後継セッション名と引き継ぎ内容を明確にする。
 
