@@ -24,6 +24,7 @@
   --color-muted: #888;
   --color-muted-light: #aaa;
   --color-heading-secondary: #555;
+  --focus-ring-color: rgba(57, 108, 216, 0.42);
 
   /* Nav */
   --nav-link-hover-bg: #e0e0e0;
@@ -120,6 +121,7 @@
     --color-muted: #888;
     --color-muted-light: #666;
     --color-heading-secondary: #bbb;
+    --focus-ring-color: rgba(147, 197, 253, 0.52);
 
     --nav-link-hover-bg: #444;
 
@@ -218,6 +220,11 @@
 
 .nav-link:hover {
   background-color: var(--nav-link-hover-bg);
+}
+
+:where(button, a, select, input, textarea):focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
 }
 
 .nav-link[data-status="active"] {
