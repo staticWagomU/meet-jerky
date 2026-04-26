@@ -174,6 +174,7 @@ function SessionRow({
         <button
           type="button"
           className="control-btn control-btn-transcribe"
+          aria-label={`ファイルを開く: ${session.title}`}
           onClick={() => onOpenFile(session.path)}
           disabled={isAnyActionPending}
         >
@@ -182,6 +183,7 @@ function SessionRow({
         <button
           type="button"
           className="control-btn control-btn-clear"
+          aria-label={`フォルダを開く: ${session.title}`}
           onClick={() => onRevealInFolder(session.path)}
           disabled={isAnyActionPending}
         >
