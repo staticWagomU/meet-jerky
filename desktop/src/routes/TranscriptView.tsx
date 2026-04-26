@@ -97,6 +97,26 @@ function getTranscriptionSourceArg(
   return null;
 }
 
+function getTranscriptionStartBlockedReason(
+  isTranscribing: boolean,
+  isAnySourceRecording: boolean,
+  isModelDownloaded: boolean | undefined,
+  modelDownloadedError: unknown,
+): string | null {
+  if (isTranscribing) return null;
+  if (modelDownloadedError) return null;
+  if (!isAnySourceRecording) {
+    return "文字起こし開始には、マイクまたはシステム音声を開始してください。";
+  }
+  if (isModelDownloaded === undefined) {
+    return "モデル状態を確認中です。";
+  }
+  if (!isModelDownloaded) {
+    return "文字起こし開始には、モデルのダウンロードが必要です。";
+  }
+  return null;
+}
+
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
@@ -480,6 +500,12 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const transcriptionStartBlockedReason = getTranscriptionStartBlockedReason(
+    isTranscribing,
+    isAnySourceRecording,
+    isModelDownloaded,
+    modelDownloadedError,
+  );
 
   return (
     <div className="transcript-view">
@@ -550,6 +576,7 @@ export function TranscriptView() {
         onModelChange={setSelectedModel}
         onToggleTranscription={handleToggleTranscription}
         canStartTranscription={canStartTranscription}
+        startBlockedReason={transcriptionStartBlockedReason}
         sourceStatusText={transcriptionSourceStatus}
         segmentsCount={segments.length}
         onClearTranscript={handleClearTranscript}

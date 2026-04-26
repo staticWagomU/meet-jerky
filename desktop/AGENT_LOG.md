@@ -991,3 +991,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。VoiceOver での読み上げ確認は未実機確認。
 - 次アクション: 録音画面のボタン状態説明やツールチップ要否を確認する。
+
+### Main task: show transcription start blocked reason
+
+- 開始日時: 2026-04-27 06:45 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし開始ボタンが無効なときに、音声ソース未開始・モデル確認中・モデル未DLのどれが理由かをボタン周辺で表示する。
+- 結果: `TranscriptView` で開始不可理由を計算し、`TranscriptionControls` に渡して `role="status"` で表示するようにした。既存の model query error は別の alert として表示済みなので重複表示しない。開始/停止処理、モデル選択、source status は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での表示確認は未実機確認。
+- 次アクション: 会議開始ボタンの disabled 理由表示も同じ基準で確認する。
