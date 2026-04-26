@@ -671,7 +671,11 @@ export function TranscriptView() {
             {formatElapsedTime(elapsedTime)}
           </span>
         )}
-        <div className="meeting-status-strip" role="status">
+        <div
+          className="meeting-status-strip"
+          role="status"
+          aria-label="会議記録状態"
+        >
           <span
             className={`meeting-status-pill ${
               isMeetingActive
