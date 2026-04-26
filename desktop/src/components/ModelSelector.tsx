@@ -319,7 +319,15 @@ function DownloadStatus({
   }
 
   if (isDownloaded) {
-    return <span className="model-status-ready">準備完了</span>;
+    return (
+      <span
+        className="model-status-ready"
+        role="status"
+        aria-label={`${selectedModel} モデルは準備完了`}
+      >
+        準備完了
+      </span>
+    );
   }
 
   if (isDownloadedError) {
