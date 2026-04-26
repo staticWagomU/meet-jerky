@@ -320,6 +320,18 @@ export function TranscriptView() {
         await invoke("stop_transcription");
         setIsTranscribing(false);
       } else {
+        if (isMicRecording) {
+          if (selectedDeviceId) {
+            await invoke("start_recording", { deviceId: selectedDeviceId });
+          } else {
+            await invoke("start_recording");
+          }
+          setMicLevel(0);
+        }
+        if (isSystemAudioRecording) {
+          await invoke("start_system_audio");
+          setSystemAudioLevel(0);
+        }
         await invoke("start_transcription", { modelName: selectedModel });
         setIsTranscribing(true);
       }
@@ -331,7 +343,13 @@ export function TranscriptView() {
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
     }
-  }, [isTranscribing, selectedModel]);
+  }, [
+    isTranscribing,
+    isMicRecording,
+    isSystemAudioRecording,
+    selectedDeviceId,
+    selectedModel,
+  ]);
 
   const handleNewSegment = useCallback((segment: TranscriptSegment) => {
     setSegments((prev) => [...prev, segment]);

@@ -319,3 +319,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `mj-main` は同方針に従い、実機・外部サービス制約で止まらず、可能な限りモックと自動テストで検証を継続する。
+
+### Worker task: restart active audio sources before transcription resume
+
+- 開始日時: 2026-04-26 20:49 JST
+- 担当セッション: `mj-worker-transcription-restart-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: 手動で文字起こし停止後、録音を継続したまま文字起こしを再開する際に、Rust 側で消費済みの ring buffer consumer に依存しないよう、`start_transcription` 直前に現在録音中の音声ソースだけを再開始する。バックエンド変更、新規依存追加、コミットは禁止。
+- 結果: `handleToggleTranscription` の停止中から開始する分岐で、`isMicRecording` が true の場合は既存の選択デバイス指定を維持して `start_recording` を再実行し、`isSystemAudioRecording` が true の場合は `start_system_audio` を再実行するよう変更した。成功時は録音中 state を維持し、該当 level のみ 0 に戻す。再開始または `start_transcription` の失敗は既存の `TRANSCRIPTION_ERROR_PREFIX` 経由で画面表示される。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。main 側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。
