@@ -303,7 +303,7 @@ function DownloadStatus({
         <div
           className="download-progress-bar"
           role="progressbar"
-          aria-label="モデルダウンロード進捗"
+          aria-label={`${selectedModel} モデルダウンロード進捗`}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progressPercent}
