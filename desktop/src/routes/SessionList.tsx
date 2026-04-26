@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 
@@ -16,12 +16,15 @@ export function SessionList() {
   const { data, isLoading, isFetching, error, refetch } = useSessionList();
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<SessionAction>(null);
+  const pendingActionRef = useRef<SessionAction>(null);
 
   const handleOpenFile = useCallback(async (path: string) => {
-    if (pendingAction) {
+    if (pendingActionRef.current) {
       return;
     }
-    setPendingAction({ kind: "open", path });
+    const nextAction = { kind: "open" as const, path };
+    pendingActionRef.current = nextAction;
+    setPendingAction(nextAction);
     try {
       await openPath(path);
       setActionError(null);
@@ -29,15 +32,18 @@ export function SessionList() {
       console.error("ファイルを開けませんでした:", e);
       setActionError(`ファイルを開けませんでした: ${String(e)}`);
     } finally {
+      pendingActionRef.current = null;
       setPendingAction(null);
     }
-  }, [pendingAction]);
+  }, []);
 
   const handleRevealInFolder = useCallback(async (path: string) => {
-    if (pendingAction) {
+    if (pendingActionRef.current) {
       return;
     }
-    setPendingAction({ kind: "reveal", path });
+    const nextAction = { kind: "reveal" as const, path };
+    pendingActionRef.current = nextAction;
+    setPendingAction(nextAction);
     try {
       await revealItemInDir(path);
       setActionError(null);
@@ -45,9 +51,10 @@ export function SessionList() {
       console.error("フォルダを開けませんでした:", e);
       setActionError(`フォルダを開けませんでした: ${String(e)}`);
     } finally {
+      pendingActionRef.current = null;
       setPendingAction(null);
     }
-  }, [pendingAction]);
+  }, []);
 
   if (isLoading) {
     return <div className="session-list">読み込み中...</div>;
