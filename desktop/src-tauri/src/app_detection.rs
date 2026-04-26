@@ -193,9 +193,10 @@ fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
         .find(|c| c == '/' || c == '?' || c == '#')
         .unwrap_or(after_scheme.len());
     let authority = &after_scheme[..authority_end];
-    let host_port = authority
-        .rsplit_once('@')
-        .map_or(authority, |(_, host)| host);
+    if authority.contains('@') {
+        return None;
+    }
+    let host_port = authority;
     let host = strip_port(host_port)?;
     if host.is_empty() {
         return None;
@@ -537,6 +538,14 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://meet.google.com:65536/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://user@meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://evil.example@meet.google.com/abc-defg-hij"),
             None
         );
     }

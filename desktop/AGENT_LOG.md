@@ -837,3 +837,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。backend worker panic 後の stale UI 状態再現は未実機確認。
 - 次アクション: stale state の他コマンド停止処理にも同様の既知エラーがないか確認する。
+
+### Main task: reject userinfo in meeting URL classification
+
+- 開始日時: 2026-04-27 05:17 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議 URL 分類で userinfo 付き URL を host 部分だけで会議扱いしないよう、`@` を含む authority を拒否する。
+- 結果: `parse_url_host_and_path` で authority に `@` が含まれる場合は `None` を返すようにした。ブラウザ会議 URL として userinfo は不要で、`evil.example@meet.google.com` のような紛らわしい入力を安全側に倒す。分類結果は従来どおり service と host のみで、URL 全文やパスは payload/log/UI に出していない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と userinfo 付き URL の実ブラウザ表示は未実機確認。
+- 次アクション: URL provider boundary を設計する際は、標準 URL parser での正規化と userinfo 拒否を前提にする。
