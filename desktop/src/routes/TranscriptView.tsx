@@ -28,6 +28,7 @@ function toErrorMessage(e: unknown): string {
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "システム音声操作に失敗しました:";
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
+const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 
 function formatOperationError(prefix: string, e: unknown): string {
   return `${prefix} ${toErrorMessage(e)}`;
@@ -38,6 +39,20 @@ function clearRelatedMeetingError(
   prefix: string,
 ): string | null {
   return currentError?.startsWith(prefix) ? null : currentError;
+}
+
+async function stopTranscriptionFromUiState(): Promise<
+  "stopped" | "already-stopped"
+> {
+  try {
+    await invoke("stop_transcription");
+    return "stopped";
+  } catch (e) {
+    if (toErrorMessage(e).includes(TRANSCRIPTION_NOT_RUNNING_MESSAGE)) {
+      return "already-stopped";
+    }
+    throw e;
+  }
 }
 
 /** 経過時間をフォーマットする */
@@ -177,7 +192,7 @@ export function TranscriptView() {
       // STOP: stop transcription, then stop audio sources, then finalize session
       try {
         if (isTranscribing) {
-          await invoke("stop_transcription");
+          await stopTranscriptionFromUiState();
           setIsTranscribing(false);
         }
         if (isMicRecording) {
@@ -315,7 +330,7 @@ export function TranscriptView() {
         setMicLevel(0);
         // If no source is recording, stop transcription too
         if (!isSystemAudioRecording && isTranscribing) {
-          await invoke("stop_transcription");
+          await stopTranscriptionFromUiState();
           setIsTranscribing(false);
         }
       } else {
@@ -349,7 +364,7 @@ export function TranscriptView() {
         setSystemAudioLevel(0);
         // If no source is recording, stop transcription too
         if (!isMicRecording && isTranscribing) {
-          await invoke("stop_transcription");
+          await stopTranscriptionFromUiState();
           setIsTranscribing(false);
         }
       } else {
@@ -369,7 +384,7 @@ export function TranscriptView() {
   const handleToggleTranscription = useCallback(async () => {
     try {
       if (isTranscribing) {
-        await invoke("stop_transcription");
+        await stopTranscriptionFromUiState();
         setIsTranscribing(false);
       } else {
         if (isMicRecording) {

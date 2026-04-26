@@ -823,3 +823,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実モデルダウンロード中の event 取りこぼし再現は未実機確認。
 - 次アクション: モデルダウンロード完了時の query invalidation と UI 状態を実機またはモックで確認する。
+
+### Main task: tolerate stale transcription stop state
+
+- 開始日時: 2026-04-27 05:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI 側の `isTranscribing` が stale なまま `stop_transcription` を呼んだ場合に、「文字起こしは実行されていません」で会議停止や音声ソース停止が止まらないようにする。
+- 結果: `stop_transcription` の「実行されていません」だけを UI 状態の stale として扱う helper を追加し、会議停止、マイク停止、システム音声停止、文字起こし停止で使うようにした。それ以外の停止エラーは従来どおり表示する。録音開始、文字起こし開始、rollback 処理は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。backend worker panic 後の stale UI 状態再現は未実機確認。
+- 次アクション: stale state の他コマンド停止処理にも同様の既知エラーがないか確認する。
