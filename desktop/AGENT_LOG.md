@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: block OpenAI Realtime start without API key
+
+- 開始日時: 2026-04-27 07:30 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI Realtime 選択時に API キー未設定のまま会議開始/文字起こし開始へ進んで失敗しないよう、開始前に UI で理由を表示してブロックする。
+- 結果: `TranscriptView` で OpenAI Realtime 選択時のみ `has_openai_api_key` を確認し、未設定/確認中/確認失敗を開始不可理由として表示するようにした。API キーの値は取得せず、有無確認のみを使う。録音、文字起こし invoke、API キー保存/削除処理、認証情報は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。OpenAI API キー確認エラー/未設定状態、OpenAI Realtime 実開始、認証は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify output directory controls
 
 - 開始日時: 2026-04-27 07:11 JST

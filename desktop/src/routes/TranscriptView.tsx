@@ -106,11 +106,21 @@ function getTranscriptionStartBlockedReason(
   requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
   modelDownloadedError: unknown,
+  requiresOpenAIApiKey: boolean,
+  hasOpenAIApiKey: boolean | undefined,
+  openAIApiKeyError: unknown,
 ): string | null {
   if (isTranscribing) return null;
   if (modelDownloadedError) return null;
+  if (openAIApiKeyError) return "OpenAI API キー状態を確認できません。";
   if (!isAnySourceRecording) {
     return "文字起こし開始には、マイクまたはシステム音声を開始してください。";
+  }
+  if (requiresOpenAIApiKey && hasOpenAIApiKey === undefined) {
+    return "OpenAI API キー状態を確認中です。";
+  }
+  if (requiresOpenAIApiKey && !hasOpenAIApiKey) {
+    return "OpenAI Realtime の利用には、設定画面で API キーを登録してください。";
   }
   if (!requiresLocalModel) {
     return null;
@@ -129,9 +139,19 @@ function getMeetingStartBlockedReason(
   requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
   modelDownloadedError: unknown,
+  requiresOpenAIApiKey: boolean,
+  hasOpenAIApiKey: boolean | undefined,
+  openAIApiKeyError: unknown,
 ): string | null {
   if (isMeetingActive) return null;
   if (modelDownloadedError) return null;
+  if (openAIApiKeyError) return "OpenAI API キー状態を確認できません。";
+  if (requiresOpenAIApiKey && hasOpenAIApiKey === undefined) {
+    return "OpenAI API キー状態を確認中です。";
+  }
+  if (requiresOpenAIApiKey && !hasOpenAIApiKey) {
+    return "会議開始には、設定画面で OpenAI API キーを登録してください。";
+  }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
     return "会議開始に必要なモデル状態を確認中です。";
@@ -160,6 +180,10 @@ function getAudioSourceStatusLabel(
 
 function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
   return !engine || engine === "whisper";
+}
+
+function getRequiresOpenAIApiKey(engine: TranscriptionEngineType | undefined): boolean {
+  return engine === "openAIRealtime";
 }
 
 function getAiTransmissionStatusLabel(
@@ -254,6 +278,9 @@ export function TranscriptView() {
   const requiresLocalModel = getRequiresLocalModel(
     settings?.transcriptionEngine,
   );
+  const requiresOpenAIApiKey = getRequiresOpenAIApiKey(
+    settings?.transcriptionEngine,
+  );
 
   // Check if selected model is downloaded
   const { data: isModelDownloaded, error: modelDownloadedError } =
@@ -263,6 +290,15 @@ export function TranscriptView() {
         invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
       enabled: requiresLocalModel && !!selectedModel,
     });
+
+  const {
+    data: hasOpenAIApiKey,
+    error: openAIApiKeyError,
+  } = useQuery<boolean>({
+    queryKey: ["openaiApiKey", "has"],
+    queryFn: () => invoke<boolean>("has_openai_api_key"),
+    enabled: requiresOpenAIApiKey,
+  });
 
   // Route audio-level events by source
   useEffect(() => {
@@ -670,9 +706,14 @@ export function TranscriptView() {
   }, []);
 
   const isTranscriptionEngineReady =
-    !requiresLocalModel || isModelDownloaded === true;
+    (!requiresLocalModel || isModelDownloaded === true) &&
+    (!requiresOpenAIApiKey || hasOpenAIApiKey === true) &&
+    !openAIApiKeyError;
   const modelDownloadedErrorForUi = requiresLocalModel
     ? modelDownloadedError
+    : null;
+  const openAIApiKeyErrorForUi = requiresOpenAIApiKey
+    ? openAIApiKeyError
     : null;
   const canStartTranscription =
     isAnySourceRecording && isTranscriptionEngineReady && !isTranscribing;
@@ -683,6 +724,9 @@ export function TranscriptView() {
     requiresLocalModel,
     isModelDownloaded,
     modelDownloadedErrorForUi,
+    requiresOpenAIApiKey,
+    hasOpenAIApiKey,
+    openAIApiKeyErrorForUi,
   );
   const isAudioSourceOperationPending =
     isMicOperationPending ||
@@ -701,6 +745,9 @@ export function TranscriptView() {
     requiresLocalModel,
     isModelDownloaded,
     modelDownloadedErrorForUi,
+    requiresOpenAIApiKey,
+    hasOpenAIApiKey,
+    openAIApiKeyErrorForUi,
   );
   const audioSourceStatusLabel = getAudioSourceStatusLabel(
     isMicRecording,
@@ -789,6 +836,11 @@ export function TranscriptView() {
         {settingsError && (
           <p className="meeting-error" role="alert">
             文字起こし設定の取得に失敗しました: {String(settingsError)}
+          </p>
+        )}
+        {openAIApiKeyErrorForUi && (
+          <p className="meeting-error" role="alert">
+            OpenAI API キー状態の確認に失敗しました: {String(openAIApiKeyErrorForUi)}
           </p>
         )}
         {meetingStartBlockedReason && (
