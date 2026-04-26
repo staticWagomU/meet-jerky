@@ -1481,3 +1481,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実設定保存は未実機確認。
 - 次アクション: 設定保存の実機挙動を確認する。次の改善候補を調査する。
+
+### Main task: guard OpenAI API key mutations with refs
+
+- 開始日時: 2026-04-27 05:32 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: API キー保存/削除 mutation の state 反映前連打でも Keychain 操作を二重起動しないようにする。認証情報自体は変更しない。
+- 結果: API キー保存/削除それぞれに pending ref を追加し、handler 入口で同期的に pending を確定してから mutation を起動するようにした。各 mutation の `onSettled` で ref を解除し、既存の disabled/保存中/削除中文言や Keychain 操作内容は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。認証情報変更・Keychain 操作は実施していない。
+- 次アクション: API キー保存/削除の実機挙動は必要時のみ確認する。認証情報変更は行わず次の改善候補を調査する。

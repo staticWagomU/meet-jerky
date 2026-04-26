@@ -455,6 +455,8 @@ function OpenAIApiKeySection({
 }) {
   const queryClient = useQueryClient();
   const [keyInput, setKeyInput] = useState("");
+  const isSettingApiKeyRef = useRef(false);
+  const isClearingApiKeyRef = useRef(false);
 
   const {
     data: hasKey,
@@ -474,6 +476,9 @@ function OpenAIApiKeySection({
       showToast("API キーを保存しました");
     },
     onError: (e) => showToast(`API キーの保存に失敗しました: ${e}`),
+    onSettled: () => {
+      isSettingApiKeyRef.current = false;
+    },
   });
 
   const clearMutation = useMutation({
@@ -483,28 +488,34 @@ function OpenAIApiKeySection({
       showToast("API キーを削除しました");
     },
     onError: (e) => showToast(`API キーの削除に失敗しました: ${e}`),
+    onSettled: () => {
+      isClearingApiKeyRef.current = false;
+    },
   });
 
   const handleSetApiKey = useCallback(() => {
-    if (setMutation.isPending) {
+    if (setMutation.isPending || isSettingApiKeyRef.current) {
       return;
     }
     const apiKey = keyInput.trim();
     if (!apiKey) {
       return;
     }
+    isSettingApiKeyRef.current = true;
     setMutation.mutate(apiKey);
   }, [keyInput, setMutation]);
 
   const handleClearApiKey = useCallback(() => {
     if (
       clearMutation.isPending ||
+      isClearingApiKeyRef.current ||
       isFetchingHasKey ||
       !hasKey ||
       Boolean(hasKeyError)
     ) {
       return;
     }
+    isClearingApiKeyRef.current = true;
     clearMutation.mutate();
   }, [clearMutation, hasKey, hasKeyError, isFetchingHasKey]);
 
