@@ -1,5 +1,5 @@
 //! Zoom / Microsoft Teams 等の会議アプリ起動・起動済み状態を検知して、ユーザーに
-//! 「記録を開始しますか?」の通知 + フロントエンドへのイベント通知を行う。
+//! 記録開始の確認を促す通知 + フロントエンドへのイベント通知を行う。
 //!
 //! macOS 限定。`swift/AppDetectionBridge.swift` 経由で `NSWorkspace` を
 //! 監視する。
@@ -11,7 +11,7 @@
 //!    - スロットリング (同一 bundle は 60 秒以内に再通知しない)
 //!    - macOS 通知センターに通知を出す
 //!    - フロントエンドへ `meeting-app-detected` イベントを emit
-//! 4. フロントエンドがバナーを表示し、ユーザー操作で記録開始
+//! 4. フロントエンドがバナーを表示し、ユーザーがアプリ側で記録開始を確認する
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -99,7 +99,7 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
     // 通知センターに通知を出す
     show_notification(&state.app_handle, app_name);
 
-    // フロントエンド (バナー表示・自動記録開始) へイベントを通知
+    // フロントエンド (バナー表示・記録開始導線) へイベントを通知
     let payload = MeetingAppDetectedPayload {
         bundle_id: bundle_id.to_string(),
         app_name: app_name.to_string(),
@@ -114,11 +114,16 @@ fn show_notification(app: &AppHandle, app_name: &str) {
     use tauri_plugin_notification::NotificationExt;
 
     let title = "Meet Jerky";
-    let body = format!("{app_name} を検出しました。クリックで記録を開始します。");
+    let body = notification_body(app_name);
 
     if let Err(e) = app.notification().builder().title(title).body(&body).show() {
         eprintln!("[app_detection] notification show failed: {e}");
     }
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn notification_body(app_name: &str) -> String {
+    format!("{app_name} を検出しました。記録を開始するにはアプリで確認してください。")
 }
 
 // ─────────────────────────────────────────────
@@ -226,5 +231,15 @@ mod tests {
         assert!(json.contains("\"bundleId\":\"us.zoom.xos\""));
         assert!(json.contains("\"appName\":\"Zoom\""));
         assert!(!json.contains("bundle_id"));
+    }
+
+    #[test]
+    fn notification_body_does_not_claim_click_starts_recording() {
+        let body = notification_body("Zoom");
+        assert!(body.contains("Zoom を検出しました。"));
+        assert!(
+            !body.contains("クリックで記録を開始"),
+            "通知クリックで録音開始する未実装挙動を本文に含めない"
+        );
     }
 }

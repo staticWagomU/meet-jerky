@@ -263,3 +263,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の対象テストと `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml system_audio` を再実行し、実機の ScreenCaptureKit audio buffer が f32 PCM 前提で問題ないか format description 確認を追加検討する。
+
+### Worker task: transparent meeting app detection notification copy
+
+- 開始日時: 2026-04-26 17:11 JST
+- 担当セッション: `mj-worker-notification-copy-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: 会議アプリ検知通知の本文が「クリックで記録を開始します。」となっているが、通知クリックで録音開始する実装はないため、実装に合う透明な文言へ修正する。可能なら本文生成を小さなヘルパーへ切り出し、「クリックで記録を開始」を含まないことを単体テストで確認する。既存イベント名、payload、スロットリング、通知タイトルは変更しない。新規依存追加なし。コミット禁止。
+- 結果: 通知本文を `{app_name} を検出しました。記録を開始するにはアプリで確認してください。` に変更し、`notification_body` ヘルパーへ切り出した。通知本文が「クリックで記録を開始」を含まないことを確認する単体テストを追加した。同じファイル内のコメントも、通知クリックや自動開始を示唆しない表現へ修正した。イベント名、payload、スロットリング、通知タイトルは変更していない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` と `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストと `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。
