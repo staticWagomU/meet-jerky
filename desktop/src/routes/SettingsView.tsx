@@ -384,7 +384,11 @@ function OpenAIApiKeySection({
   const queryClient = useQueryClient();
   const [keyInput, setKeyInput] = useState("");
 
-  const { data: hasKey } = useQuery<boolean>({
+  const {
+    data: hasKey,
+    error: hasKeyError,
+    refetch: refetchHasKey,
+  } = useQuery<boolean>({
     queryKey: ["openaiApiKey", "has"],
     queryFn: () => invoke<boolean>("has_openai_api_key"),
   });
@@ -415,6 +419,20 @@ function OpenAIApiKeySection({
         Keychain に安全に保存され、ブラウザ・ログには出力されません。
       </p>
       <div className="settings-api-key">
+        {hasKeyError && (
+          <div className="settings-inline-error" role="alert">
+            <span>
+              API キー状態の確認に失敗しました: {String(hasKeyError)}
+            </span>
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() => refetchHasKey()}
+            >
+              再確認
+            </button>
+          </div>
+        )}
         <input
           type="password"
           autoComplete="off"
@@ -436,14 +454,21 @@ function OpenAIApiKeySection({
           <button
             type="button"
             className="control-btn control-btn-clear"
-            disabled={!hasKey || clearMutation.isPending}
+            disabled={!hasKey || Boolean(hasKeyError) || clearMutation.isPending}
             onClick={() => clearMutation.mutate()}
           >
             削除
           </button>
         </div>
         <div className="settings-api-key-status">
-          状態: {hasKey === undefined ? "確認中..." : hasKey ? "登録済み" : "未登録"}
+          状態:{" "}
+          {hasKeyError
+            ? "確認失敗"
+            : hasKey === undefined
+              ? "確認中..."
+              : hasKey
+                ? "登録済み"
+                : "未登録"}
         </div>
       </div>
     </div>

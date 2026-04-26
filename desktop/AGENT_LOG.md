@@ -935,3 +935,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。支援技術での読み上げ確認は未実機確認。
 - 次アクション: 他のエラー表示にも alert の抜けがないか確認する。
+
+### Main task: show OpenAI API key status errors
+
+- 開始日時: 2026-04-27 06:17 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の OpenAI API キー有無確認が失敗した場合に、「確認中...」のままにせず、失敗理由と再確認導線を表示する。
+- 結果: `has_openai_api_key` query の `error` と `refetch` を受け取り、失敗時は API キー欄に `role="alert"` のインラインエラーと再確認ボタンを表示するようにした。失敗中は削除ボタンを disabled にし、状態表示は「確認失敗」にする。API キー保存/削除処理、認証情報、課金関連設定は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Keychain 読み取り失敗の実機再現は未実機確認。
+- 次アクション: API キー状態確認失敗時の表示を実機またはモックで確認する。
