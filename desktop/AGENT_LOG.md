@@ -305,3 +305,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。エラーは `failed to execute command: No such file or directory (os error 2)` および `is cmake not installed?`。
 - 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml audio` を再実行する。
+
+### Harness: mock-based fallback policy for blocked verification
+
+- 開始日時: 2026-04-26 20:49 JST
+- 担当セッション: bootstrap
+- 役割: ブートストラップ担当
+- 作業範囲: `docs/autonomous-main-prompt.md`, `AGENT_LOG.md`
+- 指示内容: macOS 権限ダイアログ、実機操作、ネットワーク/API/認証/課金が絡む作業で `mj-main` が停止しないよう、自動テスト、単体テスト、モック、静的検証、UI のエラー表示確認で代替する方針を伝える。
+- 結果: 稼働中の `mj-main` へ追加方針を queue し、再起動後にも維持されるよう `docs/autonomous-main-prompt.md` の最重要方針と改善ループに同方針を追記した。代替できない範囲は `AGENT_LOG.md` に「未実機確認」「環境制約」として残し、権限不要・課金不要の改善へ進む運用にした。
+- 変更ファイル: `docs/autonomous-main-prompt.md`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- docs/autonomous-main-prompt.md AGENT_LOG.md` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `mj-main` は同方針に従い、実機・外部サービス制約で止まらず、可能な限りモックと自動テストで検証を継続する。
