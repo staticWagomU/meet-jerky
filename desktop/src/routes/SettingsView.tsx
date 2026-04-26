@@ -179,6 +179,7 @@ export function SettingsView() {
           className="control-btn control-btn-clear"
           onClick={() => refetchSettings()}
           disabled={isFetchingSettings}
+          aria-label="アプリ設定を再読み込み"
         >
           {isFetchingSettings ? "読み込み中..." : "再読み込み"}
         </button>
