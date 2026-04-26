@@ -34,6 +34,7 @@
 - `scripts/agent-verify.sh [PATH ...]`
 - `scripts/agent-commit.sh COMMIT_MESSAGE [PATH ...]`
 - `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
+- `scripts/agent-adopt-main.sh SUCCESSOR_SESSION [MAIN_SESSION]`
 - `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
 - `scripts/agent-start-watchdog.sh [WATCHDOG_SESSION] [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
 
@@ -85,7 +86,7 @@ watchdog方針:
 - コンテキストが肥大化した、または複数ループ分の判断履歴で見通しが悪くなったと判断したら、早めに後継メインを起動する。
 - 後継用プロンプトファイルには、目的、現在のgit状態、直近コミット、進行中セッション、未完了タスク、検証制約、旧メインが終了すべきことを具体的に書く。
 - `scripts/agent-handoff-main.sh mj-main-YYYYMMDD-N /path/to/prompt.txt` で後継を起動する。
-- 後継起動後、旧メインは作業を増殖させず終了する。
+- 後継起動後、旧メインは `scripts/agent-adopt-main.sh mj-main-YYYYMMDD-N mj-main` で後継を canonical な `mj-main` 名へ切り替え、作業を増殖させず終了する。
 
 調査担当プロンプトの基本形:
 あなたは調査担当エージェントです。

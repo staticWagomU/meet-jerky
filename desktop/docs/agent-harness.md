@@ -107,6 +107,10 @@
 - `scripts/agent-handoff-main.sh SESSION PROMPT_FILE [OUTPUT_FILE]`
   - 後継メインエージェントを `tmux new-session` で起動する。
   - 後継プロンプトは `PROMPT_FILE` に具体的な引き継ぎ内容を書いて渡す。
+- `scripts/agent-adopt-main.sh SUCCESSOR_SESSION [MAIN_SESSION]`
+  - 後継メインエージェントを watchdog が監視する canonical 名へ切り替える。
+  - 標準では既存の `mj-main` を一時退避して終了し、`SUCCESSOR_SESSION` を `mj-main` にリネームする。
+  - 後継が十分に起動し、旧メインが引き継ぎ以外の作業を増やさない状態で実行する。
 - `scripts/agent-watchdog.sh [MAIN_SESSION] [PROMPT_FILE] [INTERVAL_SECONDS] [NUDGE_COOLDOWN_SECONDS]`
   - メインセッションが存在するかを定期確認し、存在しなければ `agent-handoff-main.sh` で起動する。
   - メインセッションが入力待ちに見える場合、定型の継続指示だけを送る。
@@ -129,4 +133,4 @@
 
 後継メインエージェントには、目的、進行中セッション、未完了タスク、直近の判断、参照すべきログ、停止すべき旧メインセッションを明確に伝える。
 
-後継メインエージェントへ引き継いだら、旧メインエージェントを終了するよう明示する。メインエージェントを増殖させない。
+後継メインエージェントへ引き継いだら、`scripts/agent-adopt-main.sh 後継セッション名 mj-main` で watchdog の監視対象名を後継へ移し、旧メインエージェントを終了する。メインエージェントを増殖させない。

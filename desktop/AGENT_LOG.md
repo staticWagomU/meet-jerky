@@ -375,3 +375,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: `resampler.process` の失敗を自然に発生させる単体テストにはリサンプラー実装の差し替えや注入構造が必要になるため、今回の「panic guard、enum 化、run_transcription_loop の挙動変更はしない」「テストが難しい場合は大きな注入構造を作らない」という制約に合わせ、テスト追加は見送った。
 - 次アクション: 必要なら `cmake` が利用できる環境で Rust 側のテストを再実行する。
+
+### Harness: adopt successor main session name
+
+- 開始日時: 2026-04-26 21:23 JST
+- 担当セッション: bootstrap
+- 役割: ブートストラップ担当
+- 作業範囲: `scripts/agent-adopt-main.sh`, `docs/agent-harness.md`, `docs/autonomous-main-prompt.md`, `AGENT_LOG.md`
+- 指示内容: 後継メインを `mj-main-YYYYMMDD-N` で起動した後に watchdog が旧 `mj-main` を監視し続けるズレを防ぐため、後継を canonical な `mj-main` 名へ切り替える手順をスクリプト化する。
+- 結果: `scripts/agent-adopt-main.sh SUCCESSOR_SESSION [MAIN_SESSION]` を追加した。既存 `mj-main` がある場合は一時退避名へ rename し、後継を `mj-main` へ rename してから旧セッションを終了する。これにより旧 `mj-main` 内から実行しても、watchdog の監視対象名を後継へ移しやすくした。ハーネス文書と自律メインプロンプトにも、後継起動後はこのスクリプトで canonical 名へ切り替える方針を追記した。
+- 変更ファイル: `scripts/agent-adopt-main.sh`, `docs/agent-harness.md`, `docs/autonomous-main-prompt.md`, `AGENT_LOG.md`
+- 検証結果: `chmod +x scripts/agent-adopt-main.sh` を実行済み。`bash -n scripts/agent-*.sh` は成功。`git diff --check -- scripts/agent-adopt-main.sh docs/agent-harness.md docs/autonomous-main-prompt.md AGENT_LOG.md` は成功。`scripts/agent-adopt-main.sh __missing_successor__` は期待どおり `successor session does not exist` を返した。一時 tmux セッション `mj-adopt-test-main-*` と `mj-adopt-test-next-*` を作成し、`scripts/agent-adopt-main.sh "$TEST_NEXT" "$TEST_MAIN"` で後継が main 名へ rename され、旧 main が終了することを確認した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 初回の存在しない後継セッション確認は、`chmod` 前の並列実行と競合して permission denied になった。権限付与後に再実行し、存在しない後継では期待どおり `successor session does not exist` を返すことを確認した。
+- 次アクション: 次回以降の後継引き継ぎでは `agent-handoff-main.sh` 後に `agent-adopt-main.sh` を使い、watchdog の監視対象を canonical な `mj-main` に保つ。
