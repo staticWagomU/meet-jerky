@@ -58,6 +58,7 @@ export function ModelSelector({
         setDownloadProgress(event.payload.progress);
         if (event.payload.progress >= 1) {
           const model = downloadingModelRef.current;
+          downloadingModelRef.current = null;
           setDownloadingModel(null);
           setDownloadProgress(0);
           if (model) {
@@ -107,6 +108,7 @@ export function ModelSelector({
       "model-download-error",
       (event) => {
         setDownloadError(event.payload.message);
+        downloadingModelRef.current = null;
         setDownloadingModel(null);
         setDownloadProgress(0);
       },
@@ -142,11 +144,13 @@ export function ModelSelector({
   }, []);
 
   const handleDownload = async (modelName: string) => {
+    downloadingModelRef.current = modelName;
     setDownloadingModel(modelName);
     setDownloadProgress(0);
     setDownloadError(null);
     try {
       await invoke("download_model", { modelName });
+      downloadingModelRef.current = null;
       setDownloadingModel(null);
       setDownloadProgress(0);
       queryClient.invalidateQueries({
@@ -157,6 +161,7 @@ export function ModelSelector({
       // emit が届かなかった場合に備えて catch でも冪等に更新する。
       console.error("モデルのダウンロードに失敗しました:", e);
       setDownloadError(typeof e === "string" ? e : String(e));
+      downloadingModelRef.current = null;
       setDownloadingModel(null);
       setDownloadProgress(0);
     }

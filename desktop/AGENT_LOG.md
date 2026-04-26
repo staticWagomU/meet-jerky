@@ -907,3 +907,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実マイク/ScreenCaptureKit の再開始失敗は未実機確認。
 - 次アクション: cmake あり環境で Rust テストを再実行し、実機で再開始失敗時の状態を確認する。
+
+### Main task: synchronize model download ref immediately
+
+- 開始日時: 2026-04-27 06:01 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデルダウンロード開始直後の progress event が React state 反映前に届いても、対象 model filter で誤って捨てられないようにする。
+- 結果: `handleDownload` 開始時に `downloadingModelRef.current` を同期的に設定し、progress 完了、download error event、invoke 成功/失敗で ref を同期的に `null` へ戻すようにした。表示 state と query invalidation の流れは前タスクのまま維持している。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実モデルダウンロード開始直後の progress event 競合は未実機確認。
+- 次アクション: モデルダウンロード event の順序差をモックで検証できる形を検討する。
