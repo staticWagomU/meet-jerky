@@ -1608,6 +1608,20 @@
 - 失敗理由: なし。実 transcript 表示は未実機確認。
 - 次アクション: 実 transcript 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
 
+### Main task: stabilize compact status layout wrapping
+
+- 開始日時: 2026-04-27 06:22 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 追加した会議状態 strip と transcript 件数 pill が狭い幅でボタンやテキストと重ならないようにする。
+- 結果: transcript toolbar に gap を追加し、コピー button は shrink しないようにした。meeting control は wrap 可能にし、status strip に min-width: 0 を追加した。表示レイアウトのみの変更でアプリ動作は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。狭幅実表示は未実機確認。
+- 次アクション: 狭幅実表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST

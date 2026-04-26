@@ -641,6 +641,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.3rem 0.5rem;
   border-bottom: 1px solid var(--color-border-light);
   background-color: var(--color-surface);
@@ -692,6 +693,7 @@
 }
 
 .copy-btn {
+  flex-shrink: 0;
   padding: 0.2em 0.6em;
   border: 1px solid var(--copy-btn-border);
   border-radius: 4px;
@@ -719,6 +721,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
   padding: 0.4rem 0;
 }
 
@@ -768,6 +771,7 @@
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .meeting-status-pill {
