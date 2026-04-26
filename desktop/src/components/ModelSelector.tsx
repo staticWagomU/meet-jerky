@@ -24,7 +24,7 @@ export function ModelSelector({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: models } = useQuery<ModelInfo[]>({
+  const { data: models, error: modelsError } = useQuery<ModelInfo[]>({
     queryKey: ["models"],
     queryFn: () => invoke<ModelInfo[]>("list_models"),
   });
@@ -96,21 +96,27 @@ export function ModelSelector({
         id="model-select"
         value={selectedModel}
         onChange={(e) => onSelectModel(e.target.value)}
-        disabled={disabled || downloadingModel !== null}
+        disabled={disabled || downloadingModel !== null || Boolean(modelsError)}
         className="model-select"
       >
         {models?.map((model) => (
           <ModelOption key={model.name} model={model} />
         ))}
       </select>
-      <DownloadStatus
-        selectedModel={selectedModel}
-        downloadingModel={downloadingModel}
-        downloadProgress={downloadProgress}
-        downloadError={downloadError}
-        disabled={disabled}
-        onDownload={handleDownload}
-      />
+      {modelsError ? (
+        <span className="download-error" role="alert">
+          モデル一覧の取得に失敗しました: {String(modelsError)}
+        </span>
+      ) : (
+        <DownloadStatus
+          selectedModel={selectedModel}
+          downloadingModel={downloadingModel}
+          downloadProgress={downloadProgress}
+          downloadError={downloadError}
+          disabled={disabled}
+          onDownload={handleDownload}
+        />
+      )}
     </div>
   );
 }
@@ -140,7 +146,7 @@ function DownloadStatus({
   disabled,
   onDownload,
 }: DownloadStatusProps) {
-  const { data: isDownloaded } = useQuery<boolean>({
+  const { data: isDownloaded, error: isDownloadedError } = useQuery<boolean>({
     queryKey: ["modelDownloaded", selectedModel],
     queryFn: () =>
       invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
@@ -167,6 +173,14 @@ function DownloadStatus({
 
   if (isDownloaded) {
     return <span className="model-status-ready">準備完了</span>;
+  }
+
+  if (isDownloadedError) {
+    return (
+      <span className="download-error" role="alert">
+        モデル状態の確認に失敗しました: {String(isDownloadedError)}
+      </span>
+    );
   }
 
   return (

@@ -655,3 +655,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機でデフォルト出力先取得失敗を再現する確認は未実機確認。
 - 次アクション: 実機またはモックでデフォルト出力先取得失敗時の再取得導線を確認する。
+
+### Main task: show model query errors
+
+- 開始日時: 2026-04-27 03:21 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデル一覧取得や選択モデルのダウンロード状態確認に失敗した場合に、モデル選択 UI が黙って空/未DL扱いにならないよう、失敗理由を表示する。
+- 結果: `ModelSelector` で models query の `error` を表示し、失敗時は select を disabled にした。`DownloadStatus` では `is_model_downloaded` query の `error` を既存 `download-error` 表示に出すようにした。モデルダウンロード処理、進捗 event、成功時の表示は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でモデル一覧/状態取得失敗を再現する確認は未実機確認。
+- 次アクション: 実機またはモックでモデル一覧/状態取得失敗時の表示を確認する。
