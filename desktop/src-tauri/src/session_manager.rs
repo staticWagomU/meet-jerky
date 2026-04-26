@@ -38,7 +38,13 @@ impl SessionManager {
     }
 
     fn lock(&self) -> MutexGuard<'_, Option<ActiveSession>> {
-        self.current.lock().expect("session manager mutex poisoned")
+        match self.current.lock() {
+            Ok(guard) => guard,
+            Err(err) => {
+                eprintln!("[session_manager] mutex poisoned; recovering active session state");
+                err.into_inner()
+            }
+        }
     }
 
     /// in-memory のみでセッションを開始する。ディスク書き出しは行わない。
@@ -153,11 +159,9 @@ impl Default for SessionManager {
 /// `phase` は append/finalize などの呼び出し文脈をログに残すためのラベル。
 fn persist_if_configured(active: &ActiveSession, phase: &str) {
     if let Some(output) = &active.output {
-        if let Err(err) = session_store::write_session_markdown_to(
-            &output.path,
-            &active.session,
-            output.offset,
-        ) {
+        if let Err(err) =
+            session_store::write_session_markdown_to(&output.path, &active.session, output.offset)
+        {
             eprintln!(
                 "[session_manager] failed to persist session on {} to {:?}: {}",
                 phase, output.path, err
@@ -290,7 +294,9 @@ mod tests {
         let manager = SessionManager::new();
         assert!(!manager.is_active());
 
-        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
 
         assert!(manager.is_active());
     }
@@ -298,7 +304,9 @@ mod tests {
     #[test]
     fn finalize_clears_state_and_subsequent_finalize_errors() {
         let manager = SessionManager::new();
-        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
         manager
             .append("Alice".into(), 5, "hello".into())
             .expect("append should succeed");
@@ -310,14 +318,18 @@ mod tests {
         assert_eq!(session.segments.len(), 1);
         assert!(!manager.is_active());
 
-        let err = manager.finalize(300).expect_err("second finalize should fail");
+        let err = manager
+            .finalize(300)
+            .expect_err("second finalize should fail");
         assert_eq!(err, SessionManagerError::NotActive);
     }
 
     #[test]
     fn discard_clears_active_session_without_finalizing() {
         let manager = SessionManager::new();
-        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
         manager
             .append("Alice".into(), 5, "hello".into())
             .expect("append should succeed");
@@ -325,7 +337,9 @@ mod tests {
         manager.discard().expect("discard should succeed");
 
         assert!(!manager.is_active());
-        let err = manager.finalize(200).expect_err("finalize after discard should fail");
+        let err = manager
+            .finalize(200)
+            .expect_err("finalize after discard should fail");
         assert_eq!(err, SessionManagerError::NotActive);
     }
 
@@ -345,7 +359,9 @@ mod tests {
             .expect_err("append before start should fail");
         assert_eq!(err, SessionManagerError::NotActive);
 
-        manager.start("meeting".into(), 100).expect("start should succeed");
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
         manager
             .append("Alice".into(), 5, "hello".into())
             .expect("append should succeed after start");
@@ -356,11 +372,52 @@ mod tests {
     #[test]
     fn start_twice_returns_already_active_and_retains_first_session() {
         let manager = SessionManager::new();
-        manager.start("first".into(), 100).expect("first start should succeed");
+        manager
+            .start("first".into(), 100)
+            .expect("first start should succeed");
 
-        let err = manager.start("second".into(), 200).expect_err("second start should fail");
+        let err = manager
+            .start("second".into(), 200)
+            .expect_err("second start should fail");
 
         assert_eq!(err, SessionManagerError::AlreadyActive);
         assert_eq!(manager.current_title(), Some("first".into()));
+    }
+
+    #[test]
+    fn is_active_recovers_from_poisoned_mutex_without_panic() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
+
+        let poison_result = std::panic::catch_unwind(|| {
+            let _guard = manager.current.lock().unwrap();
+            panic!("poison session manager mutex");
+        });
+        assert!(poison_result.is_err());
+
+        assert!(manager.is_active());
+        assert_eq!(manager.current_title(), Some("meeting".into()));
+    }
+
+    #[test]
+    fn append_recovers_from_poisoned_mutex_without_panic() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
+
+        let poison_result = std::panic::catch_unwind(|| {
+            let _guard = manager.current.lock().unwrap();
+            panic!("poison session manager mutex");
+        });
+        assert!(poison_result.is_err());
+
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should recover and succeed");
+
+        assert_eq!(manager.current_segment_count(), Some(1));
     }
 }

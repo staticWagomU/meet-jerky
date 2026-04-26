@@ -333,3 +333,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。
+
+### Worker task: recover poisoned session manager mutex
+
+- 開始日時: 2026-04-26 20:53 JST
+- 担当セッション: `mj-worker-session-poison-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/session_manager.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `SessionManager::lock()` が poisoned mutex で panic しないよう、軽いログを出して `into_inner()` で guard を回収し、append/finalize/is_active/current_* などの処理を継続できるようにする。公開 API、通常時の挙動、`AlreadyActive` / `NotActive`、インクリメンタル保存挙動は維持し、poisoned mutex で `is_active()` または `append()` が panic しない単体テストを追加する。新規依存追加なし。コミット禁止。
+- 結果: `SessionManager::lock()` を `match` に変更し、`Mutex::lock()` が `Err` を返した場合は `eprintln!` で復旧ログを出して `err.into_inner()` の guard で継続するようにした。単体テストで同一モジュール内から `current` を意図的に poison し、`is_active()` / `current_title()` と `append()` / `current_segment_count()` が panic せず既存状態を扱えることを確認するケースを追加した。
+- 変更ファイル: `src-tauri/src/session_manager.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/session_manager.rs` は最初に整形差分で失敗したため、対象ファイルへ `rustfmt --edition 2021 src-tauri/src/session_manager.rs` を適用後に再実行して成功。`git diff --check -- src-tauri/src/session_manager.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml session_manager` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。main 側の再確認でも `rustfmt --check`、`git diff --check`、`npm run build` は成功し、`command -v cmake` は空だった。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_manager.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml session_manager` を再実行する。
