@@ -80,6 +80,9 @@
   --permission-banner-border: #eab308;
   --permission-banner-color: #92400e;
   --permission-summary-bg: rgba(255, 255, 255, 0.5);
+  --meeting-detected-bg: #fff3cd;
+  --meeting-detected-border: #ffe69c;
+  --meeting-detected-color: #664d03;
 
   /* Toast */
   --toast-bg: #1f2937;
@@ -160,6 +163,9 @@
     --permission-banner-border: #ca8a04;
     --permission-banner-color: #fbbf24;
     --permission-summary-bg: rgba(31, 41, 55, 0.45);
+    --meeting-detected-bg: rgba(234, 179, 8, 0.12);
+    --meeting-detected-border: #ca8a04;
+    --meeting-detected-color: #fbbf24;
 
     --toast-bg: #374151;
     --toast-color: #f9fafb;
@@ -1144,9 +1150,9 @@
 }
 
 .meeting-detected-banner {
-  background-color: #fff3cd;
-  border: 1px solid #ffe69c;
-  color: #664d03;
+  background-color: var(--meeting-detected-bg);
+  border: 1px solid var(--meeting-detected-border);
+  color: var(--meeting-detected-color);
   padding: 0.625rem 0.875rem;
   border-radius: 6px;
   margin-bottom: 0.75rem;
@@ -1154,11 +1160,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
   font-size: 0.85rem;
 }
 
 .meeting-detected-banner-text {
   flex: 1;
+  min-width: 14rem;
   line-height: 1.3;
 }
 
