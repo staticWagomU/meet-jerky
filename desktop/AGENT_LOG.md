@@ -1285,3 +1285,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS の実ファイル/フォルダ opener は未実機確認。
 - 次アクション: 履歴画面の opener 操作を実機で確認する。
+
+### Main task: cleanup delayed UI feedback timers on unmount
+
+- 開始日時: 2026-04-27 04:46 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 一時表示用の `setTimeout` がアンマウント後に state 更新しないようにする。
+- 結果: 設定トーストと文字起こしコピー完了表示の timeout id を ref で保持し、再実行時は既存 timeout を clear、unmount 時にも cleanup するようにした。表示文言やコピー/保存処理自体は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 遷移中の timer cleanup は未実機確認。
+- 次アクション: UI 遷移時の timeout cleanup を実機で確認する。

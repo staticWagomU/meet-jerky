@@ -45,6 +45,9 @@ export function TranscriptDisplay({
   const [autoScroll, setAutoScroll] = useState(true);
   const userScrolledRef = useRef(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [copyError, setCopyError] = useState<string | null>(null);
   const [resultListenerError, setResultListenerError] = useState<string | null>(
     null,
@@ -149,6 +152,14 @@ export function TranscriptDisplay({
     }
   }, [segments, autoScroll]);
 
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -181,7 +192,13 @@ export function TranscriptDisplay({
       await navigator.clipboard.writeText(text);
       setCopyError(null);
       setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+      copyFeedbackTimeoutRef.current = setTimeout(() => {
+        setCopyFeedback(false);
+        copyFeedbackTimeoutRef.current = null;
+      }, 2000);
     } catch (e) {
       console.error("コピーに失敗しました:", e);
       setCopyFeedback(false);

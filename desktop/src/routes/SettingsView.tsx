@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
@@ -22,6 +22,7 @@ export function SettingsView() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
     useState(false);
 
@@ -84,8 +85,22 @@ export function SettingsView() {
   }, [settings, localSettings]);
 
   const showToast = useCallback((message: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleSave = useCallback(() => {
