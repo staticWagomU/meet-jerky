@@ -184,7 +184,11 @@ struct ParsedUrlParts {
 
 fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
     let trimmed = url.trim();
-    let after_scheme = trimmed.split_once("://").map_or(trimmed, |(_, rest)| rest);
+    let (scheme, after_scheme) = trimmed.split_once("://")?;
+    if !scheme.eq_ignore_ascii_case("http") && !scheme.eq_ignore_ascii_case("https") {
+        return None;
+    }
+
     let authority_end = after_scheme
         .find(|c| c == '/' || c == '?' || c == '#')
         .unwrap_or(after_scheme.len());
@@ -362,6 +366,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("http://meet.google.com/abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://company.zoom.us/j/123456789?pwd=secret"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -382,5 +393,18 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
         assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_non_http_urls() {
+        assert_eq!(classify_meeting_url("meet.google.com/abc-defg-hij"), None);
+        assert_eq!(
+            classify_meeting_url("file://meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("mailto:https://meet.google.com/abc-defg-hij"),
+            None
+        );
     }
 }

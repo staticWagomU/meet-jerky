@@ -431,3 +431,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `cmake` が利用できる環境で、追加した `app_detection` の単体テストを含む Rust テストを再実行する。
+
+### Worker task: restrict meeting URL classification to HTTP(S)
+
+- 開始日時: 2026-04-26 22:50 JST
+- 担当セッション: `mj-worker-url-scheme-guard-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `classify_meeting_url` / `parse_url_host_and_path` が `http://` または `https://` の URL だけを分類するようにし、schemeless 文字列や `file://` / `mailto:` などは `None` にする。既存の Google Meet / Zoom Web / Teams Web の正常系、URL 全文を payload/log/UI に出さない方針、新規依存追加禁止を維持する。コミット禁止。
+- 結果: `parse_url_host_and_path` で `://` を必須にし、scheme が `http` / `https` 以外の場合は `None` を返すようにした。分類結果は引き続き service と host のみで、URL 全文や path は保持しない。`http://` の正常系と、schemeless / `file://` / `mailto:` を拒否する単体テストを追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は初回に追加テストの折り返し整形差分で失敗したため、対象ファイルへ `rustfmt --edition 2021 src-tauri/src/app_detection.rs` を適用後に再実行して成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。main 側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。`cargo test` / `cargo check` は今回実行していない。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 必要なら `cmake` が利用できる環境で `app_detection` の単体テストを含む Rust テストを再実行する。
