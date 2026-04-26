@@ -230,6 +230,16 @@ function getOpenAIApiKeyStatusLabel(
   return hasOpenAIApiKey ? "登録済み" : "未設定";
 }
 
+function getOpenAIApiKeyStatusPillClass(statusLabel: string | null): string {
+  if (statusLabel === "登録済み") {
+    return "meeting-status-pill-active";
+  }
+  if (statusLabel === "未設定" || statusLabel === "確認失敗") {
+    return "meeting-status-pill-idle";
+  }
+  return "meeting-status-pill-neutral";
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -863,7 +873,9 @@ export function TranscriptView() {
             AI送信 {aiTransmissionStatusLabel}
           </span>
           {openAIApiKeyStatusLabel && (
-            <span className="meeting-status-pill meeting-status-pill-neutral">
+            <span
+              className={`meeting-status-pill ${getOpenAIApiKeyStatusPillClass(openAIApiKeyStatusLabel)}`}
+            >
               APIキー {openAIApiKeyStatusLabel}
             </span>
           )}

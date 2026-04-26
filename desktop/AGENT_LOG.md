@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: color OpenAI API key status in meeting strip
+
+- 開始日時: 2026-04-27 07:48 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI Realtime 利用時の API キー状態を、会議状態 strip 上で登録済み/未設定/確認失敗が見分けやすい色にする。
+- 結果: API キー状態 pill の class を状態に応じて切り替える helper を追加し、登録済みは active、未設定/確認失敗は idle、確認中は neutral 表示にした。API キー値の読み取り、保存、送信、会議開始条件は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示は未実機確認。OpenAI 認証/API 呼び出しは未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: label unclassified transcript rows
 
 - 開始日時: 2026-04-27 07:47 JST
