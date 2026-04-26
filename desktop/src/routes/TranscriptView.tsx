@@ -213,6 +213,23 @@ function getEngineStatusLabel(
   return "Whisper";
 }
 
+function getOpenAIApiKeyStatusLabel(
+  requiresOpenAIApiKey: boolean,
+  hasOpenAIApiKey: boolean | undefined,
+  openAIApiKeyError: unknown,
+): string | null {
+  if (!requiresOpenAIApiKey) {
+    return null;
+  }
+  if (openAIApiKeyError) {
+    return "確認失敗";
+  }
+  if (hasOpenAIApiKey === undefined) {
+    return "確認中";
+  }
+  return hasOpenAIApiKey ? "登録済み" : "未設定";
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -757,6 +774,11 @@ export function TranscriptView() {
     settings?.transcriptionEngine,
   );
   const engineStatusLabel = getEngineStatusLabel(settings?.transcriptionEngine);
+  const openAIApiKeyStatusLabel = getOpenAIApiKeyStatusLabel(
+    requiresOpenAIApiKey,
+    hasOpenAIApiKey,
+    openAIApiKeyErrorForUi,
+  );
 
   return (
     <div className="transcript-view">
@@ -822,6 +844,11 @@ export function TranscriptView() {
           <span className="meeting-status-pill meeting-status-pill-neutral">
             AI送信 {aiTransmissionStatusLabel}
           </span>
+          {openAIApiKeyStatusLabel && (
+            <span className="meeting-status-pill meeting-status-pill-neutral">
+              APIキー {openAIApiKeyStatusLabel}
+            </span>
+          )}
         </div>
         {meetingError && (
           <p className="meeting-error" role="alert">
