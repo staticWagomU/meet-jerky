@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 
@@ -17,6 +17,13 @@ export function SessionList() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<SessionAction>(null);
   const pendingActionRef = useRef<SessionAction>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleOpenFile = useCallback(async (path: string) => {
     if (pendingActionRef.current) {
@@ -27,13 +34,21 @@ export function SessionList() {
     setPendingAction(nextAction);
     try {
       await openPath(path);
+      if (!isMountedRef.current) {
+        return;
+      }
       setActionError(null);
     } catch (e) {
       console.error("ファイルを開けませんでした:", e);
+      if (!isMountedRef.current) {
+        return;
+      }
       setActionError(`ファイルを開けませんでした: ${String(e)}`);
     } finally {
       pendingActionRef.current = null;
-      setPendingAction(null);
+      if (isMountedRef.current) {
+        setPendingAction(null);
+      }
     }
   }, []);
 
@@ -46,13 +61,21 @@ export function SessionList() {
     setPendingAction(nextAction);
     try {
       await revealItemInDir(path);
+      if (!isMountedRef.current) {
+        return;
+      }
       setActionError(null);
     } catch (e) {
       console.error("フォルダを開けませんでした:", e);
+      if (!isMountedRef.current) {
+        return;
+      }
       setActionError(`フォルダを開けませんでした: ${String(e)}`);
     } finally {
       pendingActionRef.current = null;
-      setPendingAction(null);
+      if (isMountedRef.current) {
+        setPendingAction(null);
+      }
     }
   }, []);
 

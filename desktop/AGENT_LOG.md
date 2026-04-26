@@ -1551,3 +1551,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。異常音声レベルの実 event は未実機確認。
 - 次アクション: 異常音声レベルの UI 表示を必要時にモックで確認する。次の改善候補を調査する。
+
+### Main task: guard session opener updates after unmount
+
+- 開始日時: 2026-04-27 05:55 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 履歴画面のファイル/フォルダ opener が完了する前にアンマウントしても state 更新しないようにする。
+- 結果: `isMountedRef` を追加し、`openPath` / `revealItemInDir` の成功・失敗・finally でアンマウント済みなら state 更新しないようにした。二重起動防止用の `pendingActionRef` は維持した。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS の実ファイル/フォルダ opener 中の画面遷移は未実機確認。
+- 次アクション: 履歴 opener 中の画面遷移を必要時に実機/モックで確認する。次の改善候補を調査する。
