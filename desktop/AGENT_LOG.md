@@ -417,3 +417,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。
+
+### Worker task: add browser meeting URL classification receiver
+
+- 開始日時: 2026-04-26 22:45 JST
+- 担当セッション: `mj-worker-meeting-url-rules-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `src/types/index.ts`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: ブラウザURL実機取得、AppleScript、Accessibility、Swift ABI 変更は行わず、URL全文を payload/log/UI に出さない低リスクな受け皿として、Rust 側の会議URL分類純粋関数、後方互換的な `MeetingAppDetectedPayload` 拡張、`service`/`urlHost` を使うバナー表示を追加する。新規依存追加なし。コミット禁止。
+- 結果: `classify_meeting_url` を追加し、Google Meet は `meet.google.com`、Zoom Web は `zoom.us` または `*.zoom.us` かつ path `/j/` 開始、Teams Web は `teams.microsoft.com` として分類するようにした。分類結果は `service` と `host` のみで、URL全文や path は保持しない。`MeetingAppDetectedPayload` は既存 `bundleId`/`appName` を維持しつつ `source`/`service`/`urlHost`/`browserName`/`windowTitle` を optional 相当に拡張した。既存アプリ検知 payload は `source: "app"` のみを追加し、未使用フィールドは serialize しない。バナーは `service` と `urlHost` があれば表示名に使い、自動録音開始を示唆しない文言へ変更した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `src/types/index.ts`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs src/types/index.ts src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` はログ追記前後とも成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。main 側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs src/types/index.ts src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。`cargo test` / `cargo check` は今回実行していない。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `cmake` が利用できる環境で、追加した `app_detection` の単体テストを含む Rust テストを再実行する。

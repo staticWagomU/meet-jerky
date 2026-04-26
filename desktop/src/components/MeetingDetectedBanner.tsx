@@ -11,7 +11,7 @@ import type { MeetingAppDetectedPayload } from "../types";
 ///   audio / engine) を外部から操作する必要があり、副作用の追跡が難しくなる。
 /// - 本コンポーネントはあくまで導線の提示にとどめ、ユーザー操作で記録ボタンを
 ///   押してもらう。今後 TranscriptView 側に「auto-start ready」状態を持たせる
-///   形で発展させやすいよう、`bundleId` / `appName` をペイロードとして保持する。
+///   形で発展させやすいよう、検知元の最小情報をペイロードとして保持する。
 export function MeetingDetectedBanner() {
   const [detected, setDetected] = useState<MeetingAppDetectedPayload | null>(
     null,
@@ -32,10 +32,12 @@ export function MeetingDetectedBanner() {
 
   if (!detected) return null;
 
+  const displayName = getMeetingDetectedDisplayName(detected);
+
   return (
     <div className="meeting-detected-banner" role="status">
       <span className="meeting-detected-banner-text">
-        {detected.appName} を検出しました。文字起こしを開始しますか?
+        {displayName} を検出しました。必要に応じて文字起こしページで状態を確認してください。
       </span>
       <div className="meeting-detected-banner-actions">
         <button
@@ -59,4 +61,13 @@ export function MeetingDetectedBanner() {
       </div>
     </div>
   );
+}
+
+export function getMeetingDetectedDisplayName(
+  payload: MeetingAppDetectedPayload,
+): string {
+  if (payload.service && payload.urlHost) {
+    return `${payload.service} (${payload.urlHost})`;
+  }
+  return payload.service || payload.urlHost || payload.appName;
 }

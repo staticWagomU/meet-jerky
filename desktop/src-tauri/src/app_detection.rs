@@ -45,6 +45,27 @@ const NOTIFICATION_THROTTLE: Duration = Duration::from_secs(60);
 pub struct MeetingAppDetectedPayload {
     pub bundle_id: String,
     pub app_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url_host: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub browser_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_title: Option<String>,
+}
+
+/// ブラウザ URL から会議サービスを分類した結果。
+///
+/// URL 全文や path は保持しない。フロントエンド表示・ログ用に必要な
+/// service 表示名と host だけを返す。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MeetingUrlClassification {
+    pub service: String,
+    pub host: String,
 }
 
 /// 検知のグローバル状態。
@@ -103,6 +124,11 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
     let payload = MeetingAppDetectedPayload {
         bundle_id: bundle_id.to_string(),
         app_name: app_name.to_string(),
+        source: Some("app".to_string()),
+        service: None,
+        url_host: None,
+        browser_name: None,
+        window_title: None,
     };
     if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
         eprintln!("[app_detection] emit failed: {e}");
@@ -124,6 +150,82 @@ fn show_notification(app: &AppHandle, app_name: &str) {
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn notification_body(app_name: &str) -> String {
     format!("{app_name} を検出しました。記録を開始するにはアプリで確認してください。")
+}
+
+/// ブラウザ URL の実機取得が入った後に使う、会議 URL 分類用の純粋関数。
+///
+/// 標準文字列処理だけで host/path を見て分類し、URL 全文は返さない。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
+    let parsed = parse_url_host_and_path(url)?;
+    let host = parsed.host.to_ascii_lowercase();
+
+    let service = if host == "meet.google.com" {
+        "Google Meet"
+    } else if is_zoom_host(&host) && parsed.path.starts_with("/j/") {
+        "Zoom"
+    } else if host == "teams.microsoft.com" {
+        "Microsoft Teams"
+    } else {
+        return None;
+    };
+
+    Some(MeetingUrlClassification {
+        service: service.to_string(),
+        host,
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ParsedUrlParts {
+    host: String,
+    path: String,
+}
+
+fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
+    let trimmed = url.trim();
+    let after_scheme = trimmed.split_once("://").map_or(trimmed, |(_, rest)| rest);
+    let authority_end = after_scheme
+        .find(|c| c == '/' || c == '?' || c == '#')
+        .unwrap_or(after_scheme.len());
+    let authority = &after_scheme[..authority_end];
+    let host_port = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, host)| host);
+    let host = strip_port(host_port)?;
+    if host.is_empty() {
+        return None;
+    }
+
+    let path =
+        if authority_end < after_scheme.len() && after_scheme[authority_end..].starts_with('/') {
+            let rest = &after_scheme[authority_end..];
+            let path_end = rest.find(|c| c == '?' || c == '#').unwrap_or(rest.len());
+            rest[..path_end].to_string()
+        } else {
+            "/".to_string()
+        };
+
+    Some(ParsedUrlParts {
+        host: host.to_string(),
+        path,
+    })
+}
+
+fn strip_port(host_port: &str) -> Option<&str> {
+    if let Some(without_opening_bracket) = host_port.strip_prefix('[') {
+        let (host, _) = without_opening_bracket.split_once(']')?;
+        return Some(host);
+    }
+    Some(
+        host_port
+            .split_once(':')
+            .map_or(host_port, |(host, _)| host),
+    )
+}
+
+fn is_zoom_host(host: &str) -> bool {
+    host == "zoom.us" || host.ends_with(".zoom.us")
 }
 
 // ─────────────────────────────────────────────
@@ -226,10 +328,17 @@ mod tests {
         let payload = MeetingAppDetectedPayload {
             bundle_id: "us.zoom.xos".to_string(),
             app_name: "Zoom".to_string(),
+            source: Some("app".to_string()),
+            service: None,
+            url_host: None,
+            browser_name: None,
+            window_title: None,
         };
         let json = serde_json::to_string(&payload).unwrap();
         assert!(json.contains("\"bundleId\":\"us.zoom.xos\""));
         assert!(json.contains("\"appName\":\"Zoom\""));
+        assert!(json.contains("\"source\":\"app\""));
+        assert!(!json.contains("urlHost"));
         assert!(!json.contains("bundle_id"));
     }
 
@@ -241,5 +350,37 @@ mod tests {
             !body.contains("クリックで記録を開始"),
             "通知クリックで録音開始する未実装挙動を本文に含めない"
         );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_service_and_host_only() {
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://company.zoom.us/j/123456789?pwd=secret"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/l/meetup-join/secret"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_non_meeting_or_non_join_urls() {
+        assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
+        assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
+        assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
     }
 }

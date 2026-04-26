@@ -64,4 +64,9 @@ export interface AppSettings {
 export interface MeetingAppDetectedPayload {
   bundleId: string;
   appName: string;
+  source?: string;
+  service?: string;
+  urlHost?: string;
+  browserName?: string;
+  windowTitle?: string;
 }
