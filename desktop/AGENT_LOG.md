@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: clarify output directory controls
+
+- 開始日時: 2026-04-27 07:11 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の出力先ディレクトリ状態と操作が、保存先に関するものだと支援技術にも明確に伝わるようにする。
+- 結果: 出力先パス表示に `role="status"` を追加し、デフォルト出力先再取得、フォルダ選択、デフォルト復帰ボタンに対象名込みの `aria-label` を追加した。フォルダ選択、保存先リセット、保存処理は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。フォルダ選択ダイアログと実 UI 表示は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify settings save button state
 
 - 開始日時: 2026-04-27 07:10 JST

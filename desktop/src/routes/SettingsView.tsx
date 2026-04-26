@@ -342,7 +342,7 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">出力先ディレクトリ</h3>
         <div className="settings-output-dir">
-          <span className="settings-output-path">
+          <span className="settings-output-path" role="status">
             {localSettings.outputDirectory ?? defaultOutputDir ?? "未設定"}
           </span>
           {defaultOutputDirError && !localSettings.outputDirectory && (
@@ -355,6 +355,7 @@ export function SettingsView() {
                 className="control-btn control-btn-clear"
                 onClick={() => refetchDefaultOutputDir()}
                 disabled={isFetchingDefaultOutputDir}
+                aria-label="デフォルト出力先ディレクトリを再取得"
               >
                 {isFetchingDefaultOutputDir ? "取得中..." : "再取得"}
               </button>
@@ -366,6 +367,11 @@ export function SettingsView() {
               className="control-btn control-btn-transcribe"
               onClick={handleSelectOutputDirectory}
               disabled={isSelectingOutputDirectory}
+              aria-label={
+                isSelectingOutputDirectory
+                  ? "出力先ディレクトリを選択中"
+                  : "出力先ディレクトリを選択"
+              }
             >
               {isSelectingOutputDirectory ? "選択中..." : "フォルダ選択"}
             </button>
@@ -374,6 +380,7 @@ export function SettingsView() {
               className="control-btn control-btn-clear"
               onClick={handleResetOutputDirectory}
               disabled={isSelectingOutputDirectory}
+              aria-label="出力先ディレクトリをデフォルトに戻す"
             >
               デフォルトに戻す
             </button>
