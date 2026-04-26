@@ -1005,3 +1005,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での表示確認は未実機確認。
 - 次アクション: 会議開始ボタンの disabled 理由表示も同じ基準で確認する。
+
+### Main task: show meeting start blocked reason
+
+- 開始日時: 2026-04-27 06:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議開始ボタンがモデル確認中・モデル未DLで無効なときに、ボタン周辺で理由を表示する。
+- 結果: `TranscriptView` で会議開始不可理由を計算し、モデル状態確認中またはモデル未DLの場合に `role="status"` で表示するようにした。model query error は既存 alert があるため重複表示しない。会議開始/終了処理、モデル選択、文字起こし開始不可理由表示は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での表示確認は未実機確認。
+- 次アクション: モデル未DL時の会議開始/文字起こし開始ガイダンスが過剰でないか実画面で確認する。

@@ -117,6 +117,22 @@ function getTranscriptionStartBlockedReason(
   return null;
 }
 
+function getMeetingStartBlockedReason(
+  isMeetingActive: boolean,
+  isModelDownloaded: boolean | undefined,
+  modelDownloadedError: unknown,
+): string | null {
+  if (isMeetingActive) return null;
+  if (modelDownloadedError) return null;
+  if (isModelDownloaded === undefined) {
+    return "会議開始に必要なモデル状態を確認中です。";
+  }
+  if (!isModelDownloaded) {
+    return "会議開始には、モデルのダウンロードが必要です。";
+  }
+  return null;
+}
+
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
@@ -494,6 +510,11 @@ export function TranscriptView() {
     isAnySourceRecording && !!isModelDownloaded && !isTranscribing;
 
   const canStartMeeting = !!isModelDownloaded && !isMeetingActive;
+  const meetingStartBlockedReason = getMeetingStartBlockedReason(
+    isMeetingActive,
+    isModelDownloaded,
+    modelDownloadedError,
+  );
 
   const transcriptionSourceStatus = getTranscriptionSourceStatus(
     isTranscribing,
@@ -537,6 +558,11 @@ export function TranscriptView() {
         {modelDownloadedError && (
           <p className="meeting-error" role="alert">
             モデル状態の確認に失敗しました: {String(modelDownloadedError)}
+          </p>
+        )}
+        {meetingStartBlockedReason && (
+          <p className="meeting-error" role="status">
+            {meetingStartBlockedReason}
           </p>
         )}
         {audioLevelListenerError && (
