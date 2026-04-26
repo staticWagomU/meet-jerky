@@ -389,6 +389,7 @@ export function SettingsView() {
               マイク <span className="settings-permission-track">自分</span>
             </span>
             <PermissionBadge
+              label="マイク 自分トラック"
               status={micPermission}
               error={micPermissionError}
               isChecking={isFetchingMicPermission}
@@ -400,6 +401,7 @@ export function SettingsView() {
               <span className="settings-permission-track">相手側</span>
             </span>
             <PermissionBadge
+              label="画面収録 相手側トラック"
               status={screenPermission}
               error={screenPermissionError}
               isChecking={isFetchingScreenPermission}
@@ -449,34 +451,42 @@ export function SettingsView() {
 }
 
 function PermissionBadge({
+  label,
   status,
   error,
   isChecking,
 }: {
+  label: string;
   status: string | undefined;
   error: unknown;
   isChecking: boolean;
 }) {
+  const renderBadge = (className: string, text: string) => (
+    <span
+      className={`settings-permission-badge${className ? ` ${className}` : ""}`}
+      role="status"
+      aria-label={`${label}: ${text}`}
+    >
+      {text}
+    </span>
+  );
+
   if (isChecking) {
-    return <span className="settings-permission-badge">確認中...</span>;
+    return renderBadge("", "確認中...");
   }
   if (error) {
-    return (
-      <span className="settings-permission-badge permission-denied">
-        確認失敗
-      </span>
-    );
+    return renderBadge("permission-denied", "確認失敗");
   }
   if (!status) {
-    return <span className="settings-permission-badge">確認中...</span>;
+    return renderBadge("", "確認中...");
   }
   if (status === "granted") {
-    return <span className="settings-permission-badge permission-granted">許可済み</span>;
+    return renderBadge("permission-granted", "許可済み");
   }
   if (status === "denied") {
-    return <span className="settings-permission-badge permission-denied">拒否</span>;
+    return renderBadge("permission-denied", "拒否");
   }
-  return <span className="settings-permission-badge permission-undetermined">未確認</span>;
+  return renderBadge("permission-undetermined", "未確認");
 }
 
 function OpenAIApiKeySection({

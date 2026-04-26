@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: expose settings permission badge labels
+
+- 開始日時: 2026-04-27 06:42 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の権限バッジが、マイク/画面収録と自分/相手側トラックのどちらを示すか支援技術にも伝わるようにする。
+- 結果: `PermissionBadge` に `label` を渡し、各バッジへ `role="status"` とトラック名込みの `aria-label` を付与した。権限状態の取得、表示文言、色分けは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify settings permission recheck label
 
 - 開始日時: 2026-04-27 06:41 JST
