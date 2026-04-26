@@ -1117,3 +1117,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 macOS マイク/システム音声開始停止の二重クリック挙動は未実機確認。
 - 次アクション: 録音画面の操作中表示を実機で確認する。
+
+### Main task: reject empty Teams URL meeting segments
+
+- 開始日時: 2026-04-27 04:30 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議 URL 分類の安全ケースを純粋関数テストで増やし、URL 全文を payload/log/UI に出さない方針を維持する。
+- 結果: Teams URL 判定で `meetup-join//` や `meet//` のような空の先頭セグメントを拒否するようにした。正規の追加パス付き Teams meetup URL は引き続き分類できることを純粋関数テストに追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: 初回 `rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` はテスト断言 1 箇所の折り返し差分で失敗したため整形指摘を反映。再実行した `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。再実行した `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実ブラウザ URL 取得は未実装/未実機確認。
+- 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。

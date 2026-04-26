@@ -296,7 +296,7 @@ fn is_teams_meeting_url(host: &str, path: &str) -> bool {
 }
 
 fn has_non_empty_segment(value: &str) -> bool {
-    !value.is_empty() && value != "/"
+    !value.is_empty() && !value.starts_with('/')
 }
 
 // ─────────────────────────────────────────────
@@ -475,6 +475,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/l/meetup-join/19%3ameeting_abc/0?context=secret#meeting"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.live.com/meet/1234567890123"),
             Some(MeetingUrlClassification {
                 service: "Microsoft Teams".to_string(),
@@ -513,8 +520,13 @@ mod tests {
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/"),
             None
         );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/l/meetup-join//"),
+            None
+        );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
         assert_eq!(classify_meeting_url("https://teams.live.com/meet/"), None);
+        assert_eq!(classify_meeting_url("https://teams.live.com/meet//"), None);
     }
 
     #[test]
