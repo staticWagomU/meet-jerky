@@ -133,11 +133,20 @@ function getMeetingStartBlockedReason(
   return null;
 }
 
-function getAudioSourceCount(
+function getAudioSourceStatusLabel(
   isMicRecording: boolean,
   isSystemAudioRecording: boolean,
-): number {
-  return Number(isMicRecording) + Number(isSystemAudioRecording);
+): string {
+  if (isMicRecording && isSystemAudioRecording) {
+    return "自分+相手側";
+  }
+  if (isMicRecording) {
+    return "自分";
+  }
+  if (isSystemAudioRecording) {
+    return "相手側";
+  }
+  return "なし";
 }
 
 function sanitizeAudioLevel(level: number): number {
@@ -628,7 +637,7 @@ export function TranscriptView() {
     isModelDownloaded,
     modelDownloadedError,
   );
-  const audioSourceCount = getAudioSourceCount(
+  const audioSourceStatusLabel = getAudioSourceStatusLabel(
     isMicRecording,
     isSystemAudioRecording,
   );
@@ -681,7 +690,7 @@ export function TranscriptView() {
             {isTranscribing ? "文字起こし中" : "文字起こし停止"}
           </span>
           <span className="meeting-status-pill meeting-status-pill-neutral">
-            音声 {audioSourceCount}/2
+            音声 {audioSourceStatusLabel}
           </span>
         </div>
         {meetingError && (
