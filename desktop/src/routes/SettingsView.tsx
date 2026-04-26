@@ -222,6 +222,7 @@ export function SettingsView() {
               }
             />
             <span>ローカル (Whisper)</span>
+            <span className="settings-note">端末内処理</span>
           </label>
           <label className="settings-radio-label">
             <input
@@ -237,7 +238,7 @@ export function SettingsView() {
               }
             />
             <span>macOS SpeechAnalyzer</span>
-            <span className="settings-note">macOS 26+ 専用</span>
+            <span className="settings-note">端末内処理 / macOS 26+ 専用</span>
           </label>
           <label className="settings-radio-label">
             <input
