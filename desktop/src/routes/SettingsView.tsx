@@ -61,8 +61,10 @@ export function SettingsView() {
   const {
     micPermission,
     micPermissionError,
+    isFetchingMicPermission,
     screenPermission,
     screenPermissionError,
+    isFetchingScreenPermission,
     isCheckingPermissions,
     refetchAll: refetchPermissions,
   } = usePermissions();
@@ -354,13 +356,18 @@ export function SettingsView() {
         <div className="settings-permissions">
           <div className="settings-permission-row">
             <span className="settings-permission-label">マイク:</span>
-            <PermissionBadge status={micPermission} error={micPermissionError} />
+            <PermissionBadge
+              status={micPermission}
+              error={micPermissionError}
+              isChecking={isFetchingMicPermission}
+            />
           </div>
           <div className="settings-permission-row">
             <span className="settings-permission-label">画面収録:</span>
             <PermissionBadge
               status={screenPermission}
               error={screenPermissionError}
+              isChecking={isFetchingScreenPermission}
             />
           </div>
           <button
@@ -402,10 +409,15 @@ export function SettingsView() {
 function PermissionBadge({
   status,
   error,
+  isChecking,
 }: {
   status: string | undefined;
   error: unknown;
+  isChecking: boolean;
 }) {
+  if (isChecking) {
+    return <span className="settings-permission-badge">確認中...</span>;
+  }
   if (error) {
     return (
       <span className="settings-permission-badge permission-denied">

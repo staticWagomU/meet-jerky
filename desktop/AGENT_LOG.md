@@ -1327,3 +1327,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実モデルDLは未実施。
 - 次アクション: モデルDL操作の実機表示を確認する。実DLは必要時のみ行う。
+
+### Main task: show permission badge checking state while refetching
+
+- 開始日時: 2026-04-27 04:50 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/hooks/usePermissions.ts`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 権限再チェック中に、直前の確認失敗 badge が残らず確認中であることが分かるようにする。
+- 結果: `usePermissions` からマイク/画面収録それぞれの fetching 状態を返し、設定画面の `PermissionBadge` では `isChecking` を最優先して「確認中...」を表示するようにした。権限確認 invoke の内容は変更していない。
+- 変更ファイル: `src/hooks/usePermissions.ts`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/hooks/usePermissions.ts src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/hooks/usePermissions.ts src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 権限状態の実機確認は未実施。
+- 次アクション: 権限再チェック中の表示を実機で確認する。

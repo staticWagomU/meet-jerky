@@ -32,8 +32,10 @@ export function usePermissions() {
   return {
     micPermission,
     micPermissionError,
+    isFetchingMicPermission,
     screenPermission,
     screenPermissionError,
+    isFetchingScreenPermission,
     isCheckingPermissions,
     refetchAll,
   };
