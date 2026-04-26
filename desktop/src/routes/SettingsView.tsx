@@ -266,23 +266,25 @@ export function SettingsView() {
       )}
 
       {/* Whisperモデル */}
-      <div className="settings-section">
-        <h3 className="settings-section-title">Whisperモデル</h3>
-        <select
-          aria-label="Whisperモデル"
-          value={localSettings.whisperModel}
-          onChange={(e) =>
-            setLocalSettings({ ...localSettings, whisperModel: e.target.value })
-          }
-          className="settings-select"
-        >
-          {WHISPER_MODELS.map((model) => (
-            <option key={model.value} value={model.value}>
-              {model.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {localSettings.transcriptionEngine === "whisper" && (
+        <div className="settings-section">
+          <h3 className="settings-section-title">Whisperモデル</h3>
+          <select
+            aria-label="Whisperモデル"
+            value={localSettings.whisperModel}
+            onChange={(e) =>
+              setLocalSettings({ ...localSettings, whisperModel: e.target.value })
+            }
+            className="settings-select"
+          >
+            {WHISPER_MODELS.map((model) => (
+              <option key={model.value} value={model.value}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* マイクデバイス */}
       <div className="settings-section">

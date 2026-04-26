@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: hide Whisper model settings for non-Whisper engines
+
+- 開始日時: 2026-04-27 08:15 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI Realtime / Apple Speech 選択時に不要な Whisper モデル設定を表示せず、設定画面の情報密度を下げる。
+- 結果: 設定画面の Whisper モデル選択を `transcriptionEngine === "whisper"` のときだけ表示するようにした。保存されている `whisperModel` 値、エンジン選択、Transcript 側のモデル要件判定、ダウンロード処理は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示は未実機確認。各エンジンの実機文字起こしは未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: expose pending OpenAI key status retry
 
 - 開始日時: 2026-04-27 08:14 JST
