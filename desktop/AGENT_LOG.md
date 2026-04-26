@@ -1089,3 +1089,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 macOS 文字起こし開始/停止の二重クリック挙動は未実機確認。
 - 次アクション: 会議開始/終了ボタンにも同種の二重実行防止が必要か確認する。
+
+### Main task: guard meeting toggle while operation is pending
+
+- 開始日時: 2026-04-27 04:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議開始/終了の async 操作中に同じボタンを連打できず、処理中であることが分かるようにする。
+- 結果: Transcript 画面に会議操作中フラグを追加し、会議開始/終了処理中は会議ボタンを disabled にして文言を「処理中...」へ切り替えるようにした。セッション開始、録音開始、文字起こし開始、停止、保存の完了・失敗後は `finally` で操作中状態を戻す。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 macOS 会議開始/終了の二重クリック挙動は未実機確認。
+- 次アクション: 個別のマイク/システム音声トグルにも同種の二重実行防止が必要か確認する。
