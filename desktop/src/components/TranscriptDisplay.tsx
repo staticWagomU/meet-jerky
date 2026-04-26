@@ -327,7 +327,7 @@ export function TranscriptDisplay({
       >
         {segments.length === 0 ? (
           <div className="transcript-empty">
-            自分 / 相手側の文字起こしがここに表示されます
+            文字起こしを開始すると、自分 / 相手側トラックの発話がここに流れます
           </div>
         ) : (
           segments.map((seg, i) => {
