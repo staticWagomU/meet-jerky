@@ -1229,3 +1229,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ScreenCaptureKit 実機 audio format 差分は未実機確認。Rust cargo 検証は `cmake` 不在制約に注意する。
 - 次アクション: `cmake` あり環境で system_audio の Rust テストを再実行する。
+
+### Main task: sanitize microphone f32 samples
+
+- 開始日時: 2026-04-27 04:41 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/audio.rs`, `AGENT_LOG.md`
+- 指示内容: マイク入力の f32 サンプルでも NaN/Infinity や範囲外値をそのまま文字起こし側へ流さないようにする。
+- 結果: `normalize_sample_to_f32` の出力を `sanitize_sample` に通し、非有限値は 0.0、範囲外値は [-1.0, 1.0] に丸めるようにした。f32 入力の invalid/range 境界を純粋関数テストに追加した。
+- 変更ファイル: `src-tauri/src/audio.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/audio.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/audio.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/audio.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実マイクデバイスの f32 invalid sample 発生は未実機確認。Rust cargo 検証は `cmake` 不在制約に注意する。
+- 次アクション: `cmake` あり環境で audio の Rust テストを再実行する。

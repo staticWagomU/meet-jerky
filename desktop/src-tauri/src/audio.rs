@@ -256,7 +256,15 @@ fn normalize_sample_to_f32<T>(sample: T) -> f32
 where
     f32: FromSample<T>,
 {
-    f32::from_sample(sample)
+    sanitize_sample(f32::from_sample(sample))
+}
+
+fn sanitize_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
 }
 
 fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32 {
@@ -624,6 +632,15 @@ mod tests {
         assert_close(normalize_sample_to_f32(32768u16), 0.0, f32::EPSILON);
         assert_close(normalize_sample_to_f32(u16::MIN), -1.0, f32::EPSILON);
         assert!(normalize_sample_to_f32(u16::MAX) > 0.999);
+    }
+
+    #[test]
+    fn test_normalize_sample_to_f32_sanitizes_invalid_f32() {
+        assert_eq!(normalize_sample_to_f32(f32::NAN), 0.0);
+        assert_eq!(normalize_sample_to_f32(f32::INFINITY), 0.0);
+        assert_eq!(normalize_sample_to_f32(f32::NEG_INFINITY), 0.0);
+        assert_eq!(normalize_sample_to_f32(2.0f32), 1.0);
+        assert_eq!(normalize_sample_to_f32(-2.0f32), -1.0);
     }
 
     #[test]
