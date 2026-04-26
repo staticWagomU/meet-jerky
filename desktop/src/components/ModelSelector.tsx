@@ -340,7 +340,7 @@ function DownloadStatus({
         onClick={() => onDownload(selectedModel)}
         disabled={disabled || downloadingModel !== null}
       >
-        DL
+        ダウンロード
       </button>
       {downloadError && (
         <span className="download-error" role="alert">
