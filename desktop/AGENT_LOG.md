@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: clarify empty session history guidance
+
+- 開始日時: 2026-04-27 08:18 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴が空のとき、履歴がいつ作られるかを短く伝える。
+- 結果: 空状態の文言を「履歴がまだありません」から、会議終了後に保存された文字起こし履歴が表示されることを説明する文言へ変更した。履歴取得、保存、ファイル/フォルダを開く操作は変更していない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と履歴保存の実機操作は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: show unsaved settings status
 
 - 開始日時: 2026-04-27 08:17 JST

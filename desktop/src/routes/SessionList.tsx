@@ -131,7 +131,7 @@ export function SessionList() {
 
       {sessions.length === 0 ? (
         <p className="session-list-empty" role="status">
-          履歴がまだありません
+          会議を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
       ) : (
         <ul className="session-list-items">
