@@ -809,3 +809,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Tauri event 購読失敗や実際のモデルダウンロード失敗は未実機確認。
 - 次アクション: model download listener の再購読設計は、進捗イベントの取りこぼしリスクとあわせて別途見直す。
+
+### Main task: stabilize model download progress listener
+
+- 開始日時: 2026-04-27 04:58 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデルダウンロード進捗 listener が `downloadingModel` の変更ごとに再購読され、ダウンロード中の event 取りこぼしや不要な解除/再登録が起き得る構造を避ける。
+- 結果: `downloadingModel` は `useRef` に同期し、`model-download-progress` listener は `queryClient` だけに依存して安定購読するようにした。完了時の modelDownloaded query invalidation は ref の現在値を使う。ダウンロード invoke、進捗表示、エラー listener は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実モデルダウンロード中の event 取りこぼし再現は未実機確認。
+- 次アクション: モデルダウンロード完了時の query invalidation と UI 状態を実機またはモックで確認する。

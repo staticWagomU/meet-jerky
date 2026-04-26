@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,7 +34,12 @@ export function ModelSelector({
   const [downloadErrorListenerError, setDownloadErrorListenerError] = useState<
     string | null
   >(null);
+  const downloadingModelRef = useRef<string | null>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    downloadingModelRef.current = downloadingModel;
+  }, [downloadingModel]);
 
   const { data: models, error: modelsError } = useQuery<ModelInfo[]>({
     queryKey: ["models"],
@@ -49,7 +54,7 @@ export function ModelSelector({
       (event) => {
         setDownloadProgress(event.payload.progress);
         if (event.payload.progress >= 1) {
-          const model = downloadingModel;
+          const model = downloadingModelRef.current;
           setDownloadingModel(null);
           setDownloadProgress(0);
           if (model) {
@@ -88,7 +93,7 @@ export function ModelSelector({
           );
         });
     };
-  }, [downloadingModel, queryClient]);
+  }, [queryClient]);
 
   // Listen for download error events emitted by the backend.
   // `invoke` の catch でも同じ文字列は拾えるが、長時間 DL 中の切断などは
