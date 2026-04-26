@@ -160,7 +160,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
     let parsed = parse_url_host_and_path(url)?;
     let host = parsed.host.to_ascii_lowercase();
 
-    let service = if host == "meet.google.com" {
+    let service = if is_google_meet_url(&host, &parsed.path) {
         "Google Meet"
     } else if is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
@@ -230,6 +230,31 @@ fn strip_port(host_port: &str) -> Option<&str> {
 
 fn is_zoom_host(host: &str) -> bool {
     host == "zoom.us" || host.ends_with(".zoom.us")
+}
+
+fn is_google_meet_url(host: &str, path: &str) -> bool {
+    host == "meet.google.com" && is_google_meet_code_path(path)
+}
+
+fn is_google_meet_code_path(path: &str) -> bool {
+    let Some(code) = path.strip_prefix('/') else {
+        return false;
+    };
+
+    let mut parts = code.split('-');
+    let (Some(first), Some(second), Some(third), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
+    else {
+        return false;
+    };
+
+    has_ascii_lowercase_len(first, 3)
+        && has_ascii_lowercase_len(second, 4)
+        && has_ascii_lowercase_len(third, 3)
+}
+
+fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
+    value.len() == len && value.bytes().all(|byte| matches!(byte, b'a'..=b'z'))
 }
 
 fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
@@ -424,6 +449,19 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/wc/profile"), None);
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
         assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
+        assert_eq!(classify_meeting_url("https://meet.google.com/"), None);
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/landing"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defg"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/ABC-defg-hij"),
+            None
+        );
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/_"), None);
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
