@@ -467,7 +467,7 @@
   margin: 0.2rem 0;
 }
 
-.system-audio-note {
+.audio-source-note {
   font-size: 0.7rem;
   color: var(--system-audio-note-color);
   background-color: var(--system-audio-note-bg);

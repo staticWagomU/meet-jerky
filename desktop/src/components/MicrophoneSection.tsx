@@ -105,6 +105,9 @@ export function MicrophoneSection({
         </div>
         <span className="level-label">{micLevelPercent}%</span>
       </div>
+      <div className="audio-source-note">
+        マイク音声は自分トラックとして文字起こしされます
+      </div>
     </div>
   );
 }
