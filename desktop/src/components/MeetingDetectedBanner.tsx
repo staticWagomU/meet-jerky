@@ -30,6 +30,9 @@ export function MeetingDetectedBanner() {
     const unlistenPromise = listen<MeetingAppDetectedPayload>(
       "meeting-app-detected",
       (e) => {
+        if (disposed) {
+          return;
+        }
         setDetected(e.payload);
       },
     )

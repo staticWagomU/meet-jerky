@@ -1159,3 +1159,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実ブラウザ URL 取得と Meet 実 URL での実機確認は未実施。
 - 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。
+
+### Main task: ignore meeting detection events after banner unmount
+
+- 開始日時: 2026-04-27 04:34 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知イベント受信側がアンマウント後に state 更新しないようにし、URL 全文を UI に出さない方針を維持する。
+- 結果: `meeting-app-detected` listener callback に `disposed` guard を追加し、unlisten 完了前後にイベントが届いてもアンマウント済みコンポーネントへ `setDetected` しないようにした。表示内容は従来通り service/host/appName のみで、URL 全文や window title は表示しない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 Tauri イベント配送タイミングは未実機確認。
+- 次アクション: 他の Tauri listener callback に同種の unmount guard 漏れがないか確認する。
