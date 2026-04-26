@@ -851,3 +851,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と userinfo 付き URL の実ブラウザ表示は未実機確認。
 - 次アクション: URL provider boundary を設計する際は、標準 URL parser での正規化と userinfo 拒否を前提にする。
+
+### Main task: clear model download state on invoke success
+
+- 開始日時: 2026-04-27 05:26 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデルダウンロード成功時の UI 状態を progress event だけに依存せず、`download_model` invoke の成功でも完了状態へ戻す。
+- 結果: `download_model` invoke 成功後に `downloadingModel` と progress を clear し、該当モデルの `modelDownloaded` query を invalidate するようにした。進捗 event は現在ダウンロード中の model と一致する場合だけ反映し、古い event や別モデル event で UI が動かないようにした。ダウンロード失敗時の表示や backend コマンドは変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実モデルダウンロード中の progress event 取りこぼし再現は未実機確認。
+- 次アクション: ダウンロード完了後の表示を実機またはモックで確認する。

@@ -52,6 +52,9 @@ export function ModelSelector({
     const unlistenPromise = listen<DownloadProgressPayload>(
       "model-download-progress",
       (event) => {
+        if (event.payload.model !== downloadingModelRef.current) {
+          return;
+        }
         setDownloadProgress(event.payload.progress);
         if (event.payload.progress >= 1) {
           const model = downloadingModelRef.current;
@@ -144,6 +147,11 @@ export function ModelSelector({
     setDownloadError(null);
     try {
       await invoke("download_model", { modelName });
+      setDownloadingModel(null);
+      setDownloadProgress(0);
+      queryClient.invalidateQueries({
+        queryKey: ["modelDownloaded", modelName],
+      });
     } catch (e) {
       // emit 側で既に state を更新している可能性が高いが、
       // emit が届かなかった場合に備えて catch でも冪等に更新する。
