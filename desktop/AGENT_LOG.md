@@ -879,3 +879,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実マイク/システム音声の片側文字起こし開始は未実機確認。
 - 次アクション: source 指定時の backend stream 選択を cmake あり環境で Rust 検証する。
+
+### Main task: clear source state when transcription restart fails
+
+- 開始日時: 2026-04-27 05:44 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 手動文字起こし開始時に録音ソースの再起動が失敗した場合、backend 側では停止済みなのに UI が録音中表示のまま残らないようにする。
+- 結果: `handleToggleTranscription` の source 再起動中だけ pending flag を立て、`start_recording` または `start_system_audio` が失敗した場合は該当 source の UI 状態とレベルを clear するようにした。source 再起動が成功した後の `start_transcription` 失敗では録音状態を維持する。通常の録音開始/停止、会議開始 rollback は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。録音ソース再起動失敗の実機再現は未実機確認。
+- 次アクション: source 再起動失敗時の UI 状態をモックまたは実機で確認する。

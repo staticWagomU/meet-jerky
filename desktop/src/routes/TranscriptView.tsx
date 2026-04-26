@@ -402,21 +402,27 @@ export function TranscriptView() {
   }, [isSystemAudioRecording, isMicRecording, isTranscribing]);
 
   const handleToggleTranscription = useCallback(async () => {
+    let micRestartPending = false;
+    let systemAudioRestartPending = false;
     try {
       if (isTranscribing) {
         await stopTranscriptionFromUiState();
         setIsTranscribing(false);
       } else {
         if (isMicRecording) {
+          micRestartPending = true;
           if (selectedDeviceId) {
             await invoke("start_recording", { deviceId: selectedDeviceId });
           } else {
             await invoke("start_recording");
           }
+          micRestartPending = false;
           setMicLevel(0);
         }
         if (isSystemAudioRecording) {
+          systemAudioRestartPending = true;
           await invoke("start_system_audio");
+          systemAudioRestartPending = false;
           setSystemAudioLevel(0);
         }
         const transcriptionSource = getTranscriptionSourceArg(
@@ -436,6 +442,14 @@ export function TranscriptView() {
         clearRelatedMeetingError(currentError, TRANSCRIPTION_ERROR_PREFIX),
       );
     } catch (e) {
+      if (micRestartPending) {
+        setIsMicRecording(false);
+        setMicLevel(0);
+      }
+      if (systemAudioRestartPending) {
+        setIsSystemAudioRecording(false);
+        setSystemAudioLevel(0);
+      }
       const msg = formatOperationError(TRANSCRIPTION_ERROR_PREFIX, e);
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
