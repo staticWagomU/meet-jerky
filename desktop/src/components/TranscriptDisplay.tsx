@@ -22,7 +22,7 @@ function getSpeakerKind(
 function getSpeakerLabel(segment: TranscriptSegment): string | null {
   if (segment.speaker) return segment.speaker;
   if (segment.source === "microphone") return "自分";
-  if (segment.source === "system_audio") return "相手";
+  if (segment.source === "system_audio") return "相手側";
   return null;
 }
 
@@ -266,7 +266,7 @@ export function TranscriptDisplay({
               自分 {segmentCounts.self}
             </span>
             <span className="transcript-count-pill transcript-count-pill-other">
-              相手 {segmentCounts.other}
+              相手側 {segmentCounts.other}
             </span>
             {segmentCounts.errors > 0 && (
               <span className="transcript-count-pill transcript-count-pill-error">
