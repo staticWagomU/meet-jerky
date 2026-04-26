@@ -64,11 +64,15 @@ export function MeetingDetectedBanner() {
   if (!detected && !listenerError) return null;
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
+  const bannerAriaLabel = listenerError
+    ? listenerError
+    : `${displayName} を検出しました。記録状態を確認できます。`;
 
   return (
     <div
       className="meeting-detected-banner"
       role={listenerError ? "alert" : "status"}
+      aria-label={bannerAriaLabel}
     >
       <span className="meeting-detected-banner-text">
         {listenerError ??

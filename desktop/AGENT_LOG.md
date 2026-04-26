@@ -2867,3 +2867,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: label meeting detected banner status
+
+- 開始日時: 2026-04-27 10:02 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知バナーが、支援技術でも検知状態または listener error を要約して伝えるようにする。
+- 結果: バナー root の `role="status"` / `role="alert"` は維持し、既存表示と同じ service/host ベースの検知名または listener error を使った `aria-label` を追加した。URL 全文は出さず、検知イベント購読、表示文言、遷移/閉じる操作は変更していない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。会議検知イベントの実機確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
