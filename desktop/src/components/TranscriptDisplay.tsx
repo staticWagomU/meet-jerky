@@ -40,6 +40,7 @@ export function TranscriptDisplay({
   const userScrolledRef = useRef(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const copyableSegmentsCount = segments.filter((seg) => !seg.isError).length;
 
   // Listen to transcription-result events
   useEffect(() => {
@@ -134,6 +135,7 @@ export function TranscriptDisplay({
             type="button"
             className="copy-btn"
             onClick={handleCopyAll}
+            disabled={copyableSegmentsCount === 0}
           >
             {copyFeedback ? "コピー済み" : "コピー"}
           </button>

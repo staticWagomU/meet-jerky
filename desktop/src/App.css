@@ -618,6 +618,11 @@
   background-color: var(--color-surface);
 }
 
+.copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ===========================
    Meeting Button & Timer
    =========================== */

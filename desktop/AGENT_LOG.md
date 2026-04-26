@@ -599,3 +599,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ/OS の clipboard 権限失敗は未実機確認。
 - 次アクション: 実機で clipboard 書き込み拒否時のエラー表示を確認する。
+
+### Main task: disable copying when only transcript errors exist
+
+- 開始日時: 2026-04-27 03:04 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: エラーセグメントだけが表示されている場合に、空の文字起こし本文をコピーできてしまう誤解を避ける。
+- 結果: コピー対象となる非エラーセグメント数を算出し、0 件の場合はコピー button を disabled にするようにした。disabled 状態の CSS を追加した。コピー本文の生成方針、エラーセグメント除外方針、イベント購読は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でエラーセグメントのみのときにコピー button が disabled になることを確認する。
