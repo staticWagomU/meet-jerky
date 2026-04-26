@@ -594,7 +594,11 @@ function OpenAIApiKeySection({
               className="control-btn control-btn-clear"
               onClick={() => refetchHasKey()}
               disabled={isFetchingHasKey}
-              aria-label="OpenAI API キー状態を再確認"
+              aria-label={
+                isFetchingHasKey
+                  ? "OpenAI API キー状態を確認中"
+                  : "OpenAI API キー状態を再確認"
+              }
             >
               {isFetchingHasKey ? "確認中..." : "再確認"}
             </button>
