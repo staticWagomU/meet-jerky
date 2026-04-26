@@ -90,7 +90,7 @@ export function MeetingDetectedBanner() {
           <button
             type="button"
             className="control-btn control-btn-clear"
-            aria-label="閉じる"
+            aria-label="会議検知バナーを閉じる"
             onClick={() => setDetected(null)}
           >
             ×
