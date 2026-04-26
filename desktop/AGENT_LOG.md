@@ -669,3 +669,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機でモデル一覧/状態取得失敗を再現する確認は未実機確認。
 - 次アクション: 実機またはモックでモデル一覧/状態取得失敗時の表示を確認する。
+
+### Main task: show transcript model state query errors
+
+- 開始日時: 2026-04-27 03:25 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: Transcript 画面側の `is_model_downloaded` query が失敗した場合に、会議開始/文字起こし開始が無効な理由をユーザーに表示する。
+- 結果: `TranscriptView` の model downloaded query から `error` を受け取り、失敗時に既存の `meeting-error` 表示へ「モデル状態の確認に失敗しました」を出すようにした。開始可否の条件、モデル取得コマンド、ダウンロード処理は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。`npx prettier --write src/routes/TranscriptView.tsx` は整形用に一時実行したが、package manifest/lockfile への依存追加は発生していない。
+- 失敗理由: なし。モデル状態 query 失敗の実機再現は未実機確認。
+- 次アクション: 実機またはモックで Transcript 画面のモデル状態 query 失敗表示を確認する。

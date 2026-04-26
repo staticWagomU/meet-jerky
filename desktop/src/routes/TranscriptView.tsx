@@ -98,12 +98,13 @@ export function TranscriptView() {
   });
 
   // Check if selected model is downloaded
-  const { data: isModelDownloaded } = useQuery<boolean>({
-    queryKey: ["modelDownloaded", selectedModel],
-    queryFn: () =>
-      invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
-    enabled: !!selectedModel,
-  });
+  const { data: isModelDownloaded, error: modelDownloadedError } =
+    useQuery<boolean>({
+      queryKey: ["modelDownloaded", selectedModel],
+      queryFn: () =>
+        invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
+      enabled: !!selectedModel,
+    });
 
   // Route audio-level events by source
   useEffect(() => {
@@ -307,7 +308,12 @@ export function TranscriptView() {
       console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
     }
-  }, [isMicRecording, isSystemAudioRecording, isTranscribing, selectedDeviceId]);
+  }, [
+    isMicRecording,
+    isSystemAudioRecording,
+    isTranscribing,
+    selectedDeviceId,
+  ]);
 
   const handleToggleSystemAudio = useCallback(async () => {
     try {
@@ -415,6 +421,11 @@ export function TranscriptView() {
         {meetingError && (
           <p className="meeting-error" role="alert">
             {meetingError}
+          </p>
+        )}
+        {modelDownloadedError && (
+          <p className="meeting-error" role="alert">
+            モデル状態の確認に失敗しました: {String(modelDownloadedError)}
           </p>
         )}
         {lastSavedPath && (
