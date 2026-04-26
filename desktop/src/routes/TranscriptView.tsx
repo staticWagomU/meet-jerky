@@ -238,7 +238,7 @@ export function TranscriptView() {
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
   });
 
-  const { data: settings } = useQuery<AppSettings>({
+  const { data: settings, error: settingsError } = useQuery<AppSettings>({
     queryKey: ["settings"],
     queryFn: () => invoke<AppSettings>("get_settings"),
   });
@@ -784,6 +784,11 @@ export function TranscriptView() {
         {modelDownloadedErrorForUi && (
           <p className="meeting-error" role="alert">
             モデル状態の確認に失敗しました: {String(modelDownloadedErrorForUi)}
+          </p>
+        )}
+        {settingsError && (
+          <p className="meeting-error" role="alert">
+            文字起こし設定の取得に失敗しました: {String(settingsError)}
           </p>
         )}
         {meetingStartBlockedReason && (

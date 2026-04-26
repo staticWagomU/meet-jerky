@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: show transcript settings query error
+
+- 開始日時: 2026-04-27 07:09 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議画面で文字起こし設定の取得に失敗した場合、エンジン/AI送信状態が不明なまま黙らないようにする。
+- 結果: `get_settings` query の error を受け取り、失敗時に会議コントロール下へ `role="alert"` 付きで表示するようにした。設定取得、録音、文字起こし invoke、保存処理は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。設定取得失敗状態の実 UI 表示は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify OpenAI API key action labels
 
 - 開始日時: 2026-04-27 07:07 JST
