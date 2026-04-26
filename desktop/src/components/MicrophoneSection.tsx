@@ -29,6 +29,7 @@ export function MicrophoneSection({
         <div className="device-selector">
           <select
             id="device-select"
+            aria-label="マイクデバイス"
             value={selectedDeviceId}
             onChange={(e) => onDeviceChange(e.target.value)}
             disabled={isMicRecording}
