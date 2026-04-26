@@ -253,7 +253,7 @@ export function SettingsView() {
               }
             />
             <span>OpenAI Realtime API</span>
-            <span className="settings-note">API キーが必要</span>
+            <span className="settings-note">音声をOpenAIへ送信 / API キーが必要</span>
           </label>
         </div>
       </div>
