@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: do not require Whisper model for non-Whisper engines
+
+- 開始日時: 2026-04-27 07:01 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: Apple SpeechAnalyzer / OpenAI Realtime 選択時に、会議開始や文字起こし開始が不要な Whisper モデル未ダウンロード状態でブロックされないようにする。
+- 結果: `TranscriptView` で設定を取得し、Whisper 選択時のみローカルモデルのダウンロード状態を開始可否に使うようにした。初回は設定の `whisperModel` をフロントの選択モデルへ同期し、非 Whisper エンジンではモデル確認エラー表示も抑制する。録音、文字起こし invoke、エンジン設定保存、認証情報は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Apple SpeechAnalyzer / OpenAI Realtime の実機開始、macOS 権限ダイアログ、API 認証は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify meeting detected dismiss label
 
 - 開始日時: 2026-04-27 06:44 JST

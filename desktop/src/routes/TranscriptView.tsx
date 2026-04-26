@@ -3,9 +3,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useQuery } from "@tanstack/react-query";
 import type {
+  AppSettings,
   AudioDevice,
   AudioLevelPayload,
   TranscriptSegment,
+  TranscriptionEngineType,
 } from "../types";
 import { MicrophoneSection } from "../components/MicrophoneSection";
 import { SystemAudioSection } from "../components/SystemAudioSection";
@@ -101,6 +103,7 @@ function getTranscriptionSourceArg(
 function getTranscriptionStartBlockedReason(
   isTranscribing: boolean,
   isAnySourceRecording: boolean,
+  requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
   modelDownloadedError: unknown,
 ): string | null {
@@ -108,6 +111,9 @@ function getTranscriptionStartBlockedReason(
   if (modelDownloadedError) return null;
   if (!isAnySourceRecording) {
     return "文字起こし開始には、マイクまたはシステム音声を開始してください。";
+  }
+  if (!requiresLocalModel) {
+    return null;
   }
   if (isModelDownloaded === undefined) {
     return "モデル状態を確認中です。";
@@ -120,11 +126,13 @@ function getTranscriptionStartBlockedReason(
 
 function getMeetingStartBlockedReason(
   isMeetingActive: boolean,
+  requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
   modelDownloadedError: unknown,
 ): string | null {
   if (isMeetingActive) return null;
   if (modelDownloadedError) return null;
+  if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
     return "会議開始に必要なモデル状態を確認中です。";
   }
@@ -150,6 +158,10 @@ function getAudioSourceStatusLabel(
   return "なし";
 }
 
+function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
+  return !engine || engine === "whisper";
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -173,6 +185,7 @@ export function TranscriptView() {
   const [systemAudioLevel, setSystemAudioLevel] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("small");
+  const hasSyncedSettingsModelRef = useRef(false);
   const [segments, setSegments] = useState<TranscriptSegment[]>([]);
 
   // Meeting state
@@ -198,13 +211,30 @@ export function TranscriptView() {
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
   });
 
+  const { data: settings } = useQuery<AppSettings>({
+    queryKey: ["settings"],
+    queryFn: () => invoke<AppSettings>("get_settings"),
+  });
+
+  useEffect(() => {
+    if (!settings?.whisperModel || hasSyncedSettingsModelRef.current) {
+      return;
+    }
+    setSelectedModel(settings.whisperModel);
+    hasSyncedSettingsModelRef.current = true;
+  }, [settings?.whisperModel]);
+
+  const requiresLocalModel = getRequiresLocalModel(
+    settings?.transcriptionEngine,
+  );
+
   // Check if selected model is downloaded
   const { data: isModelDownloaded, error: modelDownloadedError } =
     useQuery<boolean>({
       queryKey: ["modelDownloaded", selectedModel],
       queryFn: () =>
         invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
-      enabled: !!selectedModel,
+      enabled: requiresLocalModel && !!selectedModel,
     });
 
   // Route audio-level events by source
@@ -612,14 +642,20 @@ export function TranscriptView() {
     setSegments([]);
   }, []);
 
+  const isTranscriptionEngineReady =
+    !requiresLocalModel || isModelDownloaded === true;
+  const modelDownloadedErrorForUi = requiresLocalModel
+    ? modelDownloadedError
+    : null;
   const canStartTranscription =
-    isAnySourceRecording && !!isModelDownloaded && !isTranscribing;
+    isAnySourceRecording && isTranscriptionEngineReady && !isTranscribing;
 
-  const canStartMeeting = !!isModelDownloaded && !isMeetingActive;
+  const canStartMeeting = isTranscriptionEngineReady && !isMeetingActive;
   const meetingStartBlockedReason = getMeetingStartBlockedReason(
     isMeetingActive,
+    requiresLocalModel,
     isModelDownloaded,
-    modelDownloadedError,
+    modelDownloadedErrorForUi,
   );
   const isAudioSourceOperationPending =
     isMicOperationPending ||
@@ -635,8 +671,9 @@ export function TranscriptView() {
   const transcriptionStartBlockedReason = getTranscriptionStartBlockedReason(
     isTranscribing,
     isAnySourceRecording,
+    requiresLocalModel,
     isModelDownloaded,
-    modelDownloadedError,
+    modelDownloadedErrorForUi,
   );
   const audioSourceStatusLabel = getAudioSourceStatusLabel(
     isMicRecording,
@@ -707,9 +744,9 @@ export function TranscriptView() {
             {meetingError}
           </p>
         )}
-        {modelDownloadedError && (
+        {modelDownloadedErrorForUi && (
           <p className="meeting-error" role="alert">
-            モデル状態の確認に失敗しました: {String(modelDownloadedError)}
+            モデル状態の確認に失敗しました: {String(modelDownloadedErrorForUi)}
           </p>
         )}
         {meetingStartBlockedReason && (
