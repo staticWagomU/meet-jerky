@@ -186,6 +186,9 @@ export function TranscriptView() {
   useEffect(() => {
     let disposed = false;
     const unlistenPromise = listen<AudioLevelPayload>("audio-level", (event) => {
+      if (disposed) {
+        return;
+      }
       if (event.payload.source === "microphone") {
         setMicLevel(event.payload.level);
       } else if (event.payload.source === "system_audio") {

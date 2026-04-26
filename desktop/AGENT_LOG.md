@@ -1173,3 +1173,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 Tauri イベント配送タイミングは未実機確認。
 - 次アクション: 他の Tauri listener callback に同種の unmount guard 漏れがないか確認する。
+
+### Main task: ignore Tauri listener events after component unmount
+
+- 開始日時: 2026-04-27 04:35 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: Tauri event listener callback がアンマウント後に state 更新しないようにそろえる。
+- 結果: `audio-level`, `transcription-result`, `transcription-error`, `model-download-progress`, `model-download-error` の各 callback に `disposed` guard を追加した。listen 開始失敗/解除失敗の既存エラー表示は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 Tauri イベント配送タイミングは未実機確認。
+- 次アクション: イベント listener の unmount guard 方針を維持しつつ、次の状態透明性/検知改善候補を確認する。

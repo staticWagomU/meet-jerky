@@ -60,6 +60,9 @@ export function TranscriptDisplay({
     const unlistenPromise = listen<TranscriptSegment>(
       "transcription-result",
       (event) => {
+        if (disposed) {
+          return;
+        }
         onNewSegment(event.payload);
       },
     )
@@ -96,6 +99,9 @@ export function TranscriptDisplay({
     const unlistenPromise = listen<TranscriptionErrorPayload>(
       "transcription-error",
       (event) => {
+        if (disposed) {
+          return;
+        }
         const errorSegment: TranscriptSegment = {
           text: `エラー: ${event.payload.error}`,
           startMs: 0,

@@ -52,6 +52,9 @@ export function ModelSelector({
     const unlistenPromise = listen<DownloadProgressPayload>(
       "model-download-progress",
       (event) => {
+        if (disposed) {
+          return;
+        }
         if (event.payload.model !== downloadingModelRef.current) {
           return;
         }
@@ -107,6 +110,9 @@ export function ModelSelector({
     const unlistenPromise = listen<DownloadErrorPayload>(
       "model-download-error",
       (event) => {
+        if (disposed) {
+          return;
+        }
         setDownloadError(event.payload.message);
         downloadingModelRef.current = null;
         setDownloadingModel(null);
