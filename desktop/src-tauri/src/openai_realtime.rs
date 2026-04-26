@@ -27,7 +27,8 @@ use parking_lot::Mutex;
 
 use crate::secret_store::{get_secret, SecretKey};
 use crate::transcription::{
-    StreamConfig, TranscriptionEngine, TranscriptionSegment, TranscriptionStream,
+    StreamConfig, TranscriptionEngine, TranscriptionSegment, TranscriptionSource,
+    TranscriptionStream,
 };
 
 /// OpenAI Realtime API のエンジン。
@@ -53,11 +54,9 @@ impl TranscriptionEngine for OpenAIRealtimeEngine {
         self: Arc<Self>,
         config: StreamConfig,
     ) -> Result<Box<dyn TranscriptionStream>, String> {
-        let api_key = get_secret(SecretKey::OpenAIApiKey)?
-            .ok_or_else(|| {
-                "OpenAI API キーが設定されていません。設定画面から登録してください。"
-                    .to_string()
-            })?;
+        let api_key = get_secret(SecretKey::OpenAIApiKey)?.ok_or_else(|| {
+            "OpenAI API キーが設定されていません。設定画面から登録してください。".to_string()
+        })?;
 
         let stream = OpenAIRealtimeStream::new(self.model.clone(), api_key, config)?;
         Ok(Box::new(stream))
@@ -74,6 +73,7 @@ pub struct OpenAIRealtimeStream {
     audio_tx: tokio::sync::mpsc::UnboundedSender<AudioCommand>,
     pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
     speaker: Option<String>,
+    source: Option<TranscriptionSource>,
     /// `tauri::async_runtime::spawn` の戻り値。Drop 時にキャンセルする。
     task_handle: Option<tauri::async_runtime::JoinHandle<()>>,
 }
@@ -86,17 +86,13 @@ enum AudioCommand {
 }
 
 impl OpenAIRealtimeStream {
-    pub fn new(
-        model: String,
-        api_key: String,
-        config: StreamConfig,
-    ) -> Result<Self, String> {
+    pub fn new(model: String, api_key: String, config: StreamConfig) -> Result<Self, String> {
         let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-        let (audio_tx, audio_rx) =
-            tokio::sync::mpsc::unbounded_channel::<AudioCommand>();
+        let (audio_tx, audio_rx) = tokio::sync::mpsc::unbounded_channel::<AudioCommand>();
 
         let pending_for_task = Arc::clone(&pending);
         let speaker = config.speaker.clone();
+        let source = config.source;
         let language = config.language.clone();
         let sample_rate = config.sample_rate;
 
@@ -109,6 +105,7 @@ impl OpenAIRealtimeStream {
                 audio_rx,
                 pending_for_task.clone(),
                 speaker.clone(),
+                source,
             )
             .await
             {
@@ -119,6 +116,7 @@ impl OpenAIRealtimeStream {
                     text: format!("[OpenAI Realtime エラー: {e}]"),
                     start_ms: 0,
                     end_ms: 0,
+                    source,
                     speaker: speaker.clone(),
                 });
             }
@@ -128,6 +126,7 @@ impl OpenAIRealtimeStream {
             audio_tx,
             pending,
             speaker: config.speaker,
+            source: config.source,
             task_handle: Some(task_handle),
         })
     }
@@ -140,9 +139,7 @@ impl TranscriptionStream for OpenAIRealtimeStream {
         }
         self.audio_tx
             .send(AudioCommand::Samples(samples.to_vec()))
-            .map_err(|_| {
-                "OpenAI Realtime ストリームが既に停止しています".to_string()
-            })?;
+            .map_err(|_| "OpenAI Realtime ストリームが既に停止しています".to_string())?;
         Ok(())
     }
 
@@ -166,6 +163,7 @@ impl TranscriptionStream for OpenAIRealtimeStream {
         // 残りの pending を返す
         let mut q = self.pending.lock();
         let _ = &self.speaker; // suppress unused warning if any
+        let _ = &self.source; // suppress unused warning if any
         Ok(std::mem::take(&mut *q))
     }
 }
@@ -194,7 +192,7 @@ mod ws_task {
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
 
-    use crate::transcription::TranscriptionSegment;
+    use crate::transcription::{TranscriptionSegment, TranscriptionSource};
 
     use super::{AudioCommand, REALTIME_SAMPLE_RATE};
 
@@ -206,6 +204,7 @@ mod ws_task {
         mut audio_rx: UnboundedReceiver<AudioCommand>,
         pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
         speaker: Option<String>,
+        source: Option<TranscriptionSource>,
     ) -> Result<(), String> {
         // ─── 1. WebSocket 接続 ───
         let url = "wss://api.openai.com/v1/realtime?intent=transcription";
@@ -286,18 +285,29 @@ mod ws_task {
         // ─── 4. 受信タスクを別 task で起こす ───
         let pending_for_reader = Arc::clone(&pending);
         let speaker_for_reader = speaker.clone();
+        let source_for_reader = source;
         let reader_task = tokio::spawn(async move {
             while let Some(msg) = ws_rx.next().await {
                 let msg = match msg {
                     Ok(m) => m,
                     Err(e) => {
-                        push_error(&pending_for_reader, &speaker_for_reader, e.to_string());
+                        push_error(
+                            &pending_for_reader,
+                            &speaker_for_reader,
+                            source_for_reader,
+                            e.to_string(),
+                        );
                         break;
                     }
                 };
                 match msg {
                     Message::Text(text) => {
-                        handle_event(&text, &pending_for_reader, &speaker_for_reader);
+                        handle_event(
+                            &text,
+                            &pending_for_reader,
+                            &speaker_for_reader,
+                            source_for_reader,
+                        );
                     }
                     Message::Close(_) => break,
                     _ => {}
@@ -310,15 +320,13 @@ mod ws_task {
         while let Some(cmd) = audio_rx.recv().await {
             match cmd {
                 AudioCommand::Samples(samples) => {
-                    let resampled =
-                        resample_block(&mut resampler, &mut resample_buf, &samples)?;
+                    let resampled = resample_block(&mut resampler, &mut resample_buf, &samples)?;
                     if resampled.is_empty() {
                         continue;
                     }
                     let pcm16 = float_to_pcm16(&resampled);
                     let b64 = base64::engine::general_purpose::STANDARD.encode(&pcm16);
-                    let event =
-                        json!({ "type": "input_audio_buffer.append", "audio": b64 });
+                    let event = json!({ "type": "input_audio_buffer.append", "audio": b64 });
                     if let Err(e) = ws_tx.send(Message::Text(event.to_string())).await {
                         return Err(format!("音声送信に失敗: {e}"));
                     }
@@ -351,6 +359,7 @@ mod ws_task {
         text: &str,
         pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
         speaker: &Option<String>,
+        source: Option<TranscriptionSource>,
     ) {
         let value: serde_json::Value = match serde_json::from_str(text) {
             Ok(v) => v,
@@ -364,15 +373,14 @@ mod ws_task {
         // API_VERIFY: 確定イベント名。delta は部分結果なので無視 (将来 UI に
         // 流すなら別チャネルを設ける)。
         if event_type == "conversation.item.input_audio_transcription.completed" {
-            if let Some(transcript) =
-                value.get("transcript").and_then(|v| v.as_str())
-            {
+            if let Some(transcript) = value.get("transcript").and_then(|v| v.as_str()) {
                 let trimmed = transcript.trim();
                 if !trimmed.is_empty() {
                     pending.lock().push(TranscriptionSegment {
                         text: trimmed.to_string(),
                         start_ms: 0,
                         end_ms: 0,
+                        source,
                         speaker: speaker.clone(),
                     });
                 }
@@ -383,7 +391,7 @@ mod ws_task {
                 .and_then(|e| e.get("message"))
                 .and_then(|m| m.as_str())
             {
-                push_error(pending, speaker, message.to_string());
+                push_error(pending, speaker, source, message.to_string());
             }
         }
     }
@@ -391,12 +399,14 @@ mod ws_task {
     fn push_error(
         pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
         speaker: &Option<String>,
+        source: Option<TranscriptionSource>,
         message: String,
     ) {
         pending.lock().push(TranscriptionSegment {
             text: format!("[OpenAI Realtime エラー: {message}]"),
             start_ms: 0,
             end_ms: 0,
+            source,
             speaker: speaker.clone(),
         });
     }
@@ -451,9 +461,7 @@ mod tests {
         let bytes = ws_task::float_to_pcm16(&samples);
         assert_eq!(bytes.len(), samples.len() * 2);
 
-        let read = |i: usize| -> i16 {
-            i16::from_le_bytes([bytes[i * 2], bytes[i * 2 + 1]])
-        };
+        let read = |i: usize| -> i16 { i16::from_le_bytes([bytes[i * 2], bytes[i * 2 + 1]]) };
         assert_eq!(read(0), 0);
         assert_eq!(read(1), i16::MAX);
         // -1.0 → -32767 (round). MIN (-32768) ではないことに注意。

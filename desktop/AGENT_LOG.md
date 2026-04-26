@@ -473,3 +473,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: Rust 側の `TranscriptionSegment` / `StreamConfig` への `source` 伝播は別タスクで実施する。
+
+### Main task: propagate transcript source from Rust streams
+
+- 開始日時: 2026-04-26 23:10 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/transcription.rs`, `src-tauri/src/apple_speech.rs`, `src-tauri/src/openai_realtime.rs`, `src-tauri/src/cloud_whisper.rs`, `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: Rust 側の `TranscriptionSegment` に optional な `source` を追加し、`StreamConfig` から各 engine の出力セグメントへ `microphone` / `system_audio` を伝播する。session 保存と Markdown export は既存の `speaker` ベースのまま変更しない。
+- 結果: `TranscriptionSource` を `Serialize` 可能な enum として追加し、`TranscriptionSegment.source` と `StreamConfig.source` を optional にした。`start_transcription` でマイクに `Microphone`、システム音声に `SystemAudio` を設定し、Whisper / Apple Speech / OpenAI Realtime / mock stream は既存 `speaker` と同じ経路で `source` を保持して出力セグメントへコピーするようにした。stream 外で source が不明な `WhisperLocal::transcribe_chunk` と `cloud_whisper::parse_whisper_verbose_response` は `source: None` にした。`transcript_bridge` は保存用ラベルを引き続き `speaker` から作る。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `src-tauri/src/apple_speech.rs`, `src-tauri/src/openai_realtime.rs`, `src-tauri/src/cloud_whisper.rs`, `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs src-tauri/src/apple_speech.rs src-tauri/src/openai_realtime.rs src-tauri/src/cloud_whisper.rs src-tauri/src/transcript_bridge.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs src-tauri/src/apple_speech.rs src-tauri/src/openai_realtime.rs src-tauri/src/cloud_whisper.rs src-tauri/src/transcript_bridge.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 調査担当 `mj-research-source-propagation-20260426-1` と作業担当 `mj-worker-transcript-source-rust-20260426-1` は長い読解表示で実装に入らず、自律運用を止めないため docs/autonomous-main-prompt.md の例外条件に沿ってメイン側で最小実装した。Rust の `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と、追加した `TranscriptionSource` 伝播テストを含む Rust テストを再実行する。

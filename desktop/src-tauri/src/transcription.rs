@@ -16,6 +16,13 @@ use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextPar
 // データ型
 // ─────────────────────────────────────────────
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionSource {
+    Microphone,
+    SystemAudio,
+}
+
 /// 文字起こし結果の1セグメント
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +30,8 @@ pub struct TranscriptionSegment {
     pub text: String,
     pub start_ms: i64,
     pub end_ms: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<TranscriptionSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speaker: Option<String>, // "自分" (mic) or "相手" (system audio)
 }
@@ -48,6 +57,8 @@ pub struct StreamConfig {
     pub sample_rate: u32,
     /// 出力セグメントに付与する話者ラベル ("自分" / "相手" など)。
     pub speaker: Option<String>,
+    /// 入力音声ソース。ライブ UI がマイク/システム音声を表示上で識別するために使う。
+    pub source: Option<TranscriptionSource>,
     /// 言語ヒント ("ja" / "en" / "auto")。エンジンが解釈する。
     pub language: Option<String>,
 }
@@ -145,6 +156,7 @@ impl WhisperLocal {
                 text,
                 start_ms: start_ts * 10,
                 end_ms: end_ts * 10,
+                source: None,
                 speaker: None,
             });
         }
@@ -181,6 +193,7 @@ pub struct WhisperStream {
     #[cfg(test)]
     ctx: Option<Arc<WhisperContext>>,
     speaker: Option<String>,
+    source: Option<TranscriptionSource>,
     language: String,
     needs_resample: bool,
     resampler: Option<SincFixedIn<f32>>,
@@ -216,6 +229,7 @@ impl WhisperStream {
             #[cfg(test)]
             ctx: Some(ctx),
             speaker: config.speaker,
+            source: config.source,
             language,
             needs_resample,
             resampler,
@@ -255,6 +269,7 @@ impl WhisperStream {
                 text: seg.text,
                 start_ms: seg.start_ms + offset_ms,
                 end_ms: seg.end_ms + offset_ms,
+                source: self.source,
                 speaker: self.speaker.clone(),
             });
         }
@@ -741,6 +756,7 @@ pub fn start_transcription(
             let stream_config = StreamConfig {
                 sample_rate: mic_sample_rate,
                 speaker: Some("自分".to_string()),
+                source: Some(TranscriptionSource::Microphone),
                 language: None,
             };
             let stream = Arc::clone(&engine)
@@ -762,6 +778,7 @@ pub fn start_transcription(
             let stream_config = StreamConfig {
                 sample_rate: sys_sample_rate,
                 speaker: Some("相手".to_string()),
+                source: Some(TranscriptionSource::SystemAudio),
                 language: None,
             };
             let stream = Arc::clone(&engine)
@@ -923,11 +940,6 @@ const CHUNK_DURATION_SECS: f64 = 5.0;
 
 /// 16kHz での5秒分のサンプル数
 const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
-
-enum TranscriptionSource {
-    Microphone,
-    SystemAudio,
-}
 
 struct PendingTranscriptionStream {
     source: TranscriptionSource,
@@ -1133,6 +1145,7 @@ mod tests {
             text: "hello".to_string(),
             start_ms: 1000,
             end_ms: 2000,
+            source: None,
             speaker: None,
         };
         let json = serde_json::to_string(&segment).unwrap();
@@ -1149,12 +1162,17 @@ mod tests {
             text: "hello".to_string(),
             start_ms: 1000,
             end_ms: 2000,
+            source: Some(TranscriptionSource::Microphone),
             speaker: Some("自分".to_string()),
         };
         let json_with_speaker = serde_json::to_string(&segment_with_speaker).unwrap();
         assert!(
             json_with_speaker.contains("\"speaker\":\"自分\""),
             "speaker: Some(\"自分\") should appear in JSON"
+        );
+        assert!(
+            json_with_speaker.contains("\"source\":\"microphone\""),
+            "source should serialize as snake_case"
         );
     }
 
@@ -1235,6 +1253,7 @@ mod tests {
 
     struct MockStream {
         speaker: Option<String>,
+        source: Option<TranscriptionSource>,
         feeds_seen: Arc<AtomicUsize>,
         samples_seen: Arc<AtomicUsize>,
         pending: Vec<TranscriptionSegment>,
@@ -1247,6 +1266,7 @@ mod tests {
         ) -> Result<Box<dyn TranscriptionStream>, String> {
             Ok(Box::new(MockStream {
                 speaker: config.speaker,
+                source: config.source,
                 feeds_seen: Arc::clone(&self.feeds_seen),
                 samples_seen: Arc::clone(&self.samples_seen),
                 pending: Vec::new(),
@@ -1262,6 +1282,7 @@ mod tests {
                 text: format!("feed-{}", self.feeds_seen.load(Ordering::SeqCst)),
                 start_ms: 0,
                 end_ms: 100,
+                source: self.source,
                 speaker: self.speaker.clone(),
             });
             Ok(())
@@ -1276,6 +1297,7 @@ mod tests {
                 text: "finalized".to_string(),
                 start_ms: 0,
                 end_ms: 0,
+                source: self.source,
                 speaker: self.speaker.clone(),
             });
             Ok(std::mem::take(&mut self.pending))
@@ -1295,6 +1317,7 @@ mod tests {
             .start_stream(StreamConfig {
                 sample_rate: 16_000,
                 speaker: Some("自分".to_string()),
+                source: Some(TranscriptionSource::Microphone),
                 language: Some("ja".to_string()),
             })
             .expect("start_stream should succeed");
@@ -1309,6 +1332,9 @@ mod tests {
         let drained = stream.drain_segments();
         assert_eq!(drained.len(), 2);
         assert!(drained.iter().all(|s| s.speaker.as_deref() == Some("自分")));
+        assert!(drained
+            .iter()
+            .all(|s| s.source == Some(TranscriptionSource::Microphone)));
 
         // 連続 drain は空
         assert!(stream.drain_segments().is_empty());
@@ -1332,6 +1358,7 @@ mod tests {
             .start_stream(StreamConfig {
                 sample_rate: 16_000,
                 speaker: Some("自分".to_string()),
+                source: Some(TranscriptionSource::Microphone),
                 language: None,
             })
             .unwrap();
@@ -1339,6 +1366,7 @@ mod tests {
             .start_stream(StreamConfig {
                 sample_rate: 16_000,
                 speaker: Some("相手".to_string()),
+                source: Some(TranscriptionSource::SystemAudio),
                 language: None,
             })
             .unwrap();
@@ -1350,6 +1378,8 @@ mod tests {
         let sys_segs = sys.drain_segments();
         assert_eq!(mic_segs[0].speaker.as_deref(), Some("自分"));
         assert_eq!(sys_segs[0].speaker.as_deref(), Some("相手"));
+        assert_eq!(mic_segs[0].source, Some(TranscriptionSource::Microphone));
+        assert_eq!(sys_segs[0].source, Some(TranscriptionSource::SystemAudio));
     }
 
     #[test]
@@ -1365,6 +1395,7 @@ mod tests {
             .start_stream(StreamConfig {
                 sample_rate: 16_000,
                 speaker: None,
+                source: None,
                 language: None,
             })
             .unwrap();

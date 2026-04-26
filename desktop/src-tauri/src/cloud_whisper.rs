@@ -92,8 +92,8 @@ pub fn build_whisper_multipart_text_fields(
 
 #[allow(dead_code)]
 pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSegment>, String> {
-    let response: VerboseResponse = serde_json::from_str(body)
-        .map_err(|e| format!("cloud whisper parse error: {e}"))?;
+    let response: VerboseResponse =
+        serde_json::from_str(body).map_err(|e| format!("cloud whisper parse error: {e}"))?;
 
     Ok(response
         .segments
@@ -102,6 +102,7 @@ pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSeg
             text: seg.text.trim().to_string(),
             start_ms: (seg.start * 1000.0).round() as i64,
             end_ms: (seg.end * 1000.0).round() as i64,
+            source: None,
             speaker: None,
         })
         .collect())

@@ -72,7 +72,7 @@ mod macos {
 
     use super::language_to_locale;
     use crate::transcription::{
-        StreamConfig, TranscriptionSegment, TranscriptionStream,
+        StreamConfig, TranscriptionSegment, TranscriptionSource, TranscriptionStream,
     };
 
     #[repr(C)]
@@ -108,6 +108,7 @@ mod macos {
     pub struct AppleSpeechStream {
         bridge: *mut SpeechBridge,
         speaker: Option<String>,
+        source: Option<TranscriptionSource>,
         finalized: bool,
     }
 
@@ -118,14 +119,12 @@ mod macos {
     impl AppleSpeechStream {
         pub fn new(config: StreamConfig) -> Result<Self, String> {
             let locale = language_to_locale(config.language.as_deref().unwrap_or("auto"));
-            let c_locale = CString::new(locale).map_err(|e| {
-                format!("ロケール文字列の変換に失敗しました: {e}")
-            })?;
+            let c_locale = CString::new(locale)
+                .map_err(|e| format!("ロケール文字列の変換に失敗しました: {e}"))?;
 
             // Safety: c_locale は呼び出し中ずっと生存する。
-            let bridge = unsafe {
-                meet_jerky_speech_create(c_locale.as_ptr(), config.sample_rate as f64)
-            };
+            let bridge =
+                unsafe { meet_jerky_speech_create(c_locale.as_ptr(), config.sample_rate as f64) };
 
             if bridge.is_null() {
                 return Err(
@@ -137,6 +136,7 @@ mod macos {
             Ok(Self {
                 bridge,
                 speaker: config.speaker,
+                source: config.source,
                 finalized: false,
             })
         }
@@ -157,9 +157,7 @@ mod macos {
             let raw: Vec<RawSegment> = match serde_json::from_str(&json_owned) {
                 Ok(v) => v,
                 Err(e) => {
-                    eprintln!(
-                        "[apple_speech] drain JSON パース失敗: {e} payload={json_owned}"
-                    );
+                    eprintln!("[apple_speech] drain JSON パース失敗: {e} payload={json_owned}");
                     return Vec::new();
                 }
             };
@@ -169,6 +167,7 @@ mod macos {
                     text: r.text,
                     start_ms: r.start_ms,
                     end_ms: r.end_ms,
+                    source: self.source,
                     speaker: self.speaker.clone(),
                 })
                 .collect()
@@ -181,9 +180,8 @@ mod macos {
                 return Ok(());
             }
             // Safety: samples は呼び出し中ずっと生存。bridge も valid。
-            let rc = unsafe {
-                meet_jerky_speech_feed(self.bridge, samples.as_ptr(), samples.len())
-            };
+            let rc =
+                unsafe { meet_jerky_speech_feed(self.bridge, samples.as_ptr(), samples.len()) };
             if rc != 0 {
                 return Err(format!("Apple Speech feed が失敗しました: rc={rc}"));
             }
@@ -198,9 +196,7 @@ mod macos {
             if !self.finalized {
                 let rc = unsafe { meet_jerky_speech_finalize(self.bridge) };
                 if rc != 0 {
-                    return Err(format!(
-                        "Apple Speech finalize が失敗しました: rc={rc}"
-                    ));
+                    return Err(format!("Apple Speech finalize が失敗しました: rc={rc}"));
                 }
                 self.finalized = true;
             }

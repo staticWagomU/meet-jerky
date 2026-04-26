@@ -32,7 +32,11 @@ pub fn build_append_args_for_emission(
     stream_started_at_secs: u64,
 ) -> Option<(String, u64, String)> {
     let started = session_started_at_secs?;
-    Some(segment_to_append_args(segment, started, stream_started_at_secs))
+    Some(segment_to_append_args(
+        segment,
+        started,
+        stream_started_at_secs,
+    ))
 }
 
 /// 話者ラベルを正規化する。
@@ -57,6 +61,7 @@ mod tests {
             text: "こんにちは".to_string(),
             start_ms: 2_000,
             end_ms: 3_500,
+            source: None,
             speaker: Some("自分".to_string()),
         }
     }
@@ -68,6 +73,7 @@ mod tests {
             text: "x".to_string(),
             start_ms: 0,
             end_ms: 0,
+            source: None,
             speaker: None,
         };
         let (speaker, _, _) = segment_to_append_args(&seg_none, 1000, 1000);
@@ -78,6 +84,7 @@ mod tests {
             text: "x".to_string(),
             start_ms: 0,
             end_ms: 0,
+            source: None,
             speaker: Some("  自分  ".to_string()),
         };
         let (speaker, _, _) = segment_to_append_args(&seg_ws, 1000, 1000);
@@ -92,6 +99,7 @@ mod tests {
             text: "early".to_string(),
             start_ms: 0,
             end_ms: 100,
+            source: None,
             speaker: Some("自分".to_string()),
         };
         let (_, offset, _) = segment_to_append_args(&segment, 1000, 990);
@@ -102,6 +110,7 @@ mod tests {
             text: "neg".to_string(),
             start_ms: -5_000,
             end_ms: 0,
+            source: None,
             speaker: Some("自分".to_string()),
         };
         let (_, offset, _) = segment_to_append_args(&neg_segment, 1000, 1000);
@@ -117,11 +126,15 @@ mod tests {
             text: "early".into(),
             start_ms: 0,
             end_ms: 100,
+            source: None,
             speaker: Some("相手".into()),
         };
         let result = build_append_args_for_emission(&segment, Some(1000), 990)
             .expect("Some 系統の結果が返る");
-        assert_eq!(result.1, 0, "clock 逆転時でも負の offset にはせず 0 に飽和する");
+        assert_eq!(
+            result.1, 0,
+            "clock 逆転時でも負の offset にはせず 0 に飽和する"
+        );
     }
 
     #[test]
