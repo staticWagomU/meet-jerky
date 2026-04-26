@@ -135,10 +135,14 @@ public final class AppDetector: @unchecked Sendable {
 /// - `-2`: macOS バージョン非対応
 @_cdecl("meet_jerky_app_detection_start")
 public func meet_jerky_app_detection_start(
-    _ bundleIdsJson: UnsafePointer<CChar>,
+    _ bundleIdsJson: UnsafePointer<CChar>?,
     _ callback: MeetJerkyAppDetectionCallback,
     _ userData: UnsafeMutableRawPointer?
 ) -> Int32 {
+    guard let bundleIdsJson else {
+        return -1
+    }
+
     let json = String(cString: bundleIdsJson)
     guard
         let data = json.data(using: .utf8),

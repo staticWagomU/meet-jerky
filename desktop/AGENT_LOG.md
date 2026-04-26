@@ -403,3 +403,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 初回の存在しない後継セッション確認は、`chmod` 前の並列実行と競合して permission denied になった。権限付与後に再実行し、存在しない後継では期待どおり `successor session does not exist` を返すことを確認した。
 - 次アクション: 次回以降の後継引き継ぎでは `agent-handoff-main.sh` 後に `agent-adopt-main.sh` を使い、watchdog の監視対象を canonical な `mj-main` に保つ。
+
+### Worker task: guard nil app detection bundle IDs JSON
+
+- 開始日時: 2026-04-26 21:27 JST
+- 担当セッション: `mj-worker-app-detection-null-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: Swift C ABI 関数 `meet_jerky_app_detection_start` の `bundleIdsJson` が nil の場合に `String(cString:)` へ渡してクラッシュしないよう nil guard を追加し、既存の JSON パース失敗と同じ扱いで `-1` を返す。callback シグネチャ、Rust 側コード、既存戻り値の意味は変更しない。新規依存追加なし。コミット禁止。
+- 結果: `bundleIdsJson` を Optional ポインタとして受け取り、nil の場合は `String(cString:)` の前に `-1` を返す guard を追加した。非 nil の場合の JSON パース、開始成功 `0`、macOS バージョン非対応 `-2` の挙動は維持した。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `swiftc -parse src-tauri/swift/AppDetectionBridge.swift` は成功。`git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。main 側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。
