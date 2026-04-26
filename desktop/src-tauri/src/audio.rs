@@ -241,7 +241,7 @@ where
         return;
     }
 
-    for frame in data.chunks(channels) {
+    for frame in data.chunks_exact(channels) {
         let mono = frame
             .iter()
             .copied()
@@ -654,6 +654,14 @@ mod tests {
         assert_eq!(mono.len(), 2);
         assert_close(mono[0], 0.0, 0.0001);
         assert_close(mono[1], 0.0, f32::EPSILON);
+    }
+
+    #[test]
+    fn test_for_each_mono_sample_ignores_incomplete_multi_channel_frame() {
+        let mut mono = Vec::new();
+        for_each_mono_sample(&[0.25f32, 0.75, -1.0], 2, |sample| mono.push(sample));
+
+        assert_eq!(mono, vec![0.5]);
     }
 
     #[test]

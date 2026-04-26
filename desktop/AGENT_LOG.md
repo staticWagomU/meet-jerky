@@ -290,4 +290,18 @@
 - 検証結果: `bash -n scripts/agent-*.sh` は成功。`git diff --check -- scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh docs/agent-harness.md docs/autonomous-main-prompt.md AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh docs/agent-harness.md docs/autonomous-main-prompt.md AGENT_LOG.md` は成功し、`cmake` 不在のため Rust 全体テストは想定どおり skip した。
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
-- 次アクション: `mj-main` が worker 差分を分離して処理中のため、このハーネス差分だけをコミットする。
+- 次アクション: `mj-main` が worker 差分と合わせて差分レビュー・検証後にコミットする。
+
+### Worker task: microphone downmix incomplete frame handling
+
+- 開始日時: 2026-04-26 20:44 JST
+- 担当セッション: `mj-worker-mic-frame-chunks-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/audio.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: マイク入力の multi-channel downmix で `for_each_mono_sample` が不完全な末尾フレームを1サンプルとして扱わないよう、`channels > 1` では完全フレームのみ処理する。`channels == 0`、mono、完全フレーム平均の既存挙動は維持し、端数フレーム無視の単体テストを追加する。新規依存追加なし。コミット禁止。
+- 結果: `for_each_mono_sample` のフレーム走査を `chunks_exact(channels)` に変更し、multi-channel 入力の不完全な末尾フレームを無視するようにした。mono は各サンプルが完全な1chフレームとして処理され、`channels == 0` の早期 return と完全フレーム平均は維持した。stereo 入力で末尾1サンプルを無視する単体テストを追加した。
+- 変更ファイル: `src-tauri/src/audio.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/audio.rs` は成功。`git diff --check -- src-tauri/src/audio.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml audio` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。エラーは `failed to execute command: No such file or directory (os error 2)` および `is cmake not installed?`。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml audio` を再実行する。
