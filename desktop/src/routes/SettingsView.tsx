@@ -436,6 +436,13 @@ export function SettingsView() {
           className="control-btn control-btn-transcribe settings-save-btn"
           onClick={handleSave}
           disabled={!hasChanges || updateMutation.isPending}
+          aria-label={
+            updateMutation.isPending
+              ? "設定を保存中"
+              : hasChanges
+                ? "変更した設定を保存"
+                : "保存する設定変更はありません"
+          }
         >
           {updateMutation.isPending ? "保存中..." : "設定を保存"}
         </button>
