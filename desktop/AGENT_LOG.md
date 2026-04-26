@@ -1425,3 +1425,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実録音/文字起こし操作は未実機確認。
 - 次アクション: 録音・文字起こし操作の実機挙動を確認する。次の改善候補を調査する。
+
+### Main task: classify Teams v2 meeting join URLs
+
+- 開始日時: 2026-04-27 05:14 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Teams の `/v2/?meetingjoin=true` 形式を会議 URL として分類しつつ、URL 全文や query を payload/log/UI に出さない方針を維持する。
+- 結果: URL parser が query を分類内部でだけ扱えるようにし、`teams.microsoft.com/v2` / `/v2/` かつ `meetingjoin=true` の場合だけ Microsoft Teams として分類するようにした。`meetingjoin=false` や `/v2/extra` は reject するテストを追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得は未実装/未実機確認。Rust cargo 検証は `cmake` 不在制約に注意する。
+- 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。ブラウザURL実機取得は未実機確認のまま次候補へ進む。

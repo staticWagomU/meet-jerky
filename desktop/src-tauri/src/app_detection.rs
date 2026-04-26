@@ -154,7 +154,7 @@ fn notification_body(app_name: &str) -> String {
 
 /// ブラウザ URL の実機取得が入った後に使う、会議 URL 分類用の純粋関数。
 ///
-/// 標準文字列処理だけで host/path を見て分類し、URL 全文は返さない。
+/// 標準文字列処理だけで host/path/query を見て分類し、URL 全文は返さない。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
     let parsed = parse_url_host_and_path(url)?;
@@ -164,7 +164,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Google Meet"
     } else if is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
-    } else if is_teams_meeting_url(&host, &parsed.path) {
+    } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
         "Microsoft Teams"
     } else {
         return None;
@@ -180,6 +180,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 struct ParsedUrlParts {
     host: String,
     path: String,
+    query: Option<String>,
 }
 
 fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
@@ -210,11 +211,20 @@ fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
         } else {
             "/".to_string()
         };
+    let query = extract_query(&after_scheme[authority_end..]);
 
     Some(ParsedUrlParts {
         host: host.to_string(),
         path,
+        query,
     })
+}
+
+fn extract_query(rest: &str) -> Option<String> {
+    let query_start = rest.find('?')? + 1;
+    let query = &rest[query_start..];
+    let query_end = query.find('#').unwrap_or(query.len());
+    Some(query[..query_end].to_string())
 }
 
 fn strip_port(host_port: &str) -> Option<&str> {
@@ -284,11 +294,14 @@ fn is_zoom_meeting_id(value: &str) -> bool {
     (9..=11).contains(&value.len()) && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
 }
 
-fn is_teams_meeting_url(host: &str, path: &str) -> bool {
+fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
     (host == "teams.microsoft.com"
         && path
             .strip_prefix("/l/meetup-join/")
             .is_some_and(has_non_empty_segment))
+        || (host == "teams.microsoft.com"
+            && (path == "/v2" || path == "/v2/")
+            && query_has_param(query, "meetingjoin", "true"))
         || (host == "teams.live.com"
             && path
                 .strip_prefix("/meet/")
@@ -297,6 +310,15 @@ fn is_teams_meeting_url(host: &str, path: &str) -> bool {
 
 fn has_non_empty_segment(value: &str) -> bool {
     !value.is_empty() && !value.starts_with('/')
+}
+
+fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
+    query.is_some_and(|query| {
+        query.split('&').any(|param| {
+            let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
+            param_key.eq_ignore_ascii_case(key) && param_value.eq_ignore_ascii_case(value)
+        })
+    })
 }
 
 // ─────────────────────────────────────────────
@@ -502,6 +524,20 @@ mod tests {
                 host: "teams.live.com".to_string(),
             })
         );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin=true&context=secret"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2?MEETINGJOIN=TRUE#meeting"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
     }
 
     #[test]
@@ -542,6 +578,18 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join//"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin=false"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/extra?meetingjoin=true"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
