@@ -410,6 +410,11 @@ export function SettingsView() {
             className="control-btn control-btn-clear"
             onClick={refetchPermissions}
             disabled={isCheckingPermissions}
+            aria-label={
+              isCheckingPermissions
+                ? "macOS権限状態を確認中"
+                : "macOS権限状態を再チェック"
+            }
           >
             {isCheckingPermissions ? "確認中..." : "再チェック"}
           </button>
