@@ -1047,3 +1047,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実ファイル一覧取得中の UI 表示は未実機確認。
 - 次アクション: 履歴一覧の再読み込み中表示を実機またはモックで確認する。
+
+### Main task: show settings refetch progress
+
+- 開始日時: 2026-04-27 07:16 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定読み込み・マイク一覧・デフォルト出力先の再取得中にボタンを連打できず、取得中であることが分かるようにする。
+- 結果: settings / audioDevices / defaultOutputDirectory query の `isFetching` を受け取り、各再読み込み・再取得ボタンを fetching 中は disabled にして文言を「読み込み中...」「取得中...」へ切り替えるようにした。設定値、保存処理、エラー表示内容は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 macOS デバイス取得/出力先取得失敗時の再取得 UI は未実機確認。
+- 次アクション: 録音画面のマイク一覧再取得中表示も同じ基準で確認する。

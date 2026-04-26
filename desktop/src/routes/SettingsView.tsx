@@ -27,6 +27,7 @@ export function SettingsView() {
     data: settings,
     error: settingsError,
     isLoading: isLoadingSettings,
+    isFetching: isFetchingSettings,
     refetch: refetchSettings,
   } = useQuery<AppSettings>({
     queryKey: ["settings"],
@@ -36,6 +37,7 @@ export function SettingsView() {
   const {
     data: devices,
     error: devicesError,
+    isFetching: isFetchingDevices,
     refetch: refetchDevices,
   } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
@@ -45,6 +47,7 @@ export function SettingsView() {
   const {
     data: defaultOutputDir,
     error: defaultOutputDirError,
+    isFetching: isFetchingDefaultOutputDir,
     refetch: refetchDefaultOutputDir,
   } = useQuery<string>({
     queryKey: ["defaultOutputDirectory"],
@@ -117,8 +120,9 @@ export function SettingsView() {
           type="button"
           className="control-btn control-btn-clear"
           onClick={() => refetchSettings()}
+          disabled={isFetchingSettings}
         >
-          再読み込み
+          {isFetchingSettings ? "読み込み中..." : "再読み込み"}
         </button>
       </div>
     );
@@ -238,8 +242,9 @@ export function SettingsView() {
               type="button"
               className="control-btn control-btn-clear"
               onClick={() => refetchDevices()}
+              disabled={isFetchingDevices}
             >
-              再取得
+              {isFetchingDevices ? "取得中..." : "再取得"}
             </button>
           </div>
         )}
@@ -280,8 +285,9 @@ export function SettingsView() {
                 type="button"
                 className="control-btn control-btn-clear"
                 onClick={() => refetchDefaultOutputDir()}
+                disabled={isFetchingDefaultOutputDir}
               >
-                再取得
+                {isFetchingDefaultOutputDir ? "取得中..." : "再取得"}
               </button>
             </div>
           )}
