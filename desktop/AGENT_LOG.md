@@ -1594,6 +1594,20 @@
 - 失敗理由: なし。macOS 権限状態の実機確認は未実施。
 - 次アクション: 権限バナーの実 UI 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
 
+### Main task: show transcript track counts
+
+- 開始日時: 2026-04-27 06:17 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 文字起こし欄の toolbar で、自分/相手側トラックとエラーの件数を短く確認できるようにする。
+- 結果: Transcript segments から自分/相手/エラー件数を集計し、toolbar に compact pill として表示するようにした。既存の transcript event 受信・コピー処理・セグメント本文表示は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 transcript 表示は未実機確認。
+- 次アクション: 実 transcript 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST

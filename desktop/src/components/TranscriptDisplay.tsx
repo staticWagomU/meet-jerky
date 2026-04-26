@@ -26,6 +26,29 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   return null;
 }
 
+function getSegmentCounts(segments: TranscriptSegment[]): {
+  self: number;
+  other: number;
+  errors: number;
+} {
+  return segments.reduce(
+    (counts, segment) => {
+      if (segment.isError) {
+        counts.errors += 1;
+        return counts;
+      }
+      const speakerKind = getSpeakerKind(segment);
+      if (speakerKind === "self") {
+        counts.self += 1;
+      } else if (speakerKind === "other") {
+        counts.other += 1;
+      }
+      return counts;
+    },
+    { self: 0, other: 0, errors: 0 },
+  );
+}
+
 function toErrorMessage(e: unknown): string {
   if (typeof e === "string") return e;
   if (e instanceof Error) return e.message;
@@ -59,6 +82,7 @@ export function TranscriptDisplay({
     null,
   );
   const copyableSegmentsCount = segments.filter((seg) => !seg.isError).length;
+  const segmentCounts = getSegmentCounts(segments);
 
   // Listen to transcription-result events
   useEffect(() => {
@@ -234,9 +258,22 @@ export function TranscriptDisplay({
     <div className="transcript-display-wrapper">
       {segments.length > 0 && (
         <div className="transcript-toolbar">
-          <span className="transcript-segment-count">
-            {segments.length} 件
-          </span>
+          <div className="transcript-counts">
+            <span className="transcript-segment-count">
+              {segments.length} 件
+            </span>
+            <span className="transcript-count-pill transcript-count-pill-self">
+              自分 {segmentCounts.self}
+            </span>
+            <span className="transcript-count-pill transcript-count-pill-other">
+              相手 {segmentCounts.other}
+            </span>
+            {segmentCounts.errors > 0 && (
+              <span className="transcript-count-pill transcript-count-pill-error">
+                エラー {segmentCounts.errors}
+              </span>
+            )}
+          </div>
           <button
             type="button"
             className="copy-btn"
