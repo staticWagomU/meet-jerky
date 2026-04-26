@@ -719,7 +719,9 @@ export function TranscriptView() {
           </p>
         )}
         {lastSavedPath && (
-          <p className="meeting-saved-path">保存先: {lastSavedPath}</p>
+          <p className="meeting-saved-path" role="status">
+            保存先: {lastSavedPath}
+          </p>
         )}
       </div>
 
