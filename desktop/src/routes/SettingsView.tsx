@@ -187,7 +187,11 @@ export function SettingsView() {
   }
 
   if (isLoadingSettings || !localSettings) {
-    return <div className="settings-view">読み込み中...</div>;
+    return (
+      <div className="settings-view" role="status">
+        読み込み中...
+      </div>
+    );
   }
 
   const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(settings);
