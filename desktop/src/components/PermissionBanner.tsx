@@ -94,6 +94,11 @@ export function PermissionBanner() {
         className="control-btn control-btn-clear"
         onClick={refetchAll}
         disabled={isCheckingPermissions}
+        aria-label={
+          isCheckingPermissions
+            ? "macOS権限状態を確認中"
+            : "macOS権限状態を再チェック"
+        }
       >
         {isCheckingPermissions ? "確認中..." : "再チェック"}
       </button>
