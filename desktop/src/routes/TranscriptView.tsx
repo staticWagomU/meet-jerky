@@ -144,6 +144,7 @@ export function TranscriptView() {
     useState(false);
   const [isTranscriptionOperationPending, setIsTranscriptionOperationPending] =
     useState(false);
+  const audioOperationPendingRef = useRef(false);
   const [micLevel, setMicLevel] = useState(0);
   const [systemAudioLevel, setSystemAudioLevel] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
@@ -245,9 +246,10 @@ export function TranscriptView() {
   const isAnySourceRecording = isMicRecording || isSystemAudioRecording;
 
   const handleToggleMeeting = useCallback(async () => {
-    if (isMeetingOperationPending) {
+    if (isMeetingOperationPending || audioOperationPendingRef.current) {
       return;
     }
+    audioOperationPendingRef.current = true;
     setIsMeetingOperationPending(true);
     try {
       if (isMeetingActive) {
@@ -386,6 +388,7 @@ export function TranscriptView() {
         setMeetingError(`会議開始に失敗しました: ${msg}`);
       }
     } finally {
+      audioOperationPendingRef.current = false;
       setIsMeetingOperationPending(false);
     }
   }, [
@@ -403,10 +406,12 @@ export function TranscriptView() {
       isMicOperationPending ||
       isSystemAudioOperationPending ||
       isMeetingOperationPending ||
-      isTranscriptionOperationPending
+      isTranscriptionOperationPending ||
+      audioOperationPendingRef.current
     ) {
       return;
     }
+    audioOperationPendingRef.current = true;
     setIsMicOperationPending(true);
     try {
       if (isMicRecording) {
@@ -434,6 +439,7 @@ export function TranscriptView() {
       console.error("マイク録音操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
     } finally {
+      audioOperationPendingRef.current = false;
       setIsMicOperationPending(false);
     }
   }, [
@@ -452,10 +458,12 @@ export function TranscriptView() {
       isSystemAudioOperationPending ||
       isMicOperationPending ||
       isMeetingOperationPending ||
-      isTranscriptionOperationPending
+      isTranscriptionOperationPending ||
+      audioOperationPendingRef.current
     ) {
       return;
     }
+    audioOperationPendingRef.current = true;
     setIsSystemAudioOperationPending(true);
     try {
       if (isSystemAudioRecording) {
@@ -479,6 +487,7 @@ export function TranscriptView() {
       console.error("システム音声操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
     } finally {
+      audioOperationPendingRef.current = false;
       setIsSystemAudioOperationPending(false);
     }
   }, [
@@ -492,9 +501,16 @@ export function TranscriptView() {
   ]);
 
   const handleToggleTranscription = useCallback(async () => {
-    if (isTranscriptionOperationPending) {
+    if (
+      isTranscriptionOperationPending ||
+      isMicOperationPending ||
+      isSystemAudioOperationPending ||
+      isMeetingOperationPending ||
+      audioOperationPendingRef.current
+    ) {
       return;
     }
+    audioOperationPendingRef.current = true;
     setIsTranscriptionOperationPending(true);
     let micRestartPending = false;
     let systemAudioRestartPending = false;
@@ -548,10 +564,14 @@ export function TranscriptView() {
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
     } finally {
+      audioOperationPendingRef.current = false;
       setIsTranscriptionOperationPending(false);
     }
   }, [
     isTranscriptionOperationPending,
+    isMicOperationPending,
+    isSystemAudioOperationPending,
+    isMeetingOperationPending,
     isTranscribing,
     isMicRecording,
     isSystemAudioRecording,

@@ -1411,3 +1411,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS の実ファイル/フォルダ opener は未実機確認。
 - 次アクション: 履歴画面の opener 操作を実機で確認する。次の改善候補を調査する。
+
+### Main task: guard transcript audio operations with a shared ref
+
+- 開始日時: 2026-04-27 05:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議開始/停止、マイク録音、システム音声、文字起こし切替で React state 反映前の連打や別操作の同時起動を防ぐ。
+- 結果: 録音・文字起こし系操作で共有する `audioOperationPendingRef` を追加し、各 async handler の入口で同期的に pending を確定してから invoke するようにした。既存の pending state と UI 表示は維持した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実録音/文字起こし操作は未実機確認。
+- 次アクション: 録音・文字起こし操作の実機挙動を確認する。次の改善候補を調査する。
