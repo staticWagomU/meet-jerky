@@ -249,3 +249,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の対象テストと `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml datetime_fmt session_store` 相当を再実行する。
+
+### Worker task: safe ScreenCaptureKit f32 PCM decode
+
+- 開始日時: 2026-04-26 16:22 JST
+- 担当セッション: `mj-worker-system-audio-format-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: ScreenCaptureKit の audio buffer を `data.as_ptr().cast::<f32>()` と `from_raw_parts` で直接 f32 slice 化している箇所を、`&[u8]` から `f32::from_ne_bytes` で復元する安全な変換ヘルパーに分離する。`channels == 0`、4バイト未満/端数バイト、フレーム途中で切れたデータは panic せず無視し、mono/multi-channel downmix 挙動は維持する。新規依存追加なし。コミット禁止。
+- 結果: `f32_pcm_bytes_to_mono` ヘルパーを追加し、ScreenCaptureKit コールバックから unsafe raw pointer cast を削除した。mono は完全な f32 サンプルのみ読み、multi-channel は完全なフレームのみ平均 downmix する。端数バイト、短いデータ、途中で切れたフレーム、`channels == 0` は空または完全分だけ処理する。現時点では f32 PCM として読む範囲に閉じ、非 f32 PCM は将来 format description を見て判定・変換する TODO を残した。変換ヘルパーの単体テストを追加した。
+- 変更ファイル: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/system_audio.rs` は成功。`git diff --check -- src-tauri/src/system_audio.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml system_audio` と `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストと `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml system_audio` を再実行し、実機の ScreenCaptureKit audio buffer が f32 PCM 前提で問題ないか format description 確認を追加検討する。

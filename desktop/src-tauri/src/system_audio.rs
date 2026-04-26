@@ -28,6 +28,45 @@ use screencapturekit::prelude::*;
 #[cfg(target_os = "macos")]
 use crate::audio::{calculate_rms, AudioCapture};
 
+const F32_SAMPLE_BYTES: usize = std::mem::size_of::<f32>();
+
+fn read_f32_ne(sample_bytes: &[u8]) -> f32 {
+    f32::from_ne_bytes([
+        sample_bytes[0],
+        sample_bytes[1],
+        sample_bytes[2],
+        sample_bytes[3],
+    ])
+}
+
+fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32> {
+    if channels == 0 {
+        return Vec::new();
+    }
+
+    let Some(frame_byte_len) = channels.checked_mul(F32_SAMPLE_BYTES) else {
+        return Vec::new();
+    };
+
+    if channels == 1 {
+        return data
+            .chunks_exact(F32_SAMPLE_BYTES)
+            .map(read_f32_ne)
+            .collect();
+    }
+
+    data.chunks_exact(frame_byte_len)
+        .map(|frame| {
+            let sum = frame
+                .chunks_exact(F32_SAMPLE_BYTES)
+                .take(channels)
+                .map(read_f32_ne)
+                .sum::<f32>();
+            sum / channels as f32
+        })
+        .collect()
+}
+
 // ─────────────────────────────────────────────
 // ScreenCaptureKitCapture
 // ─────────────────────────────────────────────
@@ -136,44 +175,15 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     None => return,
                 };
 
-                // 各バッファからf32 PCMサンプルを抽出
+                // 各バッファから f32 PCM サンプルを安全に抽出する。
+                // TODO: format description を見て非 f32 PCM も判定・変換する。
                 let mut mono_samples: Vec<f32> = Vec::new();
 
                 for buffer in audio_buffer_list.iter() {
                     let data = buffer.data();
                     let channels = buffer.number_channels as usize;
 
-                    if data.is_empty() || channels == 0 {
-                        continue;
-                    }
-
-                    // f32 PCM データとして解釈
-                    let sample_count = data.len() / std::mem::size_of::<f32>();
-                    if sample_count == 0 {
-                        continue;
-                    }
-
-                    let float_samples: &[f32] = unsafe {
-                        std::slice::from_raw_parts(
-                            data.as_ptr().cast::<f32>(),
-                            sample_count,
-                        )
-                    };
-
-                    if channels == 1 {
-                        // モノラルの場合はそのまま
-                        mono_samples.extend_from_slice(float_samples);
-                    } else {
-                        // マルチチャンネルの場合はモノラルに変換
-                        let frames = sample_count / channels;
-                        for frame in 0..frames {
-                            let mut sum = 0.0f32;
-                            for ch in 0..channels {
-                                sum += float_samples[frame * channels + ch];
-                            }
-                            mono_samples.push(sum / channels as f32);
-                        }
-                    }
+                    mono_samples.extend(f32_pcm_bytes_to_mono(data, channels));
                 }
 
                 if mono_samples.is_empty() {
@@ -322,4 +332,62 @@ pub fn stop_system_audio(
     _state: tauri::State<'_, crate::audio::AudioStateHandle>,
 ) -> Result<(), String> {
     Err("システム音声キャプチャは macOS でのみ利用可能です".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pcm_bytes(samples: &[f32]) -> Vec<u8> {
+        samples
+            .iter()
+            .flat_map(|sample| sample.to_ne_bytes())
+            .collect()
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_keeps_mono_samples() {
+        let data = pcm_bytes(&[0.25, -0.5, 1.0]);
+
+        assert_eq!(f32_pcm_bytes_to_mono(&data, 1), vec![0.25, -0.5, 1.0]);
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_downmixes_stereo_frames() {
+        let data = pcm_bytes(&[1.0, -1.0, 0.25, 0.75]);
+
+        assert_eq!(f32_pcm_bytes_to_mono(&data, 2), vec![0.0, 0.5]);
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_downmixes_multichannel_frames() {
+        let data = pcm_bytes(&[1.0, 0.5, -0.5, 0.25, 0.25, 1.0]);
+
+        assert_eq!(f32_pcm_bytes_to_mono(&data, 3), vec![1.0 / 3.0, 0.5]);
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_ignores_zero_channels() {
+        let data = pcm_bytes(&[1.0, -1.0]);
+
+        assert!(f32_pcm_bytes_to_mono(&data, 0).is_empty());
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_ignores_short_and_trailing_bytes() {
+        assert!(f32_pcm_bytes_to_mono(&[1, 2, 3], 1).is_empty());
+
+        let mut data = pcm_bytes(&[0.5]);
+        data.extend_from_slice(&[9, 8, 7]);
+
+        assert_eq!(f32_pcm_bytes_to_mono(&data, 1), vec![0.5]);
+    }
+
+    #[test]
+    fn test_f32_pcm_bytes_to_mono_ignores_partial_multichannel_frame() {
+        let mut data = pcm_bytes(&[0.25, 0.75, 1.0]);
+        data.extend_from_slice(&[9, 8]);
+
+        assert_eq!(f32_pcm_bytes_to_mono(&data, 2), vec![0.5]);
+    }
 }
