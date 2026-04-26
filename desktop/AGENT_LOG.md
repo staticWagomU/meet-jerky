@@ -1299,3 +1299,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 遷移中の timer cleanup は未実機確認。
 - 次アクション: UI 遷移時の timeout cleanup を実機で確認する。
+
+### Main task: sync settings refetch when no local edits exist
+
+- 開始日時: 2026-04-27 04:47 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定再読み込み結果が、未編集状態のフォームへ反映されるようにする。ただし編集中の未保存変更は上書きしない。
+- 結果: 最後に同期した settings を ref で保持し、refetch 後に local settings が未編集なら新しい settings へ同期するようにした。local settings が前回同期値から変わっている場合は、編集中とみなして上書きしない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実設定再読み込み操作は未実機確認。
+- 次アクション: 設定再読み込みと未保存編集の両方を実機で確認する。

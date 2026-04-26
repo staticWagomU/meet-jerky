@@ -23,6 +23,7 @@ export function SettingsView() {
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
   const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
     useState(false);
 
@@ -79,10 +80,22 @@ export function SettingsView() {
   });
 
   useEffect(() => {
-    if (settings && !localSettings) {
-      setLocalSettings(settings);
+    if (!settings) {
+      return;
     }
-  }, [settings, localSettings]);
+    setLocalSettings((current) => {
+      const previous = lastSyncedSettingsRef.current;
+      const hasUnsavedChanges =
+        current !== null &&
+        previous !== null &&
+        JSON.stringify(current) !== JSON.stringify(previous);
+      lastSyncedSettingsRef.current = settings;
+      if (hasUnsavedChanges) {
+        return current;
+      }
+      return settings;
+    });
+  }, [settings]);
 
   const showToast = useCallback((message: string) => {
     if (toastTimeoutRef.current) {
