@@ -26,7 +26,7 @@ export function PermissionBanner() {
     Boolean(micPermissionError) || Boolean(screenPermissionError);
 
   return (
-    <div className="permission-banner permission-banner-warning">
+    <div className="permission-banner permission-banner-warning" role="alert">
       <div className="permission-banner-title">
         {hasCheckError ? "権限状態を確認できません" : "権限の確認が必要です"}
       </div>

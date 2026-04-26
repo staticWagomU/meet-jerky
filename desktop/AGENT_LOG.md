@@ -949,3 +949,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Keychain 読み取り失敗の実機再現は未実機確認。
 - 次アクション: API キー状態確認失敗時の表示を実機またはモックで確認する。
+
+### Main task: mark permission banner as alert
+
+- 開始日時: 2026-04-27 06:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 録音や相手側音声取得に必要な macOS 権限の拒否/確認失敗バナーを支援技術にも重要な警告として伝える。
+- 結果: `PermissionBanner` の root に `role="alert"` を追加した。権限状態の判定、再チェック導線、文言は変更していない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。支援技術での読み上げ確認は未実機確認。
+- 次アクション: 権限説明の実機表示と VoiceOver 読み上げを確認する。
