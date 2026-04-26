@@ -816,6 +816,7 @@ export function TranscriptView() {
         isTranscribing={isTranscribing}
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
+        showModelSelector={requiresLocalModel}
         onToggleTranscription={handleToggleTranscription}
         canStartTranscription={canStartTranscription}
         isTranscriptionOperationPending={isTranscriptionOperationPending}

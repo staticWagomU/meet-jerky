@@ -7,6 +7,7 @@ interface TranscriptionControlsProps {
   isTranscribing: boolean;
   selectedModel: string;
   onModelChange: (model: string) => void;
+  showModelSelector: boolean;
   onToggleTranscription: () => void;
   canStartTranscription: boolean;
   isTranscriptionOperationPending: boolean;
@@ -20,6 +21,7 @@ export function TranscriptionControls({
   isTranscribing,
   selectedModel,
   onModelChange,
+  showModelSelector,
   onToggleTranscription,
   canStartTranscription,
   isTranscriptionOperationPending,
@@ -30,13 +32,15 @@ export function TranscriptionControls({
 }: TranscriptionControlsProps) {
   return (
     <>
-      <div className="controls-row">
-        <ModelSelector
-          selectedModel={selectedModel}
-          onSelectModel={onModelChange}
-          disabled={isTranscribing}
-        />
-      </div>
+      {showModelSelector && (
+        <div className="controls-row">
+          <ModelSelector
+            selectedModel={selectedModel}
+            onSelectModel={onModelChange}
+            disabled={isTranscribing}
+          />
+        </div>
+      )}
 
       <div className="controls-row">
         <button
