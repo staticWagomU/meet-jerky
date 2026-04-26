@@ -1509,3 +1509,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実画面遷移中の mutation 完了タイミングは未実機確認。
 - 次アクション: 設定画面遷移中の toast cleanup を実機/モックで確認する。次の改善候補を調査する。
+
+### Main task: guard transcript copy after unmount
+
+- 開始日時: 2026-04-27 05:40 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしコピー処理が clipboard 書き込み中にアンマウントしても state 更新しないようにし、state 反映前連打も防ぐ。
+- 結果: `isMountedRef` と `isCopyingRef` を追加し、コピー handler 入口で同期的に pending を確定するようにした。clipboard 書き込み後・失敗時・timeout callback はアンマウント済みなら state 更新しない。unmount cleanup では timeout を clear し ref を null に戻す。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 clipboard 書き込み中の画面遷移は未実機確認。
+- 次アクション: clipboard 書き込み中の画面遷移を実機/モックで確認する。次の改善候補を調査する。

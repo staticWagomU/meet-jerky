@@ -45,6 +45,8 @@ export function TranscriptDisplay({
   const [autoScroll, setAutoScroll] = useState(true);
   const userScrolledRef = useRef(false);
   const [isCopying, setIsCopying] = useState(false);
+  const isCopyingRef = useRef(false);
+  const isMountedRef = useRef(true);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -155,8 +157,10 @@ export function TranscriptDisplay({
 
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
       if (copyFeedbackTimeoutRef.current) {
         clearTimeout(copyFeedbackTimeoutRef.current);
+        copyFeedbackTimeoutRef.current = null;
       }
     };
   }, []);
@@ -179,9 +183,10 @@ export function TranscriptDisplay({
   }, []);
 
   const handleCopyAll = useCallback(async () => {
-    if (isCopying) {
+    if (isCopying || isCopyingRef.current) {
       return;
     }
+    isCopyingRef.current = true;
     const text = segments
       .filter((seg) => !seg.isError)
       .map((seg) => {
@@ -195,21 +200,33 @@ export function TranscriptDisplay({
     try {
       setIsCopying(true);
       await navigator.clipboard.writeText(text);
+      if (!isMountedRef.current) {
+        return;
+      }
       setCopyError(null);
       setCopyFeedback(true);
       if (copyFeedbackTimeoutRef.current) {
         clearTimeout(copyFeedbackTimeoutRef.current);
       }
       copyFeedbackTimeoutRef.current = setTimeout(() => {
+        if (!isMountedRef.current) {
+          return;
+        }
         setCopyFeedback(false);
         copyFeedbackTimeoutRef.current = null;
       }, 2000);
     } catch (e) {
       console.error("コピーに失敗しました:", e);
+      if (!isMountedRef.current) {
+        return;
+      }
       setCopyFeedback(false);
       setCopyError(`コピーに失敗しました: ${String(e)}`);
     } finally {
-      setIsCopying(false);
+      isCopyingRef.current = false;
+      if (isMountedRef.current) {
+        setIsCopying(false);
+      }
     }
   }, [isCopying, segments]);
 
