@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: expose transcript copy feedback label
+
+- 開始日時: 2026-04-27 08:12 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしコピー操作の処理中/完了状態が、支援技術でも表示テキストと同じように伝わるようにする。
+- 結果: Transcript のコピー按钮の `aria-label` を `isCopying` / `copyFeedback` に応じて切り替え、対象件数込みでコピー中/コピー済みを読めるようにした。コピー対象、clipboard 書き込み、エラー処理は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。clipboard 実機操作は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify meeting saved status text
 
 - 開始日時: 2026-04-27 08:11 JST
