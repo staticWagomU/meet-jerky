@@ -1762,6 +1762,20 @@
 - 失敗理由: なし。実 UI 表示は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: allow settings status rows to wrap
+
+- 開始日時: 2026-04-27 07:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 設定画面の権限/出力先操作が狭幅で詰まらないようにし、追加済みの自分/相手側 track badge を読みやすく保つ。
+- 結果: `.settings-permission-row` と `.settings-output-actions` に `flex-wrap: wrap` を追加した。設定保存、権限チェック、フォルダ選択の処理は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST
