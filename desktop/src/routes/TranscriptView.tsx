@@ -178,6 +178,12 @@ function getAudioSourceStatusLabel(
   return "なし";
 }
 
+function getAudioSourceStatusPillClass(statusLabel: string): string {
+  return statusLabel === "なし"
+    ? "meeting-status-pill-idle"
+    : "meeting-status-pill-active";
+}
+
 function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
   return !engine || engine === "whisper";
 }
@@ -873,7 +879,9 @@ export function TranscriptView() {
           >
             {isTranscribing ? "文字起こし中" : "文字起こし停止"}
           </span>
-          <span className="meeting-status-pill meeting-status-pill-neutral">
+          <span
+            className={`meeting-status-pill ${getAudioSourceStatusPillClass(audioSourceStatusLabel)}`}
+          >
             音声 {audioSourceStatusLabel}
           </span>
           <span className="meeting-status-pill meeting-status-pill-neutral">
