@@ -82,7 +82,11 @@ export function TranscriptionControls({
       </div>
 
       {sourceStatusText && (
-        <div className="transcription-source-status" role="status">
+        <div
+          className="transcription-source-status"
+          role="status"
+          aria-label={`文字起こし音声ソース状態: ${sourceStatusText}`}
+        >
           {sourceStatusText}
         </div>
       )}
@@ -91,6 +95,7 @@ export function TranscriptionControls({
           id={TRANSCRIPTION_START_BLOCKED_REASON_ID}
           className="transcription-source-status transcription-source-status-warning"
           role="status"
+          aria-label={`文字起こし開始不可理由: ${startBlockedReason}`}
         >
           {startBlockedReason}
         </div>
