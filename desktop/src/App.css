@@ -615,6 +615,12 @@
   padding-left: 0.4rem;
 }
 
+.transcript-speaker-unknown {
+  background-color: var(--meeting-status-neutral-bg);
+  border-left: 3px solid var(--meeting-status-neutral-color);
+  padding-left: 0.4rem;
+}
+
 .transcript-speaker-label {
   font-size: 0.75rem;
   font-weight: 600;
@@ -629,6 +635,10 @@
 
 .speaker-label-other {
   color: var(--speaker-other-label-color);
+}
+
+.speaker-label-unknown {
+  color: var(--meeting-status-neutral-color);
 }
 
 .scroll-to-bottom-btn {

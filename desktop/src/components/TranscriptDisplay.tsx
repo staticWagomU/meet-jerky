@@ -23,7 +23,7 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   if (segment.speaker) return segment.speaker;
   if (segment.source === "microphone") return "自分";
   if (segment.source === "system_audio") return "相手側";
-  return null;
+  return "未分類";
 }
 
 function getSegmentCounts(segments: TranscriptSegment[]): {
@@ -326,13 +326,21 @@ export function TranscriptDisplay({
         ) : (
           segments.map((seg, i) => {
             const speakerKind = getSpeakerKind(seg);
-            const speakerLabel = getSpeakerLabel(seg);
+            const speakerLabel = seg.isError ? null : getSpeakerLabel(seg);
             const speakerClass =
-              speakerKind === "self"
+              seg.isError
+                ? ""
+                : speakerKind === "self"
                 ? " transcript-speaker-self"
                 : speakerKind === "other"
                   ? " transcript-speaker-other"
-                  : "";
+                  : " transcript-speaker-unknown";
+            const speakerLabelClass =
+              speakerKind === "self"
+                ? " speaker-label-self"
+                : speakerKind === "other"
+                  ? " speaker-label-other"
+                  : " speaker-label-unknown";
             const errorClass = seg.isError
               ? " transcript-segment-error"
               : "";
@@ -348,11 +356,7 @@ export function TranscriptDisplay({
                 )}
                 {speakerLabel && (
                   <span
-                    className={`transcript-speaker-label${
-                      speakerKind === "self"
-                        ? " speaker-label-self"
-                        : " speaker-label-other"
-                    }`}
+                    className={`transcript-speaker-label${speakerLabelClass}`}
                   >
                     {speakerLabel}:
                   </span>
