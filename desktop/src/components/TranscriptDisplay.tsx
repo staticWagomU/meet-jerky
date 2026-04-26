@@ -29,6 +29,7 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
 function getSegmentCounts(segments: TranscriptSegment[]): {
   self: number;
   other: number;
+  unknown: number;
   errors: number;
 } {
   return segments.reduce(
@@ -42,10 +43,12 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
         counts.self += 1;
       } else if (speakerKind === "other") {
         counts.other += 1;
+      } else {
+        counts.unknown += 1;
       }
       return counts;
     },
-    { self: 0, other: 0, errors: 0 },
+    { self: 0, other: 0, unknown: 0, errors: 0 },
   );
 }
 
@@ -260,7 +263,7 @@ export function TranscriptDisplay({
         <div className="transcript-toolbar">
           <div
             className="transcript-counts"
-            aria-label={`文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、エラー ${segmentCounts.errors} 件`}
+            aria-label={`文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`}
           >
             <span className="transcript-segment-count">
               {segments.length} 件
@@ -271,6 +274,11 @@ export function TranscriptDisplay({
             <span className="transcript-count-pill transcript-count-pill-other">
               相手側 {segmentCounts.other}
             </span>
+            {segmentCounts.unknown > 0 && (
+              <span className="transcript-count-pill transcript-count-pill-unknown">
+                未分類 {segmentCounts.unknown}
+              </span>
+            )}
             {segmentCounts.errors > 0 && (
               <span className="transcript-count-pill transcript-count-pill-error">
                 エラー {segmentCounts.errors}

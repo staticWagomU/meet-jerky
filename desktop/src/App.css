@@ -691,6 +691,11 @@
   background-color: var(--speaker-other-bg);
 }
 
+.transcript-count-pill-unknown {
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
+}
+
 .transcript-count-pill-error {
   color: var(--transcript-error-color);
   background-color: var(--transcript-error-bg);
