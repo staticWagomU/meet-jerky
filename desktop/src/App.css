@@ -595,6 +595,14 @@
   color: var(--color-muted);
 }
 
+.transcript-copy-error {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+  color: #c44;
+  font-size: 0.75rem;
+  background-color: var(--transcript-error-bg);
+}
+
 .copy-btn {
   padding: 0.2em 0.6em;
   border: 1px solid var(--copy-btn-border);

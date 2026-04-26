@@ -585,3 +585,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS のフォルダ選択ダイアログ失敗は未実機確認。
 - 次アクション: 実機でフォルダ選択 invoke 失敗時の toast 表示を確認する。
+
+### Main task: show transcript copy errors
+
+- 開始日時: 2026-04-27 03:00 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 文字起こし結果のコピーに失敗した場合に、console だけでなく transcript UI 内へ失敗理由を表示する。
+- 結果: `TranscriptDisplay` に `copyError` state を追加し、`navigator.clipboard.writeText` 失敗時に toolbar 下へ `role="alert"` 付きで表示するようにした。コピー成功時は古いエラーを消し、既存の「コピー済み」フィードバックは維持した。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ/OS の clipboard 権限失敗は未実機確認。
+- 次アクション: 実機で clipboard 書き込み拒否時のエラー表示を確認する。

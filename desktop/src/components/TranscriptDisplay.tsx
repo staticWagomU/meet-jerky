@@ -39,6 +39,7 @@ export function TranscriptDisplay({
   const [autoScroll, setAutoScroll] = useState(true);
   const userScrolledRef = useRef(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   // Listen to transcription-result events
   useEffect(() => {
@@ -112,10 +113,13 @@ export function TranscriptDisplay({
 
     try {
       await navigator.clipboard.writeText(text);
+      setCopyError(null);
       setCopyFeedback(true);
       setTimeout(() => setCopyFeedback(false), 2000);
     } catch (e) {
       console.error("コピーに失敗しました:", e);
+      setCopyFeedback(false);
+      setCopyError(`コピーに失敗しました: ${String(e)}`);
     }
   }, [segments]);
 
@@ -133,6 +137,11 @@ export function TranscriptDisplay({
           >
             {copyFeedback ? "コピー済み" : "コピー"}
           </button>
+        </div>
+      )}
+      {copyError && (
+        <div className="transcript-copy-error" role="alert">
+          {copyError}
         </div>
       )}
       <div
