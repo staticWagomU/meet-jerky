@@ -557,6 +557,7 @@ function OpenAIApiKeySection({
         )}
         <input
           type="password"
+          aria-label="OpenAI API キー"
           autoComplete="off"
           spellCheck={false}
           placeholder={hasKey ? "登録済み (再入力で上書き)" : "sk-..."}
