@@ -8,7 +8,7 @@ import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
  * 解決させる。
  */
 export function SessionList() {
-  const { data, isLoading, error, refetch } = useSessionList();
+  const { data, isLoading, isFetching, error, refetch } = useSessionList();
   const [actionError, setActionError] = useState<string | null>(null);
 
   const handleOpenFile = useCallback(async (path: string) => {
@@ -45,8 +45,9 @@ export function SessionList() {
           type="button"
           className="control-btn control-btn-clear"
           onClick={() => refetch()}
+          disabled={isFetching}
         >
-          再読み込み
+          {isFetching ? "読み込み中..." : "再読み込み"}
         </button>
       </div>
     );
@@ -62,8 +63,9 @@ export function SessionList() {
           type="button"
           className="control-btn control-btn-clear"
           onClick={() => refetch()}
+          disabled={isFetching}
         >
-          再読み込み
+          {isFetching ? "読み込み中..." : "再読み込み"}
         </button>
       </div>
 

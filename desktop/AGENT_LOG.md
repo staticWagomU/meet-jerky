@@ -1033,3 +1033,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限ダイアログや実機権限状態での確認は未実機確認。
 - 次アクション: 権限確認中 UI を実機またはモックで確認する。
+
+### Main task: show session list refresh progress
+
+- 開始日時: 2026-04-27 07:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/hooks/useSessionList.ts`, `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧の再読み込み中にボタンを連打できず、読み込み中であることが分かるようにする。
+- 結果: `useSessionList` が React Query の `isFetching` を返すようにし、通常画面とエラー画面の再読み込みボタンを fetching 中は disabled にして文言を「読み込み中...」へ切り替えるようにした。履歴取得コマンド、エラー表示、ファイル/フォルダ操作は変更していない。
+- 変更ファイル: `src/hooks/useSessionList.ts`, `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/hooks/useSessionList.ts src/routes/SessionList.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/hooks/useSessionList.ts src/routes/SessionList.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実ファイル一覧取得中の UI 表示は未実機確認。
+- 次アクション: 履歴一覧の再読み込み中表示を実機またはモックで確認する。

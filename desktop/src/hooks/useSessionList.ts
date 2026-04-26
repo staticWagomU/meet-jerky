@@ -23,6 +23,7 @@ export function useSessionList() {
   return {
     data: query.data,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     error: query.error,
     refetch: query.refetch,
   };
