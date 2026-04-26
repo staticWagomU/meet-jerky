@@ -133,6 +133,13 @@ function getMeetingStartBlockedReason(
   return null;
 }
 
+function sanitizeAudioLevel(level: number): number {
+  if (!Number.isFinite(level)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, level));
+}
+
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
@@ -190,10 +197,11 @@ export function TranscriptView() {
       if (disposed) {
         return;
       }
+      const level = sanitizeAudioLevel(event.payload.level);
       if (event.payload.source === "microphone") {
-        setMicLevel(event.payload.level);
+        setMicLevel(level);
       } else if (event.payload.source === "system_audio") {
-        setSystemAudioLevel(event.payload.level);
+        setSystemAudioLevel(level);
       }
     })
       .then((unlisten) => {

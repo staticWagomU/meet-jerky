@@ -1439,3 +1439,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得は未実装/未実機確認。Rust cargo 検証は `cmake` 不在制約に注意する。
 - 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。ブラウザURL実機取得は未実機確認のまま次候補へ進む。
+
+### Main task: sanitize audio level values in the frontend
+
+- 開始日時: 2026-04-27 05:20 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/AudioLevelMeter.tsx`, `AGENT_LOG.md`
+- 指示内容: 音声レベル event に NaN/Infinity/範囲外値が混入しても、UI の percent 表示や CSS 幅/色に不正値を流さないようにする。
+- 結果: `TranscriptView` の audio-level event 受信時に非有限値を 0、範囲外値を 0..1 に丸めるようにした。`AudioLevelMeter` 側にも同じ防御を追加し、直接渡された不正 level でも `NaN%` や `rgb(NaN,...)` を生成しないようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/AudioLevelMeter.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/AudioLevelMeter.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/AudioLevelMeter.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 audio-level event の不正値混入は未実機確認。
+- 次アクション: audio-level event の異常値表示を実機/モックで確認する。次の改善候補を調査する。
