@@ -198,6 +198,16 @@ function getAiTransmissionStatusLabel(
   return "なし";
 }
 
+function getAiTransmissionStatusPillClass(statusLabel: string): string {
+  if (statusLabel === "OpenAI") {
+    return "meeting-status-pill-active";
+  }
+  if (statusLabel === "なし") {
+    return "meeting-status-pill-idle";
+  }
+  return "meeting-status-pill-neutral";
+}
+
 function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
 ): string {
@@ -869,7 +879,9 @@ export function TranscriptView() {
           <span className="meeting-status-pill meeting-status-pill-neutral">
             エンジン {engineStatusLabel}
           </span>
-          <span className="meeting-status-pill meeting-status-pill-neutral">
+          <span
+            className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
+          >
             AI送信 {aiTransmissionStatusLabel}
           </span>
           {openAIApiKeyStatusLabel && (
