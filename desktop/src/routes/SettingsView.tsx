@@ -193,7 +193,11 @@ export function SettingsView() {
 
   if (isLoadingSettings || !localSettings) {
     return (
-      <div className="settings-view" role="status">
+      <div
+        className="settings-view"
+        role="status"
+        aria-label="アプリ設定を読み込み中"
+      >
         読み込み中...
       </div>
     );

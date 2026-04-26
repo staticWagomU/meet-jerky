@@ -81,7 +81,11 @@ export function SessionList() {
 
   if (isLoading) {
     return (
-      <div className="session-list" role="status">
+      <div
+        className="session-list"
+        role="status"
+        aria-label="セッション履歴一覧を読み込み中"
+      >
         読み込み中...
       </div>
     );
@@ -138,7 +142,11 @@ export function SessionList() {
       )}
 
       {sessions.length === 0 ? (
-        <p className="session-list-empty" role="status">
+        <p
+          className="session-list-empty"
+          role="status"
+          aria-label="保存された文字起こし履歴はまだありません"
+        >
           会議を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
       ) : (
