@@ -20,6 +20,13 @@ function toErrorMessage(e: unknown): string {
   return String(e);
 }
 
+function sanitizeProgress(progress: number): number {
+  if (!Number.isFinite(progress)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, progress));
+}
+
 export function ModelSelector({
   selectedModel,
   onSelectModel,
@@ -35,11 +42,18 @@ export function ModelSelector({
     string | null
   >(null);
   const downloadingModelRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     downloadingModelRef.current = downloadingModel;
   }, [downloadingModel]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const {
     data: models,
@@ -63,8 +77,9 @@ export function ModelSelector({
         if (event.payload.model !== downloadingModelRef.current) {
           return;
         }
-        setDownloadProgress(event.payload.progress);
-        if (event.payload.progress >= 1) {
+        const progress = sanitizeProgress(event.payload.progress);
+        setDownloadProgress(progress);
+        if (progress >= 1) {
           const model = downloadingModelRef.current;
           downloadingModelRef.current = null;
           setDownloadingModel(null);
@@ -165,6 +180,9 @@ export function ModelSelector({
     try {
       await invoke("download_model", { modelName });
       downloadingModelRef.current = null;
+      if (!isMountedRef.current) {
+        return;
+      }
       setDownloadingModel(null);
       setDownloadProgress(0);
       queryClient.invalidateQueries({
@@ -174,8 +192,11 @@ export function ModelSelector({
       // emit 側で既に state を更新している可能性が高いが、
       // emit が届かなかった場合に備えて catch でも冪等に更新する。
       console.error("モデルのダウンロードに失敗しました:", e);
-      setDownloadError(typeof e === "string" ? e : String(e));
       downloadingModelRef.current = null;
+      if (!isMountedRef.current) {
+        return;
+      }
+      setDownloadError(typeof e === "string" ? e : String(e));
       setDownloadingModel(null);
       setDownloadProgress(0);
     }
@@ -275,17 +296,16 @@ function DownloadStatus({
   if (!selectedModel) return null;
 
   if (downloadingModel === selectedModel) {
+    const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
     return (
       <div className="download-progress-wrapper">
         <div className="download-progress-bar">
           <div
             className="download-progress-fill"
-            style={{ width: `${Math.round(downloadProgress * 100)}%` }}
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <span className="download-progress-text">
-          {Math.round(downloadProgress * 100)}%
-        </span>
+        <span className="download-progress-text">{progressPercent}%</span>
       </div>
     );
   }

@@ -1523,3 +1523,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 clipboard 書き込み中の画面遷移は未実機確認。
 - 次アクション: clipboard 書き込み中の画面遷移を実機/モックで確認する。次の改善候補を調査する。
+
+### Main task: guard model download updates after unmount
+
+- 開始日時: 2026-04-27 05:44 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデルDLの promise 完了/失敗がアンマウント後に state 更新しないようにし、進捗値が NaN/範囲外でも UI を壊さないようにする。
+- 結果: `isMountedRef` を追加し、`download_model` の成功/失敗後はアンマウント済みなら state 更新しないようにした。モデルDL進捗 event と進捗表示では `sanitizeProgress` で非有限値を 0、範囲外値を 0..1 に丸めるようにした。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: 初回差分レビューでファイル末尾に誤って残った重複 `useEffect` ブロックを発見して削除した。再確認した `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実モデルDL中の画面遷移は未実施。
+- 次アクション: 実モデルDL中の画面遷移と異常進捗表示を必要時に実機/モックで確認する。次の改善候補を調査する。
