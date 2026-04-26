@@ -33,8 +33,12 @@ if agent_session_exists "$SESSION"; then
   exit 1
 fi
 
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+: >"$OUTPUT_FILE"
+
 tmux new-session -d -s "$SESSION" \
-  "cd \"$ROOT_DIR\" && PATH=\"$AGENT_PATH\" codex -C \"$ROOT_DIR\" -m \"$CODEX_MODEL\" -c model_reasoning_effort=\"$CODEX_REASONING_MEDIUM\" --dangerously-bypass-approvals-and-sandbox \"\$(cat \"$PROMPT_FILE\")\" | tee \"$OUTPUT_FILE\""
+  "cd \"$ROOT_DIR\" && PATH=\"$AGENT_PATH\" codex -C \"$ROOT_DIR\" -m \"$CODEX_MODEL\" -c model_reasoning_effort=\"$CODEX_REASONING_MEDIUM\" --dangerously-bypass-approvals-and-sandbox \"\$(cat \"$PROMPT_FILE\")\""
+tmux pipe-pane -o -t "$SESSION" "cat >> \"$OUTPUT_FILE\""
 
 echo "started successor main session: $SESSION"
 echo "output: $OUTPUT_FILE"

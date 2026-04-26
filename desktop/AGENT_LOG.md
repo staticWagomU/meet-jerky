@@ -221,3 +221,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 差分レビュー後にコミットする。
+
+### Bootstrap: start watchdog and main agent
+
+- 開始日時: 2026-04-26 15:50 JST
+- 担当セッション: bootstrap
+- 役割: ブートストラップ担当
+- 作業範囲: `scripts/agent-handoff-main.sh`, `AGENT_LOG.md`
+- 指示内容: `mj-watchdog` を起動し、`mj-main` が存在しない場合に watchdog が `docs/autonomous-main-prompt.md` で再起動できる状態を確認する。
+- 結果: 初回確認で `agent-handoff-main.sh` が対話 Codex CLI の stdout を `tee` にパイプしており、TTY でなくなるため `mj-main` が即終了する問題を確認。watchdog の判断・実装・コミット範囲は増やさず、ハンドオフ側を対話 CLI はパイプせずに起動し、tmux `pipe-pane` で `logs/agent/mj-main.txt` へ出力保存する形に修正した。
+- 変更ファイル: `scripts/agent-handoff-main.sh`, `AGENT_LOG.md`
+- 検証結果: `bash -n scripts/agent-handoff-main.sh scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh` は成功。`git diff --check -- scripts/agent-handoff-main.sh AGENT_LOG.md` は成功。`scripts/agent-watch.sh mj-` で `mj-watchdog` と `mj-main` の両方が存在することを確認した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 初回 `mj-main` 起動は Codex CLI の TTY 要件を満たさず即終了した。
+- 次アクション: ブートストラップ担当は終了し、以後の改善判断、worker 起動、差分レビュー、検証、コミットは `mj-main` に任せる。
