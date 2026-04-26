@@ -179,7 +179,11 @@ export function SettingsView() {
           className="control-btn control-btn-clear"
           onClick={() => refetchSettings()}
           disabled={isFetchingSettings}
-          aria-label="アプリ設定を再読み込み"
+          aria-label={
+            isFetchingSettings
+              ? "アプリ設定を読み込み中"
+              : "アプリ設定を再読み込み"
+          }
         >
           {isFetchingSettings ? "読み込み中..." : "再読み込み"}
         </button>
@@ -315,7 +319,11 @@ export function SettingsView() {
               className="control-btn control-btn-clear"
               onClick={() => refetchDevices()}
               disabled={isFetchingDevices}
-              aria-label="マイクデバイス一覧を再取得"
+              aria-label={
+                isFetchingDevices
+                  ? "マイクデバイス一覧を取得中"
+                  : "マイクデバイス一覧を再取得"
+              }
             >
               {isFetchingDevices ? "取得中..." : "再取得"}
             </button>
@@ -359,7 +367,11 @@ export function SettingsView() {
                 className="control-btn control-btn-clear"
                 onClick={() => refetchDefaultOutputDir()}
                 disabled={isFetchingDefaultOutputDir}
-                aria-label="デフォルト出力先ディレクトリを再取得"
+                aria-label={
+                  isFetchingDefaultOutputDir
+                    ? "デフォルト出力先ディレクトリを取得中"
+                    : "デフォルト出力先ディレクトリを再取得"
+                }
               >
                 {isFetchingDefaultOutputDir ? "取得中..." : "再取得"}
               </button>

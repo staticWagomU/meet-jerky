@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: expose pending retry labels across settings
+
+- 開始日時: 2026-04-27 08:41 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定/デバイス/モデル一覧の再読み込み・再取得操作が処理中のとき、支援技術でも読み込み中/取得中状態を伝える。
+- 結果: アプリ設定、マイクデバイス一覧、デフォルト出力先、Transcript 画面のマイクデバイス一覧、Whisper モデル一覧の再取得ボタンで `aria-label` を pending 状態に応じて切り替えるようにした。各 refetch 処理、表示条件、保存/録音/ダウンロード処理は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/components/MicrophoneSection.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/components/MicrophoneSection.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: expose pending session history reload
 
 - 開始日時: 2026-04-27 08:40 JST

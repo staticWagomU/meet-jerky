@@ -102,7 +102,11 @@ export function MicrophoneSection({
             className="control-btn control-btn-clear"
             onClick={onRetryDevices}
             disabled={isReloadingAudioDevices}
-            aria-label="マイクデバイス一覧を再取得"
+            aria-label={
+              isReloadingAudioDevices
+                ? "マイクデバイス一覧を取得中"
+                : "マイクデバイス一覧を再取得"
+            }
           >
             {isReloadingAudioDevices ? "取得中..." : "再取得"}
           </button>
