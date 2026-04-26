@@ -779,6 +779,17 @@ export function TranscriptView() {
     hasOpenAIApiKey,
     openAIApiKeyErrorForUi,
   );
+  const meetingStatusAriaLabel = [
+    "会議記録状態",
+    isMeetingActive ? "記録中" : "待機中",
+    isTranscribing ? "文字起こし中" : "文字起こし停止",
+    `音声 ${audioSourceStatusLabel}`,
+    `エンジン ${engineStatusLabel}`,
+    `AI送信 ${aiTransmissionStatusLabel}`,
+    openAIApiKeyStatusLabel ? `APIキー ${openAIApiKeyStatusLabel}` : null,
+  ]
+    .filter(Boolean)
+    .join("、");
 
   return (
     <div className="transcript-view">
@@ -822,7 +833,7 @@ export function TranscriptView() {
         <div
           className="meeting-status-strip"
           role="status"
-          aria-label="会議記録状態"
+          aria-label={meetingStatusAriaLabel}
         >
           <span
             className={`meeting-status-pill ${
