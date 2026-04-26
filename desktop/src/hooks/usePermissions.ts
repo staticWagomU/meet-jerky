@@ -2,12 +2,20 @@ import { invoke } from "@tauri-apps/api/core";
 import { useQuery } from "@tanstack/react-query";
 
 export function usePermissions() {
-  const { data: micPermission, refetch: refetchMic } = useQuery<string>({
+  const {
+    data: micPermission,
+    error: micPermissionError,
+    refetch: refetchMic,
+  } = useQuery<string, unknown>({
     queryKey: ["microphonePermission"],
     queryFn: () => invoke<string>("check_microphone_permission"),
   });
 
-  const { data: screenPermission, refetch: refetchScreen } = useQuery<string>({
+  const {
+    data: screenPermission,
+    error: screenPermissionError,
+    refetch: refetchScreen,
+  } = useQuery<string, unknown>({
     queryKey: ["screenRecordingPermission"],
     queryFn: () => invoke<string>("check_screen_recording_permission"),
   });
@@ -17,5 +25,11 @@ export function usePermissions() {
     refetchScreen();
   };
 
-  return { micPermission, screenPermission, refetchAll };
+  return {
+    micPermission,
+    micPermissionError,
+    screenPermission,
+    screenPermissionError,
+    refetchAll,
+  };
 }

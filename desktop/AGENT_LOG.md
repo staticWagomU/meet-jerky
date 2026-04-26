@@ -445,3 +445,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 必要なら `cmake` が利用できる環境で `app_detection` の単体テストを含む Rust テストを再実行する。
+
+### Worker task: show permission check invoke failures
+
+- 開始日時: 2026-04-26 22:55 JST
+- 担当セッション: `mj-worker-permission-query-error-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/hooks/usePermissions.ts`, `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `check_microphone_permission` または `check_screen_recording_permission` の invoke が失敗したときに、権限バナーや設定画面が問題なしのように黙らないようにする。PermissionBanner では query error 時もバナーを出し、再チェック可能にする。成功時の既存表示を壊さず、新規依存追加とコミットは禁止。
+- 結果: `usePermissions` で既存 React Query の `error` を返すようにし、追加 query や購読は増やさなかった。`PermissionBanner` は権限確認 invoke の失敗時にも表示され、macOS から権限状態を取得できず録音や相手側音声取得の可否が不明であることを説明し、既存の再チェックボタンで再取得できる。`SettingsView` は失敗時に `確認失敗` バッジと説明文を表示する。
+- 変更ファイル: `src/hooks/usePermissions.ts`, `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/hooks/usePermissions.ts src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は初回、設定画面の JSX 条件に `unknown` を直接渡した型エラーで失敗したため `Boolean(...)` に修正し、再実行して成功。main 側で同じ `git diff --check` と `npm run build` を再実行して成功した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。

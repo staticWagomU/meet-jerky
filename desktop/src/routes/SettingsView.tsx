@@ -38,7 +38,13 @@ export function SettingsView() {
     queryFn: () => invoke<string>("get_default_output_directory"),
   });
 
-  const { micPermission, screenPermission, refetchAll: refetchPermissions } = usePermissions();
+  const {
+    micPermission,
+    micPermissionError,
+    screenPermission,
+    screenPermissionError,
+    refetchAll: refetchPermissions,
+  } = usePermissions();
 
   const updateMutation = useMutation({
     mutationFn: (newSettings: AppSettings) =>
@@ -243,11 +249,14 @@ export function SettingsView() {
         <div className="settings-permissions">
           <div className="settings-permission-row">
             <span className="settings-permission-label">マイク:</span>
-            <PermissionBadge status={micPermission} />
+            <PermissionBadge status={micPermission} error={micPermissionError} />
           </div>
           <div className="settings-permission-row">
             <span className="settings-permission-label">画面収録:</span>
-            <PermissionBadge status={screenPermission} />
+            <PermissionBadge
+              status={screenPermission}
+              error={screenPermissionError}
+            />
           </div>
           <button
             type="button"
@@ -256,6 +265,11 @@ export function SettingsView() {
           >
             再チェック
           </button>
+          {(Boolean(micPermissionError) || Boolean(screenPermissionError)) && (
+            <p className="settings-note">
+              macOS の権限状態を読み取れませんでした。録音や相手側音声取得の可否が不明なため、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。
+            </p>
+          )}
         </div>
       </div>
 
@@ -279,8 +293,23 @@ export function SettingsView() {
   );
 }
 
-function PermissionBadge({ status }: { status: string | undefined }) {
-  if (!status) return <span className="settings-permission-badge">確認中...</span>;
+function PermissionBadge({
+  status,
+  error,
+}: {
+  status: string | undefined;
+  error: unknown;
+}) {
+  if (error) {
+    return (
+      <span className="settings-permission-badge permission-denied">
+        確認失敗
+      </span>
+    );
+  }
+  if (!status) {
+    return <span className="settings-permission-badge">確認中...</span>;
+  }
   if (status === "granted") {
     return <span className="settings-permission-badge permission-granted">許可済み</span>;
   }
