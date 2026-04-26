@@ -1341,3 +1341,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限状態の実機確認は未実施。
 - 次アクション: 権限再チェック中の表示を実機で確認する。
+
+### Main task: show permission banner checking state while refetching
+
+- 開始日時: 2026-04-27 04:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 権限再チェック中に、バナーが直前の確認失敗文言を出し続けず確認中であることが分かるようにする。
+- 結果: `PermissionBanner` のタイトルと本文で `isCheckingPermissions` を最優先し、再チェック中は「権限状態を確認中です」と各権限の確認中文言を表示するようにした。権限確認 invoke の内容は変更していない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 権限状態の実機確認は未実施。
+- 次アクション: 権限バナー再チェック中の表示を実機で確認する。

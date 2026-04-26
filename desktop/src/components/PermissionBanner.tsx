@@ -29,12 +29,18 @@ export function PermissionBanner() {
   return (
     <div className="permission-banner permission-banner-warning" role="alert">
       <div className="permission-banner-title">
-        {hasCheckError ? "権限状態を確認できません" : "権限の確認が必要です"}
+        {isCheckingPermissions
+          ? "権限状態を確認中です"
+          : hasCheckError
+            ? "権限状態を確認できません"
+            : "権限の確認が必要です"}
       </div>
       <div className="permission-banner-body">
         {micNeedsAttention && (
           <p>
-            {micPermissionError
+            {isCheckingPermissions
+              ? "マイク権限の状態を確認しています。"
+              : micPermissionError
               ? "マイク権限の状態をmacOSから取得できませんでした。録音の可否が不明です。"
               : "マイクへのアクセスが許可されていません。"}
             <br />
@@ -44,7 +50,9 @@ export function PermissionBanner() {
         )}
         {screenNeedsAttention && (
           <p>
-            {screenPermissionError
+            {isCheckingPermissions
+              ? "画面収録権限の状態を確認しています。"
+              : screenPermissionError
               ? "画面収録権限の状態をmacOSから取得できませんでした。相手側の音声取得可否が不明です。"
               : "画面収録のアクセスが許可されていません。"}
             <br />
