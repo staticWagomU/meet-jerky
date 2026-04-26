@@ -64,6 +64,13 @@ export function ModelSelector({
     queryKey: ["models"],
     queryFn: () => invoke<ModelInfo[]>("list_models"),
   });
+  const modelSelectAriaLabel = modelsError
+    ? "Whisperモデル一覧の取得に失敗したため選択できません"
+    : downloadingModel
+      ? `${downloadingModel} をダウンロード中のためWhisperモデルを選択できません`
+      : disabled
+        ? "文字起こし中のためWhisperモデルを選択できません"
+        : "Whisperモデルを選択";
 
   // Listen for download progress events
   useEffect(() => {
@@ -213,6 +220,7 @@ export function ModelSelector({
         onChange={(e) => onSelectModel(e.target.value)}
         disabled={disabled || downloadingModel !== null || Boolean(modelsError)}
         className="model-select"
+        aria-label={modelSelectAriaLabel}
       >
         {models?.map((model) => (
           <ModelOption key={model.name} model={model} />
