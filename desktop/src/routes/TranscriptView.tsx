@@ -92,7 +92,11 @@ export function TranscriptView() {
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [lastSavedPath, setLastSavedPath] = useState<string | null>(null);
 
-  const { data: devices } = useQuery<AudioDevice[]>({
+  const {
+    data: devices,
+    error: devicesError,
+    refetch: refetchDevices,
+  } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
   });
@@ -440,7 +444,9 @@ export function TranscriptView() {
         micLevel={micLevel}
         selectedDeviceId={selectedDeviceId}
         audioDevices={devices}
+        audioDevicesError={devicesError}
         onDeviceChange={setSelectedDeviceId}
+        onRetryDevices={() => refetchDevices()}
         onToggleRecording={handleToggleMicRecording}
       />
 

@@ -6,7 +6,9 @@ interface MicrophoneSectionProps {
   micLevel: number;
   selectedDeviceId: string;
   audioDevices: AudioDevice[] | undefined;
+  audioDevicesError: unknown;
   onDeviceChange: (deviceId: string) => void;
+  onRetryDevices: () => void;
   onToggleRecording: () => void;
 }
 
@@ -15,7 +17,9 @@ export function MicrophoneSection({
   micLevel,
   selectedDeviceId,
   audioDevices,
+  audioDevicesError,
   onDeviceChange,
+  onRetryDevices,
   onToggleRecording,
 }: MicrophoneSectionProps) {
   return (
@@ -49,6 +53,20 @@ export function MicrophoneSection({
           {isMicRecording ? "録音停止" : "録音開始"}
         </button>
       </div>
+      {Boolean(audioDevicesError) && (
+        <div className="settings-inline-error" role="alert">
+          <span>
+            マイクデバイス一覧の取得に失敗しました: {String(audioDevicesError)}
+          </span>
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            onClick={onRetryDevices}
+          >
+            再取得
+          </button>
+        </div>
+      )}
       <div className="level-meter-row">
         <span className="level-label">レベル</span>
         <div className="level-meter-bar">

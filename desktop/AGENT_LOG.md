@@ -683,3 +683,17 @@
 - 依存関係追加の有無と理由: なし。`npx prettier --write src/routes/TranscriptView.tsx` は整形用に一時実行したが、package manifest/lockfile への依存追加は発生していない。
 - 失敗理由: なし。モデル状態 query 失敗の実機再現は未実機確認。
 - 次アクション: 実機またはモックで Transcript 画面のモデル状態 query 失敗表示を確認する。
+
+### Main task: show transcript microphone device list errors
+
+- 開始日時: 2026-04-27 03:32 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: Transcript 画面のマイクデバイス一覧取得が失敗した場合に、デフォルトだけが正常に見える状態を避け、失敗理由と再取得導線を表示する。
+- 結果: `TranscriptView` の audio devices query から `error` と `refetch` を受け取り、`MicrophoneSection` に渡すようにした。`MicrophoneSection` は失敗時にインラインエラーと再取得ボタンを表示する。録音開始/停止、デフォルトデバイス選択、設定画面の挙動は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は初回、`unknown && JSX` の型エラーで失敗したため `Boolean(audioDevicesError)` に修正し、再実行して成功。`git diff --check -- src/routes/TranscriptView.tsx src/components/MicrophoneSection.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/MicrophoneSection.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でマイクデバイス一覧取得失敗を再現する確認は未実機確認。
+- 次アクション: 実機またはモックで Transcript 画面のマイクデバイス一覧取得失敗表示を確認する。
