@@ -87,6 +87,16 @@ function getTranscriptionSourceStatus(
   return "文字起こし中: 音声ソースなし";
 }
 
+function getTranscriptionSourceArg(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): "microphone" | "system_audio" | "both" | null {
+  if (isMicRecording && isSystemAudioRecording) return "both";
+  if (isMicRecording) return "microphone";
+  if (isSystemAudioRecording) return "system_audio";
+  return null;
+}
+
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
@@ -259,7 +269,17 @@ export function TranscriptView() {
       systemAudioStarted = true;
       setIsSystemAudioRecording(true);
 
-      await invoke("start_transcription", { modelName: selectedModel });
+      const transcriptionSource = getTranscriptionSourceArg(
+        micStarted,
+        systemAudioStarted,
+      );
+      if (!transcriptionSource) {
+        throw new Error("文字起こしに利用できる音声ソースがありません");
+      }
+      await invoke("start_transcription", {
+        modelName: selectedModel,
+        source: transcriptionSource,
+      });
       transcriptionStarted = true;
       setIsTranscribing(true);
 
@@ -399,7 +419,17 @@ export function TranscriptView() {
           await invoke("start_system_audio");
           setSystemAudioLevel(0);
         }
-        await invoke("start_transcription", { modelName: selectedModel });
+        const transcriptionSource = getTranscriptionSourceArg(
+          isMicRecording,
+          isSystemAudioRecording,
+        );
+        if (!transcriptionSource) {
+          throw new Error("文字起こしに利用できる音声ソースがありません");
+        }
+        await invoke("start_transcription", {
+          modelName: selectedModel,
+          source: transcriptionSource,
+        });
         setIsTranscribing(true);
       }
       setMeetingError((currentError) =>

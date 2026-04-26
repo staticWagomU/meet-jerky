@@ -865,3 +865,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実モデルダウンロード中の progress event 取りこぼし再現は未実機確認。
 - 次アクション: ダウンロード完了後の表示を実機またはモックで確認する。
+
+### Main task: pass active source to transcription start
+
+- 開始日時: 2026-04-27 05:36 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI から `start_transcription` を呼ぶ際に常に both 扱いへせず、現在有効な音声ソースを明示的に渡す。
+- 結果: 録音状態から `microphone` / `system_audio` / `both` / `null` を返す helper を追加し、会議開始と手動文字起こし開始で `source` 引数を渡すようにした。音声ソースがない場合は開始前に明示エラーにする。バックエンドの既存 `source` 仕様、録音開始/停止処理、表示中の source status は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実マイク/システム音声の片側文字起こし開始は未実機確認。
+- 次アクション: source 指定時の backend stream 選択を cmake あり環境で Rust 検証する。
