@@ -52,6 +52,26 @@ function formatElapsedTime(ms: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function getTranscriptionSourceStatus(
+  isTranscribing: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string | null {
+  if (!isTranscribing) {
+    return null;
+  }
+  if (isMicRecording && isSystemAudioRecording) {
+    return "文字起こし中: 自分 / 相手側";
+  }
+  if (isMicRecording) {
+    return "文字起こし中: 自分のみ";
+  }
+  if (isSystemAudioRecording) {
+    return "文字起こし中: 相手側のみ";
+  }
+  return "文字起こし中: 音声ソースなし";
+}
+
 export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
@@ -364,6 +384,12 @@ export function TranscriptView() {
 
   const canStartMeeting = !!isModelDownloaded && !isMeetingActive;
 
+  const transcriptionSourceStatus = getTranscriptionSourceStatus(
+    isTranscribing,
+    isMicRecording,
+    isSystemAudioRecording,
+  );
+
   return (
     <div className="transcript-view">
       <PermissionBanner />
@@ -421,6 +447,7 @@ export function TranscriptView() {
         onModelChange={setSelectedModel}
         onToggleTranscription={handleToggleTranscription}
         canStartTranscription={canStartTranscription}
+        sourceStatusText={transcriptionSourceStatus}
         segmentsCount={segments.length}
         onClearTranscript={handleClearTranscript}
       />

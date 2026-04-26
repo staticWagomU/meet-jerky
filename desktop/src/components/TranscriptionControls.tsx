@@ -6,6 +6,7 @@ interface TranscriptionControlsProps {
   onModelChange: (model: string) => void;
   onToggleTranscription: () => void;
   canStartTranscription: boolean;
+  sourceStatusText: string | null;
   segmentsCount: number;
   onClearTranscript: () => void;
 }
@@ -16,6 +17,7 @@ export function TranscriptionControls({
   onModelChange,
   onToggleTranscription,
   canStartTranscription,
+  sourceStatusText,
   segmentsCount,
   onClearTranscript,
 }: TranscriptionControlsProps) {
@@ -49,6 +51,12 @@ export function TranscriptionControls({
           </button>
         )}
       </div>
+
+      {sourceStatusText && (
+        <div className="transcription-source-status" role="status">
+          {sourceStatusText}
+        </div>
+      )}
     </>
   );
 }

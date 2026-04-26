@@ -543,3 +543,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。
+
+### Main task: show active transcription sources
+
+- 開始日時: 2026-04-27 02:43 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 文字起こし中に、マイク音声とシステム音声のどちらを現在文字起こし対象として扱っているかを UI 上で確認できるようにし、録音状態の透明性を上げる。
+- 結果: `TranscriptView` に文字起こし中のソース状態表示 helper を追加し、`TranscriptionControls` に `sourceStatusText` を渡して表示するようにした。表示は文字起こし中のみで、「自分 / 相手側」「自分のみ」「相手側のみ」「音声ソースなし」を状態に応じて出す。録音開始/停止、文字起こし開始/停止、保存処理、Rust 側の挙動は変更していない。調査担当 `mj-research-source-status-ui-20260427-1` は AGENT_LOG.md の長い読解表示から結論に進まなかったため、自律運用を止めないため kill し、メイン側で小さく実装した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 調査担当が長いログ読解表示から進まず、実装判断に必要なローカル文脈はメイン側で確認できたため、メインが最小実装した。実機録音状態の確認は未実機確認。
+- 次アクション: 実機でマイクのみ、システム音声のみ、両方の録音状態表示を確認する。

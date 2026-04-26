@@ -348,6 +348,16 @@
   font-weight: 500;
 }
 
+.transcription-source-status {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: 4px;
+  padding: 0.25em 0.5em;
+}
+
 .rec-indicator {
   display: inline-block;
   width: 8px;
