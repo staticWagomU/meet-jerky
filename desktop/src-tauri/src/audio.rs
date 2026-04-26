@@ -513,6 +513,7 @@ pub fn start_recording(
     if let Some(ref mut mic) = inner.microphone {
         mic.stop()?;
     }
+    inner.microphone = None;
 
     let mut mic = CpalMicCapture::new(device_id);
     mic.start(app)?;

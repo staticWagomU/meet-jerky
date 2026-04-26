@@ -893,3 +893,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。録音ソース再起動失敗の実機再現は未実機確認。
 - 次アクション: source 再起動失敗時の UI 状態をモックまたは実機で確認する。
+
+### Main task: clear stopped capture before backend restart
+
+- 開始日時: 2026-04-27 05:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/audio.rs`, `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 指示内容: マイク/システム音声の再開始時に既存 capture を停止した後、新規 start が失敗しても停止済み capture が state に残らないようにする。
+- 結果: `start_recording` と macOS `start_system_audio` で既存 capture を `stop()` した直後に state を `None` に戻してから新しい capture を開始するようにした。これにより再開始失敗時も backend state は「未起動」と一致する。既存 capture の stop 失敗、新規 start 成功、非 macOS stub は変更していない。
+- 変更ファイル: `src-tauri/src/audio.rs`, `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/audio.rs src-tauri/src/system_audio.rs` は成功。`git diff --check -- src-tauri/src/audio.rs src-tauri/src/system_audio.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/audio.rs src-tauri/src/system_audio.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実マイク/ScreenCaptureKit の再開始失敗は未実機確認。
+- 次アクション: cmake あり環境で Rust テストを再実行し、実機で再開始失敗時の状態を確認する。

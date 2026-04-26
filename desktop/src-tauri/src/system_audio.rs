@@ -291,6 +291,7 @@ pub fn start_system_audio(
     if let Some(ref mut sys) = inner.system_audio {
         sys.stop()?;
     }
+    inner.system_audio = None;
 
     let mut capture = ScreenCaptureKitCapture::new();
     capture.start(app)?;
