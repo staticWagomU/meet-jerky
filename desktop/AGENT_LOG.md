@@ -376,6 +376,20 @@
 - 失敗理由: `resampler.process` の失敗を自然に発生させる単体テストにはリサンプラー実装の差し替えや注入構造が必要になるため、今回の「panic guard、enum 化、run_transcription_loop の挙動変更はしない」「テストが難しい場合は大きな注入構造を作らない」という制約に合わせ、テスト追加は見送った。
 - 次アクション: 必要なら `cmake` が利用できる環境で Rust 側のテストを再実行する。
 
+### Worker task: guard transcription worker panic
+
+- 開始日時: 2026-04-26 21:23 JST
+- 担当セッション: `mj-worker-transcription-panic-guard-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `start_transcription` で spawn する worker thread を `std::panic::catch_unwind(std::panic::AssertUnwindSafe(...))` で保護し、`run_transcription_loop(worker)` panic 時に共有 `running` を false、短い `eprintln!`、`transcription-error` の固定メッセージ emit を行う。通常処理、feed Err/finalize Err の既存挙動は変更せず、panic payload 詳細を UI に出さない。新規依存追加なし。コミット禁止。
+- 結果: spawn 先を `run_transcription_worker_with_panic_guard` 経由に変更した。guard は worker から `running` と `AppHandle` を事前に clone し、`run_transcription_loop(worker)` を `catch_unwind(AssertUnwindSafe(...))` で実行する。panic 時は `running.store(false, Ordering::SeqCst)`、`eprintln!("[transcription] worker panic")`、`app.emit("transcription-error", {"error":"文字起こしワーカーが異常終了しました"})` を行う。通常の loop 本体、`feed` エラー、`finalize` エラー処理は変更していない。UI 用 panic error payload を小さな純粋関数に切り出し、panic/payload 詳細文字列を含まないことを確認する単体テストを追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml test_worker_panic_payload_does_not_expose_panic_details` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。main 側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。エラーは `failed to execute command: No such file or directory (os error 2)` および `is cmake not installed?`。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml test_worker_panic_payload_does_not_expose_panic_details` を再実行する。
+
 ### Harness: adopt successor main session name
 
 - 開始日時: 2026-04-26 21:23 JST

@@ -804,7 +804,7 @@ pub fn start_transcription(
 
     for worker in workers {
         std::thread::spawn(move || {
-            run_transcription_loop(worker);
+            run_transcription_worker_with_panic_guard(worker);
         });
     }
 
@@ -941,6 +941,25 @@ struct TranscriptionLoopConfig {
     app: tauri::AppHandle,
     session_manager: Arc<crate::session_manager::SessionManager>,
     stream_started_at_secs: u64,
+}
+
+fn build_worker_panic_error_payload() -> serde_json::Value {
+    serde_json::json!({ "error": "文字起こしワーカーが異常終了しました" })
+}
+
+fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
+    let running = Arc::clone(&worker.running);
+    let app = worker.app.clone();
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        run_transcription_loop(worker);
+    }));
+
+    if result.is_err() {
+        running.store(false, Ordering::SeqCst);
+        eprintln!("[transcription] worker panic");
+        let _ = app.emit("transcription-error", build_worker_panic_error_payload());
+    }
 }
 
 fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
@@ -1093,6 +1112,18 @@ mod tests {
         let s = payload.to_string();
         assert!(s.contains("\"model\":\"small\""), "got: {s}");
         assert!(s.contains("\"message\":\"HTTP 404\""), "got: {s}");
+    }
+
+    #[test]
+    fn test_worker_panic_payload_does_not_expose_panic_details() {
+        let payload = build_worker_panic_error_payload();
+        assert_eq!(
+            payload.get("error").and_then(|value| value.as_str()),
+            Some("文字起こしワーカーが異常終了しました")
+        );
+        let serialized = payload.to_string();
+        assert!(!serialized.contains("panic"));
+        assert!(!serialized.contains("payload"));
     }
 
     #[test]
