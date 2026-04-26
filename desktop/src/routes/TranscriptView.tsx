@@ -950,8 +950,12 @@ export function TranscriptView() {
           </p>
         )}
         {lastSavedPath && (
-          <p className="meeting-saved-path" role="status">
-            保存先: {lastSavedPath}
+          <p
+            className="meeting-saved-path"
+            role="status"
+            aria-label={`会議セッションを保存しました: ${lastSavedPath}`}
+          >
+            保存しました: {lastSavedPath}
           </p>
         )}
       </div>
