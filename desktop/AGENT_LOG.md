@@ -1145,3 +1145,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実ブラウザ URL 取得と Zoom 実 URL での実機確認は未実施。
 - 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。
+
+### Main task: cover Google Meet URL parser boundaries
+
+- 開始日時: 2026-04-27 04:33 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Google Meet URL 分類で、URL 全文を返さずに安全に扱える境界ケースを純粋関数テストで固定する。
+- 結果: 大文字 scheme/host、前後空白、query/hash 付きの Google Meet URL が service/host のみへ分類されることをテストに追加した。会議コード後に余分な path が続く URL は拒否されることも固定した。実装変更はなし。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実ブラウザ URL 取得と Meet 実 URL での実機確認は未実施。
+- 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。

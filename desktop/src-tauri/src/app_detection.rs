@@ -447,6 +447,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url(" HTTPS://MEET.GOOGLE.COM/abc-defg-hij?authuser=0#meeting "),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://company.zoom.us/j/123456789?pwd=secret"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -521,6 +528,10 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://meet.google.com/ABC-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defg-hij/extra"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);
