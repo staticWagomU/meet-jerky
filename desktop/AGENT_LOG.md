@@ -613,3 +613,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機でエラーセグメントのみのときにコピー button が disabled になることを確認する。
+
+### Main task: show settings load errors
+
+- 開始日時: 2026-04-27 03:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: `get_settings` の invoke/query が失敗した場合に、設定画面が読み込み中のまま残らず、失敗理由と再読み込み導線を表示する。
+- 結果: 設定 query の `error` と `refetch` を受け取り、読み込み失敗時は `role="alert"` のエラー文と再読み込みボタンを表示するようにした。正常読み込み後の `localSettings` 初期化、保存、各設定項目の挙動は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。設定ファイル破損や読み込み失敗の実機再現は未実機確認。
+- 次アクション: 実機またはモックで設定読み込み失敗時の再読み込み導線を確認する。

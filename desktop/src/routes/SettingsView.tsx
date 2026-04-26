@@ -23,7 +23,12 @@ export function SettingsView() {
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const { data: settings, isLoading: isLoadingSettings } = useQuery<AppSettings>({
+  const {
+    data: settings,
+    error: settingsError,
+    isLoading: isLoadingSettings,
+    refetch: refetchSettings,
+  } = useQuery<AppSettings>({
     queryKey: ["settings"],
     queryFn: () => invoke<AppSettings>("get_settings"),
   });
@@ -92,6 +97,23 @@ export function SettingsView() {
       setLocalSettings({ ...localSettings, outputDirectory: null });
     }
   }, [localSettings]);
+
+  if (settingsError) {
+    return (
+      <div className="settings-view">
+        <p className="settings-warning" role="alert">
+          設定の読み込みに失敗しました: {String(settingsError)}
+        </p>
+        <button
+          type="button"
+          className="control-btn control-btn-clear"
+          onClick={() => refetchSettings()}
+        >
+          再読み込み
+        </button>
+      </div>
+    );
+  }
 
   if (isLoadingSettings || !localSettings) {
     return <div className="settings-view">読み込み中...</div>;
