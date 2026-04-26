@@ -1355,3 +1355,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限状態の実機確認は未実施。
 - 次アクション: 権限バナー再チェック中の表示を実機で確認する。
+
+### Main task: guard transcript copy while clipboard write is pending
+
+- 開始日時: 2026-04-27 04:53 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしコピー操作中に同じボタンを連打できず、コピー中であることが分かるようにする。
+- 結果: Transcript copy に `isCopying` state を追加し、clipboard 書き込み中はコピーボタンを disabled にして「コピー中...」を表示するようにした。成功/失敗表示とコピー対象テキストは変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 clipboard 書き込みは未実機確認。
+- 次アクション: clipboard コピー中表示を実機で確認する。

@@ -44,6 +44,7 @@ export function TranscriptDisplay({
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const userScrolledRef = useRef(false);
+  const [isCopying, setIsCopying] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -178,6 +179,9 @@ export function TranscriptDisplay({
   }, []);
 
   const handleCopyAll = useCallback(async () => {
+    if (isCopying) {
+      return;
+    }
     const text = segments
       .filter((seg) => !seg.isError)
       .map((seg) => {
@@ -189,6 +193,7 @@ export function TranscriptDisplay({
       .join("\n");
 
     try {
+      setIsCopying(true);
       await navigator.clipboard.writeText(text);
       setCopyError(null);
       setCopyFeedback(true);
@@ -203,8 +208,10 @@ export function TranscriptDisplay({
       console.error("コピーに失敗しました:", e);
       setCopyFeedback(false);
       setCopyError(`コピーに失敗しました: ${String(e)}`);
+    } finally {
+      setIsCopying(false);
     }
-  }, [segments]);
+  }, [isCopying, segments]);
 
   return (
     <div className="transcript-display-wrapper">
@@ -217,9 +224,9 @@ export function TranscriptDisplay({
             type="button"
             className="copy-btn"
             onClick={handleCopyAll}
-            disabled={copyableSegmentsCount === 0}
+            disabled={copyableSegmentsCount === 0 || isCopying}
           >
-            {copyFeedback ? "コピー済み" : "コピー"}
+            {isCopying ? "コピー中..." : copyFeedback ? "コピー済み" : "コピー"}
           </button>
         </div>
       )}
