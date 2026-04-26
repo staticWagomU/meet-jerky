@@ -196,8 +196,14 @@ export function SettingsView() {
     <div className="settings-view">
       {/* 文字起こしエンジン */}
       <div className="settings-section">
-        <h3 className="settings-section-title">文字起こしエンジン</h3>
-        <div className="settings-radio-group">
+        <h3 className="settings-section-title" id="transcription-engine-title">
+          文字起こしエンジン
+        </h3>
+        <div
+          className="settings-radio-group"
+          role="radiogroup"
+          aria-labelledby="transcription-engine-title"
+        >
           <label className="settings-radio-label">
             <input
               type="radio"
