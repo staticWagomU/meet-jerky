@@ -20,7 +20,7 @@ PROMPT_FILE="${2:-$ROOT_DIR/docs/autonomous-main-prompt.md}"
 INTERVAL_SECONDS="${3:-600}"
 NUDGE_COOLDOWN_SECONDS="${4:-${MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS:-600}}"
 WATCHDOG_LOG="${MJ_WATCHDOG_LOG:-$AGENT_OUTPUT_DIR/watchdog.log}"
-NUDGE_MESSAGE="${MJ_WATCHDOG_NUDGE_MESSAGE:-docs/autonomous-main-prompt.md の方針に従い、ユーザーから停止依頼がない限り final answer で停止せず次の自律改善ループへ進んでください。watchdog からの定型継続指示です。判断・実装・差分レビュー・検証・コミットは mj-main が行ってください。}"
+NUDGE_MESSAGE="${MJ_WATCHDOG_NUDGE_MESSAGE:-watchdog継続指示: docs/autonomous-main-prompt.md に従って次の自律改善ループへ進んでください。}"
 
 if [[ ! "$INTERVAL_SECONDS" =~ ^[0-9]+$ ]] || [[ "$INTERVAL_SECONDS" -lt 10 ]]; then
   echo "interval must be an integer >= 10 seconds: $INTERVAL_SECONDS" >&2
@@ -55,7 +55,14 @@ main_session_waiting_for_input() {
 }
 
 nudge_main_session() {
-  tmux send-keys -t "$MAIN_SESSION" C-u "$NUDGE_MESSAGE" C-m
+  local pane_text
+  pane_text="$(tmux capture-pane -p -t "$MAIN_SESSION" -S -80 2>/dev/null || true)"
+
+  if printf '%s\n' "$pane_text" | grep -q 'watchdog継続指示\|watchdog からの定型継続指示'; then
+    tmux send-keys -t "$MAIN_SESSION" C-m
+  else
+    tmux send-keys -t "$MAIN_SESSION" C-u "$NUDGE_MESSAGE" C-m
+  fi
 }
 
 LAST_NUDGE_AT=0

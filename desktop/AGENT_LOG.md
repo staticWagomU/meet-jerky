@@ -529,3 +529,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機ブラウザURL取得は未実機確認で、今回も純粋関数境界のみを更新した。
 - 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。
+
+### Harness: prevent duplicated watchdog nudge text
+
+- 開始日時: 2026-04-27 02:39 JST
+- 担当セッション: bootstrap
+- 役割: ブートストラップ担当
+- 作業範囲: `scripts/agent-watchdog.sh`, `AGENT_LOG.md`
+- 指示内容: `mj-main` が入力待ちで止まった際、watchdog の長い継続指示が入力欄に蓄積し続ける問題を修正する。
+- 結果: watchdog の既定 nudge 文を短縮し、pane 上に既存の watchdog 継続指示が見える場合は新しい文を追記せず Enter のみ送るようにした。これにより、同じ継続指示が何度も入力欄に溜まる状態を避ける。watchdog を再起動し、新しい nudge ロジックで `mj-main` を監視していることを確認した。
+- 変更ファイル: `scripts/agent-watchdog.sh`, `AGENT_LOG.md`
+- 検証結果: `bash -n scripts/agent-watchdog.sh scripts/agent-start-watchdog.sh` は成功。`git diff --check -- scripts/agent-watchdog.sh` は成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。
