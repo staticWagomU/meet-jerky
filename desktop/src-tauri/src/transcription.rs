@@ -317,10 +317,13 @@ impl TranscriptionStream for WhisperStream {
             let mut input_chunk = std::mem::take(&mut self.resample_input_buffer);
             input_chunk.resize(chunk_size, 0.0);
             let input_refs: Vec<&[f32]> = vec![&input_chunk];
-            if let Ok(output) = resampler.process(&input_refs, None) {
-                if let Some(channel) = output.first() {
-                    self.accumulation_buffer.extend_from_slice(channel);
+            match resampler.process(&input_refs, None) {
+                Ok(output) => {
+                    if let Some(channel) = output.first() {
+                        self.accumulation_buffer.extend_from_slice(channel);
+                    }
                 }
+                Err(e) => return Err(format!("リサンプリングエラー: {e}")),
             }
         }
 

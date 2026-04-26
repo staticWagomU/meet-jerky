@@ -361,3 +361,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の対象テストは環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。エラーは `failed to execute command: No such file or directory (os error 2)` および `is cmake not installed?`。
 - 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml whisper_stream` を再実行する。
+
+### Worker task: return finalize resampler process error
+
+- 開始日時: 2026-04-26 21:12 JST
+- 担当セッション: `mj-worker-finalize-resample-error-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `WhisperStream::finalize` で `resampler.process(&input_refs, None)` が `Err` の場合に握り潰さず `Err(format!("リサンプリングエラー: {e}"))` を返す。新規依存追加、コミット、panic guard、enum 化、`run_transcription_loop` の挙動変更は禁止。
+- 結果: `finalize` の残りリサンプリング処理を `if let Ok(...)` から `match` に変更し、`process` 失敗時は `リサンプリングエラー: ...` を返すようにした。成功時の出力チャンネル取り込み挙動は維持した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。main 側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。`cargo test` / `cargo check` は今回実行していない。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `resampler.process` の失敗を自然に発生させる単体テストにはリサンプラー実装の差し替えや注入構造が必要になるため、今回の「panic guard、enum 化、run_transcription_loop の挙動変更はしない」「テストが難しい場合は大きな注入構造を作らない」という制約に合わせ、テスト追加は見送った。
+- 次アクション: 必要なら `cmake` が利用できる環境で Rust 側のテストを再実行する。
