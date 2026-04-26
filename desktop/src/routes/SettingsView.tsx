@@ -395,8 +395,14 @@ export function SettingsView() {
               type="button"
               className="control-btn control-btn-clear"
               onClick={handleResetOutputDirectory}
-              disabled={isSelectingOutputDirectory}
-              aria-label="出力先ディレクトリをデフォルトに戻す"
+              disabled={isSelectingOutputDirectory || !localSettings.outputDirectory}
+              aria-label={
+                isSelectingOutputDirectory
+                  ? "出力先ディレクトリを選択中"
+                  : localSettings.outputDirectory
+                    ? "出力先ディレクトリをデフォルトに戻す"
+                    : "出力先ディレクトリはデフォルトです"
+              }
             >
               デフォルトに戻す
             </button>
