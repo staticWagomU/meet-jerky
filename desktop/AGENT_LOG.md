@@ -235,3 +235,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 初回 `mj-main` 起動は Codex CLI の TTY 要件を満たさず即終了した。
 - 次アクション: ブートストラップ担当は終了し、以後の改善判断、worker 起動、差分レビュー、検証、コミットは `mj-main` に任せる。
+
+### Worker task: safe datetime formatting for session markdown
+
+- 開始日時: 2026-04-26 15:55 JST
+- 担当セッション: `mj-worker-datetime-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/datetime_fmt.rs`, `src-tauri/src/session_store.rs`, 直接関連する単体テスト, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: `timestamp_opt(...).unwrap()` による範囲外 Unix 秒での panic をなくし、保存/Markdown生成時は silent fallback せず `std::io::Result` として失敗理由を返す。正常系出力形式は維持し、範囲外 timestamp のテストを追加する。新規依存追加なし。コミット禁止。
+- 結果: `format_session_header_timestamp_with_offset` と `format_segment_timestamp_with_offset` を `Result<String, String>` 返却に変更し、`timestamp_opt(...).single()` の失敗を明示エラー化した。`session_store` は Markdown レンダリングを `std::io::Result<String>` に変更し、開始時刻の `u64`→`i64` 変換、セグメント絶対時刻の加算、Chrono の範囲外エラーを `InvalidInput` として保存呼び出し元へ返すようにした。正常系のフォーマット文字列は維持した。
+- 変更ファイル: `src-tauri/src/datetime_fmt.rs`, `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/datetime_fmt.rs src-tauri/src/session_store.rs` は成功。`git diff --check -- src-tauri/src/datetime_fmt.rs src-tauri/src/session_store.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml datetime_fmt`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml session_store`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` はいずれも `whisper-rs-sys` の build script が `cmake` を起動できず失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストと `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。`command -v cmake` でも見つからなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と `cargo test --manifest-path src-tauri/Cargo.toml datetime_fmt session_store` 相当を再実行する。

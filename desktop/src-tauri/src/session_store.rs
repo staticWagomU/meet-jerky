@@ -4,7 +4,7 @@
 //! リアルタイム追記や Tauri コマンド化は本ループのスコープ外。
 
 use std::fs;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
 use chrono::FixedOffset;
@@ -32,14 +32,15 @@ pub fn write_session_markdown_to(
     session: &Session,
     offset: FixedOffset,
 ) -> std::io::Result<()> {
-    let body = render_session_markdown(session, offset);
+    let body = render_session_markdown(session, offset)?;
     fs::write(path, body)
 }
 
 /// セッションを Markdown 文字列に整形する内部ヘルパー。
-fn render_session_markdown(session: &Session, offset: FixedOffset) -> String {
+fn render_session_markdown(session: &Session, offset: FixedOffset) -> std::io::Result<String> {
+    let started_at_secs = unix_secs_i64("session started_at", session.started_at)?;
     let header_display =
-        format_session_header_timestamp_with_offset(session.started_at as i64, offset);
+        format_session_header_timestamp_with_offset(started_at_secs, offset).map_err(io_invalid)?;
     let meta = SessionMeta {
         title: session.title.clone(),
         started_at_display: header_display,
@@ -48,17 +49,33 @@ fn render_session_markdown(session: &Session, offset: FixedOffset) -> String {
     let segments: Vec<markdown::SessionSegment> = session
         .segments
         .iter()
-        .map(|s| markdown::SessionSegment {
-            speaker: s.speaker.clone(),
-            timestamp_display: format_segment_timestamp_with_offset(
-                session.started_at as i64 + s.timestamp_offset_secs as i64,
-                offset,
-            ),
-            text: s.text.clone(),
-        })
-        .collect();
+        .map(|s| {
+            let segment_abs_secs = session
+                .started_at
+                .checked_add(s.timestamp_offset_secs)
+                .ok_or_else(|| io_invalid("session segment timestamp overflow"))?;
+            let segment_abs_secs = unix_secs_i64("session segment timestamp", segment_abs_secs)?;
+            let timestamp_display = format_segment_timestamp_with_offset(segment_abs_secs, offset)
+                .map_err(io_invalid)?;
 
-    markdown::format_session_markdown(&meta, &segments)
+            Ok(markdown::SessionSegment {
+                speaker: s.speaker.clone(),
+                timestamp_display,
+                text: s.text.clone(),
+            })
+        })
+        .collect::<std::io::Result<_>>()?;
+
+    Ok(markdown::format_session_markdown(&meta, &segments))
+}
+
+fn unix_secs_i64(label: &str, unix_secs: u64) -> std::io::Result<i64> {
+    i64::try_from(unix_secs)
+        .map_err(|_| io_invalid(format!("{label} is out of i64 range: {unix_secs}")))
+}
+
+fn io_invalid(message: impl Into<String>) -> Error {
+    Error::new(ErrorKind::InvalidInput, message.into())
 }
 
 /// 完了済みセッションを `<session_id>.md` として `dir` に書き出す。
@@ -168,7 +185,12 @@ mod tests {
 
         let files = list_session_files(dir.path()).unwrap();
 
-        assert_eq!(files.len(), 2, "should list only .md files, got {:?}", files);
+        assert_eq!(
+            files.len(),
+            2,
+            "should list only .md files, got {:?}",
+            files
+        );
         let names: Vec<String> = files
             .iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
@@ -200,9 +222,21 @@ mod tests {
     #[test]
     fn list_session_summaries_sorted_newest_first() {
         let dir = tempdir().unwrap();
-        fs::write(dir.path().join("100-0.md"), "# 会議メモ - 2024-01-01 00:01\n").unwrap();
-        fs::write(dir.path().join("200-0.md"), "# 会議メモ - 2024-01-01 00:02\n").unwrap();
-        fs::write(dir.path().join("50-0.md"), "# 会議メモ - 2024-01-01 00:00\n").unwrap();
+        fs::write(
+            dir.path().join("100-0.md"),
+            "# 会議メモ - 2024-01-01 00:01\n",
+        )
+        .unwrap();
+        fs::write(
+            dir.path().join("200-0.md"),
+            "# 会議メモ - 2024-01-01 00:02\n",
+        )
+        .unwrap();
+        fs::write(
+            dir.path().join("50-0.md"),
+            "# 会議メモ - 2024-01-01 00:00\n",
+        )
+        .unwrap();
 
         let summaries = list_session_summaries(dir.path()).unwrap();
 
@@ -213,7 +247,11 @@ mod tests {
     #[test]
     fn list_session_summaries_skips_unparsable_prefixes() {
         let dir = tempdir().unwrap();
-        fs::write(dir.path().join("100-0.md"), "# 会議メモ - 2024-04-17 14:50\n").unwrap();
+        fs::write(
+            dir.path().join("100-0.md"),
+            "# 会議メモ - 2024-04-17 14:50\n",
+        )
+        .unwrap();
         fs::write(dir.path().join("notes.md"), "# メモ - 自由記述\n").unwrap();
 
         let summaries = list_session_summaries(dir.path()).unwrap();
@@ -236,6 +274,35 @@ mod tests {
             contents.contains("**[14:50:15] 自分:** hello"),
             "segment line missing. contents=\n{}",
             contents
+        );
+    }
+
+    #[test]
+    fn save_session_markdown_returns_error_for_out_of_range_started_at() {
+        let session = Session::start("会議メモ".to_string(), i64::MAX as u64);
+        let dir = tempdir().unwrap();
+
+        let err = save_session_markdown(dir.path(), &session, jst()).unwrap_err();
+
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(
+            err.to_string().contains("out of range"),
+            "unexpected error message: {err}"
+        );
+    }
+
+    #[test]
+    fn save_session_markdown_returns_error_for_overflowing_segment_timestamp() {
+        let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+        session.append_segment("自分".into(), u64::MAX, "hello".into());
+        let dir = tempdir().unwrap();
+
+        let err = save_session_markdown(dir.path(), &session, jst()).unwrap_err();
+
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(
+            err.to_string().contains("overflow"),
+            "unexpected error message: {err}"
         );
     }
 }
