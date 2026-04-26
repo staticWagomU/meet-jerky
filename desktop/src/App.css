@@ -1091,6 +1091,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .session-list-title {
@@ -1126,6 +1128,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
   padding: 0.75rem 1rem;
   border: 1px solid var(--control-btn-clear-border);
   border-radius: 8px;
@@ -1155,6 +1158,7 @@
 .session-list-item-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
