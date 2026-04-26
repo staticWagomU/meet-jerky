@@ -2,6 +2,11 @@ import { useCallback, useState } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 
+type SessionAction =
+  | { kind: "open"; path: string }
+  | { kind: "reveal"; path: string }
+  | null;
+
 /**
  * 保存済みセッションの一覧画面。
  * 各行から「ファイルを開く」「フォルダを開く」で OS のデフォルトアプリ / エクスプローラに
@@ -10,26 +15,39 @@ import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 export function SessionList() {
   const { data, isLoading, isFetching, error, refetch } = useSessionList();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<SessionAction>(null);
 
   const handleOpenFile = useCallback(async (path: string) => {
+    if (pendingAction) {
+      return;
+    }
+    setPendingAction({ kind: "open", path });
     try {
       await openPath(path);
       setActionError(null);
     } catch (e) {
       console.error("ファイルを開けませんでした:", e);
       setActionError(`ファイルを開けませんでした: ${String(e)}`);
+    } finally {
+      setPendingAction(null);
     }
-  }, []);
+  }, [pendingAction]);
 
   const handleRevealInFolder = useCallback(async (path: string) => {
+    if (pendingAction) {
+      return;
+    }
+    setPendingAction({ kind: "reveal", path });
     try {
       await revealItemInDir(path);
       setActionError(null);
     } catch (e) {
       console.error("フォルダを開けませんでした:", e);
       setActionError(`フォルダを開けませんでした: ${String(e)}`);
+    } finally {
+      setPendingAction(null);
     }
-  }, []);
+  }, [pendingAction]);
 
   if (isLoading) {
     return <div className="session-list">読み込み中...</div>;
@@ -83,6 +101,7 @@ export function SessionList() {
             <SessionRow
               key={session.path}
               session={session}
+              pendingAction={pendingAction}
               onOpenFile={handleOpenFile}
               onRevealInFolder={handleRevealInFolder}
             />
@@ -95,14 +114,25 @@ export function SessionList() {
 
 interface SessionRowProps {
   session: SessionSummary;
+  pendingAction: SessionAction;
   onOpenFile: (path: string) => void;
   onRevealInFolder: (path: string) => void;
 }
 
-function SessionRow({ session, onOpenFile, onRevealInFolder }: SessionRowProps) {
+function SessionRow({
+  session,
+  pendingAction,
+  onOpenFile,
+  onRevealInFolder,
+}: SessionRowProps) {
   // 秒 → ミリ秒に変換してローカルタイムでフォーマット。
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
   const startedAtLabel = new Date(session.startedAtSecs * 1000).toLocaleString();
+  const isAnyActionPending = pendingAction !== null;
+  const isOpeningThisFile =
+    pendingAction?.kind === "open" && pendingAction.path === session.path;
+  const isRevealingThisFile =
+    pendingAction?.kind === "reveal" && pendingAction.path === session.path;
 
   return (
     <li className="session-list-item">
@@ -115,15 +145,17 @@ function SessionRow({ session, onOpenFile, onRevealInFolder }: SessionRowProps) 
           type="button"
           className="control-btn control-btn-transcribe"
           onClick={() => onOpenFile(session.path)}
+          disabled={isAnyActionPending}
         >
-          ファイルを開く
+          {isOpeningThisFile ? "開いています..." : "ファイルを開く"}
         </button>
         <button
           type="button"
           className="control-btn control-btn-clear"
           onClick={() => onRevealInFolder(session.path)}
+          disabled={isAnyActionPending}
         >
-          フォルダを開く
+          {isRevealingThisFile ? "開いています..." : "フォルダを開く"}
         </button>
       </div>
     </li>

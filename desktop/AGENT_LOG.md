@@ -1271,3 +1271,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS の実フォルダ選択ダイアログは未実機確認。
 - 次アクション: 出力先フォルダ選択の実機表示を確認する。
+
+### Main task: guard session open actions while pending
+
+- 開始日時: 2026-04-27 04:45 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 履歴画面の「ファイルを開く」「フォルダを開く」操作中に同じ OS opener 操作を連打できず、処理中であることが分かるようにする。
+- 結果: 履歴一覧に pending action state を追加し、ファイル/フォルダを開く処理中は履歴行の opener ボタンを disabled にした。対象行のボタン文言は「開いています...」へ切り替える。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS の実ファイル/フォルダ opener は未実機確認。
+- 次アクション: 履歴画面の opener 操作を実機で確認する。
