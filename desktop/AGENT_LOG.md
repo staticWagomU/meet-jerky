@@ -1243,3 +1243,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実マイクデバイスの f32 invalid sample 発生は未実機確認。Rust cargo 検証は `cmake` 不在制約に注意する。
 - 次アクション: `cmake` あり環境で audio の Rust テストを再実行する。
+
+### Main task: show OpenAI API key status refetch progress
+
+- 開始日時: 2026-04-27 04:42 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI API キー状態の再確認中に連打できず、確認中であることが分かるようにする。認証情報自体は変更しない。
+- 結果: API キー状態 query の `isFetching` を使い、確認失敗時の再確認ボタンを fetching 中は disabled にして文言を「確認中...」へ切り替えるようにした。状態表示も再確認中は「確認中...」を優先し、削除ボタンは確認中にも押せないようにした。削除 mutation 中は「削除中...」を表示する。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Keychain/API キー状態の実機確認は未実施。認証情報変更は行っていない。
+- 次アクション: API キー状態の実機表示を確認する。認証情報変更は行わない。

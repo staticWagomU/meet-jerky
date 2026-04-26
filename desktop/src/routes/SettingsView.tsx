@@ -398,6 +398,7 @@ function OpenAIApiKeySection({
   const {
     data: hasKey,
     error: hasKeyError,
+    isFetching: isFetchingHasKey,
     refetch: refetchHasKey,
   } = useQuery<boolean>({
     queryKey: ["openaiApiKey", "has"],
@@ -439,8 +440,9 @@ function OpenAIApiKeySection({
               type="button"
               className="control-btn control-btn-clear"
               onClick={() => refetchHasKey()}
+              disabled={isFetchingHasKey}
             >
-              再確認
+              {isFetchingHasKey ? "確認中..." : "再確認"}
             </button>
           </div>
         )}
@@ -465,18 +467,25 @@ function OpenAIApiKeySection({
           <button
             type="button"
             className="control-btn control-btn-clear"
-            disabled={!hasKey || Boolean(hasKeyError) || clearMutation.isPending}
+            disabled={
+              !hasKey ||
+              Boolean(hasKeyError) ||
+              isFetchingHasKey ||
+              clearMutation.isPending
+            }
             onClick={() => clearMutation.mutate()}
           >
-            削除
+            {clearMutation.isPending ? "削除中..." : "削除"}
           </button>
         </div>
         <div className="settings-api-key-status">
           状態:{" "}
-          {hasKeyError
-            ? "確認失敗"
-            : hasKey === undefined
-              ? "確認中..."
+          {isFetchingHasKey
+            ? "確認中..."
+            : hasKeyError
+              ? "確認失敗"
+              : hasKey === undefined
+                ? "確認中..."
               : hasKey
                 ? "登録済み"
                 : "未登録"}
