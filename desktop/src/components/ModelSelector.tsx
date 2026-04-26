@@ -14,6 +14,12 @@ interface ModelSelectorProps {
   disabled: boolean;
 }
 
+function toErrorMessage(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
 export function ModelSelector({
   selectedModel,
   onSelectModel,
@@ -22,6 +28,12 @@ export function ModelSelector({
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [progressListenerError, setProgressListenerError] = useState<
+    string | null
+  >(null);
+  const [downloadErrorListenerError, setDownloadErrorListenerError] = useState<
+    string | null
+  >(null);
   const queryClient = useQueryClient();
 
   const { data: models, error: modelsError } = useQuery<ModelInfo[]>({
@@ -31,6 +43,7 @@ export function ModelSelector({
 
   // Listen for download progress events
   useEffect(() => {
+    let disposed = false;
     const unlistenPromise = listen<DownloadProgressPayload>(
       "model-download-progress",
       (event) => {
@@ -46,10 +59,34 @@ export function ModelSelector({
           }
         }
       },
-    );
+    )
+      .then((unlisten) => {
+        if (!disposed) {
+          setProgressListenerError(null);
+        }
+        return unlisten;
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("モデルDL進捗通知の受信開始に失敗しました:", msg);
+          setProgressListenerError(
+            `モデルDL進捗通知の受信開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error(
+            "モデルDL進捗通知の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
+        });
     };
   }, [downloadingModel, queryClient]);
 
@@ -57,6 +94,7 @@ export function ModelSelector({
   // `invoke` の catch でも同じ文字列は拾えるが、長時間 DL 中の切断などは
   // Tauri 側の Err を先に emit で受け取った方が UI 反映が早い。
   useEffect(() => {
+    let disposed = false;
     const unlistenPromise = listen<DownloadErrorPayload>(
       "model-download-error",
       (event) => {
@@ -64,10 +102,34 @@ export function ModelSelector({
         setDownloadingModel(null);
         setDownloadProgress(0);
       },
-    );
+    )
+      .then((unlisten) => {
+        if (!disposed) {
+          setDownloadErrorListenerError(null);
+        }
+        return unlisten;
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("モデルDLエラー通知の受信開始に失敗しました:", msg);
+          setDownloadErrorListenerError(
+            `モデルDLエラー通知の受信開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error(
+            "モデルDLエラー通知の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
+        });
     };
   }, []);
 
@@ -103,6 +165,16 @@ export function ModelSelector({
           <ModelOption key={model.name} model={model} />
         ))}
       </select>
+      {progressListenerError && (
+        <span className="download-error" role="alert">
+          {progressListenerError}
+        </span>
+      )}
+      {downloadErrorListenerError && (
+        <span className="download-error" role="alert">
+          {downloadErrorListenerError}
+        </span>
+      )}
       {modelsError ? (
         <span className="download-error" role="alert">
           モデル一覧の取得に失敗しました: {String(modelsError)}

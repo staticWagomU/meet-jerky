@@ -795,3 +795,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Tauri event 購読失敗や実際の会議アプリ検知は未実機確認。
 - 次アクション: model download progress/error listener も同じ観点で確認する。
+
+### Main task: show model download listener errors
+
+- 開始日時: 2026-04-27 04:50 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデルダウンロード進捗/エラー event の購読開始に失敗した場合、進捗や失敗通知が届かない状態をユーザーに表示する。
+- 結果: `model-download-progress` と `model-download-error` listener の Promise を成功/失敗で明示処理し、購読開始失敗時はモデル選択 UI の `download-error` 表示へ出すようにした。2つの listener 失敗状態は別々に保持し、解除失敗は console に記録する。モデル一覧取得、ダウンロード invoke、進捗 payload 処理は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Tauri event 購読失敗や実際のモデルダウンロード失敗は未実機確認。
+- 次アクション: model download listener の再購読設計は、進捗イベントの取りこぼしリスクとあわせて別途見直す。
