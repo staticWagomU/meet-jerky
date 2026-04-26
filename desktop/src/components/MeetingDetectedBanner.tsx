@@ -72,7 +72,7 @@ export function MeetingDetectedBanner() {
     >
       <span className="meeting-detected-banner-text">
         {listenerError ??
-          `${displayName} を検出しました。必要に応じて文字起こしページで状態を確認してください。`}
+          `${displayName} を検出しました。文字起こしページで記録状態を確認できます。`}
       </span>
       {detected && (
         <div className="meeting-detected-banner-actions">
@@ -84,7 +84,7 @@ export function MeetingDetectedBanner() {
               setDetected(null);
             }}
           >
-            文字起こしページへ
+            記録状態を確認
           </button>
           <button
             type="button"

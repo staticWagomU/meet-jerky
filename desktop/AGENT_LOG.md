@@ -1748,6 +1748,20 @@
 - 失敗理由: なし。実 UI 表示は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: clarify meeting detected banner action
+
+- 開始日時: 2026-04-27 07:18 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知バナーの導線を、会議中の記録状態確認につながる表現へ寄せる。
+- 結果: バナー本文を「文字起こしページで記録状態を確認できます」に変更し、ボタン文言を「記録状態を確認」にした。検知イベント購読、navigate、payload 表示内容は変更していない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST
