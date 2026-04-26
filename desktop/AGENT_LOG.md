@@ -1257,3 +1257,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Keychain/API キー状態の実機確認は未実施。認証情報変更は行っていない。
 - 次アクション: API キー状態の実機表示を確認する。認証情報変更は行わない。
+
+### Main task: guard output directory picker while opening
+
+- 開始日時: 2026-04-27 04:43 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 出力先フォルダ選択ダイアログの起動中にボタンを連打できず、選択中であることが分かるようにする。
+- 結果: `select_output_directory` invoke の実行中フラグを追加し、フォルダ選択中は「フォルダ選択」ボタンを disabled にして「選択中...」へ切り替えるようにした。選択中は「デフォルトに戻す」も disabled にする。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS の実フォルダ選択ダイアログは未実機確認。
+- 次アクション: 出力先フォルダ選択の実機表示を確認する。

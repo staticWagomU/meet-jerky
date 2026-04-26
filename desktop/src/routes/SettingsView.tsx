@@ -22,6 +22,8 @@ export function SettingsView() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
+    useState(false);
 
   const {
     data: settings,
@@ -93,6 +95,10 @@ export function SettingsView() {
   }, [localSettings, updateMutation]);
 
   const handleSelectOutputDirectory = useCallback(async () => {
+    if (isSelectingOutputDirectory) {
+      return;
+    }
+    setIsSelectingOutputDirectory(true);
     try {
       const selected = await invoke<string | null>("select_output_directory");
       if (selected && localSettings) {
@@ -101,8 +107,10 @@ export function SettingsView() {
     } catch (e) {
       console.error("フォルダ選択に失敗しました:", e);
       showToast(`フォルダ選択に失敗しました: ${String(e)}`);
+    } finally {
+      setIsSelectingOutputDirectory(false);
     }
-  }, [localSettings, showToast]);
+  }, [isSelectingOutputDirectory, localSettings, showToast]);
 
   const handleResetOutputDirectory = useCallback(() => {
     if (localSettings) {
@@ -296,13 +304,15 @@ export function SettingsView() {
               type="button"
               className="control-btn control-btn-transcribe"
               onClick={handleSelectOutputDirectory}
+              disabled={isSelectingOutputDirectory}
             >
-              フォルダ選択
+              {isSelectingOutputDirectory ? "選択中..." : "フォルダ選択"}
             </button>
             <button
               type="button"
               className="control-btn control-btn-clear"
               onClick={handleResetOutputDirectory}
+              disabled={isSelectingOutputDirectory}
             >
               デフォルトに戻す
             </button>
