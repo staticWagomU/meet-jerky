@@ -270,8 +270,18 @@ fn is_zoom_meeting_id(value: &str) -> bool {
 }
 
 fn is_teams_meeting_url(host: &str, path: &str) -> bool {
-    (host == "teams.microsoft.com" && path.starts_with("/l/meetup-join/"))
-        || (host == "teams.live.com" && path.starts_with("/meet/"))
+    (host == "teams.microsoft.com"
+        && path
+            .strip_prefix("/l/meetup-join/")
+            .is_some_and(has_non_empty_segment))
+        || (host == "teams.live.com"
+            && path
+                .strip_prefix("/meet/")
+                .is_some_and(has_non_empty_segment))
+}
+
+fn has_non_empty_segment(value: &str) -> bool {
+    !value.is_empty() && value != "/"
 }
 
 // ─────────────────────────────────────────────
@@ -477,7 +487,12 @@ mod tests {
         );
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/_"), None);
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/l/meetup-join/"),
+            None
+        );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
+        assert_eq!(classify_meeting_url("https://teams.live.com/meet/"), None);
     }
 
     #[test]

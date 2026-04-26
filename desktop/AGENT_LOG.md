@@ -725,3 +725,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
 - 次アクション: Teams の URL 分類も同じ方針で追加安全ケースを確認する。
+
+### Main task: tighten Teams URL classification
+
+- 開始日時: 2026-04-27 04:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Teams URL 分類で `/l/meetup-join/` や `/meet/` の空パスまで会議として扱わないよう、会議識別子の存在だけを純粋関数で確認する。
+- 結果: Teams は既存の host と prefix 判定に加えて、prefix 後に空でない識別子がある場合だけ分類するようにした。Teams の実 URL は encoded path や追加 path segment を含み得るため、Zoom のような数値 ID 制約は入れていない。分類結果は従来どおり service と host のみで、URL 全文やパスは payload/log/UI に出していない。worker は直近の長い読解停止履歴があるため、この純粋関数とテストだけの最小変更はメイン直接実装とした。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
+- 次アクション: URL provider boundary を設計する前に、分類関数の残りの入力正規化リスクを確認する。
