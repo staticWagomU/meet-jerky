@@ -739,3 +739,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
 - 次アクション: URL provider boundary を設計する前に、分類関数の残りの入力正規化リスクを確認する。
+
+### Main task: reject invalid URL ports in meeting classification
+
+- 開始日時: 2026-04-27 04:15 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議 URL 分類の簡易 parser が `https://meet.google.com:notaport/...` のような無効 port を host だけで通してしまわないよう、port を検証する。
+- 結果: `strip_port` で port が存在する場合は空でなく `u16` として parse できる値だけを許可するようにした。通常の host、valid port、bracket host は従来どおり扱う。分類結果は従来どおり service と host のみで、URL 全文やパスは payload/log/UI に出していない。worker は直近の長い読解停止履歴があるため、この parser とテストだけの最小変更はメイン直接実装とした。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
+- 次アクション: URL provider boundary を設計する際は標準 URL parser 利用可否も再評価する。

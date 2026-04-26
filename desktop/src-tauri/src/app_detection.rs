@@ -218,14 +218,28 @@ fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
 
 fn strip_port(host_port: &str) -> Option<&str> {
     if let Some(without_opening_bracket) = host_port.strip_prefix('[') {
-        let (host, _) = without_opening_bracket.split_once(']')?;
+        let (host, port) = without_opening_bracket.split_once(']')?;
+        if let Some(port) = port.strip_prefix(':') {
+            validate_port(port)?;
+        } else if !port.is_empty() {
+            return None;
+        }
         return Some(host);
     }
-    Some(
-        host_port
-            .split_once(':')
-            .map_or(host_port, |(host, _)| host),
-    )
+
+    if let Some((host, port)) = host_port.split_once(':') {
+        validate_port(port)?;
+        Some(host)
+    } else {
+        Some(host_port)
+    }
+}
+
+fn validate_port(port: &str) -> Option<()> {
+    if port.is_empty() || port.parse::<u16>().is_err() {
+        return None;
+    }
+    Some(())
 }
 
 fn is_zoom_host(host: &str) -> bool {
@@ -425,6 +439,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://meet.google.com:443/abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://company.zoom.us/j/123456789?pwd=secret"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -504,6 +525,18 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("mailto:https://meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:notaport/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:65536/abc-defg-hij"),
             None
         );
     }
