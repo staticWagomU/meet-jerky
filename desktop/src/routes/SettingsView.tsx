@@ -484,7 +484,12 @@ export function SettingsView() {
 
       {/* トースト通知 */}
       {toastMessage && (
-        <div className="toast" role="status" aria-live="polite">
+        <div
+          className="toast"
+          role="status"
+          aria-live="polite"
+          aria-label={`設定通知: ${toastMessage}`}
+        >
           {toastMessage}
         </div>
       )}
