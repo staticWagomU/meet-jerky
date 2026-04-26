@@ -501,3 +501,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Rust の `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と panic payload / error payload 周辺の Rust テストを再実行する。
+
+### Main task: tighten Teams meeting URL classification
+
+- 開始日時: 2026-04-26 23:19 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議URL分類で、URL全文を payload/log/UI に出さない方針を維持しつつ、Teams の誤検知を減らし、Teams Free の安全な join URL を分類する。
+- 結果: 調査担当 `mj-research-app-detection-20260426-1` は、`teams.microsoft.com` 全体の分類は広すぎるため `/l/meetup-join/` に限定すること、`teams.live.com/meet/...` は低リスクな追加候補であることを報告した。作業担当 `mj-worker-app-detection-safe-cases-20260426-1` は AGENT_LOG.md の長い読解表示から編集に入らず、自律運用を止めないため docs/autonomous-main-prompt.md の例外条件に沿って kill し、メイン側で最小実装した。`is_teams_meeting_url` helper を追加し、`teams.microsoft.com` は `/l/meetup-join/`、`teams.live.com` は `/meet/` のみ Microsoft Teams と分類するようにした。分類結果は引き続き service と host のみで、URL 全文や path は保持しない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は初回、追加テストの折り返し整形差分で失敗したため、対象ファイルへ `rustfmt --edition 2021 src-tauri/src/app_detection.rs` を適用後に再実行して成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 作業担当が長いログ読解表示から進まず編集に入らなかったため、メインが最小実装した。実機ブラウザURL取得は未実機確認で、今回も純粋関数境界のみを更新した。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。

@@ -164,7 +164,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Google Meet"
     } else if is_zoom_host(&host) && parsed.path.starts_with("/j/") {
         "Zoom"
-    } else if host == "teams.microsoft.com" {
+    } else if is_teams_meeting_url(&host, &parsed.path) {
         "Microsoft Teams"
     } else {
         return None;
@@ -230,6 +230,11 @@ fn strip_port(host_port: &str) -> Option<&str> {
 
 fn is_zoom_host(host: &str) -> bool {
     host == "zoom.us" || host.ends_with(".zoom.us")
+}
+
+fn is_teams_meeting_url(host: &str, path: &str) -> bool {
+    (host == "teams.microsoft.com" && path.starts_with("/l/meetup-join/"))
+        || (host == "teams.live.com" && path.starts_with("/meet/"))
 }
 
 // ─────────────────────────────────────────────
@@ -386,6 +391,13 @@ mod tests {
                 host: "teams.microsoft.com".to_string(),
             })
         );
+        assert_eq!(
+            classify_meeting_url("https://teams.live.com/meet/1234567890123"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.live.com".to_string(),
+            })
+        );
     }
 
     #[test]
@@ -393,6 +405,9 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
         assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
+        assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);
+        assert_eq!(classify_meeting_url("https://teams.microsoft.com/_"), None);
+        assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
     }
 
     #[test]
