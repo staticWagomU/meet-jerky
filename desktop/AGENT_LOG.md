@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: clarify queued model download label
+
+- 開始日時: 2026-04-27 08:13 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 別の Whisper モデルをダウンロード中で選択中モデルのダウンロード按钮が無効なとき、支援技術でも待機理由を伝える。
+- 結果: ダウンロード按钮の `aria-label` を `downloadingModel` に応じて切り替え、別モデルのダウンロード中は現在の選択モデルが待機中であることを読めるようにした。モデル選択、ダウンロード開始、進捗表示、状態確認処理は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。モデルダウンロード実機操作は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: expose transcript copy feedback label
 
 - 開始日時: 2026-04-27 08:12 JST

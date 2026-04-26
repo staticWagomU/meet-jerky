@@ -359,7 +359,11 @@ function DownloadStatus({
       <button
         type="button"
         className="download-btn"
-        aria-label={`${selectedModel} をダウンロード`}
+        aria-label={
+          downloadingModel
+            ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
+            : `${selectedModel} をダウンロード`
+        }
         onClick={() => onDownload(selectedModel)}
         disabled={disabled || downloadingModel !== null}
       >
