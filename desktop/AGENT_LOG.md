@@ -2378,6 +2378,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。macOS 権限ダイアログ/実機権限状態は未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: summarize transcript source counts for accessibility
+
+- 開始日時: 2026-04-27 07:42 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし表示の自分/相手側/エラー件数を、支援技術でもまとまった状態として把握できるようにする。
+- 結果: Transcript toolbar の件数表示に `aria-label` を追加し、総件数、自分、相手側、エラー件数を 1 つの要約として読めるようにした。文字起こし受信、コピー、スクロール、表示文言は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: clarify session history reload labels
 
 - 開始日時: 2026-04-27 07:42 JST

@@ -258,7 +258,10 @@ export function TranscriptDisplay({
     <div className="transcript-display-wrapper">
       {segments.length > 0 && (
         <div className="transcript-toolbar">
-          <div className="transcript-counts">
+          <div
+            className="transcript-counts"
+            aria-label={`文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、エラー ${segmentCounts.errors} 件`}
+          >
             <span className="transcript-segment-count">
               {segments.length} 件
             </span>
