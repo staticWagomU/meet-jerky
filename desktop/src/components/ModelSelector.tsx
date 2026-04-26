@@ -238,6 +238,7 @@ export function ModelSelector({
             className="download-btn"
             onClick={() => refetchModels()}
             disabled={isFetchingModels}
+            aria-label="Whisperモデル一覧を再取得"
           >
             {isFetchingModels ? "取得中..." : "再取得"}
           </button>
