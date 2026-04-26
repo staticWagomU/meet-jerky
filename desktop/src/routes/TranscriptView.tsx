@@ -29,6 +29,7 @@ const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:"
 const SYSTEM_AUDIO_ERROR_PREFIX = "システム音声操作に失敗しました:";
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
+const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 
 function formatOperationError(prefix: string, e: unknown): string {
   return `${prefix} ${toErrorMessage(e)}`;
@@ -655,6 +656,9 @@ export function TranscriptView() {
           disabled={
             isMeetingOperationPending || (!canStartMeeting && !isMeetingActive)
           }
+          aria-describedby={
+            meetingStartBlockedReason ? MEETING_START_BLOCKED_REASON_ID : undefined
+          }
         >
           <span
             className={`rec-indicator ${isMeetingActive ? "rec-indicator-active" : ""}`}
@@ -709,7 +713,11 @@ export function TranscriptView() {
           </p>
         )}
         {meetingStartBlockedReason && (
-          <p className="meeting-error" role="status">
+          <p
+            id={MEETING_START_BLOCKED_REASON_ID}
+            className="meeting-error"
+            role="status"
+          >
             {meetingStartBlockedReason}
           </p>
         )}

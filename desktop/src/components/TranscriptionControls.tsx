@@ -1,5 +1,8 @@
 import { ModelSelector } from "./ModelSelector";
 
+const TRANSCRIPTION_START_BLOCKED_REASON_ID =
+  "transcription-start-blocked-reason";
+
 interface TranscriptionControlsProps {
   isTranscribing: boolean;
   selectedModel: string;
@@ -44,6 +47,9 @@ export function TranscriptionControls({
             (!canStartTranscription && !isTranscribing)
           }
           className={`control-btn ${isTranscribing ? "control-btn-transcribing" : "control-btn-transcribe"}`}
+          aria-describedby={
+            startBlockedReason ? TRANSCRIPTION_START_BLOCKED_REASON_ID : undefined
+          }
         >
           {isTranscriptionOperationPending
             ? "処理中..."
@@ -71,6 +77,7 @@ export function TranscriptionControls({
       )}
       {startBlockedReason && (
         <div
+          id={TRANSCRIPTION_START_BLOCKED_REASON_ID}
           className="transcription-source-status transcription-source-status-warning"
           role="status"
         >
