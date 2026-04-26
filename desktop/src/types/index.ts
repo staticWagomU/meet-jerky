@@ -12,6 +12,7 @@ export interface TranscriptSegment {
   text: string;
   startMs: number;
   endMs: number;
+  source?: "microphone" | "system_audio";
   speaker?: string; // "自分" (mic) or "相手" (system audio)
   isError?: boolean;
 }

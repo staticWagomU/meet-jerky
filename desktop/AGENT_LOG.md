@@ -459,3 +459,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。
+
+### Worker task: add transcript source receiver for frontend
+
+- 開始日時: 2026-04-26 23:00 JST
+- 担当セッション: `mj-worker-transcript-source-ui-20260426-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/types/index.ts`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`（このタスクのログ追記のみ）
+- 指示内容: 将来 Rust 側の `TranscriptSegment` に `source` が追加されたとき、UI が `speaker` 表示文字列だけに依存しないようフロント側の受け皿を追加する。`source` は `"microphone" | "system_audio"`、self/other class 判定は `source` 優先で既存の `speaker === "自分"` fallback を維持し、コピー時の話者ラベルは `speaker` 優先で `speaker` がない場合のみ `source` 由来の「自分」「相手」を使う。バックエンド/Rust 変更、新規依存追加、コミットは禁止。
+- 結果: `TranscriptSegment` に optional な `source` を追加した。`TranscriptDisplay` に表示用 helper を追加し、セグメントと話者ラベルの self/other class は `source` を優先し、`source` がない既存 payload では `speaker === "自分"` を self、それ以外の speaker を other として扱うようにした。コピー用の話者ラベルは既存 `speaker` を優先し、未指定時のみ `source` から「自分」「相手」を補完する。
+- 変更ファイル: `src/types/index.ts`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/types/index.ts src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。main 側で同じ `git diff --check` と `npm run build` を再実行して成功した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: Rust 側の `TranscriptionSegment` / `StreamConfig` への `source` 伝播は別タスクで実施する。

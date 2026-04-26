@@ -9,6 +9,23 @@ function formatTimestamp(ms: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function getSpeakerKind(
+  segment: TranscriptSegment,
+): "self" | "other" | null {
+  if (segment.source === "microphone") return "self";
+  if (segment.source === "system_audio") return "other";
+  if (segment.speaker === "自分") return "self";
+  if (segment.speaker) return "other";
+  return null;
+}
+
+function getSpeakerLabel(segment: TranscriptSegment): string | null {
+  if (segment.speaker) return segment.speaker;
+  if (segment.source === "microphone") return "自分";
+  if (segment.source === "system_audio") return "相手";
+  return null;
+}
+
 interface TranscriptDisplayProps {
   segments: TranscriptSegment[];
   onNewSegment: (segment: TranscriptSegment) => void;
@@ -86,7 +103,8 @@ export function TranscriptDisplay({
       .filter((seg) => !seg.isError)
       .map((seg) => {
         const time = `[${formatTimestamp(seg.startMs)}]`;
-        const speaker = seg.speaker ? `${seg.speaker}: ` : "";
+        const speakerLabel = getSpeakerLabel(seg);
+        const speaker = speakerLabel ? `${speakerLabel}: ` : "";
         return `${time} ${speaker}${seg.text}`;
       })
       .join("\n");
@@ -127,11 +145,14 @@ export function TranscriptDisplay({
           </div>
         ) : (
           segments.map((seg, i) => {
-            const speakerClass = seg.speaker
-              ? seg.speaker === "自分"
+            const speakerKind = getSpeakerKind(seg);
+            const speakerLabel = getSpeakerLabel(seg);
+            const speakerClass =
+              speakerKind === "self"
                 ? " transcript-speaker-self"
-                : " transcript-speaker-other"
-              : "";
+                : speakerKind === "other"
+                  ? " transcript-speaker-other"
+                  : "";
             const errorClass = seg.isError
               ? " transcript-segment-error"
               : "";
@@ -145,15 +166,15 @@ export function TranscriptDisplay({
                     [{formatTimestamp(seg.startMs)}]
                   </span>
                 )}
-                {seg.speaker && (
+                {speakerLabel && (
                   <span
                     className={`transcript-speaker-label${
-                      seg.speaker === "自分"
+                      speakerKind === "self"
                         ? " speaker-label-self"
                         : " speaker-label-other"
                     }`}
                   >
-                    {seg.speaker}:
+                    {speakerLabel}:
                   </span>
                 )}
                 <span className="transcript-text">{seg.text}</span>
