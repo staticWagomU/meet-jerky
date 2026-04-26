@@ -711,3 +711,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
 - 次アクション: Teams/Zoom/Meet の追加安全ケースを純粋関数テストで継続的に増やし、実機取得境界は別タスクで mockable にする。
+
+### Main task: tighten Zoom URL classification
+
+- 開始日時: 2026-04-27 04:01 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Zoom URL 分類で `/j/` や `/wc/join/` の空 ID・非数値 ID・余分なパスまで会議として扱わないよう、会議 ID 形式を純粋関数で絞る。
+- 結果: Zoom は既存の host 判定に加えて、`/j/<numeric-id>` または `/wc/join/<numeric-id>` のみを分類するようにした。分類結果は従来どおり service と host のみで、URL 全文やパスは payload/log/UI に出していない。worker は直近の長い読解停止履歴があるため、この純粋関数とテストだけの最小変更はメイン直接実装とした。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。初回 `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は改行位置で失敗したため `rustfmt` を適用し、再実行して成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と macOS 権限経由の検知は未実機確認。
+- 次アクション: Teams の URL 分類も同じ方針で追加安全ケースを確認する。

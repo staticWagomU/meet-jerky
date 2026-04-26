@@ -258,7 +258,15 @@ fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
 }
 
 fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
-    is_zoom_host(host) && (path.starts_with("/j/") || path.starts_with("/wc/join/"))
+    is_zoom_host(host)
+        && (path.strip_prefix("/j/").is_some_and(is_zoom_meeting_id)
+            || path
+                .strip_prefix("/wc/join/")
+                .is_some_and(is_zoom_meeting_id))
+}
+
+fn is_zoom_meeting_id(value: &str) -> bool {
+    !value.is_empty() && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
 }
 
 fn is_teams_meeting_url(host: &str, path: &str) -> bool {
@@ -446,7 +454,12 @@ mod tests {
     #[test]
     fn classify_meeting_url_rejects_non_meeting_or_non_join_urls() {
         assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/j/"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/j/abc"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/j/123/extra"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/profile"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/wc/join/"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/wc/join/abc"), None);
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
         assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
         assert_eq!(classify_meeting_url("https://meet.google.com/"), None);
