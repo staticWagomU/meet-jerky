@@ -24,6 +24,7 @@ export function SettingsView() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
+  const isSavingSettingsRef = useRef(false);
   const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
     useState(false);
   const isSelectingOutputDirectoryRef = useRef(false);
@@ -80,6 +81,9 @@ export function SettingsView() {
     onError: (error) => {
       showToast(`保存に失敗しました: ${error}`);
     },
+    onSettled: () => {
+      isSavingSettingsRef.current = false;
+    },
   });
 
   useEffect(() => {
@@ -120,10 +124,11 @@ export function SettingsView() {
   }, []);
 
   const handleSave = useCallback(() => {
-    if (updateMutation.isPending) {
+    if (updateMutation.isPending || isSavingSettingsRef.current) {
       return;
     }
     if (localSettings) {
+      isSavingSettingsRef.current = true;
       updateMutation.mutate(localSettings);
     }
   }, [localSettings, updateMutation]);
