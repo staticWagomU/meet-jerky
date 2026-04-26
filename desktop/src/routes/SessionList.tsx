@@ -1,28 +1,33 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 
 /**
  * 保存済みセッションの一覧画面。
  * 各行から「ファイルを開く」「フォルダを開く」で OS のデフォルトアプリ / エクスプローラに
- * 解決させる。開けなかった場合は console.error に留める（UI 上のトーストは未実装）。
+ * 解決させる。
  */
 export function SessionList() {
   const { data, isLoading, error, refetch } = useSessionList();
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const handleOpenFile = useCallback(async (path: string) => {
     try {
       await openPath(path);
+      setActionError(null);
     } catch (e) {
       console.error("ファイルを開けませんでした:", e);
+      setActionError(`ファイルを開けませんでした: ${String(e)}`);
     }
   }, []);
 
   const handleRevealInFolder = useCallback(async (path: string) => {
     try {
       await revealItemInDir(path);
+      setActionError(null);
     } catch (e) {
       console.error("フォルダを開けませんでした:", e);
+      setActionError(`フォルダを開けませんでした: ${String(e)}`);
     }
   }, []);
 
@@ -61,6 +66,12 @@ export function SessionList() {
           再読み込み
         </button>
       </div>
+
+      {actionError && (
+        <p className="session-list-error" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {sessions.length === 0 ? (
         <p className="session-list-empty">履歴がまだありません</p>

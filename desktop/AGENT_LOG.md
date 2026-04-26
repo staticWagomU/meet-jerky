@@ -557,3 +557,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 調査担当が長いログ読解表示から進まず、実装判断に必要なローカル文脈はメイン側で確認できたため、メインが最小実装した。実機録音状態の確認は未実機確認。
 - 次アクション: 実機でマイクのみ、システム音声のみ、両方の録音状態表示を確認する。
+
+### Main task: show session file open errors
+
+- 開始日時: 2026-04-27 02:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴画面で、保存済みファイルやフォルダを開けなかった場合に console だけで黙らず、画面上に失敗理由を表示する。
+- 結果: `SessionList` に `actionError` state を追加し、「ファイルを開く」「フォルダを開く」の失敗時に既存の `session-list-error` 表示へ反映するようにした。成功時は古い操作エラーを消す。履歴取得エラー、再読み込み、保存形式、バックエンドは変更していない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機で OS の opener 失敗を発生させる確認は未実機確認。
+- 次アクション: 実機で存在しない保存パスや opener 失敗時の表示を確認する。
