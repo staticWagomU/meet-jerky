@@ -159,6 +159,7 @@ export function TranscriptView() {
   const {
     data: devices,
     error: devicesError,
+    isFetching: isFetchingDevices,
     refetch: refetchDevices,
   } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
@@ -583,6 +584,7 @@ export function TranscriptView() {
         selectedDeviceId={selectedDeviceId}
         audioDevices={devices}
         audioDevicesError={devicesError}
+        isReloadingAudioDevices={isFetchingDevices}
         onDeviceChange={setSelectedDeviceId}
         onRetryDevices={() => refetchDevices()}
         onToggleRecording={handleToggleMicRecording}

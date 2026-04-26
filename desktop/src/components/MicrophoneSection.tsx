@@ -7,6 +7,7 @@ interface MicrophoneSectionProps {
   selectedDeviceId: string;
   audioDevices: AudioDevice[] | undefined;
   audioDevicesError: unknown;
+  isReloadingAudioDevices: boolean;
   onDeviceChange: (deviceId: string) => void;
   onRetryDevices: () => void;
   onToggleRecording: () => void;
@@ -18,6 +19,7 @@ export function MicrophoneSection({
   selectedDeviceId,
   audioDevices,
   audioDevicesError,
+  isReloadingAudioDevices,
   onDeviceChange,
   onRetryDevices,
   onToggleRecording,
@@ -63,8 +65,9 @@ export function MicrophoneSection({
             type="button"
             className="control-btn control-btn-clear"
             onClick={onRetryDevices}
+            disabled={isReloadingAudioDevices}
           >
-            再取得
+            {isReloadingAudioDevices ? "取得中..." : "再取得"}
           </button>
         </div>
       )}

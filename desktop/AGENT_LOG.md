@@ -1061,3 +1061,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 macOS デバイス取得/出力先取得失敗時の再取得 UI は未実機確認。
 - 次アクション: 録音画面のマイク一覧再取得中表示も同じ基準で確認する。
+
+### Main task: show transcript microphone refetch progress
+
+- 開始日時: 2026-04-27 07:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 録音画面のマイク一覧再取得中にボタンを連打できず、取得中であることが分かるようにする。
+- 結果: Transcript 画面の audioDevices query の `isFetching` を `MicrophoneSection` に渡し、マイク一覧取得失敗時の再取得ボタンを fetching 中は disabled にして文言を「取得中...」へ切り替えるようにした。録音操作、デバイス選択値、エラー文言は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/MicrophoneSection.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/MicrophoneSection.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 macOS デバイス取得失敗時の再取得 UI は未実機確認。
+- 次アクション: 録音画面の実機表示を確認する。
