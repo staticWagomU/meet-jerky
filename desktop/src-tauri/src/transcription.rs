@@ -804,6 +804,7 @@ pub fn start_transcription(
         if let Some(consumer) = consumer {
             workers.push(TranscriptionLoopConfig {
                 consumer,
+                source: pending.source,
                 stream: pending.stream,
                 running: Arc::clone(&running),
                 app: app.clone(),
@@ -948,6 +949,7 @@ struct PendingTranscriptionStream {
 
 struct TranscriptionLoopConfig {
     consumer: ringbuf::HeapCons<f32>,
+    source: TranscriptionSource,
     stream: Box<dyn TranscriptionStream>,
     running: Arc<AtomicBool>,
     app: tauri::AppHandle,
@@ -955,13 +957,25 @@ struct TranscriptionLoopConfig {
     stream_started_at_secs: u64,
 }
 
-fn build_worker_panic_error_payload() -> serde_json::Value {
-    serde_json::json!({ "error": "文字起こしワーカーが異常終了しました" })
+fn build_transcription_error_payload(
+    error: String,
+    source: Option<TranscriptionSource>,
+) -> serde_json::Value {
+    let mut payload = serde_json::json!({ "error": error });
+    if let Some(source) = source {
+        payload["source"] = serde_json::json!(source);
+    }
+    payload
+}
+
+fn build_worker_panic_error_payload(source: Option<TranscriptionSource>) -> serde_json::Value {
+    build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
 }
 
 fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
     let running = Arc::clone(&worker.running);
     let app = worker.app.clone();
+    let source = worker.source;
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         run_transcription_loop(worker);
@@ -970,13 +984,17 @@ fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
     if result.is_err() {
         running.store(false, Ordering::SeqCst);
         eprintln!("[transcription] worker panic");
-        let _ = app.emit("transcription-error", build_worker_panic_error_payload());
+        let _ = app.emit(
+            "transcription-error",
+            build_worker_panic_error_payload(Some(source)),
+        );
     }
 }
 
 fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
     let TranscriptionLoopConfig {
         mut consumer,
+        source,
         mut stream,
         running,
         app,
@@ -1005,7 +1023,10 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
 
         if let Err(e) = stream.feed(samples) {
             eprintln!("文字起こしエラー: {e}");
-            let _ = app.emit("transcription-error", serde_json::json!({ "error": e }));
+            let _ = app.emit(
+                "transcription-error",
+                build_transcription_error_payload(e, Some(source)),
+            );
         }
 
         emit_segments(
@@ -1025,7 +1046,10 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
         }
         Err(e) => {
             eprintln!("文字起こしの finalize に失敗しました: {e}");
-            let _ = app.emit("transcription-error", serde_json::json!({ "error": e }));
+            let _ = app.emit(
+                "transcription-error",
+                build_transcription_error_payload(e, Some(source)),
+            );
         }
     }
 }
@@ -1128,10 +1152,14 @@ mod tests {
 
     #[test]
     fn test_worker_panic_payload_does_not_expose_panic_details() {
-        let payload = build_worker_panic_error_payload();
+        let payload = build_worker_panic_error_payload(Some(TranscriptionSource::Microphone));
         assert_eq!(
             payload.get("error").and_then(|value| value.as_str()),
             Some("文字起こしワーカーが異常終了しました")
+        );
+        assert_eq!(
+            payload.get("source").and_then(|value| value.as_str()),
+            Some("microphone")
         );
         let serialized = payload.to_string();
         assert!(!serialized.contains("panic"));

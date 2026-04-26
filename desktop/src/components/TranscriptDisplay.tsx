@@ -63,6 +63,7 @@ export function TranscriptDisplay({
           text: `エラー: ${event.payload.error}`,
           startMs: 0,
           endMs: 0,
+          source: event.payload.source,
           isError: true,
         };
         onNewSegment(errorSegment);

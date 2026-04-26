@@ -19,6 +19,7 @@ export interface TranscriptSegment {
 
 export interface TranscriptionErrorPayload {
   error: string;
+  source?: "microphone" | "system_audio";
 }
 
 export interface ModelInfo {

@@ -487,3 +487,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 調査担当 `mj-research-source-propagation-20260426-1` と作業担当 `mj-worker-transcript-source-rust-20260426-1` は長い読解表示で実装に入らず、自律運用を止めないため docs/autonomous-main-prompt.md の例外条件に沿ってメイン側で最小実装した。Rust の `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。
 - 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と、追加した `TranscriptionSource` 伝播テストを含む Rust テストを再実行する。
+
+### Main task: include source in transcription error events
+
+- 開始日時: 2026-04-26 23:25 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/transcription.rs`, `src/types/index.ts`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしの `feed` / `finalize` / worker panic エラーイベントにも音声 `source` を付与し、UI のエラーセグメントが通常セグメントと同じ self/other 表示判定を使えるようにする。
+- 結果: `TranscriptionLoopConfig` に `source` を保持させ、`transcription-error` payload を作る helper で `source` を optional に含めるようにした。フロントの `TranscriptionErrorPayload` に optional `source` を追加し、`TranscriptDisplay` のエラーセグメントへ引き継ぐようにした。panic payload のテストは panic 詳細を露出しないことに加えて `source: "microphone"` を含むことを確認するよう更新した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `src/types/index.ts`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/transcription.rs` は成功。`git diff --check -- src-tauri/src/transcription.rs src/types/index.ts src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を起動できず失敗。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs src/types/index.ts src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の `cargo check` は環境に `cmake` がなく、`whisper-rs-sys` のビルド前段で停止したため完走できなかった。
+- 次アクション: `cmake` が利用できる環境で `cargo check --manifest-path src-tauri/Cargo.toml` と panic payload / error payload 周辺の Rust テストを再実行する。
