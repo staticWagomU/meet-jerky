@@ -98,7 +98,11 @@ export function SessionList() {
           className="control-btn control-btn-clear"
           onClick={() => refetch()}
           disabled={isFetching}
-          aria-label="セッション履歴一覧を再読み込み"
+          aria-label={
+            isFetching
+              ? "セッション履歴一覧を読み込み中"
+              : "セッション履歴一覧を再読み込み"
+          }
         >
           {isFetching ? "読み込み中..." : "再読み込み"}
         </button>
@@ -117,7 +121,11 @@ export function SessionList() {
           className="control-btn control-btn-clear"
           onClick={() => refetch()}
           disabled={isFetching}
-          aria-label="セッション履歴一覧を再読み込み"
+          aria-label={
+            isFetching
+              ? "セッション履歴一覧を読み込み中"
+              : "セッション履歴一覧を再読み込み"
+          }
         >
           {isFetching ? "読み込み中..." : "再読み込み"}
         </button>
