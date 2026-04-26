@@ -1636,6 +1636,20 @@
 - 失敗理由: なし。長いエラー/保存先パスの実表示は未実機確認。
 - 次アクション: 長いエラー/保存先パスの実表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
 
+### Main task: show permission track labels in settings
+
+- 開始日時: 2026-04-27 06:32 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 設定画面の権限ステータスでも、マイクが自分トラック、画面収録が相手側トラックに対応することを短く分かるようにする。
+- 結果: 権限ラベルに「自分」「相手側」の小さな track badge を追加し、既存の権限状態 badge と再チェック処理は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。設定画面の実 UI 表示は未実機確認。
+- 次アクション: 設定画面の実 UI 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST
