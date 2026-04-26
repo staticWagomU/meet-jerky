@@ -312,6 +312,7 @@ export function SettingsView() {
               className="control-btn control-btn-clear"
               onClick={() => refetchDevices()}
               disabled={isFetchingDevices}
+              aria-label="マイクデバイス一覧を再取得"
             >
               {isFetchingDevices ? "取得中..." : "再取得"}
             </button>
