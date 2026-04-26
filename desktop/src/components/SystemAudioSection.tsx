@@ -44,6 +44,7 @@ export function SystemAudioSection({
         >
           <span
             className={`rec-indicator ${isSystemAudioRecording ? "rec-indicator-active" : ""}`}
+            aria-hidden="true"
           />
           {isOperationPending
             ? "処理中..."

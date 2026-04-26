@@ -74,6 +74,7 @@ export function MicrophoneSection({
         >
           <span
             className={`rec-indicator ${isMicRecording ? "rec-indicator-active" : ""}`}
+            aria-hidden="true"
           />
           {isOperationPending
             ? "処理中..."

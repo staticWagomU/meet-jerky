@@ -658,6 +658,7 @@ export function TranscriptView() {
         >
           <span
             className={`rec-indicator ${isMeetingActive ? "rec-indicator-active" : ""}`}
+            aria-hidden="true"
           />
           {isMeetingOperationPending
             ? "処理中..."
