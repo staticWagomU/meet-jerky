@@ -38,7 +38,7 @@ export function SessionList() {
   if (error) {
     return (
       <div className="session-list">
-        <p className="session-list-error">
+        <p className="session-list-error" role="alert">
           セッション一覧の取得に失敗しました: {String(error)}
         </p>
         <button

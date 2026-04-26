@@ -921,3 +921,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実モデルダウンロード開始直後の progress event 競合は未実機確認。
 - 次アクション: モデルダウンロード event の順序差をモックで検証できる形を検討する。
+
+### Main task: mark session list load errors as alerts
+
+- 開始日時: 2026-04-27 06:10 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴一覧の取得失敗表示を支援技術へもエラーとして伝わるようにする。
+- 結果: `SessionList` の一覧取得失敗メッセージに `role="alert"` を追加した。ファイル/フォルダ操作失敗の alert、再読み込み導線、一覧表示ロジックは変更していない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。支援技術での読み上げ確認は未実機確認。
+- 次アクション: 他のエラー表示にも alert の抜けがないか確認する。
