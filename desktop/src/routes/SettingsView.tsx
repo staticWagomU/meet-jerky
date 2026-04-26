@@ -648,7 +648,9 @@ function OpenAIApiKeySection({
             aria-label={
               setMutation.isPending
                 ? "OpenAI API キーを保存中"
-                : "OpenAI API キーを保存"
+                : keyInput.trim()
+                  ? "OpenAI API キーを保存"
+                  : "OpenAI API キーを入力すると保存できます"
             }
           >
             {setMutation.isPending ? "保存中..." : "保存"}
