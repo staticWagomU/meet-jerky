@@ -641,3 +641,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機でデバイス一覧取得失敗を再現する確認は未実機確認。
 - 次アクション: 実機またはモックでマイクデバイス一覧取得失敗時の再取得導線を確認する。
+
+### Main task: show default output directory errors
+
+- 開始日時: 2026-04-27 03:16 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面でデフォルト出力先ディレクトリの取得に失敗した場合に、単に「未設定」と見せず、失敗理由と再取得導線を表示する。
+- 結果: default output directory query の `error` と `refetch` を受け取り、ユーザー指定の出力先がない場合にインラインエラーと再取得ボタンを表示するようにした。ユーザー指定の出力先がある場合は既存どおりその値を優先する。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でデフォルト出力先取得失敗を再現する確認は未実機確認。
+- 次アクション: 実機またはモックでデフォルト出力先取得失敗時の再取得導線を確認する。

@@ -42,7 +42,11 @@ export function SettingsView() {
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
   });
 
-  const { data: defaultOutputDir } = useQuery<string>({
+  const {
+    data: defaultOutputDir,
+    error: defaultOutputDirError,
+    refetch: refetchDefaultOutputDir,
+  } = useQuery<string>({
     queryKey: ["defaultOutputDirectory"],
     queryFn: () => invoke<string>("get_default_output_directory"),
   });
@@ -263,6 +267,20 @@ export function SettingsView() {
           <span className="settings-output-path">
             {localSettings.outputDirectory ?? defaultOutputDir ?? "未設定"}
           </span>
+          {defaultOutputDirError && !localSettings.outputDirectory && (
+            <div className="settings-inline-error" role="alert">
+              <span>
+                デフォルト出力先の取得に失敗しました: {String(defaultOutputDirError)}
+              </span>
+              <button
+                type="button"
+                className="control-btn control-btn-clear"
+                onClick={() => refetchDefaultOutputDir()}
+              >
+                再取得
+              </button>
+            </div>
+          )}
           <div className="settings-output-actions">
             <button
               type="button"
