@@ -767,3 +767,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Tauri event 購読失敗の実機再現は未実機確認。
 - 次アクション: 録音/文字起こし操作の部分失敗時に stale state が残らないか引き続き確認する。
+
+### Main task: show transcript event listener errors
+
+- 開始日時: 2026-04-27 04:32 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: Transcript 表示で `transcription-result` / `transcription-error` event の購読開始に失敗した場合、結果やバックエンドエラーが届かない状態をユーザーに表示する。
+- 結果: 2つの event listener の Promise を成功/失敗で明示処理し、購読開始失敗時は transcript 内の alert に表示するようにした。片方の成功で他方の失敗表示を消さないよう、結果 listener とエラー listener の失敗状態は別々に保持する。解除失敗は console に記録する。segment 表示、コピー処理、transcription-error payload の source 伝播は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Tauri event 購読失敗の実機再現は未実機確認。
+- 次アクション: event listener 失敗時の UI 文言を実機またはモックで確認する。

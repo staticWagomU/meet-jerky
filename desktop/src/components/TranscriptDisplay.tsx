@@ -26,6 +26,12 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   return null;
 }
 
+function toErrorMessage(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
 interface TranscriptDisplayProps {
   segments: TranscriptSegment[];
   onNewSegment: (segment: TranscriptSegment) => void;
@@ -40,24 +46,53 @@ export function TranscriptDisplay({
   const userScrolledRef = useRef(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [resultListenerError, setResultListenerError] = useState<string | null>(
+    null,
+  );
+  const [errorListenerError, setErrorListenerError] = useState<string | null>(
+    null,
+  );
   const copyableSegmentsCount = segments.filter((seg) => !seg.isError).length;
 
   // Listen to transcription-result events
   useEffect(() => {
+    let disposed = false;
     const unlistenPromise = listen<TranscriptSegment>(
       "transcription-result",
       (event) => {
         onNewSegment(event.payload);
       },
-    );
+    )
+      .then((unlisten) => {
+        if (!disposed) {
+          setResultListenerError(null);
+        }
+        return unlisten;
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("文字起こし結果の受信開始に失敗しました:", msg);
+          setResultListenerError(
+            `文字起こし結果の受信開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error("文字起こし結果の受信解除に失敗しました:", toErrorMessage(e));
+        });
     };
   }, [onNewSegment]);
 
   // Listen to transcription-error events
   useEffect(() => {
+    let disposed = false;
     const unlistenPromise = listen<TranscriptionErrorPayload>(
       "transcription-error",
       (event) => {
@@ -70,10 +105,34 @@ export function TranscriptDisplay({
         };
         onNewSegment(errorSegment);
       },
-    );
+    )
+      .then((unlisten) => {
+        if (!disposed) {
+          setErrorListenerError(null);
+        }
+        return unlisten;
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("文字起こしエラー通知の受信開始に失敗しました:", msg);
+          setErrorListenerError(
+            `文字起こしエラー通知の受信開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
 
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error(
+            "文字起こしエラー通知の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
+        });
     };
   }, [onNewSegment]);
 
@@ -144,6 +203,16 @@ export function TranscriptDisplay({
       {copyError && (
         <div className="transcript-copy-error" role="alert">
           {copyError}
+        </div>
+      )}
+      {resultListenerError && (
+        <div className="transcript-copy-error" role="alert">
+          {resultListenerError}
+        </div>
+      )}
+      {errorListenerError && (
+        <div className="transcript-copy-error" role="alert">
+          {errorListenerError}
         </div>
       )}
       <div
