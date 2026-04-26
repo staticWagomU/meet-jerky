@@ -69,7 +69,10 @@ export function TranscriptionControls({
         </div>
       )}
       {startBlockedReason && (
-        <div className="transcription-source-status" role="status">
+        <div
+          className="transcription-source-status transcription-source-status-warning"
+          role="status"
+        >
           {startBlockedReason}
         </div>
       )}

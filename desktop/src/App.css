@@ -393,6 +393,12 @@
   padding: 0.25em 0.5em;
 }
 
+.transcription-source-status-warning {
+  color: var(--system-audio-note-color);
+  background-color: var(--system-audio-note-bg);
+  border-color: var(--permission-banner-border);
+}
+
 .rec-indicator {
   display: inline-block;
   width: 8px;
