@@ -281,7 +281,7 @@ fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
 }
 
 fn is_zoom_meeting_id(value: &str) -> bool {
-    !value.is_empty() && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
+    (9..=11).contains(&value.len()) && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
 }
 
 fn is_teams_meeting_url(host: &str, path: &str) -> bool {
@@ -468,6 +468,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://us02web.zoom.us/j/12345678901#success"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "us02web.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/secret"),
             Some(MeetingUrlClassification {
                 service: "Microsoft Teams".to_string(),
@@ -494,8 +501,10 @@ mod tests {
     fn classify_meeting_url_rejects_non_meeting_or_non_join_urls() {
         assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/j/12345678"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/abc"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/123/extra"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/j/123456789012"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/profile"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/abc"), None);

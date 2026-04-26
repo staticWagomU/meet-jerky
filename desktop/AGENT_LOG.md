@@ -1131,3 +1131,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実ブラウザ URL 取得は未実装/未実機確認。
 - 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。
+
+### Main task: bound Zoom URL meeting id length
+
+- 開始日時: 2026-04-27 04:31 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Zoom URL 分類の誤検知を減らすため、純粋関数テストで安全な境界ケースを追加する。
+- 結果: Zoom 会議 ID 判定を数字のみから 9〜11 桁の数字へ絞った。11 桁の Zoom サブドメイン URLを分類できること、8 桁/12 桁の短すぎる/長すぎる ID を拒否することをテストに追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: 初回 `rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` はテスト断言 1 箇所の折り返し差分で失敗したため整形指摘を反映。再実行した `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。再実行した `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実ブラウザ URL 取得と Zoom 実 URL での実機確認は未実施。
+- 次アクション: `cmake` あり環境で app_detection の Rust テストを再実行する。
