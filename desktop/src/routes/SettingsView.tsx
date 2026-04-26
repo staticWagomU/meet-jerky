@@ -83,8 +83,9 @@ export function SettingsView() {
       }
     } catch (e) {
       console.error("フォルダ選択に失敗しました:", e);
+      showToast(`フォルダ選択に失敗しました: ${String(e)}`);
     }
-  }, [localSettings]);
+  }, [localSettings, showToast]);
 
   const handleResetOutputDirectory = useCallback(() => {
     if (localSettings) {

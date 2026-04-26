@@ -571,3 +571,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機で OS の opener 失敗を発生させる確認は未実機確認。
 - 次アクション: 実機で存在しない保存パスや opener 失敗時の表示を確認する。
+
+### Main task: show output directory selection errors
+
+- 開始日時: 2026-04-27 02:57 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面で出力先フォルダ選択 invoke が失敗した場合に、console だけでなく既存 toast へ表示する。
+- 結果: `handleSelectOutputDirectory` の catch で既存 `showToast` を呼び、失敗理由を画面に出すようにした。フォルダ選択成功時の挙動、保存処理、設定型、バックエンドは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS のフォルダ選択ダイアログ失敗は未実機確認。
+- 次アクション: 実機でフォルダ選択 invoke 失敗時の toast 表示を確認する。
