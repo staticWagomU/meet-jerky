@@ -647,6 +647,17 @@ function OpenAIApiKeySection({
           className="settings-api-key-status"
           role="status"
           aria-live="polite"
+          aria-label={`OpenAI API キー状態: ${
+            isFetchingHasKey
+              ? "確認中"
+              : hasKeyError
+                ? "確認失敗"
+                : hasKey === undefined
+                  ? "確認中"
+                  : hasKey
+                    ? "登録済み"
+                    : "未登録"
+          }`}
         >
           状態:{" "}
           {isFetchingHasKey
