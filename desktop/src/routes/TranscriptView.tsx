@@ -229,6 +229,16 @@ function getEngineStatusLabel(
   return "Whisper";
 }
 
+function getEngineStatusPillClass(statusLabel: string): string {
+  if (statusLabel === "OpenAI") {
+    return "meeting-status-pill-active";
+  }
+  if (statusLabel === "確認中") {
+    return "meeting-status-pill-neutral";
+  }
+  return "meeting-status-pill-idle";
+}
+
 function getOpenAIApiKeyStatusLabel(
   requiresOpenAIApiKey: boolean,
   hasOpenAIApiKey: boolean | undefined,
@@ -887,7 +897,9 @@ export function TranscriptView() {
           >
             音声 {audioSourceStatusLabel}
           </span>
-          <span className="meeting-status-pill meeting-status-pill-neutral">
+          <span
+            className={`meeting-status-pill ${getEngineStatusPillClass(engineStatusLabel)}`}
+          >
             エンジン {engineStatusLabel}
           </span>
           <span
