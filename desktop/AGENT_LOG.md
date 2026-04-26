@@ -1664,6 +1664,20 @@
 - 失敗理由: なし。会議検知バナーの実 UI 表示は未実機確認。
 - 次アクション: 会議検知バナーの実 UI 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
 
+### Main task: improve output path readability
+
+- 開始日時: 2026-04-27 06:42 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 設定画面の出力先パス表示を、長いパスでも読みやすく折り返すようにする。
+- 結果: `.settings-output-path` を等幅フォントにし、`word-break: break-all` を `overflow-wrap: anywhere` に変更した。設定値やフォルダ選択処理は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。長い出力先パスの実表示は未実機確認。
+- 次アクション: 長い出力先パスの実表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST
