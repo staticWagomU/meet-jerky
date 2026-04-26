@@ -51,6 +51,13 @@ export function TranscriptionControls({
             (!canStartTranscription && !isTranscribing)
           }
           className={`control-btn ${isTranscribing ? "control-btn-transcribing" : "control-btn-transcribe"}`}
+          aria-label={
+            isTranscriptionOperationPending
+              ? "文字起こしを処理中"
+              : isTranscribing
+                ? "文字起こしを停止"
+                : "文字起こしを開始"
+          }
           aria-describedby={
             startBlockedReason ? TRANSCRIPTION_START_BLOCKED_REASON_ID : undefined
           }
