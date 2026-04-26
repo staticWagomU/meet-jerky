@@ -1383,3 +1383,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実設定保存は未実機確認。
 - 次アクション: 設定保存中の二重クリック挙動を実機で確認する。
+
+### Main task: guard OpenAI API key mutation handlers while pending
+
+- 開始日時: 2026-04-27 04:56 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: API キー保存/削除ボタンの state 更新前連打でも mutation を二重起動しないようにする。認証情報自体は変更しない。
+- 結果: API キー保存/削除に専用 handler を追加し、保存中/削除中/状態確認中/キー未登録/状態確認失敗時は handler 側でも即 return するようにした。既存の disabled 表示と保存/削除 mutation の内容は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。認証情報変更・Keychain 操作は実施していない。
+- 次アクション: API キー保存/削除中の二重クリック挙動を実機で確認する。認証情報変更は必要時のみ行う。

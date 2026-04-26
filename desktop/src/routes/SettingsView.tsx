@@ -477,6 +477,29 @@ function OpenAIApiKeySection({
     onError: (e) => showToast(`API キーの削除に失敗しました: ${e}`),
   });
 
+  const handleSetApiKey = useCallback(() => {
+    if (setMutation.isPending) {
+      return;
+    }
+    const apiKey = keyInput.trim();
+    if (!apiKey) {
+      return;
+    }
+    setMutation.mutate(apiKey);
+  }, [keyInput, setMutation]);
+
+  const handleClearApiKey = useCallback(() => {
+    if (
+      clearMutation.isPending ||
+      isFetchingHasKey ||
+      !hasKey ||
+      Boolean(hasKeyError)
+    ) {
+      return;
+    }
+    clearMutation.mutate();
+  }, [clearMutation, hasKey, hasKeyError, isFetchingHasKey]);
+
   return (
     <div className="settings-section">
       <h3 className="settings-section-title">OpenAI API キー</h3>
@@ -513,7 +536,7 @@ function OpenAIApiKeySection({
             type="button"
             className="control-btn control-btn-transcribe"
             disabled={!keyInput.trim() || setMutation.isPending}
-            onClick={() => setMutation.mutate(keyInput.trim())}
+            onClick={handleSetApiKey}
           >
             {setMutation.isPending ? "保存中..." : "保存"}
           </button>
@@ -526,7 +549,7 @@ function OpenAIApiKeySection({
               isFetchingHasKey ||
               clearMutation.isPending
             }
-            onClick={() => clearMutation.mutate()}
+            onClick={handleClearApiKey}
           >
             {clearMutation.isPending ? "削除中..." : "削除"}
           </button>
