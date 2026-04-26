@@ -79,6 +79,7 @@
   --permission-banner-bg: rgba(234, 179, 8, 0.1);
   --permission-banner-border: #eab308;
   --permission-banner-color: #92400e;
+  --permission-summary-bg: rgba(255, 255, 255, 0.5);
 
   /* Toast */
   --toast-bg: #1f2937;
@@ -158,6 +159,7 @@
     --permission-banner-bg: rgba(234, 179, 8, 0.12);
     --permission-banner-border: #ca8a04;
     --permission-banner-color: #fbbf24;
+    --permission-summary-bg: rgba(31, 41, 55, 0.45);
 
     --toast-bg: #374151;
     --toast-color: #f9fafb;
@@ -785,6 +787,22 @@
 .permission-banner-body {
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+.permission-banner-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.permission-summary-pill {
+  border-radius: 4px;
+  padding: 0.14rem 0.4rem;
+  background-color: var(--permission-summary-bg);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  font-weight: 600;
 }
 
 .permission-banner-body p {

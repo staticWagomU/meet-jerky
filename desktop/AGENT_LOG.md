@@ -1580,6 +1580,20 @@
 - 失敗理由: なし。実 UI 表示は未実機確認。
 - 次アクション: 実 UI 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
 
+### Main task: clarify permission to audio track mapping
+
+- 開始日時: 2026-04-27 06:12 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 権限バナーで、マイク権限が自分トラック、画面収録権限が相手側トラックに対応することを短く分かるようにする。
+- 結果: 権限バナーに「マイク / 自分」「画面収録 / 相手側」の summary pill を追加し、確認中/確認失敗/未許可/未確認を表示するようにした。権限チェック invoke や再チェック処理は変更していない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 権限状態の実機確認は未実施。
+- 次アクション: 権限バナーの実 UI 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。
+
 ### Main task: add compact meeting status strip
 
 - 開始日時: 2026-04-27 06:08 JST

@@ -25,6 +25,20 @@ export function PermissionBanner() {
 
   const hasCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
+  const micStatusLabel = isCheckingPermissions
+    ? "確認中"
+    : micPermissionError
+      ? "確認失敗"
+      : micPermission === "denied"
+        ? "未許可"
+        : "未確認";
+  const screenStatusLabel = isCheckingPermissions
+    ? "確認中"
+    : screenPermissionError
+      ? "確認失敗"
+      : screenPermission === "denied"
+        ? "未許可"
+        : "未確認";
 
   return (
     <div className="permission-banner permission-banner-warning" role="alert">
@@ -34,6 +48,18 @@ export function PermissionBanner() {
           : hasCheckError
             ? "権限状態を確認できません"
             : "権限の確認が必要です"}
+      </div>
+      <div className="permission-banner-summary">
+        {micNeedsAttention && (
+          <span className="permission-summary-pill">
+            マイク / 自分: {micStatusLabel}
+          </span>
+        )}
+        {screenNeedsAttention && (
+          <span className="permission-summary-pill">
+            画面収録 / 相手側: {screenStatusLabel}
+          </span>
+        )}
       </div>
       <div className="permission-banner-body">
         {micNeedsAttention && (
