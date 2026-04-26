@@ -162,7 +162,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 
     let service = if host == "meet.google.com" {
         "Google Meet"
-    } else if is_zoom_host(&host) && parsed.path.starts_with("/j/") {
+    } else if is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
     } else if is_teams_meeting_url(&host, &parsed.path) {
         "Microsoft Teams"
@@ -230,6 +230,10 @@ fn strip_port(host_port: &str) -> Option<&str> {
 
 fn is_zoom_host(host: &str) -> bool {
     host == "zoom.us" || host.ends_with(".zoom.us")
+}
+
+fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
+    is_zoom_host(host) && (path.starts_with("/j/") || path.starts_with("/wc/join/"))
 }
 
 fn is_teams_meeting_url(host: &str, path: &str) -> bool {
@@ -385,6 +389,20 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/join/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://company.zoom.us/wc/join/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/secret"),
             Some(MeetingUrlClassification {
                 service: "Microsoft Teams".to_string(),
@@ -403,6 +421,7 @@ mod tests {
     #[test]
     fn classify_meeting_url_rejects_non_meeting_or_non_join_urls() {
         assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/wc/profile"), None);
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
         assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);

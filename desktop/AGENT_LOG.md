@@ -515,3 +515,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 作業担当が長いログ読解表示から進まず編集に入らなかったため、メインが最小実装した。実機ブラウザURL取得は未実機確認で、今回も純粋関数境界のみを更新した。
 - 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。
+
+### Main task: add Zoom web client join URL classification
+
+- 開始日時: 2026-04-26 23:34 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議検知の網羅性を上げるため、Zoom のブラウザ参加 URL で誤検知リスクが低い `/wc/join/` を分類対象に追加する。URL 全文や path を payload/log/UI に出さない方針は維持する。
+- 結果: 直前の調査担当 `mj-research-app-detection-20260426-1` の報告を踏まえ、`is_zoom_meeting_url` helper を追加した。Zoom は既存どおり `zoom.us` または `*.zoom.us` の host に限定し、path が `/j/` または `/wc/join/` で始まる場合のみ分類する。`/wc/profile` は分類しないテストを追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs` は成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機ブラウザURL取得は未実機確認で、今回も純粋関数境界のみを更新した。
+- 次アクション: `cmake` が利用できる環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。
