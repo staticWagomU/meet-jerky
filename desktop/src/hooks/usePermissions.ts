@@ -5,6 +5,7 @@ export function usePermissions() {
   const {
     data: micPermission,
     error: micPermissionError,
+    isFetching: isFetchingMicPermission,
     refetch: refetchMic,
   } = useQuery<string, unknown>({
     queryKey: ["microphonePermission"],
@@ -14,6 +15,7 @@ export function usePermissions() {
   const {
     data: screenPermission,
     error: screenPermissionError,
+    isFetching: isFetchingScreenPermission,
     refetch: refetchScreen,
   } = useQuery<string, unknown>({
     queryKey: ["screenRecordingPermission"],
@@ -24,12 +26,15 @@ export function usePermissions() {
     refetchMic();
     refetchScreen();
   };
+  const isCheckingPermissions =
+    isFetchingMicPermission || isFetchingScreenPermission;
 
   return {
     micPermission,
     micPermissionError,
     screenPermission,
     screenPermissionError,
+    isCheckingPermissions,
     refetchAll,
   };
 }

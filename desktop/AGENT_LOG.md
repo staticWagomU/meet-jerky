@@ -1019,3 +1019,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での表示確認は未実機確認。
 - 次アクション: モデル未DL時の会議開始/文字起こし開始ガイダンスが過剰でないか実画面で確認する。
+
+### Main task: show permission recheck progress
+
+- 開始日時: 2026-04-27 07:00 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/hooks/usePermissions.ts`, `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: macOS 権限の再チェック中にボタンを連打できず、確認中であることが分かるようにする。
+- 結果: `usePermissions` が mic/screen permission query の fetching 状態を集約して `isCheckingPermissions` を返すようにした。`PermissionBanner` と Settings の再チェックボタンは確認中に disabled になり、文言を「確認中...」へ切り替える。権限判定、エラー表示、再チェック対象コマンドは変更していない。
+- 変更ファイル: `src/hooks/usePermissions.ts`, `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/hooks/usePermissions.ts src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/hooks/usePermissions.ts src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 権限ダイアログや実機権限状態での確認は未実機確認。
+- 次アクション: 権限確認中 UI を実機またはモックで確認する。

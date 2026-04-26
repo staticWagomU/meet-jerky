@@ -6,6 +6,7 @@ export function PermissionBanner() {
     micPermissionError,
     screenPermission,
     screenPermissionError,
+    isCheckingPermissions,
     refetchAll,
   } = usePermissions();
 
@@ -58,8 +59,9 @@ export function PermissionBanner() {
         type="button"
         className="control-btn control-btn-clear"
         onClick={refetchAll}
+        disabled={isCheckingPermissions}
       >
-        再チェック
+        {isCheckingPermissions ? "確認中..." : "再チェック"}
       </button>
     </div>
   );

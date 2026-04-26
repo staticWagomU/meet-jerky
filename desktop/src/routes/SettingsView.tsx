@@ -56,6 +56,7 @@ export function SettingsView() {
     micPermissionError,
     screenPermission,
     screenPermissionError,
+    isCheckingPermissions,
     refetchAll: refetchPermissions,
   } = usePermissions();
 
@@ -322,8 +323,9 @@ export function SettingsView() {
             type="button"
             className="control-btn control-btn-clear"
             onClick={refetchPermissions}
+            disabled={isCheckingPermissions}
           >
-            再チェック
+            {isCheckingPermissions ? "確認中..." : "再チェック"}
           </button>
           {(Boolean(micPermissionError) || Boolean(screenPermissionError)) && (
             <p className="settings-note">
