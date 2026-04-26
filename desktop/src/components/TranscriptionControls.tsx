@@ -57,6 +57,7 @@ export function TranscriptionControls({
             type="button"
             onClick={onClearTranscript}
             className="control-btn control-btn-clear"
+            aria-label={`文字起こし ${segmentsCount} 件をクリア`}
           >
             クリア
           </button>
