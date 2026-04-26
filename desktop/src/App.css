@@ -43,6 +43,14 @@
   /* Meter */
   --meter-bg: #e0e0e0;
 
+  /* Audio source badges */
+  --audio-source-track-bg: rgba(57, 108, 216, 0.08);
+  --audio-source-track-color: #315fbf;
+  --audio-source-active-bg: rgba(34, 197, 94, 0.12);
+  --audio-source-active-color: #15803d;
+  --audio-source-idle-bg: rgba(107, 114, 128, 0.1);
+  --audio-source-idle-color: #6b7280;
+
   /* System audio note */
   --system-audio-note-color: #b08000;
   --system-audio-note-bg: rgba(234, 179, 8, 0.1);
@@ -115,6 +123,13 @@
     --download-progress-bar-bg: #444;
 
     --meter-bg: #3a3a3a;
+
+    --audio-source-track-bg: rgba(96, 165, 250, 0.14);
+    --audio-source-track-color: #93c5fd;
+    --audio-source-active-bg: rgba(34, 197, 94, 0.16);
+    --audio-source-active-color: #86efac;
+    --audio-source-idle-bg: rgba(156, 163, 175, 0.12);
+    --audio-source-idle-color: #9ca3af;
 
     --system-audio-note-color: #eab308;
     --system-audio-note-bg: rgba(234, 179, 8, 0.1);
@@ -389,9 +404,36 @@
 }
 
 .audio-source-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-heading-secondary);
+}
+
+.audio-source-track-badge,
+.audio-source-state-badge {
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.audio-source-track-badge {
+  color: var(--audio-source-track-color);
+  background-color: var(--audio-source-track-bg);
+}
+
+.audio-source-state-badge-active {
+  color: var(--audio-source-active-color);
+  background-color: var(--audio-source-active-bg);
+}
+
+.audio-source-state-badge-idle {
+  color: var(--audio-source-idle-color);
+  background-color: var(--audio-source-idle-bg);
 }
 
 .section-divider {

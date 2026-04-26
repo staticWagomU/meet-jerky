@@ -22,7 +22,19 @@ export function SystemAudioSection({
 
   return (
     <div className="audio-source-section">
-      <div className="audio-source-header">システム音声</div>
+      <div className="audio-source-header">
+        <span>システム音声</span>
+        <span className="audio-source-track-badge">相手側</span>
+        <span
+          className={`audio-source-state-badge ${
+            isSystemAudioRecording
+              ? "audio-source-state-badge-active"
+              : "audio-source-state-badge-idle"
+          }`}
+        >
+          {isSystemAudioRecording ? "取得中" : "待機中"}
+        </span>
+      </div>
       <div className="controls-row">
         <button
           type="button"

@@ -1565,3 +1565,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS の実ファイル/フォルダ opener 中の画面遷移は未実機確認。
 - 次アクション: 履歴 opener 中の画面遷移を必要時に実機/モックで確認する。次の改善候補を調査する。
+
+### Main task: show compact audio track state badges
+
+- 開始日時: 2026-04-27 06:04 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 会議中の邪魔にならない状態表示と、自分/相手側トラックの透明性を小さく改善する。
+- 結果: マイク見出しに「自分」「録音中/待機中」、システム音声見出しに「相手側」「取得中/待機中」の badge を追加した。既存のボタン・録音処理・権限処理は変更していない。light/dark 双方の CSS 変数を追加した。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示は未実機確認。
+- 次アクション: 実 UI 表示を必要時にローカル起動で確認する。次の UI/UX 改善候補を調査する。

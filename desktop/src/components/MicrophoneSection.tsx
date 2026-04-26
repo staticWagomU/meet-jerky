@@ -35,7 +35,19 @@ export function MicrophoneSection({
 
   return (
     <div className="audio-source-section">
-      <div className="audio-source-header">マイク</div>
+      <div className="audio-source-header">
+        <span>マイク</span>
+        <span className="audio-source-track-badge">自分</span>
+        <span
+          className={`audio-source-state-badge ${
+            isMicRecording
+              ? "audio-source-state-badge-active"
+              : "audio-source-state-badge-idle"
+          }`}
+        >
+          {isMicRecording ? "録音中" : "待機中"}
+        </span>
+      </div>
       <div className="controls-row">
         <div className="device-selector">
           <select
