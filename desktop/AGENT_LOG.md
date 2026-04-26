@@ -1313,3 +1313,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実設定再読み込み操作は未実機確認。
 - 次アクション: 設定再読み込みと未保存編集の両方を実機で確認する。
+
+### Main task: guard model download with ref state
+
+- 開始日時: 2026-04-27 04:48 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: モデルDLボタンの state 更新前連打でも `download_model` を二重起動しないようにする。
+- 結果: `handleDownload` の先頭で `downloadingModelRef.current` を確認し、既にDL中なら即 return するようにした。既存の disabled 表示、進捗表示、完了/失敗時の state reset は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実モデルDLは未実施。
+- 次アクション: モデルDL操作の実機表示を確認する。実DLは必要時のみ行う。

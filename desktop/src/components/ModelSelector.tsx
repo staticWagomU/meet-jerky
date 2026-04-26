@@ -155,6 +155,9 @@ export function ModelSelector({
   }, []);
 
   const handleDownload = async (modelName: string) => {
+    if (downloadingModelRef.current) {
+      return;
+    }
     downloadingModelRef.current = modelName;
     setDownloadingModel(modelName);
     setDownloadProgress(0);
