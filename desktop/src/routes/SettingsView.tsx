@@ -578,6 +578,7 @@ function OpenAIApiKeySection({
               className="control-btn control-btn-clear"
               onClick={() => refetchHasKey()}
               disabled={isFetchingHasKey}
+              aria-label="OpenAI API キー状態を再確認"
             >
               {isFetchingHasKey ? "確認中..." : "再確認"}
             </button>
@@ -599,6 +600,11 @@ function OpenAIApiKeySection({
             className="control-btn control-btn-transcribe"
             disabled={!keyInput.trim() || setMutation.isPending}
             onClick={handleSetApiKey}
+            aria-label={
+              setMutation.isPending
+                ? "OpenAI API キーを保存中"
+                : "OpenAI API キーを保存"
+            }
           >
             {setMutation.isPending ? "保存中..." : "保存"}
           </button>
@@ -612,6 +618,11 @@ function OpenAIApiKeySection({
               clearMutation.isPending
             }
             onClick={handleClearApiKey}
+            aria-label={
+              clearMutation.isPending
+                ? "OpenAI API キーを削除中"
+                : "OpenAI API キーを削除"
+            }
           >
             {clearMutation.isPending ? "削除中..." : "削除"}
           </button>
