@@ -772,6 +772,15 @@
   display: block;
 }
 
+.settings-inline-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: #d33;
+}
+
 .settings-select {
   padding: 0.4em 0.6em;
   border-radius: 6px;

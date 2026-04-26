@@ -627,3 +627,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。設定ファイル破損や読み込み失敗の実機再現は未実機確認。
 - 次アクション: 実機またはモックで設定読み込み失敗時の再読み込み導線を確認する。
+
+### Main task: show microphone device list errors
+
+- 開始日時: 2026-04-27 03:12 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 設定画面でマイクデバイス一覧の取得に失敗した場合に、選択肢が黙ってデフォルトだけに見えないよう、失敗理由と再取得導線を表示する。
+- 結果: audio devices query の `error` と `refetch` を受け取り、マイクデバイス欄に `role="alert"` のインラインエラーと再取得ボタンを表示するようにした。デフォルトデバイス選択や保存処理は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でデバイス一覧取得失敗を再現する確認は未実機確認。
+- 次アクション: 実機またはモックでマイクデバイス一覧取得失敗時の再取得導線を確認する。

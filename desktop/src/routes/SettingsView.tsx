@@ -33,7 +33,11 @@ export function SettingsView() {
     queryFn: () => invoke<AppSettings>("get_settings"),
   });
 
-  const { data: devices } = useQuery<AudioDevice[]>({
+  const {
+    data: devices,
+    error: devicesError,
+    refetch: refetchDevices,
+  } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
   });
@@ -220,6 +224,18 @@ export function SettingsView() {
             </option>
           ))}
         </select>
+        {devicesError && (
+          <div className="settings-inline-error" role="alert">
+            <span>マイクデバイス一覧の取得に失敗しました: {String(devicesError)}</span>
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() => refetchDevices()}
+            >
+              再取得
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 言語 */}
