@@ -1,5 +1,6 @@
 interface AudioLevelMeterProps {
   level: number;
+  label: string;
 }
 
 function getLevelColor(level: number): string {
@@ -26,13 +27,22 @@ export function sanitizeAudioLevelForDisplay(level: number): number {
   return Math.max(0, Math.min(1, level));
 }
 
-export function AudioLevelMeter({ level }: AudioLevelMeterProps) {
+export function AudioLevelMeter({ level, label }: AudioLevelMeterProps) {
   const clampedLevel = sanitizeAudioLevelForDisplay(level);
   const percentage = clampedLevel * 100;
+  const roundedPercentage = Math.round(percentage);
   const color = getLevelColor(clampedLevel);
 
   return (
-    <div className="audio-meter-container">
+    <div
+      className="audio-meter-container"
+      role="meter"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={roundedPercentage}
+      aria-valuetext={`${roundedPercentage}%`}
+    >
       <div
         className="audio-meter-fill"
         style={{

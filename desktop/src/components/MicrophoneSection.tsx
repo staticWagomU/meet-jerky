@@ -100,7 +100,7 @@ export function MicrophoneSection({
       <div className="level-meter-row">
         <span className="level-label">レベル</span>
         <div className="level-meter-bar">
-          <AudioLevelMeter level={micLevel} />
+          <AudioLevelMeter level={micLevel} label="マイク音量レベル" />
         </div>
         <span className="level-label">{micLevelPercent}%</span>
       </div>

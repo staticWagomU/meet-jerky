@@ -55,7 +55,10 @@ export function SystemAudioSection({
       <div className="level-meter-row">
         <span className="level-label">レベル</span>
         <div className="level-meter-bar">
-          <AudioLevelMeter level={systemAudioLevel} />
+          <AudioLevelMeter
+            level={systemAudioLevel}
+            label="システム音声音量レベル"
+          />
         </div>
         <span className="level-label">{systemAudioLevelPercent}%</span>
       </div>
