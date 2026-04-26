@@ -2056,6 +2056,20 @@
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
 
+### Main task: expose audio source track controls to assistive tech
+
+- 開始日時: 2026-04-27 06:36 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: マイク/システム音声の状態表示と操作ボタンが、自分/相手側トラックのどちらを扱うか支援技術にも伝わるようにする。
+- 結果: マイクとシステム音声の状態バッジに `role="status"` とトラック名込みの `aria-label` を追加し、録音/キャプチャ操作ボタンにも処理中/開始/停止をトラック名込みで伝える `aria-label` を追加した。録音、キャプチャ、文字起こし、権限確認の処理は変更していない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。録音/キャプチャの実機操作は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
 ### Main task: expose meeting saved path as status
 
 - 開始日時: 2026-04-27 09:42 JST

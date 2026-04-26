@@ -31,6 +31,8 @@ export function SystemAudioSection({
               ? "audio-source-state-badge-active"
               : "audio-source-state-badge-idle"
           }`}
+          role="status"
+          aria-label={`システム音声 相手側トラック: ${isSystemAudioRecording ? "取得中" : "待機中"}`}
         >
           {isSystemAudioRecording ? "取得中" : "待機中"}
         </span>
@@ -41,6 +43,13 @@ export function SystemAudioSection({
           onClick={onToggleSystemAudio}
           disabled={isOperationPending}
           className={`control-btn ${isSystemAudioRecording ? "control-btn-stop" : "control-btn-capture"}`}
+          aria-label={
+            isOperationPending
+              ? "相手側トラックのシステム音声キャプチャを処理中"
+              : isSystemAudioRecording
+                ? "相手側トラックのシステム音声キャプチャを停止"
+                : "相手側トラックのシステム音声キャプチャを開始"
+          }
         >
           <span
             className={`rec-indicator ${isSystemAudioRecording ? "rec-indicator-active" : ""}`}

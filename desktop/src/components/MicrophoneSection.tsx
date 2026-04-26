@@ -44,6 +44,8 @@ export function MicrophoneSection({
               ? "audio-source-state-badge-active"
               : "audio-source-state-badge-idle"
           }`}
+          role="status"
+          aria-label={`マイク 自分トラック: ${isMicRecording ? "録音中" : "待機中"}`}
         >
           {isMicRecording ? "録音中" : "待機中"}
         </span>
@@ -71,6 +73,13 @@ export function MicrophoneSection({
           onClick={onToggleRecording}
           disabled={isOperationPending}
           className={`control-btn ${isMicRecording ? "control-btn-stop" : "control-btn-record"}`}
+          aria-label={
+            isOperationPending
+              ? "自分トラックのマイク録音を処理中"
+              : isMicRecording
+                ? "自分トラックのマイク録音を停止"
+                : "自分トラックのマイク録音を開始"
+          }
         >
           <span
             className={`rec-indicator ${isMicRecording ? "rec-indicator-active" : ""}`}
