@@ -852,7 +852,10 @@ export function TranscriptView() {
               : "会議を開始"}
         </button>
         {isMeetingActive && meetingStartTime && (
-          <span className="meeting-timer" aria-label="会議経過時間">
+          <span
+            className="meeting-timer"
+            aria-label={`会議経過時間 ${formatElapsedTime(elapsedTime)}`}
+          >
             {formatElapsedTime(elapsedTime)}
           </span>
         )}
