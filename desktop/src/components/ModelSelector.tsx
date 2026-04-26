@@ -299,7 +299,15 @@ function DownloadStatus({
     const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
     return (
       <div className="download-progress-wrapper">
-        <div className="download-progress-bar">
+        <div
+          className="download-progress-bar"
+          role="progressbar"
+          aria-label="モデルダウンロード進捗"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPercent}
+          aria-valuetext={`${progressPercent}%`}
+        >
           <div
             className="download-progress-fill"
             style={{ width: `${progressPercent}%` }}
