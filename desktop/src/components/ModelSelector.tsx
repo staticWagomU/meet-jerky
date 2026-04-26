@@ -257,7 +257,12 @@ function DownloadStatus({
   disabled,
   onDownload,
 }: DownloadStatusProps) {
-  const { data: isDownloaded, error: isDownloadedError } = useQuery<boolean>({
+  const {
+    data: isDownloaded,
+    error: isDownloadedError,
+    isFetching: isFetchingDownloaded,
+    refetch: refetchDownloaded,
+  } = useQuery<boolean>({
     queryKey: ["modelDownloaded", selectedModel],
     queryFn: () =>
       invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
@@ -288,9 +293,19 @@ function DownloadStatus({
 
   if (isDownloadedError) {
     return (
-      <span className="download-error" role="alert">
-        モデル状態の確認に失敗しました: {String(isDownloadedError)}
-      </span>
+      <div className="download-status-wrapper">
+        <span className="download-error" role="alert">
+          モデル状態の確認に失敗しました: {String(isDownloadedError)}
+        </span>
+        <button
+          type="button"
+          className="download-btn"
+          onClick={() => refetchDownloaded()}
+          disabled={isFetchingDownloaded}
+        >
+          {isFetchingDownloaded ? "確認中..." : "再確認"}
+        </button>
+      </div>
     );
   }
 

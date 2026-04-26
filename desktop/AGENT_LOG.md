@@ -1201,3 +1201,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実バックエンドのモデル一覧取得失敗状態は未実機確認。
 - 次アクション: モデル状態確認失敗時にも再取得導線が必要か確認する。
+
+### Main task: add retry state for selected model status failure
+
+- 開始日時: 2026-04-27 04:37 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 選択モデルのダウンロード状態確認失敗時に再確認導線と確認中状態を表示する。
+- 結果: `modelDownloaded` query の `isFetching` / `refetch` を `DownloadStatus` で使い、モデル状態確認失敗時に「再確認」ボタンを表示し、確認中は disabled かつ「確認中...」へ切り替えるようにした。モデルDL本体の挙動は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実バックエンドのモデル状態確認失敗は未実機確認。
+- 次アクション: モデル関連の再取得 UI を実機で確認する。
