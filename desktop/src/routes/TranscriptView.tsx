@@ -162,6 +162,18 @@ function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boo
   return !engine || engine === "whisper";
 }
 
+function getAiTransmissionStatusLabel(
+  engine: TranscriptionEngineType | undefined,
+): string {
+  if (!engine) {
+    return "確認中";
+  }
+  if (engine === "openAIRealtime") {
+    return "OpenAI";
+  }
+  return "なし";
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -679,6 +691,9 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const aiTransmissionStatusLabel = getAiTransmissionStatusLabel(
+    settings?.transcriptionEngine,
+  );
 
   return (
     <div className="transcript-view">
@@ -737,6 +752,9 @@ export function TranscriptView() {
           </span>
           <span className="meeting-status-pill meeting-status-pill-neutral">
             音声 {audioSourceStatusLabel}
+          </span>
+          <span className="meeting-status-pill meeting-status-pill-neutral">
+            AI送信 {aiTransmissionStatusLabel}
           </span>
         </div>
         {meetingError && (
