@@ -6,6 +6,7 @@ interface TranscriptionControlsProps {
   onModelChange: (model: string) => void;
   onToggleTranscription: () => void;
   canStartTranscription: boolean;
+  isTranscriptionOperationPending: boolean;
   startBlockedReason: string | null;
   sourceStatusText: string | null;
   segmentsCount: number;
@@ -18,6 +19,7 @@ export function TranscriptionControls({
   onModelChange,
   onToggleTranscription,
   canStartTranscription,
+  isTranscriptionOperationPending,
   startBlockedReason,
   sourceStatusText,
   segmentsCount,
@@ -37,10 +39,17 @@ export function TranscriptionControls({
         <button
           type="button"
           onClick={onToggleTranscription}
-          disabled={!canStartTranscription && !isTranscribing}
+          disabled={
+            isTranscriptionOperationPending ||
+            (!canStartTranscription && !isTranscribing)
+          }
           className={`control-btn ${isTranscribing ? "control-btn-transcribing" : "control-btn-transcribe"}`}
         >
-          {isTranscribing ? "文字起こし停止" : "文字起こし開始"}
+          {isTranscriptionOperationPending
+            ? "処理中..."
+            : isTranscribing
+              ? "文字起こし停止"
+              : "文字起こし開始"}
         </button>
 
         {segmentsCount > 0 && (

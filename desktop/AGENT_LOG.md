@@ -1075,3 +1075,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 macOS デバイス取得失敗時の再取得 UI は未実機確認。
 - 次アクション: 録音画面の実機表示を確認する。
+
+### Main task: guard transcription toggle while operation is pending
+
+- 開始日時: 2026-04-27 04:23 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし開始/停止操作中に同じボタンを連打できず、処理中であることが分かるようにする。
+- 結果: Transcript 画面に文字起こし操作中フラグを追加し、`start_transcription` / `stop_transcription` 周辺の async 処理中は文字起こしボタンを disabled にして文言を「処理中...」へ切り替えるようにした。処理完了・失敗後は `finally` で操作中状態を戻す。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 macOS 文字起こし開始/停止の二重クリック挙動は未実機確認。
+- 次アクション: 会議開始/終了ボタンにも同種の二重実行防止が必要か確認する。

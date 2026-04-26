@@ -137,6 +137,8 @@ export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isTranscriptionOperationPending, setIsTranscriptionOperationPending] =
+    useState(false);
   const [micLevel, setMicLevel] = useState(0);
   const [systemAudioLevel, setSystemAudioLevel] = useState(0);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
@@ -439,6 +441,10 @@ export function TranscriptView() {
   }, [isSystemAudioRecording, isMicRecording, isTranscribing]);
 
   const handleToggleTranscription = useCallback(async () => {
+    if (isTranscriptionOperationPending) {
+      return;
+    }
+    setIsTranscriptionOperationPending(true);
     let micRestartPending = false;
     let systemAudioRestartPending = false;
     try {
@@ -490,8 +496,11 @@ export function TranscriptView() {
       const msg = formatOperationError(TRANSCRIPTION_ERROR_PREFIX, e);
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
+    } finally {
+      setIsTranscriptionOperationPending(false);
     }
   }, [
+    isTranscriptionOperationPending,
     isTranscribing,
     isMicRecording,
     isSystemAudioRecording,
@@ -604,6 +613,7 @@ export function TranscriptView() {
         onModelChange={setSelectedModel}
         onToggleTranscription={handleToggleTranscription}
         canStartTranscription={canStartTranscription}
+        isTranscriptionOperationPending={isTranscriptionOperationPending}
         startBlockedReason={transcriptionStartBlockedReason}
         sourceStatusText={transcriptionSourceStatus}
         segmentsCount={segments.length}
