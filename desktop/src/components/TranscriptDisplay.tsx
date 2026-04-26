@@ -306,7 +306,7 @@ export function TranscriptDisplay({
       >
         {segments.length === 0 ? (
           <div className="transcript-empty">
-            文字起こし結果がここに表示されます
+            自分 / 相手側の文字起こしがここに表示されます
           </div>
         ) : (
           segments.map((seg, i) => {
