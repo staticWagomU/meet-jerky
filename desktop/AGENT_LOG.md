@@ -781,3 +781,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Tauri event 購読失敗の実機再現は未実機確認。
 - 次アクション: event listener 失敗時の UI 文言を実機またはモックで確認する。
+
+### Main task: show meeting detection listener errors
+
+- 開始日時: 2026-04-27 04:42 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: グローバル会議検知バナーで `meeting-app-detected` event の購読開始に失敗した場合、検知導線が黙って消えないよう失敗を表示する。
+- 結果: `meeting-app-detected` listener の Promise を成功/失敗で明示処理し、購読開始失敗時はバナー領域に `role="alert"` で表示するようにした。購読成功時はエラーを clear し、解除失敗は console に記録する。検知 payload の表示内容やクリックで録音開始しない方針は変更していない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` は成功し、Rust 検証は既知の `cmake` 不在によりスキップされた。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Tauri event 購読失敗や実際の会議アプリ検知は未実機確認。
+- 次アクション: model download progress/error listener も同じ観点で確認する。
