@@ -745,7 +745,7 @@
   background-color: var(--transcript-error-bg);
 }
 
-.transcript-copy-error {
+.transcript-inline-error {
   padding: 0.35rem 0.5rem;
   border-bottom: 1px solid var(--color-border-light);
   color: #c44;
@@ -753,7 +753,7 @@
   background-color: var(--transcript-error-bg);
 }
 
-.transcript-copy-error-dismissible {
+.transcript-inline-error-dismissible {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -761,7 +761,7 @@
   flex-wrap: wrap;
 }
 
-.transcript-copy-error-dismissible > span {
+.transcript-inline-error-dismissible > span {
   flex: 1 1 12rem;
 }
 

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: generalize inline error class
+
+- 開始日時: 2026-04-28 07:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、コピーエラーだけでなく受信エラーにも使っている CSS クラス名を実態に合わせる。
+- 結果: `transcript-copy-error` / `transcript-copy-error-dismissible` を `transcript-inline-error` / `transcript-inline-error-dismissible` に変更した。表示内容、閉じる操作、受信エラーの扱いには触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `rg -n "transcript-copy-error|transcript-inline-error" src` で旧クラス残存なし、新クラス参照のみを確認。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 文字起こしログ内のコピーエラー/受信エラーが同じ見た目で表示されることを実機 UI で確認する。
+
 ### Settings UX: clarify URL privacy wording
 
 - 開始日時: 2026-04-28 07:27 JST

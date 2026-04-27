@@ -395,7 +395,7 @@ export function TranscriptDisplay({
       )}
       {copyError && (
         <div
-          className="transcript-copy-error transcript-copy-error-dismissible"
+          className="transcript-inline-error transcript-inline-error-dismissible"
           role="alert"
           aria-label={`文字起こしコピーエラー: ${copyError}`}
           title={`文字起こしコピーエラー: ${copyError}`}
@@ -414,7 +414,7 @@ export function TranscriptDisplay({
       )}
       {resultListenerError && (
         <div
-          className="transcript-copy-error"
+          className="transcript-inline-error"
           role="alert"
           aria-label={`文字起こし結果受信エラー: ${resultListenerError}`}
           title={`文字起こし結果受信エラー: ${resultListenerError}`}
@@ -424,7 +424,7 @@ export function TranscriptDisplay({
       )}
       {errorListenerError && (
         <div
-          className="transcript-copy-error"
+          className="transcript-inline-error"
           role="alert"
           aria-label={`文字起こしエラー受信エラー: ${errorListenerError}`}
           title={`文字起こしエラー受信エラー: ${errorListenerError}`}
