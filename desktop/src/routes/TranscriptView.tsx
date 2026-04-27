@@ -827,6 +827,10 @@ export function TranscriptView() {
     isSystemAudioOperationPending ||
     isMeetingOperationPending ||
     isTranscriptionOperationPending;
+  const isAudioCaptureOperationPending =
+    isMicOperationPending ||
+    isSystemAudioOperationPending ||
+    isMeetingOperationPending;
 
   const transcriptionSourceStatus = getTranscriptionSourceStatus(
     isTranscribing,
@@ -853,6 +857,15 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const audioSourceStatusDisplayLabel = isAudioCaptureOperationPending
+    ? "処理中"
+    : audioSourceStatusLabel;
+  const audioSourceStatusDisplayAriaText = isAudioCaptureOperationPending
+    ? "音声ソースを処理中"
+    : audioSourceStatusAriaText;
+  const audioSourceStatusClass = isAudioCaptureOperationPending
+    ? "meeting-status-pill-neutral"
+    : getAudioSourceStatusPillClass(audioSourceStatusLabel);
   const audioSourceNotice = getAudioSourceNotice(
     isMeetingActive || isTranscribing,
     isMicRecording,
@@ -891,7 +904,7 @@ export function TranscriptView() {
     "会議記録状態",
     meetingRecordingStatusLabel,
     transcriptionStatusLabel,
-    `音声 ${audioSourceStatusAriaText}`,
+    `音声 ${audioSourceStatusDisplayAriaText}`,
     `エンジン ${engineStatusLabel}`,
     `AI送信 ${aiTransmissionStatusLabel}`,
     openAIApiKeyStatusLabel ? `APIキー ${openAIApiKeyStatusLabel}` : null,
@@ -964,10 +977,10 @@ export function TranscriptView() {
             {transcriptionStatusLabel}
           </span>
           <span
-            className={`meeting-status-pill ${getAudioSourceStatusPillClass(audioSourceStatusLabel)}`}
-            title={`音声ソース: ${audioSourceStatusAriaText}`}
+            className={`meeting-status-pill ${audioSourceStatusClass}`}
+            title={`音声ソース: ${audioSourceStatusDisplayAriaText}`}
           >
-            音声 {audioSourceStatusLabel}
+            音声 {audioSourceStatusDisplayLabel}
           </span>
           <span
             className={`meeting-status-pill ${getEngineStatusPillClass(engineStatusLabel)}`}
