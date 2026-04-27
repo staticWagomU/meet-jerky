@@ -955,7 +955,7 @@ export function TranscriptView() {
   const meetingRecordingStatusLabel = isMeetingOperationPending
     ? "処理中"
     : isMeetingActive
-      ? "記録中"
+      ? "録音中"
       : "待機中";
   const meetingRecordingStatusClass = isMeetingOperationPending
     ? "meeting-status-pill-neutral"
@@ -973,7 +973,7 @@ export function TranscriptView() {
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
   const meetingStatusAriaLabel = [
-    "会議記録状態",
+    "会議録音状態",
     meetingRecordingStatusLabel,
     transcriptionStatusLabel,
     `音声 ${audioSourceStatusDisplayAriaText}`,
@@ -1052,8 +1052,8 @@ export function TranscriptView() {
         >
           <span
             className={`meeting-status-pill ${meetingRecordingStatusClass}`}
-            aria-label={`会議記録: ${meetingRecordingStatusLabel}`}
-            title={`会議記録: ${meetingRecordingStatusLabel}`}
+            aria-label={`会議録音: ${meetingRecordingStatusLabel}`}
+            title={`会議録音: ${meetingRecordingStatusLabel}`}
           >
             {meetingRecordingStatusLabel}
           </span>

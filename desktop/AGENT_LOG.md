@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: label meeting recording status clearly
+
+- 開始日時: 2026-04-28 03:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の会議ステータス pill が録音状態として読めるように、抽象的な `記録中` 表記を見直す。
+- 結果: 会議ステータス pill の active 表示を `記録中` から `録音中` に変更し、対応する aria/title の対象も `会議録音` へ揃えた。会議開始/終了ボタン、セッション保存、録音・文字起こし制御には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で status pill が録音状態として自然に読めるか確認する。
+
 ### App detection UX: clarify notification status target
 
 - 開始日時: 2026-04-28 03:23 JST
