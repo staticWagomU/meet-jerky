@@ -312,8 +312,8 @@ export function SettingsView() {
       screenPermission === "denied" ||
       screenPermission === "undetermined");
   const permissionStatusNote = hasPermissionCheckError
-    ? "macOS の権限状態を読み取れませんでした。自分トラックの録音・文字起こしや相手側音声の取得・文字起こしができるか分からないため、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。"
-    : "マイクは自分トラックの録音、画面収録は相手側音声の取得に必要です。未許可または未確認の場合はシステム設定のプライバシーとセキュリティで確認してください。";
+    ? "macOS の権限状態を読み取れませんでした。自分トラックの録音・文字起こしや相手側のシステム音声取得・文字起こしができるか分からないため、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。"
+    : "マイクは自分トラックの録音、画面収録は相手側のシステム音声取得に必要です。未許可または未確認の場合はシステム設定のプライバシーとセキュリティで確認してください。";
   const unsavedSettingsLabel = "未保存の変更があります";
   const saveSettingsLabel = updateMutation.isPending
     ? "設定を保存中"
@@ -683,10 +683,10 @@ export function SettingsView() {
           <div className="settings-permission-row">
             <span className="settings-permission-label">
               <span className="settings-permission-track">相手側</span>{" "}
-              画面収録
+              画面収録/システム音声
             </span>
             <PermissionBadge
-              label="相手側トラック 画面収録"
+              label="相手側トラック 画面収録/システム音声"
               status={screenPermission}
               error={screenPermissionError}
               isChecking={isFetchingScreenPermission}

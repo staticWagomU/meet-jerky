@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: align system audio permission wording
+
+- 開始日時: 2026-04-28 08:57 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限ステータスでも相手側トラックの画面収録権限がシステム音声取得に影響することを明確にし、ライブ画面の権限バナーと表現を揃える。
+- 結果: 設定画面の権限説明文、相手側権限ラベル、PermissionBadge の label を `画面収録/システム音声` に揃えた。権限取得 command や保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機の macOS 権限画面遷移は未確認。
+- 次アクション: 実機で設定画面の権限ステータス文言が長すぎず自然に読めるか確認する。
+
 ### Permission UX: clarify system audio permission impact
 
 - 開始日時: 2026-04-28 08:56 JST
