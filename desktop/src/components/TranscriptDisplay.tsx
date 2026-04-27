@@ -373,7 +373,11 @@ export function TranscriptDisplay({
             onClick={handleCopyAll}
             disabled={copyableSegmentsCount === 0 || isCopying}
           >
-            {isCopying ? "コピー中..." : copyFeedback ? "コピー済み" : "コピー"}
+            {isCopying
+              ? "コピー中..."
+              : copyFeedback
+                ? "コピー済み"
+                : "すべてコピー"}
           </button>
         </div>
       )}

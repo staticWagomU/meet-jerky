@@ -6466,6 +6466,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI でボタン幅が不自然に広がらず、誤操作しにくい表示になっているか確認する。
 
+### Transcript Display UX: clarify copy-all button
+
+- 開始日時: 2026-04-28 07:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログのコピー操作が全件対象であることを可視表示でも明確にする。
+- 結果: コピー可能な文字起こしがある通常時のボタン表示を `コピー` から `すべてコピー` に変更した。コピー中/コピー済み表示、aria-label の件数表示、クリップボード書き込み処理には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でコピー操作のボタン幅とツールバー密度が自然に保たれるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
