@@ -86,7 +86,7 @@ export function MeetingDetectedBanner() {
       aria-live={bannerRole === "alert" ? "assertive" : "polite"}
       aria-atomic="true"
       aria-label={bannerAriaLabel}
-      title={bannerMessage}
+      title={bannerAriaLabel}
     >
       {sourceLabel && (
         <span
