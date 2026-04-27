@@ -125,7 +125,12 @@ public final class AppDetector: @unchecked Sendable {
         lock.unlock()
 
         DispatchQueue.main.async {
-            detector.installObservers()
+            lock.lock()
+            let shouldInstall = instance === detector
+            lock.unlock()
+            if shouldInstall {
+                detector.installObservers()
+            }
         }
     }
 

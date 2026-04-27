@@ -4883,3 +4883,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機ブラウザURL取得は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: guard delayed app detection observer install
+
+- 開始日時: 2026-04-27 20:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: AppDetectionBridge の observer 登録が main queue に遅延された後、stop/restart 済みの古い detector が observer/timer を登録しないようにする。
+- 結果: main queue 上で observer を登録する直前に singleton の `instance` が同じ detector か確認し、stop/restart 済みの古い detector が observer/timer を登録しないようにした。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `swiftc -parse-as-library -typecheck src-tauri/swift/AppDetectionBridge.swift` 成功。`git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での start/stop race 再現は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
