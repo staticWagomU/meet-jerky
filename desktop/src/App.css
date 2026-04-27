@@ -1185,6 +1185,7 @@
   color: #c44;
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
+  overflow-wrap: anywhere;
 }
 
 .session-list-items {
