@@ -69,8 +69,8 @@ export function MeetingDetectedBanner() {
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
       }録音と文字起こしは自動開始していません。開始前に状態を確認してください。`;
   const confirmRecordingLabel = detected
-    ? `${displayName} の録音と文字起こしの状態を確認`
-    : "録音と文字起こしの状態を確認";
+    ? `${displayName} の記録状態を確認`
+    : "記録状態を確認";
   const dismissBannerLabel = "会議検知バナーを閉じる";
   const bannerRole = listenerError ? "alert" : "status";
   const bannerClassName = listenerError
@@ -109,7 +109,7 @@ export function MeetingDetectedBanner() {
                 setDetected(null);
               }}
             >
-              録音と文字起こしを確認
+              記録状態を確認
             </button>
           )}
           <button
