@@ -6003,3 +6003,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver でマイク権限確認失敗時の説明が自分トラックへの影響として明確に伝わるか確認する。
+
+### Permission UX: clarify screen check failure impact
+
+- 開始日時: 2026-04-28 02:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限バナーの画面収録権限確認失敗時にも、相手側トラック取得の可否が不明であることを明確にする。
+- 結果: 画面収録権限状態を macOS から取得できない場合の本文を `相手側トラック取得の可否が不明です` に更新した。権限確認処理、バナー表示条件、再チェック操作には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で画面収録権限確認失敗時の説明が相手側トラックへの影響として明確に伝わるか確認する。
