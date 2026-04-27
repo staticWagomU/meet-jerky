@@ -27,9 +27,9 @@ where
 pub enum TranscriptionEngineType {
     /// ローカル Whisper モデル (whisper-rs / GGML)
     Whisper,
-    /// macOS 内蔵 SpeechAnalyzer (実装は次 PR)
+    /// macOS 内蔵 SpeechAnalyzer
     AppleSpeech,
-    /// OpenAI Realtime API (実装は次 PR)
+    /// OpenAI Realtime API
     OpenAIRealtime,
     /// ElevenLabs Scribe v2 Realtime API
     ElevenLabsRealtime,
@@ -56,7 +56,7 @@ impl TranscriptionEngineType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AppSettings {
-    /// 文字起こしエンジン ("local" or "cloud")
+    /// 文字起こしエンジン ("whisper", "appleSpeech", "openAIRealtime" など)
     #[serde(deserialize_with = "deserialize_engine_type_with_fallback")]
     pub transcription_engine: TranscriptionEngineType,
 
@@ -72,7 +72,7 @@ pub struct AppSettings {
     /// 出力ディレクトリ (None = デフォルトディレクトリ)
     pub output_directory: Option<String>,
 
-    /// クラウドエンジンの API キー (None = 未設定)
+    /// 旧クラウド設定互換用の API キー。現在の Realtime API キーは Keychain に保存する。
     #[serde(default)]
     pub api_key: Option<String>,
 }

@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings docs: update implemented engine comments
+
+- 開始日時: 2026-04-28 03:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/settings.rs`, `AGENT_LOG.md`
+- 指示内容: ElevenLabs / OpenAI Realtime と Apple Speech 実装後の現状に合わせ、設定 enum と旧 API キーフィールドのコメントを更新する。
+- 結果: `AppleSpeech` / `OpenAIRealtime` の `実装は次 PR` コメントを削除し、`transcription_engine` の値説明と旧 `api_key` が Keychain 以前の互換用であることを明記した。設定 serialization、互換マイグレーション、Keychain command には触れなかった。
+- 変更ファイル: `src-tauri/src/settings.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check --manifest-path src-tauri/Cargo.toml` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/settings.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/settings.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 旧 `api_key` フィールドが今後も UI に露出しないことを維持する。
+
 ### Settings UX: show provider in API key status error
 
 - 開始日時: 2026-04-28 03:39 JST
