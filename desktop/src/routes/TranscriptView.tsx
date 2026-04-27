@@ -179,9 +179,13 @@ function getAudioSourceStatusLabel(
 }
 
 function getAudioSourceStatusPillClass(statusLabel: string): string {
-  return statusLabel === "なし"
-    ? "meeting-status-pill-idle"
-    : "meeting-status-pill-active";
+  if (statusLabel === "自分+相手側") {
+    return "meeting-status-pill-active";
+  }
+  if (statusLabel === "なし") {
+    return "meeting-status-pill-idle";
+  }
+  return "meeting-status-pill-neutral";
 }
 
 function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
