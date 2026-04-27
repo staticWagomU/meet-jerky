@@ -64,12 +64,15 @@ export function MeetingDetectedBanner() {
   if (!detected && !listenerError) return null;
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
+  const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const bannerMessage = listenerError
     ? listenerError
     : `${displayName} を検出しました。文字起こしページで記録状態を確認できます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
-    : `${displayName} を検出しました。記録状態を確認できます。`;
+    : `${displayName} を検出しました。${
+        sourceLabel ? `検知元 ${sourceLabel}。` : ""
+      }記録状態を確認できます。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の記録状態を確認`
     : "記録状態を確認";
@@ -82,9 +85,15 @@ export function MeetingDetectedBanner() {
       aria-label={bannerAriaLabel}
       title={bannerMessage}
     >
-      <span className="meeting-detected-banner-text">
-        {bannerMessage}
-      </span>
+      {sourceLabel && (
+        <span
+          className="meeting-detected-source-badge"
+          title={`検知元: ${sourceLabel}`}
+        >
+          {sourceLabel}
+        </span>
+      )}
+      <span className="meeting-detected-banner-text">{bannerMessage}</span>
       {detected && (
         <div className="meeting-detected-banner-actions">
           <button
@@ -121,4 +130,19 @@ export function getMeetingDetectedDisplayName(
     return `${payload.service} (${payload.urlHost})`;
   }
   return payload.service || payload.urlHost || payload.appName;
+}
+
+export function getMeetingDetectedSourceLabel(
+  payload: MeetingAppDetectedPayload,
+): string {
+  if (payload.browserName && payload.urlHost) {
+    return `${payload.browserName} URL`;
+  }
+  if (payload.urlHost) {
+    return "ブラウザURL";
+  }
+  if (payload.source === "app") {
+    return "アプリ";
+  }
+  return "検知";
 }

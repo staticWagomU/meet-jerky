@@ -4239,3 +4239,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 実機録音、権限ダイアログ、会議中実操作は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: show meeting detection source badge
+
+- 開始日時: 2026-04-27 17:30 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先方針に従い、会議検知バナーで検知元の透明性を上げる。URL 全文や path は表示しない。
+- 結果: 会議検知バナーに短い検知元バッジを追加した。現在の app 検知は「アプリ」と表示し、将来の browser/urlHost payload ではブラウザURL由来であることだけを示す。banner の aria-label にも検知元を含めた。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。会議アプリ実機起動、ブラウザ URL 実機取得、macOS 通知操作は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
