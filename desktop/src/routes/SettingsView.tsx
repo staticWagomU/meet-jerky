@@ -273,8 +273,8 @@ export function SettingsView() {
     ? `マイクデバイス: ${selectedMicrophoneDeviceName}`
     : "マイクデバイス: デフォルト";
   const retryDevicesLabel = isFetchingDevices
-    ? "マイクデバイス一覧を取得中"
-    : "マイクデバイス一覧を再取得";
+    ? "自分トラックのマイクデバイス一覧を取得中"
+    : "自分トラックのマイクデバイス一覧を再取得";
   const languageLabel = `言語: ${languageName}`;
   const devicesErrorMessage = devicesError ? toErrorMessage(devicesError) : "";
   const retryDefaultOutputDirLabel = isFetchingDefaultOutputDir
@@ -537,11 +537,12 @@ export function SettingsView() {
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`マイクデバイス一覧エラー: ${devicesErrorMessage}`}
-            title={`マイクデバイス一覧エラー: ${devicesErrorMessage}`}
+            aria-label={`自分トラックのマイクデバイス一覧エラー: ${devicesErrorMessage}`}
+            title={`自分トラックのマイクデバイス一覧エラー: ${devicesErrorMessage}`}
           >
             <span>
-              マイクデバイス一覧の取得に失敗しました: {devicesErrorMessage}
+              自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
+              {devicesErrorMessage}
             </span>
             <button
               type="button"
