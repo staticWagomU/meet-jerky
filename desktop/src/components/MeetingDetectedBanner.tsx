@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { MeetingAppDetectedPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 
-/// 会議アプリまたはブラウザ会議URLを検知したら、画面上部にバナーを出して
+/// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
 ///
 /// 設計メモ:
@@ -146,10 +146,10 @@ export function getMeetingDetectedSourceLabel(
     return `${payload.browserName} URL`;
   }
   if (payload.urlHost) {
-    return "ブラウザURL";
+    return "ブラウザ URL";
   }
   if (payload.source === "browser") {
-    return "ブラウザURL";
+    return "ブラウザ URL";
   }
   if (payload.source === "app") {
     return "アプリ";

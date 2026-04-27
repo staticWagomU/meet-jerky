@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Browser Detection UX: space URL labels
+
+- 開始日時: 2026-04-28 04:00 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/routes/SettingsView.tsx`, `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知や自動操作権限の `ブラウザURL` / `会議URL` 表記を読みやすくする。
+- 結果: 会議検知バナー、設定画面の自動操作権限表示、macOS 自動操作権限説明の URL 表記を `ブラウザ URL` / `会議 URL` / `URL 全文` に揃えた。会議 URL 分類、payload、ログ、URL 全文非表示方針には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/routes/SettingsView.tsx`, `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/routes/SettingsView.tsx src-tauri/Info.plist AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/routes/SettingsView.tsx src-tauri/Info.plist AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI と macOS 権限ダイアログで URL 表記が自然に読めるか確認する。
+
 ### Permission UX: space macOS references
 
 - 開始日時: 2026-04-28 03:58 JST

@@ -287,7 +287,7 @@ export function SettingsView() {
     ? "macOS権限状態を確認中"
     : "macOS権限状態を再チェック";
   const browserAutomationPermissionLabel =
-    "自動操作 ブラウザURL検知: 必要時に macOS が確認";
+    "自動操作 ブラウザ URL 検知: 必要時に macOS が確認";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -681,7 +681,7 @@ export function SettingsView() {
           <div className="settings-permission-row">
             <span className="settings-permission-label">
               自動操作{" "}
-              <span className="settings-permission-track">ブラウザURL</span>
+              <span className="settings-permission-track">ブラウザ URL</span>
             </span>
             <span
               className="settings-permission-badge permission-undetermined"
@@ -708,8 +708,8 @@ export function SettingsView() {
             </p>
           )}
           <p className="settings-note">
-            ブラウザ会議URL検知では、macOS が Safari / Chrome / Edge /
-            Firefox の自動操作許可を求める場合があります。URL全文は表示・保存せず、会議サービスとホスト名だけを使います。
+            ブラウザ会議 URL 検知では、macOS が Safari / Chrome / Edge /
+            Firefox の自動操作許可を求める場合があります。URL 全文は表示・保存せず、会議サービスとホスト名だけを使います。
           </p>
         </div>
       </div>
