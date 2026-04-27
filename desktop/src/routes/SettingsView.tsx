@@ -12,6 +12,8 @@ const WHISPER_MODELS = [
   { value: "large-v3", label: "Large v3" },
 ];
 
+const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
+
 const LANGUAGES = [
   { value: "auto", label: "自動検出" },
   { value: "ja", label: "日本語" },
@@ -647,7 +649,7 @@ function OpenAIApiKeySection({
   return (
     <div className="settings-section">
       <h3 className="settings-section-title">OpenAI API キー</h3>
-      <p className="settings-note">
+      <p id={OPENAI_API_KEY_NOTE_ID} className="settings-note">
         Keychain に安全に保存され、ブラウザ・ログには出力されません。
       </p>
       <div className="settings-api-key">
@@ -678,6 +680,7 @@ function OpenAIApiKeySection({
         <input
           type="password"
           aria-label="OpenAI API キー"
+          aria-describedby={OPENAI_API_KEY_NOTE_ID}
           autoComplete="off"
           spellCheck={false}
           placeholder={hasKey ? "登録済み (再入力で上書き)" : "sk-..."}
