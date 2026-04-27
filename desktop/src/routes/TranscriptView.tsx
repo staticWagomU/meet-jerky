@@ -194,6 +194,23 @@ function getAudioSourceStatusAriaText(
   return "音声ソースなし";
 }
 
+function getAudioSourceNotice(
+  isVisible: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string | null {
+  if (!isVisible || (isMicRecording && isSystemAudioRecording)) {
+    return null;
+  }
+  if (isMicRecording) {
+    return "相手側トラック未取得。会議相手の音声を残すにはシステム音声を開始してください。";
+  }
+  if (isSystemAudioRecording) {
+    return "自分トラック未録音。自分の発話を残すにはマイクを開始してください。";
+  }
+  return "音声ソース未開始。マイクまたはシステム音声を開始してください。";
+}
+
 function getAudioSourceStatusPillClass(statusLabel: string): string {
   if (statusLabel === "自分+相手側") {
     return "meeting-status-pill-active";
@@ -832,6 +849,11 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const audioSourceNotice = getAudioSourceNotice(
+    isMeetingActive || isTranscribing,
+    isMicRecording,
+    isSystemAudioRecording,
+  );
   const aiTransmissionStatusLabel = getAiTransmissionStatusLabel(
     settings?.transcriptionEngine,
   );
@@ -955,6 +977,18 @@ export function TranscriptView() {
             </span>
           )}
         </div>
+        {audioSourceNotice && (
+          <p
+            className="meeting-source-notice"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`音声ソース注意: ${audioSourceNotice}`}
+            title={`音声ソース注意: ${audioSourceNotice}`}
+          >
+            {audioSourceNotice}
+          </p>
+        )}
         {meetingError && (
           <p
             className="meeting-error"

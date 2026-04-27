@@ -4225,3 +4225,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: show missing audio track notice during recording
+
+- 開始日時: 2026-04-27 17:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先方針に従い、会議中の邪魔にならない状態表示と自分/相手側トラックの透明性を小さく改善する。
+- 結果: 会議記録中または文字起こし中に片側または両方の音声ソースが未取得の場合、meeting status strip の直下に小さな注意表示を出すようにした。自分のみ、相手側のみ、音声ソースなしを区別し、既存の permission warning 系スタイルで過度に目立たない表示にしている。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 実機録音、権限ダイアログ、会議中実操作は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

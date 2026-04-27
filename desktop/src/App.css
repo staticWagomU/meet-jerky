@@ -849,12 +849,21 @@
 }
 
 .meeting-error,
+.meeting-source-notice,
 .meeting-saved-path {
   flex-basis: 100%;
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.4;
   overflow-wrap: anywhere;
+}
+
+.meeting-source-notice {
+  color: var(--permission-banner-color);
+  background-color: var(--permission-banner-bg);
+  border: 1px solid var(--permission-banner-border);
+  border-radius: 4px;
+  padding: 0.35rem 0.55rem;
 }
 
 .meeting-error {
