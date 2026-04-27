@@ -319,12 +319,14 @@ export function TranscriptDisplay({
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-self"
+              aria-label={`自分トラックの文字起こし: ${segmentCounts.self} 件`}
               title={`自分トラックの文字起こし: ${segmentCounts.self} 件`}
             >
               自分 {segmentCounts.self}
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-other"
+              aria-label={`相手側トラックの文字起こし: ${segmentCounts.other} 件`}
               title={`相手側トラックの文字起こし: ${segmentCounts.other} 件`}
             >
               相手側 {segmentCounts.other}
@@ -332,6 +334,7 @@ export function TranscriptDisplay({
             {segmentCounts.unknown > 0 && (
               <span
                 className="transcript-count-pill transcript-count-pill-unknown"
+                aria-label={`音声ソース未分類の文字起こし: ${segmentCounts.unknown} 件`}
                 title={`音声ソース未分類の文字起こし: ${segmentCounts.unknown} 件`}
               >
                 未分類 {segmentCounts.unknown}
@@ -340,6 +343,7 @@ export function TranscriptDisplay({
             {segmentCounts.errors > 0 && (
               <span
                 className="transcript-count-pill transcript-count-pill-error"
+                aria-label={`文字起こしエラー: ${segmentCounts.errors} 件`}
                 title={`文字起こしエラー: ${segmentCounts.errors} 件`}
               >
                 エラー {segmentCounts.errors}
