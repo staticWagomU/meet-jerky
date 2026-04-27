@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings UX: track-first permission labels
+
+- 開始日時: 2026-04-28 03:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限ステータスでも自分/相手側トラックを先に読み取れるようにする。
+- 結果: 権限ステータスの可視ラベルと PermissionBadge の aria/title ラベルを `自分 マイク` / `相手側 画面収録`、`自分トラック マイク` / `相手側トラック 画面収録` の順へ揃えた。権限確認処理、macOS権限、設定保存には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で権限ステータスがトラック単位で把握しやすいか確認する。
+
 ### Audio controls UX: track-first source labels
 
 - 開始日時: 2026-04-28 03:49 JST

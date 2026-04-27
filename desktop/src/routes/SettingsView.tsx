@@ -657,10 +657,10 @@ export function SettingsView() {
         <div className="settings-permissions">
           <div className="settings-permission-row">
             <span className="settings-permission-label">
-              マイク <span className="settings-permission-track">自分</span>
+              <span className="settings-permission-track">自分</span> マイク
             </span>
             <PermissionBadge
-              label="マイク 自分トラック"
+              label="自分トラック マイク"
               status={micPermission}
               error={micPermissionError}
               isChecking={isFetchingMicPermission}
@@ -668,11 +668,11 @@ export function SettingsView() {
           </div>
           <div className="settings-permission-row">
             <span className="settings-permission-label">
-              画面収録{" "}
-              <span className="settings-permission-track">相手側</span>
+              <span className="settings-permission-track">相手側</span>{" "}
+              画面収録
             </span>
             <PermissionBadge
-              label="画面収録 相手側トラック"
+              label="相手側トラック 画面収録"
               status={screenPermission}
               error={screenPermissionError}
               isChecking={isFetchingScreenPermission}
