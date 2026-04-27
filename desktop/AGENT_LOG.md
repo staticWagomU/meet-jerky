@@ -4841,3 +4841,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。AppleScript/Accessibility 権限ダイアログや実機ブラウザURL取得は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: explain browser URL permission behavior
+
+- 開始日時: 2026-04-27 20:03 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: ブラウザ会議URL検知で macOS の自動操作許可が求められる可能性と、URL全文を表示・保存しない方針を設定画面で説明する。
+- 結果: 権限ステータスにブラウザURL検知の静的な説明文を追加し、macOS の自動操作許可が求められる可能性と URL 全文を表示・保存しない方針を示した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Apple Events 権限ダイアログや実機ブラウザURL取得は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

@@ -574,6 +574,10 @@ export function SettingsView() {
               {permissionStatusNote}
             </p>
           )}
+          <p className="settings-note">
+            ブラウザ会議URL検知では、macOS が Safari / Chrome / Edge /
+            Firefox の自動操作許可を求める場合があります。URL全文は表示・保存せず、会議サービスとホスト名だけを使います。
+          </p>
         </div>
       </div>
 
