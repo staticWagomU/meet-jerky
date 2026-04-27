@@ -230,8 +230,8 @@ function SessionRow({
     ? `ファイルを開いています: ${session.title}`
     : `ファイルを開く: ${session.title}`;
   const revealFileLabel = isRevealingThisFile
-    ? `フォルダを開いています: ${session.title}`
-    : `フォルダを開く: ${session.title}`;
+    ? `保存場所を表示しています: ${session.title}`
+    : `保存場所を表示: ${session.title}`;
 
   return (
     <li
@@ -279,7 +279,7 @@ function SessionRow({
           onClick={() => onRevealInFolder(session.path)}
           disabled={isAnyActionPending}
         >
-          {isRevealingThisFile ? "開いています..." : "フォルダを開く"}
+          {isRevealingThisFile ? "表示中..." : "保存場所を表示"}
         </button>
       </div>
     </li>

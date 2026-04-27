@@ -4743,3 +4743,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限ダイアログや実機設定画面確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: clarify session reveal action label
+
+- 開始日時: 2026-04-27 19:40 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装。小さな UI 文言差分で worker 起動のオーバーヘッドが大きいため、メインが直接編集した。
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴のファイルを開く操作と保存場所を表示する操作の進行中文言を区別し、会議後の保存確認で誤読しにくくする。
+- 結果: 保存場所表示ボタンの通常/処理中文言と aria-label を「フォルダを開く」から「保存場所を表示」系へ変更し、ファイルを開く操作と区別しやすくした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。OS の Finder 表示実操作は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
