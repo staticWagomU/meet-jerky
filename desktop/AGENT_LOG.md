@@ -6200,6 +6200,20 @@
 - 失敗理由: なし。
 - 次アクション: 設定画面で各エンジン説明が狭い幅でも読みやすく折り返されるか確認する。
 
+### Permission Banner UX: replace slash-separated track pills
+
+- 開始日時: 2026-04-28 05:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限バナーのトラック別ピルを記号区切りではなく自然な表記へ揃える。
+- 結果: `マイク / 自分` を `自分のマイク`、`画面収録 / 相手側` を `相手側の画面収録` に変更した。権限判定、aria-label、再チェック処理には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で権限バナーのピル幅が過度に広がらないか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

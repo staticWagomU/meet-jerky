@@ -103,7 +103,7 @@ export function PermissionBanner() {
             aria-label={micPermissionDetail}
             title={micPermissionDetail}
           >
-            マイク / 自分: {micStatusLabel}
+            自分のマイク: {micStatusLabel}
           </span>
         )}
         {screenNeedsAttention && (
@@ -112,7 +112,7 @@ export function PermissionBanner() {
             aria-label={screenPermissionDetail}
             title={screenPermissionDetail}
           >
-            画面収録 / 相手側: {screenStatusLabel}
+            相手側の画面収録: {screenStatusLabel}
           </span>
         )}
       </div>
