@@ -1,5 +1,19 @@
 # Agent Log
 
+### Crash Fix: prevent dual Apple Speech streams
+
+- 開始日時: 2026-04-28 08:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `logs/apple.log`, `src-tauri/swift/SpeechAnalyzerBridge.swift`, `src-tauri/src/apple_speech.rs`, `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: ユーザー報告の 2026-04-28 08:15:58 `meet-jerky` クラッシュを最優先で調査し、文字起こし開始時のアプリ停止を防ぐ。Speech.framework / Apple SpeechAnalyzer / start_transcription 周辺の並行起動、複数 source 起動、権限/SDK 条件を批判的に確認する。
+- 結果: `logs/apple.log` では `EXC_BREAKPOINT (SIGTRAP)` が Speech.framework 内の Swift concurrency task で発生し、同時に `run_transcription_loop` worker が 2 本見えていた。Apple Speech 選択時にマイクと相手側音声の 2 ストリームを同時初期化すると Speech.framework 内でプロセス停止するリスクが高いと判断し、実際に利用可能な音声 source が 2 本ある場合は `SpeechAnalyzer` ストリームを作る前に明示エラーで拒否するようにした。Whisper / OpenAI Realtime / ElevenLabs Realtime のデュアルストリームは維持し、Apple Speech の片側 source は許可する。回帰防止として純粋関数テストを追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/transcription.rs` 成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo test --manifest-path src-tauri/Cargo.toml apple_speech` と `cargo test --manifest-path src-tauri/Cargo.toml transcription` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。この環境では実機再現・Speech.framework 疎通は未確認。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。実機での Apple Speech 再現確認は未実施。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml apple_speech` と `cargo test --manifest-path src-tauri/Cargo.toml transcription` を再実行し、macOS 実機で Apple Speech 選択 + マイク/相手側同時記録がクラッシュせず開始不可エラーになること、片側 source では開始できることを確認する。
+
 ### Settings UX: clarify output folder select button
 
 - 開始日時: 2026-04-28 08:24 JST

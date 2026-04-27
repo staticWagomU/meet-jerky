@@ -690,6 +690,23 @@ pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result
     }
 }
 
+fn validate_stream_count_for_engine(
+    engine_type: &crate::settings::TranscriptionEngineType,
+    stream_count: usize,
+) -> Result<(), String> {
+    if matches!(
+        engine_type,
+        crate::settings::TranscriptionEngineType::AppleSpeech
+    ) && stream_count > 1
+    {
+        return Err(
+            "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。"
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
 /// 文字起こしを開始する
 ///
 /// `source` パラメータ:
@@ -749,6 +766,22 @@ pub fn start_transcription(
     let use_system = source_str == "system_audio" || source_str == "both";
     let stream_language = Some(language.trim().to_string()).filter(|value| !value.is_empty());
 
+    let mic_sample_rate = if use_mic {
+        audio_state.get_sample_rate()
+    } else {
+        None
+    };
+    let system_sample_rate = if use_system {
+        audio_state.get_system_audio_sample_rate()
+    } else {
+        None
+    };
+    let available_stream_count = [mic_sample_rate, system_sample_rate]
+        .into_iter()
+        .filter(Option::is_some)
+        .count();
+    validate_stream_count_for_engine(&engine_type, available_stream_count)?;
+
     let mut pending_streams = Vec::new();
 
     // live loop に渡す SessionManager の Arc と、ストリーム基準時刻 (now)。
@@ -762,47 +795,39 @@ pub fn start_transcription(
         .unwrap_or(0);
 
     // マイク用の文字起こしスレッド
-    if use_mic {
-        if let Some(mic_sample_rate) = audio_state.get_sample_rate() {
-            let stream_config = StreamConfig {
-                sample_rate: mic_sample_rate,
-                speaker: Some("自分".to_string()),
-                source: Some(TranscriptionSource::Microphone),
-                language: stream_language.clone(),
-            };
-            let stream = Arc::clone(&engine)
-                .start_stream(stream_config)
-                .map_err(|e| {
-                    format!("マイク音声の文字起こしストリーム初期化に失敗しました: {e}")
-                })?;
+    if let Some(mic_sample_rate) = mic_sample_rate {
+        let stream_config = StreamConfig {
+            sample_rate: mic_sample_rate,
+            speaker: Some("自分".to_string()),
+            source: Some(TranscriptionSource::Microphone),
+            language: stream_language.clone(),
+        };
+        let stream = Arc::clone(&engine)
+            .start_stream(stream_config)
+            .map_err(|e| format!("マイク音声の文字起こしストリーム初期化に失敗しました: {e}"))?;
 
-            pending_streams.push(PendingTranscriptionStream {
-                source: TranscriptionSource::Microphone,
-                stream,
-            });
-        }
+        pending_streams.push(PendingTranscriptionStream {
+            source: TranscriptionSource::Microphone,
+            stream,
+        });
     }
 
     // システム音声用の文字起こしスレッド
-    if use_system {
-        if let Some(sys_sample_rate) = audio_state.get_system_audio_sample_rate() {
-            let stream_config = StreamConfig {
-                sample_rate: sys_sample_rate,
-                speaker: Some("相手側".to_string()),
-                source: Some(TranscriptionSource::SystemAudio),
-                language: stream_language.clone(),
-            };
-            let stream = Arc::clone(&engine)
-                .start_stream(stream_config)
-                .map_err(|e| {
-                    format!("システム音声の文字起こしストリーム初期化に失敗しました: {e}")
-                })?;
+    if let Some(sys_sample_rate) = system_sample_rate {
+        let stream_config = StreamConfig {
+            sample_rate: sys_sample_rate,
+            speaker: Some("相手側".to_string()),
+            source: Some(TranscriptionSource::SystemAudio),
+            language: stream_language.clone(),
+        };
+        let stream = Arc::clone(&engine)
+            .start_stream(stream_config)
+            .map_err(|e| format!("システム音声の文字起こしストリーム初期化に失敗しました: {e}"))?;
 
-            pending_streams.push(PendingTranscriptionStream {
-                source: TranscriptionSource::SystemAudio,
-                stream,
-            });
-        }
+        pending_streams.push(PendingTranscriptionStream {
+            source: TranscriptionSource::SystemAudio,
+            stream,
+        });
     }
 
     let mut workers = Vec::new();
@@ -1176,6 +1201,35 @@ mod tests {
         let serialized = payload.to_string();
         assert!(!serialized.contains("panic"));
         assert!(!serialized.contains("payload"));
+    }
+
+    #[test]
+    fn test_apple_speech_rejects_multiple_available_streams() {
+        let err = validate_stream_count_for_engine(
+            &crate::settings::TranscriptionEngineType::AppleSpeech,
+            2,
+        )
+        .unwrap_err();
+        assert!(err.contains("Apple SpeechAnalyzer"));
+        assert!(err.contains("同時文字起こし"));
+    }
+
+    #[test]
+    fn test_apple_speech_allows_single_available_stream() {
+        validate_stream_count_for_engine(&crate::settings::TranscriptionEngineType::AppleSpeech, 1)
+            .expect("single Apple Speech stream should be allowed");
+    }
+
+    #[test]
+    fn test_other_engines_allow_multiple_available_streams() {
+        for engine in [
+            crate::settings::TranscriptionEngineType::Whisper,
+            crate::settings::TranscriptionEngineType::OpenAIRealtime,
+            crate::settings::TranscriptionEngineType::ElevenLabsRealtime,
+        ] {
+            validate_stream_count_for_engine(&engine, 2)
+                .expect("non Apple Speech engines should keep dual stream support");
+        }
     }
 
     #[test]
