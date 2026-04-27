@@ -42,6 +42,7 @@ export function AudioLevelMeter({ level, label }: AudioLevelMeterProps) {
       aria-valuemax={100}
       aria-valuenow={roundedPercentage}
       aria-valuetext={`${roundedPercentage}%`}
+      title={`${label}: ${roundedPercentage}%`}
     >
       <div
         className="audio-meter-fill"
