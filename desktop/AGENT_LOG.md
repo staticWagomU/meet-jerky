@@ -5527,3 +5527,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での会議検知通知/通知購読失敗表示は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: emphasize denied permission banner state
+
+- 開始日時: 2026-04-27 22:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 会議前の録音/画面収録状態を分かりやすくするため、権限未確認の注意と、権限拒否または確認失敗の警告を視覚的に区別する。
+- 結果: 権限バナーで `alert` 扱いになる拒否/確認失敗時に専用クラスを付け、未確認の注意色より強いエラー調で表示するようにした。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での macOS 権限拒否/確認失敗表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。

@@ -924,6 +924,12 @@
   color: var(--permission-banner-color);
 }
 
+.permission-banner-alert {
+  background-color: var(--transcript-error-bg);
+  border-color: var(--transcript-error-color);
+  color: var(--transcript-error-color);
+}
+
 .permission-banner-title {
   font-weight: 700;
   font-size: 0.9rem;
