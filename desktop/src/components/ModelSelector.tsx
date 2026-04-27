@@ -106,9 +106,12 @@ export function ModelSelector({
       .catch((e) => {
         if (!disposed) {
           const msg = toErrorMessage(e);
-          console.error("モデルDL進捗通知の受信開始に失敗しました:", msg);
+          console.error(
+            "Whisperモデルダウンロード進捗通知の受信開始に失敗しました:",
+            msg,
+          );
           setProgressListenerError(
-            `モデルDL進捗通知の受信開始に失敗しました: ${msg}`,
+            `Whisperモデルダウンロード進捗通知の受信開始に失敗しました: ${msg}`,
           );
         }
         return null;
@@ -120,7 +123,7 @@ export function ModelSelector({
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error(
-            "モデルDL進捗通知の受信解除に失敗しました:",
+            "Whisperモデルダウンロード進捗通知の受信解除に失敗しました:",
             toErrorMessage(e),
           );
         });
@@ -158,9 +161,12 @@ export function ModelSelector({
       .catch((e) => {
         if (!disposed) {
           const msg = toErrorMessage(e);
-          console.error("モデルDLエラー通知の受信開始に失敗しました:", msg);
+          console.error(
+            "Whisperモデルダウンロードエラー通知の受信開始に失敗しました:",
+            msg,
+          );
           setDownloadErrorListenerError(
-            `モデルDLエラー通知の受信開始に失敗しました: ${msg}`,
+            `Whisperモデルダウンロードエラー通知の受信開始に失敗しました: ${msg}`,
           );
         }
         return null;
@@ -172,7 +178,7 @@ export function ModelSelector({
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error(
-            "モデルDLエラー通知の受信解除に失敗しました:",
+            "Whisperモデルダウンロードエラー通知の受信解除に失敗しました:",
             toErrorMessage(e),
           );
         });
@@ -202,7 +208,7 @@ export function ModelSelector({
     } catch (e) {
       // emit 側で既に state を更新している可能性が高いが、
       // emit が届かなかった場合に備えて catch でも冪等に更新する。
-      console.error("モデルのダウンロードに失敗しました:", e);
+      console.error("Whisperモデルのダウンロードに失敗しました:", e);
       downloadingModelRef.current = null;
       if (!isMountedRef.current) {
         return;
@@ -447,8 +453,8 @@ function DownloadStatus({
         <span
           className="download-error"
           role="alert"
-          aria-label={`${selectedModel} モデルダウンロードエラー: ${downloadError}`}
-          title={`${selectedModel} モデルダウンロードエラー: ${downloadError}`}
+          aria-label={`${selectedModel} Whisperモデルダウンロードエラー: ${downloadError}`}
+          title={`${selectedModel} Whisperモデルダウンロードエラー: ${downloadError}`}
         >
           {downloadError}
         </span>

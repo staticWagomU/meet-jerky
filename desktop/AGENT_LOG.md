@@ -5975,3 +5975,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: ローカル Whisper 選択時にモデル選択・進捗・状態エラーの各表示が Whisper 専用 UI として自然に読めるか確認する。
+
+### Model selector UX: expand download notification labels
+
+- 開始日時: 2026-04-28 01:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ModelSelector の `モデルDL` 略語を避け、Whisperモデルダウンロード通知としてユーザー向けに自然な表現へ揃える。
+- 結果: ダウンロード進捗/エラー通知の受信開始・解除ログと UI エラー文、ダウンロード失敗ログ、ダウンロードエラーの `aria-label` / `title` を `Whisperモデルダウンロード` 表記に更新した。イベント購読、ダウンロード処理、状態更新には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: Whisperモデルダウンロードの通知受信エラーとダウンロードエラーが、略語なしで自然に読めるか確認する。
