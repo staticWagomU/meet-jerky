@@ -260,6 +260,7 @@ export function TranscriptDisplay({
 
     try {
       setIsCopying(true);
+      setCopyError(null);
       await navigator.clipboard.writeText(text);
       if (!isMountedRef.current) {
         return;
