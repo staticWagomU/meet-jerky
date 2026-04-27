@@ -53,6 +53,7 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
   other: number;
   unknown: number;
   errors: number;
+  copyable: number;
 } {
   return segments.reduce(
     (counts, segment) => {
@@ -60,6 +61,7 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
         counts.errors += 1;
         return counts;
       }
+      counts.copyable += 1;
       const speakerKind = getSpeakerKind(segment);
       if (speakerKind === "self") {
         counts.self += 1;
@@ -70,7 +72,7 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
       }
       return counts;
     },
-    { self: 0, other: 0, unknown: 0, errors: 0 },
+    { self: 0, other: 0, unknown: 0, errors: 0, copyable: 0 },
   );
 }
 
@@ -106,8 +108,8 @@ export function TranscriptDisplay({
   const [errorListenerError, setErrorListenerError] = useState<string | null>(
     null,
   );
-  const copyableSegmentsCount = segments.filter((seg) => !seg.isError).length;
   const segmentCounts = getSegmentCounts(segments);
+  const copyableSegmentsCount = segmentCounts.copyable;
 
   // Listen to transcription-result events
   useEffect(() => {
