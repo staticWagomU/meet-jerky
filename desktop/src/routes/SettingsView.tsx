@@ -559,13 +559,15 @@ function PermissionBadge({
   error: unknown;
   isChecking: boolean;
 }) {
+  const getBadgeLabel = (text: string) => `${label}: ${text}`;
   const renderBadge = (className: string, text: string) => (
     <span
       className={`settings-permission-badge${className ? ` ${className}` : ""}`}
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      aria-label={`${label}: ${text}`}
+      aria-label={getBadgeLabel(text)}
+      title={getBadgeLabel(text)}
     >
       {text}
     </span>
