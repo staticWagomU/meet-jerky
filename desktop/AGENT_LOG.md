@@ -6634,6 +6634,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で状態確認エラー文が短く自然に読めるか確認する。
 
+### System Audio UX: polish permission note
+
+- 開始日時: 2026-04-28 06:46 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、相手側システム音声セクションの権限補足文を自然な日本語へ整える。
+- 結果: 補足文を `macOS の画面収録許可が必要です` から `macOS の画面収録の許可が必要です。` に変更した。画面収録権限確認、音声取得処理、状態判定には触れなかった。
+- 変更ファイル: `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で相手側音声セクションの補足文が自然な行長で表示されるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
