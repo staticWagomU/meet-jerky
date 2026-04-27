@@ -4687,3 +4687,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機画面確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: mark meeting status strip busy
+
+- 開始日時: 2026-04-27 19:15 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議 status strip 自体にも、会議/音声/文字起こし操作中の busy 状態を支援技術へ伝える。
+- 結果: status strip root に `aria-busy={isAudioSourceOperationPending}` を追加し、状態帯単位でも処理中であることを示すようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。会議/音声/文字起こし実操作と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
