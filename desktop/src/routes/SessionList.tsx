@@ -178,7 +178,7 @@ export function SessionList() {
             aria-label={sessionCountLabel}
             title={sessionCountLabel}
           >
-            {sessions.length} 件{isFetching ? " / 更新中" : ""}
+            {sessions.length} 件{isFetching ? "、更新中" : ""}
           </span>
         </div>
         <button

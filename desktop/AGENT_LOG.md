@@ -6214,6 +6214,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で権限バナーのピル幅が過度に広がらないか確認する。
 
+### Session List UX: clarify updating count
+
+- 開始日時: 2026-04-28 05:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、履歴件数の更新中表示を記号区切りではなく自然な表記へ揃える。
+- 結果: セッション履歴の件数表示で `件 / 更新中` となっていた部分を `件、更新中` に変更した。履歴取得、ファイル操作、状態判定には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 履歴一覧の更新中表示が狭い幅でも読みやすく表示されるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
