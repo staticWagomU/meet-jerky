@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: make track actions read naturally
+
+- 開始日時: 2026-04-28 07:51 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の自分/相手側トラック操作ボタンを、短縮しすぎた硬い表記ではなく自然に読める文言へ整える。
+- 結果: `自分録音を開始/停止` を `自分の録音を開始/停止` に、`相手側取得を開始/停止` を `相手側音声の取得を開始/停止` に変更した。録音・システム音声取得・文字起こし制御には触れなかった。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機 UI でボタン幅と折り返しの有無を確認する。
+
 ### Microphone UX: clarify visible track action
 
 - 開始日時: 2026-04-28 07:50 JST
