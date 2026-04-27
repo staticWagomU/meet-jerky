@@ -6536,6 +6536,20 @@
 - 失敗理由: なし。
 - 次アクション: VoiceOver で status strip の読み上げが会議全体の状態として自然か確認する。
 
+### Transcript UX: replace partial source slash wording
+
+- 開始日時: 2026-04-28 07:54 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こし中の片側トラック状態表示を記号区切りではなく自然な表記へ揃える。
+- 結果: `文字起こし中: 自分のみ / 相手側は未取得` を `文字起こし中: 自分のみ、相手側は未取得` に、`相手側のみ / 自分は未録音` を `相手側のみ、自分は未録音` に変更した。録音/取得状態判定、文字起こし制御、注意文には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で片側トラックのみ文字起こし中の状態表示が自然に折り返されるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
