@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: clarify empty log label
+
+- 開始日時: 2026-04-28 07:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログが空のときの aria/title でも自分/相手側トラックの待機状態が分かるようにする。
+- 結果: 空ログのラベルを `文字起こしログは空です` から、可視本文と同じ「開始すると自分と相手側トラックの発話が流れる」説明を含む文へ変更した。可視表示、文字起こし受信、コピー処理には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で空の文字起こしログが自分/相手側トラックの待機場所として自然に読まれるか確認する。
+
 ### Transcript UX: generalize inline error class
 
 - 開始日時: 2026-04-28 07:39 JST
