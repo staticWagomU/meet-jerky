@@ -663,6 +663,31 @@ function OpenAIApiKeySection({
     clearMutation.mutate();
   }, [clearMutation, hasKey, hasKeyError, isFetchingHasKey]);
 
+  const saveApiKeyLabel = setMutation.isPending
+    ? "OpenAI API キーを保存中"
+    : keyInput.trim()
+      ? "OpenAI API キーを保存"
+      : "OpenAI API キーを入力すると保存できます";
+  const clearApiKeyLabel = clearMutation.isPending
+    ? "OpenAI API キーを削除中"
+    : isFetchingHasKey
+      ? "OpenAI API キー状態を確認中"
+      : hasKeyError
+        ? "OpenAI API キー状態を確認できないため削除できません"
+        : hasKey
+          ? "OpenAI API キーを削除"
+          : "削除できる OpenAI API キーはありません";
+  const apiKeyStatusText = isFetchingHasKey
+    ? "確認中"
+    : hasKeyError
+      ? "確認失敗"
+      : hasKey === undefined
+        ? "確認中"
+        : hasKey
+          ? "登録済み"
+          : "未登録";
+  const apiKeyStatusLabel = `OpenAI API キー状態: ${apiKeyStatusText}`;
+
   return (
     <div className="settings-section">
       <h3 className="settings-section-title">OpenAI API キー</h3>
@@ -711,13 +736,8 @@ function OpenAIApiKeySection({
             className="control-btn control-btn-transcribe"
             disabled={!keyInput.trim() || setMutation.isPending}
             onClick={handleSetApiKey}
-            aria-label={
-              setMutation.isPending
-                ? "OpenAI API キーを保存中"
-                : keyInput.trim()
-                  ? "OpenAI API キーを保存"
-                  : "OpenAI API キーを入力すると保存できます"
-            }
+            aria-label={saveApiKeyLabel}
+            title={saveApiKeyLabel}
           >
             {setMutation.isPending ? "保存中..." : "保存"}
           </button>
@@ -731,17 +751,8 @@ function OpenAIApiKeySection({
               clearMutation.isPending
             }
             onClick={handleClearApiKey}
-            aria-label={
-              clearMutation.isPending
-                ? "OpenAI API キーを削除中"
-                : isFetchingHasKey
-                  ? "OpenAI API キー状態を確認中"
-                  : hasKeyError
-                    ? "OpenAI API キー状態を確認できないため削除できません"
-                    : hasKey
-                      ? "OpenAI API キーを削除"
-                      : "削除できる OpenAI API キーはありません"
-            }
+            aria-label={clearApiKeyLabel}
+            title={clearApiKeyLabel}
           >
             {clearMutation.isPending ? "削除中..." : "削除"}
           </button>
@@ -751,17 +762,8 @@ function OpenAIApiKeySection({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`OpenAI API キー状態: ${
-            isFetchingHasKey
-              ? "確認中"
-              : hasKeyError
-                ? "確認失敗"
-                : hasKey === undefined
-                  ? "確認中"
-                  : hasKey
-                    ? "登録済み"
-                    : "未登録"
-          }`}
+          aria-label={apiKeyStatusLabel}
+          title={apiKeyStatusLabel}
         >
           状態:{" "}
           {isFetchingHasKey
