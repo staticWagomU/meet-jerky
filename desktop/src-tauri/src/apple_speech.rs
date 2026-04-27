@@ -207,6 +207,13 @@ mod macos {
     impl Drop for AppleSpeechStream {
         fn drop(&mut self) {
             if !self.bridge.is_null() {
+                if !self.finalized {
+                    let rc = unsafe { meet_jerky_speech_finalize(self.bridge) };
+                    if rc != 0 {
+                        eprintln!("[apple_speech] drop finalize failed: rc={rc}");
+                    }
+                    self.finalized = true;
+                }
                 unsafe { meet_jerky_speech_destroy(self.bridge) };
                 self.bridge = std::ptr::null_mut();
             }

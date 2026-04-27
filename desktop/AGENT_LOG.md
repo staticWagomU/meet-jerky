@@ -1,5 +1,19 @@
 # Agent Log
 
+### Crash Hardening: finalize Apple Speech stream on drop
+
+- 開始日時: 2026-04-28 08:54 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 指示内容: Apple Speech / SpeechAnalyzer のクラッシュ対策継続として、片側 source でも stream 作成後に worker 起動前エラーなどで破棄される場合の Swift bridge ライフサイクルを確認し、未 finalize のまま destroy される経路を潰す。
+- 結果: `AppleSpeechStream` の `Drop` で、未 finalize の bridge は `meet_jerky_speech_finalize` を呼んでから `meet_jerky_speech_destroy` するようにした。通常停止時の `finalize` 済み stream は二重 finalize しない。これにより、consumer 不在や初期化途中エラーで stream が Drop された場合でも SpeechAnalyzer の入力 stream と consumer task を閉じやすくした。
+- 変更ファイル: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/apple_speech.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/apple_speech.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml apple_speech` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。実機での Apple Speech / Speech.framework 疎通確認は未実施。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml apple_speech` を再実行し、実機で片側 Apple Speech 開始・停止・開始失敗時の破棄がクラッシュしないことを確認する。
+
 ### Settings UX: disclose Apple Speech single-track limitation
 
 - 開始日時: 2026-04-28 08:53 JST
