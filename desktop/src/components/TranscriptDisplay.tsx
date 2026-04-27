@@ -24,7 +24,7 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   if (segment.source === "microphone") return "自分";
   if (segment.source === "system_audio") return "相手側";
   if (segment.speaker) return segment.speaker;
-  return "未分類";
+  return "ソース不明";
 }
 
 function isSourceLessError(segment: TranscriptSegment): boolean {
@@ -35,7 +35,7 @@ function getSegmentAriaLabel(segment: TranscriptSegment): string {
   const speakerLabel =
     isSourceLessError(segment)
       ? "音声ソース不明"
-      : getSpeakerLabel(segment) ?? "未分類";
+      : getSpeakerLabel(segment) ?? "音声ソース不明";
   if (segment.isError) {
     return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
   }
@@ -294,9 +294,9 @@ export function TranscriptDisplay({
 
   const transcriptLogLabel =
     segments.length > 0
-      ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
+      ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
       : "文字起こしログは空です";
-  const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
+  const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
   const transcriptWrapperLabel = isCopying
     ? `${transcriptCountsLabel}、コピー中`
     : transcriptCountsLabel;
@@ -347,10 +347,10 @@ export function TranscriptDisplay({
             {segmentCounts.unknown > 0 && (
               <span
                 className="transcript-count-pill transcript-count-pill-unknown"
-                aria-label={`音声ソース未分類の文字起こし: ${segmentCounts.unknown} 件`}
-                title={`音声ソース未分類の文字起こし: ${segmentCounts.unknown} 件`}
+                aria-label={`音声ソース不明の文字起こし: ${segmentCounts.unknown} 件`}
+                title={`音声ソース不明の文字起こし: ${segmentCounts.unknown} 件`}
               >
-                未分類 {segmentCounts.unknown}
+                ソース不明 {segmentCounts.unknown}
               </span>
             )}
             {segmentCounts.errors > 0 && (
