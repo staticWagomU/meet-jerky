@@ -35,6 +35,9 @@ export function ModelSelector({
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadErrorModel, setDownloadErrorModel] = useState<string | null>(
+    null,
+  );
   const [progressListenerError, setProgressListenerError] = useState<
     string | null
   >(null);
@@ -141,6 +144,7 @@ export function ModelSelector({
           return;
         }
         setDownloadError(event.payload.message);
+        setDownloadErrorModel(event.payload.model);
         downloadingModelRef.current = null;
         setDownloadingModel(null);
         setDownloadProgress(0);
@@ -184,6 +188,7 @@ export function ModelSelector({
     setDownloadingModel(modelName);
     setDownloadProgress(0);
     setDownloadError(null);
+    setDownloadErrorModel(null);
     try {
       await invoke("download_model", { modelName });
       downloadingModelRef.current = null;
@@ -204,6 +209,7 @@ export function ModelSelector({
         return;
       }
       setDownloadError(typeof e === "string" ? e : String(e));
+      setDownloadErrorModel(modelName);
       setDownloadingModel(null);
       setDownloadProgress(0);
     }
@@ -284,7 +290,9 @@ export function ModelSelector({
           selectedModel={selectedModel}
           downloadingModel={downloadingModel}
           downloadProgress={downloadProgress}
-          downloadError={downloadError}
+          downloadError={
+            downloadErrorModel === selectedModel ? downloadError : null
+          }
           disabled={disabled}
           onDownload={handleDownload}
         />
