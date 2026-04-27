@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: pre-block dual Apple Speech starts
+
+- 開始日時: 2026-04-28 08:51 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: Apple Speech / SpeechAnalyzer の同時 source 起動クラッシュ修正の追補として、UI でも Apple Speech 選択時の自分トラック + 相手側トラック同時文字起こし開始を事前に止め、録音開始後に失敗・ロールバックする体験を避ける。
+- 結果: 記録開始ボタンと文字起こし開始ボタンの開始可否判定に Apple Speech の同時 source 制約を反映した。記録開始は既存フローがマイクと相手側音声を同時に開始するため Apple Speech 選択時は開始前に不可理由を表示し、手動文字起こしは両 source が録音中の場合だけ不可理由を表示する。実行ハンドラ側にも同じガードを追加し、ボタン状態の競合でも session / 録音開始前に止めるようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での Apple Speech / Speech.framework 疎通確認は未実施。
+- 次アクション: cmake あり環境で Rust 検証を再実行し、実機で Apple Speech 選択時の記録開始不可表示と片側 source の手動文字起こし開始を確認する。
+
 ### Crash Fix: prevent dual Apple Speech streams
 
 - 開始日時: 2026-04-28 08:30 JST
