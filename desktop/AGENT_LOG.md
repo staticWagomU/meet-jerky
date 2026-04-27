@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Controls UX: clarify waiting button text
+
+- 開始日時: 2026-04-28 07:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、マイク/相手側音声ボタンが他の処理待ちで無効なときの可視表示を支援技術向けラベルと揃える。
+- 結果: 他の音声または文字起こし操作中のボタン表示を `他の操作中` から `他の処理中` に変更した。無効条件、aria/title、録音/取得処理には触れなかった。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でマイク/相手側音声ボタンの幅と状態表示が自然か確認する。
+
 ### Transcript UX: include blocked reason in start buttons
 
 - 開始日時: 2026-04-28 07:04 JST
