@@ -5793,3 +5793,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で OpenAI / ElevenLabs 選択時のステータスバー表示と読み上げを確認する。
+
+### Worker task: shorten missing audio source notice
+
+- 開始日時: 2026-04-28 01:22 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中または文字起こし中に片側トラックが未取得のときに出る `meeting-source-notice` の文言を、短く、会議中に邪魔にならず、何が記録対象外になるかが明確な文言へ調整する。表示条件、CSS、音声取得、文字起こし、権限処理には触れない。コミットは禁止。
+- 結果: `getAudioSourceNotice()` の文言のみを更新し、マイクのみ、システム音声のみ、両方なしの各状態で、未取得/未録音トラックと記録されない発話範囲を短く明示するようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議中/文字起こし中の片側トラック未取得 notice が短く視認でき、記録対象外の範囲が誤解なく伝わるか確認する。

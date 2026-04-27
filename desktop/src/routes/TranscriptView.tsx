@@ -210,12 +210,12 @@ function getAudioSourceNotice(
     return null;
   }
   if (isMicRecording) {
-    return "相手側トラック未取得。会議相手の音声を残すにはシステム音声を開始してください。";
+    return "相手側トラックは未取得です。相手の発話は記録されません。";
   }
   if (isSystemAudioRecording) {
-    return "自分トラック未録音。自分の発話を残すにはマイクを開始してください。";
+    return "自分トラックは未録音です。自分の発話は記録されません。";
   }
-  return "音声ソース未開始。マイクまたはシステム音声を開始してください。";
+  return "音声ソース未開始です。自分/相手側トラックは記録されません。";
 }
 
 function getAudioSourceStatusPillClass(statusLabel: string): string {
