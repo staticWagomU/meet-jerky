@@ -4085,3 +4085,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認と録音/AI送信実機確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose transcription engine choices on hover
+
+- 開始日時: 2026-04-27 15:20 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の文字起こしエンジン選択肢が、ホバーでも端末内処理か OpenAI 送信かを確認できるようにする。
+- 結果: Whisper、macOS SpeechAnalyzer、OpenAI Realtime API の各 radio label に処理場所と送信有無を示す `title` を追加した。エンジン選択値、保存処理、OpenAI API 利用、認証情報は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。認証情報変更/API送信は行っていない。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

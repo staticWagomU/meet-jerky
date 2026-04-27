@@ -262,6 +262,11 @@ export function SettingsView() {
     : hasChanges
       ? "変更した設定を保存"
       : "保存する設定変更はありません";
+  const whisperEngineLabel = "文字起こしエンジン: ローカル Whisper、端末内処理";
+  const appleSpeechEngineLabel =
+    "文字起こしエンジン: macOS SpeechAnalyzer、端末内処理";
+  const openAIRealtimeEngineLabel =
+    "文字起こしエンジン: OpenAI Realtime API、音声をOpenAIへ送信";
 
   return (
     <div className="settings-view">
@@ -275,7 +280,7 @@ export function SettingsView() {
           role="radiogroup"
           aria-labelledby="transcription-engine-title"
         >
-          <label className="settings-radio-label">
+          <label className="settings-radio-label" title={whisperEngineLabel}>
             <input
               type="radio"
               name="engine"
@@ -294,7 +299,7 @@ export function SettingsView() {
               端末内処理
             </span>
           </label>
-          <label className="settings-radio-label">
+          <label className="settings-radio-label" title={appleSpeechEngineLabel}>
             <input
               type="radio"
               name="engine"
@@ -313,7 +318,10 @@ export function SettingsView() {
               端末内処理 / macOS 26+ 専用
             </span>
           </label>
-          <label className="settings-radio-label">
+          <label
+            className="settings-radio-label"
+            title={openAIRealtimeEngineLabel}
+          >
             <input
               type="radio"
               name="engine"
