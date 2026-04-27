@@ -877,10 +877,20 @@ export function TranscriptView() {
     : isMeetingActive
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
+  const transcriptionStatusLabel = isTranscriptionOperationPending
+    ? "処理中"
+    : isTranscribing
+      ? "文字起こし中"
+      : "文字起こし停止";
+  const transcriptionStatusClass = isTranscriptionOperationPending
+    ? "meeting-status-pill-neutral"
+    : isTranscribing
+      ? "meeting-status-pill-active"
+      : "meeting-status-pill-idle";
   const meetingStatusAriaLabel = [
     "会議記録状態",
     meetingRecordingStatusLabel,
-    isTranscribing ? "文字起こし中" : "文字起こし停止",
+    transcriptionStatusLabel,
     `音声 ${audioSourceStatusAriaText}`,
     `エンジン ${engineStatusLabel}`,
     `AI送信 ${aiTransmissionStatusLabel}`,
@@ -948,18 +958,10 @@ export function TranscriptView() {
             {meetingRecordingStatusLabel}
           </span>
           <span
-            className={`meeting-status-pill ${
-              isTranscribing
-                ? "meeting-status-pill-active"
-                : "meeting-status-pill-idle"
-            }`}
-            title={
-              isTranscribing
-                ? "文字起こし: 実行中"
-                : "文字起こし: 停止中"
-            }
+            className={`meeting-status-pill ${transcriptionStatusClass}`}
+            title={`文字起こし: ${transcriptionStatusLabel}`}
           >
-            {isTranscribing ? "文字起こし中" : "文字起こし停止"}
+            {transcriptionStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${getAudioSourceStatusPillClass(audioSourceStatusLabel)}`}
