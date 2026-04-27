@@ -64,6 +64,9 @@ export function MeetingDetectedBanner() {
   if (!detected && !listenerError) return null;
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
+  const bannerMessage = listenerError
+    ? listenerError
+    : `${displayName} を検出しました。文字起こしページで記録状態を確認できます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。記録状態を確認できます。`;
@@ -73,10 +76,10 @@ export function MeetingDetectedBanner() {
       className="meeting-detected-banner"
       role={listenerError ? "alert" : "status"}
       aria-label={bannerAriaLabel}
+      title={bannerMessage}
     >
       <span className="meeting-detected-banner-text">
-        {listenerError ??
-          `${displayName} を検出しました。文字起こしページで記録状態を確認できます。`}
+        {bannerMessage}
       </span>
       {detected && (
         <div className="meeting-detected-banner-actions">
