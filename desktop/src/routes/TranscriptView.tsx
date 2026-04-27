@@ -939,6 +939,7 @@ export function TranscriptView() {
     : isMeetingActive
       ? "会議記録を終了"
       : "会議記録を開始";
+  const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const modelDownloadedErrorMessage = modelDownloadedErrorForUi
     ? toErrorMessage(modelDownloadedErrorForUi)
@@ -949,7 +950,12 @@ export function TranscriptView() {
     : "";
 
   return (
-    <div className="transcript-view" aria-busy={isAudioSourceOperationPending}>
+    <div
+      className="transcript-view"
+      aria-busy={isAudioSourceOperationPending}
+      aria-label={transcriptViewLabel}
+      title={transcriptViewLabel}
+    >
       <PermissionBanner />
 
       {/* 会議ボタン */}
