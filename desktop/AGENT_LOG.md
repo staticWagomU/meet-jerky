@@ -4828,6 +4828,20 @@
 - 失敗理由: なし。実際のモデルDL競合イベント再現は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
 
+### Main task: browser meeting URL detection
+
+- 開始日時: 2026-04-27 23:36 JST
+- 担当セッション: `Codex`
+- 役割: 実装担当
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `src-tauri/src/app_detection.rs`, `src-tauri/src/transcription.rs`, `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 指示内容: Safari / Edge / Chrome / Firefox で開かれた Google Meet / Zoom / Microsoft Teams の会議URLを検知して通知する仕組みを実装する。watchdog や自律メインの責務は変更しない。
+- 結果: Swift 側にブラウザ前面アプリのアクティブタブURL取得を追加。Safari / Chrome / Edge は Apple Events、Firefox は AppleScript と Accessibility fallback で取得を試みる。3秒間隔の前面ブラウザポーリングとアクティブアプリ切替時スキャンで URL 変化を検知し、Rust 側へ C callback で渡す。Rust 側は既存 `classify_meeting_url` で Google Meet / Zoom / Teams の会議URLのみ分類し、URL全文や path を payload / UI / log に出さず、service と host だけで macOS 通知と `meeting-app-detected` イベントを発火する。Apple Events 利用目的を `Info.plist` に追加した。Rust 全体テストを通すため、既存テストヘルパーの `WhisperStream` 初期化漏れ `source: None` も最小修正した。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `src-tauri/src/app_detection.rs`, `src-tauri/src/transcription.rs`, `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 検証結果: `swiftc -parse src-tauri/swift/AppDetectionBridge.swift` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2021 --check src-tauri/src/app_detection.rs src-tauri/src/transcription.rs` 成功。`git diff --check -- src-tauri/src/app_detection.rs src-tauri/src/transcription.rs src-tauri/swift/AppDetectionBridge.swift src-tauri/Info.plist` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` は 141 passed。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 最初の sandbox 内 `cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `~/.cache/clang/ModuleCache` へ書き込めず失敗したため、外側権限で再実行して成功。実機ブラウザでの Apple Events / Accessibility 権限ダイアログ確認は未実施。
+- 次アクション: 実機で Safari / Chrome / Edge / Firefox を前面にして Meet / Zoom / Teams URL を開き、初回 Apple Events または Accessibility 権限許可後に通知とバナーが出ることを確認する。Firefox は環境により Accessibility の許可が必要になる可能性がある。
+
 ### Main task: review browser URL detection bridge
 
 - 開始日時: 2026-04-27 20:01 JST
