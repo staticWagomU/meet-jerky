@@ -176,6 +176,9 @@ export function SettingsView() {
   }, [localSettings]);
 
   if (settingsError) {
+    const reloadSettingsLabel = isFetchingSettings
+      ? "アプリ設定を読み込み中"
+      : "アプリ設定を再読み込み";
     return (
       <div className="settings-view">
         <p
@@ -191,11 +194,8 @@ export function SettingsView() {
           className="control-btn control-btn-clear"
           onClick={() => refetchSettings()}
           disabled={isFetchingSettings}
-          aria-label={
-            isFetchingSettings
-              ? "アプリ設定を読み込み中"
-              : "アプリ設定を再読み込み"
-          }
+          aria-label={reloadSettingsLabel}
+          title={reloadSettingsLabel}
         >
           {isFetchingSettings ? "読み込み中..." : "再読み込み"}
         </button>
@@ -204,13 +204,15 @@ export function SettingsView() {
   }
 
   if (isLoadingSettings || !localSettings) {
+    const loadingSettingsLabel = "アプリ設定を読み込み中";
     return (
       <div
         className="settings-view"
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        aria-label="アプリ設定を読み込み中"
+        aria-label={loadingSettingsLabel}
+        title={loadingSettingsLabel}
       >
         読み込み中...
       </div>
@@ -231,6 +233,35 @@ export function SettingsView() {
     : localSettings.outputDirectory
       ? "出力先ディレクトリをデフォルトに戻す"
       : "出力先ディレクトリはデフォルトです";
+  const whisperModelName =
+    WHISPER_MODELS.find((model) => model.value === localSettings.whisperModel)
+      ?.label ?? localSettings.whisperModel;
+  const selectedMicrophoneDeviceName = localSettings.microphoneDeviceId
+    ? (devices?.find((device) => device.id === localSettings.microphoneDeviceId)
+        ?.name ?? localSettings.microphoneDeviceId)
+    : "デフォルト";
+  const languageName =
+    LANGUAGES.find((lang) => lang.value === localSettings.language)?.label ??
+    localSettings.language;
+  const whisperModelLabel = `Whisperモデル: ${whisperModelName}`;
+  const microphoneDeviceLabel = localSettings.microphoneDeviceId
+    ? `マイクデバイス: ${selectedMicrophoneDeviceName}`
+    : "マイクデバイス: デフォルト";
+  const retryDevicesLabel = isFetchingDevices
+    ? "マイクデバイス一覧を取得中"
+    : "マイクデバイス一覧を再取得";
+  const languageLabel = `言語: ${languageName}`;
+  const retryDefaultOutputDirLabel = isFetchingDefaultOutputDir
+    ? "デフォルト出力先ディレクトリを取得中"
+    : "デフォルト出力先ディレクトリを再取得";
+  const permissionRetryLabel = isCheckingPermissions
+    ? "macOS権限状態を確認中"
+    : "macOS権限状態を再チェック";
+  const saveSettingsLabel = updateMutation.isPending
+    ? "設定を保存中"
+    : hasChanges
+      ? "変更した設定を保存"
+      : "保存する設定変更はありません";
 
   return (
     <div className="settings-view">
@@ -314,7 +345,8 @@ export function SettingsView() {
         <div className="settings-section">
           <h3 className="settings-section-title">Whisperモデル</h3>
           <select
-            aria-label="Whisperモデル"
+            aria-label={whisperModelLabel}
+            title={whisperModelLabel}
             value={localSettings.whisperModel}
             onChange={(e) =>
               setLocalSettings({ ...localSettings, whisperModel: e.target.value })
@@ -334,7 +366,8 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">マイクデバイス</h3>
         <select
-          aria-label="マイクデバイス"
+          aria-label={microphoneDeviceLabel}
+          title={microphoneDeviceLabel}
           value={localSettings.microphoneDeviceId ?? ""}
           onChange={(e) =>
             setLocalSettings({
@@ -364,11 +397,8 @@ export function SettingsView() {
               className="control-btn control-btn-clear"
               onClick={() => refetchDevices()}
               disabled={isFetchingDevices}
-              aria-label={
-                isFetchingDevices
-                  ? "マイクデバイス一覧を取得中"
-                  : "マイクデバイス一覧を再取得"
-              }
+              aria-label={retryDevicesLabel}
+              title={retryDevicesLabel}
             >
               {isFetchingDevices ? "取得中..." : "再取得"}
             </button>
@@ -380,7 +410,8 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">言語</h3>
         <select
-          aria-label="言語"
+          aria-label={languageLabel}
+          title={languageLabel}
           value={localSettings.language}
           onChange={(e) =>
             setLocalSettings({ ...localSettings, language: e.target.value })
@@ -424,11 +455,8 @@ export function SettingsView() {
                 className="control-btn control-btn-clear"
                 onClick={() => refetchDefaultOutputDir()}
                 disabled={isFetchingDefaultOutputDir}
-                aria-label={
-                  isFetchingDefaultOutputDir
-                    ? "デフォルト出力先ディレクトリを取得中"
-                    : "デフォルト出力先ディレクトリを再取得"
-                }
+                aria-label={retryDefaultOutputDirLabel}
+                title={retryDefaultOutputDirLabel}
               >
                 {isFetchingDefaultOutputDir ? "取得中..." : "再取得"}
               </button>
@@ -491,11 +519,8 @@ export function SettingsView() {
             className="control-btn control-btn-clear"
             onClick={refetchPermissions}
             disabled={isCheckingPermissions}
-            aria-label={
-              isCheckingPermissions
-                ? "macOS権限状態を確認中"
-                : "macOS権限状態を再チェック"
-            }
+            aria-label={permissionRetryLabel}
+            title={permissionRetryLabel}
           >
             {isCheckingPermissions ? "確認中..." : "再チェック"}
           </button>
@@ -515,6 +540,7 @@ export function SettingsView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
+            title="未保存の変更があります"
           >
             未保存の変更があります
           </span>
@@ -524,13 +550,8 @@ export function SettingsView() {
           className="control-btn control-btn-transcribe settings-save-btn"
           onClick={handleSave}
           disabled={!hasChanges || updateMutation.isPending}
-          aria-label={
-            updateMutation.isPending
-              ? "設定を保存中"
-              : hasChanges
-                ? "変更した設定を保存"
-                : "保存する設定変更はありません"
-          }
+          aria-label={saveSettingsLabel}
+          title={saveSettingsLabel}
         >
           {updateMutation.isPending ? "保存中..." : "設定を保存"}
         </button>
