@@ -46,7 +46,7 @@ export function MicrophoneSection({
       ? "audio-source-state-badge-active"
       : "audio-source-state-badge-idle";
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
-  const micStateDescription = `マイク 自分トラック: ${micStateText}`;
+  const micStateDescription = `自分トラック マイク: ${micStateText}`;
   const micButtonLabel = isOperationPending
     ? "自分トラックのマイク録音を処理中"
     : isControlDisabled
@@ -140,8 +140,8 @@ export function MicrophoneSection({
         <div
           className="settings-inline-error"
           role="alert"
-          aria-label={`マイク 自分トラックのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
-          title={`マイク 自分トラックのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
+          aria-label={`自分トラック マイクのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
+          title={`自分トラック マイクのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
         >
           <span>
             自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
@@ -164,7 +164,7 @@ export function MicrophoneSection({
         <div className="level-meter-bar">
           <AudioLevelMeter
             level={micLevel}
-            label="マイク 自分トラック音量レベル"
+            label="自分トラック マイクの音量レベル"
           />
         </div>
         <span className="level-label">{micLevelPercent}%</span>

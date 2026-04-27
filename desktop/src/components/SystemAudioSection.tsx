@@ -32,7 +32,7 @@ export function SystemAudioSection({
       ? "audio-source-state-badge-active"
       : "audio-source-state-badge-idle";
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
-  const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
+  const systemAudioStateDescription = `相手側トラック システム音声: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
     ? "相手側トラックのシステム音声取得を処理中"
     : isControlDisabled
@@ -97,7 +97,7 @@ export function SystemAudioSection({
         <div className="level-meter-bar">
           <AudioLevelMeter
             level={systemAudioLevel}
-            label="システム音声 相手側トラック音量レベル"
+            label="相手側トラック システム音声の音量レベル"
           />
         </div>
         <span className="level-label">{systemAudioLevelPercent}%</span>

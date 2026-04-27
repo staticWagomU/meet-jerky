@@ -55,14 +55,14 @@ export function PermissionBanner() {
         ? "未許可"
         : "未確認";
   const micPermissionDetail = [
-    "マイク 自分トラック",
+    "自分トラック マイク",
     micStatusLabel,
     micPermissionErrorMessage,
   ]
     .filter(Boolean)
     .join(": ");
   const screenPermissionDetail = [
-    "画面収録 相手側トラック",
+    "相手側トラック 画面収録",
     screenStatusLabel,
     screenPermissionErrorMessage,
   ]
