@@ -126,10 +126,10 @@ function getTranscriptionStartBlockedReason(
     return null;
   }
   if (isModelDownloaded === undefined) {
-    return "モデル状態を確認中です。";
+    return "Whisperモデル状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "文字起こし開始には、モデルのダウンロードが必要です。";
+    return "文字起こし開始には、Whisperモデルのダウンロードが必要です。";
   }
   return null;
 }
@@ -156,10 +156,10 @@ function getMeetingStartBlockedReason(
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
-    return "会議開始に必要なモデル状態を確認中です。";
+    return "会議開始に必要なWhisperモデル状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "会議開始には、モデルのダウンロードが必要です。";
+    return "会議開始には、Whisperモデルのダウンロードが必要です。";
   }
   return null;
 }
