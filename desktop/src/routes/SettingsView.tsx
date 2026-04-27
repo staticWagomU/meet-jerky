@@ -284,8 +284,8 @@ export function SettingsView() {
     ? toErrorMessage(defaultOutputDirError)
     : "";
   const permissionRetryLabel = isCheckingPermissions
-    ? "macOS権限状態を確認中"
-    : "macOS権限状態を再チェック";
+    ? "macOS 権限状態を確認中"
+    : "macOS 権限状態を再チェック";
   const browserAutomationPermissionLabel =
     "自動操作 ブラウザ URL 検知: 必要時に macOS が確認";
   const hasPermissionCheckError =
@@ -328,7 +328,7 @@ export function SettingsView() {
     isFetchingSettings ? "設定を読み込み中" : null,
     isFetchingDevices ? "マイクデバイス一覧を取得中" : null,
     isFetchingDefaultOutputDir ? "デフォルト出力先を取得中" : null,
-    isCheckingPermissions ? "macOS権限状態を確認中" : null,
+    isCheckingPermissions ? "macOS 権限状態を確認中" : null,
     hasChanges ? "未保存の変更あり" : null,
   ]
     .filter(Boolean)
