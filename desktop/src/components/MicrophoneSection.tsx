@@ -18,6 +18,12 @@ interface MicrophoneSectionProps {
   onToggleRecording: () => void;
 }
 
+function toErrorMessage(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
 export function MicrophoneSection({
   isMicRecording,
   micLevel,
@@ -62,6 +68,9 @@ export function MicrophoneSection({
   const retryDevicesLabel = isReloadingAudioDevices
     ? "マイクデバイス一覧を取得中"
     : "マイクデバイス一覧を再取得";
+  const audioDevicesErrorMessage = audioDevicesError
+    ? toErrorMessage(audioDevicesError)
+    : "";
 
   return (
     <div
@@ -129,11 +138,11 @@ export function MicrophoneSection({
         <div
           className="settings-inline-error"
           role="alert"
-          aria-label={`マイク 自分トラックのデバイス一覧エラー: ${String(audioDevicesError)}`}
-          title={`マイク 自分トラックのデバイス一覧エラー: ${String(audioDevicesError)}`}
+          aria-label={`マイク 自分トラックのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
+          title={`マイク 自分トラックのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
         >
           <span>
-            マイクデバイス一覧の取得に失敗しました: {String(audioDevicesError)}
+            マイクデバイス一覧の取得に失敗しました: {audioDevicesErrorMessage}
           </span>
           <button
             type="button"
