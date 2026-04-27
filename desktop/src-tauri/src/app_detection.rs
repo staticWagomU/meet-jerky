@@ -235,6 +235,9 @@ fn extract_query(rest: &str) -> Option<String> {
 fn strip_port(host_port: &str) -> Option<&str> {
     if let Some(without_opening_bracket) = host_port.strip_prefix('[') {
         let (host, port) = without_opening_bracket.split_once(']')?;
+        if !host.contains(':') {
+            return None;
+        }
         if let Some(port) = port.strip_prefix(':') {
             validate_port(port)?;
         } else if !port.is_empty() {
@@ -679,6 +682,14 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://meet.google.com:65536/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://[meet.google.com]/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://[meet.google.com]:443/abc-defg-hij"),
             None
         );
         assert_eq!(
