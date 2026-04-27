@@ -1037,8 +1037,8 @@ export function TranscriptView() {
         {isMeetingActive && meetingStartTime && (
           <span
             className="meeting-timer"
-            aria-label={`会議経過時間 ${formatElapsedTime(elapsedTime)}`}
-            title={`会議経過時間 ${formatElapsedTime(elapsedTime)}`}
+            aria-label={`記録経過時間 ${formatElapsedTime(elapsedTime)}`}
+            title={`記録経過時間 ${formatElapsedTime(elapsedTime)}`}
           >
             {formatElapsedTime(elapsedTime)}
           </span>

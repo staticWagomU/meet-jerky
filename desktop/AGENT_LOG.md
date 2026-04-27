@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: clarify recording timer label
+
+- 開始日時: 2026-04-28 08:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面のタイマーが会議そのものではなく記録開始からの経過時間だと支援技術向けにも分かるようにする。
+- 結果: タイマーの aria-label/title を `会議経過時間` から `記録経過時間` に変更した。表示値、タイマー更新、記録開始/停止処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、記録タイマーとして自然に読めるか確認する。
+
 ### Transcript UX: clarify visible save status
 
 - 開始日時: 2026-04-28 08:20 JST
