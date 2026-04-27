@@ -6508,6 +6508,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI でモデル選択行のボタン幅が不自然に広がらないか確認する。
 
+### Transcript Log UX: align operation labels
+
+- 開始日時: 2026-04-28 07:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログのクリア/コピー操作ラベルを可視表示と支援技術向け表示で揃える。
+- 結果: クリア操作の aria/title を `文字起こしログ ... 件をクリア` に変更し、コピー操作の通常時 aria/title を `文字起こし ... 件をすべてコピー` に変更した。可視表示、クリア処理、コピー処理、件数計算には触れなかった。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でログ操作が可視表示と同じ意味で読まれるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

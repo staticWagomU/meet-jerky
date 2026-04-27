@@ -41,7 +41,7 @@ export function TranscriptionControls({
     : isTranscribing
       ? "文字起こしを停止"
       : "文字起こしを開始";
-  const clearTranscriptLabel = `文字起こし ${segmentsCount} 件をクリア`;
+  const clearTranscriptLabel = `文字起こしログ ${segmentsCount} 件をクリア`;
   const transcriptionControlsLabel = [
     "文字起こし操作",
     isTranscriptionOperationPending ? "処理中" : null,
