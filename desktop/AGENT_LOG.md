@@ -4869,3 +4869,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機ブラウザURL取得は未実施。追加した Rust テストを含む cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: narrow meeting detection source type
+
+- 開始日時: 2026-04-27 20:06 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/types/index.ts`, `AGENT_LOG.md`
+- 指示内容: `meeting-app-detected` payload の `source` を任意文字列ではなく、既存の `app` と追加された `browser` に限定する。
+- 結果: TypeScript の `MeetingAppDetectedPayload.source` を `"app" | "browser"` union にし、会議検知元の UI 分岐を型で保護した。
+- 変更ファイル: `src/types/index.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/types/index.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/types/index.ts AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機ブラウザURL取得は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
