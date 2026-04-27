@@ -3413,3 +3413,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。VoiceOver 読み上げと source なしエラー発生時の実機確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: centralize source-less error predicate
+
+- 開始日時: 2026-04-27 10:26 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小リファクタ
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: source も speaker もないエラー行の判定が複数箇所でずれないようにする。
+- 結果: `isSourceLessError` helper を追加し、エラー行の表示ラベル抑制と aria-label の `source不明` 判定で共有した。表示結果、コピー処理、event 受信、録音/文字起こし処理は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: 初回 `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` と `scripts/agent-verify.sh` は `segment.isError` が optional 扱いで `boolean | undefined` になる TypeScript error により失敗。`isSourceLessError` の戻り値を `Boolean(...)` で正規化後、`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 初回検証で predicate の戻り値型が `boolean | undefined` になったため修正した。実 UI 表示は未実機確認。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

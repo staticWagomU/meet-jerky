@@ -26,9 +26,13 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   return "未分類";
 }
 
+function isSourceLessError(segment: TranscriptSegment): boolean {
+  return Boolean(segment.isError && !segment.speaker && !segment.source);
+}
+
 function getSegmentAriaLabel(segment: TranscriptSegment): string {
   const speakerLabel =
-    segment.isError && !segment.speaker && !segment.source
+    isSourceLessError(segment)
       ? "source不明"
       : getSpeakerLabel(segment) ?? "未分類";
   if (segment.isError) {
@@ -38,7 +42,7 @@ function getSegmentAriaLabel(segment: TranscriptSegment): string {
 }
 
 function getVisibleSpeakerLabel(segment: TranscriptSegment): string | null {
-  if (segment.isError && !segment.speaker && !segment.source) {
+  if (isSourceLessError(segment)) {
     return null;
   }
   return getSpeakerLabel(segment);
