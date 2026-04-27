@@ -5723,3 +5723,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での文字起こし画面ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: include session list busy state in label
+
+- 開始日時: 2026-04-27 23:25 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴一覧全体で、保存済み件数、更新中、ファイル操作中の状態を把握できるようにする。
+- 結果: セッション履歴ルートの `aria-label` / `title` に、保存済み件数と busy 状態を含めるようにした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのセッション履歴一覧ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。

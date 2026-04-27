@@ -141,9 +141,21 @@ export function SessionList() {
   const sessionCountLabel = isFetching
     ? `保存済み ${sessions.length} 件、更新中`
     : `保存済み ${sessions.length} 件`;
+  const sessionListLabel = [
+    "セッション履歴",
+    sessionCountLabel,
+    pendingAction ? "ファイル操作中" : null,
+  ]
+    .filter(Boolean)
+    .join("、");
 
   return (
-    <div className="session-list" aria-busy={isSessionListBusy}>
+    <div
+      className="session-list"
+      aria-busy={isSessionListBusy}
+      aria-label={sessionListLabel}
+      title={sessionListLabel}
+    >
       <div className="session-list-header">
         <div className="session-list-heading">
           <h2 className="session-list-title">セッション履歴</h2>
