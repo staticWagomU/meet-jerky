@@ -307,11 +307,16 @@ fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
         || (host == "teams.live.com"
             && path
                 .strip_prefix("/meet/")
-                .is_some_and(has_non_empty_segment))
+                .is_some_and(has_single_non_empty_segment))
 }
 
 fn has_non_empty_segment(value: &str) -> bool {
     !value.is_empty() && !value.starts_with('/')
+}
+
+fn has_single_non_empty_segment(value: &str) -> bool {
+    let value = value.strip_suffix('/').unwrap_or(value);
+    !value.is_empty() && !value.contains('/')
 }
 
 fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
@@ -548,6 +553,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://teams.live.com/meet/1234567890123/"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.live.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin=true&context=secret"),
             Some(MeetingUrlClassification {
                 service: "Microsoft Teams".to_string(),
@@ -627,6 +639,14 @@ mod tests {
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
         assert_eq!(classify_meeting_url("https://teams.live.com/meet/"), None);
         assert_eq!(classify_meeting_url("https://teams.live.com/meet//"), None);
+        assert_eq!(
+            classify_meeting_url("https://teams.live.com/meet/1234567890123/extra"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.live.com/meet/1234567890123//"),
+            None
+        );
     }
 
     #[test]

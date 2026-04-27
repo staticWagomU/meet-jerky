@@ -4155,3 +4155,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: narrow Teams Live meeting URL path matching
+
+- 開始日時: 2026-04-27 16:21 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Teams Live の `/meet/{id}` URL 分類で、追加 path まで誤って会議扱いしないよう境界を狭める。
+- 結果: `teams.live.com/meet/` は単一の非空 segment のみ許容する helper に切り出し、末尾スラッシュ 1 つは許容しつつ追加 path と二重末尾スラッシュは拒否するテストを追加した。Teams meetup-join の複数 segment 許容、URL 全文を payload/log/UI に出さない方針は変更していない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
