@@ -4253,3 +4253,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。会議アプリ実機起動、ブラウザ URL 実機取得、macOS 通知操作は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: reduce permission banner interruption
+
+- 開始日時: 2026-04-27 17:31 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 権限/録音状態の透明性を保ちつつ、確認中や未確認の権限バナーが会議中に過剰な alert にならないようにする。
+- 結果: 権限バナーの role を、権限拒否または確認失敗時は `alert`、確認中/未確認のみの状態では `status` に切り替えるようにした。aria-live も assertive/polite を role に合わせた。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 権限ダイアログと実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

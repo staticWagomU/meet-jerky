@@ -25,6 +25,10 @@ export function PermissionBanner() {
 
   const hasCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
+  const hasDeniedPermission =
+    micPermission === "denied" || screenPermission === "denied";
+  const permissionBannerRole =
+    hasCheckError || hasDeniedPermission ? "alert" : "status";
   const micStatusLabel = isCheckingPermissions
     ? "確認中"
     : micPermissionError
@@ -57,7 +61,9 @@ export function PermissionBanner() {
   return (
     <div
       className="permission-banner permission-banner-warning"
-      role="alert"
+      role={permissionBannerRole}
+      aria-live={permissionBannerRole === "alert" ? "assertive" : "polite"}
+      aria-atomic="true"
       aria-label={permissionSummaryLabel}
       title={permissionSummaryLabel}
     >
