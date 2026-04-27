@@ -1016,6 +1016,7 @@ export function TranscriptView() {
             aria-live="polite"
             aria-atomic="true"
             aria-label={`会議セッションを保存しました: ${lastSavedPath}`}
+            title={`会議セッションを保存しました: ${lastSavedPath}`}
           >
             保存しました: {lastSavedPath}
           </p>
