@@ -1,4 +1,5 @@
 import { usePermissions } from "../hooks/usePermissions";
+import { toErrorMessage } from "../utils/errorMessage";
 
 export function PermissionBanner() {
   const {
@@ -29,6 +30,12 @@ export function PermissionBanner() {
     micPermission === "denied" || screenPermission === "denied";
   const permissionBannerRole =
     hasCheckError || hasDeniedPermission ? "alert" : "status";
+  const micPermissionErrorMessage = micPermissionError
+    ? toErrorMessage(micPermissionError)
+    : null;
+  const screenPermissionErrorMessage = screenPermissionError
+    ? toErrorMessage(screenPermissionError)
+    : null;
   const micStatusLabel = isCheckingPermissions
     ? "確認中"
     : micPermissionError
@@ -43,17 +50,27 @@ export function PermissionBanner() {
       : screenPermission === "denied"
         ? "未許可"
         : "未確認";
+  const micPermissionDetail = [
+    "マイク 自分トラック",
+    micStatusLabel,
+    micPermissionErrorMessage,
+  ]
+    .filter(Boolean)
+    .join(": ");
+  const screenPermissionDetail = [
+    "画面収録 相手側トラック",
+    screenStatusLabel,
+    screenPermissionErrorMessage,
+  ]
+    .filter(Boolean)
+    .join(": ");
   const permissionSummaryLabel = [
     "録音権限状態",
-    micNeedsAttention ? `マイク 自分トラック ${micStatusLabel}` : null,
-    screenNeedsAttention
-      ? `画面収録 相手側トラック ${screenStatusLabel}`
-      : null,
+    micNeedsAttention ? micPermissionDetail : null,
+    screenNeedsAttention ? screenPermissionDetail : null,
   ]
     .filter(Boolean)
     .join("、");
-  const micPermissionDetail = `マイク 自分トラック: ${micStatusLabel}`;
-  const screenPermissionDetail = `画面収録 相手側トラック: ${screenStatusLabel}`;
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS権限状態を確認中"
     : "macOS権限状態を再チェック";

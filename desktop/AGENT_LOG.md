@@ -5289,3 +5289,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での macOS 権限確認失敗表示と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose permission banner error detail
+
+- 開始日時: 2026-04-27 22:28 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議画面上部の権限バナーで、権限状態確認に失敗した理由をコンパクトな表示を崩さず確認できるようにする。
+- 結果: `PermissionBanner` で権限確認エラーを共有 `toErrorMessage` で整形し、summary aria-label と各 pill の title に詳細を含めるようにした。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での macOS 権限確認失敗表示と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
