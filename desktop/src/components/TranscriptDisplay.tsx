@@ -282,7 +282,7 @@ export function TranscriptDisplay({
         return;
       }
       setCopyFeedback(false);
-      setCopyError(`コピーに失敗しました: ${String(e)}`);
+      setCopyError(`コピーに失敗しました: ${toErrorMessage(e)}`);
     } finally {
       isCopyingRef.current = false;
       if (isMountedRef.current) {
