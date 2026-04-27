@@ -217,6 +217,11 @@ export function SettingsView() {
   }
 
   const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(settings);
+  const outputDirectoryLabel = localSettings.outputDirectory
+    ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
+    : defaultOutputDir
+      ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
+      : "現在の出力先ディレクトリは未設定です";
 
   return (
     <div className="settings-view">
@@ -389,13 +394,8 @@ export function SettingsView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={
-              localSettings.outputDirectory
-                ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
-                : defaultOutputDir
-                  ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
-                  : "現在の出力先ディレクトリは未設定です"
-            }
+            aria-label={outputDirectoryLabel}
+            title={outputDirectoryLabel}
           >
             {localSettings.outputDirectory ?? defaultOutputDir ?? "未設定"}
           </span>
