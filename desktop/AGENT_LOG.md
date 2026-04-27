@@ -5807,3 +5807,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI で会議中/文字起こし中の片側トラック未取得 notice が短く視認でき、記録対象外の範囲が誤解なく伝わるか確認する。
+
+### Worker task: clarify no external transmission label
+
+- 開始日時: 2026-04-28 01:25 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中ステータスバーの外部送信 pill で、Whisper / Apple Speech などローカル系エンジンの表示を `外部送信 端末内処理` から、外部送信がないことを直接示す `外部送信 なし` に変更する。OpenAI / ElevenLabs の送信表示、設定取得中/失敗の既存挙動、文字起こし処理、設定保存処理には触れない。コミットは禁止。
+- 結果: `getAiTransmissionStatusLabel()` のローカル系フォールバックを `なし` に変更し、`getAiTransmissionStatusPillClass()` で `なし` を idle pill として扱うようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で Whisper / Apple Speech 選択時の `外部送信 なし` 表示と読み上げを確認する。

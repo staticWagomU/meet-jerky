@@ -256,7 +256,7 @@ function getAiTransmissionStatusLabel(
   if (engine === "elevenLabsRealtime") {
     return "ElevenLabs送信";
   }
-  return "端末内処理";
+  return "なし";
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
@@ -266,7 +266,7 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === "確認失敗") {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "端末内処理") {
+  if (statusLabel === "なし") {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
