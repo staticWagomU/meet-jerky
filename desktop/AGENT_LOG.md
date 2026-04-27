@@ -5555,3 +5555,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での各エラー状態表示は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: clear stale saved-session notice on next meeting start
+
+- 開始日時: 2026-04-27 22:54 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議後の保存完了表示が次の会議開始後も残り、現在の録音状態と紛らわしくならないようにする。
+- 結果: 会議開始フローに入った時点で `lastSavedPath` をクリアし、前回セッションの「保存しました」表示を新しい会議中に残さないようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での保存後再開始表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。

@@ -510,6 +510,7 @@ export function TranscriptView() {
       }
 
       // START: session 開始 → mic → system audio → transcription
+      setLastSavedPath(null);
       const title = `会議 ${new Date().toLocaleString("ja-JP")}`;
       let sessionStarted = false;
       let micStarted = false;
