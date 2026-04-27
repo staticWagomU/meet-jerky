@@ -6312,6 +6312,20 @@
 - 失敗理由: なし。
 - 次アクション: 今後のプロダクト文書でも英字混じり表記と記号区切りを読みやすく保つ。
 
+### Product Concept UX: clarify desktop audio wording
+
+- 開始日時: 2026-04-28 06:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `docs/product-concept.md`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の表記整合として、プロダクトコンセプト本文に残るスラッシュ区切りの音声取得表記を読みやすく揃える。
+- 結果: 本文の `デスクトップ/アプリ音声` を `デスクトップ音声またはアプリ音声` に変更した。プロダクト方針、実装、UI 表示には触れなかった。
+- 変更ファイル: `docs/product-concept.md`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- docs/product-concept.md AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh docs/product-concept.md AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: プロダクト文書で音声取得方針を更新するときも、自分/相手側トラックの読みやすさを維持する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
