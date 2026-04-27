@@ -1191,7 +1191,7 @@ export function TranscriptView() {
             aria-label={`記録セッションを保存しました: ${lastSavedFileName}`}
             title={`記録セッションを保存しました: ${lastSavedFileName}`}
           >
-            保存しました: {lastSavedFileName}
+            記録を保存しました: {lastSavedFileName}
           </p>
         )}
       </div>
