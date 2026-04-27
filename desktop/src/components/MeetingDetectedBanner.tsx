@@ -86,6 +86,7 @@ export function MeetingDetectedBanner() {
       {sourceLabel && (
         <span
           className="meeting-detected-source-badge"
+          aria-label={`検知元: ${sourceLabel}`}
           title={`検知元: ${sourceLabel}`}
         >
           {sourceLabel}
