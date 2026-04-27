@@ -6564,6 +6564,20 @@
 - 失敗理由: なし。
 - 次アクション: VoiceOver でモデルのダウンロード待ち状態が可視表示と同じ意味で読まれるか確認する。
 
+### Transcript UX: clarify no audio source state
+
+- 開始日時: 2026-04-28 06:41 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、自分/相手側どちらの音声も取得していない状態をトラック視点で分かる表記へ揃える。
+- 結果: 音声ソース未開始時の表示/aria/注意文を `未開始` や `音声ソース未開始` から `未取得`、`自分と相手側とも未取得`、`自分と相手側トラックは未取得です` に変更した。録音/取得状態判定、文字起こし開始条件、音声取得処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で音声未取得状態の pill と注意文が過度に長くならず自然に読めるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

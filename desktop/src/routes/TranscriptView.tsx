@@ -85,7 +85,7 @@ function getTranscriptionSourceStatus(
   if (isSystemAudioRecording) {
     return "文字起こし中: 相手側のみ、自分は未録音";
   }
-  return "文字起こし中: 音声ソース未開始";
+  return "文字起こし中: 自分と相手側とも未取得";
 }
 
 function getTranscriptionSourceArg(
@@ -177,7 +177,7 @@ function getAudioSourceStatusLabel(
   if (isSystemAudioRecording) {
     return "相手側のみ";
   }
-  return "未開始";
+  return "未取得";
 }
 
 function getAudioSourceStatusAriaText(
@@ -193,7 +193,7 @@ function getAudioSourceStatusAriaText(
   if (isSystemAudioRecording) {
     return "相手側のみ取得中、自分は未録音";
   }
-  return "音声ソース未開始";
+  return "自分と相手側とも未取得";
 }
 
 function getAudioSourceNotice(
@@ -215,7 +215,7 @@ function getAudioSourceNotice(
   if (isSystemAudioRecording) {
     return "自分トラックは未録音です。自分の発話は文字起こしされません。";
   }
-  return "音声ソース未開始です。自分と相手側トラックは文字起こしされません。";
+  return "自分と相手側トラックは未取得です。発話は文字起こしされません。";
 }
 
 function getAudioSourceStatusPillClass(
