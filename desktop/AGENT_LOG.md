@@ -6116,6 +6116,20 @@
 - 失敗理由: なし。
 - 次アクション: 今後のプロダクト文書でも英字混じり表記を読みやすく保つ。
 
+### Model Selector UX: clarify download wording
+
+- 開始日時: 2026-04-28 05:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Whisper モデルのダウンロード状態や通知エラーの表記を読みやすく揃える。
+- 結果: `Whisper モデルダウンロード` と詰まっていた aria-label、title、エラー state、console 表記を `Whisper モデルのダウンロード` に変更した。モデル一覧取得、ダウンロード処理、進捗計算には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でモデルダウンロード中の進捗とエラー表示が長すぎないか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

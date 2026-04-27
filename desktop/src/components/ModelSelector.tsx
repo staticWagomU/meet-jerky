@@ -107,11 +107,11 @@ export function ModelSelector({
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error(
-            "Whisper モデルダウンロード進捗通知の受信開始に失敗しました:",
+            "Whisper モデルのダウンロード進捗通知の受信開始に失敗しました:",
             msg,
           );
           setProgressListenerError(
-            `Whisper モデルダウンロード進捗通知の受信開始に失敗しました: ${msg}`,
+            `Whisper モデルのダウンロード進捗通知の受信開始に失敗しました: ${msg}`,
           );
         }
         return null;
@@ -123,7 +123,7 @@ export function ModelSelector({
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error(
-            "Whisper モデルダウンロード進捗通知の受信解除に失敗しました:",
+            "Whisper モデルのダウンロード進捗通知の受信解除に失敗しました:",
             toErrorMessage(e),
           );
         });
@@ -162,11 +162,11 @@ export function ModelSelector({
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error(
-            "Whisper モデルダウンロードエラー通知の受信開始に失敗しました:",
+            "Whisper モデルのダウンロードエラー通知の受信開始に失敗しました:",
             msg,
           );
           setDownloadErrorListenerError(
-            `Whisper モデルダウンロードエラー通知の受信開始に失敗しました: ${msg}`,
+            `Whisper モデルのダウンロードエラー通知の受信開始に失敗しました: ${msg}`,
           );
         }
         return null;
@@ -178,7 +178,7 @@ export function ModelSelector({
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error(
-            "Whisper モデルダウンロードエラー通知の受信解除に失敗しました:",
+            "Whisper モデルのダウンロードエラー通知の受信解除に失敗しました:",
             toErrorMessage(e),
           );
         });
@@ -256,8 +256,8 @@ export function ModelSelector({
         <span
           className="download-error"
           role="alert"
-          aria-label={`Whisper モデルダウンロード進捗受信エラー: ${progressListenerError}`}
-          title={`Whisper モデルダウンロード進捗受信エラー: ${progressListenerError}`}
+          aria-label={`Whisper モデルのダウンロード進捗受信エラー: ${progressListenerError}`}
+          title={`Whisper モデルのダウンロード進捗受信エラー: ${progressListenerError}`}
         >
           {progressListenerError}
         </span>
@@ -266,8 +266,8 @@ export function ModelSelector({
         <span
           className="download-error"
           role="alert"
-          aria-label={`Whisper モデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
-          title={`Whisper モデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+          aria-label={`Whisper モデルのダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+          title={`Whisper モデルのダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
         >
           {downloadErrorListenerError}
         </span>
@@ -358,7 +358,7 @@ function DownloadStatus({
 
   if (downloadingModel === selectedModel) {
     const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
-    const progressLabel = `${selectedModel} Whisper モデルダウンロード進捗`;
+    const progressLabel = `${selectedModel} Whisper モデルのダウンロード進捗`;
     return (
       <div className="download-progress-wrapper">
         <div
@@ -453,8 +453,8 @@ function DownloadStatus({
         <span
           className="download-error"
           role="alert"
-          aria-label={`${selectedModel} Whisper モデルダウンロードエラー: ${downloadError}`}
-          title={`${selectedModel} Whisper モデルダウンロードエラー: ${downloadError}`}
+          aria-label={`${selectedModel} Whisper モデルのダウンロードエラー: ${downloadError}`}
+          title={`${selectedModel} Whisper モデルのダウンロードエラー: ${downloadError}`}
         >
           {downloadError}
         </span>
