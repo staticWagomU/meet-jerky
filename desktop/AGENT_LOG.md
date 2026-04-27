@@ -6354,6 +6354,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で権限バナーの確認失敗状態が自然に伝わるか確認する。
 
+### Status Pills UX: clarify failed check labels
+
+- 開始日時: 2026-04-28 06:42 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面と会議画面の status pill に残る `確認失敗` 表記を自然な表記へ揃える。
+- 結果: API キー、エンジン、外部送信の状態ラベルを `確認失敗` から `確認できません` に変更し、該当する pill class 判定も同じ表記に合わせた。API キー有無確認、設定取得、文字起こし開始可否判定には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で status pill の確認不可状態が自然に伝わるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

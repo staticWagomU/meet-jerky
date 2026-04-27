@@ -266,7 +266,7 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === "OpenAI へ送信" || statusLabel === "ElevenLabs へ送信") {
     return "meeting-status-pill-active";
   }
-  if (statusLabel === "確認失敗") {
+  if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "なし") {
@@ -294,7 +294,7 @@ function getEngineStatusLabel(
 }
 
 function getEngineStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "確認失敗") {
+  if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "確認中") {
@@ -312,7 +312,7 @@ function getExternalApiKeyStatusLabel(
     return null;
   }
   if (externalApiKeyError) {
-    return "確認失敗";
+    return "確認できません";
   }
   if (hasExternalApiKey === undefined) {
     return "確認中";
@@ -324,7 +324,7 @@ function getExternalApiKeyStatusPillClass(statusLabel: string | null): string {
   if (statusLabel === "登録済み") {
     return "meeting-status-pill-active";
   }
-  if (statusLabel === "確認失敗") {
+  if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "未設定") {
@@ -934,10 +934,10 @@ export function TranscriptView() {
     isSystemAudioRecording,
   );
   const aiTransmissionStatusLabel = settingsError
-    ? "確認失敗"
+    ? "確認できません"
     : getAiTransmissionStatusLabel(settings?.transcriptionEngine);
   const engineStatusLabel = settingsError
-    ? "確認失敗"
+    ? "確認できません"
     : getEngineStatusLabel(settings?.transcriptionEngine);
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,

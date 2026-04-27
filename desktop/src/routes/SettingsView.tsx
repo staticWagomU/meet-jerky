@@ -934,7 +934,7 @@ function ExternalApiKeySection({
   const apiKeyStatusText = isFetchingHasKey
     ? "確認中"
     : hasKeyError
-      ? "確認失敗"
+      ? "確認できません"
       : hasKey === undefined
         ? "確認中"
         : hasKey
