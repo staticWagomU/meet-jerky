@@ -9,8 +9,8 @@ function toErrorMessage(e: unknown): string {
   return String(e);
 }
 
-/// Zoom / Teams 等の起動を検知したら、画面上部にバナーを出して
-/// ユーザーに記録開始を促すグローバルコンポーネント。
+/// 会議アプリまたはブラウザ会議URLを検知したら、画面上部にバナーを出して
+/// ユーザーに記録状態の確認を促すグローバルコンポーネント。
 ///
 /// 設計メモ:
 /// - 自動で記録開始まで踏み込むと、TranscriptView のローカル状態 (mic / system
