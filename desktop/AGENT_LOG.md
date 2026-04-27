@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcription: propagate language setting to streams
+
+- 開始日時: 2026-04-28 02:56 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: ElevenLabs Scribe v2 Realtime 対応後の批判的レビューとして、設定画面の言語設定が各文字起こし stream に渡らず精度ヒントが効かない問題を修正する。
+- 結果: `start_transcription` で `settings.language` を読み、マイク/システム音声の `StreamConfig.language` へ渡すようにした。ElevenLabs Realtime は `auto` 以外の言語設定を `language_code` query として付与するようにし、URL 生成テストを追加した。OpenAI Realtime / Whisper / Apple Speech は既存の `StreamConfig.language` 解釈をそのまま利用する。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。初回 `cargo fmt --check` は `src-tauri/src/transcription.rs` の改行整形を指摘したため `cargo fmt` を適用。再実行した `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check` 成功。`git diff --check -- src-tauri/src/transcription.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo check/test` は cmake 不在により未実行。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で Rust テストを再実行し、各エンジンで言語ヒントが実 API / 実機に反映されるか確認する。
+
 ### Settings UX: include provider in API key toast
 
 - 開始日時: 2026-04-28 02:55 JST

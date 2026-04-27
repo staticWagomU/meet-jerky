@@ -75,11 +75,13 @@ impl ElevenLabsRealtimeStream {
         let speaker = config.speaker.clone();
         let source = config.source;
         let sample_rate = config.sample_rate;
+        let language = config.language.clone();
 
         let task_handle = tauri::async_runtime::spawn(async move {
             if let Err(e) = ws_task::run(
                 api_key,
                 model_id,
+                language,
                 sample_rate,
                 audio_rx,
                 pending_for_task.clone(),
@@ -164,13 +166,14 @@ mod ws_task {
     pub async fn run(
         api_key: String,
         model_id: String,
+        language: Option<String>,
         sample_rate: u32,
         mut audio_rx: UnboundedReceiver<AudioCommand>,
         pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
         speaker: Option<String>,
         source: Option<TranscriptionSource>,
     ) -> Result<(), String> {
-        let url = build_realtime_url(&model_id);
+        let url = build_realtime_url(&model_id, language.as_deref());
         let mut request = url
             .into_client_request()
             .map_err(|e| format!("WebSocket リクエスト構築に失敗: {e}"))?;
@@ -286,10 +289,17 @@ mod ws_task {
         Ok(())
     }
 
-    pub(crate) fn build_realtime_url(model_id: &str) -> String {
-        format!(
-            "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id={model_id}&audio_format=pcm_16000&commit_strategy=vad"
-        )
+    pub(crate) fn build_realtime_url(model_id: &str, language: Option<&str>) -> String {
+        let mut url = format!(
+            "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id={model_id}&audio_format=pcm_16000&commit_strategy=vad",
+        );
+        if let Some(language) = language.map(str::trim).filter(|value| !value.is_empty()) {
+            if language != "auto" {
+                url.push_str("&language_code=");
+                url.push_str(language);
+            }
+        }
+        url
     }
 
     pub(crate) fn handle_event(
@@ -447,10 +457,19 @@ mod tests {
 
     #[test]
     fn realtime_url_uses_scribe_v2_pcm16_and_vad() {
-        let url = ws_task::build_realtime_url(SCRIBE_V2_REALTIME_MODEL_ID);
+        let url = ws_task::build_realtime_url(SCRIBE_V2_REALTIME_MODEL_ID, None);
         assert!(url.contains("model_id=scribe_v2_realtime"));
         assert!(url.contains("audio_format=pcm_16000"));
         assert!(url.contains("commit_strategy=vad"));
+        assert!(!url.contains("language_code="));
+    }
+
+    #[test]
+    fn realtime_url_includes_explicit_language_hint() {
+        let url = ws_task::build_realtime_url(SCRIBE_V2_REALTIME_MODEL_ID, Some("ja"));
+        assert!(url.contains("language_code=ja"));
+        let auto_url = ws_task::build_realtime_url(SCRIBE_V2_REALTIME_MODEL_ID, Some("auto"));
+        assert!(!auto_url.contains("language_code="));
     }
 
     #[test]

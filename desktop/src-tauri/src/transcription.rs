@@ -717,14 +717,18 @@ pub fn start_transcription(
 
     // 設定からエンジン種別を読み取り、必要ならエンジンを切り替える。
     // 引数の `model_name` は Whisper の場合に優先採用 (UI から選択された値を反映)。
-    let (engine_type, whisper_model) = {
+    let (engine_type, whisper_model, language) = {
         let settings = settings_state.0.lock();
         let model = if model_name.is_empty() {
             settings.whisper_model.clone()
         } else {
             model_name.clone()
         };
-        (settings.transcription_engine.clone(), model)
+        (
+            settings.transcription_engine.clone(),
+            model,
+            settings.language.clone(),
+        )
     };
 
     manager.ensure_engine(&engine_type, &whisper_model)?;
@@ -743,6 +747,7 @@ pub fn start_transcription(
 
     let use_mic = source_str == "microphone" || source_str == "both";
     let use_system = source_str == "system_audio" || source_str == "both";
+    let stream_language = Some(language.trim().to_string()).filter(|value| !value.is_empty());
 
     let mut pending_streams = Vec::new();
 
@@ -763,7 +768,7 @@ pub fn start_transcription(
                 sample_rate: mic_sample_rate,
                 speaker: Some("自分".to_string()),
                 source: Some(TranscriptionSource::Microphone),
-                language: None,
+                language: stream_language.clone(),
             };
             let stream = Arc::clone(&engine)
                 .start_stream(stream_config)
@@ -785,7 +790,7 @@ pub fn start_transcription(
                 sample_rate: sys_sample_rate,
                 speaker: Some("相手".to_string()),
                 source: Some(TranscriptionSource::SystemAudio),
-                language: None,
+                language: stream_language.clone(),
             };
             let stream = Arc::clone(&engine)
                 .start_stream(stream_config)
