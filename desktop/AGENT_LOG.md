@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify source requirement message
+
+- 開始日時: 2026-04-28 03:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こし開始不可理由で必要な音声ソースを自分/相手側トラック込みで明示する。
+- 結果: 音声ソース未開始時の開始不可理由を、自分トラックのマイク録音または相手側トラックのシステム音声取得が必要だと分かる文言へ変更した。開始可否判定、録音/取得処理、文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で開始不可理由が長すぎず、必要な音声ソースとして自然に読めるか確認する。
+
 ### System audio UX: use acquisition wording
 
 - 開始日時: 2026-04-28 03:17 JST

@@ -114,7 +114,7 @@ function getTranscriptionStartBlockedReason(
     return `${externalApiProvider} API キー状態を確認できません。`;
   }
   if (!isAnySourceRecording) {
-    return "文字起こし開始には、マイクまたはシステム音声を開始してください。";
+    return "文字起こし開始には、自分トラックのマイク録音または相手側トラックのシステム音声取得を開始してください。";
   }
   if (externalApiProvider && hasExternalApiKey === undefined) {
     return `${externalApiProvider} API キー状態を確認中です。`;
