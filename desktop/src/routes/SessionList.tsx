@@ -130,6 +130,7 @@ export function SessionList() {
   }
 
   const sessions = data ?? [];
+  const isSessionListBusy = isFetching || pendingAction !== null;
   const reloadSessionsLabel = isFetching
     ? "セッション履歴一覧を読み込み中"
     : "セッション履歴一覧を再読み込み";
@@ -138,7 +139,7 @@ export function SessionList() {
     : `保存済み ${sessions.length} 件`;
 
   return (
-    <div className="session-list" aria-busy={isFetching}>
+    <div className="session-list" aria-busy={isSessionListBusy}>
       <div className="session-list-header">
         <div className="session-list-heading">
           <h2 className="session-list-title">セッション履歴</h2>
