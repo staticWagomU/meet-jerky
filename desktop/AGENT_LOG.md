@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Audio Controls UX: clarify waiting label
+
+- 開始日時: 2026-04-28 04:28 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、自分/相手側トラックの個別操作ボタンが他操作で待機している状態を短く分かる表示へ変える。
+- 結果: マイク録音と相手側システム音声の操作ボタンで、他の音声または文字起こし操作中の可視表示を `操作待ち` から `他操作中` に変更した。aria/title の詳細説明、disabled 判定、録音/取得処理には触れなかった。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で短い待機表示が誤読されず、ボタン幅に収まるか確認する。
+
 ### Audio Controls UX: verb action labels
 
 - 開始日時: 2026-04-28 04:25 JST

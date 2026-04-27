@@ -86,7 +86,7 @@ export function SystemAudioSection({
           {isOperationPending
             ? "処理中..."
             : isWaitingForOtherOperation
-              ? "操作待ち"
+              ? "他操作中"
             : isSystemAudioRecording
               ? "取得を停止"
               : "取得を開始"}
