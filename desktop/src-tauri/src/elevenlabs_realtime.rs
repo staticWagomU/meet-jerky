@@ -241,6 +241,8 @@ mod ws_task {
             }
         });
 
+        let mut sent_finalize_commit = false;
+        let mut pending_len_before_finalize = 0;
         while let Some(cmd) = audio_rx.recv().await {
             match cmd {
                 AudioCommand::Samples(samples) => {
@@ -267,12 +269,17 @@ mod ws_task {
                         "sample_rate": ELEVENLABS_REALTIME_SAMPLE_RATE,
                         "commit": true
                     });
+                    pending_len_before_finalize = pending.lock().len();
                     let _ = ws_tx.send(Message::Text(commit.to_string())).await;
+                    sent_finalize_commit = true;
                     break;
                 }
             }
         }
 
+        if sent_finalize_commit {
+            wait_for_pending_after_commit(&pending, pending_len_before_finalize).await;
+        }
         let _ = ws_tx.send(Message::Close(None)).await;
         let _ = tokio::time::timeout(std::time::Duration::from_secs(3), reader_task).await;
 
@@ -331,6 +338,19 @@ mod ws_task {
 
     fn is_scribe_error_event(event_name: &str) -> bool {
         event_name.starts_with("scribe_") && event_name.ends_with("_error")
+    }
+
+    async fn wait_for_pending_after_commit(
+        pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
+        previous_len: usize,
+    ) {
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        while tokio::time::Instant::now() < deadline {
+            if pending.lock().len() > previous_len {
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
     }
 
     fn extract_transcript(value: &Value) -> Option<String> {

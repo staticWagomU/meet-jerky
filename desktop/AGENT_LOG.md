@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### ElevenLabs Realtime: wait briefly after final commit
+
+- 開始日時: 2026-04-28 02:53 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: ElevenLabs Scribe v2 Realtime 対応の批判的レビューとして、停止時の manual commit 直後に WebSocket を閉じて最後の確定 transcript を取りこぼすリスクを下げる。
+- 結果: finalize commit 送信前の pending 件数を記録し、commit 送信後に committed transcript またはエラーが queue されるまで最大 3 秒だけ待ってから Close するようにした。通常の音声送信、VAD 設定、Keychain、実通信には触れなかった。
+- 変更ファイル: `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo check/test` は cmake 不在により未実行。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で Rust テストを再実行し、実 API 疎通が許可された環境で停止直後の最終 transcript が返るか確認する。
+
 ### ElevenLabs Realtime: surface scribe error events
 
 - 開始日時: 2026-04-28 02:52 JST
