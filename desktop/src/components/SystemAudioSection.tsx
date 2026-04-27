@@ -31,6 +31,7 @@ export function SystemAudioSection({
     : isSystemAudioRecording
       ? "audio-source-state-badge-active"
       : "audio-source-state-badge-idle";
+  const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
     ? "相手側トラックのシステム音声キャプチャを処理中"
@@ -77,6 +78,8 @@ export function SystemAudioSection({
           />
           {isOperationPending
             ? "処理中..."
+            : isWaitingForOtherOperation
+              ? "操作待ち"
             : isSystemAudioRecording
               ? "キャプチャ停止"
               : "キャプチャ開始"}

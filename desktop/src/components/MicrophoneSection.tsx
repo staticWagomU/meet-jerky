@@ -44,6 +44,7 @@ export function MicrophoneSection({
     : isMicRecording
       ? "audio-source-state-badge-active"
       : "audio-source-state-badge-idle";
+  const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const micStateDescription = `マイク 自分トラック: ${micStateText}`;
   const micButtonLabel = isOperationPending
     ? "自分トラックのマイク録音を処理中"
@@ -117,6 +118,8 @@ export function MicrophoneSection({
           />
           {isOperationPending
             ? "処理中..."
+            : isWaitingForOtherOperation
+              ? "操作待ち"
             : isMicRecording
               ? "録音停止"
               : "録音開始"}
