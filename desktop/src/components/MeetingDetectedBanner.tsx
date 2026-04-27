@@ -2,12 +2,7 @@ import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useNavigate } from "@tanstack/react-router";
 import type { MeetingAppDetectedPayload } from "../types";
-
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
-}
+import { toErrorMessage } from "../utils/errorMessage";
 
 /// 会議アプリまたはブラウザ会議URLを検知したら、画面上部にバナーを出して
 /// ユーザーに記録状態の確認を促すグローバルコンポーネント。

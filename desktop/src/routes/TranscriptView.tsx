@@ -19,13 +19,7 @@ import {
   finalizeAndSaveSession,
   discardSession,
 } from "../hooks/useSession";
-
-/** invoke のエラーを文字列として返すヘルパー */
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
-}
+import { toErrorMessage } from "../utils/errorMessage";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "システム音声操作に失敗しました:";

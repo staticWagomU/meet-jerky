@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
+import { toErrorMessage } from "../utils/errorMessage";
 
 type SessionAction =
   | { kind: "open"; path: string }
@@ -9,12 +10,6 @@ type SessionAction =
 
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
-}
-
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
 }
 
 /**

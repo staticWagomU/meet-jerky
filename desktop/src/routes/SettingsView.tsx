@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
 import { usePermissions } from "../hooks/usePermissions";
+import { toErrorMessage } from "../utils/errorMessage";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -24,12 +25,6 @@ const LANGUAGES = [
   { value: "ja", label: "日本語" },
   { value: "en", label: "English" },
 ];
-
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
-}
 
 export function SettingsView() {
   const queryClient = useQueryClient();

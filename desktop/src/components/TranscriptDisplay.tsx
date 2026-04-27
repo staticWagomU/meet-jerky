@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
+import { toErrorMessage } from "../utils/errorMessage";
 
 function formatTimestamp(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -74,12 +75,6 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
     },
     { self: 0, other: 0, unknown: 0, errors: 0, copyable: 0 },
   );
-}
-
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
 }
 
 interface TranscriptDisplayProps {

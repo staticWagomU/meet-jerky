@@ -3,6 +3,7 @@ import {
   AudioLevelMeter,
   sanitizeAudioLevelForDisplay,
 } from "./AudioLevelMeter";
+import { toErrorMessage } from "../utils/errorMessage";
 
 interface MicrophoneSectionProps {
   isMicRecording: boolean;
@@ -16,12 +17,6 @@ interface MicrophoneSectionProps {
   onDeviceChange: (deviceId: string) => void;
   onRetryDevices: () => void;
   onToggleRecording: () => void;
-}
-
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
 }
 
 export function MicrophoneSection({

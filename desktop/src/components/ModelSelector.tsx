@@ -7,17 +7,12 @@ import type {
   DownloadProgressPayload,
   DownloadErrorPayload,
 } from "../types";
+import { toErrorMessage } from "../utils/errorMessage";
 
 interface ModelSelectorProps {
   selectedModel: string;
   onSelectModel: (name: string) => void;
   disabled: boolean;
-}
-
-function toErrorMessage(e: unknown): string {
-  if (typeof e === "string") return e;
-  if (e instanceof Error) return e.message;
-  return String(e);
 }
 
 function sanitizeProgress(progress: number): number {

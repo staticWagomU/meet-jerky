@@ -5233,3 +5233,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での履歴一覧取得失敗やファイル open/reveal 失敗表示は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: share UI error message formatter
+
+- 開始日時: 2026-04-27 22:09 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小リファクタ
+- 作業範囲: `src/utils/errorMessage.ts`, `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `src/routes/SessionList.tsx`, `src/components/MeetingDetectedBanner.tsx`, `src/components/ModelSelector.tsx`, `src/components/TranscriptDisplay.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI のエラー文言整形で同じ `toErrorMessage` 実装が複数ファイルに増えたため、挙動を変えずに共有化する。
+- 結果: `src/utils/errorMessage.ts` を追加し、各 route/component のローカル `toErrorMessage` 定義を共有 import に置き換えた。
+- 変更ファイル: `src/utils/errorMessage.ts`, `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `src/routes/SessionList.tsx`, `src/components/MeetingDetectedBanner.tsx`, `src/components/ModelSelector.tsx`, `src/components/TranscriptDisplay.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx src/components/ModelSelector.tsx src/components/TranscriptDisplay.tsx src/components/MicrophoneSection.tsx src/utils/errorMessage.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx src/components/ModelSelector.tsx src/components/TranscriptDisplay.tsx src/components/MicrophoneSection.tsx src/utils/errorMessage.ts AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。UI の実機エラー表示確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
