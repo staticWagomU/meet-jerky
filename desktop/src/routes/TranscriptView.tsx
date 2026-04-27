@@ -935,6 +935,13 @@ export function TranscriptView() {
       ? "会議記録を終了"
       : "会議記録を開始";
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
+  const modelDownloadedErrorMessage = modelDownloadedErrorForUi
+    ? toErrorMessage(modelDownloadedErrorForUi)
+    : "";
+  const settingsErrorMessage = settingsError ? toErrorMessage(settingsError) : "";
+  const openAIApiKeyErrorMessage = openAIApiKeyErrorForUi
+    ? toErrorMessage(openAIApiKeyErrorForUi)
+    : "";
 
   return (
     <div className="transcript-view" aria-busy={isAudioSourceOperationPending}>
@@ -1057,30 +1064,31 @@ export function TranscriptView() {
           <p
             className="meeting-error"
             role="alert"
-            aria-label={`Whisperモデル状態エラー: ${String(modelDownloadedErrorForUi)}`}
-            title={`Whisperモデル状態エラー: ${String(modelDownloadedErrorForUi)}`}
+            aria-label={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
+            title={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
           >
-            モデル状態の確認に失敗しました: {String(modelDownloadedErrorForUi)}
+            モデル状態の確認に失敗しました: {modelDownloadedErrorMessage}
           </p>
         )}
         {settingsError && (
           <p
             className="meeting-error"
             role="alert"
-            aria-label={`文字起こし設定エラー: ${String(settingsError)}`}
-            title={`文字起こし設定エラー: ${String(settingsError)}`}
+            aria-label={`文字起こし設定エラー: ${settingsErrorMessage}`}
+            title={`文字起こし設定エラー: ${settingsErrorMessage}`}
           >
-            文字起こし設定の取得に失敗しました: {String(settingsError)}
+            文字起こし設定の取得に失敗しました: {settingsErrorMessage}
           </p>
         )}
         {openAIApiKeyErrorForUi && (
           <p
             className="meeting-error"
             role="alert"
-            aria-label={`OpenAI API キー状態エラー: ${String(openAIApiKeyErrorForUi)}`}
-            title={`OpenAI API キー状態エラー: ${String(openAIApiKeyErrorForUi)}`}
+            aria-label={`OpenAI API キー状態エラー: ${openAIApiKeyErrorMessage}`}
+            title={`OpenAI API キー状態エラー: ${openAIApiKeyErrorMessage}`}
           >
-            OpenAI API キー状態の確認に失敗しました: {String(openAIApiKeyErrorForUi)}
+            OpenAI API キー状態の確認に失敗しました:{" "}
+            {openAIApiKeyErrorMessage}
           </p>
         )}
         {meetingStartBlockedReason && (
