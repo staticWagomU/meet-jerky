@@ -5821,3 +5821,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で Whisper / Apple Speech 選択時の `外部送信 なし` 表示と読み上げを確認する。
+
+### Settings UX: clarify local engine external transmission
+
+- 開始日時: 2026-04-28 01:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議中ステータスの `外部送信 なし` 表示と設定画面の文字起こしエンジン説明の語彙を揃え、ローカル系エンジンが外部送信しないことを明確にする。
+- 結果: Whisper / macOS SpeechAnalyzer のラジオ選択肢 note と `title` 文言に `外部送信なし` を追加し、OpenAI / ElevenLabs の送信あり表示や設定保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で設定画面のローカル系エンジン説明が冗長すぎず、外部送信なしとして明確に伝わるか確認する。
