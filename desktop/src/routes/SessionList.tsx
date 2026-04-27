@@ -166,14 +166,23 @@ export function SessionList() {
       </div>
 
       {actionError && (
-        <p
+        <div
           className="session-list-error"
           role="alert"
           aria-label={`セッション履歴ファイル操作エラー: ${actionError}`}
           title={`セッション履歴ファイル操作エラー: ${actionError}`}
         >
-          {actionError}
-        </p>
+          <span>{actionError}</span>
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            onClick={() => setActionError(null)}
+            aria-label="セッション履歴ファイル操作エラーを閉じる"
+            title="セッション履歴ファイル操作エラーを閉じる"
+          >
+            閉じる
+          </button>
+        </div>
       )}
 
       {sessions.length === 0 ? (
