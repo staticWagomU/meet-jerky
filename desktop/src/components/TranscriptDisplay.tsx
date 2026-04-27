@@ -297,6 +297,9 @@ export function TranscriptDisplay({
       ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
       : "文字起こしログは空です";
   const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
+  const transcriptWrapperLabel = isCopying
+    ? `${transcriptCountsLabel}、コピー中`
+    : transcriptCountsLabel;
   const copyButtonLabel =
     copyableSegmentsCount === 0
       ? "コピーできる文字起こしはありません"
@@ -307,7 +310,12 @@ export function TranscriptDisplay({
           : `文字起こし ${copyableSegmentsCount} 件をコピー`;
 
   return (
-    <div className="transcript-display-wrapper" aria-busy={isCopying}>
+    <div
+      className="transcript-display-wrapper"
+      aria-busy={isCopying}
+      aria-label={transcriptWrapperLabel}
+      title={transcriptWrapperLabel}
+    >
       {segments.length > 0 && (
         <div className="transcript-toolbar">
           <div

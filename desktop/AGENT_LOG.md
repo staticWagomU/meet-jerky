@@ -5737,3 +5737,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機でのセッション履歴一覧ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: include copy busy state in transcript wrapper label
+
+- 開始日時: 2026-04-27 23:27 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしログ全体で、件数内訳とコピー中状態を把握できるようにする。
+- 結果: `TranscriptDisplay` wrapper の `aria-label` / `title` に、文字起こし件数内訳とコピー中状態を含めるようにした。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での文字起こしログ wrapper ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
