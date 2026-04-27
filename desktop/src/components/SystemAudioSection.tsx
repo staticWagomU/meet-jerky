@@ -34,9 +34,9 @@ export function SystemAudioSection({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`システム音声 相手側トラック: ${isSystemAudioRecording ? "取得中" : "待機中"}`}
+          aria-label={`システム音声 相手側トラック: ${isSystemAudioRecording ? "取得中" : "未取得"}`}
         >
-          {isSystemAudioRecording ? "取得中" : "待機中"}
+          {isSystemAudioRecording ? "取得中" : "未取得"}
         </span>
       </div>
       <div className="controls-row">

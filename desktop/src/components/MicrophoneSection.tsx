@@ -47,9 +47,9 @@ export function MicrophoneSection({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`マイク 自分トラック: ${isMicRecording ? "録音中" : "待機中"}`}
+          aria-label={`マイク 自分トラック: ${isMicRecording ? "録音中" : "未録音"}`}
         >
-          {isMicRecording ? "録音中" : "待機中"}
+          {isMicRecording ? "録音中" : "未録音"}
         </span>
       </div>
       <div className="controls-row">
