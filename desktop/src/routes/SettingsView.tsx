@@ -396,7 +396,9 @@ export function SettingsView() {
             title={whisperModelLabel}
             value={localSettings.whisperModel}
             onChange={(e) =>
-              setLocalSettings({ ...localSettings, whisperModel: e.target.value })
+              setLocalSettings((current) =>
+                current ? { ...current, whisperModel: e.target.value } : current,
+              )
             }
             className="settings-select"
           >
@@ -463,7 +465,9 @@ export function SettingsView() {
           title={languageLabel}
           value={localSettings.language}
           onChange={(e) =>
-            setLocalSettings({ ...localSettings, language: e.target.value })
+            setLocalSettings((current) =>
+              current ? { ...current, language: e.target.value } : current,
+            )
           }
           className="settings-select"
         >
