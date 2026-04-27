@@ -182,6 +182,7 @@ export function SettingsView() {
           className="settings-warning"
           role="alert"
           aria-label={`アプリ設定読み込みエラー: ${String(settingsError)}`}
+          title={`アプリ設定読み込みエラー: ${String(settingsError)}`}
         >
           設定の読み込みに失敗しました: {String(settingsError)}
         </p>
@@ -355,6 +356,7 @@ export function SettingsView() {
             className="settings-inline-error"
             role="alert"
             aria-label={`マイクデバイス一覧エラー: ${String(devicesError)}`}
+            title={`マイクデバイス一覧エラー: ${String(devicesError)}`}
           >
             <span>マイクデバイス一覧の取得に失敗しました: {String(devicesError)}</span>
             <button
@@ -412,6 +414,7 @@ export function SettingsView() {
               className="settings-inline-error"
               role="alert"
               aria-label={`デフォルト出力先ディレクトリエラー: ${String(defaultOutputDirError)}`}
+              title={`デフォルト出力先ディレクトリエラー: ${String(defaultOutputDirError)}`}
             >
               <span>
                 デフォルト出力先の取得に失敗しました: {String(defaultOutputDirError)}
@@ -700,6 +703,7 @@ function OpenAIApiKeySection({
             className="settings-inline-error"
             role="alert"
             aria-label={`OpenAI API キー状態エラー: ${String(hasKeyError)}`}
+            title={`OpenAI API キー状態エラー: ${String(hasKeyError)}`}
           >
             <span>
               API キー状態の確認に失敗しました: {String(hasKeyError)}
