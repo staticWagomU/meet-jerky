@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection UX: align confirm action label
+
+- 開始日時: 2026-04-28 06:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーの確認ボタンが録音だけでなく文字起こし状態も確認する導線だと可視表示で分かるようにする。
+- 結果: 会議検知バナーの確認ボタン表示を `録音状態を確認` から `録音と文字起こしを確認` に変更した。会議検知イベント、遷移先、バナー表示条件には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議検知バナーのボタン幅が過度に広がらず、導線として自然に読めるか確認する。
+
 ### Settings UX: clarify permission retry button
 
 - 開始日時: 2026-04-28 06:58 JST

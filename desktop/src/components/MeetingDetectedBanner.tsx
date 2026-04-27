@@ -109,7 +109,7 @@ export function MeetingDetectedBanner() {
                 setDetected(null);
               }}
             >
-              録音状態を確認
+              録音と文字起こしを確認
             </button>
           )}
           <button
