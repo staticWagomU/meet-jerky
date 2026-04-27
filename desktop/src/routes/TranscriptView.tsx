@@ -946,11 +946,11 @@ export function TranscriptView() {
   );
   const externalApiKeyStatusDisplayLabel =
     externalApiProvider && externalApiKeyStatusLabel
-      ? `${externalApiProvider} APIキー ${externalApiKeyStatusLabel}`
+      ? `${externalApiProvider} API キー ${externalApiKeyStatusLabel}`
       : null;
   const externalApiKeyStatusAriaLabel =
     externalApiProvider && externalApiKeyStatusLabel
-      ? `${externalApiProvider} APIキー: ${externalApiKeyStatusLabel}`
+      ? `${externalApiProvider} API キー: ${externalApiKeyStatusLabel}`
       : null;
   const meetingRecordingStatusLabel = isMeetingOperationPending
     ? "処理中"
