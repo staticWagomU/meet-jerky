@@ -4701,3 +4701,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。会議/音声/文字起こし実操作と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: announce transcript copy state changes
+
+- 開始日時: 2026-04-27 19:17 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしログのコピー中/コピー済み状態変化を、コピー操作ボタン単位で支援技術に伝わりやすくする。
+- 結果: コピー操作ボタンに `aria-live="polite"` と `aria-atomic="true"` を追加し、コピー中/コピー済みの状態変化をボタン単位で伝わりやすくした。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。クリップボード実操作と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

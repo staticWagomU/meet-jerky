@@ -338,6 +338,8 @@ export function TranscriptDisplay({
             type="button"
             className="copy-btn"
             aria-label={copyButtonLabel}
+            aria-live="polite"
+            aria-atomic="true"
             title={copyButtonLabel}
             onClick={handleCopyAll}
             disabled={copyableSegmentsCount === 0 || isCopying}
