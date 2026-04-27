@@ -61,8 +61,8 @@ export function MicrophoneSection({
         ? "マイクデバイス: 他の処理中は変更できません"
       : "マイクデバイス: 自分トラックの入力を選択";
   const retryDevicesLabel = isReloadingAudioDevices
-    ? "マイクデバイス一覧を取得中"
-    : "マイクデバイス一覧を再取得";
+    ? "自分トラックのマイクデバイス一覧を取得中"
+    : "自分トラックのマイクデバイス一覧を再取得";
   const audioDevicesErrorMessage = audioDevicesError
     ? toErrorMessage(audioDevicesError)
     : "";
@@ -144,7 +144,8 @@ export function MicrophoneSection({
           title={`マイク 自分トラックのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
         >
           <span>
-            マイクデバイス一覧の取得に失敗しました: {audioDevicesErrorMessage}
+            自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
+            {audioDevicesErrorMessage}
           </span>
           <button
             type="button"
