@@ -958,6 +958,8 @@ export function TranscriptView() {
             id={MEETING_START_BLOCKED_REASON_ID}
             className="meeting-error"
             role="status"
+            aria-live="polite"
+            aria-atomic="true"
           >
             {meetingStartBlockedReason}
           </p>
@@ -975,6 +977,8 @@ export function TranscriptView() {
           <p
             className="meeting-saved-path"
             role="status"
+            aria-live="polite"
+            aria-atomic="true"
             aria-label={`会議セッションを保存しました: ${lastSavedPath}`}
           >
             保存しました: {lastSavedPath}
