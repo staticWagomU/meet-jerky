@@ -871,10 +871,12 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
-  const aiTransmissionStatusLabel = getAiTransmissionStatusLabel(
-    settings?.transcriptionEngine,
-  );
-  const engineStatusLabel = getEngineStatusLabel(settings?.transcriptionEngine);
+  const aiTransmissionStatusLabel = settingsError
+    ? "確認失敗"
+    : getAiTransmissionStatusLabel(settings?.transcriptionEngine);
+  const engineStatusLabel = settingsError
+    ? "確認失敗"
+    : getEngineStatusLabel(settings?.transcriptionEngine);
   const openAIApiKeyStatusLabel = getOpenAIApiKeyStatusLabel(
     requiresOpenAIApiKey,
     hasOpenAIApiKey,
