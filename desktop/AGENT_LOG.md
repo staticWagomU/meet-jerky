@@ -5905,3 +5905,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI で権限ステータス注記が折り返し過多にならず、自分/相手側トラックへの影響が読み取れるか確認する。
+
+### Transcript UX: prefer source label in visible text
+
+- 開始日時: 2026-04-28 01:33 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Transcript 表示ラベルも source 優先にし、システム音声セグメントを `相手` ではなく他 UI と同じ `相手側` として表示する。
+- 結果: `getSpeakerLabel()` を source 優先に変更し、`microphone` は `自分`、`system_audio` は `相手側` と表示するようにした。source がない古いセグメントでは既存の `speaker` 表示を維持した。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で system_audio セグメントとコピー出力が `相手側` 表示に揃うか確認する。

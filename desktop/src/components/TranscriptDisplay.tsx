@@ -21,9 +21,9 @@ function getSpeakerKind(
 }
 
 function getSpeakerLabel(segment: TranscriptSegment): string | null {
-  if (segment.speaker) return segment.speaker;
   if (segment.source === "microphone") return "自分";
   if (segment.source === "system_audio") return "相手側";
+  if (segment.speaker) return segment.speaker;
   return "未分類";
 }
 
