@@ -19,6 +19,8 @@ export function SystemAudioSection({
   const systemAudioLevelPercent = Math.round(
     sanitizeAudioLevelForDisplay(systemAudioLevel) * 100,
   );
+  const systemAudioStateText = isSystemAudioRecording ? "取得中" : "未取得";
+  const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
 
   return (
     <div
@@ -38,9 +40,10 @@ export function SystemAudioSection({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`システム音声 相手側トラック: ${isSystemAudioRecording ? "取得中" : "未取得"}`}
+          aria-label={systemAudioStateDescription}
+          title={systemAudioStateDescription}
         >
-          {isSystemAudioRecording ? "取得中" : "未取得"}
+          {systemAudioStateText}
         </span>
       </div>
       <div className="controls-row">

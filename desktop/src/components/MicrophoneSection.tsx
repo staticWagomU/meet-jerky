@@ -32,6 +32,8 @@ export function MicrophoneSection({
   const micLevelPercent = Math.round(
     sanitizeAudioLevelForDisplay(micLevel) * 100,
   );
+  const micStateText = isMicRecording ? "録音中" : "未録音";
+  const micStateDescription = `マイク 自分トラック: ${micStateText}`;
 
   return (
     <div
@@ -51,9 +53,10 @@ export function MicrophoneSection({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`マイク 自分トラック: ${isMicRecording ? "録音中" : "未録音"}`}
+          aria-label={micStateDescription}
+          title={micStateDescription}
         >
-          {isMicRecording ? "録音中" : "未録音"}
+          {micStateText}
         </span>
       </div>
       <div className="controls-row">
