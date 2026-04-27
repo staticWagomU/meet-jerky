@@ -178,6 +178,22 @@ function getAudioSourceStatusLabel(
   return "なし";
 }
 
+function getAudioSourceStatusAriaText(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string {
+  if (isMicRecording && isSystemAudioRecording) {
+    return "自分と相手側を取得中";
+  }
+  if (isMicRecording) {
+    return "自分のみ録音中、相手側は未取得";
+  }
+  if (isSystemAudioRecording) {
+    return "相手側のみ取得中、自分は未録音";
+  }
+  return "音声ソースなし";
+}
+
 function getAudioSourceStatusPillClass(statusLabel: string): string {
   if (statusLabel === "自分+相手側") {
     return "meeting-status-pill-active";
@@ -810,6 +826,10 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const audioSourceStatusAriaText = getAudioSourceStatusAriaText(
+    isMicRecording,
+    isSystemAudioRecording,
+  );
   const aiTransmissionStatusLabel = getAiTransmissionStatusLabel(
     settings?.transcriptionEngine,
   );
@@ -823,7 +843,7 @@ export function TranscriptView() {
     "会議記録状態",
     isMeetingActive ? "記録中" : "待機中",
     isTranscribing ? "文字起こし中" : "文字起こし停止",
-    `音声 ${audioSourceStatusLabel}`,
+    `音声 ${audioSourceStatusAriaText}`,
     `エンジン ${engineStatusLabel}`,
     `AI送信 ${aiTransmissionStatusLabel}`,
     openAIApiKeyStatusLabel ? `APIキー ${openAIApiKeyStatusLabel}` : null,
