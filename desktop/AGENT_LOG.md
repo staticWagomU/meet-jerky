@@ -6340,6 +6340,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で権限確認失敗バッジが自然に伝わるか確認する。
 
+### Permission Banner UX: clarify failed check status
+
+- 開始日時: 2026-04-28 06:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議画面上部の権限バナーでも確認失敗状態を自然な表記へ揃える。
+- 結果: マイク権限と画面収録権限の status pill に使う `確認失敗` を `確認できません` に変更した。権限確認処理、alert 判定、本文説明、再チェック処理には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で権限バナーの確認失敗状態が自然に伝わるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

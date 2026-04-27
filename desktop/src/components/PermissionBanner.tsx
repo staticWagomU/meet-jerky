@@ -43,14 +43,14 @@ export function PermissionBanner() {
   const micStatusLabel = isCheckingPermissions
     ? "確認中"
     : micPermissionError
-      ? "確認失敗"
+      ? "確認できません"
       : micPermission === "denied"
         ? "未許可"
         : "未確認";
   const screenStatusLabel = isCheckingPermissions
     ? "確認中"
     : screenPermissionError
-      ? "確認失敗"
+      ? "確認できません"
       : screenPermission === "denied"
         ? "未許可"
         : "未確認";
