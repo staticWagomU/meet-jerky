@@ -169,7 +169,7 @@ function getAudioSourceStatusLabel(
   isSystemAudioRecording: boolean,
 ): string {
   if (isMicRecording && isSystemAudioRecording) {
-    return "自分+相手側";
+    return "自分 / 相手側";
   }
   if (isMicRecording) {
     return "自分のみ";
@@ -219,7 +219,7 @@ function getAudioSourceNotice(
 }
 
 function getAudioSourceStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "自分+相手側") {
+  if (statusLabel === "自分 / 相手側") {
     return "meeting-status-pill-active";
   }
   if (statusLabel === "なし") {

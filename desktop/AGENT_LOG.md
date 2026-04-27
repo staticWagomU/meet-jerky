@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: align both-source status label
+
+- 開始日時: 2026-04-28 03:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、音声ソース status pill の両方取得中表示を、他の UI と同じ `自分 / 相手側` 表記へ揃える。
+- 結果: `自分+相手側` を `自分 / 相手側` に変更し、active class 判定も同じ文言へ更新した。録音/取得状態判定、aria summary、文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で status pill が横幅を取りすぎず、両トラック取得中として自然に読めるか確認する。
+
 ### Transcript UX: space track pair in source notice
 
 - 開始日時: 2026-04-28 03:19 JST
