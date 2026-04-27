@@ -34,6 +34,11 @@ export function MicrophoneSection({
   );
   const micStateText = isMicRecording ? "録音中" : "未録音";
   const micStateDescription = `マイク 自分トラック: ${micStateText}`;
+  const micButtonLabel = isOperationPending
+    ? "自分トラックのマイク録音を処理中"
+    : isMicRecording
+      ? "自分トラックのマイク録音を停止"
+      : "自分トラックのマイク録音を開始";
 
   return (
     <div
@@ -82,13 +87,8 @@ export function MicrophoneSection({
           onClick={onToggleRecording}
           disabled={isOperationPending}
           className={`control-btn ${isMicRecording ? "control-btn-stop" : "control-btn-record"}`}
-          aria-label={
-            isOperationPending
-              ? "自分トラックのマイク録音を処理中"
-              : isMicRecording
-                ? "自分トラックのマイク録音を停止"
-                : "自分トラックのマイク録音を開始"
-          }
+          aria-label={micButtonLabel}
+          title={micButtonLabel}
         >
           <span
             className={`rec-indicator ${isMicRecording ? "rec-indicator-active" : ""}`}

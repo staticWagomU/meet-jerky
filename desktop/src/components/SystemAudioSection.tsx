@@ -21,6 +21,11 @@ export function SystemAudioSection({
   );
   const systemAudioStateText = isSystemAudioRecording ? "取得中" : "未取得";
   const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
+  const systemAudioButtonLabel = isOperationPending
+    ? "相手側トラックのシステム音声キャプチャを処理中"
+    : isSystemAudioRecording
+      ? "相手側トラックのシステム音声キャプチャを停止"
+      : "相手側トラックのシステム音声キャプチャを開始";
 
   return (
     <div
@@ -52,13 +57,8 @@ export function SystemAudioSection({
           onClick={onToggleSystemAudio}
           disabled={isOperationPending}
           className={`control-btn ${isSystemAudioRecording ? "control-btn-stop" : "control-btn-capture"}`}
-          aria-label={
-            isOperationPending
-              ? "相手側トラックのシステム音声キャプチャを処理中"
-              : isSystemAudioRecording
-                ? "相手側トラックのシステム音声キャプチャを停止"
-                : "相手側トラックのシステム音声キャプチャを開始"
-          }
+          aria-label={systemAudioButtonLabel}
+          title={systemAudioButtonLabel}
         >
           <span
             className={`rec-indicator ${isSystemAudioRecording ? "rec-indicator-active" : ""}`}
