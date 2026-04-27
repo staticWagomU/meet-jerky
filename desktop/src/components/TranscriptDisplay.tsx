@@ -410,7 +410,11 @@ export function TranscriptDisplay({
         onScroll={handleScroll}
       >
         {segments.length === 0 ? (
-          <div className="transcript-empty" title={transcriptLogLabel}>
+          <div
+            className="transcript-empty"
+            aria-label={transcriptLogLabel}
+            title={transcriptLogLabel}
+          >
             文字起こしを開始すると、自分 / 相手側トラックの発話がここに流れます
           </div>
         ) : (
