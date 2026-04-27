@@ -89,6 +89,7 @@ export function SessionList() {
       <div
         className="session-list"
         role="status"
+        aria-busy={true}
         aria-live="polite"
         aria-atomic="true"
         aria-label={loadingLabel}
@@ -105,7 +106,7 @@ export function SessionList() {
       ? "セッション履歴一覧を読み込み中"
       : "セッション履歴一覧を再読み込み";
     return (
-      <div className="session-list">
+      <div className="session-list" aria-busy={isFetching}>
         <p
           className="session-list-error"
           role="alert"
