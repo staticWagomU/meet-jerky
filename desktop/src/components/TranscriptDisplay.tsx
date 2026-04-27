@@ -506,7 +506,7 @@ export function TranscriptDisplay({
           title="文字起こしログの最新位置へ戻る"
           onClick={handleScrollToLatest}
         >
-          最新へ
+          最新へ戻る
         </button>
       )}
     </div>

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Log UX: clarify latest button
+
+- 開始日時: 2026-04-28 08:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログの最新追従再開ボタンを、可視表示でも戻る操作だと分かる文言へ揃える。
+- 結果: 最新位置へ戻るボタン表示を `最新へ` から `最新へ戻る` に変更した。既存の aria-label/title と同じ意味へ揃え、スクロール制御や文字起こし受信処理には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機 UI で浮動ボタンがログ本文を邪魔しないか確認する。
+
 ### Transcript UX: align recording stop error wording
 
 - 開始日時: 2026-04-28 08:00 JST
