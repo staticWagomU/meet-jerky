@@ -6410,6 +6410,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI でデフォルト出力先取得エラーと再取得導線が自然に見えるか確認する。
 
+### Settings UX: clarify output directory error mode
+
+- 開始日時: 2026-04-28 07:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、デフォルト出力先ディレクトリ取得失敗時の mode pill もエラー状態として分かる表示へ揃える。
+- 結果: カスタム出力先がなく、デフォルト出力先取得に失敗した場合の mode pill を `デフォルト` ではなく `確認できません` に変更した。合わせて直前変更で崩れていた ternary のインデントを整えた。出力先取得、フォルダ選択、保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で出力先エラー時の mode pill とエラー本文が重複しすぎないか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
