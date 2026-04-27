@@ -458,7 +458,7 @@ export function SettingsView() {
         </div>
       </div>
 
-      {/* 外部Realtime API キー */}
+      {/* 外部 Realtime API キー */}
       {localSettings.transcriptionEngine === "openAIRealtime" && (
         <ExternalApiKeySection
           providerName="OpenAI"

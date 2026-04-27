@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Docs UX: align meeting URL wording
+
+- 開始日時: 2026-04-28 04:34 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `docs/product-concept.md`, `src/types/index.ts`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の表記整合として、会議 URL / 外部 Realtime 周辺のコメント・プロダクト文書に残る詰まった表記を揃える。
+- 結果: プロダクトコンセプト、会議検知 payload コメント、設定画面コメントの `ブラウザURL` / `会議URL` / `外部Realtime` を `ブラウザ URL` / `会議 URL` / `外部 Realtime` 表記へ揃えた。会議検知処理、payload、表示文言、URL 全文非表示方針には触れなかった。
+- 変更ファイル: `docs/product-concept.md`, `src/types/index.ts`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- docs/product-concept.md src/types/index.ts src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh docs/product-concept.md src/types/index.ts src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後の会議 URL 関連実装でも URL 全文を UI / payload / log に出さない方針を維持する。
+
 ### Session List UX: clarify waiting label
 
 - 開始日時: 2026-04-28 04:31 JST
