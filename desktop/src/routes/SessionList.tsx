@@ -84,6 +84,8 @@ export function SessionList() {
       <div
         className="session-list"
         role="status"
+        aria-live="polite"
+        aria-atomic="true"
         aria-label="セッション履歴一覧を読み込み中"
       >
         読み込み中...
@@ -153,6 +155,8 @@ export function SessionList() {
         <p
           className="session-list-empty"
           role="status"
+          aria-live="polite"
+          aria-atomic="true"
           aria-label="保存された文字起こし履歴はまだありません"
         >
           会議を終了すると、保存された文字起こし履歴がここに表示されます

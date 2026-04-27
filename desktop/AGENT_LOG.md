@@ -3147,3 +3147,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。設定変更/保存の実機操作は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: make history and model statuses atomic
+
+- 開始日時: 2026-04-27 11:28 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧の読み込み/空状態と Whisper モデル準備完了状態が、支援技術でまとまった状態通知として扱われるようにする。
+- 結果: セッション履歴読み込み中、履歴空状態、モデル準備完了の status region に `aria-live="polite"` と `aria-atomic="true"` を追加した。履歴取得、モデル状態確認、表示文言は変更していない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。履歴取得/モデル状態確認の実機確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

@@ -348,6 +348,8 @@ function DownloadStatus({
       <span
         className="model-status-ready"
         role="status"
+        aria-live="polite"
+        aria-atomic="true"
         aria-label={`${selectedModel} モデルは準備完了`}
       >
         準備完了
