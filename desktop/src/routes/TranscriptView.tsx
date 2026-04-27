@@ -881,7 +881,7 @@ export function TranscriptView() {
       : "会議記録を開始";
 
   return (
-    <div className="transcript-view">
+    <div className="transcript-view" aria-busy={isAudioSourceOperationPending}>
       <PermissionBanner />
 
       {/* 会議ボタン */}
