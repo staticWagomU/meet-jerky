@@ -182,6 +182,7 @@ export function SettingsView() {
   }, [localSettings]);
 
   if (settingsError) {
+    const settingsErrorMessage = toErrorMessage(settingsError);
     const reloadSettingsLabel = isFetchingSettings
       ? "アプリ設定を読み込み中"
       : "アプリ設定を再読み込み";
@@ -190,10 +191,10 @@ export function SettingsView() {
         <p
           className="settings-warning"
           role="alert"
-          aria-label={`アプリ設定読み込みエラー: ${String(settingsError)}`}
-          title={`アプリ設定読み込みエラー: ${String(settingsError)}`}
+          aria-label={`アプリ設定読み込みエラー: ${settingsErrorMessage}`}
+          title={`アプリ設定読み込みエラー: ${settingsErrorMessage}`}
         >
-          設定の読み込みに失敗しました: {String(settingsError)}
+          設定の読み込みに失敗しました: {settingsErrorMessage}
         </p>
         <button
           type="button"
@@ -266,9 +267,13 @@ export function SettingsView() {
     ? "マイクデバイス一覧を取得中"
     : "マイクデバイス一覧を再取得";
   const languageLabel = `言語: ${languageName}`;
+  const devicesErrorMessage = devicesError ? toErrorMessage(devicesError) : "";
   const retryDefaultOutputDirLabel = isFetchingDefaultOutputDir
     ? "デフォルト出力先ディレクトリを取得中"
     : "デフォルト出力先ディレクトリを再取得";
+  const defaultOutputDirErrorMessage = defaultOutputDirError
+    ? toErrorMessage(defaultOutputDirError)
+    : "";
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS権限状態を確認中"
     : "macOS権限状態を再チェック";
@@ -433,10 +438,12 @@ export function SettingsView() {
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`マイクデバイス一覧エラー: ${String(devicesError)}`}
-            title={`マイクデバイス一覧エラー: ${String(devicesError)}`}
+            aria-label={`マイクデバイス一覧エラー: ${devicesErrorMessage}`}
+            title={`マイクデバイス一覧エラー: ${devicesErrorMessage}`}
           >
-            <span>マイクデバイス一覧の取得に失敗しました: {String(devicesError)}</span>
+            <span>
+              マイクデバイス一覧の取得に失敗しました: {devicesErrorMessage}
+            </span>
             <button
               type="button"
               className="control-btn control-btn-clear"
@@ -497,11 +504,12 @@ export function SettingsView() {
             <div
               className="settings-inline-error"
               role="alert"
-              aria-label={`デフォルト出力先ディレクトリエラー: ${String(defaultOutputDirError)}`}
-              title={`デフォルト出力先ディレクトリエラー: ${String(defaultOutputDirError)}`}
+              aria-label={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
+              title={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
             >
               <span>
-                デフォルト出力先の取得に失敗しました: {String(defaultOutputDirError)}
+                デフォルト出力先の取得に失敗しました:{" "}
+                {defaultOutputDirErrorMessage}
               </span>
               <button
                 type="button"
@@ -794,6 +802,7 @@ function OpenAIApiKeySection({
   const refetchApiKeyStatusLabel = isFetchingHasKey
     ? "OpenAI API キー状態を確認中"
     : "OpenAI API キー状態を再確認";
+  const apiKeyErrorMessage = hasKeyError ? toErrorMessage(hasKeyError) : "";
   const apiKeyInputLabel = hasKey
     ? "OpenAI API キー: 登録済み、再入力で上書き"
     : "OpenAI API キー: 未登録";
@@ -809,11 +818,11 @@ function OpenAIApiKeySection({
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`OpenAI API キー状態エラー: ${String(hasKeyError)}`}
-            title={`OpenAI API キー状態エラー: ${String(hasKeyError)}`}
+            aria-label={`OpenAI API キー状態エラー: ${apiKeyErrorMessage}`}
+            title={`OpenAI API キー状態エラー: ${apiKeyErrorMessage}`}
           >
             <span>
-              API キー状態の確認に失敗しました: {String(hasKeyError)}
+              API キー状態の確認に失敗しました: {apiKeyErrorMessage}
             </span>
             <button
               type="button"
