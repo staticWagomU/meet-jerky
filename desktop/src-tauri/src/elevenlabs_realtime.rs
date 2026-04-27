@@ -285,7 +285,7 @@ mod ws_task {
         )
     }
 
-    fn handle_event(
+    pub(crate) fn handle_event(
         text: &str,
         pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
         speaker: &Option<String>,
@@ -320,8 +320,17 @@ mod ws_task {
                     push_error(pending, speaker, source, message);
                 }
             }
+            Some(event_name) if is_scribe_error_event(event_name) => {
+                if let Some(message) = extract_error_message(&value) {
+                    push_error(pending, speaker, source, message);
+                }
+            }
             _ => {}
         }
+    }
+
+    fn is_scribe_error_event(event_name: &str) -> bool {
+        event_name.starts_with("scribe_") && event_name.ends_with("_error")
     }
 
     fn extract_transcript(value: &Value) -> Option<String> {
@@ -442,5 +451,24 @@ mod tests {
     fn engine_construction_records_model_id() {
         let engine = ElevenLabsRealtimeEngine::new(SCRIBE_V2_REALTIME_MODEL_ID);
         assert_eq!(engine.model_id, SCRIBE_V2_REALTIME_MODEL_ID);
+    }
+
+    #[test]
+    fn scribe_error_events_are_queued_as_error_segments() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("相手".to_string());
+
+        ws_task::handle_event(
+            r#"{"message_type":"scribe_auth_error","message":"invalid api key"}"#,
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::SystemAudio),
+        );
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 1);
+        assert!(segments[0].text.contains("invalid api key"));
+        assert_eq!(segments[0].speaker, speaker);
+        assert_eq!(segments[0].source, Some(TranscriptionSource::SystemAudio));
     }
 }

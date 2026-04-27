@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### ElevenLabs Realtime: surface scribe error events
+
+- 開始日時: 2026-04-28 02:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: ElevenLabs Scribe v2 Realtime 対応の批判的レビューとして、公式仕様にある `scribe_*_error` 系受信イベントが UI へ流れず見落とされるリスクを潰す。
+- 結果: ElevenLabs Realtime の受信イベント処理で `scribe_` から始まり `_error` で終わる `message_type` を既存エラーセグメントへ流すようにした。`scribe_auth_error` を source/speaker 付きエラーセグメントとして queue する単体テストを追加した。WebSocket 接続先、Keychain、音声送信、課金が発生する実通信には触れなかった。
+- 変更ファイル: `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check` 成功。`git diff --check -- src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo check/test` は cmake 不在により未実行。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で Rust テストを再実行し、ElevenLabs の実 API キーがある環境では課金・認証方針に従って疎通を別途確認する。
+
 ### Transcript UX: clarify system audio operation error
 
 - 開始日時: 2026-04-28 02:29 JST
