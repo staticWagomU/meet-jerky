@@ -6298,6 +6298,20 @@
 - 失敗理由: なし。
 - 次アクション: 設定画面で OpenAI / ElevenLabs の API キー状態エラー表示が自然に読めるか確認する。
 
+### Product Concept UX: align AI and audio wording
+
+- 開始日時: 2026-04-28 06:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `docs/product-concept.md`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の表記整合として、プロダクトコンセプトに残る英字混じり表記とスラッシュ区切りを読みやすく揃える。
+- 結果: `AI連携` を `AI 連携`、`決定事項とToDo抽出` を `決定事項と ToDo 抽出`、`デスクトップ/アプリ音声取得` を `デスクトップ音声またはアプリ音声取得` に変更した。プロダクト方針、実装、UI 表示には触れなかった。
+- 変更ファイル: `docs/product-concept.md`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- docs/product-concept.md AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh docs/product-concept.md AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後のプロダクト文書でも英字混じり表記と記号区切りを読みやすく保つ。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
