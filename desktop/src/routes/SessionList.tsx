@@ -323,7 +323,7 @@ function SessionRow({
           {isOpeningThisFile
             ? "開いています..."
             : isWaitingForOtherAction
-              ? "操作待ち"
+              ? "他操作中"
               : "ファイルを開く"}
         </button>
         <button
@@ -337,7 +337,7 @@ function SessionRow({
           {isRevealingThisFile
             ? "表示中..."
             : isWaitingForOtherAction
-              ? "操作待ち"
+              ? "他操作中"
               : "Finder で表示"}
         </button>
       </div>
