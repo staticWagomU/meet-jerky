@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: align recording status labels
+
+- 開始日時: 2026-04-28 08:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の主操作を `記録` に揃えた後に残っていた状態 strip と操作エラーの aria/title も同じ語彙へ揃える。
+- 結果: `会議状態` を `記録状態`、`会議録音` を `記録の録音`、`会議操作エラー` を `記録操作エラー`、保存完了の aria/title を `記録セッション` に変更した。可視ボタン、録音/文字起こし制御、保存処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、支援技術向けの記録状態ラベルが可視状態と矛盾しないか確認する。
+
 ### Transcript Log UX: clarify latest button
 
 - 開始日時: 2026-04-28 08:01 JST

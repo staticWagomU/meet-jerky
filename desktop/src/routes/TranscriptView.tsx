@@ -973,7 +973,7 @@ export function TranscriptView() {
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
   const meetingStatusAriaLabel = [
-    "会議状態",
+    "記録状態",
     meetingRecordingStatusLabel,
     transcriptionStatusLabel,
     `音声 ${audioSourceStatusDisplayAriaText}`,
@@ -1054,8 +1054,8 @@ export function TranscriptView() {
         >
           <span
             className={`meeting-status-pill ${meetingRecordingStatusClass}`}
-            aria-label={`会議録音: ${meetingRecordingStatusLabel}`}
-            title={`会議録音: ${meetingRecordingStatusLabel}`}
+            aria-label={`記録の録音: ${meetingRecordingStatusLabel}`}
+            title={`記録の録音: ${meetingRecordingStatusLabel}`}
           >
             {meetingRecordingStatusLabel}
           </span>
@@ -1113,16 +1113,16 @@ export function TranscriptView() {
           <div
             className="meeting-error meeting-alert meeting-error-dismissible"
             role="alert"
-            aria-label={`会議操作エラー: ${meetingError}`}
-            title={`会議操作エラー: ${meetingError}`}
+            aria-label={`記録操作エラー: ${meetingError}`}
+            title={`記録操作エラー: ${meetingError}`}
           >
             <span>{meetingError}</span>
             <button
               type="button"
               className="control-btn control-btn-clear"
               onClick={() => setMeetingError(null)}
-              aria-label="会議操作エラーを閉じる"
-              title="会議操作エラーを閉じる"
+              aria-label="記録操作エラーを閉じる"
+              title="記録操作エラーを閉じる"
             >
               閉じる
             </button>
@@ -1188,8 +1188,8 @@ export function TranscriptView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`会議セッションを保存しました: ${lastSavedFileName}`}
-            title={`会議セッションを保存しました: ${lastSavedFileName}`}
+            aria-label={`記録セッションを保存しました: ${lastSavedFileName}`}
+            title={`記録セッションを保存しました: ${lastSavedFileName}`}
           >
             保存しました: {lastSavedFileName}
           </p>
