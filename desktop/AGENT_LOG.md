@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify meeting error assistive label
+
+- 開始日時: 2026-04-28 03:28 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議開始・停止・保存エラーを表示する領域の aria/title を `会議記録` 固有ではない説明へ揃える。
+- 結果: 会議エラー領域と閉じるボタンの補助ラベルを `会議記録エラー` から `会議操作エラー` へ変更した。表示されるエラーメッセージ本文、エラー生成、開始/停止/保存処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で会議エラーが開始・停止・保存に共通する操作エラーとして自然に読まれるか確認する。
+
 ### App detection docs: align status confirmation wording
 
 - 開始日時: 2026-04-28 03:27 JST

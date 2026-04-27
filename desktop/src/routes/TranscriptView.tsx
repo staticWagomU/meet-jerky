@@ -1111,16 +1111,16 @@ export function TranscriptView() {
           <div
             className="meeting-error meeting-alert meeting-error-dismissible"
             role="alert"
-            aria-label={`会議記録エラー: ${meetingError}`}
-            title={`会議記録エラー: ${meetingError}`}
+            aria-label={`会議操作エラー: ${meetingError}`}
+            title={`会議操作エラー: ${meetingError}`}
           >
             <span>{meetingError}</span>
             <button
               type="button"
               className="control-btn control-btn-clear"
               onClick={() => setMeetingError(null)}
-              aria-label="会議記録エラーを閉じる"
-              title="会議記録エラーを閉じる"
+              aria-label="会議操作エラーを閉じる"
+              title="会議操作エラーを閉じる"
             >
               閉じる
             </button>
