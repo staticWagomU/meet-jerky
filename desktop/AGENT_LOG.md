@@ -5093,3 +5093,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での履歴ファイル open/reveal 操作中 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: add titles to primary navigation links
+
+- 開始日時: 2026-04-27 21:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: 上部ナビゲーションの短い表示語だけでは各ビューの意味が分かりにくい場合に備え、ホバーで文脈を確認できるようにする。
+- 結果: 「文字起こし」「履歴」「設定」の各 nav link に、リアルタイム文字起こし、保存済みセッション履歴、アプリ設定と権限状態を示す `title` を追加した。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
