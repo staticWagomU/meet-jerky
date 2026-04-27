@@ -42,6 +42,16 @@ export function TranscriptionControls({
       ? "文字起こしを停止"
       : "文字起こしを開始";
   const clearTranscriptLabel = `文字起こし ${segmentsCount} 件をクリア`;
+  const transcriptionControlsLabel = [
+    "文字起こし操作",
+    isTranscriptionOperationPending ? "処理中" : null,
+    isTranscribing ? "文字起こし中" : "停止中",
+    sourceStatusText,
+    startBlockedReason ? `開始不可: ${startBlockedReason}` : null,
+    `ログ ${segmentsCount} 件`,
+  ]
+    .filter(Boolean)
+    .join("、");
 
   return (
     <>
@@ -59,7 +69,8 @@ export function TranscriptionControls({
         className="controls-row"
         role="group"
         aria-busy={isTranscriptionOperationPending}
-        aria-label="文字起こし操作"
+        aria-label={transcriptionControlsLabel}
+        title={transcriptionControlsLabel}
       >
         <button
           type="button"

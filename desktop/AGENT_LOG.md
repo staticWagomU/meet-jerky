@@ -5653,3 +5653,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での音声ソースセクションラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: include transcription state in control group label
+
+- 開始日時: 2026-04-27 23:20 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし操作周辺で、開始不可理由・音声ソース状態・ログ件数を操作グループ単位でも把握できるようにする。
+- 結果: `TranscriptionControls` の操作グループ `aria-label` / `title` に、処理中状態、文字起こし状態、音声ソース状態、開始不可理由、ログ件数を含めるようにした。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での文字起こし操作グループラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
