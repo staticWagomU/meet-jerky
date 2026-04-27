@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings UX: clarify API key delete lock label
+
+- 開始日時: 2026-04-28 04:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、API キー保存中に削除できない理由ラベルを自然な日本語へ揃える。
+- 結果: API キー削除ボタンの aria/title ラベルを `API キー保存中のため削除できません` から `API キーを保存中のため削除できません` に変更した。Keychain 保存/削除処理、disabled 判定、キー値の扱いには触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で API キー保存中の削除ロック理由が自然に読めるか確認する。
+
 ### Settings UX: verb folder selection label
 
 - 開始日時: 2026-04-28 04:37 JST

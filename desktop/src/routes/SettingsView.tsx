@@ -923,7 +923,7 @@ function ExternalApiKeySection({
   const clearApiKeyLabel = clearMutation.isPending
     ? `${providerName} API キーを削除中`
     : setMutation.isPending
-      ? `${providerName} API キー保存中のため削除できません`
+      ? `${providerName} API キーを保存中のため削除できません`
     : isFetchingHasKey
       ? `${providerName} API キー状態を確認中`
       : hasKeyError
