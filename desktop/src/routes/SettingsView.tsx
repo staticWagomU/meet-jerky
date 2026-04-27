@@ -358,7 +358,17 @@ export function SettingsView() {
       <div className="settings-section">
         <h3 className="settings-section-title">出力先ディレクトリ</h3>
         <div className="settings-output-dir">
-          <span className="settings-output-path" role="status">
+          <span
+            className="settings-output-path"
+            role="status"
+            aria-label={
+              localSettings.outputDirectory
+                ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
+                : defaultOutputDir
+                  ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
+                  : "現在の出力先ディレクトリは未設定です"
+            }
+          >
             {localSettings.outputDirectory ?? defaultOutputDir ?? "未設定"}
           </span>
           {defaultOutputDirError && !localSettings.outputDirectory && (
