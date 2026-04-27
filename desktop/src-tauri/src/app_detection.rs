@@ -570,10 +570,15 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/j/12345678"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/abc"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/123/extra"), None);
+        assert_eq!(classify_meeting_url("https://zoom.us/j/123456789//"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/123456789012"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/profile"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/abc"), None);
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/join/123456789//"),
+            None
+        );
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
         assert_eq!(classify_meeting_url("https://example.com/j/123"), None);
         assert_eq!(classify_meeting_url("https://meet.google.com/"), None);
@@ -591,6 +596,10 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://meet.google.com/abc-defg-hij/extra"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defg-hij//"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);

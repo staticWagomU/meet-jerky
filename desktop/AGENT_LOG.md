@@ -4141,3 +4141,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: guard double slash meeting URL rejection
+
+- 開始日時: 2026-04-27 16:01 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小テスト補強
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 末尾スラッシュ付き会議 URL の許容が、二重スラッシュや追加 path まで広がらないよう純粋関数テストで固定する。
+- 結果: Google Meet と Zoom の二重末尾スラッシュ URL が分類されないことをテストに追加した。分類ロジック、payload、ログ、UI 表示は変更していない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
