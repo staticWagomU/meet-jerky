@@ -11,6 +11,12 @@ function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
 }
 
+function toErrorMessage(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
 /**
  * 保存済みセッションの一覧画面。
  * 各行から「ファイルを開く」「フォルダを開く」で OS のデフォルトアプリ / エクスプローラに
@@ -47,7 +53,7 @@ export function SessionList() {
       if (!isMountedRef.current) {
         return;
       }
-      setActionError(`ファイルを開けませんでした: ${String(e)}`);
+      setActionError(`ファイルを開けませんでした: ${toErrorMessage(e)}`);
     } finally {
       pendingActionRef.current = null;
       if (isMountedRef.current) {
@@ -74,7 +80,7 @@ export function SessionList() {
       if (!isMountedRef.current) {
         return;
       }
-      setActionError(`フォルダを開けませんでした: ${String(e)}`);
+      setActionError(`フォルダを開けませんでした: ${toErrorMessage(e)}`);
     } finally {
       pendingActionRef.current = null;
       if (isMountedRef.current) {
@@ -101,7 +107,8 @@ export function SessionList() {
   }
 
   if (error) {
-    const errorLabel = `セッション履歴一覧エラー: ${String(error)}`;
+    const errorMessage = toErrorMessage(error);
+    const errorLabel = `セッション履歴一覧エラー: ${errorMessage}`;
     const retryErrorLabel = isFetching
       ? "セッション履歴一覧を読み込み中"
       : "セッション履歴一覧を再読み込み";
@@ -113,7 +120,7 @@ export function SessionList() {
           aria-label={errorLabel}
           title={errorLabel}
         >
-          セッション一覧の取得に失敗しました: {String(error)}
+          セッション一覧の取得に失敗しました: {errorMessage}
         </p>
         <button
           type="button"
