@@ -316,9 +316,26 @@ export function SettingsView() {
     isFetchingDevices ||
     isFetchingDefaultOutputDir ||
     isCheckingPermissions;
+  const settingsViewLabel = [
+    "アプリ設定",
+    updateMutation.isPending ? "設定を保存中" : null,
+    isSelectingOutputDirectory ? "出力先フォルダを選択中" : null,
+    isFetchingSettings ? "設定を読み込み中" : null,
+    isFetchingDevices ? "マイクデバイス一覧を取得中" : null,
+    isFetchingDefaultOutputDir ? "デフォルト出力先を取得中" : null,
+    isCheckingPermissions ? "macOS権限状態を確認中" : null,
+    hasChanges ? "未保存の変更あり" : null,
+  ]
+    .filter(Boolean)
+    .join("、");
 
   return (
-    <div className="settings-view" aria-busy={isSettingsViewBusy}>
+    <div
+      className="settings-view"
+      aria-busy={isSettingsViewBusy}
+      aria-label={settingsViewLabel}
+      title={settingsViewLabel}
+    >
       {/* 文字起こしエンジン */}
       <div className="settings-section">
         <h3 className="settings-section-title" id="transcription-engine-title">
