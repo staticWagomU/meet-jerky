@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection UX: align auto-start notice with recording wording
+
+- 開始日時: 2026-04-28 07:54 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナー本文もライブ画面の `記録を開始` と同じ語彙に揃え、自動開始していない対象を短く明確にする。
+- 結果: バナー本文と aria-label の `録音と文字起こしは自動開始していません` を `記録は自動開始していません` に変更した。CTA、検知ロジック、ナビゲーション、URL 情報の扱いには触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機 UI でバナー本文が短くなった分だけ視線を邪魔しないか確認する。
+
 ### Meeting Detection UX: align confirmation CTA with recording
 
 - 開始日時: 2026-04-28 07:53 JST
