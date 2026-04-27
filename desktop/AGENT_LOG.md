@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings UX: show provider in API key status error
+
+- 開始日時: 2026-04-28 03:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、OpenAI / ElevenLabs の API キー状態確認エラー本文でも、どちらの provider のエラーか分かるようにする。
+- 結果: API キー状態確認失敗の可視本文に `OpenAI` または `ElevenLabs` の provider 名を含めた。aria/title は既に provider 名付きだったため、Keychain command、キー値、保存/削除処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面で OpenAI / ElevenLabs の状態エラーが provider 別に自然に読めるか確認する。
+
 ### Realtime UX: align missing API key errors
 
 - 開始日時: 2026-04-28 03:38 JST
