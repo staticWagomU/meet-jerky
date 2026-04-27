@@ -21,7 +21,7 @@ function getSessionDisplayTitle(title: string): string {
 
 /**
  * 保存済みセッションの一覧画面。
- * 各行から「ファイルを開く」「フォルダを開く」で OS のデフォルトアプリ / エクスプローラに
+ * 各行から「ファイルを開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
  * 解決させる。
  */
 export function SessionList() {
@@ -82,12 +82,12 @@ export function SessionList() {
       }
       setActionError(null);
     } catch (e) {
-      console.error("フォルダを開けませんでした:", e);
+      console.error("Finder で表示できませんでした:", e);
       if (!isMountedRef.current) {
         return;
       }
       setActionError(
-        `保存場所を表示できませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
+        `Finder で表示できませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
       );
     } finally {
       pendingActionRef.current = null;
@@ -272,14 +272,14 @@ function SessionRow({
       ? `他のセッション操作を処理中: ${displayTitle}`
     : `ファイルを開く: ${displayTitle}`;
   const revealFileLabel = isRevealingThisFile
-    ? `保存場所を表示しています: ${displayTitle}`
+    ? `Finder で表示しています: ${displayTitle}`
     : isWaitingForOtherAction
       ? `他のセッション操作を処理中: ${displayTitle}`
-    : `保存場所を表示: ${displayTitle}`;
+    : `Finder で表示: ${displayTitle}`;
   const sessionActionsLabel = isOpeningThisFile
     ? `セッション操作: ${displayTitle}、ファイルを開いています`
     : isRevealingThisFile
-      ? `セッション操作: ${displayTitle}、保存場所を表示しています`
+      ? `セッション操作: ${displayTitle}、Finder で表示しています`
     : isWaitingForOtherAction
       ? `セッション操作: ${displayTitle}、他の操作を処理中`
     : `セッション操作: ${displayTitle}`;
@@ -338,7 +338,7 @@ function SessionRow({
             ? "表示中..."
             : isWaitingForOtherAction
               ? "操作待ち"
-              : "保存場所を表示"}
+              : "Finder で表示"}
         </button>
       </div>
     </li>

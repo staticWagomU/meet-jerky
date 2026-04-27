@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Session List UX: use Finder wording
+
+- 開始日時: 2026-04-28 04:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、履歴ファイルの保存場所表示操作を macOS らしい表現へ寄せる。
+- 結果: セッション履歴の保存場所表示ボタン、aria/title、処理中ラベル、エラー文を `Finder で表示` 表記へ変更した。ファイル open/reveal 処理、保存形式、履歴取得処理には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で Finder 表記が履歴操作として自然に読めるか確認する。
+
 ### Transcript UX: clarify no source status
 
 - 開始日時: 2026-04-28 04:16 JST
