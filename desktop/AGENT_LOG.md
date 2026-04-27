@@ -6017,3 +6017,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で画面収録権限確認失敗時の説明が相手側トラックへの影響として明確に伝わるか確認する。
+
+### Session list UX: align history error wording
+
+- 開始日時: 2026-04-28 02:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、セッション履歴一覧の読み込みエラー本文を、周辺の `aria-label` と同じ `セッション履歴一覧` 表記へ揃える。
+- 結果: 読み込みエラーの visible text を `セッション履歴一覧の取得に失敗しました` に更新した。履歴取得、再読み込み、ファイル操作処理には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で履歴一覧読み込みエラー本文と読み上げの語彙が揃っているか確認する。

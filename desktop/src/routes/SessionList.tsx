@@ -117,7 +117,7 @@ export function SessionList() {
           aria-label={errorLabel}
           title={errorLabel}
         >
-          セッション一覧の取得に失敗しました: {errorMessage}
+          セッション履歴一覧の取得に失敗しました: {errorMessage}
         </p>
         <button
           type="button"
