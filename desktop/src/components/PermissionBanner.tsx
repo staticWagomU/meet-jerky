@@ -94,13 +94,18 @@ export function PermissionBanner() {
       </div>
       <div className="permission-banner-summary">
         {micNeedsAttention && (
-          <span className="permission-summary-pill" title={micPermissionDetail}>
+          <span
+            className="permission-summary-pill"
+            aria-label={micPermissionDetail}
+            title={micPermissionDetail}
+          >
             マイク / 自分: {micStatusLabel}
           </span>
         )}
         {screenNeedsAttention && (
           <span
             className="permission-summary-pill"
+            aria-label={screenPermissionDetail}
             title={screenPermissionDetail}
           >
             画面収録 / 相手側: {screenStatusLabel}

@@ -5345,3 +5345,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での文字起こし件数 pill と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: label permission summary pills
+
+- 開始日時: 2026-04-27 22:46 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議画面上部の権限 summary pill が、個別に読まれても自分/相手側トラックと権限状態の意味を保持するようにする。
+- 結果: マイク/自分と画面収録/相手側の summary pill に、詳細文と同じ `aria-label` を追加した。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での権限 summary pill と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
