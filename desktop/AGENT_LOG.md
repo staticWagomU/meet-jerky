@@ -5429,3 +5429,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機でのモデル選択ロック中表示と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: clarify AI transmission status label
+
+- 開始日時: 2026-04-27 23:13 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中ステータスの AI送信 pill で、音声が端末内処理か OpenAI 送信かを短い表示でも分かりやすくする。
+- 結果: AI送信状態ラベルを `OpenAI` / `端末内` から `OpenAI送信` / `端末内処理` に変更し、対応する pill class 判定も更新した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議中ステータス表示確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

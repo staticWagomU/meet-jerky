@@ -239,19 +239,19 @@ function getAiTransmissionStatusLabel(
     return "確認中";
   }
   if (engine === "openAIRealtime") {
-    return "OpenAI";
+    return "OpenAI送信";
   }
-  return "端末内";
+  return "端末内処理";
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "OpenAI") {
+  if (statusLabel === "OpenAI送信") {
     return "meeting-status-pill-active";
   }
   if (statusLabel === "確認失敗") {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "端末内") {
+  if (statusLabel === "端末内処理") {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
