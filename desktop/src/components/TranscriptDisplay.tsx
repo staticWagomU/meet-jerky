@@ -294,7 +294,7 @@ export function TranscriptDisplay({
           : `文字起こし ${copyableSegmentsCount} 件をコピー`;
 
   return (
-    <div className="transcript-display-wrapper">
+    <div className="transcript-display-wrapper" aria-busy={isCopying}>
       {segments.length > 0 && (
         <div className="transcript-toolbar">
           <div
