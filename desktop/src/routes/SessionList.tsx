@@ -80,13 +80,15 @@ export function SessionList() {
   }, []);
 
   if (isLoading) {
+    const loadingLabel = "セッション履歴一覧を読み込み中";
     return (
       <div
         className="session-list"
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        aria-label="セッション履歴一覧を読み込み中"
+        aria-label={loadingLabel}
+        title={loadingLabel}
       >
         読み込み中...
       </div>
@@ -94,12 +96,17 @@ export function SessionList() {
   }
 
   if (error) {
+    const errorLabel = `セッション履歴一覧エラー: ${String(error)}`;
+    const retryErrorLabel = isFetching
+      ? "セッション履歴一覧を読み込み中"
+      : "セッション履歴一覧を再読み込み";
     return (
       <div className="session-list">
         <p
           className="session-list-error"
           role="alert"
-          aria-label={`セッション履歴一覧エラー: ${String(error)}`}
+          aria-label={errorLabel}
+          title={errorLabel}
         >
           セッション一覧の取得に失敗しました: {String(error)}
         </p>
@@ -108,11 +115,8 @@ export function SessionList() {
           className="control-btn control-btn-clear"
           onClick={() => refetch()}
           disabled={isFetching}
-          aria-label={
-            isFetching
-              ? "セッション履歴一覧を読み込み中"
-              : "セッション履歴一覧を再読み込み"
-          }
+          aria-label={retryErrorLabel}
+          title={retryErrorLabel}
         >
           {isFetching ? "読み込み中..." : "再読み込み"}
         </button>
@@ -146,6 +150,7 @@ export function SessionList() {
           className="session-list-error"
           role="alert"
           aria-label={`セッション履歴ファイル操作エラー: ${actionError}`}
+          title={`セッション履歴ファイル操作エラー: ${actionError}`}
         >
           {actionError}
         </p>
@@ -158,6 +163,7 @@ export function SessionList() {
           aria-live="polite"
           aria-atomic="true"
           aria-label="保存された文字起こし履歴はまだありません"
+          title="保存された文字起こし履歴はまだありません"
         >
           会議を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
@@ -210,6 +216,7 @@ function SessionRow({
     <li
       className="session-list-item"
       aria-label={`セッション ${session.title}、開始 ${startedAtLabel}`}
+      title={`セッション ${session.title}、開始 ${startedAtLabel}`}
     >
       <div className="session-list-item-body">
         <div className="session-list-item-title" title={session.title}>
@@ -221,6 +228,7 @@ function SessionRow({
         className="session-list-item-actions"
         role="group"
         aria-label={`セッション操作: ${session.title}`}
+        title={`セッション操作: ${session.title}`}
       >
         <button
           type="button"
