@@ -512,7 +512,7 @@ export function SettingsView() {
 
       {/* マイクデバイス */}
       <div className="settings-section">
-        <h3 className="settings-section-title">マイクデバイス</h3>
+        <h3 className="settings-section-title">自分トラックのマイク</h3>
         <select
           aria-label={microphoneDeviceLabel}
           title={microphoneDeviceLabel}
