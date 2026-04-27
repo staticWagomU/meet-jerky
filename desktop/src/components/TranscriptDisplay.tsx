@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 
@@ -108,7 +108,7 @@ export function TranscriptDisplay({
   const [errorListenerError, setErrorListenerError] = useState<string | null>(
     null,
   );
-  const segmentCounts = getSegmentCounts(segments);
+  const segmentCounts = useMemo(() => getSegmentCounts(segments), [segments]);
   const copyableSegmentsCount = segmentCounts.copyable;
 
   // Listen to transcription-result events

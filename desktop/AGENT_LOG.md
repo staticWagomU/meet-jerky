@@ -5037,3 +5037,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Tauri WebView 実機での長時間ログスクロール性能確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: memoize transcript segment counts
+
+- 開始日時: 2026-04-27 21:08 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: コピー中/コピー済み表示など、セグメント配列が変わらない再レンダーで文字起こし件数集計を繰り返さないようにする。
+- 結果: `getSegmentCounts(segments)` を `useMemo` 化し、`segments` が変わったときだけ自分/相手側/未分類/エラー/コピー可能件数を再集計するようにした。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での長時間ログ表示性能確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
