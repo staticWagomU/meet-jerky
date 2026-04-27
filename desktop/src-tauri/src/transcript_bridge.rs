@@ -44,7 +44,7 @@ pub fn build_append_args_for_emission(
 /// - 前後の空白をトリム
 /// - `None` または空文字列は `"不明"` にフォールバック
 /// - それ以外は受け取った値をそのまま採用（`transcription.rs` 側で
-///   既に `"自分"` / `"相手"` が付与されているため）
+///   既に `"自分"` / `"相手側"` が付与されているため）
 fn normalize_speaker(raw: Option<&str>) -> String {
     match raw.map(str::trim) {
         Some(s) if !s.is_empty() => s.to_string(),
@@ -127,7 +127,7 @@ mod tests {
             start_ms: 0,
             end_ms: 100,
             source: None,
-            speaker: Some("相手".into()),
+            speaker: Some("相手側".into()),
         };
         let result = build_append_args_for_emission(&segment, Some(1000), 990)
             .expect("Some 系統の結果が返る");

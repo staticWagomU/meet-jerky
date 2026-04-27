@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript persistence: align system speaker label
+
+- 開始日時: 2026-04-28 03:14 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `src-tauri/src/transcript_bridge.rs`, `src-tauri/src/markdown.rs`, `src-tauri/src/session_manager.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `src/types/index.ts`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ UI だけでなく保存・Markdown に流れる speaker label も、相手側トラック表記へ揃える。
+- 結果: システム音声 stream の speaker を `相手` から `相手側` に変更し、関連する Rust/TS コメントと Rust テスト期待値を更新した。`source` 伝播、UI の source 優先判定、既存履歴ファイルのマイグレーションには触れなかった。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `src-tauri/src/transcript_bridge.rs`, `src-tauri/src/markdown.rs`, `src-tauri/src/session_manager.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `src/types/index.ts`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。初回 `cargo fmt --check` は `src-tauri/src/session_manager.rs` の改行整形を指摘したため `cargo fmt` を適用。再実行した `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check` 成功。`git diff --check -- src-tauri/src/transcription.rs src-tauri/src/transcript_bridge.rs src-tauri/src/markdown.rs src-tauri/src/session_manager.rs src-tauri/src/elevenlabs_realtime.rs src/types/index.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcript_bridge.rs src-tauri/src/markdown.rs src-tauri/src/session_manager.rs src-tauri/src/elevenlabs_realtime.rs src/types/index.ts AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo check/test` は cmake 不在により未実行。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で Rust テストを再実行し、新規保存される Markdown の相手側表記を実機で確認する。
+
 ### Transcript UX: align other-side notice wording
 
 - 開始日時: 2026-04-28 02:59 JST

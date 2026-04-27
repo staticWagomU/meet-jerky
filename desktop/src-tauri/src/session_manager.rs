@@ -231,7 +231,9 @@ mod tests {
             .expect("start should succeed");
 
         manager.append("自分".into(), 5, "一言目".into()).unwrap();
-        manager.append("相手".into(), 12, "二言目".into()).unwrap();
+        manager
+            .append("相手側".into(), 12, "二言目".into())
+            .unwrap();
 
         let files = list_md_files(dir.path());
         assert_eq!(files.len(), 1);
@@ -243,7 +245,7 @@ mod tests {
             contents
         );
         assert!(
-            contents.contains("**[14:50:12] 相手:** 二言目"),
+            contents.contains("**[14:50:12] 相手側:** 二言目"),
             "second segment missing. contents=\n{}",
             contents
         );
@@ -264,7 +266,9 @@ mod tests {
             )
             .expect("start should succeed");
         manager.append("自分".into(), 5, "一言目".into()).unwrap();
-        manager.append("相手".into(), 12, "二言目".into()).unwrap();
+        manager
+            .append("相手側".into(), 12, "二言目".into())
+            .unwrap();
 
         let files_before = list_md_files(dir.path());
         assert_eq!(files_before.len(), 1);
@@ -276,7 +280,7 @@ mod tests {
 
         // 全セグメントがディスクに残っている
         assert!(after.contains("**[14:50:05] 自分:** 一言目"));
-        assert!(after.contains("**[14:50:12] 相手:** 二言目"));
+        assert!(after.contains("**[14:50:12] 相手側:** 二言目"));
         // finalize 時点で最後の append と同じ内容が保持されている
         // （現状 finalize では ended_at は markdown に出さないため一致するはず）
         assert_eq!(

@@ -33,7 +33,7 @@ pub struct TranscriptionSegment {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<TranscriptionSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub speaker: Option<String>, // "自分" (mic) or "相手" (system audio)
+    pub speaker: Option<String>, // "自分" (mic) or "相手側" (system audio)
 }
 
 /// 利用可能なモデルの情報
@@ -55,7 +55,7 @@ pub struct ModelInfo {
 pub struct StreamConfig {
     /// 入力音声のサンプルレート。エンジン内部で必要に応じてリサンプルする。
     pub sample_rate: u32,
-    /// 出力セグメントに付与する話者ラベル ("自分" / "相手" など)。
+    /// 出力セグメントに付与する話者ラベル ("自分" / "相手側" など)。
     pub speaker: Option<String>,
     /// 入力音声ソース。ライブ UI がマイク/システム音声を表示上で識別するために使う。
     pub source: Option<TranscriptionSource>,
@@ -788,7 +788,7 @@ pub fn start_transcription(
         if let Some(sys_sample_rate) = audio_state.get_system_audio_sample_rate() {
             let stream_config = StreamConfig {
                 sample_rate: sys_sample_rate,
-                speaker: Some("相手".to_string()),
+                speaker: Some("相手側".to_string()),
                 source: Some(TranscriptionSource::SystemAudio),
                 language: stream_language.clone(),
             };
@@ -1388,7 +1388,7 @@ mod tests {
     #[test]
     fn test_stream_config_speaker_propagates_to_segments() {
         // start_stream に渡した speaker が、各 stream のセグメントに反映される。
-        // マイク (自分) とシステム音声 (相手) を別ストリームで動かす運用の前提。
+        // マイク (自分) とシステム音声 (相手側) を別ストリームで動かす運用の前提。
         let engine: Arc<dyn TranscriptionEngine> = Arc::new(MockEngine {
             feeds_seen: Arc::new(AtomicUsize::new(0)),
             samples_seen: Arc::new(AtomicUsize::new(0)),
@@ -1405,7 +1405,7 @@ mod tests {
         let mut sys = Arc::clone(&engine)
             .start_stream(StreamConfig {
                 sample_rate: 16_000,
-                speaker: Some("相手".to_string()),
+                speaker: Some("相手側".to_string()),
                 source: Some(TranscriptionSource::SystemAudio),
                 language: None,
             })
@@ -1417,7 +1417,7 @@ mod tests {
         let mic_segs = mic.drain_segments();
         let sys_segs = sys.drain_segments();
         assert_eq!(mic_segs[0].speaker.as_deref(), Some("自分"));
-        assert_eq!(sys_segs[0].speaker.as_deref(), Some("相手"));
+        assert_eq!(sys_segs[0].speaker.as_deref(), Some("相手側"));
         assert_eq!(mic_segs[0].source, Some(TranscriptionSource::Microphone));
         assert_eq!(sys_segs[0].source, Some(TranscriptionSource::SystemAudio));
     }

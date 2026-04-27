@@ -53,7 +53,7 @@ mod tests {
         };
         let segments = vec![
             SessionSegment {
-                speaker: "相手".to_string(),
+                speaker: "相手側".to_string(),
                 timestamp_display: "14:30:05".to_string(),
                 text: "それでは始めましょう。".to_string(),
             },
@@ -64,7 +64,7 @@ mod tests {
             },
         ];
 
-        let expected = "# 会議メモ - 2026-04-17 14:30\n\n**[14:30:05] 相手:** それでは始めましょう。\n**[14:30:12] 自分:** よろしくお願いします。";
+        let expected = "# 会議メモ - 2026-04-17 14:30\n\n**[14:30:05] 相手側:** それでは始めましょう。\n**[14:30:12] 自分:** よろしくお願いします。";
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
 

@@ -495,7 +495,7 @@ mod tests {
     #[test]
     fn scribe_error_events_are_queued_as_error_segments() {
         let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-        let speaker = Some("相手".to_string());
+        let speaker = Some("相手側".to_string());
 
         ws_task::handle_event(
             r#"{"message_type":"scribe_auth_error","message":"invalid api key"}"#,
