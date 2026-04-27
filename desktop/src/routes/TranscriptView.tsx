@@ -200,10 +200,15 @@ function getAudioSourceStatusAriaText(
 
 function getAudioSourceNotice(
   isVisible: boolean,
+  isAudioCaptureOperationPending: boolean,
   isMicRecording: boolean,
   isSystemAudioRecording: boolean,
 ): string | null {
-  if (!isVisible || (isMicRecording && isSystemAudioRecording)) {
+  if (
+    !isVisible ||
+    isAudioCaptureOperationPending ||
+    (isMicRecording && isSystemAudioRecording)
+  ) {
     return null;
   }
   if (isMicRecording) {
@@ -874,6 +879,7 @@ export function TranscriptView() {
     : getAudioSourceStatusPillClass(audioSourceStatusLabel);
   const audioSourceNotice = getAudioSourceNotice(
     isMeetingActive || isTranscribing,
+    isAudioCaptureOperationPending,
     isMicRecording,
     isSystemAudioRecording,
   );
