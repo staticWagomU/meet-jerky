@@ -152,7 +152,7 @@ function getMeetingStartBlockedReason(
     return `${externalApiProvider} API キー状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
-    return `会議開始には、設定画面で ${externalApiProvider} API キーを登録してください。`;
+    return `会議開始には、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
