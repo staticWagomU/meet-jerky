@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify system audio operation error
+
+- 開始日時: 2026-04-28 02:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面のシステム音声操作エラーでも、相手側音声取得に関する失敗だと分かる文言へ揃える。
+- 結果: `SYSTEM_AUDIO_ERROR_PREFIX` と対応する console error 文言を `相手側音声の取得操作に失敗しました:` へ変更した。エラーの関連消去、録音/取得制御、文字起こし処理には触れなかった。小さな表示文言変更であり、自律運用を止めないためメインで直接実装した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で相手側音声取得の失敗表示が過度に長くならず、原因箇所として自然に読めるか確認する。
+
 ### System audio UX: clarify section heading
 
 - 開始日時: 2026-04-28 02:28 JST

@@ -22,7 +22,7 @@ import {
 import { toErrorMessage } from "../utils/errorMessage";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
-const SYSTEM_AUDIO_ERROR_PREFIX = "システム音声操作に失敗しました:";
+const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
@@ -738,7 +738,7 @@ export function TranscriptView() {
       );
     } catch (e) {
       const msg = formatOperationError(SYSTEM_AUDIO_ERROR_PREFIX, e);
-      console.error("システム音声操作に失敗しました:", toErrorMessage(e));
+      console.error("相手側音声の取得操作に失敗しました:", toErrorMessage(e));
       setMeetingError(msg);
     } finally {
       audioOperationPendingRef.current = false;
