@@ -684,6 +684,7 @@
 .transcript-counts {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   gap: 0.35rem;
   flex-wrap: wrap;
   min-width: 0;
@@ -803,6 +804,7 @@
 .meeting-status-strip {
   display: flex;
   align-items: center;
+  flex: 1 1 18rem;
   gap: 0.35rem;
   flex-wrap: wrap;
   min-width: 0;
