@@ -946,7 +946,7 @@ export function TranscriptView() {
   );
   const externalApiKeyStatusDisplayLabel =
     externalApiProvider && externalApiKeyStatusLabel
-      ? `${externalApiProvider}キー ${externalApiKeyStatusLabel}`
+      ? `${externalApiProvider} APIキー ${externalApiKeyStatusLabel}`
       : null;
   const externalApiKeyStatusAriaLabel =
     externalApiProvider && externalApiKeyStatusLabel
