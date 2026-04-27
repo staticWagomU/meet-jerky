@@ -211,7 +211,11 @@ function SessionRow({
         </div>
         <div className="session-list-item-meta">{startedAtLabel}</div>
       </div>
-      <div className="session-list-item-actions">
+      <div
+        className="session-list-item-actions"
+        role="group"
+        aria-label={`セッション操作: ${session.title}`}
+      >
         <button
           type="button"
           className="control-btn control-btn-transcribe"
