@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### API Key UX: concise status error text
+
+- 開始日時: 2026-04-28 04:55 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、API キー状態確認エラー本文を短く自然な表現へ揃える。
+- 結果: 設定画面と会議画面の API キー状態確認エラー本文を `状態の確認に失敗しました` から `状態確認に失敗しました` に変更した。API キー有無確認、Keychain 保存/削除、開始可否判定には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で API キー状態確認エラー本文が自然に読めるか確認する。
+
 ### Whisper UX: natural status labels
 
 - 開始日時: 2026-04-28 04:52 JST

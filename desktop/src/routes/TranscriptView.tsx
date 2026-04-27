@@ -1153,7 +1153,7 @@ export function TranscriptView() {
             aria-label={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
             title={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
           >
-            {externalApiProvider} API キーの状態の確認に失敗しました:{" "}
+            {externalApiProvider} API キーの状態確認に失敗しました:{" "}
             {externalApiKeyErrorMessage}
           </p>
         )}

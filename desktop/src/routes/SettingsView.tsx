@@ -969,7 +969,7 @@ function ExternalApiKeySection({
             title={`${providerName} API キーの状態確認エラー: ${apiKeyErrorMessage}`}
           >
             <span>
-              {providerName} API キーの状態の確認に失敗しました:{" "}
+              {providerName} API キーの状態確認に失敗しました:{" "}
               {apiKeyErrorMessage}
             </span>
             <button
