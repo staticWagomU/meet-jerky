@@ -925,9 +925,9 @@ function ExternalApiKeySection({
     : setMutation.isPending
       ? `${providerName} API キーを保存中のため削除できません`
     : isFetchingHasKey
-      ? `${providerName} API キー状態を確認中`
+      ? `${providerName} API キーの状態を確認中`
       : hasKeyError
-        ? `${providerName} API キー状態を確認できないため削除できません`
+        ? `${providerName} API キーの状態を確認できないため削除できません`
         : hasKey
           ? `${providerName} API キーを削除`
           : `削除できる ${providerName} API キーはありません`;
@@ -945,10 +945,10 @@ function ExternalApiKeySection({
     : hasKey
       ? "settings-api-key-status settings-api-key-status-ready"
       : "settings-api-key-status";
-  const apiKeyStatusLabel = `${providerName} API キー状態: ${apiKeyStatusText}`;
+  const apiKeyStatusLabel = `${providerName} API キーの状態: ${apiKeyStatusText}`;
   const refetchApiKeyStatusLabel = isFetchingHasKey
-    ? `${providerName} API キー状態を確認中`
-    : `${providerName} API キー状態を再確認`;
+    ? `${providerName} API キーの状態を確認中`
+    : `${providerName} API キーの状態を再確認`;
   const apiKeyErrorMessage = hasKeyError ? toErrorMessage(hasKeyError) : "";
   const apiKeyInputLabel = hasKey
     ? `${providerName} API キー: 登録済み、再入力で上書き`
@@ -965,11 +965,11 @@ function ExternalApiKeySection({
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`${providerName} API キー状態エラー: ${apiKeyErrorMessage}`}
-            title={`${providerName} API キー状態エラー: ${apiKeyErrorMessage}`}
+            aria-label={`${providerName} API キーの状態確認エラー: ${apiKeyErrorMessage}`}
+            title={`${providerName} API キーの状態確認エラー: ${apiKeyErrorMessage}`}
           >
             <span>
-              {providerName} API キー状態の確認に失敗しました:{" "}
+              {providerName} API キーの状態の確認に失敗しました:{" "}
               {apiKeyErrorMessage}
             </span>
             <button

@@ -111,13 +111,13 @@ function getTranscriptionStartBlockedReason(
   if (isTranscribing) return null;
   if (modelDownloadedError) return null;
   if (externalApiKeyError && externalApiProvider) {
-    return `${externalApiProvider} API キー状態を確認できません。`;
+    return `${externalApiProvider} API キーの状態を確認できません。`;
   }
   if (!isAnySourceRecording) {
     return "文字起こしを開始するには、自分トラックのマイク録音または相手側トラックのシステム音声取得を開始してください。";
   }
   if (externalApiProvider && hasExternalApiKey === undefined) {
-    return `${externalApiProvider} API キー状態を確認中です。`;
+    return `${externalApiProvider} API キーの状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
     return `${externalApiProvider} Realtime の利用には、設定画面で API キーを登録してください。`;
@@ -146,10 +146,10 @@ function getMeetingStartBlockedReason(
   if (isMeetingActive) return null;
   if (modelDownloadedError) return null;
   if (externalApiKeyError && externalApiProvider) {
-    return `${externalApiProvider} API キー状態を確認できません。`;
+    return `${externalApiProvider} API キーの状態を確認できません。`;
   }
   if (externalApiProvider && hasExternalApiKey === undefined) {
-    return `${externalApiProvider} API キー状態を確認中です。`;
+    return `${externalApiProvider} API キーの状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
     return `会議開始には、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
@@ -1150,10 +1150,10 @@ export function TranscriptView() {
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`${externalApiProvider} API キー状態エラー: ${externalApiKeyErrorMessage}`}
-            title={`${externalApiProvider} API キー状態エラー: ${externalApiKeyErrorMessage}`}
+            aria-label={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
+            title={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
           >
-            {externalApiProvider} API キー状態の確認に失敗しました:{" "}
+            {externalApiProvider} API キーの状態の確認に失敗しました:{" "}
             {externalApiKeyErrorMessage}
           </p>
         )}
