@@ -636,7 +636,7 @@ export function SettingsView() {
                 aria-label={retryDefaultOutputDirLabel}
                 title={retryDefaultOutputDirLabel}
               >
-                {isFetchingDefaultOutputDir ? "取得中..." : "再取得"}
+                {isFetchingDefaultOutputDir ? "取得中..." : "出力先を再取得"}
               </button>
             </div>
           )}
