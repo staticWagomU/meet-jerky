@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### System audio UX: use acquisition wording
+
+- 開始日時: 2026-04-28 03:17 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、相手側システム音声操作の visible/accessible label を技術寄りの `キャプチャ` から、他の状態表示と揃う `取得` へ変更する。
+- 結果: システム音声ボタンの表示を `取得開始` / `取得停止` に変更し、aria/title も `相手側トラックのシステム音声取得...` に揃えた。ボタン class、録音/取得処理、権限処理には触れなかった。
+- 変更ファイル: `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でシステム音声ボタンの文言が短く、相手側音声取得の操作として自然に読めるか確認する。
+
 ### Session list UX: fallback empty display title
 
 - 開始日時: 2026-04-28 03:17 JST

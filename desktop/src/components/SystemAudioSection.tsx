@@ -34,12 +34,12 @@ export function SystemAudioSection({
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
-    ? "相手側トラックのシステム音声キャプチャを処理中"
+    ? "相手側トラックのシステム音声取得を処理中"
     : isControlDisabled
       ? "他の音声または文字起こし操作の処理中"
     : isSystemAudioRecording
-      ? "相手側トラックのシステム音声キャプチャを停止"
-      : "相手側トラックのシステム音声キャプチャを開始";
+      ? "相手側トラックのシステム音声取得を停止"
+      : "相手側トラックのシステム音声取得を開始";
   const systemAudioSectionLabel = `${systemAudioStateDescription}、音量 ${systemAudioLevelPercent}%`;
 
   return (
@@ -88,8 +88,8 @@ export function SystemAudioSection({
             : isWaitingForOtherOperation
               ? "操作待ち"
             : isSystemAudioRecording
-              ? "キャプチャ停止"
-              : "キャプチャ開始"}
+              ? "取得停止"
+              : "取得開始"}
         </button>
       </div>
       <div className="level-meter-row">
