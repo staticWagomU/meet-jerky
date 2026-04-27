@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Whisper UX: space model labels
+
+- 開始日時: 2026-04-28 04:06 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ローカル Whisper モデル関連の `Whisperモデル` 表記を読みやすくする。
+- 結果: 設定画面、会議画面、モデル選択の可視文言、aria/title、console error 文字列を `Whisper モデル` 表記へ揃えた。モデル一覧取得、ダウンロード、選択、状態確認処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で Whisper モデル関連ラベルが横幅を取りすぎず自然に読めるか確認する。
+
 ### Permission UX: space macOS permission labels
 
 - 開始日時: 2026-04-28 04:03 JST

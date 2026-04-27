@@ -268,7 +268,7 @@ export function SettingsView() {
   const languageName =
     LANGUAGES.find((lang) => lang.value === localSettings.language)?.label ??
     localSettings.language;
-  const whisperModelLabel = `Whisperモデル: ${whisperModelName}`;
+  const whisperModelLabel = `Whisper モデル: ${whisperModelName}`;
   const microphoneDeviceLabel = localSettings.microphoneDeviceId
     ? `自分トラックのマイクデバイス: ${selectedMicrophoneDeviceName}`
     : "自分トラックのマイクデバイス: デフォルト";
@@ -486,10 +486,10 @@ export function SettingsView() {
         />
       )}
 
-      {/* Whisperモデル */}
+      {/* Whisper モデル */}
       {localSettings.transcriptionEngine === "whisper" && (
         <div className="settings-section">
-          <h3 className="settings-section-title">Whisperモデル</h3>
+          <h3 className="settings-section-title">Whisper モデル</h3>
           <select
             aria-label={whisperModelLabel}
             title={whisperModelLabel}

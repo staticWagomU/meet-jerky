@@ -63,12 +63,12 @@ export function ModelSelector({
     queryFn: () => invoke<ModelInfo[]>("list_models"),
   });
   const modelSelectAriaLabel = modelsError
-    ? "Whisperモデル一覧の取得に失敗したため選択できません"
+    ? "Whisper モデル一覧の取得に失敗したため選択できません"
     : downloadingModel
-      ? `${downloadingModel} をダウンロード中のためWhisperモデルを選択できません。現在の選択: ${selectedModel}`
+      ? `${downloadingModel} をダウンロード中のため Whisper モデルを選択できません。現在の選択: ${selectedModel}`
       : disabled
-        ? `文字起こし中のためWhisperモデルを選択できません。現在の選択: ${selectedModel}`
-        : `Whisperモデルを選択。現在の選択: ${selectedModel}`;
+        ? `文字起こし中のため Whisper モデルを選択できません。現在の選択: ${selectedModel}`
+        : `Whisper モデルを選択。現在の選択: ${selectedModel}`;
 
   // Listen for download progress events
   useEffect(() => {
@@ -107,11 +107,11 @@ export function ModelSelector({
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error(
-            "Whisperモデルダウンロード進捗通知の受信開始に失敗しました:",
+            "Whisper モデルダウンロード進捗通知の受信開始に失敗しました:",
             msg,
           );
           setProgressListenerError(
-            `Whisperモデルダウンロード進捗通知の受信開始に失敗しました: ${msg}`,
+            `Whisper モデルダウンロード進捗通知の受信開始に失敗しました: ${msg}`,
           );
         }
         return null;
@@ -123,7 +123,7 @@ export function ModelSelector({
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error(
-            "Whisperモデルダウンロード進捗通知の受信解除に失敗しました:",
+            "Whisper モデルダウンロード進捗通知の受信解除に失敗しました:",
             toErrorMessage(e),
           );
         });
@@ -162,11 +162,11 @@ export function ModelSelector({
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error(
-            "Whisperモデルダウンロードエラー通知の受信開始に失敗しました:",
+            "Whisper モデルダウンロードエラー通知の受信開始に失敗しました:",
             msg,
           );
           setDownloadErrorListenerError(
-            `Whisperモデルダウンロードエラー通知の受信開始に失敗しました: ${msg}`,
+            `Whisper モデルダウンロードエラー通知の受信開始に失敗しました: ${msg}`,
           );
         }
         return null;
@@ -178,7 +178,7 @@ export function ModelSelector({
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error(
-            "Whisperモデルダウンロードエラー通知の受信解除に失敗しました:",
+            "Whisper モデルダウンロードエラー通知の受信解除に失敗しました:",
             toErrorMessage(e),
           );
         });
@@ -208,7 +208,7 @@ export function ModelSelector({
     } catch (e) {
       // emit 側で既に state を更新している可能性が高いが、
       // emit が届かなかった場合に備えて catch でも冪等に更新する。
-      console.error("Whisperモデルのダウンロードに失敗しました:", e);
+      console.error("Whisper モデルのダウンロードに失敗しました:", e);
       downloadingModelRef.current = null;
       if (!isMountedRef.current) {
         return;
@@ -221,10 +221,10 @@ export function ModelSelector({
   };
   const modelsErrorMessage = modelsError ? toErrorMessage(modelsError) : "";
   const modelSelectorLabel = [
-    `Whisperモデル選択: ${selectedModel}`,
-    isFetchingModels ? "Whisperモデル一覧を取得中" : null,
+    `Whisper モデル選択: ${selectedModel}`,
+    isFetchingModels ? "Whisper モデル一覧を取得中" : null,
     downloadingModel ? `${downloadingModel} をダウンロード中` : null,
-    modelsError ? `Whisperモデル一覧エラー: ${modelsErrorMessage}` : null,
+    modelsError ? `Whisper モデル一覧エラー: ${modelsErrorMessage}` : null,
   ]
     .filter(Boolean)
     .join("、");
@@ -237,7 +237,7 @@ export function ModelSelector({
       title={modelSelectorLabel}
     >
       <label htmlFor="model-select" className="model-select-label">
-        Whisperモデル:
+        Whisper モデル:
       </label>
       <select
         id="model-select"
@@ -256,8 +256,8 @@ export function ModelSelector({
         <span
           className="download-error"
           role="alert"
-          aria-label={`Whisperモデルダウンロード進捗受信エラー: ${progressListenerError}`}
-          title={`Whisperモデルダウンロード進捗受信エラー: ${progressListenerError}`}
+          aria-label={`Whisper モデルダウンロード進捗受信エラー: ${progressListenerError}`}
+          title={`Whisper モデルダウンロード進捗受信エラー: ${progressListenerError}`}
         >
           {progressListenerError}
         </span>
@@ -266,8 +266,8 @@ export function ModelSelector({
         <span
           className="download-error"
           role="alert"
-          aria-label={`Whisperモデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
-          title={`Whisperモデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+          aria-label={`Whisper モデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+          title={`Whisper モデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
         >
           {downloadErrorListenerError}
         </span>
@@ -277,10 +277,10 @@ export function ModelSelector({
           <span
             className="download-error"
             role="alert"
-            aria-label={`Whisperモデル一覧エラー: ${modelsErrorMessage}`}
-            title={`Whisperモデル一覧エラー: ${modelsErrorMessage}`}
+            aria-label={`Whisper モデル一覧エラー: ${modelsErrorMessage}`}
+            title={`Whisper モデル一覧エラー: ${modelsErrorMessage}`}
           >
-            Whisperモデル一覧の取得に失敗しました: {modelsErrorMessage}
+            Whisper モデル一覧の取得に失敗しました: {modelsErrorMessage}
           </span>
           <button
             type="button"
@@ -289,13 +289,13 @@ export function ModelSelector({
             disabled={isFetchingModels}
             aria-label={
               isFetchingModels
-                ? "Whisperモデル一覧を取得中"
-                : "Whisperモデル一覧を再取得"
+                ? "Whisper モデル一覧を取得中"
+                : "Whisper モデル一覧を再取得"
             }
             title={
               isFetchingModels
-                ? "Whisperモデル一覧を取得中"
-                : "Whisperモデル一覧を再取得"
+                ? "Whisper モデル一覧を取得中"
+                : "Whisper モデル一覧を再取得"
             }
           >
             {isFetchingModels ? "取得中..." : "再取得"}
@@ -358,7 +358,7 @@ function DownloadStatus({
 
   if (downloadingModel === selectedModel) {
     const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
-    const progressLabel = `${selectedModel} Whisperモデルダウンロード進捗`;
+    const progressLabel = `${selectedModel} Whisper モデルダウンロード進捗`;
     return (
       <div className="download-progress-wrapper">
         <div
@@ -382,7 +382,7 @@ function DownloadStatus({
   }
 
   if (isDownloaded) {
-    const readyLabel = `${selectedModel} Whisperモデルは準備完了`;
+    const readyLabel = `${selectedModel} Whisper モデルは準備完了`;
     return (
       <span
         className="model-status-ready"
@@ -399,10 +399,10 @@ function DownloadStatus({
 
   if (isDownloadedError) {
     const downloadedErrorMessage = toErrorMessage(isDownloadedError);
-    const downloadedErrorLabel = `${selectedModel} Whisperモデル状態エラー: ${downloadedErrorMessage}`;
+    const downloadedErrorLabel = `${selectedModel} Whisper モデル状態エラー: ${downloadedErrorMessage}`;
     const refetchDownloadedLabel = isFetchingDownloaded
-      ? `${selectedModel} のWhisperモデル状態を確認中`
-      : `${selectedModel} のWhisperモデル状態を再確認`;
+      ? `${selectedModel} の Whisper モデル状態を確認中`
+      : `${selectedModel} の Whisper モデル状態を再確認`;
     return (
       <div className="download-status-wrapper">
         <span
@@ -411,7 +411,7 @@ function DownloadStatus({
           aria-label={downloadedErrorLabel}
           title={downloadedErrorLabel}
         >
-          Whisperモデル状態の確認に失敗しました: {downloadedErrorMessage}
+          Whisper モデル状態の確認に失敗しました: {downloadedErrorMessage}
         </span>
         <button
           type="button"
@@ -428,7 +428,7 @@ function DownloadStatus({
   }
 
   const downloadButtonLabel = isFetchingDownloaded
-    ? `${selectedModel} のWhisperモデル状態を確認中`
+    ? `${selectedModel} の Whisper モデル状態を確認中`
     : downloadingModel
       ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
       : `${selectedModel} をダウンロード`;
@@ -453,8 +453,8 @@ function DownloadStatus({
         <span
           className="download-error"
           role="alert"
-          aria-label={`${selectedModel} Whisperモデルダウンロードエラー: ${downloadError}`}
-          title={`${selectedModel} Whisperモデルダウンロードエラー: ${downloadError}`}
+          aria-label={`${selectedModel} Whisper モデルダウンロードエラー: ${downloadError}`}
+          title={`${selectedModel} Whisper モデルダウンロードエラー: ${downloadError}`}
         >
           {downloadError}
         </span>

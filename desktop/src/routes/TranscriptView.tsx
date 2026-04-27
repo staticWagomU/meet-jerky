@@ -126,10 +126,10 @@ function getTranscriptionStartBlockedReason(
     return null;
   }
   if (isModelDownloaded === undefined) {
-    return "Whisperモデル状態を確認中です。";
+    return "Whisper モデル状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "文字起こし開始には、Whisperモデルのダウンロードが必要です。";
+    return "文字起こし開始には、Whisper モデルのダウンロードが必要です。";
   }
   return null;
 }
@@ -156,10 +156,10 @@ function getMeetingStartBlockedReason(
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
-    return "会議開始に必要なWhisperモデル状態を確認中です。";
+    return "会議開始に必要な Whisper モデル状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "会議開始には、Whisperモデルのダウンロードが必要です。";
+    return "会議開始には、Whisper モデルのダウンロードが必要です。";
   }
   return null;
 }
@@ -1130,10 +1130,10 @@ export function TranscriptView() {
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
-            title={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
+            aria-label={`Whisper モデル状態エラー: ${modelDownloadedErrorMessage}`}
+            title={`Whisper モデル状態エラー: ${modelDownloadedErrorMessage}`}
           >
-            Whisperモデル状態の確認に失敗しました: {modelDownloadedErrorMessage}
+            Whisper モデル状態の確認に失敗しました: {modelDownloadedErrorMessage}
           </p>
         )}
         {settingsError && (
