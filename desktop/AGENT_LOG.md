@@ -3357,3 +3357,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と片側トラックのみの実機確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: show source label on transcript error rows
+
+- 開始日時: 2026-04-27 10:21 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしエラー行でも、payload の source から自分/相手側のどちらのトラックで起きたか分かるようにする。
+- 結果: エラーセグメントでも `getSpeakerLabel` を使い、source があれば `自分` / `相手側` ラベルを表示するようにした。エラー行の背景、コピー対象除外、event 受信、録音/文字起こし処理は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と source 付きエラー発生時の実機確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

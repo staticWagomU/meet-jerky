@@ -351,7 +351,7 @@ export function TranscriptDisplay({
         ) : (
           segments.map((seg, i) => {
             const speakerKind = getSpeakerKind(seg);
-            const speakerLabel = seg.isError ? null : getSpeakerLabel(seg);
+            const speakerLabel = getSpeakerLabel(seg);
             const speakerClass =
               seg.isError
                 ? ""
