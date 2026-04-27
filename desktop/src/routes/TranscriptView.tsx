@@ -170,10 +170,10 @@ function getAudioSourceStatusLabel(
     return "自分+相手側";
   }
   if (isMicRecording) {
-    return "自分";
+    return "自分のみ";
   }
   if (isSystemAudioRecording) {
-    return "相手側";
+    return "相手側のみ";
   }
   return "なし";
 }
