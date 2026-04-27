@@ -365,7 +365,10 @@ fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
         && (path.strip_prefix("/j/").is_some_and(is_zoom_meeting_id)
             || path
                 .strip_prefix("/wc/join/")
-                .is_some_and(is_zoom_meeting_id))
+                .is_some_and(is_zoom_meeting_id)
+            || path
+                .strip_prefix("/my/")
+                .is_some_and(has_single_non_empty_segment))
 }
 
 fn is_zoom_meeting_id(value: &str) -> bool {
@@ -682,6 +685,20 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://us02web.zoom.us/my/team.sync?pwd=secret"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "us02web.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/my/personal-room/"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://company.zoom.us./j/123456789"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -760,6 +777,11 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/abc"), None);
         assert_eq!(
             classify_meeting_url("https://zoom.us/wc/join/123456789//"),
+            None
+        );
+        assert_eq!(classify_meeting_url("https://zoom.us/my/"), None);
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/my/personal/extra"),
             None
         );
         assert_eq!(classify_meeting_url("https://.zoom.us/j/123456789"), None);

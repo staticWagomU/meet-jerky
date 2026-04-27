@@ -4855,3 +4855,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。Apple Events 権限ダイアログや実機ブラウザURL取得は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: classify zoom personal meeting URLs
+
+- 開始日時: 2026-04-27 20:05 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: ブラウザ会議URL分類で Zoom のパーソナルミーティングURL `/my/<vanity>` を安全に検知対象へ追加する。
+- 結果: Zoom host の `/my/` 単一セグメントを会議URLとして分類し、空セグメントや追加パスは拒否するテストを追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機ブラウザURL取得は未実施。追加した Rust テストを含む cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
