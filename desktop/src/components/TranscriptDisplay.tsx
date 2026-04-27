@@ -257,6 +257,11 @@ export function TranscriptDisplay({
     }
   }, [isCopying, segments]);
 
+  const transcriptLogLabel =
+    segments.length > 0
+      ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
+      : "文字起こしログは空です";
+
   return (
     <div className="transcript-display-wrapper">
       {segments.length > 0 && (
@@ -323,7 +328,7 @@ export function TranscriptDisplay({
         ref={containerRef}
         className="transcript-display"
         role="log"
-        aria-label="文字起こしログ"
+        aria-label={transcriptLogLabel}
         aria-relevant="additions text"
         onScroll={handleScroll}
       >
