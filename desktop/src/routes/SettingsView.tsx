@@ -608,10 +608,11 @@ function PermissionBadge({
   isChecking: boolean;
 }) {
   const getBadgeLabel = (text: string) => `${label}: ${text}`;
-  const renderBadge = (className: string, text: string) => (
+  const renderBadge = (className: string, text: string, isBusy = false) => (
     <span
       className={`settings-permission-badge${className ? ` ${className}` : ""}`}
       role="status"
+      aria-busy={isBusy}
       aria-live="polite"
       aria-atomic="true"
       aria-label={getBadgeLabel(text)}
@@ -622,13 +623,13 @@ function PermissionBadge({
   );
 
   if (isChecking) {
-    return renderBadge("", "確認中...");
+    return renderBadge("", "確認中...", true);
   }
   if (error) {
     return renderBadge("permission-denied", "確認失敗");
   }
   if (!status) {
-    return renderBadge("", "確認中...");
+    return renderBadge("", "確認中...", true);
   }
   if (status === "granted") {
     return renderBadge("permission-granted", "許可済み");
