@@ -4827,3 +4827,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実際のモデルDL競合イベント再現は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: review browser URL detection bridge
+
+- 開始日時: 2026-04-27 20:01 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる差分レビューと最小修正。開始時点でブラウザURL検知の未コミット差分が存在したため、ユーザー変更を戻さずに引き継いだ。
+- 作業範囲: `src-tauri/Info.plist`, `src-tauri/src/app_detection.rs`, `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: ブラウザのアクティブタブURL検知差分をレビューし、URL全文をpayload/log/UIへ出さない方針を維持しながら、明確なクラッシュリスクだけを最小修正する。
+- 結果: ブラウザURL検知の未コミット差分をレビューし、Swift Accessibility フォールバックの AX 属性取得で CFString 変換と AXUIElement 型確認を明示した。URL全文は分類にのみ使い、payload/log/UI には host と service のみを渡す方針を維持した。
+- 変更ファイル: `src-tauri/Info.plist`, `src-tauri/src/app_detection.rs`, `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`swiftc -parse-as-library -typecheck src-tauri/swift/AppDetectionBridge.swift` 成功。`git diff --check -- src-tauri/Info.plist src-tauri/src/app_detection.rs src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/Info.plist src-tauri/src/app_detection.rs src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。AppleScript/Accessibility 権限ダイアログや実機ブラウザURL取得は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

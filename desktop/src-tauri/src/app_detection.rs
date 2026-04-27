@@ -1,17 +1,20 @@
-//! Zoom / Microsoft Teams 等の会議アプリ起動・起動済み状態を検知して、ユーザーに
+//! Zoom / Microsoft Teams 等の会議アプリ起動・起動済み状態と、
+//! Safari / Chrome / Edge / Firefox の会議 URL を検知して、ユーザーに
 //! 記録開始の確認を促す通知 + フロントエンドへのイベント通知を行う。
 //!
 //! macOS 限定。`swift/AppDetectionBridge.swift` 経由で `NSWorkspace` を
-//! 監視する。
+//! 監視し、ブラウザのアクティブタブ URL を取得する。
 //!
 //! 通知のフロー:
 //! 1. アプリ起動時に `start()` を呼ぶ → Swift 側 `NSWorkspace` Observer 登録 + 初回スキャン
 //! 2. 対象アプリが起動中、または起動する → Swift コールバックが Rust に上がる
-//! 3. Rust 側で:
+//! 3. ブラウザが前面にある場合は Swift がアクティブタブ URL を取得し、
+//!    Rust 側の純粋関数で会議 URL だけを分類する
+//! 4. Rust 側で:
 //!    - スロットリング (同一 bundle は 60 秒以内に再通知しない)
 //!    - macOS 通知センターに通知を出す
 //!    - フロントエンドへ `meeting-app-detected` イベントを emit
-//! 4. フロントエンドがバナーを表示し、ユーザーがアプリ側で記録開始を確認する
+//! 5. フロントエンドがバナーを表示し、ユーザーがアプリ側で記録開始を確認する
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -132,6 +135,56 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
     };
     if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
         eprintln!("[app_detection] emit failed: {e}");
+    }
+}
+
+/// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
+///
+/// URL 全文はここで分類にのみ使い、payload / 通知 / log には出さない。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn handle_browser_url_detection(
+    bundle_id: &str,
+    browser_name: &str,
+    url: &str,
+    _window_title: &str,
+) {
+    let Some(classification) = classify_meeting_url(url) else {
+        return;
+    };
+
+    let state = match STATE.get() {
+        Some(s) => s,
+        None => return,
+    };
+
+    let throttle_key = format!(
+        "browser:{bundle_id}:{}:{}",
+        classification.service, classification.host
+    );
+    {
+        let mut last_seen = state.last_seen.lock();
+        let now = Instant::now();
+        if let Some(prev) = last_seen.get(&throttle_key) {
+            if now.duration_since(*prev) < NOTIFICATION_THROTTLE {
+                return;
+            }
+        }
+        last_seen.insert(throttle_key, now);
+    }
+
+    show_notification(&state.app_handle, &classification.service);
+
+    let payload = MeetingAppDetectedPayload {
+        bundle_id: bundle_id.to_string(),
+        app_name: browser_name.to_string(),
+        source: Some("browser".to_string()),
+        service: Some(classification.service),
+        url_host: Some(classification.host),
+        browser_name: Some(browser_name.to_string()),
+        window_title: None,
+    };
+    if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
+        eprintln!("[app_detection] browser emit failed: {e}");
     }
 }
 
@@ -361,7 +414,7 @@ fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
 mod macos {
     use std::ffi::{c_char, c_void, CStr, CString};
 
-    use super::{handle_detection, WATCHED_BUNDLE_IDS};
+    use super::{handle_browser_url_detection, handle_detection, WATCHED_BUNDLE_IDS};
 
     type DetectionCallback =
         extern "C" fn(bundle_id: *const c_char, app_name: *const c_char, user_data: *mut c_void);
@@ -370,12 +423,21 @@ mod macos {
         fn meet_jerky_app_detection_start(
             bundle_ids_json: *const c_char,
             callback: DetectionCallback,
+            browser_url_callback: BrowserUrlCallback,
             user_data: *mut c_void,
         ) -> i32;
 
         #[allow(dead_code)]
         fn meet_jerky_app_detection_stop();
     }
+
+    type BrowserUrlCallback = extern "C" fn(
+        bundle_id: *const c_char,
+        browser_name: *const c_char,
+        url: *const c_char,
+        window_title: *const c_char,
+        user_data: *mut c_void,
+    );
 
     extern "C" fn detection_callback(
         bundle_id: *const c_char,
@@ -403,6 +465,41 @@ mod macos {
         });
     }
 
+    extern "C" fn browser_url_callback(
+        bundle_id: *const c_char,
+        browser_name: *const c_char,
+        url: *const c_char,
+        window_title: *const c_char,
+        _user_data: *mut c_void,
+    ) {
+        if bundle_id.is_null() || browser_name.is_null() || url.is_null() {
+            return;
+        }
+
+        // Safety: Swift 側でコールバック呼び出しの間だけ valid な C 文字列。
+        // ここで String にコピーし、URL 全文は分類にのみ使う。
+        let bundle = unsafe { CStr::from_ptr(bundle_id) }
+            .to_string_lossy()
+            .into_owned();
+        let name = unsafe { CStr::from_ptr(browser_name) }
+            .to_string_lossy()
+            .into_owned();
+        let active_url = unsafe { CStr::from_ptr(url) }
+            .to_string_lossy()
+            .into_owned();
+        let title = if window_title.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(window_title) }
+                .to_string_lossy()
+                .into_owned()
+        };
+
+        std::thread::spawn(move || {
+            handle_browser_url_detection(&bundle, &name, &active_url, &title);
+        });
+    }
+
     pub fn start_detection() {
         // 監視対象を JSON 配列にして Swift に渡す
         let bundle_ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _)| *id).collect();
@@ -420,6 +517,7 @@ mod macos {
             meet_jerky_app_detection_start(
                 c_json.as_ptr(),
                 detection_callback,
+                browser_url_callback,
                 std::ptr::null_mut(),
             )
         };
@@ -465,6 +563,26 @@ mod tests {
         assert!(json.contains("\"source\":\"app\""));
         assert!(!json.contains("urlHost"));
         assert!(!json.contains("bundle_id"));
+    }
+
+    #[test]
+    fn browser_meeting_payload_serializes_without_full_url() {
+        let payload = MeetingAppDetectedPayload {
+            bundle_id: "com.apple.Safari".to_string(),
+            app_name: "Safari".to_string(),
+            source: Some("browser".to_string()),
+            service: Some("Google Meet".to_string()),
+            url_host: Some("meet.google.com".to_string()),
+            browser_name: Some("Safari".to_string()),
+            window_title: None,
+        };
+        let json = serde_json::to_string(&payload).unwrap();
+        assert!(json.contains("\"source\":\"browser\""));
+        assert!(json.contains("\"service\":\"Google Meet\""));
+        assert!(json.contains("\"urlHost\":\"meet.google.com\""));
+        assert!(json.contains("\"browserName\":\"Safari\""));
+        assert!(!json.contains("abc-defg-hij"));
+        assert!(!json.contains("windowTitle"));
     }
 
     #[test]

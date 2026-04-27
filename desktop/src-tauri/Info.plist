@@ -6,5 +6,7 @@
     <string>Meet Jerky はマイク音声を文字起こしするためにマイクへのアクセスが必要です。</string>
     <key>NSScreenCaptureUsageDescription</key>
     <string>Meet Jerky はシステム音声をキャプチャするために画面録音の権限が必要です。</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Meet Jerky はブラウザで開かれた会議URLを検知するために、Safari、Chrome、Edge、Firefox のアクティブタブ情報を確認します。</string>
 </dict>
 </plist>
