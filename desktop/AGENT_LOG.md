@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Product Concept UX: align English spacing
+
+- 開始日時: 2026-04-28 05:00 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `docs/product-concept.md`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の表記整合として、プロダクトコンセプト内の英字混じり表記をアプリ内文言と同じ読みやすさへ揃える。
+- 結果: `AI議事録` / `AI送信` / `Macらしさ` / `UI` / `API` / `macOSの` を、`AI 議事録` / `AI 送信` / `Mac らしさ` / `UI に` / `API や` / `macOS の` 表記へ揃えた。プロダクト方針、実装、UI 表示には触れなかった。
+- 変更ファイル: `docs/product-concept.md`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- docs/product-concept.md AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh docs/product-concept.md AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後のプロダクト文書でも英字混じり表記を読みやすく保つ。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
