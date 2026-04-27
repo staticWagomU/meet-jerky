@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: align remaining recording start wording
+
+- 開始日時: 2026-04-28 07:56 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、記録開始/終了へ揃えた後に残っていたユーザー表示系の `会議開始/終了` 文言を、実際の操作対象である記録に合わせる。
+- 結果: 記録開始失敗エラー、記録開始不可理由の aria/title、履歴空状態の説明を `記録` 基準に変更した。録音・文字起こし・履歴読み込み・保存処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、履歴空状態とライブ画面の用語が自然につながるか確認する。
+
 ### Transcript UX: align recording accessibility labels
 
 - 開始日時: 2026-04-28 07:55 JST

@@ -595,7 +595,7 @@ export function TranscriptView() {
         setLastSavedPath(null);
       } catch (e) {
         const msg = toErrorMessage(e);
-        console.error("会議開始に失敗しました:", msg);
+        console.error("記録開始に失敗しました:", msg);
         if (transcriptionStarted) {
           await invoke("stop_transcription").catch((rollbackError) => {
             console.error(
@@ -636,7 +636,7 @@ export function TranscriptView() {
         setIsMeetingActive(false);
         setMeetingStartTime(null);
         setElapsedTime(0);
-        setMeetingError(`会議開始に失敗しました: ${msg}`);
+        setMeetingError(`記録開始に失敗しました: ${msg}`);
       }
     } finally {
       audioOperationPendingRef.current = false;
@@ -1166,8 +1166,8 @@ export function TranscriptView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`会議開始不可理由: ${meetingStartBlockedReason}`}
-            title={`会議開始不可理由: ${meetingStartBlockedReason}`}
+            aria-label={`記録開始不可理由: ${meetingStartBlockedReason}`}
+            title={`記録開始不可理由: ${meetingStartBlockedReason}`}
           >
             {meetingStartBlockedReason}
           </p>

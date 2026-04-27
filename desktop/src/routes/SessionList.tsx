@@ -222,7 +222,7 @@ export function SessionList() {
           aria-label="保存された文字起こし履歴はまだありません"
           title="保存された文字起こし履歴はまだありません"
         >
-          会議を終了すると、保存された文字起こし履歴がここに表示されます
+          記録を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
       ) : (
         <ul className="session-list-items">
