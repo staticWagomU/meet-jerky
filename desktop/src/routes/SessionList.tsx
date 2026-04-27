@@ -138,7 +138,7 @@ export function SessionList() {
           aria-label={retryErrorLabel}
           title={retryErrorLabel}
         >
-          {isFetching ? "読み込み中..." : "再読み込み"}
+          {isFetching ? "読み込み中..." : "履歴を再読み込み"}
         </button>
       </div>
     );
@@ -189,7 +189,7 @@ export function SessionList() {
           aria-label={reloadSessionsLabel}
           title={reloadSessionsLabel}
         >
-          {isFetching ? "読み込み中..." : "再読み込み"}
+          {isFetching ? "読み込み中..." : "履歴を再読み込み"}
         </button>
       </div>
 

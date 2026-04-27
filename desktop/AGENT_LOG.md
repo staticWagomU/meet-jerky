@@ -1,5 +1,19 @@
 # Agent Log
 
+### Session List UX: clarify reload buttons
+
+- 開始日時: 2026-04-28 07:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、セッション履歴一覧の再読み込みボタンが履歴対象だと可視表示でも分かるようにする。
+- 結果: 履歴読み込みエラー時と通常一覧ヘッダーのボタン表示を `再読み込み` から `履歴を再読み込み` に変更した。履歴取得処理、aria/title、ファイル操作には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でセッション履歴の再読み込みボタン幅が自然か確認する。
+
 ### Settings UX: clarify settings reload button
 
 - 開始日時: 2026-04-28 07:42 JST
