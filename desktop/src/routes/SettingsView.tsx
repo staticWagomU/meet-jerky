@@ -222,6 +222,14 @@ export function SettingsView() {
     : defaultOutputDir
       ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
       : "現在の出力先ディレクトリは未設定です";
+  const selectOutputDirectoryLabel = isSelectingOutputDirectory
+    ? "出力先ディレクトリを選択中"
+    : "出力先ディレクトリを選択";
+  const resetOutputDirectoryLabel = isSelectingOutputDirectory
+    ? "出力先ディレクトリを選択中"
+    : localSettings.outputDirectory
+      ? "出力先ディレクトリをデフォルトに戻す"
+      : "出力先ディレクトリはデフォルトです";
 
   return (
     <div className="settings-view">
@@ -429,11 +437,8 @@ export function SettingsView() {
               className="control-btn control-btn-transcribe"
               onClick={handleSelectOutputDirectory}
               disabled={isSelectingOutputDirectory}
-              aria-label={
-                isSelectingOutputDirectory
-                  ? "出力先ディレクトリを選択中"
-                  : "出力先ディレクトリを選択"
-              }
+              aria-label={selectOutputDirectoryLabel}
+              title={selectOutputDirectoryLabel}
             >
               {isSelectingOutputDirectory ? "選択中..." : "フォルダ選択"}
             </button>
@@ -442,13 +447,8 @@ export function SettingsView() {
               className="control-btn control-btn-clear"
               onClick={handleResetOutputDirectory}
               disabled={isSelectingOutputDirectory || !localSettings.outputDirectory}
-              aria-label={
-                isSelectingOutputDirectory
-                  ? "出力先ディレクトリを選択中"
-                  : localSettings.outputDirectory
-                    ? "出力先ディレクトリをデフォルトに戻す"
-                    : "出力先ディレクトリはデフォルトです"
-              }
+              aria-label={resetOutputDirectoryLabel}
+              title={resetOutputDirectoryLabel}
             >
               デフォルトに戻す
             </button>

@@ -3875,3 +3875,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose settings output action states on hover
+
+- 開始日時: 2026-04-27 13:01 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の出力先フォルダ選択/デフォルト復帰操作が、ホバーでも処理中状態や現在の可否を確認できるようにする。
+- 結果: 出力先フォルダ選択とデフォルト復帰ボタンのラベルを定数化し、既存 `aria-label` と新規 `title` で共有した。出力先選択、デフォルト復帰、保存処理、disabled 判定は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
