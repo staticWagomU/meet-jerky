@@ -48,6 +48,8 @@ export function PermissionBanner() {
   ]
     .filter(Boolean)
     .join("、");
+  const micPermissionDetail = `マイク 自分トラック: ${micStatusLabel}`;
+  const screenPermissionDetail = `画面収録 相手側トラック: ${screenStatusLabel}`;
 
   return (
     <div
@@ -64,12 +66,15 @@ export function PermissionBanner() {
       </div>
       <div className="permission-banner-summary">
         {micNeedsAttention && (
-          <span className="permission-summary-pill">
+          <span className="permission-summary-pill" title={micPermissionDetail}>
             マイク / 自分: {micStatusLabel}
           </span>
         )}
         {screenNeedsAttention && (
-          <span className="permission-summary-pill">
+          <span
+            className="permission-summary-pill"
+            title={screenPermissionDetail}
+          >
             画面収録 / 相手側: {screenStatusLabel}
           </span>
         )}
