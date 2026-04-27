@@ -4309,3 +4309,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実ファイルを使った Finder/Open 操作と macOS 実機画面確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: mark session list busy while refreshing
+
+- 開始日時: 2026-04-27 17:54 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴の再読み込み中状態を支援技術にも伝わるようにする。
+- 結果: 通常表示中のセッション一覧コンテナに `aria-busy={isFetching}` を付け、再読み込み中の状態を明示した。画面上の表示は既存の件数バッジと再読み込みボタンに委ねている。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 VoiceOver と macOS 画面確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

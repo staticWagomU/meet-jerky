@@ -137,7 +137,7 @@ export function SessionList() {
     : `保存済み ${sessions.length} 件`;
 
   return (
-    <div className="session-list">
+    <div className="session-list" aria-busy={isFetching}>
       <div className="session-list-header">
         <div className="session-list-heading">
           <h2 className="session-list-title">セッション履歴</h2>
