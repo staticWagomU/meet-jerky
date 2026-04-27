@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: soften permission check failure note
+
+- 開始日時: 2026-04-28 07:02 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限状態取得失敗メモを権限バナーと同じ自然な表現へ揃える。
+- 結果: `取得・文字起こし可否が不明` を `取得・文字起こしができるか分からない` に変更した。権限状態取得、注意表示条件、再チェック処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で設定画面の権限メモが長すぎず自然に読めるか確認する。
+
 ### Permission UX: soften unknown capability warning
 
 - 開始日時: 2026-04-28 07:01 JST
