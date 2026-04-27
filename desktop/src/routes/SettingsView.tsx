@@ -14,10 +14,12 @@ const WHISPER_MODELS = [
 ];
 
 const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
+const ELEVENLABS_API_KEY_NOTE_ID = "elevenlabs-api-key-note";
 const ENGINE_NOTE_IDS = {
   whisper: "transcription-engine-note-whisper",
   appleSpeech: "transcription-engine-note-apple-speech",
   openAIRealtime: "transcription-engine-note-openai-realtime",
+  elevenLabsRealtime: "transcription-engine-note-elevenlabs-realtime",
 } as const;
 
 const LANGUAGES = [
@@ -309,6 +311,8 @@ export function SettingsView() {
     "文字起こしエンジン: macOS SpeechAnalyzer、端末内処理";
   const openAIRealtimeEngineLabel =
     "文字起こしエンジン: OpenAI Realtime API、音声をOpenAIへ送信";
+  const elevenLabsRealtimeEngineLabel =
+    "文字起こしエンジン: ElevenLabs Scribe v2 Realtime、音声をElevenLabsへ送信";
   const isSettingsViewBusy =
     updateMutation.isPending ||
     isSelectingOutputDirectory ||
@@ -420,12 +424,65 @@ export function SettingsView() {
               音声をOpenAIへ送信 / API キーが必要
             </span>
           </label>
+          <label
+            className="settings-radio-label"
+            title={elevenLabsRealtimeEngineLabel}
+          >
+            <input
+              type="radio"
+              name="engine"
+              value="elevenLabsRealtime"
+              aria-describedby={ENGINE_NOTE_IDS.elevenLabsRealtime}
+              checked={localSettings.transcriptionEngine === "elevenLabsRealtime"}
+              onChange={() =>
+                setLocalSettings((current) =>
+                  current
+                    ? {
+                        ...current,
+                        transcriptionEngine:
+                          "elevenLabsRealtime" as TranscriptionEngineType,
+                      }
+                    : current,
+                )
+              }
+            />
+            <span>ElevenLabs Scribe v2 Realtime</span>
+            <span
+              id={ENGINE_NOTE_IDS.elevenLabsRealtime}
+              className="settings-note"
+            >
+              音声をElevenLabsへ送信 / API キーが必要
+            </span>
+          </label>
         </div>
       </div>
 
-      {/* OpenAI API キー (Realtime) */}
+      {/* 外部Realtime API キー */}
       {localSettings.transcriptionEngine === "openAIRealtime" && (
-        <OpenAIApiKeySection clearToast={clearToast} showToast={showToast} />
+        <ExternalApiKeySection
+          providerName="OpenAI"
+          noteId={OPENAI_API_KEY_NOTE_ID}
+          queryKey={["openaiApiKey", "has"]}
+          hasCommand="has_openai_api_key"
+          setCommand="set_openai_api_key"
+          clearCommand="clear_openai_api_key"
+          placeholder="sk-..."
+          clearToast={clearToast}
+          showToast={showToast}
+        />
+      )}
+      {localSettings.transcriptionEngine === "elevenLabsRealtime" && (
+        <ExternalApiKeySection
+          providerName="ElevenLabs"
+          noteId={ELEVENLABS_API_KEY_NOTE_ID}
+          queryKey={["elevenlabsApiKey", "has"]}
+          hasCommand="has_elevenlabs_api_key"
+          setCommand="set_elevenlabs_api_key"
+          clearCommand="clear_elevenlabs_api_key"
+          placeholder="xi-..."
+          clearToast={clearToast}
+          showToast={showToast}
+        />
       )}
 
       {/* Whisperモデル */}
@@ -754,10 +811,24 @@ function PermissionBadge({
   return renderBadge("permission-undetermined", "未確認");
 }
 
-function OpenAIApiKeySection({
+function ExternalApiKeySection({
+  providerName,
+  noteId,
+  queryKey,
+  hasCommand,
+  setCommand,
+  clearCommand,
+  placeholder,
   clearToast,
   showToast,
 }: {
+  providerName: string;
+  noteId: string;
+  queryKey: readonly string[];
+  hasCommand: string;
+  setCommand: string;
+  clearCommand: string;
+  placeholder: string;
   clearToast: () => void;
   showToast: (msg: string) => void;
 }) {
@@ -772,14 +843,14 @@ function OpenAIApiKeySection({
     isFetching: isFetchingHasKey,
     refetch: refetchHasKey,
   } = useQuery<boolean>({
-    queryKey: ["openaiApiKey", "has"],
-    queryFn: () => invoke<boolean>("has_openai_api_key"),
+    queryKey,
+    queryFn: () => invoke<boolean>(hasCommand),
   });
 
   const setMutation = useMutation({
-    mutationFn: (apiKey: string) => invoke("set_openai_api_key", { apiKey }),
+    mutationFn: (apiKey: string) => invoke(setCommand, { apiKey }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["openaiApiKey", "has"] });
+      queryClient.invalidateQueries({ queryKey });
       setKeyInput("");
       showToast("API キーを保存しました");
     },
@@ -791,9 +862,9 @@ function OpenAIApiKeySection({
   });
 
   const clearMutation = useMutation({
-    mutationFn: () => invoke("clear_openai_api_key"),
+    mutationFn: () => invoke(clearCommand),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["openaiApiKey", "has"] });
+      queryClient.invalidateQueries({ queryKey });
       showToast("API キーを削除しました");
     },
     onError: (e) =>
@@ -843,21 +914,21 @@ function OpenAIApiKeySection({
     setMutation.isPending || clearMutation.isPending;
 
   const saveApiKeyLabel = setMutation.isPending
-    ? "OpenAI API キーを保存中"
+    ? `${providerName} API キーを保存中`
     : keyInput.trim()
-      ? "OpenAI API キーを保存"
-      : "OpenAI API キーを入力すると保存できます";
+      ? `${providerName} API キーを保存`
+      : `${providerName} API キーを入力すると保存できます`;
   const clearApiKeyLabel = clearMutation.isPending
-    ? "OpenAI API キーを削除中"
+    ? `${providerName} API キーを削除中`
     : setMutation.isPending
-      ? "OpenAI API キー保存中のため削除できません"
+      ? `${providerName} API キー保存中のため削除できません`
     : isFetchingHasKey
-      ? "OpenAI API キー状態を確認中"
+      ? `${providerName} API キー状態を確認中`
       : hasKeyError
-        ? "OpenAI API キー状態を確認できないため削除できません"
+        ? `${providerName} API キー状態を確認できないため削除できません`
         : hasKey
-          ? "OpenAI API キーを削除"
-          : "削除できる OpenAI API キーはありません";
+          ? `${providerName} API キーを削除`
+          : `削除できる ${providerName} API キーはありません`;
   const apiKeyStatusText = isFetchingHasKey
     ? "確認中"
     : hasKeyError
@@ -872,19 +943,19 @@ function OpenAIApiKeySection({
     : hasKey
       ? "settings-api-key-status settings-api-key-status-ready"
       : "settings-api-key-status";
-  const apiKeyStatusLabel = `OpenAI API キー状態: ${apiKeyStatusText}`;
+  const apiKeyStatusLabel = `${providerName} API キー状態: ${apiKeyStatusText}`;
   const refetchApiKeyStatusLabel = isFetchingHasKey
-    ? "OpenAI API キー状態を確認中"
-    : "OpenAI API キー状態を再確認";
+    ? `${providerName} API キー状態を確認中`
+    : `${providerName} API キー状態を再確認`;
   const apiKeyErrorMessage = hasKeyError ? toErrorMessage(hasKeyError) : "";
   const apiKeyInputLabel = hasKey
-    ? "OpenAI API キー: 登録済み、再入力で上書き"
-    : "OpenAI API キー: 未登録";
+    ? `${providerName} API キー: 登録済み、再入力で上書き`
+    : `${providerName} API キー: 未登録`;
 
   return (
     <div className="settings-section">
-      <h3 className="settings-section-title">OpenAI API キー</h3>
-      <p id={OPENAI_API_KEY_NOTE_ID} className="settings-note">
+      <h3 className="settings-section-title">{providerName} API キー</h3>
+      <p id={noteId} className="settings-note">
         Keychain に安全に保存され、ブラウザ・ログには出力されません。
       </p>
       <div className="settings-api-key">
@@ -892,8 +963,8 @@ function OpenAIApiKeySection({
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`OpenAI API キー状態エラー: ${apiKeyErrorMessage}`}
-            title={`OpenAI API キー状態エラー: ${apiKeyErrorMessage}`}
+            aria-label={`${providerName} API キー状態エラー: ${apiKeyErrorMessage}`}
+            title={`${providerName} API キー状態エラー: ${apiKeyErrorMessage}`}
           >
             <span>
               API キー状態の確認に失敗しました: {apiKeyErrorMessage}
@@ -914,10 +985,10 @@ function OpenAIApiKeySection({
           type="password"
           aria-label={apiKeyInputLabel}
           title={apiKeyInputLabel}
-          aria-describedby={OPENAI_API_KEY_NOTE_ID}
+          aria-describedby={noteId}
           autoComplete="off"
           spellCheck={false}
-          placeholder={hasKey ? "登録済み (再入力で上書き)" : "sk-..."}
+          placeholder={hasKey ? "登録済み (再入力で上書き)" : placeholder}
           value={keyInput}
           onChange={(e) => setKeyInput(e.target.value)}
           disabled={isApiKeyOperationPending}

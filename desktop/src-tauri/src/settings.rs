@@ -31,6 +31,8 @@ pub enum TranscriptionEngineType {
     AppleSpeech,
     /// OpenAI Realtime API (実装は次 PR)
     OpenAIRealtime,
+    /// ElevenLabs Scribe v2 Realtime API
+    ElevenLabsRealtime,
 }
 
 impl TranscriptionEngineType {
@@ -41,6 +43,9 @@ impl TranscriptionEngineType {
             // 旧名 → 新名のマイグレーション
             "local" | "whisper" => Self::Whisper,
             "cloud" | "openAIRealtime" | "openai_realtime" => Self::OpenAIRealtime,
+            "elevenLabsRealtime" | "elevenlabs_realtime" | "eleven_labs_realtime" => {
+                Self::ElevenLabsRealtime
+            }
             "appleSpeech" | "apple_speech" => Self::AppleSpeech,
             _ => Self::Whisper,
         }
@@ -373,6 +378,14 @@ mod tests {
             TranscriptionEngineType::OpenAIRealtime
         );
         assert_eq!(
+            TranscriptionEngineType::from_legacy_str("elevenLabsRealtime"),
+            TranscriptionEngineType::ElevenLabsRealtime
+        );
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("elevenlabs_realtime"),
+            TranscriptionEngineType::ElevenLabsRealtime
+        );
+        assert_eq!(
             TranscriptionEngineType::from_legacy_str("appleSpeech"),
             TranscriptionEngineType::AppleSpeech
         );
@@ -435,12 +448,17 @@ mod tests {
         let whisper = TranscriptionEngineType::Whisper;
         let apple = TranscriptionEngineType::AppleSpeech;
         let openai = TranscriptionEngineType::OpenAIRealtime;
+        let elevenlabs = TranscriptionEngineType::ElevenLabsRealtime;
 
         assert_eq!(serde_json::to_string(&whisper).unwrap(), "\"whisper\"");
         assert_eq!(serde_json::to_string(&apple).unwrap(), "\"appleSpeech\"");
         assert_eq!(
             serde_json::to_string(&openai).unwrap(),
             "\"openAIRealtime\""
+        );
+        assert_eq!(
+            serde_json::to_string(&elevenlabs).unwrap(),
+            "\"elevenLabsRealtime\""
         );
     }
 

@@ -104,21 +104,23 @@ function getTranscriptionStartBlockedReason(
   requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
   modelDownloadedError: unknown,
-  requiresOpenAIApiKey: boolean,
-  hasOpenAIApiKey: boolean | undefined,
-  openAIApiKeyError: unknown,
+  externalApiProvider: string | null,
+  hasExternalApiKey: boolean | undefined,
+  externalApiKeyError: unknown,
 ): string | null {
   if (isTranscribing) return null;
   if (modelDownloadedError) return null;
-  if (openAIApiKeyError) return "OpenAI API キー状態を確認できません。";
+  if (externalApiKeyError && externalApiProvider) {
+    return `${externalApiProvider} API キー状態を確認できません。`;
+  }
   if (!isAnySourceRecording) {
     return "文字起こし開始には、マイクまたはシステム音声を開始してください。";
   }
-  if (requiresOpenAIApiKey && hasOpenAIApiKey === undefined) {
-    return "OpenAI API キー状態を確認中です。";
+  if (externalApiProvider && hasExternalApiKey === undefined) {
+    return `${externalApiProvider} API キー状態を確認中です。`;
   }
-  if (requiresOpenAIApiKey && !hasOpenAIApiKey) {
-    return "OpenAI Realtime の利用には、設定画面で API キーを登録してください。";
+  if (externalApiProvider && !hasExternalApiKey) {
+    return `${externalApiProvider} Realtime の利用には、設定画面で API キーを登録してください。`;
   }
   if (!requiresLocalModel) {
     return null;
@@ -137,18 +139,20 @@ function getMeetingStartBlockedReason(
   requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
   modelDownloadedError: unknown,
-  requiresOpenAIApiKey: boolean,
-  hasOpenAIApiKey: boolean | undefined,
-  openAIApiKeyError: unknown,
+  externalApiProvider: string | null,
+  hasExternalApiKey: boolean | undefined,
+  externalApiKeyError: unknown,
 ): string | null {
   if (isMeetingActive) return null;
   if (modelDownloadedError) return null;
-  if (openAIApiKeyError) return "OpenAI API キー状態を確認できません。";
-  if (requiresOpenAIApiKey && hasOpenAIApiKey === undefined) {
-    return "OpenAI API キー状態を確認中です。";
+  if (externalApiKeyError && externalApiProvider) {
+    return `${externalApiProvider} API キー状態を確認できません。`;
   }
-  if (requiresOpenAIApiKey && !hasOpenAIApiKey) {
-    return "会議開始には、設定画面で OpenAI API キーを登録してください。";
+  if (externalApiProvider && hasExternalApiKey === undefined) {
+    return `${externalApiProvider} API キー状態を確認中です。`;
+  }
+  if (externalApiProvider && !hasExternalApiKey) {
+    return `会議開始には、設定画面で ${externalApiProvider} API キーを登録してください。`;
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
@@ -228,8 +232,16 @@ function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boo
   return !engine || engine === "whisper";
 }
 
-function getRequiresOpenAIApiKey(engine: TranscriptionEngineType | undefined): boolean {
-  return engine === "openAIRealtime";
+function getExternalApiProvider(
+  engine: TranscriptionEngineType | undefined,
+): "OpenAI" | "ElevenLabs" | null {
+  if (engine === "openAIRealtime") {
+    return "OpenAI";
+  }
+  if (engine === "elevenLabsRealtime") {
+    return "ElevenLabs";
+  }
+  return null;
 }
 
 function getAiTransmissionStatusLabel(
@@ -241,11 +253,14 @@ function getAiTransmissionStatusLabel(
   if (engine === "openAIRealtime") {
     return "OpenAI送信";
   }
+  if (engine === "elevenLabsRealtime") {
+    return "ElevenLabs送信";
+  }
   return "端末内処理";
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "OpenAI送信") {
+  if (statusLabel === "OpenAI送信" || statusLabel === "ElevenLabs送信") {
     return "meeting-status-pill-active";
   }
   if (statusLabel === "確認失敗") {
@@ -269,6 +284,9 @@ function getEngineStatusLabel(
   if (engine === "openAIRealtime") {
     return "OpenAI・送信";
   }
+  if (engine === "elevenLabsRealtime") {
+    return "ElevenLabs・送信";
+  }
   return "Whisper・端末内";
 }
 
@@ -282,24 +300,24 @@ function getEngineStatusPillClass(statusLabel: string): string {
   return "meeting-status-pill-active";
 }
 
-function getOpenAIApiKeyStatusLabel(
-  requiresOpenAIApiKey: boolean,
-  hasOpenAIApiKey: boolean | undefined,
-  openAIApiKeyError: unknown,
+function getExternalApiKeyStatusLabel(
+  externalApiProvider: string | null,
+  hasExternalApiKey: boolean | undefined,
+  externalApiKeyError: unknown,
 ): string | null {
-  if (!requiresOpenAIApiKey) {
+  if (!externalApiProvider) {
     return null;
   }
-  if (openAIApiKeyError) {
+  if (externalApiKeyError) {
     return "確認失敗";
   }
-  if (hasOpenAIApiKey === undefined) {
+  if (hasExternalApiKey === undefined) {
     return "確認中";
   }
-  return hasOpenAIApiKey ? "登録済み" : "未設定";
+  return hasExternalApiKey ? "登録済み" : "未設定";
 }
 
-function getOpenAIApiKeyStatusPillClass(statusLabel: string | null): string {
+function getExternalApiKeyStatusPillClass(statusLabel: string | null): string {
   if (statusLabel === "登録済み") {
     return "meeting-status-pill-active";
   }
@@ -377,9 +395,11 @@ export function TranscriptView() {
   const requiresLocalModel = getRequiresLocalModel(
     settings?.transcriptionEngine,
   );
-  const requiresOpenAIApiKey = getRequiresOpenAIApiKey(
+  const externalApiProvider = getExternalApiProvider(
     settings?.transcriptionEngine,
   );
+  const requiresOpenAIApiKey = externalApiProvider === "OpenAI";
+  const requiresElevenLabsApiKey = externalApiProvider === "ElevenLabs";
 
   // Check if selected model is downloaded
   const { data: isModelDownloaded, error: modelDownloadedError } =
@@ -397,6 +417,15 @@ export function TranscriptView() {
     queryKey: ["openaiApiKey", "has"],
     queryFn: () => invoke<boolean>("has_openai_api_key"),
     enabled: requiresOpenAIApiKey,
+  });
+
+  const {
+    data: hasElevenLabsApiKey,
+    error: elevenLabsApiKeyError,
+  } = useQuery<boolean>({
+    queryKey: ["elevenlabsApiKey", "has"],
+    queryFn: () => invoke<boolean>("has_elevenlabs_api_key"),
+    enabled: requiresElevenLabsApiKey,
   });
 
   // Route audio-level events by source
@@ -815,16 +844,25 @@ export function TranscriptView() {
     setSegments([]);
   }, []);
 
-  const isTranscriptionEngineReady =
-    (!requiresLocalModel || isModelDownloaded === true) &&
-    (!requiresOpenAIApiKey || hasOpenAIApiKey === true) &&
-    !openAIApiKeyError;
   const modelDownloadedErrorForUi = requiresLocalModel
     ? modelDownloadedError
     : null;
-  const openAIApiKeyErrorForUi = requiresOpenAIApiKey
-    ? openAIApiKeyError
-    : null;
+  const externalApiKeyErrorForUi =
+    externalApiProvider === "OpenAI"
+      ? openAIApiKeyError
+      : externalApiProvider === "ElevenLabs"
+        ? elevenLabsApiKeyError
+        : null;
+  const hasExternalApiKey =
+    externalApiProvider === "OpenAI"
+      ? hasOpenAIApiKey
+      : externalApiProvider === "ElevenLabs"
+        ? hasElevenLabsApiKey
+        : undefined;
+  const isTranscriptionEngineReady =
+    (!requiresLocalModel || isModelDownloaded === true) &&
+    (!externalApiProvider || hasExternalApiKey === true) &&
+    !externalApiKeyErrorForUi;
   const canStartTranscription =
     isAnySourceRecording && isTranscriptionEngineReady && !isTranscribing;
 
@@ -834,9 +872,9 @@ export function TranscriptView() {
     requiresLocalModel,
     isModelDownloaded,
     modelDownloadedErrorForUi,
-    requiresOpenAIApiKey,
-    hasOpenAIApiKey,
-    openAIApiKeyErrorForUi,
+    externalApiProvider,
+    hasExternalApiKey,
+    externalApiKeyErrorForUi,
   );
   const isAudioSourceOperationPending =
     isMicOperationPending ||
@@ -865,9 +903,9 @@ export function TranscriptView() {
     requiresLocalModel,
     isModelDownloaded,
     modelDownloadedErrorForUi,
-    requiresOpenAIApiKey,
-    hasOpenAIApiKey,
-    openAIApiKeyErrorForUi,
+    externalApiProvider,
+    hasExternalApiKey,
+    externalApiKeyErrorForUi,
   );
   const audioSourceStatusLabel = getAudioSourceStatusLabel(
     isMicRecording,
@@ -898,10 +936,10 @@ export function TranscriptView() {
   const engineStatusLabel = settingsError
     ? "確認失敗"
     : getEngineStatusLabel(settings?.transcriptionEngine);
-  const openAIApiKeyStatusLabel = getOpenAIApiKeyStatusLabel(
-    requiresOpenAIApiKey,
-    hasOpenAIApiKey,
-    openAIApiKeyErrorForUi,
+  const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
+    externalApiProvider,
+    hasExternalApiKey,
+    externalApiKeyErrorForUi,
   );
   const meetingRecordingStatusLabel = isMeetingOperationPending
     ? "処理中"
@@ -929,8 +967,8 @@ export function TranscriptView() {
     transcriptionStatusLabel,
     `音声 ${audioSourceStatusDisplayAriaText}`,
     `エンジン ${engineStatusLabel}`,
-    `AI送信 ${aiTransmissionStatusLabel}`,
-    openAIApiKeyStatusLabel ? `APIキー ${openAIApiKeyStatusLabel}` : null,
+    `外部送信 ${aiTransmissionStatusLabel}`,
+    externalApiKeyStatusLabel ? `APIキー ${externalApiKeyStatusLabel}` : null,
   ]
     .filter(Boolean)
     .join("、");
@@ -945,8 +983,8 @@ export function TranscriptView() {
     ? toErrorMessage(modelDownloadedErrorForUi)
     : "";
   const settingsErrorMessage = settingsError ? toErrorMessage(settingsError) : "";
-  const openAIApiKeyErrorMessage = openAIApiKeyErrorForUi
-    ? toErrorMessage(openAIApiKeyErrorForUi)
+  const externalApiKeyErrorMessage = externalApiKeyErrorForUi
+    ? toErrorMessage(externalApiKeyErrorForUi)
     : "";
 
   return (
@@ -1031,18 +1069,18 @@ export function TranscriptView() {
           </span>
           <span
             className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
-            aria-label={`AI送信: ${aiTransmissionStatusLabel}`}
-            title={`AI送信: ${aiTransmissionStatusLabel}`}
+            aria-label={`外部送信: ${aiTransmissionStatusLabel}`}
+            title={`外部送信: ${aiTransmissionStatusLabel}`}
           >
-            AI送信 {aiTransmissionStatusLabel}
+            外部送信 {aiTransmissionStatusLabel}
           </span>
-          {openAIApiKeyStatusLabel && (
+          {externalApiKeyStatusLabel && (
             <span
-              className={`meeting-status-pill ${getOpenAIApiKeyStatusPillClass(openAIApiKeyStatusLabel)}`}
-              aria-label={`OpenAI APIキー: ${openAIApiKeyStatusLabel}`}
-              title={`OpenAI APIキー: ${openAIApiKeyStatusLabel}`}
+              className={`meeting-status-pill ${getExternalApiKeyStatusPillClass(externalApiKeyStatusLabel)}`}
+              aria-label={`${externalApiProvider} APIキー: ${externalApiKeyStatusLabel}`}
+              title={`${externalApiProvider} APIキー: ${externalApiKeyStatusLabel}`}
             >
-              APIキー {openAIApiKeyStatusLabel}
+              APIキー {externalApiKeyStatusLabel}
             </span>
           )}
         </div>
@@ -1097,15 +1135,15 @@ export function TranscriptView() {
             文字起こし設定の取得に失敗しました: {settingsErrorMessage}
           </p>
         )}
-        {openAIApiKeyErrorForUi && (
+        {externalApiKeyErrorForUi && externalApiProvider && (
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`OpenAI API キー状態エラー: ${openAIApiKeyErrorMessage}`}
-            title={`OpenAI API キー状態エラー: ${openAIApiKeyErrorMessage}`}
+            aria-label={`${externalApiProvider} API キー状態エラー: ${externalApiKeyErrorMessage}`}
+            title={`${externalApiProvider} API キー状態エラー: ${externalApiKeyErrorMessage}`}
           >
-            OpenAI API キー状態の確認に失敗しました:{" "}
-            {openAIApiKeyErrorMessage}
+            {externalApiProvider} API キー状態の確認に失敗しました:{" "}
+            {externalApiKeyErrorMessage}
           </p>
         )}
         {meetingStartBlockedReason && (

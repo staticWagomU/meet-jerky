@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::Mutex;
@@ -584,6 +584,12 @@ impl TranscriptionManager {
                 // gpt-4o-mini-transcribe は安価でレイテンシが低い。
                 let engine =
                     crate::openai_realtime::OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
+                self.engine = Some(Arc::new(engine));
+            }
+            TranscriptionEngineType::ElevenLabsRealtime => {
+                let engine = crate::elevenlabs_realtime::ElevenLabsRealtimeEngine::new(
+                    crate::elevenlabs_realtime::SCRIBE_V2_REALTIME_MODEL_ID,
+                );
                 self.engine = Some(Arc::new(engine));
             }
         }
@@ -1361,11 +1367,9 @@ mod tests {
         let drained = stream.drain_segments();
         assert_eq!(drained.len(), 2);
         assert!(drained.iter().all(|s| s.speaker.as_deref() == Some("自分")));
-        assert!(
-            drained
-                .iter()
-                .all(|s| s.source == Some(TranscriptionSource::Microphone))
-        );
+        assert!(drained
+            .iter()
+            .all(|s| s.source == Some(TranscriptionSource::Microphone)));
 
         // 連続 drain は空
         assert!(stream.drain_segments().is_empty());
@@ -1471,6 +1475,20 @@ mod tests {
                 "small",
             )
             .expect("OpenAI エンジンの ensure_engine は同期的には成功する");
+        assert!(manager.is_engine_loaded());
+    }
+
+    #[test]
+    fn test_ensure_engine_elevenlabs_loads_engine_without_api_key_check() {
+        // ElevenLabs も start_stream 時に Keychain から API キーを取得する。
+        // ensure_engine 自体は課金・通信を発生させず、同期的に成功する。
+        let mut manager = TranscriptionManager::new();
+        manager
+            .ensure_engine(
+                &crate::settings::TranscriptionEngineType::ElevenLabsRealtime,
+                "small",
+            )
+            .expect("ElevenLabs エンジンの ensure_engine は同期的には成功する");
         assert!(manager.is_engine_loaded());
     }
 }

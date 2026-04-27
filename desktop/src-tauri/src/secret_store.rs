@@ -10,26 +10,22 @@
 
 // Keychain サービス名・アカウント名は macOS / Windows ビルドでのみ参照される。
 // 非対応プラットフォームではスタブ実装が呼ばれるので unused warning を抑制する。
-#[cfg_attr(
-    not(any(target_os = "macos", target_os = "windows")),
-    allow(dead_code)
-)]
+#[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
 const SERVICE: &str = "com.wagomu.meet-jerky";
 
 /// Keychain に保存するアカウント名 (キー識別子)。
 #[derive(Debug, Clone, Copy)]
 pub enum SecretKey {
     OpenAIApiKey,
+    ElevenLabsApiKey,
 }
 
 impl SecretKey {
-    #[cfg_attr(
-        not(any(target_os = "macos", target_os = "windows")),
-        allow(dead_code)
-    )]
+    #[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
     pub fn account(&self) -> &'static str {
         match self {
             SecretKey::OpenAIApiKey => "openai-api-key",
+            SecretKey::ElevenLabsApiKey => "elevenlabs-api-key",
         }
     }
 }
@@ -134,6 +130,30 @@ pub fn has_openai_api_key() -> Result<bool, String> {
     has_secret(SecretKey::OpenAIApiKey)
 }
 
+/// ElevenLabs API キーを Keychain に保存する。
+///
+/// 空文字列または前後空白のみの値はバリデーション失敗とし、保存しない。
+#[tauri::command]
+pub fn set_elevenlabs_api_key(api_key: String) -> Result<(), String> {
+    let trimmed = api_key.trim();
+    if trimmed.is_empty() {
+        return Err("API キーが空です".to_string());
+    }
+    set_secret(SecretKey::ElevenLabsApiKey, trimmed)
+}
+
+/// ElevenLabs API キーを Keychain から削除する。
+#[tauri::command]
+pub fn clear_elevenlabs_api_key() -> Result<(), String> {
+    delete_secret(SecretKey::ElevenLabsApiKey)
+}
+
+/// ElevenLabs API キーが Keychain に保存されているかを返す。値自体は返さない。
+#[tauri::command]
+pub fn has_elevenlabs_api_key() -> Result<bool, String> {
+    has_secret(SecretKey::ElevenLabsApiKey)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,10 +166,18 @@ mod tests {
     }
 
     #[test]
+    fn set_elevenlabs_api_key_rejects_empty_input() {
+        // ElevenLabs も OpenAI と同じ境界で空入力を弾き、Keychain に到達させない。
+        assert!(set_elevenlabs_api_key(String::new()).is_err());
+        assert!(set_elevenlabs_api_key("   ".to_string()).is_err());
+    }
+
+    #[test]
     fn secret_key_account_is_stable() {
         // Keychain のキー識別子を不用意に変えると、ユーザーが再入力を
         // 強いられる。アカウント名を回帰防止で固定する。
         assert_eq!(SecretKey::OpenAIApiKey.account(), "openai-api-key");
+        assert_eq!(SecretKey::ElevenLabsApiKey.account(), "elevenlabs-api-key");
     }
 
     #[test]

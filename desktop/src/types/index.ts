@@ -50,7 +50,8 @@ export interface FinalizeSessionResult {
 export type TranscriptionEngineType =
   | "whisper"
   | "appleSpeech"
-  | "openAIRealtime";
+  | "openAIRealtime"
+  | "elevenLabsRealtime";
 
 export interface AppSettings {
   transcriptionEngine: TranscriptionEngineType;

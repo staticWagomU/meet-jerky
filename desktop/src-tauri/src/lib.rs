@@ -4,6 +4,7 @@ mod audio;
 mod cloud_whisper;
 mod cloud_whisper_errors;
 mod datetime_fmt;
+mod elevenlabs_realtime;
 mod markdown;
 mod openai_realtime;
 mod secret_store;
@@ -71,10 +72,8 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                             Size::Physical(size) => (size.width as f64, size.height as f64),
                             Size::Logical(size) => (size.width, size.height),
                         };
-                        let window_width = window
-                            .outer_size()
-                            .map(|s| s.width as f64)
-                            .unwrap_or(400.0);
+                        let window_width =
+                            window.outer_size().map(|s| s.width as f64).unwrap_or(400.0);
 
                         // Position the window centered below the tray icon
                         let x = tray_x + (tray_w / 2.0) - (window_width / 2.0);
@@ -121,6 +120,9 @@ pub fn run() {
             secret_store::set_openai_api_key,
             secret_store::clear_openai_api_key,
             secret_store::has_openai_api_key,
+            secret_store::set_elevenlabs_api_key,
+            secret_store::clear_elevenlabs_api_key,
+            secret_store::has_elevenlabs_api_key,
             session_commands::start_session,
             session_commands::finalize_and_save_session,
             session_commands::discard_session,

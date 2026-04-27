@@ -5765,3 +5765,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での文字起こしログ wrapper ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### User task: add ElevenLabs Scribe v2 Realtime transcription engine
+
+- 開始日時: 2026-04-28 00:59 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる実装・検証・コミット
+- 作業範囲: `src-tauri/src/elevenlabs_realtime.rs`, `src-tauri/src/secret_store.rs`, `src-tauri/src/settings.rs`, `src-tauri/src/transcription.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/session_commands.rs`, `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `src/types/index.ts`, `AGENT_LOG.md`
+- 指示内容: ElevenLabs API を使えるようにし、Scribe v2 Realtime (`model_id=scribe_v2_realtime`) を文字起こしエンジンとして選択可能にする。API キーは OpenAI と分けて Keychain に保存し、JS へ値を返さない。課金が発生する実通信テストは禁止。
+- 結果: `TranscriptionEngineType::ElevenLabsRealtime` / `elevenLabsRealtime` を追加し、`ElevenLabsRealtimeEngine` を実装した。WebSocket は `wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad` を使い、16kHz PCM16 LE を base64 化した `input_audio_chunk` を送る。`committed_transcript` / `committed_transcript_with_timestamps` を既存 `TranscriptionSegment` に流し、エラーは既存方針と同じ error segment にする。Keychain は `SecretKey::ElevenLabsApiKey` / account `elevenlabs-api-key` とし、set/clear/has の Tauri command を追加した。設定画面には ElevenLabs 選択肢と API キー登録欄を追加し、会議中ステータスは OpenAI 固有の `AI送信` から `外部送信` 表示へ寄せた。
+- 変更ファイル: `src-tauri/src/elevenlabs_realtime.rs`, `src-tauri/src/secret_store.rs`, `src-tauri/src/settings.rs`, `src-tauri/src/transcription.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/session_commands.rs`, `src/routes/SettingsView.tsx`, `src/routes/TranscriptView.tsx`, `src/types/index.ts`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh` 成功（Rust は cmake 不在によりスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` 不在で失敗。
+- 依存関係追加の有無と理由: なし。既存の `tokio-tungstenite`, `rubato`, `base64`, `serde_json` を利用した。
+- 失敗理由: ElevenLabs 実通信テストは課金/API キーが絡むため禁止方針に従って未実施。`cargo check/test` は cmake 不在で未完走。`session_commands.rs` は今回機能とは無関係だが、`cargo fmt --check` を通すため rustfmt の機械的整形のみ含めた。
+- 次アクション: cmake あり、かつ課金・認証が許可された環境で ElevenLabs Realtime の実疎通、`committed_transcript_with_timestamps` の実 payload 形状、VAD commit の挙動を確認する。
