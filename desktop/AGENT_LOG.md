@@ -6452,6 +6452,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で保存済み表示がボタン幅や導線として自然に見えるか確認する。
 
+### Transcription Controls UX: clarify clear button text
+
+- 開始日時: 2026-04-28 07:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログのクリア操作を可視表示でも明確にする。
+- 結果: 文字起こしログの削除ボタン表示を `クリア` から `ログをクリア` に変更した。aria-label の件数表示、クリア処理、表示条件には触れなかった。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でボタン幅が不自然に広がらず、誤操作しにくい表示になっているか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
