@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: soften unknown capability warning
+
+- 開始日時: 2026-04-28 07:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限状態取得に失敗したときの警告本文を硬い `可否が不明` 表現から自然な説明へ整える。
+- 結果: マイク/画面収録の権限状態を取得できない場合の本文を `録音・文字起こしできるか分かりません` / `取得・文字起こしできるか分かりません` に変更した。権限取得処理、警告条件、再チェック操作には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で権限取得失敗時の警告文が自然に読めるか確認する。
+
 ### Meeting Detection UX: clarify manual start message
 
 - 開始日時: 2026-04-28 07:00 JST
