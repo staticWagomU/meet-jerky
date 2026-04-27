@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: clarify system audio permission impact
+
+- 開始日時: 2026-04-28 08:56 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限バナーで相手側トラックに必要な画面収録権限が、実際にはシステム音声取得に影響することをより明確にする。
+- 結果: 相手側トラックの権限詳細を `画面収録/システム音声` にし、可視 pill を `相手側の音声取得` へ変更した。権限取得失敗・未許可時の説明も相手側のシステム音声が取得/文字起こしできない表現に揃えた。権限チェック処理には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機の macOS 権限ダイアログ確認は未実施。
+- 次アクション: 実機で macOS 権限状態が未許可/確認不可のとき、権限バナーが長すぎず自然に読めるか確認する。
+
 ### Crash Hardening: finalize Apple Speech stream on drop
 
 - 開始日時: 2026-04-28 08:54 JST

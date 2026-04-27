@@ -62,7 +62,7 @@ export function PermissionBanner() {
     .filter(Boolean)
     .join(": ");
   const screenPermissionDetail = [
-    "相手側トラック 画面収録",
+    "相手側トラック 画面収録/システム音声",
     screenStatusLabel,
     screenPermissionErrorMessage,
   ]
@@ -112,7 +112,7 @@ export function PermissionBanner() {
             aria-label={screenPermissionDetail}
             title={screenPermissionDetail}
           >
-            相手側の画面収録: {screenStatusLabel}
+            相手側の音声取得: {screenStatusLabel}
           </span>
         )}
       </div>
@@ -134,8 +134,8 @@ export function PermissionBanner() {
             {isCheckingPermissions
               ? "画面収録権限の状態を確認しています。"
               : screenPermissionError
-              ? "画面収録権限の状態を macOS から取得できませんでした。相手側音声を取得・文字起こしできるか分かりません。"
-              : "画面収録が未許可です。相手側音声は取得・文字起こしされません。"}
+                ? "画面収録権限の状態を macOS から取得できませんでした。相手側のシステム音声を取得・文字起こしできるか分かりません。"
+                : "画面収録が未許可です。相手側のシステム音声は取得・文字起こしされません。"}
             <br />
             <strong>
               システム設定 &gt; プライバシーとセキュリティ &gt; 画面収録
