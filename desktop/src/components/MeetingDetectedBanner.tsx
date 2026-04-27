@@ -62,12 +62,12 @@ export function MeetingDetectedBanner() {
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const bannerMessage = listenerError
     ? listenerError
-    : `${displayName} を検出しました。文字起こしページで記録状態を確認できます。`;
+    : `${displayName} を検出しました。自動録音は開始していません。記録状態を確認できます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }記録状態を確認できます。`;
+      }自動録音は開始していません。記録状態を確認できます。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の記録状態を確認`
     : "記録状態を確認";

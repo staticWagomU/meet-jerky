@@ -5863,3 +5863,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI でシステム音声セクションの注記が折り返し過多にならず、相手側トラックの意味が伝わるか確認する。
+
+### Meeting detection UX: clarify no auto recording
+
+- 開始日時: 2026-04-28 01:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーで検知と録音開始を混同しないように、自動録音が開始されていないことを明示する。
+- 結果: 会議検知バナーの本文と `aria-label` に `自動録音は開始していません` を追加し、検知イベント購読、検知元表示、遷移ボタンの挙動には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で検知バナーが長くなりすぎず、自動録音していないことが自然に伝わるか確認する。
