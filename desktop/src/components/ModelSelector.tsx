@@ -430,7 +430,11 @@ function DownloadStatus({
         onClick={() => onDownload(selectedModel)}
         disabled={disabled || downloadingModel !== null || isFetchingDownloaded}
       >
-        {isFetchingDownloaded ? "確認中..." : "ダウンロード"}
+        {isFetchingDownloaded
+          ? "確認中..."
+          : downloadingModel
+            ? "待機中"
+            : "ダウンロード"}
       </button>
       {downloadError && (
         <span

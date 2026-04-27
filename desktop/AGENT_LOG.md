@@ -5135,3 +5135,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機ブラウザURL検知は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: show waiting label while another model downloads
+
+- 開始日時: 2026-04-27 21:38 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 別モデルのダウンロード中に現在選択中モデルのダウンロードボタンが無効化される場合、通常の「ダウンロード」文言のままにせず待機中であることを示す。
+- 結果: `DownloadStatus` のボタン表示を、モデル状態確認中は「確認中...」、別モデルのダウンロード中は「待機中」、通常時は「ダウンロード」に切り替えるようにした。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での複数モデルダウンロード操作中 UI 表示は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
