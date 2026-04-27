@@ -796,9 +796,9 @@ function PermissionBadge({
   if (error) {
     return renderBadge(
       "permission-denied",
-      "確認失敗",
+      "確認できません",
       false,
-      `確認失敗: ${toErrorMessage(error)}`,
+      `確認できません: ${toErrorMessage(error)}`,
     );
   }
   if (!status) {

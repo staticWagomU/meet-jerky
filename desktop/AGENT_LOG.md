@@ -6326,6 +6326,20 @@
 - 失敗理由: なし。
 - 次アクション: プロダクト文書で音声取得方針を更新するときも、自分/相手側トラックの読みやすさを維持する。
 
+### Settings Permissions UX: clarify failed check badge
+
+- 開始日時: 2026-04-28 06:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限ステータス確認失敗バッジをユーザーに自然な表記へ揃える。
+- 結果: 権限バッジの `確認失敗` を `確認できません` に変更し、aria/title のエラー詳細も同じ表記にした。権限確認処理、権限状態の判定、再チェック処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で権限確認失敗バッジが自然に伝わるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
