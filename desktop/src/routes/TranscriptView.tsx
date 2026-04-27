@@ -941,6 +941,14 @@ export function TranscriptView() {
     hasExternalApiKey,
     externalApiKeyErrorForUi,
   );
+  const externalApiKeyStatusDisplayLabel =
+    externalApiProvider && externalApiKeyStatusLabel
+      ? `${externalApiProvider}キー ${externalApiKeyStatusLabel}`
+      : null;
+  const externalApiKeyStatusAriaLabel =
+    externalApiProvider && externalApiKeyStatusLabel
+      ? `${externalApiProvider} APIキー: ${externalApiKeyStatusLabel}`
+      : null;
   const meetingRecordingStatusLabel = isMeetingOperationPending
     ? "処理中"
     : isMeetingActive
@@ -968,7 +976,7 @@ export function TranscriptView() {
     `音声 ${audioSourceStatusDisplayAriaText}`,
     `エンジン ${engineStatusLabel}`,
     `外部送信 ${aiTransmissionStatusLabel}`,
-    externalApiKeyStatusLabel ? `APIキー ${externalApiKeyStatusLabel}` : null,
+    externalApiKeyStatusAriaLabel,
   ]
     .filter(Boolean)
     .join("、");
@@ -1074,13 +1082,13 @@ export function TranscriptView() {
           >
             外部送信 {aiTransmissionStatusLabel}
           </span>
-          {externalApiKeyStatusLabel && (
+          {externalApiKeyStatusLabel && externalApiKeyStatusDisplayLabel && (
             <span
               className={`meeting-status-pill ${getExternalApiKeyStatusPillClass(externalApiKeyStatusLabel)}`}
-              aria-label={`${externalApiProvider} APIキー: ${externalApiKeyStatusLabel}`}
-              title={`${externalApiProvider} APIキー: ${externalApiKeyStatusLabel}`}
+              aria-label={externalApiKeyStatusAriaLabel ?? undefined}
+              title={externalApiKeyStatusAriaLabel ?? undefined}
             >
-              APIキー {externalApiKeyStatusLabel}
+              {externalApiKeyStatusDisplayLabel}
             </span>
           )}
         </div>

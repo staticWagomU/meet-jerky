@@ -5779,3 +5779,17 @@
 - 依存関係追加の有無と理由: なし。既存の `tokio-tungstenite`, `rubato`, `base64`, `serde_json` を利用した。
 - 失敗理由: ElevenLabs 実通信テストは課金/API キーが絡むため禁止方針に従って未実施。`cargo check/test` は cmake 不在で未完走。`session_commands.rs` は今回機能とは無関係だが、`cargo fmt --check` を通すため rustfmt の機械的整形のみ含めた。
 - 次アクション: cmake あり、かつ課金・認証が許可された環境で ElevenLabs Realtime の実疎通、`committed_transcript_with_timestamps` の実 payload 形状、VAD commit の挙動を確認する。
+
+### Worker task: clarify external API key provider in meeting status
+
+- 開始日時: 2026-04-28 01:20 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中ステータスバーの外部 API キー状態で、OpenAI / ElevenLabs のどちらのキー状態かを視覚表示と `aria-label` / `title` の両方で明確にする。ローカル / Apple Speech では API キー pill を出さない既存挙動を維持する。コミットは禁止。
+- 結果: 外部 API キー状態の表示ラベルを `OpenAIキー 登録済み` / `ElevenLabsキー 未設定` 形式にし、ステータスバー全体と pill の `aria-label` / `title` には `OpenAI APIキー: 登録済み` 形式のプロバイダ名付き文言を使うようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で OpenAI / ElevenLabs 選択時のステータスバー表示と読み上げを確認する。
