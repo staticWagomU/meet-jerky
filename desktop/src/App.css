@@ -600,6 +600,8 @@
   font-size: 0.85rem;
   line-height: 1.4;
   min-width: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 2.25rem;
 }
 
 .transcript-timestamp {

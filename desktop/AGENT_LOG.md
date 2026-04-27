@@ -5023,3 +5023,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での長時間ログ表示性能確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: defer offscreen transcript segment rendering
+
+- 開始日時: 2026-04-27 21:05 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 長時間会議で文字起こしセグメントが増えたとき、画面外の行描画負荷を下げる。
+- 結果: `.transcript-segment` に `content-visibility: auto` と `contain-intrinsic-size` を追加し、未対応環境では無視される CSS の範囲で画面外描画を遅延できるようにした。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Tauri WebView 実機での長時間ログスクロール性能確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
