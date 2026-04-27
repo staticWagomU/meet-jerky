@@ -5695,3 +5695,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での設定画面ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: include model selector busy state in label
+
+- 開始日時: 2026-04-27 23:23 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: Whisper モデル選択欄で、選択中モデル、一覧取得中、ダウンロード中、一覧取得エラーをグループ単位でも把握できるようにする。
+- 結果: モデル選択 wrapper の `aria-label` / `title` に、選択中モデルと busy / error 状態を含めるようにした。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのモデル選択欄ラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。

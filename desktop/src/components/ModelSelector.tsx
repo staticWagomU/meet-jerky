@@ -214,11 +214,21 @@ export function ModelSelector({
     }
   };
   const modelsErrorMessage = modelsError ? toErrorMessage(modelsError) : "";
+  const modelSelectorLabel = [
+    `Whisperモデル選択: ${selectedModel}`,
+    isFetchingModels ? "モデル一覧を取得中" : null,
+    downloadingModel ? `${downloadingModel} をダウンロード中` : null,
+    modelsError ? `モデル一覧エラー: ${modelsErrorMessage}` : null,
+  ]
+    .filter(Boolean)
+    .join("、");
 
   return (
     <div
       className="model-selector"
       aria-busy={isFetchingModels || downloadingModel !== null}
+      aria-label={modelSelectorLabel}
+      title={modelSelectorLabel}
     >
       <label htmlFor="model-select" className="model-select-label">
         モデル:
