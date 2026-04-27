@@ -6284,6 +6284,20 @@
 - 失敗理由: なし。
 - 次アクション: 文字起こし画面でエラー表示が長すぎず自然に読めるか確認する。
 
+### Settings UX: clarify API key status error wording
+
+- 開始日時: 2026-04-28 06:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の外部 API キー状態確認エラー表記を読みやすく揃える。
+- 結果: 外部 API キーの `状態確認エラー` / `状態確認に失敗` を `状態の確認エラー` / `状態の確認に失敗` に変更した。Keychain 保存/削除、状態確認 command、API キー値の扱いには触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面で OpenAI / ElevenLabs の API キー状態エラー表示が自然に読めるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
