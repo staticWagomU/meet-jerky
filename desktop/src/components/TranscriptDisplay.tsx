@@ -441,6 +441,7 @@ export function TranscriptDisplay({
           type="button"
           className="scroll-to-bottom-btn"
           aria-label="最新の文字起こしへスクロール"
+          title="最新の文字起こしへスクロール"
           onClick={() => {
             setAutoScroll(true);
             userScrolledRef.current = false;
