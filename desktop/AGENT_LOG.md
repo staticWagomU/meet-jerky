@@ -4127,3 +4127,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI/支援技術での読み上げ確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: accept trailing slash meeting URLs
+
+- 開始日時: 2026-04-27 15:43 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Google Meet / Zoom の会議 URL 分類で、末尾スラッシュ付きの安全な会議 URL を受け入れる。
+- 結果: Google Meet の会議コード path と Zoom の meeting ID 判定で、末尾スラッシュ 1 つを分類前に取り除くようにした。URL 全文や path を payload/log/UI に出さない方針は維持し、分類結果は service と host のみ。Meet/Zoom の末尾スラッシュ付き URL を純粋関数テストに追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

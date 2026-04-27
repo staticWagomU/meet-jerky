@@ -265,6 +265,7 @@ fn is_google_meet_code_path(path: &str) -> bool {
     let Some(code) = path.strip_prefix('/') else {
         return false;
     };
+    let code = code.strip_suffix('/').unwrap_or(code);
 
     let mut parts = code.split('-');
     let (Some(first), Some(second), Some(third), None) =
@@ -291,6 +292,7 @@ fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
 }
 
 fn is_zoom_meeting_id(value: &str) -> bool {
+    let value = value.strip_suffix('/').unwrap_or(value);
     (9..=11).contains(&value.len()) && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
 }
 
@@ -476,6 +478,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defg-hij/"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://company.zoom.us/j/123456789?pwd=secret"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -483,7 +492,21 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://company.zoom.us/j/123456789/"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://zoom.us/wc/join/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/join/123456789/"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
                 host: "zoom.us".to_string(),
