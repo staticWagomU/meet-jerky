@@ -3931,3 +3931,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認は未実施。認証情報変更は行っていない。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose microphone device states on hover
+
+- 開始日時: 2026-04-27 13:46 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 自分トラックのマイクデバイス選択/一覧エラー/再取得操作が、ホバーでも状態と文脈付きで確認できるようにする。
+- 結果: マイクデバイス select と再取得ボタンのラベルを定数化し、既存 `aria-label` と新規 `title` で共有した。デバイス一覧エラーにも `title` を追加した。録音制御、デバイス取得、disabled 判定は変更していない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

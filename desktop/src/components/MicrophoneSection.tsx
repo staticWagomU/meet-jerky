@@ -39,6 +39,13 @@ export function MicrophoneSection({
     : isMicRecording
       ? "自分トラックのマイク録音を停止"
       : "自分トラックのマイク録音を開始";
+  const deviceSelectLabel =
+    isMicRecording || isOperationPending
+      ? "マイクデバイス: 録音中または処理中は変更できません"
+      : "マイクデバイス: 自分トラックの入力を選択";
+  const retryDevicesLabel = isReloadingAudioDevices
+    ? "マイクデバイス一覧を取得中"
+    : "マイクデバイス一覧を再取得";
 
   return (
     <div
@@ -68,7 +75,8 @@ export function MicrophoneSection({
         <div className="device-selector">
           <select
             id="device-select"
-            aria-label="マイクデバイス"
+            aria-label={deviceSelectLabel}
+            title={deviceSelectLabel}
             value={selectedDeviceId}
             onChange={(e) => onDeviceChange(e.target.value)}
             disabled={isMicRecording || isOperationPending}
@@ -106,6 +114,7 @@ export function MicrophoneSection({
           className="settings-inline-error"
           role="alert"
           aria-label={`マイク 自分トラックのデバイス一覧エラー: ${String(audioDevicesError)}`}
+          title={`マイク 自分トラックのデバイス一覧エラー: ${String(audioDevicesError)}`}
         >
           <span>
             マイクデバイス一覧の取得に失敗しました: {String(audioDevicesError)}
@@ -115,11 +124,8 @@ export function MicrophoneSection({
             className="control-btn control-btn-clear"
             onClick={onRetryDevices}
             disabled={isReloadingAudioDevices}
-            aria-label={
-              isReloadingAudioDevices
-                ? "マイクデバイス一覧を取得中"
-                : "マイクデバイス一覧を再取得"
-            }
+            aria-label={retryDevicesLabel}
+            title={retryDevicesLabel}
           >
             {isReloadingAudioDevices ? "取得中..." : "再取得"}
           </button>
