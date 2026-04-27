@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: polish browser permission note
+
+- 開始日時: 2026-04-28 07:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ブラウザ会議 URL 検知の補足文に残るスラッシュ区切りを読みやすい列挙表現へ整える。
+- 結果: `Safari / Chrome / Edge / Firefox` を `Safari、Chrome、Edge、Firefox` に変更した。ブラウザ検知、URL 取り扱い、権限処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でブラウザ URL 検知メモが自然に折り返されるか確認する。
+
 ### Settings UX: clarify API key action buttons
 
 - 開始日時: 2026-04-28 07:24 JST
