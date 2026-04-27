@@ -272,7 +272,12 @@ export function SettingsView() {
   const openAIRealtimeEngineLabel =
     "文字起こしエンジン: OpenAI Realtime API、音声をOpenAIへ送信";
   const isSettingsViewBusy =
-    updateMutation.isPending || isSelectingOutputDirectory || isFetchingSettings;
+    updateMutation.isPending ||
+    isSelectingOutputDirectory ||
+    isFetchingSettings ||
+    isFetchingDevices ||
+    isFetchingDefaultOutputDir ||
+    isCheckingPermissions;
 
   return (
     <div className="settings-view" aria-busy={isSettingsViewBusy}>

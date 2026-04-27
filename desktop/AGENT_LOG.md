@@ -4519,3 +4519,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限ダイアログや実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: broaden settings busy state
+
+- 開始日時: 2026-04-27 18:22 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面全体の処理中状態に、マイクデバイス再取得、デフォルト出力先取得、macOS 権限確認も含める。
+- 結果: `isSettingsViewBusy` の条件にマイクデバイス再取得、デフォルト出力先取得、macOS 権限確認を追加し、設定画面全体の busy 状態を広げた。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS フォルダ選択/権限ダイアログと実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
