@@ -13,6 +13,7 @@ interface TranscriptionControlsProps {
   isTranscriptionOperationPending: boolean;
   startBlockedReason: string | null;
   sourceStatusText: string | null;
+  sourceStatusIsWarning: boolean;
   segmentsCount: number;
   onClearTranscript: () => void;
 }
@@ -27,11 +28,12 @@ export function TranscriptionControls({
   isTranscriptionOperationPending,
   startBlockedReason,
   sourceStatusText,
+  sourceStatusIsWarning,
   segmentsCount,
   onClearTranscript,
 }: TranscriptionControlsProps) {
   const sourceStatusClassName =
-    sourceStatusText && sourceStatusText !== "文字起こし中: 自分 / 相手側"
+    sourceStatusText && sourceStatusIsWarning
       ? "transcription-source-status transcription-source-status-warning"
       : "transcription-source-status";
 

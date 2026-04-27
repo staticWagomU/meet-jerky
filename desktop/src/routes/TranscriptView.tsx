@@ -812,6 +812,8 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const transcriptionSourceStatusIsWarning =
+    isTranscribing && !(isMicRecording && isSystemAudioRecording);
   const transcriptionStartBlockedReason = getTranscriptionStartBlockedReason(
     isTranscribing,
     isAnySourceRecording,
@@ -1044,6 +1046,7 @@ export function TranscriptView() {
         isTranscriptionOperationPending={isTranscriptionOperationPending}
         startBlockedReason={transcriptionStartBlockedReason}
         sourceStatusText={transcriptionSourceStatus}
+        sourceStatusIsWarning={transcriptionSourceStatusIsWarning}
         segmentsCount={segments.length}
         onClearTranscript={handleClearTranscript}
       />
