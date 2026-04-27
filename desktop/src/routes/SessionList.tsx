@@ -256,6 +256,7 @@ function SessionRow({
       <div
         className="session-list-item-actions"
         role="group"
+        aria-busy={isOpeningThisFile || isRevealingThisFile}
         aria-label={`セッション操作: ${session.title}`}
         title={`セッション操作: ${session.title}`}
       >

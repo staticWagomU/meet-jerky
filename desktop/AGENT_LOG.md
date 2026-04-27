@@ -4477,3 +4477,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機 VoiceOver 確認と文字起こし実操作は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: mark session row actions busy
+
+- 開始日時: 2026-04-27 18:18 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴でファイルを開く/フォルダを開く操作中の行を、操作グループ単位でも支援技術に伝える。
+- 結果: 該当セッション行の actions group に操作中だけ `aria-busy` を反映し、ファイル/フォルダを開いている行を示すようにした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。OS のファイルオープン実操作と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
