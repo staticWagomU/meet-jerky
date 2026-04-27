@@ -4267,3 +4267,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限ダイアログと実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: tune meeting detection live region
+
+- 開始日時: 2026-04-27 17:33 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中の邪魔にならない通知方針に合わせ、会議検知バナーの live region 強度を状態別に明示する。
+- 結果: 会議検知バナーの role を変数化し、通常の検知は `status` + polite、検知リスナー失敗時は `alert` + assertive にした。aria-atomic も追加した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。会議アプリ実機起動、macOS 通知、実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

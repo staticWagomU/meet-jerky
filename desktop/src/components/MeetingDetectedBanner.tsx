@@ -77,11 +77,14 @@ export function MeetingDetectedBanner() {
     ? `${displayName} の記録状態を確認`
     : "記録状態を確認";
   const dismissBannerLabel = "会議検知バナーを閉じる";
+  const bannerRole = listenerError ? "alert" : "status";
 
   return (
     <div
       className="meeting-detected-banner"
-      role={listenerError ? "alert" : "status"}
+      role={bannerRole}
+      aria-live={bannerRole === "alert" ? "assertive" : "polite"}
+      aria-atomic="true"
       aria-label={bannerAriaLabel}
       title={bannerMessage}
     >
