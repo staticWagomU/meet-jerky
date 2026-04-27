@@ -746,7 +746,11 @@ export function SettingsView() {
           aria-label={saveSettingsLabel}
           title={saveSettingsLabel}
         >
-          {updateMutation.isPending ? "保存中..." : "設定を保存"}
+          {updateMutation.isPending
+            ? "保存中..."
+            : hasChanges
+              ? "設定を保存"
+              : "保存済み"}
         </button>
       </div>
 

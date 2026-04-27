@@ -6438,6 +6438,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で出力先取得エラー時の無効ボタン理由が自然に伝わるか確認する。
 
+### Settings UX: show saved state on save button
+
+- 開始日時: 2026-04-28 07:14 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定変更がないときの保存ボタン可視表示を状態に合った表記へ揃える。
+- 結果: 変更がないため保存ボタンが disabled のとき、表示を `設定を保存` ではなく `保存済み` に変更した。保存中と未保存変更ありの表示、disabled 条件、保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で保存済み表示がボタン幅や導線として自然に見えるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
