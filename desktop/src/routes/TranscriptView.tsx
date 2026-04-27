@@ -902,6 +902,7 @@ export function TranscriptView() {
           aria-live="polite"
           aria-atomic="true"
           aria-label={meetingStatusAriaLabel}
+          title={meetingStatusAriaLabel}
         >
           <span
             className={`meeting-status-pill ${
