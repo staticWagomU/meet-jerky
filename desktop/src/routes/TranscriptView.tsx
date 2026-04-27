@@ -85,7 +85,7 @@ function getTranscriptionSourceStatus(
   if (isSystemAudioRecording) {
     return "文字起こし中: 相手側のみ / 自分は未録音";
   }
-  return "文字起こし中: 音声ソースなし";
+  return "文字起こし中: 音声ソース未開始";
 }
 
 function getTranscriptionSourceArg(
@@ -193,7 +193,7 @@ function getAudioSourceStatusAriaText(
   if (isSystemAudioRecording) {
     return "相手側のみ取得中、自分は未録音";
   }
-  return "音声ソースなし";
+  return "音声ソース未開始";
 }
 
 function getAudioSourceNotice(

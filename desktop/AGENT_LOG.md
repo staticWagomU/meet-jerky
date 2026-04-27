@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify no source status
+
+- 開始日時: 2026-04-28 04:16 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、音声ソースがない状態の説明を原因が分かる表現へ揃える。
+- 結果: 文字起こし中の音声ソース説明と音声ソース aria 文言を `音声ソースなし` から `音声ソース未開始` に変更した。短い status pill の `なし` 表示、録音/取得状態判定、文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で音声ソース未開始状態が分かりやすいか確認する。
+
 ### Transcript UX: clarify one-sided source status
 
 - 開始日時: 2026-04-28 04:13 JST
