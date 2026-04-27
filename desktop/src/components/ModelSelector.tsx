@@ -421,7 +421,7 @@ function DownloadStatus({
           onClick={() => refetchDownloaded()}
           disabled={isFetchingDownloaded}
         >
-          {isFetchingDownloaded ? "確認中..." : "再確認"}
+          {isFetchingDownloaded ? "確認中..." : "状態を再確認"}
         </button>
       </div>
     );

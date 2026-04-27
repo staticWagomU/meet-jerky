@@ -1,5 +1,19 @@
 # Agent Log
 
+### Status Retry UX: clarify recheck buttons
+
+- 開始日時: 2026-04-28 07:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Whisper モデル/API キー状態確認エラー後の再確認ボタンが何を確認する操作か可視表示でも分かるようにする。
+- 結果: エラー時の再試行ボタン表示を `再確認` から `状態を再確認` に変更した。状態取得処理、aria/title、API キー/モデル処理には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で状態再確認ボタンの幅が不自然に広がらないか確認する。
+
 ### Transcript UX: clarify inactive meeting recording state
 
 - 開始日時: 2026-04-28 07:07 JST

@@ -998,7 +998,7 @@ function ExternalApiKeySection({
               aria-label={refetchApiKeyStatusLabel}
               title={refetchApiKeyStatusLabel}
             >
-              {isFetchingHasKey ? "確認中..." : "再確認"}
+              {isFetchingHasKey ? "確認中..." : "状態を再確認"}
             </button>
           </div>
         )}
