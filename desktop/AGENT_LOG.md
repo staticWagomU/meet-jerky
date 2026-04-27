@@ -6480,6 +6480,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI でコピー操作のボタン幅とツールバー密度が自然に保たれるか確認する。
 
+### Settings UX: prioritize output directory fetching state
+
+- 開始日時: 2026-04-28 07:31 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、デフォルト出力先ディレクトリ再取得中に前回エラー表示が残らないよう状態表示を揃える。
+- 結果: カスタム出力先がなくデフォルト出力先を取得中の場合、mode pill を `取得中` にし、リセットボタンの aria/title も `出力先ディレクトリを取得中` を優先するようにした。出力先取得、フォルダ選択、保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で出力先再取得中の mode pill と無効ボタン理由が自然に切り替わるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

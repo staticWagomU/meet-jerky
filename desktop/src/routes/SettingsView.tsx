@@ -255,6 +255,8 @@ export function SettingsView() {
       : "現在の出力先ディレクトリは未設定です";
   const outputDirectoryModeLabel = localSettings.outputDirectory
     ? "カスタム"
+    : isFetchingDefaultOutputDir
+      ? "取得中"
     : defaultOutputDirError
       ? "確認できません"
     : "デフォルト";
@@ -265,6 +267,8 @@ export function SettingsView() {
     ? "出力先ディレクトリを選択中"
     : localSettings.outputDirectory
       ? "出力先ディレクトリをデフォルトに戻す"
+    : isFetchingDefaultOutputDir
+      ? "出力先ディレクトリを取得中"
     : defaultOutputDirError
       ? "出力先ディレクトリを取得できないため戻せません"
       : "出力先ディレクトリはデフォルトです";
