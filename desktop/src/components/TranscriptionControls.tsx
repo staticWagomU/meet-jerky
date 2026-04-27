@@ -36,6 +36,12 @@ export function TranscriptionControls({
     sourceStatusText && sourceStatusIsWarning
       ? "transcription-source-status transcription-source-status-warning"
       : "transcription-source-status";
+  const transcriptionButtonLabel = isTranscriptionOperationPending
+    ? "文字起こしを処理中"
+    : isTranscribing
+      ? "文字起こしを停止"
+      : "文字起こしを開始";
+  const clearTranscriptLabel = `文字起こし ${segmentsCount} 件をクリア`;
 
   return (
     <>
@@ -58,13 +64,8 @@ export function TranscriptionControls({
             (!canStartTranscription && !isTranscribing)
           }
           className={`control-btn ${isTranscribing ? "control-btn-transcribing" : "control-btn-transcribe"}`}
-          aria-label={
-            isTranscriptionOperationPending
-              ? "文字起こしを処理中"
-              : isTranscribing
-                ? "文字起こしを停止"
-                : "文字起こしを開始"
-          }
+          aria-label={transcriptionButtonLabel}
+          title={transcriptionButtonLabel}
           aria-describedby={
             startBlockedReason ? TRANSCRIPTION_START_BLOCKED_REASON_ID : undefined
           }
@@ -81,7 +82,8 @@ export function TranscriptionControls({
             type="button"
             onClick={onClearTranscript}
             className="control-btn control-btn-clear"
-            aria-label={`文字起こし ${segmentsCount} 件をクリア`}
+            aria-label={clearTranscriptLabel}
+            title={clearTranscriptLabel}
           >
             クリア
           </button>
