@@ -121,6 +121,9 @@ export function SessionList() {
   }
 
   const sessions = data ?? [];
+  const reloadSessionsLabel = isFetching
+    ? "セッション履歴一覧を読み込み中"
+    : "セッション履歴一覧を再読み込み";
 
   return (
     <div className="session-list">
@@ -131,11 +134,8 @@ export function SessionList() {
           className="control-btn control-btn-clear"
           onClick={() => refetch()}
           disabled={isFetching}
-          aria-label={
-            isFetching
-              ? "セッション履歴一覧を読み込み中"
-              : "セッション履歴一覧を再読み込み"
-          }
+          aria-label={reloadSessionsLabel}
+          title={reloadSessionsLabel}
         >
           {isFetching ? "読み込み中..." : "再読み込み"}
         </button>
@@ -199,6 +199,12 @@ function SessionRow({
     pendingAction?.kind === "open" && pendingAction.path === session.path;
   const isRevealingThisFile =
     pendingAction?.kind === "reveal" && pendingAction.path === session.path;
+  const openFileLabel = isOpeningThisFile
+    ? `ファイルを開いています: ${session.title}`
+    : `ファイルを開く: ${session.title}`;
+  const revealFileLabel = isRevealingThisFile
+    ? `フォルダを開いています: ${session.title}`
+    : `フォルダを開く: ${session.title}`;
 
   return (
     <li
@@ -219,11 +225,8 @@ function SessionRow({
         <button
           type="button"
           className="control-btn control-btn-transcribe"
-          aria-label={
-            isOpeningThisFile
-              ? `ファイルを開いています: ${session.title}`
-              : `ファイルを開く: ${session.title}`
-          }
+          aria-label={openFileLabel}
+          title={openFileLabel}
           onClick={() => onOpenFile(session.path)}
           disabled={isAnyActionPending}
         >
@@ -232,11 +235,8 @@ function SessionRow({
         <button
           type="button"
           className="control-btn control-btn-clear"
-          aria-label={
-            isRevealingThisFile
-              ? `フォルダを開いています: ${session.title}`
-              : `フォルダを開く: ${session.title}`
-          }
+          aria-label={revealFileLabel}
+          title={revealFileLabel}
           onClick={() => onRevealInFolder(session.path)}
           disabled={isAnyActionPending}
         >
