@@ -176,8 +176,8 @@ export function SettingsView() {
         );
       }
     } catch (e) {
-      console.error("フォルダ選択に失敗しました:", e);
-      showToast(`フォルダ選択に失敗しました: ${toErrorMessage(e)}`);
+      console.error("フォルダの選択に失敗しました:", e);
+      showToast(`フォルダの選択に失敗しました: ${toErrorMessage(e)}`);
     } finally {
       isSelectingOutputDirectoryRef.current = false;
       setIsSelectingOutputDirectory(false);
@@ -635,7 +635,7 @@ export function SettingsView() {
               aria-label={selectOutputDirectoryLabel}
               title={selectOutputDirectoryLabel}
             >
-              {isSelectingOutputDirectory ? "選択中..." : "フォルダ選択"}
+              {isSelectingOutputDirectory ? "選択中..." : "フォルダを選択"}
             </button>
             <button
               type="button"
