@@ -5499,3 +5499,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での設定 select 連続変更確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: use functional updates for remaining settings controls
+
+- 開始日時: 2026-04-27 23:40 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定フォームで直接 `localSettings` を展開する更新を残さず、連続変更時の上書きリスクを下げる。
+- 結果: 文字起こしエンジン radio とマイクデバイス select の `setLocalSettings` を functional update に変更し、直接 `{ ...localSettings }` する箇所が残っていないことを確認した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での設定 radio/select 連続変更確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

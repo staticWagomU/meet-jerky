@@ -327,10 +327,14 @@ export function SettingsView() {
               aria-describedby={ENGINE_NOTE_IDS.whisper}
               checked={localSettings.transcriptionEngine === "whisper"}
               onChange={() =>
-                setLocalSettings({
-                  ...localSettings,
-                  transcriptionEngine: "whisper" as TranscriptionEngineType,
-                })
+                setLocalSettings((current) =>
+                  current
+                    ? {
+                        ...current,
+                        transcriptionEngine: "whisper" as TranscriptionEngineType,
+                      }
+                    : current,
+                )
               }
             />
             <span>ローカル (Whisper)</span>
@@ -346,10 +350,15 @@ export function SettingsView() {
               aria-describedby={ENGINE_NOTE_IDS.appleSpeech}
               checked={localSettings.transcriptionEngine === "appleSpeech"}
               onChange={() =>
-                setLocalSettings({
-                  ...localSettings,
-                  transcriptionEngine: "appleSpeech" as TranscriptionEngineType,
-                })
+                setLocalSettings((current) =>
+                  current
+                    ? {
+                        ...current,
+                        transcriptionEngine:
+                          "appleSpeech" as TranscriptionEngineType,
+                      }
+                    : current,
+                )
               }
             />
             <span>macOS SpeechAnalyzer</span>
@@ -368,10 +377,15 @@ export function SettingsView() {
               aria-describedby={ENGINE_NOTE_IDS.openAIRealtime}
               checked={localSettings.transcriptionEngine === "openAIRealtime"}
               onChange={() =>
-                setLocalSettings({
-                  ...localSettings,
-                  transcriptionEngine: "openAIRealtime" as TranscriptionEngineType,
-                })
+                setLocalSettings((current) =>
+                  current
+                    ? {
+                        ...current,
+                        transcriptionEngine:
+                          "openAIRealtime" as TranscriptionEngineType,
+                      }
+                    : current,
+                )
               }
             />
             <span>OpenAI Realtime API</span>
@@ -419,10 +433,11 @@ export function SettingsView() {
           title={microphoneDeviceLabel}
           value={localSettings.microphoneDeviceId ?? ""}
           onChange={(e) =>
-            setLocalSettings({
-              ...localSettings,
-              microphoneDeviceId: e.target.value || null,
-            })
+            setLocalSettings((current) =>
+              current
+                ? { ...current, microphoneDeviceId: e.target.value || null }
+                : current,
+            )
           }
           className="settings-select"
         >
