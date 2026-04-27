@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify API key action buttons
+
+- 開始日時: 2026-04-28 07:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、OpenAI / ElevenLabs API キー欄の保存/削除ボタンがキー操作だと可視表示でも分かるようにする。
+- 結果: API キー操作ボタンの通常表示を `保存` / `削除` から `キーを保存` / `キーを削除` に変更した。Keychain 操作、aria/title、入力値の扱いには触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で API キー欄のボタン幅が過度に広がらないか確認する。
+
 ### Transcript UX: merge latest scroll control
 
 - 開始日時: 2026-04-28 07:23 JST

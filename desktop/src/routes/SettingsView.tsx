@@ -1024,7 +1024,7 @@ function ExternalApiKeySection({
             aria-label={saveApiKeyLabel}
             title={saveApiKeyLabel}
           >
-            {setMutation.isPending ? "保存中..." : "保存"}
+            {setMutation.isPending ? "保存中..." : "キーを保存"}
           </button>
           <button
             type="button"
@@ -1040,7 +1040,7 @@ function ExternalApiKeySection({
             aria-label={clearApiKeyLabel}
             title={clearApiKeyLabel}
           >
-            {clearMutation.isPending ? "削除中..." : "削除"}
+            {clearMutation.isPending ? "削除中..." : "キーを削除"}
           </button>
         </div>
         <div
