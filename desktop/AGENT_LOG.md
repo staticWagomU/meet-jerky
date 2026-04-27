@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings UX: clarify permission note track mapping
+
+- 開始日時: 2026-04-28 03:32 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限説明でマイクと画面収録がそれぞれどのトラックに必要かを明確化する。
+- 結果: 権限ステータスの通常説明を、マイクは自分トラック録音、画面収録は相手側音声取得に必要だと分かる文言へ変更した。権限チェック処理、設定保存、バッジ表示には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面で権限説明が長すぎず、トラック対応として自然に読めるか確認する。
+
 ### Permission UX: clarify banner recording and capture scope
 
 - 開始日時: 2026-04-28 03:31 JST
