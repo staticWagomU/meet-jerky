@@ -3329,3 +3329,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: warn on partial transcription source status
+
+- 開始日時: 2026-04-27 10:03 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし中の source status で、片側トラックのみまたは音声ソースなしが通常状態に見えないようにする。
+- 結果: `文字起こし中: 自分 / 相手側` 以外の source status には既存の warning class を付けるようにした。表示文言、録音/キャプチャ/文字起こし処理、開始可否判定は変更していない。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と片側トラックのみの実機確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

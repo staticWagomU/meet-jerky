@@ -30,6 +30,11 @@ export function TranscriptionControls({
   segmentsCount,
   onClearTranscript,
 }: TranscriptionControlsProps) {
+  const sourceStatusClassName =
+    sourceStatusText && sourceStatusText !== "文字起こし中: 自分 / 相手側"
+      ? "transcription-source-status transcription-source-status-warning"
+      : "transcription-source-status";
+
   return (
     <>
       {showModelSelector && (
@@ -83,7 +88,7 @@ export function TranscriptionControls({
 
       {sourceStatusText && (
         <div
-          className="transcription-source-status"
+          className={sourceStatusClassName}
           role="status"
           aria-live="polite"
           aria-atomic="true"
