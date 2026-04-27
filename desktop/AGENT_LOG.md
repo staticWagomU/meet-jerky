@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify meeting button assistive label
+
+- 開始日時: 2026-04-28 03:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議開始/終了ボタンの aria/title を、実際に始まる録音と文字起こしが分かる説明へ揃える。
+- 結果: 会議ボタンの補助ラベルを `会議記録を開始/終了/処理中` から `会議の録音と文字起こしを開始/終了/処理中` へ変更した。表示ボタン文言、会議開始/終了処理、セッション保存には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で会議ボタンが録音と文字起こしの操作として自然に読まれるか確認する。
+
 ### Transcript UX: clarify missing source transcription impact
 
 - 開始日時: 2026-04-28 03:25 JST

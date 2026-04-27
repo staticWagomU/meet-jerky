@@ -984,10 +984,10 @@ export function TranscriptView() {
     .filter(Boolean)
     .join("、");
   const meetingButtonLabel = isMeetingOperationPending
-    ? "会議記録を処理中"
+    ? "会議の録音と文字起こしを処理中"
     : isMeetingActive
-      ? "会議記録を終了"
-      : "会議記録を開始";
+      ? "会議の録音と文字起こしを終了"
+      : "会議の録音と文字起こしを開始";
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const modelDownloadedErrorMessage = modelDownloadedErrorForUi
