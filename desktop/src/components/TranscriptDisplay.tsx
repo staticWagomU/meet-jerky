@@ -383,12 +383,21 @@ export function TranscriptDisplay({
       )}
       {copyError && (
         <div
-          className="transcript-copy-error"
+          className="transcript-copy-error transcript-copy-error-dismissible"
           role="alert"
           aria-label={`文字起こしコピーエラー: ${copyError}`}
           title={`文字起こしコピーエラー: ${copyError}`}
         >
-          {copyError}
+          <span>{copyError}</span>
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            onClick={() => setCopyError(null)}
+            aria-label="文字起こしコピーエラーを閉じる"
+            title="文字起こしコピーエラーを閉じる"
+          >
+            閉じる
+          </button>
         </div>
       )}
       {resultListenerError && (

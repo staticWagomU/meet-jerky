@@ -753,6 +753,18 @@
   background-color: var(--transcript-error-bg);
 }
 
+.transcript-copy-error-dismissible {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.transcript-copy-error-dismissible > span {
+  flex: 1 1 12rem;
+}
+
 .copy-btn {
   flex-shrink: 0;
   padding: 0.2em 0.6em;

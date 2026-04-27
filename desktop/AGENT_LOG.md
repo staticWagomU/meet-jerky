@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Copy UX: make copy errors dismissible
+
+- 開始日時: 2026-04-28 07:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしコピー失敗後のエラー表示を会議中に邪魔になり続けないよう閉じられる表示にする。
+- 結果: コピーエラー表示に `閉じる` ボタンを追加し、既存の dismissible error と同じ flex レイアウトで表示する CSS を追加した。コピー処理、受信エラー表示、文字起こしデータには触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でコピーエラー表示の閉じるボタンがログ領域を圧迫しないか確認する。
+
 ### Status Retry UX: clarify recheck buttons
 
 - 開始日時: 2026-04-28 07:19 JST
