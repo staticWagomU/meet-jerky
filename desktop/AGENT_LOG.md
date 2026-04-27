@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings UX: align permission denied wording
+
+- 開始日時: 2026-04-28 03:42 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限ステータスで `拒否` と `未許可` の表記揺れをなくす。
+- 結果: 設定画面の denied badge を `未許可` に変更し、権限説明文も `拒否または未確認` から `未許可または未確認` に揃えた。権限チェック処理、バッジ class、再チェック処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面の権限 badge が権限バナーと同じ意味で自然に読めるか確認する。
+
 ### Transcript UX: align meeting Realtime key block reason
 
 - 開始日時: 2026-04-28 03:41 JST
