@@ -996,6 +996,8 @@ export function TranscriptView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
+            aria-label={`会議開始不可理由: ${meetingStartBlockedReason}`}
+            title={`会議開始不可理由: ${meetingStartBlockedReason}`}
           >
             {meetingStartBlockedReason}
           </p>
