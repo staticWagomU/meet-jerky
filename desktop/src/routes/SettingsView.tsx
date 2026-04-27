@@ -200,6 +200,8 @@ export function SettingsView() {
       <div
         className="settings-view"
         role="status"
+        aria-live="polite"
+        aria-atomic="true"
         aria-label="アプリ設定を読み込み中"
       >
         読み込み中...
@@ -545,6 +547,8 @@ function PermissionBadge({
     <span
       className={`settings-permission-badge${className ? ` ${className}` : ""}`}
       role="status"
+      aria-live="polite"
+      aria-atomic="true"
       aria-label={`${label}: ${text}`}
     >
       {text}
@@ -726,6 +730,7 @@ function OpenAIApiKeySection({
           className="settings-api-key-status"
           role="status"
           aria-live="polite"
+          aria-atomic="true"
           aria-label={`OpenAI API キー状態: ${
             isFetchingHasKey
               ? "確認中"
