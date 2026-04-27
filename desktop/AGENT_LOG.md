@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: expose paused autoscroll state
+
+- 開始日時: 2026-04-28 07:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログを手動スクロールして最新追従が止まった状態を支援技術向けラベルでも分かるようにする。
+- 結果: transcript wrapper の aria/title に、コピー中状態に加えて `最新追従を一時停止中` を含めるようにした。可視表示、スクロール挙動、文字起こし受信には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でログを上へ戻した際に最新追従停止状態が自然に読まれるか確認する。
+
 ### Settings UX: polish browser permission note
 
 - 開始日時: 2026-04-28 07:25 JST

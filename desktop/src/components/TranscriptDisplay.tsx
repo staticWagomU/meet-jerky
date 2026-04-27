@@ -305,9 +305,13 @@ export function TranscriptDisplay({
       ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
       : "文字起こしログは空です";
   const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
-  const transcriptWrapperLabel = isCopying
-    ? `${transcriptCountsLabel}、コピー中`
-    : transcriptCountsLabel;
+  const transcriptWrapperLabel = [
+    transcriptCountsLabel,
+    isCopying ? "コピー中" : null,
+    !autoScroll && segments.length > 0 ? "最新追従を一時停止中" : null,
+  ]
+    .filter(Boolean)
+    .join("、");
   const copyButtonLabel =
     copyableSegmentsCount === 0
       ? "コピーできる文字起こしはありません"
