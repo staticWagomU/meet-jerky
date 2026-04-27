@@ -5849,3 +5849,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で未許可バナーの本文が会議前に必要十分な説明として読めるか確認する。
+
+### System audio UX: clarify other-side track source
+
+- 開始日時: 2026-04-28 01:28 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、相手側トラックがシステム音声由来であり、画面収録権限が必要なことを録音操作付近で分かりやすくする。
+- 結果: システム音声セクションの注記を `相手側トラックはシステム音声から取得します。macOSの画面収録許可が必要です` に更新し、録音制御や権限確認処理には触れなかった。
+- 変更ファイル: `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でシステム音声セクションの注記が折り返し過多にならず、相手側トラックの意味が伝わるか確認する。
