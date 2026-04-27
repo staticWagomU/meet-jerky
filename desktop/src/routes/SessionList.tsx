@@ -13,7 +13,10 @@ function getFileName(path: string): string {
 }
 
 function getSessionDisplayTitle(title: string): string {
-  return title.replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "");
+  const displayTitle = title
+    .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
+    .trim();
+  return displayTitle || "無題の会議";
 }
 
 /**

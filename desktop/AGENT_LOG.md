@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Session list UX: fallback empty display title
+
+- 開始日時: 2026-04-28 03:17 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧の表示タイトル整形で、壊れたヘッダや空タイトルから空文字が表示されないようにする。
+- 結果: タイトル末尾日時を除去した後に trim し、空になった場合は `無題の会議` を表示・aria/title に使うようにした。保存形式、バックエンド summary、ファイル名には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で空または壊れた履歴ヘッダが一覧表示を崩さないことを確認する。
+
 ### Session list UX: avoid duplicated timestamp in title
 
 - 開始日時: 2026-04-28 03:15 JST
