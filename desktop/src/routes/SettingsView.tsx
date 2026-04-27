@@ -480,6 +480,7 @@ export function SettingsView() {
           <div className="settings-output-summary">
             <span
               className="settings-output-mode"
+              aria-label={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
               title={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
             >
               {outputDirectoryModeLabel}
