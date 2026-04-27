@@ -32,7 +32,16 @@ export function MicrophoneSection({
   const micLevelPercent = Math.round(
     sanitizeAudioLevelForDisplay(micLevel) * 100,
   );
-  const micStateText = isMicRecording ? "録音中" : "未録音";
+  const micStateText = isOperationPending
+    ? "処理中"
+    : isMicRecording
+      ? "録音中"
+      : "未録音";
+  const micStateClassName = isOperationPending
+    ? "audio-source-state-badge-pending"
+    : isMicRecording
+      ? "audio-source-state-badge-active"
+      : "audio-source-state-badge-idle";
   const micStateDescription = `マイク 自分トラック: ${micStateText}`;
   const micButtonLabel = isOperationPending
     ? "自分トラックのマイク録音を処理中"
@@ -59,11 +68,7 @@ export function MicrophoneSection({
         <span>マイク</span>
         <span className="audio-source-track-badge">自分</span>
         <span
-          className={`audio-source-state-badge ${
-            isMicRecording
-              ? "audio-source-state-badge-active"
-              : "audio-source-state-badge-idle"
-          }`}
+          className={`audio-source-state-badge ${micStateClassName}`}
           role="status"
           aria-live="polite"
           aria-atomic="true"

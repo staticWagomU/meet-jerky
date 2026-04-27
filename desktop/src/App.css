@@ -475,6 +475,11 @@
   background-color: var(--audio-source-idle-bg);
 }
 
+.audio-source-state-badge-pending {
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
+}
+
 .section-divider {
   border-top: 1px solid var(--color-border);
   margin: 0.2rem 0;

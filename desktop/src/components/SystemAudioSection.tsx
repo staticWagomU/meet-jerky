@@ -19,7 +19,16 @@ export function SystemAudioSection({
   const systemAudioLevelPercent = Math.round(
     sanitizeAudioLevelForDisplay(systemAudioLevel) * 100,
   );
-  const systemAudioStateText = isSystemAudioRecording ? "取得中" : "未取得";
+  const systemAudioStateText = isOperationPending
+    ? "処理中"
+    : isSystemAudioRecording
+      ? "取得中"
+      : "未取得";
+  const systemAudioStateClassName = isOperationPending
+    ? "audio-source-state-badge-pending"
+    : isSystemAudioRecording
+      ? "audio-source-state-badge-active"
+      : "audio-source-state-badge-idle";
   const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
     ? "相手側トラックのシステム音声キャプチャを処理中"
@@ -39,11 +48,7 @@ export function SystemAudioSection({
         <span>システム音声</span>
         <span className="audio-source-track-badge">相手側</span>
         <span
-          className={`audio-source-state-badge ${
-            isSystemAudioRecording
-              ? "audio-source-state-badge-active"
-              : "audio-source-state-badge-idle"
-          }`}
+          className={`audio-source-state-badge ${systemAudioStateClassName}`}
           role="status"
           aria-live="polite"
           aria-atomic="true"
