@@ -4113,3 +4113,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認とモデルダウンロード実機確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: label unsaved settings status
+
+- 開始日時: 2026-04-27 15:41 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の未保存状態が、表示だけでなく支援技術にも状態名として伝わるようにする。
+- 結果: 未保存 status のラベルを定数化し、`aria-label` と `title` で共有した。設定保存処理、変更判定、保存ボタンの有効/無効判定は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI/支援技術での読み上げ確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

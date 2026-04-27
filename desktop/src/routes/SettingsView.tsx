@@ -257,6 +257,7 @@ export function SettingsView() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS権限状態を確認中"
     : "macOS権限状態を再チェック";
+  const unsavedSettingsLabel = "未保存の変更があります";
   const saveSettingsLabel = updateMutation.isPending
     ? "設定を保存中"
     : hasChanges
@@ -548,7 +549,8 @@ export function SettingsView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            title="未保存の変更があります"
+            aria-label={unsavedSettingsLabel}
+            title={unsavedSettingsLabel}
           >
             未保存の変更があります
           </span>
