@@ -908,6 +908,7 @@ export function TranscriptView() {
                 ? "meeting-status-pill-active"
                 : "meeting-status-pill-idle"
             }`}
+            title={isMeetingActive ? "会議記録: 記録中" : "会議記録: 待機中"}
           >
             {isMeetingActive ? "記録中" : "待機中"}
           </span>
@@ -917,27 +918,36 @@ export function TranscriptView() {
                 ? "meeting-status-pill-active"
                 : "meeting-status-pill-idle"
             }`}
+            title={
+              isTranscribing
+                ? "文字起こし: 実行中"
+                : "文字起こし: 停止中"
+            }
           >
             {isTranscribing ? "文字起こし中" : "文字起こし停止"}
           </span>
           <span
             className={`meeting-status-pill ${getAudioSourceStatusPillClass(audioSourceStatusLabel)}`}
+            title={`音声ソース: ${audioSourceStatusAriaText}`}
           >
             音声 {audioSourceStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${getEngineStatusPillClass(engineStatusLabel)}`}
+            title={`文字起こしエンジン: ${engineStatusLabel}`}
           >
             エンジン {engineStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
+            title={`AI送信: ${aiTransmissionStatusLabel}`}
           >
             AI送信 {aiTransmissionStatusLabel}
           </span>
           {openAIApiKeyStatusLabel && (
             <span
               className={`meeting-status-pill ${getOpenAIApiKeyStatusPillClass(openAIApiKeyStatusLabel)}`}
+              title={`OpenAI APIキー: ${openAIApiKeyStatusLabel}`}
             >
               APIキー {openAIApiKeyStatusLabel}
             </span>
