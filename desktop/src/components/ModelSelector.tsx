@@ -216,9 +216,9 @@ export function ModelSelector({
   const modelsErrorMessage = modelsError ? toErrorMessage(modelsError) : "";
   const modelSelectorLabel = [
     `Whisperモデル選択: ${selectedModel}`,
-    isFetchingModels ? "モデル一覧を取得中" : null,
+    isFetchingModels ? "Whisperモデル一覧を取得中" : null,
     downloadingModel ? `${downloadingModel} をダウンロード中` : null,
-    modelsError ? `モデル一覧エラー: ${modelsErrorMessage}` : null,
+    modelsError ? `Whisperモデル一覧エラー: ${modelsErrorMessage}` : null,
   ]
     .filter(Boolean)
     .join("、");
@@ -231,7 +231,7 @@ export function ModelSelector({
       title={modelSelectorLabel}
     >
       <label htmlFor="model-select" className="model-select-label">
-        モデル:
+        Whisperモデル:
       </label>
       <select
         id="model-select"
@@ -274,7 +274,7 @@ export function ModelSelector({
             aria-label={`Whisperモデル一覧エラー: ${modelsErrorMessage}`}
             title={`Whisperモデル一覧エラー: ${modelsErrorMessage}`}
           >
-            モデル一覧の取得に失敗しました: {modelsErrorMessage}
+            Whisperモデル一覧の取得に失敗しました: {modelsErrorMessage}
           </span>
           <button
             type="button"
@@ -352,7 +352,7 @@ function DownloadStatus({
 
   if (downloadingModel === selectedModel) {
     const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
-    const progressLabel = `${selectedModel} モデルダウンロード進捗`;
+    const progressLabel = `${selectedModel} Whisperモデルダウンロード進捗`;
     return (
       <div className="download-progress-wrapper">
         <div
@@ -376,7 +376,7 @@ function DownloadStatus({
   }
 
   if (isDownloaded) {
-    const readyLabel = `${selectedModel} モデルは準備完了`;
+    const readyLabel = `${selectedModel} Whisperモデルは準備完了`;
     return (
       <span
         className="model-status-ready"
@@ -393,10 +393,10 @@ function DownloadStatus({
 
   if (isDownloadedError) {
     const downloadedErrorMessage = toErrorMessage(isDownloadedError);
-    const downloadedErrorLabel = `${selectedModel} モデル状態エラー: ${downloadedErrorMessage}`;
+    const downloadedErrorLabel = `${selectedModel} Whisperモデル状態エラー: ${downloadedErrorMessage}`;
     const refetchDownloadedLabel = isFetchingDownloaded
-      ? `${selectedModel} のモデル状態を確認中`
-      : `${selectedModel} のモデル状態を再確認`;
+      ? `${selectedModel} のWhisperモデル状態を確認中`
+      : `${selectedModel} のWhisperモデル状態を再確認`;
     return (
       <div className="download-status-wrapper">
         <span
@@ -405,7 +405,7 @@ function DownloadStatus({
           aria-label={downloadedErrorLabel}
           title={downloadedErrorLabel}
         >
-          モデル状態の確認に失敗しました: {downloadedErrorMessage}
+          Whisperモデル状態の確認に失敗しました: {downloadedErrorMessage}
         </span>
         <button
           type="button"
@@ -422,7 +422,7 @@ function DownloadStatus({
   }
 
   const downloadButtonLabel = isFetchingDownloaded
-    ? `${selectedModel} のモデル状態を確認中`
+    ? `${selectedModel} のWhisperモデル状態を確認中`
     : downloadingModel
       ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
       : `${selectedModel} をダウンロード`;

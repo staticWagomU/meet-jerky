@@ -5961,3 +5961,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: ローカル Whisper 選択時のモデル状態エラー本文が `aria-label` と同じ意味で読めるか確認する。
+
+### Model selector UX: clarify Whisper-only model labels
+
+- 開始日時: 2026-04-28 01:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、外部 Realtime エンジン追加後に混同しやすい ModelSelector の汎用 `モデル` 表記を Whisper 専用であることが分かる表記へ揃える。
+- 結果: モデル選択ラベル、一覧取得エラー、ダウンロード進捗、準備完了、状態確認エラー/再確認ラベルを `Whisperモデル` 表記に更新した。モデル取得、ダウンロード、状態判定の処理には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: ローカル Whisper 選択時にモデル選択・進捗・状態エラーの各表示が Whisper 専用 UI として自然に読めるか確認する。
