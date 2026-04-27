@@ -204,6 +204,7 @@
 .nav {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
   margin-bottom: 1rem;

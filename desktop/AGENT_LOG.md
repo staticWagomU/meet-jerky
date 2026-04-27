@@ -5107,3 +5107,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: allow primary navigation to wrap
+
+- 開始日時: 2026-04-27 21:28 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 上部ナビゲーションが狭幅ウィンドウで横方向に詰まった場合でも、リンクが自然に折り返せるようにする。
+- 結果: `.nav` に `flex-wrap: wrap` を追加し、短いナビゲーションリンクが狭幅でもコンテナ内に収まりやすくした。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での狭幅表示確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
