@@ -210,12 +210,12 @@ function getAudioSourceNotice(
     return null;
   }
   if (isMicRecording) {
-    return "相手側トラックは未取得です。相手側の発話は記録されません。";
+    return "相手側トラックは未取得です。相手側の発話は文字起こしされません。";
   }
   if (isSystemAudioRecording) {
-    return "自分トラックは未録音です。自分の発話は記録されません。";
+    return "自分トラックは未録音です。自分の発話は文字起こしされません。";
   }
-  return "音声ソース未開始です。自分 / 相手側トラックは記録されません。";
+  return "音声ソース未開始です。自分 / 相手側トラックは文字起こしされません。";
 }
 
 function getAudioSourceStatusPillClass(

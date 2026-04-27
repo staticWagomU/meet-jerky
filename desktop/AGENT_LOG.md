@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify missing source transcription impact
+
+- 開始日時: 2026-04-28 03:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、片方の音声ソースが未開始のときの注意文を、録音全体ではなく文字起こし結果への影響として明確化する。
+- 結果: 音声ソース注意文の `発話は記録されません` / `トラックは記録されません` を `文字起こしされません` へ変更した。録音/取得状態、文字起こし開始条件、セッション保存には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で注意文が過度に長くならず、欠けるトラックの影響として自然に読めるか確認する。
+
 ### Transcript UX: label meeting recording status clearly
 
 - 開始日時: 2026-04-28 03:24 JST
