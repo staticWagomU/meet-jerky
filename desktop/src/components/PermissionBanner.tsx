@@ -122,7 +122,7 @@ export function PermissionBanner() {
             {isCheckingPermissions
               ? "マイク権限の状態を確認しています。"
               : micPermissionError
-              ? "マイク権限の状態をmacOSから取得できませんでした。録音の可否が不明です。"
+              ? "マイク権限の状態をmacOSから取得できませんでした。自分トラック録音の可否が不明です。"
               : "マイクが未許可です。自分トラックは録音されません。"}
             <br />
             <strong>システム設定 &gt; プライバシーとセキュリティ &gt; マイク</strong>
