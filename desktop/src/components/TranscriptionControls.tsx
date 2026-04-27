@@ -89,8 +89,8 @@ export function TranscriptionControls({
           {isTranscriptionOperationPending
             ? "処理中..."
             : isTranscribing
-              ? "文字起こし停止"
-              : "文字起こし開始"}
+              ? "文字起こしを停止"
+              : "文字起こしを開始"}
         </button>
 
         {segmentsCount > 0 && (
