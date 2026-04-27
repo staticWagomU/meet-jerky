@@ -883,6 +883,18 @@
   color: #c44;
 }
 
+.meeting-error-dismissible {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.meeting-error-dismissible > span {
+  flex: 1 1 12rem;
+}
+
 .meeting-saved-path {
   color: var(--color-muted);
 }

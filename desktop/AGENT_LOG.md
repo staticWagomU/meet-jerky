@@ -4799,3 +4799,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実際のモデルダウンロード失敗操作は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: dismiss meeting operation errors
+
+- 開始日時: 2026-04-27 19:46 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装。会議操作エラー表示の局所 UI 改善で競合リスクが低いため、メインが直接編集した。
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 会議開始/停止/録音/文字起こし操作などの一時的な会議記録エラーを、確認後に閉じられるようにする。
+- 結果: `meetingError` 表示を閉じるボタン付き alert に変更し、専用の横並び CSS を追加した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。会議/録音/文字起こし実操作は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
