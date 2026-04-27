@@ -171,7 +171,11 @@ export function SettingsView() {
   if (settingsError) {
     return (
       <div className="settings-view">
-        <p className="settings-warning" role="alert">
+        <p
+          className="settings-warning"
+          role="alert"
+          aria-label={`アプリ設定読み込みエラー: ${String(settingsError)}`}
+        >
           設定の読み込みに失敗しました: {String(settingsError)}
         </p>
         <button
@@ -316,7 +320,11 @@ export function SettingsView() {
           ))}
         </select>
         {devicesError && (
-          <div className="settings-inline-error" role="alert">
+          <div
+            className="settings-inline-error"
+            role="alert"
+            aria-label={`マイクデバイス一覧エラー: ${String(devicesError)}`}
+          >
             <span>マイクデバイス一覧の取得に失敗しました: {String(devicesError)}</span>
             <button
               type="button"
@@ -372,7 +380,11 @@ export function SettingsView() {
             {localSettings.outputDirectory ?? defaultOutputDir ?? "未設定"}
           </span>
           {defaultOutputDirError && !localSettings.outputDirectory && (
-            <div className="settings-inline-error" role="alert">
+            <div
+              className="settings-inline-error"
+              role="alert"
+              aria-label={`デフォルト出力先ディレクトリエラー: ${String(defaultOutputDirError)}`}
+            >
               <span>
                 デフォルト出力先の取得に失敗しました: {String(defaultOutputDirError)}
               </span>
@@ -629,7 +641,11 @@ function OpenAIApiKeySection({
       </p>
       <div className="settings-api-key">
         {hasKeyError && (
-          <div className="settings-inline-error" role="alert">
+          <div
+            className="settings-inline-error"
+            role="alert"
+            aria-label={`OpenAI API キー状態エラー: ${String(hasKeyError)}`}
+          >
             <span>
               API キー状態の確認に失敗しました: {String(hasKeyError)}
             </span>
