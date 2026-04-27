@@ -5317,3 +5317,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での会議検知バナー表示と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: label meeting status pills
+
+- 開始日時: 2026-04-27 22:39 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議画面上部のステータス pill が、個別に読まれても会議記録/文字起こし/音声ソース等の意味を保持するようにする。
+- 結果: 会議記録、文字起こし、音声ソース、文字起こしエンジン、AI送信、OpenAI APIキーの各 status pill に `aria-label` を追加した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議画面ステータス pill と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

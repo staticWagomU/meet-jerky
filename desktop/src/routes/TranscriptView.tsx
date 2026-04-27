@@ -986,30 +986,35 @@ export function TranscriptView() {
         >
           <span
             className={`meeting-status-pill ${meetingRecordingStatusClass}`}
+            aria-label={`会議記録: ${meetingRecordingStatusLabel}`}
             title={`会議記録: ${meetingRecordingStatusLabel}`}
           >
             {meetingRecordingStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${transcriptionStatusClass}`}
+            aria-label={`文字起こし: ${transcriptionStatusLabel}`}
             title={`文字起こし: ${transcriptionStatusLabel}`}
           >
             {transcriptionStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${audioSourceStatusClass}`}
+            aria-label={`音声ソース: ${audioSourceStatusDisplayAriaText}`}
             title={`音声ソース: ${audioSourceStatusDisplayAriaText}`}
           >
             音声 {audioSourceStatusDisplayLabel}
           </span>
           <span
             className={`meeting-status-pill ${getEngineStatusPillClass(engineStatusLabel)}`}
+            aria-label={`文字起こしエンジン: ${engineStatusLabel}`}
             title={`文字起こしエンジン: ${engineStatusLabel}`}
           >
             エンジン {engineStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
+            aria-label={`AI送信: ${aiTransmissionStatusLabel}`}
             title={`AI送信: ${aiTransmissionStatusLabel}`}
           >
             AI送信 {aiTransmissionStatusLabel}
@@ -1017,6 +1022,7 @@ export function TranscriptView() {
           {openAIApiKeyStatusLabel && (
             <span
               className={`meeting-status-pill ${getOpenAIApiKeyStatusPillClass(openAIApiKeyStatusLabel)}`}
+              aria-label={`OpenAI APIキー: ${openAIApiKeyStatusLabel}`}
               title={`OpenAI APIキー: ${openAIApiKeyStatusLabel}`}
             >
               APIキー {openAIApiKeyStatusLabel}
