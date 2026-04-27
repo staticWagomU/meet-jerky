@@ -6382,6 +6382,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で `音声 未開始` の pill 幅と意味が自然か確認する。
 
+### Transcript UX: align API key missing label
+
+- 開始日時: 2026-04-28 06:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議画面の外部 API キー未登録状態を設定画面と同じ表記へ揃える。
+- 結果: 外部 API キーの status pill で `未設定` と表示していた状態を `未登録` に変更し、idle class 判定も同じ表記に合わせた。API キー有無確認、Keychain 操作、開始可否判定には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で OpenAI / ElevenLabs の API キー未登録 pill が設定画面と同じ意味で伝わるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

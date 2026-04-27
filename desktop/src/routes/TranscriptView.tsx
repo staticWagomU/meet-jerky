@@ -317,7 +317,7 @@ function getExternalApiKeyStatusLabel(
   if (hasExternalApiKey === undefined) {
     return "確認中";
   }
-  return hasExternalApiKey ? "登録済み" : "未設定";
+  return hasExternalApiKey ? "登録済み" : "未登録";
 }
 
 function getExternalApiKeyStatusPillClass(statusLabel: string | null): string {
@@ -327,7 +327,7 @@ function getExternalApiKeyStatusPillClass(statusLabel: string | null): string {
   if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "未設定") {
+  if (statusLabel === "未登録") {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
