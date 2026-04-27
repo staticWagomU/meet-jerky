@@ -1111,12 +1111,14 @@
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
+  max-width: min(32rem, calc(100vw - 2rem));
   padding: 0.6em 1.2em;
   background-color: var(--toast-bg);
   color: var(--toast-color);
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
+  overflow-wrap: anywhere;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   animation: toast-slide-up 0.3s ease-out;
