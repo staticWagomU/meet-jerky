@@ -262,7 +262,14 @@ fn validate_port(port: &str) -> Option<()> {
 }
 
 fn is_zoom_host(host: &str) -> bool {
-    host == "zoom.us" || host.ends_with(".zoom.us")
+    if host == "zoom.us" {
+        return true;
+    }
+
+    let Some(subdomain) = host.strip_suffix(".zoom.us") else {
+        return false;
+    };
+    !subdomain.is_empty() && subdomain.split('.').all(|label| !label.is_empty())
 }
 
 fn is_google_meet_url(host: &str, path: &str) -> bool {
@@ -597,6 +604,11 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/abc"), None);
         assert_eq!(
             classify_meeting_url("https://zoom.us/wc/join/123456789//"),
+            None
+        );
+        assert_eq!(classify_meeting_url("https://.zoom.us/j/123456789"), None);
+        assert_eq!(
+            classify_meeting_url("https://evil..zoom.us/j/123456789"),
             None
         );
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);
