@@ -101,6 +101,7 @@ export function TranscriptDisplay({
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const previousSegmentsRef = useRef(segments);
   const [copyError, setCopyError] = useState<string | null>(null);
   const [resultListenerError, setResultListenerError] = useState<string | null>(
     null,
@@ -215,6 +216,20 @@ export function TranscriptDisplay({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (previousSegmentsRef.current === segments) {
+      return;
+    }
+    previousSegmentsRef.current = segments;
+    if (copyFeedback) {
+      setCopyFeedback(false);
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+        copyFeedbackTimeoutRef.current = null;
+      }
+    }
+  }, [segments, copyFeedback]);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
