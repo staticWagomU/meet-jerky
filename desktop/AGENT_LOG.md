@@ -3469,3 +3469,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と狭幅ウィンドウでの目視確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: stabilize settings permission badge wrapping
+
+- 開始日時: 2026-04-27 10:44 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 設定画面の権限ステータスで、マイク/画面収録ラベル、トラック badge、状態 badge が狭幅でも読みにくくならないようにする。
+- 結果: `.settings-permission-label` に `flex-wrap: wrap` を追加し、`.settings-permission-badge` に `white-space: nowrap` を追加した。権限確認処理、表示文言、aria-label、再チェック処理は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と狭幅ウィンドウでの目視確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

@@ -1041,6 +1041,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  flex-wrap: wrap;
   font-weight: 500;
   min-width: 7em;
 }
@@ -1060,6 +1061,7 @@
   padding: 0.1em 0.5em;
   border-radius: 4px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .permission-granted {
