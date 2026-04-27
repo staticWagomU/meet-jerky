@@ -242,7 +242,7 @@ function getAiTransmissionStatusLabel(
   if (engine === "openAIRealtime") {
     return "OpenAI";
   }
-  return "なし";
+  return "端末内";
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
@@ -252,7 +252,7 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === "確認失敗") {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "なし") {
+  if (statusLabel === "端末内") {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
