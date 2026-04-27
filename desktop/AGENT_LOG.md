@@ -5457,3 +5457,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での会議中エンジンステータス表示確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: lock OpenAI API key controls during operations
+
+- 開始日時: 2026-04-27 23:24 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI API キー保存/削除中に入力や逆方向の操作ができて、保存成功時に後から入力した値がクリアされる混乱を避ける。
+- 結果: API キー保存/削除中は入力欄と保存ボタンを無効化し、保存中は削除操作もロックするようにした。削除ボタンの aria/title には保存中で削除できない理由を出すようにした。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（内部で `npm run build` 成功、Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での API キー保存/削除中 UI ロック確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

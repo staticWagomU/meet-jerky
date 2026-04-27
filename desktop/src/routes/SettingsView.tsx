@@ -767,6 +767,7 @@ function OpenAIApiKeySection({
 
   const handleClearApiKey = useCallback(() => {
     if (
+      setMutation.isPending ||
       clearMutation.isPending ||
       isClearingApiKeyRef.current ||
       isFetchingHasKey ||
@@ -777,7 +778,16 @@ function OpenAIApiKeySection({
     }
     isClearingApiKeyRef.current = true;
     clearMutation.mutate();
-  }, [clearMutation, hasKey, hasKeyError, isFetchingHasKey]);
+  }, [
+    clearMutation,
+    hasKey,
+    hasKeyError,
+    isFetchingHasKey,
+    setMutation.isPending,
+  ]);
+
+  const isApiKeyOperationPending =
+    setMutation.isPending || clearMutation.isPending;
 
   const saveApiKeyLabel = setMutation.isPending
     ? "OpenAI API キーを保存中"
@@ -786,6 +796,8 @@ function OpenAIApiKeySection({
       : "OpenAI API キーを入力すると保存できます";
   const clearApiKeyLabel = clearMutation.isPending
     ? "OpenAI API キーを削除中"
+    : setMutation.isPending
+      ? "OpenAI API キー保存中のため削除できません"
     : isFetchingHasKey
       ? "OpenAI API キー状態を確認中"
       : hasKeyError
@@ -855,13 +867,14 @@ function OpenAIApiKeySection({
           placeholder={hasKey ? "登録済み (再入力で上書き)" : "sk-..."}
           value={keyInput}
           onChange={(e) => setKeyInput(e.target.value)}
+          disabled={isApiKeyOperationPending}
           className="settings-input"
         />
         <div className="settings-api-key-actions">
           <button
             type="button"
             className="control-btn control-btn-transcribe"
-            disabled={!keyInput.trim() || setMutation.isPending}
+            disabled={!keyInput.trim() || isApiKeyOperationPending}
             onClick={handleSetApiKey}
             aria-label={saveApiKeyLabel}
             title={saveApiKeyLabel}
@@ -875,6 +888,7 @@ function OpenAIApiKeySection({
               !hasKey ||
               Boolean(hasKeyError) ||
               isFetchingHasKey ||
+              setMutation.isPending ||
               clearMutation.isPending
             }
             onClick={handleClearApiKey}
