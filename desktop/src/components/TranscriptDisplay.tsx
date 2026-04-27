@@ -44,7 +44,7 @@ function getSegmentAriaLabel(segment: TranscriptSegment): string {
 
 function getVisibleSpeakerLabel(segment: TranscriptSegment): string | null {
   if (isSourceLessError(segment)) {
-    return null;
+    return "ソース不明";
   }
   return getSpeakerLabel(segment);
 }

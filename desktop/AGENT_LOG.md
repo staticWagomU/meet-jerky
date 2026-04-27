@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript display UX: show unknown source on errors
+
+- 開始日時: 2026-04-28 03:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、source が無い文字起こしエラーでも画面上で音声ソース不明だと分かるようにする。
+- 結果: source/speaker の無い error segment の可視 speaker label を非表示から `ソース不明` に変更した。aria label、エラー受信処理、セグメント件数集計には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: source が無いエラー表示が横幅を取りすぎず、発生元不明として自然に読めるか確認する。
+
 ### Permission UX: clarify screen recording transcription impact
 
 - 開始日時: 2026-04-28 03:34 JST
