@@ -103,7 +103,7 @@ export function SystemAudioSection({
         <span className="level-label">{systemAudioLevelPercent}%</span>
       </div>
       <div className="audio-source-note">
-        相手側トラックはシステム音声から取得します。macOSの画面収録許可が必要です
+        相手側トラックはシステム音声から取得します。macOS の画面収録許可が必要です
       </div>
     </div>
   );

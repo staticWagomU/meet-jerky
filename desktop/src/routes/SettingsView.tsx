@@ -287,7 +287,7 @@ export function SettingsView() {
     ? "macOS権限状態を確認中"
     : "macOS権限状態を再チェック";
   const browserAutomationPermissionLabel =
-    "自動操作 ブラウザURL検知: 必要時にmacOSが確認";
+    "自動操作 ブラウザURL検知: 必要時に macOS が確認";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
