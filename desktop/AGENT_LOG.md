@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: merge latest scroll control
+
+- 開始日時: 2026-04-28 07:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 直前の `最新へ` 操作追加を批判的にレビューし、既存の最新スクロールボタンと重複していたため1つの操作へ統合する。
+- 結果: 新しく追加した重複ボタンと専用 CSS を削除し、既存の `scroll-to-bottom-btn` に共通ハンドラと `文字起こしログの最新位置へ戻る` ラベルを適用した。スクロール挙動、文字起こし受信、コピー処理には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `rg -n "scroll-to-bottom-btn|transcript-scroll-latest-btn|文字起こしログの最新位置へ戻る" src` で最新スクロール操作が1箇所だけであることを確認。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で `最新へ` ボタンが1つだけ表示され、押すと末尾へ戻るか確認する。
+
 ### Transcript UX: add latest scroll affordance
 
 - 開始日時: 2026-04-28 07:21 JST

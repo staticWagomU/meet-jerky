@@ -389,17 +389,6 @@ export function TranscriptDisplay({
           </button>
         </div>
       )}
-      {segments.length > 0 && !autoScroll && (
-        <button
-          type="button"
-          className="transcript-scroll-latest-btn"
-          onClick={handleScrollToLatest}
-          aria-label="文字起こしログの最新位置へ戻る"
-          title="文字起こしログの最新位置へ戻る"
-        >
-          最新へ
-        </button>
-      )}
       {copyError && (
         <div
           className="transcript-copy-error transcript-copy-error-dismissible"
@@ -509,16 +498,9 @@ export function TranscriptDisplay({
         <button
           type="button"
           className="scroll-to-bottom-btn"
-          aria-label="最新の文字起こしへスクロール"
-          title="最新の文字起こしへスクロール"
-          onClick={() => {
-            setAutoScroll(true);
-            userScrolledRef.current = false;
-            if (containerRef.current) {
-              containerRef.current.scrollTop =
-                containerRef.current.scrollHeight;
-            }
-          }}
+          aria-label="文字起こしログの最新位置へ戻る"
+          title="文字起こしログの最新位置へ戻る"
+          onClick={handleScrollToLatest}
         >
           最新へ
         </button>
