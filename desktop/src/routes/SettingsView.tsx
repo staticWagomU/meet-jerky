@@ -540,6 +540,7 @@ export function SettingsView() {
           role="status"
           aria-live="polite"
           aria-label={`設定通知: ${toastMessage}`}
+          title={`設定通知: ${toastMessage}`}
         >
           {toastMessage}
         </div>
