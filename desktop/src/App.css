@@ -770,6 +770,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   gap: 0.5rem;
   padding: 0.7em 1.5em;
   border: none;
@@ -804,6 +805,7 @@
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
   font-size: 1.1rem;
   font-weight: 600;
+  flex: 0 0 auto;
   color: var(--meeting-timer-color);
 }
 
