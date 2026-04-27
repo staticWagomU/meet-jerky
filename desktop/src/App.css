@@ -349,6 +349,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   gap: 0.4rem;
   padding: 0.4em 0.8em;
   border: none;
