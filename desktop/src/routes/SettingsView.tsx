@@ -720,6 +720,11 @@ function OpenAIApiKeySection({
         : hasKey
           ? "登録済み"
           : "未登録";
+  const apiKeyStatusClassName = hasKeyError
+    ? "settings-api-key-status settings-api-key-status-error"
+    : hasKey
+      ? "settings-api-key-status settings-api-key-status-ready"
+      : "settings-api-key-status";
   const apiKeyStatusLabel = `OpenAI API キー状態: ${apiKeyStatusText}`;
   const refetchApiKeyStatusLabel = isFetchingHasKey
     ? "OpenAI API キー状態を確認中"
@@ -797,23 +802,14 @@ function OpenAIApiKeySection({
           </button>
         </div>
         <div
-          className="settings-api-key-status"
+          className={apiKeyStatusClassName}
           role="status"
           aria-live="polite"
           aria-atomic="true"
           aria-label={apiKeyStatusLabel}
           title={apiKeyStatusLabel}
         >
-          状態:{" "}
-          {isFetchingHasKey
-            ? "確認中..."
-            : hasKeyError
-              ? "確認失敗"
-              : hasKey === undefined
-                ? "確認中..."
-              : hasKey
-                ? "登録済み"
-                : "未登録"}
+          状態: {apiKeyStatusText}
         </div>
       </div>
     </div>

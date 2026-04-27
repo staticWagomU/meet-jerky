@@ -4337,3 +4337,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: style OpenAI API key status
+
+- 開始日時: 2026-04-27 17:59 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 設定画面で OpenAI API キーの登録/未登録/確認失敗状態を視認しやすくし、録音開始前の状態透明性を上げる。
+- 結果: API キー状態表示を既存 status pill 系の色に合わせてバッジ化した。登録済みは active、未登録/確認中は idle、確認失敗は error として表示し、表示テキストは `apiKeyStatusText` に集約した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Keychain 実操作、認証変更、OpenAI API 接続確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
