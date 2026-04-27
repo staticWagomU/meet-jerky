@@ -254,16 +254,16 @@ function getAiTransmissionStatusLabel(
     return "確認中";
   }
   if (engine === "openAIRealtime") {
-    return "OpenAIへ送信";
+    return "OpenAI へ送信";
   }
   if (engine === "elevenLabsRealtime") {
-    return "ElevenLabsへ送信";
+    return "ElevenLabs へ送信";
   }
   return "なし";
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "OpenAIへ送信" || statusLabel === "ElevenLabsへ送信") {
+  if (statusLabel === "OpenAI へ送信" || statusLabel === "ElevenLabs へ送信") {
     return "meeting-status-pill-active";
   }
   if (statusLabel === "確認失敗") {
