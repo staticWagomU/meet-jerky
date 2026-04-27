@@ -42,7 +42,7 @@ impl TranscriptionEngine for ElevenLabsRealtimeEngine {
         config: StreamConfig,
     ) -> Result<Box<dyn TranscriptionStream>, String> {
         let api_key = get_secret(SecretKey::ElevenLabsApiKey)?.ok_or_else(|| {
-            "ElevenLabs API キーが設定されていません。設定画面から登録してください。".to_string()
+            "ElevenLabs Realtime の利用には、設定画面で API キーを登録してください。".to_string()
         })?;
 
         let stream = ElevenLabsRealtimeStream::new(self.model_id.clone(), api_key, config)?;

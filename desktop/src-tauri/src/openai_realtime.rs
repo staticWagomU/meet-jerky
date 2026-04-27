@@ -55,7 +55,7 @@ impl TranscriptionEngine for OpenAIRealtimeEngine {
         config: StreamConfig,
     ) -> Result<Box<dyn TranscriptionStream>, String> {
         let api_key = get_secret(SecretKey::OpenAIApiKey)?.ok_or_else(|| {
-            "OpenAI API キーが設定されていません。設定画面から登録してください。".to_string()
+            "OpenAI Realtime の利用には、設定画面で API キーを登録してください。".to_string()
         })?;
 
         let stream = OpenAIRealtimeStream::new(self.model.clone(), api_key, config)?;

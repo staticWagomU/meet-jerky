@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Realtime UX: align missing API key errors
+
+- 開始日時: 2026-04-28 03:38 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Realtime エンジン開始時に API キーが無い場合の Rust 側エラー文をフロントエンドの開始ブロック文言と揃える。
+- 結果: OpenAI / ElevenLabs の Keychain secret 未設定エラーを、`Realtime の利用には、設定画面で API キーを登録してください` という provider 別の表現へ変更した。Keychain 操作、API キー値、WebSocket 接続、実通信には触れなかった。
+- 変更ファイル: `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check --manifest-path src-tauri/Cargo.toml` は改行整形差分で失敗。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml` で整形後、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check --manifest-path src-tauri/Cargo.toml` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。実 API 呼び出しは行っていない。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 外部 Realtime API キー未設定時の UI エラーが provider と設定導線として自然に読めるか確認する。
+
 ### Meeting detection docs: align banner status comment
 
 - 開始日時: 2026-04-28 03:37 JST
