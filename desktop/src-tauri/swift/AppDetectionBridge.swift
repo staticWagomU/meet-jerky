@@ -207,11 +207,20 @@ public final class AppDetector: @unchecked Sendable {
             let frontmost = NSWorkspace.shared.frontmostApplication,
             let bundleId = frontmost.bundleIdentifier,
             let browser = watchedBrowsers.first(where: { $0.bundleId == bundleId })
-        else { return }
+        else {
+            lastBrowserSnapshotKey = nil
+            return
+        }
 
-        guard let tab = activeTabSnapshot(for: browser, app: frontmost) else { return }
+        guard let tab = activeTabSnapshot(for: browser, app: frontmost) else {
+            lastBrowserSnapshotKey = nil
+            return
+        }
         let normalizedUrl = tab.url.trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalizedUrl.isEmpty { return }
+        if normalizedUrl.isEmpty {
+            lastBrowserSnapshotKey = nil
+            return
+        }
 
         let snapshotKey = "\(bundleId)\t\(normalizedUrl)"
         if snapshotKey == lastBrowserSnapshotKey {
