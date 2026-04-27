@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection UX: clarify manual start message
+
+- 開始日時: 2026-04-28 07:00 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知後に録音と文字起こしが自動開始しない状態から次の確認行動へつながる本文にする。
+- 結果: 会議検知バナー本文と aria/title 文を `必要なら状態を確認してください` から `開始前に状態を確認してください` に変更した。自動開始しない設計、検知イベント、遷移先には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議検知バナー本文が押し付けがましくなく、手動開始前の確認導線として自然に読めるか確認する。
+
 ### Meeting Detection UX: align confirm action label
 
 - 開始日時: 2026-04-28 06:59 JST

@@ -62,12 +62,12 @@ export function MeetingDetectedBanner() {
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const bannerMessage = listenerError
     ? listenerError
-    : `${displayName} を検出しました。録音と文字起こしは自動開始していません。必要なら状態を確認してください。`;
+    : `${displayName} を検出しました。録音と文字起こしは自動開始していません。開始前に状態を確認してください。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }録音と文字起こしは自動開始していません。必要なら状態を確認してください。`;
+      }録音と文字起こしは自動開始していません。開始前に状態を確認してください。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の録音と文字起こしの状態を確認`
     : "録音と文字起こしの状態を確認";
