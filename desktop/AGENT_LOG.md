@@ -1,5 +1,19 @@
 # Agent Log
 
+### Microphone UX: clarify visible track action
+
+- 開始日時: 2026-04-28 07:50 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面のマイク録音ボタンを、可視表示でも自分トラックの録音操作だと分かる文言へ揃える。
+- 結果: マイク録音ボタンの表示を `録音を開始` / `録音を停止` から `自分録音を開始` / `自分録音を停止` に変更した。既存の aria-label/title と同じ意味へ近づけ、録音制御・デバイス選択・文字起こし処理には触れなかった。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機 UI でボタン幅がデバイス選択欄と並んでも窮屈でないか確認する。
+
 ### System Audio UX: clarify visible track action
 
 - 開始日時: 2026-04-28 07:49 JST
