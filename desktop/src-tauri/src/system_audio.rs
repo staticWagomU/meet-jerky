@@ -217,7 +217,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
         // キャプチャを開始
         stream
             .start_capture()
-            .map_err(|e| format!("システム音声キャプチャの開始に失敗しました: {e}"))?;
+            .map_err(|e| format!("相手側音声の取得開始に失敗しました: {e}"))?;
 
         self.stream = Some(stream);
 
@@ -333,7 +333,7 @@ pub fn start_system_audio(
     _state: tauri::State<'_, crate::audio::AudioStateHandle>,
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
-    Err("システム音声キャプチャは macOS でのみ利用可能です".to_string())
+    Err("相手側音声の取得は macOS でのみ利用可能です".to_string())
 }
 
 /// システム音声キャプチャを停止する (非macOS用のスタブ)
@@ -342,7 +342,7 @@ pub fn start_system_audio(
 pub fn stop_system_audio(
     _state: tauri::State<'_, crate::audio::AudioStateHandle>,
 ) -> Result<(), String> {
-    Err("システム音声キャプチャは macOS でのみ利用可能です".to_string())
+    Err("相手側音声の取得は macOS でのみ利用可能です".to_string())
 }
 
 #[cfg(test)]

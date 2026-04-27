@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### System audio UX: align backend error wording
+
+- 開始日時: 2026-04-28 03:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、相手側音声取得に失敗したときに UI へ出る Rust 側エラー文も `キャプチャ` ではなく `相手側音声の取得` 表記へ揃える。
+- 結果: ScreenCaptureKit の start_capture 失敗メッセージと非 macOS スタブのエラー文を、相手側音声の取得として読める表現へ変更した。音声取得処理、イベント payload、macOS 実機挙動には触れなかった。
+- 変更ファイル: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check --manifest-path src-tauri/Cargo.toml` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/system_audio.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/system_audio.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo check/test` は cmake 不在により未実行。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で相手側音声取得失敗時のエラー表示が重複しすぎず自然に読めるか確認する。
+
 ### Transcript display UX: show unknown source on errors
 
 - 開始日時: 2026-04-28 03:35 JST
