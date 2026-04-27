@@ -7,6 +7,7 @@ interface SystemAudioSectionProps {
   isSystemAudioRecording: boolean;
   systemAudioLevel: number;
   isOperationPending: boolean;
+  isControlDisabled: boolean;
   onToggleSystemAudio: () => void;
 }
 
@@ -14,6 +15,7 @@ export function SystemAudioSection({
   isSystemAudioRecording,
   systemAudioLevel,
   isOperationPending,
+  isControlDisabled,
   onToggleSystemAudio,
 }: SystemAudioSectionProps) {
   const systemAudioLevelPercent = Math.round(
@@ -32,6 +34,8 @@ export function SystemAudioSection({
   const systemAudioStateDescription = `システム音声 相手側トラック: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
     ? "相手側トラックのシステム音声キャプチャを処理中"
+    : isControlDisabled
+      ? "他の音声または文字起こし操作の処理中"
     : isSystemAudioRecording
       ? "相手側トラックのシステム音声キャプチャを停止"
       : "相手側トラックのシステム音声キャプチャを開始";
@@ -62,7 +66,7 @@ export function SystemAudioSection({
         <button
           type="button"
           onClick={onToggleSystemAudio}
-          disabled={isOperationPending}
+          disabled={isControlDisabled}
           className={`control-btn ${isSystemAudioRecording ? "control-btn-stop" : "control-btn-capture"}`}
           aria-label={systemAudioButtonLabel}
           title={systemAudioButtonLabel}

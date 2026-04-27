@@ -4953,3 +4953,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での録音開始/停止中 UI 表示は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: show pending state per audio source
+
+- 開始日時: 2026-04-27 20:39 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 片方の音声ソース操作中に、もう片方のトラックまで「処理中」と見える状態を避け、表示の透明性を上げる。
+- 結果: 各音声セクションの処理中表示をソース別 pending に分け、同時操作を防ぐ全体 disabled 状態は別 prop として維持した。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での各音声ソース操作中 UI 表示は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

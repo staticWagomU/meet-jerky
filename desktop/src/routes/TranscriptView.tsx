@@ -842,6 +842,10 @@ export function TranscriptView() {
     isMicOperationPending ||
     isSystemAudioOperationPending ||
     isMeetingOperationPending;
+  const isMicSourceOperationPending =
+    isMicOperationPending || isMeetingOperationPending;
+  const isSystemAudioSourceOperationPending =
+    isSystemAudioOperationPending || isMeetingOperationPending;
 
   const transcriptionSourceStatus = getTranscriptionSourceStatus(
     isTranscribing,
@@ -1125,7 +1129,8 @@ export function TranscriptView() {
         audioDevices={devices}
         audioDevicesError={devicesError}
         isReloadingAudioDevices={isFetchingDevices}
-        isOperationPending={isAudioSourceOperationPending}
+        isOperationPending={isMicSourceOperationPending}
+        isControlDisabled={isAudioSourceOperationPending}
         onDeviceChange={setSelectedDeviceId}
         onRetryDevices={() => refetchDevices()}
         onToggleRecording={handleToggleMicRecording}
@@ -1134,7 +1139,8 @@ export function TranscriptView() {
       <SystemAudioSection
         isSystemAudioRecording={isSystemAudioRecording}
         systemAudioLevel={systemAudioLevel}
-        isOperationPending={isAudioSourceOperationPending}
+        isOperationPending={isSystemAudioSourceOperationPending}
+        isControlDisabled={isAudioSourceOperationPending}
         onToggleSystemAudio={handleToggleSystemAudio}
       />
 

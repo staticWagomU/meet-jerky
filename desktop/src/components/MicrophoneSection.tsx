@@ -12,6 +12,7 @@ interface MicrophoneSectionProps {
   audioDevicesError: unknown;
   isReloadingAudioDevices: boolean;
   isOperationPending: boolean;
+  isControlDisabled: boolean;
   onDeviceChange: (deviceId: string) => void;
   onRetryDevices: () => void;
   onToggleRecording: () => void;
@@ -25,6 +26,7 @@ export function MicrophoneSection({
   audioDevicesError,
   isReloadingAudioDevices,
   isOperationPending,
+  isControlDisabled,
   onDeviceChange,
   onRetryDevices,
   onToggleRecording,
@@ -45,12 +47,16 @@ export function MicrophoneSection({
   const micStateDescription = `マイク 自分トラック: ${micStateText}`;
   const micButtonLabel = isOperationPending
     ? "自分トラックのマイク録音を処理中"
+    : isControlDisabled
+      ? "他の音声または文字起こし操作の処理中"
     : isMicRecording
       ? "自分トラックのマイク録音を停止"
       : "自分トラックのマイク録音を開始";
   const deviceSelectLabel =
     isMicRecording || isOperationPending
       ? "マイクデバイス: 録音中または処理中は変更できません"
+      : isControlDisabled
+        ? "マイクデバイス: 他の処理中は変更できません"
       : "マイクデバイス: 自分トラックの入力を選択";
   const retryDevicesLabel = isReloadingAudioDevices
     ? "マイクデバイス一覧を取得中"
@@ -86,7 +92,7 @@ export function MicrophoneSection({
             title={deviceSelectLabel}
             value={selectedDeviceId}
             onChange={(e) => onDeviceChange(e.target.value)}
-            disabled={isMicRecording || isOperationPending}
+            disabled={isMicRecording || isOperationPending || isControlDisabled}
             className="device-select"
           >
             <option value="">デフォルト</option>
@@ -100,7 +106,7 @@ export function MicrophoneSection({
         <button
           type="button"
           onClick={onToggleRecording}
-          disabled={isOperationPending}
+          disabled={isControlDisabled}
           className={`control-btn ${isMicRecording ? "control-btn-stop" : "control-btn-record"}`}
           aria-label={micButtonLabel}
           title={micButtonLabel}
