@@ -69,7 +69,7 @@ export function PermissionBanner() {
     .filter(Boolean)
     .join(": ");
   const permissionSummaryLabel = [
-    "録音/取得権限状態",
+    "録音と取得の権限状態",
     micNeedsAttention ? micPermissionDetail : null,
     screenNeedsAttention ? screenPermissionDetail : null,
   ]
