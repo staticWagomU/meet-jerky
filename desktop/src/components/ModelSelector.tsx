@@ -402,21 +402,23 @@ function DownloadStatus({
     );
   }
 
-  const downloadButtonLabel = downloadingModel
-    ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
-    : `${selectedModel} をダウンロード`;
+  const downloadButtonLabel = isFetchingDownloaded
+    ? `${selectedModel} のモデル状態を確認中`
+    : downloadingModel
+      ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
+      : `${selectedModel} をダウンロード`;
 
   return (
-    <div className="download-status-wrapper">
+    <div className="download-status-wrapper" aria-busy={isFetchingDownloaded}>
       <button
         type="button"
         className="download-btn"
         aria-label={downloadButtonLabel}
         title={downloadButtonLabel}
         onClick={() => onDownload(selectedModel)}
-        disabled={disabled || downloadingModel !== null}
+        disabled={disabled || downloadingModel !== null || isFetchingDownloaded}
       >
-        ダウンロード
+        {isFetchingDownloaded ? "確認中..." : "ダウンロード"}
       </button>
       {downloadError && (
         <span

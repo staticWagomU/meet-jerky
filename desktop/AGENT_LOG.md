@@ -4449,3 +4449,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS 権限ダイアログや実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: avoid premature model download action while checking
+
+- 開始日時: 2026-04-27 18:14 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: Whisper モデルのダウンロード済み状態を確認中に、未確認のままダウンロード可能に見える状態を避ける。
+- 結果: モデル状態確認中はダウンロードボタンを disabled にし、文言と `aria-busy` を確認中として示すようにした。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。モデルダウンロード実操作と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
