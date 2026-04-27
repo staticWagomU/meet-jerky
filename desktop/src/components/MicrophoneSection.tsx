@@ -93,7 +93,11 @@ export function MicrophoneSection({
         </button>
       </div>
       {Boolean(audioDevicesError) && (
-        <div className="settings-inline-error" role="alert">
+        <div
+          className="settings-inline-error"
+          role="alert"
+          aria-label={`マイク 自分トラックのデバイス一覧エラー: ${String(audioDevicesError)}`}
+        >
           <span>
             マイクデバイス一覧の取得に失敗しました: {String(audioDevicesError)}
           </span>
