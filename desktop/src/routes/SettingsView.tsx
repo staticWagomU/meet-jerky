@@ -239,13 +239,19 @@ export function SettingsView() {
   const outputDirectoryDisplayText =
     localSettings.outputDirectory ??
     defaultOutputDir ??
-    (isFetchingDefaultOutputDir ? "取得中..." : "未設定");
+    (isFetchingDefaultOutputDir
+      ? "取得中..."
+      : defaultOutputDirError
+        ? "取得できません"
+        : "未設定");
   const outputDirectoryLabel = localSettings.outputDirectory
     ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
-    : defaultOutputDir
-      ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
+      : defaultOutputDir
+        ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
       : isFetchingDefaultOutputDir
         ? "現在の出力先ディレクトリを取得中です"
+      : defaultOutputDirError
+        ? "現在の出力先ディレクトリを取得できません"
       : "現在の出力先ディレクトリは未設定です";
   const outputDirectoryModeLabel = localSettings.outputDirectory
     ? "カスタム"
