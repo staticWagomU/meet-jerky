@@ -3245,3 +3245,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と狭幅ウィンドウでの目視確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: stabilize transcript text wrapping
+
+- 開始日時: 2026-04-27 12:04 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 文字起こし行の本文が長い場合でも、狭い幅でタイムスタンプや話者ラベルを押し出しにくくする。
+- 結果: `transcript-segment` と `transcript-text` に `min-width: 0` を追加し、本文に `overflow-wrap: anywhere` を追加した。セグメント描画、タイムスタンプ、話者ラベル、auto-scroll、コピー処理は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と長文/狭幅ウィンドウでの目視確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
