@@ -52,6 +52,7 @@ export function MicrophoneSection({
       className="audio-source-section"
       role="group"
       aria-label="マイク 自分トラック"
+      title="マイク 自分トラック"
     >
       <div className="audio-source-header">
         <span>マイク</span>
