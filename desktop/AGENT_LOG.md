@@ -5387,3 +5387,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での設定画面出力先 badge と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: label transcript total count
+
+- 開始日時: 2026-04-27 22:58 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こしログの総件数表示が、短い「N 件」だけで読まれても意味を保持するようにする。
+- 結果: 総件数 span に `aria-label` と `title` を追加した。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での文字起こし総件数表示と VoiceOver 読み上げ確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

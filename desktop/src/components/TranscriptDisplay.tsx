@@ -314,7 +314,11 @@ export function TranscriptDisplay({
             aria-label={transcriptCountsLabel}
             title={transcriptCountsLabel}
           >
-            <span className="transcript-segment-count">
+            <span
+              className="transcript-segment-count"
+              aria-label={`文字起こし総件数: ${segments.length} 件`}
+              title={`文字起こし総件数: ${segments.length} 件`}
+            >
               {segments.length} 件
             </span>
             <span
