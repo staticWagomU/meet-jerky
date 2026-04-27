@@ -65,10 +65,10 @@ export function ModelSelector({
   const modelSelectAriaLabel = modelsError
     ? "Whisperモデル一覧の取得に失敗したため選択できません"
     : downloadingModel
-      ? `${downloadingModel} をダウンロード中のためWhisperモデルを選択できません`
+      ? `${downloadingModel} をダウンロード中のためWhisperモデルを選択できません。現在の選択: ${selectedModel}`
       : disabled
-        ? "文字起こし中のためWhisperモデルを選択できません"
-        : "Whisperモデルを選択";
+        ? `文字起こし中のためWhisperモデルを選択できません。現在の選択: ${selectedModel}`
+        : `Whisperモデルを選択。現在の選択: ${selectedModel}`;
 
   // Listen for download progress events
   useEffect(() => {
