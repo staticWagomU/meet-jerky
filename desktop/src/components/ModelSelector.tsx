@@ -212,12 +212,13 @@ export function ModelSelector({
       if (!isMountedRef.current) {
         return;
       }
-      setDownloadError(typeof e === "string" ? e : String(e));
+      setDownloadError(toErrorMessage(e));
       setDownloadErrorModel(modelName);
       setDownloadingModel(null);
       setDownloadProgress(0);
     }
   };
+  const modelsErrorMessage = modelsError ? toErrorMessage(modelsError) : "";
 
   return (
     <div
@@ -265,10 +266,10 @@ export function ModelSelector({
           <span
             className="download-error"
             role="alert"
-            aria-label={`Whisperモデル一覧エラー: ${String(modelsError)}`}
-            title={`Whisperモデル一覧エラー: ${String(modelsError)}`}
+            aria-label={`Whisperモデル一覧エラー: ${modelsErrorMessage}`}
+            title={`Whisperモデル一覧エラー: ${modelsErrorMessage}`}
           >
-            モデル一覧の取得に失敗しました: {String(modelsError)}
+            モデル一覧の取得に失敗しました: {modelsErrorMessage}
           </span>
           <button
             type="button"
@@ -386,7 +387,8 @@ function DownloadStatus({
   }
 
   if (isDownloadedError) {
-    const downloadedErrorLabel = `${selectedModel} モデル状態エラー: ${String(isDownloadedError)}`;
+    const downloadedErrorMessage = toErrorMessage(isDownloadedError);
+    const downloadedErrorLabel = `${selectedModel} モデル状態エラー: ${downloadedErrorMessage}`;
     const refetchDownloadedLabel = isFetchingDownloaded
       ? `${selectedModel} のモデル状態を確認中`
       : `${selectedModel} のモデル状態を再確認`;
@@ -398,7 +400,7 @@ function DownloadStatus({
           aria-label={downloadedErrorLabel}
           title={downloadedErrorLabel}
         >
-          モデル状態の確認に失敗しました: {String(isDownloadedError)}
+          モデル状態の確認に失敗しました: {downloadedErrorMessage}
         </span>
         <button
           type="button"
