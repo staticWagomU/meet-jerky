@@ -50,12 +50,16 @@ export function PermissionBanner() {
     .join("、");
   const micPermissionDetail = `マイク 自分トラック: ${micStatusLabel}`;
   const screenPermissionDetail = `画面収録 相手側トラック: ${screenStatusLabel}`;
+  const permissionRetryLabel = isCheckingPermissions
+    ? "macOS権限状態を確認中"
+    : "macOS権限状態を再チェック";
 
   return (
     <div
       className="permission-banner permission-banner-warning"
       role="alert"
       aria-label={permissionSummaryLabel}
+      title={permissionSummaryLabel}
     >
       <div className="permission-banner-title">
         {isCheckingPermissions
@@ -112,11 +116,8 @@ export function PermissionBanner() {
         className="control-btn control-btn-clear"
         onClick={refetchAll}
         disabled={isCheckingPermissions}
-        aria-label={
-          isCheckingPermissions
-            ? "macOS権限状態を確認中"
-            : "macOS権限状態を再チェック"
-        }
+        aria-label={permissionRetryLabel}
+        title={permissionRetryLabel}
       >
         {isCheckingPermissions ? "確認中..." : "再チェック"}
       </button>
