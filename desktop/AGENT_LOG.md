@@ -5569,3 +5569,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での保存後再開始表示は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: clear stale meeting errors on retry start
+
+- 開始日時: 2026-04-27 22:56 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議開始を再試行している最中に前回の会議エラーが残り、現在の処理状態と紛らわしくならないようにする。
+- 結果: 会議開始フローに入った時点で `meetingError` をクリアし、再試行中は古いエラーを表示せず、失敗時は新しいエラーだけを表示するようにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議開始失敗後の再試行表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
