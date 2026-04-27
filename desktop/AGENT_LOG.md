@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: align stopped status label
+
+- 開始日時: 2026-04-28 04:10 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の文字起こし停止状態を操作エリアと同じ状態表現へ揃える。
+- 結果: 会議ステータス strip の停止時ラベルを `文字起こし停止` から `停止中` に変更した。文字起こし開始/停止処理、録音状態、エラー処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議ステータス strip の状態語が自然に読めるか確認する。
+
 ### Whisper UX: space model labels
 
 - 開始日時: 2026-04-28 04:06 JST

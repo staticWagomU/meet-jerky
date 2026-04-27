@@ -966,7 +966,7 @@ export function TranscriptView() {
     ? "処理中"
     : isTranscribing
       ? "文字起こし中"
-      : "文字起こし停止";
+      : "停止中";
   const transcriptionStatusClass = isTranscriptionOperationPending
     ? "meeting-status-pill-neutral"
     : isTranscribing
