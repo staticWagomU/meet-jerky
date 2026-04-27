@@ -3217,3 +3217,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と狭幅ウィンドウでの目視確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: stabilize narrow action wrapping
+
+- 開始日時: 2026-04-27 11:53 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 履歴行の操作ボタン群と会議検知バナーの操作群が、狭い幅でも不自然に押し出されにくいようにする。
+- 結果: セッション行アクションと会議検知バナーアクションに縮小可能な flex 指定と右寄せを追加し、会議検知バナー本文の `min-width` を `min(14rem, 100%)` にした。表示文言、ボタン構成、履歴操作、会議検知導線は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と狭幅ウィンドウでの目視確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
