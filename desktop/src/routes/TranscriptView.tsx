@@ -872,6 +872,8 @@ export function TranscriptView() {
         <div
           className="meeting-status-strip"
           role="status"
+          aria-live="polite"
+          aria-atomic="true"
           aria-label={meetingStatusAriaLabel}
         >
           <span
