@@ -632,6 +632,9 @@ export function TranscriptView() {
     }
     audioOperationPendingRef.current = true;
     setIsMicOperationPending(true);
+    setMeetingError((currentError) =>
+      clearRelatedMeetingError(currentError, MIC_RECORDING_ERROR_PREFIX),
+    );
     try {
       if (isMicRecording) {
         await invoke("stop_recording");
@@ -684,6 +687,9 @@ export function TranscriptView() {
     }
     audioOperationPendingRef.current = true;
     setIsSystemAudioOperationPending(true);
+    setMeetingError((currentError) =>
+      clearRelatedMeetingError(currentError, SYSTEM_AUDIO_ERROR_PREFIX),
+    );
     try {
       if (isSystemAudioRecording) {
         await invoke("stop_system_audio");
@@ -731,6 +737,9 @@ export function TranscriptView() {
     }
     audioOperationPendingRef.current = true;
     setIsTranscriptionOperationPending(true);
+    setMeetingError((currentError) =>
+      clearRelatedMeetingError(currentError, TRANSCRIPTION_ERROR_PREFIX),
+    );
     let micRestartPending = false;
     let systemAudioRestartPending = false;
     try {

@@ -5583,3 +5583,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での会議開始失敗後の再試行表示は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: clear related operation errors while retrying
+
+- 開始日時: 2026-04-27 22:57 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: マイク/システム音声/文字起こしの単体操作を再試行している間、前回の同種エラーが残って現在の処理状態と混ざらないようにする。
+- 結果: 各単体操作の開始時に、該当 prefix の `meetingError` だけをクリアするようにした。別カテゴリのエラーは残すため、関連しない問題の通知は維持される。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での各単体操作エラー後の再試行表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
