@@ -6522,6 +6522,20 @@
 - 失敗理由: なし。
 - 次アクション: VoiceOver でログ操作が可視表示と同じ意味で読まれるか確認する。
 
+### Transcript UX: broaden meeting status summary label
+
+- 開始日時: 2026-04-28 07:49 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議画面 status strip の支援技術向けサマリーが録音だけでなく全体状態を表すようにする。
+- 結果: status strip の aria/title 先頭ラベルを `会議録音状態` から `会議状態` に変更した。可視表示、録音/文字起こし/音声/エンジン/外部送信の各状態値には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で status strip の読み上げが会議全体の状態として自然か確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

@@ -973,7 +973,7 @@ export function TranscriptView() {
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
   const meetingStatusAriaLabel = [
-    "会議録音状態",
+    "会議状態",
     meetingRecordingStatusLabel,
     transcriptionStatusLabel,
     `音声 ${audioSourceStatusDisplayAriaText}`,
