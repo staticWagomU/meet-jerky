@@ -4995,3 +4995,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での同時操作ロック中 UI 表示は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose browser automation permission in settings
+
+- 開始日時: 2026-04-27 20:54 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: ブラウザ会議URL検知で macOS の自動操作許可が求められ得ることを、権限ステータス欄でも確認できるようにする。
+- 結果: 権限ステータスに「自動操作 / ブラウザURL」行を追加し、実ステータスを偽らず「必要時に確認」と表示するようにした。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機の macOS 自動操作許可ダイアログ表示は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

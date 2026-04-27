@@ -266,6 +266,8 @@ export function SettingsView() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS権限状態を確認中"
     : "macOS権限状態を再チェック";
+  const browserAutomationPermissionLabel =
+    "自動操作 ブラウザURL検知: 必要時にmacOSが確認";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -558,6 +560,20 @@ export function SettingsView() {
               error={screenPermissionError}
               isChecking={isFetchingScreenPermission}
             />
+          </div>
+          <div className="settings-permission-row">
+            <span className="settings-permission-label">
+              自動操作{" "}
+              <span className="settings-permission-track">ブラウザURL</span>
+            </span>
+            <span
+              className="settings-permission-badge permission-undetermined"
+              role="status"
+              aria-label={browserAutomationPermissionLabel}
+              title={browserAutomationPermissionLabel}
+            >
+              必要時に確認
+            </span>
           </div>
           <button
             type="button"
