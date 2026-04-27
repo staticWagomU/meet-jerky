@@ -298,8 +298,8 @@ export function SettingsView() {
       screenPermission === "denied" ||
       screenPermission === "undetermined");
   const permissionStatusNote = hasPermissionCheckError
-    ? "macOS の権限状態を読み取れませんでした。録音や相手側音声取得の可否が不明なため、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。"
-    : "拒否または未確認の権限がある場合は、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。";
+    ? "macOS の権限状態を読み取れませんでした。自分トラック録音や相手側音声取得の可否が不明なため、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。"
+    : "マイクは自分トラック、画面収録は相手側トラックに影響します。拒否または未確認の場合はシステム設定のプライバシーとセキュリティで確認してください。";
   const unsavedSettingsLabel = "未保存の変更があります";
   const saveSettingsLabel = updateMutation.isPending
     ? "設定を保存中"

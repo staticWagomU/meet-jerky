@@ -5891,3 +5891,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で API キー注記が過度に長くならず、保存境界が明確に伝わるか確認する。
+
+### Settings UX: clarify permission track impact
+
+- 開始日時: 2026-04-28 01:31 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限ステータス注記で、マイクと画面収録がそれぞれ自分/相手側トラックに影響することを明確にする。
+- 結果: 権限確認失敗時と拒否/未確認時の注記を、自分トラック録音と相手側音声取得への影響が分かる文言に更新した。権限確認 command、バッジ状態、再チェック操作には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で権限ステータス注記が折り返し過多にならず、自分/相手側トラックへの影響が読み取れるか確認する。
