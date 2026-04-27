@@ -62,6 +62,7 @@ export function PermissionBanner() {
     <div
       className="permission-banner permission-banner-warning"
       role={permissionBannerRole}
+      aria-busy={isCheckingPermissions}
       aria-live={permissionBannerRole === "alert" ? "assertive" : "polite"}
       aria-atomic="true"
       aria-label={permissionSummaryLabel}
