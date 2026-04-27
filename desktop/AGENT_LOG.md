@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### App detection docs: align status confirmation wording
+
+- 開始日時: 2026-04-28 03:27 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知とバナーを録音/文字起こし状態確認へ寄せた変更に合わせ、Rust 側の設計コメントも古い `記録開始` 導線から更新する。
+- 結果: app detection のモジュールコメントとイベント emit コメントを、録音と文字起こしの状態確認を促す説明へ変更した。会議検知ロジック、通知本文、payload、UI 表示には触れなかった。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check` は作業ディレクトリ直下に `Cargo.toml` がないため失敗（コマンド指定ミス）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check --manifest-path src-tauri/Cargo.toml` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後の会議検知改善で自動録音開始と状態確認導線を混同しないようコメントを維持する。
+
 ### Transcript UX: clarify meeting button assistive label
 
 - 開始日時: 2026-04-28 03:26 JST

@@ -1,6 +1,6 @@
 //! Zoom / Microsoft Teams 等の会議アプリ起動・起動済み状態と、
 //! Safari / Chrome / Edge / Firefox の会議 URL を検知して、ユーザーに
-//! 記録開始の確認を促す通知 + フロントエンドへのイベント通知を行う。
+//! 録音と文字起こしの状態確認を促す通知 + フロントエンドへのイベント通知を行う。
 //!
 //! macOS 限定。`swift/AppDetectionBridge.swift` 経由で `NSWorkspace` を
 //! 監視し、ブラウザのアクティブタブ URL を取得する。
@@ -14,7 +14,7 @@
 //!    - スロットリング (同一 bundle は 60 秒以内に再通知しない)
 //!    - macOS 通知センターに通知を出す
 //!    - フロントエンドへ `meeting-app-detected` イベントを emit
-//! 5. フロントエンドがバナーを表示し、ユーザーがアプリ側で記録開始を確認する
+//! 5. フロントエンドがバナーを表示し、ユーザーがアプリ側で録音と文字起こしの状態を確認する
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -123,7 +123,7 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
     // 通知センターに通知を出す
     show_notification(&state.app_handle, app_name);
 
-    // フロントエンド (バナー表示・記録開始導線) へイベントを通知
+    // フロントエンド (バナー表示・録音/文字起こし状態確認導線) へイベントを通知
     let payload = MeetingAppDetectedPayload {
         bundle_id: bundle_id.to_string(),
         app_name: app_name.to_string(),
