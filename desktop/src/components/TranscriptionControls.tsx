@@ -103,7 +103,7 @@ export function TranscriptionControls({
             aria-label={clearTranscriptLabel}
             title={clearTranscriptLabel}
           >
-            ログをクリア
+            文字起こしログをクリア
           </button>
         )}
       </div>
