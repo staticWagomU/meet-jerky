@@ -4813,3 +4813,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。会議/録音/文字起こし実操作は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: ignore stale model download error state resets
+
+- 開始日時: 2026-04-27 19:48 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装。直前のモデルDLエラー紐づけ改善で見つけた局所的な状態不整合修正のため、メインが直接編集した。
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 古いモデルダウンロードエラーイベントが遅れて届いた場合に、現在進行中の別モデルDL表示を止めないようにする。
+- 結果: エラー元モデルが現在DL中モデルと一致するときだけ `downloadingModel` と進捗を解除するようにした。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実際のモデルDL競合イベント再現は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

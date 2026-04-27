@@ -143,8 +143,12 @@ export function ModelSelector({
         if (disposed) {
           return;
         }
+        const errorModel = event.payload.model;
         setDownloadError(event.payload.message);
-        setDownloadErrorModel(event.payload.model);
+        setDownloadErrorModel(errorModel);
+        if (errorModel !== downloadingModelRef.current) {
+          return;
+        }
         downloadingModelRef.current = null;
         setDownloadingModel(null);
         setDownloadProgress(0);
