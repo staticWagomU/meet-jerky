@@ -114,7 +114,7 @@ function getTranscriptionStartBlockedReason(
     return `${externalApiProvider} API キー状態を確認できません。`;
   }
   if (!isAnySourceRecording) {
-    return "文字起こし開始には、自分トラックのマイク録音または相手側トラックのシステム音声取得を開始してください。";
+    return "文字起こしを開始するには、自分トラックのマイク録音または相手側トラックのシステム音声取得を開始してください。";
   }
   if (externalApiProvider && hasExternalApiKey === undefined) {
     return `${externalApiProvider} API キー状態を確認中です。`;
@@ -129,7 +129,7 @@ function getTranscriptionStartBlockedReason(
     return "Whisper モデル状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "文字起こし開始には、Whisper モデルのダウンロードが必要です。";
+    return "文字起こしを開始するには、Whisper モデルのダウンロードが必要です。";
   }
   return null;
 }
