@@ -80,10 +80,10 @@ function getTranscriptionSourceStatus(
     return "文字起こし中: 自分 / 相手側";
   }
   if (isMicRecording) {
-    return "文字起こし中: 自分のみ / 相手側未取得";
+    return "文字起こし中: 自分のみ / 相手側は未取得";
   }
   if (isSystemAudioRecording) {
-    return "文字起こし中: 相手側のみ / 自分未取得";
+    return "文字起こし中: 相手側のみ / 自分は未録音";
   }
   return "文字起こし中: 音声ソースなし";
 }

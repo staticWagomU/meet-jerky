@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify one-sided source status
+
+- 開始日時: 2026-04-28 04:13 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、片側トラックのみ文字起こし中の音声ソース状態を読みやすくする。
+- 結果: 文字起こし中のソース状態を `相手側未取得` / `自分未取得` から `相手側は未取得` / `自分は未録音` に変更した。録音/取得状態判定、文字起こし開始/停止処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で片側トラック欠落時の注意表示が過度に長くならず自然に読めるか確認する。
+
 ### Transcript UX: align stopped status label
 
 - 開始日時: 2026-04-28 04:10 JST
