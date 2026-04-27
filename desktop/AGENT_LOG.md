@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify save failure toast
+
+- 開始日時: 2026-04-28 08:22 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定保存失敗 toast が何の保存失敗か可視文言だけで分かるようにする。
+- 結果: 設定保存失敗 toast を `保存に失敗しました` から `設定の保存に失敗しました` に変更した。設定保存処理、入力値、API キー処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、設定画面 toast の他メッセージと文体が揃っているか確認する。
+
 ### Transcript UX: clarify recording timer label
 
 - 開始日時: 2026-04-28 08:21 JST

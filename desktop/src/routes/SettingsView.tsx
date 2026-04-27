@@ -90,7 +90,7 @@ export function SettingsView() {
       showToast("設定を保存しました");
     },
     onError: (error) => {
-      showToast(`保存に失敗しました: ${toErrorMessage(error)}`);
+      showToast(`設定の保存に失敗しました: ${toErrorMessage(error)}`);
     },
     onSettled: () => {
       isSavingSettingsRef.current = false;
