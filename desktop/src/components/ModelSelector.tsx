@@ -232,6 +232,7 @@ export function ModelSelector({
           className="download-error"
           role="alert"
           aria-label={`Whisperモデルダウンロード進捗受信エラー: ${progressListenerError}`}
+          title={`Whisperモデルダウンロード進捗受信エラー: ${progressListenerError}`}
         >
           {progressListenerError}
         </span>
@@ -241,6 +242,7 @@ export function ModelSelector({
           className="download-error"
           role="alert"
           aria-label={`Whisperモデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+          title={`Whisperモデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
         >
           {downloadErrorListenerError}
         </span>
@@ -251,6 +253,7 @@ export function ModelSelector({
             className="download-error"
             role="alert"
             aria-label={`Whisperモデル一覧エラー: ${String(modelsError)}`}
+            title={`Whisperモデル一覧エラー: ${String(modelsError)}`}
           >
             モデル一覧の取得に失敗しました: {String(modelsError)}
           </span>
