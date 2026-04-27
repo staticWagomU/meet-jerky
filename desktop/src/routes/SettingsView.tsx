@@ -321,9 +321,9 @@ export function SettingsView() {
       ? "変更した設定を保存"
       : "保存する設定変更はありません";
   const whisperEngineLabel =
-    "文字起こしエンジン: ローカル Whisper、外部送信なし、端末内処理";
+    "文字起こしエンジン: ローカル Whisper、端末内のみ、外部送信なし";
   const appleSpeechEngineLabel =
-    "文字起こしエンジン: macOS SpeechAnalyzer、外部送信なし、端末内処理";
+    "文字起こしエンジン: macOS SpeechAnalyzer、端末内のみ、外部送信なし";
   const openAIRealtimeEngineLabel =
     "文字起こしエンジン: OpenAI Realtime API、音声を OpenAI へ送信";
   const elevenLabsRealtimeEngineLabel =
@@ -385,7 +385,7 @@ export function SettingsView() {
             />
             <span>ローカル (Whisper)</span>
             <span id={ENGINE_NOTE_IDS.whisper} className="settings-note">
-              外部送信なし、端末内処理
+              端末内のみ、外部送信なし
             </span>
           </label>
           <label className="settings-radio-label" title={appleSpeechEngineLabel}>
@@ -409,7 +409,7 @@ export function SettingsView() {
             />
             <span>macOS SpeechAnalyzer</span>
             <span id={ENGINE_NOTE_IDS.appleSpeech} className="settings-note">
-              外部送信なし、macOS 26+ 専用
+              端末内のみ、macOS 26+ 専用
             </span>
           </label>
           <label

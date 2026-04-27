@@ -6606,6 +6606,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI でエンジン pill と外部送信 pill が重複せず自然に並ぶか確認する。
 
+### Settings UX: align local-only engine wording
+
+- 開始日時: 2026-04-28 06:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面のローカル系エンジン説明をライブ画面の `端末内のみ` 表示と揃える。
+- 結果: Whisper / Apple Speech の title と補足文を `端末内のみ、外部送信なし` または `端末内のみ、macOS 26+ 専用` に変更した。エンジン選択、外部送信判定、API キー表示には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で設定画面のエンジン説明が長すぎず、ライブ画面の `端末内のみ` 表示と自然につながるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
