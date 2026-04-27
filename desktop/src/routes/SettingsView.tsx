@@ -649,7 +649,7 @@ export function SettingsView() {
               aria-label={selectOutputDirectoryLabel}
               title={selectOutputDirectoryLabel}
             >
-              {isSelectingOutputDirectory ? "選択中..." : "フォルダを選択"}
+              {isSelectingOutputDirectory ? "選択中..." : "出力先を選択"}
             </button>
             <button
               type="button"

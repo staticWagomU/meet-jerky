@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify output folder select button
+
+- 開始日時: 2026-04-28 08:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、出力先ディレクトリの選択ボタンが可視表示でも出力先設定の操作だと分かるようにする。
+- 結果: 出力先選択ボタン表示を `フォルダを選択` から `出力先を選択` に変更した。aria/title と同じ意味へ近づけ、フォルダ選択 invoke や設定保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、出力先操作ボタンの横幅が自然か確認する。
+
 ### Settings UX: clarify output folder failure toast
 
 - 開始日時: 2026-04-28 08:23 JST
