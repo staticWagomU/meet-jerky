@@ -1,6 +1,6 @@
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use parking_lot::Mutex;
@@ -1093,6 +1093,7 @@ mod tests {
         WhisperStream {
             ctx: None,
             speaker: None,
+            source: None,
             language: "ja".to_string(),
             needs_resample: true,
             resampler: None,
@@ -1360,9 +1361,11 @@ mod tests {
         let drained = stream.drain_segments();
         assert_eq!(drained.len(), 2);
         assert!(drained.iter().all(|s| s.speaker.as_deref() == Some("自分")));
-        assert!(drained
-            .iter()
-            .all(|s| s.source == Some(TranscriptionSource::Microphone)));
+        assert!(
+            drained
+                .iter()
+                .all(|s| s.source == Some(TranscriptionSource::Microphone))
+        );
 
         // 連続 drain は空
         assert!(stream.drain_segments().is_empty());

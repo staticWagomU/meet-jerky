@@ -4967,3 +4967,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での各音声ソース操作中 UI 表示は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: complete WhisperStream test fixture source field
+
+- 開始日時: 2026-04-27 20:45 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: `WhisperStream` の `source` 伝播追加後、テスト用 fixture の構造体初期化にも `source` を明示して Rust 側の整合性を保つ。
+- 結果: `stream_with_missing_resampler` の `WhisperStream` 初期化に `source: None` を追加し、同ファイルを `rustfmt --edition 2024` で整形した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/transcription.rs` は edition 未指定のため Rust 2015 扱いとなり既存 async 構文で失敗。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --edition 2024 --check src-tauri/src/transcription.rs` 成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: cargo check/test は cmake 不在により未実行。edition 未指定 rustfmt はこのファイルの既存 async 構文に対応できないため、edition 2024 指定で代替検証した。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
