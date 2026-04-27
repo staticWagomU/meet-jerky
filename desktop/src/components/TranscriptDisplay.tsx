@@ -26,6 +26,14 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   return "未分類";
 }
 
+function getSegmentAriaLabel(segment: TranscriptSegment): string {
+  const speakerLabel = getSpeakerLabel(segment) ?? "未分類";
+  if (segment.isError) {
+    return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
+  }
+  return `文字起こし ${formatTimestamp(segment.startMs)} ${speakerLabel}: ${segment.text}`;
+}
+
 function getSegmentCounts(segments: TranscriptSegment[]): {
   self: number;
   other: number;
@@ -373,6 +381,7 @@ export function TranscriptDisplay({
               <div
                 key={i}
                 className={`transcript-segment${errorClass}${speakerClass}`}
+                aria-label={getSegmentAriaLabel(seg)}
               >
                 {!seg.isError && (
                   <span className="transcript-timestamp">
