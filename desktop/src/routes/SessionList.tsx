@@ -94,7 +94,11 @@ export function SessionList() {
   if (error) {
     return (
       <div className="session-list">
-        <p className="session-list-error" role="alert">
+        <p
+          className="session-list-error"
+          role="alert"
+          aria-label={`セッション履歴一覧エラー: ${String(error)}`}
+        >
           セッション一覧の取得に失敗しました: {String(error)}
         </p>
         <button
@@ -136,7 +140,11 @@ export function SessionList() {
       </div>
 
       {actionError && (
-        <p className="session-list-error" role="alert">
+        <p
+          className="session-list-error"
+          role="alert"
+          aria-label={`セッション履歴ファイル操作エラー: ${actionError}`}
+        >
           {actionError}
         </p>
       )}
