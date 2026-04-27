@@ -220,10 +220,16 @@ export function SettingsView() {
   }
 
   const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(settings);
+  const outputDirectoryDisplayText =
+    localSettings.outputDirectory ??
+    defaultOutputDir ??
+    (isFetchingDefaultOutputDir ? "取得中..." : "未設定");
   const outputDirectoryLabel = localSettings.outputDirectory
     ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
     : defaultOutputDir
       ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
+      : isFetchingDefaultOutputDir
+        ? "現在の出力先ディレクトリを取得中です"
       : "現在の出力先ディレクトリは未設定です";
   const outputDirectoryModeLabel = localSettings.outputDirectory
     ? "カスタム"
@@ -464,7 +470,7 @@ export function SettingsView() {
               aria-label={outputDirectoryLabel}
               title={outputDirectoryLabel}
             >
-              {localSettings.outputDirectory ?? defaultOutputDir ?? "未設定"}
+              {outputDirectoryDisplayText}
             </span>
           </div>
           {defaultOutputDirError && !localSettings.outputDirectory && (
