@@ -69,7 +69,7 @@ export function PermissionBanner() {
     .filter(Boolean)
     .join(": ");
   const permissionSummaryLabel = [
-    "録音権限状態",
+    "録音/取得権限状態",
     micNeedsAttention ? micPermissionDetail : null,
     screenNeedsAttention ? screenPermissionDetail : null,
   ]
@@ -123,7 +123,7 @@ export function PermissionBanner() {
               ? "マイク権限の状態を確認しています。"
               : micPermissionError
               ? "マイク権限の状態をmacOSから取得できませんでした。自分トラック録音の可否が不明です。"
-              : "マイクが未許可です。自分トラックは録音されません。"}
+              : "マイクが未許可です。自分トラックは録音・文字起こしされません。"}
             <br />
             <strong>システム設定 &gt; プライバシーとセキュリティ &gt; マイク</strong>
             で状態を確認してください。
