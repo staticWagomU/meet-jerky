@@ -867,9 +867,19 @@ export function TranscriptView() {
     hasOpenAIApiKey,
     openAIApiKeyErrorForUi,
   );
+  const meetingRecordingStatusLabel = isMeetingOperationPending
+    ? "処理中"
+    : isMeetingActive
+      ? "記録中"
+      : "待機中";
+  const meetingRecordingStatusClass = isMeetingOperationPending
+    ? "meeting-status-pill-neutral"
+    : isMeetingActive
+      ? "meeting-status-pill-active"
+      : "meeting-status-pill-idle";
   const meetingStatusAriaLabel = [
     "会議記録状態",
-    isMeetingActive ? "記録中" : "待機中",
+    meetingRecordingStatusLabel,
     isTranscribing ? "文字起こし中" : "文字起こし停止",
     `音声 ${audioSourceStatusAriaText}`,
     `エンジン ${engineStatusLabel}`,
@@ -932,14 +942,10 @@ export function TranscriptView() {
           title={meetingStatusAriaLabel}
         >
           <span
-            className={`meeting-status-pill ${
-              isMeetingActive
-                ? "meeting-status-pill-active"
-                : "meeting-status-pill-idle"
-            }`}
-            title={isMeetingActive ? "会議記録: 記録中" : "会議記録: 待機中"}
+            className={`meeting-status-pill ${meetingRecordingStatusClass}`}
+            title={`会議記録: ${meetingRecordingStatusLabel}`}
           >
-            {isMeetingActive ? "記録中" : "待機中"}
+            {meetingRecordingStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${
