@@ -3987,3 +3987,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose transcript display states on hover
+
+- 開始日時: 2026-04-27 14:02 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし一覧の全体件数/コピー操作/ログ領域/空状態が、ホバーでも自分/相手側トラック件数や操作状態付きで確認できるようにする。
+- 結果: 文字起こし件数ラベルとコピー操作ラベルを定数化し、既存 `aria-label` と新規 `title` で共有した。ログ領域と空状態にも `title` を追加した。文字起こし受信、コピー処理、セグメント分類は変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

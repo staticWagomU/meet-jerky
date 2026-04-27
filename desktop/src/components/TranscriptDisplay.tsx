@@ -283,6 +283,15 @@ export function TranscriptDisplay({
     segments.length > 0
       ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
       : "文字起こしログは空です";
+  const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
+  const copyButtonLabel =
+    copyableSegmentsCount === 0
+      ? "コピーできる文字起こしはありません"
+      : isCopying
+        ? `文字起こし ${copyableSegmentsCount} 件をコピー中`
+        : copyFeedback
+          ? `文字起こし ${copyableSegmentsCount} 件をコピー済み`
+          : `文字起こし ${copyableSegmentsCount} 件をコピー`;
 
   return (
     <div className="transcript-display-wrapper">
@@ -290,7 +299,8 @@ export function TranscriptDisplay({
         <div className="transcript-toolbar">
           <div
             className="transcript-counts"
-            aria-label={`文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、未分類 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`}
+            aria-label={transcriptCountsLabel}
+            title={transcriptCountsLabel}
           >
             <span className="transcript-segment-count">
               {segments.length} 件
@@ -327,15 +337,8 @@ export function TranscriptDisplay({
           <button
             type="button"
             className="copy-btn"
-            aria-label={
-              copyableSegmentsCount === 0
-                ? "コピーできる文字起こしはありません"
-                : isCopying
-                ? `文字起こし ${copyableSegmentsCount} 件をコピー中`
-                : copyFeedback
-                  ? `文字起こし ${copyableSegmentsCount} 件をコピー済み`
-                  : `文字起こし ${copyableSegmentsCount} 件をコピー`
-            }
+            aria-label={copyButtonLabel}
+            title={copyButtonLabel}
             onClick={handleCopyAll}
             disabled={copyableSegmentsCount === 0 || isCopying}
           >
@@ -378,11 +381,12 @@ export function TranscriptDisplay({
         className="transcript-display"
         role="log"
         aria-label={transcriptLogLabel}
+        title={transcriptLogLabel}
         aria-relevant="additions text"
         onScroll={handleScroll}
       >
         {segments.length === 0 ? (
-          <div className="transcript-empty">
+          <div className="transcript-empty" title={transcriptLogLabel}>
             文字起こしを開始すると、自分 / 相手側トラックの発話がここに流れます
           </div>
         ) : (
