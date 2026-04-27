@@ -158,7 +158,7 @@ fn notification_body(app_name: &str) -> String {
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
     let parsed = parse_url_host_and_path(url)?;
-    let host = parsed.host.to_ascii_lowercase();
+    let host = normalize_url_host(&parsed.host)?;
 
     let service = if is_google_meet_url(&host, &parsed.path) {
         "Google Meet"
@@ -174,6 +174,15 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         service: service.to_string(),
         host,
     })
+}
+
+fn normalize_url_host(host: &str) -> Option<String> {
+    let normalized = host.to_ascii_lowercase();
+    let normalized = normalized.strip_suffix('.').unwrap_or(&normalized);
+    if normalized.is_empty() || normalized.ends_with('.') {
+        return None;
+    }
+    Some(normalized.to_string())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -492,6 +501,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://meet.google.com./abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url(" HTTPS://MEET.GOOGLE.COM/abc-defg-hij?authuser=0#meeting "),
             Some(MeetingUrlClassification {
                 service: "Google Meet".to_string(),
@@ -548,6 +564,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://company.zoom.us./j/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/secret"),
             Some(MeetingUrlClassification {
                 service: "Microsoft Teams".to_string(),
@@ -596,6 +619,13 @@ mod tests {
                 host: "teams.microsoft.com".to_string(),
             })
         );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com./v2?meetingjoin=true"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
     }
 
     #[test]
@@ -617,6 +647,10 @@ mod tests {
         assert_eq!(classify_meeting_url("https://.zoom.us/j/123456789"), None);
         assert_eq!(
             classify_meeting_url("https://evil..zoom.us/j/123456789"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com../abc-defg-hij"),
             None
         );
         assert_eq!(classify_meeting_url("https://evilzoom.us/j/123"), None);

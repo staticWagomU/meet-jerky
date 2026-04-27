@@ -4323,3 +4323,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機 VoiceOver と macOS 画面確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: normalize trailing dot meeting hosts
+
+- 開始日時: 2026-04-27 17:56 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: ブラウザ URL 分類で FQDN 表記の末尾ドット付き会議 host を取りこぼさないようにしつつ、不正な二重末尾ドットは拒否する。
+- 結果: classify 前に host を小文字化し、末尾ドット 1 つだけを正規化する helper を追加した。Google Meet / Zoom / Teams の末尾ドット付き URL を分類するテストと、二重末尾ドットを拒否するテストを追加した。payload/log/UI に URL 全文や path を出さない方針は維持している。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
