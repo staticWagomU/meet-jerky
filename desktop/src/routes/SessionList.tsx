@@ -37,6 +37,7 @@ export function SessionList() {
     const nextAction = { kind: "open" as const, path };
     pendingActionRef.current = nextAction;
     setPendingAction(nextAction);
+    setActionError(null);
     try {
       await openPath(path);
       if (!isMountedRef.current) {
@@ -64,6 +65,7 @@ export function SessionList() {
     const nextAction = { kind: "reveal" as const, path };
     pendingActionRef.current = nextAction;
     setPendingAction(nextAction);
+    setActionError(null);
     try {
       await revealItemInDir(path);
       if (!isMountedRef.current) {
