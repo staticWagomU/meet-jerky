@@ -5065,3 +5065,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機でのコピー後ライブ更新表示は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: show waiting label for locked session actions
+
+- 開始日時: 2026-04-27 21:17 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴で別行のファイル操作中に他の行のボタンが無効化される場合、通常操作文言のままにせず待機中であることを示す。
+- 結果: 他セッションの open/reveal 処理中は、該当していない行の操作ボタン表示を「操作待ち」にし、aria/title も「他のセッション操作を処理中」とするようにした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での履歴ファイル open/reveal 操作中 UI 表示は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

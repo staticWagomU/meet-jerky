@@ -235,11 +235,17 @@ function SessionRow({
     pendingAction?.kind === "open" && pendingAction.path === session.path;
   const isRevealingThisFile =
     pendingAction?.kind === "reveal" && pendingAction.path === session.path;
+  const isWaitingForOtherAction =
+    isAnyActionPending && !isOpeningThisFile && !isRevealingThisFile;
   const openFileLabel = isOpeningThisFile
     ? `ファイルを開いています: ${session.title}`
+    : isWaitingForOtherAction
+      ? `他のセッション操作を処理中: ${session.title}`
     : `ファイルを開く: ${session.title}`;
   const revealFileLabel = isRevealingThisFile
     ? `保存場所を表示しています: ${session.title}`
+    : isWaitingForOtherAction
+      ? `他のセッション操作を処理中: ${session.title}`
     : `保存場所を表示: ${session.title}`;
 
   return (
@@ -278,7 +284,11 @@ function SessionRow({
           onClick={() => onOpenFile(session.path)}
           disabled={isAnyActionPending}
         >
-          {isOpeningThisFile ? "開いています..." : "ファイルを開く"}
+          {isOpeningThisFile
+            ? "開いています..."
+            : isWaitingForOtherAction
+              ? "操作待ち"
+              : "ファイルを開く"}
         </button>
         <button
           type="button"
@@ -288,7 +298,11 @@ function SessionRow({
           onClick={() => onRevealInFolder(session.path)}
           disabled={isAnyActionPending}
         >
-          {isRevealingThisFile ? "表示中..." : "保存場所を表示"}
+          {isRevealingThisFile
+            ? "表示中..."
+            : isWaitingForOtherAction
+              ? "操作待ち"
+              : "保存場所を表示"}
         </button>
       </div>
     </li>
