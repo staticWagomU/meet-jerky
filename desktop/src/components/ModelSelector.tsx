@@ -446,7 +446,7 @@ function DownloadStatus({
         {isFetchingDownloaded
           ? "確認中..."
           : downloadingModel
-            ? "待機中"
+            ? "ダウンロード待ち"
             : "ダウンロード"}
       </button>
       {downloadError && (
