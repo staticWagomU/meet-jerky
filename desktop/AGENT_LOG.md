@@ -1,5 +1,19 @@
 # Agent Log
 
+### Microphone UX: clarify device reload buttons
+
+- 開始日時: 2026-04-28 07:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、マイクデバイス一覧取得エラー時の再取得ボタンがデバイス対象だと可視表示でも分かるようにする。
+- 結果: 設定画面とライブ画面のマイクデバイス再取得ボタン表示を `再取得` から `デバイスを再取得` に変更した。デバイス取得処理、aria/title、録音処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でマイクデバイス再取得ボタン幅が自然か確認する。
+
 ### Session List UX: clarify reload buttons
 
 - 開始日時: 2026-04-28 07:43 JST

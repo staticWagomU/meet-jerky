@@ -155,7 +155,7 @@ export function MicrophoneSection({
             aria-label={retryDevicesLabel}
             title={retryDevicesLabel}
           >
-            {isReloadingAudioDevices ? "取得中..." : "再取得"}
+            {isReloadingAudioDevices ? "取得中..." : "デバイスを再取得"}
           </button>
         </div>
       )}

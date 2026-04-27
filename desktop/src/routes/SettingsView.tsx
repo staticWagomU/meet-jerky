@@ -566,7 +566,7 @@ export function SettingsView() {
               aria-label={retryDevicesLabel}
               title={retryDevicesLabel}
             >
-              {isFetchingDevices ? "取得中..." : "再取得"}
+              {isFetchingDevices ? "取得中..." : "デバイスを再取得"}
             </button>
           </div>
         )}
