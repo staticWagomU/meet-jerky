@@ -158,8 +158,10 @@ export function SettingsView() {
     setIsSelectingOutputDirectory(true);
     try {
       const selected = await invoke<string | null>("select_output_directory");
-      if (selected && localSettings) {
-        setLocalSettings({ ...localSettings, outputDirectory: selected });
+      if (selected) {
+        setLocalSettings((current) =>
+          current ? { ...current, outputDirectory: selected } : current,
+        );
       }
     } catch (e) {
       console.error("フォルダ選択に失敗しました:", e);
@@ -168,13 +170,13 @@ export function SettingsView() {
       isSelectingOutputDirectoryRef.current = false;
       setIsSelectingOutputDirectory(false);
     }
-  }, [isSelectingOutputDirectory, localSettings, showToast]);
+  }, [isSelectingOutputDirectory, showToast]);
 
   const handleResetOutputDirectory = useCallback(() => {
-    if (localSettings) {
-      setLocalSettings({ ...localSettings, outputDirectory: null });
-    }
-  }, [localSettings]);
+    setLocalSettings((current) =>
+      current ? { ...current, outputDirectory: null } : current,
+    );
+  }, []);
 
   if (settingsError) {
     const settingsErrorMessage = toErrorMessage(settingsError);
