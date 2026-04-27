@@ -528,7 +528,7 @@ export function TranscriptView() {
           return;
         }
 
-        // 録音停止は完了している。finalize 失敗時はユーザに通知するだけ。
+        // 録音停止は完了している。finalize 失敗時はユーザーに通知するだけ。
         try {
           const savedPath = await finalizeAndSaveSession();
           setLastSavedPath(savedPath);
