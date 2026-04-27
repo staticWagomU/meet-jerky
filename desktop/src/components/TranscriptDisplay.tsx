@@ -295,19 +295,31 @@ export function TranscriptDisplay({
             <span className="transcript-segment-count">
               {segments.length} 件
             </span>
-            <span className="transcript-count-pill transcript-count-pill-self">
+            <span
+              className="transcript-count-pill transcript-count-pill-self"
+              title={`自分トラックの文字起こし: ${segmentCounts.self} 件`}
+            >
               自分 {segmentCounts.self}
             </span>
-            <span className="transcript-count-pill transcript-count-pill-other">
+            <span
+              className="transcript-count-pill transcript-count-pill-other"
+              title={`相手側トラックの文字起こし: ${segmentCounts.other} 件`}
+            >
               相手側 {segmentCounts.other}
             </span>
             {segmentCounts.unknown > 0 && (
-              <span className="transcript-count-pill transcript-count-pill-unknown">
+              <span
+                className="transcript-count-pill transcript-count-pill-unknown"
+                title={`音声ソース未分類の文字起こし: ${segmentCounts.unknown} 件`}
+              >
                 未分類 {segmentCounts.unknown}
               </span>
             )}
             {segmentCounts.errors > 0 && (
-              <span className="transcript-count-pill transcript-count-pill-error">
+              <span
+                className="transcript-count-pill transcript-count-pill-error"
+                title={`文字起こしエラー: ${segmentCounts.errors} 件`}
+              >
                 エラー {segmentCounts.errors}
               </span>
             )}
