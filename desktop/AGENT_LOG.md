@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Meeting detection UX: clarify no auto start scope
+
+- 開始日時: 2026-04-28 03:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーで自動開始していない対象を録音だけでなく文字起こしまで含めて明確化する。
+- 結果: バナー本文と aria/title の `自動録音は開始していません` を、`録音と文字起こしは自動開始していません` へ変更した。meeting-app-detected event、dismiss、遷移処理には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 会議検知バナーが邪魔にならず、自動開始していない範囲として自然に読めるか確認する。
+
 ### Settings UX: align permission denied wording
 
 - 開始日時: 2026-04-28 03:42 JST
