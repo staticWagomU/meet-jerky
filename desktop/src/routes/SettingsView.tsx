@@ -371,7 +371,7 @@ export function SettingsView() {
             />
             <span>ローカル (Whisper)</span>
             <span id={ENGINE_NOTE_IDS.whisper} className="settings-note">
-              外部送信なし / 端末内処理
+              外部送信なし、端末内処理
             </span>
           </label>
           <label className="settings-radio-label" title={appleSpeechEngineLabel}>
@@ -395,7 +395,7 @@ export function SettingsView() {
             />
             <span>macOS SpeechAnalyzer</span>
             <span id={ENGINE_NOTE_IDS.appleSpeech} className="settings-note">
-              外部送信なし / macOS 26+ 専用
+              外部送信なし、macOS 26+ 専用
             </span>
           </label>
           <label
@@ -422,7 +422,7 @@ export function SettingsView() {
             />
             <span>OpenAI Realtime API</span>
             <span id={ENGINE_NOTE_IDS.openAIRealtime} className="settings-note">
-              音声を OpenAI へ送信 / API キーが必要
+              音声を OpenAI へ送信、API キーが必要
             </span>
           </label>
           <label
@@ -452,7 +452,7 @@ export function SettingsView() {
               id={ENGINE_NOTE_IDS.elevenLabsRealtime}
               className="settings-note"
             >
-              音声を ElevenLabs へ送信 / API キーが必要
+              音声を ElevenLabs へ送信、API キーが必要
             </span>
           </label>
         </div>

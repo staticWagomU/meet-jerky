@@ -6186,6 +6186,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で空状態文言が狭い幅でも自然に折り返されるか確認する。
 
+### Settings Engine UX: replace slash-separated notes
+
+- 開始日時: 2026-04-28 05:33 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしエンジン説明の記号区切りを読みやすい表記へ揃える。
+- 結果: エンジン説明の `外部送信なし / ...` と `音声を ... へ送信 / API キーが必要` を読点区切りへ変更した。エンジン選択、API キー保存、外部送信判定には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面で各エンジン説明が狭い幅でも読みやすく折り返されるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
