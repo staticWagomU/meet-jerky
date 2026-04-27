@@ -660,25 +660,38 @@ function PermissionBadge({
   isChecking: boolean;
 }) {
   const getBadgeLabel = (text: string) => `${label}: ${text}`;
-  const renderBadge = (className: string, text: string, isBusy = false) => (
-    <span
-      className={`settings-permission-badge${className ? ` ${className}` : ""}`}
-      role="status"
-      aria-busy={isBusy}
-      aria-live="polite"
-      aria-atomic="true"
-      aria-label={getBadgeLabel(text)}
-      title={getBadgeLabel(text)}
-    >
-      {text}
-    </span>
-  );
+  const renderBadge = (
+    className: string,
+    text: string,
+    isBusy = false,
+    description = text,
+  ) => {
+    const badgeLabel = getBadgeLabel(description);
+    return (
+      <span
+        className={`settings-permission-badge${className ? ` ${className}` : ""}`}
+        role="status"
+        aria-busy={isBusy}
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={badgeLabel}
+        title={badgeLabel}
+      >
+        {text}
+      </span>
+    );
+  };
 
   if (isChecking) {
     return renderBadge("", "確認中...", true);
   }
   if (error) {
-    return renderBadge("permission-denied", "確認失敗");
+    return renderBadge(
+      "permission-denied",
+      "確認失敗",
+      false,
+      `確認失敗: ${toErrorMessage(error)}`,
+    );
   }
   if (!status) {
     return renderBadge("", "確認中...", true);
