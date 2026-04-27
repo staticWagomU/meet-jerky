@@ -399,7 +399,7 @@ function DownloadStatus({
 
   if (isDownloadedError) {
     const downloadedErrorMessage = toErrorMessage(isDownloadedError);
-    const downloadedErrorLabel = `${selectedModel} Whisper モデルの状態確認エラー: ${downloadedErrorMessage}`;
+    const downloadedErrorLabel = `${selectedModel} Whisper モデルの状態の確認エラー: ${downloadedErrorMessage}`;
     const refetchDownloadedLabel = isFetchingDownloaded
       ? `${selectedModel} の Whisper モデルの状態を確認中`
       : `${selectedModel} の Whisper モデルの状態を再確認`;
@@ -411,7 +411,7 @@ function DownloadStatus({
           aria-label={downloadedErrorLabel}
           title={downloadedErrorLabel}
         >
-          Whisper モデルの状態確認に失敗しました: {downloadedErrorMessage}
+          Whisper モデルの状態の確認に失敗しました: {downloadedErrorMessage}
         </span>
         <button
           type="button"
