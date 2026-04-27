@@ -32,6 +32,8 @@ export function SystemAudioSection({
               : "audio-source-state-badge-idle"
           }`}
           role="status"
+          aria-live="polite"
+          aria-atomic="true"
           aria-label={`システム音声 相手側トラック: ${isSystemAudioRecording ? "取得中" : "待機中"}`}
         >
           {isSystemAudioRecording ? "取得中" : "待機中"}

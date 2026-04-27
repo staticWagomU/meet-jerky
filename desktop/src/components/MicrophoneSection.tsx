@@ -45,6 +45,8 @@ export function MicrophoneSection({
               : "audio-source-state-badge-idle"
           }`}
           role="status"
+          aria-live="polite"
+          aria-atomic="true"
           aria-label={`マイク 自分トラック: ${isMicRecording ? "録音中" : "待機中"}`}
         >
           {isMicRecording ? "録音中" : "待機中"}
