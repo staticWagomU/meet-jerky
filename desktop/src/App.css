@@ -497,14 +497,17 @@
   gap: 0.5rem;
   font-size: 0.75rem;
   color: var(--color-muted);
+  min-width: 0;
 }
 
 .level-label {
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .level-meter-bar {
-  flex: 1;
+  flex: 1 1 6rem;
+  min-width: 4rem;
 }
 
 .audio-meter-container {
