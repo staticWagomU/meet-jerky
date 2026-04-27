@@ -221,8 +221,13 @@ fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
 }
 
 fn extract_query(rest: &str) -> Option<String> {
-    let query_start = rest.find('?')? + 1;
-    let query = &rest[query_start..];
+    let query_start = rest.find('?')?;
+    if let Some(fragment_start) = rest.find('#') {
+        if fragment_start < query_start {
+            return None;
+        }
+    }
+    let query = &rest[query_start + 1..];
     let query_end = query.find('#').unwrap_or(query.len());
     Some(query[..query_end].to_string())
 }
@@ -634,6 +639,10 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/v2/extra?meetingjoin=true"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2#fragment?meetingjoin=true"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
