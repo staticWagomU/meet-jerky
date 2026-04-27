@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify permission retry button
+
+- 開始日時: 2026-04-28 06:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定画面の権限再確認ボタンをライブ画面の権限バナーと同じ分かりやすい操作名へ揃える。
+- 結果: 設定画面の権限セクションにある通常時ボタン表示を `再チェック` から `権限を再チェック` に変更した。権限取得処理、macOS 設定導線、aria/title ラベルには触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で設定画面の権限ボタン幅が不自然に広がらないか確認する。
+
 ## 2026-04-25
 
 ### Harness initialization
