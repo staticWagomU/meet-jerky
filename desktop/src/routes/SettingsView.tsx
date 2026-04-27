@@ -369,6 +369,8 @@ export function SettingsView() {
           <span
             className="settings-output-path"
             role="status"
+            aria-live="polite"
+            aria-atomic="true"
             aria-label={
               localSettings.outputDirectory
                 ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
@@ -487,7 +489,12 @@ export function SettingsView() {
       {/* 保存ボタン */}
       <div className="settings-actions">
         {hasChanges && (
-          <span className="settings-unsaved-status" role="status">
+          <span
+            className="settings-unsaved-status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             未保存の変更があります
           </span>
         )}
