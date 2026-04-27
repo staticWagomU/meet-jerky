@@ -221,6 +221,7 @@ export function ModelSelector({
         disabled={disabled || downloadingModel !== null || Boolean(modelsError)}
         className="model-select"
         aria-label={modelSelectAriaLabel}
+        title={modelSelectAriaLabel}
       >
         {models?.map((model) => (
           <ModelOption key={model.name} model={model} />
@@ -259,6 +260,11 @@ export function ModelSelector({
             onClick={() => refetchModels()}
             disabled={isFetchingModels}
             aria-label={
+              isFetchingModels
+                ? "Whisperモデル一覧を取得中"
+                : "Whisperモデル一覧を再取得"
+            }
+            title={
               isFetchingModels
                 ? "Whisperモデル一覧を取得中"
                 : "Whisperモデル一覧を再取得"
@@ -322,16 +328,18 @@ function DownloadStatus({
 
   if (downloadingModel === selectedModel) {
     const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
+    const progressLabel = `${selectedModel} モデルダウンロード進捗`;
     return (
       <div className="download-progress-wrapper">
         <div
           className="download-progress-bar"
           role="progressbar"
-          aria-label={`${selectedModel} モデルダウンロード進捗`}
+          aria-label={progressLabel}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progressPercent}
           aria-valuetext={`${progressPercent}%`}
+          title={`${progressLabel}: ${progressPercent}%`}
         >
           <div
             className="download-progress-fill"
@@ -344,13 +352,15 @@ function DownloadStatus({
   }
 
   if (isDownloaded) {
+    const readyLabel = `${selectedModel} モデルは準備完了`;
     return (
       <span
         className="model-status-ready"
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        aria-label={`${selectedModel} モデルは準備完了`}
+        aria-label={readyLabel}
+        title={readyLabel}
       >
         準備完了
       </span>
@@ -358,23 +368,25 @@ function DownloadStatus({
   }
 
   if (isDownloadedError) {
+    const downloadedErrorLabel = `${selectedModel} モデル状態エラー: ${String(isDownloadedError)}`;
+    const refetchDownloadedLabel = isFetchingDownloaded
+      ? `${selectedModel} のモデル状態を確認中`
+      : `${selectedModel} のモデル状態を再確認`;
     return (
       <div className="download-status-wrapper">
         <span
           className="download-error"
           role="alert"
-          aria-label={`${selectedModel} モデル状態エラー: ${String(isDownloadedError)}`}
+          aria-label={downloadedErrorLabel}
+          title={downloadedErrorLabel}
         >
           モデル状態の確認に失敗しました: {String(isDownloadedError)}
         </span>
         <button
           type="button"
           className="download-btn"
-          aria-label={
-            isFetchingDownloaded
-              ? `${selectedModel} のモデル状態を確認中`
-              : `${selectedModel} のモデル状態を再確認`
-          }
+          aria-label={refetchDownloadedLabel}
+          title={refetchDownloadedLabel}
           onClick={() => refetchDownloaded()}
           disabled={isFetchingDownloaded}
         >
@@ -384,16 +396,17 @@ function DownloadStatus({
     );
   }
 
+  const downloadButtonLabel = downloadingModel
+    ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
+    : `${selectedModel} をダウンロード`;
+
   return (
     <div className="download-status-wrapper">
       <button
         type="button"
         className="download-btn"
-        aria-label={
-          downloadingModel
-            ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
-            : `${selectedModel} をダウンロード`
-        }
+        aria-label={downloadButtonLabel}
+        title={downloadButtonLabel}
         onClick={() => onDownload(selectedModel)}
         disabled={disabled || downloadingModel !== null}
       >
@@ -404,6 +417,7 @@ function DownloadStatus({
           className="download-error"
           role="alert"
           aria-label={`${selectedModel} モデルダウンロードエラー: ${downloadError}`}
+          title={`${selectedModel} モデルダウンロードエラー: ${downloadError}`}
         >
           {downloadError}
         </span>

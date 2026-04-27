@@ -3903,3 +3903,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認は未実施。認証情報変更は行っていない。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose model selector states on hover
+
+- 開始日時: 2026-04-27 13:13 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: Whisperモデル選択/準備/ダウンロード/再確認の状態が、ホバーでも文脈付きで確認できるようにする。
+- 結果: モデル select、一覧再取得、進捗バー、準備完了 status、モデル状態エラー、再確認、ダウンロード、ダウンロードエラーに `title` を追加し、一部のラベルを定数化した。モデル一覧取得、ダウンロード処理、状態判定、進捗更新は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
