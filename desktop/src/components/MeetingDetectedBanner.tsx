@@ -5,7 +5,7 @@ import type { MeetingAppDetectedPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 
 /// 会議アプリまたはブラウザ会議URLを検知したら、画面上部にバナーを出して
-/// ユーザーに記録状態の確認を促すグローバルコンポーネント。
+/// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
 ///
 /// 設計メモ:
 /// - 自動で記録開始まで踏み込むと、TranscriptView のローカル状態 (mic / system

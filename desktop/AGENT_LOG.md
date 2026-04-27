@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Meeting detection docs: align banner status comment
+
+- 開始日時: 2026-04-28 03:37 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知バナーの設計コメントを、現行の録音と文字起こし状態確認導線に合わせて更新する。
+- 結果: `記録状態` の確認を促すコメントを、録音と文字起こしの状態確認を促す説明へ変更した。表示文言、イベント購読、ナビゲーション処理には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後の会議検知改善で自動録音開始と状態確認導線を混同しないようコメントを維持する。
+
 ### System audio UX: align backend error wording
 
 - 開始日時: 2026-04-28 03:36 JST
