@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: shorten saved session status
+
+- 開始日時: 2026-04-28 07:41 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議終了後の保存完了 status がフルパスを読み上げず、会議中でも邪魔にならない情報量にする。
+- 結果: 保存完了表示の aria/title から保存先フルパスを外し、可視表示と同じファイル名中心の `会議セッションを保存しました: <file>` に変更した。保存処理、保存先、履歴画面のファイル操作には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で保存完了 status が短く自然に読まれるか確認する。
+
 ### Transcript UX: clarify empty log label
 
 - 開始日時: 2026-04-28 07:40 JST
