@@ -5513,3 +5513,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での設定 radio/select 連続変更確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: separate meeting detection listener errors visually
+
+- 開始日時: 2026-04-27 22:51 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先方針に沿い、会議中に邪魔にならない状態表示を保ちながら、通常の会議検知通知と通知受信失敗を視覚的に区別しやすくする。
+- 結果: `MeetingDetectedBanner` にリスナー失敗時専用のクラスを付け、通常の検知通知は従来の注意色のまま、通知購読エラーだけをエラー色で表示するようにした。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議検知通知/通知購読失敗表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。

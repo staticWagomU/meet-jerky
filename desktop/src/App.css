@@ -84,6 +84,9 @@
   --meeting-detected-bg: #fff3cd;
   --meeting-detected-border: #ffe69c;
   --meeting-detected-color: #664d03;
+  --meeting-detected-error-bg: rgba(220, 38, 38, 0.1);
+  --meeting-detected-error-border: rgba(220, 38, 38, 0.28);
+  --meeting-detected-error-color: #b91c1c;
 
   /* Toast */
   --toast-bg: #1f2937;
@@ -168,6 +171,9 @@
     --meeting-detected-bg: rgba(234, 179, 8, 0.12);
     --meeting-detected-border: #ca8a04;
     --meeting-detected-color: #fbbf24;
+    --meeting-detected-error-bg: rgba(220, 38, 38, 0.16);
+    --meeting-detected-error-border: rgba(248, 113, 113, 0.38);
+    --meeting-detected-error-color: #fca5a5;
 
     --toast-bg: #374151;
     --toast-color: #f9fafb;
@@ -1375,6 +1381,12 @@
   flex: 1;
   min-width: min(14rem, 100%);
   line-height: 1.3;
+}
+
+.meeting-detected-banner-error {
+  background-color: var(--meeting-detected-error-bg);
+  border-color: var(--meeting-detected-error-border);
+  color: var(--meeting-detected-error-color);
 }
 
 .meeting-detected-source-badge {
