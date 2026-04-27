@@ -25,6 +25,12 @@ const LANGUAGES = [
   { value: "en", label: "English" },
 ];
 
+function toErrorMessage(e: unknown): string {
+  if (typeof e === "string") return e;
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
 export function SettingsView() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
@@ -87,7 +93,7 @@ export function SettingsView() {
       showToast("設定を保存しました");
     },
     onError: (error) => {
-      showToast(`保存に失敗しました: ${error}`);
+      showToast(`保存に失敗しました: ${toErrorMessage(error)}`);
     },
     onSettled: () => {
       isSavingSettingsRef.current = false;
@@ -162,7 +168,7 @@ export function SettingsView() {
       }
     } catch (e) {
       console.error("フォルダ選択に失敗しました:", e);
-      showToast(`フォルダ選択に失敗しました: ${String(e)}`);
+      showToast(`フォルダ選択に失敗しました: ${toErrorMessage(e)}`);
     } finally {
       isSelectingOutputDirectoryRef.current = false;
       setIsSelectingOutputDirectory(false);
@@ -710,7 +716,8 @@ function OpenAIApiKeySection({
       setKeyInput("");
       showToast("API キーを保存しました");
     },
-    onError: (e) => showToast(`API キーの保存に失敗しました: ${e}`),
+    onError: (e) =>
+      showToast(`API キーの保存に失敗しました: ${toErrorMessage(e)}`),
     onSettled: () => {
       isSettingApiKeyRef.current = false;
     },
@@ -722,7 +729,8 @@ function OpenAIApiKeySection({
       queryClient.invalidateQueries({ queryKey: ["openaiApiKey", "has"] });
       showToast("API キーを削除しました");
     },
-    onError: (e) => showToast(`API キーの削除に失敗しました: ${e}`),
+    onError: (e) =>
+      showToast(`API キーの削除に失敗しました: ${toErrorMessage(e)}`),
     onSettled: () => {
       isClearingApiKeyRef.current = false;
     },
