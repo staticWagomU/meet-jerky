@@ -270,8 +270,8 @@ export function SettingsView() {
     localSettings.language;
   const whisperModelLabel = `Whisperモデル: ${whisperModelName}`;
   const microphoneDeviceLabel = localSettings.microphoneDeviceId
-    ? `マイクデバイス: ${selectedMicrophoneDeviceName}`
-    : "マイクデバイス: デフォルト";
+    ? `自分トラックのマイクデバイス: ${selectedMicrophoneDeviceName}`
+    : "自分トラックのマイクデバイス: デフォルト";
   const retryDevicesLabel = isFetchingDevices
     ? "自分トラックのマイクデバイス一覧を取得中"
     : "自分トラックのマイクデバイス一覧を再取得";
