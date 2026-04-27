@@ -6270,6 +6270,20 @@
 - 失敗理由: なし。
 - 次アクション: 設定画面で Whisper モデル状態エラー表示が長すぎないか確認する。
 
+### Transcript UX: clarify status check error wording
+
+- 開始日時: 2026-04-28 06:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こし画面の状態確認エラー表記を読みやすく揃える。
+- 結果: Whisper モデルと外部 API キーの `状態確認エラー` / `状態確認に失敗` を `状態の確認エラー` / `状態の確認に失敗` に変更した。状態取得、開始可否判定、API キー処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 文字起こし画面でエラー表示が長すぎず自然に読めるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
