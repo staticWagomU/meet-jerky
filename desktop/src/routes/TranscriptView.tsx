@@ -523,8 +523,8 @@ export function TranscriptView() {
           setElapsedTime(0);
         } catch (e) {
           const msg = toErrorMessage(e);
-          console.error("会議停止に失敗しました:", msg);
-          setMeetingError(`会議停止に失敗しました: ${msg}`);
+          console.error("記録停止に失敗しました:", msg);
+          setMeetingError(`記録停止に失敗しました: ${msg}`);
           return;
         }
 
