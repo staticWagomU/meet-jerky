@@ -227,18 +227,30 @@ export function ModelSelector({
         ))}
       </select>
       {progressListenerError && (
-        <span className="download-error" role="alert">
+        <span
+          className="download-error"
+          role="alert"
+          aria-label={`Whisperモデルダウンロード進捗受信エラー: ${progressListenerError}`}
+        >
           {progressListenerError}
         </span>
       )}
       {downloadErrorListenerError && (
-        <span className="download-error" role="alert">
+        <span
+          className="download-error"
+          role="alert"
+          aria-label={`Whisperモデルダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+        >
           {downloadErrorListenerError}
         </span>
       )}
       {modelsError ? (
         <div className="download-status-wrapper">
-          <span className="download-error" role="alert">
+          <span
+            className="download-error"
+            role="alert"
+            aria-label={`Whisperモデル一覧エラー: ${String(modelsError)}`}
+          >
             モデル一覧の取得に失敗しました: {String(modelsError)}
           </span>
           <button
@@ -346,7 +358,11 @@ function DownloadStatus({
   if (isDownloadedError) {
     return (
       <div className="download-status-wrapper">
-        <span className="download-error" role="alert">
+        <span
+          className="download-error"
+          role="alert"
+          aria-label={`${selectedModel} モデル状態エラー: ${String(isDownloadedError)}`}
+        >
           モデル状態の確認に失敗しました: {String(isDownloadedError)}
         </span>
         <button
@@ -382,7 +398,11 @@ function DownloadStatus({
         ダウンロード
       </button>
       {downloadError && (
-        <span className="download-error" role="alert">
+        <span
+          className="download-error"
+          role="alert"
+          aria-label={`${selectedModel} モデルダウンロードエラー: ${downloadError}`}
+        >
           {downloadError}
         </span>
       )}

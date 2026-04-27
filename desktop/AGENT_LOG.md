@@ -3035,3 +3035,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。設定取得/Keychain の実機確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: label model alert contexts
+
+- 開始日時: 2026-04-27 10:55 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: Whisper モデル選択の alert が、支援技術でも一覧取得/状態確認/ダウンロード/イベント受信のどのエラーか分かるようにする。
+- 結果: モデル一覧取得失敗、モデル状態確認失敗、モデルダウンロード失敗、ダウンロード進捗 listener 失敗、ダウンロードエラー listener 失敗の alert に対象別 `aria-label` を追加した。表示文言、モデル一覧取得、状態確認、ダウンロード処理は変更していない。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI 表示と VoiceOver 読み上げは未実機確認。モデルダウンロード/イベント失敗の実機確認は未実施。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
