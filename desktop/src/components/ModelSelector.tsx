@@ -430,7 +430,7 @@ function DownloadStatus({
   const downloadButtonLabel = isFetchingDownloaded
     ? `${selectedModel} の Whisper モデルの状態を確認中`
     : downloadingModel
-      ? `${downloadingModel} をダウンロード中のため ${selectedModel} は待機中`
+      ? `${downloadingModel} をダウンロード中のため ${selectedModel} はダウンロード待ち`
       : `${selectedModel} をダウンロード`;
 
   return (

@@ -6550,6 +6550,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で片側トラックのみ文字起こし中の状態表示が自然に折り返されるか確認する。
 
+### Model Selector UX: align download waiting label
+
+- 開始日時: 2026-04-28 06:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、別モデルのダウンロード中に選択モデルが待つ状態を可視表示と支援技術向け表示で揃える。
+- 結果: `... は待機中` の aria/title ラベルを `... はダウンロード待ち` に変更した。可視表示、ダウンロード処理、進捗表示、状態判定には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でモデルのダウンロード待ち状態が可視表示と同じ意味で読まれるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
