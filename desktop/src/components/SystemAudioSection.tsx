@@ -51,7 +51,13 @@ export function SystemAudioSection({
     >
       <div className="audio-source-header">
         <span>システム音声</span>
-        <span className="audio-source-track-badge">相手側</span>
+        <span
+          className="audio-source-track-badge"
+          aria-label="音声トラック: 相手側"
+          title="音声トラック: 相手側"
+        >
+          相手側
+        </span>
         <span
           className={`audio-source-state-badge ${systemAudioStateClassName}`}
           role="status"

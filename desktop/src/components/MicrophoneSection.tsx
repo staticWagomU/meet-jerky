@@ -77,7 +77,13 @@ export function MicrophoneSection({
     >
       <div className="audio-source-header">
         <span>マイク</span>
-        <span className="audio-source-track-badge">自分</span>
+        <span
+          className="audio-source-track-badge"
+          aria-label="音声トラック: 自分"
+          title="音声トラック: 自分"
+        >
+          自分
+        </span>
         <span
           className={`audio-source-state-badge ${micStateClassName}`}
           role="status"
