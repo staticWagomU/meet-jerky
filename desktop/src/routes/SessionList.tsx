@@ -219,8 +219,8 @@ export function SessionList() {
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label="保存された文字起こし履歴はまだありません"
-          title="保存された文字起こし履歴はまだありません"
+          aria-label="保存された文字起こし履歴はまだありません。記録を終了すると、ここに表示されます"
+          title="保存された文字起こし履歴はまだありません。記録を終了すると、ここに表示されます"
         >
           記録を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
