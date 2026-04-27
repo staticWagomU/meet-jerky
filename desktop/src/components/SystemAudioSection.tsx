@@ -88,8 +88,8 @@ export function SystemAudioSection({
             : isWaitingForOtherOperation
               ? "操作待ち"
             : isSystemAudioRecording
-              ? "取得停止"
-              : "取得開始"}
+              ? "取得を停止"
+              : "取得を開始"}
         </button>
       </div>
       <div className="level-meter-row">

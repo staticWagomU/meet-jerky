@@ -132,8 +132,8 @@ export function MicrophoneSection({
             : isWaitingForOtherOperation
               ? "操作待ち"
             : isMicRecording
-              ? "録音停止"
-              : "録音開始"}
+              ? "録音を停止"
+              : "録音を開始"}
         </button>
       </div>
       {Boolean(audioDevicesError) && (
