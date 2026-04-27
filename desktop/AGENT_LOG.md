@@ -6130,6 +6130,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI でモデルダウンロード中の進捗とエラー表示が長すぎないか確認する。
 
+### Meeting Banner UX: make recording status action explicit
+
+- 開始日時: 2026-04-28 05:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーが自動録音しないことと次の操作をより自然に伝える。
+- 結果: バナー本文と aria-label を `必要なら状態を確認してください` に変更し、ボタン表示を `録音状態を確認` にした。検知イベント購読、payload 表示、画面遷移処理には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でバナーが会議中に過度に主張せず、録音状態確認の導線として自然に見えるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
