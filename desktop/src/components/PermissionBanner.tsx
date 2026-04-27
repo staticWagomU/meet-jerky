@@ -152,7 +152,7 @@ export function PermissionBanner() {
         aria-label={permissionRetryLabel}
         title={permissionRetryLabel}
       >
-        {isCheckingPermissions ? "確認中..." : "再チェック"}
+        {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
       </button>
     </div>
   );

@@ -6648,6 +6648,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で相手側音声セクションの補足文が自然な行長で表示されるか確認する。
 
+### Permission UX: clarify retry button
+
+- 開始日時: 2026-04-28 06:46 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限バナーの再確認ボタンが何を再チェックする操作か可視表示でも分かるようにする。
+- 結果: 権限バナーの通常時ボタン表示を `再チェック` から `権限を再チェック` に変更した。権限取得、macOS 設定導線、aria/title ラベルには触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で権限バナーのボタン幅が不自然に広がらないか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
