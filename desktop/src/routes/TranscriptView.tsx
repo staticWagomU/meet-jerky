@@ -37,6 +37,10 @@ function formatOperationError(prefix: string, e: unknown): string {
   return `${prefix} ${toErrorMessage(e)}`;
 }
 
+function getFileName(path: string): string {
+  return path.split(/[\\/]/).pop() || path;
+}
+
 function clearRelatedMeetingError(
   currentError: string | null,
   prefix: string,
@@ -879,6 +883,7 @@ export function TranscriptView() {
     : isMeetingActive
       ? "会議記録を終了"
       : "会議記録を開始";
+  const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
 
   return (
     <div className="transcript-view" aria-busy={isAudioSourceOperationPending}>
@@ -1052,16 +1057,16 @@ export function TranscriptView() {
             {audioLevelListenerError}
           </p>
         )}
-        {lastSavedPath && (
+        {lastSavedPath && lastSavedFileName && (
           <p
             className="meeting-saved-path"
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`会議セッションを保存しました: ${lastSavedPath}`}
+            aria-label={`会議セッションを保存しました: ${lastSavedFileName}`}
             title={`会議セッションを保存しました: ${lastSavedPath}`}
           >
-            保存しました: {lastSavedPath}
+            保存しました: {lastSavedFileName}
           </p>
         )}
       </div>
