@@ -149,6 +149,9 @@ export function getMeetingDetectedSourceLabel(
   if (payload.urlHost) {
     return "ブラウザURL";
   }
+  if (payload.source === "browser") {
+    return "ブラウザURL";
+  }
   if (payload.source === "app") {
     return "アプリ";
   }
