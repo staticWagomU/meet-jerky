@@ -128,11 +128,26 @@ export function SessionList() {
   const reloadSessionsLabel = isFetching
     ? "セッション履歴一覧を読み込み中"
     : "セッション履歴一覧を再読み込み";
+  const sessionCountLabel = isFetching
+    ? `保存済み ${sessions.length} 件、更新中`
+    : `保存済み ${sessions.length} 件`;
 
   return (
     <div className="session-list">
       <div className="session-list-header">
-        <h2 className="session-list-title">セッション履歴</h2>
+        <div className="session-list-heading">
+          <h2 className="session-list-title">セッション履歴</h2>
+          <span
+            className="session-list-count"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={sessionCountLabel}
+            title={sessionCountLabel}
+          >
+            {sessions.length} 件{isFetching ? " / 更新中" : ""}
+          </span>
+        </div>
         <button
           type="button"
           className="control-btn control-btn-clear"
