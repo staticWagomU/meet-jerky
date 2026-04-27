@@ -13,6 +13,11 @@ const WHISPER_MODELS = [
 ];
 
 const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
+const ENGINE_NOTE_IDS = {
+  whisper: "transcription-engine-note-whisper",
+  appleSpeech: "transcription-engine-note-apple-speech",
+  openAIRealtime: "transcription-engine-note-openai-realtime",
+} as const;
 
 const LANGUAGES = [
   { value: "auto", label: "自動検出" },
@@ -230,6 +235,7 @@ export function SettingsView() {
               type="radio"
               name="engine"
               value="whisper"
+              aria-describedby={ENGINE_NOTE_IDS.whisper}
               checked={localSettings.transcriptionEngine === "whisper"}
               onChange={() =>
                 setLocalSettings({
@@ -239,13 +245,16 @@ export function SettingsView() {
               }
             />
             <span>ローカル (Whisper)</span>
-            <span className="settings-note">端末内処理</span>
+            <span id={ENGINE_NOTE_IDS.whisper} className="settings-note">
+              端末内処理
+            </span>
           </label>
           <label className="settings-radio-label">
             <input
               type="radio"
               name="engine"
               value="appleSpeech"
+              aria-describedby={ENGINE_NOTE_IDS.appleSpeech}
               checked={localSettings.transcriptionEngine === "appleSpeech"}
               onChange={() =>
                 setLocalSettings({
@@ -255,13 +264,16 @@ export function SettingsView() {
               }
             />
             <span>macOS SpeechAnalyzer</span>
-            <span className="settings-note">端末内処理 / macOS 26+ 専用</span>
+            <span id={ENGINE_NOTE_IDS.appleSpeech} className="settings-note">
+              端末内処理 / macOS 26+ 専用
+            </span>
           </label>
           <label className="settings-radio-label">
             <input
               type="radio"
               name="engine"
               value="openAIRealtime"
+              aria-describedby={ENGINE_NOTE_IDS.openAIRealtime}
               checked={localSettings.transcriptionEngine === "openAIRealtime"}
               onChange={() =>
                 setLocalSettings({
@@ -271,7 +283,9 @@ export function SettingsView() {
               }
             />
             <span>OpenAI Realtime API</span>
-            <span className="settings-note">音声をOpenAIへ送信 / API キーが必要</span>
+            <span id={ENGINE_NOTE_IDS.openAIRealtime} className="settings-note">
+              音声をOpenAIへ送信 / API キーが必要
+            </span>
           </label>
         </div>
       </div>
