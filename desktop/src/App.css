@@ -1017,7 +1017,27 @@
   gap: 0.4rem;
 }
 
+.settings-output-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.settings-output-mode {
+  border-radius: 4px;
+  padding: 0.14rem 0.4rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
+  white-space: nowrap;
+}
+
 .settings-output-path {
+  flex: 1 1 18rem;
+  min-width: 0;
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
   font-size: 0.8rem;
   color: var(--color-muted);
