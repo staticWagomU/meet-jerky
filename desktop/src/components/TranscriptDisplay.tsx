@@ -403,11 +403,13 @@ export function TranscriptDisplay({
             const errorClass = seg.isError
               ? " transcript-segment-error"
               : "";
+            const segmentAriaLabel = getSegmentAriaLabel(seg);
             return (
               <div
                 key={i}
                 className={`transcript-segment${errorClass}${speakerClass}`}
-                aria-label={getSegmentAriaLabel(seg)}
+                aria-label={segmentAriaLabel}
+                title={segmentAriaLabel}
               >
                 {!seg.isError && (
                   <span className="transcript-timestamp">
