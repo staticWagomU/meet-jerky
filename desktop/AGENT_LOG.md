@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### App detection UX: clarify notification status target
+
+- 開始日時: 2026-04-28 03:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知の macOS 通知文も録音と文字起こしの状態確認だと分かる表現へ揃える。
+- 結果: 通知本文を `録音と文字起こしの状態をアプリで確認してください` に変更し、通知クリックで録音開始するとは主張しない既存テストに状態確認文言の確認を追加した。会議検知ロジック、通知発火条件、URL payload には触れなかった。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo check/test` は cmake 不在により未実行。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で app_detection の Rust テストを再実行し、実機通知文が短く自然に読めるか確認する。
+
 ### Meeting detection UX: clarify status target
 
 - 開始日時: 2026-04-28 03:22 JST
