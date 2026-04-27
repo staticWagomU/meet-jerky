@@ -218,11 +218,14 @@ function getAudioSourceNotice(
   return "音声ソース未開始です。自分 / 相手側トラックは記録されません。";
 }
 
-function getAudioSourceStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "自分 / 相手側") {
+function getAudioSourceStatusPillClass(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string {
+  if (isMicRecording && isSystemAudioRecording) {
     return "meeting-status-pill-active";
   }
-  if (statusLabel === "なし") {
+  if (!isMicRecording && !isSystemAudioRecording) {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
@@ -923,7 +926,7 @@ export function TranscriptView() {
     : audioSourceStatusAriaText;
   const audioSourceStatusClass = isAudioCaptureOperationPending
     ? "meeting-status-pill-neutral"
-    : getAudioSourceStatusPillClass(audioSourceStatusLabel);
+    : getAudioSourceStatusPillClass(isMicRecording, isSystemAudioRecording);
   const audioSourceNotice = getAudioSourceNotice(
     isMeetingActive || isTranscribing,
     isAudioCaptureOperationPending,

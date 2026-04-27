@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: decouple source pill class from label text
+
+- 開始日時: 2026-04-28 03:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 表示文言の継続改善に耐えるよう、音声ソース status pill の class 判定を表示文字列依存から録音/取得状態依存へ変更する。
+- 結果: `getAudioSourceStatusPillClass` が `isMicRecording` / `isSystemAudioRecording` から active/idle/neutral を決めるようにした。表示文言、録音/取得状態、文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: status pill 文言を今後変更しても active/idle/neutral 表示が崩れないことを実 UI で確認する。
+
 ### Transcript UX: align both-source status label
 
 - 開始日時: 2026-04-28 03:20 JST
