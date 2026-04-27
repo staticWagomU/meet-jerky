@@ -5667,3 +5667,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での文字起こし操作グループラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: include session action pending state in group label
+
+- 開始日時: 2026-04-27 23:21 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: セッション履歴のファイル操作で、各行の操作グループ自体からも処理中/待機中の状態が分かるようにする。
+- 結果: セッション操作グループの `aria-label` / `title` に、ファイルを開いている、保存場所を表示している、他操作処理中の状態を含めるようにした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのセッション操作グループラベル読み上げ確認は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。

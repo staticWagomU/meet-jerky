@@ -252,6 +252,13 @@ function SessionRow({
     : isWaitingForOtherAction
       ? `他のセッション操作を処理中: ${session.title}`
     : `保存場所を表示: ${session.title}`;
+  const sessionActionsLabel = isOpeningThisFile
+    ? `セッション操作: ${session.title}、ファイルを開いています`
+    : isRevealingThisFile
+      ? `セッション操作: ${session.title}、保存場所を表示しています`
+    : isWaitingForOtherAction
+      ? `セッション操作: ${session.title}、他の操作を処理中`
+    : `セッション操作: ${session.title}`;
 
   return (
     <li
@@ -278,8 +285,8 @@ function SessionRow({
         className="session-list-item-actions"
         role="group"
         aria-busy={isOpeningThisFile || isRevealingThisFile}
-        aria-label={`セッション操作: ${session.title}`}
-        title={`セッション操作: ${session.title}`}
+        aria-label={sessionActionsLabel}
+        title={sessionActionsLabel}
       >
         <button
           type="button"
