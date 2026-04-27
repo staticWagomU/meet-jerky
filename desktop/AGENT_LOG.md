@@ -4561,3 +4561,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。macOS フォルダ選択ダイアログと実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: allow dismissing meeting detection errors
+
+- 開始日時: 2026-04-27 18:43 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知の受信開始に失敗した場合でも、バナーを閉じられるようにして会議中の邪魔になりにくくする。
+- 結果: 検知エラーのみのバナーにも閉じる操作を表示し、閉じる時に detected と listenerError を両方 clear するようにした。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。会議検知イベントの実機発火と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

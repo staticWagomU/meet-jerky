@@ -97,26 +97,31 @@ export function MeetingDetectedBanner() {
         </span>
       )}
       <span className="meeting-detected-banner-text">{bannerMessage}</span>
-      {detected && (
+      {(detected || listenerError) && (
         <div className="meeting-detected-banner-actions">
-          <button
-            type="button"
-            className="control-btn control-btn-transcribe"
-            aria-label={confirmRecordingLabel}
-            title={confirmRecordingLabel}
-            onClick={() => {
-              navigate({ to: "/" });
-              setDetected(null);
-            }}
-          >
-            記録状態を確認
-          </button>
+          {detected && (
+            <button
+              type="button"
+              className="control-btn control-btn-transcribe"
+              aria-label={confirmRecordingLabel}
+              title={confirmRecordingLabel}
+              onClick={() => {
+                navigate({ to: "/" });
+                setDetected(null);
+              }}
+            >
+              記録状態を確認
+            </button>
+          )}
           <button
             type="button"
             className="control-btn control-btn-clear"
             aria-label={dismissBannerLabel}
             title={dismissBannerLabel}
-            onClick={() => setDetected(null)}
+            onClick={() => {
+              setDetected(null);
+              setListenerError(null);
+            }}
           >
             ×
           </button>
