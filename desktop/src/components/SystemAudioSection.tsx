@@ -21,7 +21,11 @@ export function SystemAudioSection({
   );
 
   return (
-    <div className="audio-source-section">
+    <div
+      className="audio-source-section"
+      role="group"
+      aria-label="システム音声 相手側トラック"
+    >
       <div className="audio-source-header">
         <span>システム音声</span>
         <span className="audio-source-track-badge">相手側</span>
