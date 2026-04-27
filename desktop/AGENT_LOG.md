@@ -4295,3 +4295,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実ファイルを使った Finder/Open 操作と macOS 実機画面確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: show session file name in history rows
+
+- 開始日時: 2026-04-27 17:53 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧で同名セッションを識別しやすくし、保存先の透明性を上げる。ただしローカルパス全文で画面を圧迫しない。
+- 結果: セッション行のメタ情報に保存ファイル名だけを追加した。行の aria-label / title にもファイル名を含め、ファイル名は長い場合に省略表示するようにした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実ファイルを使った Finder/Open 操作と macOS 実機画面確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。

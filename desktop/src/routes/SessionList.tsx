@@ -7,6 +7,10 @@ type SessionAction =
   | { kind: "reveal"; path: string }
   | null;
 
+function getFileName(path: string): string {
+  return path.split(/[\\/]/).pop() || path;
+}
+
 /**
  * 保存済みセッションの一覧画面。
  * 各行から「ファイルを開く」「フォルダを開く」で OS のデフォルトアプリ / エクスプローラに
@@ -215,6 +219,7 @@ function SessionRow({
   // 秒 → ミリ秒に変換してローカルタイムでフォーマット。
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
   const startedAtLabel = new Date(session.startedAtSecs * 1000).toLocaleString();
+  const fileName = getFileName(session.path);
   const isAnyActionPending = pendingAction !== null;
   const isOpeningThisFile =
     pendingAction?.kind === "open" && pendingAction.path === session.path;
@@ -230,14 +235,23 @@ function SessionRow({
   return (
     <li
       className="session-list-item"
-      aria-label={`セッション ${session.title}、開始 ${startedAtLabel}`}
-      title={`セッション ${session.title}、開始 ${startedAtLabel}`}
+      aria-label={`セッション ${session.title}、開始 ${startedAtLabel}、ファイル ${fileName}`}
+      title={`セッション ${session.title}、開始 ${startedAtLabel}、ファイル ${fileName}`}
     >
       <div className="session-list-item-body">
         <div className="session-list-item-title" title={session.title}>
           {session.title}
         </div>
-        <div className="session-list-item-meta">{startedAtLabel}</div>
+        <div className="session-list-item-meta">
+          <span>{startedAtLabel}</span>
+          <span
+            className="session-list-item-file"
+            aria-label={`保存ファイル ${fileName}`}
+            title={`保存ファイル ${fileName}`}
+          >
+            {fileName}
+          </span>
+        </div>
       </div>
       <div
         className="session-list-item-actions"
