@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Meeting detection UX: clarify status target
+
+- 開始日時: 2026-04-28 03:22 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーの `記録状態` という抽象表現を、録音と文字起こしの状態確認だと分かる文言へ変更する。
+- 結果: バナー本文・aria/title・確認ボタン label を `録音と文字起こしの状態` に更新し、表示ボタン本文は短い `状態を確認` にした。会議検知 event、遷移、dismiss 処理には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議検知バナーが邪魔にならず、録音/文字起こし状態確認への導線として自然に読めるか確認する。
+
 ### Transcript UX: decouple source pill class from label text
 
 - 開始日時: 2026-04-28 03:21 JST
