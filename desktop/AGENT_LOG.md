@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: include blocked reason in start buttons
+
+- 開始日時: 2026-04-28 07:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議開始/文字起こし開始ボタンが無効なときに aria/title からも開始できない理由が分かるようにする。
+- 結果: 会議開始ボタンと文字起こし開始ボタンの aria/title に、開始不可時は `開始できません: ...` と既存の blocked reason を含めるようにした。可視表示、開始可否判定、録音/文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver / tooltip で無効ボタンの理由が重複しすぎず自然に伝わるか確認する。
+
 ### Permission UX: align retry aria label
 
 - 開始日時: 2026-04-28 07:03 JST

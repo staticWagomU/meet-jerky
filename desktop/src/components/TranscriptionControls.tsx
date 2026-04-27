@@ -40,6 +40,8 @@ export function TranscriptionControls({
     ? "文字起こしを処理中"
     : isTranscribing
       ? "文字起こしを停止"
+      : !canStartTranscription && startBlockedReason
+        ? `文字起こしを開始できません: ${startBlockedReason}`
       : "文字起こしを開始";
   const clearTranscriptLabel = `文字起こしログ ${segmentsCount} 件をクリア`;
   const transcriptionControlsLabel = [

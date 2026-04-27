@@ -987,6 +987,8 @@ export function TranscriptView() {
     ? "会議の録音と文字起こしを処理中"
     : isMeetingActive
       ? "会議の録音と文字起こしを終了"
+      : !canStartMeeting && meetingStartBlockedReason
+        ? `会議の録音と文字起こしを開始できません: ${meetingStartBlockedReason}`
       : "会議の録音と文字起こしを開始";
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
