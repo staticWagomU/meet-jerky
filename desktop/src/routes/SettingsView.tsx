@@ -130,6 +130,14 @@ export function SettingsView() {
     }, 3000);
   }, []);
 
+  const clearToast = useCallback(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+    setToastMessage(null);
+  }, []);
+
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -146,9 +154,10 @@ export function SettingsView() {
     }
     if (localSettings) {
       isSavingSettingsRef.current = true;
+      clearToast();
       updateMutation.mutate(localSettings);
     }
-  }, [localSettings, updateMutation]);
+  }, [clearToast, localSettings, updateMutation]);
 
   const handleSelectOutputDirectory = useCallback(async () => {
     if (isSelectingOutputDirectory || isSelectingOutputDirectoryRef.current) {
@@ -156,6 +165,7 @@ export function SettingsView() {
     }
     isSelectingOutputDirectoryRef.current = true;
     setIsSelectingOutputDirectory(true);
+    clearToast();
     try {
       const selected = await invoke<string | null>("select_output_directory");
       if (selected) {
@@ -170,7 +180,7 @@ export function SettingsView() {
       isSelectingOutputDirectoryRef.current = false;
       setIsSelectingOutputDirectory(false);
     }
-  }, [isSelectingOutputDirectory, showToast]);
+  }, [clearToast, isSelectingOutputDirectory, showToast]);
 
   const handleResetOutputDirectory = useCallback(() => {
     setLocalSettings((current) =>
@@ -398,7 +408,7 @@ export function SettingsView() {
 
       {/* OpenAI API キー (Realtime) */}
       {localSettings.transcriptionEngine === "openAIRealtime" && (
-        <OpenAIApiKeySection showToast={showToast} />
+        <OpenAIApiKeySection clearToast={clearToast} showToast={showToast} />
       )}
 
       {/* Whisperモデル */}
@@ -728,8 +738,10 @@ function PermissionBadge({
 }
 
 function OpenAIApiKeySection({
+  clearToast,
   showToast,
 }: {
+  clearToast: () => void;
   showToast: (msg: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -783,8 +795,9 @@ function OpenAIApiKeySection({
       return;
     }
     isSettingApiKeyRef.current = true;
+    clearToast();
     setMutation.mutate(apiKey);
-  }, [keyInput, setMutation]);
+  }, [clearToast, keyInput, setMutation]);
 
   const handleClearApiKey = useCallback(() => {
     if (
@@ -798,8 +811,10 @@ function OpenAIApiKeySection({
       return;
     }
     isClearingApiKeyRef.current = true;
+    clearToast();
     clearMutation.mutate();
   }, [
+    clearToast,
     clearMutation,
     hasKey,
     hasKeyError,

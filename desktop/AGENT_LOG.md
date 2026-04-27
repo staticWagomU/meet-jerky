@@ -5625,3 +5625,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での履歴ファイル操作失敗後の再試行表示は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: clear stale settings toasts on retry
+
+- 開始日時: 2026-04-27 23:17 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定保存、出力先選択、OpenAI APIキー保存/削除を再試行している間、前回の失敗トーストが残って現在の処理状態と混ざらないようにする。
+- 結果: `clearToast` を追加し、設定保存、フォルダ選択、APIキー保存/削除の開始時に既存トーストを閉じるようにした。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での設定/APIキー操作失敗後の再試行表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
