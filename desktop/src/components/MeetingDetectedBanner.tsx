@@ -70,6 +70,10 @@ export function MeetingDetectedBanner() {
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。記録状態を確認できます。`;
+  const confirmRecordingLabel = detected
+    ? `${displayName} の記録状態を確認`
+    : "記録状態を確認";
+  const dismissBannerLabel = "会議検知バナーを閉じる";
 
   return (
     <div
@@ -86,7 +90,8 @@ export function MeetingDetectedBanner() {
           <button
             type="button"
             className="control-btn control-btn-transcribe"
-            aria-label={`${displayName} の記録状態を確認`}
+            aria-label={confirmRecordingLabel}
+            title={confirmRecordingLabel}
             onClick={() => {
               navigate({ to: "/" });
               setDetected(null);
@@ -97,7 +102,8 @@ export function MeetingDetectedBanner() {
           <button
             type="button"
             className="control-btn control-btn-clear"
-            aria-label="会議検知バナーを閉じる"
+            aria-label={dismissBannerLabel}
+            title={dismissBannerLabel}
             onClick={() => setDetected(null)}
           >
             ×
