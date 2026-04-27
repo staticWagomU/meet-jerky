@@ -210,7 +210,10 @@ export function ModelSelector({
   };
 
   return (
-    <div className="model-selector">
+    <div
+      className="model-selector"
+      aria-busy={isFetchingModels || downloadingModel !== null}
+    >
       <label htmlFor="model-select" className="model-select-label">
         モデル:
       </label>
