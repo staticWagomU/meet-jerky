@@ -6368,6 +6368,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で status pill の確認不可状態が自然に伝わるか確認する。
 
+### Transcript UX: clarify audio source idle pill
+
+- 開始日時: 2026-04-28 06:47 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議画面の音声ソース pill の未開始状態をより明確にする。
+- 結果: 音声ソースがないときの可視ラベルを `なし` から `未開始` に変更し、既存 aria の `音声ソース未開始` 表記と揃えた。録音/取得状態判定、注意文、文字起こし開始可否には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で `音声 未開始` の pill 幅と意味が自然か確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

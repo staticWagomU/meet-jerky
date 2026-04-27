@@ -177,7 +177,7 @@ function getAudioSourceStatusLabel(
   if (isSystemAudioRecording) {
     return "相手側のみ";
   }
-  return "なし";
+  return "未開始";
 }
 
 function getAudioSourceStatusAriaText(
