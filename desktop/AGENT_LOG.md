@@ -5877,3 +5877,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI で検知バナーが長くなりすぎず、自動録音していないことが自然に伝わるか確認する。
+
+### Settings UX: clarify API key visibility boundary
+
+- 開始日時: 2026-04-28 01:31 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、外部 Realtime API キー欄で Keychain 保存とキー値非表示の境界をユーザーに明確に伝える。
+- 結果: OpenAI / ElevenLabs 共通の API キー注記を、Keychain 保存、アプリ画面へ再表示しないこと、ブラウザ・ログへ出力しないことを明示する文言に更新した。secret command や保存/削除処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で API キー注記が過度に長くならず、保存境界が明確に伝わるか確認する。

@@ -957,7 +957,7 @@ function ExternalApiKeySection({
     <div className="settings-section">
       <h3 className="settings-section-title">{providerName} API キー</h3>
       <p id={noteId} className="settings-note">
-        Keychain に安全に保存され、ブラウザ・ログには出力されません。
+        Keychain に保存され、キー値はアプリ画面へ再表示されません。ブラウザ・ログにも出力されません。
       </p>
       <div className="settings-api-key">
         {hasKeyError && (
