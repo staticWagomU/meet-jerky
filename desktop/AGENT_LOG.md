@@ -4729,3 +4729,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。会議/音声実操作と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: explain denied permission states in settings
+
+- 開始日時: 2026-04-27 19:23 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の権限ステータスで、確認失敗だけでなく拒否/未確認時にも macOS 側で確認すべき場所を示す。
+- 結果: 権限ステータスの注意文を確認失敗または拒否/未確認時に表示し、録音/相手側音声取得に必要な macOS 設定確認先を明示した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。macOS 権限ダイアログや実機設定画面確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
