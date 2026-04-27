@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Transcript UX: clarify external transmission pill
+
+- 開始日時: 2026-04-28 02:54 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の外部送信 status pill を OpenAI / ElevenLabs のどちらへ音声送信するか自然に読める表記へ揃える。
+- 結果: `OpenAI送信` / `ElevenLabs送信` を `OpenAIへ送信` / `ElevenLabsへ送信` に変更し、対応する active class 判定も同じ文言へ更新した。外部送信の有無判定、API キー確認、文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で外部送信 pill が横幅を取りすぎず、外部サービスへ音声送信する状態として自然に読めるか確認する。
+
 ### ElevenLabs Realtime: wait briefly after final commit
 
 - 開始日時: 2026-04-28 02:53 JST
