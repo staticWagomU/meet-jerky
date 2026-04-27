@@ -848,6 +848,11 @@
   background-color: var(--meeting-status-neutral-bg);
 }
 
+.meeting-status-pill-error {
+  color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
+}
+
 .meeting-error,
 .meeting-source-notice,
 .meeting-saved-path {

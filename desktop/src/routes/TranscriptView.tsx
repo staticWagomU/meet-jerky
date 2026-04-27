@@ -249,6 +249,9 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === "OpenAI") {
     return "meeting-status-pill-active";
   }
+  if (statusLabel === "確認失敗") {
+    return "meeting-status-pill-error";
+  }
   if (statusLabel === "なし") {
     return "meeting-status-pill-idle";
   }
@@ -273,6 +276,9 @@ function getEngineStatusLabel(
 function getEngineStatusPillClass(statusLabel: string): string {
   if (statusLabel === "OpenAI") {
     return "meeting-status-pill-active";
+  }
+  if (statusLabel === "確認失敗") {
+    return "meeting-status-pill-error";
   }
   if (statusLabel === "確認中") {
     return "meeting-status-pill-neutral";
@@ -301,7 +307,10 @@ function getOpenAIApiKeyStatusPillClass(statusLabel: string | null): string {
   if (statusLabel === "登録済み") {
     return "meeting-status-pill-active";
   }
-  if (statusLabel === "未設定" || statusLabel === "確認失敗") {
+  if (statusLabel === "確認失敗") {
+    return "meeting-status-pill-error";
+  }
+  if (statusLabel === "未設定") {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";

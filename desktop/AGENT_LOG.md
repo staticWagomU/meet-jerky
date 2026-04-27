@@ -4631,3 +4631,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。設定取得失敗の実機再現と実機 VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: color failed status pills as errors
+
+- 開始日時: 2026-04-27 18:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: エンジン/AI送信/APIキーの確認失敗 pill が idle/neutral に埋もれないよう、エラー色で示す。
+- 結果: `meeting-status-pill-error` を追加し、確認失敗ステータスの class 判定に適用した。エラー色は既存の transcript error 系 CSS 変数を再利用した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。設定/APIキー確認失敗の実機再現と実機画面/VoiceOver 確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
