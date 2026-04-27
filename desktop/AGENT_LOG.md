@@ -6592,6 +6592,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で外部送信 pill が横幅を取りすぎず、端末内処理として自然に読めるか確認する。
 
+### Transcript UX: simplify engine status labels
+
+- 開始日時: 2026-04-28 06:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議中のエンジン status pill を外部送信状態と重複しない自然な表記へ揃える。
+- 結果: エンジン表示を `OpenAI・送信` / `ElevenLabs・送信` から `OpenAI Realtime` / `ElevenLabs Realtime` に変更し、端末内エンジンは `Whisper（端末内）` / `Apple Speech（端末内）` として残した。外部送信の有無は隣の status pill が担うため、送信判定やエンジン選択処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でエンジン pill と外部送信 pill が重複せず自然に並ぶか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

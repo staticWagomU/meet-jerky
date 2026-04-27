@@ -282,15 +282,15 @@ function getEngineStatusLabel(
     return "確認中";
   }
   if (engine === "appleSpeech") {
-    return "Apple Speech・端末内";
+    return "Apple Speech（端末内）";
   }
   if (engine === "openAIRealtime") {
-    return "OpenAI・送信";
+    return "OpenAI Realtime";
   }
   if (engine === "elevenLabsRealtime") {
-    return "ElevenLabs・送信";
+    return "ElevenLabs Realtime";
   }
-  return "Whisper・端末内";
+  return "Whisper（端末内）";
 }
 
 function getEngineStatusPillClass(statusLabel: string): string {
