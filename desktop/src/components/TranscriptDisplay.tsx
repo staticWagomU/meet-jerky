@@ -310,17 +310,29 @@ export function TranscriptDisplay({
         </div>
       )}
       {copyError && (
-        <div className="transcript-copy-error" role="alert">
+        <div
+          className="transcript-copy-error"
+          role="alert"
+          aria-label={`文字起こしコピーエラー: ${copyError}`}
+        >
           {copyError}
         </div>
       )}
       {resultListenerError && (
-        <div className="transcript-copy-error" role="alert">
+        <div
+          className="transcript-copy-error"
+          role="alert"
+          aria-label={`文字起こし結果受信エラー: ${resultListenerError}`}
+        >
           {resultListenerError}
         </div>
       )}
       {errorListenerError && (
-        <div className="transcript-copy-error" role="alert">
+        <div
+          className="transcript-copy-error"
+          role="alert"
+          aria-label={`文字起こしエラー受信エラー: ${errorListenerError}`}
+        >
           {errorListenerError}
         </div>
       )}
