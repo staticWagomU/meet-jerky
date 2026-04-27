@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: align recording accessibility labels
+
+- 開始日時: 2026-04-28 07:55 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面主ボタンの可視表示を `記録` に変えた後も、開始不可理由と aria/title が会議そのものを開始するように読めないよう揃える。
+- 結果: 開始不可理由を `記録を開始するには...` に変更し、主ボタン aria/title を `録音と文字起こしの記録を開始/終了/処理中` の文言へ変更した。開始可否判定、API キー確認、モデル確認、録音/文字起こし制御には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、支援技術向けラベルが長すぎず意味が明確か確認する。
+
 ### Meeting Detection UX: align auto-start notice with recording wording
 
 - 開始日時: 2026-04-28 07:54 JST

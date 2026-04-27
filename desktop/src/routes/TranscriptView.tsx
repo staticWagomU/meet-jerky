@@ -152,14 +152,14 @@ function getMeetingStartBlockedReason(
     return `${externalApiProvider} API キーの状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
-    return `会議を開始するには、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
+    return `記録を開始するには、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
-    return "会議開始に必要な Whisper モデルの状態を確認中です。";
+    return "記録開始に必要な Whisper モデルの状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "会議を開始するには、Whisper モデルのダウンロードが必要です。";
+    return "記録を開始するには、Whisper モデルのダウンロードが必要です。";
   }
   return null;
 }
@@ -984,12 +984,12 @@ export function TranscriptView() {
     .filter(Boolean)
     .join("、");
   const meetingButtonLabel = isMeetingOperationPending
-    ? "会議の録音と文字起こしを処理中"
+    ? "録音と文字起こしの記録を処理中"
     : isMeetingActive
-      ? "会議の録音と文字起こしを終了"
+      ? "録音と文字起こしの記録を終了"
       : !canStartMeeting && meetingStartBlockedReason
-        ? `会議の録音と文字起こしを開始できません: ${meetingStartBlockedReason}`
-      : "会議の録音と文字起こしを開始";
+        ? `録音と文字起こしの記録を開始できません: ${meetingStartBlockedReason}`
+      : "録音と文字起こしの記録を開始";
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const modelDownloadedErrorMessage = modelDownloadedErrorForUi
