@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: disclose Apple Speech single-track limitation
+
+- 開始日時: 2026-04-28 08:53 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Apple Speech / SpeechAnalyzer の同時 source 起動クラッシュ対策に合わせ、設定画面のエンジン選択説明でも現在の片側トラック向け制約を事前に伝える。
+- 結果: macOS SpeechAnalyzer の title と補足文を更新し、端末内のみ・macOS 26+ 専用に加えて、現在は自分または相手側の片側トラック向けであることを表示するようにした。設定保存処理やエンジン値には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI 表示は未確認。
+- 次アクション: 実機 UI で設定画面の文言が長すぎないか確認する。
+
 ### Transcript UX: pre-block dual Apple Speech starts
 
 - 開始日時: 2026-04-28 08:51 JST

@@ -323,7 +323,7 @@ export function SettingsView() {
   const whisperEngineLabel =
     "文字起こしエンジン: ローカル Whisper、端末内のみ、外部送信なし";
   const appleSpeechEngineLabel =
-    "文字起こしエンジン: macOS SpeechAnalyzer、端末内のみ、外部送信なし";
+    "文字起こしエンジン: macOS SpeechAnalyzer、端末内のみ、外部送信なし、現在は片側トラック向け";
   const openAIRealtimeEngineLabel =
     "文字起こしエンジン: OpenAI Realtime API、音声を OpenAI へ送信";
   const elevenLabsRealtimeEngineLabel =
@@ -409,7 +409,7 @@ export function SettingsView() {
             />
             <span>macOS SpeechAnalyzer</span>
             <span id={ENGINE_NOTE_IDS.appleSpeech} className="settings-note">
-              端末内のみ、macOS 26+ 専用
+              端末内のみ、macOS 26+ 専用。現在は自分または相手側の片側トラック向け
             </span>
           </label>
           <label
