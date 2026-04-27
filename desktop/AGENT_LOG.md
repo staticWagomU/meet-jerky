@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Permission UX: clarify screen recording transcription impact
+
+- 開始日時: 2026-04-28 03:34 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、画面収録権限が相手側音声の取得だけでなく相手側トラックの文字起こし可否にも関係することを明確化する。
+- 結果: 設定画面と権限バナーの画面収録確認失敗/未許可文言を、相手側音声の `取得・文字起こし` 可否として表現を揃えた。権限チェック hook、再チェック処理、状態判定には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 権限状態取得失敗/未許可時の文言が長すぎず、画面収録と相手側文字起こしの関係として自然に読めるか確認する。
+
 ### Permission UX: clarify microphone check failure impact
 
 - 開始日時: 2026-04-28 03:33 JST
