@@ -4211,3 +4211,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
+
+### Main task: reject empty Teams meetup path segments
+
+- 開始日時: 2026-04-27 17:21 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Teams meetup-join URL 分類で、正当な複数 segment は保ちつつ空 segment を含む path を誤分類しないようにする。
+- 結果: meetup-join の path 判定を、末尾スラッシュ 1 つは許容しながら各 segment が非空であることを確認する helper に置き換えた。正当な複数 segment + 末尾スラッシュの許容と、途中の二重スラッシュ拒否をテストに追加した。URL 全文や path を payload/log/UI に出さない方針は維持している。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" rustfmt --check src-tauri/src/app_detection.rs` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。ブラウザ URL 実機取得と会議サービス実機確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の改善候補を調査する。
