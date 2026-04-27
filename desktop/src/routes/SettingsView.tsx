@@ -983,11 +983,11 @@ function ExternalApiKeySection({
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`${providerName} API キーの状態の確認エラー: ${apiKeyErrorMessage}`}
-            title={`${providerName} API キーの状態の確認エラー: ${apiKeyErrorMessage}`}
+            aria-label={`${providerName} API キーの状態確認エラー: ${apiKeyErrorMessage}`}
+            title={`${providerName} API キーの状態確認エラー: ${apiKeyErrorMessage}`}
           >
             <span>
-              {providerName} API キーの状態の確認に失敗しました:{" "}
+              {providerName} API キーの状態確認に失敗しました:{" "}
               {apiKeyErrorMessage}
             </span>
             <button

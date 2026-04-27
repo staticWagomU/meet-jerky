@@ -1130,10 +1130,10 @@ export function TranscriptView() {
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`Whisper モデルの状態の確認エラー: ${modelDownloadedErrorMessage}`}
-            title={`Whisper モデルの状態の確認エラー: ${modelDownloadedErrorMessage}`}
+            aria-label={`Whisper モデルの状態確認エラー: ${modelDownloadedErrorMessage}`}
+            title={`Whisper モデルの状態確認エラー: ${modelDownloadedErrorMessage}`}
           >
-            Whisper モデルの状態の確認に失敗しました: {modelDownloadedErrorMessage}
+            Whisper モデルの状態確認に失敗しました: {modelDownloadedErrorMessage}
           </p>
         )}
         {settingsError && (
@@ -1150,10 +1150,10 @@ export function TranscriptView() {
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`${externalApiProvider} API キーの状態の確認エラー: ${externalApiKeyErrorMessage}`}
-            title={`${externalApiProvider} API キーの状態の確認エラー: ${externalApiKeyErrorMessage}`}
+            aria-label={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
+            title={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
           >
-            {externalApiProvider} API キーの状態の確認に失敗しました:{" "}
+            {externalApiProvider} API キーの状態確認に失敗しました:{" "}
             {externalApiKeyErrorMessage}
           </p>
         )}

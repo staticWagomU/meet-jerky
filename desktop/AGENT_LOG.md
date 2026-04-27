@@ -6620,6 +6620,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面のエンジン説明が長すぎず、ライブ画面の `端末内のみ` 表示と自然につながるか確認する。
 
+### Status Error UX: shorten state check wording
+
+- 開始日時: 2026-04-28 06:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `src/routes/TranscriptView.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Whisper モデル/API キー状態確認エラーの硬い表記を短く揃える。
+- 結果: `状態の確認エラー` / `状態の確認に失敗しました` を `状態確認エラー` / `状態確認に失敗しました` に変更した。モデル状態取得、API キー確認、Keychain 操作には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `src/routes/TranscriptView.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `rg -n "状態の確認エラー|状態の確認に失敗しました" src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/components/ModelSelector.tsx` で残存なし。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で状態確認エラー文が短く自然に読めるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST
