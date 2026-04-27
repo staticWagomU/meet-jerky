@@ -201,7 +201,10 @@ function SessionRow({
     pendingAction?.kind === "reveal" && pendingAction.path === session.path;
 
   return (
-    <li className="session-list-item">
+    <li
+      className="session-list-item"
+      aria-label={`セッション ${session.title}、開始 ${startedAtLabel}`}
+    >
       <div className="session-list-item-body">
         <div className="session-list-item-title" title={session.title}>
           {session.title}
