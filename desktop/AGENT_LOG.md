@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Permission UX: clarify macOS usage descriptions
+
+- 開始日時: 2026-04-28 03:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、macOS 権限ダイアログの説明文を自分/相手側トラックと録音/文字起こし用途が分かる表現へ揃える。
+- 結果: マイク権限説明を自分トラックの録音・文字起こし用途に変更し、画面収録権限説明を相手側トラックのシステム音声取得用途へ変更した。権限要求タイミング、Swift bridge、Tauri permission 設定には触れなかった。
+- 変更ファイル: `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/Info.plist AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/Info.plist AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`plutil -lint src-tauri/Info.plist` 成功。実機の macOS 権限ダイアログ表示は未確認。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 macOS 権限ダイアログで文言が長すぎず自然に読めるか確認する。
+
 ### Transcript display UX: label unknown source clearly
 
 - 開始日時: 2026-04-28 03:29 JST
