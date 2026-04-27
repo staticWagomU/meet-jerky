@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Whisper UX: natural status labels
+
+- 開始日時: 2026-04-28 04:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Whisper モデル状態ラベルの詰まった表現を読みやすくする。
+- 結果: 会議画面とモデル選択の `Whisper モデル状態` 表記を `Whisper モデルの状態` に変更した。モデル一覧取得、ダウンロード、状態確認処理、開始可否判定には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で Whisper モデル状態表示が自然に読めるか確認する。
+
 ### Meeting UX: natural start blocked reasons
 
 - 開始日時: 2026-04-28 04:49 JST
