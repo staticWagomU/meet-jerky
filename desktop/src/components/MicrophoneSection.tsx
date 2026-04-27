@@ -51,6 +51,7 @@ export function MicrophoneSection({
     <div
       className="audio-source-section"
       role="group"
+      aria-busy={isOperationPending}
       aria-label="マイク 自分トラック"
       title="マイク 自分トラック"
     >

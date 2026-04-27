@@ -31,6 +31,7 @@ export function SystemAudioSection({
     <div
       className="audio-source-section"
       role="group"
+      aria-busy={isOperationPending}
       aria-label="システム音声 相手側トラック"
       title="システム音声 相手側トラック"
     >
