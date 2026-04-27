@@ -203,7 +203,9 @@ function SessionRow({
   return (
     <li className="session-list-item">
       <div className="session-list-item-body">
-        <div className="session-list-item-title">{session.title}</div>
+        <div className="session-list-item-title" title={session.title}>
+          {session.title}
+        </div>
         <div className="session-list-item-meta">{startedAtLabel}</div>
       </div>
       <div className="session-list-item-actions">
