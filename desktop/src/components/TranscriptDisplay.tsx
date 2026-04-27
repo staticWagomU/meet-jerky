@@ -34,6 +34,13 @@ function getSegmentAriaLabel(segment: TranscriptSegment): string {
   return `文字起こし ${formatTimestamp(segment.startMs)} ${speakerLabel}: ${segment.text}`;
 }
 
+function getVisibleSpeakerLabel(segment: TranscriptSegment): string | null {
+  if (segment.isError && !segment.speaker && !segment.source) {
+    return null;
+  }
+  return getSpeakerLabel(segment);
+}
+
 function getSegmentCounts(segments: TranscriptSegment[]): {
   self: number;
   other: number;
@@ -359,7 +366,7 @@ export function TranscriptDisplay({
         ) : (
           segments.map((seg, i) => {
             const speakerKind = getSpeakerKind(seg);
-            const speakerLabel = getSpeakerLabel(seg);
+            const speakerLabel = getVisibleSpeakerLabel(seg);
             const speakerClass =
               seg.isError
                 ? ""
