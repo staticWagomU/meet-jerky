@@ -6102,6 +6102,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で設定画面の見出しが過度に長くならず、自分トラック用マイク設定として自然に読めるか確認する。
 
+### Settings UX: clarify transcription language label
+
+- 開始日時: 2026-04-28 02:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の言語設定が文字起こし engine へ反映されるようになったため、UI 上でも対象が文字起こし言語だと分かるようにする。
+- 結果: 言語設定の section 見出しと select の aria/title label を `文字起こし言語` に変更した。設定値、保存処理、文字起こし処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で設定画面の文言が長すぎず、文字起こし対象の言語設定として自然に読めるか確認する。
+
 ### Transcription: propagate language setting to streams
 
 - 開始日時: 2026-04-28 02:56 JST

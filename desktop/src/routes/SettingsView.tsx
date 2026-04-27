@@ -275,7 +275,7 @@ export function SettingsView() {
   const retryDevicesLabel = isFetchingDevices
     ? "自分トラックのマイクデバイス一覧を取得中"
     : "自分トラックのマイクデバイス一覧を再取得";
-  const languageLabel = `言語: ${languageName}`;
+  const languageLabel = `文字起こし言語: ${languageName}`;
   const devicesErrorMessage = devicesError ? toErrorMessage(devicesError) : "";
   const retryDefaultOutputDirLabel = isFetchingDefaultOutputDir
     ? "デフォルト出力先ディレクトリを取得中"
@@ -560,7 +560,7 @@ export function SettingsView() {
 
       {/* 言語 */}
       <div className="settings-section">
-        <h3 className="settings-section-title">言語</h3>
+        <h3 className="settings-section-title">文字起こし言語</h3>
         <select
           aria-label={languageLabel}
           title={languageLabel}
