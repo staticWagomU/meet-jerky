@@ -396,6 +396,8 @@ export function TranscriptDisplay({
         role="log"
         aria-label={transcriptLogLabel}
         title={transcriptLogLabel}
+        aria-live="polite"
+        aria-atomic="false"
         aria-relevant="additions text"
         onScroll={handleScroll}
       >
