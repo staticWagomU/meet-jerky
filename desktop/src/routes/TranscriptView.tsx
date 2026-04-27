@@ -1043,7 +1043,7 @@ export function TranscriptView() {
         )}
         {meetingError && (
           <div
-            className="meeting-error meeting-error-dismissible"
+            className="meeting-error meeting-alert meeting-error-dismissible"
             role="alert"
             aria-label={`会議記録エラー: ${meetingError}`}
             title={`会議記録エラー: ${meetingError}`}
@@ -1062,7 +1062,7 @@ export function TranscriptView() {
         )}
         {modelDownloadedErrorForUi && (
           <p
-            className="meeting-error"
+            className="meeting-error meeting-alert"
             role="alert"
             aria-label={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
             title={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
@@ -1072,7 +1072,7 @@ export function TranscriptView() {
         )}
         {settingsError && (
           <p
-            className="meeting-error"
+            className="meeting-error meeting-alert"
             role="alert"
             aria-label={`文字起こし設定エラー: ${settingsErrorMessage}`}
             title={`文字起こし設定エラー: ${settingsErrorMessage}`}
@@ -1082,7 +1082,7 @@ export function TranscriptView() {
         )}
         {openAIApiKeyErrorForUi && (
           <p
-            className="meeting-error"
+            className="meeting-error meeting-alert"
             role="alert"
             aria-label={`OpenAI API キー状態エラー: ${openAIApiKeyErrorMessage}`}
             title={`OpenAI API キー状態エラー: ${openAIApiKeyErrorMessage}`}
@@ -1106,7 +1106,7 @@ export function TranscriptView() {
         )}
         {audioLevelListenerError && (
           <p
-            className="meeting-error"
+            className="meeting-error meeting-alert"
             role="alert"
             aria-label={`音量レベル監視エラー: ${audioLevelListenerError}`}
             title={`音量レベル監視エラー: ${audioLevelListenerError}`}

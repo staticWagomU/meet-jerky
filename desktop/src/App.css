@@ -892,6 +892,14 @@
   color: #c44;
 }
 
+.meeting-alert {
+  color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
+  border: 1px solid var(--transcript-error-color);
+  border-radius: 4px;
+  padding: 0.35rem 0.55rem;
+}
+
 .meeting-error-dismissible {
   display: flex;
   align-items: center;

@@ -5541,3 +5541,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での macOS 権限拒否/確認失敗表示は未確認。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
+
+### Main task: distinguish transcript screen alerts from blocked hints
+
+- 開始日時: 2026-04-27 22:53 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 会議中の状態表示を邪魔にしすぎず、実エラーと開始不可理由を視覚的に区別して、録音/文字起こしの問題を見つけやすくする。
+- 結果: `role="alert"` の会議記録/モデル/設定/APIキー/音量監視エラーに `meeting-alert` クラスを追加し、開始不可理由は従来の控えめな `meeting-error` 表示のまま残した。`meeting-alert` はエラー背景・枠付きにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での各エラー状態表示は未確認。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を確認して静的検証を行い、問題なければコミットする。
