@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection UX: clarify recording is not started
+
+- 開始日時: 2026-04-28 08:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーで会議を検知しても録音と文字起こしがまだ開始していないことを明確にする。
+- 結果: バナー本文と aria-label の `記録は自動開始していません` を `録音と文字起こしはまだ開始していません` に変更した。会議検知イベント、URL 表示方針、画面遷移には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議検知イベント表示は未確認。
+- 次アクション: 実機で会議検知バナーが長すぎず、記録状態確認への導線として自然に読めるか確認する。
+
 ### Settings UX: align system audio permission wording
 
 - 開始日時: 2026-04-28 08:57 JST
