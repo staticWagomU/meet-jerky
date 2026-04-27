@@ -27,7 +27,10 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
 }
 
 function getSegmentAriaLabel(segment: TranscriptSegment): string {
-  const speakerLabel = getSpeakerLabel(segment) ?? "未分類";
+  const speakerLabel =
+    segment.isError && !segment.speaker && !segment.source
+      ? "source不明"
+      : getSpeakerLabel(segment) ?? "未分類";
   if (segment.isError) {
     return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
   }
