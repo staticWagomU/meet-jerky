@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify output folder failure toast
+
+- 開始日時: 2026-04-28 08:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、出力先ディレクトリ選択失敗時の toast が、どのフォルダ選択に失敗したか可視文言だけで分かるようにする。
+- 結果: 出力先選択失敗の console/toast 文言を `フォルダの選択に失敗しました` から `出力先フォルダの選択に失敗しました` に変更した。フォルダ選択 invoke、設定保存処理、パス表示には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、出力先設定の他ラベルと文体が揃っているか確認する。
+
 ### Settings UX: clarify save failure toast
 
 - 開始日時: 2026-04-28 08:22 JST
