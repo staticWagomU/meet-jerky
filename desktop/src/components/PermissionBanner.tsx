@@ -77,7 +77,7 @@ export function PermissionBanner() {
     .join("、");
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
-    : "macOS 権限状態を再チェック";
+    : "macOS の権限を再チェック";
 
   return (
     <div

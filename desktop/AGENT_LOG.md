@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: align retry aria label
+
+- 開始日時: 2026-04-28 07:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限再チェック操作の aria/title を可視ラベルに近い自然な表現へ揃える。
+- 結果: 権限再チェック操作の aria/title を `macOS 権限状態を再チェック` から `macOS の権限を再チェック` に変更した。権限取得処理、可視ボタン表示、警告条件には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で権限再チェック操作が可視表示と同じ意味で読まれるか確認する。
+
 ### Settings UX: soften permission check failure note
 
 - 開始日時: 2026-04-28 07:02 JST

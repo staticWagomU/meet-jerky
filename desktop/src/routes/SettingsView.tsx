@@ -299,7 +299,7 @@ export function SettingsView() {
     : "";
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
-    : "macOS 権限状態を再チェック";
+    : "macOS の権限を再チェック";
   const browserAutomationPermissionLabel =
     "自動操作 ブラウザ URL 検知: 必要時に macOS が確認";
   const hasPermissionCheckError =
