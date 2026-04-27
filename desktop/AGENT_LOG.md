@@ -5443,3 +5443,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実機での会議中ステータス表示確認は未実施。cargo check/test は cmake 不在により未実行。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: clarify transcription engine status label
+
+- 開始日時: 2026-04-27 23:18 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中ステータスのエンジン pill で、文字起こしが端末内処理か OpenAI 送信かを短い表示でも分かりやすくする。
+- 結果: エンジン状態ラベルを `Whisper・端末内`、`Apple Speech・端末内`、`OpenAI・送信` に変更した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（内部で `npm run build` 成功、Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議中エンジンステータス表示確認は未実施。cargo check/test は cmake 不在により未実行。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

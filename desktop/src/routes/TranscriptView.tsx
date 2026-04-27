@@ -264,12 +264,12 @@ function getEngineStatusLabel(
     return "確認中";
   }
   if (engine === "appleSpeech") {
-    return "Apple Speech";
+    return "Apple Speech・端末内";
   }
   if (engine === "openAIRealtime") {
-    return "OpenAI";
+    return "OpenAI・送信";
   }
-  return "Whisper";
+  return "Whisper・端末内";
 }
 
 function getEngineStatusPillClass(statusLabel: string): string {
