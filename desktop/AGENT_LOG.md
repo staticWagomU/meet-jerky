@@ -6031,3 +6031,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で履歴一覧読み込みエラー本文と読み上げの語彙が揃っているか確認する。
+
+### Session list UX: include file name in action errors
+
+- 開始日時: 2026-04-28 02:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、履歴ファイルを開く/保存場所を表示する操作に失敗したとき、どの履歴ファイルで失敗したかをファイル名だけで分かるようにする。
+- 結果: ファイルを開けない場合は `文字起こし履歴ファイルを開けませんでした (ファイル名)`、保存場所を表示できない場合は `保存場所を表示できませんでした (ファイル名)` と表示するようにした。ファイル操作 API 呼び出し、履歴取得、フルパス表示には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で履歴ファイル操作エラーが、フルパスを増やさず対象ファイル名だけで判別できるか確認する。

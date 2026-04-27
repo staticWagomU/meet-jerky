@@ -49,7 +49,9 @@ export function SessionList() {
       if (!isMountedRef.current) {
         return;
       }
-      setActionError(`ファイルを開けませんでした: ${toErrorMessage(e)}`);
+      setActionError(
+        `文字起こし履歴ファイルを開けませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
+      );
     } finally {
       pendingActionRef.current = null;
       if (isMountedRef.current) {
@@ -77,7 +79,9 @@ export function SessionList() {
       if (!isMountedRef.current) {
         return;
       }
-      setActionError(`フォルダを開けませんでした: ${toErrorMessage(e)}`);
+      setActionError(
+        `保存場所を表示できませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
+      );
     } finally {
       pendingActionRef.current = null;
       if (isMountedRef.current) {
