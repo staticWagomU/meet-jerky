@@ -40,14 +40,15 @@ export function SystemAudioSection({
     : isSystemAudioRecording
       ? "相手側トラックのシステム音声キャプチャを停止"
       : "相手側トラックのシステム音声キャプチャを開始";
+  const systemAudioSectionLabel = `${systemAudioStateDescription}、音量 ${systemAudioLevelPercent}%`;
 
   return (
     <div
       className="audio-source-section"
       role="group"
       aria-busy={isOperationPending}
-      aria-label="システム音声 相手側トラック"
-      title="システム音声 相手側トラック"
+      aria-label={systemAudioSectionLabel}
+      title={systemAudioSectionLabel}
     >
       <div className="audio-source-header">
         <span>システム音声</span>

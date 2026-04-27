@@ -66,14 +66,15 @@ export function MicrophoneSection({
   const audioDevicesErrorMessage = audioDevicesError
     ? toErrorMessage(audioDevicesError)
     : "";
+  const micSectionLabel = `${micStateDescription}、音量 ${micLevelPercent}%`;
 
   return (
     <div
       className="audio-source-section"
       role="group"
       aria-busy={isOperationPending}
-      aria-label="マイク 自分トラック"
-      title="マイク 自分トラック"
+      aria-label={micSectionLabel}
+      title={micSectionLabel}
     >
       <div className="audio-source-header">
         <span>マイク</span>
