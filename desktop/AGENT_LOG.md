@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify settings reload button
+
+- 開始日時: 2026-04-28 07:42 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定読み込みエラー時の再読み込みボタンが設定対象だと可視表示でも分かるようにする。
+- 結果: 設定読み込みエラー時のボタン表示を `再読み込み` から `設定を再読み込み` に変更した。設定取得処理、aria/title、エラー表示条件には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で設定読み込みエラー時の再読み込みボタン幅が自然か確認する。
+
 ### Transcript UX: shorten saved session status
 
 - 開始日時: 2026-04-28 07:41 JST

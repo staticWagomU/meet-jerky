@@ -213,7 +213,7 @@ export function SettingsView() {
           aria-label={reloadSettingsLabel}
           title={reloadSettingsLabel}
         >
-          {isFetchingSettings ? "読み込み中..." : "再読み込み"}
+          {isFetchingSettings ? "読み込み中..." : "設定を再読み込み"}
         </button>
       </div>
     );
