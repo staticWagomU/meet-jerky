@@ -274,16 +274,13 @@ function getEngineStatusLabel(
 }
 
 function getEngineStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "OpenAI") {
-    return "meeting-status-pill-active";
-  }
   if (statusLabel === "確認失敗") {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "確認中") {
     return "meeting-status-pill-neutral";
   }
-  return "meeting-status-pill-idle";
+  return "meeting-status-pill-active";
 }
 
 function getOpenAIApiKeyStatusLabel(
