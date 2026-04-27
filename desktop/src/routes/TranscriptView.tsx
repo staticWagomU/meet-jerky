@@ -1130,7 +1130,7 @@ export function TranscriptView() {
             aria-label={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
             title={`Whisperモデル状態エラー: ${modelDownloadedErrorMessage}`}
           >
-            モデル状態の確認に失敗しました: {modelDownloadedErrorMessage}
+            Whisperモデル状態の確認に失敗しました: {modelDownloadedErrorMessage}
           </p>
         )}
         {settingsError && (

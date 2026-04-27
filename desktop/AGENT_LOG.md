@@ -5947,3 +5947,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: ローカル Whisper 選択時にモデル未ダウンロード/確認中の開始不可表示がエンジン名込みで自然に読めるか確認する。
+
+### Transcript UX: clarify Whisper model error text
+
+- 開始日時: 2026-04-28 01:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、TranscriptView のモデル状態エラー本文を `aria-label` と同じく Whisper モデルとして明示する。
+- 結果: モデル状態確認失敗の visible text を `Whisperモデル状態の確認に失敗しました` に更新した。モデル状態取得、開始可否、エラー条件には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: ローカル Whisper 選択時のモデル状態エラー本文が `aria-label` と同じ意味で読めるか確認する。
