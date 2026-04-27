@@ -12,6 +12,10 @@ function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
 }
 
+function getSessionDisplayTitle(title: string): string {
+  return title.replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "");
+}
+
 /**
  * 保存済みセッションの一覧画面。
  * 各行から「ファイルを開く」「フォルダを開く」で OS のデフォルトアプリ / エクスプローラに
@@ -250,6 +254,7 @@ function SessionRow({
   // 秒 → ミリ秒に変換してローカルタイムでフォーマット。
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
   const startedAtLabel = new Date(session.startedAtSecs * 1000).toLocaleString();
+  const displayTitle = getSessionDisplayTitle(session.title);
   const fileName = getFileName(session.path);
   const isAnyActionPending = pendingAction !== null;
   const isOpeningThisFile =
@@ -259,32 +264,32 @@ function SessionRow({
   const isWaitingForOtherAction =
     isAnyActionPending && !isOpeningThisFile && !isRevealingThisFile;
   const openFileLabel = isOpeningThisFile
-    ? `ファイルを開いています: ${session.title}`
+    ? `ファイルを開いています: ${displayTitle}`
     : isWaitingForOtherAction
-      ? `他のセッション操作を処理中: ${session.title}`
-    : `ファイルを開く: ${session.title}`;
+      ? `他のセッション操作を処理中: ${displayTitle}`
+    : `ファイルを開く: ${displayTitle}`;
   const revealFileLabel = isRevealingThisFile
-    ? `保存場所を表示しています: ${session.title}`
+    ? `保存場所を表示しています: ${displayTitle}`
     : isWaitingForOtherAction
-      ? `他のセッション操作を処理中: ${session.title}`
-    : `保存場所を表示: ${session.title}`;
+      ? `他のセッション操作を処理中: ${displayTitle}`
+    : `保存場所を表示: ${displayTitle}`;
   const sessionActionsLabel = isOpeningThisFile
-    ? `セッション操作: ${session.title}、ファイルを開いています`
+    ? `セッション操作: ${displayTitle}、ファイルを開いています`
     : isRevealingThisFile
-      ? `セッション操作: ${session.title}、保存場所を表示しています`
+      ? `セッション操作: ${displayTitle}、保存場所を表示しています`
     : isWaitingForOtherAction
-      ? `セッション操作: ${session.title}、他の操作を処理中`
-    : `セッション操作: ${session.title}`;
+      ? `セッション操作: ${displayTitle}、他の操作を処理中`
+    : `セッション操作: ${displayTitle}`;
 
   return (
     <li
       className="session-list-item"
-      aria-label={`セッション ${session.title}、開始 ${startedAtLabel}、ファイル ${fileName}`}
-      title={`セッション ${session.title}、開始 ${startedAtLabel}、ファイル ${fileName}`}
+      aria-label={`セッション ${displayTitle}、開始 ${startedAtLabel}、ファイル ${fileName}`}
+      title={`セッション ${displayTitle}、開始 ${startedAtLabel}、ファイル ${fileName}`}
     >
       <div className="session-list-item-body">
-        <div className="session-list-item-title" title={session.title}>
-          {session.title}
+        <div className="session-list-item-title" title={displayTitle}>
+          {displayTitle}
         </div>
         <div className="session-list-item-meta">
           <span>{startedAtLabel}</span>
