@@ -152,14 +152,14 @@ function getMeetingStartBlockedReason(
     return `${externalApiProvider} API キーの状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
-    return `会議開始には、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
+    return `会議を開始するには、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {
     return "会議開始に必要な Whisper モデル状態を確認中です。";
   }
   if (!isModelDownloaded) {
-    return "会議開始には、Whisper モデルのダウンロードが必要です。";
+    return "会議を開始するには、Whisper モデルのダウンロードが必要です。";
   }
   return null;
 }
