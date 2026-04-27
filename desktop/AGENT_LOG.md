@@ -6172,6 +6172,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で状態ピルの横幅が過度に広がらず、両トラック状態が自然に読めるか確認する。
 
+### Transcript Empty UX: align both-track wording
+
+- 開始日時: 2026-04-28 05:28 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログの空状態文言を両トラック状態表示と同じ読みやすさへ揃える。
+- 結果: 空状態の `自分 / 相手側トラック` を `自分と相手側トラック` に変更した。文字起こし結果の受信、コピー、分類表示には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で空状態文言が狭い幅でも自然に折り返されるか確認する。
+
 ### Docs UX: align user wording
 
 - 開始日時: 2026-04-28 04:58 JST

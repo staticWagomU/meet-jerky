@@ -424,7 +424,7 @@ export function TranscriptDisplay({
             aria-label={transcriptLogLabel}
             title={transcriptLogLabel}
           >
-            文字起こしを開始すると、自分 / 相手側トラックの発話がここに流れます
+            文字起こしを開始すると、自分と相手側トラックの発話がここに流れます
           </div>
         ) : (
           segments.map((seg, i) => {
