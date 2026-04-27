@@ -215,7 +215,7 @@ function getAudioSourceNotice(
   if (isSystemAudioRecording) {
     return "自分トラックは未録音です。自分の発話は記録されません。";
   }
-  return "音声ソース未開始です。自分/相手側トラックは記録されません。";
+  return "音声ソース未開始です。自分 / 相手側トラックは記録されません。";
 }
 
 function getAudioSourceStatusPillClass(statusLabel: string): string {
