@@ -77,7 +77,7 @@ function getTranscriptionSourceStatus(
     return null;
   }
   if (isMicRecording && isSystemAudioRecording) {
-    return "文字起こし中: 自分 / 相手側";
+    return "文字起こし中: 自分と相手側";
   }
   if (isMicRecording) {
     return "文字起こし中: 自分のみ / 相手側は未取得";
@@ -169,7 +169,7 @@ function getAudioSourceStatusLabel(
   isSystemAudioRecording: boolean,
 ): string {
   if (isMicRecording && isSystemAudioRecording) {
-    return "自分 / 相手側";
+    return "自分と相手側";
   }
   if (isMicRecording) {
     return "自分のみ";
@@ -215,7 +215,7 @@ function getAudioSourceNotice(
   if (isSystemAudioRecording) {
     return "自分トラックは未録音です。自分の発話は文字起こしされません。";
   }
-  return "音声ソース未開始です。自分 / 相手側トラックは文字起こしされません。";
+  return "音声ソース未開始です。自分と相手側トラックは文字起こしされません。";
 }
 
 function getAudioSourceStatusPillClass(
