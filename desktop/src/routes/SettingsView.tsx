@@ -265,6 +265,8 @@ export function SettingsView() {
     ? "出力先ディレクトリを選択中"
     : localSettings.outputDirectory
       ? "出力先ディレクトリをデフォルトに戻す"
+    : defaultOutputDirError
+      ? "出力先ディレクトリを取得できないため戻せません"
       : "出力先ディレクトリはデフォルトです";
   const whisperModelName =
     WHISPER_MODELS.find((model) => model.value === localSettings.whisperModel)
