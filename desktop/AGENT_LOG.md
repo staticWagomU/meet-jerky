@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: clarify recording primary action
+
+- 開始日時: 2026-04-28 07:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の主操作ボタンが会議そのものではなく録音・文字起こし記録の開始/終了操作だと分かる表示へ直す。
+- 結果: 主ボタンの表示を `会議を開始` / `会議を終了` から `記録を開始` / `記録を終了` に変更した。既存の aria-label/title は録音と文字起こしの操作として詳細なまま維持し、開始/停止処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機 UI で主ボタンが会議検知バナーの文脈と自然につながるか確認する。
+
 ### Audio Source UX: make track actions read naturally
 
 - 開始日時: 2026-04-28 07:51 JST

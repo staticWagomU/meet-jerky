@@ -1031,8 +1031,8 @@ export function TranscriptView() {
           {isMeetingOperationPending
             ? "処理中..."
             : isMeetingActive
-              ? "会議を終了"
-              : "会議を開始"}
+              ? "記録を終了"
+              : "記録を開始"}
         </button>
         {isMeetingActive && meetingStartTime && (
           <span
