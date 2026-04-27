@@ -85,6 +85,8 @@ export function TranscriptionControls({
         <div
           className="transcription-source-status"
           role="status"
+          aria-live="polite"
+          aria-atomic="true"
           aria-label={`文字起こし音声ソース状態: ${sourceStatusText}`}
         >
           {sourceStatusText}
@@ -95,6 +97,8 @@ export function TranscriptionControls({
           id={TRANSCRIPTION_START_BLOCKED_REASON_ID}
           className="transcription-source-status transcription-source-status-warning"
           role="status"
+          aria-live="polite"
+          aria-atomic="true"
           aria-label={`文字起こし開始不可理由: ${startBlockedReason}`}
         >
           {startBlockedReason}
