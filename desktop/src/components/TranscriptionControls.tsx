@@ -55,7 +55,12 @@ export function TranscriptionControls({
         </div>
       )}
 
-      <div className="controls-row">
+      <div
+        className="controls-row"
+        role="group"
+        aria-busy={isTranscriptionOperationPending}
+        aria-label="文字起こし操作"
+      >
         <button
           type="button"
           onClick={onToggleTranscription}
