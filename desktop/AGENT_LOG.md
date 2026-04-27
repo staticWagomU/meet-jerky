@@ -5835,3 +5835,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI / VoiceOver で設定画面のローカル系エンジン説明が冗長すぎず、外部送信なしとして明確に伝わるか確認する。
+
+### Permission UX: clarify missing track impact
+
+- 開始日時: 2026-04-28 01:27 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、権限バナーの未許可説明を、自分/相手側トラックのどちらが記録されないか分かる文言へ小さく調整する。
+- 結果: マイク未許可時は `自分トラックは録音されません`、画面収録未許可時は `相手側音声は取得されません` と明示し、権限確認中/確認失敗の挙動や再チェック操作には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI / VoiceOver で未許可バナーの本文が会議前に必要十分な説明として読めるか確認する。
