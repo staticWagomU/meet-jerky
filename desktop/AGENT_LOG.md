@@ -4029,3 +4029,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。実 UI での hover 表示確認は未実施。
 - 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。
+
+### Main task: expose OpenAI key input states on hover
+
+- 開始日時: 2026-04-27 14:40 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェントによる最小実装
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI API キー入力欄と状態再確認操作が、ホバーでも登録状態と操作内容付きで確認できるようにする。
+- 結果: API キー状態再確認ボタンのラベルを定数化し、既存 `aria-label` と新規 `title` で共有した。API キー入力欄にも登録済み/未登録の文脈を持つ `aria-label` と `title` を付けた。Keychain 保存/削除、認証情報、入力値、API 送信処理は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実 UI での hover 表示確認は未実施。認証情報変更は行っていない。
+- 次アクション: 差分を最終確認してコミットする。次の UI/UX 改善候補を調査する。

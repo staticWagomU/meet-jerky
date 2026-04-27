@@ -711,6 +711,12 @@ function OpenAIApiKeySection({
           ? "登録済み"
           : "未登録";
   const apiKeyStatusLabel = `OpenAI API キー状態: ${apiKeyStatusText}`;
+  const refetchApiKeyStatusLabel = isFetchingHasKey
+    ? "OpenAI API キー状態を確認中"
+    : "OpenAI API キー状態を再確認";
+  const apiKeyInputLabel = hasKey
+    ? "OpenAI API キー: 登録済み、再入力で上書き"
+    : "OpenAI API キー: 未登録";
 
   return (
     <div className="settings-section">
@@ -734,11 +740,8 @@ function OpenAIApiKeySection({
               className="control-btn control-btn-clear"
               onClick={() => refetchHasKey()}
               disabled={isFetchingHasKey}
-              aria-label={
-                isFetchingHasKey
-                  ? "OpenAI API キー状態を確認中"
-                  : "OpenAI API キー状態を再確認"
-              }
+              aria-label={refetchApiKeyStatusLabel}
+              title={refetchApiKeyStatusLabel}
             >
               {isFetchingHasKey ? "確認中..." : "再確認"}
             </button>
@@ -746,7 +749,8 @@ function OpenAIApiKeySection({
         )}
         <input
           type="password"
-          aria-label="OpenAI API キー"
+          aria-label={apiKeyInputLabel}
+          title={apiKeyInputLabel}
           aria-describedby={OPENAI_API_KEY_NOTE_ID}
           autoComplete="off"
           spellCheck={false}
