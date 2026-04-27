@@ -268,9 +268,11 @@ export function SettingsView() {
     "文字起こしエンジン: macOS SpeechAnalyzer、端末内処理";
   const openAIRealtimeEngineLabel =
     "文字起こしエンジン: OpenAI Realtime API、音声をOpenAIへ送信";
+  const isSettingsViewBusy =
+    updateMutation.isPending || isSelectingOutputDirectory || isFetchingSettings;
 
   return (
-    <div className="settings-view">
+    <div className="settings-view" aria-busy={isSettingsViewBusy}>
       {/* 文字起こしエンジン */}
       <div className="settings-section">
         <h3 className="settings-section-title" id="transcription-engine-title">
