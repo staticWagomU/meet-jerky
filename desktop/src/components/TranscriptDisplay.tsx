@@ -243,6 +243,14 @@ export function TranscriptDisplay({
     }
   }, []);
 
+  const handleScrollToLatest = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+    userScrolledRef.current = false;
+    setAutoScroll(true);
+  }, []);
+
   const handleCopyAll = useCallback(async () => {
     if (isCopying || isCopyingRef.current) {
       return;
@@ -380,6 +388,17 @@ export function TranscriptDisplay({
                 : "すべてコピー"}
           </button>
         </div>
+      )}
+      {segments.length > 0 && !autoScroll && (
+        <button
+          type="button"
+          className="transcript-scroll-latest-btn"
+          onClick={handleScrollToLatest}
+          aria-label="文字起こしログの最新位置へ戻る"
+          title="文字起こしログの最新位置へ戻る"
+        >
+          最新へ
+        </button>
       )}
       {copyError && (
         <div

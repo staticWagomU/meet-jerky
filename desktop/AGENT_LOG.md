@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: add latest scroll affordance
+
+- 開始日時: 2026-04-28 07:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログを手動スクロールしたあと最新位置へ戻れる小さな操作を追加する。
+- 結果: 自動スクロールが止まっているときだけ `最新へ` ボタンを表示し、押すとログ末尾へ戻って自動スクロールを再開するようにした。文字起こし受信、コピー処理、セグメント表示には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でログを上へ戻した際の `最新へ` ボタンが邪魔にならず、クリックで末尾へ戻るか確認する。
+
 ### Transcript Copy UX: make copy errors dismissible
 
 - 開始日時: 2026-04-28 07:20 JST

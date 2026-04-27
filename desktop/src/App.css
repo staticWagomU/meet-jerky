@@ -765,6 +765,21 @@
   flex: 1 1 12rem;
 }
 
+.transcript-scroll-latest-btn {
+  align-self: flex-end;
+  margin: 0.35rem 0.5rem 0;
+  padding: 0.2em 0.65em;
+  border: 1px solid var(--color-border-light);
+  border-radius: 999px;
+  background: var(--copy-btn-bg);
+  color: var(--copy-btn-color);
+  font-size: 0.75rem;
+}
+
+.transcript-scroll-latest-btn:hover:not(:disabled) {
+  background: var(--control-btn-hover-bg);
+}
+
 .copy-btn {
   flex-shrink: 0;
   padding: 0.2em 0.6em;
