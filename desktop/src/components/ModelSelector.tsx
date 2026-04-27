@@ -298,7 +298,7 @@ export function ModelSelector({
                 : "Whisper モデル一覧を再取得"
             }
           >
-            {isFetchingModels ? "取得中..." : "再取得"}
+            {isFetchingModels ? "取得中..." : "モデル一覧を再取得"}
           </button>
         </div>
       ) : (

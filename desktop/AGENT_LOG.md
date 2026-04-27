@@ -1,5 +1,19 @@
 # Agent Log
 
+### Model Selector UX: clarify model list retry button
+
+- 開始日時: 2026-04-28 07:47 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、Whisper モデル一覧取得失敗時の再取得ボタンを、何を再取得する操作か分かる表示へ揃える。
+- 結果: Whisper モデル一覧エラー時のボタン表示を `再取得` から `モデル一覧を再取得` に変更した。既存の aria-label/title と同じ意味へ揃え、モデル取得・ダウンロード・認証・外部通信処理には触れなかった。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機 UI でボタン幅がモデル選択欄に対して窮屈でないか確認する。
+
 ### Settings UX: clarify output directory retry button
 
 - 開始日時: 2026-04-28 07:46 JST
