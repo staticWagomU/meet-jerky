@@ -958,6 +958,7 @@ export function TranscriptView() {
             className="meeting-error"
             role="alert"
             aria-label={`会議記録エラー: ${meetingError}`}
+            title={`会議記録エラー: ${meetingError}`}
           >
             {meetingError}
           </p>
@@ -967,6 +968,7 @@ export function TranscriptView() {
             className="meeting-error"
             role="alert"
             aria-label={`Whisperモデル状態エラー: ${String(modelDownloadedErrorForUi)}`}
+            title={`Whisperモデル状態エラー: ${String(modelDownloadedErrorForUi)}`}
           >
             モデル状態の確認に失敗しました: {String(modelDownloadedErrorForUi)}
           </p>
@@ -976,6 +978,7 @@ export function TranscriptView() {
             className="meeting-error"
             role="alert"
             aria-label={`文字起こし設定エラー: ${String(settingsError)}`}
+            title={`文字起こし設定エラー: ${String(settingsError)}`}
           >
             文字起こし設定の取得に失敗しました: {String(settingsError)}
           </p>
@@ -985,6 +988,7 @@ export function TranscriptView() {
             className="meeting-error"
             role="alert"
             aria-label={`OpenAI API キー状態エラー: ${String(openAIApiKeyErrorForUi)}`}
+            title={`OpenAI API キー状態エラー: ${String(openAIApiKeyErrorForUi)}`}
           >
             OpenAI API キー状態の確認に失敗しました: {String(openAIApiKeyErrorForUi)}
           </p>
@@ -1007,6 +1011,7 @@ export function TranscriptView() {
             className="meeting-error"
             role="alert"
             aria-label={`音量レベル監視エラー: ${audioLevelListenerError}`}
+            title={`音量レベル監視エラー: ${audioLevelListenerError}`}
           >
             {audioLevelListenerError}
           </p>
