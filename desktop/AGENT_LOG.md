@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: clarify inactive meeting recording state
+
+- 開始日時: 2026-04-28 07:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議中 status strip の録音状態が未開始時にも録音状態として明確に読めるようにする。
+- 結果: 会議録音 status pill の非アクティブ表示を `待機中` から `未録音` に変更した。録音状態判定、ボタン動作、セッション保存処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議状態 pill が `未録音` / `停止中` と並んでも自然に読めるか確認する。
+
 ### Session List UX: clarify waiting action buttons
 
 - 開始日時: 2026-04-28 07:06 JST

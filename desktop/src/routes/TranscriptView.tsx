@@ -956,7 +956,7 @@ export function TranscriptView() {
     ? "処理中"
     : isMeetingActive
       ? "録音中"
-      : "待機中";
+      : "未録音";
   const meetingRecordingStatusClass = isMeetingOperationPending
     ? "meeting-status-pill-neutral"
     : isMeetingActive
