@@ -5919,3 +5919,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 UI で system_audio セグメントとコピー出力が `相手側` 表示に揃うか確認する。
+
+### Transcript UX: localize unknown source aria label
+
+- 開始日時: 2026-04-28 01:34 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、音声ソースなしのエラーセグメント読み上げ文言に残っている英語混じりの `source不明` を日本語へ揃える。
+- 結果: `getSegmentAriaLabel()` の source なしエラー向けラベルを `音声ソース不明` に変更した。表示ラベル、イベント購読、エラーセグメント生成には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で音声ソースなしエラーの読み上げが日本語として自然に伝わるか確認する。

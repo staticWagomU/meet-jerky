@@ -34,7 +34,7 @@ function isSourceLessError(segment: TranscriptSegment): boolean {
 function getSegmentAriaLabel(segment: TranscriptSegment): string {
   const speakerLabel =
     isSourceLessError(segment)
-      ? "source不明"
+      ? "音声ソース不明"
       : getSpeakerLabel(segment) ?? "未分類";
   if (segment.isError) {
     return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
