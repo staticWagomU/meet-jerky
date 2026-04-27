@@ -854,10 +854,10 @@ function ExternalApiKeySection({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setKeyInput("");
-      showToast("API キーを保存しました");
+      showToast(`${providerName} API キーを保存しました`);
     },
     onError: (e) =>
-      showToast(`API キーの保存に失敗しました: ${toErrorMessage(e)}`),
+      showToast(`${providerName} API キーの保存に失敗しました: ${toErrorMessage(e)}`),
     onSettled: () => {
       isSettingApiKeyRef.current = false;
     },
@@ -867,10 +867,10 @@ function ExternalApiKeySection({
     mutationFn: () => invoke(clearCommand),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      showToast("API キーを削除しました");
+      showToast(`${providerName} API キーを削除しました`);
     },
     onError: (e) =>
-      showToast(`API キーの削除に失敗しました: ${toErrorMessage(e)}`),
+      showToast(`${providerName} API キーの削除に失敗しました: ${toErrorMessage(e)}`),
     onSettled: () => {
       isClearingApiKeyRef.current = false;
     },
