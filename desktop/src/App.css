@@ -1200,7 +1200,18 @@ body[data-window="live-caption"] {
 }
 
 .meeting-saved-path {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
   color: var(--color-muted);
+}
+
+.meeting-saved-path-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 /* ===========================

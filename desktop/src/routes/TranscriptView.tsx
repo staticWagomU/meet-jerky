@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AppSettings,
@@ -38,6 +39,7 @@ const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
+type SavedFileAction = "open" | "reveal" | null;
 
 function formatOperationError(prefix: string, e: unknown): string {
   return `${prefix} ${toErrorMessage(e)}`;
@@ -445,6 +447,11 @@ export function TranscriptView() {
   // Session wiring state
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [lastSavedPath, setLastSavedPath] = useState<string | null>(null);
+  const [savedFileActionError, setSavedFileActionError] = useState<
+    string | null
+  >(null);
+  const [savedFileActionPending, setSavedFileActionPending] =
+    useState<SavedFileAction>(null);
   const [audioLevelListenerError, setAudioLevelListenerError] = useState<
     string | null
   >(null);
@@ -594,6 +601,42 @@ export function TranscriptView() {
 
   const isAnySourceRecording = isMicRecording || isSystemAudioRecording;
 
+  const handleOpenLastSavedFile = useCallback(async () => {
+    if (!lastSavedPath || savedFileActionPending) {
+      return;
+    }
+    setSavedFileActionPending("open");
+    setSavedFileActionError(null);
+    try {
+      await openPath(lastSavedPath);
+    } catch (e) {
+      const msg = toErrorMessage(e);
+      console.error("保存済み履歴ファイルを開けませんでした:", msg);
+      setSavedFileActionError(`保存済み履歴ファイルを開けませんでした: ${msg}`);
+    } finally {
+      setSavedFileActionPending(null);
+    }
+  }, [lastSavedPath, savedFileActionPending]);
+
+  const handleRevealLastSavedFile = useCallback(async () => {
+    if (!lastSavedPath || savedFileActionPending) {
+      return;
+    }
+    setSavedFileActionPending("reveal");
+    setSavedFileActionError(null);
+    try {
+      await revealItemInDir(lastSavedPath);
+    } catch (e) {
+      const msg = toErrorMessage(e);
+      console.error("保存済み履歴ファイルを Finder で表示できませんでした:", msg);
+      setSavedFileActionError(
+        `保存済み履歴ファイルを Finder で表示できませんでした: ${msg}`,
+      );
+    } finally {
+      setSavedFileActionPending(null);
+    }
+  }, [lastSavedPath, savedFileActionPending]);
+
   const handleToggleMeeting = useCallback(async () => {
     if (isMeetingOperationPending || audioOperationPendingRef.current) {
       return;
@@ -650,6 +693,7 @@ export function TranscriptView() {
         return;
       }
       setLastSavedPath(null);
+      setSavedFileActionError(null);
       setMeetingError(null);
       const title = `会議 ${new Date().toLocaleString("ja-JP")}`;
       let sessionStarted = false;
@@ -1488,7 +1532,7 @@ export function TranscriptView() {
           </p>
         )}
         {lastSavedPath && lastSavedFileName && (
-          <p
+          <div
             className="meeting-saved-path"
             role="status"
             aria-live="polite"
@@ -1496,8 +1540,55 @@ export function TranscriptView() {
             aria-label={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
             title={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
           >
-            履歴ファイルを保存しました: {lastSavedFileName}
-          </p>
+            <span>履歴ファイルを保存しました: {lastSavedFileName}</span>
+            <span className="meeting-saved-path-actions">
+              <button
+                type="button"
+                className="control-btn control-btn-clear"
+                onClick={() => {
+                  void handleOpenLastSavedFile();
+                }}
+                disabled={savedFileActionPending !== null}
+                aria-label={`保存済み履歴ファイルを開く: ${lastSavedFileName}`}
+                title={`保存済み履歴ファイルを開く: ${lastSavedFileName}`}
+              >
+                {savedFileActionPending === "open" ? "開いています..." : "開く"}
+              </button>
+              <button
+                type="button"
+                className="control-btn control-btn-clear"
+                onClick={() => {
+                  void handleRevealLastSavedFile();
+                }}
+                disabled={savedFileActionPending !== null}
+                aria-label={`保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`}
+                title={`保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`}
+              >
+                {savedFileActionPending === "reveal"
+                  ? "表示中..."
+                  : "Finder で表示"}
+              </button>
+            </span>
+          </div>
+        )}
+        {savedFileActionError && (
+          <div
+            className="meeting-error meeting-alert meeting-error-dismissible"
+            role="alert"
+            aria-label={`保存済み履歴ファイル操作エラー: ${savedFileActionError}`}
+            title={`保存済み履歴ファイル操作エラー: ${savedFileActionError}`}
+          >
+            <span>{savedFileActionError}</span>
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() => setSavedFileActionError(null)}
+              aria-label="保存済み履歴ファイル操作エラーを閉じる"
+              title="保存済み履歴ファイル操作エラーを閉じる"
+            >
+              閉じる
+            </button>
+          </div>
         )}
       </div>
 

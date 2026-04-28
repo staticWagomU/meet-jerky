@@ -1,5 +1,19 @@
 # Agent Log
 
+### Saved History UX: add actions after save
+
+- 開始日時: 2026-04-29 05:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、記録終了後に保存された履歴ファイルへすぐアクセスできるようにする。
+- 結果: 保存完了メッセージに「開く」「Finder で表示」ボタンを追加し、操作中状態と失敗時の dismissible error を表示するようにした。保存処理本体、履歴一覧、外部通信には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で保存済みファイルを開く / Finder 表示する操作は未確認。
+- 次アクション: 実機で保存済みファイルを開く / Finder 表示する操作を確認する。
+
 ### Meeting Start Safety: reject future pending timestamps
 
 - 開始日時: 2026-04-29 05:19 JST
