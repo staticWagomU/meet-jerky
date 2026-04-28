@@ -16,6 +16,7 @@ const WHISPER_MODELS = [
 const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
 const ELEVENLABS_API_KEY_NOTE_ID = "elevenlabs-api-key-note";
 const EXTERNAL_REALTIME_RISK_NOTE_ID = "external-realtime-risk-note";
+const APPLE_SPEECH_LIMIT_NOTE_ID = "apple-speech-limit-note";
 const ENGINE_NOTE_IDS = {
   whisper: "transcription-engine-note-whisper",
   appleSpeech: "transcription-engine-note-apple-speech",
@@ -346,6 +347,10 @@ export function SettingsView() {
     localSettings.transcriptionEngine === "elevenLabsRealtime"
       ? `${ENGINE_NOTE_IDS.elevenLabsRealtime} ${EXTERNAL_REALTIME_RISK_NOTE_ID}`
       : ENGINE_NOTE_IDS.elevenLabsRealtime;
+  const appleSpeechDescribedBy =
+    localSettings.transcriptionEngine === "appleSpeech"
+      ? `${ENGINE_NOTE_IDS.appleSpeech} ${APPLE_SPEECH_LIMIT_NOTE_ID}`
+      : ENGINE_NOTE_IDS.appleSpeech;
   const isSettingsViewBusy =
     updateMutation.isPending ||
     isSelectingOutputDirectory ||
@@ -411,7 +416,7 @@ export function SettingsView() {
               type="radio"
               name="engine"
               value="appleSpeech"
-              aria-describedby={ENGINE_NOTE_IDS.appleSpeech}
+              aria-describedby={appleSpeechDescribedBy}
               checked={localSettings.transcriptionEngine === "appleSpeech"}
               onChange={() =>
                 setLocalSettings((current) =>
@@ -500,6 +505,20 @@ export function SettingsView() {
           >
             {externalRealtimeRiskLabel}
             API キーは Keychain に保存され、画面には再表示されません。
+          </p>
+        )}
+        {localSettings.transcriptionEngine === "appleSpeech" && (
+          <p
+            id={APPLE_SPEECH_LIMIT_NOTE_ID}
+            className="settings-risk-note"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="Apple Speech 制約: 現在の記録開始ボタンは自分と相手側の両トラックを同時に開始するため、Apple Speech では安全のため無効化されます。片側トラックだけを手動開始して利用してください。"
+            title="Apple Speech 制約: 現在の記録開始ボタンは自分と相手側の両トラックを同時に開始するため、Apple Speech では安全のため無効化されます。片側トラックだけを手動開始して利用してください。"
+          >
+            記録開始ボタンは両トラックを同時に開始するため、Apple Speech
+            では安全のため無効化されます。片側トラックだけを手動開始して利用してください。
           </p>
         )}
       </div>

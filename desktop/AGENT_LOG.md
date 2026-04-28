@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: explain Apple Speech dual-track limit
+
+- 開始日時: 2026-04-28 18:22 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 再整理した優先順位に従い、Apple Speech 選択時に自分/相手側両トラック同時開始が使えない制約をユーザーが設定画面で理解できるようにする。
+- 結果: Apple Speech 選択時に、記録開始ボタンは両トラックを同時開始するため安全上無効化されること、片側トラックだけを手動開始して使う必要があることを warning note として表示した。radio の `aria-describedby` にも制約 note を紐づけた。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機での設定画面表示と VoiceOver 読み上げは未確認。Apple Speech 実機動作は未確認。
+- 次アクション: 実機で Apple Speech 選択時に制約説明が表示され、ライブ画面の開始不可理由と矛盾しないことを確認する。
+
 ### Transcript UX: warn external realtime before recording
 
 - 開始日時: 2026-04-28 18:08 JST
