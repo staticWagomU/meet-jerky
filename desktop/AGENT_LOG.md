@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime Tests: assert provider error flags
+
+- 開始日時: 2026-04-29 02:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、OpenAI / ElevenLabs Realtime の provider error segment が `is_error: Some(true)` を持つことを回帰テストで固定する。
+- 結果: OpenAI Realtime の error event 処理テストを追加し、ElevenLabs Scribe error event の既存テストに `is_error` assertion を追加した。外部 API 通信、課金、認証情報変更は行っていない。
+- 変更ファイル: `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Realtime API 通信は課金/外部通信に当たるため未実施。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml openai_realtime elevenlabs_realtime` を再実行し、provider error が `isError` として UI に届くことを確認する。
+
 ### Live Caption A11y: announce errors assertively
 
 - 開始日時: 2026-04-29 02:14 JST

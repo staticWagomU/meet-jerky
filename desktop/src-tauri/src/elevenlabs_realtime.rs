@@ -514,5 +514,6 @@ mod tests {
         assert!(segments[0].text.contains("invalid api key"));
         assert_eq!(segments[0].speaker, speaker);
         assert_eq!(segments[0].source, Some(TranscriptionSource::SystemAudio));
+        assert_eq!(segments[0].is_error, Some(true));
     }
 }

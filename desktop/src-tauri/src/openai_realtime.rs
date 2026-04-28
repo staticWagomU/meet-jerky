@@ -358,7 +358,7 @@ mod ws_task {
         Ok(())
     }
 
-    fn handle_event(
+    pub(crate) fn handle_event(
         text: &str,
         pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
         speaker: &Option<String>,
@@ -485,5 +485,25 @@ mod tests {
     fn engine_construction_records_model() {
         let engine = OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
         assert_eq!(engine.model, "gpt-4o-mini-transcribe");
+    }
+
+    #[test]
+    fn error_events_are_queued_as_error_segments() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+
+        ws_task::handle_event(
+            r#"{"type":"error","error":{"message":"connection closed"}}"#,
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+        );
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 1);
+        assert!(segments[0].text.contains("connection closed"));
+        assert_eq!(segments[0].speaker, speaker);
+        assert_eq!(segments[0].source, Some(TranscriptionSource::Microphone));
+        assert_eq!(segments[0].is_error, Some(true));
     }
 }
