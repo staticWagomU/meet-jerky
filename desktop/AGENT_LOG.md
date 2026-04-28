@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Status UX: surface waiting input in track pills
+
+- 開始日時: 2026-04-29 04:02 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議ステータス strip の自分/相手側トラックピルでも、録音中/取得中だが表示レベル 0% のトラックを一目で分かるようにする。
+- 結果: 自分トラックは `録音中・入力待ち`、相手側トラックは `取得中・入力待ち` を必要時だけ表示するようにした。音声レベル計算は既存の sanitize と 0% 丸めに合わせ、録音/文字起こし処理には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で会議ステータスピルの幅とちらつきは未確認。
+- 次アクション: 実機で会議中の表示が過密にならず、入力待ち状態が上部ステータスだけで把握できることを確認する。
+
 ### Audio Source A11y: include waiting input in section labels
 
 - 開始日時: 2026-04-29 04:01 JST

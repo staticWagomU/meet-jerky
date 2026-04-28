@@ -1085,15 +1085,24 @@ export function TranscriptView() {
   const audioSourceStatusClass = isAudioCaptureOperationPending
     ? "meeting-status-pill-neutral"
     : getAudioSourceStatusPillClass(isMicRecording, isSystemAudioRecording);
+  const isMicInputWaiting =
+    isMicRecording && Math.round(sanitizeAudioLevel(micLevel) * 100) === 0;
+  const isSystemAudioInputWaiting =
+    isSystemAudioRecording &&
+    Math.round(sanitizeAudioLevel(systemAudioLevel) * 100) === 0;
   const micTrackStatusLabel = isMicSourceOperationPending
     ? "切替中"
     : isMicRecording
-      ? "録音中"
+      ? isMicInputWaiting
+        ? "録音中・入力待ち"
+        : "録音中"
       : "未録音";
   const systemAudioTrackStatusLabel = isSystemAudioSourceOperationPending
     ? "切替中"
     : isSystemAudioRecording
-      ? "取得中"
+      ? isSystemAudioInputWaiting
+        ? "取得中・入力待ち"
+        : "取得中"
       : "未取得";
   const micTrackStatusClass = getTrackStatusPillClass(
     isMicSourceOperationPending,
