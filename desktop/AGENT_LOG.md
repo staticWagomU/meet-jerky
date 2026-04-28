@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: reveal prompt window on meeting detection
+
+- 開始日時: 2026-04-28 15:02 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知時にアプリ内の録音開始プロンプトが隠れたままにならないよう、既存 main window を上部中央へ表示する。
+- 結果: 会議アプリ検知またはブラウザ会議 URL 検知後、`meeting-app-detected` event を emit する前に main window を上部中央へ移動して表示・focus するようにした。録音開始は引き続きフロントエンドの `録音を開始` ボタン操作が必要で、ステルス録音にはしていない。macOS 通知センター通知は既存挙動として維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での window 表示位置・focus 挙動は未確認。
+- 次アクション: 実機で会議検知時に main window が上部中央へ表示され、アプリ内録音開始プロンプトが見えることを確認する。
+
 ### Meeting UX: add floating start prompt and live caption panel
 
 - 開始日時: 2026-04-28 14:38 JST

@@ -12,6 +12,7 @@
 //!    Rust 側の純粋関数で会議 URL だけを分類する
 //! 4. Rust 側で:
 //!    - スロットリング (同一 bundle は 60 秒以内に再通知しない)
+//!    - main window を上部中央へ表示し、アプリ内プロンプトを見せる
 //!    - macOS 通知センターに通知を出す
 //!    - フロントエンドへ `meeting-app-detected` イベントを emit
 //! 5. フロントエンドがバナーを表示し、ユーザーがアプリ側で録音と文字起こしの状態を確認する
@@ -22,7 +23,7 @@ use std::time::{Duration, Instant};
 
 use parking_lot::Mutex;
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
 
 // 以下の定数・関数は macOS の Swift bridge から呼ばれる。
 // Linux 等のビルドで dead_code 警告にならないように cfg_attr で抑制する。
@@ -120,6 +121,9 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
         last_seen.insert(bundle_id.to_string(), now);
     }
 
+    // 隠れている場合でも、アプリ内の録音開始プロンプトが見えるようにする。
+    reveal_detection_window(&state.app_handle);
+
     // 通知センターに通知を出す
     show_notification(&state.app_handle, app_name);
 
@@ -172,6 +176,7 @@ fn handle_browser_url_detection(
         last_seen.insert(throttle_key, now);
     }
 
+    reveal_detection_window(&state.app_handle);
     show_notification(&state.app_handle, &classification.service);
 
     let payload = MeetingAppDetectedPayload {
@@ -186,6 +191,32 @@ fn handle_browser_url_detection(
     if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
         eprintln!("[app_detection] browser emit failed: {e}");
     }
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn reveal_detection_window(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+
+    let window_size = window.outer_size().ok();
+    let monitor = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| app.primary_monitor().ok().flatten());
+
+    if let (Some(window_size), Some(monitor)) = (window_size, monitor) {
+        let monitor_position = monitor.position();
+        let monitor_size = monitor.size();
+        let x = monitor_position.x
+            + ((monitor_size.width.saturating_sub(window_size.width)) / 2) as i32;
+        let y = monitor_position.y + 44;
+        let _ = window.set_position(PhysicalPosition::new(x, y));
+    }
+
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
