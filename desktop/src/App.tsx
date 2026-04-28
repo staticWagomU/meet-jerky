@@ -16,6 +16,7 @@ const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 function App() {
   const navigate = useNavigate();
   const [ringLightMode, setRingLightMode] = useState<RingLightMode>("off");
+  const [ringLightError, setRingLightError] = useState<string | null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -56,10 +57,18 @@ function App() {
   const cycleRingLightMode = () => {
     const nextMode = getNextRingLightMode(ringLightMode);
     setRingLightMode(nextMode);
+    setRingLightError(null);
     void invoke("set_ring_light_visible", { visible: nextMode !== "off" })
-      .then(() => emit(RING_LIGHT_MODE_EVENT, { mode: nextMode }))
+      .then(() => {
+        setRingLightError(null);
+        void emit(RING_LIGHT_MODE_EVENT, { mode: nextMode }).catch((e) => {
+          setRingLightError("リングライトの明るさを反映できませんでした");
+          console.error("リングライト設定の送信に失敗しました:", e);
+        });
+      })
       .catch((e) => {
         setRingLightMode(ringLightMode);
+        setRingLightError("リングライトを切り替えられませんでした");
         console.error("リングライト表示の切り替えに失敗しました:", e);
       });
   };
@@ -111,6 +120,18 @@ function App() {
           >
             常駐中
           </span>
+          {ringLightError && (
+            <span
+              className="app-header-light-error"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={ringLightError}
+              title={ringLightError}
+            >
+              {ringLightError}
+            </span>
+          )}
         </div>
       </header>
       <nav className="nav app-nav" aria-label="主要ナビゲーション">

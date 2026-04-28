@@ -1,5 +1,19 @@
 # Agent Log
 
+### Ring light UX: surface toggle failures
+
+- 開始日時: 2026-04-29 08:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: リングライトは便利機能として扱い、表示/明るさ反映に失敗した場合も console だけでなく控えめに UI へ出す。
+- 結果: リングライト表示切り替え時にエラー状態を保持し、表示失敗または明るさイベント送信失敗をヘッダー内の小さな error pill で表示するようにした。録音/文字起こし処理、リングライトウィンドウ生成コマンド、権限/認証には触れなかった。
+- 変更ファイル: `src/App.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でリングライトウィンドウ表示失敗/イベント送信失敗時の error pill が小さく表示され、成功時に消えることを確認する。
+
 ### UI polish: compact window responsive layout
 
 - 開始日時: 2026-04-29 08:35 JST

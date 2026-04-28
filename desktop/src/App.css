@@ -337,6 +337,19 @@ body[data-window="ring-light"] {
   border-color: color-mix(in srgb, var(--permission-banner-color) 36%, transparent);
 }
 
+.app-header-light-error {
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 0.18rem 0.48rem;
+  color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
+  border: 1px solid color-mix(in srgb, var(--transcript-error-color) 26%, transparent);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .app-content {
   flex: 1;
   min-height: 0;
