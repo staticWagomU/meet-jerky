@@ -286,12 +286,14 @@ export function TranscriptDisplay({
         copyFeedbackTimeoutRef.current = null;
       }, 2000);
     } catch (e) {
-      console.error("コピーに失敗しました:", e);
+      console.error("文字起こし本文のコピーに失敗しました:", e);
       if (!isMountedRef.current) {
         return;
       }
       setCopyFeedback(false);
-      setCopyError(`コピーに失敗しました: ${toErrorMessage(e)}`);
+      setCopyError(
+        `文字起こし本文のコピーに失敗しました: ${toErrorMessage(e)}`,
+      );
     } finally {
       isCopyingRef.current = false;
       if (isMountedRef.current) {
@@ -397,16 +399,16 @@ export function TranscriptDisplay({
         <div
           className="transcript-inline-error transcript-inline-error-dismissible"
           role="alert"
-          aria-label={`文字起こしコピーエラー: ${copyError}`}
-          title={`文字起こしコピーエラー: ${copyError}`}
+          aria-label={`文字起こし本文コピーエラー: ${copyError}`}
+          title={`文字起こし本文コピーエラー: ${copyError}`}
         >
           <span>{copyError}</span>
           <button
             type="button"
             className="control-btn control-btn-clear"
             onClick={() => setCopyError(null)}
-            aria-label="文字起こしコピーエラーを閉じる"
-            title="文字起こしコピーエラーを閉じる"
+            aria-label="文字起こし本文コピーエラーを閉じる"
+            title="文字起こし本文コピーエラーを閉じる"
           >
             閉じる
           </button>

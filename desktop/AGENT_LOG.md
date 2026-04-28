@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Log UX: clarify copy failure target
+
+- 開始日時: 2026-04-28 09:54 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こし本文コピーに失敗したときのエラー文言と aria/title も、対象が本文コピーであることが分かる表現へ揃える。
+- 結果: 文字起こし本文コピー失敗時の console/error/aria/title を `文字起こし本文のコピー` に揃えた。コピー対象、クリップボード処理、セグメント表示には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でクリップボード失敗時のエラー文言と支援技術読み上げが自然に読めるか確認する。
+
 ### History UX: clarify reveal failure target
 
 - 開始日時: 2026-04-28 09:51 JST
