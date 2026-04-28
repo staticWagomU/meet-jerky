@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: validate Zoom host labels
+
+- 開始日時: 2026-04-29 01:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Zoom / ZoomGov の会議 URL 分類で不自然なサブドメインを誤検知しないよう純粋関数の host 判定を強める。
+- 結果: Zoom 系サブドメインの各 DNS label を英数字またはハイフン、先頭末尾は英数字、最大 63 bytes に限定した。`company-name.zoom.us` は許可し、`bad_label.zoom.us`、`-bad.zoom.us`、`bad-.zoom.us` は拒否する回帰テストを追加した。URL 全文を payload/log/UI に出さない方針は維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: ブラウザ URL 実機取得と macOS Automation/Accessibility 権限を伴う確認は未実機確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行し、実機ブラウザで Zoom vanity host の検知と不正 host の非検知を確認する。
+
 ### Realtime UX: style provider error segments
 
 - 開始日時: 2026-04-29 01:06 JST

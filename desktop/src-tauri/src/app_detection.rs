@@ -339,7 +339,22 @@ fn is_zoom_host(host: &str) -> bool {
     } else {
         return false;
     };
-    !subdomain.is_empty() && subdomain.split('.').all(|label| !label.is_empty())
+    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
+}
+
+fn is_valid_dns_label(label: &str) -> bool {
+    let bytes = label.as_bytes();
+    !bytes.is_empty()
+        && bytes.len() <= 63
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
+        && bytes
+            .first()
+            .is_some_and(|byte| byte.is_ascii_alphanumeric())
+        && bytes
+            .last()
+            .is_some_and(|byte| byte.is_ascii_alphanumeric())
 }
 
 fn is_google_meet_url(host: &str, path: &str) -> bool {
@@ -705,6 +720,13 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://company-name.zoom.us/j/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company-name.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://zoom.us/my/personal-room/"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -828,6 +850,18 @@ mod tests {
         assert_eq!(classify_meeting_url("https://.zoom.us/j/123456789"), None);
         assert_eq!(
             classify_meeting_url("https://evil..zoom.us/j/123456789"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://bad_label.zoom.us/j/123456789"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://-bad.zoom.us/j/123456789"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://bad-.zoom.us/j/123456789"),
             None
         );
         assert_eq!(
