@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### History: skip impossible session timestamp prefixes
+
+- 開始日時: 2026-04-29 06:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧で、異常に大きい Markdown ファイル名 timestamp prefix が先頭に並んだり UI 日付変換を壊したりしないようにする。
+- 結果: セッション一覧の timestamp prefix 解析を helper 化し、JavaScript Date として扱えない範囲の Unix 秒を持つ `.md` ファイルを一覧から除外するようにした。正常な履歴ファイル、Markdown 保存形式、検索本文には触れなかった。範囲外 prefix を skip する回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml session_store` は `whisper-rs-sys` の build script が `cmake` 不在で失敗。`git diff --check -- src-tauri/src/session_store.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml session_store` を再実行する。
+
 ### Meeting prompt UX: surface invalid status payload
 
 - 開始日時: 2026-04-29 06:38 JST

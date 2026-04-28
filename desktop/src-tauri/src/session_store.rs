@@ -17,6 +17,7 @@ use crate::markdown::{self, SessionMeta};
 use crate::session::Session;
 
 const MAX_SESSION_SEARCH_TEXT_BYTES: u64 = 64 * 1024;
+const MAX_JS_DATE_UNIX_SECS: u64 = 8_640_000_000_000;
 
 /// セッションを保存するファイルパスを決定する。
 ///
@@ -138,8 +139,7 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
         let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
             continue;
         };
-        let prefix = stem.split('-').next().unwrap_or("");
-        let Ok(started_at_secs) = prefix.parse::<u64>() else {
+        let Some(started_at_secs) = parse_session_started_at_secs(stem) else {
             continue;
         };
 
@@ -169,6 +169,15 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
     }
     out.sort_by(|a, b| b.started_at_secs.cmp(&a.started_at_secs));
     Ok(out)
+}
+
+fn parse_session_started_at_secs(stem: &str) -> Option<u64> {
+    let prefix = stem.split('-').next().unwrap_or("");
+    let started_at_secs = prefix.parse::<u64>().ok()?;
+    if started_at_secs > MAX_JS_DATE_UNIX_SECS {
+        return None;
+    }
+    Some(started_at_secs)
 }
 
 /// `dir` 配下の `.md` 拡張子ファイルを一覧する。
@@ -329,6 +338,27 @@ mod tests {
 
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].started_at_secs, 100);
+    }
+
+    #[test]
+    fn list_session_summaries_skips_out_of_js_date_range_prefixes() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("100-0.md"),
+            "# 会議メモ - 2024-04-17 14:50\n",
+        )
+        .unwrap();
+        fs::write(
+            dir.path().join("8640000000001-0.md"),
+            "# 壊れた履歴 - 275760-09-13 00:00\n",
+        )
+        .unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].started_at_secs, 100);
+        assert_eq!(summaries[0].title, "会議メモ - 2024-04-17 14:50");
     }
 
     #[test]
