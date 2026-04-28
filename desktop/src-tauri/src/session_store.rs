@@ -4,7 +4,7 @@
 //! リアルタイム追記や Tauri コマンド化は本ループのスコープ外。
 
 use std::fs;
-use std::io::{BufRead, BufReader, Error, ErrorKind};
+use std::io::{BufRead, BufReader, Error, ErrorKind, Read};
 use std::path::{Path, PathBuf};
 
 use chrono::FixedOffset;
@@ -15,6 +15,8 @@ use crate::datetime_fmt::{
 };
 use crate::markdown::{self, SessionMeta};
 use crate::session::Session;
+
+const MAX_SESSION_SEARCH_TEXT_BYTES: u64 = 64 * 1024;
 
 /// セッションを保存するファイルパスを決定する。
 ///
@@ -93,16 +95,18 @@ pub fn save_session_markdown(
 
 /// 保存済みセッションの一覧用メタデータ。
 ///
-/// ファイル本体を全て読まずに、UI が一覧表示するために必要な情報を提供する。
+/// ファイル本体を必要以上に読まず、UI が一覧表示・検索するために必要な情報を提供する。
 /// - `started_at_secs` はファイル名先頭（`<started_at>-<seq>.md`）から復元。
 /// - `title` はファイル先頭行 `# ...` の `# ` を除いた残り全体（日付を含む）。
 ///   日付を分離しない方針: 呼び出し側が素のヘッダ文字列をそのまま見せれば十分。
+/// - `search_text` は本文検索用。表示はせず、巨大ファイルで UI を重くしないため先頭だけ読む。
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionSummary {
     pub path: PathBuf,
     pub started_at_secs: u64,
     pub title: String,
+    pub search_text: String,
 }
 
 /// `dir` 配下の `.md` ファイルを走査し、サマリーを新しい順に返す。
@@ -130,11 +134,17 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
         } else {
             title.to_string()
         };
+        let mut search_bytes = Vec::new();
+        reader
+            .take(MAX_SESSION_SEARCH_TEXT_BYTES)
+            .read_to_end(&mut search_bytes)?;
+        let search_text = String::from_utf8_lossy(&search_bytes).to_string();
 
         out.push(SessionSummary {
             path,
             started_at_secs,
             title,
+            search_text,
         });
     }
     out.sort_by(|a, b| b.started_at_secs.cmp(&a.started_at_secs));
@@ -222,7 +232,7 @@ mod tests {
         let dir = tempdir().unwrap();
         fs::write(
             dir.path().join("100-0.md"),
-            "# 会議メモ - 2024-04-17 14:50\n",
+            "# 会議メモ - 2024-04-17 14:50\n\n**[14:50:15] 自分:** 検索できる本文  \n",
         )
         .unwrap();
 
@@ -231,9 +241,32 @@ mod tests {
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].started_at_secs, 100);
         assert_eq!(summaries[0].title, "会議メモ - 2024-04-17 14:50");
+        assert!(
+            summaries[0].search_text.contains("検索できる本文"),
+            "search_text should include transcript body"
+        );
         assert_eq!(
             summaries[0].path.file_name().unwrap().to_string_lossy(),
             "100-0.md"
+        );
+    }
+
+    #[test]
+    fn list_session_summaries_limits_search_text_size() {
+        let dir = tempdir().unwrap();
+        let long_body = "x".repeat(MAX_SESSION_SEARCH_TEXT_BYTES as usize + 1024);
+        fs::write(
+            dir.path().join("100-0.md"),
+            format!("# 会議メモ - 2024-04-17 14:50\n{long_body}"),
+        )
+        .unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(
+            summaries[0].search_text.len(),
+            MAX_SESSION_SEARCH_TEXT_BYTES as usize
         );
     }
 

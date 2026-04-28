@@ -7,6 +7,7 @@ export interface SessionSummary {
   path: string;
   startedAtSecs: number;
   title: string;
+  searchText: string;
 }
 
 /**

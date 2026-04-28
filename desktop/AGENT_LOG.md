@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search: include transcript body
+
+- 開始日時: 2026-04-29 02:34 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/session_store.rs`, `src/hooks/useSessionList.ts`, `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索をタイトル・日時・ファイル名だけでなく文字起こし本文にも効くようにし、履歴検索のプロダクト価値を上げる。
+- 結果: `SessionSummary` に表示しない検索用 `search_text` を追加し、Markdown 本文先頭 64KiB を一覧取得時に読むようにした。フロントの `SessionSummary.searchText` を検索対象へ加え、検索 placeholder も本文検索を含む表現へ更新した。巨大ファイルで UI を重くしすぎないよう読み取り上限の回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/session_store.rs`, `src/hooks/useSessionList.ts`, `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/session_store.rs src/hooks/useSessionList.ts src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_store.rs src/hooks/useSessionList.ts src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 大量履歴での実測パフォーマンスは未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml session_store` を再実行し、実機の履歴画面で本文語句検索が効くことを確認する。
+
 ### Meeting Prompt A11y: avoid countdown live spam
 
 - 開始日時: 2026-04-29 02:32 JST

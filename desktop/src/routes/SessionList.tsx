@@ -32,6 +32,7 @@ function sessionMatchesQuery(
     getSessionDisplayTitle(session.title),
     getFileName(session.path),
     startedAtLabel,
+    session.searchText,
   ]
     .join(" ")
     .toLocaleLowerCase();
@@ -239,7 +240,7 @@ export function SessionList() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="タイトル、日時、ファイル名"
+              placeholder="タイトル、本文、日時、ファイル名"
               aria-label={sessionSearchLabel}
               title={sessionSearchLabel}
             />
