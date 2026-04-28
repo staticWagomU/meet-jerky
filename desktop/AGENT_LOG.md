@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: make live caption window draggable and closable
+
+- 開始日時: 2026-04-29 07:34 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の初期段階として、既存の独立ライブ文字起こしウィンドウを維持したまま、音声入力アプリのように邪魔にならず直感的に扱えるようにする。特に「どこをさわってもドラッグできる」「必要に応じて閉じれる」を優先する。
+- 結果: ライブ字幕ウィンドウの主要領域に `data-tauri-drag-region` を付与し、パネル全体をドラッグ対象にした。右上に小さなクローズボタンを追加し、録音や文字起こし処理は止めずウィンドウだけ隠せるようにした。jankeyboard については検索で同名 OSS を特定できず、ライセンス未確認のためコード流用はしない。類似の Mac リングライトアプリからは、クリックを邪魔しないオーバーレイ、輝度/色温度/幅調整、メニューバー常駐の設計アイデアのみ参考候補とした。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。Tauri の `data-tauri-drag-region` による実機ドラッグと、focusable false ウィンドウ上の close button click は未実機確認。
+- 次アクション: コミット後、メニューバー押下時ウィンドウの刷新、通知用ウィンドウの刷新、リングライト境界設計を段階実装する。
+
 ### Meeting Prompt: reflect pending action in buttons
 
 - 開始日時: 2026-04-29 07:03 JST

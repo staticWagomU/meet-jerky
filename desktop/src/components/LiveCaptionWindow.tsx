@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
@@ -279,24 +280,36 @@ export function LiveCaptionWindow() {
   const liveCaptionTransmissionAriaLabel = statusPayload.isExternalTransmission
     ? `外部送信中 ${statusPayload.aiTransmissionLabel}`
     : `外部送信 ${statusPayload.aiTransmissionLabel}`;
+  const hideLiveCaptionWindow = () => {
+    void getCurrentWindow()
+      .hide()
+      .catch((e) => {
+        console.error("ライブ字幕ウィンドウを隠せませんでした:", toErrorMessage(e));
+      });
+  };
 
   return (
     <div
       className="overlay-window live-caption-window"
+      data-tauri-drag-region
       role={liveCaptionRole}
       aria-live={isErrorState ? "assertive" : "polite"}
       aria-atomic="true"
       aria-label={label}
       title={label}
     >
-      <div className={panelClassName}>
-        <div className="live-transcript-wave" aria-hidden="true">
+      <div className={panelClassName} data-tauri-drag-region>
+        <div
+          className="live-transcript-wave"
+          data-tauri-drag-region
+          aria-hidden="true"
+        >
           <span />
           <span />
           <span />
         </div>
-        <div className="live-transcript-content">
-          <div className="live-transcript-meta">
+        <div className="live-transcript-content" data-tauri-drag-region>
+          <div className="live-transcript-meta" data-tauri-drag-region>
             <span className="live-transcript-dot" aria-hidden="true" />
             <span>{isErrorState ? "文字起こしエラー" : "ライブ文字起こし"}</span>
             {latestSegment && (
@@ -338,6 +351,7 @@ export function LiveCaptionWindow() {
           </div>
           <div
             className="live-transcript-track-row"
+            data-tauri-drag-region
             aria-label={trackRowLabel}
             title={trackRowLabel}
           >
@@ -349,16 +363,25 @@ export function LiveCaptionWindow() {
                   aria-label={track.ariaLabel}
                   title={track.ariaLabel}
                 >
-                  <span>{track.label}</span>
-                  <span>{track.state}</span>
+                  <span data-tauri-drag-region>{track.label}</span>
+                  <span data-tauri-drag-region>{track.state}</span>
                 </span>
               );
             })}
           </div>
-          <div className="live-transcript-text">
+          <div className="live-transcript-text" data-tauri-drag-region>
             {listenerError ?? latestSegment?.text ?? WAITING_CAPTION_TEXT}
           </div>
         </div>
+        <button
+          type="button"
+          className="live-transcript-close-btn"
+          aria-label="ライブ文字起こしウィンドウを閉じる"
+          title="ライブ文字起こしウィンドウを閉じる"
+          onClick={hideLiveCaptionWindow}
+        >
+          ×
+        </button>
       </div>
     </div>
   );

@@ -753,6 +753,12 @@ body[data-window="live-caption"] {
   transform: translateX(-50%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   backdrop-filter: blur(24px) saturate(160%);
+  user-select: none;
+  cursor: grab;
+}
+
+.live-transcript-panel:active {
+  cursor: grabbing;
 }
 
 .live-transcript-wave {
@@ -804,6 +810,7 @@ body[data-window="live-caption"] {
   min-width: 0;
   flex-direction: column;
   gap: 0.15rem;
+  padding-right: 1.8rem;
 }
 
 .live-transcript-meta {
@@ -955,6 +962,35 @@ body[data-window="live-caption"] {
 
 .live-transcript-panel-error .live-transcript-dot {
   background-color: var(--transcript-error-color);
+}
+
+.live-transcript-close-btn {
+  position: absolute;
+  top: 0.46rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.36rem;
+  height: 1.36rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-radius: 999px;
+  color: var(--color-muted);
+  background-color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  box-shadow: none;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: default;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.live-transcript-close-btn:hover {
+  color: var(--color-text);
+  background-color: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  border-color: color-mix(in srgb, var(--color-muted) 34%, transparent);
 }
 
 /* ===========================
