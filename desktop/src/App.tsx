@@ -2,11 +2,11 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { markPendingMeetingStartRequest } from "./utils/meetingStartRequest";
 import "./App.css";
 
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
-const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 
 function App() {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ function App() {
       if (disposed) {
         return;
       }
-      localStorage.setItem(PENDING_MEETING_START_STORAGE_KEY, "1");
+      markPendingMeetingStartRequest();
       showMainTranscriptWindow();
     });
 

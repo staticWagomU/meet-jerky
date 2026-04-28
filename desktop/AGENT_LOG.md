@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Safety: centralize pending start storage
+
+- 開始日時: 2026-04-29 03:41 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `src/components/MeetingDetectedBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知から録音開始へ渡す pending start の localStorage キー操作が複数ファイルに重複し、将来の変更でずれるリスクを下げる。
+- 結果: `meetingStartRequest` utility を追加し、pending start の有無確認・設定・削除を `App`、`MeetingDetectedBanner`、`TranscriptView` から共通関数経由にした。イベント名、localStorage キー値、録音開始フローそのものには触れない。
+- 変更ファイル: `src/App.tsx`, `src/components/MeetingDetectedBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 検証結果: `rg -n "PENDING_MEETING_START_STORAGE_KEY|meetJerky\\.pendingMeetingStart|localStorage\\.(getItem|setItem|removeItem)" src/App.tsx src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/utils/meetingStartRequest.ts` で direct localStorage 操作が utility に集約されていることを確認。初回 `npm run build` は import 名が既存 state 名と衝突して失敗したため alias に修正。`git diff --check -- src/App.tsx src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実ウィンドウ間の localStorage 共有と会議検知からの録音開始は未実機確認。
+- 次アクション: 実機で会議検知バナーの録音開始/状態確認/自動非表示が意図通り動くことを確認する。
+
 ### Meeting Prompt Safety: clear pending start on auto hide
 
 - 開始日時: 2026-04-29 03:40 JST

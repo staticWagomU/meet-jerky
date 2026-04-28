@@ -19,6 +19,10 @@ import {
   finalizeAndSaveSession,
   discardSession,
 } from "../hooks/useSession";
+import {
+  clearPendingMeetingStartRequest,
+  hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
+} from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
@@ -27,7 +31,6 @@ const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:"
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
-const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 
@@ -466,7 +469,7 @@ export function TranscriptView() {
   }, [settings?.whisperModel]);
 
   useEffect(() => {
-    if (localStorage.getItem(PENDING_MEETING_START_STORAGE_KEY)) {
+    if (readPendingMeetingStartRequest()) {
       setHasPendingMeetingStartRequest(true);
     }
     let disposed = false;
@@ -1199,7 +1202,7 @@ export function TranscriptView() {
       return;
     }
     if (isMeetingActive) {
-      localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+      clearPendingMeetingStartRequest();
       setHasPendingMeetingStartRequest(false);
       return;
     }
@@ -1210,7 +1213,7 @@ export function TranscriptView() {
     ) {
       return;
     }
-    localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+    clearPendingMeetingStartRequest();
     setHasPendingMeetingStartRequest(false);
     if (!canStartMeeting) {
       setMeetingError(

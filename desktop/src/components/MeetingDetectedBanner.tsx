@@ -2,17 +2,16 @@ import { useEffect, useState } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { MeetingAppDetectedPayload } from "../types";
+import {
+  clearPendingMeetingStartRequest,
+  markPendingMeetingStartRequest,
+} from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
-const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
-
-function clearPendingMeetingStartRequest() {
-  localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
-}
 
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
@@ -148,7 +147,7 @@ export function MeetingDetectedBanner() {
                 aria-label={startRecordingLabel}
                 title={startRecordingLabel}
                 onClick={() => {
-                  localStorage.setItem(PENDING_MEETING_START_STORAGE_KEY, "1");
+                  markPendingMeetingStartRequest();
                   void emit(MEETING_START_REQUEST_EVENT);
                   void getCurrentWindow().hide();
                   setDetected(null);
