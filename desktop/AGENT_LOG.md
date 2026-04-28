@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: shorten external API key warning
+
+- 開始日時: 2026-04-28 13:48 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ状態 strip の外部 API キー警告 pill を短くし、会議中 UI の横幅を抑える。
+- 結果: 外部 Realtime エンジンで API キーが未登録・確認中・確認失敗の場合の可視表示を `OpenAI API キー 未登録` 形式から `OpenAI キー未登録` 形式へ短縮した。詳細な `API キー` 表現は aria-label/title に残した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での表示幅確認は未実施。
+- 次アクション: 実機 UI で API キー未登録/確認失敗時の短縮 pill が十分に明確で、小さいウィンドウでも収まることを確認する。
+
 ### Transcript UX: shorten engine status label
 
 - 開始日時: 2026-04-28 13:40 JST

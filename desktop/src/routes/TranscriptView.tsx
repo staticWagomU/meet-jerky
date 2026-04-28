@@ -1044,7 +1044,7 @@ export function TranscriptView() {
   );
   const externalApiKeyStatusDisplayLabel =
     externalApiProvider && externalApiKeyStatusLabel
-      ? `${externalApiProvider} API キー ${externalApiKeyStatusLabel}`
+      ? `${externalApiProvider} キー${externalApiKeyStatusLabel}`
       : null;
   const shouldShowExternalApiKeyStatus =
     Boolean(externalApiKeyStatusLabel) &&
