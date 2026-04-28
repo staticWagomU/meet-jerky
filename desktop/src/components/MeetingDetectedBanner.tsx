@@ -83,12 +83,12 @@ export function MeetingDetectedBanner() {
     : "録音しますか？";
   const bannerDetail = listenerError
     ? null
-    : `${displayName} を検出しました。録音と文字起こしはまだ開始していません。`;
+    : `${displayName} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }録音と文字起こしはまだ開始していません。開始前に状態を確認してください。`;
+      }自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の録音開始前の状態を確認`
     : "録音開始前の状態を確認";

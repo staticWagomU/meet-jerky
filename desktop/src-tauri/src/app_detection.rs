@@ -206,7 +206,7 @@ fn show_notification(app: &AppHandle, app_name: &str) {
 
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn notification_body(app_name: &str) -> String {
-    format!("{app_name} を検出しました。録音と文字起こしはまだ開始していません。アプリで状態を確認してください。")
+    format!("{app_name} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。アプリで状態を確認してください。")
 }
 
 /// ブラウザ URL の実機取得が入った後に使う、会議 URL 分類用の純粋関数。
@@ -608,7 +608,7 @@ mod tests {
             !body.contains("クリックで記録を開始"),
             "通知クリックで録音開始する未実装挙動を本文に含めない"
         );
-        assert!(body.contains("録音と文字起こしはまだ開始していません"));
+        assert!(body.contains("自分/相手側トラックの録音と文字起こしはまだ開始していません"));
     }
 
     #[test]

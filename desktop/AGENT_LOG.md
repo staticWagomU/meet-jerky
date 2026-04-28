@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection UX: clarify track recording state in prompt
+
+- 開始日時: 2026-04-28 18:48 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 再整理した優先順位に従い、会議検知時の通知/プロンプトで何が未開始なのかをより具体化し、録音状態の透明性を上げる。
+- 結果: 会議検知プロンプトと macOS 通知本文を、単なる「録音と文字起こしは未開始」から「自分/相手側トラックの録音と文字起こしは未開始」へ変更した。Rust 側の通知本文テスト期待値も更新した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機通知センターでの文言幅、専用プロンプト内の折り返しは未確認。Rust 全体テストは `cmake` 不在により未完走。
+- 次アクション: 実機で会議検知通知とプロンプトが長すぎず、自分/相手側トラック未開始であることが自然に伝わるか確認する。
+
 ### Settings UX: align browser URL permission note with detection targets
 
 - 開始日時: 2026-04-28 18:35 JST
