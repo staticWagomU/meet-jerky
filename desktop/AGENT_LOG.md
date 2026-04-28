@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Controls: clarify disabled clear reason
+
+- 開始日時: 2026-04-29 07:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議中 UI の操作不可理由を支援技術と tooltip でも自然に読めるようにする。
+- 結果: 文字起こし開始/停止中に表示ログをクリアできない理由のラベルへ読点を追加し、`文字起こしを停止中のため表示ログ...` ではなく `文字起こしを停止中のため、表示ログ...` と読みやすくした。動作や保存形式には触れない。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`npm run build` は素の shell PATH では `npm` が見つからず失敗したため、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` で再実行して成功。`scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での VoiceOver 読み上げは未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### Agent Verify: include Rust formatting check
 
 - 開始日時: 2026-04-29 06:35 JST

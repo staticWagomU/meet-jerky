@@ -47,7 +47,7 @@ export function TranscriptionControls({
         ? `文字起こしを開始できません: ${startBlockedReason}`
       : "文字起こしを開始";
   const clearTranscriptLabel = isTranscriptionOperationPending
-    ? `${pendingTranscriptionLabel}のため表示ログをクリアできません`
+    ? `${pendingTranscriptionLabel}のため、表示ログをクリアできません`
     : `表示中の文字起こしログ ${segmentsCount} 件をクリア`;
   const transcriptionControlsLabel = [
     "文字起こし操作",
