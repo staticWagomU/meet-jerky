@@ -1411,6 +1411,7 @@
   flex: 1;
   min-width: min(14rem, 100%);
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .meeting-detected-banner-error {

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection UX: keep long detected names readable
+
+- 開始日時: 2026-04-28 10:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、会議検知バナーで長いサービス名やホスト名が出ても本文が横にはみ出さないようにする。
+- 結果: 会議検知バナー本文に `overflow-wrap: anywhere` を追加し、長い検知名やホスト名でも本文が横にはみ出しにくくした。検知ペイロード、URL 全文非表示方針、通知処理には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で長いホスト名の会議検知バナーが横にはみ出さず、会議中の邪魔にならないか確認する。
+
 ### Settings UX: clarify browser automation permission timing
 
 - 開始日時: 2026-04-28 10:02 JST
