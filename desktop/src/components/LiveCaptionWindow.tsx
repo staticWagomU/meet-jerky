@@ -8,6 +8,21 @@ import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
 
+type AudioSource = NonNullable<TranscriptSegment["source"]>;
+type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
+
+const TRACKS: Array<{ source: AudioSource; label: string }> = [
+  { source: "microphone", label: "自分" },
+  { source: "system_audio", label: "相手側" },
+];
+
+function createEmptyLatestBySource(): LatestBySource {
+  return {
+    microphone: null,
+    system_audio: null,
+  };
+}
+
 function getSpeakerLabel(segment: TranscriptSegment): string {
   if (segment.source === "microphone") return "自分";
   if (segment.source === "system_audio") return "相手側";
@@ -28,6 +43,9 @@ export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
     null,
   );
+  const [latestBySource, setLatestBySource] = useState<LatestBySource>(
+    createEmptyLatestBySource,
+  );
   const [listenerError, setListenerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,6 +55,7 @@ export function LiveCaptionWindow() {
         return;
       }
       setLatestSegment(null);
+      setLatestBySource(createEmptyLatestBySource());
       setListenerError(null);
     });
     const resultUnlistenPromise = listen<TranscriptSegment>(
@@ -46,6 +65,12 @@ export function LiveCaptionWindow() {
           return;
         }
         setLatestSegment(event.payload);
+        if (event.payload.source) {
+          setLatestBySource((prev) => ({
+            ...prev,
+            [event.payload.source as AudioSource]: event.payload,
+          }));
+        }
       },
     );
     const errorUnlistenPromise = listen<TranscriptionErrorPayload>(
@@ -54,13 +79,20 @@ export function LiveCaptionWindow() {
         if (disposed) {
           return;
         }
-        setLatestSegment({
+        const errorSegment: TranscriptSegment = {
           text: `エラー: ${event.payload.error}`,
           startMs: 0,
           endMs: 0,
           source: event.payload.source,
           isError: true,
-        });
+        };
+        setLatestSegment(errorSegment);
+        if (event.payload.source) {
+          setLatestBySource((prev) => ({
+            ...prev,
+            [event.payload.source as AudioSource]: errorSegment,
+          }));
+        }
       },
     );
 
@@ -159,6 +191,35 @@ export function LiveCaptionWindow() {
                 {captionTimestamp}
               </span>
             )}
+          </div>
+          <div
+            className="live-transcript-track-row"
+            aria-label="音声トラック別の最新文字起こし状態"
+          >
+            {TRACKS.map((track) => {
+              const segment = latestBySource[track.source];
+              const trackTimestamp =
+                segment && !isTranscriptErrorSegment(segment)
+                  ? formatSegmentTimestamp(segment.startMs)
+                  : null;
+              const trackState = segment
+                ? isTranscriptErrorSegment(segment)
+                  ? "エラー"
+                  : trackTimestamp
+                : "待機";
+              const trackLabel = `${track.label}トラック: ${trackState}`;
+              return (
+                <span
+                  key={track.source}
+                  className={`live-transcript-track-pill live-transcript-track-pill-${track.source}`}
+                  aria-label={trackLabel}
+                  title={trackLabel}
+                >
+                  <span>{track.label}</span>
+                  <span>{trackState}</span>
+                </span>
+              );
+            })}
           </div>
           <div className="live-transcript-text">
             {listenerError ?? latestSegment?.text ?? WAITING_CAPTION_TEXT}

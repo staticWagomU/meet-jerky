@@ -815,6 +815,40 @@ body[data-window="live-caption"] {
   font-variant-numeric: tabular-nums;
 }
 
+.live-transcript-track-row {
+  display: flex;
+  min-width: 0;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.live-transcript-track-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 76%, transparent);
+  color: var(--color-muted);
+  background-color: color-mix(in srgb, var(--color-surface) 74%, transparent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.live-transcript-track-pill-microphone {
+  color: var(--speaker-self-label-color);
+  border-color: color-mix(in srgb, var(--speaker-self-label-color) 34%, transparent);
+}
+
+.live-transcript-track-pill-system_audio {
+  color: var(--speaker-other-label-color);
+  border-color: color-mix(in srgb, var(--speaker-other-label-color) 34%, transparent);
+}
+
 .live-transcript-text {
   display: -webkit-box;
   overflow: hidden;

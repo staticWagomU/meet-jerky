@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: show per-track freshness
+
+- 開始日時: 2026-04-29 02:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウで自分/相手側トラックのどちらが最近文字起こしされたかを小さく表示し、録音状態の透明性を上げる。
+- 結果: 最新セグメントとは別に source 別の最新セグメントを保持し、ライブ字幕内に `自分` / `相手側` のトラック状態ピルを追加した。発話があれば発話時刻、source 付きエラーなら `エラー`、未到着なら `待機` を表示する。録音制御、文字起こしイベント、保存形式には触れない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ライブ字幕ウィンドウでの視認性とスクリーンリーダー読み上げは未確認。
+- 次アクション: 実機で独立ライブ字幕ウィンドウを表示し、自分/相手側トラックピルが邪魔にならず状態を補足することを確認する。
+
 ### History UX: unescape Markdown titles
 
 - 開始日時: 2026-04-29 02:37 JST
