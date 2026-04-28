@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: label external realtime as destination
+
+- 開始日時: 2026-04-28 12:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中の状態透明性改善として、外部 Realtime エンジンの pill が停止中でも現在送信中のように読めない文言へ調整する。
+- 結果: ライブ画面の外部送信 pill を `OpenAI へ送信` / `ElevenLabs へ送信` から `送信先 OpenAI` / `送信先 ElevenLabs` へ変更した。停止中でも設定された送信先として読めるようにし、警告色の扱いは維持した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での表示幅確認は未実施。
+- 次アクション: 実機 UI で status strip の文言が小さいウィンドウでも読みやすく、外部送信の警告として過不足がないか確認する。
+
 ### History UX: fallback empty titles to filename
 
 - 開始日時: 2026-04-28 11:43 JST
