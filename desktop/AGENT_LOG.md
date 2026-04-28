@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Markdown: escape inline marks
+
+- 開始日時: 2026-04-29 02:11 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/markdown.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴Markdownでタイトル・話者・本文に含まれる Markdown 記号が意図せず装飾やリンク扱いにならないようにする。
+- 結果: `inline_markdown_text` が whitespace 正規化に加えて `\\`, `` ` ``, `*`, `_`, `[`, `]` をエスケープするようにした。セグメント行末の半角スペース2つ、タイムスタンプ、既存の改行正規化は維持し、Markdown 記号の回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/markdown.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/markdown.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/markdown.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Markdown 表示アプリごとのレンダリング差異は未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml markdown` を再実行し、実際の履歴Markdownビューアで Markdown 記号が literal に見えることを確認する。
+
 ### Cloud Whisper Privacy: sanitize error body
 
 - 開始日時: 2026-04-29 02:09 JST

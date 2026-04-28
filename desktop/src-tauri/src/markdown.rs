@@ -49,7 +49,15 @@ pub fn format_session_markdown(meta: &SessionMeta, segments: &[SessionSegment]) 
 }
 
 fn inline_markdown_text(value: &str) -> String {
-    value.split_whitespace().collect::<Vec<_>>().join(" ")
+    let normalized = value.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut escaped = String::with_capacity(normalized.len());
+    for ch in normalized.chars() {
+        if matches!(ch, '\\' | '`' | '*' | '_' | '[' | ']') {
+            escaped.push('\\');
+        }
+        escaped.push(ch);
+    }
+    escaped
 }
 
 // ─────────────────────────────────────────────
@@ -110,6 +118,24 @@ mod tests {
 
         let expected =
             "# 会議 メモ - 2026-04-17 14:30\n\n**[14:30:05] 自分 側:** 1行目 2行目 3行目  ";
+        assert_eq!(format_session_markdown(&meta, &segments), expected);
+    }
+
+    #[test]
+    fn test_format_session_markdown_escapes_inline_markdown_marks() {
+        let meta = SessionMeta {
+            title: "会議 *重要*".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments = vec![SessionSegment {
+            speaker: "自分[メモ]".to_string(),
+            timestamp_display: "14:30:05".to_string(),
+            text: r#"literal `code` and **bold** \ slash"#.to_string(),
+        }];
+
+        let expected = r#"# 会議 \*重要\* - 2026-04-17 14:30
+
+**[14:30:05] 自分\[メモ\]:** literal \`code\` and \*\*bold\*\* \\ slash  "#;
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
 }
