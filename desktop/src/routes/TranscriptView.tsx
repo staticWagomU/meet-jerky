@@ -1176,10 +1176,11 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
-  const externalRealtimeRiskNotice =
-    externalApiProvider && !isMeetingActive && !isTranscribing
-      ? `${externalApiProvider} Realtime は音声を外部 API へ送信します。プロバイダ側の利用量課金が発生する可能性があります。`
-      : null;
+  const externalRealtimeRiskNotice = externalApiProvider
+    ? isMeetingActive || isTranscribing
+      ? `${externalApiProvider} Realtime へ音声を送信中です。プロバイダ側の利用量課金が発生する可能性があります。`
+      : `${externalApiProvider} Realtime は音声を外部 API へ送信します。プロバイダ側の利用量課金が発生する可能性があります。`
+    : null;
   const aiTransmissionStatusLabel = settingsError
     ? "確認できません"
     : getAiTransmissionStatusLabel(settings?.transcriptionEngine);

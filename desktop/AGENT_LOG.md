@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### Transcript UX: show external realtime sending notice while active
+
+- 開始日時: 2026-04-29 06:41 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 録音状態の透明性改善として、OpenAI / ElevenLabs Realtime 選択時に開始前だけでなく会議中・文字起こし中も外部送信中であることを明示する。
+- 結果: 外部 Realtime provider がある場合、記録中または文字起こし中は `音声を送信中` の注意文を表示するようにした。開始前の課金注意文は維持し、外部 API 呼び出し・認証情報・録音処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で会議中の外部送信注意文が邪魔になりすぎず、OpenAI / ElevenLabs の送信状態として自然に読めるか確認する。
+
 ### History: skip impossible session timestamp prefixes
 
 - 開始日時: 2026-04-29 06:40 JST
