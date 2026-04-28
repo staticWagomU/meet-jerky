@@ -1,5 +1,19 @@
 # Agent Log
 
+### Ring light UX: prevent rapid toggle overlap
+
+- 開始日時: 2026-04-29 08:37 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: リングライトの表示切替が連打で重ならないようにし、切替中状態を UI に反映する。
+- 結果: `isRingLightPending` を追加し、切替中はボタンを disabled にして `切替中...` 表示にした。表示コマンド失敗時は前の mode に戻し、明るさイベント送信失敗時は表示状態を維持したまま error pill を出す。録音/文字起こし処理、リングライトウィンドウ実装には触れなかった。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でリングライトボタン連打時に切替中表示になり、最終状態とリングライト表示がずれないことを確認する。
+
 ### Ring light UX: surface toggle failures
 
 - 開始日時: 2026-04-29 08:36 JST

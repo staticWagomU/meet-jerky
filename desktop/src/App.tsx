@@ -17,6 +17,7 @@ function App() {
   const navigate = useNavigate();
   const [ringLightMode, setRingLightMode] = useState<RingLightMode>("off");
   const [ringLightError, setRingLightError] = useState<string | null>(null);
+  const [isRingLightPending, setIsRingLightPending] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -55,35 +56,45 @@ function App() {
   }, [navigate]);
 
   const cycleRingLightMode = () => {
+    if (isRingLightPending) {
+      return;
+    }
+    const previousMode = ringLightMode;
     const nextMode = getNextRingLightMode(ringLightMode);
     setRingLightMode(nextMode);
     setRingLightError(null);
-    void invoke("set_ring_light_visible", { visible: nextMode !== "off" })
-      .then(() => {
+    setIsRingLightPending(true);
+    void (async () => {
+      try {
+        await invoke("set_ring_light_visible", { visible: nextMode !== "off" });
         setRingLightError(null);
-        void emit(RING_LIGHT_MODE_EVENT, { mode: nextMode }).catch((e) => {
+        try {
+          await emit(RING_LIGHT_MODE_EVENT, { mode: nextMode });
+        } catch (e) {
           setRingLightError("リングライトの明るさを反映できませんでした");
           console.error("リングライト設定の送信に失敗しました:", e);
-        });
-      })
-      .catch((e) => {
-        setRingLightMode(ringLightMode);
+        }
+      } catch (e) {
+        setRingLightMode(previousMode);
         setRingLightError("リングライトを切り替えられませんでした");
         console.error("リングライト表示の切り替えに失敗しました:", e);
-      });
+      } finally {
+        setIsRingLightPending(false);
+      }
+    })();
   };
-  const ringLightLabel =
-    ringLightMode === "off"
-      ? "リングライトを弱で表示する"
-      : ringLightMode === "soft"
-        ? "リングライトを強にする"
-        : "リングライトを消す";
-  const ringLightButtonText =
-    ringLightMode === "off"
-      ? "ライト"
-      : ringLightMode === "soft"
-        ? "ライト 弱"
-        : "ライト 強";
+  let ringLightLabel = "リングライトを弱で表示する";
+  let ringLightButtonText = "ライト";
+  if (isRingLightPending) {
+    ringLightLabel = "リングライトを切り替え中";
+    ringLightButtonText = "切替中...";
+  } else if (ringLightMode === "soft") {
+    ringLightLabel = "リングライトを強にする";
+    ringLightButtonText = "ライト 弱";
+  } else if (ringLightMode === "bright") {
+    ringLightLabel = "リングライトを消す";
+    ringLightButtonText = "ライト 強";
+  }
 
   return (
     <main className="container app-shell">
@@ -109,6 +120,7 @@ function App() {
             aria-label={ringLightLabel}
             title={`${ringLightLabel}。クリック操作は透過します。`}
             onClick={cycleRingLightMode}
+            disabled={isRingLightPending}
           >
             {ringLightButtonText}
           </button>
