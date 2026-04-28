@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### Agent verify: split Rust format/test headings
+
+- 開始日時: 2026-04-29 06:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `scripts/agent-verify.sh`, `AGENT_LOG.md`
+- 指示内容: 自律改善ループとして、検証ハーネスで `cargo fmt` が実行されたことをログ上で読み取りやすくし、cmake 不在による cargo test skip と混同しないようにする。
+- 結果: `agent-verify.sh` の Rust 検証出力を `== rust format ==` と `== rust tests ==` に分け、`cargo fmt --manifest-path src-tauri/Cargo.toml --check` の実行位置を明示した。検証内容自体は変更せず、課金・認証・録音処理には触れなかった。
+- 変更ファイル: `scripts/agent-verify.sh`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- scripts/agent-verify.sh AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh scripts/agent-verify.sh AGENT_LOG.md` 成功し、`== rust format ==` と `== rust tests ==` が分かれて出力されることを確認。Rust テストは cmake 不在により従来通りスキップ。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 次回以降の検証ログで Rust format と cargo test skip を区別して読む。
+
 ### Transcript UX: clarify external transmission pill
 
 - 開始日時: 2026-04-28 02:54 JST

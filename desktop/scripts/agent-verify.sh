@@ -17,8 +17,11 @@ echo "== frontend build =="
 PATH="$AGENT_PATH" npm run build
 
 echo
-echo "== rust verification =="
+echo "== rust format =="
 PATH="$AGENT_PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+echo
+echo "== rust tests =="
 if PATH="$AGENT_PATH" command -v cmake >/dev/null 2>&1; then
   PATH="$AGENT_PATH" cargo test --manifest-path src-tauri/Cargo.toml
 else
