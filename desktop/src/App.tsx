@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { markPendingMeetingStartRequest } from "./utils/meetingStartRequest";
+import {
+  getNextRingLightMode,
+  RING_LIGHT_MODE_EVENT,
+  type RingLightMode,
+} from "./utils/ringLight";
 import "./App.css";
 
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
@@ -10,7 +15,7 @@ const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 
 function App() {
   const navigate = useNavigate();
-  const [isRingLightVisible, setIsRingLightVisible] = useState(false);
+  const [ringLightMode, setRingLightMode] = useState<RingLightMode>("off");
 
   useEffect(() => {
     let disposed = false;
@@ -48,14 +53,28 @@ function App() {
     };
   }, [navigate]);
 
-  const toggleRingLight = () => {
-    const nextVisible = !isRingLightVisible;
-    setIsRingLightVisible(nextVisible);
-    void invoke("set_ring_light_visible", { visible: nextVisible }).catch((e) => {
-      setIsRingLightVisible(!nextVisible);
-      console.error("リングライト表示の切り替えに失敗しました:", e);
-    });
+  const cycleRingLightMode = () => {
+    const nextMode = getNextRingLightMode(ringLightMode);
+    setRingLightMode(nextMode);
+    void invoke("set_ring_light_visible", { visible: nextMode !== "off" })
+      .then(() => emit(RING_LIGHT_MODE_EVENT, { mode: nextMode }))
+      .catch((e) => {
+        setRingLightMode(ringLightMode);
+        console.error("リングライト表示の切り替えに失敗しました:", e);
+      });
   };
+  const ringLightLabel =
+    ringLightMode === "off"
+      ? "リングライトを弱で表示する"
+      : ringLightMode === "soft"
+        ? "リングライトを強にする"
+        : "リングライトを消す";
+  const ringLightButtonText =
+    ringLightMode === "off"
+      ? "ライト"
+      : ringLightMode === "soft"
+        ? "ライト 弱"
+        : "ライト 強";
 
   return (
     <main className="container app-shell">
@@ -75,22 +94,14 @@ function App() {
           <button
             type="button"
             className={`app-header-light-toggle${
-              isRingLightVisible ? " app-header-light-toggle-active" : ""
+              ringLightMode !== "off" ? " app-header-light-toggle-active" : ""
             }`}
-            aria-pressed={isRingLightVisible}
-            aria-label={
-              isRingLightVisible
-                ? "リングライトを消す"
-                : "リングライトを表示する"
-            }
-            title={
-              isRingLightVisible
-                ? "リングライトを消す"
-                : "リングライトを表示する"
-            }
-            onClick={toggleRingLight}
+            aria-pressed={ringLightMode !== "off"}
+            aria-label={ringLightLabel}
+            title={`${ringLightLabel}。クリック操作は透過します。`}
+            onClick={cycleRingLightMode}
           >
-            ライト
+            {ringLightButtonText}
           </button>
           <span
             className="app-header-status"

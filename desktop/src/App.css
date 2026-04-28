@@ -1099,6 +1099,22 @@ body[data-window="ring-light"] {
   opacity: 0.74;
 }
 
+.ring-light-window-bright .ring-light-edge {
+  background: rgba(255, 248, 226, 0.94);
+  filter: blur(22px);
+  opacity: 0.92;
+}
+
+.ring-light-window-bright .ring-light-edge-top,
+.ring-light-window-bright .ring-light-edge-bottom {
+  height: 6.2rem;
+}
+
+.ring-light-window-bright .ring-light-edge-left,
+.ring-light-window-bright .ring-light-edge-right {
+  width: 5.4rem;
+}
+
 .ring-light-edge-top,
 .ring-light-edge-bottom {
   left: 8vw;

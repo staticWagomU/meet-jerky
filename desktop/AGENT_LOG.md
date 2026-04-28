@@ -1,5 +1,19 @@
 # Agent Log
 
+### Ring Light: add intensity modes
+
+- 開始日時: 2026-04-29 08:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `src/components/RingLightWindow.tsx`, `src/utils/ringLight.ts`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: リングライトを単純なオン/オフから、会議中に使いやすい弱/強の段階切り替えへ改善する。クリック透過と独立ウィンドウ方針は維持する。
+- 結果: リングライトの mode 型とイベント payload guard を追加し、ヘッダーのライトボタンを `off -> soft -> bright -> off` の循環にした。リングライトウィンドウはイベントを受けて弱/強の CSS を切り替える。コード流用や依存追加はない。
+- 変更ファイル: `src/App.tsx`, `src/components/RingLightWindow.tsx`, `src/utils/ringLight.ts`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx src/components/RingLightWindow.tsx src/utils/ringLight.ts src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/App.tsx src/components/RingLightWindow.tsx src/utils/ringLight.ts src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。リングライトの弱/強切り替えイベント反映は未実機確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### UI Refresh: restyle recording status cockpit
 
 - 開始日時: 2026-04-29 08:03 JST
