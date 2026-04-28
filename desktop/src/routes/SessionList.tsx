@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 import { toErrorMessage } from "../utils/errorMessage";
@@ -70,6 +77,32 @@ function getSearchMatchExcerpt(text: string, query: string): string | null {
     return null;
   }
   return `${start > 0 ? "..." : ""}${excerpt}${end < text.length ? "..." : ""}`;
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderHighlightedSearchExcerpt(
+  text: string,
+  query: string,
+): ReactNode {
+  const searchTerms = Array.from(new Set(getSearchTerms(query)))
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp);
+  if (searchTerms.length === 0) {
+    return text;
+  }
+
+  const matcher = new RegExp(`(${searchTerms.join("|")})`, "gi");
+  const exactMatcher = new RegExp(`^(${searchTerms.join("|")})$`, "i");
+  return text.split(matcher).map((part, index) =>
+    exactMatcher.test(part) ? (
+      <mark key={`${part}-${index}`}>{part}</mark>
+    ) : (
+      part
+    ),
+  );
 }
 
 function hasTranscriptBody(searchText: string): boolean {
@@ -501,7 +534,7 @@ function SessionRow({
             aria-label={`本文一致: ${searchExcerpt}`}
             title={`本文一致: ${searchExcerpt}`}
           >
-            {searchExcerpt}
+            {renderHighlightedSearchExcerpt(searchExcerpt, searchQuery)}
           </div>
         )}
       </div>

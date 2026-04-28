@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: highlight matched terms in excerpts
+
+- 開始日時: 2026-04-29 04:09 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索の本文一致スニペットで検索語が埋もれないよう、保存データに触れず一覧表示だけを控えめに改善する。
+- 結果: スニペット内の検索語を React の `mark` 要素で分割描画し、HTML 文字列化せず安全に強調するようにした。macOS 風の控えめな背景で、本文保存形式や検索条件には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでの強調表示は未確認。
+- 次アクション: 実履歴検索で一致語が過剰に目立たず読めることを確認する。
+
 ### History Search UX: remove leftover bold markers from excerpts
 
 - 開始日時: 2026-04-29 04:07 JST

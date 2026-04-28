@@ -1699,6 +1699,17 @@ body[data-window="live-caption"] {
   -webkit-box-orient: vertical;
 }
 
+.session-list-item-excerpt mark {
+  border-radius: 3px;
+  padding: 0.02rem 0.16rem;
+  color: var(--color-text);
+  background-color: color-mix(
+    in srgb,
+    var(--meeting-status-neutral-color) 18%,
+    transparent
+  );
+}
+
 .session-list-item-file {
   max-width: min(22rem, 100%);
   overflow-wrap: anywhere;
