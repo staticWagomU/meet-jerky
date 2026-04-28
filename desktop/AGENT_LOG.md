@@ -1,5 +1,19 @@
 # Agent Log
 
+### Cloud Whisper Privacy: sanitize error body
+
+- 開始日時: 2026-04-29 02:09 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/cloud_whisper_errors.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Cloud Whisper の未分類 HTTP error body を将来 UI/ログに流用しても過度に長い raw body が出ないようにする。
+- 結果: `CloudWhisperError::Other.message` を whitespace 正規化、空本文の明示、200 文字上限にサニタイズするようにした。401/429/5xx の分類は維持し、サニタイズ挙動の回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/cloud_whisper_errors.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/cloud_whisper_errors.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/cloud_whisper_errors.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Cloud Whisper API 通信は課金/外部通信に当たるため未実施。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml cloud_whisper_errors` を再実行し、未分類 error body が短く正規化されることを確認する。
+
 ### Cloud Whisper Privacy: redact auth header debug
 
 - 開始日時: 2026-04-29 02:07 JST
