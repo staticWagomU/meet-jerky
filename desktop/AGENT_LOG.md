@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: keep long titles and filenames readable
+
+- 開始日時: 2026-04-28 10:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、履歴一覧の長い会議タイトルや保存ファイル名を省略せず読めるようにする。
+- 結果: 履歴一覧の会議タイトルと保存ファイル名の ellipsis をやめ、長い文字列も折り返して読めるようにした。履歴取得、ファイル操作、セッション表示データには触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で長い会議タイトルやファイル名の履歴行が過度に高くならず、読みやすいか確認する。
+
 ### Meeting Detection UX: keep long detected names readable
 
 - 開始日時: 2026-04-28 10:03 JST
