@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: explain settings loading block
+
+- 開始日時: 2026-04-29 01:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、文字起こし設定の取得中/取得失敗時に記録開始・文字起こし開始が無効化される理由を UI に明示する。
+- 結果: `getTranscriptionStartBlockedReason` と `getMeetingStartBlockedReason` に設定取得中/取得失敗の理由を追加し、開始可否判定にも `settings` が取得済みで `settingsError` がないことを含めた。設定取得失敗時は既存の設定エラー表示も維持する。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で設定取得中の一瞬の表示は未確認。
+- 次アクション: 実機またはモックで、設定取得中/失敗時に開始ボタンが無効化され、理由が `記録開始不可理由` と title/aria に出ることを確認する。
+
 ### App Detection: validate Zoom host labels
 
 - 開始日時: 2026-04-29 01:23 JST

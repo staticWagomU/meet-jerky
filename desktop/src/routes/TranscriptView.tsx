@@ -113,6 +113,8 @@ function getTranscriptionSourceArg(
 
 function getTranscriptionStartBlockedReason(
   isTranscribing: boolean,
+  isSettingsLoading: boolean,
+  settingsError: unknown,
   isAnySourceRecording: boolean,
   isMicRecording: boolean,
   isSystemAudioRecording: boolean,
@@ -125,6 +127,12 @@ function getTranscriptionStartBlockedReason(
   externalApiKeyError: unknown,
 ): string | null {
   if (isTranscribing) return null;
+  if (settingsError) {
+    return "文字起こし設定を取得できません。設定画面または再読み込みで状態を確認してください。";
+  }
+  if (isSettingsLoading) {
+    return "文字起こし設定を確認中です。";
+  }
   if (modelDownloadedError) return null;
   if (externalApiKeyError && externalApiProvider) {
     return `${externalApiProvider} API キーの状態を確認できません。`;
@@ -159,6 +167,8 @@ function getTranscriptionStartBlockedReason(
 
 function getMeetingStartBlockedReason(
   isMeetingActive: boolean,
+  isSettingsLoading: boolean,
+  settingsError: unknown,
   transcriptionEngine: TranscriptionEngineType | undefined,
   requiresLocalModel: boolean,
   isModelDownloaded: boolean | undefined,
@@ -168,6 +178,12 @@ function getMeetingStartBlockedReason(
   externalApiKeyError: unknown,
 ): string | null {
   if (isMeetingActive) return null;
+  if (settingsError) {
+    return "文字起こし設定を取得できません。設定画面または再読み込みで状態を確認してください。";
+  }
+  if (isSettingsLoading) {
+    return "文字起こし設定を確認中です。";
+  }
   if (modelDownloadedError) return null;
   if (externalApiKeyError && externalApiProvider) {
     return `${externalApiProvider} API キーの状態を確認できません。`;
@@ -983,17 +999,23 @@ export function TranscriptView() {
   const isAppleSpeechDualSourceBlockedForMeeting =
     settings?.transcriptionEngine === "appleSpeech";
   const canStartTranscription =
+    Boolean(settings) &&
+    !settingsError &&
     isAnySourceRecording &&
     isTranscriptionEngineReady &&
     !isAppleSpeechDualSourceBlockedForTranscription &&
     !isTranscribing;
 
   const canStartMeeting =
+    Boolean(settings) &&
+    !settingsError &&
     isTranscriptionEngineReady &&
     !isAppleSpeechDualSourceBlockedForMeeting &&
     !isMeetingActive;
   const meetingStartBlockedReason = getMeetingStartBlockedReason(
     isMeetingActive,
+    settings === undefined && !settingsError,
+    settingsError,
     settings?.transcriptionEngine,
     requiresLocalModel,
     isModelDownloaded,
@@ -1026,6 +1048,8 @@ export function TranscriptView() {
     !(isMicRecording && isSystemAudioRecording);
   const transcriptionStartBlockedReason = getTranscriptionStartBlockedReason(
     isTranscribing,
+    settings === undefined && !settingsError,
+    settingsError,
     isAnySourceRecording,
     isMicRecording,
     isSystemAudioRecording,
