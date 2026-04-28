@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: remove leftover bold markers from excerpts
+
+- 開始日時: 2026-04-29 04:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 直前の履歴検索スニペット整形を批判的に見直し、excerpt の切り出し位置が Markdown 強調記号の途中になっても `**` が残りにくいようにする。
+- 結果: 一覧表示用 excerpt の整形で残った `**` を除去するようにした。検索条件、保存 Markdown、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでのスニペット見え方は未確認。
+- 次アクション: 実履歴で切り出し位置に関わらずスニペットが自然に読めることを確認する。
+
 ### History Freshness: invalidate list after saving
 
 - 開始日時: 2026-04-29 04:05 JST

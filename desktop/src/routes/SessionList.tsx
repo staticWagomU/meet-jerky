@@ -41,6 +41,7 @@ function getSessionDisplayTitle(title: string): string {
 function formatSearchExcerptText(text: string): string {
   return text
     .replace(/\*\*\[([^\]]+)\]\s*([^:*]+):\*\*/g, "[$1] $2:")
+    .replace(/\*\*/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
