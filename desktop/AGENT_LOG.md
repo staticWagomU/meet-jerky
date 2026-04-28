@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: share segment timestamp formatting
+
+- 開始日時: 2026-04-29 00:06 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/timeFormat.ts`, `src/components/TranscriptDisplay.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴表示とライブ字幕で重複していたセグメント開始時刻の `mm:ss` 整形を共有化し、今後の表示ずれを防ぐ。
+- 結果: `formatSegmentTimestamp` を追加し、TranscriptDisplay の aria/copy/表示時刻と LiveCaptionWindow の時刻表示で共通利用するようにした。経過時間表示など別用途の時刻整形には触れない。
+- 変更ファイル: `src/utils/timeFormat.ts`, `src/components/TranscriptDisplay.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/utils/timeFormat.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/timeFormat.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 履歴表示・コピー結果・ライブ字幕の時刻表記が同じ `mm:ss` として見えることを実機 UI で確認する。
+
 ### Live Caption UX: color speaker source labels
 
 - 開始日時: 2026-04-28 20:20 JST

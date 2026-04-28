@@ -2,13 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
-
-function formatTimestamp(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
+import { formatSegmentTimestamp } from "../utils/timeFormat";
 
 function getSpeakerKind(
   segment: TranscriptSegment,
@@ -39,7 +33,7 @@ function getSegmentAriaLabel(segment: TranscriptSegment): string {
   if (segment.isError) {
     return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
   }
-  return `文字起こし ${formatTimestamp(segment.startMs)} ${speakerLabel}: ${segment.text}`;
+  return `文字起こし ${formatSegmentTimestamp(segment.startMs)} ${speakerLabel}: ${segment.text}`;
 }
 
 function getVisibleSpeakerLabel(segment: TranscriptSegment): string | null {
@@ -259,7 +253,7 @@ export function TranscriptDisplay({
     const text = segments
       .filter((seg) => !seg.isError)
       .map((seg) => {
-        const time = `[${formatTimestamp(seg.startMs)}]`;
+        const time = `[${formatSegmentTimestamp(seg.startMs)}]`;
         const speakerLabel = getSpeakerLabel(seg);
         const speaker = speakerLabel ? `${speakerLabel}: ` : "";
         return `${time} ${speaker}${seg.text}`;
@@ -481,7 +475,7 @@ export function TranscriptDisplay({
               >
                 {!seg.isError && (
                   <span className="transcript-timestamp">
-                    [{formatTimestamp(seg.startMs)}]
+                    [{formatSegmentTimestamp(seg.startMs)}]
                   </span>
                 )}
                 {speakerLabel && (

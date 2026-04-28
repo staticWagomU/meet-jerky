@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
+import { formatSegmentTimestamp } from "../utils/timeFormat";
 
 function getSpeakerLabel(segment: TranscriptSegment): string {
   if (segment.source === "microphone") return "自分";
@@ -17,15 +18,6 @@ function getSpeakerClassName(segment: TranscriptSegment): string {
     return "live-transcript-speaker live-transcript-speaker-other";
   }
   return "live-transcript-speaker live-transcript-speaker-unknown";
-}
-
-function formatCaptionTimestamp(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes.toString().padStart(2, "0")}:${seconds
-    .toString()
-    .padStart(2, "0")}`;
 }
 
 export function LiveCaptionWindow() {
@@ -109,7 +101,7 @@ export function LiveCaptionWindow() {
   const isErrorState = Boolean(listenerError || latestSegment?.isError);
   const captionTimestamp =
     latestSegment && !latestSegment.isError
-      ? formatCaptionTimestamp(latestSegment.startMs)
+      ? formatSegmentTimestamp(latestSegment.startMs)
       : null;
   const label = listenerError
     ? listenerError
