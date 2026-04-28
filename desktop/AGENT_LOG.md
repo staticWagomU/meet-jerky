@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: add search clear action
+
+- 開始日時: 2026-04-29 00:55 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索の検索語を明示的にクリアできる導線を追加し、該当なし状態から戻りやすくする。
+- 結果: 検索語入力中だけ `クリア` ボタンを表示し、押すと検索語を空に戻すようにした。aria/title には現在の検索語を含め、入力欄とボタンを横並びにする CSS を追加した。履歴取得・ファイル操作処理には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI で検索欄とクリアボタンが狭幅に収まるかは未確認。
+- 次アクション: 実機 UI で検索欄と `クリア` ボタンが狭幅でも収まり、該当なし状態から戻りやすいことを確認する。
+
 ### History UX: clarify pending session actions
 
 - 開始日時: 2026-04-29 00:44 JST

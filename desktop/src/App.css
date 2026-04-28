@@ -1533,6 +1533,18 @@ body[data-window="live-caption"] {
   background-color: var(--color-surface);
 }
 
+.session-list-search-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.session-list-search-clear {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.65rem;
+}
+
 .session-list-search input:focus {
   outline: 2px solid var(--meeting-status-neutral-color);
   outline-offset: 1px;

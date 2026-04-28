@@ -183,6 +183,9 @@ export function SessionList() {
       ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
       : `保存済み ${sessions.length} 件`;
   const sessionSearchLabel = "セッション履歴を検索";
+  const clearSearchLabel = trimmedSearchQuery
+    ? `検索語 ${trimmedSearchQuery} をクリア`
+    : "検索語は入力されていません";
   const sessionListLabel = [
     "セッション履歴",
     sessionCountLabel,
@@ -231,14 +234,27 @@ export function SessionList() {
       {sessions.length > 0 && (
         <label className="session-list-search">
           <span>{sessionSearchLabel}</span>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="タイトル、日時、ファイル名"
-            aria-label={sessionSearchLabel}
-            title={sessionSearchLabel}
-          />
+          <span className="session-list-search-row">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="タイトル、日時、ファイル名"
+              aria-label={sessionSearchLabel}
+              title={sessionSearchLabel}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="control-btn control-btn-clear session-list-search-clear"
+                onClick={() => setSearchQuery("")}
+                aria-label={clearSearchLabel}
+                title={clearSearchLabel}
+              >
+                クリア
+              </button>
+            )}
+          </span>
         </label>
       )}
 
