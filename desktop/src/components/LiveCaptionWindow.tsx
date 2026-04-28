@@ -3,11 +3,9 @@ import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
-  DEFAULT_LIVE_CAPTION_STATUS,
   LIVE_CAPTION_STATUS_EVENT,
-  LIVE_CAPTION_STATUS_STORAGE_KEY,
   getVisibleTransmissionLabel,
-  isLiveCaptionStatusPayload,
+  readStoredLiveCaptionStatus,
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
@@ -29,22 +27,6 @@ function createEmptyLatestBySource(): LatestBySource {
     microphone: null,
     system_audio: null,
   };
-}
-
-function readStoredLiveCaptionStatus(): LiveCaptionStatusPayload {
-  try {
-    const raw = localStorage.getItem(LIVE_CAPTION_STATUS_STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_LIVE_CAPTION_STATUS;
-    }
-    const parsed: unknown = JSON.parse(raw);
-    return isLiveCaptionStatusPayload(parsed)
-      ? parsed
-      : DEFAULT_LIVE_CAPTION_STATUS;
-  } catch (e) {
-    console.error("ライブ字幕ステータスの読み取りに失敗しました:", toErrorMessage(e));
-    return DEFAULT_LIVE_CAPTION_STATUS;
-  }
 }
 
 function getSpeakerLabel(segment: TranscriptSegment): string {
@@ -80,8 +62,15 @@ export function LiveCaptionWindow() {
   const [latestBySource, setLatestBySource] = useState<LatestBySource>(
     createEmptyLatestBySource,
   );
-  const [statusPayload, setStatusPayload] =
-    useState<LiveCaptionStatusPayload>(readStoredLiveCaptionStatus);
+  const [statusPayload, setStatusPayload] = useState<LiveCaptionStatusPayload>(
+    () =>
+      readStoredLiveCaptionStatus((e) => {
+        console.error(
+          "ライブ字幕ステータスの読み取りに失敗しました:",
+          toErrorMessage(e),
+        );
+      }),
+  );
   const [listenerError, setListenerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -101,7 +90,14 @@ export function LiveCaptionWindow() {
       }
       setLatestSegment(null);
       setLatestBySource(createEmptyLatestBySource());
-      setStatusPayload(readStoredLiveCaptionStatus());
+      setStatusPayload(
+        readStoredLiveCaptionStatus((e) => {
+          console.error(
+            "ライブ字幕ステータスの読み取りに失敗しました:",
+            toErrorMessage(e),
+          );
+        }),
+      );
       setListenerError(null);
     });
     const resultUnlistenPromise = listen<TranscriptSegment>(

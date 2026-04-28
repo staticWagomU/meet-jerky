@@ -26,7 +26,7 @@ import {
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
-  LIVE_CAPTION_STATUS_STORAGE_KEY,
+  writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
@@ -1146,14 +1146,9 @@ export function TranscriptView() {
         aiTransmissionStatusLabel === "送信先 OpenAI" ||
         aiTransmissionStatusLabel === "送信先 ElevenLabs",
     };
-    try {
-      localStorage.setItem(
-        LIVE_CAPTION_STATUS_STORAGE_KEY,
-        JSON.stringify(liveCaptionStatus),
-      );
-    } catch (e) {
+    writeStoredLiveCaptionStatus(liveCaptionStatus, (e) => {
       console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
-    }
+    });
     void emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus).catch((e) => {
       console.error("ライブ字幕ステータスの同期に失敗しました:", toErrorMessage(e));
     });

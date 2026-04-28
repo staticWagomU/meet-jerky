@@ -27,6 +27,37 @@ export function isLiveCaptionStatusPayload(
   );
 }
 
+export function readStoredLiveCaptionStatus(
+  onError?: (error: unknown) => void,
+): LiveCaptionStatusPayload {
+  try {
+    const raw = localStorage.getItem(LIVE_CAPTION_STATUS_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_LIVE_CAPTION_STATUS;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    return isLiveCaptionStatusPayload(parsed)
+      ? parsed
+      : DEFAULT_LIVE_CAPTION_STATUS;
+  } catch (e) {
+    onError?.(e);
+    return DEFAULT_LIVE_CAPTION_STATUS;
+  }
+}
+
+export function writeStoredLiveCaptionStatus(
+  status: LiveCaptionStatusPayload,
+  onError?: (error: unknown) => void,
+): boolean {
+  try {
+    localStorage.setItem(LIVE_CAPTION_STATUS_STORAGE_KEY, JSON.stringify(status));
+    return true;
+  } catch (e) {
+    onError?.(e);
+    return false;
+  }
+}
+
 export function getVisibleTransmissionLabel(
   status: LiveCaptionStatusPayload,
 ): string {

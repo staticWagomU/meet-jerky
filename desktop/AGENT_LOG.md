@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Status: centralize storage helpers
+
+- 開始日時: 2026-04-29 04:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 直近のライブ字幕/会議検知プロンプトのステータス共有を批判的に見直し、localStorage の読み書き処理が重複して将来ズレないようにする。
+- 結果: ライブ字幕ステータスの保存・読み取り処理を `src/utils/liveCaptionStatus.ts` に集約し、各 UI はコンポーネント固有のエラーログ文言だけを渡す形にした。保存内容や表示挙動は変えない。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ウィンドウ間 localStorage 共有は未確認。
+- 次アクション: 実機で会議検知プロンプトとライブ字幕のラベル同期を確認する。
+
 ### Meeting Prompt Transparency: show engine and external sending before recording
 
 - 開始日時: 2026-04-29 04:18 JST

@@ -8,10 +8,8 @@ import {
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
-  DEFAULT_LIVE_CAPTION_STATUS,
-  LIVE_CAPTION_STATUS_STORAGE_KEY,
   getVisibleTransmissionLabel,
-  isLiveCaptionStatusPayload,
+  readStoredLiveCaptionStatus,
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
 
@@ -20,23 +18,13 @@ const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 
-function readStoredLiveCaptionStatus(): LiveCaptionStatusPayload {
-  try {
-    const raw = localStorage.getItem(LIVE_CAPTION_STATUS_STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_LIVE_CAPTION_STATUS;
-    }
-    const parsed: unknown = JSON.parse(raw);
-    return isLiveCaptionStatusPayload(parsed)
-      ? parsed
-      : DEFAULT_LIVE_CAPTION_STATUS;
-  } catch (e) {
+function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
+  return readStoredLiveCaptionStatus((e) => {
     console.error(
       "会議検知プロンプトの文字起こしステータス読み取りに失敗しました:",
       toErrorMessage(e),
     );
-    return DEFAULT_LIVE_CAPTION_STATUS;
-  }
+  });
 }
 
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
@@ -53,7 +41,7 @@ export function MeetingDetectedBanner() {
     null,
   );
   const [statusPayload, setStatusPayload] =
-    useState<LiveCaptionStatusPayload>(readStoredLiveCaptionStatus);
+    useState<LiveCaptionStatusPayload>(readPromptLiveCaptionStatus);
   const [listenerError, setListenerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,7 +52,7 @@ export function MeetingDetectedBanner() {
         if (disposed) {
           return;
         }
-        setStatusPayload(readStoredLiveCaptionStatus());
+        setStatusPayload(readPromptLiveCaptionStatus());
         setDetected(e.payload);
       },
     )
