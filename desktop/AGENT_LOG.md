@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Controls UX: clarify disabled operation label
+
+- 開始日時: 2026-04-28 12:06 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中の状態透明性改善として、音声トラック操作が文字起こしなど別処理で無効化された場合の表示を誤解しにくくする。
+- 結果: 自分/相手側トラックの操作ボタンが別処理で無効化された場合の表示を `他の音声操作中` から `他の処理中` に変更した。文字起こし開始/停止中にも自然に読めるようにし、aria-label/title の詳細説明は維持した。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI でのボタン幅確認は未実施。
+- 次アクション: 実機 UI で小さいウィンドウでもボタン文言が収まり、処理中の理由が title/aria と矛盾しないか確認する。
+
 ### Transcript UX: label external realtime as destination
 
 - 開始日時: 2026-04-28 12:01 JST
