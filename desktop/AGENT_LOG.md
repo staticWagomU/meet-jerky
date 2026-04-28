@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection UX: clarify notification does not start recording
+
+- 開始日時: 2026-04-28 09:27 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議検知の UX 改善として、macOS 通知本文でも会議検知時に録音と文字起こしがまだ開始していないことを明確にし、フロントエンドのバナー文言と揃える。
+- 結果: `notification_body` を `録音と文字起こしはまだ開始していません` と明示する文言に変更し、既存の通知本文テストも同じ期待へ更新した。会議検知対象、URL 分類、通知クリック挙動には触れなかった。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。実機 macOS 通知表示は未確認。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行し、実機で会議検知通知の本文が自然に読めるか確認する。
+
 ### History UX: clarify open history file action
 
 - 開始日時: 2026-04-28 09:26 JST
