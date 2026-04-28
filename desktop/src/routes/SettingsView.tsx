@@ -1005,6 +1005,7 @@ function ExternalApiKeySection({
     mutationFn: () => invoke(clearCommand),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      setKeyInput("");
       showToast(`${providerName} API キーを削除しました`);
     },
     onError: (e) =>

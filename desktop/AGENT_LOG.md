@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Privacy: clear API key input after deletion
+
+- 開始日時: 2026-04-29 01:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、外部 Realtime API キー削除後に入力欄へ打ちかけの秘密値が残り続けないようにする。
+- 結果: OpenAI / ElevenLabs 共通の API キー削除成功時に、Keychain 状態の再取得に加えて入力欄を空にするようにした。API キー値の取得・ログ出力・認証情報作成や外部 API 呼び出しは行っていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実際の Keychain 削除操作は認証情報変更にあたるため未実施。
+- 次アクション: 実機のテスト用キーで、削除成功後に入力欄が空になり、秘密値が画面に残らないことを確認する。
+
 ### Live Caption UX: avoid redundant reset while visible
 
 - 開始日時: 2026-04-29 00:49 JST
