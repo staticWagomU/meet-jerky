@@ -213,7 +213,7 @@ body {
 body[data-window="meeting-prompt"],
 body[data-window="live-caption"] {
   min-width: 0;
-  background: transparent;
+  background: var(--color-surface);
 }
 
 #root {
@@ -222,7 +222,7 @@ body[data-window="live-caption"] {
 
 .overlay-window {
   min-height: 100vh;
-  background: transparent;
+  background: var(--color-surface);
 }
 
 .meeting-prompt-window {

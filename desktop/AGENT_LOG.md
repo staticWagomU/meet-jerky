@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: remove unsupported transparent builder call
+
+- 開始日時: 2026-04-28 16:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: ユーザー報告として、`npm run tauri dev` で `WebviewWindowBuilder::transparent(true)` が現行 Tauri API に存在せず E0599 になる問題を修正する。
+- 結果: `meeting-prompt` / `live-caption` 作成時の `.transparent(true)` を削除した。Tauri 2.10.3 では `WebviewWindowBuilder::transparent` は macOS で `macos-private-api` feature が必要な API として cfg gate されており、private API 依存を追加しない方針にした。透明ウィンドウ前提だった overlay body は確実に描画される `var(--color-surface)` 背景へ戻し、独立ウィンドウ自体は維持した。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` の build script が `cmake` を見つけられず失敗したが、報告された `transparent` E0599 は再発していない。`git diff --check -- src-tauri/src/lib.rs src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。`macos-private-api` feature は追加しない。
+- 失敗理由: `npm run tauri dev` / `cargo check` の Rust 完走は `cmake` 不在により未確認。実機での専用ウィンドウの角丸・背景見え方は未確認。
+- 次アクション: `cmake` が PATH 上にある環境で `npm run tauri dev` または `cargo check --manifest-path src-tauri/Cargo.toml` を再実行し、専用ウィンドウの見え方を確認する。
+
 ### Meeting UX: split prompt and live captions into dedicated windows
 
 - 開始日時: 2026-04-28 16:05 JST

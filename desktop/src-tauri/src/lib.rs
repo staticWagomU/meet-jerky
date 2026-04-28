@@ -117,7 +117,6 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .resizable(false)
     .always_on_top(true)
     .skip_taskbar(true)
-    .transparent(true)
     .shadow(true)
     .visible(false)
     .build()?;
@@ -133,7 +132,6 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .resizable(false)
     .always_on_top(true)
     .skip_taskbar(true)
-    .transparent(true)
     .shadow(true)
     .visible(false)
     .build()?;
