@@ -64,6 +64,10 @@ function getSearchMatchExcerpt(text: string, query: string): string | null {
   return `${start > 0 ? "..." : ""}${excerpt}${end < text.length ? "..." : ""}`;
 }
 
+function hasTranscriptBody(searchText: string): boolean {
+  return searchText.trim().length > 0;
+}
+
 function sessionMatchesQuery(
   session: SessionSummary,
   startedAtLabel: string,
@@ -401,6 +405,8 @@ function SessionRow({
   const displayTitle = getSessionDisplayTitle(session.title);
   const fileName = getFileName(session.path);
   const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
+  const hasBody = hasTranscriptBody(session.searchText);
+  const transcriptBodyLabel = hasBody ? "文字起こし本文あり" : "文字起こし本文なし";
   const isAnyActionPending = pendingAction !== null;
   const isOpeningThisFile =
     pendingAction?.kind === "open" && pendingAction.path === session.path;
@@ -444,6 +450,7 @@ function SessionRow({
       aria-label={[
         `セッション ${displayTitle}`,
         `開始 ${startedAtLabel}`,
+        transcriptBodyLabel,
         `ファイル ${fileName}`,
         searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
       ]
@@ -452,6 +459,7 @@ function SessionRow({
       title={[
         `セッション ${displayTitle}`,
         `開始 ${startedAtLabel}`,
+        transcriptBodyLabel,
         `ファイル ${fileName}`,
         searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
       ]
@@ -464,6 +472,13 @@ function SessionRow({
         </div>
         <div className="session-list-item-meta">
           <span>{startedAtLabel}</span>
+          <span
+            className="session-list-item-body-state"
+            aria-label={transcriptBodyLabel}
+            title={transcriptBodyLabel}
+          >
+            {hasBody ? "本文あり" : "本文なし"}
+          </span>
           <span
             className="session-list-item-file"
             aria-label={`保存ファイル ${fileName}`}

@@ -1676,6 +1676,17 @@ body[data-window="live-caption"] {
   color: var(--color-muted);
 }
 
+.session-list-item-body-state {
+  border-radius: 4px;
+  padding: 0.08rem 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
+  white-space: nowrap;
+}
+
 .session-list-item-actions {
   display: flex;
   gap: 0.5rem;

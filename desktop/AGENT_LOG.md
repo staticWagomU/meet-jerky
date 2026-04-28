@@ -1,5 +1,19 @@
 # Agent Log
 
+### History List UX: show transcript body presence
+
+- 開始日時: 2026-04-29 03:33 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存済み履歴一覧で本文がある履歴と空に近い履歴を開く前に判別できるようにする。
+- 結果: 各履歴行のメタ情報へ `本文あり` / `本文なし` の小さな状態ピルを追加し、行の aria-label / title にも `文字起こし本文あり` / `文字起こし本文なし` を含めた。検索ロジック、保存形式、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実画面での見え方は未確認。
+- 次アクション: 実画面で履歴行のメタ表示が過密にならず、本文なし履歴を開く前に判別できることを確認する。
+
 ### App Detection Permissions: update Apple Events usage text
 
 - 開始日時: 2026-04-29 04:10 JST
