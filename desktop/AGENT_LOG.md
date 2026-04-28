@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: shorten engine status label
+
+- 開始日時: 2026-04-28 13:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ状態 strip のエンジン表示を短くし、会議中 UI の横幅を抑える。
+- 結果: status strip 上のエンジン pill 表示を `Apple Speech（端末内）` / `OpenAI Realtime` / `ElevenLabs Realtime` / `Whisper（端末内）` から短い表示名へ変更した。詳細なエンジン名は aria-label と title に残し、アクセシビリティと確認時の情報量は維持した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での表示幅確認は未実施。
+- 次アクション: 実機 UI でエンジン pill が十分短く、title/VoiceOver では詳細名を確認できることを確認する。
+
 ### Transcript UX: shorten local external-send label
 
 - 開始日時: 2026-04-28 13:29 JST

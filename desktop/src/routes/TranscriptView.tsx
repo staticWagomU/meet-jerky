@@ -323,6 +323,22 @@ function getEngineStatusLabel(
   return "Whisper（端末内）";
 }
 
+function getEngineStatusDisplayLabel(statusLabel: string): string {
+  if (statusLabel === "Apple Speech（端末内）") {
+    return "Apple Speech";
+  }
+  if (statusLabel === "OpenAI Realtime") {
+    return "OpenAI";
+  }
+  if (statusLabel === "ElevenLabs Realtime") {
+    return "ElevenLabs";
+  }
+  if (statusLabel === "Whisper（端末内）") {
+    return "Whisper";
+  }
+  return statusLabel;
+}
+
 function getEngineStatusPillClass(statusLabel: string): string {
   if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
@@ -1019,6 +1035,8 @@ export function TranscriptView() {
   const engineStatusLabel = settingsError
     ? "確認できません"
     : getEngineStatusLabel(settings?.transcriptionEngine);
+  const engineStatusDisplayLabel =
+    getEngineStatusDisplayLabel(engineStatusLabel);
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,
     hasExternalApiKey,
@@ -1177,7 +1195,7 @@ export function TranscriptView() {
             aria-label={`文字起こしエンジン: ${engineStatusLabel}`}
             title={`文字起こしエンジン: ${engineStatusLabel}`}
           >
-            エンジン {engineStatusLabel}
+            エンジン {engineStatusDisplayLabel}
           </span>
           <span
             className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
