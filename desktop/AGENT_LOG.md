@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime UX: mark provider error segments
+
+- 開始日時: 2026-04-29 02:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `src-tauri/src/apple_speech.rs`, `src-tauri/src/cloud_whisper.rs`, `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、OpenAI / ElevenLabs Realtime の provider error segment を文字列 prefix だけに頼らず、バックエンド payload でも通常発話と区別できるようにする。
+- 結果: `TranscriptionSegment` に optional `is_error` を追加し、通常セグメントでは省略、Realtime provider error segment では `isError: true` として serialize するようにした。フロントの既存 `isError` 判定と prefix fallback を活かし、通常発話の表示・履歴保存・音声 source 伝播は維持した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `src-tauri/src/apple_speech.rs`, `src-tauri/src/cloud_whisper.rs`, `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/transcription.rs src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/apple_speech.rs src-tauri/src/cloud_whisper.rs src-tauri/src/transcript_bridge.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/apple_speech.rs src-tauri/src/cloud_whisper.rs src-tauri/src/transcript_bridge.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Realtime provider error の外部 API 再現は課金/外部通信に当たるため未実施。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml transcription openai_realtime elevenlabs` を再実行し、モックまたは非課金再現で Realtime provider error が `isError: true` として UI に届くことを確認する。
+
 ### Meeting UX: expose model status error as block reason
 
 - 開始日時: 2026-04-29 01:47 JST

@@ -104,6 +104,7 @@ pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSeg
             end_ms: (seg.end * 1000.0).round() as i64,
             source: None,
             speaker: None,
+            is_error: None,
         })
         .collect())
 }

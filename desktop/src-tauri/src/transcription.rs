@@ -34,6 +34,8 @@ pub struct TranscriptionSegment {
     pub source: Option<TranscriptionSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speaker: Option<String>, // "自分" (mic) or "相手側" (system audio)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_error: Option<bool>,
 }
 
 /// 利用可能なモデルの情報
@@ -158,6 +160,7 @@ impl WhisperLocal {
                 end_ms: end_ts * 10,
                 source: None,
                 speaker: None,
+                is_error: None,
             });
         }
 
@@ -271,6 +274,7 @@ impl WhisperStream {
                 end_ms: seg.end_ms + offset_ms,
                 source: self.source,
                 speaker: self.speaker.clone(),
+                is_error: None,
             });
         }
         Ok(())
@@ -1286,6 +1290,7 @@ mod tests {
             end_ms: 2000,
             source: None,
             speaker: None,
+            is_error: None,
         };
         let json = serde_json::to_string(&segment).unwrap();
         assert!(json.contains("startMs"));
@@ -1295,6 +1300,10 @@ mod tests {
             !json.contains("speaker"),
             "speaker: None should be skipped in JSON"
         );
+        assert!(
+            !json.contains("isError"),
+            "is_error: None should be skipped in JSON"
+        );
 
         // speaker: Some("自分") の場合、JSONに speaker フィールドが含まれることを確認
         let segment_with_speaker = TranscriptionSegment {
@@ -1303,6 +1312,7 @@ mod tests {
             end_ms: 2000,
             source: Some(TranscriptionSource::Microphone),
             speaker: Some("自分".to_string()),
+            is_error: Some(true),
         };
         let json_with_speaker = serde_json::to_string(&segment_with_speaker).unwrap();
         assert!(
@@ -1312,6 +1322,10 @@ mod tests {
         assert!(
             json_with_speaker.contains("\"source\":\"microphone\""),
             "source should serialize as snake_case"
+        );
+        assert!(
+            json_with_speaker.contains("\"isError\":true"),
+            "is_error: Some(true) should serialize as isError"
         );
     }
 
@@ -1423,6 +1437,7 @@ mod tests {
                 end_ms: 100,
                 source: self.source,
                 speaker: self.speaker.clone(),
+                is_error: None,
             });
             Ok(())
         }
@@ -1438,6 +1453,7 @@ mod tests {
                 end_ms: 0,
                 source: self.source,
                 speaker: self.speaker.clone(),
+                is_error: None,
             });
             Ok(std::mem::take(&mut self.pending))
         }

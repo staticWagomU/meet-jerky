@@ -169,6 +169,7 @@ mod macos {
                     end_ms: r.end_ms,
                     source: self.source,
                     speaker: self.speaker.clone(),
+                    is_error: None,
                 })
                 .collect()
         }

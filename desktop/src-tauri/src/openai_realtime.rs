@@ -120,6 +120,7 @@ impl OpenAIRealtimeStream {
                     end_ms: 0,
                     source,
                     speaker: speaker.clone(),
+                    is_error: Some(true),
                 });
             }
         });
@@ -384,6 +385,7 @@ mod ws_task {
                         end_ms: 0,
                         source,
                         speaker: speaker.clone(),
+                        is_error: None,
                     });
                 }
             }
@@ -410,6 +412,7 @@ mod ws_task {
             end_ms: 0,
             source,
             speaker: speaker.clone(),
+            is_error: Some(true),
         });
     }
 

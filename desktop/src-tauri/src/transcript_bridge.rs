@@ -105,6 +105,7 @@ mod tests {
             end_ms: 3_500,
             source: None,
             speaker: Some("自分".to_string()),
+            is_error: None,
         }
     }
 
@@ -117,6 +118,7 @@ mod tests {
             end_ms: 0,
             source: None,
             speaker: None,
+            is_error: None,
         };
         let (speaker, _, _) = segment_to_append_args(&seg_none, 1000, 1000);
         assert_eq!(speaker, "不明");
@@ -128,6 +130,7 @@ mod tests {
             end_ms: 0,
             source: None,
             speaker: Some("  自分  ".to_string()),
+            is_error: None,
         };
         let (speaker, _, _) = segment_to_append_args(&seg_ws, 1000, 1000);
         assert_eq!(speaker, "自分");
@@ -143,6 +146,7 @@ mod tests {
             end_ms: 100,
             source: None,
             speaker: Some("自分".to_string()),
+            is_error: None,
         };
         let (_, offset, _) = segment_to_append_args(&segment, 1000, 990);
         assert_eq!(offset, 0, "clock 逆転時は offset は 0 に飽和する");
@@ -154,6 +158,7 @@ mod tests {
             end_ms: 0,
             source: None,
             speaker: Some("自分".to_string()),
+            is_error: None,
         };
         let (_, offset, _) = segment_to_append_args(&neg_segment, 1000, 1000);
         assert_eq!(offset, 0, "負の start_ms も 0 に飽和する");
@@ -170,6 +175,7 @@ mod tests {
             end_ms: 100,
             source: None,
             speaker: Some("相手側".into()),
+            is_error: None,
         };
         let result = build_append_args_for_emission(&segment, Some(1000), 990)
             .expect("Some 系統の結果が返る");
@@ -205,6 +211,7 @@ mod tests {
             end_ms: 0,
             source: None,
             speaker: Some("相手側".to_string()),
+            is_error: None,
         };
 
         let (_, offset, text) = segment_to_append_args_at(&segment, 1_000, 1_000, Some(1_075));
@@ -223,6 +230,7 @@ mod tests {
             end_ms: 1_200,
             source: None,
             speaker: Some("自分".to_string()),
+            is_error: None,
         };
 
         let (_, offset, _) = segment_to_append_args_at(&segment, 1_000, 1_040, Some(9_999));
