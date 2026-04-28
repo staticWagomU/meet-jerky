@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: support ZoomGov meeting URLs
+
+- 開始日時: 2026-04-28 11:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議検知の網羅性改善として、Zoom for Government の `zoomgov.com` / `*.zoomgov.com` 会議 URL を既存 Zoom 分類へ安全に追加する。
+- 結果: Zoom URL host 判定で `zoomgov.com` と `*.zoomgov.com` を受け入れるようにした。`/j/<id>` と `/wc/join/<id>` は既存 Zoom meeting ID 検証を再利用し、空ラベルや `evilzoomgov.com` は拒否するテストを追加した。分類結果は従来通り service と host のみで、URL 全文は payload/log/UI に出さない。ZoomGov の公式 join ページと `*.zoomgov.com` の公的機関向け Zoom for Government ページを確認して実装した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。ブラウザ URL 実機取得は AppleScript/Accessibility/権限が絡むため未実機確認。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行し、実機ブラウザ URL 取得で ZoomGov URL が通知されるか確認する。
+
 ### Transcript UX: mark error source visually
 
 - 開始日時: 2026-04-28 11:21 JST

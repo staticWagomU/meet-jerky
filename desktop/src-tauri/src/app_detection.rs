@@ -324,11 +324,15 @@ fn validate_port(port: &str) -> Option<()> {
 }
 
 fn is_zoom_host(host: &str) -> bool {
-    if host == "zoom.us" {
+    if host == "zoom.us" || host == "zoomgov.com" {
         return true;
     }
 
-    let Some(subdomain) = host.strip_suffix(".zoom.us") else {
+    let subdomain = if let Some(subdomain) = host.strip_suffix(".zoom.us") {
+        subdomain
+    } else if let Some(subdomain) = host.strip_suffix(".zoomgov.com") {
+        subdomain
+    } else {
         return false;
     };
     !subdomain.is_empty() && subdomain.split('.').all(|label| !label.is_empty())
@@ -711,6 +715,20 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://zoomgov.com/j/1600991835?pwd=secret"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoomgov.com".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://agency.zoomgov.com/wc/join/1600991835"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "agency.zoomgov.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/secret"),
             Some(MeetingUrlClassification {
                 service: "Microsoft Teams".to_string(),
@@ -806,6 +824,14 @@ mod tests {
         assert_eq!(classify_meeting_url("https://.zoom.us/j/123456789"), None);
         assert_eq!(
             classify_meeting_url("https://evil..zoom.us/j/123456789"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://evil..zoomgov.com/j/1600991835"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://evilzoomgov.com/j/1600991835"),
             None
         );
         assert_eq!(
