@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Transparency: keep status labels current
+
+- 開始日時: 2026-04-29 05:13 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプト表示中に文字起こしエンジンや外部送信状態が古い表示のまま残らないようにする。
+- 結果: 会議検知プロンプトが `live-caption-status` イベントを購読し、表示中でもステータス payload を更新するようにした。録音開始・外部通信・認証情報には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機での表示中プロンプト更新は未確認。
+- 次アクション: 実機で表示中プロンプトのステータス更新を確認する。
+
 ### Live Caption Transparency: show capture state per track
 
 - 開始日時: 2026-04-29 05:12 JST

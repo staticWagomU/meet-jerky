@@ -8,6 +8,7 @@ import {
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
+  LIVE_CAPTION_STATUS_EVENT,
   getVisibleTransmissionLabel,
   readStoredLiveCaptionStatus,
   type LiveCaptionStatusPayload,
@@ -46,7 +47,7 @@ export function MeetingDetectedBanner() {
 
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<MeetingAppDetectedPayload>(
+    const detectedUnlistenPromise = listen<MeetingAppDetectedPayload>(
       "meeting-app-detected",
       (e) => {
         if (disposed) {
@@ -70,13 +71,37 @@ export function MeetingDetectedBanner() {
         }
         return null;
       });
+    const statusUnlistenPromise = listen<LiveCaptionStatusPayload>(
+      LIVE_CAPTION_STATUS_EVENT,
+      (event) => {
+        if (!disposed) {
+          setStatusPayload(event.payload);
+        }
+      },
+    ).catch((e) => {
+      if (!disposed) {
+        console.error(
+          "会議検知プロンプトの文字起こしステータス受信開始に失敗しました:",
+          toErrorMessage(e),
+        );
+      }
+      return null;
+    });
 
     return () => {
       disposed = true;
-      unlistenPromise
+      detectedUnlistenPromise
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error("会議検知通知の受信解除に失敗しました:", toErrorMessage(e));
+        });
+      statusUnlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error(
+            "会議検知プロンプトの文字起こしステータス受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
   }, []);
