@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption A11y: include timestamp in label
+
+- 開始日時: 2026-04-28 20:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ字幕に表示した発話時刻を支援技術向けの `aria-label` / title にも含め、視覚表示と読み上げ情報の差を減らす。
+- 結果: 最新セグメントのアクセシブルラベルに、非エラー時のみ `発話時刻 mm:ss` を含めるようにした。エラー時は時刻を含めず、既存のエラー表示を維持した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。
+- 次アクション: 実機でライブ字幕の title/アクセシブルラベルが冗長すぎないか確認する。
+
 ### Live Caption UX: show segment timestamp
 
 - 開始日時: 2026-04-28 20:05 JST

@@ -96,16 +96,23 @@ export function LiveCaptionWindow() {
     };
   }, []);
 
-  const label = listenerError
-    ? listenerError
-    : latestSegment
-      ? `ライブ文字起こし ${getSpeakerLabel(latestSegment)}: ${latestSegment.text}`
-      : "ライブ文字起こし 待機中";
   const isErrorState = Boolean(listenerError || latestSegment?.isError);
   const captionTimestamp =
     latestSegment && !latestSegment.isError
       ? formatCaptionTimestamp(latestSegment.startMs)
       : null;
+  const label = listenerError
+    ? listenerError
+    : latestSegment
+      ? [
+          "ライブ文字起こし",
+          getSpeakerLabel(latestSegment),
+          captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
+          latestSegment.text,
+        ]
+          .filter(Boolean)
+          .join(": ")
+      : "ライブ文字起こし 待機中";
   const panelClassName = isErrorState
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
     : "live-transcript-panel live-transcript-panel-window";
