@@ -1279,6 +1279,20 @@ export function TranscriptView() {
       : "録音と文字起こしの記録を開始";
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
+  const lastSavedOpenLabel = lastSavedFileName
+    ? savedFileActionPending === "open"
+      ? `保存済み履歴ファイルを開いています: ${lastSavedFileName}`
+      : savedFileActionPending === "reveal"
+        ? `保存済み履歴ファイルを Finder で表示中のため開けません: ${lastSavedFileName}`
+        : `保存済み履歴ファイルを開く: ${lastSavedFileName}`
+    : "保存済み履歴ファイルを開く";
+  const lastSavedRevealLabel = lastSavedFileName
+    ? savedFileActionPending === "reveal"
+      ? `保存済み履歴ファイルを Finder で表示しています: ${lastSavedFileName}`
+      : savedFileActionPending === "open"
+        ? `保存済み履歴ファイルを開いているため Finder で表示できません: ${lastSavedFileName}`
+        : `保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`
+    : "保存済み履歴ファイルを Finder で表示";
   const modelDownloadedErrorMessage = modelDownloadedErrorForUi
     ? toErrorMessage(modelDownloadedErrorForUi)
     : "";
@@ -1561,8 +1575,8 @@ export function TranscriptView() {
                   void handleOpenLastSavedFile();
                 }}
                 disabled={savedFileActionPending !== null}
-                aria-label={`保存済み履歴ファイルを開く: ${lastSavedFileName}`}
-                title={`保存済み履歴ファイルを開く: ${lastSavedFileName}`}
+                aria-label={lastSavedOpenLabel}
+                title={lastSavedOpenLabel}
               >
                 {savedFileActionPending === "open" ? "開いています..." : "開く"}
               </button>
@@ -1573,8 +1587,8 @@ export function TranscriptView() {
                   void handleRevealLastSavedFile();
                 }}
                 disabled={savedFileActionPending !== null}
-                aria-label={`保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`}
-                title={`保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`}
+                aria-label={lastSavedRevealLabel}
+                title={lastSavedRevealLabel}
               >
                 {savedFileActionPending === "reveal"
                   ? "表示中..."

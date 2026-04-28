@@ -1,5 +1,19 @@
 # Agent Log
 
+### Saved History Actions: reflect pending state in labels
+
+- 開始日時: 2026-04-29 06:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存直後の履歴ファイル操作ボタンで、開く/Finder 表示の pending 状態を aria-label と title にも反映する。
+- 結果: 保存済み履歴ファイルの「開く」「Finder で表示」ボタンに pending 状態別のラベルを追加し、可視テキストだけでなく支援技術と tooltip でも操作中・他操作中が分かるようにした。保存処理やファイル操作処理には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機で保存直後のファイル操作 pending 表示は未確認。
+- 次アクション: 実機で保存済みファイルを開く/Finder 表示する操作中ラベルを確認する。
+
 ### History Search: match escaped Markdown text as displayed
 
 - 開始日時: 2026-04-29 06:14 JST
