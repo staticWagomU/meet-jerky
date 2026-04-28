@@ -124,12 +124,13 @@ export function LiveCaptionWindow() {
   const panelClassName = isErrorState
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
     : "live-transcript-panel live-transcript-panel-window";
+  const liveCaptionRole = isErrorState ? "alert" : "status";
 
   return (
     <div
       className="overlay-window live-caption-window"
-      role="status"
-      aria-live="polite"
+      role={liveCaptionRole}
+      aria-live={isErrorState ? "assertive" : "polite"}
       aria-atomic="true"
       aria-label={label}
       title={label}
