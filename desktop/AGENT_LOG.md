@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Start Safety: expire pending start request
+
+- 開始日時: 2026-04-29 05:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトからの記録開始予約が古く残って後から意図せず録音開始しないようにする。
+- 結果: pending start を固定値ではなく作成時刻で保存し、60 秒を超えた予約や旧形式の予約は読み取り時に破棄するようにした。プロンプト経由の即時開始導線は維持し、録音開始処理本体には触れない。
+- 変更ファイル: `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で古い pending start が残った状態からの復帰は未確認。
+- 次アクション: 実機でプロンプト開始予約の期限切れ挙動を確認する。
+
 ### Meeting Prompt Reliability: rollback failed start request
 
 - 開始日時: 2026-04-29 05:15 JST
