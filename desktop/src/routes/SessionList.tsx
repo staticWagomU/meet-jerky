@@ -326,22 +326,34 @@ function SessionRow({
     pendingAction?.kind === "reveal" && pendingAction.path === session.path;
   const isWaitingForOtherAction =
     isAnyActionPending && !isOpeningThisFile && !isRevealingThisFile;
+  const otherActionLabel =
+    pendingAction?.kind === "open"
+      ? "他の履歴ファイルを開いています"
+      : pendingAction?.kind === "reveal"
+        ? "他の履歴ファイルを Finder で表示しています"
+        : "他のセッション操作を処理中";
+  const otherActionButtonText =
+    pendingAction?.kind === "open"
+      ? "別履歴を開いています"
+      : pendingAction?.kind === "reveal"
+        ? "別履歴を表示中"
+        : "他の処理中";
   const openFileLabel = isOpeningThisFile
     ? `履歴ファイルを開いています: ${displayTitle}`
     : isWaitingForOtherAction
-      ? `他のセッション操作を処理中: ${displayTitle}`
+      ? `${otherActionLabel}: ${displayTitle}`
       : `履歴ファイルを開く: ${displayTitle}`;
   const revealFileLabel = isRevealingThisFile
     ? `履歴ファイルを Finder で表示しています: ${displayTitle}`
     : isWaitingForOtherAction
-      ? `他のセッション操作を処理中: ${displayTitle}`
+      ? `${otherActionLabel}: ${displayTitle}`
       : `履歴ファイルを Finder で表示: ${displayTitle}`;
   const sessionActionsLabel = isOpeningThisFile
     ? `セッション操作: ${displayTitle}、履歴ファイルを開いています`
     : isRevealingThisFile
       ? `セッション操作: ${displayTitle}、履歴ファイルを Finder で表示しています`
       : isWaitingForOtherAction
-        ? `セッション操作: ${displayTitle}、他の操作を処理中`
+        ? `セッション操作: ${displayTitle}、${otherActionLabel}`
         : `セッション操作: ${displayTitle}`;
 
   return (
@@ -383,7 +395,7 @@ function SessionRow({
           {isOpeningThisFile
             ? "開いています..."
             : isWaitingForOtherAction
-              ? "他の処理中"
+              ? otherActionButtonText
               : "履歴ファイルを開く"}
         </button>
         <button
@@ -397,7 +409,7 @@ function SessionRow({
           {isRevealingThisFile
             ? "表示中..."
             : isWaitingForOtherAction
-              ? "他の処理中"
+              ? otherActionButtonText
               : "Finder で表示"}
         </button>
       </div>

@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: clarify pending session actions
+
+- 開始日時: 2026-04-29 00:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴画面で他のセッション操作中に `他の処理中` とだけ表示される状態を、開く/Finder表示のどちらを待っているか分かるようにする。
+- 結果: pending action の種類から `他の履歴ファイルを開いています` / `他の履歴ファイルを Finder で表示しています` を aria/title に反映し、ボタン表示は `別履歴を開いています` / `別履歴を表示中` と短くした。ファイル操作処理自体には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI で履歴操作中のボタン文言が収まるかは未確認。
+- 次アクション: 実機 UI で `別履歴を開いています` / `別履歴を表示中` がボタン幅に収まり、aria/title で詳細が補足されることを確認する。
+
 ### Audio Source A11y: align pending labels
 
 - 開始日時: 2026-04-29 00:37 JST
