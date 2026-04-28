@@ -21,7 +21,7 @@ function getSessionDisplayTitle(title: string): string {
 
 /**
  * 保存済みセッションの一覧画面。
- * 各行から「ファイルを開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
+ * 各行から「履歴ファイルを開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
  * 解決させる。
  */
 export function SessionList() {
@@ -52,12 +52,12 @@ export function SessionList() {
       }
       setActionError(null);
     } catch (e) {
-      console.error("ファイルを開けませんでした:", e);
+      console.error("履歴ファイルを開けませんでした:", e);
       if (!isMountedRef.current) {
         return;
       }
       setActionError(
-        `文字起こし履歴ファイルを開けませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
+        `履歴ファイルを開けませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
       );
     } finally {
       pendingActionRef.current = null;
@@ -155,7 +155,7 @@ export function SessionList() {
   const sessionListLabel = [
     "セッション履歴",
     sessionCountLabel,
-    pendingAction ? "ファイル操作中" : null,
+    pendingAction ? "履歴ファイル操作中" : null,
   ]
     .filter(Boolean)
     .join("、");

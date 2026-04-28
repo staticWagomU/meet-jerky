@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: clarify open failure target
+
+- 開始日時: 2026-04-28 09:55 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、履歴ファイルを開く操作の失敗時と操作中ラベルも、対象が保存済み履歴ファイルであることが分かる表現へ揃える。
+- 結果: 履歴ファイル open 失敗時の console/error とセッション一覧の操作中ラベルを `履歴ファイル` に揃えた。open/reveal の実処理、パス、履歴取得処理には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で履歴ファイル open 失敗ケースと操作中ラベルが自然に読めるか確認する。
+
 ### Transcript Log UX: clarify copy failure target
 
 - 開始日時: 2026-04-28 09:54 JST
