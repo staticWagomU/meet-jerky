@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: clarify waiting tracks
+
+- 開始日時: 2026-04-29 00:46 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウの待機文言を、単なる音声待ちではなく自分/相手側トラックの発話待ちとして伝える。
+- 結果: 待機時の表示文と aria/title ラベルを `自分/相手側トラックの発話が確定するとここに表示されます。` に揃えた。ライブ字幕イベント処理、エラー表示、ウィンドウ制御には触れない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ライブ字幕ウィンドウで待機文の見え方は未確認。
+- 次アクション: 検証後、実機で録音開始直後の待機表示が邪魔にならず、トラックの意味が伝わることを確認する。
+
 ### Audio Source UX: clarify blocked operation labels
 
 - 開始日時: 2026-04-29 00:44 JST

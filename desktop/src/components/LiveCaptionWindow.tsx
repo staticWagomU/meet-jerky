@@ -4,6 +4,9 @@ import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
 
+const WAITING_CAPTION_TEXT =
+  "自分/相手側トラックの発話が確定するとここに表示されます。";
+
 function getSpeakerLabel(segment: TranscriptSegment): string {
   if (segment.source === "microphone") return "自分";
   if (segment.source === "system_audio") return "相手側";
@@ -114,7 +117,7 @@ export function LiveCaptionWindow() {
         ]
           .filter(Boolean)
           .join(": ")
-      : "ライブ文字起こし 待機中";
+      : `ライブ文字起こし 待機中: ${WAITING_CAPTION_TEXT}`;
   const panelClassName = isErrorState
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
     : "live-transcript-panel live-transcript-panel-window";
@@ -154,9 +157,7 @@ export function LiveCaptionWindow() {
             )}
           </div>
           <div className="live-transcript-text">
-            {listenerError ??
-              latestSegment?.text ??
-              "音声を聞き取り中です。発話が確定するとここに表示されます。"}
+            {listenerError ?? latestSegment?.text ?? WAITING_CAPTION_TEXT}
           </div>
         </div>
       </div>
