@@ -5,6 +5,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  MACOS_MICROPHONE_PRIVACY_URL,
+  MACOS_SCREEN_RECORDING_PRIVACY_URL,
+  OPEN_MICROPHONE_PRIVACY_LABEL,
+  OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
+} from "../utils/macosPrivacySettings";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -18,10 +24,6 @@ const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
 const ELEVENLABS_API_KEY_NOTE_ID = "elevenlabs-api-key-note";
 const EXTERNAL_REALTIME_RISK_NOTE_ID = "external-realtime-risk-note";
 const APPLE_SPEECH_LIMIT_NOTE_ID = "apple-speech-limit-note";
-const MACOS_MICROPHONE_PRIVACY_URL =
-  "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone";
-const MACOS_SCREEN_RECORDING_PRIVACY_URL =
-  "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
 const ENGINE_NOTE_IDS = {
   whisper: "transcription-engine-note-whisper",
   appleSpeech: "transcription-engine-note-apple-speech",
@@ -323,10 +325,6 @@ export function SettingsView() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
-  const openMicSettingsLabel =
-    "macOS のプライバシーとセキュリティでマイク権限を開く";
-  const openScreenSettingsLabel =
-    "macOS のプライバシーとセキュリティで画面収録権限を開く";
   const permissionSettingsOpenErrorLabel = permissionSettingsOpenError
     ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
     : null;
@@ -808,8 +806,8 @@ export function SettingsView() {
                   "マイク権限設定",
                 )
               }
-              aria-label={openMicSettingsLabel}
-              title={openMicSettingsLabel}
+              aria-label={OPEN_MICROPHONE_PRIVACY_LABEL}
+              title={OPEN_MICROPHONE_PRIVACY_LABEL}
             >
               マイク設定を開く
             </button>
@@ -822,8 +820,8 @@ export function SettingsView() {
                   "画面収録設定",
                 )
               }
-              aria-label={openScreenSettingsLabel}
-              title={openScreenSettingsLabel}
+              aria-label={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
+              title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
             >
               画面収録設定を開く
             </button>

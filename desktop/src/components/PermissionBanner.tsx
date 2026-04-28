@@ -2,11 +2,12 @@ import { useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
-
-const MACOS_MICROPHONE_PRIVACY_URL =
-  "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone";
-const MACOS_SCREEN_RECORDING_PRIVACY_URL =
-  "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
+import {
+  MACOS_MICROPHONE_PRIVACY_URL,
+  MACOS_SCREEN_RECORDING_PRIVACY_URL,
+  OPEN_MICROPHONE_PRIVACY_LABEL,
+  OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
+} from "../utils/macosPrivacySettings";
 
 export function PermissionBanner() {
   const [settingsOpenError, setSettingsOpenError] = useState<string | null>(
@@ -88,10 +89,6 @@ export function PermissionBanner() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
-  const openMicSettingsLabel =
-    "macOS のプライバシーとセキュリティでマイク権限を開く";
-  const openScreenSettingsLabel =
-    "macOS のプライバシーとセキュリティで画面収録権限を開く";
   const settingsOpenErrorLabel = settingsOpenError
     ? `macOS 設定を開けませんでした: ${settingsOpenError}`
     : null;
@@ -192,8 +189,8 @@ export function PermissionBanner() {
                 setSettingsOpenError(msg);
               });
             }}
-            aria-label={openMicSettingsLabel}
-            title={openMicSettingsLabel}
+            aria-label={OPEN_MICROPHONE_PRIVACY_LABEL}
+            title={OPEN_MICROPHONE_PRIVACY_LABEL}
           >
             マイク設定を開く
           </button>
@@ -209,8 +206,8 @@ export function PermissionBanner() {
                 setSettingsOpenError(msg);
               });
             }}
-            aria-label={openScreenSettingsLabel}
-            title={openScreenSettingsLabel}
+            aria-label={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
+            title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
           >
             画面収録設定を開く
           </button>

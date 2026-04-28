@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: share macOS privacy settings constants
+
+- 開始日時: 2026-04-28 19:45 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/macosPrivacySettings.ts`, `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、権限バナーと設定画面に重複した macOS プライバシー設定 URL / aria label を共有化し、権限導線の将来的なずれを防ぐ。
+- 結果: `macosPrivacySettings.ts` を追加し、マイク/画面収録の `x-apple.systempreferences:` URL と説明ラベルを共通定数化した。既存の表示文言と挙動は維持し、録音状態や権限状態には触れない。
+- 変更ファイル: `src/utils/macosPrivacySettings.ts`, `src/components/PermissionBanner.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/utils/macosPrivacySettings.ts src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功。新規ファイルを stage 後に `git diff --cached --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/macosPrivacySettings.ts src/components/PermissionBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 権限導線の実機確認時は、権限バナーと設定画面のラベル/遷移先が同じであることも確認する。
+
 ### Settings UX: add privacy settings shortcuts
 
 - 開始日時: 2026-04-28 19:35 JST
