@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Layout: prevent track pill overflow
+
+- 開始日時: 2026-04-29 05:14 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウのトラック状態ラベルが長くなっても狭いウィンドウで横あふれしないようにする。
+- 結果: ライブ字幕のトラックピル内テキストに `min-width: 0` と ellipsis を適用し、取得状態や最新時刻が長い場合でもピル内に収まるようにした。表示内容や状態同期には触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ライブ字幕ウィンドウ幅での表示は未確認。
+- 次アクション: 実機で狭い独立ライブ字幕ウィンドウの折り返しと省略表示を確認する。
+
 ### Meeting Prompt Transparency: keep status labels current
 
 - 開始日時: 2026-04-29 05:13 JST

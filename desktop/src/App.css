@@ -902,6 +902,12 @@ body[data-window="live-caption"] {
   font-variant-numeric: tabular-nums;
 }
 
+.live-transcript-track-pill span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .live-transcript-track-pill-microphone {
   color: var(--speaker-self-label-color);
   border-color: color-mix(in srgb, var(--speaker-self-label-color) 34%, transparent);
