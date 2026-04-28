@@ -446,21 +446,23 @@ export function TranscriptView() {
   }, [settings?.whisperModel]);
 
   useEffect(() => {
-    if (sessionStorage.getItem(PENDING_MEETING_START_STORAGE_KEY)) {
+    if (localStorage.getItem(PENDING_MEETING_START_STORAGE_KEY)) {
       setHasPendingMeetingStartRequest(true);
     }
-    const handleMeetingStartRequest = () => {
-      setHasPendingMeetingStartRequest(true);
-    };
-    window.addEventListener(
-      MEETING_START_REQUEST_EVENT,
-      handleMeetingStartRequest,
-    );
+    let disposed = false;
+    const unlistenPromise = listen(MEETING_START_REQUEST_EVENT, () => {
+      if (!disposed) {
+        setHasPendingMeetingStartRequest(true);
+      }
+    });
+
     return () => {
-      window.removeEventListener(
-        MEETING_START_REQUEST_EVENT,
-        handleMeetingStartRequest,
-      );
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten())
+        .catch((e) => {
+          console.error("録音開始要求の受信解除に失敗しました:", toErrorMessage(e));
+        });
     };
   }, []);
 
@@ -931,6 +933,30 @@ export function TranscriptView() {
     setSegments([]);
   }, []);
 
+  useEffect(() => {
+    void invoke("set_live_caption_window_visible", {
+      visible: isMeetingActive || isTranscribing,
+    }).catch((e) => {
+      console.error(
+        "ライブ字幕ウィンドウの表示切替に失敗しました:",
+        toErrorMessage(e),
+      );
+    });
+  }, [isMeetingActive, isTranscribing]);
+
+  useEffect(() => {
+    return () => {
+      void invoke("set_live_caption_window_visible", { visible: false }).catch(
+        (e) => {
+          console.error(
+            "ライブ字幕ウィンドウの非表示に失敗しました:",
+            toErrorMessage(e),
+          );
+        },
+      );
+    };
+  }, []);
+
   const modelDownloadedErrorForUi = requiresLocalModel
     ? modelDownloadedError
     : null;
@@ -1131,7 +1157,7 @@ export function TranscriptView() {
       return;
     }
     if (isMeetingActive) {
-      sessionStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+      localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
       setHasPendingMeetingStartRequest(false);
       return;
     }
@@ -1142,7 +1168,7 @@ export function TranscriptView() {
     ) {
       return;
     }
-    sessionStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+    localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
     setHasPendingMeetingStartRequest(false);
     if (!canStartMeeting) {
       setMeetingError(
@@ -1422,7 +1448,6 @@ export function TranscriptView() {
       <TranscriptDisplay
         segments={segments}
         onNewSegment={handleNewSegment}
-        isLive={isMeetingActive || isTranscribing}
       />
     </div>
   );

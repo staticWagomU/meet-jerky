@@ -80,13 +80,11 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
 interface TranscriptDisplayProps {
   segments: TranscriptSegment[];
   onNewSegment: (segment: TranscriptSegment) => void;
-  isLive?: boolean;
 }
 
 export function TranscriptDisplay({
   segments,
   onNewSegment,
-  isLive = false,
 }: TranscriptDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -108,10 +106,6 @@ export function TranscriptDisplay({
   );
   const segmentCounts = useMemo(() => getSegmentCounts(segments), [segments]);
   const copyableSegmentsCount = segmentCounts.copyable;
-  const latestVisibleSegment = useMemo(
-    () => [...segments].reverse().find((segment) => !segment.isError) ?? null,
-    [segments],
-  );
 
   // Listen to transcription-result events
   useEffect(() => {
@@ -328,10 +322,6 @@ export function TranscriptDisplay({
         : copyFeedback
           ? `文字起こし本文 ${copyableSegmentsCount} 件をコピー済み`
           : `文字起こし本文 ${copyableSegmentsCount} 件をコピー`;
-  const liveTranscriptLabel = latestVisibleSegment
-    ? `ライブ文字起こし ${getSpeakerLabel(latestVisibleSegment)}: ${latestVisibleSegment.text}`
-    : "ライブ文字起こし 待機中";
-
   return (
     <div
       className="transcript-display-wrapper"
@@ -517,38 +507,6 @@ export function TranscriptDisplay({
         >
           最新へ戻る
         </button>
-      )}
-      {isLive && (
-        <div
-          className="live-transcript-panel"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          aria-label={liveTranscriptLabel}
-          title={liveTranscriptLabel}
-        >
-          <div className="live-transcript-wave" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="live-transcript-content">
-            <div className="live-transcript-meta">
-              <span className="live-transcript-dot" aria-hidden="true" />
-              <span>ライブ文字起こし</span>
-              {latestVisibleSegment && (
-                <span className="live-transcript-speaker">
-                  {getSpeakerLabel(latestVisibleSegment)}
-                </span>
-              )}
-            </div>
-            <div className="live-transcript-text">
-              {latestVisibleSegment
-                ? latestVisibleSegment.text
-                : "音声を聞き取り中です。発話が確定するとここに表示されます。"}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: split prompt and live captions into dedicated windows
+
+- 開始日時: 2026-04-28 16:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `src-tauri/src/app_detection.rs`, `src-tauri/capabilities/default.json`, `src/main.tsx`, `src/App.tsx`, `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: ユーザー依頼として、通知ウィンドウとリアルタイム文字起こしウィンドウを、メニューから起動する通常アプリウィンドウ内コンポーネントではなく、会議検知時・録音中に独立して表示される専用ウィンドウとして実装する。
+- 結果: Tauri 起動時に `meeting-prompt` と `live-caption` の透明・装飾なし・常時前面専用ウィンドウを作成するようにした。会議検知時は main window ではなく `meeting-prompt` を上部中央に表示し、録音開始/状態確認は Tauri event 経由で main window を表示して TranscriptView に引き渡す。録音中または文字起こし中は `live-caption` を画面下部中央に表示し、最新の確定文字起こしまたはエラーを表示する。main window 内のライブ字幕パネルは削除し、通常ウィンドウは履歴・設定・詳細状態確認に集中させた。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src-tauri/src/app_detection.rs`, `src-tauri/capabilities/default.json`, `src/main.tsx`, `src/App.tsx`, `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: 初回の `cargo` / `npm` 実行はこのセッションの PATH に `/Users/wagomu/.cargo/bin` と `/opt/homebrew/bin` がなく失敗したため、PATH を明示して再実行した。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/capabilities/default.json src-tauri/src/lib.rs src-tauri/src/app_detection.rs src/main.tsx src/App.tsx src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/App.css` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh ...` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機での会議検知、専用 window の常時前面/透明/位置、ノッチ直下の見え方、ライブ字幕 window の録音中表示は未確認。Rust 全体テストは `cmake` 不在により未完走。
+- 次アクション: 実機で `meeting-prompt` が通常 main/settings/history window と独立して表示されること、録音開始ボタンから main window 経由で記録開始へ進むこと、録音停止時に `live-caption` が非表示になることを確認する。
+
 ### Meeting UX: make detection prompt ask to record
 
 - 開始日時: 2026-04-28 15:20 JST

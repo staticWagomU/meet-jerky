@@ -22,8 +22,16 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager, PhysicalPosition, Position, Size, WindowEvent,
+    Manager, PhysicalPosition, Position, Size, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
+
+const MAIN_WINDOW_LABEL: &str = "main";
+const MEETING_PROMPT_WINDOW_LABEL: &str = "meeting-prompt";
+const LIVE_CAPTION_WINDOW_LABEL: &str = "live-caption";
+const MEETING_PROMPT_WIDTH: f64 = 440.0;
+const MEETING_PROMPT_HEIGHT: f64 = 128.0;
+const LIVE_CAPTION_WIDTH: f64 = 460.0;
+const LIVE_CAPTION_HEIGHT: f64 = 104.0;
 
 pub(crate) fn install_rustls_crypto_provider() {
     if rustls::crypto::CryptoProvider::get_default().is_none() {
@@ -97,6 +105,112 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    WebviewWindowBuilder::new(
+        app,
+        MEETING_PROMPT_WINDOW_LABEL,
+        WebviewUrl::App("index.html".into()),
+    )
+    .title("meet-jerky recording prompt")
+    .inner_size(MEETING_PROMPT_WIDTH, MEETING_PROMPT_HEIGHT)
+    .decorations(false)
+    .resizable(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .transparent(true)
+    .shadow(true)
+    .visible(false)
+    .build()?;
+
+    WebviewWindowBuilder::new(
+        app,
+        LIVE_CAPTION_WINDOW_LABEL,
+        WebviewUrl::App("index.html".into()),
+    )
+    .title("meet-jerky live caption")
+    .inner_size(LIVE_CAPTION_WIDTH, LIVE_CAPTION_HEIGHT)
+    .decorations(false)
+    .resizable(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .transparent(true)
+    .shadow(true)
+    .visible(false)
+    .build()?;
+
+    Ok(())
+}
+
+fn position_window_top_center(app: &tauri::AppHandle, label: &str, top_offset: i32) {
+    let Some(window) = app.get_webview_window(label) else {
+        return;
+    };
+    let Ok(Some(monitor)) = app.primary_monitor() else {
+        return;
+    };
+    let Ok(window_size) = window.outer_size() else {
+        return;
+    };
+
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let x =
+        monitor_position.x + ((monitor_size.width.saturating_sub(window_size.width)) / 2) as i32;
+    let y = monitor_position.y + top_offset;
+    let _ = window.set_position(PhysicalPosition::new(x, y));
+}
+
+fn position_window_bottom_center(app: &tauri::AppHandle, label: &str, bottom_offset: u32) {
+    let Some(window) = app.get_webview_window(label) else {
+        return;
+    };
+    let Ok(Some(monitor)) = app.primary_monitor() else {
+        return;
+    };
+    let Ok(window_size) = window.outer_size() else {
+        return;
+    };
+
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let x =
+        monitor_position.x + ((monitor_size.width.saturating_sub(window_size.width)) / 2) as i32;
+    let y = monitor_position.y
+        + monitor_size
+            .height
+            .saturating_sub(window_size.height)
+            .saturating_sub(bottom_offset) as i32;
+    let _ = window.set_position(PhysicalPosition::new(x, y));
+}
+
+pub(crate) fn show_meeting_prompt_window(app: &tauri::AppHandle) {
+    position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, 44);
+    if let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+fn show_main_window(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) {
+    position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 56);
+    if let Some(window) = app.get_webview_window(LIVE_CAPTION_WINDOW_LABEL) {
+        if visible {
+            let _ = window.show();
+        } else {
+            let _ = window.hide();
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     install_rustls_crypto_provider();
@@ -135,15 +249,18 @@ pub fn run() {
             session_commands::finalize_and_save_session,
             session_commands::discard_session,
             session_commands::list_session_summaries_cmd,
+            show_main_window,
+            set_live_caption_window_visible,
         ])
         .setup(|app| {
             setup_tray(app)?;
+            setup_overlay_windows(app)?;
             // 会議アプリの起動検知を開始する。macOS 以外では noop。
             app_detection::start(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let WindowEvent::Focused(false) = event {
+            if window.label() == MAIN_WINDOW_LABEL && matches!(event, WindowEvent::Focused(false)) {
                 let _ = window.hide();
             }
         })

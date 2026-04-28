@@ -1,0 +1,114 @@
+import { useEffect, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
+import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
+import { toErrorMessage } from "../utils/errorMessage";
+
+function getSpeakerLabel(segment: TranscriptSegment): string {
+  if (segment.source === "microphone") return "自分";
+  if (segment.source === "system_audio") return "相手側";
+  return segment.speaker || "ソース不明";
+}
+
+export function LiveCaptionWindow() {
+  const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
+    null,
+  );
+  const [listenerError, setListenerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    const resultUnlistenPromise = listen<TranscriptSegment>(
+      "transcription-result",
+      (event) => {
+        if (disposed || event.payload.isError) {
+          return;
+        }
+        setLatestSegment(event.payload);
+      },
+    );
+    const errorUnlistenPromise = listen<TranscriptionErrorPayload>(
+      "transcription-error",
+      (event) => {
+        if (disposed) {
+          return;
+        }
+        setLatestSegment({
+          text: `エラー: ${event.payload.error}`,
+          startMs: 0,
+          endMs: 0,
+          source: event.payload.source,
+          isError: true,
+        });
+      },
+    );
+
+    Promise.all([resultUnlistenPromise, errorUnlistenPromise])
+      .then(() => {
+        if (!disposed) {
+          setListenerError(null);
+        }
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("ライブ字幕の受信開始に失敗しました:", msg);
+          setListenerError(`ライブ字幕の受信開始に失敗しました: ${msg}`);
+        }
+      });
+
+    return () => {
+      disposed = true;
+      resultUnlistenPromise
+        .then((unlisten) => unlisten())
+        .catch((e) =>
+          console.error("ライブ字幕結果の受信解除に失敗しました:", toErrorMessage(e)),
+        );
+      errorUnlistenPromise
+        .then((unlisten) => unlisten())
+        .catch((e) =>
+          console.error("ライブ字幕エラーの受信解除に失敗しました:", toErrorMessage(e)),
+        );
+    };
+  }, []);
+
+  const label = listenerError
+    ? listenerError
+    : latestSegment
+      ? `ライブ文字起こし ${getSpeakerLabel(latestSegment)}: ${latestSegment.text}`
+      : "ライブ文字起こし 待機中";
+
+  return (
+    <div
+      className="overlay-window live-caption-window"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-label={label}
+      title={label}
+    >
+      <div className="live-transcript-panel live-transcript-panel-window">
+        <div className="live-transcript-wave" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="live-transcript-content">
+          <div className="live-transcript-meta">
+            <span className="live-transcript-dot" aria-hidden="true" />
+            <span>ライブ文字起こし</span>
+            {latestSegment && (
+              <span className="live-transcript-speaker">
+                {getSpeakerLabel(latestSegment)}
+              </span>
+            )}
+          </div>
+          <div className="live-transcript-text">
+            {listenerError ??
+              latestSegment?.text ??
+              "音声を聞き取り中です。発話が確定するとここに表示されます。"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

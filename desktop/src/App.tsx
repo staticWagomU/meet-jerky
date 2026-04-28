@@ -1,11 +1,54 @@
-import { Link, Outlet } from "@tanstack/react-router";
-import { MeetingDetectedBanner } from "./components/MeetingDetectedBanner";
+import { useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import "./App.css";
 
+const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
+const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
+
 function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let disposed = false;
+    const showMainTranscriptWindow = () => {
+      void invoke("show_main_window").catch((e) => {
+        console.error("メインウィンドウの表示に失敗しました:", e);
+      });
+      void navigate({ to: "/" });
+    };
+    const unlistenShowPromise = listen(SHOW_MAIN_WINDOW_REQUEST_EVENT, () => {
+      if (!disposed) {
+        showMainTranscriptWindow();
+      }
+    });
+    const unlistenStartPromise = listen(MEETING_START_REQUEST_EVENT, () => {
+      if (disposed) {
+        return;
+      }
+      localStorage.setItem(PENDING_MEETING_START_STORAGE_KEY, "1");
+      showMainTranscriptWindow();
+    });
+
+    return () => {
+      disposed = true;
+      unlistenShowPromise
+        .then((unlisten) => unlisten())
+        .catch((e) => {
+          console.error("メイン表示要求の受信解除に失敗しました:", e);
+        });
+      unlistenStartPromise
+        .then((unlisten) => unlisten())
+        .catch((e) => {
+          console.error("録音開始要求の受信解除に失敗しました:", e);
+        });
+    };
+  }, [navigate]);
+
   return (
     <main className="container">
-      <MeetingDetectedBanner />
       <nav className="nav" aria-label="主要ナビゲーション">
         <Link to="/" className="nav-link" title="リアルタイム文字起こし">
           文字起こし

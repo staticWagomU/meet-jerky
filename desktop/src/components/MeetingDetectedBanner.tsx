@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { useNavigate } from "@tanstack/react-router";
+import { emit, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { MeetingAppDetectedPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
@@ -21,7 +22,6 @@ export function MeetingDetectedBanner() {
     null,
   );
   const [listenerError, setListenerError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     let disposed = false;
@@ -127,9 +127,9 @@ export function MeetingDetectedBanner() {
                 aria-label={startRecordingLabel}
                 title={startRecordingLabel}
                 onClick={() => {
-                  sessionStorage.setItem(PENDING_MEETING_START_STORAGE_KEY, "1");
-                  navigate({ to: "/" });
-                  window.dispatchEvent(new Event(MEETING_START_REQUEST_EVENT));
+                  localStorage.setItem(PENDING_MEETING_START_STORAGE_KEY, "1");
+                  void emit(MEETING_START_REQUEST_EVENT);
+                  void getCurrentWindow().hide();
                   setDetected(null);
                 }}
               >
@@ -141,7 +141,8 @@ export function MeetingDetectedBanner() {
                 aria-label={confirmRecordingLabel}
                 title={confirmRecordingLabel}
                 onClick={() => {
-                  navigate({ to: "/" });
+                  void emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
+                  void getCurrentWindow().hide();
                   setDetected(null);
                 }}
               >
@@ -157,6 +158,7 @@ export function MeetingDetectedBanner() {
             onClick={() => {
               setDetected(null);
               setListenerError(null);
+              void getCurrentWindow().hide();
             }}
           >
             ×
