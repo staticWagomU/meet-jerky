@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Accessibility: mark session start time semantically
+
+- 開始日時: 2026-04-29 05:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存済み履歴一覧の開始日時を単なるテキストではなく HTML の日時情報として扱えるようにする。
+- 結果: 履歴行の開始日時表示を `time dateTime` に変更し、表示は OS ローカル時刻のまま、機械可読な ISO 時刻を DOM に保持するようにした。検索、保存形式、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。
+- 次アクション: 実機で履歴一覧の日時表示が従来と同じ見た目であることを確認する。
+
 ### App Detection Notification: avoid not-started claim
 
 - 開始日時: 2026-04-29 05:55 JST

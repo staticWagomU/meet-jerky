@@ -463,7 +463,9 @@ function SessionRow({
 }: SessionRowProps) {
   // 秒 → ミリ秒に変換してローカルタイムでフォーマット。
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
-  const startedAtLabel = new Date(session.startedAtSecs * 1000).toLocaleString();
+  const startedAtDate = new Date(session.startedAtSecs * 1000);
+  const startedAtLabel = startedAtDate.toLocaleString();
+  const startedAtIso = startedAtDate.toISOString();
   const displayTitle = getSessionDisplayTitle(session.title);
   const fileName = getFileName(session.path);
   const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
@@ -547,7 +549,7 @@ function SessionRow({
           {displayTitle}
         </div>
         <div className="session-list-item-meta">
-          <span>{startedAtLabel}</span>
+          <time dateTime={startedAtIso}>{startedAtLabel}</time>
           <span
             className="session-list-item-body-state"
             aria-label={transcriptBodyLabel}
