@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Freshness: invalidate list after saving
+
+- 開始日時: 2026-04-29 04:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議終了後に履歴ファイルを保存したら履歴一覧キャッシュを明示的に更新対象へし、保存直後の履歴/検索の鮮度を上げる。
+- 結果: `finalizeAndSaveSession` 成功後に React Query の `sessionList` を invalidate するようにした。保存処理、Markdown 形式、履歴一覧 UI には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実画面で保存直後に履歴タブへ移動した際の再取得挙動は未確認。
+- 次アクション: 実機で保存直後の履歴一覧が新しいファイルを反映することを確認する。
+
 ### History Search UX: clean markdown from excerpts
 
 - 開始日時: 2026-04-29 04:04 JST

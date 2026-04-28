@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AppSettings,
   AudioDevice,
@@ -412,6 +412,7 @@ function sanitizeAudioLevel(level: number): number {
 }
 
 export function TranscriptView() {
+  const queryClient = useQueryClient();
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -626,6 +627,7 @@ export function TranscriptView() {
         try {
           const savedPath = await finalizeAndSaveSession();
           setLastSavedPath(savedPath);
+          void queryClient.invalidateQueries({ queryKey: ["sessionList"] });
           setMeetingError(null);
         } catch (e) {
           const msg = toErrorMessage(e);
@@ -748,6 +750,7 @@ export function TranscriptView() {
     isTranscribing,
     isMicRecording,
     isSystemAudioRecording,
+    queryClient,
     selectedDeviceId,
     selectedModel,
     settings?.transcriptionEngine,
