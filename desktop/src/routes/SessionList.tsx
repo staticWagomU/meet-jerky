@@ -38,6 +38,13 @@ function getSessionDisplayTitle(title: string): string {
   return displayTitle || "無題の会議";
 }
 
+function formatSearchExcerptText(text: string): string {
+  return text
+    .replace(/\*\*\[([^\]]+)\]\s*([^:*]+):\*\*/g, "[$1] $2:")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getSearchMatchExcerpt(text: string, query: string): string | null {
   const searchTerms = getSearchTerms(query);
   if (searchTerms.length === 0 || !text) {
@@ -57,7 +64,7 @@ function getSearchMatchExcerpt(text: string, query: string): string | null {
     text.length,
     matchIndex + matchedTerm.length + SEARCH_EXCERPT_CONTEXT_LENGTH,
   );
-  const excerpt = text.slice(start, end).replace(/\s+/g, " ").trim();
+  const excerpt = formatSearchExcerptText(text.slice(start, end));
   if (!excerpt) {
     return null;
   }

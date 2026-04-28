@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: clean markdown from excerpts
+
+- 開始日時: 2026-04-29 04:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索の本文一致スニペットに保存 Markdown の強調記号がそのまま出て一覧の可読性を下げないようにする。
+- 結果: 一覧表示用 excerpt のみ、`**[時刻] 話者:**` を `[時刻] 話者:` へ整える軽い整形を追加した。検索条件、保存 Markdown、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでのスニペット見え方は未確認。
+- 次アクション: 実履歴で Markdown 記号が過剰に残らず、検索一致箇所の文脈が自然に読めることを確認する。
+
 ### Meeting Status UX: surface waiting input in track pills
 
 - 開始日時: 2026-04-29 04:02 JST
