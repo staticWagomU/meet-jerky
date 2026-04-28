@@ -1028,6 +1028,9 @@ export function TranscriptView() {
     externalApiProvider && externalApiKeyStatusLabel
       ? `${externalApiProvider} API キー ${externalApiKeyStatusLabel}`
       : null;
+  const shouldShowExternalApiKeyStatus =
+    Boolean(externalApiKeyStatusLabel) &&
+    externalApiKeyStatusLabel !== "登録済み";
   const externalApiKeyStatusAriaLabel =
     externalApiProvider && externalApiKeyStatusLabel
       ? `${externalApiProvider} API キー: ${externalApiKeyStatusLabel}`
@@ -1183,15 +1186,17 @@ export function TranscriptView() {
           >
             外部送信 {aiTransmissionStatusLabel}
           </span>
-          {externalApiKeyStatusLabel && externalApiKeyStatusDisplayLabel && (
-            <span
-              className={`meeting-status-pill ${getExternalApiKeyStatusPillClass(externalApiKeyStatusLabel)}`}
-              aria-label={externalApiKeyStatusAriaLabel ?? undefined}
-              title={externalApiKeyStatusAriaLabel ?? undefined}
-            >
-              {externalApiKeyStatusDisplayLabel}
-            </span>
-          )}
+          {shouldShowExternalApiKeyStatus &&
+            externalApiKeyStatusLabel &&
+            externalApiKeyStatusDisplayLabel && (
+              <span
+                className={`meeting-status-pill ${getExternalApiKeyStatusPillClass(externalApiKeyStatusLabel)}`}
+                aria-label={externalApiKeyStatusAriaLabel ?? undefined}
+                title={externalApiKeyStatusAriaLabel ?? undefined}
+              >
+                {externalApiKeyStatusDisplayLabel}
+              </span>
+            )}
         </div>
         {audioSourceNotice && (
           <p

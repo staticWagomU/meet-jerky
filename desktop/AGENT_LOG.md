@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: hide registered API key pill
+
+- 開始日時: 2026-04-28 13:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ状態 strip の情報密度を下げ、会議中に邪魔になりにくい状態表示へ寄せる。
+- 結果: 外部 Realtime エンジン選択時、API キーが `登録済み` の場合は status strip の API キー pill を非表示にした。`未登録`、`確認中`、`確認できません` は従来どおり表示し、開始不可理由やエラー表示も維持した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npx tsc --noEmit` 成功。`npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での status strip 表示密度は未確認。
+- 次アクション: 実機 UI で外部 Realtime 選択時に登録済み API キー pill が消え、未登録/確認失敗時だけ必要な警告が残ることを確認する。
+
 ### Session Markdown: normalize inline newlines
 
 - 開始日時: 2026-04-28 13:08 JST
