@@ -531,20 +531,41 @@ body[data-window="ring-light"] {
   justify-content: center;
   flex: 0 0 auto;
   gap: 0.4rem;
-  padding: 0.4em 0.8em;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  min-height: 2rem;
+  padding: 0.42em 0.82em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
   color: #fff;
-  transition: background-color 0.2s, opacity 0.2s;
+  box-shadow:
+    0 6px 14px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.1s ease;
   white-space: nowrap;
+}
+
+.control-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 9px 18px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+.control-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .control-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .control-btn-record {
@@ -568,10 +589,17 @@ body[data-window="ring-light"] {
 }
 
 .control-btn-clear {
-  background-color: transparent;
+  background-color: color-mix(in srgb, var(--color-surface) 58%, transparent);
   color: var(--control-btn-clear-color);
-  border: 1px solid var(--control-btn-clear-border);
-  font-weight: 500;
+  border: 1px solid color-mix(in srgb, var(--control-btn-clear-border) 74%, transparent);
+  box-shadow: none;
+}
+
+.control-btn-clear:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: color-mix(in srgb, var(--color-surface) 86%, transparent);
+  border-color: color-mix(in srgb, var(--control-btn-clear-color) 34%, transparent);
+  box-shadow: none;
 }
 
 .transcription-source-status {

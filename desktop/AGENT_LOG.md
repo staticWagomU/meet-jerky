@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI refresh: shared control buttons
+
+- 開始日時: 2026-04-29 08:33 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI刷新の継続として、メイン/通知/履歴/権限で共有される `control-btn` の見た目を macOS らしい pill 型へ統一する。
+- 結果: 共有ボタンの角丸、最小高さ、境界、影、hover/active/disabled 状態を更新し、clear ボタンも半透明 surface へ揃えた。ボタン文言、クリック処理、録音/文字起こし制御には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で録音開始/停止、字幕再表示、履歴操作、権限設定ボタンが小さいウィンドウでも押しやすく、文言が溢れないことを確認する。
+
 ### UI refresh: meeting notices and saved file card
 
 - 開始日時: 2026-04-29 08:32 JST
