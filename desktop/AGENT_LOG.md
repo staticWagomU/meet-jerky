@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Dates: guard invalid started_at values
+
+- 開始日時: 2026-04-29 06:31 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 直近の履歴日時 `time` 要素化を見直し、履歴ファイル名の数値 prefix が極端な値でも一覧画面が `toISOString()` で落ちないようにする。
+- 結果: 履歴開始時刻の表示計算を helper 化し、JS Date として扱えない値は `日時不明` の通常テキスト表示へフォールバックするようにした。正常な履歴では従来通り `time dateTime` を出す。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。異常に大きい started_at prefix を含む実ファイルでの UI 表示は未確認。
+- 次アクション: 実履歴フォルダに異常 prefix の `.md` がある場合でも一覧が落ちないことを確認する。
+
 ### Meeting Detection: recover from invalid payload error
 
 - 開始日時: 2026-04-29 06:27 JST

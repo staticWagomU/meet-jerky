@@ -25,8 +25,30 @@ interface TranscriptTrackCounts {
   unknown: number;
 }
 
+interface SessionStartedAtDisplay {
+  label: string;
+  iso: string | null;
+}
+
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
+}
+
+function getSessionStartedAtDisplay(
+  startedAtSecs: number,
+): SessionStartedAtDisplay {
+  const startedAtMs = startedAtSecs * 1000;
+  if (!Number.isFinite(startedAtMs)) {
+    return { label: "日時不明", iso: null };
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return { label: "日時不明", iso: null };
+  }
+  return {
+    label: startedAtDate.toLocaleString(),
+    iso: startedAtDate.toISOString(),
+  };
 }
 
 function formatSearchQueryForLabel(query: string): string {
@@ -240,7 +262,7 @@ export function SessionList() {
       sessions.filter((session) =>
         sessionMatchesQuery(
           session,
-          new Date(session.startedAtSecs * 1000).toLocaleString(),
+          getSessionStartedAtDisplay(session.startedAtSecs).label,
           trimmedSearchQuery,
         ),
       ),
@@ -467,9 +489,8 @@ function SessionRow({
 }: SessionRowProps) {
   // 秒 → ミリ秒に変換してローカルタイムでフォーマット。
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
-  const startedAtDate = new Date(session.startedAtSecs * 1000);
-  const startedAtLabel = startedAtDate.toLocaleString();
-  const startedAtIso = startedAtDate.toISOString();
+  const startedAtDisplay = getSessionStartedAtDisplay(session.startedAtSecs);
+  const startedAtLabel = startedAtDisplay.label;
   const displayTitle = getSessionDisplayTitle(session.title);
   const fileName = getFileName(session.path);
   const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
@@ -553,7 +574,11 @@ function SessionRow({
           {displayTitle}
         </div>
         <div className="session-list-item-meta">
-          <time dateTime={startedAtIso}>{startedAtLabel}</time>
+          {startedAtDisplay.iso ? (
+            <time dateTime={startedAtDisplay.iso}>{startedAtLabel}</time>
+          ) : (
+            <span>{startedAtLabel}</span>
+          )}
           <span
             className="session-list-item-body-state"
             aria-label={transcriptBodyLabel}
