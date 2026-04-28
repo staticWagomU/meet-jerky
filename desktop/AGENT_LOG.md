@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Reliability: ignore md directories in listing
+
+- 開始日時: 2026-04-28 10:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧の信頼性改善として、出力先ディレクトリに `.md` 拡張子のディレクトリが混ざっても保存済み履歴ファイル一覧全体が失敗しないようにする。
+- 結果: 履歴一覧のファイル列挙で `.md` 拡張子かつ通常ファイルだけを対象にし、`.md` ディレクトリを無視するようにした。`.md` ディレクトリが混ざっても通常の履歴ファイルだけを返す単体テストを追加した。
+- 変更ファイル: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/session_store.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml session_store` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。実機の履歴出力先に `.md` ディレクトリが混ざるケースは未確認。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml session_store` を再実行する。
+
 ### Transcript UX: clarify saved history file message
 
 - 開始日時: 2026-04-28 10:20 JST

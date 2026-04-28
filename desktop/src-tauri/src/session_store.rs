@@ -143,8 +143,9 @@ pub fn list_session_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
     let mut out = Vec::new();
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
+        let file_type = entry.file_type()?;
         let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("md") {
+        if file_type.is_file() && path.extension().and_then(|e| e.to_str()) == Some("md") {
             out.push(path);
         }
     }
@@ -197,6 +198,18 @@ mod tests {
             .collect();
         assert!(names.contains(&"a.md".to_string()));
         assert!(names.contains(&"b.md".to_string()));
+    }
+
+    #[test]
+    fn list_session_files_ignores_md_directories() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("100-0.md"), "# 会議メモ\n").unwrap();
+        fs::create_dir(dir.path().join("not-a-session.md")).unwrap();
+
+        let files = list_session_files(dir.path()).unwrap();
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].file_name().unwrap().to_string_lossy(), "100-0.md");
     }
 
     #[test]
