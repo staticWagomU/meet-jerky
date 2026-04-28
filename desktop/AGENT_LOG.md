@@ -1,5 +1,19 @@
 # Agent Log
 
+### Overlay windows: keep live caption closeable and authorize ring light
+
+- 開始日時: 2026-04-29 08:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `src-tauri/capabilities/default.json`, `AGENT_LOG.md`
+- 指示内容: 独立ウィンドウ要件を批判的に確認し、閉じられるライブ字幕ウィンドウとリングライトイベント受信の実用性を上げる。
+- 結果: `live-caption` ウィンドウの `focusable(false)` を外し、右上の閉じるボタンが実機でクリック不能になるリスクを下げた。`ring-light` を Tauri capability の `windows` に追加し、リングライト WebView でも既存 permission が適用されるようにした。録音/文字起こし処理、外部 API、認証情報には触れなかった。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src-tauri/capabilities/default.json`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/lib.rs src-tauri/capabilities/default.json AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src-tauri/capabilities/default.json AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` build script が `cmake` 不在で失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo check` は環境制約（cmake 不在）により未完走。ライブ字幕 close button の実クリックとリングライト capability 適用は未実機確認。
+- 次アクション: cmake あり環境で `cargo check --manifest-path src-tauri/Cargo.toml` を再実行し、実機でライブ字幕の閉じるボタンとリングライト明るさ反映を確認する。
+
 ### Ring light UX: prevent rapid toggle overlap
 
 - 開始日時: 2026-04-29 08:37 JST

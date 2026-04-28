@@ -141,7 +141,6 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .skip_taskbar(true)
     .shadow(true)
     .focused(false)
-    .focusable(false)
     .visible(false)
     .build()?;
 
