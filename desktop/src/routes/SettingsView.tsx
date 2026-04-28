@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { emit } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
@@ -15,6 +16,8 @@ import {
 } from "../utils/macosPrivacySettings";
 import {
   buildLiveCaptionStatusFromEngine,
+  LIVE_CAPTION_STATUS_EVENT,
+  type LiveCaptionStatusPayload,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
 
@@ -42,6 +45,15 @@ const LANGUAGES = [
   { value: "ja", label: "日本語" },
   { value: "en", label: "English" },
 ];
+
+function syncLiveCaptionStatus(status: LiveCaptionStatusPayload): void {
+  writeStoredLiveCaptionStatus(status, (e) => {
+    console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
+  });
+  void emit(LIVE_CAPTION_STATUS_EVENT, status).catch((e) => {
+    console.error("ライブ字幕ステータスの同期に失敗しました:", toErrorMessage(e));
+  });
+}
 
 export function SettingsView() {
   const queryClient = useQueryClient();
@@ -103,14 +115,8 @@ export function SettingsView() {
     mutationFn: (newSettings: AppSettings) =>
       invoke("update_settings", { settings: newSettings }),
     onSuccess: (_data, savedSettings) => {
-      writeStoredLiveCaptionStatus(
+      syncLiveCaptionStatus(
         buildLiveCaptionStatusFromEngine(savedSettings.transcriptionEngine),
-        (e) => {
-          console.error(
-            "ライブ字幕ステータスの保存に失敗しました:",
-            toErrorMessage(e),
-          );
-        },
       );
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       showToast("設定を保存しました");
@@ -127,14 +133,8 @@ export function SettingsView() {
     if (!settings) {
       return;
     }
-    writeStoredLiveCaptionStatus(
+    syncLiveCaptionStatus(
       buildLiveCaptionStatusFromEngine(settings.transcriptionEngine),
-      (e) => {
-        console.error(
-          "ライブ字幕ステータスの保存に失敗しました:",
-          toErrorMessage(e),
-        );
-      },
     );
     setLocalSettings((current) => {
       const previous = lastSyncedSettingsRef.current;

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Transparency: emit live caption status after settings sync
+
+- 開始日時: 2026-04-29 04:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面でエンジン変更後に保存ラベルだけでなく、表示中の独立ライブ字幕ウィンドウも即時更新されるようにする。
+- 結果: 設定読み込み時と保存成功時のライブ字幕ステータス同期を共通関数化し、localStorage 保存に加えて `live-caption-status` イベントも emit するようにした。API キーや認証情報には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で表示中ライブ字幕ウィンドウの即時更新は未確認。
+- 次アクション: 実機で設定変更後のライブ字幕ラベル更新を確認する。
+
 ### Settings Transparency: refresh live caption status after engine changes
 
 - 開始日時: 2026-04-29 04:23 JST
