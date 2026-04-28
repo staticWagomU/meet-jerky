@@ -223,41 +223,61 @@ fn show_main_window(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) {
+fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
     position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 56);
-    if let Some(window) = app.get_webview_window(LIVE_CAPTION_WINDOW_LABEL) {
-        if visible {
-            let was_visible = window.is_visible().unwrap_or(false);
-            if !was_visible {
-                let _ = window.emit("live-caption-reset", ());
-            }
-            let _ = window.show();
-        } else {
-            let _ = window.hide();
+    let Some(window) = app.get_webview_window(LIVE_CAPTION_WINDOW_LABEL) else {
+        return Err("ライブ文字起こしウィンドウが見つかりません".to_string());
+    };
+    if visible {
+        let was_visible = window
+            .is_visible()
+            .map_err(|e| format!("ライブ文字起こしウィンドウの表示状態を確認できません: {e}"))?;
+        if !was_visible {
+            let _ = window.emit("live-caption-reset", ());
         }
+        window
+            .show()
+            .map_err(|e| format!("ライブ文字起こしウィンドウを表示できません: {e}"))?;
+    } else {
+        window
+            .hide()
+            .map_err(|e| format!("ライブ文字起こしウィンドウを隠せません: {e}"))?;
     }
+    Ok(())
 }
 
 #[tauri::command]
-fn set_ring_light_visible(app: tauri::AppHandle, visible: bool) {
-    if let Some(window) = app.get_webview_window(RING_LIGHT_WINDOW_LABEL) {
-        if let Ok(Some(monitor)) = app.primary_monitor() {
-            let _ = window.set_position(PhysicalPosition::new(
+fn set_ring_light_visible(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(RING_LIGHT_WINDOW_LABEL) else {
+        return Err("リングライトウィンドウが見つかりません".to_string());
+    };
+    if let Ok(Some(monitor)) = app.primary_monitor() {
+        window
+            .set_position(PhysicalPosition::new(
                 monitor.position().x,
                 monitor.position().y,
-            ));
-            let _ = window.set_size(PhysicalSize::new(
+            ))
+            .map_err(|e| format!("リングライトウィンドウの位置を更新できません: {e}"))?;
+        window
+            .set_size(PhysicalSize::new(
                 monitor.size().width,
                 monitor.size().height,
-            ));
-        }
-        let _ = window.set_ignore_cursor_events(true);
-        if visible {
-            let _ = window.show();
-        } else {
-            let _ = window.hide();
-        }
+            ))
+            .map_err(|e| format!("リングライトウィンドウのサイズを更新できません: {e}"))?;
     }
+    window
+        .set_ignore_cursor_events(true)
+        .map_err(|e| format!("リングライトウィンドウをクリック透過にできません: {e}"))?;
+    if visible {
+        window
+            .show()
+            .map_err(|e| format!("リングライトウィンドウを表示できません: {e}"))?;
+    } else {
+        window
+            .hide()
+            .map_err(|e| format!("リングライトウィンドウを隠せません: {e}"))?;
+    }
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

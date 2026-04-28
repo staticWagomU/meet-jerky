@@ -1,5 +1,19 @@
 # Agent Log
 
+### Overlay windows: propagate show/hide failures
+
+- 開始日時: 2026-04-29 08:46 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: ライブ字幕再表示やリングライト切替の UI エラー表示が実際に機能するよう、Tauri command 側で show/hide 失敗を握り潰さない。
+- 結果: `set_live_caption_window_visible` と `set_ring_light_visible` を `Result<(), String>` にし、対象ウィンドウ欠落、表示状態確認、show/hide、リングライト位置/サイズ更新、クリック透過設定の失敗をフロントへ返すようにした。録音/文字起こし処理、API/認証、ウィンドウ作成設定には触れなかった。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml` は `whisper-rs-sys` build script が `cmake` 不在で失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo check` は環境制約（cmake 不在）により未完走。独立ウィンドウ show/hide 失敗時にフロントへエラーが表示されることは未実機確認。
+- 次アクション: cmake あり環境で `cargo check --manifest-path src-tauri/Cargo.toml` を再実行し、実機でライブ字幕再表示失敗/リングライト表示失敗の UI エラーを確認する。
+
 ### Overlay windows: keep live caption closeable and authorize ring light
 
 - 開始日時: 2026-04-29 08:39 JST
