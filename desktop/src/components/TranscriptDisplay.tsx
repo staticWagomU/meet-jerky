@@ -319,7 +319,7 @@ export function TranscriptDisplay({
         ? `文字起こし ${copyableSegmentsCount} 件をコピー中`
         : copyFeedback
           ? `文字起こし ${copyableSegmentsCount} 件をコピー済み`
-          : `文字起こし ${copyableSegmentsCount} 件をすべてコピー`;
+          : `文字起こし本文 ${copyableSegmentsCount} 件をコピー`;
 
   return (
     <div
