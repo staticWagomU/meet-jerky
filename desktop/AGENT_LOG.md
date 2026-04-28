@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt A11y: avoid countdown live spam
+
+- 開始日時: 2026-04-29 02:32 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 直前の自律改善を批判的に見直し、会議検知プロンプトの残り秒数が `role="status"` 内で毎秒変わって支援技術へ過剰通知され得る問題を避ける。
+- 結果: 動的 countdown state と interval を削除し、UI/aria/title には静的に `約15秒後に自動で隠れます` と表示する形へ変更した。15秒の自動 hide、録音開始/状態確認/閉じる操作、検知 payload は維持した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: 実機またはブラウザで、会議検知プロンプトが静的な自動非表示案内を表示し、ライブリージョンが毎秒更新されないことを確認する。
+
 ### Meeting Prompt UX: show auto-hide countdown
 
 - 開始日時: 2026-04-29 02:30 JST

@@ -24,9 +24,6 @@ export function MeetingDetectedBanner() {
     null,
   );
   const [listenerError, setListenerError] = useState<string | null>(null);
-  const [autoHideRemainingSeconds, setAutoHideRemainingSeconds] = useState(
-    PROMPT_AUTO_HIDE_SECONDS,
-  );
 
   useEffect(() => {
     let disposed = false;
@@ -36,7 +33,6 @@ export function MeetingDetectedBanner() {
         if (disposed) {
           return;
         }
-        setAutoHideRemainingSeconds(PROMPT_AUTO_HIDE_SECONDS);
         setDetected(e.payload);
       },
     )
@@ -69,21 +65,12 @@ export function MeetingDetectedBanner() {
     if (!detected || listenerError) {
       return;
     }
-    const startedAt = Date.now();
-    setAutoHideRemainingSeconds(PROMPT_AUTO_HIDE_SECONDS);
-    const intervalId = window.setInterval(() => {
-      const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-      setAutoHideRemainingSeconds(
-        Math.max(PROMPT_AUTO_HIDE_SECONDS - elapsedSeconds, 0),
-      );
-    }, 1000);
     const timeoutId = window.setTimeout(() => {
       setDetected(null);
       void getCurrentWindow().hide();
     }, PROMPT_AUTO_HIDE_MS);
 
     return () => {
-      window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
   }, [detected, listenerError]);
@@ -97,12 +84,12 @@ export function MeetingDetectedBanner() {
     : "録音しますか？";
   const bannerDetail = listenerError
     ? null
-    : `${displayName} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。約${autoHideRemainingSeconds}秒後に自動で隠れます。`;
+    : `${displayName} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。約${autoHideRemainingSeconds}秒後に自動で隠れます。`;
+      }自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の録音開始前の状態を確認`
     : "録音開始前の状態を確認";
