@@ -26,6 +26,8 @@ const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しま
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
+const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 
@@ -417,6 +419,8 @@ export function TranscriptView() {
   const [audioLevelListenerError, setAudioLevelListenerError] = useState<
     string | null
   >(null);
+  const [hasPendingMeetingStartRequest, setHasPendingMeetingStartRequest] =
+    useState(false);
 
   const {
     data: devices,
@@ -440,6 +444,25 @@ export function TranscriptView() {
     setSelectedModel(settings.whisperModel);
     hasSyncedSettingsModelRef.current = true;
   }, [settings?.whisperModel]);
+
+  useEffect(() => {
+    if (sessionStorage.getItem(PENDING_MEETING_START_STORAGE_KEY)) {
+      setHasPendingMeetingStartRequest(true);
+    }
+    const handleMeetingStartRequest = () => {
+      setHasPendingMeetingStartRequest(true);
+    };
+    window.addEventListener(
+      MEETING_START_REQUEST_EVENT,
+      handleMeetingStartRequest,
+    );
+    return () => {
+      window.removeEventListener(
+        MEETING_START_REQUEST_EVENT,
+        handleMeetingStartRequest,
+      );
+    };
+  }, []);
 
   const requiresLocalModel = getRequiresLocalModel(
     settings?.transcriptionEngine,
@@ -1103,6 +1126,44 @@ export function TranscriptView() {
     ? toErrorMessage(externalApiKeyErrorForUi)
     : "";
 
+  useEffect(() => {
+    if (!hasPendingMeetingStartRequest) {
+      return;
+    }
+    if (isMeetingActive) {
+      sessionStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+      setHasPendingMeetingStartRequest(false);
+      return;
+    }
+    if (
+      isMeetingOperationPending ||
+      (settings === undefined && !settingsError) ||
+      meetingStartBlockedReason?.includes("確認中")
+    ) {
+      return;
+    }
+    sessionStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+    setHasPendingMeetingStartRequest(false);
+    if (!canStartMeeting) {
+      setMeetingError(
+        meetingStartBlockedReason
+          ? `録音開始前に確認してください: ${meetingStartBlockedReason}`
+          : "録音と文字起こしを開始できません。設定と権限状態を確認してください。",
+      );
+      return;
+    }
+    void handleToggleMeeting();
+  }, [
+    canStartMeeting,
+    handleToggleMeeting,
+    hasPendingMeetingStartRequest,
+    isMeetingActive,
+    isMeetingOperationPending,
+    meetingStartBlockedReason,
+    settings,
+    settingsError,
+  ]);
+
   return (
     <div
       className="transcript-view"
@@ -1356,7 +1417,11 @@ export function TranscriptView() {
         onClearTranscript={handleClearTranscript}
       />
 
-      <TranscriptDisplay segments={segments} onNewSegment={handleNewSegment} />
+      <TranscriptDisplay
+        segments={segments}
+        onNewSegment={handleNewSegment}
+        isLive={isMeetingActive || isTranscribing}
+      />
     </div>
   );
 }

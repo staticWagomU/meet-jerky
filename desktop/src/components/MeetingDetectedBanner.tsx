@@ -4,6 +4,9 @@ import { useNavigate } from "@tanstack/react-router";
 import type { MeetingAppDetectedPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 
+const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
+
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
 ///
@@ -71,6 +74,9 @@ export function MeetingDetectedBanner() {
   const confirmRecordingLabel = detected
     ? `${displayName} の録音開始前の状態を確認`
     : "録音開始前の状態を確認";
+  const startRecordingLabel = detected
+    ? `${displayName} の録音と文字起こしを開始`
+    : "録音と文字起こしを開始";
   const dismissBannerLabel = "会議検知バナーを閉じる";
   const bannerRole = listenerError ? "alert" : "status";
   const bannerClassName = listenerError
@@ -86,6 +92,11 @@ export function MeetingDetectedBanner() {
       aria-label={bannerAriaLabel}
       title={bannerAriaLabel}
     >
+      {!listenerError && (
+        <div className="meeting-detected-recording-mark" aria-hidden="true">
+          <span className="rec-indicator rec-indicator-active" />
+        </div>
+      )}
       {sourceLabel && (
         <span
           className="meeting-detected-source-badge"
@@ -99,18 +110,34 @@ export function MeetingDetectedBanner() {
       {(detected || listenerError) && (
         <div className="meeting-detected-banner-actions">
           {detected && (
-            <button
-              type="button"
-              className="control-btn control-btn-transcribe"
-              aria-label={confirmRecordingLabel}
-              title={confirmRecordingLabel}
-              onClick={() => {
-                navigate({ to: "/" });
-                setDetected(null);
-              }}
-            >
-              開始前に確認
-            </button>
+            <>
+              <button
+                type="button"
+                className="control-btn control-btn-transcribe"
+                aria-label={startRecordingLabel}
+                title={startRecordingLabel}
+                onClick={() => {
+                  sessionStorage.setItem(PENDING_MEETING_START_STORAGE_KEY, "1");
+                  navigate({ to: "/" });
+                  window.dispatchEvent(new Event(MEETING_START_REQUEST_EVENT));
+                  setDetected(null);
+                }}
+              >
+                録音を開始
+              </button>
+              <button
+                type="button"
+                className="control-btn control-btn-clear"
+                aria-label={confirmRecordingLabel}
+                title={confirmRecordingLabel}
+                onClick={() => {
+                  navigate({ to: "/" });
+                  setDetected(null);
+                }}
+              >
+                状態を確認
+              </button>
+            </>
           )}
           <button
             type="button"

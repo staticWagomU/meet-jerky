@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: add floating start prompt and live caption panel
+
+- 開始日時: 2026-04-28 14:38 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: ユーザー依頼として、通知/会議中 UI を macOS ネイティブ感のある体験へ改善する。会議検知時はノッチ下付近の角丸プロンプトに録音開始ボタンを出し、会議中は画面下部に控えめな音声入力風ライブ文字起こしパネルを出す。
+- 結果: 会議検知バナーを上部中央のガラス調フローティングプロンプトへ変更し、`録音を開始` ボタンを追加した。ボタンは TranscriptView の既存記録開始処理へ橋渡しし、開始不可時は既存の開始不可理由を表示する。文字起こし中または記録中は下部中央に最新の確定文字起こしを表示するライブ字幕パネルを出すようにした。実際の macOS 通知センター通知や権限/録音制御には触れず、ステルス録音にならないようユーザー操作を必須にした。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのノッチ下位置、常時前面ウィンドウ位置、録音開始ボタンからの実録音開始は未確認。
+- 次アクション: 実機 UI で検知プロンプトがノッチ下付近に自然に出ること、録音開始ボタンが開始不可時に理由表示へ誘導すること、下部ライブ字幕パネルが会議中に邪魔になりすぎないことを確認する。
+
 ### Settings UX: align external-send engine notes
 
 - 開始日時: 2026-04-28 14:18 JST
