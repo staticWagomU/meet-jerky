@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript History: skip UI error segments
+
+- 開始日時: 2026-04-29 02:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Realtime provider error を会議中 UI には表示しつつ、履歴Markdownの通常発話として保存されないようにする。
+- 結果: `build_append_args_for_emission_at` が `is_error == Some(true)` のセグメントでは `None` を返すようにし、`SessionManager::append` を呼ばない経路へ乗せた。通常セグメントの時刻計算と未開始セッションの skip 挙動は維持し、回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/transcript_bridge.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcript_bridge.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Realtime provider error の外部 API 再現は課金/外部通信に当たるため未実施。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml transcript_bridge` を再実行し、実機またはモックで provider error が UI には表示され、履歴Markdownには保存されないことを確認する。
+
 ### Realtime UX: mark provider error segments
 
 - 開始日時: 2026-04-29 02:01 JST

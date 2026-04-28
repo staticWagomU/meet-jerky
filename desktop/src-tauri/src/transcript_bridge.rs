@@ -46,10 +46,11 @@ pub fn segment_to_append_args_at(
 /// セグメント emit 直前に、`SessionManager::append` に渡す引数を計算するヘルパー。
 ///
 /// - `session_started_at_secs == None` → `None` を返し、呼び出し側に append をスキップさせる
+/// - `segment.is_error == Some(true)` → `None` を返し、UI 用エラーを議事録本文へ保存しない
 /// - `Some(started)` → `segment_to_append_args` と同じ 3 つ組を `Some` で返す
 ///
 /// live loop 側の条件分岐をこの純粋関数に閉じ込めることで、
-/// 「未開始時に append を呼ばない」挙動をユニットテストで保証する。
+/// 「未開始時やエラー表示時に append を呼ばない」挙動をユニットテストで保証する。
 pub fn build_append_args_for_emission(
     segment: &TranscriptionSegment,
     session_started_at_secs: Option<u64>,
@@ -72,6 +73,9 @@ pub fn build_append_args_for_emission_at(
     stream_started_at_secs: u64,
     observed_at_secs: Option<u64>,
 ) -> Option<(String, u64, String)> {
+    if segment.is_error.unwrap_or(false) {
+        return None;
+    }
     let started = session_started_at_secs?;
     Some(segment_to_append_args_at(
         segment,
@@ -254,6 +258,18 @@ mod tests {
         let segment = sample_segment();
         let result = build_append_args_for_emission(&segment, None, 1000);
         assert!(result.is_none(), "session 未開始時は None を返す");
+    }
+
+    #[test]
+    fn build_append_args_returns_none_for_error_segments() {
+        // Realtime provider error は会議中 UI には出すが、議事録本文へ通常発話として保存しない。
+        let mut segment = sample_segment();
+        segment.text = "[OpenAI Realtime エラー: connection closed]".to_string();
+        segment.is_error = Some(true);
+
+        let result = build_append_args_for_emission(&segment, Some(1000), 1000);
+
+        assert!(result.is_none(), "error segment は append 対象外にする");
     }
 
     #[test]
