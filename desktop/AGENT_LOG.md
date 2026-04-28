@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI polish: compact window responsive layout
+
+- 開始日時: 2026-04-29 08:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI刷新の継続として、メニューバー由来の小さい通常ウィンドウや通知/字幕ウィンドウで文言やボタンが詰まりにくいレスポンシブ調整を追加する。
+- 結果: 520px 以下でヘッダー、nav、記録操作、モデル選択、履歴検索/行操作、保存済みファイル操作、会議検知プロンプト、ライブ字幕パネルの折り返しと幅を調整した。画面遷移、録音/文字起こし、ウィンドウ生成処理には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で小さいメニューバーウィンドウ、通知ウィンドウ、下部字幕ウィンドウの折り返しとボタン幅が自然なことを確認する。
+
 ### UI refresh: shared control buttons
 
 - 開始日時: 2026-04-29 08:33 JST

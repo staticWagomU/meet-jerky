@@ -2335,3 +2335,74 @@ body[data-window="ring-light"] {
   flex-wrap: nowrap;
   justify-content: flex-end;
 }
+
+@media (max-width: 520px) {
+  .container {
+    padding: 0.55rem;
+  }
+
+  .app-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .app-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-link {
+    padding-inline: 0.42em;
+    font-size: 0.78rem;
+  }
+
+  .meeting-control,
+  .model-selector,
+  .session-list-header,
+  .session-list-search-row,
+  .meeting-saved-path {
+    align-items: stretch;
+  }
+
+  .meeting-btn,
+  .meeting-caption-window-btn,
+  .model-selector,
+  .model-select,
+  .session-list-search input,
+  .session-list-item-actions,
+  .session-list-item-actions .control-btn,
+  .meeting-saved-path-actions,
+  .meeting-saved-path-actions .control-btn {
+    width: 100%;
+  }
+
+  .meeting-status-strip,
+  .download-status-wrapper,
+  .download-progress-wrapper {
+    flex-basis: 100%;
+  }
+
+  .meeting-detected-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    border-radius: 20px;
+  }
+
+  .meeting-detected-banner-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .meeting-detected-banner-actions .control-btn {
+    flex: 1 1 auto;
+  }
+
+  .live-transcript-panel {
+    width: min(100vw - 0.7rem, 27rem);
+    padding: 0.6rem 0.66rem;
+  }
+
+  .live-transcript-content {
+    padding-right: 1.6rem;
+  }
+}
