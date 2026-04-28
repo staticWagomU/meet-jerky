@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### System audio: stop ScreenCaptureKit stream on drop
+
+- 開始日時: 2026-04-29 06:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 指示内容: 相手側トラック取得の信頼性改善として、ScreenCaptureKit キャプチャが破棄される経路でも停止処理を通す。
+- 結果: macOS の `ScreenCaptureKitCapture` に `Drop` を追加し、破棄時に `stop()` を冪等に呼ぶようにした。通常の停止 command、音声変換、権限処理、録音/文字起こし制御には触れなかった。
+- 変更ファイル: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/system_audio.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/system_audio.rs AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。ScreenCaptureKit 実機停止挙動は未実機確認。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で相手側システム音声取得の開始失敗・停止・ウィンドウ終了時にキャプチャが残らないことを確認する。
+
 ### Live caption UX: label external sending while active
 
 - 開始日時: 2026-04-29 06:43 JST

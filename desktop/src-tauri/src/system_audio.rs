@@ -108,6 +108,13 @@ impl ScreenCaptureKitCapture {
     }
 }
 
+#[cfg(target_os = "macos")]
+impl Drop for ScreenCaptureKitCapture {
+    fn drop(&mut self) {
+        let _ = self.stop();
+    }
+}
+
 /// システム音声のサンプルレート
 #[cfg(target_os = "macos")]
 const SYSTEM_AUDIO_SAMPLE_RATE: u32 = 48_000;
