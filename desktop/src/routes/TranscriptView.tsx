@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AppSettings,
   AudioDevice,
-  AudioLevelPayload,
   TranscriptSegment,
   TranscriptionEngineType,
 } from "../types";
@@ -25,6 +24,7 @@ import {
   hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
+import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import {
   buildLiveCaptionStatusFromLabels,
   LIVE_CAPTION_STATUS_EVENT,
@@ -541,14 +541,20 @@ export function TranscriptView() {
   // Route audio-level events by source
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<AudioLevelPayload>("audio-level", (event) => {
+    const unlistenPromise = listen<unknown>("audio-level", (event) => {
       if (disposed) {
         return;
       }
-      const level = sanitizeAudioLevel(event.payload.level);
-      if (event.payload.source === "microphone") {
+      const payload = event.payload;
+      if (!isAudioLevelPayload(payload)) {
+        setAudioLevelListenerError("音声レベル通知の形式が不正です。");
+        return;
+      }
+      setAudioLevelListenerError(null);
+      const level = sanitizeAudioLevel(payload.level);
+      if (payload.source === "microphone") {
         setMicLevel(level);
-      } else if (event.payload.source === "system_audio") {
+      } else if (payload.source === "system_audio") {
         setSystemAudioLevel(level);
       }
     })

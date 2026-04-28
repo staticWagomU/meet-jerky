@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Level Events: validate payloads before status update
+
+- 開始日時: 2026-04-29 06:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/audioLevelPayload.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、録音状態と入力待ち表示に使う `audio-level` イベント payload を型だけで信用せず、音量値へ反映する前に形式確認する。
+- 結果: `AudioLevelPayload` の runtime guard を追加し、`TranscriptView` の音声レベル受信を `unknown` で受けるようにした。不正 payload は音量へ反映せず、既存の音量監視エラー表示へ切り替える。
+- 変更ファイル: `src/utils/audioLevelPayload.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/audioLevelPayload.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/audioLevelPayload.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機の不正 payload 受信ケースは未確認。
+- 次アクション: 実機で通常の音声レベル表示が従来通り更新されることを確認する。
+
 ### Meeting Detection: validate prompt event payloads
 
 - 開始日時: 2026-04-29 06:04 JST
