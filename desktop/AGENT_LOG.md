@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection Notification: avoid not-started claim
+
+- 開始日時: 2026-04-29 05:55 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知の macOS 通知本文でも録音・文字起こしが未開始だと断定しないようにする。
+- 結果: 通知本文を、録音と文字起こしの状態確認を促す表現へ変更した。回帰テストも「クリックで開始」や「未開始」の未実装・不正確な断定を含めない確認へ更新した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機通知表示は未確認。
+- 次アクション: 実機で会議検知通知本文が録音中にも誤解を生まないことを確認する。
+
 ### Transcript Events: validate UI event payloads
 
 - 開始日時: 2026-04-29 05:50 JST
