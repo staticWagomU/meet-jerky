@@ -38,7 +38,7 @@ export function SystemAudioSection({
   const systemAudioButtonLabel = isOperationPending
     ? "相手側トラックのシステム音声取得を切替中"
     : isControlDisabled
-      ? "他の音声または文字起こし操作の処理中"
+      ? "他の音声または文字起こし操作を待機中"
     : isSystemAudioRecording
       ? "相手側トラックのシステム音声取得を停止"
       : "相手側トラックのシステム音声取得を開始";
@@ -88,7 +88,7 @@ export function SystemAudioSection({
           {isOperationPending
             ? "取得を切替中..."
             : isWaitingForOtherOperation
-              ? "他の処理中"
+              ? "他操作待ち"
             : isSystemAudioRecording
               ? "相手側音声の取得を停止"
               : "相手側音声の取得を開始"}

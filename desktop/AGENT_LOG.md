@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: clarify blocked operation labels
+
+- 開始日時: 2026-04-29 00:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、音声ソース操作が他の音声または文字起こし操作でブロックされているときの `他の処理中` 表示を、短くても理由が伝わる文言へ変更する。
+- 結果: マイク録音、マイクデバイス選択、相手側システム音声取得の aria/title を `他の音声または文字起こし操作を待機中` 系に変更し、ボタン表示は幅を抑えて `他操作待ち` にした。録音・取得・文字起こし制御には触れない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI で `他操作待ち` が自然に見えるかは未確認。
+- 次アクション: 検証後、実機 UI で操作待ち状態が狭幅でも収まり、aria/title で理由を補足できていることを確認する。
+
 ### Settings A11y: expose Whisper model display names
 
 - 開始日時: 2026-04-29 00:42 JST
