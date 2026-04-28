@@ -458,9 +458,7 @@ export function TranscriptDisplay({
             const speakerKind = getSpeakerKind(seg);
             const speakerLabel = getVisibleSpeakerLabel(seg);
             const speakerClass =
-              seg.isError
-                ? ""
-                : speakerKind === "self"
+              speakerKind === "self"
                 ? " transcript-speaker-self"
                 : speakerKind === "other"
                   ? " transcript-speaker-other"

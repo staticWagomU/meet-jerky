@@ -636,11 +636,6 @@
    Speaker Labels & Segments
    =========================== */
 
-.transcript-segment-error {
-  background-color: var(--transcript-error-bg);
-  color: var(--transcript-error-color);
-}
-
 .transcript-speaker-self {
   background-color: var(--speaker-self-bg);
   border-left: 3px solid var(--speaker-self-border);
@@ -657,6 +652,11 @@
   background-color: var(--meeting-status-neutral-bg);
   border-left: 3px solid var(--meeting-status-neutral-color);
   padding-left: 0.4rem;
+}
+
+.transcript-segment-error {
+  background-color: var(--transcript-error-bg);
+  color: var(--transcript-error-color);
 }
 
 .transcript-speaker-label {
