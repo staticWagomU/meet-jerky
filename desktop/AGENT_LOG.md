@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Safety: tolerate pending storage failures
+
+- 開始日時: 2026-04-29 03:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知から録音開始へ渡す pending start の localStorage 操作が例外を投げても UI 操作全体を壊さないようにする。
+- 結果: pending start の確認・保存・削除を `try/catch` で囲み、失敗時はコンソールへ理由を残しつつ、確認は `false`、保存/削除は no-op として扱うようにした。イベント送信、録音開始フロー、localStorage キー値には触れない。
+- 変更ファイル: `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 WebView で localStorage 例外を発生させる検証は未実施。
+- 次アクション: 実機で会議検知バナーの録音開始/状態確認が従来どおり動くことを確認する。
+
 ### Live Caption UX: animate voice wave subtly
 
 - 開始日時: 2026-04-29 03:44 JST
