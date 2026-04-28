@@ -7,20 +7,63 @@ import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
+const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
+const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
+interface LiveCaptionStatusPayload {
+  engineLabel: string;
+  aiTransmissionLabel: string;
+  isExternalTransmission: boolean;
+}
 
 const TRACKS: Array<{ source: AudioSource; label: string }> = [
   { source: "microphone", label: "自分" },
   { source: "system_audio", label: "相手側" },
 ];
 
+const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
+  engineLabel: "確認中",
+  aiTransmissionLabel: "確認中",
+  isExternalTransmission: false,
+};
+
 function createEmptyLatestBySource(): LatestBySource {
   return {
     microphone: null,
     system_audio: null,
   };
+}
+
+function isLiveCaptionStatusPayload(
+  value: unknown,
+): value is LiveCaptionStatusPayload {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as Partial<LiveCaptionStatusPayload>;
+  return (
+    typeof candidate.engineLabel === "string" &&
+    typeof candidate.aiTransmissionLabel === "string" &&
+    typeof candidate.isExternalTransmission === "boolean"
+  );
+}
+
+function readStoredLiveCaptionStatus(): LiveCaptionStatusPayload {
+  try {
+    const raw = localStorage.getItem(LIVE_CAPTION_STATUS_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_LIVE_CAPTION_STATUS;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    return isLiveCaptionStatusPayload(parsed)
+      ? parsed
+      : DEFAULT_LIVE_CAPTION_STATUS;
+  } catch (e) {
+    console.error("ライブ字幕ステータスの読み取りに失敗しました:", toErrorMessage(e));
+    return DEFAULT_LIVE_CAPTION_STATUS;
+  }
 }
 
 function getSpeakerLabel(segment: TranscriptSegment): string {
@@ -56,16 +99,28 @@ export function LiveCaptionWindow() {
   const [latestBySource, setLatestBySource] = useState<LatestBySource>(
     createEmptyLatestBySource,
   );
+  const [statusPayload, setStatusPayload] =
+    useState<LiveCaptionStatusPayload>(readStoredLiveCaptionStatus);
   const [listenerError, setListenerError] = useState<string | null>(null);
 
   useEffect(() => {
     let disposed = false;
+    const statusUnlistenPromise = listen<LiveCaptionStatusPayload>(
+      LIVE_CAPTION_STATUS_EVENT,
+      (event) => {
+        if (disposed) {
+          return;
+        }
+        setStatusPayload(event.payload);
+      },
+    );
     const resetUnlistenPromise = listen("live-caption-reset", () => {
       if (disposed) {
         return;
       }
       setLatestSegment(null);
       setLatestBySource(createEmptyLatestBySource());
+      setStatusPayload(readStoredLiveCaptionStatus());
       setListenerError(null);
     });
     const resultUnlistenPromise = listen<TranscriptSegment>(
@@ -109,6 +164,7 @@ export function LiveCaptionWindow() {
     );
 
     Promise.all([
+      statusUnlistenPromise,
       resetUnlistenPromise,
       resultUnlistenPromise,
       errorUnlistenPromise,
@@ -143,6 +199,14 @@ export function LiveCaptionWindow() {
         .catch((e) =>
           console.error("ライブ字幕エラーの受信解除に失敗しました:", toErrorMessage(e)),
         );
+      statusUnlistenPromise
+        .then((unlisten) => unlisten())
+        .catch((e) =>
+          console.error(
+            "ライブ字幕ステータスの受信解除に失敗しました:",
+            toErrorMessage(e),
+          ),
+        );
     };
   }, []);
 
@@ -164,6 +228,8 @@ export function LiveCaptionWindow() {
             (track) =>
               `${track.label}トラック ${getTrackStateLabel(latestBySource[track.source])}`,
           ),
+          `エンジン ${statusPayload.engineLabel}`,
+          `外部送信 ${statusPayload.aiTransmissionLabel}`,
           latestSegment.text,
         ]
           .filter(Boolean)
@@ -174,6 +240,8 @@ export function LiveCaptionWindow() {
             (track) =>
               `${track.label}トラック ${getTrackStateLabel(latestBySource[track.source])}`,
           ),
+          `エンジン ${statusPayload.engineLabel}`,
+          `外部送信 ${statusPayload.aiTransmissionLabel}`,
           WAITING_CAPTION_TEXT,
         ].join(": ");
   const panelClassName = isErrorState
@@ -214,6 +282,17 @@ export function LiveCaptionWindow() {
                 {captionTimestamp}
               </span>
             )}
+            <span
+              className={`live-transcript-engine-pill${
+                statusPayload.isExternalTransmission
+                  ? " live-transcript-engine-pill-warning"
+                  : ""
+              }`}
+              aria-label={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
+              title={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
+            >
+              {statusPayload.engineLabel}
+            </span>
           </div>
           <div
             className="live-transcript-track-row"

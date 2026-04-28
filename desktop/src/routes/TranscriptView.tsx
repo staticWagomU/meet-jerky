@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AppSettings,
@@ -31,6 +31,8 @@ const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:"
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
+const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 
@@ -1133,6 +1135,28 @@ export function TranscriptView() {
     : getEngineStatusLabel(settings?.transcriptionEngine);
   const engineStatusDisplayLabel =
     getEngineStatusDisplayLabel(engineStatusLabel);
+
+  useEffect(() => {
+    const liveCaptionStatus = {
+      engineLabel: engineStatusDisplayLabel,
+      aiTransmissionLabel: aiTransmissionStatusLabel,
+      isExternalTransmission:
+        aiTransmissionStatusLabel === "送信先 OpenAI" ||
+        aiTransmissionStatusLabel === "送信先 ElevenLabs",
+    };
+    try {
+      localStorage.setItem(
+        LIVE_CAPTION_STATUS_STORAGE_KEY,
+        JSON.stringify(liveCaptionStatus),
+      );
+    } catch (e) {
+      console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
+    }
+    void emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus).catch((e) => {
+      console.error("ライブ字幕ステータスの同期に失敗しました:", toErrorMessage(e));
+    });
+  }, [aiTransmissionStatusLabel, engineStatusDisplayLabel]);
+
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,
     hasExternalApiKey,

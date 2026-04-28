@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Transparency: show engine and external sending status
+
+- 開始日時: 2026-04-29 04:13 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議中に表示される独立ライブ文字起こしウィンドウでも、文字起こしエンジンと外部送信有無が分かるようにし、録音状態の透明性を上げる。
+- 結果: メインの TranscriptView からライブ字幕ウィンドウへ、エンジン表示名と外部送信ラベルだけをイベント同期し、取りこぼし対策として同じラベルを localStorage に保存するようにした。ライブ字幕側は API キーや設定全体を読まず、ラベルだけを控えめなピルで表示する。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ウィンドウでのイベント同期と表示位置は未確認。
+- 次アクション: 実機でライブ字幕ウィンドウにエンジン/外部送信ラベルが表示されることを確認する。
+
 ### History Search UX: highlight matched terms in excerpts
 
 - 開始日時: 2026-04-29 04:09 JST
