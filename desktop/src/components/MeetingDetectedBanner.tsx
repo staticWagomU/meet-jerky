@@ -138,8 +138,8 @@ export function MeetingDetectedBanner() {
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
       }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。自分/相手側トラックの録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
-    ? `${displayName} の録音開始前の状態を確認`
-    : "録音開始前の状態を確認";
+    ? `${displayName} の録音と文字起こしの状態を確認`
+    : "録音と文字起こしの状態を確認";
   const startRecordingLabel = detected
     ? `${displayName} の録音と文字起こしを開始`
     : "録音と文字起こしを開始";

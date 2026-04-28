@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Copy: align status button label
+
+- 開始日時: 2026-04-29 05:42 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトの状態確認ボタンの aria/title から「録音開始前」の断定を外す。
+- 結果: 状態確認ボタンのラベルを、検知対象の録音と文字起こしの状態を確認する表現に変更した。可視文言、遷移先、録音開始処理には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で記録中に会議検知が再発火するケースは未確認。
+- 次アクション: 実機で記録中に会議検知が再発火した場合の状態確認ボタンラベルを確認する。
+
 ### Meeting Prompt Copy: avoid stale not-started claim
 
 - 開始日時: 2026-04-29 05:41 JST
