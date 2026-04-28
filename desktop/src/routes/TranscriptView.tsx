@@ -25,6 +25,7 @@ import {
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
+  buildLiveCaptionStatusFromLabels,
   LIVE_CAPTION_STATUS_EVENT,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
@@ -1139,13 +1140,10 @@ export function TranscriptView() {
     getEngineStatusDisplayLabel(engineStatusLabel);
 
   useEffect(() => {
-    const liveCaptionStatus = {
-      engineLabel: engineStatusDisplayLabel,
-      aiTransmissionLabel: aiTransmissionStatusLabel,
-      isExternalTransmission:
-        aiTransmissionStatusLabel === "送信先 OpenAI" ||
-        aiTransmissionStatusLabel === "送信先 ElevenLabs",
-    };
+    const liveCaptionStatus = buildLiveCaptionStatusFromLabels(
+      engineStatusDisplayLabel,
+      aiTransmissionStatusLabel,
+    );
     writeStoredLiveCaptionStatus(liveCaptionStatus, (e) => {
       console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
     });

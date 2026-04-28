@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Status: centralize external sending detection
+
+- 開始日時: 2026-04-29 04:27 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: TranscriptView 側のライブ字幕ステータス payload 生成を批判的に見直し、外部送信判定の文字列比較がコンポーネント内へ残らないようにする。
+- 結果: エンジン表示ラベルと外部送信ラベルから `LiveCaptionStatusPayload` を作るヘルパーを追加し、TranscriptView はそれを使うようにした。表示内容や保存内容は変えない。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機のライブ字幕ステータス表示は未確認。
+- 次アクション: 実機で外部送信ラベル表示を確認する。
+
 ### Meeting Prompt Copy: shorten visual detail text
 
 - 開始日時: 2026-04-29 04:26 JST

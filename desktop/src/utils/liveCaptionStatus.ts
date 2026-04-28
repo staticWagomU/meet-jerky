@@ -105,3 +105,16 @@ export function buildLiveCaptionStatusFromEngine(
   }
   return DEFAULT_LIVE_CAPTION_STATUS;
 }
+
+export function buildLiveCaptionStatusFromLabels(
+  engineLabel: string,
+  aiTransmissionLabel: string,
+): LiveCaptionStatusPayload {
+  return {
+    engineLabel,
+    aiTransmissionLabel,
+    isExternalTransmission:
+      aiTransmissionLabel === "送信先 OpenAI" ||
+      aiTransmissionLabel === "送信先 ElevenLabs",
+  };
+}
