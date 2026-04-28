@@ -102,6 +102,8 @@ export function LiveCaptionWindow() {
             ...prev,
             [event.payload.source as AudioSource]: errorSegment,
           }));
+        } else {
+          setLatestBySource(createEmptyLatestBySource());
         }
       },
     );

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: clear stale tracks on global error
+
+- 開始日時: 2026-04-29 04:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、source なしの文字起こしエラーが来たときに、独立ライブ字幕ウィンドウの自分/相手側トラック状態が古い時刻のまま残って誤解を招かないようにする。
+- 結果: `transcription-error` payload に source が無い場合は source 別最新状態を空に戻し、グローバル/ソース不明エラー中に古いトラック時刻を表示し続けないようにした。source 付きエラーは従来どおり該当トラックだけ `エラー` にする。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機ライブ字幕で source なしエラー発生時の表示は未確認。
+- 次アクション: source なしエラー時のトラック表示が古い時刻を残さないことを実機またはテスト境界で確認する。
+
 ### History List Performance: skip offscreen row rendering
 
 - 開始日時: 2026-04-29 03:58 JST
