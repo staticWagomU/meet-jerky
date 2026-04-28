@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: support Teams unified domain
+
+- 開始日時: 2026-04-29 05:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Microsoft Teams の Web URL 分類で unified domain `teams.cloud.microsoft` の会議 URL を検知できるようにする。
+- 結果: Teams の work/school host 判定を共通化し、`teams.microsoft.com` と同じ meetup-join / v2 meetingjoin / meet パターンを `teams.cloud.microsoft` でも受け入れるようにした。URL 全文や path を payload/log/UI に出さない方針は維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` build script が `cmake` を見つけられず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機ブラウザでの `teams.cloud.microsoft` 会議検知は未確認。Rust 個別テストは `cmake` 不在で未完走。
+- 次アクション: 実機ブラウザと `cmake` あり環境で Teams unified domain の分類テストを確認する。
+
 ### Saved History Accessibility: separate status and actions
 
 - 開始日時: 2026-04-29 05:22 JST

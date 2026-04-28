@@ -400,14 +400,14 @@ fn is_zoom_meeting_id(value: &str) -> bool {
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
-    (host == "teams.microsoft.com"
+    (is_teams_work_or_school_host(host)
         && path
             .strip_prefix("/l/meetup-join/")
             .is_some_and(has_non_empty_path_segments))
-        || (host == "teams.microsoft.com"
+        || (is_teams_work_or_school_host(host)
             && (path == "/v2" || path == "/v2/")
             && query_has_param(query, "meetingjoin", "true"))
-        || (host == "teams.microsoft.com"
+        || (is_teams_work_or_school_host(host)
             && path
                 .strip_prefix("/meet/")
                 .is_some_and(has_single_non_empty_segment))
@@ -415,6 +415,10 @@ fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
             && path
                 .strip_prefix("/meet/")
                 .is_some_and(has_single_non_empty_segment))
+}
+
+fn is_teams_work_or_school_host(host: &str) -> bool {
+    host == "teams.microsoft.com" || host == "teams.cloud.microsoft"
 }
 
 fn has_non_empty_path_segments(value: &str) -> bool {
@@ -824,6 +828,29 @@ mod tests {
                 host: "teams.microsoft.com".to_string(),
             })
         );
+        assert_eq!(
+            classify_meeting_url(
+                "https://teams.cloud.microsoft/l/meetup-join/19%3ameeting_abc/0?context=secret"
+            ),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.cloud.microsoft".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.cloud.microsoft/v2?meetingjoin=true"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.cloud.microsoft".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.cloud.microsoft/meet/1234567890123?p=passcode"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.cloud.microsoft".to_string(),
+            })
+        );
     }
 
     #[test]
@@ -943,6 +970,19 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/meet/123//"),
+            None
+        );
+        assert_eq!(classify_meeting_url("https://teams.cloud.microsoft/"), None);
+        assert_eq!(
+            classify_meeting_url("https://teams.cloud.microsoft/l/meetup-join/"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.cloud.microsoft/v2?meetingjoin=false"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.cloud.microsoft/meet/123/extra"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
