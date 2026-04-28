@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: color speaker source labels
+
+- 開始日時: 2026-04-28 20:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ字幕ウィンドウの話者ラベルにも既存の自分/相手側トラック色を反映し、会議中にどちらの音声か一目で判別しやすくする。
+- 結果: ライブ字幕の話者ラベルへ source 別 class を付与し、自分は既存 self 色、相手側は existing other 色、ソース不明は muted 色で表示するようにした。文字起こしイベント処理や履歴表示には触れない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機のライブ字幕ウィンドウで色の視認性は未確認。
+- 次アクション: 実機でライブ字幕ウィンドウの自分/相手側ラベル色が目立ちすぎず、既存履歴表示と自然に揃うことを確認する。
+
 ### Live Caption A11y: include timestamp in label
 
 - 開始日時: 2026-04-28 20:12 JST

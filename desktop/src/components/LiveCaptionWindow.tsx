@@ -9,6 +9,16 @@ function getSpeakerLabel(segment: TranscriptSegment): string {
   return segment.speaker || "ソース不明";
 }
 
+function getSpeakerClassName(segment: TranscriptSegment): string {
+  if (segment.source === "microphone") {
+    return "live-transcript-speaker live-transcript-speaker-self";
+  }
+  if (segment.source === "system_audio") {
+    return "live-transcript-speaker live-transcript-speaker-other";
+  }
+  return "live-transcript-speaker live-transcript-speaker-unknown";
+}
+
 function formatCaptionTimestamp(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -137,7 +147,7 @@ export function LiveCaptionWindow() {
             <span className="live-transcript-dot" aria-hidden="true" />
             <span>{isErrorState ? "文字起こしエラー" : "ライブ文字起こし"}</span>
             {latestSegment && (
-              <span className="live-transcript-speaker">
+              <span className={getSpeakerClassName(latestSegment)}>
                 {getSpeakerLabel(latestSegment)}
               </span>
             )}

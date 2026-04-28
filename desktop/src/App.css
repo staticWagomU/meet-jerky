@@ -798,6 +798,18 @@ body[data-window="live-caption"] {
   color: var(--meeting-status-neutral-color);
 }
 
+.live-transcript-speaker-self {
+  color: var(--speaker-self-label-color);
+}
+
+.live-transcript-speaker-other {
+  color: var(--speaker-other-label-color);
+}
+
+.live-transcript-speaker-unknown {
+  color: var(--color-muted);
+}
+
 .live-transcript-timestamp {
   color: var(--color-muted);
   font-variant-numeric: tabular-nums;
