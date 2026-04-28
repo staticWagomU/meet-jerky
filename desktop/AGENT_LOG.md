@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: show settings shortcut errors
+
+- 開始日時: 2026-04-28 19:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、macOS 権限設定ショートカットを開けなかった場合に console だけでなくユーザーにも失敗を伝える。
+- 結果: 権限設定を開く操作が失敗した場合、権限バナー内に `macOS 設定を開けませんでした` の inline error を表示するようにした。`権限を再チェック` を押したときは古い設定オープン失敗表示を消す。録音状態や権限状態は自動変更しない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で `x-apple.systempreferences:` URL が失敗した場合の inline error 表示は未確認。
+- 次アクション: 実機で権限設定を開けない環境でもエラーがバナー内に見えることを確認する。
+
 ### Permission UX: add macOS privacy settings shortcuts
 
 - 開始日時: 2026-04-28 19:05 JST

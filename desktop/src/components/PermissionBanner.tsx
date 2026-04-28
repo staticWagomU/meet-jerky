@@ -1,6 +1,7 @@
+import { useState } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
-import { openUrl } from "@tauri-apps/plugin-opener";
 
 const MACOS_MICROPHONE_PRIVACY_URL =
   "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone";
@@ -8,6 +9,9 @@ const MACOS_SCREEN_RECORDING_PRIVACY_URL =
   "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
 
 export function PermissionBanner() {
+  const [settingsOpenError, setSettingsOpenError] = useState<string | null>(
+    null,
+  );
   const {
     micPermission,
     micPermissionError,
@@ -88,6 +92,9 @@ export function PermissionBanner() {
     "macOS のプライバシーとセキュリティでマイク権限を開く";
   const openScreenSettingsLabel =
     "macOS のプライバシーとセキュリティで画面収録権限を開く";
+  const settingsOpenErrorLabel = settingsOpenError
+    ? `macOS 設定を開けませんでした: ${settingsOpenError}`
+    : null;
   const micPermissionBody = isCheckingPermissions
     ? "マイク権限の状態を確認しています。"
     : micPermissionError
@@ -163,7 +170,10 @@ export function PermissionBanner() {
       <button
         type="button"
         className="control-btn control-btn-clear"
-        onClick={refetchAll}
+        onClick={() => {
+          setSettingsOpenError(null);
+          refetchAll();
+        }}
         disabled={isCheckingPermissions}
         aria-label={permissionRetryLabel}
         title={permissionRetryLabel}
@@ -177,7 +187,9 @@ export function PermissionBanner() {
             className="control-btn control-btn-clear"
             onClick={() => {
               void openUrl(MACOS_MICROPHONE_PRIVACY_URL).catch((e) => {
-                console.error("マイク権限設定を開けませんでした:", toErrorMessage(e));
+                const msg = toErrorMessage(e);
+                console.error("マイク権限設定を開けませんでした:", msg);
+                setSettingsOpenError(msg);
               });
             }}
             aria-label={openMicSettingsLabel}
@@ -192,7 +204,9 @@ export function PermissionBanner() {
             className="control-btn control-btn-clear"
             onClick={() => {
               void openUrl(MACOS_SCREEN_RECORDING_PRIVACY_URL).catch((e) => {
-                console.error("画面収録設定を開けませんでした:", toErrorMessage(e));
+                const msg = toErrorMessage(e);
+                console.error("画面収録設定を開けませんでした:", msg);
+                setSettingsOpenError(msg);
               });
             }}
             aria-label={openScreenSettingsLabel}
@@ -202,6 +216,16 @@ export function PermissionBanner() {
           </button>
         )}
       </div>
+      {settingsOpenErrorLabel && (
+        <p
+          className="permission-banner-inline-error"
+          role="alert"
+          aria-label={settingsOpenErrorLabel}
+          title={settingsOpenErrorLabel}
+        >
+          {settingsOpenErrorLabel}
+        </p>
+      )}
     </div>
   );
 }

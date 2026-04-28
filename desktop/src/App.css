@@ -1122,6 +1122,14 @@ body[data-window="live-caption"] {
   flex-wrap: wrap;
 }
 
+.permission-banner-inline-error {
+  margin: 0.45rem 0 0;
+  color: var(--transcript-error-color);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .permission-banner-summary {
   display: flex;
   flex-wrap: wrap;
