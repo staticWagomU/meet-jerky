@@ -111,8 +111,8 @@ export function MeetingDetectedBanner() {
       title={bannerAriaLabel}
     >
       {!listenerError && (
-        <div className="meeting-detected-recording-mark" aria-hidden="true">
-          <span className="rec-indicator rec-indicator-active" />
+        <div className="meeting-detected-attention-mark" aria-hidden="true">
+          <span className="meeting-detected-attention-dot" />
         </div>
       )}
       {sourceLabel && (

@@ -1663,7 +1663,7 @@ body[data-window="live-caption"] {
   color: var(--meeting-detected-error-color);
 }
 
-.meeting-detected-recording-mark {
+.meeting-detected-attention-mark {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1671,7 +1671,16 @@ body[data-window="live-caption"] {
   width: 1.65rem;
   height: 1.65rem;
   border-radius: 999px;
-  background-color: var(--meeting-status-active-bg);
+  background-color: var(--meeting-status-neutral-bg);
+  border: 1px solid color-mix(in srgb, var(--meeting-status-neutral-color) 22%, transparent);
+}
+
+.meeting-detected-attention-dot {
+  display: inline-block;
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+  background-color: var(--meeting-status-neutral-color);
 }
 
 .meeting-detected-source-badge {

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: avoid recording-active mark before start
+
+- 開始日時: 2026-04-28 19:55 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトで録音前なのに録音中を示すような active rec indicator を使っている表示を修正し、録音状態の透明性を高める。
+- 結果: 会議検知プロンプト左側のマークを `rec-indicator-active` から専用の attention mark に変更した。プロンプト本文や開始処理は維持し、録音中表示は実際に記録中の UI に限定されるようにした。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機でノッチ下ウィンドウの見た目は未確認。
+- 次アクション: 実機で会議検知プロンプトが録音中に見えず、録音開始ボタンとして自然に見えることを確認する。
+
 ### Permission UX: share macOS privacy settings constants
 
 - 開始日時: 2026-04-28 19:45 JST
