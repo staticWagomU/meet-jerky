@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: add local session search
+
+- 開始日時: 2026-04-28 12:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 履歴・検索領域の改善として、保存済み文字起こし履歴をタイトル、日時、ファイル名で素早く絞り込めるようにする。
+- 結果: セッション履歴一覧に検索入力を追加し、タイトル、ローカル表示日時、保存ファイル名でクライアント側フィルタできるようにした。検索中は `表示件数/総件数` を表示し、該当なしの場合は専用の空状態を出すようにした。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での検索入力と件数表示の確認は未実施。
+- 次アクション: 実機 UI で履歴検索の入力幅、フォーカスリング、該当なし表示が小さいウィンドウでも自然に収まるか確認する。
+
 ### Audio Controls UX: clarify disabled operation label
 
 - 開始日時: 2026-04-28 12:06 JST

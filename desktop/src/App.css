@@ -1319,6 +1319,32 @@
   white-space: nowrap;
 }
 
+.session-list-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.session-list-search input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.session-list-search input:focus {
+  outline: 2px solid var(--meeting-status-neutral-color);
+  outline-offset: 1px;
+}
+
 .session-list-empty {
   color: var(--control-btn-clear-color);
   font-size: 0.9rem;

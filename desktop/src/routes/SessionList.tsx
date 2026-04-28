@@ -19,6 +19,25 @@ function getSessionDisplayTitle(title: string): string {
   return displayTitle || "無題の会議";
 }
 
+function sessionMatchesQuery(
+  session: SessionSummary,
+  startedAtLabel: string,
+  query: string,
+): boolean {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) {
+    return true;
+  }
+  const searchableText = [
+    getSessionDisplayTitle(session.title),
+    getFileName(session.path),
+    startedAtLabel,
+  ]
+    .join(" ")
+    .toLocaleLowerCase();
+  return searchableText.includes(normalizedQuery);
+}
+
 /**
  * 保存済みセッションの一覧画面。
  * 各行から「履歴ファイルを開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
@@ -28,6 +47,7 @@ export function SessionList() {
   const { data, isLoading, isFetching, error, refetch } = useSessionList();
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<SessionAction>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const pendingActionRef = useRef<SessionAction>(null);
   const isMountedRef = useRef(true);
 
@@ -145,16 +165,28 @@ export function SessionList() {
   }
 
   const sessions = data ?? [];
+  const trimmedSearchQuery = searchQuery.trim();
+  const filteredSessions = sessions.filter((session) =>
+    sessionMatchesQuery(
+      session,
+      new Date(session.startedAtSecs * 1000).toLocaleString(),
+      trimmedSearchQuery,
+    ),
+  );
   const isSessionListBusy = isFetching || pendingAction !== null;
   const reloadSessionsLabel = isFetching
     ? "セッション履歴一覧を読み込み中"
     : "セッション履歴一覧を再読み込み";
   const sessionCountLabel = isFetching
     ? `保存済み ${sessions.length} 件、更新中`
-    : `保存済み ${sessions.length} 件`;
+    : trimmedSearchQuery
+      ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
+      : `保存済み ${sessions.length} 件`;
+  const sessionSearchLabel = "セッション履歴を検索";
   const sessionListLabel = [
     "セッション履歴",
     sessionCountLabel,
+    trimmedSearchQuery ? `検索語 ${trimmedSearchQuery}` : null,
     pendingAction ? "履歴ファイル操作中" : null,
   ]
     .filter(Boolean)
@@ -178,7 +210,10 @@ export function SessionList() {
             aria-label={sessionCountLabel}
             title={sessionCountLabel}
           >
-            {sessions.length} 件{isFetching ? "、更新中" : ""}
+            {trimmedSearchQuery
+              ? `${filteredSessions.length}/${sessions.length} 件`
+              : `${sessions.length} 件`}
+            {isFetching ? "、更新中" : ""}
           </span>
         </div>
         <button
@@ -192,6 +227,20 @@ export function SessionList() {
           {isFetching ? "読み込み中..." : "履歴を再読み込み"}
         </button>
       </div>
+
+      {sessions.length > 0 && (
+        <label className="session-list-search">
+          <span>{sessionSearchLabel}</span>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="タイトル、日時、ファイル名"
+            aria-label={sessionSearchLabel}
+            title={sessionSearchLabel}
+          />
+        </label>
+      )}
 
       {actionError && (
         <div
@@ -224,9 +273,20 @@ export function SessionList() {
         >
           記録を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
+      ) : filteredSessions.length === 0 ? (
+        <p
+          className="session-list-empty"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label={`検索条件 ${trimmedSearchQuery} に一致する文字起こし履歴はありません`}
+          title={`検索条件 ${trimmedSearchQuery} に一致する文字起こし履歴はありません`}
+        >
+          検索条件に一致する文字起こし履歴はありません
+        </p>
       ) : (
         <ul className="session-list-items">
-          {sessions.map((session) => (
+          {filteredSessions.map((session) => (
             <SessionRow
               key={session.path}
               session={session}
