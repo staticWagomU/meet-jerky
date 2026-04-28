@@ -194,13 +194,13 @@ function getAudioSourceStatusLabel(
   isSystemAudioRecording: boolean,
 ): string {
   if (isMicRecording && isSystemAudioRecording) {
-    return "自分と相手側";
+    return "自分と相手側を取得中";
   }
   if (isMicRecording) {
-    return "自分のみ";
+    return "自分のみ録音中";
   }
   if (isSystemAudioRecording) {
-    return "相手側のみ";
+    return "相手側のみ取得中";
   }
   return "未取得";
 }

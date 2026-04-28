@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: show audio capture state in pill
+
+- 開始日時: 2026-04-28 09:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の音声ソースピルでも自分/相手側の録音・取得状態が分かるようにする。
+- 結果: ライブ画面の音声ソースピルの可視ラベルを `自分のみ録音中`、`相手側のみ取得中`、`自分と相手側を取得中` に変更した。音声取得状態の判定、録音制御、文字起こし制御には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でステータスピルの折り返しや横幅が会議中表示を圧迫しないか確認する。
+
 ### Audio Source UX: clarify cross-operation waiting label
 
 - 開始日時: 2026-04-28 09:56 JST
