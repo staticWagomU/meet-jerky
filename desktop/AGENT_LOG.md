@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: align browser URL permission note with detection targets
+
+- 開始日時: 2026-04-28 18:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 再整理した優先順位に従い、会議 URL 検知の権限説明を実装済みブラウザ対象とプライバシー方針に合わせる。
+- 結果: ブラウザ URL 検知の自動操作権限説明に Brave を追加し、Safari / Chrome / Edge / Brave / Firefox が対象であることを aria-label と表示 note の両方へ反映した。URL 全体を表示・保存せず、会議サービスとホスト名だけを使う説明は維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で各ブラウザの自動操作許可ダイアログと URL 検知挙動は未確認。
+- 次アクション: 実機で Brave を含む対象ブラウザの会議 URL 検知と権限説明が矛盾しないことを確認する。
+
 ### Settings UX: explain Apple Speech dual-track limit
 
 - 開始日時: 2026-04-28 18:22 JST

@@ -303,7 +303,7 @@ export function SettingsView() {
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
   const browserAutomationPermissionLabel =
-    "自動操作 ブラウザ URL 検知: URL 検知時に macOS が確認";
+    "自動操作 ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Firefox の URL 検知時に macOS が確認";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -773,7 +773,7 @@ export function SettingsView() {
             </p>
           )}
           <p className="settings-note">
-            ブラウザ会議 URL 検知では、macOS が Safari、Chrome、Edge、Firefox
+            ブラウザ会議 URL 検知では、macOS が Safari、Chrome、Edge、Brave、Firefox
             の自動操作許可を求める場合があります。URL 全体は表示・保存せず、会議サービスとホスト名だけを使います。
           </p>
         </div>
