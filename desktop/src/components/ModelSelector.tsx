@@ -22,6 +22,16 @@ function sanitizeProgress(progress: number): number {
   return Math.max(0, Math.min(1, progress));
 }
 
+function getModelDisplayName(
+  models: ModelInfo[] | undefined,
+  modelName: string | null,
+): string | null {
+  if (!modelName) {
+    return null;
+  }
+  return models?.find((model) => model.name === modelName)?.displayName ?? modelName;
+}
+
 export function ModelSelector({
   selectedModel,
   onSelectModel,
@@ -62,13 +72,16 @@ export function ModelSelector({
     queryKey: ["models"],
     queryFn: () => invoke<ModelInfo[]>("list_models"),
   });
+  const selectedModelLabel = getModelDisplayName(models, selectedModel);
+  const downloadingModelLabel = getModelDisplayName(models, downloadingModel);
+  const selectedModelStatusLabel = selectedModelLabel ?? "未選択";
   const modelSelectAriaLabel = modelsError
     ? "Whisper モデル一覧の取得に失敗したため選択できません"
     : downloadingModel
-      ? `${downloadingModel} をダウンロード中のため Whisper モデルを選択できません。現在の選択: ${selectedModel}`
+      ? `${downloadingModelLabel} をダウンロード中のため Whisper モデルを選択できません。現在の選択: ${selectedModelStatusLabel}`
       : disabled
-        ? `文字起こし中のため Whisper モデルを選択できません。現在の選択: ${selectedModel}`
-        : `Whisper モデルを選択。現在の選択: ${selectedModel}`;
+        ? `文字起こし中のため Whisper モデルを選択できません。現在の選択: ${selectedModelStatusLabel}`
+        : `Whisper モデルを選択。現在の選択: ${selectedModelStatusLabel}`;
 
   // Listen for download progress events
   useEffect(() => {
@@ -221,9 +234,9 @@ export function ModelSelector({
   };
   const modelsErrorMessage = modelsError ? toErrorMessage(modelsError) : "";
   const modelSelectorLabel = [
-    `Whisper モデル選択: ${selectedModel}`,
+    `Whisper モデル選択: ${selectedModelStatusLabel}`,
     isFetchingModels ? "Whisper モデル一覧を取得中" : null,
-    downloadingModel ? `${downloadingModel} をダウンロード中` : null,
+    downloadingModel ? `${downloadingModelLabel} をダウンロード中` : null,
     modelsError ? `Whisper モデル一覧エラー: ${modelsErrorMessage}` : null,
   ]
     .filter(Boolean)
@@ -304,7 +317,9 @@ export function ModelSelector({
       ) : (
         <DownloadStatus
           selectedModel={selectedModel}
+          selectedModelLabel={selectedModelLabel}
           downloadingModel={downloadingModel}
+          downloadingModelLabel={downloadingModelLabel}
           downloadProgress={downloadProgress}
           downloadError={
             downloadErrorModel === selectedModel ? downloadError : null
@@ -327,7 +342,9 @@ function ModelOption({ model }: { model: ModelInfo }) {
 
 interface DownloadStatusProps {
   selectedModel: string;
+  selectedModelLabel: string | null;
   downloadingModel: string | null;
+  downloadingModelLabel: string | null;
   downloadProgress: number;
   downloadError: string | null;
   disabled: boolean;
@@ -336,7 +353,9 @@ interface DownloadStatusProps {
 
 function DownloadStatus({
   selectedModel,
+  selectedModelLabel,
   downloadingModel,
+  downloadingModelLabel,
   downloadProgress,
   downloadError,
   disabled,
@@ -356,9 +375,12 @@ function DownloadStatus({
 
   if (!selectedModel) return null;
 
+  const selectedLabel = selectedModelLabel ?? selectedModel;
+  const downloadingLabel = downloadingModelLabel ?? downloadingModel;
+
   if (downloadingModel === selectedModel) {
     const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
-    const progressLabel = `${selectedModel} Whisper モデルのダウンロード進捗`;
+    const progressLabel = `${selectedLabel} Whisper モデルのダウンロード進捗`;
     return (
       <div className="download-progress-wrapper">
         <div
@@ -382,7 +404,7 @@ function DownloadStatus({
   }
 
   if (isDownloaded) {
-    const readyLabel = `${selectedModel} Whisper モデルは準備完了`;
+    const readyLabel = `${selectedLabel} Whisper モデルは準備完了`;
     return (
       <span
         className="model-status-ready"
@@ -399,10 +421,10 @@ function DownloadStatus({
 
   if (isDownloadedError) {
     const downloadedErrorMessage = toErrorMessage(isDownloadedError);
-    const downloadedErrorLabel = `${selectedModel} Whisper モデルの状態確認エラー: ${downloadedErrorMessage}`;
+    const downloadedErrorLabel = `${selectedLabel} Whisper モデルの状態確認エラー: ${downloadedErrorMessage}`;
     const refetchDownloadedLabel = isFetchingDownloaded
-      ? `${selectedModel} の Whisper モデルの状態を確認中`
-      : `${selectedModel} の Whisper モデルの状態を再確認`;
+      ? `${selectedLabel} の Whisper モデルの状態を確認中`
+      : `${selectedLabel} の Whisper モデルの状態を再確認`;
     return (
       <div className="download-status-wrapper">
         <span
@@ -428,10 +450,10 @@ function DownloadStatus({
   }
 
   const downloadButtonLabel = isFetchingDownloaded
-    ? `${selectedModel} の Whisper モデルの状態を確認中`
+    ? `${selectedLabel} の Whisper モデルの状態を確認中`
     : downloadingModel
-      ? `${downloadingModel} をダウンロード中のため ${selectedModel} はダウンロード待ち`
-      : `${selectedModel} をダウンロード`;
+      ? `${downloadingLabel} をダウンロード中のため ${selectedLabel} はダウンロード待ち`
+      : `${selectedLabel} をダウンロード`;
 
   return (
     <div className="download-status-wrapper" aria-busy={isFetchingDownloaded}>
@@ -453,8 +475,8 @@ function DownloadStatus({
         <span
           className="download-error"
           role="alert"
-          aria-label={`${selectedModel} Whisper モデルのダウンロードエラー: ${downloadError}`}
-          title={`${selectedModel} Whisper モデルのダウンロードエラー: ${downloadError}`}
+          aria-label={`${selectedLabel} Whisper モデルのダウンロードエラー: ${downloadError}`}
+          title={`${selectedLabel} Whisper モデルのダウンロードエラー: ${downloadError}`}
         >
           {downloadError}
         </span>

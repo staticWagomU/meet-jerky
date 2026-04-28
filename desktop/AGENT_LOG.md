@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings A11y: expose Whisper model display names
+
+- 開始日時: 2026-04-29 00:42 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Whisper モデル選択とダウンロード状態の aria/title 文言に raw モデル ID ではなく表示名を使い、設定画面の読み取りやすさを上げる。
+- 結果: モデル一覧の `displayName` から選択中/ダウンロード中モデルの表示名を解決し、選択不可理由、状態ラベル、進捗、準備完了、状態確認エラー、ダウンロード待ち、ダウンロードエラーの説明へ反映した。Tauri command に渡すモデル ID と query key は従来どおり raw ID のまま維持した。
+- 変更ファイル: `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機スクリーンリーダーでの読み上げは未確認。
+- 次アクション: 検証後、設定画面でモデル表示名が選択肢と状態説明で一致していることを実機確認する。
+
 ### Navigation A11y: expose current page
 
 - 開始日時: 2026-04-29 01:10 JST
