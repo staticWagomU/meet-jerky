@@ -860,6 +860,22 @@ body[data-window="live-caption"] {
   background-color: var(--permission-banner-bg);
 }
 
+.live-transcript-privacy-pill {
+  border-radius: 999px;
+  padding: 0.1rem 0.34rem;
+  color: var(--meeting-status-idle-color);
+  background-color: var(--meeting-status-idle-bg);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.live-transcript-privacy-pill-warning {
+  color: var(--permission-banner-color);
+  background-color: var(--permission-banner-bg);
+}
+
 .live-transcript-track-row {
   display: flex;
   min-width: 0;

@@ -92,6 +92,16 @@ function getTrackStateLabel(segment: TranscriptSegment | null): string {
   return formatSegmentTimestamp(segment.startMs);
 }
 
+function getVisibleTransmissionLabel(status: LiveCaptionStatusPayload): string {
+  if (status.isExternalTransmission) {
+    return "外部送信";
+  }
+  if (status.aiTransmissionLabel === "なし") {
+    return "端末内";
+  }
+  return status.aiTransmissionLabel;
+}
+
 export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
     null,
@@ -248,6 +258,7 @@ export function LiveCaptionWindow() {
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
     : "live-transcript-panel live-transcript-panel-window";
   const liveCaptionRole = isErrorState ? "alert" : "status";
+  const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
 
   return (
     <div
@@ -292,6 +303,17 @@ export function LiveCaptionWindow() {
               title={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
             >
               {statusPayload.engineLabel}
+            </span>
+            <span
+              className={`live-transcript-privacy-pill${
+                statusPayload.isExternalTransmission
+                  ? " live-transcript-privacy-pill-warning"
+                  : ""
+              }`}
+              aria-label={`外部送信 ${statusPayload.aiTransmissionLabel}`}
+              title={`外部送信 ${statusPayload.aiTransmissionLabel}`}
+            >
+              {visibleTransmissionLabel}
             </span>
           </div>
           <div

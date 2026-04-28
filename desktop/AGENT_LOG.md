@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Transparency: make external sending visible
+
+- 開始日時: 2026-04-29 04:14 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 直前のライブ字幕ステータス表示を批判的に見直し、エンジン名の色だけで外部送信有無を判断させないようにする。
+- 結果: ライブ字幕のメタ行に `外部送信` / `端末内` / 確認中ラベルを追加し、Realtime 外部 API 利用時は警告色で明示するようにした。設定値や API キーには触れない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ウィンドウでの視認性は未確認。
+- 次アクション: 実機でライブ字幕メタ行が詰まりすぎないことを確認する。
+
 ### Live Caption Transparency: show engine and external sending status
 
 - 開始日時: 2026-04-29 04:13 JST
