@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Transparency: show capture state per track
+
+- 開始日時: 2026-04-29 05:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウで自分/相手側トラックが未発話待ちなのか未録音/未取得なのかを分かるようにする。
+- 結果: ライブ字幕ステータス payload に自分/相手側トラックの取得状態ラベルを追加し、TranscriptView から同期するようにした。独立ライブ字幕ウィンドウの各トラックピルは、未録音/未取得/録音中/取得中・入力待ちと最新確定時刻を合わせて表示する。API キー、認証情報、外部通信には触れない。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ライブ字幕ウィンドウ表示は未確認。
+- 次アクション: 実機で録音中の独立ライブ字幕トラック表示を確認する。
+
 ### History Track Transparency: show unknown saved track count
 
 - 開始日時: 2026-04-29 05:09 JST

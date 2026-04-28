@@ -1143,6 +1143,10 @@ export function TranscriptView() {
     const liveCaptionStatus = buildLiveCaptionStatusFromLabels(
       engineStatusDisplayLabel,
       aiTransmissionStatusLabel,
+      {
+        microphoneTrackLabel: micTrackStatusLabel,
+        systemAudioTrackLabel: systemAudioTrackStatusLabel,
+      },
     );
     writeStoredLiveCaptionStatus(liveCaptionStatus, (e) => {
       console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
@@ -1150,7 +1154,12 @@ export function TranscriptView() {
     void emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus).catch((e) => {
       console.error("ライブ字幕ステータスの同期に失敗しました:", toErrorMessage(e));
     });
-  }, [aiTransmissionStatusLabel, engineStatusDisplayLabel]);
+  }, [
+    aiTransmissionStatusLabel,
+    engineStatusDisplayLabel,
+    micTrackStatusLabel,
+    systemAudioTrackStatusLabel,
+  ]);
 
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,

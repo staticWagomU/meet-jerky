@@ -7,12 +7,16 @@ export interface LiveCaptionStatusPayload {
   engineLabel: string;
   aiTransmissionLabel: string;
   isExternalTransmission: boolean;
+  microphoneTrackLabel: string;
+  systemAudioTrackLabel: string;
 }
 
 export const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
   engineLabel: "確認中",
   aiTransmissionLabel: "確認中",
   isExternalTransmission: false,
+  microphoneTrackLabel: "未確認",
+  systemAudioTrackLabel: "未確認",
 };
 
 export function isLiveCaptionStatusPayload(
@@ -25,8 +29,21 @@ export function isLiveCaptionStatusPayload(
   return (
     typeof candidate.engineLabel === "string" &&
     typeof candidate.aiTransmissionLabel === "string" &&
-    typeof candidate.isExternalTransmission === "boolean"
+    typeof candidate.isExternalTransmission === "boolean" &&
+    (candidate.microphoneTrackLabel === undefined ||
+      typeof candidate.microphoneTrackLabel === "string") &&
+    (candidate.systemAudioTrackLabel === undefined ||
+      typeof candidate.systemAudioTrackLabel === "string")
   );
+}
+
+function normalizeLiveCaptionStatus(
+  status: LiveCaptionStatusPayload,
+): LiveCaptionStatusPayload {
+  return {
+    ...DEFAULT_LIVE_CAPTION_STATUS,
+    ...status,
+  };
 }
 
 export function readStoredLiveCaptionStatus(
@@ -39,7 +56,7 @@ export function readStoredLiveCaptionStatus(
     }
     const parsed: unknown = JSON.parse(raw);
     return isLiveCaptionStatusPayload(parsed)
-      ? parsed
+      ? normalizeLiveCaptionStatus(parsed)
       : DEFAULT_LIVE_CAPTION_STATUS;
   } catch (e) {
     onError?.(e);
@@ -80,6 +97,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "OpenAI",
       aiTransmissionLabel: "送信先 OpenAI",
       isExternalTransmission: true,
+      microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
+      systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
   }
   if (engine === "elevenLabsRealtime") {
@@ -87,6 +106,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "ElevenLabs",
       aiTransmissionLabel: "送信先 ElevenLabs",
       isExternalTransmission: true,
+      microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
+      systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
   }
   if (engine === "appleSpeech") {
@@ -94,6 +115,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "Apple Speech",
       aiTransmissionLabel: "なし",
       isExternalTransmission: false,
+      microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
+      systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
   }
   if (engine === "whisper") {
@@ -101,6 +124,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "Whisper",
       aiTransmissionLabel: "なし",
       isExternalTransmission: false,
+      microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
+      systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
   }
   return DEFAULT_LIVE_CAPTION_STATUS;
@@ -109,6 +134,10 @@ export function buildLiveCaptionStatusFromEngine(
 export function buildLiveCaptionStatusFromLabels(
   engineLabel: string,
   aiTransmissionLabel: string,
+  trackLabels?: {
+    microphoneTrackLabel: string;
+    systemAudioTrackLabel: string;
+  },
 ): LiveCaptionStatusPayload {
   return {
     engineLabel,
@@ -116,5 +145,11 @@ export function buildLiveCaptionStatusFromLabels(
     isExternalTransmission:
       aiTransmissionLabel === "送信先 OpenAI" ||
       aiTransmissionLabel === "送信先 ElevenLabs",
+    microphoneTrackLabel:
+      trackLabels?.microphoneTrackLabel ??
+      DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
+    systemAudioTrackLabel:
+      trackLabels?.systemAudioTrackLabel ??
+      DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
   };
 }

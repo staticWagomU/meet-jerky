@@ -45,14 +45,17 @@ function getSpeakerClassName(segment: TranscriptSegment): string {
   return "live-transcript-speaker live-transcript-speaker-unknown";
 }
 
-function getTrackStateLabel(segment: TranscriptSegment | null): string {
+function getTrackStateLabel(
+  segment: TranscriptSegment | null,
+  captureLabel: string,
+): string {
   if (!segment) {
-    return "待機";
+    return captureLabel;
   }
   if (isTranscriptErrorSegment(segment)) {
-    return "エラー";
+    return `${captureLabel}・エラー`;
   }
-  return formatSegmentTimestamp(segment.startMs);
+  return `${captureLabel}・${formatSegmentTimestamp(segment.startMs)}`;
 }
 
 export function LiveCaptionWindow() {
@@ -203,7 +206,12 @@ export function LiveCaptionWindow() {
           captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
           ...TRACKS.map(
             (track) =>
-              `${track.label}トラック ${getTrackStateLabel(latestBySource[track.source])}`,
+              `${track.label}トラック ${getTrackStateLabel(
+                latestBySource[track.source],
+                track.source === "microphone"
+                  ? statusPayload.microphoneTrackLabel
+                  : statusPayload.systemAudioTrackLabel,
+              )}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
@@ -215,7 +223,12 @@ export function LiveCaptionWindow() {
           "ライブ文字起こし 待機中",
           ...TRACKS.map(
             (track) =>
-              `${track.label}トラック ${getTrackStateLabel(latestBySource[track.source])}`,
+              `${track.label}トラック ${getTrackStateLabel(
+                latestBySource[track.source],
+                track.source === "microphone"
+                  ? statusPayload.microphoneTrackLabel
+                  : statusPayload.systemAudioTrackLabel,
+              )}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
@@ -289,7 +302,11 @@ export function LiveCaptionWindow() {
           >
             {TRACKS.map((track) => {
               const segment = latestBySource[track.source];
-              const trackState = getTrackStateLabel(segment);
+              const captureLabel =
+                track.source === "microphone"
+                  ? statusPayload.microphoneTrackLabel
+                  : statusPayload.systemAudioTrackLabel;
+              const trackState = getTrackStateLabel(segment, captureLabel);
               const trackLabel = `${track.label}トラック: ${trackState}`;
               return (
                 <span
