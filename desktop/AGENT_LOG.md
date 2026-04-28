@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Layout: allow metadata to wrap
+
+- 開始日時: 2026-04-29 04:15 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 直近のライブ字幕メタ情報追加を批判的に見直し、独立ウィンドウの狭い横幅でエンジン/外部送信ラベルがはみ出しにくいようにする。
+- 結果: ライブ字幕のメタ行を折り返し可能にし、狭いウィンドウでもラベルを隠さず表示できるようにした。表示内容やデータ同期には触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ウィンドウでの折り返し見え方は未確認。
+- 次アクション: 実機でライブ字幕メタ行が自然に折り返すことを確認する。
+
 ### Live Caption Transparency: make external sending visible
 
 - 開始日時: 2026-04-29 04:14 JST

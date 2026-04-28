@@ -809,6 +809,8 @@ body[data-window="live-caption"] {
 .live-transcript-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
   gap: 0.35rem;
   color: var(--color-muted);
   font-size: 0.68rem;
