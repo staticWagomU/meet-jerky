@@ -49,7 +49,7 @@ impl Session {
     }
 
     pub fn duration_secs(&self) -> Option<u64> {
-        self.ended_at.map(|end| end - self.started_at)
+        self.ended_at.map(|end| end.saturating_sub(self.started_at))
     }
 }
 
@@ -78,6 +78,15 @@ mod tests {
         assert!(session.is_finalized());
         assert_eq!(session.ended_at, Some(1300));
         assert_eq!(session.duration_secs(), Some(300));
+    }
+
+    #[test]
+    fn duration_secs_saturates_when_end_precedes_start() {
+        let mut session = Session::start("title".into(), 1000);
+
+        session.finalize(900);
+
+        assert_eq!(session.duration_secs(), Some(0));
     }
 
     #[test]

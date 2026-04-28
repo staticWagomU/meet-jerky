@@ -1,5 +1,19 @@
 # Agent Log
 
+### Session Reliability: saturate duration on clock rollback
+
+- 開始日時: 2026-04-28 12:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/session.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、セッション終了時刻が開始時刻より前になった場合でも duration 計算で panic/underflow しないようにする。
+- 結果: `Session::duration_secs()` を通常減算から `saturating_sub` に変更し、時計逆行や注入時刻の前後ずれで終了時刻が開始時刻より前でも `Some(0)` を返すようにした。回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/session.rs`, `AGENT_LOG.md`
+- 検証結果: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`npm run build` 成功。`git diff --check -- src-tauri/src/session.rs AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/src/session.rs AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo test --manifest-path src-tauri/Cargo.toml session` は `whisper-rs-sys` の build script が `cmake` を見つけられず失敗する既知の環境制約で未完走。
+- 次アクション: `cmake` が PATH 上にある環境で `cargo test --manifest-path src-tauri/Cargo.toml session` を再実行し、時計逆行時の duration が 0 に飽和することを確認する。
+
 ### Session Markdown: limit observed-time fallback to untimed realtime segments
 
 - 開始日時: 2026-04-28 12:45 JST
