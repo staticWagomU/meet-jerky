@@ -266,6 +266,9 @@ export function LiveCaptionWindow() {
     : "live-transcript-panel live-transcript-panel-window";
   const liveCaptionRole = isErrorState ? "alert" : "status";
   const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
+  const liveCaptionTransmissionLabel = statusPayload.isExternalTransmission
+    ? "外部送信中"
+    : visibleTransmissionLabel;
 
   return (
     <div
@@ -320,7 +323,7 @@ export function LiveCaptionWindow() {
               aria-label={`外部送信 ${statusPayload.aiTransmissionLabel}`}
               title={`外部送信 ${statusPayload.aiTransmissionLabel}`}
             >
-              {visibleTransmissionLabel}
+              {liveCaptionTransmissionLabel}
             </span>
           </div>
           <div

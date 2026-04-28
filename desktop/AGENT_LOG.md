@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### Live caption UX: label external sending while active
+
+- 開始日時: 2026-04-29 06:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 独立ライブ字幕ウィンドウ上で、OpenAI / ElevenLabs Realtime 利用時の外部送信状態をより明確にする。
+- 結果: ライブ字幕ウィンドウの外部送信 pill を、外部 Realtime 利用時だけ `外部送信中` と表示するようにした。開始前プロンプトや設定表示、外部 API 呼び出し、認証情報には触れなかった。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の独立ライブ字幕ウィンドウで `外部送信中` pill が狭い画面でも収まり、注意喚起として過剰でないか確認する。
+
 ### Transcript UX: show external realtime sending notice while active
 
 - 開始日時: 2026-04-29 06:41 JST
