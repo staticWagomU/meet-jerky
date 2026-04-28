@@ -1252,6 +1252,10 @@ export function TranscriptView() {
     : isTranscribing
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
+  const canShowLiveCaptionWindow = isMeetingActive || isTranscribing;
+  const showLiveCaptionWindowLabel = canShowLiveCaptionWindow
+    ? "ライブ文字起こしウィンドウを表示"
+    : "録音または文字起こし中だけライブ文字起こしウィンドウを表示できます";
   const meetingStatusAriaLabel = [
     "記録状態",
     meetingRecordingStatusLabel,
@@ -1301,6 +1305,16 @@ export function TranscriptView() {
   const externalApiKeyErrorMessage = externalApiKeyErrorForUi
     ? toErrorMessage(externalApiKeyErrorForUi)
     : "";
+  const handleShowLiveCaptionWindow = useCallback(() => {
+    if (!canShowLiveCaptionWindow) {
+      return;
+    }
+    void invoke("set_live_caption_window_visible", { visible: true }).catch((e) => {
+      const msg = toErrorMessage(e);
+      console.error("ライブ文字起こしウィンドウを表示できませんでした:", msg);
+      setMeetingError(`ライブ文字起こしウィンドウを表示できませんでした: ${msg}`);
+    });
+  }, [canShowLiveCaptionWindow]);
 
   useEffect(() => {
     if (!hasPendingMeetingStartRequest) {
@@ -1455,6 +1469,17 @@ export function TranscriptView() {
               </span>
             )}
         </div>
+        {canShowLiveCaptionWindow && (
+          <button
+            type="button"
+            className="control-btn control-btn-clear meeting-caption-window-btn"
+            aria-label={showLiveCaptionWindowLabel}
+            title={showLiveCaptionWindowLabel}
+            onClick={handleShowLiveCaptionWindow}
+          >
+            字幕を表示
+          </button>
+        )}
         {audioSourceNotice && (
           <p
             className="meeting-source-notice"

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Window: add restore control
+
+- 開始日時: 2026-04-29 08:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 閉じられる独立ライブ文字起こしウィンドウを、録音/文字起こし中にメイン画面から再表示できるようにする。
+- 結果: 記録状態パネルに `字幕を表示` ボタンを追加し、会議中または文字起こし中に `set_live_caption_window_visible(true)` を呼べるようにした。再表示失敗時は既存の記録操作エラー表示へ流す。録音・文字起こし処理そのものには触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機で閉じたライブ文字起こしウィンドウを再表示する操作は未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### Ring Light: add intensity modes
 
 - 開始日時: 2026-04-29 08:19 JST

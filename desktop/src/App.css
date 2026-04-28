@@ -1399,6 +1399,11 @@ body[data-window="ring-light"] {
   border-color: color-mix(in srgb, var(--transcript-error-color) 28%, transparent);
 }
 
+.meeting-caption-window-btn {
+  min-height: 2rem;
+  border-radius: 999px;
+}
+
 .meeting-error,
 .meeting-source-notice,
 .meeting-start-blocked-reason,
