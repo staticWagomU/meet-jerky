@@ -50,13 +50,28 @@ function App() {
   return (
     <main className="container">
       <nav className="nav" aria-label="主要ナビゲーション">
-        <Link to="/" className="nav-link" title="リアルタイム文字起こし">
+        <Link
+          to="/"
+          className="nav-link"
+          title="リアルタイム文字起こし"
+          activeProps={{ "aria-current": "page" }}
+        >
           文字起こし
         </Link>
-        <Link to="/sessions" className="nav-link" title="保存済みセッション履歴">
+        <Link
+          to="/sessions"
+          className="nav-link"
+          title="保存済みセッション履歴"
+          activeProps={{ "aria-current": "page" }}
+        >
           履歴
         </Link>
-        <Link to="/settings" className="nav-link" title="アプリ設定と権限状態">
+        <Link
+          to="/settings"
+          className="nav-link"
+          title="アプリ設定と権限状態"
+          activeProps={{ "aria-current": "page" }}
+        >
           設定
         </Link>
       </nav>

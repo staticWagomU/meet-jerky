@@ -1,5 +1,19 @@
 # Agent Log
 
+### Navigation A11y: expose current page
+
+- 開始日時: 2026-04-29 01:10 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、主要ナビゲーションの active 表示を支援技術にも現在ページとして伝える。
+- 結果: 文字起こし / 履歴 / 設定の各 `Link` に `activeProps={{ "aria-current": "page" }}` を追加した。ルーティング、表示スタイル、画面構成には触れない。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。
+- 次アクション: 実機またはブラウザで active nav link に `aria-current="page"` が付くことを確認する。
+
 ### History UX: add empty-search clear action
 
 - 開始日時: 2026-04-29 01:03 JST
