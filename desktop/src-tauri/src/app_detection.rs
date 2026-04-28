@@ -1,5 +1,5 @@
 //! Zoom / Microsoft Teams 等の会議アプリ起動・起動済み状態と、
-//! Safari / Chrome / Edge / Firefox の会議 URL を検知して、ユーザーに
+//! Safari / Chrome / Edge / Brave / Arc / Firefox の会議 URL を検知して、ユーザーに
 //! 録音と文字起こしの状態確認を促す通知 + フロントエンドへのイベント通知を行う。
 //!
 //! macOS 限定。`swift/AppDetectionBridge.swift` 経由で `NSWorkspace` を

@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: add Arc browser URL polling
+
+- 開始日時: 2026-04-29 03:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知の網羅性を上げるため、macOS で利用される Arc ブラウザを既存のブラウザURL検知対象へ追加する。
+- 結果: Arc の bundle id を公式ヘルプ（https://resources.arc.net/hc/en-us/articles/22353769256471-How-To-Set-Arc-Group-Policies）で `company.thebrowser.Browser` と確認し、Swift bridge の `watchedBrowsers` に Chromium 系として追加した。Rust 側のモジュールコメントも対象ブラウザに合わせた。URL全文を payload/log/UI へ出さない既存方針、分類ロジック、通知文言には触れない。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `swiftc -parse src-tauri/swift/AppDetectionBridge.swift` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/swift/AppDetectionBridge.swift src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Arc 実機での AppleScript / Accessibility URL 取得は未確認。
+- 次アクション: 実機で Arc のアクティブタブ会議URLが host/service のみで通知され、AppleScript 名 `Arc` で取得できない場合も Accessibility fallback へ進めることを確認する。
+
 ### Live Caption A11y: include track states in label
 
 - 開始日時: 2026-04-29 02:56 JST

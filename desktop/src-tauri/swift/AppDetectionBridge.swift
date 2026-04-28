@@ -94,6 +94,12 @@ public final class AppDetector: @unchecked Sendable {
             tabScriptKind: .chromium
         ),
         BrowserDescriptor(
+            bundleId: "company.thebrowser.Browser",
+            displayName: "Arc",
+            appleScriptName: "Arc",
+            tabScriptKind: .chromium
+        ),
+        BrowserDescriptor(
             bundleId: "org.mozilla.firefox",
             displayName: "Firefox",
             appleScriptName: "Firefox",
