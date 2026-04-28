@@ -39,6 +39,16 @@ function getSpeakerClassName(segment: TranscriptSegment): string {
   return "live-transcript-speaker live-transcript-speaker-unknown";
 }
 
+function getTrackStateLabel(segment: TranscriptSegment | null): string {
+  if (!segment) {
+    return "待機";
+  }
+  if (isTranscriptErrorSegment(segment)) {
+    return "エラー";
+  }
+  return formatSegmentTimestamp(segment.startMs);
+}
+
 export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
     null,
@@ -148,11 +158,22 @@ export function LiveCaptionWindow() {
           "ライブ文字起こし",
           getSpeakerLabel(latestSegment),
           captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
+          ...TRACKS.map(
+            (track) =>
+              `${track.label}トラック ${getTrackStateLabel(latestBySource[track.source])}`,
+          ),
           latestSegment.text,
         ]
           .filter(Boolean)
           .join(": ")
-      : `ライブ文字起こし 待機中: ${WAITING_CAPTION_TEXT}`;
+      : [
+          "ライブ文字起こし 待機中",
+          ...TRACKS.map(
+            (track) =>
+              `${track.label}トラック ${getTrackStateLabel(latestBySource[track.source])}`,
+          ),
+          WAITING_CAPTION_TEXT,
+        ].join(": ");
   const panelClassName = isErrorState
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
     : "live-transcript-panel live-transcript-panel-window";
@@ -198,15 +219,7 @@ export function LiveCaptionWindow() {
           >
             {TRACKS.map((track) => {
               const segment = latestBySource[track.source];
-              const trackTimestamp =
-                segment && !isTranscriptErrorSegment(segment)
-                  ? formatSegmentTimestamp(segment.startMs)
-                  : null;
-              const trackState = segment
-                ? isTranscriptErrorSegment(segment)
-                  ? "エラー"
-                  : trackTimestamp
-                : "待機";
+              const trackState = getTrackStateLabel(segment);
               const trackLabel = `${track.label}トラック: ${trackState}`;
               return (
                 <span

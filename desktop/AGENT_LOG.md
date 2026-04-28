@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption A11y: include track states in label
+
+- 開始日時: 2026-04-29 02:56 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウの自分/相手側トラック状態ピルが支援技術にも伝わるようにする。
+- 結果: トラック状態の表示文言を `getTrackStateLabel` に集約し、親の `role=status` / `role=alert` ラベルにも `自分トラック` / `相手側トラック` の待機・時刻・エラー状態を含めた。表示ロジック、録音制御、イベント構造には触れない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。
+- 次アクション: 実機でライブ字幕ラベルが過剰に長くなりすぎず、自分/相手側トラック状態が支援技術へ伝わることを確認する。
+
 ### History Search UX: show body match excerpt
 
 - 開始日時: 2026-04-29 02:49 JST
