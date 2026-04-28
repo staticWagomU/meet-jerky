@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search: match escaped Markdown text as displayed
+
+- 開始日時: 2026-04-29 06:14 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存済み Markdown 内でエスケープされた `*` や `[` などの文字も、履歴検索ではユーザーが見る文字として検索・抜粋表示できるようにする。
+- 結果: 履歴一覧の検索対象と本文一致抜粋で、Markdown inline escape を表示向けに戻してから検索するようにした。本文中の literal `**` は抜粋整形で消さず、保存形式、トラック件数集計、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実履歴データでの escaped Markdown 検索は未確認。
+- 次アクション: 実履歴で `*` や `[` を含む本文検索と抜粋表示を確認する。
+
 ### Model Download Events: validate payloads before UI update
 
 - 開始日時: 2026-04-29 06:10 JST

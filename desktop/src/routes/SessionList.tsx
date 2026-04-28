@@ -51,10 +51,13 @@ function getSessionDisplayTitle(title: string): string {
   return displayTitle || "無題の会議";
 }
 
+function unescapeInlineMarkdownText(text: string): string {
+  return text.replace(/\\([\\`*_[\]])/g, "$1");
+}
+
 function formatSearchExcerptText(text: string): string {
-  return text
+  return unescapeInlineMarkdownText(text)
     .replace(/\*\*\[([^\]]+)\]\s*([^:*]+):\*\*/g, "[$1] $2:")
-    .replace(/\*\*/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -64,7 +67,8 @@ function getSearchMatchExcerpt(text: string, query: string): string | null {
   if (searchTerms.length === 0 || !text) {
     return null;
   }
-  const normalizedText = text.toLocaleLowerCase();
+  const searchText = unescapeInlineMarkdownText(text);
+  const normalizedText = searchText.toLocaleLowerCase();
   const matchedTerm = searchTerms.find((term) => normalizedText.includes(term));
   if (!matchedTerm) {
     return null;
@@ -75,14 +79,14 @@ function getSearchMatchExcerpt(text: string, query: string): string | null {
   }
   const start = Math.max(0, matchIndex - SEARCH_EXCERPT_CONTEXT_LENGTH);
   const end = Math.min(
-    text.length,
+    searchText.length,
     matchIndex + matchedTerm.length + SEARCH_EXCERPT_CONTEXT_LENGTH,
   );
-  const excerpt = formatSearchExcerptText(text.slice(start, end));
+  const excerpt = formatSearchExcerptText(searchText.slice(start, end));
   if (!excerpt) {
     return null;
   }
-  return `${start > 0 ? "..." : ""}${excerpt}${end < text.length ? "..." : ""}`;
+  return `${start > 0 ? "..." : ""}${excerpt}${end < searchText.length ? "..." : ""}`;
 }
 
 function escapeRegExp(text: string): string {
@@ -143,7 +147,7 @@ function sessionMatchesQuery(
     getSessionDisplayTitle(session.title),
     getFileName(session.path),
     startedAtLabel,
-    session.searchText,
+    unescapeInlineMarkdownText(session.searchText),
   ]
     .join(" ")
     .toLocaleLowerCase();
