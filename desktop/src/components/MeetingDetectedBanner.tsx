@@ -131,12 +131,12 @@ export function MeetingDetectedBanner() {
     : "録音しますか？";
   const bannerDetail = listenerError
     ? null
-    : `${displayName} を検出。録音と文字起こしは未開始です。約${PROMPT_AUTO_HIDE_SECONDS}秒後に隠れます。`;
+    : `${displayName} を検出。録音と文字起こしの状態を確認できます。約${PROMPT_AUTO_HIDE_SECONDS}秒後に隠れます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
+      }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。自分/相手側トラックの録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の録音開始前の状態を確認`
     : "録音開始前の状態を確認";

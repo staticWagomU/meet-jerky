@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Copy: avoid stale not-started claim
+
+- 開始日時: 2026-04-29 05:41 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトが記録中でも「未開始」と断定しないようにする。
+- 結果: プロンプト本文と aria-label から未開始の断定を外し、録音と文字起こしの状態確認を促す表現へ変更した。録音開始処理や状態同期には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で記録中に会議検知が再発火するケースは未確認。
+- 次アクション: 実機で記録中に会議検知が再発火した場合のプロンプト文言を確認する。
+
 ### App Detection: support Teams unified domain
 
 - 開始日時: 2026-04-29 05:39 JST
