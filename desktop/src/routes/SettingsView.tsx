@@ -416,6 +416,8 @@ export function SettingsView() {
     isFetchingDevices ? "マイクデバイス一覧を取得中" : null,
     isFetchingDefaultOutputDir ? "デフォルト出力先を取得中" : null,
     isCheckingPermissions ? "macOS 権限状態を確認中" : null,
+    hasPermissionStatusAttention ? "権限確認が必要" : null,
+    permissionSettingsOpenErrorLabel,
     hasChanges ? "未保存の変更あり" : null,
   ]
     .filter(Boolean)

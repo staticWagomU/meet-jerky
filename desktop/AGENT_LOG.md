@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Accessibility: include permission attention in page label
+
+- 開始日時: 2026-04-29 04:50 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、設定画面全体の状態要約に録音・システム音声取得へ影響する権限注意や macOS 設定起動失敗を含める。
+- 結果: 設定画面の aria-label / title に、権限確認が必要な状態と macOS 設定を開けなかったエラーを含めるようにした。画面表示、権限判定、設定URLには触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の支援技術読み上げは未確認。
+- 次アクション: 実機で設定画面の状態要約を確認する。
+
 ### Permission UX: include settings-open failures in banner status
 
 - 開始日時: 2026-04-29 04:48 JST
