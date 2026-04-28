@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Track Transparency: show unknown saved track count
+
+- 開始日時: 2026-04-29 05:09 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存済み履歴一覧のトラック件数表示で、自分/相手側以外の古い話者ラベルや未知ラベルが黙って消えないようにする。
+- 結果: 保存 Markdown の話者見出しが自分/相手側以外だった場合に「不明」件数として集計し、該当する履歴だけ小さなピルで表示するようにした。保存形式、検索条件、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでの不明件数表示は未確認。
+- 次アクション: 実履歴で不明件数が過剰に目立たないことを確認する。
+
 ### History Track Transparency: show saved self and other counts
 
 - 開始日時: 2026-04-29 04:53 JST

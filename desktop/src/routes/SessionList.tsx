@@ -22,6 +22,7 @@ const EMPTY_SESSIONS: SessionSummary[] = [];
 interface TranscriptTrackCounts {
   self: number;
   other: number;
+  unknown: number;
 }
 
 function getFileName(path: string): string {
@@ -115,13 +116,15 @@ function hasTranscriptBody(searchText: string): boolean {
 }
 
 function getTranscriptTrackCounts(searchText: string): TranscriptTrackCounts {
-  const counts = { self: 0, other: 0 };
+  const counts = { self: 0, other: 0, unknown: 0 };
   for (const match of searchText.matchAll(/\*\*\[[^\]]+\]\s*([^:*]+):\*\*/g)) {
     const speaker = match[1]?.trim();
     if (speaker === "自分") {
       counts.self += 1;
     } else if (speaker === "相手側") {
       counts.other += 1;
+    } else if (speaker) {
+      counts.unknown += 1;
     }
   }
   return counts;
@@ -468,7 +471,15 @@ function SessionRow({
   const trackCounts = getTranscriptTrackCounts(session.searchText);
   const transcriptBodyLabel = hasBody ? "文字起こし本文あり" : "文字起こし本文なし";
   const trackCountsLabel = hasBody
-    ? `自分トラック ${trackCounts.self} 件、相手側トラック ${trackCounts.other} 件`
+    ? [
+        `自分トラック ${trackCounts.self} 件`,
+        `相手側トラック ${trackCounts.other} 件`,
+        trackCounts.unknown > 0
+          ? `音声ソース不明 ${trackCounts.unknown} 件`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("、")
     : null;
   const isAnyActionPending = pendingAction !== null;
   const isOpeningThisFile =
@@ -560,6 +571,15 @@ function SessionRow({
               >
                 相手側 {trackCounts.other}
               </span>
+              {trackCounts.unknown > 0 && (
+                <span
+                  className="session-list-item-track-count session-list-item-track-count-unknown"
+                  aria-label={`音声ソース不明の文字起こし ${trackCounts.unknown} 件`}
+                  title={`音声ソース不明の文字起こし ${trackCounts.unknown} 件`}
+                >
+                  不明 {trackCounts.unknown}
+                </span>
+              )}
             </>
           )}
           <span

@@ -1780,6 +1780,11 @@ body[data-window="live-caption"] {
   background-color: var(--speaker-other-bg);
 }
 
+.session-list-item-track-count-unknown {
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
+}
+
 .session-list-item-actions {
   display: flex;
   gap: 0.5rem;
