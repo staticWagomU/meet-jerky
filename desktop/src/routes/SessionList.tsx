@@ -272,14 +272,14 @@ function SessionRow({
       ? `他のセッション操作を処理中: ${displayTitle}`
       : `履歴ファイルを開く: ${displayTitle}`;
   const revealFileLabel = isRevealingThisFile
-    ? `Finder で表示しています: ${displayTitle}`
+    ? `履歴ファイルを Finder で表示しています: ${displayTitle}`
     : isWaitingForOtherAction
       ? `他のセッション操作を処理中: ${displayTitle}`
-      : `Finder で表示: ${displayTitle}`;
+      : `履歴ファイルを Finder で表示: ${displayTitle}`;
   const sessionActionsLabel = isOpeningThisFile
     ? `セッション操作: ${displayTitle}、履歴ファイルを開いています`
     : isRevealingThisFile
-      ? `セッション操作: ${displayTitle}、Finder で表示しています`
+      ? `セッション操作: ${displayTitle}、履歴ファイルを Finder で表示しています`
       : isWaitingForOtherAction
         ? `セッション操作: ${displayTitle}、他の操作を処理中`
         : `セッション操作: ${displayTitle}`;

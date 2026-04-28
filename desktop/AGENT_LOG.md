@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: clarify reveal history file action
+
+- 開始日時: 2026-04-28 09:48 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、セッション履歴一覧の Finder 表示操作も保存済み文字起こし履歴ファイルを対象にしていることを aria/title で明確にする。
+- 結果: Finder 表示操作の aria/title と操作中ラベルを `履歴ファイルを Finder で表示` に揃えた。可視ボタンは幅を保つため `Finder で表示` のままにし、ファイル操作処理や履歴取得処理には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での Finder 表示操作は未確認。
+- 次アクション: 実機で Finder 表示操作の aria/title と可視文言が矛盾なく読めるか確認する。
+
 ### App Detection UX: clarify notification does not start recording
 
 - 開始日時: 2026-04-28 09:27 JST
