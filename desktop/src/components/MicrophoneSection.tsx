@@ -186,7 +186,7 @@ export function MicrophoneSection({
       </div>
       {!isCompact && (
         <div className="audio-source-note">
-          マイク音声は自分トラックとして文字起こしされます
+          マイク音声は自分トラックとして文字起こしされます。マイクが未許可の場合、自分の発話は記録されません。
         </div>
       )}
     </div>

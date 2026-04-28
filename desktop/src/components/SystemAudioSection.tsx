@@ -121,7 +121,7 @@ export function SystemAudioSection({
       {!isCompact && (
         <div className="audio-source-note">
           相手側トラックはシステム音声から取得します。macOS
-          の画面収録の許可が必要です。
+          の画面収録が未許可の場合、相手側の発話は記録されません。
         </div>
       )}
     </div>

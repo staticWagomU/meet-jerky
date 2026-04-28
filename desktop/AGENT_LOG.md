@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: clarify permission impact per track
+
+- 開始日時: 2026-04-29 04:51 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、音声ソース欄で権限がない場合にどのトラックの発話が記録されないかを明確にする。
+- 結果: 自分トラックのマイク補足と相手側トラックのシステム音声補足に、未許可時は該当トラックが記録されない旨を追加した。権限判定、録音制御、UI 構造には触れない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機での権限未許可表示は未確認。
+- 次アクション: 実機で補足文が過剰に目立たないことを確認する。
+
 ### Settings Accessibility: include permission attention in page label
 
 - 開始日時: 2026-04-29 04:50 JST
