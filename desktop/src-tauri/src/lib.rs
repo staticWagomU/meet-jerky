@@ -22,17 +22,20 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter, Manager, PhysicalPosition, Position, Size, WebviewUrl, WebviewWindowBuilder,
-    WindowEvent,
+    Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Size, WebviewUrl,
+    WebviewWindowBuilder, WindowEvent,
 };
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const MEETING_PROMPT_WINDOW_LABEL: &str = "meeting-prompt";
 const LIVE_CAPTION_WINDOW_LABEL: &str = "live-caption";
+const RING_LIGHT_WINDOW_LABEL: &str = "ring-light";
 const MEETING_PROMPT_WIDTH: f64 = 440.0;
 const MEETING_PROMPT_HEIGHT: f64 = 128.0;
 const LIVE_CAPTION_WIDTH: f64 = 460.0;
 const LIVE_CAPTION_HEIGHT: f64 = 104.0;
+const RING_LIGHT_FALLBACK_WIDTH: f64 = 1280.0;
+const RING_LIGHT_FALLBACK_HEIGHT: f64 = 800.0;
 
 pub(crate) fn install_rustls_crypto_provider() {
     if rustls::crypto::CryptoProvider::get_default().is_none() {
@@ -142,6 +145,24 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .visible(false)
     .build()?;
 
+    WebviewWindowBuilder::new(
+        app,
+        RING_LIGHT_WINDOW_LABEL,
+        WebviewUrl::App("index.html".into()),
+    )
+    .title("meet-jerky ring light")
+    .inner_size(RING_LIGHT_FALLBACK_WIDTH, RING_LIGHT_FALLBACK_HEIGHT)
+    .decorations(false)
+    .resizable(false)
+    .transparent(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .shadow(false)
+    .focused(false)
+    .focusable(false)
+    .visible(false)
+    .build()?;
+
     Ok(())
 }
 
@@ -218,6 +239,28 @@ fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) {
     }
 }
 
+#[tauri::command]
+fn set_ring_light_visible(app: tauri::AppHandle, visible: bool) {
+    if let Some(window) = app.get_webview_window(RING_LIGHT_WINDOW_LABEL) {
+        if let Ok(Some(monitor)) = app.primary_monitor() {
+            let _ = window.set_position(PhysicalPosition::new(
+                monitor.position().x,
+                monitor.position().y,
+            ));
+            let _ = window.set_size(PhysicalSize::new(
+                monitor.size().width,
+                monitor.size().height,
+            ));
+        }
+        let _ = window.set_ignore_cursor_events(true);
+        if visible {
+            let _ = window.show();
+        } else {
+            let _ = window.hide();
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     install_rustls_crypto_provider();
@@ -258,6 +301,7 @@ pub fn run() {
             session_commands::list_session_summaries_cmd,
             show_main_window,
             set_live_caption_window_visible,
+            set_ring_light_visible,
         ])
         .setup(|app| {
             setup_tray(app)?;

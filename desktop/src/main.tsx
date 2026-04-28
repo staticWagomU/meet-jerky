@@ -7,6 +7,7 @@ import { router } from "./router";
 import { queryClient } from "./lib/queryClient";
 import { MeetingDetectedBanner } from "./components/MeetingDetectedBanner";
 import { LiveCaptionWindow } from "./components/LiveCaptionWindow";
+import { RingLightWindow } from "./components/RingLightWindow";
 import "./App.css";
 
 const currentWindowLabel = getCurrentWindow().label;
@@ -19,6 +20,8 @@ const root =
     </div>
   ) : currentWindowLabel === "live-caption" ? (
     <LiveCaptionWindow />
+  ) : currentWindowLabel === "ring-light" ? (
+    <RingLightWindow />
   ) : (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

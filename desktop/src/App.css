@@ -224,9 +224,15 @@ body {
 }
 
 body[data-window="meeting-prompt"],
-body[data-window="live-caption"] {
+body[data-window="live-caption"],
+body[data-window="ring-light"] {
   min-width: 0;
   background: var(--color-surface);
+}
+
+body[data-window="ring-light"] {
+  min-height: 100vh;
+  background: transparent;
 }
 
 #root {
@@ -304,6 +310,31 @@ body[data-window="live-caption"] {
   font-size: 0.68rem;
   line-height: 1.25;
   font-weight: 700;
+}
+
+.app-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+}
+
+.app-header-light-toggle {
+  border: 1px solid color-mix(in srgb, var(--meeting-status-neutral-color) 24%, transparent);
+  border-radius: 999px;
+  padding: 0.18rem 0.48rem;
+  color: var(--meeting-status-neutral-color);
+  background-color: var(--meeting-status-neutral-bg);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-header-light-toggle-active {
+  color: var(--permission-banner-color);
+  background-color: var(--permission-banner-bg);
+  border-color: color-mix(in srgb, var(--permission-banner-color) 36%, transparent);
 }
 
 .app-content {
@@ -1051,6 +1082,51 @@ body[data-window="live-caption"] {
 
 .live-transcript-panel-error .live-transcript-dot {
   background-color: var(--transcript-error-color);
+}
+
+.ring-light-window {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: transparent;
+}
+
+.ring-light-edge {
+  position: fixed;
+  pointer-events: none;
+  background: rgba(255, 244, 214, 0.88);
+  filter: blur(18px);
+  opacity: 0.74;
+}
+
+.ring-light-edge-top,
+.ring-light-edge-bottom {
+  left: 8vw;
+  right: 8vw;
+  height: 4.8rem;
+}
+
+.ring-light-edge-top {
+  top: -1.5rem;
+}
+
+.ring-light-edge-bottom {
+  bottom: -1.5rem;
+}
+
+.ring-light-edge-left,
+.ring-light-edge-right {
+  top: 10vh;
+  bottom: 10vh;
+  width: 4.2rem;
+}
+
+.ring-light-edge-left {
+  left: -1.4rem;
+}
+
+.ring-light-edge-right {
+  right: -1.4rem;
 }
 
 .live-transcript-close-btn {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
@@ -10,6 +10,7 @@ const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 
 function App() {
   const navigate = useNavigate();
+  const [isRingLightVisible, setIsRingLightVisible] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -47,6 +48,15 @@ function App() {
     };
   }, [navigate]);
 
+  const toggleRingLight = () => {
+    const nextVisible = !isRingLightVisible;
+    setIsRingLightVisible(nextVisible);
+    void invoke("set_ring_light_visible", { visible: nextVisible }).catch((e) => {
+      setIsRingLightVisible(!nextVisible);
+      console.error("リングライト表示の切り替えに失敗しました:", e);
+    });
+  };
+
   return (
     <main className="container app-shell">
       <header
@@ -61,14 +71,36 @@ function App() {
           </span>
           <h1 data-tauri-drag-region>会議の記録</h1>
         </div>
-        <span
-          className="app-header-status"
-          data-tauri-drag-region
-          aria-label="メニューバー常駐中"
-          title="メニューバー常駐中"
-        >
-          常駐中
-        </span>
+        <div className="app-header-actions">
+          <button
+            type="button"
+            className={`app-header-light-toggle${
+              isRingLightVisible ? " app-header-light-toggle-active" : ""
+            }`}
+            aria-pressed={isRingLightVisible}
+            aria-label={
+              isRingLightVisible
+                ? "リングライトを消す"
+                : "リングライトを表示する"
+            }
+            title={
+              isRingLightVisible
+                ? "リングライトを消す"
+                : "リングライトを表示する"
+            }
+            onClick={toggleRingLight}
+          >
+            ライト
+          </button>
+          <span
+            className="app-header-status"
+            data-tauri-drag-region
+            aria-label="メニューバー常駐中"
+            title="メニューバー常駐中"
+          >
+            常駐中
+          </span>
+        </div>
       </header>
       <nav className="nav app-nav" aria-label="主要ナビゲーション">
         <Link

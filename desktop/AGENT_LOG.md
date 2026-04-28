@@ -1,5 +1,19 @@
 # Agent Log
 
+### Ring Light: add click-through overlay window
+
+- 開始日時: 2026-04-29 07:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `src/App.tsx`, `src/main.tsx`, `src/components/RingLightWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の追加要望として、必要に応じて表示できるリングライト風機能を最小実装する。jankeyboard は同名 OSS を特定できずライセンス未確認のためコード流用せず、クリックを邪魔しないオーバーレイという実装アイデアだけ取り込む。
+- 結果: `ring-light` 独立ウィンドウを追加し、透明・常時前面・focusable false・クリック透過で作成するようにした。メニューバーウィンドウのヘッダーに `ライト` トグルを追加し、表示時は主ディスプレイ全体へ配置して画面端に暖色の柔らかい光を描画する。録音/文字起こし/会議検知ロジックには触れない。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src/App.tsx`, `src/main.tsx`, `src/components/RingLightWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: 初回 `cargo fmt --manifest-path src-tauri/Cargo.toml --check` は import 整形差分で失敗したため `cargo fmt --manifest-path src-tauri/Cargo.toml` を実行。再検証で `git diff --check -- src-tauri/src/lib.rs src/App.tsx src/main.tsx src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md` 成功、`cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`scripts/agent-verify.sh src-tauri/src/lib.rs src/App.tsx src/main.tsx src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。追加で `cargo check --manifest-path src-tauri/Cargo.toml` を試したが、既知通り `whisper-rs-sys` の build script が `cmake` 不在で失敗。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の型チェック/全体テストは `cmake` 不在で未完走。リングライトの透明・クリック透過・主ディスプレイ全体配置は未実機確認。
+- 次アクション: 差分を確認してコミットする。`cmake` あり環境で Tauri Rust build とリングライト実機挙動を確認する。
+
 ### UI Refresh: restructure meeting prompt window
 
 - 開始日時: 2026-04-29 07:38 JST
