@@ -39,10 +39,16 @@ export function PermissionBanner() {
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasDeniedPermission =
     micPermission === "denied" || screenPermission === "denied";
+  const settingsOpenErrorLabel = settingsOpenError
+    ? `macOS 設定を開けませんでした: ${settingsOpenError}`
+    : null;
+  const hasSettingsOpenError = Boolean(settingsOpenErrorLabel);
   const permissionBannerRole =
-    hasCheckError || hasDeniedPermission ? "alert" : "status";
+    hasCheckError || hasDeniedPermission || hasSettingsOpenError
+      ? "alert"
+      : "status";
   const permissionBannerClassName =
-    hasCheckError || hasDeniedPermission
+    hasCheckError || hasDeniedPermission || hasSettingsOpenError
       ? "permission-banner permission-banner-warning permission-banner-alert"
       : "permission-banner permission-banner-warning";
   const micPermissionErrorMessage = micPermissionError
@@ -83,15 +89,13 @@ export function PermissionBanner() {
     "録音と取得の権限状態",
     micNeedsAttention ? micPermissionDetail : null,
     screenNeedsAttention ? screenPermissionDetail : null,
+    settingsOpenErrorLabel,
   ]
     .filter(Boolean)
     .join("、");
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
-  const settingsOpenErrorLabel = settingsOpenError
-    ? `macOS 設定を開けませんでした: ${settingsOpenError}`
-    : null;
   const micPermissionBody = isCheckingPermissions
     ? "マイク権限の状態を確認しています。"
     : micPermissionError

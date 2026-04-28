@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: include settings-open failures in banner status
+
+- 開始日時: 2026-04-29 04:48 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、権限バナーで macOS 設定を開けなかった失敗が本文だけでなくバナー全体の状態にも反映されるようにする。
+- 結果: 設定アプリを開けないエラーがある場合、権限バナー全体を `alert` 扱いにし、aria-label / title の要約にもエラー内容を含めるようにした。権限判定・設定URL・実機操作には触れない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で macOS 設定を開けないケースの表示は未確認。
+- 次アクション: 実機で設定起動失敗時のバナー読み上げを確認する。
+
 ### Live Caption Status: centralize external sending detection
 
 - 開始日時: 2026-04-29 04:27 JST
