@@ -11294,3 +11294,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実装時はノッチ有無、メニューバー位置、複数ディスプレイ、ステージマネージャ、フルスクリーンアプリ上での表示制約を検証する。
+
+### Live caption window: expand draggable surface
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 画面下部の独立した文字起こしウィンドウを、音声入力アプリのように控えめで、閉じるボタン以外はどこを触ってもドラッグできる操作感へ近づける。
+- 結果: ライブ文字起こしウィンドウのメタ情報、話者表示、タイムスタンプ、エンジン/外部送信ピルにも `data-tauri-drag-region` を明示した。閉じるボタンはドラッグ領域にせず、既存の手動 close 操作を維持した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: ビルド後、実機 Tauri ウィンドウで閉じるボタンとドラッグ可能範囲を確認する。未実機範囲は環境制約として扱う。

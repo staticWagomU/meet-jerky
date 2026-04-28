@@ -311,15 +311,21 @@ export function LiveCaptionWindow() {
         <div className="live-transcript-content" data-tauri-drag-region>
           <div className="live-transcript-meta" data-tauri-drag-region>
             <span className="live-transcript-dot" aria-hidden="true" />
-            <span>{isErrorState ? "文字起こしエラー" : "ライブ文字起こし"}</span>
+            <span data-tauri-drag-region>
+              {isErrorState ? "文字起こしエラー" : "ライブ文字起こし"}
+            </span>
             {latestSegment && (
-              <span className={getSpeakerClassName(latestSegment)}>
+              <span
+                className={getSpeakerClassName(latestSegment)}
+                data-tauri-drag-region
+              >
                 {getSpeakerLabel(latestSegment)}
               </span>
             )}
             {captionTimestamp && (
               <span
                 className="live-transcript-timestamp"
+                data-tauri-drag-region
                 aria-label={`発話時刻 ${captionTimestamp}`}
                 title={`発話時刻 ${captionTimestamp}`}
               >
@@ -332,6 +338,7 @@ export function LiveCaptionWindow() {
                   ? " live-transcript-engine-pill-warning"
                   : ""
               }`}
+              data-tauri-drag-region
               aria-label={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
               title={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
             >
@@ -343,6 +350,7 @@ export function LiveCaptionWindow() {
                   ? " live-transcript-privacy-pill-warning"
                   : ""
               }`}
+              data-tauri-drag-region
               aria-label={liveCaptionTransmissionAriaLabel}
               title={liveCaptionTransmissionAriaLabel}
             >
