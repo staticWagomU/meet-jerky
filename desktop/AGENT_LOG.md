@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: show pending transcription source
+
+- 開始日時: 2026-04-28 09:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、録音ソースは動いているが文字起こし停止中のときも、開始するとどのトラックが文字起こし対象になるかを分かりやすくする。
+- 結果: 文字起こし停止中でもマイク/相手側音声の取得状態に応じて `文字起こし待機: ...` を表示するようにした。片側 source のみ待機/実行中は warning 表示にし、自分または相手側が未取得であることが見えるようにした。録音開始/停止や文字起こし開始処理には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI 表示は未確認。
+- 次アクション: 実機で待機中の source 表示が操作パネルを圧迫せず自然に読めるか確認する。
+
 ### Transcript UX: clarify visible log clear action
 
 - 開始日時: 2026-04-28 09:18 JST

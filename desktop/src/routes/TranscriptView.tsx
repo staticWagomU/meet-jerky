@@ -76,6 +76,15 @@ function getTranscriptionSourceStatus(
   isSystemAudioRecording: boolean,
 ): string | null {
   if (!isTranscribing) {
+    if (isMicRecording && isSystemAudioRecording) {
+      return "文字起こし待機: 自分と相手側";
+    }
+    if (isMicRecording) {
+      return "文字起こし待機: 自分のみ、相手側は未取得";
+    }
+    if (isSystemAudioRecording) {
+      return "文字起こし待機: 相手側のみ、自分は未録音";
+    }
     return null;
   }
   if (isMicRecording && isSystemAudioRecording) {
@@ -943,7 +952,8 @@ export function TranscriptView() {
     isSystemAudioRecording,
   );
   const transcriptionSourceStatusIsWarning =
-    isTranscribing && !(isMicRecording && isSystemAudioRecording);
+    Boolean(transcriptionSourceStatus) &&
+    !(isMicRecording && isSystemAudioRecording);
   const transcriptionStartBlockedReason = getTranscriptionStartBlockedReason(
     isTranscribing,
     isAnySourceRecording,
