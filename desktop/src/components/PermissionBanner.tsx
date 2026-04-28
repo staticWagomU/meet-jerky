@@ -183,6 +183,7 @@ export function PermissionBanner() {
             type="button"
             className="control-btn control-btn-clear"
             onClick={() => {
+              setSettingsOpenError(null);
               void openUrl(MACOS_MICROPHONE_PRIVACY_URL).catch((e) => {
                 const msg = toErrorMessage(e);
                 console.error("マイク権限設定を開けませんでした:", msg);
@@ -200,6 +201,7 @@ export function PermissionBanner() {
             type="button"
             className="control-btn control-btn-clear"
             onClick={() => {
+              setSettingsOpenError(null);
               void openUrl(MACOS_SCREEN_RECORDING_PRIVACY_URL).catch((e) => {
                 const msg = toErrorMessage(e);
                 console.error("画面収録設定を開けませんでした:", msg);

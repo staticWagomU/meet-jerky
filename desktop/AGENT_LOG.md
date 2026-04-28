@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: clear stale settings-open errors
+
+- 開始日時: 2026-04-29 00:47 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、macOS 権限設定を開く操作で過去の失敗メッセージが残り続けないようにする。
+- 結果: マイク設定/画面収録設定を開くボタンを押した時点で `settingsOpenError` をクリアし、その操作が失敗した場合だけ新しいエラーを表示するようにした。権限確認処理、URL、認証情報には触れない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: macOS システム設定を実際に開く確認は未実機確認。
+- 次アクション: 検証後、実機で一度設定オープンに失敗したあと再操作時に古いエラーが消えることを確認する。
+
 ### Live Caption UX: clarify waiting tracks
 
 - 開始日時: 2026-04-29 00:46 JST
