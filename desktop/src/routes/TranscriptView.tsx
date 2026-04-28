@@ -24,6 +24,10 @@ import {
   hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  LIVE_CAPTION_STATUS_EVENT,
+  LIVE_CAPTION_STATUS_STORAGE_KEY,
+} from "../utils/liveCaptionStatus";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
@@ -31,8 +35,6 @@ const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:"
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
-const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
-const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 

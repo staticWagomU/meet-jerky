@@ -2,52 +2,33 @@ import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  DEFAULT_LIVE_CAPTION_STATUS,
+  LIVE_CAPTION_STATUS_EVENT,
+  LIVE_CAPTION_STATUS_STORAGE_KEY,
+  getVisibleTransmissionLabel,
+  isLiveCaptionStatusPayload,
+  type LiveCaptionStatusPayload,
+} from "../utils/liveCaptionStatus";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
 import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
-const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
-const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
-interface LiveCaptionStatusPayload {
-  engineLabel: string;
-  aiTransmissionLabel: string;
-  isExternalTransmission: boolean;
-}
 
 const TRACKS: Array<{ source: AudioSource; label: string }> = [
   { source: "microphone", label: "自分" },
   { source: "system_audio", label: "相手側" },
 ];
 
-const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
-  engineLabel: "確認中",
-  aiTransmissionLabel: "確認中",
-  isExternalTransmission: false,
-};
-
 function createEmptyLatestBySource(): LatestBySource {
   return {
     microphone: null,
     system_audio: null,
   };
-}
-
-function isLiveCaptionStatusPayload(
-  value: unknown,
-): value is LiveCaptionStatusPayload {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as Partial<LiveCaptionStatusPayload>;
-  return (
-    typeof candidate.engineLabel === "string" &&
-    typeof candidate.aiTransmissionLabel === "string" &&
-    typeof candidate.isExternalTransmission === "boolean"
-  );
 }
 
 function readStoredLiveCaptionStatus(): LiveCaptionStatusPayload {
@@ -90,16 +71,6 @@ function getTrackStateLabel(segment: TranscriptSegment | null): string {
     return "エラー";
   }
   return formatSegmentTimestamp(segment.startMs);
-}
-
-function getVisibleTransmissionLabel(status: LiveCaptionStatusPayload): string {
-  if (status.isExternalTransmission) {
-    return "外部送信";
-  }
-  if (status.aiTransmissionLabel === "なし") {
-    return "端末内";
-  }
-  return status.aiTransmissionLabel;
 }
 
 export function LiveCaptionWindow() {

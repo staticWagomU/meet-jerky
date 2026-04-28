@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Status: share event constants and payload type
+
+- 開始日時: 2026-04-29 04:16 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 直近のライブ字幕ステータス実装を批判的に見直し、イベント名・保存キー・payload 型の重複で将来ドリフトしないようにする。
+- 結果: ライブ字幕ステータスのイベント名、保存キー、payload 型、既定値、表示ラベル変換を `src/utils/liveCaptionStatus.ts` に集約した。挙動や保存内容は変えず、API キーや設定全体には触れない。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立ウィンドウでのイベント同期は未確認。
+- 次アクション: ライブ字幕ステータスの同期表示を実機確認する。
+
 ### Live Caption Layout: allow metadata to wrap
 
 - 開始日時: 2026-04-29 04:15 JST
