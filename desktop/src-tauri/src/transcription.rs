@@ -1072,8 +1072,8 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
         let samples = &read_buffer[..read_count];
 
         if let Err(e) = stream.feed(samples) {
-            eprintln!("文字起こしエラー: {e}");
             if should_emit_realtime_stream_error(&e) {
+                eprintln!("文字起こしエラー: {e}");
                 let _ = app.emit(
                     "transcription-error",
                     build_transcription_error_payload(e, Some(source)),
