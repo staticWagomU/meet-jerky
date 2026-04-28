@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcription UX: clarify pending control labels
+
+- 開始日時: 2026-04-29 00:31 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、文字起こし操作の pending 表示を `処理中` から開始中/停止中へ揃え、会議中の状態を読み取りやすくする。
+- 結果: `isTranscribing` に応じて pending 文言を `文字起こしを開始中` / `文字起こしを停止中` にし、ボタン表示も `開始中...` / `停止中...` に変更した。文字起こし開始/停止処理には触れない。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI でボタン幅に収まるかは未確認。
+- 次アクション: 実機 UI で `開始中...` / `停止中...` が文字起こしボタン内で自然に収まるか確認する。
+
 ### Meeting UX: clarify pending status strip labels
 
 - 開始日時: 2026-04-29 00:25 JST

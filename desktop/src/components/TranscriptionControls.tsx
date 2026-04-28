@@ -36,19 +36,22 @@ export function TranscriptionControls({
     sourceStatusText && sourceStatusIsWarning
       ? "transcription-source-status transcription-source-status-warning"
       : "transcription-source-status";
+  const pendingTranscriptionLabel = isTranscribing
+    ? "文字起こしを停止中"
+    : "文字起こしを開始中";
   const transcriptionButtonLabel = isTranscriptionOperationPending
-    ? "文字起こしを処理中"
+    ? pendingTranscriptionLabel
     : isTranscribing
       ? "文字起こしを停止"
       : !canStartTranscription && startBlockedReason
         ? `文字起こしを開始できません: ${startBlockedReason}`
       : "文字起こしを開始";
   const clearTranscriptLabel = isTranscriptionOperationPending
-    ? "文字起こし処理中のため表示ログをクリアできません"
+    ? `${pendingTranscriptionLabel}のため表示ログをクリアできません`
     : `表示中の文字起こしログ ${segmentsCount} 件をクリア`;
   const transcriptionControlsLabel = [
     "文字起こし操作",
-    isTranscriptionOperationPending ? "処理中" : null,
+    isTranscriptionOperationPending ? pendingTranscriptionLabel : null,
     isTranscribing ? "文字起こし中" : "停止中",
     sourceStatusText,
     startBlockedReason ? `開始不可: ${startBlockedReason}` : null,
@@ -91,7 +94,9 @@ export function TranscriptionControls({
           }
         >
           {isTranscriptionOperationPending
-            ? "処理中..."
+            ? isTranscribing
+              ? "停止中..."
+              : "開始中..."
             : isTranscribing
               ? "文字起こしを停止"
               : "文字起こしを開始"}
