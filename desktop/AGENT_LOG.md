@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: animate voice wave subtly
+
+- 開始日時: 2026-04-29 03:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウの状態感を強めるため、音声入力 UI らしい控えめな波形アニメーションを追加する。
+- 結果: `.live-transcript-wave` の3本バーに stagger 付きの `scaleY` アニメーションを追加した。既存の `prefers-reduced-motion: reduce` 全体ガードにより、動きを減らす設定では実質停止する。レイアウト、文字起こしイベント、録音制御には触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実ウィンドウでのアニメーション表示と reduced motion 設定下の見え方は未確認。
+- 次アクション: 実機で会議中に邪魔にならない動きか、reduced motion 設定下で実質停止するか確認する。
+
 ### Meeting Prompt Safety: centralize pending start storage
 
 - 開始日時: 2026-04-29 03:41 JST
