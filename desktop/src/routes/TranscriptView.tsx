@@ -133,7 +133,9 @@ function getTranscriptionStartBlockedReason(
   if (isSettingsLoading) {
     return "文字起こし設定を確認中です。";
   }
-  if (modelDownloadedError) return null;
+  if (modelDownloadedError) {
+    return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
+  }
   if (externalApiKeyError && externalApiProvider) {
     return `${externalApiProvider} API キーの状態を確認できません。`;
   }
@@ -184,7 +186,9 @@ function getMeetingStartBlockedReason(
   if (isSettingsLoading) {
     return "文字起こし設定を確認中です。";
   }
-  if (modelDownloadedError) return null;
+  if (modelDownloadedError) {
+    return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
+  }
   if (externalApiKeyError && externalApiProvider) {
     return `${externalApiProvider} API キーの状態を確認できません。`;
   }

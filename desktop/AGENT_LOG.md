@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: expose model status error as block reason
+
+- 開始日時: 2026-04-29 01:47 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Whisper モデル状態確認エラー時に記録開始・文字起こし開始が無効化される理由をボタン title/aria からも分かるようにする。
+- 結果: 文字起こし開始と記録開始の開始不可理由に `Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。` を追加した。既存のモデル状態確認エラー alert は維持し、モデル取得・ダウンロード処理には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: モデル状態確認エラーの実機 UI 表示は未確認。
+- 次アクション: モックまたは cmake あり環境でモデル状態確認失敗時に開始不可理由、alert、button title/aria が矛盾しないことを確認する。
+
 ### Meeting UX: explain settings loading block
 
 - 開始日時: 2026-04-29 01:25 JST
