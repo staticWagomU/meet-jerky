@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: add empty-search clear action
+
+- 開始日時: 2026-04-29 01:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索で該当なしになった空状態からも検索語をクリアできるようにし、履歴一覧へ戻りやすくする。
+- 結果: 該当なし表示を action 付きの空状態に変更し、`検索をクリア` ボタンで検索語を空に戻せるようにした。検索入力欄のクリアボタン、履歴取得、ファイル操作処理は維持した。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI で空状態内のボタン位置は未確認。
+- 次アクション: 実機 UI で該当なし状態の `検索をクリア` ボタンが自然に見え、検索入力欄のクリアボタンと挙動が一致することを確認する。
+
 ### History UX: add search clear action
 
 - 開始日時: 2026-04-29 00:55 JST

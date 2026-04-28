@@ -1557,6 +1557,13 @@ body[data-window="live-caption"] {
   padding: 2rem 0;
 }
 
+.session-list-empty-actionable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
 .session-list-error {
   display: flex;
   align-items: center;

@@ -290,16 +290,25 @@ export function SessionList() {
           記録を終了すると、保存された文字起こし履歴がここに表示されます
         </p>
       ) : filteredSessions.length === 0 ? (
-        <p
-          className="session-list-empty"
+        <div
+          className="session-list-empty session-list-empty-actionable"
           role="status"
           aria-live="polite"
           aria-atomic="true"
           aria-label={`検索条件 ${trimmedSearchQuery} に一致する文字起こし履歴はありません`}
           title={`検索条件 ${trimmedSearchQuery} に一致する文字起こし履歴はありません`}
         >
-          検索条件に一致する文字起こし履歴はありません
-        </p>
+          <span>検索条件に一致する文字起こし履歴はありません</span>
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            onClick={() => setSearchQuery("")}
+            aria-label={clearSearchLabel}
+            title={clearSearchLabel}
+          >
+            検索をクリア
+          </button>
+        </div>
       ) : (
         <ul className="session-list-items">
           {filteredSessions.map((session) => (
