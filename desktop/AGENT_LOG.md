@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: prevent status pill truncation
+
+- 開始日時: 2026-04-28 09:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面のステータスピルが長い録音/取得/外部送信状態を省略せず読めるようにする。
+- 結果: ライブ画面のステータスピルの ellipsis をやめ、最大幅を広げつつ折り返し可能にした。状態判定、文言、録音/文字起こし制御には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でステータスピルの折り返しが会議中の邪魔にならず、全文が読めるか確認する。
+
 ### Transcript UX: show audio capture state in pill
 
 - 開始日時: 2026-04-28 09:58 JST

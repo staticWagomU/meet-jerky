@@ -856,10 +856,9 @@
   font-size: 0.72rem;
   line-height: 1.3;
   font-weight: 600;
-  max-width: 10rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: min(100%, 16rem);
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .meeting-status-pill-active {
