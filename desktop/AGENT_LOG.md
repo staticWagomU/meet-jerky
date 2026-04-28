@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: restyle audio track cards
+
+- 開始日時: 2026-04-29 08:22 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の段階実装として、自分/相手側の音声トラック欄を録音状態パネルと同じ質感へ揃え、トラック状態の透明性を上げる。
+- 結果: 音声トラック欄をガラス調カードにし、状態 badge、入力待ち badge、注意文、音量メーターの角丸・余白・境界を調整した。コンポーネントのロジック、録音、権限処理には触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での小ウィンドウ内の折り返しと音量メーター視認性は未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### Live Caption Window: add restore control
 
 - 開始日時: 2026-04-29 08:20 JST
