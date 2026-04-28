@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source A11y: include waiting input in section labels
+
+- 開始日時: 2026-04-29 04:01 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 直前に追加した `入力待ち` 状態を、視覚バッジだけでなく音声トラックセクション全体の aria-label / title にも含める。
+- 結果: 自分マイクと相手側システム音声のセクションラベルに、録音/取得中かつ表示レベル 0% の場合だけ `入力待ち` を含めた。表示バッジ、音声取得、文字起こし処理には触れない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。
+- 次アクション: 実機で aria-label が過剰に長くならず、入力待ち状態が支援技術にも伝わることを確認する。
+
 ### Audio Source UX: show waiting input badge
 
 - 開始日時: 2026-04-29 03:59 JST

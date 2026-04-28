@@ -69,7 +69,7 @@ export function MicrophoneSection({
   const audioDevicesErrorMessage = audioDevicesError
     ? toErrorMessage(audioDevicesError)
     : "";
-  const micSectionLabel = `${micStateDescription}、音量 ${micLevelPercent}%`;
+  const micSectionLabel = `${micStateDescription}${isMicInputWaiting ? "、入力待ち" : ""}、音量 ${micLevelPercent}%`;
 
   return (
     <div

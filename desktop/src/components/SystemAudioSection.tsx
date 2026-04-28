@@ -44,7 +44,7 @@ export function SystemAudioSection({
     : isSystemAudioRecording
       ? "相手側トラックのシステム音声取得を停止"
       : "相手側トラックのシステム音声取得を開始";
-  const systemAudioSectionLabel = `${systemAudioStateDescription}、音量 ${systemAudioLevelPercent}%`;
+  const systemAudioSectionLabel = `${systemAudioStateDescription}${isSystemAudioInputWaiting ? "、入力待ち" : ""}、音量 ${systemAudioLevelPercent}%`;
 
   return (
     <div
