@@ -1046,21 +1046,21 @@ export function TranscriptView() {
     isSystemAudioRecording,
   );
   const audioSourceStatusDisplayLabel = isAudioCaptureOperationPending
-    ? "処理中"
+    ? "切替中"
     : audioSourceStatusLabel;
   const audioSourceStatusDisplayAriaText = isAudioCaptureOperationPending
-    ? "音声ソースを処理中"
+    ? "音声ソースを切替中"
     : audioSourceStatusAriaText;
   const audioSourceStatusClass = isAudioCaptureOperationPending
     ? "meeting-status-pill-neutral"
     : getAudioSourceStatusPillClass(isMicRecording, isSystemAudioRecording);
   const micTrackStatusLabel = isMicSourceOperationPending
-    ? "処理中"
+    ? "切替中"
     : isMicRecording
       ? "録音中"
       : "未録音";
   const systemAudioTrackStatusLabel = isSystemAudioSourceOperationPending
-    ? "処理中"
+    ? "切替中"
     : isSystemAudioRecording
       ? "取得中"
       : "未取得";
@@ -1107,7 +1107,9 @@ export function TranscriptView() {
       ? `${externalApiProvider} API キー: ${externalApiKeyStatusLabel}`
       : null;
   const meetingRecordingStatusLabel = isMeetingOperationPending
-    ? "処理中"
+    ? isMeetingActive
+      ? "終了中"
+      : "開始中"
     : isMeetingActive
       ? "録音中"
       : "未録音";
@@ -1117,7 +1119,9 @@ export function TranscriptView() {
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
   const transcriptionStatusLabel = isTranscriptionOperationPending
-    ? "処理中"
+    ? isTranscribing
+      ? "停止中"
+      : "開始中"
     : isTranscribing
       ? "文字起こし中"
       : "停止中";
@@ -1140,7 +1144,9 @@ export function TranscriptView() {
     .filter(Boolean)
     .join("、");
   const meetingButtonLabel = isMeetingOperationPending
-    ? "録音と文字起こしの記録を処理中"
+    ? isMeetingActive
+      ? "録音と文字起こしの記録を終了中"
+      : "録音と文字起こしの記録を開始中"
     : isMeetingActive
       ? "録音と文字起こしの記録を終了"
       : !canStartMeeting && meetingStartBlockedReason
@@ -1223,7 +1229,9 @@ export function TranscriptView() {
             aria-hidden="true"
           />
           {isMeetingOperationPending
-            ? "処理中..."
+            ? isMeetingActive
+              ? "終了中..."
+              : "開始中..."
             : isMeetingActive
               ? "記録を終了"
               : "記録を開始"}

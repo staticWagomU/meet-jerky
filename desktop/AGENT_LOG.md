@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: clarify pending status strip labels
+
+- 開始日時: 2026-04-29 00:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、記録中画面の status strip と記録ボタンで pending 状態が `処理中` に丸められている箇所を、開始中/終了中/切替中として読み取りやすくする。
+- 結果: 音声ソースと各トラックの pending 表示を `切替中` にし、記録は active 状態に応じて `開始中` / `終了中`、文字起こしは `開始中` / `停止中` を表示するようにした。録音・文字起こし制御ロジックには触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI で各 pill の幅が収まるかは未確認。
+- 次アクション: 実機 UI で `開始中` / `終了中` / `切替中` の各 pill が横幅に収まり、状態遷移として自然に読めるか確認する。
+
 ### Audio Source UX: clarify pending state labels
 
 - 開始日時: 2026-04-29 00:17 JST
