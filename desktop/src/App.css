@@ -1263,9 +1263,15 @@ body[data-window="ring-light"] {
 .meeting-control {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.7rem;
   flex-wrap: wrap;
-  padding: 0.4rem 0;
+  padding: 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  border-radius: 16px;
+  background-color: color-mix(in srgb, var(--color-surface-glass) 92%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 42%, transparent),
+    0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .meeting-btn {
@@ -1274,15 +1280,23 @@ body[data-window="ring-light"] {
   justify-content: center;
   flex: 0 0 auto;
   gap: 0.5rem;
-  padding: 0.7em 1.5em;
+  min-height: 2.35rem;
+  padding: 0.58em 1.05em;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
   color: #fff;
   background-color: #16a34a;
-  transition: background-color 0.2s, opacity 0.2s, transform 0.1s;
+  box-shadow:
+    0 8px 18px rgba(22, 163, 74, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transition:
+    background-color 0.2s,
+    opacity 0.2s,
+    transform 0.1s,
+    box-shadow 0.2s;
   white-space: nowrap;
 }
 
@@ -1301,14 +1315,21 @@ body[data-window="ring-light"] {
 
 .meeting-btn-active {
   background-color: #dc2626;
+  box-shadow:
+    0 8px 18px rgba(220, 38, 38, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .meeting-timer {
   font-family: var(--font-mono);
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 0.98rem;
+  font-weight: 700;
   flex: 0 0 auto;
   color: var(--meeting-timer-color);
+  border-radius: 999px;
+  padding: 0.32rem 0.52rem;
+  background-color: var(--transcript-error-bg);
+  font-variant-numeric: tabular-nums;
 }
 
 .meeting-status-strip {
@@ -1321,39 +1342,45 @@ body[data-window="ring-light"] {
 }
 
 .meeting-status-pill {
-  border-radius: 4px;
-  padding: 0.16rem 0.45rem;
-  font-size: 0.72rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.48rem;
+  font-size: 0.7rem;
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 700;
   max-width: min(100%, 16rem);
   overflow-wrap: anywhere;
   white-space: normal;
+  border: 1px solid transparent;
 }
 
 .meeting-status-pill-active {
   color: var(--meeting-status-active-color);
   background-color: var(--meeting-status-active-bg);
+  border-color: color-mix(in srgb, var(--meeting-status-active-color) 24%, transparent);
 }
 
 .meeting-status-pill-idle {
   color: var(--meeting-status-idle-color);
   background-color: var(--meeting-status-idle-bg);
+  border-color: color-mix(in srgb, var(--meeting-status-idle-color) 22%, transparent);
 }
 
 .meeting-status-pill-neutral {
   color: var(--meeting-status-neutral-color);
   background-color: var(--meeting-status-neutral-bg);
+  border-color: color-mix(in srgb, var(--meeting-status-neutral-color) 22%, transparent);
 }
 
 .meeting-status-pill-warning {
   color: var(--permission-banner-color);
   background-color: var(--permission-banner-bg);
+  border-color: color-mix(in srgb, var(--permission-banner-color) 28%, transparent);
 }
 
 .meeting-status-pill-error {
   color: var(--transcript-error-color);
   background-color: var(--transcript-error-bg);
+  border-color: color-mix(in srgb, var(--transcript-error-color) 28%, transparent);
 }
 
 .meeting-error,

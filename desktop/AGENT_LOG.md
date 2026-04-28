@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: restyle recording status cockpit
+
+- 開始日時: 2026-04-29 08:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の段階実装として、メイン画面の録音・文字起こし状態を会議中に一目で分かるコックピット風に整える。
+- 結果: 会議操作ブロックをガラス調のまとまりにし、記録ボタン、経過時間、状態 pill の角丸・余白・影・境界を Mac らしい控えめな密度へ調整した。React/録音/文字起こしロジックには触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での小ウィンドウ内の折り返しと視認性は未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### Ring Light: add click-through overlay window
 
 - 開始日時: 2026-04-29 07:40 JST
