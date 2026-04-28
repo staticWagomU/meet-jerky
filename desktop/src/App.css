@@ -1064,6 +1064,11 @@
   color: #d33;
 }
 
+.settings-inline-error > span {
+  flex: 1 1 14rem;
+  overflow-wrap: anywhere;
+}
+
 .settings-select {
   padding: 0.4em 0.6em;
   border-radius: 6px;

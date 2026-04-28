@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: keep inline errors readable
+
+- 開始日時: 2026-04-28 10:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、設定・マイクデバイス周辺のインラインエラーで長い OS/API エラー文がボタンを圧迫せず読めるようにする。
+- 結果: `.settings-inline-error > span` に伸縮幅と `overflow-wrap: anywhere` を追加し、マイクデバイス一覧、出力先、API キー状態などの長いエラー文が折り返して読めるようにした。エラー生成や再試行処理には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で長い権限/API/出力先エラーがボタンを圧迫せず読めるか確認する。
+
 ### History UX: keep long titles and filenames readable
 
 - 開始日時: 2026-04-28 10:04 JST
