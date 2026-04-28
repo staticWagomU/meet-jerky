@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Copy: align URL detection spacing
+
+- 開始日時: 2026-04-29 03:41 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、設定画面のブラウザ URL 検知権限バッジに残っていた `URL検知時` 表記を、既存の `URL 検知` 表記へ揃える。
+- 結果: 権限バッジ表示を `URL 検知時に確認` に変更した。aria/title、権限取得処理、URL 検知処理には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実画面での表示は未確認。
+- 次アクション: 実画面で `URL 検知時に確認` が自然に収まることを確認する。
+
 ### Settings Permissions: clarify browser URL permissions
 
 - 開始日時: 2026-04-29 03:36 JST

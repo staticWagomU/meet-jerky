@@ -780,7 +780,7 @@ export function SettingsView() {
               aria-label={browserAutomationPermissionLabel}
               title={browserAutomationPermissionLabel}
             >
-              URL検知時に確認
+              URL 検知時に確認
             </span>
           </div>
           <div className="settings-permission-actions">
