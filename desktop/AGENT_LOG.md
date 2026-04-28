@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt UX: show auto-hide countdown
+
+- 開始日時: 2026-04-29 02:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立した会議検知プロンプトが自動で隠れるまでの残り秒数を UI と aria/title に出し、録音開始前の状況を分かりやすくする。
+- 結果: `PROMPT_AUTO_HIDE_SECONDS` と countdown state を追加し、会議検知時に残り秒数を初期化、1秒ごとに更新するようにした。録音開始/状態確認/閉じる操作、15秒の自動 hide 挙動、検知 payload には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の独立 meeting-prompt window での見え方は未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: 実機またはブラウザで、会議検知プロンプトが残り秒数を表示し、15秒後に隠れることを確認する。
+
 ### Realtime Tests: assert provider error flags
 
 - 開始日時: 2026-04-29 02:29 JST

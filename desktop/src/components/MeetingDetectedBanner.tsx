@@ -8,6 +8,7 @@ const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 const PROMPT_AUTO_HIDE_MS = 15000;
+const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
@@ -23,6 +24,9 @@ export function MeetingDetectedBanner() {
     null,
   );
   const [listenerError, setListenerError] = useState<string | null>(null);
+  const [autoHideRemainingSeconds, setAutoHideRemainingSeconds] = useState(
+    PROMPT_AUTO_HIDE_SECONDS,
+  );
 
   useEffect(() => {
     let disposed = false;
@@ -32,6 +36,7 @@ export function MeetingDetectedBanner() {
         if (disposed) {
           return;
         }
+        setAutoHideRemainingSeconds(PROMPT_AUTO_HIDE_SECONDS);
         setDetected(e.payload);
       },
     )
@@ -64,12 +69,21 @@ export function MeetingDetectedBanner() {
     if (!detected || listenerError) {
       return;
     }
+    const startedAt = Date.now();
+    setAutoHideRemainingSeconds(PROMPT_AUTO_HIDE_SECONDS);
+    const intervalId = window.setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+      setAutoHideRemainingSeconds(
+        Math.max(PROMPT_AUTO_HIDE_SECONDS - elapsedSeconds, 0),
+      );
+    }, 1000);
     const timeoutId = window.setTimeout(() => {
       setDetected(null);
       void getCurrentWindow().hide();
     }, PROMPT_AUTO_HIDE_MS);
 
     return () => {
+      window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
   }, [detected, listenerError]);
@@ -83,12 +97,12 @@ export function MeetingDetectedBanner() {
     : "録音しますか？";
   const bannerDetail = listenerError
     ? null
-    : `${displayName} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。`;
+    : `${displayName} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。約${autoHideRemainingSeconds}秒後に自動で隠れます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。`;
+      }自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。約${autoHideRemainingSeconds}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の録音開始前の状態を確認`
     : "録音開始前の状態を確認";
