@@ -1171,6 +1171,10 @@ export function TranscriptView() {
   ]
     .filter(Boolean)
     .join("、");
+  const isMeetingStatusBusy =
+    isMeetingOperationPending ||
+    isTranscriptionOperationPending ||
+    isAudioSourceOperationPending;
   const meetingButtonLabel = isMeetingOperationPending
     ? isMeetingActive
       ? "録音と文字起こしの記録を終了中"
@@ -1276,7 +1280,7 @@ export function TranscriptView() {
         <div
           className="meeting-status-strip"
           role="status"
-          aria-busy={isAudioSourceOperationPending}
+          aria-busy={isMeetingStatusBusy}
           aria-live="polite"
           aria-atomic="true"
           aria-label={meetingStatusAriaLabel}

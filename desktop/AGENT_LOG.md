@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting A11y: mark status strip busy for all operations
+
+- 開始日時: 2026-04-29 02:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、記録開始/終了や文字起こし開始/停止の pending 状態も会議状態 strip の `aria-busy` に反映する。
+- 結果: `isMeetingStatusBusy` を追加し、会議操作・文字起こし操作・音声ソース操作のいずれかが pending の間は状態 strip が busy として支援技術へ伝わるようにした。表示文言、録音制御、文字起こし制御には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: 実機またはブラウザで、記録開始/終了・文字起こし開始/停止 pending 中に status strip の `aria-busy` が true になることを確認する。
+
 ### Transcript Markdown: escape inline marks
 
 - 開始日時: 2026-04-29 02:11 JST
