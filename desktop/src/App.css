@@ -1306,6 +1306,12 @@ body[data-window="live-caption"] {
   gap: 0.3rem;
 }
 
+.settings-permission-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .settings-permission-row {
   display: flex;
   align-items: center;

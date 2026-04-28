@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
 import { usePermissions } from "../hooks/usePermissions";
@@ -17,6 +18,10 @@ const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
 const ELEVENLABS_API_KEY_NOTE_ID = "elevenlabs-api-key-note";
 const EXTERNAL_REALTIME_RISK_NOTE_ID = "external-realtime-risk-note";
 const APPLE_SPEECH_LIMIT_NOTE_ID = "apple-speech-limit-note";
+const MACOS_MICROPHONE_PRIVACY_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone";
+const MACOS_SCREEN_RECORDING_PRIVACY_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
 const ENGINE_NOTE_IDS = {
   whisper: "transcription-engine-note-whisper",
   appleSpeech: "transcription-engine-note-apple-speech",
@@ -34,6 +39,8 @@ export function SettingsView() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [permissionSettingsOpenError, setPermissionSettingsOpenError] =
+    useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
@@ -192,6 +199,20 @@ export function SettingsView() {
     );
   }, []);
 
+  const handleOpenPermissionSettings = useCallback(
+    async (url: string, label: string) => {
+      setPermissionSettingsOpenError(null);
+      try {
+        await openUrl(url);
+      } catch (e) {
+        const msg = toErrorMessage(e);
+        console.error(`${label}を開けませんでした:`, msg);
+        setPermissionSettingsOpenError(msg);
+      }
+    },
+    [],
+  );
+
   if (settingsError) {
     const settingsErrorMessage = toErrorMessage(settingsError);
     const reloadSettingsLabel = isFetchingSettings
@@ -302,6 +323,13 @@ export function SettingsView() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
+  const openMicSettingsLabel =
+    "macOS のプライバシーとセキュリティでマイク権限を開く";
+  const openScreenSettingsLabel =
+    "macOS のプライバシーとセキュリティで画面収録権限を開く";
+  const permissionSettingsOpenErrorLabel = permissionSettingsOpenError
+    ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
+    : null;
   const browserAutomationPermissionLabel =
     "自動操作 ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Firefox の URL 検知時に macOS が確認";
   const hasPermissionCheckError =
@@ -757,16 +785,59 @@ export function SettingsView() {
               URL検知時に確認
             </span>
           </div>
-          <button
-            type="button"
-            className="control-btn control-btn-clear"
-            onClick={refetchPermissions}
-            disabled={isCheckingPermissions}
-            aria-label={permissionRetryLabel}
-            title={permissionRetryLabel}
-          >
-            {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
-          </button>
+          <div className="settings-permission-actions">
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() => {
+                setPermissionSettingsOpenError(null);
+                refetchPermissions();
+              }}
+              disabled={isCheckingPermissions}
+              aria-label={permissionRetryLabel}
+              title={permissionRetryLabel}
+            >
+              {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
+            </button>
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() =>
+                void handleOpenPermissionSettings(
+                  MACOS_MICROPHONE_PRIVACY_URL,
+                  "マイク権限設定",
+                )
+              }
+              aria-label={openMicSettingsLabel}
+              title={openMicSettingsLabel}
+            >
+              マイク設定を開く
+            </button>
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() =>
+                void handleOpenPermissionSettings(
+                  MACOS_SCREEN_RECORDING_PRIVACY_URL,
+                  "画面収録設定",
+                )
+              }
+              aria-label={openScreenSettingsLabel}
+              title={openScreenSettingsLabel}
+            >
+              画面収録設定を開く
+            </button>
+          </div>
+          {permissionSettingsOpenErrorLabel && (
+            <p
+              className="settings-inline-error"
+              role="alert"
+              aria-label={permissionSettingsOpenErrorLabel}
+              title={permissionSettingsOpenErrorLabel}
+            >
+              <span>{permissionSettingsOpenErrorLabel}</span>
+            </p>
+          )}
           {hasPermissionStatusAttention && (
             <p className="settings-note">
               {permissionStatusNote}

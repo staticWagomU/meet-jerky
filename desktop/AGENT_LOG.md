@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: add privacy settings shortcuts
+
+- 開始日時: 2026-04-28 19:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、設定画面の権限ステータスから macOS のマイク/画面収録設定へ直接移動できるようにし、録音開始前の権限復旧導線を分かりやすくする。
+- 結果: 設定画面の権限ステータスに `マイク設定を開く` と `画面収録設定を開く` を追加した。設定を開けない場合は設定画面内に inline error を表示する。権限状態、録音状態、認証情報には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で `x-apple.systempreferences:` URL が各 macOS バージョンで期待通り開くかは未確認。
+- 次アクション: 実機で設定画面から macOS のマイク/画面収録設定へ移動できること、失敗時の inline error が見えることを確認する。
+
 ### Permission UX: show settings shortcut errors
 
 - 開始日時: 2026-04-28 19:18 JST
