@@ -19,6 +19,11 @@ const SEARCH_QUERY_LABEL_MAX_LENGTH = 40;
 const SEARCH_EXCERPT_CONTEXT_LENGTH = 42;
 const EMPTY_SESSIONS: SessionSummary[] = [];
 
+interface TranscriptTrackCounts {
+  self: number;
+  other: number;
+}
+
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
 }
@@ -107,6 +112,19 @@ function renderHighlightedSearchExcerpt(
 
 function hasTranscriptBody(searchText: string): boolean {
   return searchText.trim().length > 0;
+}
+
+function getTranscriptTrackCounts(searchText: string): TranscriptTrackCounts {
+  const counts = { self: 0, other: 0 };
+  for (const match of searchText.matchAll(/\*\*\[[^\]]+\]\s*([^:*]+):\*\*/g)) {
+    const speaker = match[1]?.trim();
+    if (speaker === "自分") {
+      counts.self += 1;
+    } else if (speaker === "相手側") {
+      counts.other += 1;
+    }
+  }
+  return counts;
 }
 
 function sessionMatchesQuery(
@@ -447,7 +465,11 @@ function SessionRow({
   const fileName = getFileName(session.path);
   const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
   const hasBody = hasTranscriptBody(session.searchText);
+  const trackCounts = getTranscriptTrackCounts(session.searchText);
   const transcriptBodyLabel = hasBody ? "文字起こし本文あり" : "文字起こし本文なし";
+  const trackCountsLabel = hasBody
+    ? `自分トラック ${trackCounts.self} 件、相手側トラック ${trackCounts.other} 件`
+    : null;
   const isAnyActionPending = pendingAction !== null;
   const isOpeningThisFile =
     pendingAction?.kind === "open" && pendingAction.path === session.path;
@@ -492,6 +514,7 @@ function SessionRow({
         `セッション ${displayTitle}`,
         `開始 ${startedAtLabel}`,
         transcriptBodyLabel,
+        trackCountsLabel,
         `ファイル ${fileName}`,
         searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
       ]
@@ -501,6 +524,7 @@ function SessionRow({
         `セッション ${displayTitle}`,
         `開始 ${startedAtLabel}`,
         transcriptBodyLabel,
+        trackCountsLabel,
         `ファイル ${fileName}`,
         searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
       ]
@@ -520,6 +544,24 @@ function SessionRow({
           >
             {hasBody ? "本文あり" : "本文なし"}
           </span>
+          {hasBody && (
+            <>
+              <span
+                className="session-list-item-track-count session-list-item-track-count-self"
+                aria-label={`自分トラックの文字起こし ${trackCounts.self} 件`}
+                title={`自分トラックの文字起こし ${trackCounts.self} 件`}
+              >
+                自分 {trackCounts.self}
+              </span>
+              <span
+                className="session-list-item-track-count session-list-item-track-count-other"
+                aria-label={`相手側トラックの文字起こし ${trackCounts.other} 件`}
+                title={`相手側トラックの文字起こし ${trackCounts.other} 件`}
+              >
+                相手側 {trackCounts.other}
+              </span>
+            </>
+          )}
           <span
             className="session-list-item-file"
             aria-label={`保存ファイル ${fileName}`}

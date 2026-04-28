@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Track Transparency: show saved self and other counts
+
+- 開始日時: 2026-04-29 04:53 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存済み履歴一覧で自分/相手側トラックのどちらが実際に保存されたかを開く前に確認できるようにする。
+- 結果: 一覧表示用に保存 Markdown の話者見出しを数え、自分/相手側の文字起こし件数を小さなピルで表示するようにした。保存形式、検索条件、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでの件数表示は未確認。
+- 次アクション: 実履歴で自分/相手側件数が妥当に表示されることを確認する。
+
 ### Audio Source UX: clarify permission impact per track
 
 - 開始日時: 2026-04-29 04:51 JST
