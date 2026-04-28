@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: show body match excerpt
+
+- 開始日時: 2026-04-29 02:49 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、本文検索で一致した履歴がなぜ表示されたのか分かるように、一覧行へ短い本文一致スニペットを出す。
+- 結果: 検索語が本文 `searchText` に一致した場合だけ、前後文脈付きの短い excerpt を行内に表示する `getSearchMatchExcerpt` を追加した。検索ロジック、ファイル操作、保存形式には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでの見え方は未確認。
+- 次アクション: 実履歴データで本文一致時だけスニペットが表示され、タイトル/日時/ファイル名一致だけの場合に過剰表示にならないことを確認する。
+
 ### Live Caption UX: show per-track freshness
 
 - 開始日時: 2026-04-29 02:43 JST

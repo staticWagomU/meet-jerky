@@ -9,6 +9,7 @@ type SessionAction =
   | null;
 
 const SEARCH_QUERY_LABEL_MAX_LENGTH = 40;
+const SEARCH_EXCERPT_CONTEXT_LENGTH = 42;
 
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
@@ -26,6 +27,27 @@ function getSessionDisplayTitle(title: string): string {
     .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
     .trim();
   return displayTitle || "無題の会議";
+}
+
+function getSearchMatchExcerpt(text: string, query: string): string | null {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery || !text) {
+    return null;
+  }
+  const matchIndex = text.toLocaleLowerCase().indexOf(normalizedQuery);
+  if (matchIndex < 0) {
+    return null;
+  }
+  const start = Math.max(0, matchIndex - SEARCH_EXCERPT_CONTEXT_LENGTH);
+  const end = Math.min(
+    text.length,
+    matchIndex + query.trim().length + SEARCH_EXCERPT_CONTEXT_LENGTH,
+  );
+  const excerpt = text.slice(start, end).replace(/\s+/g, " ").trim();
+  if (!excerpt) {
+    return null;
+  }
+  return `${start > 0 ? "..." : ""}${excerpt}${end < text.length ? "..." : ""}`;
 }
 
 function sessionMatchesQuery(
@@ -326,6 +348,7 @@ export function SessionList() {
             <SessionRow
               key={session.path}
               session={session}
+              searchQuery={trimmedSearchQuery}
               pendingAction={pendingAction}
               onOpenFile={handleOpenFile}
               onRevealInFolder={handleRevealInFolder}
@@ -339,6 +362,7 @@ export function SessionList() {
 
 interface SessionRowProps {
   session: SessionSummary;
+  searchQuery: string;
   pendingAction: SessionAction;
   onOpenFile: (path: string) => void;
   onRevealInFolder: (path: string) => void;
@@ -346,6 +370,7 @@ interface SessionRowProps {
 
 function SessionRow({
   session,
+  searchQuery,
   pendingAction,
   onOpenFile,
   onRevealInFolder,
@@ -355,6 +380,7 @@ function SessionRow({
   const startedAtLabel = new Date(session.startedAtSecs * 1000).toLocaleString();
   const displayTitle = getSessionDisplayTitle(session.title);
   const fileName = getFileName(session.path);
+  const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
   const isAnyActionPending = pendingAction !== null;
   const isOpeningThisFile =
     pendingAction?.kind === "open" && pendingAction.path === session.path;
@@ -395,8 +421,22 @@ function SessionRow({
   return (
     <li
       className="session-list-item"
-      aria-label={`セッション ${displayTitle}、開始 ${startedAtLabel}、ファイル ${fileName}`}
-      title={`セッション ${displayTitle}、開始 ${startedAtLabel}、ファイル ${fileName}`}
+      aria-label={[
+        `セッション ${displayTitle}`,
+        `開始 ${startedAtLabel}`,
+        `ファイル ${fileName}`,
+        searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
+      ]
+        .filter(Boolean)
+        .join("、")}
+      title={[
+        `セッション ${displayTitle}`,
+        `開始 ${startedAtLabel}`,
+        `ファイル ${fileName}`,
+        searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
+      ]
+        .filter(Boolean)
+        .join("、")}
     >
       <div className="session-list-item-body">
         <div className="session-list-item-title" title={displayTitle}>
@@ -412,6 +452,15 @@ function SessionRow({
             {fileName}
           </span>
         </div>
+        {searchExcerpt && (
+          <div
+            className="session-list-item-excerpt"
+            aria-label={`本文一致: ${searchExcerpt}`}
+            title={`本文一致: ${searchExcerpt}`}
+          >
+            {searchExcerpt}
+          </div>
+        )}
       </div>
       <div
         className="session-list-item-actions"
