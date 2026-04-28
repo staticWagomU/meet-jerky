@@ -11,6 +11,17 @@ export interface LiveCaptionStatusPayload {
   systemAudioTrackLabel: string;
 }
 
+type StoredLiveCaptionStatusPayload = Omit<
+  LiveCaptionStatusPayload,
+  "microphoneTrackLabel" | "systemAudioTrackLabel"
+> &
+  Partial<
+    Pick<
+      LiveCaptionStatusPayload,
+      "microphoneTrackLabel" | "systemAudioTrackLabel"
+    >
+  >;
+
 export const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
   engineLabel: "確認中",
   aiTransmissionLabel: "確認中",
@@ -21,7 +32,7 @@ export const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
 
 export function isLiveCaptionStatusPayload(
   value: unknown,
-): value is LiveCaptionStatusPayload {
+): value is StoredLiveCaptionStatusPayload {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -38,7 +49,7 @@ export function isLiveCaptionStatusPayload(
 }
 
 function normalizeLiveCaptionStatus(
-  status: LiveCaptionStatusPayload,
+  status: StoredLiveCaptionStatusPayload,
 ): LiveCaptionStatusPayload {
   return {
     ...DEFAULT_LIVE_CAPTION_STATUS,

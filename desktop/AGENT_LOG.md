@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Status: clarify stored payload typing
+
+- 開始日時: 2026-04-29 05:45 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウの保存済み状態 payload について、古い保存形式を受け入れる後方互換処理を型上も正確に表す。
+- 結果: 保存済み payload 用の型を分け、古い保存値では自分/相手側トラック状態ラベルが欠け得ることを型で表現した。読み込み時の default 補完と表示挙動は変更しない。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。
+- 次アクション: `cmake` あり環境で Rust 全体テストを確認する。
+
 ### Meeting Prompt Copy: align status button label
 
 - 開始日時: 2026-04-29 05:42 JST
