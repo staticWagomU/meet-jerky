@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 import { toErrorMessage } from "../utils/errorMessage";
@@ -162,6 +162,20 @@ export function SessionList() {
     }
   }, []);
 
+  const sessions = data ?? [];
+  const trimmedSearchQuery = searchQuery.trim();
+  const filteredSessions = useMemo(
+    () =>
+      sessions.filter((session) =>
+        sessionMatchesQuery(
+          session,
+          new Date(session.startedAtSecs * 1000).toLocaleString(),
+          trimmedSearchQuery,
+        ),
+      ),
+    [sessions, trimmedSearchQuery],
+  );
+
   if (isLoading) {
     const loadingLabel = "セッション履歴一覧を読み込み中";
     return (
@@ -209,15 +223,6 @@ export function SessionList() {
     );
   }
 
-  const sessions = data ?? [];
-  const trimmedSearchQuery = searchQuery.trim();
-  const filteredSessions = sessions.filter((session) =>
-    sessionMatchesQuery(
-      session,
-      new Date(session.startedAtSecs * 1000).toLocaleString(),
-      trimmedSearchQuery,
-    ),
-  );
   const isSessionListBusy = isFetching || pendingAction !== null;
   const searchQueryLabel = formatSearchQueryForLabel(trimmedSearchQuery);
   const reloadSessionsLabel = isFetching

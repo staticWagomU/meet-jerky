@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search Performance: memoize filtered sessions
+
+- 開始日時: 2026-04-29 03:47 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴本文検索が入ったことで再レンダーごとの全件検索コストが増え得るため、検索結果計算を安定化する。
+- 結果: `filteredSessions` を `useMemo` で `sessions` と trimmed query に依存させて再計算するようにした。Hook は早期 return より前に配置し、React の呼び出し順ルールを維持した。検索条件、表示、一覧取得、保存形式には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 大量履歴での実測パフォーマンスは未確認。
+- 次アクション: 大量履歴で検索入力・ファイル操作中の再レンダー負荷を実測する。
+
 ### Settings Copy: align URL detection spacing
 
 - 開始日時: 2026-04-29 03:41 JST
