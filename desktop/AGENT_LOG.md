@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting prompt UX: separate pending actions
+
+- 開始日時: 2026-04-29 08:50 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知プロンプトで「記録を開始」と「状態を確認」の操作中表示が同じ pending フラグで混ざらないようにする。
+- 結果: pending 状態を `start` / `confirm` / `null` に分け、開始要求中と表示要求中の可視テキスト、aria-label、title を操作ごとに分離した。録音開始要求イベント、状態確認イベント、会議検知ロジック、録音/文字起こし本体には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の会議検知プロンプトで、記録開始と状態確認それぞれの操作中ラベルが混ざらないことを確認する。
+
 ### Overlay windows: propagate show/hide failures
 
 - 開始日時: 2026-04-29 08:46 JST
