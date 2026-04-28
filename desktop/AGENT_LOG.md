@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission UX: add macOS privacy settings shortcuts
+
+- 開始日時: 2026-04-28 19:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `src/App.css`, `src-tauri/capabilities/default.json`, `AGENT_LOG.md`
+- 指示内容: 再整理した優先順位に従い、マイク/画面収録の権限が未許可・未確認のときに、ユーザーが次に行うべき macOS 設定画面へ移動しやすくする。
+- 結果: 権限バナーに `マイク設定を開く` / `画面収録設定を開く` ボタンを追加し、macOS の `x-apple.systempreferences:` URL で該当プライバシー設定を開く導線を追加した。Tauri opener の scope は `x-apple.systempreferences:*` のみに限定して許可した。設定を開けなかった場合は console error に留め、録音状態や権限状態を勝手に変更しない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `src/App.css`, `src-tauri/capabilities/default.json`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx src/App.css src-tauri/capabilities/default.json AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx src/App.css src-tauri/capabilities/default.json AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で `x-apple.systempreferences:` URL が該当プライバシー画面を正しく開くことは未確認。Rust 全体テストは `cmake` 不在により未完走。
+- 次アクション: 実機で未許可/未確認時のボタン表示、マイク/画面収録設定への遷移、設定変更後の `権限を再チェック` を確認する。
+
 ### Meeting Detection UX: clarify track recording state in prompt
 
 - 開始日時: 2026-04-28 18:48 JST

@@ -1116,6 +1116,12 @@ body[data-window="live-caption"] {
   line-height: 1.5;
 }
 
+.permission-banner-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .permission-banner-summary {
   display: flex;
   flex-wrap: wrap;

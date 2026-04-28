@@ -1,5 +1,11 @@
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
+import { openUrl } from "@tauri-apps/plugin-opener";
+
+const MACOS_MICROPHONE_PRIVACY_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone";
+const MACOS_SCREEN_RECORDING_PRIVACY_URL =
+  "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture";
 
 export function PermissionBanner() {
   const {
@@ -78,6 +84,10 @@ export function PermissionBanner() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
+  const openMicSettingsLabel =
+    "macOS のプライバシーとセキュリティでマイク権限を開く";
+  const openScreenSettingsLabel =
+    "macOS のプライバシーとセキュリティで画面収録権限を開く";
   const micPermissionBody = isCheckingPermissions
     ? "マイク権限の状態を確認しています。"
     : micPermissionError
@@ -160,6 +170,38 @@ export function PermissionBanner() {
       >
         {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
       </button>
+      <div className="permission-banner-actions">
+        {micNeedsAttention && (
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            onClick={() => {
+              void openUrl(MACOS_MICROPHONE_PRIVACY_URL).catch((e) => {
+                console.error("マイク権限設定を開けませんでした:", toErrorMessage(e));
+              });
+            }}
+            aria-label={openMicSettingsLabel}
+            title={openMicSettingsLabel}
+          >
+            マイク設定を開く
+          </button>
+        )}
+        {screenNeedsAttention && (
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            onClick={() => {
+              void openUrl(MACOS_SCREEN_RECORDING_PRIVACY_URL).catch((e) => {
+                console.error("画面収録設定を開けませんでした:", toErrorMessage(e));
+              });
+            }}
+            aria-label={openScreenSettingsLabel}
+            title={openScreenSettingsLabel}
+          >
+            画面収録設定を開く
+          </button>
+        )}
+      </div>
     </div>
   );
 }
