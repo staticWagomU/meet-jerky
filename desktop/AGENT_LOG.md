@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Safety: clear pending start on auto hide
+
+- 開始日時: 2026-04-29 03:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 直前の会議検知バナー安全策を批判的に見直し、自動非表示経路でも古い pending start が残らないようにする。
+- 結果: 会議検知バナーが約15秒で自動的に隠れるときも `meetJerky.pendingMeetingStart` を削除するようにした。録音開始ボタンの pending start 保存、イベント送信、会議検知 payload には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実ウィンドウ間の localStorage 共有と自動非表示は未実機確認。
+- 次アクション: 実機で自動非表示後に録音が自動開始されず、録音開始ボタンでは従来どおり main へ開始要求が渡ることを確認する。
+
 ### Meeting Prompt Safety: clear pending start on cancel paths
 
 - 開始日時: 2026-04-29 03:39 JST

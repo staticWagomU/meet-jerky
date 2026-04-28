@@ -70,6 +70,7 @@ export function MeetingDetectedBanner() {
       return;
     }
     const timeoutId = window.setTimeout(() => {
+      clearPendingMeetingStartRequest();
       setDetected(null);
       void getCurrentWindow().hide();
     }, PROMPT_AUTO_HIDE_MS);
