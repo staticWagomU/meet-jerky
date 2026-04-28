@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Events: validate UI event payloads
+
+- 開始日時: 2026-04-29 05:50 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/transcriptSegment.ts`, `src/components/TranscriptDisplay.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、文字起こし結果・エラー通知イベントの payload を React 側で型だけで信用せず、表示に入れる前に最低限の形式確認を行う。
+- 結果: `TranscriptSegment` と `TranscriptionErrorPayload` の runtime guard を追加し、通常ログと独立ライブ字幕ウィンドウの受信処理で適用した。不正 payload はセグメントへ追加せず、UI 上の受信エラーとして表示する。
+- 変更ファイル: `src/utils/transcriptSegment.ts`, `src/components/TranscriptDisplay.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/transcriptSegment.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は初回 `event.payload` の narrowing 不足で失敗し、payload をローカル変数化して再実行後に成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/transcriptSegment.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 初回 TypeScript build で `event.payload` の narrowing 不足を検出し修正済み。Rust 全体テストは `cmake` 不在で未実行。
+- 次アクション: `cmake` あり環境で Rust 全体テストを確認する。
+
 ### Live Caption Status: normalize event payloads
 
 - 開始日時: 2026-04-29 05:47 JST

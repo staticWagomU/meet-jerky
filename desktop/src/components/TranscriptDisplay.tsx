@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
-import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
+import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
-import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
+import {
+  isTranscriptErrorSegment,
+  isTranscriptSegmentPayload,
+  isTranscriptionErrorPayload,
+} from "../utils/transcriptSegment";
 
 function getSpeakerKind(
   segment: TranscriptSegment,
@@ -107,13 +111,19 @@ export function TranscriptDisplay({
   // Listen to transcription-result events
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<TranscriptSegment>(
+    const unlistenPromise = listen<unknown>(
       "transcription-result",
       (event) => {
         if (disposed) {
           return;
         }
-        onNewSegment(event.payload);
+        const payload = event.payload;
+        if (!isTranscriptSegmentPayload(payload)) {
+          setResultListenerError("文字起こし結果の形式が不正です。");
+          return;
+        }
+        setResultListenerError(null);
+        onNewSegment(payload);
       },
     )
       .then((unlisten) => {
@@ -146,17 +156,23 @@ export function TranscriptDisplay({
   // Listen to transcription-error events
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<TranscriptionErrorPayload>(
+    const unlistenPromise = listen<unknown>(
       "transcription-error",
       (event) => {
         if (disposed) {
           return;
         }
+        const payload = event.payload;
+        if (!isTranscriptionErrorPayload(payload)) {
+          setErrorListenerError("文字起こしエラー通知の形式が不正です。");
+          return;
+        }
+        setErrorListenerError(null);
         const errorSegment: TranscriptSegment = {
-          text: `エラー: ${event.payload.error}`,
+          text: `エラー: ${payload.error}`,
           startMs: 0,
           endMs: 0,
-          source: event.payload.source,
+          source: payload.source,
           isError: true,
         };
         onNewSegment(errorSegment);

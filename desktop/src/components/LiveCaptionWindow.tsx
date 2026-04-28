@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
+import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
@@ -11,7 +11,11 @@ import {
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
-import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
+import {
+  isTranscriptErrorSegment,
+  isTranscriptSegmentPayload,
+  isTranscriptionErrorPayload,
+} from "../utils/transcriptSegment";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
@@ -107,39 +111,51 @@ export function LiveCaptionWindow() {
       );
       setListenerError(null);
     });
-    const resultUnlistenPromise = listen<TranscriptSegment>(
+    const resultUnlistenPromise = listen<unknown>(
       "transcription-result",
       (event) => {
         if (disposed) {
           return;
         }
-        setLatestSegment(event.payload);
-        if (event.payload.source) {
+        const payload = event.payload;
+        if (!isTranscriptSegmentPayload(payload)) {
+          setListenerError("ライブ字幕の文字起こし結果の形式が不正です。");
+          return;
+        }
+        setListenerError(null);
+        setLatestSegment(payload);
+        if (payload.source) {
           setLatestBySource((prev) => ({
             ...prev,
-            [event.payload.source as AudioSource]: event.payload,
+            [payload.source as AudioSource]: payload,
           }));
         }
       },
     );
-    const errorUnlistenPromise = listen<TranscriptionErrorPayload>(
+    const errorUnlistenPromise = listen<unknown>(
       "transcription-error",
       (event) => {
         if (disposed) {
           return;
         }
+        const payload = event.payload;
+        if (!isTranscriptionErrorPayload(payload)) {
+          setListenerError("ライブ字幕の文字起こしエラー通知の形式が不正です。");
+          return;
+        }
+        setListenerError(null);
         const errorSegment: TranscriptSegment = {
-          text: `エラー: ${event.payload.error}`,
+          text: `エラー: ${payload.error}`,
           startMs: 0,
           endMs: 0,
-          source: event.payload.source,
+          source: payload.source,
           isError: true,
         };
         setLatestSegment(errorSegment);
-        if (event.payload.source) {
+        if (payload.source) {
           setLatestBySource((prev) => ({
             ...prev,
-            [event.payload.source as AudioSource]: errorSegment,
+            [payload.source as AudioSource]: errorSegment,
           }));
         } else {
           setLatestBySource(createEmptyLatestBySource());
