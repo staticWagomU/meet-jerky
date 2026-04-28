@@ -1,5 +1,19 @@
 # Agent Log
 
+### App UX: prefer macOS system fonts
+
+- 開始日時: 2026-04-28 11:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: macOS ネイティブで自然な UI/UX 改善として、アプリ全体のフォント指定を macOS システムフォント優先へ寄せる。
+- 結果: グローバル sans-serif font stack を `-apple-system` / `BlinkMacSystemFont` / `SF Pro Text` 優先へ変更し、タイムスタンプ・タイマー・保存先パスの等幅表示も `ui-monospace` / `SF Mono` 優先の CSS 変数へ統一した。UI 構造、表示文言、録音・文字起こし処理には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI でシステムフォント適用後の行高、pill、ボタン幅が過度に変わっていないか確認する。
+
 ### App Detection: support Teams short meet URL
 
 - 開始日時: 2026-04-28 11:02 JST

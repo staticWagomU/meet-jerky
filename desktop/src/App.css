@@ -4,7 +4,12 @@
 
 :root {
   /* Typography */
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
@@ -612,7 +617,7 @@
 }
 
 .transcript-timestamp {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--transcript-timestamp-color);
   white-space: nowrap;
@@ -834,7 +839,7 @@
 }
 
 .meeting-timer {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 1.1rem;
   font-weight: 600;
   flex: 0 0 auto;
@@ -1107,7 +1112,7 @@
 .settings-output-path {
   flex: 1 1 18rem;
   min-width: 0;
-  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--color-muted);
   overflow-wrap: anywhere;
