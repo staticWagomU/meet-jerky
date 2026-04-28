@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: show per-track live status
+
+- 開始日時: 2026-04-28 10:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の状態表示で自分トラックと相手側トラックの録音/取得状態を一目で分かるようにする。既存の `docs/product-concept.md` 変更はユーザー変更として触れない。
+- 結果: ライブ画面の meeting status strip に `自分 録音中/未録音/処理中` と `相手側 取得中/未取得/処理中` の pill を追加した。既存の総合音声状態、エンジン、外部送信、API キー状態は維持し、aria label にも各トラック状態を含めた。録音・文字起こし制御、外部 API、Keychain には触れなかった。小さな UI 表示変更であり、自律運用を止めないためメインで直接実装した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で status strip の pill 数が増えても会議中の小さいウィンドウで過度に邪魔にならず、自分/相手側トラック状態が自然に読めるか確認する。
+
 ### Realtime TLS: install rustls crypto provider
 
 - 開始日時: 2026-04-28 10:44 JST

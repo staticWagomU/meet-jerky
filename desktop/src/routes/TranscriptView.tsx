@@ -256,6 +256,11 @@ function getAudioSourceStatusPillClass(
   return "meeting-status-pill-neutral";
 }
 
+function getTrackStatusPillClass(isPending: boolean, isActive: boolean): string {
+  if (isPending) return "meeting-status-pill-neutral";
+  return isActive ? "meeting-status-pill-active" : "meeting-status-pill-idle";
+}
+
 function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
   return !engine || engine === "whisper";
 }
@@ -984,6 +989,24 @@ export function TranscriptView() {
   const audioSourceStatusClass = isAudioCaptureOperationPending
     ? "meeting-status-pill-neutral"
     : getAudioSourceStatusPillClass(isMicRecording, isSystemAudioRecording);
+  const micTrackStatusLabel = isMicSourceOperationPending
+    ? "処理中"
+    : isMicRecording
+      ? "録音中"
+      : "未録音";
+  const systemAudioTrackStatusLabel = isSystemAudioSourceOperationPending
+    ? "処理中"
+    : isSystemAudioRecording
+      ? "取得中"
+      : "未取得";
+  const micTrackStatusClass = getTrackStatusPillClass(
+    isMicSourceOperationPending,
+    isMicRecording,
+  );
+  const systemAudioTrackStatusClass = getTrackStatusPillClass(
+    isSystemAudioSourceOperationPending,
+    isSystemAudioRecording,
+  );
   const audioSourceNotice = getAudioSourceNotice(
     isMeetingActive || isTranscribing,
     isAudioCaptureOperationPending,
@@ -1034,6 +1057,8 @@ export function TranscriptView() {
     meetingRecordingStatusLabel,
     transcriptionStatusLabel,
     `音声 ${audioSourceStatusDisplayAriaText}`,
+    `自分トラック ${micTrackStatusLabel}`,
+    `相手側トラック ${systemAudioTrackStatusLabel}`,
     `エンジン ${engineStatusLabel}`,
     `外部送信 ${aiTransmissionStatusLabel}`,
     externalApiKeyStatusAriaLabel,
@@ -1129,6 +1154,20 @@ export function TranscriptView() {
             title={`音声ソース: ${audioSourceStatusDisplayAriaText}`}
           >
             音声 {audioSourceStatusDisplayLabel}
+          </span>
+          <span
+            className={`meeting-status-pill ${micTrackStatusClass}`}
+            aria-label={`自分トラック: ${micTrackStatusLabel}`}
+            title={`自分トラック: ${micTrackStatusLabel}`}
+          >
+            自分 {micTrackStatusLabel}
+          </span>
+          <span
+            className={`meeting-status-pill ${systemAudioTrackStatusClass}`}
+            aria-label={`相手側トラック: ${systemAudioTrackStatusLabel}`}
+            title={`相手側トラック: ${systemAudioTrackStatusLabel}`}
+          >
+            相手側 {systemAudioTrackStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${getEngineStatusPillClass(engineStatusLabel)}`}
