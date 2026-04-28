@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Reliability: rollback failed start request
+
+- 開始日時: 2026-04-29 05:15 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトの「記録を開始」でイベント送信に失敗しても開始予約だけが残らないようにする。
+- 結果: 録音開始要求と状態確認要求を async handler 化し、開始要求の送信失敗時は pending start を消してプロンプト内エラーへ切り替えるようにした。成功時だけプロンプトを閉じる。録音開始処理本体や外部通信には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機でのイベント送信失敗ケースは未確認。
+- 次アクション: 実機で会議検知プロンプトからの開始要求と失敗時表示を確認する。
+
 ### Live Caption Layout: prevent track pill overflow
 
 - 開始日時: 2026-04-29 05:14 JST

@@ -148,6 +148,39 @@ export function MeetingDetectedBanner() {
   const bannerClassName = listenerError
     ? "meeting-detected-banner meeting-detected-banner-error"
     : "meeting-detected-banner";
+  const handleStartRecording = async () => {
+    markPendingMeetingStartRequest();
+    try {
+      await emit(MEETING_START_REQUEST_EVENT);
+      await getCurrentWindow().hide();
+      setDetected(null);
+    } catch (e) {
+      clearPendingMeetingStartRequest();
+      setDetected(null);
+      setListenerError(`録音開始要求の送信に失敗しました: ${toErrorMessage(e)}`);
+    }
+  };
+  const handleConfirmRecordingState = async () => {
+    clearPendingMeetingStartRequest();
+    try {
+      await emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
+      await getCurrentWindow().hide();
+      setDetected(null);
+    } catch (e) {
+      setDetected(null);
+      setListenerError(`録音状態確認画面の表示要求に失敗しました: ${toErrorMessage(e)}`);
+    }
+  };
+  const handleDismissBanner = async () => {
+    clearPendingMeetingStartRequest();
+    setDetected(null);
+    setListenerError(null);
+    try {
+      await getCurrentWindow().hide();
+    } catch (e) {
+      console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
+    }
+  };
 
   return (
     <div
@@ -212,10 +245,7 @@ export function MeetingDetectedBanner() {
                 aria-label={startRecordingLabel}
                 title={startRecordingLabel}
                 onClick={() => {
-                  markPendingMeetingStartRequest();
-                  void emit(MEETING_START_REQUEST_EVENT);
-                  void getCurrentWindow().hide();
-                  setDetected(null);
+                  void handleStartRecording();
                 }}
               >
                 記録を開始
@@ -226,10 +256,7 @@ export function MeetingDetectedBanner() {
                 aria-label={confirmRecordingLabel}
                 title={confirmRecordingLabel}
                 onClick={() => {
-                  clearPendingMeetingStartRequest();
-                  void emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
-                  void getCurrentWindow().hide();
-                  setDetected(null);
+                  void handleConfirmRecordingState();
                 }}
               >
                 状態を確認
@@ -242,10 +269,7 @@ export function MeetingDetectedBanner() {
             aria-label={dismissBannerLabel}
             title={dismissBannerLabel}
             onClick={() => {
-              clearPendingMeetingStartRequest();
-              setDetected(null);
-              setListenerError(null);
-              void getCurrentWindow().hide();
+              void handleDismissBanner();
             }}
           >
             ×
