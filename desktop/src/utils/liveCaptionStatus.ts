@@ -1,3 +1,5 @@
+import type { TranscriptionEngineType } from "../types";
+
 export const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
 export const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
 
@@ -68,4 +70,38 @@ export function getVisibleTransmissionLabel(
     return "端末内";
   }
   return status.aiTransmissionLabel;
+}
+
+export function buildLiveCaptionStatusFromEngine(
+  engine: TranscriptionEngineType | undefined,
+): LiveCaptionStatusPayload {
+  if (engine === "openAIRealtime") {
+    return {
+      engineLabel: "OpenAI",
+      aiTransmissionLabel: "送信先 OpenAI",
+      isExternalTransmission: true,
+    };
+  }
+  if (engine === "elevenLabsRealtime") {
+    return {
+      engineLabel: "ElevenLabs",
+      aiTransmissionLabel: "送信先 ElevenLabs",
+      isExternalTransmission: true,
+    };
+  }
+  if (engine === "appleSpeech") {
+    return {
+      engineLabel: "Apple Speech",
+      aiTransmissionLabel: "なし",
+      isExternalTransmission: false,
+    };
+  }
+  if (engine === "whisper") {
+    return {
+      engineLabel: "Whisper",
+      aiTransmissionLabel: "なし",
+      isExternalTransmission: false,
+    };
+  }
+  return DEFAULT_LIVE_CAPTION_STATUS;
 }

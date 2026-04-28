@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Transparency: refresh live caption status after engine changes
+
+- 開始日時: 2026-04-29 04:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 指示内容: 会議検知プロンプト/ライブ字幕に表示する文字起こしエンジン・外部送信ラベルが、設定画面でエンジン変更後に古いまま残らないようにする。
+- 結果: 設定読み込み時と保存成功時に、選択中エンジンからライブ字幕ステータスラベルを再生成して保存するようにした。保存するのはエンジン表示名と外部送信ラベルのみで、API キーや認証情報には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で設定変更直後の会議検知プロンプト表示は未確認。
+- 次アクション: 実機で設定保存後にプロンプト/ライブ字幕のラベルが更新されることを確認する。
+
 ### Meeting Prompt Copy: align start button with recording session wording
 
 - 開始日時: 2026-04-29 04:21 JST

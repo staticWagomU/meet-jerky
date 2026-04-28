@@ -13,6 +13,10 @@ import {
   OPEN_MICROPHONE_PRIVACY_LABEL,
   OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
 } from "../utils/macosPrivacySettings";
+import {
+  buildLiveCaptionStatusFromEngine,
+  writeStoredLiveCaptionStatus,
+} from "../utils/liveCaptionStatus";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -98,7 +102,16 @@ export function SettingsView() {
   const updateMutation = useMutation({
     mutationFn: (newSettings: AppSettings) =>
       invoke("update_settings", { settings: newSettings }),
-    onSuccess: () => {
+    onSuccess: (_data, savedSettings) => {
+      writeStoredLiveCaptionStatus(
+        buildLiveCaptionStatusFromEngine(savedSettings.transcriptionEngine),
+        (e) => {
+          console.error(
+            "ライブ字幕ステータスの保存に失敗しました:",
+            toErrorMessage(e),
+          );
+        },
+      );
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       showToast("設定を保存しました");
     },
@@ -114,6 +127,15 @@ export function SettingsView() {
     if (!settings) {
       return;
     }
+    writeStoredLiveCaptionStatus(
+      buildLiveCaptionStatusFromEngine(settings.transcriptionEngine),
+      (e) => {
+        console.error(
+          "ライブ字幕ステータスの保存に失敗しました:",
+          toErrorMessage(e),
+        );
+      },
+    );
     setLocalSettings((current) => {
       const previous = lastSyncedSettingsRef.current;
       const hasUnsavedChanges =
