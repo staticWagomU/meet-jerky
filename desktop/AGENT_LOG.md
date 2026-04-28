@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Window: expose track row status label
+
+- 開始日時: 2026-04-29 07:02 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、録音中の独立ライブ字幕ウィンドウで自分/相手側トラック状態の透明性を上げる。
+- 結果: ライブ字幕のトラック状態を `trackStatusLabels` に集約し、ウィンドウ全体ラベル、各トラック pill、トラック行の aria-label/title で同じ最新状態を使うようにした。見た目と機能挙動は維持し、支援技術と tooltip で両トラックの状態を一括確認しやすくした。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での独立ウィンドウ tooltip/VoiceOver 読み上げは未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### Transcript Controls: clarify disabled clear reason
 
 - 開始日時: 2026-04-29 07:01 JST

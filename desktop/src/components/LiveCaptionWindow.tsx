@@ -224,6 +224,25 @@ export function LiveCaptionWindow() {
     latestSegment && !isTranscriptErrorSegment(latestSegment)
       ? formatSegmentTimestamp(latestSegment.startMs)
       : null;
+  const trackStatusLabels = TRACKS.map((track) => {
+    const captureLabel =
+      track.source === "microphone"
+        ? statusPayload.microphoneTrackLabel
+        : statusPayload.systemAudioTrackLabel;
+    const state = getTrackStateLabel(
+      latestBySource[track.source],
+      captureLabel,
+    );
+    return {
+      ...track,
+      state,
+      ariaLabel: `${track.label}トラック: ${state}`,
+    };
+  });
+  const trackRowLabel = [
+    "音声トラック別の最新文字起こし状態",
+    ...trackStatusLabels.map((track) => track.ariaLabel),
+  ].join("、");
   const label = listenerError
     ? listenerError
     : latestSegment
@@ -231,14 +250,8 @@ export function LiveCaptionWindow() {
           "ライブ文字起こし",
           getSpeakerLabel(latestSegment),
           captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
-          ...TRACKS.map(
-            (track) =>
-              `${track.label}トラック ${getTrackStateLabel(
-                latestBySource[track.source],
-                track.source === "microphone"
-                  ? statusPayload.microphoneTrackLabel
-                  : statusPayload.systemAudioTrackLabel,
-              )}`,
+          ...trackStatusLabels.map(
+            (track) => `${track.label}トラック ${track.state}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
@@ -248,14 +261,8 @@ export function LiveCaptionWindow() {
           .join(": ")
       : [
           "ライブ文字起こし 待機中",
-          ...TRACKS.map(
-            (track) =>
-              `${track.label}トラック ${getTrackStateLabel(
-                latestBySource[track.source],
-                track.source === "microphone"
-                  ? statusPayload.microphoneTrackLabel
-                  : statusPayload.systemAudioTrackLabel,
-              )}`,
+          ...trackStatusLabels.map(
+            (track) => `${track.label}トラック ${track.state}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
@@ -331,25 +338,19 @@ export function LiveCaptionWindow() {
           </div>
           <div
             className="live-transcript-track-row"
-            aria-label="音声トラック別の最新文字起こし状態"
+            aria-label={trackRowLabel}
+            title={trackRowLabel}
           >
-            {TRACKS.map((track) => {
-              const segment = latestBySource[track.source];
-              const captureLabel =
-                track.source === "microphone"
-                  ? statusPayload.microphoneTrackLabel
-                  : statusPayload.systemAudioTrackLabel;
-              const trackState = getTrackStateLabel(segment, captureLabel);
-              const trackLabel = `${track.label}トラック: ${trackState}`;
+            {trackStatusLabels.map((track) => {
               return (
                 <span
                   key={track.source}
                   className={`live-transcript-track-pill live-transcript-track-pill-${track.source}`}
-                  aria-label={trackLabel}
-                  title={trackLabel}
+                  aria-label={track.ariaLabel}
+                  title={track.ariaLabel}
                 >
                   <span>{track.label}</span>
-                  <span>{trackState}</span>
+                  <span>{track.state}</span>
                 </span>
               );
             })}
