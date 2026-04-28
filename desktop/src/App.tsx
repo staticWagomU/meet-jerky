@@ -48,8 +48,29 @@ function App() {
   }, [navigate]);
 
   return (
-    <main className="container">
-      <nav className="nav" aria-label="主要ナビゲーション">
+    <main className="container app-shell">
+      <header
+        className="app-header"
+        data-tauri-drag-region
+        aria-label="meet-jerky メニューバーウィンドウ"
+        title="meet-jerky メニューバーウィンドウ"
+      >
+        <div className="app-header-copy" data-tauri-drag-region>
+          <span className="app-kicker" data-tauri-drag-region>
+            meet-jerky
+          </span>
+          <h1 data-tauri-drag-region>会議の記録</h1>
+        </div>
+        <span
+          className="app-header-status"
+          data-tauri-drag-region
+          aria-label="メニューバー常駐中"
+          title="メニューバー常駐中"
+        >
+          常駐中
+        </span>
+      </header>
+      <nav className="nav app-nav" aria-label="主要ナビゲーション">
         <Link
           to="/"
           className="nav-link"
@@ -75,7 +96,9 @@ function App() {
           設定
         </Link>
       </nav>
-      <Outlet />
+      <section className="app-content" aria-label="現在の画面">
+        <Outlet />
+      </section>
     </main>
   );
 }

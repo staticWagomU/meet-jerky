@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: restyle menubar app window shell
+
+- 開始日時: 2026-04-29 07:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の段階実装として、メニューバー押下時の通常ウィンドウを Mac の小さな常駐ポップオーバーに近い密度と質感へ寄せる。
+- 結果: 既存ルート構成を維持しつつ、アプリヘッダー、常駐ステータス pill、セグメント風ナビ、ガラス調のシェル背景を追加した。ヘッダーは `data-tauri-drag-region` にして、装飾なしウィンドウでも自然に掴める余白にした。録音/文字起こし/履歴/設定の機能ロジックには触れない。
+- 変更ファイル: `src/App.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/App.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機でのメニューバー位置・ヘッダードラッグは未確認。
+- 次アクション: 差分を確認してコミットする。次に通知用ウィンドウの視覚刷新、リングライト用の設定/ウィンドウ境界を検討する。
+
 ### UI Refresh: make live caption window draggable and closable
 
 - 開始日時: 2026-04-29 07:34 JST
