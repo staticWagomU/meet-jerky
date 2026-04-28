@@ -10904,6 +10904,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### UI refresh: history list card surface
+
+- 開始日時: 2026-04-29 08:27 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 完全UI刷新の継続として、会議後の履歴一覧を既存のメニューバー/設定/文字起こし画面のカード調と揃え、検索・履歴行・トラック件数の情報密度を保ったまま macOS ネイティブ感を上げる。
+- 結果: 履歴一覧ヘッダー、検索欄、空/エラー状態、履歴行、本文一致抜粋、トラック件数 badge を glass/card 調へ更新した。検索・ファイル操作・履歴保存形式・録音/文字起こし処理には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機のメニューバー履歴一覧で、検索欄・履歴行・操作ボタンが狭いウィンドウでも詰まらず自然に読めるか確認する。
+
 ### Live caption accessibility: align external sending label
 
 - 開始日時: 2026-04-29 06:59 JST
