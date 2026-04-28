@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### Meeting prompt UX: surface invalid status payload
+
+- 開始日時: 2026-04-29 06:38 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知プロンプトで、録音/文字起こし状態の同期 payload が壊れた場合に黙って古い表示を続けないようにする。
+- 結果: `live-caption-status` の payload が不正な場合に会議検知プロンプトへエラー表示するようにした。後続の正常な status payload でこの状態エラーだけを解除する。録音・文字起こし本体、認証情報、課金 API には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の独立プロンプトウィンドウで、状態 payload 不正時の表示と正常復帰が自然か確認する。
+
 ### App detection: classify Zoom web client meeting URLs
 
 - 開始日時: 2026-04-29 06:29 JST

@@ -21,6 +21,8 @@ const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
+const INVALID_STATUS_PAYLOAD_ERROR =
+  "会議検知プロンプトの状態通知の形式が不正です。";
 
 function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
   return readStoredLiveCaptionStatus((e) => {
@@ -88,8 +90,13 @@ export function MeetingDetectedBanner() {
       (event) => {
         if (!disposed) {
           if (isLiveCaptionStatusPayload(event.payload)) {
+            setListenerError((current) =>
+              current === INVALID_STATUS_PAYLOAD_ERROR ? null : current,
+            );
             setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
+            return;
           }
+          setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
         }
       },
     ).catch((e) => {
