@@ -124,7 +124,12 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
         let mut first_line = String::new();
         reader.read_line(&mut first_line)?;
         let trimmed = first_line.trim_end_matches(['\n', '\r']);
-        let title = trimmed.strip_prefix("# ").unwrap_or(trimmed).to_string();
+        let title = trimmed.strip_prefix("# ").unwrap_or(trimmed);
+        let title = if title.trim().is_empty() {
+            stem.to_string()
+        } else {
+            title.to_string()
+        };
 
         out.push(SessionSummary {
             path,
@@ -271,6 +276,17 @@ mod tests {
 
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].started_at_secs, 100);
+    }
+
+    #[test]
+    fn list_session_summaries_uses_file_stem_when_title_is_empty() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("100-0.md"), "# \n").unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].title, "100-0");
     }
 
     #[test]

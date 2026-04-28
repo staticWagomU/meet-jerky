@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: fallback empty titles to filename
+
+- 開始日時: 2026-04-28 11:43 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 指示内容: 履歴一覧の堅牢性改善として、空ヘッダの Markdown ファイルでもタイトル欄が空白にならないようにする。
+- 結果: 履歴 Markdown の先頭行が `# ` や空行でタイトル化できない場合、ファイル stem をタイトルとして返すようにした。空タイトルの回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 検証結果: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`npm run build` 成功。`git diff --check -- src-tauri/src/session_store.rs AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo test --manifest-path src-tauri/Cargo.toml session_store` は `whisper-rs-sys` の build script が `cmake` を見つけられず失敗する既知の環境制約で未完走。実 UI での履歴一覧表示は未確認。
+- 次アクション: `cmake` が PATH 上にある環境で Rust テストを再実行し、空ヘッダ/部分書き込み Markdown の履歴一覧表示を実機 UI でも確認する。
+
 ### Meeting UX: show blocked start as guidance
 
 - 開始日時: 2026-04-28 11:40 JST
