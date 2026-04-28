@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection: recover from invalid payload error
+
+- 開始日時: 2026-04-29 06:27 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 直前の会議検知 payload 検証追加を批判的に見直し、不正 payload エラー後に正常な検知 payload でプロンプト表示へ復帰できるようにする。
+- 結果: 正常な `meeting-app-detected` payload を受信した時点で `listenerError` を clear するようにした。不正 payload の alert 表示と通常 payload の表示内容は維持する。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機で不正 payload 後に正常検知へ復帰するケースは未確認。
+- 次アクション: 実機またはイベント注入で不正 payload 後の会議検知プロンプト復帰を確認する。
+
 ### Realtime TLS: log crypto provider install failures
 
 - 開始日時: 2026-04-29 06:23 JST

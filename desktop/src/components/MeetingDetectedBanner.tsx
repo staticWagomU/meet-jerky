@@ -61,6 +61,7 @@ export function MeetingDetectedBanner() {
           setListenerError("会議検知通知の形式が不正です。");
           return;
         }
+        setListenerError(null);
         setStatusPayload(readPromptLiveCaptionStatus());
         setDetected(e.payload);
       },
