@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### Meeting prompt UX: prevent duplicate prompt actions
+
+- 開始日時: 2026-04-29 06:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX と録音状態の透明性改善として、独立した会議検知プロンプトの開始/確認操作が連打で重複送信されないようにする。
+- 結果: 会議検知プロンプトに送信中状態を追加し、録音開始要求・状態確認要求の送信中は開始/確認/閉じるボタンを disabled にした。送信中は自動非表示を止め、次の検知通知・エラー・明示 dismiss で状態を戻すようにした。録音・文字起こし本体、認証情報、課金 API には触れなかった。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の独立プロンプトウィンドウで開始/確認ボタン連打時に重複要求が出ないことを確認する。
+
 ### Agent verify: split Rust format/test headings
 
 - 開始日時: 2026-04-29 06:25 JST

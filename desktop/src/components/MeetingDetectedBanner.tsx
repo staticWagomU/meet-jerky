@@ -47,6 +47,7 @@ export function MeetingDetectedBanner() {
   const [statusPayload, setStatusPayload] =
     useState<LiveCaptionStatusPayload>(readPromptLiveCaptionStatus);
   const [listenerError, setListenerError] = useState<string | null>(null);
+  const [isActionPending, setIsActionPending] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -58,10 +59,12 @@ export function MeetingDetectedBanner() {
         }
         if (!isMeetingAppDetectedPayload(e.payload)) {
           setDetected(null);
+          setIsActionPending(false);
           setListenerError("会議検知通知の形式が不正です。");
           return;
         }
         setListenerError(null);
+        setIsActionPending(false);
         setStatusPayload(readPromptLiveCaptionStatus());
         setDetected(e.payload);
       },
@@ -118,11 +121,12 @@ export function MeetingDetectedBanner() {
   }, []);
 
   useEffect(() => {
-    if (!detected || listenerError) {
+    if (!detected || listenerError || isActionPending) {
       return;
     }
     const timeoutId = window.setTimeout(() => {
       clearPendingMeetingStartRequest();
+      setIsActionPending(false);
       setDetected(null);
       void getCurrentWindow().hide();
     }, PROMPT_AUTO_HIDE_MS);
@@ -130,7 +134,7 @@ export function MeetingDetectedBanner() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [detected, listenerError]);
+  }, [detected, listenerError, isActionPending]);
 
   if (!detected && !listenerError) return null;
 
@@ -149,10 +153,14 @@ export function MeetingDetectedBanner() {
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
       }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。自分/相手側トラックの録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
-    ? `${displayName} の録音と文字起こしの状態を確認`
+    ? isActionPending
+      ? `${displayName} の録音状態確認画面を開いています`
+      : `${displayName} の録音と文字起こしの状態を確認`
     : "録音と文字起こしの状態を確認";
   const startRecordingLabel = detected
-    ? `${displayName} の録音と文字起こしを開始`
+    ? isActionPending
+      ? `${displayName} の録音開始要求を送信中`
+      : `${displayName} の録音と文字起こしを開始`
     : "録音と文字起こしを開始";
   const dismissBannerLabel = "会議検知バナーを閉じる";
   const bannerRole = listenerError ? "alert" : "status";
@@ -160,6 +168,10 @@ export function MeetingDetectedBanner() {
     ? "meeting-detected-banner meeting-detected-banner-error"
     : "meeting-detected-banner";
   const handleStartRecording = async () => {
+    if (isActionPending) {
+      return;
+    }
+    setIsActionPending(true);
     markPendingMeetingStartRequest();
     try {
       await emit(MEETING_START_REQUEST_EVENT);
@@ -168,10 +180,15 @@ export function MeetingDetectedBanner() {
     } catch (e) {
       clearPendingMeetingStartRequest();
       setDetected(null);
+      setIsActionPending(false);
       setListenerError(`録音開始要求の送信に失敗しました: ${toErrorMessage(e)}`);
     }
   };
   const handleConfirmRecordingState = async () => {
+    if (isActionPending) {
+      return;
+    }
+    setIsActionPending(true);
     clearPendingMeetingStartRequest();
     try {
       await emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
@@ -179,6 +196,7 @@ export function MeetingDetectedBanner() {
       setDetected(null);
     } catch (e) {
       setDetected(null);
+      setIsActionPending(false);
       setListenerError(`録音状態確認画面の表示要求に失敗しました: ${toErrorMessage(e)}`);
     }
   };
@@ -186,6 +204,7 @@ export function MeetingDetectedBanner() {
     clearPendingMeetingStartRequest();
     setDetected(null);
     setListenerError(null);
+    setIsActionPending(false);
     try {
       await getCurrentWindow().hide();
     } catch (e) {
@@ -253,6 +272,7 @@ export function MeetingDetectedBanner() {
               <button
                 type="button"
                 className="control-btn control-btn-transcribe"
+                disabled={isActionPending}
                 aria-label={startRecordingLabel}
                 title={startRecordingLabel}
                 onClick={() => {
@@ -264,6 +284,7 @@ export function MeetingDetectedBanner() {
               <button
                 type="button"
                 className="control-btn control-btn-clear"
+                disabled={isActionPending}
                 aria-label={confirmRecordingLabel}
                 title={confirmRecordingLabel}
                 onClick={() => {
@@ -277,6 +298,7 @@ export function MeetingDetectedBanner() {
           <button
             type="button"
             className="control-btn control-btn-clear"
+            disabled={isActionPending}
             aria-label={dismissBannerLabel}
             title={dismissBannerLabel}
             onClick={() => {
