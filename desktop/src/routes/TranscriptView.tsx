@@ -289,7 +289,7 @@ function getAiTransmissionStatusLabel(
   if (engine === "elevenLabsRealtime") {
     return "送信先 ElevenLabs";
   }
-  return "端末内のみ";
+  return "なし";
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
@@ -299,7 +299,7 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "端末内のみ") {
+  if (statusLabel === "なし") {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: shorten local external-send label
+
+- 開始日時: 2026-04-28 13:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ状態 strip の外部送信表示を短くし、会議中 UI の横幅を抑える。
+- 結果: ローカル文字起こしエンジン時の外部送信 pill を `外部送信 端末内のみ` から `外部送信 なし` に短縮した。OpenAI / ElevenLabs Realtime の送信先表示と警告色は維持した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での表示幅確認は未実施。
+- 次アクション: 実機 UI で `外部送信 なし` が十分に明確で、status strip の横幅が過度に増えないか確認する。
+
 ### Transcript UX: hide registered API key pill
 
 - 開始日時: 2026-04-28 13:18 JST
