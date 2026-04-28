@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: avoid redundant reset while visible
+
+- 開始日時: 2026-04-29 00:49 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議中/文字起こし中の状態変化で独立ライブ字幕ウィンドウが既に表示中でも `live-caption-reset` され、直近字幕が消える可能性を潰す。
+- 結果: `set_live_caption_window_visible` で visible=true のとき、ウィンドウが非表示から表示へ切り替わる場合だけ `live-caption-reset` を emit するようにした。表示中の再配置・show は継続し、非表示処理は従来どおり。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: ローカルの Tauri 2.10.3 crate に `WebviewWindow::is_visible() -> Result<bool>` があることを `rg` で確認。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。なお `rustfmt --check src-tauri/src/lib.rs` の単体指定は Cargo edition を拾わず、既存 async ファイルを Rust 2015 扱いして失敗するため検証として不適。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 独立ライブ字幕ウィンドウの実機表示中リセット挙動は未実機確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: 検証後、実機で記録開始時にライブ字幕が一度だけ初期化され、録音/文字起こし状態遷移で直近字幕が消えないことを確認する。
+
 ### Permission UX: clear stale settings-open errors
 
 - 開始日時: 2026-04-29 00:47 JST
