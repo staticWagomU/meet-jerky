@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Detection: validate prompt event payloads
+
+- 開始日時: 2026-04-29 06:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/meetingDetection.ts`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトが `meeting-app-detected` イベント payload を型だけで信用せず、表示に入れる前に形式確認する。
+- 結果: `MeetingAppDetectedPayload` の runtime guard を追加し、プロンプトのイベント受信を `unknown` で受けて検証するようにした。不正 payload は会議名として表示せず、プロンプト内の受信エラーへ切り替える。
+- 変更ファイル: `src/utils/meetingDetection.ts`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingDetection.ts src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/meetingDetection.ts src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機の不正 payload 受信ケースは未確認。
+- 次アクション: 実機で会議検知プロンプトが通常 payload で従来通り表示されることを確認する。
+
 ### History Accessibility: mark session start time semantically
 
 - 開始日時: 2026-04-29 05:59 JST

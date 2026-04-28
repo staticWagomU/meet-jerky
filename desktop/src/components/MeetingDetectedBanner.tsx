@@ -6,6 +6,7 @@ import {
   clearPendingMeetingStartRequest,
   markPendingMeetingStartRequest,
 } from "../utils/meetingStartRequest";
+import { isMeetingAppDetectedPayload } from "../utils/meetingDetection";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
@@ -49,10 +50,15 @@ export function MeetingDetectedBanner() {
 
   useEffect(() => {
     let disposed = false;
-    const detectedUnlistenPromise = listen<MeetingAppDetectedPayload>(
+    const detectedUnlistenPromise = listen<unknown>(
       "meeting-app-detected",
       (e) => {
         if (disposed) {
+          return;
+        }
+        if (!isMeetingAppDetectedPayload(e.payload)) {
+          setDetected(null);
+          setListenerError("会議検知通知の形式が不正です。");
           return;
         }
         setStatusPayload(readPromptLiveCaptionStatus());
