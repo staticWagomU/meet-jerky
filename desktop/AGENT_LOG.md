@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: clarify saved history file message
+
+- 開始日時: 2026-04-28 10:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、記録終了後の保存完了表示が保存済み文字起こし履歴ファイルを指すことを明確にする。
+- 結果: 記録終了後の保存完了表示と aria/title を `文字起こし履歴ファイル` / `履歴ファイル` に変更した。保存処理、ファイル名生成、履歴一覧取得には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で記録終了後の保存完了表示が自然に読めるか確認する。
+
 ### Settings UX: keep inline errors readable
 
 - 開始日時: 2026-04-28 10:18 JST

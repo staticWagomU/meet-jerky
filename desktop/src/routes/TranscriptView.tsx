@@ -1245,10 +1245,10 @@ export function TranscriptView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`記録セッションを保存しました: ${lastSavedFileName}`}
-            title={`記録セッションを保存しました: ${lastSavedFileName}`}
+            aria-label={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
+            title={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
           >
-            記録を保存しました: {lastSavedFileName}
+            履歴ファイルを保存しました: {lastSavedFileName}
           </p>
         )}
       </div>
