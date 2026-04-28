@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Start Safety: reject future pending timestamps
+
+- 開始日時: 2026-04-29 05:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議開始予約の保存時刻が将来値になった場合も安全側で破棄する。
+- 結果: pending start の age を一度計算し、負の値または 60 秒超過なら予約を削除して無効扱いにするようにした。正常な即時開始導線には触れない。
+- 変更ファイル: `src/utils/meetingStartRequest.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/meetingStartRequest.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で時計変更後の pending start は未確認。
+- 次アクション: 実機で時計変更後の pending start 破棄を確認する。
+
 ### Meeting Start Safety: expire pending start request
 
 - 開始日時: 2026-04-29 05:18 JST

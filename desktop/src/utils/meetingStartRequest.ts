@@ -12,7 +12,8 @@ export function hasPendingMeetingStartRequest(): boolean {
       localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
       return false;
     }
-    if (Date.now() - createdAt > PENDING_MEETING_START_TTL_MS) {
+    const ageMs = Date.now() - createdAt;
+    if (ageMs < 0 || ageMs > PENDING_MEETING_START_TTL_MS) {
       localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
       return false;
     }
