@@ -1,5 +1,19 @@
 # Agent Log
 
+### Cloud Whisper Privacy: redact auth header debug
+
+- 開始日時: 2026-04-29 02:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/cloud_whisper.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Cloud Whisper request descriptor が `Debug` 出力された場合に Authorization header 由来の API キーが露出しないようにする。
+- 結果: `WhisperHttpRequestDescriptor` の derive `Debug` を redaction 付きの手動実装へ置き換え、`auth_header` は `<redacted>` として出すようにした。実リクエスト用の `auth_header` 値、PartialEq、既存 request descriptor の構造は維持し、Debug にキーが含まれない回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/cloud_whisper.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/cloud_whisper.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/cloud_whisper.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Cloud Whisper API 通信は課金/外部通信に当たるため未実施。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml cloud_whisper` を再実行し、Debug 出力に API キーが含まれないことを確認する。
+
 ### Apple Speech Privacy: avoid transcript payload logs
 
 - 開始日時: 2026-04-29 02:05 JST

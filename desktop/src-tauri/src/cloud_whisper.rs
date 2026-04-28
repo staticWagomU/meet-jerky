@@ -50,12 +50,22 @@ pub fn build_whisper_request_params(
     })
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 #[allow(dead_code)]
 pub struct WhisperHttpRequestDescriptor {
     pub url: String,
     pub auth_header: String,
     pub params: WhisperRequestParams,
+}
+
+impl std::fmt::Debug for WhisperHttpRequestDescriptor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WhisperHttpRequestDescriptor")
+            .field("url", &self.url)
+            .field("auth_header", &"<redacted>")
+            .field("params", &self.params)
+            .finish()
+    }
 }
 
 #[allow(dead_code)]
@@ -360,5 +370,23 @@ mod tests {
                 },
             }
         );
+    }
+
+    #[test]
+    fn descriptor_debug_redacts_authorization_header() {
+        let descriptor = build_whisper_http_request_descriptor(
+            "https://api.openai.com/v1",
+            "sk-test-abc",
+            "small",
+            Some("ja"),
+        )
+        .expect("should build descriptor");
+
+        let debug = format!("{descriptor:?}");
+
+        assert!(debug.contains("auth_header"));
+        assert!(debug.contains("<redacted>"));
+        assert!(!debug.contains("sk-test-abc"));
+        assert!(!debug.contains("Bearer sk-test-abc"));
     }
 }
