@@ -389,7 +389,7 @@ export function TranscriptDisplay({
               ? "コピー中..."
               : copyFeedback
                 ? "コピー済み"
-                : "すべてコピー"}
+                : "本文をコピー"}
           </button>
         </div>
       )}
