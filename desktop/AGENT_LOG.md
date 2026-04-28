@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Permissions: clarify browser URL permissions
+
+- 開始日時: 2026-04-29 03:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ブラウザ会議 URL 検知が AppleScript だけでなく Accessibility fallback も使う可能性を設定画面の権限説明へ反映する。
+- 結果: ブラウザ URL 検知の権限行と aria/title ラベルを `自動操作/アクセシビリティ` に更新し、対象ブラウザ一覧にも Arc を含めた。権限取得処理、URL取得処理、URL分類、保存形式には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実画面での折り返しと実機権限ダイアログ表示は未確認。
+- 次アクション: 実機で Automation / Accessibility 権限別の表示と検知挙動、狭い幅での折り返しを確認する。
+
 ### Realtime Stability: suppress stopped stream feed logs
 
 - 開始日時: 2026-04-29 03:31 JST

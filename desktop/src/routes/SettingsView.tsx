@@ -329,7 +329,7 @@ export function SettingsView() {
     ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
     : null;
   const browserAutomationPermissionLabel =
-    "自動操作 ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Firefox の URL 検知時に macOS が確認";
+    "自動操作/アクセシビリティ ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Arc、Firefox の URL 検知時に macOS が確認";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -771,7 +771,7 @@ export function SettingsView() {
           </div>
           <div className="settings-permission-row">
             <span className="settings-permission-label">
-              自動操作{" "}
+              自動操作/アクセシビリティ{" "}
               <span className="settings-permission-track">ブラウザ URL</span>
             </span>
             <span
@@ -843,7 +843,7 @@ export function SettingsView() {
           )}
           <p className="settings-note">
             ブラウザ会議 URL 検知では、macOS が Safari、Chrome、Edge、Brave、Arc、Firefox
-            の自動操作許可を求める場合があります。URL 全体は表示・保存せず、会議サービスとホスト名だけを使います。
+            の自動操作またはアクセシビリティ許可を求める場合があります。URL 全体は表示・保存せず、会議サービスとホスト名だけを使います。
           </p>
         </div>
       </div>
