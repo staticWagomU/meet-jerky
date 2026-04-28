@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: explain multi-term search
+
+- 開始日時: 2026-04-29 03:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索がスペース区切りの複数語に対応したことを検索欄から分かるようにする。
+- 結果: 検索欄の aria-label/title と placeholder に複数語検索できることを反映した。検索ロジック、一覧取得、保存形式には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実画面で placeholder の収まりは未確認。
+- 次アクション: 実画面で検索欄の文言が狭い幅でも破綻しないことを確認する。
+
 ### History Search UX: support multi-term queries
 
 - 開始日時: 2026-04-29 03:14 JST

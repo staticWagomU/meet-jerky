@@ -228,7 +228,8 @@ export function SessionList() {
     : trimmedSearchQuery
       ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
       : `保存済み ${sessions.length} 件`;
-  const sessionSearchLabel = "セッション履歴を検索";
+  const sessionSearchLabel =
+    "セッション履歴を検索。スペース区切りで複数語を指定できます";
   const clearSearchLabel = trimmedSearchQuery
     ? `検索語 ${searchQueryLabel} をクリア`
     : "検索語は入力されていません";
@@ -285,7 +286,7 @@ export function SessionList() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="タイトル、本文、日時、ファイル名"
+              placeholder="タイトル、本文、日時、ファイル名を複数語で検索"
               aria-label={sessionSearchLabel}
               title={sessionSearchLabel}
             />
