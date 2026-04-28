@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: support multi-term queries
+
+- 開始日時: 2026-04-29 03:14 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴検索で `重要 田中` のような複数語入力が、完全な連続文字列一致でしか見つからない問題を避ける。
+- 結果: 検索語を whitespace 区切りの term に正規化し、すべての term がタイトル・本文・日時・ファイル名の結合テキストに含まれる場合に一致とした。本文スニペットは最初に本文内で見つかった term の周辺を表示する。データ取得、保存形式、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴データでの複数語検索挙動は未確認。
+- 次アクション: 実履歴で複数語検索が AND 条件として機能し、本文スニペットが最初の本文一致 term 周辺を示すことを確認する。
+
 ### App Detection: use accessibility fallback for browser URLs
 
 - 開始日時: 2026-04-29 03:06 JST

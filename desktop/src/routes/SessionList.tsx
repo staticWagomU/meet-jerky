@@ -22,6 +22,14 @@ function formatSearchQueryForLabel(query: string): string {
     : normalized;
 }
 
+function getSearchTerms(query: string): string[] {
+  return query
+    .trim()
+    .toLocaleLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
 function getSessionDisplayTitle(title: string): string {
   const displayTitle = title
     .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
@@ -30,18 +38,23 @@ function getSessionDisplayTitle(title: string): string {
 }
 
 function getSearchMatchExcerpt(text: string, query: string): string | null {
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  if (!normalizedQuery || !text) {
+  const searchTerms = getSearchTerms(query);
+  if (searchTerms.length === 0 || !text) {
     return null;
   }
-  const matchIndex = text.toLocaleLowerCase().indexOf(normalizedQuery);
+  const normalizedText = text.toLocaleLowerCase();
+  const matchedTerm = searchTerms.find((term) => normalizedText.includes(term));
+  if (!matchedTerm) {
+    return null;
+  }
+  const matchIndex = normalizedText.indexOf(matchedTerm);
   if (matchIndex < 0) {
     return null;
   }
   const start = Math.max(0, matchIndex - SEARCH_EXCERPT_CONTEXT_LENGTH);
   const end = Math.min(
     text.length,
-    matchIndex + query.trim().length + SEARCH_EXCERPT_CONTEXT_LENGTH,
+    matchIndex + matchedTerm.length + SEARCH_EXCERPT_CONTEXT_LENGTH,
   );
   const excerpt = text.slice(start, end).replace(/\s+/g, " ").trim();
   if (!excerpt) {
@@ -55,8 +68,8 @@ function sessionMatchesQuery(
   startedAtLabel: string,
   query: string,
 ): boolean {
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  if (!normalizedQuery) {
+  const searchTerms = getSearchTerms(query);
+  if (searchTerms.length === 0) {
     return true;
   }
   const searchableText = [
@@ -67,7 +80,7 @@ function sessionMatchesQuery(
   ]
     .join(" ")
     .toLocaleLowerCase();
-  return searchableText.includes(normalizedQuery);
+  return searchTerms.every((term) => searchableText.includes(term));
 }
 
 /**
