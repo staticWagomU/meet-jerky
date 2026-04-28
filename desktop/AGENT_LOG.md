@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Copy: mention Arc browser permission
+
+- 開始日時: 2026-04-29 03:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Arc ブラウザを会議 URL 検知対象に追加した後、設定画面のブラウザ自動操作許可説明にも Arc を反映する。
+- 結果: 権限ステータス内のブラウザ会議 URL 検知説明に Arc を追加した。検知実装、権限取得、URL分類、保存形式には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実画面での折り返しは未確認。
+- 次アクション: 実画面で設定画面の説明文が対象ブラウザと一致し、折り返しが破綻しないことを確認する。
+
 ### History Search UX: explain multi-term search
 
 - 開始日時: 2026-04-29 03:20 JST
