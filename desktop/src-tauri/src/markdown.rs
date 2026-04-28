@@ -22,7 +22,11 @@ pub struct SessionSegment {
 
 /// セッションをMarkdown形式の文字列に整形する。
 pub fn format_session_markdown(meta: &SessionMeta, segments: &[SessionSegment]) -> String {
-    let header = format!("# {} - {}\n", meta.title, meta.started_at_display);
+    let header = format!(
+        "# {} - {}\n",
+        inline_markdown_text(&meta.title),
+        inline_markdown_text(&meta.started_at_display)
+    );
     if segments.is_empty() {
         return header;
     }
@@ -31,10 +35,21 @@ pub fn format_session_markdown(meta: &SessionMeta, segments: &[SessionSegment]) 
     out.push('\n');
     let lines: Vec<String> = segments
         .iter()
-        .map(|s| format!("**[{}] {}:** {}  ", s.timestamp_display, s.speaker, s.text))
+        .map(|s| {
+            format!(
+                "**[{}] {}:** {}  ",
+                inline_markdown_text(&s.timestamp_display),
+                inline_markdown_text(&s.speaker),
+                inline_markdown_text(&s.text)
+            )
+        })
         .collect();
     out.push_str(&lines.join("\n"));
     out
+}
+
+fn inline_markdown_text(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 // ─────────────────────────────────────────────
@@ -78,6 +93,23 @@ mod tests {
         let segments: Vec<SessionSegment> = Vec::new();
 
         let expected = "# 会議メモ - 2026-04-17 14:30\n";
+        assert_eq!(format_session_markdown(&meta, &segments), expected);
+    }
+
+    #[test]
+    fn test_format_session_markdown_normalizes_inline_newlines() {
+        let meta = SessionMeta {
+            title: "会議\nメモ".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments = vec![SessionSegment {
+            speaker: "自分\n側".to_string(),
+            timestamp_display: "14:30:05".to_string(),
+            text: "1行目\n2行目\t3行目".to_string(),
+        }];
+
+        let expected =
+            "# 会議 メモ - 2026-04-17 14:30\n\n**[14:30:05] 自分 側:** 1行目 2行目 3行目  ";
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
 }

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Session Markdown: normalize inline newlines
+
+- 開始日時: 2026-04-28 13:08 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/markdown.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Markdown 保存時にタイトル・話者・本文の改行やタブがセグメント行構造を崩さないようにする。
+- 結果: Markdown フォーマッタでタイトル、開始時刻表示、話者、セグメント本文を `split_whitespace().join(" ")` で1行化してから出力するようにした。本文に改行やタブが混ざっても、1セグメント1 Markdown 行と行末 hard break が崩れない回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/markdown.rs`, `AGENT_LOG.md`
+- 検証結果: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`npm run build` 成功。`git diff --check -- src-tauri/src/markdown.rs AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/src/markdown.rs AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo test --manifest-path src-tauri/Cargo.toml markdown` は `whisper-rs-sys` の build script が `cmake` を見つけられず失敗する既知の環境制約で未完走。
+- 次アクション: `cmake` が PATH 上にある環境で `cargo test --manifest-path src-tauri/Cargo.toml markdown` を再実行し、改行混入テキストの Markdown 表示を実機でも確認する。
+
 ### Session Reliability: saturate duration on clock rollback
 
 - 開始日時: 2026-04-28 12:58 JST
