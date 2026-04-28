@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI refresh: meeting notices and saved file card
+
+- 開始日時: 2026-04-29 08:32 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI刷新の継続として、会議中の注意/エラー表示と会議後の履歴保存完了表示を、状態が読みやすいカード調へ揃える。
+- 結果: `meeting-source-notice`、開始不可理由、エラー alert、保存済み履歴ファイル表示の角丸・境界・背景・余白を更新した。保存処理、Finder/ファイル起動、録音/文字起こし制御には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で外部送信注意、開始不可理由、保存完了表示が小さいウィンドウでも詰まらず、操作ボタンが読みやすいことを確認する。
+
 ### UI refresh: Whisper model selector
 
 - 開始日時: 2026-04-29 08:31 JST
