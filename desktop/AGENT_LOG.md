@@ -1,5 +1,19 @@
 # Agent Log
 
+### Harness: reliable tmux prompt sender
+
+- 開始日時: 2026-04-28 10:41 JST
+- 担当セッション: Codex
+- 役割: ブートストラップ/運用補助
+- 作業範囲: `scripts/agent-send-input.sh`, `AGENT_LOG.md`
+- 指示内容: `mj-main` への長文指示送信で Enter 確定漏れが繰り返されたため、送信手順を改善する。
+- 結果: `tmux send-keys` で本文を直接送る代わりに、tmux paste buffer へ本文を入れて paste し、その後 Enter を送って直近 pane を表示する `scripts/agent-send-input.sh` を追加した。今後の `mj-main` への依頼はこのスクリプトを優先して使う。
+- 変更ファイル: `scripts/agent-send-input.sh`, `AGENT_LOG.md`
+- 検証結果: `bash -n scripts/agent-send-input.sh` 成功。`git diff --check -- scripts/agent-send-input.sh AGENT_LOG.md` 成功。`chmod +x scripts/agent-send-input.sh` 実行済み。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後の `mj-main` への長文指示は `scripts/agent-send-input.sh mj-main - < prompt.txt` 形式を優先する。
+
 ### Realtime Transcription: stop worker after closed stream feed
 
 - 開始日時: 2026-04-28 10:32 JST
