@@ -22,7 +22,8 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager, PhysicalPosition, Position, Size, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+    Emitter, Manager, PhysicalPosition, Position, Size, WebviewUrl, WebviewWindowBuilder,
+    WindowEvent,
 };
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -204,6 +205,7 @@ fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) {
     position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 56);
     if let Some(window) = app.get_webview_window(LIVE_CAPTION_WINDOW_LABEL) {
         if visible {
+            let _ = window.emit("live-caption-reset", ());
             let _ = window.show();
         } else {
             let _ = window.hide();

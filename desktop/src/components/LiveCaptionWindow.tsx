@@ -17,6 +17,13 @@ export function LiveCaptionWindow() {
 
   useEffect(() => {
     let disposed = false;
+    const resetUnlistenPromise = listen("live-caption-reset", () => {
+      if (disposed) {
+        return;
+      }
+      setLatestSegment(null);
+      setListenerError(null);
+    });
     const resultUnlistenPromise = listen<TranscriptSegment>(
       "transcription-result",
       (event) => {
@@ -42,7 +49,11 @@ export function LiveCaptionWindow() {
       },
     );
 
-    Promise.all([resultUnlistenPromise, errorUnlistenPromise])
+    Promise.all([
+      resetUnlistenPromise,
+      resultUnlistenPromise,
+      errorUnlistenPromise,
+    ])
       .then(() => {
         if (!disposed) {
           setListenerError(null);
@@ -58,6 +69,11 @@ export function LiveCaptionWindow() {
 
     return () => {
       disposed = true;
+      resetUnlistenPromise
+        .then((unlisten) => unlisten())
+        .catch((e) =>
+          console.error("ライブ字幕リセットの受信解除に失敗しました:", toErrorMessage(e)),
+        );
       resultUnlistenPromise
         .then((unlisten) => unlisten())
         .catch((e) =>

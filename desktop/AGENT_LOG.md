@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: reset stale caption on show
+
+- 開始日時: 2026-04-28 17:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ字幕専用ウィンドウが hide/show で再利用される際に前回録音の最後の字幕やエラーを表示し続けないようにする。
+- 結果: `set_live_caption_window_visible(true)` 時に `live-caption-reset` event を字幕ウィンドウへ emit し、`LiveCaptionWindow` 側で最新セグメントと listener error をクリアするようにした。これにより次の録音開始時は待機文から始まり、古い発話が新しい会議の字幕として見えにくくなる。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/lib.rs src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で録音停止後に再開した際、字幕ウィンドウが前回発話を表示しないことは未確認。Rust 全体テストは `cmake` 不在により未完走。
+- 次アクション: 実機で録音開始→停止→再開始を行い、下部ライブ字幕が待機状態から始まることを確認する。
+
 ### Live Caption UX: mark error state in caption window
 
 - 開始日時: 2026-04-28 17:12 JST
