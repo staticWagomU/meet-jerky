@@ -10,6 +10,10 @@ const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 
+function clearPendingMeetingStartRequest() {
+  localStorage.removeItem(PENDING_MEETING_START_STORAGE_KEY);
+}
+
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
 ///
@@ -157,6 +161,7 @@ export function MeetingDetectedBanner() {
                 aria-label={confirmRecordingLabel}
                 title={confirmRecordingLabel}
                 onClick={() => {
+                  clearPendingMeetingStartRequest();
                   void emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
                   void getCurrentWindow().hide();
                   setDetected(null);
@@ -172,6 +177,7 @@ export function MeetingDetectedBanner() {
             aria-label={dismissBannerLabel}
             title={dismissBannerLabel}
             onClick={() => {
+              clearPendingMeetingStartRequest();
               setDetected(null);
               setListenerError(null);
               void getCurrentWindow().hide();

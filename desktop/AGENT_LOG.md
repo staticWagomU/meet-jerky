@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Safety: clear pending start on cancel paths
+
+- 開始日時: 2026-04-29 03:39 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知バナーで録音開始以外の操作をしたときに古い pending start が残って偶発的な録音開始につながらないようにする。
+- 結果: `状態を確認` と閉じる操作で `meetJerky.pendingMeetingStart` を明示的に削除するようにした。`録音を開始` の pending start 保存とイベント送信、会議検知 payload、録音制御処理には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実ウィンドウ間の localStorage 共有と会議検知バナー操作は未実機確認。
+- 次アクション: 実機で状態確認/閉じる後に録音が自動開始されず、録音開始ボタンでは従来どおり main へ開始要求が渡ることを確認する。
+
 ### Realtime Stability: generalize stopped stream suppression
 
 - 開始日時: 2026-04-29 03:37 JST
