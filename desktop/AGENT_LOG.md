@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript Log UX: align copy progress labels
+
+- 開始日時: 2026-04-28 09:50 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こし本文コピーのコピー中/コピー済み aria/title も本文コピーであることが分かる表現へ揃える。
+- 結果: コピー中・コピー済みの aria/title を `文字起こし本文 ... 件` に変更した。コピー対象、クリップボード処理、可視ボタン文言には触れなかった。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での支援技術読み上げ確認は未実施。
+- 次アクション: 実機でコピー中/コピー済み aria/title と可視文言が矛盾なく読めるか確認する。
+
 ### History UX: clarify reveal history file action
 
 - 開始日時: 2026-04-28 09:48 JST

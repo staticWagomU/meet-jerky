@@ -316,9 +316,9 @@ export function TranscriptDisplay({
     copyableSegmentsCount === 0
       ? "コピーできる文字起こしはありません"
       : isCopying
-        ? `文字起こし ${copyableSegmentsCount} 件をコピー中`
+        ? `文字起こし本文 ${copyableSegmentsCount} 件をコピー中`
         : copyFeedback
-          ? `文字起こし ${copyableSegmentsCount} 件をコピー済み`
+          ? `文字起こし本文 ${copyableSegmentsCount} 件をコピー済み`
           : `文字起こし本文 ${copyableSegmentsCount} 件をコピー`;
 
   return (
