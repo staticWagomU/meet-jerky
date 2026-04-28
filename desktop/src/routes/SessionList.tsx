@@ -8,8 +8,17 @@ type SessionAction =
   | { kind: "reveal"; path: string }
   | null;
 
+const SEARCH_QUERY_LABEL_MAX_LENGTH = 40;
+
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
+}
+
+function formatSearchQueryForLabel(query: string): string {
+  const normalized = query.split(/\s+/).filter(Boolean).join(" ");
+  return normalized.length > SEARCH_QUERY_LABEL_MAX_LENGTH
+    ? `${normalized.slice(0, SEARCH_QUERY_LABEL_MAX_LENGTH)}...`
+    : normalized;
 }
 
 function getSessionDisplayTitle(title: string): string {
@@ -175,6 +184,7 @@ export function SessionList() {
     ),
   );
   const isSessionListBusy = isFetching || pendingAction !== null;
+  const searchQueryLabel = formatSearchQueryForLabel(trimmedSearchQuery);
   const reloadSessionsLabel = isFetching
     ? "セッション履歴一覧を読み込み中"
     : "セッション履歴一覧を再読み込み";
@@ -185,12 +195,12 @@ export function SessionList() {
       : `保存済み ${sessions.length} 件`;
   const sessionSearchLabel = "セッション履歴を検索";
   const clearSearchLabel = trimmedSearchQuery
-    ? `検索語 ${trimmedSearchQuery} をクリア`
+    ? `検索語 ${searchQueryLabel} をクリア`
     : "検索語は入力されていません";
   const sessionListLabel = [
     "セッション履歴",
     sessionCountLabel,
-    trimmedSearchQuery ? `検索語 ${trimmedSearchQuery}` : null,
+    trimmedSearchQuery ? `検索語 ${searchQueryLabel}` : null,
     pendingAction ? "履歴ファイル操作中" : null,
   ]
     .filter(Boolean)
@@ -296,8 +306,8 @@ export function SessionList() {
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`検索条件 ${trimmedSearchQuery} に一致する文字起こし履歴はありません`}
-          title={`検索条件 ${trimmedSearchQuery} に一致する文字起こし履歴はありません`}
+          aria-label={`検索条件 ${searchQueryLabel} に一致する文字起こし履歴はありません`}
+          title={`検索条件 ${searchQueryLabel} に一致する文字起こし履歴はありません`}
         >
           <span>検索条件に一致する文字起こし履歴はありません</span>
           <button

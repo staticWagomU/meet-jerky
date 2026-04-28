@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search UX: shorten query labels
+
+- 開始日時: 2026-04-29 02:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、本文検索で長い検索語句を貼った場合でも aria/title や空状態ラベルが過度に長くならないようにする。
+- 結果: 検索処理自体は full query を使い続け、UI/aria/title 用に whitespace 正規化と40文字省略を行う `formatSearchQueryForLabel` を追加した。検索対象、履歴取得、ファイル操作には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機スクリーンリーダーでの読み上げは未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: 実機またはブラウザで、長い検索語句でも検索結果は full query で絞り込まれ、aria/title は短縮表示になることを確認する。
+
 ### History Search: include transcript body
 
 - 開始日時: 2026-04-29 02:34 JST
