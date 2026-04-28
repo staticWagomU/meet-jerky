@@ -157,7 +157,10 @@ mod macos {
             let raw: Vec<RawSegment> = match serde_json::from_str(&json_owned) {
                 Ok(v) => v,
                 Err(e) => {
-                    eprintln!("[apple_speech] drain JSON パース失敗: {e} payload={json_owned}");
+                    eprintln!(
+                        "[apple_speech] drain JSON パース失敗: {e} payload_bytes={}",
+                        json_owned.len()
+                    );
                     return Vec::new();
                 }
             };

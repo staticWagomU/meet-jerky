@@ -1,5 +1,19 @@
 # Agent Log
 
+### Apple Speech Privacy: avoid transcript payload logs
+
+- 開始日時: 2026-04-29 02:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Apple Speech bridge の JSON パース失敗時に文字起こし本文を含み得る raw payload をログへ出さないようにする。
+- 結果: `drain_inner` の parse error ログから `payload={json_owned}` を削除し、診断に必要な `payload_bytes` のみを記録するようにした。SpeechAnalyzer 呼び出し、セグメント変換、source/speaker 伝播には触れない。
+- 変更ファイル: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/apple_speech.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/apple_speech.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Apple Speech 実機の malformed JSON 再現は未実施。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml apple_speech` を再実行し、実機では parse error 時にも transcript payload がログへ出ないことを確認する。
+
 ### Transcript History: skip UI error segments
 
 - 開始日時: 2026-04-29 02:03 JST
