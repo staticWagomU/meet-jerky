@@ -78,6 +78,20 @@ export function PermissionBanner() {
   const permissionRetryLabel = isCheckingPermissions
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
+  const micPermissionBody = isCheckingPermissions
+    ? "マイク権限の状態を確認しています。"
+    : micPermissionError
+      ? "マイク権限の状態を macOS から取得できませんでした。自分トラックを録音・文字起こしできるか分かりません。"
+      : micPermission === "denied"
+        ? "マイクが未許可です。自分トラックは録音・文字起こしされません。"
+        : "マイク権限が未確認です。許可されるまで自分トラックは録音・文字起こしされません。";
+  const screenPermissionBody = isCheckingPermissions
+    ? "画面収録権限の状態を確認しています。"
+    : screenPermissionError
+      ? "画面収録権限の状態を macOS から取得できませんでした。相手側のシステム音声を取得・文字起こしできるか分かりません。"
+      : screenPermission === "denied"
+        ? "画面収録が未許可です。相手側のシステム音声は取得・文字起こしされません。"
+        : "画面収録権限が未確認です。許可されるまで相手側のシステム音声は取得・文字起こしされません。";
 
   return (
     <div
@@ -119,11 +133,7 @@ export function PermissionBanner() {
       <div className="permission-banner-body">
         {micNeedsAttention && (
           <p>
-            {isCheckingPermissions
-              ? "マイク権限の状態を確認しています。"
-              : micPermissionError
-              ? "マイク権限の状態を macOS から取得できませんでした。自分トラックを録音・文字起こしできるか分かりません。"
-              : "マイクが未許可です。自分トラックは録音・文字起こしされません。"}
+            {micPermissionBody}
             <br />
             <strong>システム設定 &gt; プライバシーとセキュリティ &gt; マイク</strong>
             で状態を確認してください。
@@ -131,11 +141,7 @@ export function PermissionBanner() {
         )}
         {screenNeedsAttention && (
           <p>
-            {isCheckingPermissions
-              ? "画面収録権限の状態を確認しています。"
-              : screenPermissionError
-                ? "画面収録権限の状態を macOS から取得できませんでした。相手側のシステム音声を取得・文字起こしできるか分かりません。"
-                : "画面収録が未許可です。相手側のシステム音声は取得・文字起こしされません。"}
+            {screenPermissionBody}
             <br />
             <strong>
               システム設定 &gt; プライバシーとセキュリティ &gt; 画面収録

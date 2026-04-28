@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permissions UX: distinguish undetermined permissions
+
+- 開始日時: 2026-04-28 11:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 権限説明の透明性改善として、macOS 権限が未確認の状態を未許可と断定せず、自分/相手側トラックへの影響を正確に示す。
+- 結果: PermissionBanner の本文を、確認中・確認失敗・未許可・未確認で分けた。未確認時は「許可されるまで録音/取得・文字起こしされない」と説明し、拒否済みと初回確認前を混同しないようにした。権限取得 command、録音・文字起こし制御、設定保存には触れなかった。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で未確認/未許可/確認失敗それぞれの権限バナー文言が macOS 権限ダイアログの状態と自然に対応するか確認する。
+
 ### App UX: prefer macOS system fonts
 
 - 開始日時: 2026-04-28 11:04 JST
