@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Copy: shorten visual detail text
+
+- 開始日時: 2026-04-29 04:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知プロンプトにエンジン/外部送信ラベルを追加した後の情報密度を見直し、ノッチ下の小窓として視覚本文が重くならないようにする。
+- 結果: 視覚表示の詳細文を短くし、会議検知・未開始・自動非表示がすぐ読める文言にした。aria-label の詳細説明は維持し、読み上げでは録音/文字起こし状態と外部送信状態を伝える。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の会議検知プロンプト表示は未確認。
+- 次アクション: 実機で本文の収まりを確認する。
+
 ### Settings Transparency: emit live caption status after settings sync
 
 - 開始日時: 2026-04-29 04:24 JST

@@ -106,7 +106,7 @@ export function MeetingDetectedBanner() {
     : "録音しますか？";
   const bannerDetail = listenerError
     ? null
-    : `${displayName} を検出しました。自分/相手側トラックの録音と文字起こしはまだ開始していません。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
+    : `${displayName} を検出。録音と文字起こしは未開始です。約${PROMPT_AUTO_HIDE_SECONDS}秒後に隠れます。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
