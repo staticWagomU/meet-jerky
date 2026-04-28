@@ -1,5 +1,19 @@
 # Agent Log
 
+### Saved History Accessibility: separate status and actions
+
+- 開始日時: 2026-04-29 05:22 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、保存完了メッセージと保存済み履歴ファイル操作ボタンの支援技術向け構造を整理する。
+- 結果: 保存後 UI の外枠を操作グループにし、保存完了メッセージだけを `role="status"` の live region にした。表示内容やファイル操作処理には触れない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の支援技術読み上げは未確認。
+- 次アクション: 実機で保存後 UI の読み上げとボタン操作を確認する。
+
 ### Saved History UX: add actions after save
 
 - 開始日時: 2026-04-29 05:21 JST

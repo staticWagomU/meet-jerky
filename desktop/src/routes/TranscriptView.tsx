@@ -1534,13 +1534,19 @@ export function TranscriptView() {
         {lastSavedPath && lastSavedFileName && (
           <div
             className="meeting-saved-path"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            aria-label={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
-            title={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
+            role="group"
+            aria-label={`保存済み履歴ファイル操作: ${lastSavedFileName}`}
+            title={`保存済み履歴ファイル操作: ${lastSavedFileName}`}
           >
-            <span>履歴ファイルを保存しました: {lastSavedFileName}</span>
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
+              title={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
+            >
+              履歴ファイルを保存しました: {lastSavedFileName}
+            </span>
             <span className="meeting-saved-path-actions">
               <button
                 type="button"
