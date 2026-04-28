@@ -14,6 +14,7 @@ interface MicrophoneSectionProps {
   isReloadingAudioDevices: boolean;
   isOperationPending: boolean;
   isControlDisabled: boolean;
+  isCompact?: boolean;
   onDeviceChange: (deviceId: string) => void;
   onRetryDevices: () => void;
   onToggleRecording: () => void;
@@ -28,6 +29,7 @@ export function MicrophoneSection({
   isReloadingAudioDevices,
   isOperationPending,
   isControlDisabled,
+  isCompact = false,
   onDeviceChange,
   onRetryDevices,
   onToggleRecording,
@@ -169,9 +171,11 @@ export function MicrophoneSection({
         </div>
         <span className="level-label">{micLevelPercent}%</span>
       </div>
-      <div className="audio-source-note">
-        マイク音声は自分トラックとして文字起こしされます
-      </div>
+      {!isCompact && (
+        <div className="audio-source-note">
+          マイク音声は自分トラックとして文字起こしされます
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: compact audio source notes while live
+
+- 開始日時: 2026-04-28 15:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議中または文字起こし中の UI を邪魔になりにくくし、下部ライブ字幕パネルと共存しやすくする。
+- 結果: 自分/相手側の音声ソースセクションに compact 表示を追加し、記録中または文字起こし中は説明 note を非表示にするようにした。状態 badge、音量メーター、操作ボタン、aria/title は維持し、録音状態の透明性は落とさないようにした。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での会議中コンパクト表示は未確認。
+- 次アクション: 実機 UI で会議中の音声セクションがコンパクトになり、状態 badge・音量メーター・操作ボタンが十分に分かりやすいことを確認する。
+
 ### Meeting UX: reveal prompt window on meeting detection
 
 - 開始日時: 2026-04-28 15:02 JST

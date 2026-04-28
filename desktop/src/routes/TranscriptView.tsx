@@ -1387,6 +1387,7 @@ export function TranscriptView() {
         isReloadingAudioDevices={isFetchingDevices}
         isOperationPending={isMicSourceOperationPending}
         isControlDisabled={isAudioSourceOperationPending}
+        isCompact={isMeetingActive || isTranscribing}
         onDeviceChange={setSelectedDeviceId}
         onRetryDevices={() => refetchDevices()}
         onToggleRecording={handleToggleMicRecording}
@@ -1397,6 +1398,7 @@ export function TranscriptView() {
         systemAudioLevel={systemAudioLevel}
         isOperationPending={isSystemAudioSourceOperationPending}
         isControlDisabled={isAudioSourceOperationPending}
+        isCompact={isMeetingActive || isTranscribing}
         onToggleSystemAudio={handleToggleSystemAudio}
       />
 

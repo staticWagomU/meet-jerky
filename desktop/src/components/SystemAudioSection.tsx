@@ -8,6 +8,7 @@ interface SystemAudioSectionProps {
   systemAudioLevel: number;
   isOperationPending: boolean;
   isControlDisabled: boolean;
+  isCompact?: boolean;
   onToggleSystemAudio: () => void;
 }
 
@@ -16,6 +17,7 @@ export function SystemAudioSection({
   systemAudioLevel,
   isOperationPending,
   isControlDisabled,
+  isCompact = false,
   onToggleSystemAudio,
 }: SystemAudioSectionProps) {
   const systemAudioLevelPercent = Math.round(
@@ -102,9 +104,12 @@ export function SystemAudioSection({
         </div>
         <span className="level-label">{systemAudioLevelPercent}%</span>
       </div>
-      <div className="audio-source-note">
-        相手側トラックはシステム音声から取得します。macOS の画面収録の許可が必要です。
-      </div>
+      {!isCompact && (
+        <div className="audio-source-note">
+          相手側トラックはシステム音声から取得します。macOS
+          の画面収録の許可が必要です。
+        </div>
+      )}
     </div>
   );
 }
