@@ -301,7 +301,7 @@ export function SettingsView() {
     ? "macOS 権限状態を確認中"
     : "macOS の権限を再チェック";
   const browserAutomationPermissionLabel =
-    "自動操作 ブラウザ URL 検知: 必要時に macOS が確認";
+    "自動操作 ブラウザ URL 検知: URL 検知時に macOS が確認";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -703,7 +703,7 @@ export function SettingsView() {
               aria-label={browserAutomationPermissionLabel}
               title={browserAutomationPermissionLabel}
             >
-              必要時に確認
+              URL検知時に確認
             </span>
           </div>
           <button

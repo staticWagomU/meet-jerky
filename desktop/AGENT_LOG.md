@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: clarify browser automation permission timing
+
+- 開始日時: 2026-04-28 10:02 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ブラウザ会議 URL 検知の自動操作権限がいつ macOS から確認されるかを設定画面で分かりやすくする。
+- 結果: 設定画面のブラウザ URL 検知用の自動操作権限バッジと aria/title を、`URL 検知時に macOS が確認` と分かる表現に変更した。権限取得処理、ブラウザ URL 取得処理、設定保存処理には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で設定画面の権限ステータスが自然に読めるか確認する。
+
 ### Meeting Detection UX: clarify pre-start action
 
 - 開始日時: 2026-04-28 10:00 JST
