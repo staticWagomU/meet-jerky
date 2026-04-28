@@ -6,8 +6,10 @@ import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
+  MACOS_ACCESSIBILITY_PRIVACY_URL,
   MACOS_MICROPHONE_PRIVACY_URL,
   MACOS_SCREEN_RECORDING_PRIVACY_URL,
+  OPEN_ACCESSIBILITY_PRIVACY_LABEL,
   OPEN_MICROPHONE_PRIVACY_LABEL,
   OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
 } from "../utils/macosPrivacySettings";
@@ -824,6 +826,20 @@ export function SettingsView() {
               title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
             >
               画面収録設定を開く
+            </button>
+            <button
+              type="button"
+              className="control-btn control-btn-clear"
+              onClick={() =>
+                void handleOpenPermissionSettings(
+                  MACOS_ACCESSIBILITY_PRIVACY_URL,
+                  "アクセシビリティ権限設定",
+                )
+              }
+              aria-label={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
+              title={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
+            >
+              アクセシビリティ設定を開く
             </button>
           </div>
           {permissionSettingsOpenErrorLabel && (

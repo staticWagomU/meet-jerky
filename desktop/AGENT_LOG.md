@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings Permissions UX: add accessibility settings shortcut
+
+- 開始日時: 2026-04-29 03:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/utils/macosPrivacySettings.ts`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ブラウザ会議 URL 検知に自動操作/アクセシビリティ許可が絡むことを説明している設定画面から、アクセシビリティ設定へ直接移動できるようにする。
+- 結果: macOS アクセシビリティ権限ペインの URL とラベルを共通 utility に追加し、権限ステータスの操作ボタンへ `アクセシビリティ設定を開く` を追加した。権限状態の取得処理、URL 検知処理、保存形式には触れない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/utils/macosPrivacySettings.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/utils/macosPrivacySettings.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/utils/macosPrivacySettings.ts AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機でシステム設定のアクセシビリティペインが開くことは未確認。
+- 次アクション: 実機でボタンが適切な macOS 設定ペインを開き、狭い幅でも権限操作ボタンが破綻しないことを確認する。
+
 ### History List UX: show transcript body presence
 
 - 開始日時: 2026-04-29 03:33 JST
