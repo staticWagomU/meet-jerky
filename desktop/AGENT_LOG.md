@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: restructure meeting prompt window
+
+- 開始日時: 2026-04-29 07:38 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の段階実装として、ノッチ下の通知用ウィンドウを「録音しますか？」に集中できる Mac らしいコンパクトなプロンプトへ寄せる。
+- 結果: 検知元/エンジン/外部送信バッジをタイトル下の meta 行へ移し、主要質問・説明・状態・操作の視線順を整理した。通知ウィンドウ幅、角丸、余白、注目マーク、操作ボタン行を調整し、既存の録音開始/状態確認/閉じる処理には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機でのノッチ下表示位置と小ウィンドウ内の折り返しは未確認。
+- 次アクション: 差分を確認してコミットする。次にリングライト機能の安全な最小境界を設計する。
+
 ### UI Refresh: restyle menubar app window shell
 
 - 開始日時: 2026-04-29 07:36 JST

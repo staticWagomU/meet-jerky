@@ -235,42 +235,42 @@ export function MeetingDetectedBanner() {
           <span className="meeting-detected-attention-dot" />
         </div>
       )}
-      {sourceLabel && (
-        <span
-          className="meeting-detected-source-badge"
-          aria-label={`検知元: ${sourceLabel}`}
-          title={`検知元: ${sourceLabel}`}
-        >
-          {sourceLabel}
-        </span>
-      )}
-      {!listenerError && (
-        <>
-          <span
-            className="meeting-detected-source-badge meeting-detected-engine-badge"
-            aria-label={`文字起こしエンジン: ${statusPayload.engineLabel}`}
-            title={`文字起こしエンジン: ${statusPayload.engineLabel}`}
-          >
-            {statusPayload.engineLabel}
-          </span>
-          <span
-            className={`meeting-detected-source-badge meeting-detected-privacy-badge${
-              statusPayload.isExternalTransmission
-                ? " meeting-detected-privacy-badge-warning"
-                : ""
-            }`}
-            aria-label={`外部送信: ${statusPayload.aiTransmissionLabel}`}
-            title={`外部送信: ${statusPayload.aiTransmissionLabel}`}
-          >
-            {visibleTransmissionLabel}
-          </span>
-        </>
-      )}
       <span className="meeting-detected-banner-text">
         <span className="meeting-detected-banner-title">{bannerTitle}</span>
         {bannerDetail && (
           <span className="meeting-detected-banner-detail">
             {bannerDetail}
+          </span>
+        )}
+        {!listenerError && (
+          <span className="meeting-detected-meta">
+            {sourceLabel && (
+              <span
+                className="meeting-detected-source-badge"
+                aria-label={`検知元: ${sourceLabel}`}
+                title={`検知元: ${sourceLabel}`}
+              >
+                {sourceLabel}
+              </span>
+            )}
+            <span
+              className="meeting-detected-source-badge meeting-detected-engine-badge"
+              aria-label={`文字起こしエンジン: ${statusPayload.engineLabel}`}
+              title={`文字起こしエンジン: ${statusPayload.engineLabel}`}
+            >
+              {statusPayload.engineLabel}
+            </span>
+            <span
+              className={`meeting-detected-source-badge meeting-detected-privacy-badge${
+                statusPayload.isExternalTransmission
+                  ? " meeting-detected-privacy-badge-warning"
+                  : ""
+              }`}
+              aria-label={`外部送信: ${statusPayload.aiTransmissionLabel}`}
+              title={`外部送信: ${statusPayload.aiTransmissionLabel}`}
+            >
+              {visibleTransmissionLabel}
+            </span>
           </span>
         )}
       </span>
