@@ -1206,6 +1206,18 @@ body[data-window="live-caption"] {
   display: block;
 }
 
+.settings-risk-note {
+  margin: 0.2rem 0 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--system-audio-note-color) 32%, transparent);
+  border-radius: 6px;
+  color: var(--system-audio-note-color);
+  background-color: var(--system-audio-note-bg);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .settings-inline-error {
   display: flex;
   align-items: center;

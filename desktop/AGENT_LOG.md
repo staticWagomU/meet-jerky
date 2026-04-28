@@ -1,5 +1,33 @@
 # Agent Log
 
+### Product Review: critical reassessment and risk-first priorities
+
+- 開始日時: 2026-04-28 17:45 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: プロダクト全体レビュー、`AGENT_LOG.md`
+- 指示内容: ユーザー依頼として、UI だけでなく機能面・技術面・プロダクト価値・ユーザー体験・macOS ネイティブ感・録音状態の透明性・会議検知・音声別トラック取得・リアルタイム文字起こし・履歴/検索/AI議事録・権限説明・信頼性・将来の課金リスクを辛口レビューし、優先順位を再整理する。
+- 結果: 重大弱点は、実機依存の Apple Speech / ScreenCaptureKit / URL 検知の未確認が多いこと、外部 Realtime 追加に対して課金・外部送信リスクの UI 表示がまだ弱いこと、AI議事録・ToDo・辞書補正がコンセプトに比べ未成熟なこと、専用ウィンドウは改善したが透明/ノッチ/フォーカス挙動が実機未確認なこと、Apple Speech の同時2トラック制約がユーザーにとって分かりにくいこと、会議検知はURL全文を出さない安全設計は良いが網羅性と権限失敗時の導線がまだ弱いこと。過剰/矛盾気味の点は、UI改善が先行し、信頼性・権限・課金透明性の説明が追いついていない点。再整理した優先順位は、1. クラッシュ/停止済みstream/panic防止、2. 外部送信・課金・権限の透明性、3. 音声別トラックの状態/制約表示、4. 会議検知の安全な網羅性、5. リアルタイム低遅延と古い字幕/エラーの混線防止、6. 履歴検索と保存品質、7. AI議事録は課金・認証境界を固めてから。
+- 変更ファイル: `AGENT_LOG.md`
+- 検証結果: レビュー記録自体は文書変更。続く実装タスクで `npm run build`、`git diff --check`、`scripts/agent-verify.sh` を実行する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機・権限・外部 API・課金に関わる挙動は未確認。
+- 次アクション: 最も価値が高くリスクが低い改善として、外部 Realtime 選択時の外部送信・課金リスクを設定 UI に明示する。
+
+### Settings UX: clarify external realtime billing risk
+
+- 開始日時: 2026-04-28 17:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 再整理した優先順位に従い、OpenAI / ElevenLabs Realtime 選択時の外部送信・将来の課金リスク・Keychain 管理を設定画面で明確にする。
+- 結果: 外部 Realtime エンジン選択時だけ、音声を外部 API に送信すること、プロバイダ側の利用量課金が発生する可能性があること、API キーは Keychain 保存で画面に再表示しないことを warning note として表示するようにした。radio の `aria-describedby` にも risk note を紐づけた。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI で note の幅・視認性・VoiceOver の読み上げ自然さは未確認。外部 API 呼び出しや課金確認は行っていない。
+- 次アクション: 実機で外部 Realtime 選択時の warning note が過度に邪魔ではなく、外部送信/課金可能性として十分に目立つことを確認する。
+
 ### Live Caption UX: reset stale caption on show
 
 - 開始日時: 2026-04-28 17:25 JST

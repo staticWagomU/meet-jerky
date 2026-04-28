@@ -15,6 +15,7 @@ const WHISPER_MODELS = [
 
 const OPENAI_API_KEY_NOTE_ID = "openai-api-key-note";
 const ELEVENLABS_API_KEY_NOTE_ID = "elevenlabs-api-key-note";
+const EXTERNAL_REALTIME_RISK_NOTE_ID = "external-realtime-risk-note";
 const ENGINE_NOTE_IDS = {
   whisper: "transcription-engine-note-whisper",
   appleSpeech: "transcription-engine-note-apple-speech",
@@ -328,6 +329,23 @@ export function SettingsView() {
     "文字起こしエンジン: OpenAI Realtime API、外部送信あり、送信先 OpenAI、API キーが必要";
   const elevenLabsRealtimeEngineLabel =
     "文字起こしエンジン: ElevenLabs Scribe v2 Realtime、外部送信あり、送信先 ElevenLabs、API キーが必要";
+  const selectedExternalRealtimeProvider =
+    localSettings.transcriptionEngine === "openAIRealtime"
+      ? "OpenAI"
+      : localSettings.transcriptionEngine === "elevenLabsRealtime"
+        ? "ElevenLabs"
+        : null;
+  const externalRealtimeRiskLabel = selectedExternalRealtimeProvider
+    ? `${selectedExternalRealtimeProvider} Realtime は音声を外部 API へ送信します。プロバイダ側の利用量課金が発生する可能性があります。`
+    : null;
+  const openAIRealtimeDescribedBy =
+    localSettings.transcriptionEngine === "openAIRealtime"
+      ? `${ENGINE_NOTE_IDS.openAIRealtime} ${EXTERNAL_REALTIME_RISK_NOTE_ID}`
+      : ENGINE_NOTE_IDS.openAIRealtime;
+  const elevenLabsRealtimeDescribedBy =
+    localSettings.transcriptionEngine === "elevenLabsRealtime"
+      ? `${ENGINE_NOTE_IDS.elevenLabsRealtime} ${EXTERNAL_REALTIME_RISK_NOTE_ID}`
+      : ENGINE_NOTE_IDS.elevenLabsRealtime;
   const isSettingsViewBusy =
     updateMutation.isPending ||
     isSelectingOutputDirectory ||
@@ -420,7 +438,7 @@ export function SettingsView() {
               type="radio"
               name="engine"
               value="openAIRealtime"
-              aria-describedby={ENGINE_NOTE_IDS.openAIRealtime}
+              aria-describedby={openAIRealtimeDescribedBy}
               checked={localSettings.transcriptionEngine === "openAIRealtime"}
               onChange={() =>
                 setLocalSettings((current) =>
@@ -447,7 +465,7 @@ export function SettingsView() {
               type="radio"
               name="engine"
               value="elevenLabsRealtime"
-              aria-describedby={ENGINE_NOTE_IDS.elevenLabsRealtime}
+              aria-describedby={elevenLabsRealtimeDescribedBy}
               checked={localSettings.transcriptionEngine === "elevenLabsRealtime"}
               onChange={() =>
                 setLocalSettings((current) =>
@@ -470,6 +488,20 @@ export function SettingsView() {
             </span>
           </label>
         </div>
+        {externalRealtimeRiskLabel && (
+          <p
+            id={EXTERNAL_REALTIME_RISK_NOTE_ID}
+            className="settings-risk-note"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={externalRealtimeRiskLabel}
+            title={externalRealtimeRiskLabel}
+          >
+            {externalRealtimeRiskLabel}
+            API キーは Keychain に保存され、画面には再表示されません。
+          </p>
+        )}
       </div>
 
       {/* 外部 Realtime API キー */}
