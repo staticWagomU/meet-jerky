@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime Transcription: stop worker after closed stream feed
+
+- 開始日時: 2026-04-28 10:32 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: OpenAI Realtime / ElevenLabs Realtime で停止済み stream への feed が繰り返され、`Realtime ストリームが既に停止しています` 系エラーが大量 emit/log される問題を修正する。実 API 呼び出し、API キー変更、課金操作は禁止。
+- 結果: `run_transcription_loop` で `stream.feed()` が Err を返したら、同じ停止済み stream に feed を続けず `running=false` にして worker を抜けるようにした。停止済み OpenAI / ElevenLabs Realtime channel の内部エラー文は UI の `transcription-error` として emit せず、pending に積まれた実 API エラー segment があればそれだけ drain する。feed 失敗後は invalid/stopped stream への finalize も避ける。停止済み realtime feed error を UI emit 対象外にする純粋関数テストを追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo test --manifest-path src-tauri/Cargo.toml transcription`、`openai_realtime`、`elevenlabs` はいずれも `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。初回の `cargo test --manifest-path src-tauri/Cargo.toml transcription openai_realtime elevenlabs` は Cargo の複数 TESTNAME 非対応で失敗したため、個別コマンドで再試行した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。実 OpenAI / ElevenLabs API 疎通は課金・認証を伴うため未実施。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml transcription`、`openai_realtime`、`elevenlabs` を再実行し、実 API 許可環境で停止済み realtime stream のエラー連続出力が止まることを確認する。
+
 ### History Reliability: ignore md directories in listing
 
 - 開始日時: 2026-04-28 10:21 JST

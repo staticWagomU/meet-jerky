@@ -1008,6 +1008,15 @@ fn build_worker_panic_error_payload(source: Option<TranscriptionSource>) -> serd
     build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
 }
 
+fn is_realtime_stream_already_stopped_error(error: &str) -> bool {
+    error.contains("OpenAI Realtime ストリームが既に停止しています")
+        || error.contains("ElevenLabs Realtime ストリームが既に停止しています")
+}
+
+fn should_emit_feed_error(error: &str) -> bool {
+    !is_realtime_stream_already_stopped_error(error)
+}
+
 fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
     let running = Arc::clone(&worker.running);
     let app = worker.app.clone();
@@ -1039,6 +1048,7 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
     } = cfg;
 
     let mut read_buffer: Vec<f32> = vec![0.0; 4096];
+    let mut feed_failed = false;
 
     while running.load(Ordering::SeqCst) {
         let available = consumer.occupied_len();
@@ -1059,10 +1069,21 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
 
         if let Err(e) = stream.feed(samples) {
             eprintln!("文字起こしエラー: {e}");
-            let _ = app.emit(
-                "transcription-error",
-                build_transcription_error_payload(e, Some(source)),
+            if should_emit_feed_error(&e) {
+                let _ = app.emit(
+                    "transcription-error",
+                    build_transcription_error_payload(e, Some(source)),
+                );
+            }
+            running.store(false, Ordering::SeqCst);
+            feed_failed = true;
+            emit_segments(
+                stream.drain_segments(),
+                &app,
+                &session_manager,
+                stream_started_at_secs,
             );
+            break;
         }
 
         emit_segments(
@@ -1073,6 +1094,10 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
         );
 
         std::thread::sleep(Duration::from_millis(50));
+    }
+
+    if feed_failed {
+        return;
     }
 
     // 停止フラグが立ったら、残ったバッファをフラッシュして最終セグメントを emit する。
@@ -1201,6 +1226,19 @@ mod tests {
         let serialized = payload.to_string();
         assert!(!serialized.contains("panic"));
         assert!(!serialized.contains("payload"));
+    }
+
+    #[test]
+    fn test_stopped_realtime_feed_errors_are_not_emitted_to_ui() {
+        assert!(!should_emit_feed_error(
+            "OpenAI Realtime ストリームが既に停止しています"
+        ));
+        assert!(!should_emit_feed_error(
+            "ElevenLabs Realtime ストリームが既に停止しています"
+        ));
+        assert!(should_emit_feed_error(
+            "リサンプリングエラー: invalid input"
+        ));
     }
 
     #[test]
