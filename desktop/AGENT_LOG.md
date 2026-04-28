@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: restyle settings panels
+
+- 開始日時: 2026-04-29 08:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の段階実装として、設定画面をメニューバー常駐アプリらしいカード型の情報密度へ揃える。
+- 結果: 設定セクションをガラス調カード化し、見出し、出力先 path、権限/状態 badge、未保存状態、API key 状態の角丸・境界を調整した。設定保存、Keychain、権限確認のロジックには触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での設定画面の縦スクロール量と折り返しは未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### UI Refresh: restyle transcript log surface
 
 - 開始日時: 2026-04-29 08:23 JST
