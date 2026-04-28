@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: keep API key checking state neutral
+
+- 開始日時: 2026-04-28 09:24 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、OpenAI / ElevenLabs API キー状態を再確認中に、過去の登録済み状態の ready 色が残らないようにする。
+- 結果: API キー状態 class 判定で、`isFetchingHasKey` または `hasKey === undefined` の間は neutral 表示にし、確認完了後の `登録済み` のみ ready 表示にした。Keychain 操作、API キー値、認証情報には触れなかった。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での Keychain 状態確認 UI は未確認。
+- 次アクション: 実機で API キー状態再確認中の badge 色が登録済み表示と誤認されないか確認する。
+
 ### Transcript UX: distinguish external audio transmission
 
 - 開始日時: 2026-04-28 09:23 JST

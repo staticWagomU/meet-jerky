@@ -960,7 +960,9 @@ function ExternalApiKeySection({
           : "未登録";
   const apiKeyStatusClassName = hasKeyError
     ? "settings-api-key-status settings-api-key-status-error"
-    : hasKey
+    : isFetchingHasKey || hasKey === undefined
+      ? "settings-api-key-status"
+      : hasKey
       ? "settings-api-key-status settings-api-key-status-ready"
       : "settings-api-key-status";
   const apiKeyStatusLabel = `${providerName} API キーの状態: ${apiKeyStatusText}`;
