@@ -5,6 +5,8 @@ import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
   getVisibleTransmissionLabel,
+  isLiveCaptionStatusPayload,
+  normalizeLiveCaptionStatusPayload,
   readStoredLiveCaptionStatus,
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
@@ -78,13 +80,15 @@ export function LiveCaptionWindow() {
 
   useEffect(() => {
     let disposed = false;
-    const statusUnlistenPromise = listen<LiveCaptionStatusPayload>(
+    const statusUnlistenPromise = listen<unknown>(
       LIVE_CAPTION_STATUS_EVENT,
       (event) => {
         if (disposed) {
           return;
         }
-        setStatusPayload(event.payload);
+        if (isLiveCaptionStatusPayload(event.payload)) {
+          setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
+        }
       },
     );
     const resetUnlistenPromise = listen("live-caption-reset", () => {

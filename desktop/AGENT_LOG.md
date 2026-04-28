@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption Status: normalize event payloads
+
+- 開始日時: 2026-04-29 05:47 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `src/components/LiveCaptionWindow.tsx`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、独立ライブ字幕ウィンドウと会議検知プロンプトが `live-caption-status` イベント payload を型だけで信用せず、保存値と同じ後方互換補完を通す。
+- 結果: live caption status の正規化関数を公開し、Tauri イベント受信側で runtime guard と default 補完を適用するようにした。不正 payload は現在表示を壊さず無視し、古い payload はトラック状態を「未確認」で補う。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `src/components/LiveCaptionWindow.tsx`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。
+- 次アクション: `cmake` あり環境で Rust 全体テストを確認する。
+
 ### Live Caption Status: clarify stored payload typing
 
 - 開始日時: 2026-04-29 05:45 JST

@@ -48,7 +48,7 @@ export function isLiveCaptionStatusPayload(
   );
 }
 
-function normalizeLiveCaptionStatus(
+export function normalizeLiveCaptionStatusPayload(
   status: StoredLiveCaptionStatusPayload,
 ): LiveCaptionStatusPayload {
   return {
@@ -67,7 +67,7 @@ export function readStoredLiveCaptionStatus(
     }
     const parsed: unknown = JSON.parse(raw);
     return isLiveCaptionStatusPayload(parsed)
-      ? normalizeLiveCaptionStatus(parsed)
+      ? normalizeLiveCaptionStatusPayload(parsed)
       : DEFAULT_LIVE_CAPTION_STATUS;
   } catch (e) {
     onError?.(e);

@@ -10,6 +10,8 @@ import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
   getVisibleTransmissionLabel,
+  isLiveCaptionStatusPayload,
+  normalizeLiveCaptionStatusPayload,
   readStoredLiveCaptionStatus,
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
@@ -71,11 +73,13 @@ export function MeetingDetectedBanner() {
         }
         return null;
       });
-    const statusUnlistenPromise = listen<LiveCaptionStatusPayload>(
+    const statusUnlistenPromise = listen<unknown>(
       LIVE_CAPTION_STATUS_EVENT,
       (event) => {
         if (!disposed) {
-          setStatusPayload(event.payload);
+          if (isLiveCaptionStatusPayload(event.payload)) {
+            setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
+          }
         }
       },
     ).catch((e) => {
