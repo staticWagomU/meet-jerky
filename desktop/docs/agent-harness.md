@@ -99,6 +99,7 @@
   - git状態、tmuxセッション、保存済み出力ファイルを一覧する。
 - `scripts/agent-verify.sh [PATH ...]`
   - `git diff --check` と `npm run build` を実行する。
+  - `cargo fmt --manifest-path src-tauri/Cargo.toml --check` を実行する。
   - `cmake` がある場合のみ `cargo test --manifest-path src-tauri/Cargo.toml` を実行する。
   - `cmake` が無い環境では `whisper-rs-sys` がビルドできないため Rust 全体テストを skip する。
 - `scripts/agent-commit.sh COMMIT_MESSAGE [PATH ...]`

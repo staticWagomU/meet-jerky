@@ -18,6 +18,7 @@ PATH="$AGENT_PATH" npm run build
 
 echo
 echo "== rust verification =="
+PATH="$AGENT_PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check
 if PATH="$AGENT_PATH" command -v cmake >/dev/null 2>&1; then
   PATH="$AGENT_PATH" cargo test --manifest-path src-tauri/Cargo.toml
 else

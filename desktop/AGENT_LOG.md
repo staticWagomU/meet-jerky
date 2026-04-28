@@ -1,5 +1,19 @@
 # Agent Log
 
+### Agent Verify: include Rust formatting check
+
+- 開始日時: 2026-04-29 06:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `scripts/agent-verify.sh`, `docs/agent-harness.md`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、`cmake` 不在で Rust 全体テストを skip する環境でも Rust 差分の format 退行を検出できるようにする。
+- 結果: `scripts/agent-verify.sh` の Rust verification に `cargo fmt --manifest-path src-tauri/Cargo.toml --check` を追加し、`docs/agent-harness.md` の説明も更新した。`cargo test` は従来通り `cmake` がある場合のみ実行する。
+- 変更ファイル: `scripts/agent-verify.sh`, `docs/agent-harness.md`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- scripts/agent-verify.sh docs/agent-harness.md AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh scripts/agent-verify.sh docs/agent-harness.md AGENT_LOG.md` 成功（`cargo fmt --check` 成功、Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。
+- 次アクション: 今後の Rust 差分では `scripts/agent-verify.sh` の標準経路で format check を確認する。
+
 ### History Dates: guard invalid started_at values
 
 - 開始日時: 2026-04-29 06:31 JST
