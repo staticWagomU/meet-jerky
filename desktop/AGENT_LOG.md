@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: auto-hide idle recording prompt
+
+- 開始日時: 2026-04-28 17:00 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知時の録音確認プロンプトが会議中に残り続けて邪魔にならないようにする。
+- 結果: 会議検知 payload を受け取った録音確認プロンプトに 15 秒の自動非表示を追加した。ユーザーが `録音を開始` / `状態を確認` / 閉じるを押した場合の既存挙動は維持し、listener error は自動で閉じずユーザーが確認できるようにした。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機での 15 秒自動非表示と、プロンプト非表示後も次回会議検知で再表示されることは未確認。
+- 次アクション: 実機で会議検知後にプロンプトが 15 秒で閉じ、録音開始/状態確認/閉じる操作時は即時に閉じることを確認する。
+
 ### Meeting UX: avoid focus steal from overlay windows
 
 - 開始日時: 2026-04-28 16:45 JST

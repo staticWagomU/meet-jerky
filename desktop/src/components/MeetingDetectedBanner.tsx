@@ -7,6 +7,7 @@ import { toErrorMessage } from "../utils/errorMessage";
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
+const PROMPT_AUTO_HIDE_MS = 15000;
 
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
@@ -58,6 +59,20 @@ export function MeetingDetectedBanner() {
         });
     };
   }, []);
+
+  useEffect(() => {
+    if (!detected || listenerError) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setDetected(null);
+      void getCurrentWindow().hide();
+    }, PROMPT_AUTO_HIDE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [detected, listenerError]);
 
   if (!detected && !listenerError) return null;
 
