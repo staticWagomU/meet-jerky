@@ -230,6 +230,7 @@ export function MeetingDetectedBanner() {
   return (
     <div
       className={bannerClassName}
+      data-tauri-drag-region
       role={bannerRole}
       aria-live={bannerRole === "alert" ? "assertive" : "polite"}
       aria-atomic="true"
@@ -237,22 +238,35 @@ export function MeetingDetectedBanner() {
       title={bannerAriaLabel}
     >
       {!listenerError && (
-        <div className="meeting-detected-attention-mark" aria-hidden="true">
+        <div
+          className="meeting-detected-attention-mark"
+          data-tauri-drag-region
+          aria-hidden="true"
+        >
           <span className="meeting-detected-attention-dot" />
         </div>
       )}
-      <span className="meeting-detected-banner-text">
-        <span className="meeting-detected-banner-title">{bannerTitle}</span>
+      <span className="meeting-detected-banner-text" data-tauri-drag-region>
+        <span
+          className="meeting-detected-banner-title"
+          data-tauri-drag-region
+        >
+          {bannerTitle}
+        </span>
         {bannerDetail && (
-          <span className="meeting-detected-banner-detail">
+          <span
+            className="meeting-detected-banner-detail"
+            data-tauri-drag-region
+          >
             {bannerDetail}
           </span>
         )}
         {!listenerError && (
-          <span className="meeting-detected-meta">
+          <span className="meeting-detected-meta" data-tauri-drag-region>
             {sourceLabel && (
               <span
                 className="meeting-detected-source-badge"
+                data-tauri-drag-region
                 aria-label={`検知元: ${sourceLabel}`}
                 title={`検知元: ${sourceLabel}`}
               >
@@ -261,6 +275,7 @@ export function MeetingDetectedBanner() {
             )}
             <span
               className="meeting-detected-source-badge meeting-detected-engine-badge"
+              data-tauri-drag-region
               aria-label={`文字起こしエンジン: ${statusPayload.engineLabel}`}
               title={`文字起こしエンジン: ${statusPayload.engineLabel}`}
             >
@@ -272,6 +287,7 @@ export function MeetingDetectedBanner() {
                   ? " meeting-detected-privacy-badge-warning"
                   : ""
               }`}
+              data-tauri-drag-region
               aria-label={`外部送信: ${statusPayload.aiTransmissionLabel}`}
               title={`外部送信: ${statusPayload.aiTransmissionLabel}`}
             >
@@ -320,7 +336,7 @@ export function MeetingDetectedBanner() {
           )}
           <button
             type="button"
-            className="control-btn control-btn-clear"
+            className="control-btn control-btn-clear meeting-detected-dismiss-btn"
             disabled={Boolean(pendingAction)}
             aria-label={dismissBannerLabel}
             title={dismissBannerLabel}

@@ -11308,3 +11308,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: ビルド後、実機 Tauri ウィンドウで閉じるボタンとドラッグ可能範囲を確認する。未実機範囲は環境制約として扱う。
+
+### Meeting prompt window: refine draggable and dismiss affordance
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: ノッチ下の通知用独立ウィンドウを、macOS の補助パネルらしく、操作ボタン以外の領域を自然につかめて、閉じる操作が過度に大きく見えない形へ整える。
+- 結果: 会議検知プロンプトの非操作領域へ `data-tauri-drag-region` を明示し、閉じるボタンへ専用クラスを追加して小さな丸ボタン寸法にした。録音開始・状態確認のイベント、検知ロジック、権限/録音制御には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 Tauri ウィンドウでノッチ下表示位置、ドラッグ可能範囲、閉じるボタンのクリック性を確認する。未実機範囲は環境制約として扱う。

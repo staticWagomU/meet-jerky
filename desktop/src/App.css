@@ -2349,6 +2349,13 @@ body[data-window="ring-light"] {
   justify-content: flex-end;
 }
 
+.meeting-detected-dismiss-btn {
+  width: 2rem;
+  min-width: 2rem;
+  padding-inline: 0;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 520px) {
   .container {
     padding: 0.55rem;
