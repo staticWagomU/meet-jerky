@@ -1632,6 +1632,8 @@ body[data-window="live-caption"] {
   padding: 0.75rem 1rem;
   border: 1px solid var(--control-btn-clear-border);
   border-radius: 8px;
+  content-visibility: auto;
+  contain-intrinsic-size: 4.75rem;
 }
 
 .session-list-item-body {

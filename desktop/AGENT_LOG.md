@@ -1,5 +1,19 @@
 # Agent Log
 
+### History List Performance: skip offscreen row rendering
+
+- 開始日時: 2026-04-29 03:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴本文検索で一覧表示件数が増えた場合でも画面外の履歴行描画コストを抑える。
+- 結果: `.session-list-item` に `content-visibility: auto` と `contain-intrinsic-size` を追加し、Chromium WebView で画面外行の描画を遅延できるようにした。検索ロジック、一覧取得、保存形式には触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 大量履歴でのスクロール実測と古い WebView での見え方は未確認。
+- 次アクション: 大量履歴でスクロール時の表示欠けがなく、画面外行の描画負荷が下がることを実測する。
+
 ### History Search Performance: stabilize empty sessions dependency
 
 - 開始日時: 2026-04-29 03:52 JST
