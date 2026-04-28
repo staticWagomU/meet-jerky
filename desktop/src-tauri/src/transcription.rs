@@ -1013,8 +1013,7 @@ fn build_worker_panic_error_payload(source: Option<TranscriptionSource>) -> serd
 }
 
 fn is_realtime_stream_already_stopped_error(error: &str) -> bool {
-    error.contains("OpenAI Realtime ストリームが既に停止しています")
-        || error.contains("ElevenLabs Realtime ストリームが既に停止しています")
+    error.contains("Realtime ストリームが既に停止しています")
 }
 
 fn should_emit_realtime_stream_error(error: &str) -> bool {
@@ -1246,6 +1245,9 @@ mod tests {
         ));
         assert!(!should_emit_realtime_stream_error(
             "ElevenLabs Realtime ストリームが既に停止しています"
+        ));
+        assert!(!should_emit_realtime_stream_error(
+            "Custom Realtime ストリームが既に停止しています"
         ));
         assert!(should_emit_realtime_stream_error(
             "リサンプリングエラー: invalid input"

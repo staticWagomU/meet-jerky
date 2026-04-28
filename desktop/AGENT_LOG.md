@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime Stability: generalize stopped stream suppression
+
+- 開始日時: 2026-04-29 03:37 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、停止済み Realtime stream への feed/finalize エラー抑制が OpenAI / ElevenLabs の個別文言にだけ依存しないようにする。
+- 結果: 停止済み Realtime stream 判定を共通の `Realtime ストリームが既に停止しています` 部分一致へ寄せ、将来の Realtime エンジンや文脈付きエラーでも同種の停止済みエラーを UI/log へ出しにくくした。通常の文字起こしエラーは引き続き emit/log する。テストにも未知プロバイダ名の停止済み Realtime 文言を追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml transcription` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Realtime API 通信は課金/外部通信に当たるため未実施。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml transcription` を再実行し、実 Realtime 停止時の不要ログが増えないことを確認する。
+
 ### Settings Permissions UX: add accessibility settings shortcut
 
 - 開始日時: 2026-04-29 03:35 JST
