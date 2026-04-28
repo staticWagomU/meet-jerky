@@ -193,7 +193,7 @@ export function MeetingDetectedBanner() {
                   setDetected(null);
                 }}
               >
-                録音を開始
+                記録を開始
               </button>
               <button
                 type="button"

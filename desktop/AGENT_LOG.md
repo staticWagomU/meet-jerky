@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Copy: align start button with recording session wording
+
+- 開始日時: 2026-04-29 04:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知プロンプトの録音開始ボタン文言を批判的に見直し、実際には録音と文字起こしを開始することが視覚的に伝わるようにする。
+- 結果: ボタン表示をメイン画面と同じ `記録を開始` に揃えた。aria-label / title は既存どおり `録音と文字起こしを開始` を維持し、読み上げでは具体性を残した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の会議検知プロンプト表示は未確認。
+- 次アクション: 実機でボタン文言が意図通り見えることを確認する。
+
 ### Live Caption Status: centralize storage helpers
 
 - 開始日時: 2026-04-29 04:20 JST
