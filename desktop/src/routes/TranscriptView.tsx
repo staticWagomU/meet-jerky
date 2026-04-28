@@ -1078,6 +1078,10 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const externalRealtimeRiskNotice =
+    externalApiProvider && !isMeetingActive && !isTranscribing
+      ? `${externalApiProvider} Realtime は音声を外部 API へ送信します。プロバイダ側の利用量課金が発生する可能性があります。`
+      : null;
   const aiTransmissionStatusLabel = settingsError
     ? "確認できません"
     : getAiTransmissionStatusLabel(settings?.transcriptionEngine);
@@ -1313,6 +1317,18 @@ export function TranscriptView() {
             title={`音声ソース注意: ${audioSourceNotice}`}
           >
             {audioSourceNotice}
+          </p>
+        )}
+        {externalRealtimeRiskNotice && (
+          <p
+            className="meeting-source-notice"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`外部 Realtime 注意: ${externalRealtimeRiskNotice}`}
+            title={`外部 Realtime 注意: ${externalRealtimeRiskNotice}`}
+          >
+            {externalRealtimeRiskNotice}
           </p>
         )}
         {meetingError && (

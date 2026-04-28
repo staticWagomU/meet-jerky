@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: warn external realtime before recording
+
+- 開始日時: 2026-04-28 18:08 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 再整理した優先順位に従い、ライブ画面でも OpenAI / ElevenLabs Realtime 選択時の外部送信・課金可能性を開始前に明示する。
+- 結果: 外部 Realtime エンジン選択中で、録音/文字起こしがまだ始まっていない場合に、音声が外部 API へ送信されプロバイダ側の利用量課金が発生する可能性を meeting control 内の注意表示として出すようにした。録音中は既存の `外部送信 送信先 ...` pill を維持し、会議中の表示密度は増やさない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機でのライブ画面表示密度と VoiceOver 読み上げは未確認。外部 API 呼び出しや課金確認は行っていない。
+- 次アクション: 実機で外部 Realtime 選択時、開始前だけ注意表示が出て、録音中は status pill に集約されることを確認する。
+
 ### Product Review: critical reassessment and risk-first priorities
 
 - 開始日時: 2026-04-28 17:45 JST
