@@ -1478,43 +1478,57 @@ body[data-window="ring-light"] {
    =========================== */
 
 .permission-banner {
-  border-radius: 6px;
-  padding: 0.6rem 0.8rem;
-  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.48rem;
+  border-radius: 16px;
+  padding: 0.66rem 0.72rem;
+  margin-bottom: 0.1rem;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 32%, transparent),
+    0 8px 20px rgba(146, 64, 14, 0.06);
 }
 
 .permission-banner-warning {
   background-color: var(--permission-banner-bg);
-  border: 1px solid var(--permission-banner-border);
+  border: 1px solid color-mix(in srgb, var(--permission-banner-border) 72%, transparent);
   color: var(--permission-banner-color);
 }
 
 .permission-banner-alert {
-  background-color: var(--transcript-error-bg);
-  border-color: var(--transcript-error-color);
+  background-color: color-mix(in srgb, var(--transcript-error-bg) 72%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--transcript-error-color) 38%, transparent);
   color: var(--transcript-error-color);
 }
 
 .permission-banner-title {
-  font-weight: 700;
+  font-weight: 760;
   font-size: 0.9rem;
-  margin-bottom: 0.3rem;
+  line-height: 1.25;
 }
 
 .permission-banner-body {
-  font-size: 0.8rem;
-  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .permission-banner-actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.36rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .permission-banner-inline-error {
-  margin: 0.45rem 0 0;
+  margin: 0;
+  padding: 0.4rem 0.52rem;
+  border: 1px solid color-mix(in srgb, var(--transcript-error-color) 28%, transparent);
+  border-radius: 10px;
   color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
   font-size: 0.75rem;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -1523,26 +1537,33 @@ body[data-window="ring-light"] {
 .permission-banner-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.35rem;
+  gap: 0.32rem;
 }
 
 .permission-summary-pill {
-  border-radius: 4px;
-  padding: 0.14rem 0.4rem;
-  background-color: var(--permission-summary-bg);
+  border-radius: 999px;
+  padding: 0.16rem 0.44rem;
+  background-color: color-mix(in srgb, var(--permission-summary-bg) 86%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   font-size: 0.72rem;
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .permission-banner-body p {
-  margin: 0.2rem 0;
+  margin: 0;
+  padding: 0.42rem 0.5rem;
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--color-surface) 54%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  overflow-wrap: anywhere;
 }
 
 .permission-banner .control-btn {
-  margin-top: 0.4rem;
+  align-self: flex-start;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--color-surface) 64%, transparent);
 }
 
 /* ===========================

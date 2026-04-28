@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI refresh: permission banner clarity
+
+- 開始日時: 2026-04-29 08:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI刷新の継続として、録音状態の透明性に直結する権限警告を、既存構造のまま macOS らしい警告カードとして読みやすくする。
+- 結果: 権限バナーの角丸、余白、summary pill、本文カード、設定ボタン、設定起動エラー表示を glass/card 調へ更新した。権限判定、macOS 設定 URL、録音/文字起こし制御には触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で権限未許可/確認失敗時のバナーが小さいメニューバーウィンドウでも読みやすく、設定ボタンが押しやすいことを確認する。
+
 ### UI Refresh: restyle settings panels
 
 - 開始日時: 2026-04-29 08:25 JST
