@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### Live caption accessibility: align external sending label
+
+- 開始日時: 2026-04-29 06:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 独立ライブ字幕ウィンドウの外部送信 pill で、可視表示と aria/title の状態表現を揃える。
+- 結果: 外部 Realtime 利用時の privacy pill aria-label / title を `外部送信中 ...` に変更し、可視文言 `外部送信中` と一致させた。外部送信判定、API キー、通信処理には触れなかった。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の独立ライブ字幕ウィンドウで、VoiceOver / title が可視 pill と同じ外部送信中状態として読めることを確認する。
+
 ### System audio: stop ScreenCaptureKit stream on drop
 
 - 開始日時: 2026-04-29 06:44 JST

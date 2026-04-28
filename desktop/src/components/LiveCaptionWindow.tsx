@@ -269,6 +269,9 @@ export function LiveCaptionWindow() {
   const liveCaptionTransmissionLabel = statusPayload.isExternalTransmission
     ? "外部送信中"
     : visibleTransmissionLabel;
+  const liveCaptionTransmissionAriaLabel = statusPayload.isExternalTransmission
+    ? `外部送信中 ${statusPayload.aiTransmissionLabel}`
+    : `外部送信 ${statusPayload.aiTransmissionLabel}`;
 
   return (
     <div
@@ -320,8 +323,8 @@ export function LiveCaptionWindow() {
                   ? " live-transcript-privacy-pill-warning"
                   : ""
               }`}
-              aria-label={`外部送信 ${statusPayload.aiTransmissionLabel}`}
-              title={`外部送信 ${statusPayload.aiTransmissionLabel}`}
+              aria-label={liveCaptionTransmissionAriaLabel}
+              title={liveCaptionTransmissionAriaLabel}
             >
               {liveCaptionTransmissionLabel}
             </span>
