@@ -118,6 +118,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .always_on_top(true)
     .skip_taskbar(true)
     .shadow(true)
+    .focused(false)
     .visible(false)
     .build()?;
 
@@ -133,6 +134,8 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .always_on_top(true)
     .skip_taskbar(true)
     .shadow(true)
+    .focused(false)
+    .focusable(false)
     .visible(false)
     .build()?;
 
@@ -185,7 +188,6 @@ pub(crate) fn show_meeting_prompt_window(app: &tauri::AppHandle) {
     position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, 44);
     if let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) {
         let _ = window.show();
-        let _ = window.set_focus();
     }
 }
 

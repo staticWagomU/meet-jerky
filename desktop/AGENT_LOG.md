@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: avoid focus steal from overlay windows
+
+- 開始日時: 2026-04-28 16:45 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトとライブ字幕専用ウィンドウが会議中の作業フォーカスを奪わないようにする。
+- 結果: `meeting-prompt` / `live-caption` の初期 `focused(false)` を指定し、`live-caption` は操作要素を持たないため `focusable(false)` にした。会議検知時の `show_meeting_prompt_window` から `set_focus()` を削除し、プロンプト表示が会議アプリやブラウザからフォーカスを奪いにくい挙動へ寄せた。main window を明示的に表示する操作では従来どおり focus する。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で会議検知時にフォーカスが奪われないこと、プロンプトボタンがクリック可能なままかは未確認。Rust 全体テストは `cmake` 不在により未完走。
+- 次アクション: 実機で Google Meet / Zoom / Teams 表示中に検知プロンプトが出ても入力フォーカスが会議側に残ること、クリック時だけ main window へ遷移することを確認する。
+
 ### Meeting UX: remove unsupported transparent builder call
 
 - 開始日時: 2026-04-28 16:30 JST
