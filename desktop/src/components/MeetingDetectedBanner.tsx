@@ -7,11 +7,37 @@ import {
   markPendingMeetingStartRequest,
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  DEFAULT_LIVE_CAPTION_STATUS,
+  LIVE_CAPTION_STATUS_STORAGE_KEY,
+  getVisibleTransmissionLabel,
+  isLiveCaptionStatusPayload,
+  type LiveCaptionStatusPayload,
+} from "../utils/liveCaptionStatus";
 
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
+
+function readStoredLiveCaptionStatus(): LiveCaptionStatusPayload {
+  try {
+    const raw = localStorage.getItem(LIVE_CAPTION_STATUS_STORAGE_KEY);
+    if (!raw) {
+      return DEFAULT_LIVE_CAPTION_STATUS;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    return isLiveCaptionStatusPayload(parsed)
+      ? parsed
+      : DEFAULT_LIVE_CAPTION_STATUS;
+  } catch (e) {
+    console.error(
+      "会議検知プロンプトの文字起こしステータス読み取りに失敗しました:",
+      toErrorMessage(e),
+    );
+    return DEFAULT_LIVE_CAPTION_STATUS;
+  }
+}
 
 /// 会議アプリまたはブラウザ会議 URL を検知したら、画面上部にバナーを出して
 /// ユーザーに録音と文字起こしの状態確認を促すグローバルコンポーネント。
@@ -26,6 +52,8 @@ export function MeetingDetectedBanner() {
   const [detected, setDetected] = useState<MeetingAppDetectedPayload | null>(
     null,
   );
+  const [statusPayload, setStatusPayload] =
+    useState<LiveCaptionStatusPayload>(readStoredLiveCaptionStatus);
   const [listenerError, setListenerError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,6 +64,7 @@ export function MeetingDetectedBanner() {
         if (disposed) {
           return;
         }
+        setStatusPayload(readStoredLiveCaptionStatus());
         setDetected(e.payload);
       },
     )
@@ -83,6 +112,7 @@ export function MeetingDetectedBanner() {
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
+  const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
   const bannerTitle = listenerError
     ? listenerError
     : "録音しますか？";
@@ -93,7 +123,7 @@ export function MeetingDetectedBanner() {
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
+      }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。自分/相手側トラックの録音と文字起こしはまだ開始していません。開始前に状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? `${displayName} の録音開始前の状態を確認`
     : "録音開始前の状態を確認";
@@ -128,6 +158,28 @@ export function MeetingDetectedBanner() {
         >
           {sourceLabel}
         </span>
+      )}
+      {!listenerError && (
+        <>
+          <span
+            className="meeting-detected-source-badge meeting-detected-engine-badge"
+            aria-label={`文字起こしエンジン: ${statusPayload.engineLabel}`}
+            title={`文字起こしエンジン: ${statusPayload.engineLabel}`}
+          >
+            {statusPayload.engineLabel}
+          </span>
+          <span
+            className={`meeting-detected-source-badge meeting-detected-privacy-badge${
+              statusPayload.isExternalTransmission
+                ? " meeting-detected-privacy-badge-warning"
+                : ""
+            }`}
+            aria-label={`外部送信: ${statusPayload.aiTransmissionLabel}`}
+            title={`外部送信: ${statusPayload.aiTransmissionLabel}`}
+          >
+            {visibleTransmissionLabel}
+          </span>
+        </>
       )}
       <span className="meeting-detected-banner-text">
         <span className="meeting-detected-banner-title">{bannerTitle}</span>

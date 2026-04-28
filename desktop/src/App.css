@@ -1864,6 +1864,24 @@ body[data-window="live-caption"] {
   white-space: nowrap;
 }
 
+.meeting-detected-engine-badge {
+  color: var(--meeting-status-idle-color);
+  background-color: var(--meeting-status-idle-bg);
+  border-color: color-mix(in srgb, var(--meeting-status-idle-color) 28%, transparent);
+}
+
+.meeting-detected-privacy-badge {
+  color: var(--meeting-status-idle-color);
+  background-color: var(--meeting-status-idle-bg);
+  border-color: color-mix(in srgb, var(--meeting-status-idle-color) 28%, transparent);
+}
+
+.meeting-detected-privacy-badge-warning {
+  color: var(--permission-banner-color);
+  background-color: var(--permission-banner-bg);
+  border-color: color-mix(in srgb, var(--permission-banner-color) 34%, transparent);
+}
+
 .meeting-detected-banner-actions {
   display: flex;
   gap: 0.4rem;

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt Transparency: show engine and external sending before recording
+
+- 開始日時: 2026-04-29 04:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトで録音開始前に文字起こしエンジンと外部送信有無を判断できるようにする。
+- 結果: ライブ字幕ステータスと同じラベル保存値を読み、会議検知プロンプトにエンジン名と `外部送信` / `端末内` / 確認中ピルを表示するようにした。API キーや設定全体は読まず、保存済みラベルだけを使う。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の会議検知プロンプト表示は未確認。
+- 次アクション: 実機でプロンプトのラベルが録音開始判断を邪魔しないことを確認する。
+
 ### Live Caption Status: share event constants and payload type
 
 - 開始日時: 2026-04-29 04:16 JST
