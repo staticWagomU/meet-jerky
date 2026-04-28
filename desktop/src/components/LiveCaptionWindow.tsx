@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
+import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
@@ -41,7 +42,7 @@ export function LiveCaptionWindow() {
     const resultUnlistenPromise = listen<TranscriptSegment>(
       "transcription-result",
       (event) => {
-        if (disposed || event.payload.isError) {
+        if (disposed) {
           return;
         }
         setLatestSegment(event.payload);
@@ -101,9 +102,11 @@ export function LiveCaptionWindow() {
     };
   }, []);
 
-  const isErrorState = Boolean(listenerError || latestSegment?.isError);
+  const isErrorState = Boolean(
+    listenerError || isTranscriptErrorSegment(latestSegment),
+  );
   const captionTimestamp =
-    latestSegment && !latestSegment.isError
+    latestSegment && !isTranscriptErrorSegment(latestSegment)
       ? formatSegmentTimestamp(latestSegment.startMs)
       : null;
   const label = listenerError

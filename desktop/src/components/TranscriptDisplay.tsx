@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { TranscriptSegment, TranscriptionErrorPayload } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
+import { isTranscriptErrorSegment } from "../utils/transcriptSegment";
 
 function getSpeakerKind(
   segment: TranscriptSegment,
@@ -22,7 +23,9 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
 }
 
 function isSourceLessError(segment: TranscriptSegment): boolean {
-  return Boolean(segment.isError && !segment.speaker && !segment.source);
+  return Boolean(
+    isTranscriptErrorSegment(segment) && !segment.speaker && !segment.source,
+  );
 }
 
 function getSegmentAriaLabel(segment: TranscriptSegment): string {
@@ -30,7 +33,7 @@ function getSegmentAriaLabel(segment: TranscriptSegment): string {
     isSourceLessError(segment)
       ? "音声ソース不明"
       : getSpeakerLabel(segment) ?? "音声ソース不明";
-  if (segment.isError) {
+  if (isTranscriptErrorSegment(segment)) {
     return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
   }
   return `文字起こし ${formatSegmentTimestamp(segment.startMs)} ${speakerLabel}: ${segment.text}`;
@@ -52,7 +55,7 @@ function getSegmentCounts(segments: TranscriptSegment[]): {
 } {
   return segments.reduce(
     (counts, segment) => {
-      if (segment.isError) {
+      if (isTranscriptErrorSegment(segment)) {
         counts.errors += 1;
         return counts;
       }
@@ -251,7 +254,7 @@ export function TranscriptDisplay({
     }
     isCopyingRef.current = true;
     const text = segments
-      .filter((seg) => !seg.isError)
+      .filter((seg) => !isTranscriptErrorSegment(seg))
       .map((seg) => {
         const time = `[${formatSegmentTimestamp(seg.startMs)}]`;
         const speakerLabel = getSpeakerLabel(seg);
@@ -462,7 +465,8 @@ export function TranscriptDisplay({
                 : speakerKind === "other"
                   ? " speaker-label-other"
                   : " speaker-label-unknown";
-            const errorClass = seg.isError
+            const isErrorSegment = isTranscriptErrorSegment(seg);
+            const errorClass = isErrorSegment
               ? " transcript-segment-error"
               : "";
             const segmentAriaLabel = getSegmentAriaLabel(seg);
@@ -473,7 +477,7 @@ export function TranscriptDisplay({
                 aria-label={segmentAriaLabel}
                 title={segmentAriaLabel}
               >
-                {!seg.isError && (
+                {!isErrorSegment && (
                   <span className="transcript-timestamp">
                     [{formatSegmentTimestamp(seg.startMs)}]
                   </span>

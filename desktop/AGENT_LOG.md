@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime UX: style provider error segments
+
+- 開始日時: 2026-04-29 01:06 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/transcriptSegment.ts`, `src/components/TranscriptDisplay.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、OpenAI / ElevenLabs Realtime の provider error segment が通常発話に見えないよう、既存のエラー表示・カウント・コピー除外へ乗せる。
+- 結果: Realtime エラー文の prefix を判定する `isTranscriptErrorSegment` を追加し、TranscriptDisplay のエラー件数、aria ラベル、赤系スタイル、コピー除外、ライブ字幕のエラー表示に反映した。既存 `transcription-error` payload と通常発話の扱いは維持した。
+- 変更ファイル: `src/utils/transcriptSegment.ts`, `src/components/TranscriptDisplay.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/utils/transcriptSegment.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/transcriptSegment.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実 Realtime provider error の UI 表示は外部 API/課金に当たるため未実施。
+- 次アクション: モックまたは実機の非課金再現で、Realtime provider error が通常発話ではなくエラーとして表示・コピー除外されることを確認する。
+
 ### Realtime Stability: suppress stopped finalize noise
 
 - 開始日時: 2026-04-29 01:04 JST
