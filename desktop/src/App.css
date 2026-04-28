@@ -877,6 +877,11 @@
   background-color: var(--meeting-status-neutral-bg);
 }
 
+.meeting-status-pill-warning {
+  color: var(--permission-banner-color);
+  background-color: var(--permission-banner-bg);
+}
+
 .meeting-status-pill-error {
   color: var(--transcript-error-color);
   background-color: var(--transcript-error-bg);

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: distinguish external audio transmission
+
+- 開始日時: 2026-04-28 09:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、ライブ画面の外部送信ピルが録音中などの active 状態と同じ緑色に見えないようにし、OpenAI / ElevenLabs へ音声送信する状態を見落としにくくする。
+- 結果: 外部送信が OpenAI / ElevenLabs の場合は `meeting-status-pill-warning` を返すようにし、既存の権限バナー系の注意色を使う warning pill スタイルを追加した。外部送信判定、API キー処理、エンジン設定には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI 表示は未確認。
+- 次アクション: 実機で外部送信ピルが強すぎず、端末内のみ状態との差が自然に読めるか確認する。
+
 ### Transcript Log UX: align copy aria label
 
 - 開始日時: 2026-04-28 09:22 JST

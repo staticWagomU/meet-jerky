@@ -289,7 +289,7 @@ function getAiTransmissionStatusLabel(
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === "OpenAI へ送信" || statusLabel === "ElevenLabs へ送信") {
-    return "meeting-status-pill-active";
+    return "meeting-status-pill-warning";
   }
   if (statusLabel === "確認できません") {
     return "meeting-status-pill-error";
