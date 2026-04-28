@@ -1541,10 +1541,25 @@
 }
 
 .meeting-detected-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
   flex: 1 1 13rem;
   min-width: min(14rem, 100%);
   line-height: 1.3;
   overflow-wrap: anywhere;
+}
+
+.meeting-detected-banner-title {
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.meeting-detected-banner-detail {
+  color: var(--color-muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
 }
 
 .meeting-detected-banner-error {

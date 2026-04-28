@@ -63,9 +63,12 @@ export function MeetingDetectedBanner() {
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
-  const bannerMessage = listenerError
+  const bannerTitle = listenerError
     ? listenerError
-    : `${displayName} を検出しました。録音と文字起こしはまだ開始していません。開始前に状態を確認してください。`;
+    : "録音しますか？";
+  const bannerDetail = listenerError
+    ? null
+    : `${displayName} を検出しました。録音と文字起こしはまだ開始していません。`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
@@ -106,7 +109,14 @@ export function MeetingDetectedBanner() {
           {sourceLabel}
         </span>
       )}
-      <span className="meeting-detected-banner-text">{bannerMessage}</span>
+      <span className="meeting-detected-banner-text">
+        <span className="meeting-detected-banner-title">{bannerTitle}</span>
+        {bannerDetail && (
+          <span className="meeting-detected-banner-detail">
+            {bannerDetail}
+          </span>
+        )}
+      </span>
       {(detected || listenerError) && (
         <div className="meeting-detected-banner-actions">
           {detected && (

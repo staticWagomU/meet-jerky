@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: make detection prompt ask to record
+
+- 開始日時: 2026-04-28 15:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトを説明バナーではなく、Apple らしい短い録音開始確認に寄せる。
+- 結果: 会議検知プロンプトの主文を `録音しますか？` に変更し、検知対象と未開始状態は小さい補足行へ分けた。aria-label/title には従来どおり検知対象、検知元、録音未開始であることを含め、録音状態の透明性を維持した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのプロンプト文言バランスは未確認。
+- 次アクション: 実機 UI で `録音しますか？` のプロンプトが検知対象・録音未開始の補足とともに自然に読めることを確認する。
+
 ### Meeting UX: compact audio source notes while live
 
 - 開始日時: 2026-04-28 15:12 JST
