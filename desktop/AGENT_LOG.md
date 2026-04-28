@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source A11y: align pending labels
+
+- 開始日時: 2026-04-29 00:37 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、音声ソースの表示上の pending 文言を `切替中` に揃えた後、支援技術向け label/title に残った `処理中` を見直す。
+- 結果: マイク録音とシステム音声取得の操作ラベルを `切替中` に揃え、マイクデバイス選択の無効理由も `録音中または切替中` に更新した。操作制御や音声処理には触れない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: スクリーンリーダーでの実読み上げは未確認。
+- 次アクション: 実機で音声ソース操作中の title/aria label が表示文言と矛盾しないことを確認する。
+
 ### Transcription UX: clarify pending control labels
 
 - 開始日時: 2026-04-29 00:31 JST

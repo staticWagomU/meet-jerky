@@ -50,7 +50,7 @@ export function MicrophoneSection({
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const micStateDescription = `自分トラック マイク: ${micStateText}`;
   const micButtonLabel = isOperationPending
-    ? "自分トラックのマイク録音を処理中"
+    ? "自分トラックのマイク録音を切替中"
     : isControlDisabled
       ? "他の音声または文字起こし操作の処理中"
     : isMicRecording
@@ -58,7 +58,7 @@ export function MicrophoneSection({
       : "自分トラックのマイク録音を開始";
   const deviceSelectLabel =
     isMicRecording || isOperationPending
-      ? "マイクデバイス: 録音中または処理中は変更できません"
+      ? "マイクデバイス: 録音中または切替中は変更できません"
       : isControlDisabled
         ? "マイクデバイス: 他の処理中は変更できません"
       : "マイクデバイス: 自分トラックの入力を選択";
