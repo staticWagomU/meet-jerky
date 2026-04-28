@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI refresh: Whisper model selector
+
+- 開始日時: 2026-04-29 08:31 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI刷新の継続として、ローカル Whisper 利用時のモデル選択・準備完了・ダウンロード進捗・エラー表示を既存のカード/pill調へ揃える。
+- 結果: モデル選択欄をカード化し、準備完了 badge、ダウンロードボタン、進捗バー、エラー表示、select の角丸・境界・情報密度を更新した。モデル一覧取得、ダウンロード処理、文字起こしエンジン選択ロジックには触れなかった。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でローカル Whisper 選択時のモデル選択・ダウンロード進捗・エラー表示が小さいウィンドウでも収まることを確認する。
+
 ### UI refresh: permission banner clarity
 
 - 開始日時: 2026-04-29 08:29 JST
