@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: clarify cross-operation waiting label
+
+- 開始日時: 2026-04-28 09:56 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、自分/相手側の音声操作ボタンが別操作待ちで無効なとき、可視ラベルでも音声操作待ちだと分かるようにする。
+- 結果: マイク録音とシステム音声取得のボタンが別操作待ちで無効なときの可視ラベルを `他の音声操作中` に変更した。録音/取得/文字起こしの制御処理には触れなかった。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でボタン幅と可視ラベルが窮屈にならず、操作待ち状態として自然に読めるか確認する。
+
 ### History UX: clarify open failure target
 
 - 開始日時: 2026-04-28 09:55 JST

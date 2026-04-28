@@ -130,7 +130,7 @@ export function MicrophoneSection({
           {isOperationPending
             ? "処理中..."
             : isWaitingForOtherOperation
-              ? "他の処理中"
+              ? "他の音声操作中"
             : isMicRecording
               ? "自分の録音を停止"
               : "自分の録音を開始"}
