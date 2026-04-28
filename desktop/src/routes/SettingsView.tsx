@@ -325,9 +325,9 @@ export function SettingsView() {
   const appleSpeechEngineLabel =
     "文字起こしエンジン: macOS SpeechAnalyzer、端末内のみ、外部送信なし、現在は片側トラック向け";
   const openAIRealtimeEngineLabel =
-    "文字起こしエンジン: OpenAI Realtime API、音声を OpenAI へ送信";
+    "文字起こしエンジン: OpenAI Realtime API、外部送信あり、送信先 OpenAI、API キーが必要";
   const elevenLabsRealtimeEngineLabel =
-    "文字起こしエンジン: ElevenLabs Scribe v2 Realtime、音声を ElevenLabs へ送信";
+    "文字起こしエンジン: ElevenLabs Scribe v2 Realtime、外部送信あり、送信先 ElevenLabs、API キーが必要";
   const isSettingsViewBusy =
     updateMutation.isPending ||
     isSelectingOutputDirectory ||
@@ -436,7 +436,7 @@ export function SettingsView() {
             />
             <span>OpenAI Realtime API</span>
             <span id={ENGINE_NOTE_IDS.openAIRealtime} className="settings-note">
-              音声を OpenAI へ送信、API キーが必要
+              外部送信あり、送信先 OpenAI、API キーが必要
             </span>
           </label>
           <label
@@ -466,7 +466,7 @@ export function SettingsView() {
               id={ENGINE_NOTE_IDS.elevenLabsRealtime}
               className="settings-note"
             >
-              音声を ElevenLabs へ送信、API キーが必要
+              外部送信あり、送信先 ElevenLabs、API キーが必要
             </span>
           </label>
         </div>

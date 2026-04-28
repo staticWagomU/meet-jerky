@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings UX: align external-send engine notes
+
+- 開始日時: 2026-04-28 14:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、設定画面の Realtime エンジン説明をライブ画面の外部送信表示と揃え、AI/外部送信の透明性を上げる。
+- 結果: OpenAI Realtime / ElevenLabs Scribe v2 Realtime の設定説明を `外部送信あり、送信先 ...、API キーが必要` へ変更した。ローカル Whisper / Apple Speech の `外部送信なし` 表示は維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での文言幅確認は未実施。
+- 次アクション: 実機 UI で Realtime エンジン説明が設定画面の幅に収まり、外部送信あり/なしの対比が分かりやすいことを確認する。
+
 ### App Detection: add Brave browser URL polling
 
 - 開始日時: 2026-04-28 14:07 JST
