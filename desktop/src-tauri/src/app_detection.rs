@@ -384,6 +384,10 @@ fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
         || (host == "teams.microsoft.com"
             && (path == "/v2" || path == "/v2/")
             && query_has_param(query, "meetingjoin", "true"))
+        || (host == "teams.microsoft.com"
+            && path
+                .strip_prefix("/meet/")
+                .is_some_and(has_single_non_empty_segment))
         || (host == "teams.live.com"
             && path
                 .strip_prefix("/meet/")
@@ -762,6 +766,20 @@ mod tests {
                 host: "teams.microsoft.com".to_string(),
             })
         );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/1234567890123?p=passcode"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/1234567890123/"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            })
+        );
     }
 
     #[test]
@@ -845,6 +863,22 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/v2#fragment?meetingjoin=true"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet//"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/123/extra"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/123//"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);

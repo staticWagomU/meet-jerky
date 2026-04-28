@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: support Teams short meet URL
+
+- 開始日時: 2026-04-28 11:02 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議検知の網羅性改善として、Microsoft Teams の短縮系 meeting URL を URL 全文を payload/log/UI に出さない方針のまま安全側に分類する。
+- 結果: `teams.microsoft.com/meet/<単一セグメント>` を Microsoft Teams 会議 URL として分類する受け皿を追加した。空セグメント、二重 slash、複数セグメントは拒否するテストも追加し、payload/log/UI には従来通り service と host だけを返して URL 全文を出さない。Microsoft Support の Teams 参加案内で 2026 年 1 月以降の招待がフル URL 表示になることを確認したうえで、短縮 URL 形式の補完として実装した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。ブラウザ URL 実機取得は AppleScript/Accessibility/権限が絡むため未実機確認。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行し、実機ブラウザ URL 取得で Teams 短縮 URL が通知されるか確認する。
+
 ### Transcript UX: show per-track live status
 
 - 開始日時: 2026-04-28 10:59 JST
