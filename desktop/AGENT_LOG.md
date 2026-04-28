@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: unescape Markdown titles
+
+- 開始日時: 2026-04-29 02:37 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、履歴Markdown保存時の inline 記号エスケープが履歴一覧タイトルにバックスラッシュ付きで見えないようにする。
+- 結果: セッション一覧読み込み時だけ、Markdown inline escape 対象文字の直前バックスラッシュを取り除く `unescape_inline_markdown_text` を追加し、タイトル表示用文字列へ適用した。保存ファイルの Markdown エスケープ、本文検索用 `search_text`、ファイル名には触れない。
+- 変更ファイル: `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`git diff --check -- src-tauri/src/session_store.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実履歴ファイル一覧での表示は未確認。Rust 全体テストは `cmake` 不在ならスキップ見込み。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml session_store` を再実行し、履歴一覧で `\\*重要\\*` が `*重要*` と表示されることを確認する。
+
 ### History Search UX: shorten query labels
 
 - 開始日時: 2026-04-29 02:35 JST

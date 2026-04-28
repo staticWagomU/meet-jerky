@@ -80,6 +80,26 @@ fn io_invalid(message: impl Into<String>) -> Error {
     Error::new(ErrorKind::InvalidInput, message.into())
 }
 
+fn unescape_inline_markdown_text(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut chars = value.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.peek().copied() {
+                Some('\\' | '`' | '*' | '_' | '[' | ']') => {
+                    if let Some(escaped) = chars.next() {
+                        out.push(escaped);
+                    }
+                }
+                _ => out.push(ch),
+            }
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+
 /// 完了済みセッションを `<session_id>.md` として `dir` に書き出す。
 ///
 /// 表示用タイムスタンプは `offset` を用いて内部で整形するため、呼び出し側はタイムゾーンだけ渡す。
@@ -132,7 +152,7 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
         let title = if title.trim().is_empty() {
             stem.to_string()
         } else {
-            title.to_string()
+            unescape_inline_markdown_text(title)
         };
         let mut search_bytes = Vec::new();
         reader
@@ -320,6 +340,22 @@ mod tests {
 
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].title, "100-0");
+    }
+
+    #[test]
+    fn list_session_summaries_unescapes_markdown_title_for_display() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("100-0.md"),
+            r#"# 会議 \*重要\* \[メモ\] - 2024-04-17 14:50
+"#,
+        )
+        .unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 1);
+        assert_eq!(summaries[0].title, "会議 *重要* [メモ] - 2024-04-17 14:50");
     }
 
     #[test]
