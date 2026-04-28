@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type {
-  ModelInfo,
-  DownloadProgressPayload,
-  DownloadErrorPayload,
-} from "../types";
+import type { ModelInfo } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  isDownloadErrorPayload,
+  isDownloadProgressPayload,
+} from "../utils/modelDownloadPayload";
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -86,16 +86,22 @@ export function ModelSelector({
   // Listen for download progress events
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<DownloadProgressPayload>(
+    const unlistenPromise = listen<unknown>(
       "model-download-progress",
       (event) => {
         if (disposed) {
           return;
         }
-        if (event.payload.model !== downloadingModelRef.current) {
+        const payload = event.payload;
+        if (!isDownloadProgressPayload(payload)) {
+          setProgressListenerError("Whisper モデルのダウンロード進捗通知の形式が不正です。");
           return;
         }
-        const progress = sanitizeProgress(event.payload.progress);
+        setProgressListenerError(null);
+        if (payload.model !== downloadingModelRef.current) {
+          return;
+        }
+        const progress = sanitizeProgress(payload.progress);
         setDownloadProgress(progress);
         if (progress >= 1) {
           const model = downloadingModelRef.current;
@@ -148,14 +154,20 @@ export function ModelSelector({
   // Tauri 側の Err を先に emit で受け取った方が UI 反映が早い。
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<DownloadErrorPayload>(
+    const unlistenPromise = listen<unknown>(
       "model-download-error",
       (event) => {
         if (disposed) {
           return;
         }
-        const errorModel = event.payload.model;
-        setDownloadError(event.payload.message);
+        const payload = event.payload;
+        if (!isDownloadErrorPayload(payload)) {
+          setDownloadErrorListenerError("Whisper モデルのダウンロードエラー通知の形式が不正です。");
+          return;
+        }
+        setDownloadErrorListenerError(null);
+        const errorModel = payload.model;
+        setDownloadError(payload.message);
         setDownloadErrorModel(errorModel);
         if (errorModel !== downloadingModelRef.current) {
           return;

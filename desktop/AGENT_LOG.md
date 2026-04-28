@@ -1,5 +1,19 @@
 # Agent Log
 
+### Model Download Events: validate payloads before UI update
+
+- 開始日時: 2026-04-29 06:10 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/modelDownloadPayload.ts`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、Whisper モデルのダウンロード進捗・エラー通知を型だけで信用せず、UI 状態へ反映する前に形式確認する。
+- 結果: ダウンロード進捗/エラー payload の runtime guard を追加し、`ModelSelector` のイベント受信を `unknown` で受けるようにした。不正 payload は進捗・エラー状態へ反映せず、既存の通知受信エラー表示へ切り替える。
+- 変更ファイル: `src/utils/modelDownloadPayload.ts`, `src/components/ModelSelector.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/modelDownloadPayload.ts src/components/ModelSelector.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/modelDownloadPayload.ts src/components/ModelSelector.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機のモデルダウンロード進捗イベントは未確認。
+- 次アクション: 実機または `cmake` あり環境でモデルダウンロード通知が従来通り更新されることを確認する。
+
 ### Audio Level Events: validate payloads before status update
 
 - 開始日時: 2026-04-29 06:07 JST
