@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: show segment timestamp
+
+- 開始日時: 2026-04-28 20:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議中の控えめなライブ字幕ウィンドウに確定セグメントの時刻を表示し、履歴や発話位置との対応を分かりやすくする。
+- 結果: 最新の非エラー文字起こしセグメントに `mm:ss` の開始時刻を表示するようにした。エラー表示には 00:00 を出さず、既存の話者/ソース表示と本文表示は維持した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機のライブ字幕ウィンドウで横幅に収まるかは未確認。
+- 次アクション: 実機のライブ字幕ウィンドウで時刻・話者・本文が狭い横幅でも破綻しないことを確認する。
+
 ### Meeting UX: avoid recording-active mark before start
 
 - 開始日時: 2026-04-28 19:55 JST

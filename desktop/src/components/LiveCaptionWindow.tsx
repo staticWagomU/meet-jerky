@@ -9,6 +9,15 @@ function getSpeakerLabel(segment: TranscriptSegment): string {
   return segment.speaker || "ソース不明";
 }
 
+function formatCaptionTimestamp(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
     null,
@@ -93,6 +102,10 @@ export function LiveCaptionWindow() {
       ? `ライブ文字起こし ${getSpeakerLabel(latestSegment)}: ${latestSegment.text}`
       : "ライブ文字起こし 待機中";
   const isErrorState = Boolean(listenerError || latestSegment?.isError);
+  const captionTimestamp =
+    latestSegment && !latestSegment.isError
+      ? formatCaptionTimestamp(latestSegment.startMs)
+      : null;
   const panelClassName = isErrorState
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
     : "live-transcript-panel live-transcript-panel-window";
@@ -119,6 +132,15 @@ export function LiveCaptionWindow() {
             {latestSegment && (
               <span className="live-transcript-speaker">
                 {getSpeakerLabel(latestSegment)}
+              </span>
+            )}
+            {captionTimestamp && (
+              <span
+                className="live-transcript-timestamp"
+                aria-label={`発話時刻 ${captionTimestamp}`}
+                title={`発話時刻 ${captionTimestamp}`}
+              >
+                {captionTimestamp}
               </span>
             )}
           </div>
