@@ -24,7 +24,7 @@ export function SystemAudioSection({
     sanitizeAudioLevelForDisplay(systemAudioLevel) * 100,
   );
   const systemAudioStateText = isOperationPending
-    ? "処理中"
+    ? "切替中"
     : isSystemAudioRecording
       ? "取得中"
       : "未取得";
@@ -86,7 +86,7 @@ export function SystemAudioSection({
             aria-hidden="true"
           />
           {isOperationPending
-            ? "処理中..."
+            ? "取得を切替中..."
             : isWaitingForOtherOperation
               ? "他の処理中"
             : isSystemAudioRecording

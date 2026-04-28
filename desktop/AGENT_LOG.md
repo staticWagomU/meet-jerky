@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: clarify pending state labels
+
+- 開始日時: 2026-04-29 00:17 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、音声ソースごとの pending 表示を曖昧な `処理中` から具体的な切替状態へ変え、会議中に自分/相手側トラックの状態を読み取りやすくする。
+- 結果: マイク録音とシステム音声取得の状態バッジを pending 時は `切替中` にし、ボタン文言を `録音を切替中...` / `取得を切替中...` に変更した。操作制御、録音/取得処理、文字起こし処理には触れない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機 UI でボタン幅に収まるかは未確認。
+- 次アクション: 実機 UI で `録音を切替中...` / `取得を切替中...` がボタン幅に収まり、状態として自然に読めるか確認する。
+
 ### Transcript UX: share segment timestamp formatting
 
 - 開始日時: 2026-04-29 00:06 JST

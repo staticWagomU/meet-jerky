@@ -38,7 +38,7 @@ export function MicrophoneSection({
     sanitizeAudioLevelForDisplay(micLevel) * 100,
   );
   const micStateText = isOperationPending
-    ? "処理中"
+    ? "切替中"
     : isMicRecording
       ? "録音中"
       : "未録音";
@@ -130,7 +130,7 @@ export function MicrophoneSection({
             aria-hidden="true"
           />
           {isOperationPending
-            ? "処理中..."
+            ? "録音を切替中..."
             : isWaitingForOtherOperation
               ? "他の処理中"
             : isMicRecording
