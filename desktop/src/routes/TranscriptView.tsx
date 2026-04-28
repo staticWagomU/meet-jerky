@@ -1258,7 +1258,7 @@ export function TranscriptView() {
         {meetingStartBlockedReason && (
           <p
             id={MEETING_START_BLOCKED_REASON_ID}
-            className="meeting-error"
+            className="meeting-start-blocked-reason"
             role="status"
             aria-live="polite"
             aria-atomic="true"

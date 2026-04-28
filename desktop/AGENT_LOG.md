@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting UX: show blocked start as guidance
+
+- 開始日時: 2026-04-28 11:40 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 記録開始不可理由を操作失敗の赤いエラーではなく、事前条件の案内として表示する。
+- 結果: `meetingStartBlockedReason` の表示 class を赤い `meeting-error` から警告/案内用の `meeting-start-blocked-reason` へ変更した。既存の音声ソース注意と同じ配色を使い、Whisper モデル未取得、API キー未登録、Apple Speech の同時トラック制約などを操作失敗ではなく開始前の案内として読めるようにした。開始可否判定、録音・文字起こし制御には触れなかった。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 UI で開始不可理由が警告として十分目立ちつつ、操作失敗の赤エラーと混同されないか確認する。
+
 ### App Detection: support ZoomGov meeting URLs
 
 - 開始日時: 2026-04-28 11:23 JST
