@@ -76,6 +76,10 @@ export function LiveCaptionWindow() {
     : latestSegment
       ? `ライブ文字起こし ${getSpeakerLabel(latestSegment)}: ${latestSegment.text}`
       : "ライブ文字起こし 待機中";
+  const isErrorState = Boolean(listenerError || latestSegment?.isError);
+  const panelClassName = isErrorState
+    ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"
+    : "live-transcript-panel live-transcript-panel-window";
 
   return (
     <div
@@ -86,7 +90,7 @@ export function LiveCaptionWindow() {
       aria-label={label}
       title={label}
     >
-      <div className="live-transcript-panel live-transcript-panel-window">
+      <div className={panelClassName}>
         <div className="live-transcript-wave" aria-hidden="true">
           <span />
           <span />
@@ -95,7 +99,7 @@ export function LiveCaptionWindow() {
         <div className="live-transcript-content">
           <div className="live-transcript-meta">
             <span className="live-transcript-dot" aria-hidden="true" />
-            <span>ライブ文字起こし</span>
+            <span>{isErrorState ? "文字起こしエラー" : "ライブ文字起こし"}</span>
             {latestSegment && (
               <span className="live-transcript-speaker">
                 {getSpeakerLabel(latestSegment)}

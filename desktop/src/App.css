@@ -823,6 +823,20 @@ body[data-window="live-caption"] {
   transform: none;
 }
 
+.live-transcript-panel-error {
+  border-color: color-mix(in srgb, var(--transcript-error-color) 38%, transparent);
+  background-color: color-mix(in srgb, var(--transcript-error-bg) 35%, var(--color-surface));
+}
+
+.live-transcript-panel-error .live-transcript-wave {
+  color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
+}
+
+.live-transcript-panel-error .live-transcript-dot {
+  background-color: var(--transcript-error-color);
+}
+
 /* ===========================
    Transcript Toolbar (copy, count)
    =========================== */

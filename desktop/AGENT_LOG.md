@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live Caption UX: mark error state in caption window
+
+- 開始日時: 2026-04-28 17:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ライブ字幕専用ウィンドウで文字起こしエラーが通常の聞き取り中表示と混同されないようにする。
+- 結果: `transcription-error` またはライブ字幕 listener error を受けたとき、下部ライブ字幕ウィンドウの meta 表示を `文字起こしエラー` に切り替え、パネル枠・波形アイコン・状態ドットをエラー色へ変更するようにした。通常のライブ文字起こし表示は従来どおり維持した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機でのライブ字幕エラー色、VoiceOver 読み上げ、下部ウィンドウ上の視認性は未確認。
+- 次アクション: 実機で Realtime/ローカル文字起こしエラー時に下部ライブ字幕がエラー状態として十分に目立つことを確認する。
+
 ### Meeting UX: auto-hide idle recording prompt
 
 - 開始日時: 2026-04-28 17:00 JST
