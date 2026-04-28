@@ -169,7 +169,9 @@ export function MeetingDetectedBanner() {
       ? `${displayName} の録音開始要求を送信中`
       : `${displayName} の録音と文字起こしを開始`
     : "録音と文字起こしを開始";
-  const dismissBannerLabel = "会議検知バナーを閉じる";
+  const dismissBannerLabel = isActionPending
+    ? "操作中のため会議検知バナーを閉じられません"
+    : "会議検知バナーを閉じる";
   const bannerRole = listenerError ? "alert" : "status";
   const bannerClassName = listenerError
     ? "meeting-detected-banner meeting-detected-banner-error"
@@ -286,7 +288,7 @@ export function MeetingDetectedBanner() {
                   void handleStartRecording();
                 }}
               >
-                記録を開始
+                {isActionPending ? "開始要求中..." : "記録を開始"}
               </button>
               <button
                 type="button"
@@ -298,7 +300,7 @@ export function MeetingDetectedBanner() {
                   void handleConfirmRecordingState();
                 }}
               >
-                状態を確認
+                {isActionPending ? "表示要求中..." : "状態を確認"}
               </button>
             </>
           )}

@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting Prompt: reflect pending action in buttons
+
+- 開始日時: 2026-04-29 07:03 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議検知プロンプトで録音開始/状態確認要求中の操作状態を可視テキストとラベルに反映する。
+- 結果: `isActionPending` 中の「記録を開始」「状態を確認」ボタン文言をそれぞれ `開始要求中...` / `表示要求中...` に切り替え、閉じるボタンの aria-label/title も操作中は閉じられない理由を示すようにした。イベント送信や自動非表示の挙動には触れない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での会議検知プロンプト操作中表示は未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### Live Caption Window: expose track row status label
 
 - 開始日時: 2026-04-29 07:02 JST
