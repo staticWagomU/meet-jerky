@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: show waiting input badge
+
+- 開始日時: 2026-04-29 03:59 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、録音中/取得中でも音声レベルが 0% のトラックが分かるようにし、会議中の自分/相手側トラック透明性を上げる。
+- 結果: 自分マイクまたは相手側システム音声が有効で、表示用レベルが 0% の場合だけ、各トラック見出しに `入力待ち` バッジを表示するようにした。音声取得、文字起こし、レベル計算の実処理には触れない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機で無音/発話時にバッジが自然に切り替わることは未確認。
+- 次アクション: 実機で入力待ち表示が過剰にちらつかず、無音/発話時に自然に切り替わることを確認する。
+
 ### Meeting Prompt Safety: tolerate pending storage failures
 
 - 開始日時: 2026-04-29 03:58 JST

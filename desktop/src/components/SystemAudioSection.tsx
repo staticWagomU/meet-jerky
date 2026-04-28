@@ -23,6 +23,8 @@ export function SystemAudioSection({
   const systemAudioLevelPercent = Math.round(
     sanitizeAudioLevelForDisplay(systemAudioLevel) * 100,
   );
+  const isSystemAudioInputWaiting =
+    isSystemAudioRecording && systemAudioLevelPercent === 0;
   const systemAudioStateText = isOperationPending
     ? "切替中"
     : isSystemAudioRecording
@@ -71,6 +73,18 @@ export function SystemAudioSection({
         >
           {systemAudioStateText}
         </span>
+        {isSystemAudioInputWaiting && (
+          <span
+            className="audio-source-silence-badge"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="相手側トラック システム音声: 入力待ち"
+            title="相手側トラック システム音声: 入力待ち"
+          >
+            入力待ち
+          </span>
+        )}
       </div>
       <div className="controls-row">
         <button

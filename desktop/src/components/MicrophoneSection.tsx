@@ -37,6 +37,7 @@ export function MicrophoneSection({
   const micLevelPercent = Math.round(
     sanitizeAudioLevelForDisplay(micLevel) * 100,
   );
+  const isMicInputWaiting = isMicRecording && micLevelPercent === 0;
   const micStateText = isOperationPending
     ? "切替中"
     : isMicRecording
@@ -97,6 +98,18 @@ export function MicrophoneSection({
         >
           {micStateText}
         </span>
+        {isMicInputWaiting && (
+          <span
+            className="audio-source-silence-badge"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="自分トラック マイク: 入力待ち"
+            title="自分トラック マイク: 入力待ち"
+          >
+            入力待ち
+          </span>
+        )}
       </div>
       <div className="controls-row">
         <div className="device-selector">
