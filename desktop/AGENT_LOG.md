@@ -1,5 +1,19 @@
 # Agent Log
 
+### Session Markdown: limit observed-time fallback to untimed realtime segments
+
+- 開始日時: 2026-04-28 12:45 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: 直前の Markdown 時刻修正を批判的に見直し、`start_ms = 0` でも `end_ms` を持つ通常セグメントまで現在時刻 fallback されないようにする。
+- 結果: Markdown 保存用 offset の現在時刻 fallback を `start_ms = 0, end_ms = 0` の時刻なし Realtime セグメントに限定した。`start_ms = 0` でも `end_ms > 0` の通常セグメントは、ストリーム先頭のエンジン時刻として扱う回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`npm run build` 成功。`git diff --check -- src-tauri/src/transcript_bridge.rs AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/src/transcript_bridge.rs AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo test --manifest-path src-tauri/Cargo.toml transcript_bridge` は `whisper-rs-sys` の build script が `cmake` を見つけられず失敗する既知の環境制約で未完走。
+- 次アクション: `cmake` が PATH 上にある環境で `cargo test --manifest-path src-tauri/Cargo.toml transcript_bridge` を再実行し、Realtime と通常セグメントの Markdown 時刻が期待どおり分岐するか確認する。
+
 ### Session Markdown: correct realtime timestamps and hard breaks
 
 - 開始日時: 2026-04-28 12:30 JST
