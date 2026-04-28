@@ -1,5 +1,19 @@
 # Agent Log
 
+### Session Markdown: correct realtime timestamps and hard breaks
+
+- 開始日時: 2026-04-28 12:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcript_bridge.rs`, `src-tauri/src/transcription.rs`, `src-tauri/src/markdown.rs`, `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 指示内容: Markdown 出力で各行のタイムスタンプが同じになる問題を修正し、表示上の改行を保証するため各セグメント行末に半角スペース2つを付ける。
+- 結果: Realtime 系のように `start_ms = 0` の確定セグメントが続く場合は、Markdown 保存用 offset を stream 開始時刻に固定せず、emit/append 時の現在時刻へフォールバックするようにした。エンジンが正の `start_ms` を持つ場合は従来どおりエンジン時刻を優先する。Markdown の各セグメント行末には半角スペース2つを付け、表示上の hard break を入れるようにした。
+- 変更ファイル: `src-tauri/src/transcript_bridge.rs`, `src-tauri/src/transcription.rs`, `src-tauri/src/markdown.rs`, `src-tauri/src/session_store.rs`, `AGENT_LOG.md`
+- 検証結果: `cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`npm run build` 成功。`git diff --check -- src-tauri/src/transcript_bridge.rs src-tauri/src/transcription.rs src-tauri/src/markdown.rs src-tauri/src/session_store.rs AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/src/transcript_bridge.rs src-tauri/src/transcription.rs src-tauri/src/markdown.rs src-tauri/src/session_store.rs AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: `cargo test --manifest-path src-tauri/Cargo.toml markdown session_store transcript_bridge` は Cargo が複数 TESTNAME を受け付けず失敗したため個別に再実行した。`cargo test --manifest-path src-tauri/Cargo.toml markdown`、`session_store`、`transcript_bridge` はいずれも `whisper-rs-sys` の build script が `cmake` を見つけられず失敗する既知の環境制約で未完走。
+- 次アクション: `cmake` が PATH 上にある環境で `cargo test --manifest-path src-tauri/Cargo.toml markdown`、`session_store`、`transcript_bridge` を再実行し、実機で Realtime 文字起こし保存後の Markdown 行時刻と hard break 表示を確認する。
+
 ### History UX: add local session search
 
 - 開始日時: 2026-04-28 12:12 JST

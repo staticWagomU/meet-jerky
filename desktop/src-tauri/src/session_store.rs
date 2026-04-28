@@ -307,6 +307,28 @@ mod tests {
     }
 
     #[test]
+    fn save_session_markdown_writes_distinct_segment_timestamps_and_hard_breaks() {
+        let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+        session.append_segment("自分".into(), 15, "hello".into());
+        session.append_segment("相手側".into(), 75, "world".into());
+        let dir = tempdir().unwrap();
+
+        let path = save_session_markdown(dir.path(), &session, jst()).unwrap();
+
+        let contents = fs::read_to_string(&path).unwrap();
+        assert!(
+            contents.contains("**[14:50:15] 自分:** hello  "),
+            "first segment line missing hard break. contents=\n{}",
+            contents
+        );
+        assert!(
+            contents.contains("**[14:51:15] 相手側:** world  "),
+            "second segment line missing distinct timestamp or hard break. contents=\n{}",
+            contents
+        );
+    }
+
+    #[test]
     fn save_session_markdown_returns_error_for_out_of_range_started_at() {
         let session = Session::start("会議メモ".to_string(), i64::MAX as u64);
         let dir = tempdir().unwrap();

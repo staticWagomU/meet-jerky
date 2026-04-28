@@ -11,10 +11,32 @@ pub fn segment_to_append_args(
     session_started_at_secs: u64,
     stream_started_at_secs: u64,
 ) -> (String, u64, String) {
+    segment_to_append_args_at(
+        segment,
+        session_started_at_secs,
+        stream_started_at_secs,
+        None,
+    )
+}
+
+/// ライブセグメントから `Session::append_segment` の引数を作る。
+///
+/// `segment.start_ms > 0` の場合はエンジンが持つストリーム相対時刻を優先する。
+/// Realtime 系のように確定セグメントが常に `start_ms = 0` で来る場合は、保存時に
+/// 全行がセッション開始時刻へ潰れないよう、呼び出し側で観測した現在時刻にフォールバックする。
+pub fn segment_to_append_args_at(
+    segment: &TranscriptionSegment,
+    session_started_at_secs: u64,
+    stream_started_at_secs: u64,
+    observed_at_secs: Option<u64>,
+) -> (String, u64, String) {
     let speaker = normalize_speaker(segment.speaker.as_deref());
-    let segment_offset_from_stream_secs = segment.start_ms.max(0) / 1000;
-    let segment_abs_secs =
-        stream_started_at_secs.saturating_add(segment_offset_from_stream_secs as u64);
+    let segment_abs_secs = if segment.start_ms > 0 {
+        let segment_offset_from_stream_secs = segment.start_ms / 1000;
+        stream_started_at_secs.saturating_add(segment_offset_from_stream_secs as u64)
+    } else {
+        observed_at_secs.unwrap_or(stream_started_at_secs)
+    };
     let offset = segment_abs_secs.saturating_sub(session_started_at_secs);
     (speaker, offset, segment.text.clone())
 }
@@ -31,11 +53,29 @@ pub fn build_append_args_for_emission(
     session_started_at_secs: Option<u64>,
     stream_started_at_secs: u64,
 ) -> Option<(String, u64, String)> {
+    build_append_args_for_emission_at(
+        segment,
+        session_started_at_secs,
+        stream_started_at_secs,
+        None,
+    )
+}
+
+/// `build_append_args_for_emission` の時刻注入版。
+///
+/// 実運用では `observed_at_secs` に現在時刻を渡し、テストでは固定値を渡せるようにする。
+pub fn build_append_args_for_emission_at(
+    segment: &TranscriptionSegment,
+    session_started_at_secs: Option<u64>,
+    stream_started_at_secs: u64,
+    observed_at_secs: Option<u64>,
+) -> Option<(String, u64, String)> {
     let started = session_started_at_secs?;
-    Some(segment_to_append_args(
+    Some(segment_to_append_args_at(
         segment,
         started,
         stream_started_at_secs,
+        observed_at_secs,
     ))
 }
 
@@ -150,6 +190,34 @@ mod tests {
         assert_eq!(actual.0, "自分");
         assert_eq!(actual.1, 42);
         assert_eq!(actual.2, "こんにちは");
+    }
+
+    #[test]
+    fn zero_start_segment_uses_observed_time_when_available() {
+        // OpenAI / ElevenLabs Realtime など、確定イベントに開始時刻が無いエンジンは
+        // start_ms = 0 で流れてくる。stream 開始時刻に固定すると Markdown の全行が
+        // 同じ時刻になるため、観測時刻へフォールバックする。
+        let segment = TranscriptionSegment {
+            text: "realtime".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("相手側".to_string()),
+        };
+
+        let (_, offset, text) = segment_to_append_args_at(&segment, 1_000, 1_000, Some(1_075));
+
+        assert_eq!(offset, 75);
+        assert_eq!(text, "realtime");
+    }
+
+    #[test]
+    fn positive_start_segment_keeps_engine_timestamp_over_observed_time() {
+        let segment = sample_segment();
+
+        let (_, offset, _) = segment_to_append_args_at(&segment, 1_000, 1_040, Some(9_999));
+
+        assert_eq!(offset, 42);
     }
 
     #[test]

@@ -31,7 +31,7 @@ pub fn format_session_markdown(meta: &SessionMeta, segments: &[SessionSegment]) 
     out.push('\n');
     let lines: Vec<String> = segments
         .iter()
-        .map(|s| format!("**[{}] {}:** {}", s.timestamp_display, s.speaker, s.text))
+        .map(|s| format!("**[{}] {}:** {}  ", s.timestamp_display, s.speaker, s.text))
         .collect();
     out.push_str(&lines.join("\n"));
     out
@@ -64,7 +64,7 @@ mod tests {
             },
         ];
 
-        let expected = "# 会議メモ - 2026-04-17 14:30\n\n**[14:30:05] 相手側:** それでは始めましょう。\n**[14:30:12] 自分:** よろしくお願いします。";
+        let expected = "# 会議メモ - 2026-04-17 14:30\n\n**[14:30:05] 相手側:** それでは始めましょう。  \n**[14:30:12] 自分:** よろしくお願いします。  ";
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
 

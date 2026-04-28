@@ -1130,10 +1130,15 @@ fn emit_segments(
         let _ = app.emit("transcription-result", &segment);
 
         let session_started_at_secs = session_manager.current_started_at_secs();
-        if let Some((sp, off, tx)) = crate::transcript_bridge::build_append_args_for_emission(
+        let observed_at_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .map(|d| d.as_secs());
+        if let Some((sp, off, tx)) = crate::transcript_bridge::build_append_args_for_emission_at(
             &segment,
             session_started_at_secs,
             stream_started_at_secs,
+            observed_at_secs,
         ) {
             if let Err(e) = session_manager.append(sp, off, tx) {
                 eprintln!("[transcription] session_manager.append failed: {e}");
