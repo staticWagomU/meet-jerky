@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: clarify visible log clear action
+
+- 開始日時: 2026-04-28 09:18 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、文字起こしログのクリア操作が保存済み記録の削除ではなく、現在表示中のログクリアであることを分かりやすくする。
+- 結果: クリアボタンの可視文言を `表示ログをクリア` にし、aria/title も `表示中の文字起こしログ ... 件をクリア` に変更した。ログ配列のクリア処理、セッション保存処理、履歴データには触れなかった。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのボタン幅確認は未実施。
+- 次アクション: 実機で表示ログクリアボタンの幅と意味が自然か確認する。
+
 ### Transcript Log UX: clarify copy button copies body text
 
 - 開始日時: 2026-04-28 09:00 JST
