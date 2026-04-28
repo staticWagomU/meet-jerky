@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime TLS: install rustls crypto provider
+
+- 開始日時: 2026-04-28 10:44 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/src/lib.rs`, `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: OpenAI / ElevenLabs Realtime 接続時に `tokio-rt-worker` が rustls の CryptoProvider 未選択 panic を起こす問題を修正する。実 API 呼び出し、API キー変更、課金操作は禁止。
+- 結果: rustls 0.23 の process default CryptoProvider として `ring` provider を明示 install する初期化関数を追加し、Tauri 起動直後と OpenAI / ElevenLabs Realtime stream 生成時に冪等に呼ぶようにした。`tokio-tungstenite` 経由の rustls feature では provider が選択されていなかったため、`rustls` を direct dependency として `default-features = false`、`ring/std/tls12` のみで追加した。`aws-lc-rs` は追加されていないことを `cargo tree -e features -i rustls` で確認した。実 OpenAI / ElevenLabs API 疎通は行っていない。
+- 変更ファイル: `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/src/lib.rs`, `src-tauri/src/openai_realtime.rs`, `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/src/lib.rs src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo tree --manifest-path src-tauri/Cargo.toml -e features -i rustls` 成功し、rustls provider feature は `ring` のみで `aws-lc-rs` は出ていないことを確認。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/src/lib.rs src-tauri/src/openai_realtime.rs src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。`cargo test --manifest-path src-tauri/Cargo.toml openai_realtime`、`elevenlabs`、`transcription` は `whisper-rs-sys` build script が `cmake` を実行できず失敗（環境制約）。
+- 依存関係追加の有無と理由: あり。`rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }` を追加し、Realtime WebSocket TLS で rustls CryptoProvider を明示選択するため。
+- 失敗理由: Rust の対象テストは `cmake` 不在により未完走。実 OpenAI / ElevenLabs API 疎通は課金・認証を伴うため未実施。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml openai_realtime`、`elevenlabs`、`transcription` を再実行し、実 API 許可環境で Realtime 接続時に rustls provider panic が再発しないことを確認する。
+
 ### Harness: reliable tmux prompt sender
 
 - 開始日時: 2026-04-28 10:41 JST

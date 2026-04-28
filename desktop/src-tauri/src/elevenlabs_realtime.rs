@@ -68,6 +68,8 @@ enum AudioCommand {
 
 impl ElevenLabsRealtimeStream {
     pub fn new(model_id: String, api_key: String, config: StreamConfig) -> Result<Self, String> {
+        crate::install_rustls_crypto_provider();
+
         let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
         let (audio_tx, audio_rx) = tokio::sync::mpsc::unbounded_channel::<AudioCommand>();
 

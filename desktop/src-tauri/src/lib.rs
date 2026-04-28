@@ -25,6 +25,12 @@ use tauri::{
     Manager, PhysicalPosition, Position, Size, WindowEvent,
 };
 
+pub(crate) fn install_rustls_crypto_provider() {
+    if rustls::crypto::CryptoProvider::get_default().is_none() {
+        let _ = rustls::crypto::ring::default_provider().install_default();
+    }
+}
+
 fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let show_item = MenuItem::with_id(app, "show", "表示", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", "終了", true, None::<&str>)?;
@@ -93,6 +99,8 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    install_rustls_crypto_provider();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
@@ -141,4 +149,15 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn rustls_crypto_provider_installation_is_idempotent() {
+        super::install_rustls_crypto_provider();
+        super::install_rustls_crypto_provider();
+
+        assert!(rustls::crypto::CryptoProvider::get_default().is_some());
+    }
 }
