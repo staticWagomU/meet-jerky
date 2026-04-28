@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime Stability: suppress stopped finalize noise
+
+- 開始日時: 2026-04-29 01:04 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、OpenAI / ElevenLabs Realtime stream が停止済みのときに `finalize()` 側でも停止済みエラーを UI エラーとして emit しないようにする。
+- 結果: feed 専用だった停止済み Realtime エラー抑制判定を `should_emit_realtime_stream_error` に一般化し、finalize のエラー emit/log にも適用した。リサンプラーなど通常の finalize エラーは従来どおり emit/log する。既存テスト名も stream 全体の抑制を表す形へ更新した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在ならスキップ見込み。実 Realtime API 通信は課金/外部 API に当たるため未実施。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml transcription` を再実行し、実機では停止時に停止済み Realtime エラーが表示されないことを確認する。
+
 ### Settings Privacy: clear API key input after deletion
 
 - 開始日時: 2026-04-29 01:03 JST

@@ -1013,7 +1013,7 @@ fn is_realtime_stream_already_stopped_error(error: &str) -> bool {
         || error.contains("ElevenLabs Realtime ストリームが既に停止しています")
 }
 
-fn should_emit_feed_error(error: &str) -> bool {
+fn should_emit_realtime_stream_error(error: &str) -> bool {
     !is_realtime_stream_already_stopped_error(error)
 }
 
@@ -1069,7 +1069,7 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
 
         if let Err(e) = stream.feed(samples) {
             eprintln!("文字起こしエラー: {e}");
-            if should_emit_feed_error(&e) {
+            if should_emit_realtime_stream_error(&e) {
                 let _ = app.emit(
                     "transcription-error",
                     build_transcription_error_payload(e, Some(source)),
@@ -1106,11 +1106,13 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
             emit_segments(remaining, &app, &session_manager, stream_started_at_secs);
         }
         Err(e) => {
-            eprintln!("文字起こしの finalize に失敗しました: {e}");
-            let _ = app.emit(
-                "transcription-error",
-                build_transcription_error_payload(e, Some(source)),
-            );
+            if should_emit_realtime_stream_error(&e) {
+                eprintln!("文字起こしの finalize に失敗しました: {e}");
+                let _ = app.emit(
+                    "transcription-error",
+                    build_transcription_error_payload(e, Some(source)),
+                );
+            }
         }
     }
 }
@@ -1234,14 +1236,14 @@ mod tests {
     }
 
     #[test]
-    fn test_stopped_realtime_feed_errors_are_not_emitted_to_ui() {
-        assert!(!should_emit_feed_error(
+    fn test_stopped_realtime_stream_errors_are_not_emitted_to_ui() {
+        assert!(!should_emit_realtime_stream_error(
             "OpenAI Realtime ストリームが既に停止しています"
         ));
-        assert!(!should_emit_feed_error(
+        assert!(!should_emit_realtime_stream_error(
             "ElevenLabs Realtime ストリームが既に停止しています"
         ));
-        assert!(should_emit_feed_error(
+        assert!(should_emit_realtime_stream_error(
             "リサンプリングエラー: invalid input"
         ));
     }
