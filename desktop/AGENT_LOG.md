@@ -1,5 +1,19 @@
 # Agent Log
 
+### Realtime TLS: log crypto provider install failures
+
+- 開始日時: 2026-04-29 06:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、OpenAI/ElevenLabs Realtime 接続前に使う rustls crypto provider の明示インストール失敗を黙殺せず、診断できるようにする。
+- 結果: provider 未設定時の `ring` provider install が失敗した場合に stderr へ理由を出すようにした。インストール順序、依存 feature、Realtime 接続処理には触れない。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。Realtime 実接続は課金/外部 API を避けるため未確認。
+- 次アクション: `cmake` あり環境で Rust 全体テストと Realtime 初期化経路を確認する。
+
 ### Saved History Actions: reflect pending state in labels
 
 - 開始日時: 2026-04-29 06:19 JST

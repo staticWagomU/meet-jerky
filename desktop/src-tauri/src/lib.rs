@@ -36,7 +36,9 @@ const LIVE_CAPTION_HEIGHT: f64 = 104.0;
 
 pub(crate) fn install_rustls_crypto_provider() {
     if rustls::crypto::CryptoProvider::get_default().is_none() {
-        let _ = rustls::crypto::ring::default_provider().install_default();
+        if let Err(err) = rustls::crypto::ring::default_provider().install_default() {
+            eprintln!("[rustls] failed to install ring crypto provider: {err:?}");
+        }
     }
 }
 
