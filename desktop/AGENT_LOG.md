@@ -1,5 +1,19 @@
 # Agent Log
 
+### UI Refresh: restyle transcript log surface
+
+- 開始日時: 2026-04-29 08:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: UI 全面刷新の段階実装として、文字起こしログ本体を Mac らしいログ面へ刷新し、自分/相手側の視認性を上げる。
+- 結果: 文字起こしログ wrapper、toolbar、発話行、トラック count pill をガラス調とカード状の見た目へ調整した。自分/相手側/不明の左アクセントは維持し、表示ロジックやコピー処理には触れない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Rust 全体テストは `cmake` 不在で未実行。実機での長文発話行とスクロール性能は未確認。
+- 次アクション: 差分を確認してコミットする。
+
 ### UI Refresh: restyle audio track cards
 
 - 開始日時: 2026-04-29 08:22 JST
