@@ -88,6 +88,12 @@ public final class AppDetector: @unchecked Sendable {
             tabScriptKind: .chromium
         ),
         BrowserDescriptor(
+            bundleId: "com.brave.Browser",
+            displayName: "Brave Browser",
+            appleScriptName: "Brave Browser",
+            tabScriptKind: .chromium
+        ),
+        BrowserDescriptor(
             bundleId: "org.mozilla.firefox",
             displayName: "Firefox",
             appleScriptName: "Firefox",

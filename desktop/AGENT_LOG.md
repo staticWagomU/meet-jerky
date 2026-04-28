@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: add Brave browser URL polling
+
+- 開始日時: 2026-04-28 14:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ブラウザ会議 URL 検知の対象ブラウザを安全に広げる。
+- 結果: Swift のブラウザ URL ポーリング対象に Chromium 系の `Brave Browser`（bundle ID `com.brave.Browser`）を追加した。既存の Chromium AppleScript 経路を再利用し、URL 全文は従来どおり Rust 側の分類にのみ渡して payload/log/UI には出さない。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `xcrun swiftc -parse src-tauri/swift/AppDetectionBridge.swift` 成功。`npm run build` 成功。`git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。Brave 実機での AppleScript/権限経由 URL 取得は未実施。
+- 次アクション: Brave 実機で AppleScript 権限がある状態の Google Meet / Zoom / Teams URL が分類され、URL 全文を UI/log に出さないことを確認する。
+
 ### Transcript UX: disable clearing while transcription is pending
 
 - 開始日時: 2026-04-28 13:56 JST
