@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection: use accessibility fallback for browser URLs
+
+- 開始日時: 2026-04-29 03:06 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、会議URL検知で AppleScript が Automation 権限やブラウザ差異により失敗しても、Accessibility 許可済みなら URL 取得を試せるようにする。
+- 結果: `activeTabSnapshot` の fallback を Firefox 限定から全対象ブラウザへ広げた。AppleScript 成功時を優先し、失敗時のみ既存の AXDocument 探索を試す。URL全文は引き続き Swift/Rust 境界の分類用にのみ使い、payload/log/UI には host/service のみを渡す。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `swiftc -parse src-tauri/swift/AppDetectionBridge.swift` 成功。`git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の Automation / Accessibility 権限組み合わせでの URL 取得は未確認。
+- 次アクション: 実機で Safari/Chromium/Firefox/Arc の Automation / Accessibility 権限別 fallback 挙動を確認する。
+
 ### App Detection: add Arc browser URL polling
 
 - 開始日時: 2026-04-29 03:01 JST

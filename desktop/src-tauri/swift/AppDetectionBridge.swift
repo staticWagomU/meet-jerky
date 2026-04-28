@@ -261,11 +261,10 @@ public final class AppDetector: @unchecked Sendable {
             return snapshot
         }
 
-        if browser.tabScriptKind == .firefox {
-            return activeTabSnapshotViaAccessibility(app: app)
-        }
-
-        return nil
+        // AppleScript はブラウザごとの Automation 権限で失敗することがある。
+        // Accessibility が許可されていれば AXDocument から URL を拾えるブラウザもあるため、
+        // Firefox に限らず最後の安全な fallback として試す。
+        return activeTabSnapshotViaAccessibility(app: app)
     }
 
     private func activeTabSnapshotViaAppleScript(
