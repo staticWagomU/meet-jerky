@@ -7,6 +7,6 @@
     <key>NSScreenCaptureUsageDescription</key>
     <string>Meet Jerky は相手側トラックのシステム音声を取得するために画面収録の権限が必要です。</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>Meet Jerky はブラウザで開かれた会議 URL を検知するために、Safari、Chrome、Edge、Firefox のアクティブタブ情報を確認します。</string>
+    <string>Meet Jerky はブラウザで開かれた会議 URL を検知するために、Safari、Chrome、Edge、Brave、Arc、Firefox のアクティブタブ情報を確認します。</string>
 </dict>
 </plist>

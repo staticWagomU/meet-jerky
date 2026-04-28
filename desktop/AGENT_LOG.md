@@ -1,5 +1,19 @@
 # Agent Log
 
+### App Detection Permissions: update Apple Events usage text
+
+- 開始日時: 2026-04-29 04:10 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、ブラウザ会議 URL 検知対象に Brave / Arc を追加した後も macOS の Apple Events 権限説明が古い対象ブラウザ一覧のままにならないようにする。
+- 結果: `NSAppleEventsUsageDescription` の対象ブラウザ一覧へ Brave と Arc を追加した。権限要求の有無、URL取得処理、URL分類、payload/log/UI の URL 全文非表示方針には触れない。
+- 変更ファイル: `src-tauri/Info.plist`, `AGENT_LOG.md`
+- 検証結果: `plutil -lint src-tauri/Info.plist` 成功。`git diff --check -- src-tauri/Info.plist AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/Info.plist AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 実機の macOS 権限ダイアログ文言表示は未確認。
+- 次アクション: 実機で Apple Events 権限ダイアログ文言が Brave / Arc を含むことを確認する。
+
 ### Live Caption UX: clear stale tracks on global error
 
 - 開始日時: 2026-04-29 04:05 JST
