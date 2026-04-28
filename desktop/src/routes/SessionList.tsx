@@ -87,7 +87,7 @@ export function SessionList() {
         return;
       }
       setActionError(
-        `Finder で表示できませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
+        `履歴ファイルを Finder で表示できませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
       );
     } finally {
       pendingActionRef.current = null;

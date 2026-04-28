@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: clarify reveal failure target
+
+- 開始日時: 2026-04-28 09:51 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、セッション履歴一覧で Finder 表示に失敗したときも、対象が保存済み履歴ファイルであることをエラー文言で明確にする。
+- 結果: Finder 表示失敗のエラー文言を `履歴ファイルを Finder で表示できませんでした` に変更した。ファイル操作処理、パス、履歴取得処理には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機での Finder 表示失敗ケースは未確認。
+- 次アクション: 実機で Finder 表示失敗ケースのエラー文言が自然に読めるか確認する。
+
 ### Transcript Log UX: align copy progress labels
 
 - 開始日時: 2026-04-28 09:50 JST
