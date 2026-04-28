@@ -19,6 +19,8 @@ import {
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
+const INVALID_STATUS_PAYLOAD_ERROR =
+  "ライブ字幕の状態通知の形式が不正です。";
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
@@ -91,8 +93,13 @@ export function LiveCaptionWindow() {
           return;
         }
         if (isLiveCaptionStatusPayload(event.payload)) {
+          setListenerError((current) =>
+            current === INVALID_STATUS_PAYLOAD_ERROR ? null : current,
+          );
           setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
+          return;
         }
+        setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
       },
     );
     const resetUnlistenPromise = listen("live-caption-reset", () => {
