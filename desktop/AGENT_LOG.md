@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript UX: disable clearing while transcription is pending
+
+- 開始日時: 2026-04-28 13:56 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善として、文字起こし開始/停止処理中の表示ログクリア誤操作を防ぎ、処理中状態を分かりやすくする。
+- 結果: 文字起こし操作が pending の間は `表示ログをクリア` ボタンを disabled にし、aria-label/title を「文字起こし処理中のため表示ログをクリアできません」へ切り替えるようにした。通常時の件数付きラベルは維持した。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `npm run build` 成功。`git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust 検証は `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI での disabled 表示確認は未実施。
+- 次アクション: 実機 UI で文字起こし開始/停止 pending 中に表示ログクリアボタンが無効化され、通常時は従来通りクリアできることを確認する。
+
 ### Transcript UX: shorten external API key warning
 
 - 開始日時: 2026-04-28 13:48 JST

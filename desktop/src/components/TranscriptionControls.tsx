@@ -43,7 +43,9 @@ export function TranscriptionControls({
       : !canStartTranscription && startBlockedReason
         ? `文字起こしを開始できません: ${startBlockedReason}`
       : "文字起こしを開始";
-  const clearTranscriptLabel = `表示中の文字起こしログ ${segmentsCount} 件をクリア`;
+  const clearTranscriptLabel = isTranscriptionOperationPending
+    ? "文字起こし処理中のため表示ログをクリアできません"
+    : `表示中の文字起こしログ ${segmentsCount} 件をクリア`;
   const transcriptionControlsLabel = [
     "文字起こし操作",
     isTranscriptionOperationPending ? "処理中" : null,
@@ -99,6 +101,7 @@ export function TranscriptionControls({
           <button
             type="button"
             onClick={onClearTranscript}
+            disabled={isTranscriptionOperationPending}
             className="control-btn control-btn-clear"
             aria-label={clearTranscriptLabel}
             title={clearTranscriptLabel}
