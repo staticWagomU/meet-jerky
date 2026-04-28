@@ -391,6 +391,7 @@ fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
             || path
                 .strip_prefix("/wc/join/")
                 .is_some_and(is_zoom_meeting_id)
+            || is_zoom_web_client_meeting_url(path)
             || path
                 .strip_prefix("/my/")
                 .is_some_and(has_single_non_empty_segment))
@@ -399,6 +400,17 @@ fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
 fn is_zoom_meeting_id(value: &str) -> bool {
     let value = value.strip_suffix('/').unwrap_or(value);
     (9..=11).contains(&value.len()) && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
+}
+
+fn is_zoom_web_client_meeting_url(path: &str) -> bool {
+    let Some(value) = path.strip_prefix("/wc/") else {
+        return false;
+    };
+    let value = value.strip_suffix('/').unwrap_or(value);
+    let Some((meeting_id, action)) = value.split_once('/') else {
+        return false;
+    };
+    action == "join" && is_zoom_meeting_id(meeting_id)
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -716,6 +728,20 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789/join"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://company.zoom.us/wc/12345678901/join/"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://us02web.zoom.us/j/12345678901#success"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -873,6 +899,23 @@ mod tests {
         assert_eq!(classify_meeting_url("https://zoom.us/wc/join/abc"), None);
         assert_eq!(
             classify_meeting_url("https://zoom.us/wc/join/123456789//"),
+            None
+        );
+        assert_eq!(classify_meeting_url("https://zoom.us/wc/123456789"), None);
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789/start"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789/join/extra"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/12345678/join"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789012/join"),
             None
         );
         assert_eq!(classify_meeting_url("https://zoom.us/my/"), None);

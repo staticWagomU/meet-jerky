@@ -10722,6 +10722,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機 UI で OpenAI / ElevenLabs それぞれの toast が長すぎず、操作対象として自然に読めるか確認する。
 
+### App detection: classify Zoom web client meeting URLs
+
+- 開始日時: 2026-04-29 06:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 優先順位2の会議検知信頼性改善として、Zoom の Web Client URL 追加形式を URL 全文を保持しない純粋関数で分類する。
+- 結果: Zoom host で `/wc/{meeting_id}/join` 形式の URL を会議 URL として分類するようにした。meeting_id は既存と同じ 9-11 桁数字に限定し、`start` や余分な path segment は拒否する回帰テストを追加した。payload/log/UI に URL 全文を出さない方針は維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` は `whisper-rs-sys` の build script が `cmake` 不在で失敗。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: cmake あり環境で `cargo test --manifest-path src-tauri/Cargo.toml app_detection` を再実行する。
+
 ### Live caption UX: surface invalid status payload
 
 - 開始日時: 2026-04-29 06:27 JST
