@@ -77,7 +77,7 @@ export function MicrophoneSection({
       title={micSectionLabel}
     >
       <div className="audio-source-header">
-        <span>マイク</span>
+        <span>自分のマイク</span>
         <span
           className="audio-source-track-badge"
           aria-label="音声トラック: 自分"

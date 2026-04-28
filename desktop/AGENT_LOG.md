@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio Source UX: clarify microphone heading
+
+- 開始日時: 2026-04-28 09:21 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、マイク音声が自分トラックであることをソース欄の見出しだけでも分かるようにする。
+- 結果: マイク欄の見出しを `マイク` から `自分のマイク` に変更した。録音制御、デバイス選択、音量メーターには触れなかった。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機 UI 表示は未確認。
+- 次アクション: 実機で自分トラック見出しとバッジが重複しすぎず自然に読めるか確認する。
+
 ### Transcript UX: show pending transcription source
 
 - 開始日時: 2026-04-28 09:20 JST
