@@ -1,5 +1,19 @@
 # Agent Log
 
+### History UX: clarify open history file action
+
+- 開始日時: 2026-04-28 09:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: UI/UX 優先の自律改善として、セッション履歴一覧の `ファイルを開く` 操作が保存済み文字起こし履歴ファイルを開く操作だと分かるようにする。
+- 結果: 履歴一覧の open 操作の可視文言、aria/title、操作中ラベルを `履歴ファイル` に揃えた。Finder 表示、ファイルパス、履歴取得処理には触れなかった。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust は cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。実機でのファイル open 操作は未確認。
+- 次アクション: 実機で履歴ファイル open 操作の文言がボタン幅を圧迫しないか確認する。
+
 ### Settings UX: keep API key checking state neutral
 
 - 開始日時: 2026-04-28 09:24 JST
