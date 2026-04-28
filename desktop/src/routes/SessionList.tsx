@@ -10,6 +10,7 @@ type SessionAction =
 
 const SEARCH_QUERY_LABEL_MAX_LENGTH = 40;
 const SEARCH_EXCERPT_CONTEXT_LENGTH = 42;
+const EMPTY_SESSIONS: SessionSummary[] = [];
 
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
@@ -162,7 +163,7 @@ export function SessionList() {
     }
   }, []);
 
-  const sessions = data ?? [];
+  const sessions = data ?? EMPTY_SESSIONS;
   const trimmedSearchQuery = searchQuery.trim();
   const filteredSessions = useMemo(
     () =>

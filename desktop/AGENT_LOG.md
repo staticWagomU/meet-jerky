@@ -1,5 +1,19 @@
 # Agent Log
 
+### History Search Performance: stabilize empty sessions dependency
+
+- 開始日時: 2026-04-29 03:52 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 直前の `useMemo` 化を批判的に見直し、`data ?? []` が未取得時に毎回新しい配列を作ることで依存配列として弱くなる点を補正する。
+- 結果: モジュール定数 `EMPTY_SESSIONS` を追加し、`data` 未取得時は安定した空配列を使うようにした。検索条件、表示、一覧取得、保存形式には触れない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のためスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 大量履歴での実測パフォーマンスは未確認。
+- 次アクション: 大量履歴でデータ未取得/再取得中の再レンダー負荷を実測する。
+
 ### History Search Performance: memoize filtered sessions
 
 - 開始日時: 2026-04-29 03:47 JST
