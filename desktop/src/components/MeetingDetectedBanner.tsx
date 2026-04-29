@@ -23,6 +23,8 @@ const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 const INVALID_STATUS_PAYLOAD_ERROR =
   "会議検知プロンプトの状態通知の形式が不正です。";
+const AUDIO_TRACKS_ARIA_LABEL =
+  "自分トラック マイク、相手側トラック システム音声";
 type PendingPromptAction = "start" | "confirm" | null;
 
 function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
@@ -161,7 +163,7 @@ export function MeetingDetectedBanner() {
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。自分/相手側トラックの録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
+      }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。${AUDIO_TRACKS_ARIA_LABEL} の録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? pendingAction === "confirm"
       ? `${displayName} の録音と文字起こしの状態確認画面を開いています`

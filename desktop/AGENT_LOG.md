@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting prompt a11y: clarify track devices
+
+- 開始日時: 2026-04-29 11:58 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知ウィンドウの読み上げで、自分/相手側トラックがマイク/システム音声に対応していることを明確にする。
+- 結果: 通知本文の見た目は維持し、aria-label/title 内のトラック説明を `自分トラック マイク、相手側トラック システム音声` に具体化した。会議検知、録音開始要求、外部送信、ウィンドウ制御には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で会議検知通知の読み上げが長すぎず、録音対象のマイク/システム音声対応が自然に伝わるか実機確認する。
+
 ### Audio track a11y: clarify source devices
 
 - 開始日時: 2026-04-29 11:51 JST
