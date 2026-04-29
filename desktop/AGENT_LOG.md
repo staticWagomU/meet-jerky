@@ -11322,3 +11322,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 Tauri ウィンドウでノッチ下表示位置、ドラッグ可能範囲、閉じるボタンのクリック性を確認する。未実機範囲は環境制約として扱う。
+
+### Design comp refinement: macOS-native meeting windows
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `meet-jerky-desktop.pen`, `AGENT_LOG.md`
+- 指示内容: メニューバー押下時のウィンドウ、ノッチ下通知、画面下部の文字起こしウィンドウについて、Mac に最初から入っているような自然さと録音状態の透明性を両立する UI カンプを整理する。
+- 結果: Pen カンプに、より中立的な macOS グレー基調、控えめな角丸、録音/トラック状態の明示、メニュー/通知/下部字幕の情報密度を整理した差分が入っていることを確認した。jankeyboard 風リングライトはコード流用せず、既存リングライトの発想レベルに留める方針を維持する。
+- 変更ファイル: `meet-jerky-desktop.pen`, `AGENT_LOG.md`
+- 検証結果: Pencil MCP は実行時に接続できずスクリーンショット確認は未実施。`git diff --check -- meet-jerky-desktop.pen` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" node -e "JSON.parse(require('fs').readFileSync('meet-jerky-desktop.pen','utf8')); console.log('pen json ok')"` 成功。`rg -n "api|key|token|secret|password|Bearer|xi-api-key|Authorization" meet-jerky-desktop.pen` は一致なし。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Pencil MCP が起動中アプリへ接続できず、画像としての再確認は未実施。
+- 次アクション: Pencil が利用できる状態で表示確認し、実装側へはノッチ有無、複数ディスプレイ、フルスクリーン上の表示制約を小さく分けて反映する。
