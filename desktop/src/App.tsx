@@ -84,16 +84,16 @@ function App() {
     })();
   };
   let ringLightLabel = "リングライトを弱で表示する";
-  let ringLightButtonText = "ライト";
+  let ringLightButtonText = "照明 オフ";
   if (isRingLightPending) {
     ringLightLabel = "リングライトを切り替え中";
-    ringLightButtonText = "切替中...";
+    ringLightButtonText = "照明 切替中...";
   } else if (ringLightMode === "soft") {
     ringLightLabel = "リングライトを強にする";
-    ringLightButtonText = "ライト 弱";
+    ringLightButtonText = "照明 弱";
   } else if (ringLightMode === "bright") {
     ringLightLabel = "リングライトを消す";
-    ringLightButtonText = "ライト 強";
+    ringLightButtonText = "照明 強";
   }
 
   return (

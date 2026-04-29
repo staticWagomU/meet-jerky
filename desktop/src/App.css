@@ -320,6 +320,9 @@ body[data-window="ring-light"] {
 }
 
 .app-header-light-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   border: 1px solid color-mix(in srgb, var(--meeting-status-neutral-color) 24%, transparent);
   border-radius: 999px;
   padding: 0.18rem 0.48rem;
@@ -331,10 +334,24 @@ body[data-window="ring-light"] {
   cursor: pointer;
 }
 
+.app-header-light-toggle::before {
+  content: "";
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background-color: currentColor;
+  opacity: 0.42;
+}
+
 .app-header-light-toggle-active {
   color: var(--permission-banner-color);
   background-color: var(--permission-banner-bg);
   border-color: color-mix(in srgb, var(--permission-banner-color) 36%, transparent);
+}
+
+.app-header-light-toggle-active::before {
+  opacity: 1;
+  box-shadow: 0 0 0 0.18rem color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .app-header-light-error {

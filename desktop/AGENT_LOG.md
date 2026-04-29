@@ -11349,3 +11349,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 設定画面が完了したら、検知・音声・AI・プライバシーの項目が実装予定の権限導線と矛盾しないか別途レビューする。
+
+### Menu bar window: clarify ring light control
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: メニューバー押下時のウィンドウで、便利機能としてのリングライトが現在オフ/弱/強/切替中のどれなのか直感的に分かるようにする。
+- 結果: ヘッダーのリングライトボタン文言を `照明 オフ` / `照明 弱` / `照明 強` / `照明 切替中...` にし、CSS の小さな状態ドットで点灯感を出した。リングライトの表示コマンド、クリック透過、課金/API/認証には触れていない。
+- 変更ファイル: `src/App.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx src/App.css AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で小幅メニューバーウィンドウ上の折り返し、リングライト状態の視認性、切替中表示の長さを確認する。
