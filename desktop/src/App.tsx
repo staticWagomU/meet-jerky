@@ -71,12 +71,16 @@ function App() {
         try {
           await emit(RING_LIGHT_MODE_EVENT, { mode: nextMode });
         } catch (e) {
-          setRingLightError("リングライトの明るさを反映できませんでした");
+          setRingLightError(
+            "リングライトの明るさを反映できませんでした。録音と文字起こしには影響しません",
+          );
           console.error("リングライト設定の送信に失敗しました:", e);
         }
       } catch (e) {
         setRingLightMode(previousMode);
-        setRingLightError("リングライトを切り替えられませんでした");
+        setRingLightError(
+          "リングライトを切り替えられませんでした。録音と文字起こしには影響しません",
+        );
         console.error("リングライト表示の切り替えに失敗しました:", e);
       } finally {
         setIsRingLightPending(false);

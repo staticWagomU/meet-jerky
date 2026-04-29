@@ -12091,3 +12091,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: リングライト説明が録音状態との混同を避けつつ長すぎないか実機で確認する。
+
+### Ring light errors: clarify recording is unaffected
+
+- 開始日時: 2026-04-29 19:50:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: リングライト表示や明るさ反映に失敗した場合でも、録音/文字起こしに影響しないことをエラー表示から明確にする。
+- 結果: リングライト表示切替失敗と明るさ反映失敗のエラーメッセージに、`録音と文字起こしには影響しません` を追加した。リングライト表示制御、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: リングライト失敗時のエラーが録音状態の不安につながらないか実機で確認する。
