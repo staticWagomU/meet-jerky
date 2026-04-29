@@ -279,7 +279,7 @@ export function LiveCaptionWindow() {
     : visibleTransmissionLabel;
   const liveCaptionTransmissionAriaLabel = statusPayload.isExternalTransmission
     ? `外部送信中 ${statusPayload.aiTransmissionLabel}`
-    : `外部送信 ${statusPayload.aiTransmissionLabel}`;
+    : "外部送信なし、端末内で処理";
   const hideLiveCaptionWindow = () => {
     void getCurrentWindow()
       .hide()
