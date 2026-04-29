@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting prompt status listener: surface privacy status failures
+
+- 開始日時: 2026-04-29 13:10 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知で、文字起こしエンジン/外部送信状態を更新するイベントリスナーの受信開始失敗が console のみに留まらないようにする。
+- 結果: `LIVE_CAPTION_STATUS_EVENT` の listen 開始失敗時に `listenerError` へ反映し、通知ウィンドウ上で alert として表示されるようにした。会議検知、録音開始要求、外部送信設定、API 通信には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または Tauri モックで status listener 失敗時に会議検知通知へ alert が表示されることを確認する。
+
 ### Permission buttons: clarify affected tracks
 
 - 開始日時: 2026-04-29 12:49 JST

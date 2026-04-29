@@ -104,9 +104,13 @@ export function MeetingDetectedBanner() {
       },
     ).catch((e) => {
       if (!disposed) {
+        const msg = toErrorMessage(e);
         console.error(
           "会議検知プロンプトの文字起こしステータス受信開始に失敗しました:",
-          toErrorMessage(e),
+          msg,
+        );
+        setListenerError(
+          `会議検知プロンプトの文字起こしステータス受信開始に失敗しました: ${msg}`,
         );
       }
       return null;
