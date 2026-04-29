@@ -148,6 +148,9 @@ export function MeetingDetectedBanner() {
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
+  const transmissionAriaLabel = statusPayload.isExternalTransmission
+    ? `外部送信: ${statusPayload.aiTransmissionLabel}`
+    : "外部送信なし、端末内で処理";
   const bannerTitle = listenerError
     ? listenerError
     : "録音しますか？";
@@ -300,8 +303,8 @@ export function MeetingDetectedBanner() {
                   : ""
               }`}
               data-tauri-drag-region
-              aria-label={`外部送信: ${statusPayload.aiTransmissionLabel}`}
-              title={`外部送信: ${statusPayload.aiTransmissionLabel}`}
+              aria-label={transmissionAriaLabel}
+              title={transmissionAriaLabel}
             >
               {visibleTransmissionLabel}
             </span>
