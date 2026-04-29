@@ -104,6 +104,15 @@ export function getVisibleTransmissionLabel(
   return status.aiTransmissionLabel;
 }
 
+export function getTransmissionStatusAriaLabel(
+  status: LiveCaptionStatusPayload,
+): string {
+  if (status.isExternalTransmission) {
+    return `外部送信: ${status.aiTransmissionLabel}`;
+  }
+  return "外部送信なし、端末内で処理";
+}
+
 export function isExternalTransmissionLabel(label: string): boolean {
   return EXTERNAL_TRANSMISSION_LABELS.has(label);
 }

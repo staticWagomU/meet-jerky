@@ -5,6 +5,7 @@ import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
+  getTransmissionStatusAriaLabel,
   getVisibleTransmissionLabel,
   isLiveCaptionStatusPayload,
   normalizeLiveCaptionStatusPayload,
@@ -261,6 +262,8 @@ export function LiveCaptionWindow() {
     "音声トラック別の最新文字起こし状態",
     ...trackStatusLabels.map((track) => track.ariaLabel),
   ].join("、");
+  const transmissionStatusAriaLabel =
+    getTransmissionStatusAriaLabel(statusPayload);
   const label = listenerError
     ? listenerError
     : latestSegment
@@ -272,7 +275,7 @@ export function LiveCaptionWindow() {
             (track) => `${track.ariaPrefix} ${track.state}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
-          `外部送信 ${statusPayload.aiTransmissionLabel}`,
+          transmissionStatusAriaLabel,
           latestSegment.text,
         ]
           .filter(Boolean)
@@ -283,7 +286,7 @@ export function LiveCaptionWindow() {
             (track) => `${track.ariaPrefix} ${track.state}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
-          `外部送信 ${statusPayload.aiTransmissionLabel}`,
+          transmissionStatusAriaLabel,
           WAITING_CAPTION_ARIA_TEXT,
         ].join(": ");
   const panelClassName = isErrorState

@@ -11,6 +11,7 @@ import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
   getVisibleTransmissionLabel,
+  getTransmissionStatusAriaLabel,
   isLiveCaptionStatusPayload,
   normalizeLiveCaptionStatusPayload,
   readStoredLiveCaptionStatus,
@@ -153,9 +154,7 @@ export function MeetingDetectedBanner() {
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
-  const transmissionAriaLabel = statusPayload.isExternalTransmission
-    ? `外部送信: ${statusPayload.aiTransmissionLabel}`
-    : "外部送信なし、端末内で処理";
+  const transmissionAriaLabel = getTransmissionStatusAriaLabel(statusPayload);
   const bannerTitle = listenerError
     ? listenerError
     : "録音しますか？";
@@ -166,7 +165,7 @@ export function MeetingDetectedBanner() {
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }文字起こしエンジン ${statusPayload.engineLabel}。外部送信 ${statusPayload.aiTransmissionLabel}。${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
+      }文字起こしエンジン ${statusPayload.engineLabel}。${transmissionAriaLabel}。${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? pendingAction === "confirm"
       ? `${displayName} の録音と文字起こしの状態確認画面を開いています`
