@@ -168,20 +168,20 @@ export function PermissionBanner() {
           </p>
         )}
       </div>
-      <button
-        type="button"
-        className="control-btn control-btn-clear"
-        onClick={() => {
-          setSettingsOpenError(null);
-          refetchAll();
-        }}
-        disabled={isCheckingPermissions}
-        aria-label={permissionRetryLabel}
-        title={permissionRetryLabel}
-      >
-        {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
-      </button>
       <div className="permission-banner-actions">
+        <button
+          type="button"
+          className="control-btn control-btn-clear"
+          onClick={() => {
+            setSettingsOpenError(null);
+            refetchAll();
+          }}
+          disabled={isCheckingPermissions}
+          aria-label={permissionRetryLabel}
+          title={permissionRetryLabel}
+        >
+          {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
+        </button>
         {micNeedsAttention && (
           <button
             type="button"
