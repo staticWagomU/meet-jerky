@@ -11755,3 +11755,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver でリングライト切替ボタンの説明が冗長すぎず自然か確認する。
+
+### Menu bar status: distinguish resident from recording
+
+- 開始日時: 2026-04-29 13:51:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: メニューバーウィンドウの常駐表示が録音状態と混同されないよう、録音状態の透明性を改善する。
+- 結果: ヘッダーの `常駐中` ピルの aria/title を「アプリはメニューバーに常駐中。録音状態ではありません」に変更した。表示テキスト、録音状態、ナビゲーション、ウィンドウ制御には触れていない。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で `常駐中` が録音中表示と混同されないか確認する。

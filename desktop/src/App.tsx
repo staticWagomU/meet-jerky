@@ -87,6 +87,8 @@ function App() {
   let ringLightButtonText = "照明 オフ";
   const ringLightOperationNote =
     "表示中も背後のアプリ操作を妨げません";
+  const menuBarResidentLabel =
+    "アプリはメニューバーに常駐中。録音状態ではありません";
   if (isRingLightPending) {
     ringLightLabel = "リングライトを切り替え中";
     ringLightButtonText = "照明 切替中...";
@@ -129,8 +131,8 @@ function App() {
           <span
             className="app-header-status"
             data-tauri-drag-region
-            aria-label="メニューバー常駐中"
-            title="メニューバー常駐中"
+            aria-label={menuBarResidentLabel}
+            title={menuBarResidentLabel}
           >
             常駐中
           </span>
