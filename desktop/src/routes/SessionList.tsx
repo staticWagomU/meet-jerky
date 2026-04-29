@@ -540,7 +540,7 @@ function SessionRow({
     isAnyActionPending && !isOpeningThisFile && !isRevealingThisFile;
   const otherActionLabel =
     pendingAction?.kind === "open"
-      ? "他の履歴ファイルを開いています"
+      ? "他の履歴ファイルを macOS の既定アプリで開いています"
       : pendingAction?.kind === "reveal"
         ? "他の履歴ファイルを Finder で表示しています"
         : "他のセッション操作を処理中";
@@ -561,7 +561,7 @@ function SessionRow({
       ? `${otherActionLabel}: ${displayTitle}`
       : `履歴ファイルを Finder で表示: ${displayTitle}`;
   const sessionActionsLabel = isOpeningThisFile
-    ? `セッション操作: ${displayTitle}、履歴ファイルを開いています`
+    ? `セッション操作: ${displayTitle}、履歴ファイルを macOS の既定アプリで開いています`
     : isRevealingThisFile
       ? `セッション操作: ${displayTitle}、履歴ファイルを Finder で表示しています`
       : isWaitingForOtherAction
