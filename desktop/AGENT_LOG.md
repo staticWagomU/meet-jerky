@@ -11727,3 +11727,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver と実機操作で、閉じる操作が録音開始/停止と誤解されないか確認する。
+
+### Ring light control: clarify pass-through behavior
+
+- 開始日時: 2026-04-29 13:36:33 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil デザイン意図とリングライト要望を踏まえ、補助照明が会議中操作を邪魔しないことを分かりやすくする。
+- 結果: Pencil MCP は実行中アプリへ接続できず `get_editor_state` / `open_document` が失敗したため、`meet-jerky-desktop.pen` を直接読み、`Mock 1 - Menu Bar Popover`, `Mock 3 - Bottom Transcript Window`, `Mock 5 - Caption Window Detail`, `Mock 6 - Menu Bar Window Variants` などの構造を確認した。リングライト切替ボタンの title を「クリック操作は透過します」から「表示中も背後のアプリ操作を妨げません」へ変更し、機能の副作用をより自然な表現にした。リングライト表示制御、透明/クリック透過実装、録音処理には触れていない。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Pencil MCP が実行中 Pencil アプリへ接続できず、`.pen` はファイル直接読みにフォールバックした。
+- 次アクション: 実機でリングライト表示中のクリック透過と説明文の自然さを確認する。

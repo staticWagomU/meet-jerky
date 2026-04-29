@@ -85,6 +85,8 @@ function App() {
   };
   let ringLightLabel = "リングライトを弱で表示する";
   let ringLightButtonText = "照明 オフ";
+  const ringLightOperationNote =
+    "表示中も背後のアプリ操作を妨げません";
   if (isRingLightPending) {
     ringLightLabel = "リングライトを切り替え中";
     ringLightButtonText = "照明 切替中...";
@@ -118,7 +120,7 @@ function App() {
             }`}
             aria-pressed={ringLightMode !== "off"}
             aria-label={ringLightLabel}
-            title={`${ringLightLabel}。クリック操作は透過します。`}
+            title={`${ringLightLabel}。${ringLightOperationNote}。`}
             onClick={cycleRingLightMode}
             disabled={isRingLightPending}
           >
