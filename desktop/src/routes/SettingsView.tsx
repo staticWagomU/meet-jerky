@@ -20,6 +20,10 @@ import {
   type LiveCaptionStatusPayload,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
+import {
+  OTHER_TRACK_PERMISSION_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "../utils/audioTrackLabels";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -777,7 +781,7 @@ export function SettingsView() {
               <span className="settings-permission-track">自分</span> マイク
             </span>
             <PermissionBadge
-              label="自分トラック マイク"
+              label={SELF_TRACK_DEVICE_LABEL}
               status={micPermission}
               error={micPermissionError}
               isChecking={isFetchingMicPermission}
@@ -789,7 +793,7 @@ export function SettingsView() {
               画面収録/システム音声
             </span>
             <PermissionBadge
-              label="相手側トラック 画面収録/システム音声"
+              label={OTHER_TRACK_PERMISSION_LABEL}
               status={screenPermission}
               error={screenPermissionError}
               isChecking={isFetchingScreenPermission}

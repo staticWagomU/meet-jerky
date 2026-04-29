@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio track labels: centralize product terms
+
+- 開始日時: 2026-04-29 12:22 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/audioTrackLabels.ts`, `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/components/TranscriptDisplay.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/components/PermissionBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 自分/相手側トラックのマイク/システム音声対応を複数 UI で揃えたため、今後の文言揺れを防ぐ小さな共通定数へ切り出す。
+- 結果: `SELF_TRACK_DEVICE_LABEL`、`OTHER_TRACK_DEVICE_LABEL`、`OTHER_TRACK_PERMISSION_LABEL`、`BOTH_TRACKS_DEVICE_LABEL` を追加し、通知、ライブ字幕、文字起こしログ、音声カード、権限バナー、設定、メイン状態で使う読み上げ・title 用語を共通化した。可視 UI、録音/文字起こし処理、権限判定、外部送信には触れていない。
+- 変更ファイル: `src/utils/audioTrackLabels.ts`, `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/components/TranscriptDisplay.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/components/PermissionBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/audioTrackLabels.ts src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptDisplay.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/audioTrackLabels.ts src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptDisplay.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後の UI 追加では `src/utils/audioTrackLabels.ts` の共通語彙を使い、録音対象の表現揺れを避ける。
+
 ### Transcription controls a11y: clarify source devices
 
 - 開始日時: 2026-04-29 12:16 JST

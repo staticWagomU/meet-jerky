@@ -8,6 +8,10 @@ import {
   OPEN_MICROPHONE_PRIVACY_LABEL,
   OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
 } from "../utils/macosPrivacySettings";
+import {
+  OTHER_TRACK_PERMISSION_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "../utils/audioTrackLabels";
 
 export function PermissionBanner() {
   const [settingsOpenError, setSettingsOpenError] = useState<string | null>(
@@ -72,14 +76,14 @@ export function PermissionBanner() {
         ? "未許可"
         : "未確認";
   const micPermissionDetail = [
-    "自分トラック マイク",
+    SELF_TRACK_DEVICE_LABEL,
     micStatusLabel,
     micPermissionErrorMessage,
   ]
     .filter(Boolean)
     .join(": ");
   const screenPermissionDetail = [
-    "相手側トラック 画面収録/システム音声",
+    OTHER_TRACK_PERMISSION_LABEL,
     screenStatusLabel,
     screenPermissionErrorMessage,
   ]

@@ -2,6 +2,7 @@ import {
   AudioLevelMeter,
   sanitizeAudioLevelForDisplay,
 } from "./AudioLevelMeter";
+import { OTHER_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";
 
 interface SystemAudioSectionProps {
   isSystemAudioRecording: boolean;
@@ -36,7 +37,7 @@ export function SystemAudioSection({
       ? "audio-source-state-badge-active"
       : "audio-source-state-badge-idle";
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
-  const systemAudioStateDescription = `相手側トラック システム音声: ${systemAudioStateText}`;
+  const systemAudioStateDescription = `${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
     ? "相手側トラックのシステム音声取得を切替中"
     : isControlDisabled
@@ -58,8 +59,8 @@ export function SystemAudioSection({
         <span>相手側のシステム音声</span>
         <span
           className="audio-source-track-badge"
-          aria-label="音声トラック: 相手側トラック システム音声"
-          title="音声トラック: 相手側トラック システム音声"
+          aria-label={`音声トラック: ${OTHER_TRACK_DEVICE_LABEL}`}
+          title={`音声トラック: ${OTHER_TRACK_DEVICE_LABEL}`}
         >
           相手側
         </span>
@@ -79,8 +80,8 @@ export function SystemAudioSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label="相手側トラック システム音声: 入力待ち"
-            title="相手側トラック システム音声: 入力待ち"
+            aria-label={`${OTHER_TRACK_DEVICE_LABEL}: 入力待ち`}
+            title={`${OTHER_TRACK_DEVICE_LABEL}: 入力待ち`}
           >
             入力待ち
           </span>
@@ -113,7 +114,7 @@ export function SystemAudioSection({
         <div className="level-meter-bar">
           <AudioLevelMeter
             level={systemAudioLevel}
-            label="相手側トラック システム音声の音量レベル"
+            label={`${OTHER_TRACK_DEVICE_LABEL}の音量レベル`}
           />
         </div>
         <span className="level-label">{systemAudioLevelPercent}%</span>

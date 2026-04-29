@@ -17,6 +17,10 @@ import {
   isTranscriptSegmentPayload,
   isTranscriptionErrorPayload,
 } from "../utils/transcriptSegment";
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "../utils/audioTrackLabels";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
@@ -32,11 +36,11 @@ type TrackMeta = {
 };
 
 const TRACKS: Array<TrackMeta> = [
-  { source: "microphone", label: "自分", ariaPrefix: "自分トラック マイク" },
+  { source: "microphone", label: "自分", ariaPrefix: SELF_TRACK_DEVICE_LABEL },
   {
     source: "system_audio",
     label: "相手側",
-    ariaPrefix: "相手側トラック システム音声",
+    ariaPrefix: OTHER_TRACK_DEVICE_LABEL,
   },
 ];
 

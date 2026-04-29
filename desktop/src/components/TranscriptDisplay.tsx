@@ -8,6 +8,10 @@ import {
   isTranscriptSegmentPayload,
   isTranscriptionErrorPayload,
 } from "../utils/transcriptSegment";
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "../utils/audioTrackLabels";
 
 function getSpeakerKind(
   segment: TranscriptSegment,
@@ -27,9 +31,9 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
 }
 
 function getSpeakerAriaLabel(segment: TranscriptSegment): string {
-  if (segment.source === "microphone") return "自分トラック マイク";
+  if (segment.source === "microphone") return SELF_TRACK_DEVICE_LABEL;
   if (segment.source === "system_audio") {
-    return "相手側トラック システム音声";
+    return OTHER_TRACK_DEVICE_LABEL;
   }
   if (segment.speaker === "自分") return "自分トラック";
   if (segment.speaker) return `話者 ${segment.speaker}`;
@@ -367,15 +371,15 @@ export function TranscriptDisplay({
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-self"
-              aria-label={`自分トラック マイクの文字起こし: ${segmentCounts.self} 件`}
-              title={`自分トラック マイクの文字起こし: ${segmentCounts.self} 件`}
+              aria-label={`${SELF_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.self} 件`}
+              title={`${SELF_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.self} 件`}
             >
               自分 {segmentCounts.self}
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-other"
-              aria-label={`相手側トラック システム音声の文字起こし: ${segmentCounts.other} 件`}
-              title={`相手側トラック システム音声の文字起こし: ${segmentCounts.other} 件`}
+              aria-label={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.other} 件`}
+              title={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.other} 件`}
             >
               相手側 {segmentCounts.other}
             </span>

@@ -3,6 +3,7 @@ import {
   AudioLevelMeter,
   sanitizeAudioLevelForDisplay,
 } from "./AudioLevelMeter";
+import { SELF_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";
 import { toErrorMessage } from "../utils/errorMessage";
 
 interface MicrophoneSectionProps {
@@ -49,7 +50,7 @@ export function MicrophoneSection({
       ? "audio-source-state-badge-active"
       : "audio-source-state-badge-idle";
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
-  const micStateDescription = `自分トラック マイク: ${micStateText}`;
+  const micStateDescription = `${SELF_TRACK_DEVICE_LABEL}: ${micStateText}`;
   const micButtonLabel = isOperationPending
     ? "自分トラックのマイク録音を切替中"
     : isControlDisabled
@@ -83,8 +84,8 @@ export function MicrophoneSection({
         <span>自分のマイク</span>
         <span
           className="audio-source-track-badge"
-          aria-label="音声トラック: 自分トラック マイク"
-          title="音声トラック: 自分トラック マイク"
+          aria-label={`音声トラック: ${SELF_TRACK_DEVICE_LABEL}`}
+          title={`音声トラック: ${SELF_TRACK_DEVICE_LABEL}`}
         >
           自分
         </span>
@@ -104,8 +105,8 @@ export function MicrophoneSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label="自分トラック マイク: 入力待ち"
-            title="自分トラック マイク: 入力待ち"
+            aria-label={`${SELF_TRACK_DEVICE_LABEL}: 入力待ち`}
+            title={`${SELF_TRACK_DEVICE_LABEL}: 入力待ち`}
           >
             入力待ち
           </span>
@@ -155,8 +156,8 @@ export function MicrophoneSection({
         <div
           className="settings-inline-error"
           role="alert"
-          aria-label={`自分トラック マイクのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
-          title={`自分トラック マイクのデバイス一覧エラー: ${audioDevicesErrorMessage}`}
+          aria-label={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${audioDevicesErrorMessage}`}
+          title={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${audioDevicesErrorMessage}`}
         >
           <span>
             自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
@@ -179,7 +180,7 @@ export function MicrophoneSection({
         <div className="level-meter-bar">
           <AudioLevelMeter
             level={micLevel}
-            label="自分トラック マイクの音量レベル"
+            label={`${SELF_TRACK_DEVICE_LABEL}の音量レベル`}
           />
         </div>
         <span className="level-label">{micLevelPercent}%</span>

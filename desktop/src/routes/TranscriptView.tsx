@@ -30,6 +30,10 @@ import {
   LIVE_CAPTION_STATUS_EVENT,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "../utils/audioTrackLabels";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
@@ -118,26 +122,26 @@ function getTranscriptionSourceStatusAriaText(
 ): string | null {
   if (!isTranscribing) {
     if (isMicRecording && isSystemAudioRecording) {
-      return "文字起こし待機: 自分トラック マイクと相手側トラック システム音声";
+      return `文字起こし待機: ${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}`;
     }
     if (isMicRecording) {
-      return "文字起こし待機: 自分トラック マイクのみ、相手側トラック システム音声は未取得";
+      return `文字起こし待機: ${SELF_TRACK_DEVICE_LABEL}のみ、${OTHER_TRACK_DEVICE_LABEL}は未取得`;
     }
     if (isSystemAudioRecording) {
-      return "文字起こし待機: 相手側トラック システム音声のみ、自分トラック マイクは未録音";
+      return `文字起こし待機: ${OTHER_TRACK_DEVICE_LABEL}のみ、${SELF_TRACK_DEVICE_LABEL}は未録音`;
     }
     return null;
   }
   if (isMicRecording && isSystemAudioRecording) {
-    return "文字起こし中: 自分トラック マイクと相手側トラック システム音声";
+    return `文字起こし中: ${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}`;
   }
   if (isMicRecording) {
-    return "文字起こし中: 自分トラック マイクのみ、相手側トラック システム音声は未取得";
+    return `文字起こし中: ${SELF_TRACK_DEVICE_LABEL}のみ、${OTHER_TRACK_DEVICE_LABEL}は未取得`;
   }
   if (isSystemAudioRecording) {
-    return "文字起こし中: 相手側トラック システム音声のみ、自分トラック マイクは未録音";
+    return `文字起こし中: ${OTHER_TRACK_DEVICE_LABEL}のみ、${SELF_TRACK_DEVICE_LABEL}は未録音`;
   }
-  return "文字起こし中: 自分トラック マイクと相手側トラック システム音声とも未取得";
+  return `文字起こし中: ${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}とも未取得`;
 }
 
 function getTranscriptionSourceArg(
@@ -374,11 +378,11 @@ function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
 }
 
 function getMicTrackStatusAriaLabel(statusLabel: string): string {
-  return `自分トラック マイク: ${statusLabel}`;
+  return `${SELF_TRACK_DEVICE_LABEL}: ${statusLabel}`;
 }
 
 function getSystemAudioTrackStatusAriaLabel(statusLabel: string): string {
-  return `相手側トラック システム音声: ${statusLabel}`;
+  return `${OTHER_TRACK_DEVICE_LABEL}: ${statusLabel}`;
 }
 
 function getEngineStatusLabel(
