@@ -77,6 +77,7 @@ export function PermissionBanner() {
         : "未確認";
   const micPermissionDetail = [
     SELF_TRACK_DEVICE_LABEL,
+    "macOS マイク権限",
     micStatusLabel,
     micPermissionErrorMessage,
   ]
@@ -84,6 +85,7 @@ export function PermissionBanner() {
     .join(": ");
   const screenPermissionDetail = [
     OTHER_TRACK_PERMISSION_LABEL,
+    "macOS 画面収録権限",
     screenStatusLabel,
     screenPermissionErrorMessage,
   ]

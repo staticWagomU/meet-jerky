@@ -12035,3 +12035,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 入力待ちの説明が原因候補として過剰でないか実機で確認する。
+
+### Permission banner: name required macOS permissions
+
+- 開始日時: 2026-04-29 18:30:11 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: メイン画面の権限バナーで、自分/相手側トラックに必要な macOS 権限名が支援技術にも明確に伝わるようにする。
+- 結果: 権限バナーの要約 aria/title と権限状態ピルの aria/title に、`macOS マイク権限` と `macOS 画面収録権限` を含めた。表示本文、権限確認処理、設定を開く処理、録音/取得処理には触れていない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 権限バナーの要約読み上げが本文と重複しすぎないか実機で確認する。
