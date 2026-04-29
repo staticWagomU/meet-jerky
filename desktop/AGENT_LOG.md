@@ -11336,3 +11336,16 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Pencil MCP が起動中アプリへ接続できず、画像としての再確認は未実施。
 - 次アクション: Pencil が利用できる状態で表示確認し、実装側へはノッチ有無、複数ディスプレイ、フルスクリーン上の表示制約を小さく分けて反映する。
+### Design comp expansion: settings, captions, menu variants
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `meet-jerky-desktop.pen`, `AGENT_LOG.md`
+- 指示内容: 既存の macOS ネイティブなテイストで、設定画面、字幕ウィンドウ画面、メニューバーウィンドウの追加カンプが Pen に含まれているか確認し、次の実装に使える状態として記録する。
+- 結果: `meet-jerky-desktop.pen` に `Mock 4 - Settings Window`, `Mock 5 - Caption Window Detail`, `Mock 6 - Menu Bar Window Variants` が含まれていることを確認した。字幕ウィンドウはライブ字幕、Self/Others の表示切替、文字サイズ、表示モード、マーク、辞書補正を含む詳細カンプ。メニューバー差分は待機中、権限不足、会議後サマリーの 3 状態を並べ、録音透明性と権限説明を明確にしている。
+- 変更ファイル: `AGENT_LOG.md`
+- 検証結果: `rg -n "Mock 4|Mock 5|Mock 6|Settings Window|Caption Window Detail|Menu Bar Window Variants" meet-jerky-desktop.pen` で 3 つの追加モック名を確認。Pen 本体の未コミット差分はなし。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面が完了したら、検知・音声・AI・プライバシーの項目が実装予定の権限導線と矛盾しないか別途レビューする。
