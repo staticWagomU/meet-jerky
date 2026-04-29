@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcription controls a11y: clarify source devices
+
+- 開始日時: 2026-04-29 12:16 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし開始/停止コントロールの音声ソース状態で、見た目の短さを維持しながら自分/相手側がマイク/システム音声に対応することを支援技術へ明確にする。
+- 結果: `TranscriptionControls` に読み上げ専用の `sourceStatusAriaText` を追加し、可視表示は従来のまま、aria-label/title と操作グループの説明だけを `自分トラック マイク` / `相手側トラック システム音声` に具体化した。文字起こし開始/停止処理、音声取得、外部送信には触れていない。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptionControls.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で文字起こし操作グループと音声ソース状態が、可視表示より詳しい説明として自然に伝わるか実機確認する。
+
 ### Transcript log a11y: clarify source devices
 
 - 開始日時: 2026-04-29 12:10 JST

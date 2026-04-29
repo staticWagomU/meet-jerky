@@ -13,6 +13,7 @@ interface TranscriptionControlsProps {
   isTranscriptionOperationPending: boolean;
   startBlockedReason: string | null;
   sourceStatusText: string | null;
+  sourceStatusAriaText: string | null;
   sourceStatusIsWarning: boolean;
   segmentsCount: number;
   onClearTranscript: () => void;
@@ -28,6 +29,7 @@ export function TranscriptionControls({
   isTranscriptionOperationPending,
   startBlockedReason,
   sourceStatusText,
+  sourceStatusAriaText,
   sourceStatusIsWarning,
   segmentsCount,
   onClearTranscript,
@@ -53,7 +55,7 @@ export function TranscriptionControls({
     "文字起こし操作",
     isTranscriptionOperationPending ? pendingTranscriptionLabel : null,
     isTranscribing ? "文字起こし中" : "停止中",
-    sourceStatusText,
+    sourceStatusAriaText ?? sourceStatusText,
     startBlockedReason ? `開始不可: ${startBlockedReason}` : null,
     `ログ ${segmentsCount} 件`,
   ]
@@ -122,8 +124,8 @@ export function TranscriptionControls({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`文字起こし音声ソース状態: ${sourceStatusText}`}
-          title={`文字起こし音声ソース状態: ${sourceStatusText}`}
+          aria-label={`文字起こし音声ソース状態: ${sourceStatusAriaText ?? sourceStatusText}`}
+          title={`文字起こし音声ソース状態: ${sourceStatusAriaText ?? sourceStatusText}`}
         >
           {sourceStatusText}
         </div>

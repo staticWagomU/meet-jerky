@@ -111,6 +111,35 @@ function getTranscriptionSourceStatus(
   return "文字起こし中: 自分と相手側とも未取得";
 }
 
+function getTranscriptionSourceStatusAriaText(
+  isTranscribing: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string | null {
+  if (!isTranscribing) {
+    if (isMicRecording && isSystemAudioRecording) {
+      return "文字起こし待機: 自分トラック マイクと相手側トラック システム音声";
+    }
+    if (isMicRecording) {
+      return "文字起こし待機: 自分トラック マイクのみ、相手側トラック システム音声は未取得";
+    }
+    if (isSystemAudioRecording) {
+      return "文字起こし待機: 相手側トラック システム音声のみ、自分トラック マイクは未録音";
+    }
+    return null;
+  }
+  if (isMicRecording && isSystemAudioRecording) {
+    return "文字起こし中: 自分トラック マイクと相手側トラック システム音声";
+  }
+  if (isMicRecording) {
+    return "文字起こし中: 自分トラック マイクのみ、相手側トラック システム音声は未取得";
+  }
+  if (isSystemAudioRecording) {
+    return "文字起こし中: 相手側トラック システム音声のみ、自分トラック マイクは未録音";
+  }
+  return "文字起こし中: 自分トラック マイクと相手側トラック システム音声とも未取得";
+}
+
 function getTranscriptionSourceArg(
   isMicRecording: boolean,
   isSystemAudioRecording: boolean,
@@ -1123,6 +1152,12 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
   );
+  const transcriptionSourceStatusAriaText =
+    getTranscriptionSourceStatusAriaText(
+      isTranscribing,
+      isMicRecording,
+      isSystemAudioRecording,
+    );
   const transcriptionSourceStatusIsWarning =
     Boolean(transcriptionSourceStatus) &&
     !(isMicRecording && isSystemAudioRecording);
@@ -1703,6 +1738,7 @@ export function TranscriptView() {
         isTranscriptionOperationPending={isTranscriptionOperationPending}
         startBlockedReason={transcriptionStartBlockedReason}
         sourceStatusText={transcriptionSourceStatus}
+        sourceStatusAriaText={transcriptionSourceStatusAriaText}
         sourceStatusIsWarning={transcriptionSourceStatusIsWarning}
         segmentsCount={segments.length}
         onClearTranscript={handleClearTranscript}
