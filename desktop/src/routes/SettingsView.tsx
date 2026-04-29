@@ -1133,7 +1133,9 @@ function ExternalApiKeySection({
       : hasKey
       ? "settings-api-key-status settings-api-key-status-ready"
       : "settings-api-key-status";
-  const apiKeyStatusLabel = `${providerName} API キーの状態: ${apiKeyStatusText}`;
+  const apiKeyStatusLabel = hasKey
+    ? `${providerName} API キーの状態: 登録済み。キー値は画面に再表示されません`
+    : `${providerName} API キーの状態: ${apiKeyStatusText}`;
   const refetchApiKeyStatusLabel = isFetchingHasKey
     ? `${providerName} API キーの状態を確認中`
     : `${providerName} API キーの状態を再確認`;

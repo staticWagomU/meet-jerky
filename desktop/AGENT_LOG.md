@@ -11853,3 +11853,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: API キー状態確認中/確認失敗時の入力欄読み上げが未登録と誤解されないか VoiceOver で確認する。
+
+### Settings API key status: clarify hidden stored value
+
+- 開始日時: 2026-04-29 14:50:25 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 外部 API キー登録済み状態で、キー値が画面に再表示されないことを状態表示からも伝える。
+- 結果: API キー状態ピルの aria/title で、登録済みの場合は `キー値は画面に再表示されません` と読むようにした。表示テキスト、Keychain 操作、認証情報、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 登録済み API キー状態で、値非表示の読み上げが note と重複しすぎないか VoiceOver で確認する。
