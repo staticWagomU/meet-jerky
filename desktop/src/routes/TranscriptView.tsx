@@ -1357,11 +1357,11 @@ export function TranscriptView() {
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const lastSavedOpenLabel = lastSavedFileName
     ? savedFileActionPending === "open"
-      ? `保存済み履歴ファイルを開いています: ${lastSavedFileName}`
+      ? `保存済み履歴ファイルを macOS の既定アプリで開いています: ${lastSavedFileName}`
       : savedFileActionPending === "reveal"
-        ? `保存済み履歴ファイルを Finder で表示中のため開けません: ${lastSavedFileName}`
-        : `保存済み履歴ファイルを開く: ${lastSavedFileName}`
-    : "保存済み履歴ファイルを開く";
+        ? `保存済み履歴ファイルを Finder で表示中のため macOS の既定アプリで開けません: ${lastSavedFileName}`
+        : `保存済み履歴ファイルを macOS の既定アプリで開く: ${lastSavedFileName}`
+    : "保存済み履歴ファイルを macOS の既定アプリで開く";
   const lastSavedRevealLabel = lastSavedFileName
     ? savedFileActionPending === "reveal"
       ? `保存済み履歴ファイルを Finder で表示しています: ${lastSavedFileName}`

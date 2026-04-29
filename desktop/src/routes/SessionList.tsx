@@ -551,10 +551,10 @@ function SessionRow({
         ? "別履歴を表示中"
         : "他の処理中";
   const openFileLabel = isOpeningThisFile
-    ? `履歴ファイルを開いています: ${displayTitle}`
+    ? `履歴ファイルを macOS の既定アプリで開いています: ${displayTitle}`
     : isWaitingForOtherAction
       ? `${otherActionLabel}: ${displayTitle}`
-      : `履歴ファイルを開く: ${displayTitle}`;
+      : `履歴ファイルを macOS の既定アプリで開く: ${displayTitle}`;
   const revealFileLabel = isRevealingThisFile
     ? `履歴ファイルを Finder で表示しています: ${displayTitle}`
     : isWaitingForOtherAction
