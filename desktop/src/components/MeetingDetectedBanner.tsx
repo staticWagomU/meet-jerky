@@ -351,6 +351,7 @@ export function MeetingDetectedBanner() {
             className="control-btn control-btn-clear meeting-detected-dismiss-btn"
             disabled={Boolean(pendingAction)}
             aria-label={dismissBannerLabel}
+            aria-keyshortcuts="Escape"
             title={dismissBannerLabel}
             onClick={() => {
               void handleDismissBanner();

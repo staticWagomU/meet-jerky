@@ -11447,3 +11447,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で権限未許可/未確認/確認失敗それぞれのボタン折り返しと読み上げ順を確認する。
+
+### Floating windows: expose Escape shortcut
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: Escape で閉じられる独立ウィンドウ操作を、支援技術にも伝わるようにする。
+- 結果: 会議検知プロンプトの dismiss ボタンとライブ字幕ウィンドウの close ボタンに `aria-keyshortcuts="Escape"` を追加した。キーハンドラ、録音開始、文字起こし、表示制御には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver などで Escape ショートカットが自然に伝わるか実機確認する。

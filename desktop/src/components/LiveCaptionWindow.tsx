@@ -397,6 +397,7 @@ export function LiveCaptionWindow() {
           type="button"
           className="live-transcript-close-btn"
           aria-label="ライブ文字起こしウィンドウを閉じる"
+          aria-keyshortcuts="Escape"
           title="ライブ文字起こしウィンドウを閉じる"
           onClick={hideLiveCaptionWindow}
         >
