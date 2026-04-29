@@ -11895,3 +11895,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: API キー状態確認失敗時に、記録開始不可理由と文字起こし開始不可理由が設定画面への導線として自然か確認する。
+
+### Transcript clear action: clarify scope
+
+- 開始日時: 2026-04-29 15:30:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 指示内容: 表示ログをクリアする操作が、録音停止や保存済み履歴削除と誤解されないようにする。
+- 結果: 表示ログクリアボタンの aria/title に、録音・文字起こし・保存済み履歴には影響しない旨を追加した。表示テキスト、ログ削除処理、録音/文字起こし処理、履歴保存処理には触れていない。
+- 変更ファイル: `src/components/TranscriptionControls.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptionControls.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 表示ログクリア操作の説明が長すぎず、保存済み履歴削除と誤解されないか実機で確認する。

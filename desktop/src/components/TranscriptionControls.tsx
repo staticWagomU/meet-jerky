@@ -50,7 +50,7 @@ export function TranscriptionControls({
       : "文字起こしを開始";
   const clearTranscriptLabel = isTranscriptionOperationPending
     ? `${pendingTranscriptionLabel}のため、表示ログをクリアできません`
-    : `表示中の文字起こしログ ${segmentsCount} 件をクリア`;
+    : `表示中の文字起こしログ ${segmentsCount} 件をクリア。録音、文字起こし、保存済み履歴には影響しません`;
   const transcriptionControlsLabel = [
     "文字起こし操作",
     isTranscriptionOperationPending ? pendingTranscriptionLabel : null,
