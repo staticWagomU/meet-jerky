@@ -145,8 +145,6 @@ export function MeetingDetectedBanner() {
     };
   }, [detected, listenerError, pendingAction]);
 
-  if (!detected && !listenerError) return null;
-
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
@@ -226,6 +224,20 @@ export function MeetingDetectedBanner() {
       console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !pendingAction) {
+        void handleDismissBanner();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [pendingAction]);
+
+  if (!detected && !listenerError) return null;
 
   return (
     <div

@@ -11419,3 +11419,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Pencil MCP は接続不可のため、画像としての再確認は未実施。
 - 次アクション: 実機で透明背景、CSS 影、ドラッグ領域、閉じる/開始ボタンのクリック性、VoiceOver で不要なリングライトが読まれないことを確認する。
+
+### Floating windows: support Escape dismissal
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 独立した通知ウィンドウとライブ字幕ウィンドウを、閉じるボタンだけでなく macOS らしく Escape キーでも閉じられるようにする。
+- 結果: 会議検知プロンプトは操作中でない場合に Escape で dismiss し、ライブ字幕ウィンドウは Escape で hide するようにした。録音開始・状態確認・文字起こし結果の処理には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でフォーカス時の Escape、ボタン操作中の誤 dismiss 抑止、閉じた後の再表示導線を確認する。
