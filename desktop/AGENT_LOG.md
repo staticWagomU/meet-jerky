@@ -11811,3 +11811,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver でライブ字幕ウィンドウのエンジン pill と全体ラベルの外部送信表現が揃っているか確認する。
+
+### Transcript status strip: clarify unknown transmission state
+
+- 開始日時: 2026-04-29 14:13:36 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: メイン画面の AI 送信状態で、設定読み取り失敗時に外部送信状態が不明であることを自然に伝える。
+- 結果: AI 送信状態の aria/title 生成で `確認できません` の場合は `外部送信状態を確認できません` と読むようにした。表示テキスト、設定取得、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定取得失敗時に AI 送信状態の読み上げが自然か VoiceOver で確認する。

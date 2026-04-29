@@ -372,6 +372,9 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
 }
 
 function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
+  if (statusLabel === "確認できません") {
+    return "外部送信状態を確認できません";
+  }
   if (statusLabel === "なし") {
     return "外部送信なし、端末内で処理";
   }
