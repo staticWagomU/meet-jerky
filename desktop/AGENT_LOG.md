@@ -11797,3 +11797,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver で会議検知通知とライブ字幕ウィンドウ全体の外部送信/端末内処理表現が揃っているか確認する。
+
+### Live caption engine pill: align transmission aria wording
+
+- 開始日時: 2026-04-29 14:12:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: ライブ字幕ウィンドウ内のエンジン表示でも、外部送信なしを端末内処理として明確に読むようにする。
+- 結果: エンジン pill の aria/title で `getTransmissionStatusAriaLabel` 由来の表現を使い、端末内処理時の `外部送信なし、端末内で処理` 表現を全体ラベルと揃えた。表示テキスト、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でライブ字幕ウィンドウのエンジン pill と全体ラベルの外部送信表現が揃っているか確認する。

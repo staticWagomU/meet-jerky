@@ -371,8 +371,8 @@ export function LiveCaptionWindow() {
                   : ""
               }`}
               data-tauri-drag-region
-              aria-label={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
-              title={`文字起こしエンジン ${statusPayload.engineLabel}、外部送信 ${statusPayload.aiTransmissionLabel}`}
+              aria-label={`文字起こしエンジン ${statusPayload.engineLabel}、${transmissionStatusAriaLabel}`}
+              title={`文字起こしエンジン ${statusPayload.engineLabel}、${transmissionStatusAriaLabel}`}
             >
               {statusPayload.engineLabel}
             </span>
