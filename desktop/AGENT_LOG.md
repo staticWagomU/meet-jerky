@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission buttons: clarify affected tracks
+
+- 開始日時: 2026-04-29 12:49 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/macosPrivacySettings.ts`, `AGENT_LOG.md`
+- 指示内容: macOS の権限設定を開くボタンで、マイク/画面収録がどの録音対象に影響するかを支援技術と title に明示する。
+- 結果: マイク権限ボタンの aria/title に `SELF_TRACK_DEVICE_LABEL`、画面収録権限ボタンの aria/title に `OTHER_TRACK_PERMISSION_LABEL` を含めた。ボタンの可視文、macOS 設定 URL、権限判定、録音/取得処理には触れていない。
+- 変更ファイル: `src/utils/macosPrivacySettings.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/macosPrivacySettings.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/macosPrivacySettings.ts AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で権限設定を開くボタンが、対象トラックとの対応として自然に読まれるか実機確認する。
+
 ### Permission copy: clarify recorded sources
 
 - 開始日時: 2026-04-29 12:42 JST
