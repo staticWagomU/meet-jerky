@@ -11839,3 +11839,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 初回ビルドで React 属性型に `null` を渡し得る実装になっていたため。`?? undefined` へ修正済み。
 - 次アクション: VoiceOver で外部 Realtime 注意文が課金リスクと Keychain 保存先を過不足なく読むか確認する。
+
+### Settings API key input: avoid false unregistered state
+
+- 開始日時: 2026-04-29 14:32:09 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 外部 API キー状態の確認中/確認失敗時に、入力欄が未登録と断定して読まれないようにする。
+- 結果: API キー入力欄の aria/title 生成で、状態確認中は `状態を確認中。入力すると保存できます`、状態確認失敗時は `状態を確認できません。入力すると保存できます` と読むようにした。表示テキスト、Keychain 操作、認証情報、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: API キー状態確認中/確認失敗時の入力欄読み上げが未登録と誤解されないか VoiceOver で確認する。

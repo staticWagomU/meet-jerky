@@ -1138,9 +1138,13 @@ function ExternalApiKeySection({
     ? `${providerName} API キーの状態を確認中`
     : `${providerName} API キーの状態を再確認`;
   const apiKeyErrorMessage = hasKeyError ? toErrorMessage(hasKeyError) : "";
-  const apiKeyInputLabel = hasKey
-    ? `${providerName} API キー: 登録済み、再入力で上書き`
-    : `${providerName} API キー: 未登録`;
+  const apiKeyInputLabel = hasKeyError
+    ? `${providerName} API キー: 状態を確認できません。入力すると保存できます`
+    : isFetchingHasKey || hasKey === undefined
+      ? `${providerName} API キー: 状態を確認中。入力すると保存できます`
+      : hasKey
+        ? `${providerName} API キー: 登録済み、再入力で上書き`
+        : `${providerName} API キー: 未登録`;
 
   return (
     <div className="settings-section">
