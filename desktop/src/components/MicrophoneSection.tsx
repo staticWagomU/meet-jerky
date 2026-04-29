@@ -70,7 +70,9 @@ export function MicrophoneSection({
   const audioDevicesErrorMessage = audioDevicesError
     ? toErrorMessage(audioDevicesError)
     : "";
-  const micSectionLabel = `${micStateDescription}${isMicInputWaiting ? "、入力待ち" : ""}、音量 ${micLevelPercent}%`;
+  const micInputWaitingLabel =
+    `${SELF_TRACK_DEVICE_LABEL}: 入力待ち。音量 0%。マイクのミュート、入力デバイス、macOS のマイク権限を確認してください`;
+  const micSectionLabel = `${micStateDescription}${isMicInputWaiting ? `、${micInputWaitingLabel}` : ""}、音量 ${micLevelPercent}%`;
 
   return (
     <div
@@ -105,8 +107,8 @@ export function MicrophoneSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`${SELF_TRACK_DEVICE_LABEL}: 入力待ち`}
-            title={`${SELF_TRACK_DEVICE_LABEL}: 入力待ち`}
+            aria-label={micInputWaitingLabel}
+            title={micInputWaitingLabel}
           >
             入力待ち
           </span>

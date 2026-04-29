@@ -45,7 +45,9 @@ export function SystemAudioSection({
     : isSystemAudioRecording
       ? `${OTHER_TRACK_DEVICE_LABEL}取得を停止。停止すると相手側の発話は文字起こしされません`
       : `${OTHER_TRACK_DEVICE_LABEL}取得を開始。相手側の発話を文字起こしします`;
-  const systemAudioSectionLabel = `${systemAudioStateDescription}${isSystemAudioInputWaiting ? "、入力待ち" : ""}、音量 ${systemAudioLevelPercent}%`;
+  const systemAudioInputWaitingLabel =
+    `${OTHER_TRACK_DEVICE_LABEL}: 入力待ち。音量 0%。会議アプリの音声出力、システム音量、macOS の画面収録権限を確認してください`;
+  const systemAudioSectionLabel = `${systemAudioStateDescription}${isSystemAudioInputWaiting ? `、${systemAudioInputWaitingLabel}` : ""}、音量 ${systemAudioLevelPercent}%`;
 
   return (
     <div
@@ -80,8 +82,8 @@ export function SystemAudioSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`${OTHER_TRACK_DEVICE_LABEL}: 入力待ち`}
-            title={`${OTHER_TRACK_DEVICE_LABEL}: 入力待ち`}
+            aria-label={systemAudioInputWaitingLabel}
+            title={systemAudioInputWaitingLabel}
           >
             入力待ち
           </span>
