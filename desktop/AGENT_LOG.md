@@ -11769,3 +11769,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver で `常駐中` が録音中表示と混同されないか確認する。
+
+### Realtime transmission labels: share external detection
+
+- 開始日時: 2026-04-29 13:53:16 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: OpenAI/ElevenLabs Realtime の外部送信警告が UI 文言変更で崩れにくいよう、状態判定を共通化する。
+- 結果: `isExternalTransmissionLabel` を `liveCaptionStatus` に追加し、ライブ字幕ステータス生成とメイン画面の AI 送信 pill class 判定で同じ外部送信ラベル判定を使うようにした。表示文言、API送信、認証情報、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: OpenAI/ElevenLabs Realtime 選択時にメイン画面とライブ字幕ウィンドウの外部送信表示が揃うか実機確認する。

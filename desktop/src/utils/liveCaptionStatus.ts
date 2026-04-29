@@ -2,6 +2,10 @@ import type { TranscriptionEngineType } from "../types";
 
 export const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
 export const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
+const EXTERNAL_TRANSMISSION_LABELS = new Set([
+  "送信先 OpenAI",
+  "送信先 ElevenLabs",
+]);
 
 export interface LiveCaptionStatusPayload {
   engineLabel: string;
@@ -100,6 +104,10 @@ export function getVisibleTransmissionLabel(
   return status.aiTransmissionLabel;
 }
 
+export function isExternalTransmissionLabel(label: string): boolean {
+  return EXTERNAL_TRANSMISSION_LABELS.has(label);
+}
+
 export function buildLiveCaptionStatusFromEngine(
   engine: TranscriptionEngineType | undefined,
 ): LiveCaptionStatusPayload {
@@ -153,9 +161,7 @@ export function buildLiveCaptionStatusFromLabels(
   return {
     engineLabel,
     aiTransmissionLabel,
-    isExternalTransmission:
-      aiTransmissionLabel === "送信先 OpenAI" ||
-      aiTransmissionLabel === "送信先 ElevenLabs",
+    isExternalTransmission: isExternalTransmissionLabel(aiTransmissionLabel),
     microphoneTrackLabel:
       trackLabels?.microphoneTrackLabel ??
       DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,

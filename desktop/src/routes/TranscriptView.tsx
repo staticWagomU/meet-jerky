@@ -27,6 +27,7 @@ import { toErrorMessage } from "../utils/errorMessage";
 import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import {
   buildLiveCaptionStatusFromLabels,
+  isExternalTransmissionLabel,
   LIVE_CAPTION_STATUS_EVENT,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
@@ -358,7 +359,7 @@ function getAiTransmissionStatusLabel(
 }
 
 function getAiTransmissionStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "送信先 OpenAI" || statusLabel === "送信先 ElevenLabs") {
+  if (isExternalTransmissionLabel(statusLabel)) {
     return "meeting-status-pill-warning";
   }
   if (statusLabel === "確認できません") {
