@@ -337,6 +337,13 @@ function getAiTransmissionStatusPillClass(statusLabel: string): string {
   return "meeting-status-pill-neutral";
 }
 
+function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
+  if (statusLabel === "なし") {
+    return "外部送信なし、端末内で処理";
+  }
+  return `外部送信: ${statusLabel}`;
+}
+
 function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
 ): string {
@@ -1264,7 +1271,7 @@ export function TranscriptView() {
     `自分トラック ${micTrackStatusLabel}`,
     `相手側トラック ${systemAudioTrackStatusLabel}`,
     `エンジン ${engineStatusLabel}`,
-    `外部送信 ${aiTransmissionStatusLabel}`,
+    getAiTransmissionStatusAriaLabel(aiTransmissionStatusLabel),
     externalApiKeyStatusAriaLabel,
   ]
     .filter(Boolean)
@@ -1452,8 +1459,10 @@ export function TranscriptView() {
           </span>
           <span
             className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
-            aria-label={`外部送信: ${aiTransmissionStatusLabel}`}
-            title={`外部送信: ${aiTransmissionStatusLabel}`}
+            aria-label={getAiTransmissionStatusAriaLabel(
+              aiTransmissionStatusLabel,
+            )}
+            title={getAiTransmissionStatusAriaLabel(aiTransmissionStatusLabel)}
           >
             外部送信 {aiTransmissionStatusLabel}
           </span>

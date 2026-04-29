@@ -11489,3 +11489,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver で会議検知プロンプトとライブ字幕ウィンドウのプライバシー表現が揃っているか確認する。
+
+### Transcript status strip: align local processing label
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: メイン画面の状態ストリップでも、外部 API へ音声を送らない状態が通知/ライブ字幕と同じ表現で支援技術に伝わるようにする。
+- 結果: AI 送信状態の aria/title 生成を `getAiTransmissionStatusAriaLabel` にまとめ、`なし` の場合は `外部送信なし、端末内で処理` と読むようにした。画面上の短い `外部送信 なし` 表示、外部送信中表示、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でメイン画面、通知、ライブ字幕のプライバシー表現が揃っているか確認する。
