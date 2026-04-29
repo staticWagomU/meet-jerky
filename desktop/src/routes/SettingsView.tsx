@@ -319,7 +319,7 @@ export function SettingsView() {
   const resetOutputDirectoryLabel = isSelectingOutputDirectory
     ? "出力先ディレクトリを選択中"
     : localSettings.outputDirectory
-      ? "出力先ディレクトリをデフォルトに戻す"
+      ? "出力先ディレクトリ設定をデフォルトに戻す。既存の履歴ファイルは削除しません"
     : isFetchingDefaultOutputDir
       ? "出力先ディレクトリを取得中"
     : defaultOutputDirError
