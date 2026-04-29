@@ -344,6 +344,14 @@ function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
   return `外部送信: ${statusLabel}`;
 }
 
+function getMicTrackStatusAriaLabel(statusLabel: string): string {
+  return `自分トラック マイク: ${statusLabel}`;
+}
+
+function getSystemAudioTrackStatusAriaLabel(statusLabel: string): string {
+  return `相手側トラック システム音声: ${statusLabel}`;
+}
+
 function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
 ): string {
@@ -1268,8 +1276,8 @@ export function TranscriptView() {
     meetingRecordingStatusLabel,
     transcriptionStatusLabel,
     `音声 ${audioSourceStatusDisplayAriaText}`,
-    `自分トラック ${micTrackStatusLabel}`,
-    `相手側トラック ${systemAudioTrackStatusLabel}`,
+    getMicTrackStatusAriaLabel(micTrackStatusLabel),
+    getSystemAudioTrackStatusAriaLabel(systemAudioTrackStatusLabel),
     `エンジン ${engineStatusLabel}`,
     getAiTransmissionStatusAriaLabel(aiTransmissionStatusLabel),
     externalApiKeyStatusAriaLabel,
@@ -1438,15 +1446,19 @@ export function TranscriptView() {
           </span>
           <span
             className={`meeting-status-pill ${micTrackStatusClass}`}
-            aria-label={`自分トラック: ${micTrackStatusLabel}`}
-            title={`自分トラック: ${micTrackStatusLabel}`}
+            aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
+            title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
           >
             自分 {micTrackStatusLabel}
           </span>
           <span
             className={`meeting-status-pill ${systemAudioTrackStatusClass}`}
-            aria-label={`相手側トラック: ${systemAudioTrackStatusLabel}`}
-            title={`相手側トラック: ${systemAudioTrackStatusLabel}`}
+            aria-label={getSystemAudioTrackStatusAriaLabel(
+              systemAudioTrackStatusLabel,
+            )}
+            title={getSystemAudioTrackStatusAriaLabel(
+              systemAudioTrackStatusLabel,
+            )}
           >
             相手側 {systemAudioTrackStatusLabel}
           </span>

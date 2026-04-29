@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio track a11y: clarify source devices
+
+- 開始日時: 2026-04-29 11:51 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 自律改善ループとして、メイン画面とライブ字幕ウィンドウの自分/相手側トラック表現がプロダクトコンセプト上のマイク/システム音声の別トラック取得を支援技術にも明確に伝えるか確認し、小さく改善する。
+- 結果: 見た目の短い `自分` / `相手側` 表示は維持しつつ、aria-label/title とライブ字幕の読み上げラベルを `自分トラック マイク` / `相手側トラック システム音声` に具体化した。録音、文字起こし、外部送信、ウィンドウ表示制御には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でメイン画面とライブ字幕ウィンドウのトラック説明が冗長すぎず、マイク/システム音声の対応として自然に伝わるか実機確認する。
+
 ### Meeting prompt UX: separate pending actions
 
 - 開始日時: 2026-04-29 08:50 JST

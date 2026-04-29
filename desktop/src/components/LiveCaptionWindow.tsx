@@ -25,10 +25,19 @@ const INVALID_STATUS_PAYLOAD_ERROR =
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
+type TrackMeta = {
+  source: AudioSource;
+  label: string;
+  ariaPrefix: string;
+};
 
-const TRACKS: Array<{ source: AudioSource; label: string }> = [
-  { source: "microphone", label: "自分" },
-  { source: "system_audio", label: "相手側" },
+const TRACKS: Array<TrackMeta> = [
+  { source: "microphone", label: "自分", ariaPrefix: "自分トラック マイク" },
+  {
+    source: "system_audio",
+    label: "相手側",
+    ariaPrefix: "相手側トラック システム音声",
+  },
 ];
 
 function createEmptyLatestBySource(): LatestBySource {
@@ -237,7 +246,7 @@ export function LiveCaptionWindow() {
     return {
       ...track,
       state,
-      ariaLabel: `${track.label}トラック: ${state}`,
+      ariaLabel: `${track.ariaPrefix}: ${state}`,
     };
   });
   const trackRowLabel = [
@@ -252,7 +261,7 @@ export function LiveCaptionWindow() {
           getSpeakerLabel(latestSegment),
           captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
           ...trackStatusLabels.map(
-            (track) => `${track.label}トラック ${track.state}`,
+            (track) => `${track.ariaPrefix} ${track.state}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
@@ -263,7 +272,7 @@ export function LiveCaptionWindow() {
       : [
           "ライブ文字起こし 待機中",
           ...trackStatusLabels.map(
-            (track) => `${track.label}トラック ${track.state}`,
+            (track) => `${track.ariaPrefix} ${track.state}`,
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
