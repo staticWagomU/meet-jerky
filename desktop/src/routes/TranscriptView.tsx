@@ -181,7 +181,7 @@ function getTranscriptionStartBlockedReason(
     return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
   }
   if (externalApiKeyError && externalApiProvider) {
-    return `${externalApiProvider} API キーの状態を確認できません。`;
+    return `${externalApiProvider} API キーの状態を確認できません。設定画面で API キー状態を再確認してください。`;
   }
   if (!isAnySourceRecording) {
     return `文字起こしを開始するには、${SELF_TRACK_DEVICE_LABEL}の録音または${OTHER_TRACK_DEVICE_LABEL}の取得を開始してください。`;
@@ -234,7 +234,7 @@ function getMeetingStartBlockedReason(
     return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
   }
   if (externalApiKeyError && externalApiProvider) {
-    return `${externalApiProvider} API キーの状態を確認できません。`;
+    return `${externalApiProvider} API キーの状態を確認できません。設定画面で API キー状態を再確認してください。`;
   }
   if (transcriptionEngine === "appleSpeech") {
     return APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON;

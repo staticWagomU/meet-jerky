@@ -11881,3 +11881,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: メイン画面の記録状態全体で、登録済み API キーの値非表示説明が自然か VoiceOver で確認する。
+
+### Transcript start blockers: point API key errors to settings
+
+- 開始日時: 2026-04-29 15:12:32 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 外部 API キー状態確認失敗で録音/文字起こし開始が止まる場合、次に確認すべき場所を明確にする。
+- 結果: 文字起こし開始不可理由と記録開始不可理由の外部 API キー確認失敗メッセージに、設定画面で API キー状態を再確認する案内を追加した。API キー確認処理、Keychain 操作、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: API キー状態確認失敗時に、記録開始不可理由と文字起こし開始不可理由が設定画面への導線として自然か確認する。
