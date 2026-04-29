@@ -217,17 +217,14 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.08), transparent 34%),
-    radial-gradient(circle at top right, rgba(57, 108, 216, 0.1), transparent 32%),
-    var(--color-bg);
+  background: transparent;
 }
 
 body[data-window="meeting-prompt"],
 body[data-window="live-caption"],
 body[data-window="ring-light"] {
   min-width: 0;
-  background: var(--color-surface);
+  background: transparent;
 }
 
 body[data-window="ring-light"] {
@@ -241,7 +238,7 @@ body[data-window="ring-light"] {
 
 .overlay-window {
   min-height: 100vh;
-  background: var(--color-surface);
+  background: transparent;
 }
 
 .meeting-prompt-window {
@@ -263,7 +260,9 @@ body[data-window="ring-light"] {
   color: var(--color-text);
   background-color: var(--color-surface-elevated);
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  border-radius: 18px;
   box-shadow: var(--app-shadow);
+  overflow: hidden;
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);
 }
@@ -1162,6 +1161,13 @@ body[data-window="ring-light"] {
   min-height: 100vh;
   border-radius: 18px;
   transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-transcript-wave span {
+    animation: none;
+    transform: none;
+  }
 }
 
 .live-transcript-panel-error {
@@ -2266,6 +2272,7 @@ body[data-window="ring-light"] {
   min-height: 0;
   height: 100vh;
   box-sizing: border-box;
+  border-radius: 20px;
   transform: none;
 }
 

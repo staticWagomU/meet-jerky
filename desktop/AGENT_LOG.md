@@ -11405,3 +11405,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機でリングライトの透明背景、クリック透過、非フォーカス、アクセシビリティ支援技術で不要に読まれないことを確認する。
+
+### Window surfaces: apply transparent rounded macOS shells
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/tauri.conf.json`, `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil カンプと透明化調査を踏まえ、メニューバーウィンドウ、ノッチ下通知、画面下部字幕ウィンドウを、矩形の WebView らしさを減らした macOS らしい角丸サーフェスへ寄せる。
+- 結果: main / meeting-prompt / live-caption を透明ウィンドウ化し、ネイティブ矩形シャドウではなく CSS の角丸・影・backdrop-filter で表面を描く構成にした。body / overlay 背景を透明にし、main shell に角丸と overflow hidden を追加した。ライブ字幕の波形アニメーションには `prefers-reduced-motion` を追加した。リングライトのクリック透過・非フォーカス設定は維持した。
+- 変更ファイル: `src-tauri/tauri.conf.json`, `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" node -e "JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')); console.log('tauri config json ok')"` 成功。`git diff --check -- src-tauri/tauri.conf.json src-tauri/src/lib.rs src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/tauri.conf.json src-tauri/src/lib.rs src/App.css AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: Pencil MCP は接続不可のため、画像としての再確認は未実施。
+- 次アクション: 実機で透明背景、CSS 影、ドラッグ領域、閉じる/開始ボタンのクリック性、VoiceOver で不要なリングライトが読まれないことを確認する。

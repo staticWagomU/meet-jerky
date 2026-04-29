@@ -121,9 +121,10 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .inner_size(MEETING_PROMPT_WIDTH, MEETING_PROMPT_HEIGHT)
     .decorations(false)
     .resizable(false)
+    .transparent(true)
     .always_on_top(true)
     .skip_taskbar(true)
-    .shadow(true)
+    .shadow(false)
     .focused(false)
     .visible(false)
     .build()?;
@@ -137,9 +138,10 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .inner_size(LIVE_CAPTION_WIDTH, LIVE_CAPTION_HEIGHT)
     .decorations(false)
     .resizable(false)
+    .transparent(true)
     .always_on_top(true)
     .skip_taskbar(true)
-    .shadow(true)
+    .shadow(false)
     .focused(false)
     .visible(false)
     .build()?;
