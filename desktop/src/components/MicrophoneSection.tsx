@@ -83,8 +83,8 @@ export function MicrophoneSection({
         <span>自分のマイク</span>
         <span
           className="audio-source-track-badge"
-          aria-label="音声トラック: 自分"
-          title="音声トラック: 自分"
+          aria-label="音声トラック: 自分トラック マイク"
+          title="音声トラック: 自分トラック マイク"
         >
           自分
         </span>

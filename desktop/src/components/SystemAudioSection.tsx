@@ -58,8 +58,8 @@ export function SystemAudioSection({
         <span>相手側のシステム音声</span>
         <span
           className="audio-source-track-badge"
-          aria-label="音声トラック: 相手側"
-          title="音声トラック: 相手側"
+          aria-label="音声トラック: 相手側トラック システム音声"
+          title="音声トラック: 相手側トラック システム音声"
         >
           相手側
         </span>
