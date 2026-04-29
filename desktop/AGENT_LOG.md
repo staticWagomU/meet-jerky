@@ -11825,3 +11825,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 設定取得失敗時に AI 送信状態の読み上げが自然か VoiceOver で確認する。
+
+### Settings realtime risk: include Keychain note in aria
+
+- 開始日時: 2026-04-29 14:30:26 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 外部 Realtime エンジン選択時の課金リスクと API キー保存先の説明を、画面表示だけでなく支援技術にも同じ情報量で伝える。
+- 結果: 外部 Realtime 注意文の aria/title に、利用量課金リスクに加えて `API キーは Keychain に保存され、画面には再表示されません` を含めた。表示テキスト、API キー保存処理、認証情報、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: 初回 `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` は `aria-label` / `title` に `string | null` を渡す型エラーで失敗。`undefined` 正規化後に `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 初回ビルドで React 属性型に `null` を渡し得る実装になっていたため。`?? undefined` へ修正済み。
+- 次アクション: VoiceOver で外部 Realtime 注意文が課金リスクと Keychain 保存先を過不足なく読むか確認する。

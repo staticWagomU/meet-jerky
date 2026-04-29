@@ -393,6 +393,9 @@ export function SettingsView() {
   const externalRealtimeRiskLabel = selectedExternalRealtimeProvider
     ? `${selectedExternalRealtimeProvider} Realtime は音声を外部 API へ送信します。プロバイダ側の利用量課金が発生する可能性があります。`
     : null;
+  const externalRealtimeRiskAriaLabel = externalRealtimeRiskLabel
+    ? `${externalRealtimeRiskLabel} API キーは Keychain に保存され、画面には再表示されません。`
+    : null;
   const openAIRealtimeDescribedBy =
     localSettings.transcriptionEngine === "openAIRealtime"
       ? `${ENGINE_NOTE_IDS.openAIRealtime} ${EXTERNAL_REALTIME_RISK_NOTE_ID}`
@@ -556,8 +559,8 @@ export function SettingsView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={externalRealtimeRiskLabel}
-            title={externalRealtimeRiskLabel}
+            aria-label={externalRealtimeRiskAriaLabel ?? undefined}
+            title={externalRealtimeRiskAriaLabel ?? undefined}
           >
             {externalRealtimeRiskLabel}
             API キーは Keychain に保存され、画面には再表示されません。
