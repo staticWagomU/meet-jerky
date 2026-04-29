@@ -28,6 +28,8 @@ const WAITING_CAPTION_ARIA_TEXT =
   `${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}の発話が確定するとここに表示されます。`;
 const INVALID_STATUS_PAYLOAD_ERROR =
   "ライブ字幕の状態通知の形式が不正です。";
+const LIVE_CAPTION_CLOSE_LABEL =
+  "ライブ文字起こしウィンドウを閉じる。録音と文字起こしは継続します";
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
@@ -411,9 +413,9 @@ export function LiveCaptionWindow() {
         <button
           type="button"
           className="live-transcript-close-btn"
-          aria-label="ライブ文字起こしウィンドウを閉じる"
+          aria-label={LIVE_CAPTION_CLOSE_LABEL}
           aria-keyshortcuts="Escape"
-          title="ライブ文字起こしウィンドウを閉じる"
+          title={LIVE_CAPTION_CLOSE_LABEL}
           onClick={hideLiveCaptionWindow}
         >
           ×

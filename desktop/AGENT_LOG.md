@@ -11713,3 +11713,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で履歴検索欄の Escape クリアと VoiceOver のショートカット案内が自然か確認する。
+
+### Floating windows: clarify close side effects
+
+- 開始日時: 2026-04-29 13:34:34 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議中 UI の録音状態透明性を、既存構造に沿う小さな差分で改善する。
+- 結果: 会議検知バナーの閉じる操作は録音を開始しないこと、ライブ文字起こしウィンドウの閉じる操作は録音と文字起こしを継続することを aria/title で明示した。見た目、録音開始/停止、ウィンドウ表示制御には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver と実機操作で、閉じる操作が録音開始/停止と誤解されないか確認する。

@@ -183,7 +183,7 @@ export function MeetingDetectedBanner() {
     : "録音と文字起こしを開始";
   const dismissBannerLabel = pendingAction
     ? "操作中のため会議検知バナーを閉じられません"
-    : "会議検知バナーを閉じる";
+    : "会議検知バナーを閉じる。録音は開始しません";
   const bannerRole = listenerError ? "alert" : "status";
   const bannerClassName = listenerError
     ? "meeting-detected-banner meeting-detected-banner-error"
