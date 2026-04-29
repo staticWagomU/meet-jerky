@@ -11391,3 +11391,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実装時は設定画面の権限状態を macOS 実権限、System Audio capture、AI 送信設定と矛盾なく接続する。
+
+### Tauri window transparency: enable macOS private API for ring light
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/tauri.conf.json`, `AGENT_LOG.md`
+- 指示内容: Qiita の透明背景記事と Tauri v2 Webview API を確認し、透明化・影・クリック透過・ドラッグ領域・アクセシビリティに副作用がないか見たうえで、現行実装と矛盾する点を修正する。
+- 結果: 公式 Tauri v2 実装とローカル crate で、macOS の `transparent` ウィンドウは `macOSPrivateApi` / `macos-private-api` が必要だと確認した。既存で `transparent(true)` を使っているのはクリック透過・非フォーカスのリングライト専用ウィンドウだけなので、会議通知/字幕/メインには透明化を広げず、`app.macOSPrivateApi` を有効化してリングライトの透明背景だけを実効化する構成にした。Tauri JS `setBackgroundColor()` は公式上 macOS/iOS では未実装のため採用しない。App Store 受け入れリスクがある private API なので、将来の配布方針では再判断が必要。
+- 変更ファイル: `src-tauri/tauri.conf.json`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" node -e "JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')); console.log('tauri config json ok')"` 成功。`git diff --check -- src-tauri/tauri.conf.json AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/tauri.conf.json AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でリングライトの透明背景、クリック透過、非フォーカス、アクセシビリティ支援技術で不要に読まれないことを確認する。
