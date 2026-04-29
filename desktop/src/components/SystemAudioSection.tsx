@@ -43,8 +43,8 @@ export function SystemAudioSection({
     : isControlDisabled
       ? "他の音声または文字起こし操作を待機中"
     : isSystemAudioRecording
-      ? `${OTHER_TRACK_DEVICE_LABEL}取得を停止`
-      : `${OTHER_TRACK_DEVICE_LABEL}取得を開始`;
+      ? `${OTHER_TRACK_DEVICE_LABEL}取得を停止。停止すると相手側の発話は文字起こしされません`
+      : `${OTHER_TRACK_DEVICE_LABEL}取得を開始。相手側の発話を文字起こしします`;
   const systemAudioSectionLabel = `${systemAudioStateDescription}${isSystemAudioInputWaiting ? "、入力待ち" : ""}、音量 ${systemAudioLevelPercent}%`;
 
   return (

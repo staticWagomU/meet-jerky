@@ -56,8 +56,8 @@ export function MicrophoneSection({
     : isControlDisabled
       ? "他の音声または文字起こし操作を待機中"
     : isMicRecording
-      ? `${SELF_TRACK_DEVICE_LABEL}録音を停止`
-      : `${SELF_TRACK_DEVICE_LABEL}録音を開始`;
+      ? `${SELF_TRACK_DEVICE_LABEL}録音を停止。停止すると自分の発話は文字起こしされません`
+      : `${SELF_TRACK_DEVICE_LABEL}録音を開始。自分の発話を文字起こしします`;
   const deviceSelectLabel =
     isMicRecording || isOperationPending
       ? "マイクデバイス: 録音中または切替中は変更できません"

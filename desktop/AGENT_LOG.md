@@ -12007,3 +12007,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 会議検知バナーの読み上げが長すぎず録音前の安心感につながるか実機で確認する。
+
+### Track controls: clarify stop impact per source
+
+- 開始日時: 2026-04-29 17:50:37 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 手動の自分トラック録音停止/相手側音声取得停止で、停止後に該当トラックの発話が文字起こしされないことを支援技術にも明確に伝える。
+- 結果: 自分トラックの録音開始/停止ボタンと相手側トラックの取得開始/停止ボタンの aria/title に、開始時は該当発話を文字起こしすること、停止時は該当発話が文字起こしされなくなることを含めた。表示テキスト、録音/取得処理、文字起こし処理には触れていない。
+- 変更ファイル: `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 片側トラック停止時の読み上げが警告として強すぎず実態に合うか実機で確認する。
