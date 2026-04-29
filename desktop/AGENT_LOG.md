@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting prompt buttons: clarify recording targets
+
+- 開始日時: 2026-04-29 12:08 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知の主要ボタンで、録音/状態確認の対象が自分トラックのマイクと相手側トラックのシステム音声であることを支援技術へ明確にする。
+- 結果: ボタンの見た目 `記録を開始` / `状態を確認` は維持し、aria-label/title に `自分トラック マイク、相手側トラック システム音声` を含めた。録音開始イベント、状態確認イベント、外部送信、会議検知には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver で通知ボタンの読み上げが明確かつ冗長すぎないか実機確認する。
+
 ### Audio source cards: clarify track badges
 
 - 開始日時: 2026-04-29 12:03 JST

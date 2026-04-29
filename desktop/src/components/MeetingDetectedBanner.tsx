@@ -169,14 +169,14 @@ export function MeetingDetectedBanner() {
       ? `${displayName} の録音と文字起こしの状態確認画面を開いています`
       : pendingAction === "start"
         ? `${displayName} の録音開始要求を送信中のため状態確認画面を開けません`
-      : `${displayName} の録音と文字起こしの状態を確認`
+      : `${displayName} の ${AUDIO_TRACKS_ARIA_LABEL} の録音と文字起こしの状態を確認`
     : "録音と文字起こしの状態を確認";
   const startRecordingLabel = detected
     ? pendingAction === "start"
       ? `${displayName} の録音開始要求を送信中`
       : pendingAction === "confirm"
         ? `${displayName} の状態確認画面を開いているため録音開始要求を送信できません`
-      : `${displayName} の録音と文字起こしを開始`
+      : `${displayName} の ${AUDIO_TRACKS_ARIA_LABEL} の録音と文字起こしを開始`
     : "録音と文字起こしを開始";
   const dismissBannerLabel = pendingAction
     ? "操作中のため会議検知バナーを閉じられません"
