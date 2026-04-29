@@ -784,7 +784,7 @@ export function SettingsView() {
               <span className="settings-permission-track">自分</span> マイク
             </span>
             <PermissionBadge
-              label={SELF_TRACK_DEVICE_LABEL}
+              label={`${SELF_TRACK_DEVICE_LABEL} macOS マイク権限`}
               status={micPermission}
               error={micPermissionError}
               isChecking={isFetchingMicPermission}
@@ -796,7 +796,7 @@ export function SettingsView() {
               画面収録/システム音声
             </span>
             <PermissionBadge
-              label={OTHER_TRACK_PERMISSION_LABEL}
+              label={`${OTHER_TRACK_PERMISSION_LABEL} macOS 画面収録権限`}
               status={screenPermission}
               error={screenPermissionError}
               isChecking={isFetchingScreenPermission}

@@ -12049,3 +12049,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 権限バナーの要約読み上げが本文と重複しすぎないか実機で確認する。
+
+### Settings permissions: align badge labels with macOS permission names
+
+- 開始日時: 2026-04-29 18:50:07 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面の権限ステータスで、自分/相手側トラックに対応する macOS 権限名がバッジ読み上げにも明確に含まれるようにする。
+- 結果: マイク権限バッジのラベルに `macOS マイク権限`、相手側の画面収録/システム音声バッジに `macOS 画面収録権限` を追加した。表示テキスト、権限確認処理、設定を開く処理、録音/取得処理には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 設定画面の権限バッジ読み上げがメイン画面の権限バナーと自然に揃うか実機で確認する。
