@@ -11937,3 +11937,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 履歴一覧で別ファイル操作中のラベルが既定アプリ/Finder 操作として自然に伝わるか実機で確認する。
+
+### Saved transcript group: clarify available file actions
+
+- 開始日時: 2026-04-29 16:12:05 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: メイン画面の直近保存ファイル操作グループで、既定アプリで開く操作と Finder で表示する操作の違いが伝わるようにする。
+- 結果: 保存済み履歴ファイル操作グループの aria/title に、`macOS の既定アプリで開く、または Finder で表示` を含めた。表示テキスト、ファイル操作処理、履歴保存/削除処理には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 直近保存ファイル操作のグループラベルが長すぎず自然か実機で確認する。

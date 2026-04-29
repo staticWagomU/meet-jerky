@@ -1369,6 +1369,9 @@ export function TranscriptView() {
         ? `保存済み履歴ファイルを開いているため Finder で表示できません: ${lastSavedFileName}`
         : `保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`
     : "保存済み履歴ファイルを Finder で表示";
+  const lastSavedActionsLabel = lastSavedFileName
+    ? `保存済み履歴ファイル操作: ${lastSavedFileName}、macOS の既定アプリで開く、または Finder で表示`
+    : "保存済み履歴ファイル操作";
   const modelDownloadedErrorMessage = modelDownloadedErrorForUi
     ? toErrorMessage(modelDownloadedErrorForUi)
     : "";
@@ -1658,8 +1661,8 @@ export function TranscriptView() {
           <div
             className="meeting-saved-path"
             role="group"
-            aria-label={`保存済み履歴ファイル操作: ${lastSavedFileName}`}
-            title={`保存済み履歴ファイル操作: ${lastSavedFileName}`}
+            aria-label={lastSavedActionsLabel}
+            title={lastSavedActionsLabel}
           >
             <span
               role="status"
