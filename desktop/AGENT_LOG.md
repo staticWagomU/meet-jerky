@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting prompt privacy: sanitize host labels
+
+- 開始日時: 2026-04-29 13:19 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知の表示名生成で、想定外の `urlHost` payload が来ても URL パスやクエリを表示しないようにする。
+- 結果: `getMeetingDetectedDisplayName` / `getMeetingDetectedSourceLabel` の前段に `getMeetingDetectedHostLabel` を追加し、URL 文字列は hostname のみ、host 風文字列も `/ ? #` 以降と userinfo/port を落として表示するようにした。Rust 側の会議検知、payload schema、録音開始処理には触れていない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: UI 単体テスト基盤を導入する場合は、会議検知通知が URL パス/クエリを表示しないことを固定する。
+
 ### Meeting prompt status listener: surface privacy status failures
 
 - 開始日時: 2026-04-29 13:10 JST

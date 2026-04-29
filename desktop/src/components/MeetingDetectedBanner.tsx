@@ -376,19 +376,21 @@ export function MeetingDetectedBanner() {
 export function getMeetingDetectedDisplayName(
   payload: MeetingAppDetectedPayload,
 ): string {
-  if (payload.service && payload.urlHost) {
-    return `${payload.service} (${payload.urlHost})`;
+  const hostLabel = getMeetingDetectedHostLabel(payload.urlHost);
+  if (payload.service && hostLabel) {
+    return `${payload.service} (${hostLabel})`;
   }
-  return payload.service || payload.urlHost || payload.appName;
+  return payload.service || hostLabel || payload.appName;
 }
 
 export function getMeetingDetectedSourceLabel(
   payload: MeetingAppDetectedPayload,
 ): string {
-  if (payload.browserName && payload.urlHost) {
+  const hostLabel = getMeetingDetectedHostLabel(payload.urlHost);
+  if (payload.browserName && hostLabel) {
     return `${payload.browserName} URL`;
   }
-  if (payload.urlHost) {
+  if (hostLabel) {
     return "ブラウザ URL";
   }
   if (payload.source === "browser") {
@@ -398,4 +400,26 @@ export function getMeetingDetectedSourceLabel(
     return "アプリ";
   }
   return "検知";
+}
+
+function getMeetingDetectedHostLabel(urlHost: string | undefined): string | null {
+  if (!urlHost) {
+    return null;
+  }
+  const trimmed = urlHost.trim();
+  if (!trimmed) {
+    return null;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.hostname || null;
+  } catch {
+    return (
+      trimmed
+        .split(/[/?#]/, 1)[0]
+        .split("@")
+        .pop()
+        ?.replace(/:\d+$/, "") || null
+    );
+  }
 }
