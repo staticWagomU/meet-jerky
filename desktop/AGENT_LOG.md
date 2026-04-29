@@ -1,5 +1,19 @@
 # Agent Log
 
+### Session history a11y: clarify track counts
+
+- 開始日時: 2026-04-29 13:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 保存済み履歴の検索・一覧でも、自分/相手側の件数がマイク/システム音声に対応していることを支援技術へ明確にする。
+- 結果: 履歴行の track count aria/title と行全体の説明に `SELF_TRACK_DEVICE_LABEL` / `OTHER_TRACK_DEVICE_LABEL` を使うようにした。可視表示、検索ロジック、ファイル操作、履歴保存形式には触れていない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で履歴一覧の件数ピルと行全体の読み上げが、検索時にも冗長すぎないか確認する。
+
 ### Meeting prompt privacy: sanitize host labels
 
 - 開始日時: 2026-04-29 13:19 JST

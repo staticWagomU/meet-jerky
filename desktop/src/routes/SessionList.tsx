@@ -8,6 +8,10 @@ import {
 } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "../utils/audioTrackLabels";
 import { toErrorMessage } from "../utils/errorMessage";
 
 type SessionAction =
@@ -499,8 +503,8 @@ function SessionRow({
   const transcriptBodyLabel = hasBody ? "文字起こし本文あり" : "文字起こし本文なし";
   const trackCountsLabel = hasBody
     ? [
-        `自分トラック ${trackCounts.self} 件`,
-        `相手側トラック ${trackCounts.other} 件`,
+        `${SELF_TRACK_DEVICE_LABEL} ${trackCounts.self} 件`,
+        `${OTHER_TRACK_DEVICE_LABEL} ${trackCounts.other} 件`,
         trackCounts.unknown > 0
           ? `音声ソース不明 ${trackCounts.unknown} 件`
           : null,
@@ -590,15 +594,15 @@ function SessionRow({
             <>
               <span
                 className="session-list-item-track-count session-list-item-track-count-self"
-                aria-label={`自分トラックの文字起こし ${trackCounts.self} 件`}
-                title={`自分トラックの文字起こし ${trackCounts.self} 件`}
+                aria-label={`${SELF_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.self} 件`}
+                title={`${SELF_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.self} 件`}
               >
                 自分 {trackCounts.self}
               </span>
               <span
                 className="session-list-item-track-count session-list-item-track-count-other"
-                aria-label={`相手側トラックの文字起こし ${trackCounts.other} 件`}
-                title={`相手側トラックの文字起こし ${trackCounts.other} 件`}
+                aria-label={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.other} 件`}
+                title={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.other} 件`}
               >
                 相手側 {trackCounts.other}
               </span>
