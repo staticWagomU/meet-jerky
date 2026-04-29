@@ -463,6 +463,19 @@ function getExternalApiKeyStatusPillClass(statusLabel: string | null): string {
   return "meeting-status-pill-neutral";
 }
 
+function getExternalApiKeyStatusAriaLabel(
+  externalApiProvider: string | null,
+  statusLabel: string | null,
+): string | null {
+  if (!externalApiProvider || !statusLabel) {
+    return null;
+  }
+  if (statusLabel === "登録済み") {
+    return `${externalApiProvider} API キー: 登録済み。キー値は画面に再表示されません`;
+  }
+  return `${externalApiProvider} API キー: ${statusLabel}`;
+}
+
 function sanitizeAudioLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return 0;
@@ -1282,10 +1295,10 @@ export function TranscriptView() {
   const shouldShowExternalApiKeyStatus =
     Boolean(externalApiKeyStatusLabel) &&
     externalApiKeyStatusLabel !== "登録済み";
-  const externalApiKeyStatusAriaLabel =
-    externalApiProvider && externalApiKeyStatusLabel
-      ? `${externalApiProvider} API キー: ${externalApiKeyStatusLabel}`
-      : null;
+  const externalApiKeyStatusAriaLabel = getExternalApiKeyStatusAriaLabel(
+    externalApiProvider,
+    externalApiKeyStatusLabel,
+  );
   const meetingRecordingStatusLabel = isMeetingOperationPending
     ? isMeetingActive
       ? "終了中"

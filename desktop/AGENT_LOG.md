@@ -11867,3 +11867,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 登録済み API キー状態で、値非表示の読み上げが note と重複しすぎないか VoiceOver で確認する。
+
+### Transcript status strip: clarify hidden API key value
+
+- 開始日時: 2026-04-29 15:10:50 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: メイン画面の記録状態全体でも、登録済み外部 API キーの値が画面に再表示されないことを伝える。
+- 結果: `getExternalApiKeyStatusAriaLabel` を追加し、登録済みの場合は `キー値は画面に再表示されません` を含む aria/title を生成するようにした。表示テキスト、API キー確認、Keychain 操作、外部送信、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: メイン画面の記録状態全体で、登録済み API キーの値非表示説明が自然か VoiceOver で確認する。
