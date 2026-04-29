@@ -103,10 +103,10 @@ export function PermissionBanner() {
   const micPermissionBody = isCheckingPermissions
     ? "マイク権限の状態を確認しています。"
     : micPermissionError
-      ? "マイク権限の状態を macOS から取得できませんでした。自分トラックを録音・文字起こしできるか分かりません。"
+      ? `マイク権限の状態を macOS から取得できませんでした。${SELF_TRACK_DEVICE_LABEL}を録音・文字起こしできるか分かりません。`
       : micPermission === "denied"
-        ? "マイクが未許可です。自分トラックは録音・文字起こしされません。"
-        : "マイク権限が未確認です。許可されるまで自分トラックは録音・文字起こしされません。";
+        ? `マイクが未許可です。${SELF_TRACK_DEVICE_LABEL}は録音・文字起こしされません。`
+        : `マイク権限が未確認です。許可されるまで${SELF_TRACK_DEVICE_LABEL}は録音・文字起こしされません。`;
   const screenPermissionBody = isCheckingPermissions
     ? "画面収録権限の状態を確認しています。"
     : screenPermissionError

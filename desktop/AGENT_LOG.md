@@ -1,5 +1,19 @@
 # Agent Log
 
+### Permission copy: clarify recorded sources
+
+- 開始日時: 2026-04-29 12:42 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/PermissionBanner.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 指示内容: 権限バナーと音声カードの本文で、マイク権限・画面収録権限がどの録音対象に影響するかを明確にする。
+- 結果: マイク未許可/未確認/確認失敗時の本文を `SELF_TRACK_DEVICE_LABEL` 由来にし、音声カードの補足文でマイクは自分トラック、デスクトップ/アプリ音声は相手側トラックとして扱うことを明示した。権限判定、設定 URL、録音/取得処理には触れていない。
+- 変更ファイル: `src/components/PermissionBanner.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/PermissionBanner.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/PermissionBanner.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で権限未許可/未確認時のバナー本文と音声カード補足が、狭いメインウィンドウでも読みやすいか確認する。
+
 ### Transcription notices: clarify missing source devices
 
 - 開始日時: 2026-04-29 12:35 JST
