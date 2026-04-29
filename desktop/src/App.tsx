@@ -86,7 +86,7 @@ function App() {
   let ringLightLabel = "リングライトを弱で表示する";
   let ringLightButtonText = "照明 オフ";
   const ringLightOperationNote =
-    "表示中も背後のアプリ操作を妨げません";
+    "録音状態を示すものではありません。表示中も背後のアプリ操作を妨げません";
   const menuBarResidentLabel =
     "アプリはメニューバーに常駐中。録音状態ではありません";
   if (isRingLightPending) {

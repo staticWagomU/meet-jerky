@@ -12077,3 +12077,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: ブラウザ URL 検知権限の説明が録音権限との混同を減らすか実機で確認する。
+
+### Ring light control: separate from recording state
+
+- 開始日時: 2026-04-29 19:30:11 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: メニューバーウィンドウのリングライト操作が、録音状態のインジケータではないことを支援技術にも明確に伝える。
+- 結果: リングライト切替ボタンの aria/title に、`録音状態を示すものではありません` を追加した。表示テキスト、リングライト表示制御、録音/文字起こし処理には触れていない。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: リングライト説明が録音状態との混同を避けつつ長すぎないか実機で確認する。
