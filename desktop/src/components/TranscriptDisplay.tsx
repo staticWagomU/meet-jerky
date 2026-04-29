@@ -26,6 +26,16 @@ function getSpeakerLabel(segment: TranscriptSegment): string | null {
   return "ソース不明";
 }
 
+function getSpeakerAriaLabel(segment: TranscriptSegment): string {
+  if (segment.source === "microphone") return "自分トラック マイク";
+  if (segment.source === "system_audio") {
+    return "相手側トラック システム音声";
+  }
+  if (segment.speaker === "自分") return "自分トラック";
+  if (segment.speaker) return `話者 ${segment.speaker}`;
+  return "音声ソース不明";
+}
+
 function isSourceLessError(segment: TranscriptSegment): boolean {
   return Boolean(
     isTranscriptErrorSegment(segment) && !segment.speaker && !segment.source,
@@ -33,10 +43,9 @@ function isSourceLessError(segment: TranscriptSegment): boolean {
 }
 
 function getSegmentAriaLabel(segment: TranscriptSegment): string {
-  const speakerLabel =
-    isSourceLessError(segment)
-      ? "音声ソース不明"
-      : getSpeakerLabel(segment) ?? "音声ソース不明";
+  const speakerLabel = isSourceLessError(segment)
+    ? "音声ソース不明"
+    : getSpeakerAriaLabel(segment);
   if (isTranscriptErrorSegment(segment)) {
     return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
   }
@@ -358,15 +367,15 @@ export function TranscriptDisplay({
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-self"
-              aria-label={`自分トラックの文字起こし: ${segmentCounts.self} 件`}
-              title={`自分トラックの文字起こし: ${segmentCounts.self} 件`}
+              aria-label={`自分トラック マイクの文字起こし: ${segmentCounts.self} 件`}
+              title={`自分トラック マイクの文字起こし: ${segmentCounts.self} 件`}
             >
               自分 {segmentCounts.self}
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-other"
-              aria-label={`相手側トラックの文字起こし: ${segmentCounts.other} 件`}
-              title={`相手側トラックの文字起こし: ${segmentCounts.other} 件`}
+              aria-label={`相手側トラック システム音声の文字起こし: ${segmentCounts.other} 件`}
+              title={`相手側トラック システム音声の文字起こし: ${segmentCounts.other} 件`}
             >
               相手側 {segmentCounts.other}
             </span>
