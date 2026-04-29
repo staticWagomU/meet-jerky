@@ -11965,3 +11965,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 検索欄の説明が長すぎずキーボード操作の助けになるか実機で確認する。
+
+### Transcript copy action: clarify clipboard-only scope
+
+- 開始日時: 2026-04-29 16:50:23 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし本文コピー操作が、録音停止や保存済み履歴変更ではなくクリップボードへのコピーだけだと伝わるようにする。
+- 結果: コピーボタンの aria/title を、表示中の文字起こし本文をクリップボードへコピーする操作だと明示し、通常状態では録音・文字起こし・保存済み履歴には影響しない旨を含めた。表示テキスト、コピー対象、録音/文字起こし処理、履歴保存処理には触れていない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: コピー操作の説明が長すぎず保存済み履歴変更と誤解されないか実機で確認する。

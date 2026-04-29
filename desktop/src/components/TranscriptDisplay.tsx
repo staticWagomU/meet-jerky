@@ -342,12 +342,12 @@ export function TranscriptDisplay({
     .join("、");
   const copyButtonLabel =
     copyableSegmentsCount === 0
-      ? "コピーできる文字起こしはありません"
+      ? "コピーできる表示中の文字起こし本文はありません"
       : isCopying
-        ? `文字起こし本文 ${copyableSegmentsCount} 件をコピー中`
+        ? `表示中の文字起こし本文 ${copyableSegmentsCount} 件をクリップボードへコピー中`
         : copyFeedback
-          ? `文字起こし本文 ${copyableSegmentsCount} 件をコピー済み`
-          : `文字起こし本文 ${copyableSegmentsCount} 件をコピー`;
+          ? `表示中の文字起こし本文 ${copyableSegmentsCount} 件をクリップボードへコピー済み`
+          : `表示中の文字起こし本文 ${copyableSegmentsCount} 件をクリップボードへコピー。録音、文字起こし、保存済み履歴には影響しません`;
   return (
     <div
       className="transcript-display-wrapper"
