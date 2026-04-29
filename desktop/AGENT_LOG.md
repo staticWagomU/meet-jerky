@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcription notices: clarify missing source devices
+
+- 開始日時: 2026-04-29 12:35 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし開始不可理由、音声ソース注意、空ログ説明で、欠けている録音対象がマイク/システム音声のどちらか分かるようにする。
+- 結果: 開始不可理由と音声ソース注意を `SELF_TRACK_DEVICE_LABEL` / `OTHER_TRACK_DEVICE_LABEL` 由来の具体表現にした。空ログの可視文は短く維持し、aria-label/title のみ詳細化した。文字起こし開始/停止、音声取得、ログ保存には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で開始不可理由と音声ソース注意が狭いメインウィンドウで折り返しても読みやすいか確認する。
+
 ### Audio track labels: apply shared terms to controls
 
 - 開始日時: 2026-04-29 12:30 JST

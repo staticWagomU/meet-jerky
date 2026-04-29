@@ -183,7 +183,7 @@ function getTranscriptionStartBlockedReason(
     return `${externalApiProvider} API キーの状態を確認できません。`;
   }
   if (!isAnySourceRecording) {
-    return "文字起こしを開始するには、自分トラックのマイク録音または相手側トラックのシステム音声取得を開始してください。";
+    return `文字起こしを開始するには、${SELF_TRACK_DEVICE_LABEL}の録音または${OTHER_TRACK_DEVICE_LABEL}の取得を開始してください。`;
   }
   if (
     transcriptionEngine === "appleSpeech" &&
@@ -300,12 +300,12 @@ function getAudioSourceNotice(
     return null;
   }
   if (isMicRecording) {
-    return "相手側トラックは未取得です。相手側の発話は文字起こしされません。";
+    return `${OTHER_TRACK_DEVICE_LABEL}は未取得です。相手側の発話は文字起こしされません。`;
   }
   if (isSystemAudioRecording) {
-    return "自分トラックは未録音です。自分の発話は文字起こしされません。";
+    return `${SELF_TRACK_DEVICE_LABEL}は未録音です。自分の発話は文字起こしされません。`;
   }
-  return "自分と相手側トラックは未取得です。発話は文字起こしされません。";
+  return `${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}は未取得です。発話は文字起こしされません。`;
 }
 
 function getAudioSourceStatusPillClass(

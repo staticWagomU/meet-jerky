@@ -331,7 +331,7 @@ export function TranscriptDisplay({
   const transcriptLogLabel =
     segments.length > 0
       ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
-      : "文字起こしログは空です。文字起こしを開始すると、自分と相手側トラックの発話がここに流れます";
+      : `文字起こしログは空です。文字起こしを開始すると、${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}の発話がここに流れます`;
   const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
   const transcriptWrapperLabel = [
     transcriptCountsLabel,
@@ -476,7 +476,7 @@ export function TranscriptDisplay({
             aria-label={transcriptLogLabel}
             title={transcriptLogLabel}
           >
-            文字起こしを開始すると、自分と相手側トラックの発話がここに流れます
+            文字起こしを開始すると、自分/相手側トラックの発話がここに流れます
           </div>
         ) : (
           segments.map((seg, i) => {
