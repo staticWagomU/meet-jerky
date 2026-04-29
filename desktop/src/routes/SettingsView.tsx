@@ -357,7 +357,7 @@ export function SettingsView() {
     ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
     : null;
   const browserAutomationPermissionLabel =
-    "自動操作/アクセシビリティ ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Arc、Firefox の URL 検知時に macOS が確認";
+    "自動操作/アクセシビリティ ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Arc、Firefox の URL 検知時に macOS が確認。録音や音声取得の権限ではありません";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =

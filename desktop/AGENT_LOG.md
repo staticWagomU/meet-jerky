@@ -12063,3 +12063,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 設定画面の権限バッジ読み上げがメイン画面の権限バナーと自然に揃うか実機で確認する。
+
+### Settings browser detection permission: separate from recording
+
+- 開始日時: 2026-04-29 19:10:46 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 設定画面のブラウザ URL 検知用アクセシビリティ権限が、録音や音声取得の権限とは別物だと支援技術にも明確に伝える。
+- 結果: ブラウザ URL 検知の権限バッジ aria/title に、`録音や音声取得の権限ではありません` を追加した。表示テキスト、会議検知処理、権限確認処理、録音/取得処理には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: ブラウザ URL 検知権限の説明が録音権限との混同を減らすか実機で確認する。
