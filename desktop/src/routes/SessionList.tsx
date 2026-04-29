@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent,
   type ReactNode,
 } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -259,6 +260,21 @@ export function SessionList() {
     }
   }, []);
 
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+  }, []);
+
+  const handleSearchKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== "Escape" || !searchQuery) {
+        return;
+      }
+      event.preventDefault();
+      clearSearch();
+    },
+    [clearSearch, searchQuery],
+  );
+
   const sessions = data ?? EMPTY_SESSIONS;
   const trimmedSearchQuery = searchQuery.trim();
   const filteredSessions = useMemo(
@@ -388,6 +404,7 @@ export function SessionList() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="タイトル、本文、日時、ファイル名を複数語で検索"
               aria-label={sessionSearchLabel}
               title={sessionSearchLabel}
@@ -396,9 +413,10 @@ export function SessionList() {
               <button
                 type="button"
                 className="control-btn control-btn-clear session-list-search-clear"
-                onClick={() => setSearchQuery("")}
+                onClick={clearSearch}
                 aria-label={clearSearchLabel}
                 title={clearSearchLabel}
+                aria-keyshortcuts="Escape"
               >
                 クリア
               </button>
@@ -451,9 +469,10 @@ export function SessionList() {
           <button
             type="button"
             className="control-btn control-btn-clear"
-            onClick={() => setSearchQuery("")}
+            onClick={clearSearch}
             aria-label={clearSearchLabel}
             title={clearSearchLabel}
+            aria-keyshortcuts="Escape"
           >
             検索をクリア
           </button>

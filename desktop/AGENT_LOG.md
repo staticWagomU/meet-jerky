@@ -11699,3 +11699,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: VoiceOver でメイン画面、通知、ライブ字幕のプライバシー表現が揃っているか確認する。
+
+### Session history search: clear with Escape
+
+- 開始日時: 2026-04-29 13:33:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: プロダクト全体レビュー後の小さな自律改善として、会議後の履歴検索を邪魔なく戻せるようにする。
+- 結果: 履歴検索欄で Escape を押すと現在の検索語をクリアするようにした。検索クリアボタンにも `aria-keyshortcuts="Escape"` を付け、支援技術へ同じ操作を伝えるようにした。検索条件、履歴読み込み、ファイル操作には触れていない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で履歴検索欄の Escape クリアと VoiceOver のショートカット案内が自然か確認する。
