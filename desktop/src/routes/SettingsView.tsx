@@ -315,7 +315,7 @@ export function SettingsView() {
     : "デフォルト";
   const selectOutputDirectoryLabel = isSelectingOutputDirectory
     ? "出力先ディレクトリを選択中"
-    : "出力先ディレクトリを選択";
+    : "今後の履歴保存に使う出力先ディレクトリを選択。既存の履歴ファイルは移動しません";
   const resetOutputDirectoryLabel = isSelectingOutputDirectory
     ? "出力先ディレクトリを選択中"
     : localSettings.outputDirectory

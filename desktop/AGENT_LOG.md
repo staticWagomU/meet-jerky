@@ -12119,3 +12119,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 出力先リセット操作が履歴削除と誤解されないか実機で確認する。
+
+### Output directory select: clarify future saves only
+
+- 開始日時: 2026-04-29 20:31:29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: 出力先ディレクトリ選択が、既存履歴の移動ではなく今後の保存先設定だと支援技術にも明確に伝える。
+- 結果: 出力先選択ボタンの aria/title に、今後の履歴保存に使う出力先を選ぶことと既存履歴ファイルは移動しないことを追加した。表示テキスト、出力先選択処理、履歴保存処理には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 出力先選択操作が既存履歴移動と誤解されないか実機で確認する。
