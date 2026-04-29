@@ -348,8 +348,13 @@ export function SessionList() {
       : `保存済み ${sessions.length} 件`;
   const sessionSearchLabel =
     "セッション履歴を検索。スペース区切りで複数語を指定できます";
-  const clearSearchLabel = trimmedSearchQuery
-    ? `検索語 ${searchQueryLabel} をクリア`
+  const sessionSearchInputLabel = trimmedSearchQuery
+    ? `${sessionSearchLabel}。現在の検索語 ${searchQueryLabel}。Escape キーでクリアできます`
+    : sessionSearchLabel;
+  const clearSearchLabel = searchQuery
+    ? trimmedSearchQuery
+      ? `検索語 ${searchQueryLabel} をクリア`
+      : "入力中の空白検索をクリア"
     : "検索語は入力されていません";
   const sessionListLabel = [
     "セッション履歴",
@@ -406,8 +411,8 @@ export function SessionList() {
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="タイトル、本文、日時、ファイル名を複数語で検索"
-              aria-label={sessionSearchLabel}
-              title={sessionSearchLabel}
+              aria-label={sessionSearchInputLabel}
+              title={sessionSearchInputLabel}
             />
             {searchQuery && (
               <button

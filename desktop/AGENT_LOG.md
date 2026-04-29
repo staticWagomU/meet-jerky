@@ -11951,3 +11951,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 直近保存ファイル操作のグループラベルが長すぎず自然か実機で確認する。
+
+### Session history search: expose clear shortcut
+
+- 開始日時: 2026-04-29 16:30:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 指示内容: 履歴検索欄で、実装済みの Escape クリア操作と空白入力時のクリア操作が支援技術でも自然に伝わるようにする。
+- 結果: 検索語入力中の検索欄 aria/title に現在の検索語と `Escape キーでクリアできます` を追加し、空白だけ入力した場合のクリアボタン説明を `入力中の空白検索をクリア` にした。検索ロジック、履歴読み込み、ファイル操作には触れていない。
+- 変更ファイル: `src/routes/SessionList.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検索欄の説明が長すぎずキーボード操作の助けになるか実機で確認する。
