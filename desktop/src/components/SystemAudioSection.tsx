@@ -39,12 +39,12 @@ export function SystemAudioSection({
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const systemAudioStateDescription = `${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
-    ? "相手側トラックのシステム音声取得を切替中"
+    ? `${OTHER_TRACK_DEVICE_LABEL}取得を切替中`
     : isControlDisabled
       ? "他の音声または文字起こし操作を待機中"
     : isSystemAudioRecording
-      ? "相手側トラックのシステム音声取得を停止"
-      : "相手側トラックのシステム音声取得を開始";
+      ? `${OTHER_TRACK_DEVICE_LABEL}取得を停止`
+      : `${OTHER_TRACK_DEVICE_LABEL}取得を開始`;
   const systemAudioSectionLabel = `${systemAudioStateDescription}${isSystemAudioInputWaiting ? "、入力待ち" : ""}、音量 ${systemAudioLevelPercent}%`;
 
   return (

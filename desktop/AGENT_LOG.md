@@ -1,5 +1,19 @@
 # Agent Log
 
+### Audio track labels: apply shared terms to controls
+
+- 開始日時: 2026-04-29 12:30 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: 共通化した音声トラック語彙を、設定画面、音声カード、ライブ字幕の待機文にも適用し、録音対象の表現揺れを減らす。
+- 結果: マイクデバイスの aria/title、録音/取得ボタンラベル、ライブ字幕の待機時 aria-label を `SELF_TRACK_DEVICE_LABEL` / `OTHER_TRACK_DEVICE_LABEL` 由来にした。ライブ字幕の可視待機文は小さなウィンドウ内で長くなりすぎないよう短い表現を維持した。録音・取得処理、設定保存、文字起こし受信には触れていない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/components/MicrophoneSection.tsx`, `src/components/SystemAudioSection.tsx`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で各ボタンの title/VoiceOver とライブ字幕の待機時読み上げが、可視表示より詳しい補足として自然に伝わるか確認する。
+
 ### Audio track labels: centralize product terms
 
 - 開始日時: 2026-04-29 12:22 JST

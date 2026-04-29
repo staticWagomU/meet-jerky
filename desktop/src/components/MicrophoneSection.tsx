@@ -52,12 +52,12 @@ export function MicrophoneSection({
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const micStateDescription = `${SELF_TRACK_DEVICE_LABEL}: ${micStateText}`;
   const micButtonLabel = isOperationPending
-    ? "自分トラックのマイク録音を切替中"
+    ? `${SELF_TRACK_DEVICE_LABEL}録音を切替中`
     : isControlDisabled
       ? "他の音声または文字起こし操作を待機中"
     : isMicRecording
-      ? "自分トラックのマイク録音を停止"
-      : "自分トラックのマイク録音を開始";
+      ? `${SELF_TRACK_DEVICE_LABEL}録音を停止`
+      : `${SELF_TRACK_DEVICE_LABEL}録音を開始`;
   const deviceSelectLabel =
     isMicRecording || isOperationPending
       ? "マイクデバイス: 録音中または切替中は変更できません"
@@ -65,8 +65,8 @@ export function MicrophoneSection({
         ? "マイクデバイス: 他の音声または文字起こし操作を待機中は変更できません"
       : "マイクデバイス: 自分トラックの入力を選択";
   const retryDevicesLabel = isReloadingAudioDevices
-    ? "自分トラックのマイクデバイス一覧を取得中"
-    : "自分トラックのマイクデバイス一覧を再取得";
+    ? `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を取得中`
+    : `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を再取得`;
   const audioDevicesErrorMessage = audioDevicesError
     ? toErrorMessage(audioDevicesError)
     : "";

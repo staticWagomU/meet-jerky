@@ -24,6 +24,8 @@ import {
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
+const WAITING_CAPTION_ARIA_TEXT =
+  `${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}の発話が確定するとここに表示されます。`;
 const INVALID_STATUS_PAYLOAD_ERROR =
   "ライブ字幕の状態通知の形式が不正です。";
 
@@ -280,7 +282,7 @@ export function LiveCaptionWindow() {
           ),
           `エンジン ${statusPayload.engineLabel}`,
           `外部送信 ${statusPayload.aiTransmissionLabel}`,
-          WAITING_CAPTION_TEXT,
+          WAITING_CAPTION_ARIA_TEXT,
         ].join(": ");
   const panelClassName = isErrorState
     ? "live-transcript-panel live-transcript-panel-window live-transcript-panel-error"

@@ -337,11 +337,11 @@ export function SettingsView() {
     localSettings.language;
   const whisperModelLabel = `Whisper モデル: ${whisperModelName}`;
   const microphoneDeviceLabel = localSettings.microphoneDeviceId
-    ? `自分トラックのマイクデバイス: ${selectedMicrophoneDeviceName}`
-    : "自分トラックのマイクデバイス: デフォルト";
+    ? `${SELF_TRACK_DEVICE_LABEL}のデバイス: ${selectedMicrophoneDeviceName}`
+    : `${SELF_TRACK_DEVICE_LABEL}のデバイス: デフォルト`;
   const retryDevicesLabel = isFetchingDevices
-    ? "自分トラックのマイクデバイス一覧を取得中"
-    : "自分トラックのマイクデバイス一覧を再取得";
+    ? `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を取得中`
+    : `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を再取得`;
   const languageLabel = `文字起こし言語: ${languageName}`;
   const devicesErrorMessage = devicesError ? toErrorMessage(devicesError) : "";
   const retryDefaultOutputDirLabel = isFetchingDefaultOutputDir
@@ -658,8 +658,8 @@ export function SettingsView() {
           <div
             className="settings-inline-error"
             role="alert"
-            aria-label={`自分トラックのマイクデバイス一覧エラー: ${devicesErrorMessage}`}
-            title={`自分トラックのマイクデバイス一覧エラー: ${devicesErrorMessage}`}
+            aria-label={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${devicesErrorMessage}`}
+            title={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${devicesErrorMessage}`}
           >
             <span>
               自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
