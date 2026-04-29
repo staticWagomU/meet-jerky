@@ -1254,7 +1254,7 @@ export function TranscriptView() {
       : "meeting-status-pill-idle";
   const canShowLiveCaptionWindow = isMeetingActive || isTranscribing;
   const showLiveCaptionWindowLabel = canShowLiveCaptionWindow
-    ? "ライブ文字起こしウィンドウを表示"
+    ? "ライブ文字起こしウィンドウを表示または前面に戻す"
     : "録音または文字起こし中だけライブ文字起こしウィンドウを表示できます";
   const meetingStatusAriaLabel = [
     "記録状態",
@@ -1477,7 +1477,7 @@ export function TranscriptView() {
             title={showLiveCaptionWindowLabel}
             onClick={handleShowLiveCaptionWindow}
           >
-            字幕を表示
+            字幕ウィンドウ
           </button>
         )}
         {audioSourceNotice && (

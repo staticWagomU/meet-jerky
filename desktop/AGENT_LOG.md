@@ -11363,3 +11363,31 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で小幅メニューバーウィンドウ上の折り返し、リングライト状態の視認性、切替中表示の長さを確認する。
+
+### Transcript view: clarify live caption window action
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 画面下部の独立したライブ文字起こしウィンドウを閉じたあとでも、メイン画面から呼び戻す操作が直感的に分かるようにする。
+- 結果: メイン画面の表示ボタン文言を `字幕ウィンドウ` にし、aria/title を `ライブ文字起こしウィンドウを表示または前面に戻す` に変更した。Tauri の表示コマンド、録音/文字起こし状態、外部 API 送信には触れていない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で閉じたライブ字幕ウィンドウをこのボタンから再表示できるか確認する。
+
+### Design comp review: settings window
+
+- 開始日時: 2026-04-29 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `meet-jerky-desktop.pen`, `AGENT_LOG.md`
+- 指示内容: `SmOt4` / `Mock 4 - Settings Window` が、meet-jerky の macOS ネイティブな設定ウィンドウカンプとして実装方針に使える内容か確認する。
+- 結果: `Mock 4 - Settings Window` に、半透明 macOS ユーティリティ調のタイトルバー、左サイドバー、検知・音声経路・録音透明性のメインペインが含まれていることを確認した。控えめな tangerine アクセント、Auto-start スイッチ、サービス状態バッジ、Mic/System の別トラック表示、権限と AI minutes の状態表示はプロダクトコンセプトと矛盾しない。
+- 変更ファイル: `AGENT_LOG.md`
+- 検証結果: `rg -n "SmOt4|Mock 4 - Settings Window" meet-jerky-desktop.pen` で対象カンプを確認。Pen 本体の未コミット差分はなし。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実装時は設定画面の権限状態を macOS 実権限、System Audio capture、AI 送信設定と矛盾なく接続する。
