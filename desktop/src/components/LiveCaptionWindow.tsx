@@ -30,7 +30,9 @@ const WAITING_CAPTION_ARIA_TEXT =
 const INVALID_STATUS_PAYLOAD_ERROR =
   "ライブ字幕の状態通知の形式が不正です。";
 const LIVE_CAPTION_CLOSE_LABEL =
-  "ライブ文字起こしウィンドウを閉じる。録音と文字起こしは継続します";
+  "ライブ文字起こしウィンドウを閉じる。Escape キーでも閉じられます。録音と文字起こしは継続します";
+const LIVE_CAPTION_WINDOW_OPERATION_LABEL =
+  "このウィンドウはドラッグで移動できます。閉じても録音と文字起こしは継続します";
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
@@ -269,6 +271,7 @@ export function LiveCaptionWindow() {
     : latestSegment
       ? [
           "ライブ文字起こし",
+          LIVE_CAPTION_WINDOW_OPERATION_LABEL,
           getSpeakerLabel(latestSegment),
           captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
           ...trackStatusLabels.map(
@@ -282,6 +285,7 @@ export function LiveCaptionWindow() {
           .join(": ")
       : [
           "ライブ文字起こし 待機中",
+          LIVE_CAPTION_WINDOW_OPERATION_LABEL,
           ...trackStatusLabels.map(
             (track) => `${track.ariaPrefix} ${track.state}`,
           ),
