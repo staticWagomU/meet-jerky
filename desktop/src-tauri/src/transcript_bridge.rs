@@ -6,6 +6,7 @@ use crate::transcription::TranscriptionSegment;
 /// ライブセグメントから `Session::append_segment` の引数 3 つ組に変換する。
 ///
 /// 戻り値は `(speaker_label, timestamp_offset_secs, text)`。
+#[cfg(test)]
 pub fn segment_to_append_args(
     segment: &TranscriptionSegment,
     session_started_at_secs: u64,
@@ -51,6 +52,7 @@ pub fn segment_to_append_args_at(
 ///
 /// live loop 側の条件分岐をこの純粋関数に閉じ込めることで、
 /// 「未開始時やエラー表示時に append を呼ばない」挙動をユニットテストで保証する。
+#[cfg(test)]
 pub fn build_append_args_for_emission(
     segment: &TranscriptionSegment,
     session_started_at_secs: Option<u64>,

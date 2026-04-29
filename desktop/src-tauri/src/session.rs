@@ -44,10 +44,12 @@ impl Session {
         self.ended_at = Some(ended_at);
     }
 
+    #[cfg(test)]
     pub fn is_finalized(&self) -> bool {
         self.ended_at.is_some()
     }
 
+    #[cfg(test)]
     pub fn duration_secs(&self) -> Option<u64> {
         self.ended_at.map(|end| end.saturating_sub(self.started_at))
     }

@@ -12133,3 +12133,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 出力先選択操作が既存履歴移動と誤解されないか実機で確認する。
+
+### Rust dead code warnings: limit test-only helpers
+
+- 開始日時: 2026-04-29 20:48:48 JST
+- 担当セッション: Codex
+- 役割: 直接対応
+- 作業範囲: `src-tauri/src/session.rs`, `src-tauri/src/session_manager.rs`, `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: Rust ビルド時に出ている未使用メソッド/関数警告を解消する。
+- 結果: 通常ビルドでは使われずユニットテスト専用になっている `Session::is_finalized`, `Session::duration_secs`, `SessionManager` のテスト補助メソッド、`transcript_bridge` のテスト向けラッパー関数に `#[cfg(test)]` を付与した。本番経路で使う `start_with_output`, `append`, `finalize`, `current_started_at_secs`, `build_append_args_for_emission_at` は変更していない。
+- 変更ファイル: `src-tauri/src/session.rs`, `src-tauri/src/session_manager.rs`, `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check` は sandbox 下で Swift module cache 書き込み制限と `cmake` 不在により失敗。`nix develop -c cargo check` 成功。`nix develop -c cargo test` 成功（169 passed）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 今後、本番で必要になったAPIは `#[cfg(test)]` を外して実利用側から呼ぶ。

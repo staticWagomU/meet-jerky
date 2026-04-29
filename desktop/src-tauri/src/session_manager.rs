@@ -48,6 +48,7 @@ impl SessionManager {
     }
 
     /// in-memory のみでセッションを開始する。ディスク書き出しは行わない。
+    #[cfg(test)]
     pub fn start(&self, title: String, started_at: u64) -> Result<(), SessionManagerError> {
         let mut guard = self.lock();
         if guard.is_some() {
@@ -125,14 +126,17 @@ impl SessionManager {
         }
     }
 
+    #[cfg(test)]
     pub fn is_active(&self) -> bool {
         self.lock().is_some()
     }
 
+    #[cfg(test)]
     pub fn current_title(&self) -> Option<String> {
         self.lock().as_ref().map(|a| a.session.title.clone())
     }
 
+    #[cfg(test)]
     pub fn current_segment_count(&self) -> Option<usize> {
         self.lock().as_ref().map(|a| a.session.segments.len())
     }
