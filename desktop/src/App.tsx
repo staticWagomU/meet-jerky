@@ -119,7 +119,7 @@ function App() {
               ringLightMode !== "off" ? " app-header-light-toggle-active" : ""
             }`}
             aria-pressed={ringLightMode !== "off"}
-            aria-label={ringLightLabel}
+            aria-label={`${ringLightLabel}。${ringLightOperationNote}`}
             title={`${ringLightLabel}。${ringLightOperationNote}。`}
             onClick={cycleRingLightMode}
             disabled={isRingLightPending}

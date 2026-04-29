@@ -11741,3 +11741,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: Pencil MCP が実行中 Pencil アプリへ接続できず、`.pen` はファイル直接読みにフォールバックした。
 - 次アクション: 実機でリングライト表示中のクリック透過と説明文の自然さを確認する。
+
+### Ring light control: expose pass-through note to assistive tech
+
+- 開始日時: 2026-04-29 13:50:32 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント
+- 作業範囲: `src/App.tsx`, `AGENT_LOG.md`
+- 指示内容: リングライトが会議中の背後アプリ操作を妨げないことを、title だけでなく支援技術にも伝わるようにする。
+- 結果: リングライト切替ボタンの `aria-label` に「表示中も背後のアプリ操作を妨げません」を含めた。表示テキスト、リングライト表示制御、クリック透過実装、録音処理には触れていない。
+- 変更ファイル: `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.tsx AGENT_LOG.md` 成功（Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: VoiceOver でリングライト切替ボタンの説明が冗長すぎず自然か確認する。
