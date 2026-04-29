@@ -25,6 +25,8 @@ const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 const INVALID_STATUS_PAYLOAD_ERROR =
   "会議検知プロンプトの状態通知の形式が不正です。";
+const PROMPT_OPERATION_LABEL =
+  "「記録を開始」を選ぶまで録音は開始しません。バナーはドラッグで移動でき、Escape キーで閉じられます";
 type PendingPromptAction = "start" | "confirm" | null;
 
 function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
@@ -165,7 +167,7 @@ export function MeetingDetectedBanner() {
     ? listenerError
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
-      }文字起こしエンジン ${statusPayload.engineLabel}。${transmissionAriaLabel}。${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
+      }${PROMPT_OPERATION_LABEL}。文字起こしエンジン ${statusPayload.engineLabel}。${transmissionAriaLabel}。${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
   const confirmRecordingLabel = detected
     ? pendingAction === "confirm"
       ? `${displayName} の録音と文字起こしの状態確認画面を開いています`
@@ -182,7 +184,7 @@ export function MeetingDetectedBanner() {
     : "録音と文字起こしを開始";
   const dismissBannerLabel = pendingAction
     ? "操作中のため会議検知バナーを閉じられません"
-    : "会議検知バナーを閉じる。録音は開始しません";
+    : "会議検知バナーを閉じる。Escape キーでも閉じられます。録音は開始しません";
   const bannerRole = listenerError ? "alert" : "status";
   const bannerClassName = listenerError
     ? "meeting-detected-banner meeting-detected-banner-error"
