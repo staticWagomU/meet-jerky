@@ -12483,3 +12483,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker が起動後に実行へ進まず、差分ゼロのまま停滞したため main が例外実装した。
 - 次アクション: 実機または Tauri イベント経路で app/browser payload がフロントの source 別契約どおり受信されることを確認する。
+
+### Live caption status: sanitize status labels
+
+- 開始日時: 2026-05-01 08:42:33 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 指示内容: ライブ字幕/会議検知通知で共有する `live-caption-status` payload について、event/localStorage 由来の空文字・空白のみ label を受け入れない。normalize/build 経路では label を trim し、空なら既存 default にフォールバックする。OpenAI/ElevenLabs の送信先 label は前後空白があっても外部送信として扱い、boolean と label のずれで外部送信なしに見えないようにする。UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。
+- 結果: `toNonEmptyTrimmedString` と `statusLabelOrDefault` を追加し、`isLiveCaptionStatusPayload` の required/optional label を trim 後非空判定へ変更した。`normalizeLiveCaptionStatusPayload` と `buildLiveCaptionStatusFromLabels` は trim 済み label を返し、空 label は default へフォールバックする。`isExternalTransmissionLabel` は trim 後に判定し、normalize では外部送信 label が来た場合に warning 表示側へ倒すようにした。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 先行 worker `mj-worker-live-caption-status-sanitize-20260501` がドキュメント読解後に差分ゼロのまま停滞したため main が例外実装した。
+- 次アクション: 壊れた localStorage/event payload で通知・字幕の status 表示が空欄にならず、正規 payload の表示が従来どおりであることを実機またはコンポーネント経路で確認する。

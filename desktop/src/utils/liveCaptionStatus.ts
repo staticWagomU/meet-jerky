@@ -7,6 +7,18 @@ const EXTERNAL_TRANSMISSION_LABELS = new Set([
   "送信先 ElevenLabs",
 ]);
 
+function toNonEmptyTrimmedString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function statusLabelOrDefault(value: unknown, fallback: string): string {
+  return toNonEmptyTrimmedString(value) ?? fallback;
+}
+
 export interface LiveCaptionStatusPayload {
   engineLabel: string;
   aiTransmissionLabel: string;
@@ -42,22 +54,41 @@ export function isLiveCaptionStatusPayload(
   }
   const candidate = value as Partial<LiveCaptionStatusPayload>;
   return (
-    typeof candidate.engineLabel === "string" &&
-    typeof candidate.aiTransmissionLabel === "string" &&
+    toNonEmptyTrimmedString(candidate.engineLabel) !== null &&
+    toNonEmptyTrimmedString(candidate.aiTransmissionLabel) !== null &&
     typeof candidate.isExternalTransmission === "boolean" &&
     (candidate.microphoneTrackLabel === undefined ||
-      typeof candidate.microphoneTrackLabel === "string") &&
+      toNonEmptyTrimmedString(candidate.microphoneTrackLabel) !== null) &&
     (candidate.systemAudioTrackLabel === undefined ||
-      typeof candidate.systemAudioTrackLabel === "string")
+      toNonEmptyTrimmedString(candidate.systemAudioTrackLabel) !== null)
   );
 }
 
 export function normalizeLiveCaptionStatusPayload(
   status: StoredLiveCaptionStatusPayload,
 ): LiveCaptionStatusPayload {
+  const engineLabel = statusLabelOrDefault(
+    status.engineLabel,
+    DEFAULT_LIVE_CAPTION_STATUS.engineLabel,
+  );
+  const aiTransmissionLabel = statusLabelOrDefault(
+    status.aiTransmissionLabel,
+    DEFAULT_LIVE_CAPTION_STATUS.aiTransmissionLabel,
+  );
   return {
-    ...DEFAULT_LIVE_CAPTION_STATUS,
-    ...status,
+    engineLabel,
+    aiTransmissionLabel,
+    isExternalTransmission:
+      status.isExternalTransmission ||
+      isExternalTransmissionLabel(aiTransmissionLabel),
+    microphoneTrackLabel: statusLabelOrDefault(
+      status.microphoneTrackLabel,
+      DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
+    ),
+    systemAudioTrackLabel: statusLabelOrDefault(
+      status.systemAudioTrackLabel,
+      DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
+    ),
   };
 }
 
@@ -114,7 +145,7 @@ export function getTransmissionStatusAriaLabel(
 }
 
 export function isExternalTransmissionLabel(label: string): boolean {
-  return EXTERNAL_TRANSMISSION_LABELS.has(label);
+  return EXTERNAL_TRANSMISSION_LABELS.has(label.trim());
 }
 
 export function buildLiveCaptionStatusFromEngine(
@@ -167,15 +198,26 @@ export function buildLiveCaptionStatusFromLabels(
     systemAudioTrackLabel: string;
   },
 ): LiveCaptionStatusPayload {
-  return {
-    engineLabel,
+  const normalizedAiTransmissionLabel = statusLabelOrDefault(
     aiTransmissionLabel,
-    isExternalTransmission: isExternalTransmissionLabel(aiTransmissionLabel),
-    microphoneTrackLabel:
-      trackLabels?.microphoneTrackLabel ??
+    DEFAULT_LIVE_CAPTION_STATUS.aiTransmissionLabel,
+  );
+  return {
+    engineLabel: statusLabelOrDefault(
+      engineLabel,
+      DEFAULT_LIVE_CAPTION_STATUS.engineLabel,
+    ),
+    aiTransmissionLabel: normalizedAiTransmissionLabel,
+    isExternalTransmission: isExternalTransmissionLabel(
+      normalizedAiTransmissionLabel,
+    ),
+    microphoneTrackLabel: statusLabelOrDefault(
+      trackLabels?.microphoneTrackLabel,
       DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
-    systemAudioTrackLabel:
-      trackLabels?.systemAudioTrackLabel ??
+    ),
+    systemAudioTrackLabel: statusLabelOrDefault(
+      trackLabels?.systemAudioTrackLabel,
       DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
+    ),
   };
 }
