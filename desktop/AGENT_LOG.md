@@ -12203,3 +12203,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker セッションが Pencil 再確認後も実装差分生成まで進まなかったため、自律運用停止回避としてメインが補完し、競合回避のため worker セッションを終了した。
 - 次アクション: 検証後、`.pen` と実挙動の差分（特に `一時停止` 未実装、会議タイトル/URL の静的表示）を残リスクとして扱い、次ループで会議検知メタデータ連携または Bottom Transcript (`kxgH8` / `V5nBfC`) の準拠を進める。
+
+### Bottom transcript: align live caption window with latest pen mock
+
+- 開始日時: 2026-04-30 23:20:00 JST
+- 担当セッション: `mj-research-bottom-transcript-pen-20260430-1`, `mj-worker-bottom-transcript-pen-20260430-1`, `mj-main`
+- 役割: research 起動・確認、worker 起動・監視、メインエージェントによる緊急補完
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で最新 `meet-jerky-desktop.pen` の Mock 3 Bottom Live Transcript Window (`kxgH8` / `V5nBfC`) を読み直し、ライブ字幕ウィンドウを 784x246、status row、2カラム transcript content、右側 audio/tools panel、collapsed preview に寄せる。既存のライブ字幕受信、外部送信表示、Escape hide、閉じても録音/文字起こしが継続する説明は保持する。
+- 結果: `LiveCaptionWindow` を `.pen` の status row / tabs / transcript lines / audio meters and tools / collapsed preview 構造へ変更し、直近2件の transcription result をローカル state に保持して統合表示するようにした。live-caption window サイズ定数を 784x246 に変更した。`.pen` の `終了` は録音停止機能に接続せず、既存の hide 操作に合わせて `閉じる` と表示した。bookmark/book-open/あとで要約は未実装操作として disabled 表示にした。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css src-tauri/src/lib.rs AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker セッションが Pencil 確認後も実装差分生成まで進まなかったため、自律運用停止回避としてメインが補完し、競合回避のため worker セッションを終了した。
+- 次アクション: 検証後、実機で 784x246 ライブ字幕ウィンドウが邪魔になりすぎないか、閉じる操作が録音停止と誤解されないか、collapsed preview の位置が期待通りか確認する。

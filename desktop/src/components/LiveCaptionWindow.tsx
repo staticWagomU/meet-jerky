@@ -91,6 +91,7 @@ export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
     null,
   );
+  const [recentSegments, setRecentSegments] = useState<TranscriptSegment[]>([]);
   const [latestBySource, setLatestBySource] = useState<LatestBySource>(
     createEmptyLatestBySource,
   );
@@ -128,6 +129,7 @@ export function LiveCaptionWindow() {
         return;
       }
       setLatestSegment(null);
+      setRecentSegments([]);
       setLatestBySource(createEmptyLatestBySource());
       setStatusPayload(
         readStoredLiveCaptionStatus((e) => {
@@ -152,6 +154,7 @@ export function LiveCaptionWindow() {
         }
         setListenerError(null);
         setLatestSegment(payload);
+        setRecentSegments((prev) => [...prev, payload].slice(-2));
         if (payload.source) {
           setLatestBySource((prev) => ({
             ...prev,
@@ -180,6 +183,7 @@ export function LiveCaptionWindow() {
           isError: true,
         };
         setLatestSegment(errorSegment);
+        setRecentSegments([errorSegment]);
         if (payload.source) {
           setLatestBySource((prev) => ({
             ...prev,
@@ -304,6 +308,12 @@ export function LiveCaptionWindow() {
   const liveCaptionTransmissionAriaLabel = statusPayload.isExternalTransmission
     ? `外部送信中 ${statusPayload.aiTransmissionLabel}`
     : "外部送信なし、端末内で処理";
+  const transcriptLines =
+    recentSegments.length > 0
+      ? recentSegments
+      : latestSegment
+        ? [latestSegment]
+        : [];
   const hideLiveCaptionWindow = () => {
     void getCurrentWindow()
       .hide()
@@ -335,98 +345,178 @@ export function LiveCaptionWindow() {
       title={label}
     >
       <div className={panelClassName} data-tauri-drag-region>
-        <div
-          className="live-transcript-wave"
-          data-tauri-drag-region
-          aria-hidden="true"
-        >
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="live-transcript-content" data-tauri-drag-region>
-          <div className="live-transcript-meta" data-tauri-drag-region>
-            <span className="live-transcript-dot" aria-hidden="true" />
-            <span data-tauri-drag-region>
-              {isErrorState ? "文字起こしエラー" : "ライブ文字起こし"}
-            </span>
-            {latestSegment && (
-              <span
-                className={getSpeakerClassName(latestSegment)}
-                data-tauri-drag-region
-              >
-                {getSpeakerLabel(latestSegment)}
-              </span>
-            )}
-            {captionTimestamp && (
-              <span
-                className="live-transcript-timestamp"
-                data-tauri-drag-region
-                aria-label={`発話時刻 ${captionTimestamp}`}
-                title={`発話時刻 ${captionTimestamp}`}
-              >
-                {captionTimestamp}
-              </span>
-            )}
-            <span
-              className={`live-transcript-engine-pill${
-                statusPayload.isExternalTransmission
-                  ? " live-transcript-engine-pill-warning"
-                  : ""
-              }`}
-              data-tauri-drag-region
-              aria-label={`文字起こしエンジン ${statusPayload.engineLabel}、${transmissionStatusAriaLabel}`}
-              title={`文字起こしエンジン ${statusPayload.engineLabel}、${transmissionStatusAriaLabel}`}
-            >
-              {statusPayload.engineLabel}
-            </span>
-            <span
-              className={`live-transcript-privacy-pill${
-                statusPayload.isExternalTransmission
-                  ? " live-transcript-privacy-pill-warning"
-                  : ""
-              }`}
-              data-tauri-drag-region
-              aria-label={liveCaptionTransmissionAriaLabel}
-              title={liveCaptionTransmissionAriaLabel}
-            >
-              {liveCaptionTransmissionLabel}
-            </span>
-          </div>
-          <div
-            className="live-transcript-track-row"
+        <div className="live-transcript-status-row" data-tauri-drag-region>
+          <span className="live-transcript-rec-pill" data-tauri-drag-region>
+            <span aria-hidden="true" />
+            録音中
+          </span>
+          <strong className="live-transcript-meeting-title" data-tauri-drag-region>
+            Google Meet {captionTimestamp ?? "待機中"}
+          </strong>
+          <span
+            className="live-transcript-health-pill"
             data-tauri-drag-region
             aria-label={trackRowLabel}
             title={trackRowLabel}
           >
-            {trackStatusLabels.map((track) => {
-              return (
-                <span
-                  key={track.source}
-                  className={`live-transcript-track-pill live-transcript-track-pill-${track.source}`}
-                  aria-label={track.ariaLabel}
-                  title={track.ariaLabel}
-                >
-                  <span data-tauri-drag-region>{track.label}</span>
-                  <span data-tauri-drag-region>{track.state}</span>
-                </span>
-              );
-            })}
-          </div>
-          <div className="live-transcript-text" data-tauri-drag-region>
-            {listenerError ?? latestSegment?.text ?? WAITING_CAPTION_TEXT}
-          </div>
+            Mic + System
+          </span>
+          <span className="live-transcript-status-spacer" data-tauri-drag-region />
+          <button
+            type="button"
+            className="live-transcript-minimize-btn"
+            aria-label={LIVE_CAPTION_CLOSE_LABEL}
+            aria-keyshortcuts="Escape"
+            title={LIVE_CAPTION_CLOSE_LABEL}
+            onClick={hideLiveCaptionWindow}
+          >
+            -
+          </button>
+          <button
+            type="button"
+            className="live-transcript-end-preview-btn"
+            aria-label={`${LIVE_CAPTION_CLOSE_LABEL}。録音停止ではありません`}
+            title={`${LIVE_CAPTION_CLOSE_LABEL}。録音停止ではありません。`}
+            onClick={hideLiveCaptionWindow}
+          >
+            閉じる
+          </button>
         </div>
-        <button
-          type="button"
-          className="live-transcript-close-btn"
-          aria-label={LIVE_CAPTION_CLOSE_LABEL}
-          aria-keyshortcuts="Escape"
-          title={LIVE_CAPTION_CLOSE_LABEL}
-          onClick={hideLiveCaptionWindow}
-        >
-          ×
-        </button>
+
+        <div className="live-transcript-content" data-tauri-drag-region>
+          <div className="live-transcript-stream" data-tauri-drag-region>
+            <div className="live-transcript-tabs" data-tauri-drag-region>
+              <span className="live-transcript-tab live-transcript-tab-active">
+                統合
+              </span>
+              <span className="live-transcript-tab">自分</span>
+              <span className="live-transcript-tab">相手側</span>
+              <span
+                className={`live-transcript-engine-pill${
+                  statusPayload.isExternalTransmission
+                    ? " live-transcript-engine-pill-warning"
+                    : ""
+                }`}
+                data-tauri-drag-region
+                aria-label={`文字起こしエンジン ${statusPayload.engineLabel}、${transmissionStatusAriaLabel}`}
+                title={`文字起こしエンジン ${statusPayload.engineLabel}、${transmissionStatusAriaLabel}`}
+              >
+                {statusPayload.engineLabel}
+              </span>
+              <span
+                className={`live-transcript-privacy-pill${
+                  statusPayload.isExternalTransmission
+                    ? " live-transcript-privacy-pill-warning"
+                    : ""
+                }`}
+                data-tauri-drag-region
+                aria-label={liveCaptionTransmissionAriaLabel}
+                title={liveCaptionTransmissionAriaLabel}
+              >
+                {liveCaptionTransmissionLabel}
+              </span>
+            </div>
+
+            <div className="live-transcript-lines" data-tauri-drag-region>
+              {transcriptLines.length > 0 ? (
+                transcriptLines.map((segment, index) => {
+                  const timestamp = isTranscriptErrorSegment(segment)
+                    ? "!"
+                    : formatSegmentTimestamp(segment.startMs);
+                  return (
+                    <div
+                      className={`live-transcript-line ${
+                        isTranscriptErrorSegment(segment)
+                          ? "live-transcript-line-error"
+                          : ""
+                      }`}
+                      key={`${segment.startMs}-${segment.endMs}-${index}`}
+                      data-tauri-drag-region
+                    >
+                      <span
+                        className="live-transcript-timestamp"
+                        data-tauri-drag-region
+                      >
+                        {timestamp}
+                      </span>
+                      <span
+                        className={getSpeakerClassName(segment)}
+                        data-tauri-drag-region
+                      >
+                        {getSpeakerLabel(segment)}
+                      </span>
+                      <span className="live-transcript-text" data-tauri-drag-region>
+                        {segment.text}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="live-transcript-line" data-tauri-drag-region>
+                  <span className="live-transcript-timestamp" data-tauri-drag-region>
+                    --
+                  </span>
+                  <span
+                    className="live-transcript-speaker live-transcript-speaker-unknown"
+                    data-tauri-drag-region
+                  >
+                    待機
+                  </span>
+                  <span className="live-transcript-text" data-tauri-drag-region>
+                    {listenerError ?? WAITING_CAPTION_TEXT}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <aside
+            className="live-transcript-tools"
+            data-tauri-drag-region
+            aria-label={trackRowLabel}
+            title={trackRowLabel}
+          >
+            <strong data-tauri-drag-region>音声入力</strong>
+            {trackStatusLabels.map((track) => (
+              <div
+                key={track.source}
+                className="live-transcript-meter"
+                data-tauri-drag-region
+                aria-label={track.ariaLabel}
+                title={track.ariaLabel}
+              >
+                <span data-tauri-drag-region>
+                  {track.source === "microphone" ? "マイク · 自分" : "システム · 相手側"}
+                </span>
+                <span className="live-transcript-meter-bar" aria-hidden="true">
+                  <span />
+                </span>
+              </div>
+            ))}
+            <div className="live-transcript-tool-row" data-tauri-drag-region>
+              <button type="button" disabled aria-label="マーク機能は未実装です">
+                ◇
+              </button>
+              <button type="button" disabled aria-label="辞書表示機能は未実装です">
+                □
+              </button>
+            </div>
+            <button
+              type="button"
+              className="live-transcript-ai-preview"
+              disabled
+              aria-label="あとで要約は未実装です。外部AI送信は開始しません"
+              title="あとで要約は未実装です。外部AI送信は開始しません。"
+            >
+              あとで要約
+            </button>
+          </aside>
+        </div>
+
+        <div className="live-transcript-collapsed-preview" data-tauri-drag-region>
+          <span aria-hidden="true" />
+          Google Meet · 録音中 · Mic + System
+        </div>
       </div>
     </div>
   );
