@@ -1359,8 +1359,14 @@ export function TranscriptView() {
       : "待機中";
   const meetingPopoverSubtitle =
     isMeetingActive && meetingStartTime
-      ? `Google Meet · ${formatElapsedTime(elapsedTime)}`
-      : "Google Meet · 記録準備";
+      ? `経過 ${formatElapsedTime(elapsedTime)}`
+      : "記録準備";
+  const meetingDetectionCardTitle = isMeetingActive
+    ? "録音と文字起こしを記録中"
+    : "会議検知と手動開始に対応";
+  const meetingDetectionCardDetail = isMeetingActive
+    ? "マイクとシステム音声の状態を表示中"
+    : "ブラウザ URL / アプリ検知に対応。録音は開始操作後のみ";
   const meetingPopoverRecordingLabel = isMeetingOperationPending
     ? isMeetingActive
       ? "終了中"
@@ -1493,8 +1499,8 @@ export function TranscriptView() {
 
           <section className="meeting-popover-detected" aria-label="自動検知された会議">
             <span>自動検知</span>
-            <strong>Design review</strong>
-            <p>meet.google.com · Chrome URL と通話音声で確認</p>
+            <strong>{meetingDetectionCardTitle}</strong>
+            <p>{meetingDetectionCardDetail}</p>
           </section>
 
           <div className="meeting-popover-tracks" aria-label="分離取得中の音声トラック">
@@ -1585,8 +1591,8 @@ export function TranscriptView() {
           </div>
 
           <div className="meeting-popover-utilities" aria-label="会議補助機能">
-            <span>辞書補正 48件</span>
-            <span>終了後に要約・ToDoを生成</span>
+            <span>辞書補正は設定で管理</span>
+            <span>履歴はこのMacに保存</span>
           </div>
 
           <div className="meeting-popover-footer">

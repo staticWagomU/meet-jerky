@@ -12273,3 +12273,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機通知で URL / アプリ検知時の表示が、実装済み根拠だけを示す文言になっているか確認する。
+
+### Menu bar popover: remove unsupported fixed meeting claims
+
+- 開始日時: 2026-05-01 00:55:00 JST
+- 担当セッション: `mj-research-pen-mock6-variants-20260501-1`, `mj-worker-popover-truthful-state-copy-20260501-1`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェントによるログ・検証補完
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 最新 `meet-jerky-desktop.pen` の Mock 6 Menu Bar Window Variants (`him1R`) を確認したうえで、メニューバーポップオーバーの固定 `Google Meet` / `Design review` / `meet.google.com · Chrome URL と通話音声で確認` / `辞書補正 48件` / `終了後に要約・ToDoを生成` を、実装済み状態だけを示す文言へ置き換える。CSS、Rust/Swift、payload schema、`.pen` は触らない。
+- 結果: `meetingPopoverSubtitle` から固定 `Google Meet` を外し、記録中は実経過時間、待機中は `記録準備` を表示するようにした。検知カードは固定会議名/URL/通話音声根拠をやめ、待機中はブラウザ URL / アプリ検知と手動開始、記録中はマイクとシステム音声の状態表示を示す文言にした。会議補助表示は固定件数や未実行の AI 生成断定をやめ、辞書補正は設定管理、履歴はこの Mac 保存として表示する。これは現実装に会議メタデータ保持、音声アクティビティ根拠、辞書件数、AI 議事録生成済み状態がないための、意図的な `.pen` 文言差分。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research/worker セッションが読解後に完了報告またはログ・検証まで進まなかったため、メインが自律運用停止回避としてログ・検証を補完した。
+- 次アクション: 実機またはブラウザで Mock 6 の待機中バリアントに対する視覚差分を確認し、会議メタデータを安全に保持できる設計を検討する。
