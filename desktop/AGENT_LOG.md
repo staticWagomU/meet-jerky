@@ -12385,3 +12385,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: Firefox Developer Edition / Firefox Nightly をインストールした実機で、Automation / Accessibility 権限下のアクティブタブ URL 検知を確認する。
+
+### App detection: add FaceTime watched bundle
+
+- 開始日時: 2026-05-01 01:59:24 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: macOS ネイティブの会議アプリ検知として FaceTime を追加し、`WATCHED_BUNDLE_IDS` に `("com.apple.FaceTime", "FaceTime")` を追加する。既存の Zoom / Microsoft Teams の bundle ID、ブラウザ URL 分類、Swift bridge、React UI は変更しない。既存テストを FaceTime も含む回帰テストにする。コミット禁止。
+- 結果: `WATCHED_BUNDLE_IDS` に FaceTime を追加し、監視対象の回帰テストを Zoom / Teams / FaceTime のネイティブ会議アプリ検知を確認する名前と内容に更新した。既存 Zoom / Teams bundle ID、ブラウザ URL 分類、Swift bridge、React UI は変更していない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed, 162 filtered out）。メイン側でも同 app_detection テスト成功。`scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で FaceTime 起動またはアクティブ化時に Swift bridge 経由で検知通知が出ることを確認する。

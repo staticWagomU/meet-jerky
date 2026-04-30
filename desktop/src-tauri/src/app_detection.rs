@@ -35,7 +35,7 @@ const WATCHED_BUNDLE_IDS: &[(&str, &str)] = &[
     ("com.microsoft.teams2", "Microsoft Teams"),
     // 旧 Teams (legacy, Electron 版)。新版に切り替わっても誤検知にはならないため両方監視。
     ("com.microsoft.teams", "Microsoft Teams"),
-    // FaceTime 等を将来追加するならここに足す。
+    ("com.apple.FaceTime", "FaceTime"),
 ];
 
 /// 同一アプリの再通知を抑制する間隔。
@@ -588,7 +588,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn watched_bundle_ids_includes_zoom_and_teams() {
+    fn watched_bundle_ids_includes_native_meeting_apps() {
         // 監視対象が抜け落ちないように回帰防止する
         let ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _)| *id).collect();
         assert!(
@@ -598,6 +598,10 @@ mod tests {
         assert!(
             ids.contains(&"com.microsoft.teams2") || ids.contains(&"com.microsoft.teams"),
             "Teams Bundle ID (新旧どちらか) が抜けています"
+        );
+        assert!(
+            ids.contains(&"com.apple.FaceTime"),
+            "FaceTime Bundle ID が抜けています"
         );
     }
 
