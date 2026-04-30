@@ -2348,6 +2348,24 @@ body[data-window="ring-light"] {
   backdrop-filter: blur(18px);
 }
 
+.settings-recording-visibility-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-height: 26px;
+  padding: 0 0.72rem;
+  border: 1px solid #ffd8c2;
+  border-radius: 999px;
+  color: #b83b00;
+  background-color: #fff3ea;
+  font-size: 0.7rem;
+  font-weight: 740;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .settings-window-controls {
   display: inline-flex;
   gap: 0.46rem;
@@ -2410,39 +2428,133 @@ body[data-window="ring-light"] {
 }
 
 .settings-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   min-width: 0;
   padding: 18px 12px 16px 14px;
   border-right: 1px solid #e9e9eb;
   background-color: #f5f5f6cc;
 }
 
+.settings-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+  min-width: 0;
+  padding: 0 0.18rem;
+}
+
+.settings-sidebar-brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff7a1a, #ff5c00);
+  font-family: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.86rem;
+  font-weight: 780;
+  line-height: 1;
+  box-shadow: 0 10px 18px rgba(255, 92, 0, 0.2);
+}
+
+.settings-sidebar-brand-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #1a1a1a;
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .settings-sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .settings-sidebar-item {
   display: flex;
   align-items: center;
+  gap: 0.52rem;
+  width: 100%;
   min-height: 32px;
   padding: 0.42rem 0.56rem;
   border: 1px solid transparent;
   border-radius: 8px;
   color: #666;
+  background: transparent;
+  font: inherit;
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.2;
+  text-align: left;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.settings-sidebar-item:hover {
+  background-color: #ffffff8a;
+}
+
+.settings-sidebar-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, #ff5c00 30%, transparent);
+  outline-offset: 2px;
+}
+
+.settings-sidebar-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  color: #777;
+  background-color: #ececee;
+  font-size: 0.72rem;
+  font-weight: 780;
+  line-height: 1;
 }
 
 .settings-sidebar-item-active {
-  color: #1a1a1a;
+  color: #c24100;
   border-color: color-mix(in srgb, #ff5c00 16%, #e9e9eb);
   background-color: #ffffffd9;
   box-shadow:
     0 8px 18px rgba(24, 24, 27, 0.06),
     inset 3px 0 0 #ff5c00;
+}
+
+.settings-sidebar-item-active .settings-sidebar-item-icon {
+  color: #fff;
+  background-color: #ff5c00;
+}
+
+.settings-sidebar-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+  margin-top: auto;
+  padding: 0.64rem;
+  border: 1px solid #e9e9eb;
+  border-radius: 8px;
+  color: #666;
+  background-color: #ffffffb8;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.settings-sidebar-note-title {
+  color: #1a1a1a;
+  font-size: 0.72rem;
+  font-weight: 760;
 }
 
 .settings-main-pane {
@@ -2461,6 +2573,14 @@ body[data-window="ring-light"] {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.85rem;
+}
+
+.settings-main-subtitle {
+  max-width: 30rem;
+  margin: 0.28rem 0 0;
+  color: #666;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .settings-section {

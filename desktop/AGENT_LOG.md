@@ -12217,3 +12217,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker セッションが Pencil 確認後も実装差分生成まで進まなかったため、自律運用停止回避としてメインが補完し、競合回避のため worker セッションを終了した。
 - 次アクション: 検証後、実機で 784x246 ライブ字幕ウィンドウが邪魔になりすぎないか、閉じる操作が録音停止と誤解されないか、collapsed preview の位置が期待通りか確認する。
+
+### Settings sidebar: category state and pen heading alignment
+
+- 開始日時: 2026-05-01 00:03:37 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 最新 `meet-jerky-desktop.pen` の Settings 詳細モック (`DCzQ2`, `ZmyUB`, `oyyEL`, `ctlAg`) に合わせ、Settings sidebar と heading を `.pen` 準拠へ近づける。既存の設定保存、`localSettings` 更新、権限確認、APIキー、Tauri invoke、aria/title、外部送信/課金可能性の説明は変更しない。`meet-jerky-desktop.pen` は編集・コミット対象外、コミット禁止。
+- 結果: Settings のカテゴリ active state を追加し、General / Detection / Audio / Transcription / AI Minutes / Privacy を button で切り替え可能にした。titlebar 右側に `Visible while recording` pill、sidebar に brand row、1文字アイコン風カテゴリ表示、`Local-first capture` note を追加した。main pane の kicker / heading / subtitle は active category に応じて切り替わる。既存フォームは未表示化せず、そのまま表示を維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機またはブラウザで `.pen` の 820x560 設定ウィンドウに対する視覚差分を確認し、カテゴリ別 detail card への分割可否を検討する。

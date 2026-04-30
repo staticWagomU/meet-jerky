@@ -50,6 +50,59 @@ const LANGUAGES = [
   { value: "en", label: "English" },
 ];
 
+const SETTINGS_CATEGORIES = [
+  {
+    key: "general",
+    label: "General",
+    icon: "G",
+    kicker: "General",
+    title: "General",
+    subtitle: "基本設定、保存先、権限状態をまとめて確認します。",
+  },
+  {
+    key: "detection",
+    label: "Detection",
+    icon: "D",
+    kicker: "Detection",
+    title: "Detection",
+    subtitle: "Google Meet、Zoom、Teams などの会議検知状態を調整します。",
+  },
+  {
+    key: "audio",
+    label: "Audio",
+    icon: "A",
+    kicker: "Audio",
+    title: "Audio",
+    subtitle: "自分のマイクと相手側システム音声を別トラックで扱います。",
+  },
+  {
+    key: "transcription",
+    label: "Transcription",
+    icon: "T",
+    kicker: "Transcription",
+    title: "Transcription",
+    subtitle: "リアルタイム文字起こしエンジン、言語、モデルを選びます。",
+  },
+  {
+    key: "aiMinutes",
+    label: "AI Minutes",
+    icon: "M",
+    kicker: "AI Minutes",
+    title: "AI Minutes",
+    subtitle: "会議後の要約、決定事項、ToDo 抽出に関する設定です。",
+  },
+  {
+    key: "privacy",
+    label: "Privacy",
+    icon: "P",
+    kicker: "Privacy",
+    title: "Privacy",
+    subtitle: "ローカル保存、外部送信、macOS 権限の透明性を確認します。",
+  },
+] as const;
+
+type SettingsCategoryKey = (typeof SETTINGS_CATEGORIES)[number]["key"];
+
 function syncLiveCaptionStatus(status: LiveCaptionStatusPayload): void {
   writeStoredLiveCaptionStatus(status, (e) => {
     console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
@@ -71,6 +124,8 @@ export function SettingsView() {
   const isSavingSettingsRef = useRef(false);
   const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
     useState(false);
+  const [activeCategory, setActiveCategory] =
+    useState<SettingsCategoryKey>("general");
   const isSelectingOutputDirectoryRef = useRef(false);
 
   const {
@@ -429,14 +484,10 @@ export function SettingsView() {
   ]
     .filter(Boolean)
     .join("、");
-  const settingsSidebarItems = [
-    "General",
-    "Detection",
-    "Audio",
-    "Transcription",
-    "AI Minutes",
-    "Privacy",
-  ];
+  const activeCategoryMeta =
+    SETTINGS_CATEGORIES.find((category) => category.key === activeCategory) ??
+    SETTINGS_CATEGORIES[0];
+  const activeCategoryTitleId = `settings-${activeCategoryMeta.key}-title`;
 
   return (
     <div
@@ -456,35 +507,66 @@ export function SettingsView() {
             <p className="settings-titlebar-kicker">meet-jerky</p>
             <h2>Settings</h2>
           </div>
+          <span
+            className="settings-recording-visibility-pill"
+            aria-label="録音中も表示されます"
+            title="録音中も表示されます"
+          >
+            Visible while recording
+          </span>
         </div>
 
         <div className="settings-window-body">
           <aside className="settings-sidebar">
+            <div className="settings-sidebar-brand" aria-label="meet-jerky">
+              <span className="settings-sidebar-brand-icon" aria-hidden="true">
+                m
+              </span>
+              <span className="settings-sidebar-brand-name">meet-jerky</span>
+            </div>
             <nav
               className="settings-sidebar-nav"
-              aria-label="設定カテゴリ。現在は General の設定を表示しています"
+              aria-label={`設定カテゴリ。現在は ${activeCategoryMeta.label} の設定見出しを表示しています`}
             >
-              {settingsSidebarItems.map((item) => (
-                <span
-                  key={item}
-                  className={
-                    item === "General"
-                      ? "settings-sidebar-item settings-sidebar-item-active"
-                      : "settings-sidebar-item"
-                  }
-                  aria-current={item === "General" ? "page" : undefined}
-                >
-                  {item}
-                </span>
-              ))}
+              {SETTINGS_CATEGORIES.map((item) => {
+                const isActive = item.key === activeCategory;
+                return (
+                  <button
+                    type="button"
+                    key={item.key}
+                    className={
+                      isActive
+                        ? "settings-sidebar-item settings-sidebar-item-active"
+                        : "settings-sidebar-item"
+                    }
+                    aria-pressed={isActive}
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => setActiveCategory(item.key)}
+                  >
+                    <span className="settings-sidebar-item-icon" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </nav>
+            <div className="settings-sidebar-note">
+              <span className="settings-sidebar-note-title">Local-first capture</span>
+              <span>Mic and system audio stay separated before any AI step.</span>
+            </div>
           </aside>
 
-          <main className="settings-main-pane" aria-labelledby="settings-general-title">
+          <main className="settings-main-pane" aria-labelledby={activeCategoryTitleId}>
             <div className="settings-main-heading">
               <div>
-                <p className="settings-titlebar-kicker">General</p>
-                <h2 id="settings-general-title">General settings</h2>
+                <p className="settings-titlebar-kicker">
+                  {activeCategoryMeta.kicker}
+                </p>
+                <h2 id={activeCategoryTitleId}>{activeCategoryMeta.title}</h2>
+                <p className="settings-main-subtitle">
+                  {activeCategoryMeta.subtitle}
+                </p>
               </div>
               {hasChanges && (
                 <span
