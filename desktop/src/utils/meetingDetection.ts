@@ -10,6 +10,14 @@ function isNonEmptyTrimmedString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+const disallowedUrlHostCharacters = /[\s/?#@:]/u;
+
+function isHostOnlyString(value: unknown): value is string {
+  return (
+    isNonEmptyTrimmedString(value) && !disallowedUrlHostCharacters.test(value)
+  );
+}
+
 export function isMeetingAppDetectedPayload(
   value: unknown,
 ): value is MeetingAppDetectedPayload {
@@ -24,8 +32,7 @@ export function isMeetingAppDetectedPayload(
       isMeetingDetectionSource(candidate.source)) &&
     (candidate.service === undefined ||
       isNonEmptyTrimmedString(candidate.service)) &&
-    (candidate.urlHost === undefined ||
-      isNonEmptyTrimmedString(candidate.urlHost)) &&
+    (candidate.urlHost === undefined || isHostOnlyString(candidate.urlHost)) &&
     (candidate.browserName === undefined ||
       isNonEmptyTrimmedString(candidate.browserName)) &&
     (candidate.windowTitle === undefined ||

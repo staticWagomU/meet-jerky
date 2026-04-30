@@ -12413,3 +12413,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: Rust/Swift 側から空白のみの optional 文字列が来た場合は UI 表示前に破棄されるため、実機検知で通常の Zoom / Teams / ブラウザ URL payload が従来どおり表示されることを確認する。
+
+### Meeting detection payload: require host-only urlHost
+
+- 開始日時: 2026-05-01 02:37:08 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 指示内容: `isMeetingAppDetectedPayload` の任意 `urlHost` だけを、非空 string に加えて host-only 文字列として防御する。`urlHost` が存在する場合は `trim()` 後に非空で、raw whitespace、`/`, `?`, `#`, `@`, `:` を含む値を拒否する。`bundleId`, `appName`, `service`, `browserName`, `windowTitle`, `source` の現在の判定は維持する。Rust 側 payload、MeetingDetectedBanner、CSS、`.pen` は変更しない。コミット禁止。
+- 結果: `isHostOnlyString` を追加し、`urlHost` のみ `isNonEmptyTrimmedString` に加えて raw whitespace と URL/path/query/fragment/userinfo/port 風の禁止文字を拒否するようにした。正規 Rust payload の正規化 host（例: `meet.google.com`, `company.zoom.us`, `teams.cloud.microsoft`）は許可される。その他フィールドの判定は変更していない。
+- 変更ファイル: `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingDetection.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `scripts/agent-verify.sh src/utils/meetingDetection.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機検知経路で通常のブラウザ会議 URL payload が正規化 host のまま UI に表示され、URL 全文や port 風の `urlHost` が UI 表示前に破棄されることを確認する。
