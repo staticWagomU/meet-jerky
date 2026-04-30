@@ -6,6 +6,10 @@ function isMeetingDetectionSource(
   return value === "app" || value === "browser";
 }
 
+function isNonEmptyTrimmedString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export function isMeetingAppDetectedPayload(
   value: unknown,
 ): value is MeetingAppDetectedPayload {
@@ -14,17 +18,17 @@ export function isMeetingAppDetectedPayload(
   }
   const candidate = value as Partial<MeetingAppDetectedPayload>;
   return (
-    typeof candidate.bundleId === "string" &&
-    typeof candidate.appName === "string" &&
+    isNonEmptyTrimmedString(candidate.bundleId) &&
+    isNonEmptyTrimmedString(candidate.appName) &&
     (candidate.source === undefined ||
       isMeetingDetectionSource(candidate.source)) &&
     (candidate.service === undefined ||
-      typeof candidate.service === "string") &&
+      isNonEmptyTrimmedString(candidate.service)) &&
     (candidate.urlHost === undefined ||
-      typeof candidate.urlHost === "string") &&
+      isNonEmptyTrimmedString(candidate.urlHost)) &&
     (candidate.browserName === undefined ||
-      typeof candidate.browserName === "string") &&
+      isNonEmptyTrimmedString(candidate.browserName)) &&
     (candidate.windowTitle === undefined ||
-      typeof candidate.windowTitle === "string")
+      isNonEmptyTrimmedString(candidate.windowTitle))
   );
 }

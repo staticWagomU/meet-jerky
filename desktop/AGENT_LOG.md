@@ -12399,3 +12399,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で FaceTime 起動またはアクティブ化時に Swift bridge 経由で検知通知が出ることを確認する。
+
+### Meeting detection payload: require non-empty trimmed strings
+
+- 開始日時: 2026-05-01 02:16:25 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 指示内容: `isMeetingAppDetectedPayload` を防御的にし、必須の `bundleId` / `appName` と任意の `service` / `urlHost` / `browserName` / `windowTitle` は、存在する場合に `trim()` 後に非空の string だけを許可する。`source` は既存どおり `"app"` / `"browser"` のみを許可する。Rust 側 payload、MeetingDetectedBanner、CSS、`.pen` は変更しない。コミット禁止。
+- 結果: `isNonEmptyTrimmedString` を追加し、必須フィールドと任意フィールドの型ガードを `trim()` 後の非空判定へ変更した。正規 Rust payload の値は変換せず、非空 string 判定だけを行うため正規経路は維持される。`source` の許可値は変更していない。
+- 変更ファイル: `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingDetection.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `scripts/agent-verify.sh src/utils/meetingDetection.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: Rust/Swift 側から空白のみの optional 文字列が来た場合は UI 表示前に破棄されるため、実機検知で通常の Zoom / Teams / ブラウザ URL payload が従来どおり表示されることを確認する。
