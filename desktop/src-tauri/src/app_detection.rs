@@ -360,7 +360,11 @@ fn is_valid_dns_label(label: &str) -> bool {
 }
 
 fn is_google_meet_url(host: &str, path: &str) -> bool {
-    host == "meet.google.com" && is_google_meet_code_path(path)
+    host == "meet.google.com"
+        && (is_google_meet_code_path(path)
+            || path
+                .strip_prefix("/lookup/")
+                .is_some_and(has_single_non_empty_segment))
 }
 
 fn is_google_meet_code_path(path: &str) -> bool {
@@ -693,6 +697,20 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/abcdefg"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/abcdefg/"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://company.zoom.us/j/123456789?pwd=secret"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -973,6 +991,26 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://meet.google.com/abc-defg-hij//"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup//"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/a/b"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/a//"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://calendar.google.com/lookup/abcdefg"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.microsoft.com/"), None);

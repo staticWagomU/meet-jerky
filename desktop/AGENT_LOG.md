@@ -1,5 +1,19 @@
 # Agent Log
 
+### Google Meet lookup URL classification
+
+- 開始日時: 2026-04-30 18:47 JST
+- 担当セッション: 作業担当エージェント（本セッション）
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: Google Meet の lookup 招待 URL を `classify_meeting_url` で Google Meet として分類する。host は `meet.google.com` のみ、path は `/lookup/<単一の非空セグメント>` のみ許可し、URL 全文や lookup token を payload に出さない方針を維持する。コミットは禁止。
+- 結果: `meet.google.com` の通常 Meet code 判定に加えて `/lookup/<単一の非空セグメント>` を Google Meet として分類するようにした。`/lookup/`, `/lookup//`, `/lookup/a/b`, `/lookup/a//` と `meet.google.com` 以外の lookup URL は拒否するテストを追加した。返却値は従来通り service と host のみで、URL 全文や token は保持しない。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed, 162 filtered out）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機のブラウザ URL 取得経路で `https://meet.google.com/lookup/abcdefg` を開いた際に会議検知通知が出ることを確認する。
+
 ### Session history a11y: clarify track counts
 
 - 開始日時: 2026-04-29 13:30 JST
