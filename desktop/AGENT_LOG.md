@@ -12315,3 +12315,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機またはブラウザで Settings の各カテゴリを切り替え、本文表示と保存導線が `.pen` の想定に合っているか確認する。
+
+### Settings readonly panes: keep save action for unsaved changes
+
+- 開始日時: 2026-05-01 01:11:55 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Settings 本文の `detection` / `aiMinutes` は `.pen` 由来の読み取り専用カテゴリ構成を維持しつつ、他カテゴリで作った未保存変更がある場合は既存の `settings-actions` 保存バーを表示して、その場で保存できるようにする。CSS、保存処理、表示テキスト、`.pen` は変更しない。コミット禁止。
+- 結果: 編集可能カテゴリ判定を `isEditableCategory` にまとめ、保存バー表示条件を `isEditableCategory || hasChanges` に変更した。未保存変更がない `detection` / `aiMinutes` では保存済みボタンを表示せず、未保存変更が残っている場合だけ既存の `handleSave` / `saveSettingsLabel` / `updateMutation` を使う保存バーを表示する。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機またはブラウザで、未保存変更を持ったまま `detection` / `aiMinutes` へ移動したときに保存バーが表示され、保存後は読み取り専用カテゴリで保存済みボタンが消えることを確認する。

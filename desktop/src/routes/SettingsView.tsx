@@ -508,6 +508,12 @@ export function SettingsView() {
     SETTINGS_CATEGORIES.find((category) => category.key === activeCategory) ??
     SETTINGS_CATEGORIES[0];
   const activeCategoryTitleId = `settings-${activeCategoryMeta.key}-title`;
+  const isEditableCategory =
+    activeCategory === "transcription" ||
+    activeCategory === "audio" ||
+    activeCategory === "general" ||
+    activeCategory === "privacy";
+  const shouldShowSettingsActions = isEditableCategory || hasChanges;
 
   return (
     <div
@@ -1123,12 +1129,7 @@ export function SettingsView() {
             )}
 
             {/* 保存ボタン */}
-            {(
-              activeCategory === "transcription" ||
-              activeCategory === "audio" ||
-              activeCategory === "general" ||
-              activeCategory === "privacy"
-            ) && (
+            {shouldShowSettingsActions && (
               <div className="settings-actions">
         {hasChanges && (
           <span
