@@ -12357,3 +12357,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 素の PATH では `npm` が見つからなかったため、既存運用と同じ PATH を明示して再検証した。
 - 次アクション: 実機で Zoom / Teams / 手動開始時のライブ字幕ウィンドウがサービス名を断定せず、aria/title の詳細説明が従来どおり機能することを確認する。
+
+### App detection: reject meeting URLs with raw whitespace
+
+- 開始日時: 2026-05-01 01:37:28 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: `classify_meeting_url` の前後空白付き URL 許容は維持しつつ、trim 後の URL 文字列に ASCII/Unicode の raw whitespace が残る場合は会議 URL として分類しない。Google Meet lookup、Zoom、Teams の内部空白ケースをテストに追加し、URL 全文や path/token を payload/log/UI に出さない方針は維持する。コミット禁止。
+- 結果: `parse_url_host_and_path` の `trim()` 直後に `char::is_whitespace` チェックを追加し、内部空白を含む URL を `None` にした。Google Meet lookup の ASCII 空白と全角空白、Zoom の query 前空白、Teams の tab 入り URL を拒否する回帰テストを追加した。前後空白付き URL の既存許容と、エンコード済み `%20` を raw whitespace として拒否しない挙動もテストで確認した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed, 162 filtered out）。メイン側で `scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機ブラウザ URL 取得経路で、通常のエンコード済み URL が従来どおり分類されることを確認する。

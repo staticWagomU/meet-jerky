@@ -253,6 +253,10 @@ struct ParsedUrlParts {
 
 fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
     let trimmed = url.trim();
+    if trimmed.chars().any(char::is_whitespace) {
+        return None;
+    }
+
     let (scheme, after_scheme) = trimmed.split_once("://")?;
     if !scheme.eq_ignore_ascii_case("http") && !scheme.eq_ignore_ascii_case("https") {
         return None;
@@ -1088,6 +1092,29 @@ mod tests {
     #[test]
     fn classify_meeting_url_rejects_non_http_urls() {
         assert_eq!(classify_meeting_url("meet.google.com/abc-defg-hij"), None);
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/a b"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/lookup/a\u{3000}b"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/j/123456789 ?pwd=x"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/1234567890123\t?p=x"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url(" https://meet.google.com/lookup/a%20b "),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
         assert_eq!(
             classify_meeting_url("file://meet.google.com/abc-defg-hij"),
             None
