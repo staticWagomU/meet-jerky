@@ -163,8 +163,8 @@ export function MeetingDetectedBanner() {
   const bannerDetail = listenerError
     ? null
     : sourceLabel
-      ? `${displayName} · ${sourceLabel} と音声アクティビティで確認`
-      : `${displayName} · 音声アクティビティで確認`;
+      ? `${displayName} · ${sourceLabel} で確認`
+      : `${displayName} · 会議候補として検知`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
@@ -423,7 +423,7 @@ export function getMeetingDetectedDisplayName(
 
 export function getMeetingDetectedSourceLabel(
   payload: MeetingAppDetectedPayload,
-): string {
+): string | null {
   const hostLabel = getMeetingDetectedHostLabel(payload.urlHost);
   if (payload.browserName && hostLabel) {
     return `${payload.browserName} URL`;
@@ -437,7 +437,7 @@ export function getMeetingDetectedSourceLabel(
   if (payload.source === "app") {
     return "アプリ";
   }
-  return "検知";
+  return null;
 }
 
 function getMeetingDetectedHostLabel(urlHost: string | undefined): string | null {

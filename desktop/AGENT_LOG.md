@@ -12259,3 +12259,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: Chrome Beta / Dev / Canary をインストールした実機で、Automation / Accessibility 権限下のアクティブタブ URL 検知を確認する。
+
+### Notch notification: remove unsupported audio activity evidence
+
+- 開始日時: 2026-05-01 00:35:01 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 最新 `meet-jerky-desktop.pen` の Mock 2 Notch Notification (`D0qo1` / `XUVhM`) のレイアウト、見た目、操作は維持しつつ、現実装の検知根拠にない「音声アクティビティで確認」という断定を外す。ブラウザ URL 検知とアプリ検知は URL / アプリ根拠だけを表示し、根拠がない場合は会議候補として検知した文言にする。CSS、Rust/Swift、payload schema、`.pen` は触らない。コミット禁止。
+- 結果: `bannerDetail` を `${displayName} · ${sourceLabel} で確認` または `${displayName} · 会議候補として検知` に変更し、音声アクティビティを会議検知根拠として表示しないようにした。未知の検知元で `検知` という根拠風ラベルを作らないよう、`getMeetingDetectedSourceLabel` は該当がない場合 `null` を返す。これは現実装の payload / Rust / Swift が音声アクティビティを会議検知根拠にしていないための、意図的な `.pen` 文言差分。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機通知で URL / アプリ検知時の表示が、実装済み根拠だけを示す文言になっているか確認する。
