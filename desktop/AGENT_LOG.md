@@ -12245,3 +12245,17 @@
 - 依存関係追加の有無と理由: あり。`lucide-react` を追加した。最新 `.pen` の sidebar/brand mark が lucide icon 指定であり、既存の文字アイコンより視覚準拠度が高いため。課金・認証変更はなく、`npm install` 時点の audit は 0 vulnerabilities。
 - 失敗理由: worker が TSX と依存追加後に CSS / AGENT_LOG / 検証まで進まなかったため、自律運用停止回避としてメインが最小補完し、競合回避のため worker セッションを終了した。
 - 次アクション: 実機またはスクリーンショットで Settings shell が `.pen` の 820x560 モックに近いか確認し、次ループではカテゴリ別 detail card 分割の安全な段階導入可否を検討する。
+
+### Browser URL detection: add Chrome prerelease bundles
+
+- 開始日時: 2026-05-01 00:15:39 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: プロダクト優先順位 2「会議検知の網羅性と信頼性」として、ブラウザ URL 検知対象に Google Chrome Beta / Dev / Canary の bundle を小さく安全に追加する。既存の Safari / Chrome stable / Edge / Brave / Arc / Firefox の定義、URL 分類、payload、通知表示には触らない。`meet-jerky-desktop.pen` はユーザー/デザイナー変更として編集・ステージ・コミットしない。コミット禁止。
+- 結果: `watchedBrowsers` に `com.google.Chrome.beta`, `com.google.Chrome.dev`, `com.google.Chrome.canary` を Chromium 系ブラウザとして追加した。既存ブラウザ定義、URL 分類、payload、通知表示は変更していない。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。実機での Chrome Beta / Dev / Canary URL 検知は未実機確認（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: Chrome Beta / Dev / Canary をインストールした実機で、Automation / Accessibility 権限下のアクティブタブ URL 検知を確認する。

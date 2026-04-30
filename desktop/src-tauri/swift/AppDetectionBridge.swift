@@ -82,6 +82,24 @@ public final class AppDetector: @unchecked Sendable {
             tabScriptKind: .chromium
         ),
         BrowserDescriptor(
+            bundleId: "com.google.Chrome.beta",
+            displayName: "Google Chrome Beta",
+            appleScriptName: "Google Chrome Beta",
+            tabScriptKind: .chromium
+        ),
+        BrowserDescriptor(
+            bundleId: "com.google.Chrome.dev",
+            displayName: "Google Chrome Dev",
+            appleScriptName: "Google Chrome Dev",
+            tabScriptKind: .chromium
+        ),
+        BrowserDescriptor(
+            bundleId: "com.google.Chrome.canary",
+            displayName: "Google Chrome Canary",
+            appleScriptName: "Google Chrome Canary",
+            tabScriptKind: .chromium
+        ),
+        BrowserDescriptor(
             bundleId: "com.microsoft.edgemac",
             displayName: "Microsoft Edge",
             appleScriptName: "Microsoft Edge",
