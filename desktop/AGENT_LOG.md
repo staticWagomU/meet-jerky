@@ -12469,3 +12469,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 内部ヘルパーを `Record<string, unknown>` 引数の型述語として書いた初回実装では TypeScript の assignability 制約により `TS2677` が出たため、外部公開ガードだけを型述語に残し、内部ヘルパーは boolean 判定へ修正した。修正後の指定検証は成功。
 - 次アクション: 実機または Tauri イベント経路で、Zoom / Teams などの app payload に browser 系フィールドが混入しないこと、Google Meet / Zoom URL などの browser payload が必須フィールド付きで表示されることを確認する。
+
+### Meeting detection payload: enforce source-specific Rust contract
+
+- 開始日時: 2026-05-01 08:40:20 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント（worker 停滞による最小例外実装）
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: フロントの `MeetingAppDetectedPayload` discriminated union と整合するよう、Rust 側 payload も `source` 別 enum に寄せる。app payload は `source: "app"`, `bundleId`, `appName` のみ、browser payload は `source: "browser"`, `bundleId`, `appName`, `service`, `urlHost`, `browserName` のみを serialize し、URL 全文や `windowTitle` を出さない。既存検知ロジック、Swift bridge、React UI、CSS、`.pen` は変更しない。
+- 結果: `MeetingAppDetectedPayload` を `#[serde(tag = "source")]` の enum に変更し、app/browser 生成箇所を専用 variant へ切り替えた。app payload に browser 系 field が混入せず、browser payload に URL 全文や `windowTitle` が混入しないことを既存 serialization テストで確認する形に更新した。`mj-worker-app-detection-payload-enum-20260501` は 90 秒以上プロンプト表示のまま差分なしだったため停止し、main が継続性維持のため最小範囲で実装した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed, 162 filtered out）。`scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker が起動後に実行へ進まず、差分ゼロのまま停滞したため main が例外実装した。
+- 次アクション: 実機または Tauri イベント経路で app/browser payload がフロントの source 別契約どおり受信されることを確認する。

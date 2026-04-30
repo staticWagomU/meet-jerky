@@ -44,21 +44,28 @@ const NOTIFICATION_THROTTLE: Duration = Duration::from_secs(60);
 
 /// フロントエンドに送る通知ペイロード (Tauri event)。
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(tag = "source")]
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-pub struct MeetingAppDetectedPayload {
-    pub bundle_id: String,
-    pub app_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub service: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub url_host: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub browser_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub window_title: Option<String>,
+pub enum MeetingAppDetectedPayload {
+    #[serde(rename = "app")]
+    App {
+        #[serde(rename = "bundleId")]
+        bundle_id: String,
+        #[serde(rename = "appName")]
+        app_name: String,
+    },
+    #[serde(rename = "browser")]
+    Browser {
+        #[serde(rename = "bundleId")]
+        bundle_id: String,
+        #[serde(rename = "appName")]
+        app_name: String,
+        service: String,
+        #[serde(rename = "urlHost")]
+        url_host: String,
+        #[serde(rename = "browserName")]
+        browser_name: String,
+    },
 }
 
 /// ブラウザ URL から会議サービスを分類した結果。
@@ -128,14 +135,9 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
     show_notification(&state.app_handle, app_name);
 
     // フロントエンド (バナー表示・録音/文字起こし状態確認導線) へイベントを通知
-    let payload = MeetingAppDetectedPayload {
+    let payload = MeetingAppDetectedPayload::App {
         bundle_id: bundle_id.to_string(),
         app_name: app_name.to_string(),
-        source: Some("app".to_string()),
-        service: None,
-        url_host: None,
-        browser_name: None,
-        window_title: None,
     };
     if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
         eprintln!("[app_detection] emit failed: {e}");
@@ -179,14 +181,12 @@ fn handle_browser_url_detection(
     crate::show_meeting_prompt_window(&state.app_handle);
     show_notification(&state.app_handle, &classification.service);
 
-    let payload = MeetingAppDetectedPayload {
+    let payload = MeetingAppDetectedPayload::Browser {
         bundle_id: bundle_id.to_string(),
         app_name: browser_name.to_string(),
-        source: Some("browser".to_string()),
-        service: Some(classification.service),
-        url_host: Some(classification.host),
-        browser_name: Some(browser_name.to_string()),
-        window_title: None,
+        service: classification.service,
+        url_host: classification.host,
+        browser_name: browser_name.to_string(),
     };
     if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
         eprintln!("[app_detection] browser emit failed: {e}");
@@ -608,35 +608,33 @@ mod tests {
     #[test]
     fn meeting_app_detected_payload_serializes_camel_case() {
         // フロントエンドの型定義 (camelCase) と整合する形でシリアライズされること
-        let payload = MeetingAppDetectedPayload {
+        let payload = MeetingAppDetectedPayload::App {
             bundle_id: "us.zoom.xos".to_string(),
             app_name: "Zoom".to_string(),
-            source: Some("app".to_string()),
-            service: None,
-            url_host: None,
-            browser_name: None,
-            window_title: None,
         };
         let json = serde_json::to_string(&payload).unwrap();
         assert!(json.contains("\"bundleId\":\"us.zoom.xos\""));
         assert!(json.contains("\"appName\":\"Zoom\""));
         assert!(json.contains("\"source\":\"app\""));
+        assert!(!json.contains("service"));
         assert!(!json.contains("urlHost"));
+        assert!(!json.contains("browserName"));
+        assert!(!json.contains("windowTitle"));
         assert!(!json.contains("bundle_id"));
     }
 
     #[test]
     fn browser_meeting_payload_serializes_without_full_url() {
-        let payload = MeetingAppDetectedPayload {
+        let payload = MeetingAppDetectedPayload::Browser {
             bundle_id: "com.apple.Safari".to_string(),
             app_name: "Safari".to_string(),
-            source: Some("browser".to_string()),
-            service: Some("Google Meet".to_string()),
-            url_host: Some("meet.google.com".to_string()),
-            browser_name: Some("Safari".to_string()),
-            window_title: None,
+            service: "Google Meet".to_string(),
+            url_host: "meet.google.com".to_string(),
+            browser_name: "Safari".to_string(),
         };
         let json = serde_json::to_string(&payload).unwrap();
+        assert!(json.contains("\"bundleId\":\"com.apple.Safari\""));
+        assert!(json.contains("\"appName\":\"Safari\""));
         assert!(json.contains("\"source\":\"browser\""));
         assert!(json.contains("\"service\":\"Google Meet\""));
         assert!(json.contains("\"urlHost\":\"meet.google.com\""));
