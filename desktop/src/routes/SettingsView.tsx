@@ -610,11 +610,13 @@ export function SettingsView() {
               )}
             </div>
 
-            {/* 文字起こしエンジン */}
-            <div className="settings-section">
-              <h3 className="settings-section-title" id="transcription-engine-title">
-                文字起こしエンジン
-              </h3>
+            {activeCategory === "transcription" && (
+              <>
+                {/* 文字起こしエンジン */}
+                <div className="settings-section">
+                  <h3 className="settings-section-title" id="transcription-engine-title">
+                    文字起こしエンジン
+                  </h3>
         <div
           className="settings-radio-group"
           role="radiogroup"
@@ -753,63 +755,89 @@ export function SettingsView() {
             では安全のため無効化されます。片側トラックだけを手動開始して利用してください。
           </p>
         )}
-      </div>
+                </div>
 
-      {/* 外部 Realtime API キー */}
-      {localSettings.transcriptionEngine === "openAIRealtime" && (
-        <ExternalApiKeySection
-          providerName="OpenAI"
-          noteId={OPENAI_API_KEY_NOTE_ID}
-          queryKey={["openaiApiKey", "has"]}
-          hasCommand="has_openai_api_key"
-          setCommand="set_openai_api_key"
-          clearCommand="clear_openai_api_key"
-          placeholder="sk-..."
-          clearToast={clearToast}
-          showToast={showToast}
-        />
-      )}
-      {localSettings.transcriptionEngine === "elevenLabsRealtime" && (
-        <ExternalApiKeySection
-          providerName="ElevenLabs"
-          noteId={ELEVENLABS_API_KEY_NOTE_ID}
-          queryKey={["elevenlabsApiKey", "has"]}
-          hasCommand="has_elevenlabs_api_key"
-          setCommand="set_elevenlabs_api_key"
-          clearCommand="clear_elevenlabs_api_key"
-          placeholder="xi-..."
-          clearToast={clearToast}
-          showToast={showToast}
-        />
-      )}
+                {/* 外部 Realtime API キー */}
+                {localSettings.transcriptionEngine === "openAIRealtime" && (
+                  <ExternalApiKeySection
+                    providerName="OpenAI"
+                    noteId={OPENAI_API_KEY_NOTE_ID}
+                    queryKey={["openaiApiKey", "has"]}
+                    hasCommand="has_openai_api_key"
+                    setCommand="set_openai_api_key"
+                    clearCommand="clear_openai_api_key"
+                    placeholder="sk-..."
+                    clearToast={clearToast}
+                    showToast={showToast}
+                  />
+                )}
+                {localSettings.transcriptionEngine === "elevenLabsRealtime" && (
+                  <ExternalApiKeySection
+                    providerName="ElevenLabs"
+                    noteId={ELEVENLABS_API_KEY_NOTE_ID}
+                    queryKey={["elevenlabsApiKey", "has"]}
+                    hasCommand="has_elevenlabs_api_key"
+                    setCommand="set_elevenlabs_api_key"
+                    clearCommand="clear_elevenlabs_api_key"
+                    placeholder="xi-..."
+                    clearToast={clearToast}
+                    showToast={showToast}
+                  />
+                )}
 
-      {/* Whisper モデル */}
-      {localSettings.transcriptionEngine === "whisper" && (
-        <div className="settings-section">
-          <h3 className="settings-section-title">Whisper モデル</h3>
-          <select
-            aria-label={whisperModelLabel}
-            title={whisperModelLabel}
-            value={localSettings.whisperModel}
-            onChange={(e) =>
-              setLocalSettings((current) =>
-                current ? { ...current, whisperModel: e.target.value } : current,
-              )
-            }
-            className="settings-select"
-          >
-            {WHISPER_MODELS.map((model) => (
-              <option key={model.value} value={model.value}>
-                {model.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+                {/* Whisper モデル */}
+                {localSettings.transcriptionEngine === "whisper" && (
+                  <div className="settings-section">
+                    <h3 className="settings-section-title">Whisper モデル</h3>
+                    <select
+                      aria-label={whisperModelLabel}
+                      title={whisperModelLabel}
+                      value={localSettings.whisperModel}
+                      onChange={(e) =>
+                        setLocalSettings((current) =>
+                          current ? { ...current, whisperModel: e.target.value } : current,
+                        )
+                      }
+                      className="settings-select"
+                    >
+                      {WHISPER_MODELS.map((model) => (
+                        <option key={model.value} value={model.value}>
+                          {model.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
-      {/* マイクデバイス */}
-      <div className="settings-section">
-        <h3 className="settings-section-title">自分トラックのマイク</h3>
+                {/* 言語 */}
+                <div className="settings-section">
+                  <h3 className="settings-section-title">文字起こし言語</h3>
+                  <select
+                    aria-label={languageLabel}
+                    title={languageLabel}
+                    value={localSettings.language}
+                    onChange={(e) =>
+                      setLocalSettings((current) =>
+                        current ? { ...current, language: e.target.value } : current,
+                      )
+                    }
+                    className="settings-select"
+                  >
+                    {LANGUAGES.map((lang) => (
+                      <option key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {activeCategory === "audio" && (
+              <>
+                {/* マイクデバイス */}
+                <div className="settings-section">
+                  <h3 className="settings-section-title">自分トラックのマイク</h3>
         <select
           aria-label={microphoneDeviceLabel}
           title={microphoneDeviceLabel}
@@ -853,33 +881,25 @@ export function SettingsView() {
             </button>
           </div>
         )}
-      </div>
+                </div>
 
-      {/* 言語 */}
-      <div className="settings-section">
-        <h3 className="settings-section-title">文字起こし言語</h3>
-        <select
-          aria-label={languageLabel}
-          title={languageLabel}
-          value={localSettings.language}
-          onChange={(e) =>
-            setLocalSettings((current) =>
-              current ? { ...current, language: e.target.value } : current,
-            )
-          }
-          className="settings-select"
-        >
-          {LANGUAGES.map((lang) => (
-            <option key={lang.value} value={lang.value}>
-              {lang.label}
-            </option>
-          ))}
-        </select>
-      </div>
+                <div className="settings-readonly-card">
+                  <h3 className="settings-readonly-card-title">
+                    相手側システム音声
+                  </h3>
+                  <p>
+                    相手側トラックはデスクトップ/アプリ音声として扱います。macOS
+                    ではシステム音声取得が画面収録権限に依存するため、画面収録が未許可の場合は相手側音声を取得できません。
+                  </p>
+                </div>
+              </>
+            )}
 
-      {/* 出力先ディレクトリ */}
-      <div className="settings-section">
-        <h3 className="settings-section-title">出力先ディレクトリ</h3>
+            {(activeCategory === "general" || activeCategory === "privacy") && (
+              <>
+                {/* 出力先ディレクトリ */}
+                <div className="settings-section">
+                  <h3 className="settings-section-title">出力先ディレクトリ</h3>
         <div className="settings-output-dir">
           <div className="settings-output-summary">
             <span
@@ -946,11 +966,11 @@ export function SettingsView() {
             </button>
           </div>
         </div>
-      </div>
+                </div>
 
-      {/* 権限ステータス */}
-      <div className="settings-section">
-        <h3 className="settings-section-title">権限ステータス</h3>
+                {/* 権限ステータス */}
+                <div className="settings-section">
+                  <h3 className="settings-section-title">権限ステータス</h3>
         <div className="settings-permissions">
           <div className="settings-permission-row">
             <span className="settings-permission-label">
@@ -1066,10 +1086,50 @@ export function SettingsView() {
             の自動操作またはアクセシビリティ許可を求める場合があります。URL 全体は表示・保存せず、会議サービスとホスト名だけを使います。
           </p>
         </div>
-      </div>
+                </div>
 
-      {/* 保存ボタン */}
-      <div className="settings-actions">
+                {activeCategory === "privacy" && (
+                  <div className="settings-readonly-card">
+                    <h3 className="settings-readonly-card-title">外部送信</h3>
+                    <p>
+                      文字起こしの外部送信は、OpenAI Realtime API または ElevenLabs
+                      Scribe v2 Realtime を選択した場合に発生し得ます。ローカル
+                      Whisper と macOS SpeechAnalyzer は端末内で処理します。
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeCategory === "detection" && (
+              <div className="settings-readonly-card">
+                <h3 className="settings-readonly-card-title">会議検知</h3>
+                <p>
+                  現在はブラウザ URL、会議アプリ、アクティブアプリの検知に対応しています。音声状態は現時点では会議検知の根拠として断定せず、録音可否とマイク/画面収録権限の文脈で扱います。
+                </p>
+                <p>
+                  検知ルールをユーザーが編集する UI はまだ実装していません。
+                </p>
+              </div>
+            )}
+
+            {activeCategory === "aiMinutes" && (
+              <div className="settings-readonly-card">
+                <h3 className="settings-readonly-card-title">AI 議事録</h3>
+                <p>
+                  AI 議事録の provider/template 設定はまだ実装していません。外部送信やプロバイダ側の課金が関わるため、明示的な同意を得たあとに今後の設定として扱います。
+                </p>
+              </div>
+            )}
+
+            {/* 保存ボタン */}
+            {(
+              activeCategory === "transcription" ||
+              activeCategory === "audio" ||
+              activeCategory === "general" ||
+              activeCategory === "privacy"
+            ) && (
+              <div className="settings-actions">
         {hasChanges && (
           <span
             className="settings-unsaved-status"
@@ -1096,7 +1156,8 @@ export function SettingsView() {
               ? "設定を保存"
               : "保存済み"}
         </button>
-            </div>
+              </div>
+            )}
           </main>
         </div>
       </div>
