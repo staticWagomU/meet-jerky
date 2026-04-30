@@ -64,12 +64,26 @@ export interface AppSettings {
 
 /// `meeting-app-detected` Tauri イベントの payload。
 /// 会議アプリまたはブラウザ会議 URL を検知したときに Rust 側から発火する。
-export interface MeetingAppDetectedPayload {
+export interface MeetingAppDetectedAppPayload {
   bundleId: string;
   appName: string;
-  source?: "app" | "browser";
-  service?: string;
-  urlHost?: string;
-  browserName?: string;
+  source: "app";
+  service?: never;
+  urlHost?: never;
+  browserName?: never;
+  windowTitle?: never;
+}
+
+export interface MeetingAppDetectedBrowserPayload {
+  bundleId: string;
+  appName: string;
+  source: "browser";
+  service: string;
+  urlHost: string;
+  browserName: string;
   windowTitle?: string;
 }
+
+export type MeetingAppDetectedPayload =
+  | MeetingAppDetectedAppPayload
+  | MeetingAppDetectedBrowserPayload;

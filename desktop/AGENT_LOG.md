@@ -12427,3 +12427,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機検知経路で通常のブラウザ会議 URL payload が正規化 host のまま UI に表示され、URL 全文や port 風の `urlHost` が UI 表示前に破棄されることを確認する。
+
+### Meeting detection payload: enforce source-specific frontend contract
+
+- 開始日時: 2026-05-01 02:57:05 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/utils/meetingDetection.ts`, `src/types/index.ts`, `AGENT_LOG.md`
+- 指示内容: Rust 正規 payload に合わせて、フロントの `MeetingAppDetectedPayload` と `isMeetingAppDetectedPayload` を `source` 別契約へ寄せる。`source` は必須で `"app"` / `"browser"` のみ許可する。`source: "app"` は `bundleId` / `appName` の非空 string を必須にし、`service` / `urlHost` / `browserName` / `windowTitle` が存在しない場合のみ許可する。`source: "browser"` は `bundleId` / `appName` / `service` / `browserName` の非空 string、`urlHost` の host-only 判定を必須にし、`windowTitle` は存在する場合のみ非空 string を許可する。Rust 側 payload、`MeetingDetectedBanner`、CSS、`.pen` は変更しない。コミット禁止。
+- 結果: `MeetingAppDetectedPayload` を `MeetingAppDetectedAppPayload` と `MeetingAppDetectedBrowserPayload` の discriminated union に変更し、既存表示コードが `payload.service` / `payload.urlHost` を安全に読める optional property 形を維持した。`isMeetingAppDetectedPayload` は `source` 必須判定後に app / browser の専用検証へ分岐し、app payload ではブラウザ系フィールドの存在を拒否、browser payload では `service` / host-only `urlHost` / `browserName` を必須化した。
+- 変更ファイル: `src/utils/meetingDetection.ts`, `src/types/index.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingDetection.ts src/types/index.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `scripts/agent-verify.sh src/utils/meetingDetection.ts src/types/index.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 内部ヘルパーを `Record<string, unknown>` 引数の型述語として書いた初回実装では TypeScript の assignability 制約により `TS2677` が出たため、外部公開ガードだけを型述語に残し、内部ヘルパーは boolean 判定へ修正した。修正後の指定検証は成功。
+- 次アクション: 実機または Tauri イベント経路で、Zoom / Teams などの app payload に browser 系フィールドが混入しないこと、Google Meet / Zoom URL などの browser payload が必須フィールド付きで表示されることを確認する。

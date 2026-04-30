@@ -18,24 +18,54 @@ function isHostOnlyString(value: unknown): value is string {
   );
 }
 
+function hasProperty(
+  value: Record<string, unknown>,
+  key: keyof MeetingAppDetectedPayload,
+): boolean {
+  return key in value;
+}
+
+function isMeetingAppDetectedAppPayload(
+  candidate: Record<string, unknown>,
+): boolean {
+  return (
+    isNonEmptyTrimmedString(candidate.bundleId) &&
+    isNonEmptyTrimmedString(candidate.appName) &&
+    candidate.source === "app" &&
+    !hasProperty(candidate, "service") &&
+    !hasProperty(candidate, "urlHost") &&
+    !hasProperty(candidate, "browserName") &&
+    !hasProperty(candidate, "windowTitle")
+  );
+}
+
+function isMeetingAppDetectedBrowserPayload(
+  candidate: Record<string, unknown>,
+): boolean {
+  return (
+    isNonEmptyTrimmedString(candidate.bundleId) &&
+    isNonEmptyTrimmedString(candidate.appName) &&
+    candidate.source === "browser" &&
+    isNonEmptyTrimmedString(candidate.service) &&
+    isHostOnlyString(candidate.urlHost) &&
+    isNonEmptyTrimmedString(candidate.browserName) &&
+    (!hasProperty(candidate, "windowTitle") ||
+      isNonEmptyTrimmedString(candidate.windowTitle))
+  );
+}
+
 export function isMeetingAppDetectedPayload(
   value: unknown,
 ): value is MeetingAppDetectedPayload {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const candidate = value as Partial<MeetingAppDetectedPayload>;
-  return (
-    isNonEmptyTrimmedString(candidate.bundleId) &&
-    isNonEmptyTrimmedString(candidate.appName) &&
-    (candidate.source === undefined ||
-      isMeetingDetectionSource(candidate.source)) &&
-    (candidate.service === undefined ||
-      isNonEmptyTrimmedString(candidate.service)) &&
-    (candidate.urlHost === undefined || isHostOnlyString(candidate.urlHost)) &&
-    (candidate.browserName === undefined ||
-      isNonEmptyTrimmedString(candidate.browserName)) &&
-    (candidate.windowTitle === undefined ||
-      isNonEmptyTrimmedString(candidate.windowTitle))
-  );
+  const candidate = value as Record<string, unknown>;
+  if (!isMeetingDetectionSource(candidate.source)) {
+    return false;
+  }
+  if (candidate.source === "app") {
+    return isMeetingAppDetectedAppPayload(candidate);
+  }
+  return isMeetingAppDetectedBrowserPayload(candidate);
 }
