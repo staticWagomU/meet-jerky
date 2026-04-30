@@ -12231,3 +12231,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機またはブラウザで `.pen` の 820x560 設定ウィンドウに対する視覚差分を確認し、カテゴリ別 detail card への分割可否を検討する。
+
+### Settings shell: match latest pen titlebar and icons
+
+- 開始日時: 2026-05-01 00:09:49 JST
+- 担当セッション: `mj-research-settings-shell-pen-20260501-1`, `mj-worker-settings-shell-pen-20260501-1`, `mj-main`
+- 役割: research 起動・確認、worker 起動・監視、メインエージェントによる緊急補完
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `package.json`, `package-lock.json`, `AGENT_LOG.md`
+- 指示内容: 最新 `meet-jerky-desktop.pen` の Settings 詳細モック (`DCzQ2`, `ZmyUB`, `oyyEL`, `ctlAg`) に合わせ、Settings shell の titlebar subtitle、recording pill、sidebar icon、active state、local-first note、category subtitle を詰める。既存フォーム、保存処理、権限確認、APIキー、Tauri invoke は変更しない。
+- 結果: `SettingsView` に `.pen` と同じ titlebar subtitle と recording dot を追加し、sidebar/brand icon を `lucide-react` の `Settings`, `Search`, `Mic`, `Type`, `Sparkles`, `Shield` に置き換えた。active category の subtitle を `.pen` の英語説明へ寄せ、local-first note を `AI sending is off until you enable minutes generation.` に変更した。CSS は recording pill を 8px radius + dot、sidebar item を white fill + subtle border + orange icon、main heading を 25px 相当に調整した。カテゴリ別 detail card 分割は、既存フォームと保存導線を落とすリスクが高いため今回対象外にした。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `package.json`, `package-lock.json`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx src/App.css package.json package-lock.json AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css package.json package-lock.json AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: あり。`lucide-react` を追加した。最新 `.pen` の sidebar/brand mark が lucide icon 指定であり、既存の文字アイコンより視覚準拠度が高いため。課金・認証変更はなく、`npm install` 時点の audit は 0 vulnerabilities。
+- 失敗理由: worker が TSX と依存追加後に CSS / AGENT_LOG / 検証まで進まなかったため、自律運用停止回避としてメインが最小補完し、競合回避のため worker セッションを終了した。
+- 次アクション: 実機またはスクリーンショットで Settings shell が `.pen` の 820x560 モックに近いか確認し、次ループではカテゴリ別 detail card 分割の安全な段階導入可否を検討する。

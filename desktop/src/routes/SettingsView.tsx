@@ -3,6 +3,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Mic,
+  Search,
+  Settings,
+  Shield,
+  Sparkles,
+  Type,
+  type LucideIcon,
+} from "lucide-react";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
@@ -54,52 +63,63 @@ const SETTINGS_CATEGORIES = [
   {
     key: "general",
     label: "General",
-    icon: "G",
+    icon: Settings,
     kicker: "General",
     title: "General",
-    subtitle: "基本設定、保存先、権限状態をまとめて確認します。",
+    subtitle: "Core preferences, storage, and permission status for meeting capture.",
   },
   {
     key: "detection",
     label: "Detection",
-    icon: "D",
+    icon: Search,
     kicker: "Detection",
     title: "Detection",
-    subtitle: "Google Meet、Zoom、Teams などの会議検知状態を調整します。",
+    subtitle:
+      "Detect meetings reliably across browsers, conferencing apps, and audio cues.",
   },
   {
     key: "audio",
     label: "Audio",
-    icon: "A",
+    icon: Mic,
     kicker: "Audio",
     title: "Audio",
-    subtitle: "自分のマイクと相手側システム音声を別トラックで扱います。",
+    subtitle:
+      "Input devices, separation, and quality - tuned for clean meeting capture.",
   },
   {
     key: "transcription",
     label: "Transcription",
-    icon: "T",
+    icon: Type,
     kicker: "Transcription",
     title: "Transcription",
-    subtitle: "リアルタイム文字起こしエンジン、言語、モデルを選びます。",
+    subtitle:
+      "Choose how meet-jerky converts captured audio into searchable text - locally first, with optional services.",
   },
   {
     key: "aiMinutes",
     label: "AI Minutes",
-    icon: "M",
+    icon: Sparkles,
     kicker: "AI Minutes",
     title: "AI Minutes",
-    subtitle: "会議後の要約、決定事項、ToDo 抽出に関する設定です。",
+    subtitle:
+      "Send transcripts to an AI provider to generate structured meeting minutes - only with your explicit consent.",
   },
   {
     key: "privacy",
     label: "Privacy",
-    icon: "P",
+    icon: Shield,
     kicker: "Privacy",
     title: "Privacy",
-    subtitle: "ローカル保存、外部送信、macOS 権限の透明性を確認します。",
+    subtitle: "Review local storage, external sending, and macOS permission transparency.",
   },
-] as const;
+] satisfies ReadonlyArray<{
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  kicker: string;
+  title: string;
+  subtitle: string;
+}>;
 
 type SettingsCategoryKey = (typeof SETTINGS_CATEGORIES)[number]["key"];
 
@@ -504,14 +524,21 @@ export function SettingsView() {
             <span className="settings-window-control settings-window-control-zoom" />
           </div>
           <div className="settings-titlebar-copy">
-            <p className="settings-titlebar-kicker">meet-jerky</p>
             <h2>Settings</h2>
+            <p className="settings-titlebar-subtitle">
+              meet-jerky controls recording, detection, and AI processing
+              transparency.
+            </p>
           </div>
           <span
             className="settings-recording-visibility-pill"
             aria-label="録音中も表示されます"
             title="録音中も表示されます"
           >
+            <span
+              className="settings-recording-visibility-dot"
+              aria-hidden="true"
+            />
             Visible while recording
           </span>
         </div>
@@ -520,7 +547,7 @@ export function SettingsView() {
           <aside className="settings-sidebar">
             <div className="settings-sidebar-brand" aria-label="meet-jerky">
               <span className="settings-sidebar-brand-icon" aria-hidden="true">
-                m
+                <Mic size={16} strokeWidth={2.2} />
               </span>
               <span className="settings-sidebar-brand-name">meet-jerky</span>
             </div>
@@ -530,6 +557,7 @@ export function SettingsView() {
             >
               {SETTINGS_CATEGORIES.map((item) => {
                 const isActive = item.key === activeCategory;
+                const ItemIcon = item.icon;
                 return (
                   <button
                     type="button"
@@ -544,7 +572,7 @@ export function SettingsView() {
                     onClick={() => setActiveCategory(item.key)}
                   >
                     <span className="settings-sidebar-item-icon" aria-hidden="true">
-                      {item.icon}
+                      <ItemIcon size={16} strokeWidth={2} />
                     </span>
                     <span>{item.label}</span>
                   </button>
@@ -553,7 +581,7 @@ export function SettingsView() {
             </nav>
             <div className="settings-sidebar-note">
               <span className="settings-sidebar-note-title">Local-first capture</span>
-              <span>Mic and system audio stay separated before any AI step.</span>
+              <span>AI sending is off until you enable minutes generation.</span>
             </div>
           </aside>
 
