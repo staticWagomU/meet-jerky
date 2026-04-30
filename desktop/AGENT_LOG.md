@@ -12371,3 +12371,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機ブラウザ URL 取得経路で、通常のエンコード済み URL が従来どおり分類されることを確認する。
+
+### Browser URL detection: add Firefox prerelease bundles
+
+- 開始日時: 2026-05-01 01:57:21 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: `AppDetector.watchedBrowsers` に Firefox Developer Edition (`org.mozilla.firefoxdeveloperedition`) と Firefox Nightly (`org.mozilla.nightly`) を追加し、Firefox stable と同じ `.firefox` の URL 取得方式を使う。既存の Safari / Chrome / Edge / Brave / Arc / Firefox stable の挙動、Rust payload、URL分類、UI文言、CSS は変更しない。`meet-jerky-desktop.pen` は編集・stage しない。コミット禁止。
+- 結果: `watchedBrowsers` に Firefox Developer Edition と Firefox Nightly を追加した。どちらも指定どおり `displayName` / `appleScriptName` を設定し、`tabScriptKind: .firefox` で Firefox stable と同じ AppleScript URL 取得方式を使うようにした。既存ブラウザ定義、Rust payload、URL分類、UI文言、CSS は変更していない。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `swiftc -typecheck src-tauri/swift/AppDetectionBridge.swift` 成功。`git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: Firefox Developer Edition / Firefox Nightly をインストールした実機で、Automation / Accessibility 権限下のアクティブタブ URL 検知を確認する。

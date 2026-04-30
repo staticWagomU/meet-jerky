@@ -123,6 +123,18 @@ public final class AppDetector: @unchecked Sendable {
             appleScriptName: "Firefox",
             tabScriptKind: .firefox
         ),
+        BrowserDescriptor(
+            bundleId: "org.mozilla.firefoxdeveloperedition",
+            displayName: "Firefox Developer Edition",
+            appleScriptName: "Firefox Developer Edition",
+            tabScriptKind: .firefox
+        ),
+        BrowserDescriptor(
+            bundleId: "org.mozilla.nightly",
+            displayName: "Firefox Nightly",
+            appleScriptName: "Firefox Nightly",
+            tabScriptKind: .firefox
+        ),
     ]
 
     private init(
