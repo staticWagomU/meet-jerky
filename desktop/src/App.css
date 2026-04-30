@@ -1289,8 +1289,12 @@ body[data-window="ring-light"] .overlay-window {
   width: 24px;
   height: 24px;
   color: #666666;
-  font-size: 18px;
   line-height: 1;
+}
+
+.live-transcript-minimize-btn svg {
+  display: block;
+  margin: 0 auto;
 }
 
 .live-transcript-end-preview-btn {
@@ -1451,14 +1455,19 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-transcript-meter-bar span {
   display: block;
-  width: 64%;
+  width: 18%;
   height: 100%;
   border-radius: inherit;
+  background: #b8bcc4;
+}
+
+.live-transcript-meter-active .live-transcript-meter-bar span {
+  width: 64%;
   background: linear-gradient(90deg, #ff6a00 0%, #ffb380 100%);
 }
 
-.live-transcript-meter:nth-of-type(2) .live-transcript-meter-bar span {
-  width: 52%;
+.live-transcript-meter-switching .live-transcript-meter-bar span {
+  width: 38%;
   background: linear-gradient(90deg, #ff8a3d 0%, #ffb380 100%);
 }
 
@@ -1483,6 +1492,12 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-transcript-tool-row button {
   flex: 1 1 0;
+}
+
+.live-transcript-tool-row button svg,
+.live-transcript-ai-preview svg {
+  flex: 0 0 auto;
+  stroke-width: 2;
 }
 
 .live-transcript-ai-preview {

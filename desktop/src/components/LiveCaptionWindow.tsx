@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { BookOpen, Bookmark, Minus, Sparkles } from "lucide-react";
 import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
@@ -288,12 +289,14 @@ export function LiveCaptionWindow() {
       track.source === "microphone"
         ? statusPayload.microphoneTrackLabel
         : statusPayload.systemAudioTrackLabel;
+    const captureState = getTrackCaptureState(captureLabel);
     const state = getTrackStateLabel(
       latestBySource[track.source],
       captureLabel,
     );
     return {
       ...track,
+      captureState,
       state,
       ariaLabel: `${track.ariaPrefix}: ${state}`,
     };
@@ -406,7 +409,7 @@ export function LiveCaptionWindow() {
             title={LIVE_CAPTION_CLOSE_LABEL}
             onClick={hideLiveCaptionWindow}
           >
-            -
+            <Minus aria-hidden="true" size={18} strokeWidth={2} />
           </button>
           <button
             type="button"
@@ -516,7 +519,7 @@ export function LiveCaptionWindow() {
             {trackStatusLabels.map((track) => (
               <div
                 key={track.source}
-                className="live-transcript-meter"
+                className={`live-transcript-meter live-transcript-meter-${track.captureState}`}
                 data-tauri-drag-region
                 aria-label={track.ariaLabel}
                 title={track.ariaLabel}
@@ -531,10 +534,10 @@ export function LiveCaptionWindow() {
             ))}
             <div className="live-transcript-tool-row" data-tauri-drag-region>
               <button type="button" disabled aria-label="マーク機能は未実装です">
-                ◇
+                <Bookmark aria-hidden="true" size={14} strokeWidth={2} />
               </button>
               <button type="button" disabled aria-label="辞書表示機能は未実装です">
-                □
+                <BookOpen aria-hidden="true" size={14} strokeWidth={2} />
               </button>
             </div>
             <button
@@ -544,6 +547,7 @@ export function LiveCaptionWindow() {
               aria-label="あとで要約は未実装です。外部AI送信は開始しません"
               title="あとで要約は未実装です。外部AI送信は開始しません。"
             >
+              <Sparkles aria-hidden="true" size={14} strokeWidth={2} />
               あとで要約
             </button>
           </aside>
