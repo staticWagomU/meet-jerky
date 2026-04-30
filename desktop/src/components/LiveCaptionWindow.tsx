@@ -41,6 +41,7 @@ type TrackMeta = {
   label: string;
   ariaPrefix: string;
 };
+type TrackCaptureState = "active" | "switching" | "inactive";
 
 const TRACKS: Array<TrackMeta> = [
   { source: "microphone", label: "自分", ariaPrefix: SELF_TRACK_DEVICE_LABEL },
@@ -85,6 +86,39 @@ function getTrackStateLabel(
     return `${captureLabel}・エラー`;
   }
   return `${captureLabel}・${formatSegmentTimestamp(segment.startMs)}`;
+}
+
+function getTrackCaptureState(label: string): TrackCaptureState {
+  const normalizedLabel = label.trim();
+  if (normalizedLabel.includes("切替中")) {
+    return "switching";
+  }
+  if (
+    normalizedLabel.includes("録音中") ||
+    normalizedLabel.includes("取得中")
+  ) {
+    return "active";
+  }
+  return "inactive";
+}
+
+function getVisibleTrackSummary(status: LiveCaptionStatusPayload): string {
+  const microphoneState = getTrackCaptureState(status.microphoneTrackLabel);
+  const systemAudioState = getTrackCaptureState(status.systemAudioTrackLabel);
+
+  if (microphoneState === "switching" || systemAudioState === "switching") {
+    return "切替中";
+  }
+  if (microphoneState === "active" && systemAudioState === "active") {
+    return "Mic + System";
+  }
+  if (microphoneState === "active") {
+    return "Mic only";
+  }
+  if (systemAudioState === "active") {
+    return "System only";
+  }
+  return "未取得";
 }
 
 export function LiveCaptionWindow() {
@@ -264,8 +298,10 @@ export function LiveCaptionWindow() {
       ariaLabel: `${track.ariaPrefix}: ${state}`,
     };
   });
+  const visibleTrackSummary = getVisibleTrackSummary(statusPayload);
   const trackRowLabel = [
     "音声トラック別の最新文字起こし状態",
+    `表示中の音声取得状態: ${visibleTrackSummary}`,
     ...trackStatusLabels.map((track) => track.ariaLabel),
   ].join("、");
   const transmissionStatusAriaLabel =
@@ -359,7 +395,7 @@ export function LiveCaptionWindow() {
             aria-label={trackRowLabel}
             title={trackRowLabel}
           >
-            Mic + System
+            {visibleTrackSummary}
           </span>
           <span className="live-transcript-status-spacer" data-tauri-drag-region />
           <button
@@ -515,7 +551,7 @@ export function LiveCaptionWindow() {
 
         <div className="live-transcript-collapsed-preview" data-tauri-drag-region>
           <span aria-hidden="true" />
-          Google Meet · 録音中 · Mic + System
+          Google Meet · 録音中 · {visibleTrackSummary}
         </div>
       </div>
     </div>

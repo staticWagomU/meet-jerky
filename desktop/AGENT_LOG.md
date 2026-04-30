@@ -12329,3 +12329,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機またはブラウザで、未保存変更を持ったまま `detection` / `aiMinutes` へ移動したときに保存バーが表示され、保存後は読み取り専用カテゴリで保存済みボタンが消えることを確認する。
+
+### Live caption: derive visible track summary from status labels
+
+- 開始日時: 2026-05-01 01:17:31 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`（`src/App.css` は確認対象のみ）
+- 指示内容: ライブ字幕ウィンドウの health pill と collapsed preview の固定 `Mic + System` 表示を、`statusPayload.microphoneTrackLabel` / `statusPayload.systemAudioTrackLabel` から導く短い状態表示へ変更する。片側未取得や切替中を両方取得中に見せず、aria-label/title では詳細なトラック状態を維持する。閉じる操作や未実装のマーク/辞書/あとで要約は実装済みに見せない。
+- 結果: `切替中` を最優先し、`録音中` / `取得中` のみをアクティブ扱いする `getVisibleTrackSummary` を追加した。可視表示は `Mic + System` / `Mic only` / `System only` / `切替中` / `未取得` を返す。health pill と collapsed preview はこの短縮表示を使い、`trackRowLabel` には短縮表示と自分トラック/相手側トラックの詳細状態を含めた。閉じるボタン、未実装ボタン、録音停止に見える文言は変更していない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メインで `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でマイクのみ、システム音声のみ、切替中、未取得の各状態が health pill と collapsed preview に過大表示なく反映されるか確認する。
