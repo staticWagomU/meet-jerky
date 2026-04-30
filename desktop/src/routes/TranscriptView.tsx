@@ -322,11 +322,6 @@ function getAudioSourceStatusPillClass(
   return "meeting-status-pill-neutral";
 }
 
-function getTrackStatusPillClass(isPending: boolean, isActive: boolean): string {
-  if (isPending) return "meeting-status-pill-neutral";
-  return isActive ? "meeting-status-pill-active" : "meeting-status-pill-idle";
-}
-
 function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
   return !engine || engine === "whisper";
 }
@@ -481,6 +476,15 @@ function sanitizeAudioLevel(level: number): number {
     return 0;
   }
   return Math.max(0, Math.min(1, level));
+}
+
+function getPopoverLevelBars(level: number): [number, number, number] {
+  const normalized = sanitizeAudioLevel(level);
+  return [
+    Math.max(0.45, normalized * 0.9),
+    Math.max(0.32, normalized * 0.65),
+    Math.max(0.5, normalized * 0.78),
+  ];
 }
 
 export function TranscriptView() {
@@ -1233,14 +1237,6 @@ export function TranscriptView() {
         ? "取得中・入力待ち"
         : "取得中"
       : "未取得";
-  const micTrackStatusClass = getTrackStatusPillClass(
-    isMicSourceOperationPending,
-    isMicRecording,
-  );
-  const systemAudioTrackStatusClass = getTrackStatusPillClass(
-    isSystemAudioSourceOperationPending,
-    isSystemAudioRecording,
-  );
   const audioSourceNotice = getAudioSourceNotice(
     isMeetingActive || isTranscribing,
     isAudioCaptureOperationPending,
@@ -1354,6 +1350,41 @@ export function TranscriptView() {
         ? `録音と文字起こしの記録を開始できません: ${meetingStartBlockedReason}`
       : "録音と文字起こしの記録を開始";
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
+  const meetingPopoverTitle = isMeetingOperationPending
+    ? isMeetingActive
+      ? "終了中"
+      : "開始中"
+    : isMeetingActive
+      ? "記録中"
+      : "待機中";
+  const meetingPopoverSubtitle =
+    isMeetingActive && meetingStartTime
+      ? `Google Meet · ${formatElapsedTime(elapsedTime)}`
+      : "Google Meet · 記録準備";
+  const meetingPopoverRecordingLabel = isMeetingOperationPending
+    ? isMeetingActive
+      ? "終了中"
+      : "開始中"
+    : meetingRecordingStatusLabel;
+  const meetingFooterEndLabel = isMeetingActive
+    ? meetingButtonLabel
+    : "記録中のみ終了できます";
+  const micPopoverSubtitle = isMicSourceOperationPending
+    ? "自分の音声 · 切替中"
+    : isMicRecording
+      ? isMicInputWaiting
+        ? "自分の音声 · 入力待ち"
+        : "自分の音声 · 入力良好"
+      : "自分の音声 · 未録音";
+  const systemAudioPopoverSubtitle = isSystemAudioSourceOperationPending
+    ? "相手側全体 · 切替中"
+    : isSystemAudioRecording
+      ? isSystemAudioInputWaiting
+        ? "相手側全体 · 入力待ち"
+        : "相手側全体 · 分離取得中"
+      : "相手側全体 · 未取得";
+  const micPopoverBars = getPopoverLevelBars(micLevel);
+  const systemAudioPopoverBars = getPopoverLevelBars(systemAudioLevel);
   const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const lastSavedOpenLabel = lastSavedFileName
     ? savedFileActionPending === "open"
@@ -1437,44 +1468,142 @@ export function TranscriptView() {
     >
       <PermissionBanner />
 
-      {/* 会議ボタン */}
-      <div className="meeting-control">
-        <button
-          type="button"
-          className={`meeting-btn ${isMeetingActive ? "meeting-btn-active" : ""}`}
-          onClick={handleToggleMeeting}
-          disabled={
-            isMeetingOperationPending || (!canStartMeeting && !isMeetingActive)
-          }
-          aria-label={meetingButtonLabel}
-          title={meetingButtonLabel}
-          aria-describedby={
-            meetingStartBlockedReason ? MEETING_START_BLOCKED_REASON_ID : undefined
-          }
-        >
-          <span
-            className={`rec-indicator ${isMeetingActive ? "rec-indicator-active" : ""}`}
-            aria-hidden="true"
-          />
-          {isMeetingOperationPending
-            ? isMeetingActive
-              ? "終了中..."
-              : "開始中..."
-            : isMeetingActive
-              ? "記録を終了"
-              : "記録を開始"}
-        </button>
-        {isMeetingActive && meetingStartTime && (
-          <span
-            className="meeting-timer"
-            aria-label={`記録経過時間 ${formatElapsedTime(elapsedTime)}`}
-            title={`記録経過時間 ${formatElapsedTime(elapsedTime)}`}
-          >
-            {formatElapsedTime(elapsedTime)}
-          </span>
-        )}
+      <div className="meeting-control meeting-popover-control">
+        <div className="meeting-popover-main">
+          <div className="meeting-popover-header">
+            <div className="meeting-popover-logo" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="meeting-popover-heading">
+              <h2>{meetingPopoverTitle}</h2>
+              <p>{meetingPopoverSubtitle}</p>
+            </div>
+            <span
+              className={`meeting-popover-rec-pill ${meetingRecordingStatusClass}`}
+              role="status"
+              aria-label={`記録の録音: ${meetingPopoverRecordingLabel}`}
+              title={`記録の録音: ${meetingPopoverRecordingLabel}`}
+            >
+              <span aria-hidden="true" />
+              {meetingPopoverRecordingLabel}
+            </span>
+          </div>
+
+          <section className="meeting-popover-detected" aria-label="自動検知された会議">
+            <span>自動検知</span>
+            <strong>Design review</strong>
+            <p>meet.google.com · Chrome URL と通話音声で確認</p>
+          </section>
+
+          <div className="meeting-popover-tracks" aria-label="分離取得中の音声トラック">
+            <div
+              className="meeting-popover-track-row"
+              aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
+              title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
+            >
+              <span className="meeting-popover-track-icon" aria-hidden="true">
+                Mic
+              </span>
+              <span className="meeting-popover-track-copy">
+                <strong>マイク入力</strong>
+                <span>{micPopoverSubtitle}</span>
+              </span>
+              <span className="meeting-popover-level" aria-hidden="true">
+                {micPopoverBars.map((bar, index) => (
+                  <span
+                    key={`mic-${index}`}
+                    style={{ transform: `scaleY(${bar})` }}
+                  />
+                ))}
+              </span>
+            </div>
+            <div
+              className="meeting-popover-track-row"
+              aria-label={getSystemAudioTrackStatusAriaLabel(
+                systemAudioTrackStatusLabel,
+              )}
+              title={getSystemAudioTrackStatusAriaLabel(
+                systemAudioTrackStatusLabel,
+              )}
+            >
+              <span className="meeting-popover-track-icon" aria-hidden="true">
+                Sys
+              </span>
+              <span className="meeting-popover-track-copy">
+                <strong>システム音声</strong>
+                <span>{systemAudioPopoverSubtitle}</span>
+              </span>
+              <span className="meeting-popover-level" aria-hidden="true">
+                {systemAudioPopoverBars.map((bar, index) => (
+                  <span
+                    key={`system-${index}`}
+                    style={{ transform: `scaleY(${bar})` }}
+                  />
+                ))}
+              </span>
+            </div>
+          </div>
+
+          <div className="meeting-popover-actions">
+            <button
+              type="button"
+              className={`meeting-btn meeting-popover-primary-action ${
+                isMeetingActive ? "meeting-btn-active" : ""
+              }`}
+              onClick={handleToggleMeeting}
+              disabled={
+                isMeetingOperationPending || (!canStartMeeting && !isMeetingActive)
+              }
+              aria-label={meetingButtonLabel}
+              title={meetingButtonLabel}
+              aria-describedby={
+                meetingStartBlockedReason
+                  ? MEETING_START_BLOCKED_REASON_ID
+                  : undefined
+              }
+            >
+              {isMeetingOperationPending
+                ? isMeetingActive
+                  ? "終了中..."
+                  : "開始中..."
+                : isMeetingActive
+                  ? "記録を終了"
+                  : "開始"}
+            </button>
+            <button
+              type="button"
+              className="control-btn control-btn-clear meeting-caption-window-btn meeting-popover-secondary-action"
+              aria-label={showLiveCaptionWindowLabel}
+              title={showLiveCaptionWindowLabel}
+              onClick={handleShowLiveCaptionWindow}
+              disabled={!canShowLiveCaptionWindow}
+            >
+              字幕ウィンドウ
+            </button>
+          </div>
+
+          <div className="meeting-popover-utilities" aria-label="会議補助機能">
+            <span>辞書補正 48件</span>
+            <span>終了後に要約・ToDoを生成</span>
+          </div>
+
+          <div className="meeting-popover-footer">
+            <span>常に録音状態を表示</span>
+            <button
+              type="button"
+              onClick={handleToggleMeeting}
+              disabled={!isMeetingActive || isMeetingOperationPending}
+              aria-label={meetingFooterEndLabel}
+              title={meetingFooterEndLabel}
+            >
+              終了
+            </button>
+          </div>
+        </div>
         <div
-          className="meeting-status-strip"
+          className="meeting-status-strip meeting-popover-status-strip"
           role="status"
           aria-busy={isMeetingStatusBusy}
           aria-live="polite"
@@ -1482,13 +1611,6 @@ export function TranscriptView() {
           aria-label={meetingStatusAriaLabel}
           title={meetingStatusAriaLabel}
         >
-          <span
-            className={`meeting-status-pill ${meetingRecordingStatusClass}`}
-            aria-label={`記録の録音: ${meetingRecordingStatusLabel}`}
-            title={`記録の録音: ${meetingRecordingStatusLabel}`}
-          >
-            {meetingRecordingStatusLabel}
-          </span>
           <span
             className={`meeting-status-pill ${transcriptionStatusClass}`}
             aria-label={`文字起こし: ${transcriptionStatusLabel}`}
@@ -1504,29 +1626,11 @@ export function TranscriptView() {
             音声 {audioSourceStatusDisplayLabel}
           </span>
           <span
-            className={`meeting-status-pill ${micTrackStatusClass}`}
-            aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
-            title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
-          >
-            自分 {micTrackStatusLabel}
-          </span>
-          <span
-            className={`meeting-status-pill ${systemAudioTrackStatusClass}`}
-            aria-label={getSystemAudioTrackStatusAriaLabel(
-              systemAudioTrackStatusLabel,
-            )}
-            title={getSystemAudioTrackStatusAriaLabel(
-              systemAudioTrackStatusLabel,
-            )}
-          >
-            相手側 {systemAudioTrackStatusLabel}
-          </span>
-          <span
             className={`meeting-status-pill ${getEngineStatusPillClass(engineStatusLabel)}`}
             aria-label={`文字起こしエンジン: ${engineStatusLabel}`}
             title={`文字起こしエンジン: ${engineStatusLabel}`}
           >
-            エンジン {engineStatusDisplayLabel}
+            {engineStatusDisplayLabel}
           </span>
           <span
             className={`meeting-status-pill ${getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)}`}
@@ -1549,17 +1653,6 @@ export function TranscriptView() {
               </span>
             )}
         </div>
-        {canShowLiveCaptionWindow && (
-          <button
-            type="button"
-            className="control-btn control-btn-clear meeting-caption-window-btn"
-            aria-label={showLiveCaptionWindowLabel}
-            title={showLiveCaptionWindowLabel}
-            onClick={handleShowLiveCaptionWindow}
-          >
-            字幕ウィンドウ
-          </button>
-        )}
         {audioSourceNotice && (
           <p
             className="meeting-source-notice"

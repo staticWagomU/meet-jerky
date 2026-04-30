@@ -12189,3 +12189,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker セッションがログ読解と差分確認後に実装完了まで進まなかったため、メインが補完した。
 - 次アクション: 最新 `.pen` の Menu Bar Popover (`Ez7TH` / `hSAR3`) と Bottom Transcript (`kxgH8` / `V5nBfC`) の UI 差分を、Pencil MCP スクリーンショット確認後に順次詰める。
+
+### Menu bar popover: align meeting control with latest pen mock
+
+- 開始日時: 2026-04-30 22:47:37 JST
+- 担当セッション: `mj-research-menubar-popover-pen-20260430-1`, `mj-worker-menubar-popover-pen-20260430-1`, `mj-main`
+- 役割: research 起動・確認、worker 起動・監視、メインエージェントによる緊急補完
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で最新 `meet-jerky-desktop.pen` の Mock 1 Menu Bar Popover (`Ez7TH` / `hSAR3`) を読み直し、会議コントロールを header、検知カード、マイク/システム音声の2トラック、primary actions、utilities、footer の縦型ポップオーバー構造へ寄せる。既存の録音/停止、字幕ウィンドウ表示、pendingAction、エラー、開始不可理由、外部送信注意、aria/title は保持する。
+- 結果: `meeting-control` を `.pen` の 312px 幅、14px radius、半透明 `#FAFAFAE8`、orange logo/rec pill、検知カード、2トラックカード、orange primary action、white 字幕ウィンドウ action、utility/footer を持つ構造へ変更した。マイク/システム音声の小型レベルバーは `micLevel` / `systemAudioLevel` から表示する。現状の実装に安全な pause 機能がないため、`.pen` の `一時停止` 文言は採用せず、既存の実挙動に合わせて active primary action は `記録を終了` のままにした。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。通常 PATH では `npm` が見つからない環境制約あり。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker セッションが Pencil 再確認後も実装差分生成まで進まなかったため、自律運用停止回避としてメインが補完し、競合回避のため worker セッションを終了した。
+- 次アクション: 検証後、`.pen` と実挙動の差分（特に `一時停止` 未実装、会議タイトル/URL の静的表示）を残リスクとして扱い、次ループで会議検知メタデータ連携または Bottom Transcript (`kxgH8` / `V5nBfC`) の準拠を進める。
