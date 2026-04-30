@@ -12161,3 +12161,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 今後、本番で必要になったAPIは `#[cfg(test)]` を外して実利用側から呼ぶ。
+
+### Settings window: align with pen mock
+
+- 開始日時: 2026-04-30 19:42:56 JST
+- 担当セッション: `mj-worker-settings-pen-alignment-20260430-1`, `mj-worker-settings-pen-alignment-20260430-2`, `mj-worker-settings-pen-alignment-20260430-3`, `mj-main`
+- 役割: worker 起動・監視、メインエージェントによる緊急補完
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認した `meet-jerky-desktop.pen` の Mock 4 Settings Window (`SmOt4`) に合わせ、設定画面をタイトルバー、左サイドバー、メインペイン、8px カード中心の macOS 風レイアウトへ寄せる。既存の設定保存、権限確認、APIキー、aria/title は保持する。
+- 結果: `SettingsView` に設定ウィンドウの titlebar/sidebar/main pane 構造を追加し、General active の静的カテゴリを表示した。`App.css` の Settings View ブロックを `.pen` 根拠の 820x560 風、titlebar 52px、sidebar 214px、`#F5F5F6CC`/`#FBFBFCCC`、カード 8px、アクセント `#FF5C00` に寄せて更新し、未定義だった API キー入力系クラスも補完した。worker は途中差分生成後に停滞したため、未完成 TSX を残さないためメインが最小範囲で補完した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。通常 PATH では `npm` が見つからない環境制約あり。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker セッション 1/2/3 が差分確認または TSX 途中差分の状態で実装完了まで進まなかったため、メインが自律運用停止回避として補完した。
+- 次アクション: `git diff --check` と `scripts/agent-verify.sh` を通し、`.pen` の他画面（メニューバー Popover、Notch 通知、Bottom Transcript）との差分を次ループで順に詰める。

@@ -429,6 +429,14 @@ export function SettingsView() {
   ]
     .filter(Boolean)
     .join("、");
+  const settingsSidebarItems = [
+    "General",
+    "Detection",
+    "Audio",
+    "Transcription",
+    "AI Minutes",
+    "Privacy",
+  ];
 
   return (
     <div
@@ -437,11 +445,66 @@ export function SettingsView() {
       aria-label={settingsViewLabel}
       title={settingsViewLabel}
     >
-      {/* 文字起こしエンジン */}
-      <div className="settings-section">
-        <h3 className="settings-section-title" id="transcription-engine-title">
-          文字起こしエンジン
-        </h3>
+      <div className="settings-window" role="group" aria-label="設定ウィンドウ">
+        <div className="settings-titlebar">
+          <div className="settings-window-controls" aria-hidden="true">
+            <span className="settings-window-control settings-window-control-close" />
+            <span className="settings-window-control settings-window-control-minimize" />
+            <span className="settings-window-control settings-window-control-zoom" />
+          </div>
+          <div className="settings-titlebar-copy">
+            <p className="settings-titlebar-kicker">meet-jerky</p>
+            <h2>Settings</h2>
+          </div>
+        </div>
+
+        <div className="settings-window-body">
+          <aside className="settings-sidebar">
+            <nav
+              className="settings-sidebar-nav"
+              aria-label="設定カテゴリ。現在は General の設定を表示しています"
+            >
+              {settingsSidebarItems.map((item) => (
+                <span
+                  key={item}
+                  className={
+                    item === "General"
+                      ? "settings-sidebar-item settings-sidebar-item-active"
+                      : "settings-sidebar-item"
+                  }
+                  aria-current={item === "General" ? "page" : undefined}
+                >
+                  {item}
+                </span>
+              ))}
+            </nav>
+          </aside>
+
+          <main className="settings-main-pane" aria-labelledby="settings-general-title">
+            <div className="settings-main-heading">
+              <div>
+                <p className="settings-titlebar-kicker">General</p>
+                <h2 id="settings-general-title">General settings</h2>
+              </div>
+              {hasChanges && (
+                <span
+                  className="settings-unsaved-status settings-unsaved-status-compact"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label={unsavedSettingsLabel}
+                  title={unsavedSettingsLabel}
+                >
+                  未保存
+                </span>
+              )}
+            </div>
+
+            {/* 文字起こしエンジン */}
+            <div className="settings-section">
+              <h3 className="settings-section-title" id="transcription-engine-title">
+                文字起こしエンジン
+              </h3>
         <div
           className="settings-radio-group"
           role="radiogroup"
@@ -923,6 +986,9 @@ export function SettingsView() {
               ? "設定を保存"
               : "保存済み"}
         </button>
+            </div>
+          </main>
+        </div>
       </div>
 
       {/* トースト通知 */}
