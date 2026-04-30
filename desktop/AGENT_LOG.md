@@ -12287,3 +12287,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: research/worker セッションが読解後に完了報告またはログ・検証まで進まなかったため、メインが自律運用停止回避としてログ・検証を補完した。
 - 次アクション: 実機またはブラウザで Mock 6 の待機中バリアントに対する視覚差分を確認し、会議メタデータを安全に保持できる設計を検討する。
+
+### App detection: handle watched app activation
+
+- 開始日時: 2026-05-01 00:53:50 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 指示内容: `didActivateApplicationNotification` でも通知から `NSRunningApplication` を安全に取り出せる場合は watched app を `handle(app:)` に通し、その後に既存どおり `scanFrontmostBrowser()` を呼ぶ。`handle(app:)`、ブラウザ URL 取得、Rust payload、通知文言、CSS、React は変更しない。コミット禁止。
+- 結果: `didActivate` observer の closure で `didLaunch` と同じ `NSWorkspace.applicationUserInfoKey` / `NSRunningApplication` の型チェックを行い、取得できた場合のみ `handle(app:)` を呼ぶようにした。nil / 型不一致時は落とさず、常に既存の `scanFrontmostBrowser()` へ進む。
+- 変更ファイル: `src-tauri/swift/AppDetectionBridge.swift`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/swift/AppDetectionBridge.swift AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。実機での Zoom / Teams アクティブ化検知は未実機確認（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で Zoom / Teams など起動済み watched app への切り替え時に検知されるか確認する。

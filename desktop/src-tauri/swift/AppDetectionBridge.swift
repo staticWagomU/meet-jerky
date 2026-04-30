@@ -192,8 +192,14 @@ public final class AppDetector: @unchecked Sendable {
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: nil
-        ) { [weak self] _ in
-            self?.scanFrontmostBrowser()
+        ) { [weak self] notification in
+            guard let self = self else { return }
+            if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                as? NSRunningApplication
+            {
+                self.handle(app: app)
+            }
+            self.scanFrontmostBrowser()
         }
         observers.append(didActivate)
 
