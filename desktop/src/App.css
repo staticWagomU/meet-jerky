@@ -224,11 +224,25 @@ body[data-window="meeting-prompt"],
 body[data-window="live-caption"],
 body[data-window="ring-light"] {
   min-width: 0;
+  min-height: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+}
+
+body[data-window="meeting-prompt"] #root,
+body[data-window="live-caption"] #root,
+body[data-window="ring-light"] #root {
+  min-height: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   background: transparent;
 }
 
 body[data-window="ring-light"] {
-  min-height: 100vh;
+  min-height: 0;
   background: transparent;
 }
 
@@ -241,10 +255,22 @@ body[data-window="ring-light"] {
   background: transparent;
 }
 
+body[data-window="meeting-prompt"] .overlay-window,
+body[data-window="live-caption"] .overlay-window,
+body[data-window="ring-light"] .overlay-window {
+  min-height: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+}
+
 .meeting-prompt-window {
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
 }
 
 .container {
@@ -1153,12 +1179,17 @@ body[data-window="ring-light"] {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .live-transcript-panel-window {
   position: static;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
   border-radius: 18px;
   transform: none;
 }
@@ -1168,7 +1199,9 @@ body[data-window="ring-light"] {
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
   padding: 12px;
   border-color: #d7d7d9aa;
   color: #1d1d1f;
@@ -3310,13 +3343,13 @@ body[data-window="ring-light"] {
 
 .meeting-prompt-window .meeting-detected-banner {
   position: static;
-  width: min(360px, 100vw);
-  min-height: 172px;
-  height: auto;
+  width: 360px;
+  min-height: 0;
+  height: 172px;
   box-sizing: border-box;
   border-radius: 18px;
   transform: none;
-  margin: 38px auto 0;
+  margin: 0;
 }
 
 .meeting-detected-ribbon {

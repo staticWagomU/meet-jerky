@@ -12232,6 +12232,20 @@
 - 失敗理由: なし。
 - 次アクション: 実機またはブラウザで `.pen` の 820x560 設定ウィンドウに対する視覚差分を確認し、カテゴリ別 detail card への分割可否を検討する。
 
+### Overlay windows: fix hide permission and transparent bounds
+
+- 開始日時: 2026-05-01 07:56:32 JST
+- 担当セッション: `mj-research-overlay-window-bug-20260501`, `mj-worker-overlay-window-transparency-20260501`, `mj-worker-overlay-window-fix-20260501`, `mj-main`
+- 役割: research 起動・確認、worker 起動・監視、メインエージェントによる緊急実装
+- 作業範囲: `src-tauri/capabilities/default.json`, `src-tauri/src/lib.rs`, `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: ユーザー報告の会議検知通知/ライブ字幕ウィンドウの白枠残り、位置不安定、`window.hide not allowed` エラーを最優先で調査し、最新 `meet-jerky-desktop.pen` の Mock 2 Notch Notification (`D0qo1` / `XUVhM`) と Mock 3 Bottom Transcript Window (`kxgH8` / `V5nBfC`) に合わせて、Tauri capability、ウィンドウサイズ/位置、overlay CSS、通知の hide 順序を修正する。`meet-jerky-desktop.pen` は編集・stage・commit しない。
+- 結果: Pencil MCP で通知カードが 360x172 のノッチ直下中央カードであり、外側白矩形が存在しないこと、Bottom transcript が 784x246 の角丸カードであることを確認した。`getCurrentWindow().hide()` に必要な `core:window:allow-hide` を capability に追加した。通知ウィンドウの Tauri inner size を 360x172 に合わせ、top offset を 38 に一本化し、CSS 側の `margin: 38px auto 0` を削除した。overlay window 用の `body` / `#root` / `.overlay-window` を透明背景、100vw/100vh、overflow hidden、min-height 0 に限定し、ライブ字幕パネルは `height: 100%` / `box-sizing: border-box` でウィンドウ bounds 内に収めるようにした。通知の auto-hide / dismiss / start / confirm は、hide 成功後だけ `detected` を消す順序にし、hide 失敗時に空白ウィンドウだけが残らないようにした。
+- 変更ファイル: `src-tauri/capabilities/default.json`, `src-tauri/src/lib.rs`, `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/capabilities/default.json src-tauri/src/lib.rs src/App.css src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/capabilities/default.json src-tauri/src/lib.rs src/App.css src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在により `whisper-rs-sys` をビルドできないため skip）。macOS 実機上の Google Meet / ノッチ / 透明 Tauri ウィンドウ視覚確認は未実機確認。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 最初の worker は対象ファイル読解から実装に進まず、2本目の worker も編集開始前に停止していたため、差分がないことを確認して終了した。自律運用停止を避けるため、メインが例外的に最小実装した。
+- 次アクション: 検証を実行し、差分をレビューする。実機で通知/字幕の透明角丸表示、閉じる/開始/今回はしない/Escape/auto-hide 後に白枠が残らないこと、`window.hide not allowed` が消えることを確認する。
+
 ### Settings shell: match latest pen titlebar and icons
 
 - 開始日時: 2026-05-01 00:09:49 JST

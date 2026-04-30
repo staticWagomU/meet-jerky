@@ -30,8 +30,8 @@ const MAIN_WINDOW_LABEL: &str = "main";
 const MEETING_PROMPT_WINDOW_LABEL: &str = "meeting-prompt";
 const LIVE_CAPTION_WINDOW_LABEL: &str = "live-caption";
 const RING_LIGHT_WINDOW_LABEL: &str = "ring-light";
-const MEETING_PROMPT_WIDTH: f64 = 440.0;
-const MEETING_PROMPT_HEIGHT: f64 = 128.0;
+const MEETING_PROMPT_WIDTH: f64 = 360.0;
+const MEETING_PROMPT_HEIGHT: f64 = 172.0;
 const LIVE_CAPTION_WIDTH: f64 = 784.0;
 const LIVE_CAPTION_HEIGHT: f64 = 246.0;
 const RING_LIGHT_FALLBACK_WIDTH: f64 = 1280.0;
@@ -210,7 +210,7 @@ fn position_window_bottom_center(app: &tauri::AppHandle, label: &str, bottom_off
 }
 
 pub(crate) fn show_meeting_prompt_window(app: &tauri::AppHandle) {
-    position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, 44);
+    position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, 38);
     if let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) {
         let _ = window.show();
     }

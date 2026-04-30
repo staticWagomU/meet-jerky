@@ -142,10 +142,16 @@ export function MeetingDetectedBanner() {
       return;
     }
     const timeoutId = window.setTimeout(() => {
-      clearPendingMeetingStartRequest();
-      setPendingAction(null);
-      setDetected(null);
-      void getCurrentWindow().hide();
+      void getCurrentWindow()
+        .hide()
+        .then(() => {
+          clearPendingMeetingStartRequest();
+          setPendingAction(null);
+          setDetected(null);
+        })
+        .catch((e) => {
+          console.error("会議検知バナーの自動非表示に失敗しました:", toErrorMessage(e));
+        });
     }, PROMPT_AUTO_HIDE_MS);
 
     return () => {
@@ -199,13 +205,18 @@ export function MeetingDetectedBanner() {
     markPendingMeetingStartRequest();
     try {
       await emit(MEETING_START_REQUEST_EVENT);
+    } catch (e) {
+      clearPendingMeetingStartRequest();
+      setPendingAction(null);
+      console.error("録音開始要求または会議検知バナー非表示に失敗しました:", toErrorMessage(e));
+      return;
+    }
+    try {
       await getCurrentWindow().hide();
       setDetected(null);
     } catch (e) {
-      clearPendingMeetingStartRequest();
-      setDetected(null);
       setPendingAction(null);
-      setListenerError(`録音開始要求の送信に失敗しました: ${toErrorMessage(e)}`);
+      console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
     }
   };
   const handleConfirmRecordingState = async () => {
@@ -216,21 +227,29 @@ export function MeetingDetectedBanner() {
     clearPendingMeetingStartRequest();
     try {
       await emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
+    } catch (e) {
+      setPendingAction(null);
+      console.error(
+        "録音状態確認画面の表示要求に失敗しました:",
+        toErrorMessage(e),
+      );
+      return;
+    }
+    try {
       await getCurrentWindow().hide();
       setDetected(null);
     } catch (e) {
-      setDetected(null);
       setPendingAction(null);
-      setListenerError(`録音状態確認画面の表示要求に失敗しました: ${toErrorMessage(e)}`);
+      console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
     }
   };
   const handleDismissBanner = async () => {
-    clearPendingMeetingStartRequest();
-    setDetected(null);
-    setListenerError(null);
-    setPendingAction(null);
     try {
       await getCurrentWindow().hide();
+      clearPendingMeetingStartRequest();
+      setDetected(null);
+      setListenerError(null);
+      setPendingAction(null);
     } catch (e) {
       console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
     }
