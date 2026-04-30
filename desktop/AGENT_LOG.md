@@ -12175,3 +12175,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker セッション 1/2/3 が差分確認または TSX 途中差分の状態で実装完了まで進まなかったため、メインが自律運用停止回避として補完した。
 - 次アクション: `git diff --check` と `scripts/agent-verify.sh` を通し、`.pen` の他画面（メニューバー Popover、Notch 通知、Bottom Transcript）との差分を次ループで順に詰める。
+
+### Notch notification: align with latest pen mock
+
+- 開始日時: 2026-04-30 21:03:00 JST
+- 担当セッション: `mj-worker-notch-notification-pen-100-20260430-1`, `mj-main`
+- 役割: worker 起動・監視、メインエージェントによる緊急補完
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で最新 `meet-jerky-desktop.pen` の Mock 2 Notch Notification (`D0qo1` / `XUVhM`) を読み直し、360x172、上部 orange ribbon、`会議を検知しました`、`Mic: 自分` / `System: 相手側`、orange `開始`、white `今回はしない` の通知 UI へ 100% 準拠を目標に寄せる。自動開始なし、Escape で閉じる、pendingAction、aria/title、外部送信情報、エラー表示は保持する。
+- 結果: `MeetingDetectedBanner` を縦積み notch card 構造へ変更し、`.pen` に合わせたタイトル、会議メタ、2トラック chip、開始/今回はしないボタンを追加した。既存の状態確認は低優先度の補助ボタンとして残し、詳細な録音・文字起こし説明は aria/title に保持した。`App.css` の meeting-detected 系を最新 `.pen` の寸法、色、角丸、密度へ更新した。worker は読解後に実装完了まで進まなかったため、メインが自律運用停止回避として補完した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（Rust テストは `cmake` 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker セッションがログ読解と差分確認後に実装完了まで進まなかったため、メインが補完した。
+- 次アクション: 最新 `.pen` の Menu Bar Popover (`Ez7TH` / `hSAR3`) と Bottom Transcript (`kxgH8` / `V5nBfC`) の UI 差分を、Pencil MCP スクリーンショット確認後に順次詰める。

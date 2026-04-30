@@ -159,10 +159,12 @@ export function MeetingDetectedBanner() {
   const transmissionAriaLabel = getTransmissionStatusAriaLabel(statusPayload);
   const bannerTitle = listenerError
     ? listenerError
-    : "録音しますか？";
+    : "会議を検知しました";
   const bannerDetail = listenerError
     ? null
-    : `${displayName} を検出。録音と文字起こしの状態を確認できます。約${PROMPT_AUTO_HIDE_SECONDS}秒後に隠れます。`;
+    : sourceLabel
+      ? `${displayName} · ${sourceLabel} と音声アクティビティで確認`
+      : `${displayName} · 音声アクティビティで確認`;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
@@ -258,31 +260,66 @@ export function MeetingDetectedBanner() {
       aria-label={bannerAriaLabel}
       title={bannerAriaLabel}
     >
+      <span className="meeting-detected-ribbon" aria-hidden="true" />
       {!listenerError && (
-        <div
-          className="meeting-detected-attention-mark"
-          data-tauri-drag-region
-          aria-hidden="true"
-        >
-          <span className="meeting-detected-attention-dot" />
-        </div>
-      )}
-      <span className="meeting-detected-banner-text" data-tauri-drag-region>
-        <span
-          className="meeting-detected-banner-title"
-          data-tauri-drag-region
-        >
-          {bannerTitle}
-        </span>
-        {bannerDetail && (
+        <span className="meeting-detected-banner-top" data-tauri-drag-region>
           <span
-            className="meeting-detected-banner-detail"
+            className="meeting-detected-attention-mark"
+            data-tauri-drag-region
+            aria-hidden="true"
+          >
+            <span className="meeting-detected-attention-dot" />
+          </span>
+          <span className="meeting-detected-banner-text" data-tauri-drag-region>
+            <span
+              className="meeting-detected-banner-title"
+              data-tauri-drag-region
+            >
+              {bannerTitle}
+            </span>
+            {bannerDetail && (
+              <span
+                className="meeting-detected-banner-detail"
+                data-tauri-drag-region
+              >
+                {bannerDetail}
+              </span>
+            )}
+          </span>
+        </span>
+      )}
+      {listenerError && (
+        <span className="meeting-detected-banner-text" data-tauri-drag-region>
+          <span
+            className="meeting-detected-banner-title"
             data-tauri-drag-region
           >
-            {bannerDetail}
+            {bannerTitle}
           </span>
-        )}
-        {!listenerError && (
+        </span>
+      )}
+      {!listenerError && (
+        <>
+          <span className="meeting-detected-track-grid" data-tauri-drag-region>
+            <span
+              className="meeting-detected-track-chip"
+              data-tauri-drag-region
+              aria-label="取得トラック: Mic 自分"
+              title="取得トラック: Mic 自分"
+            >
+              <span className="meeting-detected-track-dot" aria-hidden="true" />
+              Mic: 自分
+            </span>
+            <span
+              className="meeting-detected-track-chip"
+              data-tauri-drag-region
+              aria-label="取得トラック: System 相手側"
+              title="取得トラック: System 相手側"
+            >
+              <span className="meeting-detected-track-dot" aria-hidden="true" />
+              System: 相手側
+            </span>
+          </span>
           <span className="meeting-detected-meta" data-tauri-drag-region>
             {sourceLabel && (
               <span
@@ -315,8 +352,8 @@ export function MeetingDetectedBanner() {
               {visibleTransmissionLabel}
             </span>
           </span>
-        )}
-      </span>
+        </>
+      )}
       {(detected || listenerError) && (
         <div className="meeting-detected-banner-actions">
           {detected && (
@@ -335,11 +372,11 @@ export function MeetingDetectedBanner() {
                   ? "開始要求中..."
                   : pendingAction === "confirm"
                     ? "表示要求中..."
-                    : "記録を開始"}
+                    : "開始"}
               </button>
               <button
                 type="button"
-                className="control-btn control-btn-clear"
+                className="control-btn control-btn-clear meeting-detected-confirm-btn"
                 disabled={Boolean(pendingAction)}
                 aria-label={confirmRecordingLabel}
                 title={confirmRecordingLabel}
@@ -366,7 +403,7 @@ export function MeetingDetectedBanner() {
               void handleDismissBanner();
             }}
           >
-            ×
+            {listenerError ? "閉じる" : "今回はしない"}
           </button>
         </div>
       )}
