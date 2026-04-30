@@ -387,7 +387,7 @@ export function LiveCaptionWindow() {
             録音中
           </span>
           <strong className="live-transcript-meeting-title" data-tauri-drag-region>
-            Google Meet {captionTimestamp ?? "待機中"}
+            ライブ文字起こし {captionTimestamp ?? "待機中"}
           </strong>
           <span
             className="live-transcript-health-pill"
@@ -551,7 +551,7 @@ export function LiveCaptionWindow() {
 
         <div className="live-transcript-collapsed-preview" data-tauri-drag-region>
           <span aria-hidden="true" />
-          Google Meet · 録音中 · {visibleTrackSummary}
+          ライブ文字起こし · 録音中 · {visibleTrackSummary}
         </div>
       </div>
     </div>

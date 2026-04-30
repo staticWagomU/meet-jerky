@@ -12343,3 +12343,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機でマイクのみ、システム音声のみ、切替中、未取得の各状態が health pill と collapsed preview に過大表示なく反映されるか確認する。
+
+### Live caption: neutralize fixed meeting service label
+
+- 開始日時: 2026-05-01 01:19:42 JST
+- 担当セッション: mj-worker-live-caption-neutral-title-20260501
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: `LiveCaptionWindow` の可視タイトルと collapsed preview に残る固定 `Google Meet` 表示を、実サービス名を推測しない中立的な短文へ変更する。aria-label/title の詳細情報、録音停止に見える操作文言、未実装のマーク/辞書/あとで要約は変更しない。コミット禁止。
+- 結果: ヘッダー表示を `ライブ文字起こし {captionTimestamp ?? "待機中"}` に変更し、collapsed preview を `ライブ文字起こし · 録音中 · {visibleTrackSummary}` に変更した。既存の `aria-label` / `title` 生成、トラック詳細、閉じる操作、未実装ボタン文言には触れていない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功。`npm run build` は素の PATH では `npm: command not found` で失敗したため、既存運用と同じ `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` で再実行し成功。メインで `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（Rust format 成功、Rust テストは cmake 不在によりスキップ）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 素の PATH では `npm` が見つからなかったため、既存運用と同じ PATH を明示して再検証した。
+- 次アクション: 実機で Zoom / Teams / 手動開始時のライブ字幕ウィンドウがサービス名を断定せず、aria/title の詳細説明が従来どおり機能することを確認する。
