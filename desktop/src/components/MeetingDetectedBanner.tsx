@@ -323,8 +323,8 @@ export function MeetingDetectedBanner() {
             <span
               className="meeting-detected-track-chip"
               data-tauri-drag-region
-              aria-label="取得トラック: Mic 自分"
-              title="取得トラック: Mic 自分"
+              aria-label="録音対象: Mic 自分"
+              title="録音対象: Mic 自分"
             >
               <span className="meeting-detected-track-dot" aria-hidden="true" />
               Mic: 自分
@@ -332,8 +332,8 @@ export function MeetingDetectedBanner() {
             <span
               className="meeting-detected-track-chip"
               data-tauri-drag-region
-              aria-label="取得トラック: System 相手側"
-              title="取得トラック: System 相手側"
+              aria-label="録音対象: System 相手側"
+              title="録音対象: System 相手側"
             >
               <span className="meeting-detected-track-dot" aria-hidden="true" />
               System: 相手側

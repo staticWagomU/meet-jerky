@@ -12497,3 +12497,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: 先行 worker `mj-worker-live-caption-status-sanitize-20260501` がドキュメント読解後に差分ゼロのまま停滞したため main が例外実装した。
 - 次アクション: 壊れた localStorage/event payload で通知・字幕の status 表示が空欄にならず、正規 payload の表示が従来どおりであることを実機またはコンポーネント経路で確認する。
+
+### Meeting detected banner: update track chip accessible labels
+
+- 開始日時: 2026-05-01 09:03:31 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知通知バナーの track chip について、可視文言 `Mic: 自分` / `System: 相手側`、レイアウト、CSS、Tauri、Rust、Swift、`.pen` を変更せず、`aria-label` / `title` だけを録音開始前でも正確な「予定/対象トラック」表現へ変更する。コミット禁止。
+- 結果: track chip の `aria-label` / `title` を `取得トラック: ...` から `録音対象: ...` に変更し、録音開始前に取得済みと読める表現を避けた。可視文言、ボタン、ステータス、CSS、Tauri、Rust、Swift、`.pen` は変更していない。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src-tauri/src/transcription.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の会議検知通知で可視表示が `.pen` の `Mic: 自分` / `System: 相手側` のまま、VoiceOver/tooltip が録音開始前に取得済みと読めないことを確認する。
