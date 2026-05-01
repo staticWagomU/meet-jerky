@@ -11,6 +11,7 @@ import { RingLightWindow } from "./components/RingLightWindow";
 import "./App.css";
 
 const currentWindowLabel = getCurrentWindow().label;
+document.documentElement.dataset.window = currentWindowLabel;
 document.body.dataset.window = currentWindowLabel;
 
 const root =

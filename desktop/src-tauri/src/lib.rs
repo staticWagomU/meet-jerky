@@ -23,7 +23,7 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     utils::config::Color,
-    Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Size, WebviewUrl,
+    Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, Position, Size, WebviewUrl,
     WebviewWindowBuilder, WindowEvent,
 };
 
@@ -172,11 +172,21 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+fn current_monitor_or_primary(app: &tauri::AppHandle) -> tauri::Result<Option<Monitor>> {
+    if let Ok(cursor_position) = app.cursor_position() {
+        if let Some(monitor) = app.monitor_from_point(cursor_position.x, cursor_position.y)? {
+            return Ok(Some(monitor));
+        }
+    }
+
+    app.primary_monitor()
+}
+
 fn position_window_top_center(app: &tauri::AppHandle, label: &str, top_offset: i32) {
     let Some(window) = app.get_webview_window(label) else {
         return;
     };
-    let Ok(Some(monitor)) = app.primary_monitor() else {
+    let Ok(Some(monitor)) = current_monitor_or_primary(app) else {
         return;
     };
     let Ok(window_size) = window.outer_size() else {
@@ -195,7 +205,7 @@ fn position_window_bottom_center(app: &tauri::AppHandle, label: &str, bottom_off
     let Some(window) = app.get_webview_window(label) else {
         return;
     };
-    let Ok(Some(monitor)) = app.primary_monitor() else {
+    let Ok(Some(monitor)) = current_monitor_or_primary(app) else {
         return;
     };
     let Ok(window_size) = window.outer_size() else {

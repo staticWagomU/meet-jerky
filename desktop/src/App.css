@@ -224,12 +224,18 @@ body {
   background: transparent;
 }
 
+html[data-window="meeting-prompt"],
+html[data-window="live-caption"],
+html[data-window="ring-light"],
 html:has(body[data-window="meeting-prompt"]),
 html:has(body[data-window="live-caption"]),
 html:has(body[data-window="ring-light"]) {
   background: transparent;
 }
 
+html[data-window="meeting-prompt"] body,
+html[data-window="live-caption"] body,
+html[data-window="ring-light"] body,
 body[data-window="meeting-prompt"],
 body[data-window="live-caption"],
 body[data-window="ring-light"] {
@@ -241,6 +247,9 @@ body[data-window="ring-light"] {
   background: transparent;
 }
 
+html[data-window="meeting-prompt"] #root,
+html[data-window="live-caption"] #root,
+html[data-window="ring-light"] #root,
 body[data-window="meeting-prompt"] #root,
 body[data-window="live-caption"] #root,
 body[data-window="ring-light"] #root {
@@ -251,6 +260,7 @@ body[data-window="ring-light"] #root {
   background: transparent;
 }
 
+html[data-window="ring-light"] body,
 body[data-window="ring-light"] {
   min-height: 0;
   background: transparent;
@@ -265,6 +275,9 @@ body[data-window="ring-light"] {
   background: transparent;
 }
 
+html[data-window="meeting-prompt"] .overlay-window,
+html[data-window="live-caption"] .overlay-window,
+html[data-window="ring-light"] .overlay-window,
 body[data-window="meeting-prompt"] .overlay-window,
 body[data-window="live-caption"] .overlay-window,
 body[data-window="ring-light"] .overlay-window {

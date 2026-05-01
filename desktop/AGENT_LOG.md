@@ -1,5 +1,19 @@
 # Agent Log
 
+### Overlay windows: html dataset transparency and cursor monitor placement
+
+- 開始日時: 2026-05-01 14:27:49 JST
+- 担当セッション: `mj-research-overlay-window-transparency-position-20260501`, `mj-worker-overlay-window-transparency-position-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（Pencil MCP 確認・差分レビュー・検証）
+- 作業範囲: `src/main.tsx`, `src/App.css`, `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: overlay window の透明化 CSS を `html:has(body[data-window=...])` 非依存にし、会議検知通知・ライブ文字起こし window の配置 monitor を primary 固定からカーソル所在 monitor 優先へ変更する。通知/字幕の本体デザイン、既存 Rust command 経由の hide/show、透明 window 設定、`meet-jerky-desktop.pen` は変更しない。コミットは禁止。
+- 結果: `document.documentElement.dataset.window` にも window label を設定した。overlay 用 `html` / `body` / `#root` / `.overlay-window` の透明化 selector に `html[data-window="meeting-prompt"]`, `html[data-window="live-caption"]`, `html[data-window="ring-light"]` 系を明示追加した。`current_monitor_or_primary` helper を追加し、top/bottom center 配置はカーソル所在 monitor を優先し、取得できない場合だけ primary monitor へ fallback するようにした。
+- 変更ファイル: `src/main.tsx`, `src/App.css`, `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: worker 側で `git diff --check -- src/main.tsx src/App.css src-tauri/src/lib.rs AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。初回 `cargo fmt --manifest-path src-tauri/Cargo.toml --check` は `current_monitor_or_primary` 内の改行整形差分で失敗したため worker が修正し、再実行した `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` は成功。メイン側で `git diff --check -- src/main.tsx src/App.css src-tauri/src/lib.rs AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/main.tsx src/App.css src-tauri/src/lib.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機の複数 monitor / ノッチあり環境で、Google Meet 操作中の画面側に会議検知通知・ライブ字幕が出ること、外側白矩形と操作後の白枠残りが解消していることを確認する。
+
 ### Transcript segment payload: reject unsafe strings
 
 - 開始日時: 2026-05-01 14:21:52 JST
