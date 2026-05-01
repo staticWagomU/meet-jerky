@@ -11,11 +11,20 @@ function isNonEmptyTrimmedString(value: unknown): value is string {
 }
 
 const disallowedUrlHostCharacters = /[\s/?#@:]/u;
+const dnsHostLabel = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/u;
 
 function isHostOnlyString(value: unknown): value is string {
-  return (
-    isNonEmptyTrimmedString(value) && !disallowedUrlHostCharacters.test(value)
-  );
+  if (
+    !isNonEmptyTrimmedString(value) ||
+    disallowedUrlHostCharacters.test(value)
+  ) {
+    return false;
+  }
+  const host = value.trim();
+  if (host.length > 253 || host.startsWith(".") || host.endsWith(".")) {
+    return false;
+  }
+  return host.split(".").every((label) => dnsHostLabel.test(label));
 }
 
 function hasProperty(value: Record<string, unknown>, key: string): boolean {

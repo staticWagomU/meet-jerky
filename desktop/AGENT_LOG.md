@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting detection payload: reject malformed DNS urlHost
+
+- 開始日時: 2026-05-01 13:41:38 JST
+- 担当セッション: `mj-research-urlhost-guard-tighten-20260501`, `mj-worker-urlhost-dns-label-guard-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（差分レビュー・ログ整形・検証）
+- 作業範囲: `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 指示内容: `isHostOnlyString` を最小強化し、既存の privacy guard（空白、`/`, `?`, `#`, `@`, `:` 拒否）を維持したまま、browser payload の `urlHost` が DNS host として明らかに壊れている場合は reject する。trim 後の host を lower/normalize せず、全体 253 文字以下、先頭/末尾 `.` 拒否、`.` 区切り label が非空、63 文字以下、英数字または `-` のみ、先頭末尾英数字であることを検証する。型定義、UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。
+- 結果: `isHostOnlyString` に DNS host label 検証を追加し、`meet.google.com`, `zoom.us`, `company.zoom.us`, `teams.microsoft.com`, `teams.cloud.microsoft`, `teams.live.com` のような正規 host は通る条件を維持した。host の lower/normalize は行っていない。
+- 変更ファイル: `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/meetingDetection.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/meetingDetection.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは保存出力を残さず終了したため、main の直接読解と worker 差分レビューで判断した。worker は実装・個別検証を完了した。
+- 次アクション: 実機または Tauri イベント経路で、正規 browser payload の `urlHost` が従来どおり通り、壊れた DNS host が UI 表示前に破棄されることを確認する。
+
 ### App detection tests: assert app payload privacy keys by object key
 
 - 開始日時: 2026-05-01 13:21:45 JST
