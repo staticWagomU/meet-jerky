@@ -880,6 +880,54 @@ export function TranscriptView() {
     settings?.transcriptionEngine,
   ]);
 
+  const startMicCapture = useCallback(async () => {
+    if (selectedDeviceId) {
+      await invoke("start_recording", { deviceId: selectedDeviceId });
+      return;
+    }
+    await invoke("start_recording");
+  }, [selectedDeviceId]);
+
+  const restartTranscriptionForAudioSources = useCallback(
+    async (nextMicRecording: boolean, nextSystemAudioRecording: boolean) => {
+      const transcriptionSource = getTranscriptionSourceArg(
+        nextMicRecording,
+        nextSystemAudioRecording,
+      );
+      if (!transcriptionSource) {
+        await stopTranscriptionFromUiState();
+        setIsTranscribing(false);
+        return;
+      }
+      if (
+        settings?.transcriptionEngine === "appleSpeech" &&
+        nextMicRecording &&
+        nextSystemAudioRecording
+      ) {
+        throw new Error(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
+      }
+
+      await stopTranscriptionFromUiState();
+      setIsTranscribing(false);
+
+      if (nextMicRecording) {
+        await startMicCapture();
+        setMicLevel(0);
+      }
+      if (nextSystemAudioRecording) {
+        await invoke("start_system_audio");
+        setSystemAudioLevel(0);
+      }
+
+      await invoke("start_transcription", {
+        modelName: selectedModel,
+        source: transcriptionSource,
+      });
+      setIsTranscribing(true);
+    },
+    [selectedModel, settings?.transcriptionEngine, startMicCapture],
+  );
+
   const handleToggleMicRecording = useCallback(async () => {
     if (
       isMicOperationPending ||
@@ -900,18 +948,28 @@ export function TranscriptView() {
         await invoke("stop_recording");
         setIsMicRecording(false);
         setMicLevel(0);
-        // If no source is recording, stop transcription too
-        if (!isSystemAudioRecording && isTranscribing) {
-          await stopTranscriptionFromUiState();
-          setIsTranscribing(false);
+        // Keep transcription workers aligned with the remaining audio sources.
+        if (isTranscribing) {
+          if (isSystemAudioRecording) {
+            await restartTranscriptionForAudioSources(false, true);
+          } else {
+            await stopTranscriptionFromUiState();
+            setIsTranscribing(false);
+          }
         }
       } else {
-        if (selectedDeviceId) {
-          await invoke("start_recording", { deviceId: selectedDeviceId });
-        } else {
-          await invoke("start_recording");
+        if (
+          isTranscribing &&
+          isSystemAudioRecording &&
+          settings?.transcriptionEngine === "appleSpeech"
+        ) {
+          throw new Error(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
         }
+        await startMicCapture();
         setIsMicRecording(true);
+        if (isTranscribing) {
+          await restartTranscriptionForAudioSources(true, isSystemAudioRecording);
+        }
       }
       setMeetingError((currentError) =>
         clearRelatedMeetingError(currentError, MIC_RECORDING_ERROR_PREFIX),
@@ -932,7 +990,9 @@ export function TranscriptView() {
     isMicRecording,
     isSystemAudioRecording,
     isTranscribing,
-    selectedDeviceId,
+    settings?.transcriptionEngine,
+    startMicCapture,
+    restartTranscriptionForAudioSources,
   ]);
 
   const handleToggleSystemAudio = useCallback(async () => {
@@ -955,14 +1015,28 @@ export function TranscriptView() {
         await invoke("stop_system_audio");
         setIsSystemAudioRecording(false);
         setSystemAudioLevel(0);
-        // If no source is recording, stop transcription too
-        if (!isMicRecording && isTranscribing) {
-          await stopTranscriptionFromUiState();
-          setIsTranscribing(false);
+        // Keep transcription workers aligned with the remaining audio sources.
+        if (isTranscribing) {
+          if (isMicRecording) {
+            await restartTranscriptionForAudioSources(true, false);
+          } else {
+            await stopTranscriptionFromUiState();
+            setIsTranscribing(false);
+          }
         }
       } else {
+        if (
+          isTranscribing &&
+          isMicRecording &&
+          settings?.transcriptionEngine === "appleSpeech"
+        ) {
+          throw new Error(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
+        }
         await invoke("start_system_audio");
         setIsSystemAudioRecording(true);
+        if (isTranscribing) {
+          await restartTranscriptionForAudioSources(isMicRecording, true);
+        }
       }
       setMeetingError((currentError) =>
         clearRelatedMeetingError(currentError, SYSTEM_AUDIO_ERROR_PREFIX),
@@ -983,6 +1057,8 @@ export function TranscriptView() {
     isSystemAudioRecording,
     isMicRecording,
     isTranscribing,
+    settings?.transcriptionEngine,
+    restartTranscriptionForAudioSources,
   ]);
 
   const handleToggleTranscription = useCallback(async () => {

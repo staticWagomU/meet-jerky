@@ -12525,3 +12525,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: フロントの正規 `source` 指定で従来どおり mic/system/both の文字起こしが開始され、壊れた invoke だけが明示的な不正 source エラーになることを実機で確認する。
+
+### Transcript view: resync transcription after audio source changes
+
+- 開始日時: 2026-05-01 09:23:12 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし中に個別の Mic/System 音声ソースを追加または停止した場合、録音ソース構成に合わせて transcription を停止・必要な録音ソースを再起動・`start_transcription` を再実行し、UI 表示と実際の文字起こし対象を一致させる。Apple Speech の dual source 禁止は維持し、会議開始/停止フロー、CSS、Tauri/Rust/Swift、`.pen` は変更しない。
+- 結果: `startMicCapture` と `restartTranscriptionForAudioSources` を追加し、文字起こし中の Mic/System 個別トグルでソース構成が変わる場合に transcription を再同期するようにした。片方を停止してもう片方が残る場合は残る片方の録音ソースを再 start して consumer を作り直し、片方を追加する場合は両方を再 start して `source: "both"` で再開する。最後の片方を停止する場合は従来どおり transcription を停止する。Apple Speech で dual source へ遷移しようとする場合は録音開始前に既存理由で拒否する。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker `mj-worker-transcription-source-sync-20260501-092147` が 2 分以上プロンプト表示のまま差分ゼロで停滞したため main が例外実装した。
+- 次アクション: 実機で片方だけ文字起こし開始後にもう片方を追加し、`transcription-result.source` が両方から出ること、片方停止後に残る片方だけで文字起こしが継続することを確認する。
