@@ -12553,3 +12553,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker `mj-worker-overlay-hide-transparent-20260501` が 1 分以上プロンプト表示のまま出力ファイルなし・差分ゼロで停滞したため、ユーザー報告の権限エラーと白枠残りを優先して main が例外実装した。
 - 次アクション: 実機で会議検知通知の閉じる/開始/状態確認/自動非表示、再通知時の top center 位置、ライブ字幕の閉じる操作、透明な角丸外観、白枠残留なし、`core:window:allow-hide` エラーなしを確認する。
+
+### Transcript view: avoid double-starting added audio sources
+
+- 開始日時: 2026-05-01 10:03:08 JST
+- 担当セッション: `mj-research-recording-transparency-20260501`, `mj-worker-transcription-source-add-no-double-start-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: 文字起こし中に Mic/System 音声ソースを追加する経路で、追加ソースを先に `start_*` してから `restartTranscriptionForAudioSources(...)` が同じソースを再 start する冗長な停止/再開を避ける。停止経路、meeting start/stop、UI 文言、CSS、Tauri/Rust/Swift、`.pen` は変更しない。
+- 結果: 文字起こし中のマイク追加では `startMicCapture()` を先行実行せず、`restartTranscriptionForAudioSources(true, isSystemAudioRecording)` に音声キャプチャ再作成と文字起こし再同期を任せるようにした。文字起こし中のシステム音声追加でも `invoke("start_system_audio")` を先行実行せず、`restartTranscriptionForAudioSources(isMicRecording, true)` に任せるようにした。文字起こし中でない通常追加は従来どおり対象ソースだけ start してから state を true にする。成功後にのみ UI state を true にする挙動を維持した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research `mj-research-recording-transparency-20260501` は保存出力に進まず探索途中で停滞し、worker `mj-worker-transcription-source-add-no-double-start-20260501` は 1 分以上プロンプト表示のまま出力ファイルなし・差分ゼロで停滞したため、main が自律運用停止回避として最小範囲で例外実装した。
+- 次アクション: 検証後、実機で文字起こし中に片方の音声ソースを追加したとき、追加ソースが短時間で停止/再開されず、両トラックの文字起こしが継続することを確認する。

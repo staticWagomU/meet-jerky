@@ -965,11 +965,12 @@ export function TranscriptView() {
         ) {
           throw new Error(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
         }
-        await startMicCapture();
-        setIsMicRecording(true);
         if (isTranscribing) {
           await restartTranscriptionForAudioSources(true, isSystemAudioRecording);
+        } else {
+          await startMicCapture();
         }
+        setIsMicRecording(true);
       }
       setMeetingError((currentError) =>
         clearRelatedMeetingError(currentError, MIC_RECORDING_ERROR_PREFIX),
@@ -1032,11 +1033,12 @@ export function TranscriptView() {
         ) {
           throw new Error(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
         }
-        await invoke("start_system_audio");
-        setIsSystemAudioRecording(true);
         if (isTranscribing) {
           await restartTranscriptionForAudioSources(isMicRecording, true);
+        } else {
+          await invoke("start_system_audio");
         }
+        setIsSystemAudioRecording(true);
       }
       setMeetingError((currentError) =>
         clearRelatedMeetingError(currentError, SYSTEM_AUDIO_ERROR_PREFIX),
