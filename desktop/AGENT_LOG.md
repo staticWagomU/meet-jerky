@@ -12539,3 +12539,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker `mj-worker-transcription-source-sync-20260501-092147` が 2 分以上プロンプト表示のまま差分ゼロで停滞したため main が例外実装した。
 - 次アクション: 実機で片方だけ文字起こし開始後にもう片方を追加し、`transcription-result.source` が両方から出ること、片方停止後に残る片方だけで文字起こしが継続することを確認する。
+
+### Overlay windows: hide via backend command and keep transparent background
+
+- 開始日時: 2026-05-01 09:34:00 JST
+- 担当セッション: `mj-worker-overlay-hide-transparent-20260501`, `mj-main`
+- 役割: worker 起動・監視、メインエージェント（worker 停滞による最小例外実装）
+- 作業範囲: `src-tauri/src/lib.rs`, `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: ユーザー報告の会議検知通知/ライブ字幕ウィンドウの白い矩形枠残り、操作後の空白ウィンドウ残留、`window.hide not allowed. Permissions associated with this command: core:window:allow-hide` を最優先で確認し、最新 `meet-jerky-desktop.pen` の Mock 2 Notch Notification (`D0qo1` / `XUVhM`) と Mock 3/5 ライブ字幕 (`kxgH8`, `vxLPK`) の「本体だけが角丸で浮く」意図に沿って、フロントの direct `window.hide()` 依存、Tauri window の transparent/decorations/background、CSS 背景、閉じる/選択後の非表示処理を修正する。`.pen` は編集・stage しない。
+- 結果: Pencil MCP で `D0qo1`, `kxgH8`, `vxLPK` の最新スクリーンショットを確認した。`MeetingDetectedBanner` と `LiveCaptionWindow` の閉じる/開始/状態確認/自動非表示処理を、フロントの `getCurrentWindow().hide()` から custom command 経由のバックエンド hide へ変更した。`src-tauri/src/lib.rs` に `set_meeting_prompt_window_visible` を追加し、通知表示時は従来どおり top center へ再配置、非表示時は Rust 側で該当 window を hide するようにした。既存 `set_live_caption_window_visible(false)` をライブ字幕の閉じる処理から使うようにした。overlay window builder に透明 `background_color(Color(0, 0, 0, 0))` を明示し、CSS でも `html` と overlay body/root/window の透明背景を維持するよう補強した。UI 文言、通知/字幕の可視レイアウト、`.pen` は変更していない。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src/components/MeetingDetectedBanner.tsx`, `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/lib.rs src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo check --manifest-path src-tauri/Cargo.toml --lib` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。実機 macOS の通知表示位置、透明 webview、Google Meet 上での白枠残留解消、閉じる/開始/状態確認後の非表示、権限エラーなしは未実機確認（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker `mj-worker-overlay-hide-transparent-20260501` が 1 分以上プロンプト表示のまま出力ファイルなし・差分ゼロで停滞したため、ユーザー報告の権限エラーと白枠残りを優先して main が例外実装した。
+- 次アクション: 実機で会議検知通知の閉じる/開始/状態確認/自動非表示、再通知時の top center 位置、ライブ字幕の閉じる操作、透明な角丸外観、白枠残留なし、`core:window:allow-hide` エラーなしを確認する。

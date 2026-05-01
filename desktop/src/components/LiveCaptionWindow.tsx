@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { BookOpen, Bookmark, Minus, Sparkles } from "lucide-react";
 import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
@@ -34,6 +34,10 @@ const LIVE_CAPTION_CLOSE_LABEL =
   "ライブ文字起こしウィンドウを閉じる。Escape キーでも閉じられます。録音と文字起こしは継続します";
 const LIVE_CAPTION_WINDOW_OPERATION_LABEL =
   "このウィンドウはドラッグで移動できます。閉じても録音と文字起こしは継続します";
+
+async function hideLiveCaptionOverlayWindow(): Promise<void> {
+  await invoke("set_live_caption_window_visible", { visible: false });
+}
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
 type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
@@ -354,8 +358,7 @@ export function LiveCaptionWindow() {
         ? [latestSegment]
         : [];
   const hideLiveCaptionWindow = () => {
-    void getCurrentWindow()
-      .hide()
+    void hideLiveCaptionOverlayWindow()
       .catch((e) => {
         console.error("ライブ字幕ウィンドウを隠せませんでした:", toErrorMessage(e));
       });

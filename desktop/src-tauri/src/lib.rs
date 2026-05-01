@@ -22,6 +22,7 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
+    utils::config::Color,
     Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Size, WebviewUrl,
     WebviewWindowBuilder, WindowEvent,
 };
@@ -122,6 +123,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .decorations(false)
     .resizable(false)
     .transparent(true)
+    .background_color(Color(0, 0, 0, 0))
     .always_on_top(true)
     .skip_taskbar(true)
     .shadow(false)
@@ -139,6 +141,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .decorations(false)
     .resizable(false)
     .transparent(true)
+    .background_color(Color(0, 0, 0, 0))
     .always_on_top(true)
     .skip_taskbar(true)
     .shadow(false)
@@ -156,6 +159,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     .decorations(false)
     .resizable(false)
     .transparent(true)
+    .background_color(Color(0, 0, 0, 0))
     .always_on_top(true)
     .skip_taskbar(true)
     .shadow(false)
@@ -214,6 +218,24 @@ pub(crate) fn show_meeting_prompt_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) {
         let _ = window.show();
     }
+}
+
+#[tauri::command]
+fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) else {
+        return Err("会議検知通知ウィンドウが見つかりません".to_string());
+    };
+    if visible {
+        position_window_top_center(&app, MEETING_PROMPT_WINDOW_LABEL, 38);
+        window
+            .show()
+            .map_err(|e| format!("会議検知通知ウィンドウを表示できません: {e}"))?;
+    } else {
+        window
+            .hide()
+            .map_err(|e| format!("会議検知通知ウィンドウを隠せません: {e}"))?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -321,6 +343,7 @@ pub fn run() {
             session_commands::discard_session,
             session_commands::list_session_summaries_cmd,
             show_main_window,
+            set_meeting_prompt_window_visible,
             set_live_caption_window_visible,
             set_ring_light_visible,
         ])

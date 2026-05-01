@@ -213,10 +213,20 @@
    Layout
    =========================== */
 
+html {
+  background: transparent;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: transparent;
+}
+
+html:has(body[data-window="meeting-prompt"]),
+html:has(body[data-window="live-caption"]),
+html:has(body[data-window="ring-light"]) {
   background: transparent;
 }
 

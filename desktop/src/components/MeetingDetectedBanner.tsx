@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { MeetingAppDetectedPayload } from "../types";
 import {
   clearPendingMeetingStartRequest,
@@ -28,6 +28,10 @@ const INVALID_STATUS_PAYLOAD_ERROR =
 const PROMPT_OPERATION_LABEL =
   "「記録を開始」を選ぶまで録音は開始しません。バナーはドラッグで移動でき、Escape キーで閉じられます";
 type PendingPromptAction = "start" | "confirm" | null;
+
+async function hideMeetingPromptWindow(): Promise<void> {
+  await invoke("set_meeting_prompt_window_visible", { visible: false });
+}
 
 function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
   return readStoredLiveCaptionStatus((e) => {
@@ -142,8 +146,7 @@ export function MeetingDetectedBanner() {
       return;
     }
     const timeoutId = window.setTimeout(() => {
-      void getCurrentWindow()
-        .hide()
+      void hideMeetingPromptWindow()
         .then(() => {
           clearPendingMeetingStartRequest();
           setPendingAction(null);
@@ -212,7 +215,7 @@ export function MeetingDetectedBanner() {
       return;
     }
     try {
-      await getCurrentWindow().hide();
+      await hideMeetingPromptWindow();
       setDetected(null);
     } catch (e) {
       setPendingAction(null);
@@ -236,7 +239,7 @@ export function MeetingDetectedBanner() {
       return;
     }
     try {
-      await getCurrentWindow().hide();
+      await hideMeetingPromptWindow();
       setDetected(null);
     } catch (e) {
       setPendingAction(null);
@@ -245,7 +248,7 @@ export function MeetingDetectedBanner() {
   };
   const handleDismissBanner = async () => {
     try {
-      await getCurrentWindow().hide();
+      await hideMeetingPromptWindow();
       clearPendingMeetingStartRequest();
       setDetected(null);
       setListenerError(null);
