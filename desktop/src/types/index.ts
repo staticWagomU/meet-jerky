@@ -70,6 +70,8 @@ export interface MeetingAppDetectedAppPayload {
   source: "app";
   service?: never;
   urlHost?: never;
+  url?: never;
+  fullUrl?: never;
   browserName?: never;
   windowTitle?: never;
 }
@@ -80,6 +82,8 @@ export interface MeetingAppDetectedBrowserPayload {
   source: "browser";
   service: string;
   urlHost: string;
+  url?: never;
+  fullUrl?: never;
   browserName: string;
   windowTitle?: never;
 }

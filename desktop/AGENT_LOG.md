@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting detection payload guard: reject raw URL fields
+
+- 開始日時: 2026-05-01 12:42 JST
+- 担当セッション: `mj-research-detection-transcription-boundary-20260501`, `mj-worker-meeting-payload-url-privacy-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/types/index.ts`, `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 指示内容: Rust 側の会議検知 payload が URL 全文や window title を出さない方針に合わせ、フロントの `meeting-app-detected` 型と runtime guard でも `url` / `fullUrl` / `windowTitle` を受け付けない。host-only の `urlHost` 検証は維持し、UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。
+- 結果: `MeetingAppDetectedAppPayload` / `MeetingAppDetectedBrowserPayload` に `url?: never` と `fullUrl?: never` を追加した。runtime guard に `hasDisallowedPrivacyField` を追加し、app/browser payload とも `url` / `fullUrl` / `windowTitle` が存在する payload を拒否するようにした。browser payload の `urlHost` は引き続き host-only 文字列のみ許可する。
+- 変更ファイル: `src/types/index.ts`, `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/types/index.ts src/utils/meetingDetection.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/types/index.ts src/utils/meetingDetection.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research/worker が長い `AGENT_LOG.md` 読解後に差分ゼロのまま停滞したため停止し、main が自律運用停止回避として最小範囲で例外実装した。
+- 次アクション: 実機または Tauri イベントモックで、`url` / `fullUrl` / `windowTitle` が混入した payload は拒否され、通常の app payload と host-only browser payload は会議検知通知へ進むことを確認する。
+
 ### Meeting prompt pill: render only with banner content
 
 - 開始日時: 2026-05-01 12:13 JST

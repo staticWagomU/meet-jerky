@@ -18,11 +18,16 @@ function isHostOnlyString(value: unknown): value is string {
   );
 }
 
-function hasProperty(
-  value: Record<string, unknown>,
-  key: keyof MeetingAppDetectedPayload,
-): boolean {
+function hasProperty(value: Record<string, unknown>, key: string): boolean {
   return key in value;
+}
+
+function hasDisallowedPrivacyField(candidate: Record<string, unknown>): boolean {
+  return (
+    hasProperty(candidate, "url") ||
+    hasProperty(candidate, "fullUrl") ||
+    hasProperty(candidate, "windowTitle")
+  );
 }
 
 function isMeetingAppDetectedAppPayload(
@@ -35,7 +40,7 @@ function isMeetingAppDetectedAppPayload(
     !hasProperty(candidate, "service") &&
     !hasProperty(candidate, "urlHost") &&
     !hasProperty(candidate, "browserName") &&
-    !hasProperty(candidate, "windowTitle")
+    !hasDisallowedPrivacyField(candidate)
   );
 }
 
@@ -49,7 +54,7 @@ function isMeetingAppDetectedBrowserPayload(
     isNonEmptyTrimmedString(candidate.service) &&
     isHostOnlyString(candidate.urlHost) &&
     isNonEmptyTrimmedString(candidate.browserName) &&
-    !hasProperty(candidate, "windowTitle")
+    !hasDisallowedPrivacyField(candidate)
   );
 }
 
