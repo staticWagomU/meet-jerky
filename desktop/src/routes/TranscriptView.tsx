@@ -35,6 +35,7 @@ import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
+import { isTranscriptionErrorPayload } from "../utils/transcriptSegment";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
@@ -567,6 +568,45 @@ export function TranscriptView() {
         .then((unlisten) => unlisten())
         .catch((e) => {
           console.error("録音開始要求の受信解除に失敗しました:", toErrorMessage(e));
+        });
+    };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    const unlistenPromise = listen<unknown>("transcription-error", (event) => {
+      if (disposed) {
+        return;
+      }
+      const payload = event.payload;
+      if (!isTranscriptionErrorPayload(payload)) {
+        setMeetingError("文字起こしエラー通知の形式が不正です。");
+        return;
+      }
+      setIsTranscribing(false);
+      setMeetingError(`文字起こしが停止しました: ${payload.error}`);
+    })
+      .then((unlisten) => unlisten)
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("文字起こしエラー通知の受信開始に失敗しました:", msg);
+          setMeetingError(
+            `文字起こしエラー通知の受信開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
+
+    return () => {
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error(
+            "文字起こしエラー通知の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
   }, []);

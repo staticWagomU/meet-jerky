@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript view: stop transcribing on worker error event
+
+- 開始日時: 2026-05-01 11:04 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, 既存 export 利用のみの `src/utils/transcriptSegment.ts`, `AGENT_LOG.md`
+- 指示内容: `TranscriptView.tsx` でも `transcription-error` イベントを購読し、バックエンド側で文字起こし worker が停止したときに UI の `isTranscribing` が「文字起こし中」のまま残らないようにする。payload は `isTranscriptionErrorPayload` で検証し、正常 payload なら `setIsTranscribing(false)` と短い `meetingError` 表示、不正 payload なら形式不正エラーを表示する。録音ソース state、`TranscriptDisplay` / `LiveCaptionWindow` の既存エラー表示、UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。コミットは禁止。
+- 結果: `TranscriptView` に `transcription-error` listener を追加し、正常 payload 受信時に `isTranscribing` だけを false にして `文字起こしが停止しました: ...` を表示するようにした。不正 payload は `文字起こしエラー通知の形式が不正です。` を表示する。録音ソース state と既存表示コンポーネントの重複購読は変更していない。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または Tauri イベントモックで、worker panic/feed 失敗時の `transcription-error` により録音ソース state は維持したまま文字起こし状態 pill とライブ字幕表示条件が停止側へ戻ることを確認する。
+
 ### Browser meeting payload privacy: reject window title
 
 - 開始日時: 2026-05-01 10:25 JST
