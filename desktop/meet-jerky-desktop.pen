@@ -7,134 +7,12 @@
       "x": 40,
       "y": 40,
       "name": "Mock 1 - Menu Bar Popover",
-      "clip": true,
       "width": 460,
       "height": 560,
-      "fill": "#F3F4F6",
+      "fill": "#00000000",
       "cornerRadius": 12,
       "layout": "none",
       "children": [
-        {
-          "type": "frame",
-          "id": "pgVJM",
-          "x": 0,
-          "y": 0,
-          "name": "Desktop background",
-          "width": 460,
-          "height": 560,
-          "fill": {
-            "type": "mesh_gradient",
-            "enabled": true,
-            "columns": 3,
-            "rows": 3,
-            "colors": [
-              "#F9FAFBFF",
-              "#F2F4F7FF",
-              "#FFF4ECFF",
-              "#F6F7F9FF",
-              "#FFFFFFFF",
-              "#FFE1D166",
-              "#F0F2F5FF",
-              "#F9FAFBFF",
-              "#FF8A3D33"
-            ],
-            "points": [
-              [
-                0,
-                0
-              ],
-              [
-                0.5,
-                0
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                0,
-                0.5
-              ],
-              [
-                0.5,
-                0.48
-              ],
-              [
-                1,
-                0.5
-              ],
-              [
-                0,
-                1
-              ],
-              [
-                0.5,
-                1
-              ],
-              [
-                1,
-                1
-              ]
-            ]
-          },
-          "layout": "none"
-        },
-        {
-          "type": "frame",
-          "id": "AUx7w",
-          "x": 0,
-          "y": 0,
-          "name": "macOS menu bar",
-          "width": 460,
-          "height": 32,
-          "fill": "#FDFDFDD9",
-          "gap": 10,
-          "padding": [
-            0,
-            16
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "FJL23",
-              "name": "appName",
-              "fill": "#1D1D1F",
-              "content": "meet-jerky",
-              "fontFamily": "Inter",
-              "fontSize": 13,
-              "fontWeight": "600"
-            },
-            {
-              "type": "frame",
-              "id": "n4zCBG",
-              "name": "barSpacer",
-              "width": "fill_container",
-              "height": 1,
-              "fill": "#FFFFFF00"
-            },
-            {
-              "type": "icon_font",
-              "id": "wUH4x",
-              "name": "micIcon",
-              "width": 15,
-              "height": 15,
-              "iconFontName": "mic",
-              "iconFontFamily": "lucide",
-              "fill": "#FF6A00"
-            },
-            {
-              "type": "text",
-              "id": "d2ppZq",
-              "name": "barTime",
-              "fill": "$foreground.primary",
-              "content": "10:24",
-              "fontFamily": "Funnel Sans",
-              "fontSize": 12,
-              "fontWeight": "normal"
-            }
-          ]
-        },
         {
           "type": "frame",
           "id": "hSAR3",
@@ -756,140 +634,12 @@
       "x": 540,
       "y": 40,
       "name": "Mock 2 - Notch Notification",
-      "clip": true,
       "width": 560,
       "height": 280,
-      "fill": "#F3F4F6",
+      "fill": "#00000000",
       "cornerRadius": 12,
       "layout": "none",
       "children": [
-        {
-          "type": "frame",
-          "id": "aK6NP",
-          "x": 0,
-          "y": 0,
-          "name": "MacBook top area",
-          "width": 560,
-          "height": 280,
-          "fill": {
-            "type": "mesh_gradient",
-            "enabled": true,
-            "columns": 3,
-            "rows": 3,
-            "colors": [
-              "#F9FAFBFF",
-              "#F2F4F7FF",
-              "#FFF4ECFF",
-              "#F6F7F9FF",
-              "#FFFFFFFF",
-              "#FFE1D166",
-              "#F0F2F5FF",
-              "#F9FAFBFF",
-              "#FF8A3D33"
-            ],
-            "points": [
-              [
-                0,
-                0
-              ],
-              [
-                0.5,
-                0
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                0,
-                0.5
-              ],
-              [
-                0.5,
-                0.48
-              ],
-              [
-                1,
-                0.5
-              ],
-              [
-                0,
-                1
-              ],
-              [
-                0.5,
-                1
-              ],
-              [
-                1,
-                1
-              ]
-            ]
-          },
-          "layout": "none"
-        },
-        {
-          "type": "frame",
-          "id": "E2kXMJ",
-          "x": 0,
-          "y": 0,
-          "name": "menu bar",
-          "width": 560,
-          "height": 30,
-          "fill": "#FDFDFDD9",
-          "gap": 8,
-          "padding": [
-            0,
-            18
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "BBqhf",
-              "name": "leftItem",
-              "fill": "#1D1D1F",
-              "content": "Finder",
-              "fontFamily": "Inter",
-              "fontSize": 12,
-              "fontWeight": "600"
-            },
-            {
-              "type": "frame",
-              "id": "DeQYK",
-              "name": "barFill",
-              "width": "fill_container",
-              "height": 1,
-              "fill": "#FFFFFF00"
-            },
-            {
-              "type": "text",
-              "id": "LXi0u",
-              "name": "barIcons",
-              "fill": "#1D1D1F",
-              "content": "Wi‑Fi   10:24",
-              "fontFamily": "Geist",
-              "fontSize": 11,
-              "fontWeight": "normal"
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "C2IHWs",
-          "x": 224,
-          "y": 0,
-          "name": "MacBook notch",
-          "width": 112,
-          "height": 30,
-          "fill": "#111111",
-          "cornerRadius": [
-            0,
-            0,
-            14,
-            14
-          ]
-        },
         {
           "type": "frame",
           "id": "XUVhM",
@@ -1208,78 +958,12 @@
       "x": 540,
       "y": 360,
       "name": "Mock 3 - Bottom Transcript Window",
-      "clip": true,
       "width": 900,
       "height": 300,
-      "fill": "#F3F4F6",
+      "fill": "#00000000",
       "cornerRadius": 12,
       "layout": "none",
       "children": [
-        {
-          "type": "frame",
-          "id": "YSgEb",
-          "x": 0,
-          "y": 0,
-          "name": "Desktop area",
-          "width": 900,
-          "height": 300,
-          "fill": {
-            "type": "mesh_gradient",
-            "enabled": true,
-            "columns": 3,
-            "rows": 3,
-            "colors": [
-              "#F9FAFBFF",
-              "#F2F4F7FF",
-              "#FFF4ECFF",
-              "#F6F7F9FF",
-              "#FFFFFFFF",
-              "#FFE1D166",
-              "#F0F2F5FF",
-              "#F9FAFBFF",
-              "#FF8A3D33"
-            ],
-            "points": [
-              [
-                0,
-                0
-              ],
-              [
-                0.5,
-                0
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                0,
-                0.5
-              ],
-              [
-                0.5,
-                0.48
-              ],
-              [
-                1,
-                0.5
-              ],
-              [
-                0,
-                1
-              ],
-              [
-                0.5,
-                1
-              ],
-              [
-                1,
-                1
-              ]
-            ]
-          },
-          "layout": "none"
-        },
         {
           "type": "frame",
           "id": "V5nBfC",
@@ -2083,7 +1767,7 @@
                   "id": "cPeFP",
                   "name": "windowTitle",
                   "fill": "$foreground.primary",
-                  "content": "Settings",
+                  "content": "設定",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "700"
@@ -2093,7 +1777,7 @@
                   "id": "JMUtX",
                   "name": "windowSub",
                   "fill": "$foreground.secondary",
-                  "content": "meet-jerky controls recording, detection, and AI processing transparency.",
+                  "content": "録音・検出・AI処理の透明性を管理します。",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -2130,7 +1814,7 @@
                   "id": "CR6LP",
                   "name": "recText",
                   "fill": "$accent.deep",
-                  "content": "Visible while recording",
+                  "content": "録音中は表示されます",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "600"
@@ -2262,7 +1946,7 @@
                   "id": "KtFyB",
                   "name": "nav1Text",
                   "fill": "$foreground.primary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "600"
@@ -2298,7 +1982,7 @@
                   "id": "cLS5L",
                   "name": "nav2Text",
                   "fill": "$foreground.secondary",
-                  "content": "Detection",
+                  "content": "検出",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -2334,7 +2018,7 @@
                   "id": "mbGCS",
                   "name": "nav3Text",
                   "fill": "$foreground.secondary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -2370,7 +2054,7 @@
                   "id": "lHrRJ",
                   "name": "nav4Text",
                   "fill": "$foreground.secondary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -2406,7 +2090,7 @@
                   "id": "SyCUp",
                   "name": "nav5Text",
                   "fill": "$foreground.secondary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -2442,7 +2126,7 @@
                   "id": "Sguow",
                   "name": "nav6Text",
                   "fill": "$foreground.secondary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -2476,7 +2160,7 @@
                   "id": "IluIU",
                   "name": "localNoteTitle",
                   "fill": "$foreground.primary",
-                  "content": "Local-first capture",
+                  "content": "ローカル優先で記録",
                   "fontFamily": "Geist",
                   "fontSize": 11,
                   "fontWeight": "700"
@@ -2488,7 +2172,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "AI sending is off until you enable minutes generation.",
+                  "content": "議事録生成を有効にするまでAI送信はオフです。",
                   "lineHeight": 1.35,
                   "fontFamily": "Funnel Sans",
                   "fontSize": 10,
@@ -2529,7 +2213,7 @@
                   "id": "waLAZ",
                   "name": "headerTitle",
                   "fill": "$foreground.primary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Inter",
                   "fontSize": 25,
                   "fontWeight": "700"
@@ -2541,7 +2225,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Keep automatic meeting capture reliable while making recording and AI processing visible.",
+                  "content": "自動キャプチャを安定させつつ、録音とAI処理を可視化します。",
                   "lineHeight": 1.35,
                   "fontFamily": "Geist",
                   "fontSize": 13,
@@ -2635,7 +2319,7 @@
                                   "id": "W5ZYOE",
                                   "name": "detectionTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Meeting detection",
+                                  "content": "会議の検出",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -2647,7 +2331,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Checks URL, app name, active window, and audio state before capture.",
+                                  "content": "キャプチャ前にURL・アプリ名・アクティブウィンドウ・音声状態を確認します。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -2685,7 +2369,7 @@
                                   "id": "iNEYJ",
                                   "name": "detectionStatusText",
                                   "fill": "#167A45",
-                                  "content": "Active",
+                                  "content": "動作中",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -2842,7 +2526,7 @@
                                   "id": "KkZpV",
                                   "name": "webText",
                                   "fill": "$foreground.primary",
-                                  "content": "URLs",
+                                  "content": "URL",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -2873,7 +2557,7 @@
                               "fill": "$foreground.secondary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Auto-start when meeting audio is confirmed",
+                              "content": "会議音声を検出したら自動開始",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -2973,7 +2657,7 @@
                                   "id": "FZ7yk",
                                   "name": "audioTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Separate audio tracks",
+                                  "content": "音声トラックを分離",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -2985,7 +2669,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Your voice and meeting audio are captured independently for cleaner transcripts.",
+                                  "content": "自分の声と会議音声を別々に録音し、文字起こしを明瞭にします。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -3061,7 +2745,7 @@
                                           "id": "oAukO",
                                           "name": "selfTitle",
                                           "fill": "$foreground.primary",
-                                          "content": "Mic input",
+                                          "content": "マイク入力",
                                           "fontFamily": "Inter",
                                           "fontSize": 13,
                                           "fontWeight": "700"
@@ -3071,7 +2755,7 @@
                                           "id": "vRZm4",
                                           "name": "selfSub",
                                           "fill": "$foreground.secondary",
-                                          "content": "Routed as Self",
+                                          "content": "自分側として録音",
                                           "fontFamily": "Funnel Sans",
                                           "fontSize": 10,
                                           "fontWeight": "normal"
@@ -3172,7 +2856,7 @@
                                           "id": "hKHs5",
                                           "name": "othersTitle",
                                           "fill": "$foreground.primary",
-                                          "content": "System audio",
+                                          "content": "システム音声",
                                           "fontFamily": "Inter",
                                           "fontSize": 13,
                                           "fontWeight": "700"
@@ -3182,7 +2866,7 @@
                                           "id": "u16KT",
                                           "name": "othersSub",
                                           "fill": "$foreground.secondary",
-                                          "content": "Routed as Others",
+                                          "content": "相手側として録音",
                                           "fontFamily": "Funnel Sans",
                                           "fontSize": 10,
                                           "fontWeight": "normal"
@@ -3215,7 +2899,7 @@
                                       "id": "pBvXD",
                                       "name": "othersSelectText",
                                       "fill": "$foreground.primary",
-                                      "content": "Loopback: Meeting Apps",
+                                      "content": "ループバック: 会議アプリ",
                                       "fontFamily": "Geist",
                                       "fontSize": 11,
                                       "fontWeight": "normal"
@@ -3253,7 +2937,7 @@
                                   "id": "Qdq1D",
                                   "name": "selfMeterLabel",
                                   "fill": "$foreground.secondary",
-                                  "content": "Self",
+                                  "content": "自分",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -3307,7 +2991,7 @@
                                   "id": "Z0PSWB",
                                   "name": "othersMeterLabel",
                                   "fill": "$foreground.secondary",
-                                  "content": "Others",
+                                  "content": "相手",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -3425,7 +3109,7 @@
                                   "id": "lU37y",
                                   "name": "permTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Recording transparency",
+                                  "content": "録音の透明性",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -3437,7 +3121,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Menu bar, transcript window, and history keep capture state visible.",
+                                  "content": "メニューバー・字幕ウィンドウ・履歴で録音状態を確認できます。",
                                   "lineHeight": 1.25,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -3477,7 +3161,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Microphone",
+                                  "content": "マイク",
                                   "fontFamily": "Geist",
                                   "fontSize": 10,
                                   "fontWeight": "normal"
@@ -3508,7 +3192,7 @@
                                       "id": "fFAVg",
                                       "name": "micBadgeText",
                                       "fill": "#167A45",
-                                      "content": "Granted",
+                                      "content": "許可済み",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -3539,7 +3223,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "System audio",
+                                  "content": "システム音声",
                                   "fontFamily": "Geist",
                                   "fontSize": 10,
                                   "fontWeight": "normal"
@@ -3570,7 +3254,7 @@
                                       "id": "s3yBlw",
                                       "name": "sysBadgeText",
                                       "fill": "#167A45",
-                                      "content": "Granted",
+                                      "content": "許可済み",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -3601,7 +3285,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "AI minutes",
+                                  "content": "AI議事録",
                                   "fontFamily": "Geist",
                                   "fontSize": 10,
                                   "fontWeight": "normal"
@@ -3632,7 +3316,7 @@
                                       "id": "hGqOE",
                                       "name": "aiBadgeText",
                                       "fill": "#A15C07",
-                                      "content": "Manual",
+                                      "content": "手動",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -3659,78 +3343,12 @@
       "x": 920,
       "y": 720,
       "name": "Mock 5 - Caption Window Detail",
-      "clip": true,
       "width": 900,
       "height": 360,
-      "fill": "#F3F4F6",
+      "fill": "#00000000",
       "cornerRadius": 12,
       "layout": "none",
       "children": [
-        {
-          "type": "frame",
-          "id": "bqB7F",
-          "x": 0,
-          "y": 0,
-          "name": "Soft desktop background",
-          "width": 900,
-          "height": 360,
-          "fill": {
-            "type": "mesh_gradient",
-            "enabled": true,
-            "columns": 3,
-            "rows": 3,
-            "colors": [
-              "#F9FAFBFF",
-              "#F2F4F7FF",
-              "#FFF4ECFF",
-              "#F6F7F9FF",
-              "#FFFFFFFF",
-              "#FFE1D166",
-              "#F0F2F5FF",
-              "#F9FAFBFF",
-              "#FF8A3D33"
-            ],
-            "points": [
-              [
-                0,
-                0
-              ],
-              [
-                0.5,
-                0
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                0,
-                0.5
-              ],
-              [
-                0.5,
-                0.48
-              ],
-              [
-                1,
-                0.5
-              ],
-              [
-                0,
-                1
-              ],
-              [
-                0.5,
-                1
-              ],
-              [
-                1,
-                1
-              ]
-            ]
-          },
-          "layout": "none"
-        },
         {
           "type": "frame",
           "id": "PxCi1",
@@ -4458,170 +4076,12 @@
       "x": 40,
       "y": 720,
       "name": "Mock 6 - Menu Bar Window Variants",
-      "clip": true,
       "width": 900,
       "height": 560,
-      "fill": "#F3F4F6",
+      "fill": "#00000000",
       "cornerRadius": 12,
       "layout": "none",
       "children": [
-        {
-          "type": "frame",
-          "id": "SpDCz",
-          "x": 0,
-          "y": 0,
-          "name": "Variant desktop background",
-          "width": 900,
-          "height": 560,
-          "fill": {
-            "type": "mesh_gradient",
-            "enabled": true,
-            "columns": 3,
-            "rows": 3,
-            "colors": [
-              "#F9FAFBFF",
-              "#F2F4F7FF",
-              "#FFF4ECFF",
-              "#F6F7F9FF",
-              "#FFFFFFFF",
-              "#FFE1D166",
-              "#F0F2F5FF",
-              "#F9FAFBFF",
-              "#FF8A3D33"
-            ],
-            "points": [
-              [
-                0,
-                0
-              ],
-              [
-                0.5,
-                0
-              ],
-              [
-                1,
-                0
-              ],
-              [
-                0,
-                0.5
-              ],
-              [
-                0.5,
-                0.48
-              ],
-              [
-                1,
-                0.5
-              ],
-              [
-                0,
-                1
-              ],
-              [
-                0.5,
-                1
-              ],
-              [
-                1,
-                1
-              ]
-            ]
-          },
-          "layout": "none"
-        },
-        {
-          "type": "frame",
-          "id": "HIRIA",
-          "x": 0,
-          "y": 0,
-          "name": "menu bar",
-          "width": 900,
-          "height": 32,
-          "fill": "#FDFDFDD9",
-          "gap": 10,
-          "padding": [
-            0,
-            16
-          ],
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "abVsy",
-              "name": "barApp",
-              "fill": "#1D1D1F",
-              "content": "meet-jerky",
-              "fontFamily": "Inter",
-              "fontSize": 13,
-              "fontWeight": "600"
-            },
-            {
-              "type": "frame",
-              "id": "LWN6N",
-              "name": "barFill",
-              "width": "fill_container",
-              "height": 1,
-              "fill": "#FFFFFF00"
-            },
-            {
-              "type": "icon_font",
-              "id": "yFWSW",
-              "name": "barStatus",
-              "width": 15,
-              "height": 15,
-              "iconFontName": "mic",
-              "iconFontFamily": "lucide",
-              "fill": "#FF6A00"
-            },
-            {
-              "type": "text",
-              "id": "pXOe6",
-              "name": "barTime",
-              "fill": "#1D1D1F",
-              "content": "10:24",
-              "fontFamily": "Geist",
-              "fontSize": 12,
-              "fontWeight": "normal"
-            }
-          ]
-        },
-        {
-          "type": "text",
-          "id": "HXa6f",
-          "x": 72,
-          "y": 60,
-          "name": "label1",
-          "fill": "#1D1D1F",
-          "content": "待機中",
-          "fontFamily": "Inter",
-          "fontSize": 14,
-          "fontWeight": "700"
-        },
-        {
-          "type": "text",
-          "id": "Yyw3w",
-          "x": 332,
-          "y": 60,
-          "name": "label2",
-          "fill": "#1D1D1F",
-          "content": "権限が必要",
-          "fontFamily": "Inter",
-          "fontSize": 14,
-          "fontWeight": "700"
-        },
-        {
-          "type": "text",
-          "id": "KFSFr",
-          "x": 612,
-          "y": 60,
-          "name": "label3",
-          "fill": "#1D1D1F",
-          "content": "会議後",
-          "fontFamily": "Inter",
-          "fontSize": 14,
-          "fontWeight": "700"
-        },
         {
           "type": "frame",
           "id": "wg5h3",
@@ -5434,7 +4894,7 @@
                   "id": "Gvkkv",
                   "name": "windowTitle",
                   "fill": "$foreground.primary",
-                  "content": "Settings",
+                  "content": "設定",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "700"
@@ -5444,7 +4904,7 @@
                   "id": "l5eJ6",
                   "name": "windowSub",
                   "fill": "$foreground.secondary",
-                  "content": "meet-jerky controls recording, detection, and AI processing transparency.",
+                  "content": "録音・検出・AI処理の透明性を管理します。",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -5481,7 +4941,7 @@
                   "id": "NZFgB",
                   "name": "recText",
                   "fill": "$accent.deep",
-                  "content": "Visible while recording",
+                  "content": "録音中は表示されます",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "600"
@@ -5612,7 +5072,7 @@
                   "id": "Ne2oc",
                   "name": "nav1Text",
                   "fill": "$foreground.secondary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -5653,7 +5113,7 @@
                   "id": "fHtvs",
                   "name": "nav2Text",
                   "fill": "$foreground.primary",
-                  "content": "Detection",
+                  "content": "検出",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "600"
@@ -5689,7 +5149,7 @@
                   "id": "E9AFQe",
                   "name": "nav3Text",
                   "fill": "$foreground.secondary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -5725,7 +5185,7 @@
                   "id": "bykfY",
                   "name": "nav4Text",
                   "fill": "$foreground.secondary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -5761,7 +5221,7 @@
                   "id": "F52EK",
                   "name": "nav5Text",
                   "fill": "$foreground.secondary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -5797,7 +5257,7 @@
                   "id": "koYOJ",
                   "name": "nav6Text",
                   "fill": "$foreground.secondary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -5831,7 +5291,7 @@
                   "id": "f19qP",
                   "name": "localNoteTitle",
                   "fill": "$foreground.primary",
-                  "content": "Local-first capture",
+                  "content": "ローカル優先で記録",
                   "fontFamily": "Geist",
                   "fontSize": 11,
                   "fontWeight": "700"
@@ -5843,7 +5303,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "AI sending is off until you enable minutes generation.",
+                  "content": "議事録生成を有効にするまでAI送信はオフです。",
                   "lineHeight": 1.35,
                   "fontFamily": "Funnel Sans",
                   "fontSize": 10,
@@ -5884,7 +5344,7 @@
                   "id": "S0M5v",
                   "name": "headerTitle",
                   "fill": "$foreground.primary",
-                  "content": "Detection",
+                  "content": "検出",
                   "fontFamily": "Inter",
                   "fontSize": 25,
                   "fontWeight": "700"
@@ -5896,7 +5356,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Detect meetings reliably across browsers, conferencing apps, and audio cues.",
+                  "content": "ブラウザ・会議アプリ・音声手がかりを横断して会議を確実に検出します。",
                   "lineHeight": 1.35,
                   "fontFamily": "Geist",
                   "fontSize": 13,
@@ -5993,7 +5453,7 @@
                                   "type": "text",
                                   "id": "xSxUs",
                                   "fill": "$foreground.primary",
-                                  "content": "Detection rules",
+                                  "content": "検出ルール",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -6076,7 +5536,7 @@
                                   "type": "text",
                                   "id": "rN54N",
                                   "fill": "$foreground.primary",
-                                  "content": "App",
+                                  "content": "アプリ",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -6113,7 +5573,7 @@
                                   "type": "text",
                                   "id": "GQkZs",
                                   "fill": "$foreground.primary",
-                                  "content": "Window",
+                                  "content": "ウィンドウ",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -6150,7 +5610,7 @@
                                   "type": "text",
                                   "id": "Sscuz",
                                   "fill": "$foreground.primary",
-                                  "content": "Audio",
+                                  "content": "音声",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -6241,7 +5701,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Sustained voice on loopback ≥ 8s",
+                                  "content": "ループバックで音声が8秒以上継続",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -6289,7 +5749,7 @@
                                   "type": "text",
                                   "id": "G1O6sC",
                                   "fill": "$accent.deep",
-                                  "content": "Add rule",
+                                  "content": "ルールを追加",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -6372,7 +5832,7 @@
                                   "type": "text",
                                   "id": "tbyqd",
                                   "fill": "$foreground.primary",
-                                  "content": "Supported services",
+                                  "content": "対応サービス",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -6448,7 +5908,7 @@
                                       "type": "text",
                                       "id": "M6dHF",
                                       "fill": "#167A45",
-                                      "content": "Active",
+                                      "content": "動作中",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -6516,7 +5976,7 @@
                                       "type": "text",
                                       "id": "DUNE5",
                                       "fill": "#167A45",
-                                      "content": "Active",
+                                      "content": "動作中",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -6584,7 +6044,7 @@
                                       "type": "text",
                                       "id": "MNuhb",
                                       "fill": "#167A45",
-                                      "content": "Active",
+                                      "content": "動作中",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -6652,7 +6112,7 @@
                                       "type": "text",
                                       "id": "L2Qo4",
                                       "fill": "#A15C07",
-                                      "content": "Beta",
+                                      "content": "ベータ",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -6691,7 +6151,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Generic URL fallback",
+                                  "content": "汎用URLフォールバック",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -6720,7 +6180,7 @@
                                       "type": "text",
                                       "id": "l1ZsUt",
                                       "fill": "$foreground.secondary",
-                                      "content": "Fallback",
+                                      "content": "フォールバック",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -6805,7 +6265,7 @@
                                   "type": "text",
                                   "id": "DWzfg",
                                   "fill": "$foreground.primary",
-                                  "content": "Sensitivity & confidence",
+                                  "content": "感度と信頼度",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -6890,7 +6350,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Confidence threshold",
+                              "content": "信頼度のしきい値",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "600"
@@ -7010,7 +6470,7 @@
                                   "type": "text",
                                   "id": "qPaJs",
                                   "fill": "$foreground.primary",
-                                  "content": "Live detection log",
+                                  "content": "検出ログ",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -7021,7 +6481,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Recent candidates with explanations.",
+                                  "content": "最近の候補と判定理由",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -7057,7 +6517,7 @@
                                   "type": "text",
                                   "id": "G366N",
                                   "fill": "$accent.deep",
-                                  "content": "Live",
+                                  "content": "ライブ",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -7120,7 +6580,7 @@
                                       "fill": "$foreground.primary",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Weekly product sync",
+                                      "content": "週次プロダクト同期",
                                       "fontFamily": "Geist",
                                       "fontSize": 11,
                                       "fontWeight": "600"
@@ -7129,7 +6589,7 @@
                                       "type": "text",
                                       "id": "Bc8ge",
                                       "fill": "#167A45",
-                                      "content": "Claimed",
+                                      "content": "採用",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -7142,7 +6602,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "meet.google.com URL match · sustained voice ≥ 14s",
+                                  "content": "meet.google.com URL一致 ・ 音声が14秒以上継続",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -7196,7 +6656,7 @@
                                       "fill": "$foreground.primary",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Zoom · 1:1 with Mei",
+                                      "content": "Zoom ・ Meiさんと1on1",
                                       "fontFamily": "Geist",
                                       "fontSize": 11,
                                       "fontWeight": "600"
@@ -7205,7 +6665,7 @@
                                       "type": "text",
                                       "id": "DSWeC",
                                       "fill": "#167A45",
-                                      "content": "Claimed",
+                                      "content": "採用",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -7218,7 +6678,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "App: zoom.us in foreground · loopback active",
+                                  "content": "アプリ: zoom.usがフォアグラウンド ・ ループバック有効",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -7272,7 +6732,7 @@
                                       "fill": "$foreground.primary",
                                       "textGrowth": "fixed-width",
                                       "width": "fill_container",
-                                      "content": "Unknown URL · captureapp.io",
+                                      "content": "不明なURL ・ captureapp.io",
                                       "fontFamily": "Geist",
                                       "fontSize": 11,
                                       "fontWeight": "600"
@@ -7281,7 +6741,7 @@
                                       "type": "text",
                                       "id": "nWnAI",
                                       "fill": "$foreground.secondary",
-                                      "content": "Skipped",
+                                      "content": "スキップ",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -7294,7 +6754,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Audio activity below threshold (0.41 < 0.82)",
+                                  "content": "音声アクティビティがしきい値未満 (0.41 < 0.82)",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -7347,7 +6807,7 @@
                                   "type": "text",
                                   "id": "EZMEX",
                                   "fill": "$accent.deep",
-                                  "content": "Why it triggered",
+                                  "content": "判定の理由",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -7360,7 +6820,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Latest claim matched 2 of 3 enabled signals: URL pattern + sustained voice on loopback. App-name signal was inconclusive but not penalised.",
+                              "content": "直近の採用は有効な3シグナル中2件と一致しました: URLパターン+ループバックの継続音声。アプリ名シグナルは判定保留ですが減点はしていません。",
                               "lineHeight": 1.35,
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
@@ -7514,7 +6974,7 @@
                   "id": "QF132",
                   "name": "windowTitle",
                   "fill": "$foreground.primary",
-                  "content": "Settings",
+                  "content": "Meet Jerky 設定",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "700"
@@ -7524,7 +6984,7 @@
                   "id": "rOfyW",
                   "name": "windowSub",
                   "fill": "$foreground.secondary",
-                  "content": "meet-jerky controls recording, detection, and AI processing transparency.",
+                  "content": "meet-jerkyは録音・検出・AI処理を透明に管理します。",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -7561,7 +7021,7 @@
                   "id": "KENcM",
                   "name": "recText",
                   "fill": "$accent.deep",
-                  "content": "Visible while recording",
+                  "content": "録音中に表示されます",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "600"
@@ -7692,7 +7152,7 @@
                   "id": "R7SUpn",
                   "name": "nav1Text",
                   "fill": "$foreground.secondary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -7728,7 +7188,7 @@
                   "id": "IlpkU",
                   "name": "nav2Text",
                   "fill": "$foreground.secondary",
-                  "content": "Detection",
+                  "content": "検出",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -7769,7 +7229,7 @@
                   "id": "WApzW",
                   "name": "nav3Text",
                   "fill": "$foreground.primary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "600"
@@ -7805,7 +7265,7 @@
                   "id": "t7ICx",
                   "name": "nav4Text",
                   "fill": "$foreground.secondary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -7841,7 +7301,7 @@
                   "id": "gS0S8",
                   "name": "nav5Text",
                   "fill": "$foreground.secondary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -7877,7 +7337,7 @@
                   "id": "r6rPD",
                   "name": "nav6Text",
                   "fill": "$foreground.secondary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -7911,7 +7371,7 @@
                   "id": "tYvKw",
                   "name": "localNoteTitle",
                   "fill": "$foreground.primary",
-                  "content": "Local-first capture",
+                  "content": "ローカル優先で記録",
                   "fontFamily": "Geist",
                   "fontSize": 11,
                   "fontWeight": "700"
@@ -7923,7 +7383,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "AI sending is off until you enable minutes generation.",
+                  "content": "議事録生成を有効にするまでAI送信はオフです。",
                   "lineHeight": 1.35,
                   "fontFamily": "Funnel Sans",
                   "fontSize": 10,
@@ -7964,7 +7424,7 @@
                   "id": "r7Fnv",
                   "name": "headerTitle",
                   "fill": "$foreground.primary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Inter",
                   "fontSize": 25,
                   "fontWeight": "700"
@@ -7976,7 +7436,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Input devices, separation, and quality — tuned for clean meeting capture.",
+                  "content": "入力デバイス・分離・品質を会議録音向けに最適化します。",
                   "lineHeight": 1.35,
                   "fontFamily": "Geist",
                   "fontSize": 13,
@@ -8067,7 +7527,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Input device",
+                              "content": "入力デバイス",
                               "fontFamily": "Inter",
                               "fontSize": 14,
                               "fontWeight": "700"
@@ -8096,7 +7556,7 @@
                                   "type": "text",
                                   "id": "UmGjA",
                                   "fill": "#167A45",
-                                  "content": "Live",
+                                  "content": "ライブ",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -8139,7 +7599,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "MacBook Pro Microphone",
+                              "content": "MacBook Pro マイク",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "normal"
@@ -8183,7 +7643,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Input level",
+                                  "content": "入力レベル",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -8256,7 +7716,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Input gain",
+                              "content": "入力ゲイン",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "600"
@@ -8363,7 +7823,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "System audio routing",
+                              "content": "システム音声ルーティング",
                               "fontFamily": "Inter",
                               "fontSize": 14,
                               "fontWeight": "700"
@@ -8392,7 +7852,7 @@
                                   "type": "text",
                                   "id": "G6FIO5",
                                   "fill": "#167A45",
-                                  "content": "Routed",
+                                  "content": "接続済",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -8441,7 +7901,7 @@
                                   "type": "text",
                                   "id": "kb0aZ",
                                   "fill": "$foreground.primary",
-                                  "content": "Loopback: Meeting Apps",
+                                  "content": "ループバック: 会議アプリ",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "normal"
@@ -8450,7 +7910,7 @@
                                   "type": "text",
                                   "id": "rLxN1",
                                   "fill": "$foreground.secondary",
-                                  "content": "Captures audio from Zoom, Meet, Teams, Webex",
+                                  "content": "Zoom・Meet・Teams・Webexの音声を取得",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 9,
                                   "fontWeight": "normal"
@@ -8506,7 +7966,7 @@
                                   "type": "text",
                                   "id": "HMiZn",
                                   "fill": "$accent.deep",
-                                  "content": "Test capture",
+                                  "content": "テスト",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -8519,7 +7979,7 @@
                               "fill": "$foreground.secondary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Plays a 2s tone and previews the captured signal",
+                              "content": "2秒のテスト音を再生し、取得信号をプレビューします",
                               "lineHeight": 1.3,
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
@@ -8595,7 +8055,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Audio quality",
+                              "content": "音声品質",
                               "fontFamily": "Inter",
                               "fontSize": 14,
                               "fontWeight": "700"
@@ -8616,7 +8076,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Sample rate",
+                              "content": "サンプリングレート",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "600"
@@ -8722,7 +8182,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Channels",
+                              "content": "チャンネル",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "600"
@@ -8755,7 +8215,7 @@
                                       "type": "text",
                                       "id": "DWbGQ",
                                       "fill": "$foreground.secondary",
-                                      "content": "Mono",
+                                      "content": "モノラル",
                                       "fontFamily": "Geist",
                                       "fontSize": 10,
                                       "fontWeight": "600"
@@ -8781,7 +8241,7 @@
                                       "type": "text",
                                       "id": "n12NqV",
                                       "fill": "$accent.deep",
-                                      "content": "Stereo",
+                                      "content": "ステレオ",
                                       "fontFamily": "Geist",
                                       "fontSize": 10,
                                       "fontWeight": "700"
@@ -8813,7 +8273,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Noise suppression",
+                              "content": "ノイズ抑制",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "normal"
@@ -8862,7 +8322,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Echo cancellation",
+                              "content": "エコー除去",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "normal"
@@ -8970,7 +8430,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Live tracks",
+                              "content": "ライブトラック",
                               "fontFamily": "Inter",
                               "fontSize": 14,
                               "fontWeight": "700"
@@ -8998,7 +8458,7 @@
                               "fill": "$foreground.secondary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Self",
+                              "content": "自分",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "700"
@@ -9140,7 +8600,7 @@
                               "fill": "$foreground.secondary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Others",
+                              "content": "相手",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "700"
@@ -9314,7 +8774,7 @@
                                   "fill": "$accent.deep",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Recording format",
+                                  "content": "録音フォーマット",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "700"
@@ -9335,7 +8795,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Codec",
+                                  "content": "コーデック",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "normal"
@@ -9365,7 +8825,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Bitrate",
+                                  "content": "ビットレート",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "normal"
@@ -9529,7 +8989,7 @@
                   "id": "JhC1U",
                   "name": "windowTitle",
                   "fill": "$foreground.primary",
-                  "content": "Settings",
+                  "content": "Meet Jerky 設定",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "700"
@@ -9539,7 +8999,7 @@
                   "id": "oRlAj",
                   "name": "windowSub",
                   "fill": "$foreground.secondary",
-                  "content": "meet-jerky controls recording, detection, and AI processing transparency.",
+                  "content": "meet-jerkyは録音・検出・AI処理を透明に管理します。",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -9576,7 +9036,7 @@
                   "id": "EOH1d",
                   "name": "recText",
                   "fill": "$accent.deep",
-                  "content": "Visible while recording",
+                  "content": "録音中に表示されます",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "600"
@@ -9708,7 +9168,7 @@
                   "id": "k18zxp",
                   "name": "nav1Text",
                   "fill": "$foreground.secondary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -9744,7 +9204,7 @@
                   "id": "hfNqD",
                   "name": "nav2Text",
                   "fill": "$foreground.secondary",
-                  "content": "Detection",
+                  "content": "検出",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -9780,7 +9240,7 @@
                   "id": "r3xAm",
                   "name": "nav3Text",
                   "fill": "$foreground.secondary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -9821,7 +9281,7 @@
                   "id": "N2uFg",
                   "name": "nav4Text",
                   "fill": "$foreground.primary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "600"
@@ -9857,7 +9317,7 @@
                   "id": "J4VOV",
                   "name": "nav5Text",
                   "fill": "$foreground.secondary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -9893,7 +9353,7 @@
                   "id": "mmYJs",
                   "name": "nav6Text",
                   "fill": "$foreground.secondary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -9927,7 +9387,7 @@
                   "id": "g5x6cs",
                   "name": "localNoteTitle",
                   "fill": "$foreground.primary",
-                  "content": "Local-first capture",
+                  "content": "ローカル優先で記録",
                   "fontFamily": "Geist",
                   "fontSize": 11,
                   "fontWeight": "700"
@@ -9939,7 +9399,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "AI sending is off until you enable minutes generation.",
+                  "content": "議事録生成を有効にするまでAI送信はオフです。",
                   "lineHeight": 1.35,
                   "fontFamily": "Funnel Sans",
                   "fontSize": 10,
@@ -9980,7 +9440,7 @@
                   "id": "vEGz8",
                   "name": "headerTitle",
                   "fill": "$foreground.primary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Inter",
                   "fontSize": 25,
                   "fontWeight": "700"
@@ -9992,7 +9452,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Choose how meet-jerky converts captured audio into searchable text — locally first, with optional services.",
+                  "content": "録音音声を検索可能なテキストに変換する方法を選びます。ローカル優先、必要に応じて外部サービスも使えます。",
                   "lineHeight": 1.35,
                   "fontFamily": "Geist",
                   "fontSize": 13,
@@ -10086,7 +9546,7 @@
                                   "id": "wvwKa",
                                   "name": "engineTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Transcription engine",
+                                  "content": "文字起こしエンジン",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -10098,7 +9558,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Pick a primary engine. Cloud engines are only used when you opt in.",
+                                  "content": "メインエンジンを選択。クラウドエンジンはオプトイン時のみ使用します。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -10159,7 +9619,7 @@
                                       "id": "wu7XD",
                                       "name": "opt1Title",
                                       "fill": "$foreground.primary",
-                                      "content": "whisper.cpp (local)",
+                                      "content": "whisper.cpp（ローカル）",
                                       "fontFamily": "Geist",
                                       "fontSize": 12,
                                       "fontWeight": "600"
@@ -10169,7 +9629,7 @@
                                       "id": "tRysG",
                                       "name": "opt1Sub",
                                       "fill": "$foreground.secondary",
-                                      "content": "medium.en · runs on-device · zero network",
+                                      "content": "medium.en・端末内処理・通信なし",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
@@ -10198,7 +9658,7 @@
                                       "id": "r4fGv",
                                       "name": "opt1TagText",
                                       "fill": "$accent.deep",
-                                      "content": "Default",
+                                      "content": "デフォルト",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 9,
                                       "fontWeight": "700"
@@ -10246,7 +9706,7 @@
                                       "id": "a5MMcV",
                                       "name": "opt2Title",
                                       "fill": "$foreground.primary",
-                                      "content": "Apple Speech (system)",
+                                      "content": "Apple Speech（システム）",
                                       "fontFamily": "Geist",
                                       "fontSize": 12,
                                       "fontWeight": "600"
@@ -10256,7 +9716,7 @@
                                       "id": "k194j",
                                       "name": "opt2Sub",
                                       "fill": "$foreground.secondary",
-                                      "content": "on-device · live captions · macOS 14+",
+                                      "content": "端末内処理・ライブ字幕・macOS 14+",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
@@ -10314,7 +9774,7 @@
                                       "id": "oU6gC",
                                       "name": "opt3Sub",
                                       "fill": "$foreground.secondary",
-                                      "content": "requires opt-in · API key needed",
+                                      "content": "オプトイン必須・APIキーが必要",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
@@ -10339,7 +9799,7 @@
                                       "id": "AJ7Es",
                                       "name": "opt3TagText",
                                       "fill": "$status.warn",
-                                      "content": "Cloud",
+                                      "content": "クラウド",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 9,
                                       "fontWeight": "700"
@@ -10421,7 +9881,7 @@
                                   "id": "o4kNF",
                                   "name": "langTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Language & vocabulary",
+                                  "content": "言語と単語登録",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -10433,7 +9893,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Improve recognition with primary language and a custom glossary.",
+                                  "content": "メイン言語と単語登録で認識精度を上げます。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -10468,7 +9928,7 @@
                               "fill": "$foreground.secondary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Primary language",
+                              "content": "メイン言語",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -10478,7 +9938,7 @@
                               "id": "v9yMRa",
                               "name": "langSelectVal",
                               "fill": "$foreground.primary",
-                              "content": "English (US)",
+                              "content": "英語（米国）",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "600"
@@ -10500,7 +9960,7 @@
                           "id": "pJFv1",
                           "name": "glossaryLabel",
                           "fill": "$foreground.primary",
-                          "content": "Custom glossary (4)",
+                          "content": "単語登録（4件）",
                           "fontFamily": "Geist",
                           "fontSize": 11,
                           "fontWeight": "700"
@@ -10627,7 +10087,7 @@
                                   "id": "Hii2o",
                                   "name": "chipAddText",
                                   "fill": "$accent.deep",
-                                  "content": "Add term",
+                                  "content": "用語を追加",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -10718,7 +10178,7 @@
                                   "id": "sZh4d",
                                   "name": "outTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Output & timing",
+                                  "content": "出力とタイミング",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -10730,7 +10190,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "How transcripts appear during and after a call.",
+                                  "content": "通話中と通話後に文字起こしをどう扱うか",
                                   "lineHeight": 1.25,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -10762,7 +10222,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Live captions while recording",
+                              "content": "録音中はライブ字幕を表示",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -10813,7 +10273,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Diarize speakers (Self / Others)",
+                              "content": "話者を分離（自分／相手）",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -10864,7 +10324,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Auto-save transcript on stop",
+                              "content": "停止時に文字起こしを自動保存",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -10897,7 +10357,7 @@
                           "id": "gEKjz",
                           "name": "formatLabel",
                           "fill": "$foreground.primary",
-                          "content": "Export format",
+                          "content": "書き出し形式",
                           "fontFamily": "Geist",
                           "fontSize": 10,
                           "fontWeight": "700"
@@ -11069,7 +10529,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Live preview",
+                              "content": "ライブプレビュー",
                               "fontFamily": "Inter",
                               "fontSize": 13,
                               "fontWeight": "700"
@@ -11104,7 +10564,7 @@
                                   "id": "p3ie9",
                                   "name": "previewBadgeText",
                                   "fill": "#167A45",
-                                  "content": "Sample",
+                                  "content": "サンプル",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 9,
                                   "fontWeight": "700"
@@ -11135,7 +10595,7 @@
                               "id": "zRpdU",
                               "name": "line1Speaker",
                               "fill": "$accent.deep",
-                              "content": "Self",
+                              "content": "自分",
                               "fontFamily": "Geist",
                               "fontSize": 9,
                               "fontWeight": "700"
@@ -11147,7 +10607,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Let's align on the FY26 OKR draft.",
+                              "content": "FY26 OKRのドラフトを擦り合わせよう。",
                               "lineHeight": 1.3,
                               "fontFamily": "Geist",
                               "fontSize": 11,
@@ -11177,7 +10637,7 @@
                               "id": "A9skg",
                               "name": "line2Speaker",
                               "fill": "$foreground.secondary",
-                              "content": "Others",
+                              "content": "相手",
                               "fontFamily": "Geist",
                               "fontSize": 9,
                               "fontWeight": "700"
@@ -11189,7 +10649,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Sure — meet-jerky's transcript will capture the exact wording.",
+                              "content": "了解です。meet-jerkyの文字起こしで正確に記録されます。",
                               "lineHeight": 1.3,
                               "fontFamily": "Geist",
                               "fontSize": 11,
@@ -11343,7 +10803,7 @@
                   "id": "NKe34",
                   "name": "windowTitle",
                   "fill": "$foreground.primary",
-                  "content": "Settings",
+                  "content": "Meet Jerky 設定",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "700"
@@ -11353,7 +10813,7 @@
                   "id": "n0xjK",
                   "name": "windowSub",
                   "fill": "$foreground.secondary",
-                  "content": "meet-jerky controls recording, detection, and AI processing transparency.",
+                  "content": "meet-jerkyは録音・検出・AI処理を透明に管理します。",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -11390,7 +10850,7 @@
                   "id": "Sl1RZ",
                   "name": "recText",
                   "fill": "$accent.deep",
-                  "content": "Visible while recording",
+                  "content": "録音中に表示されます",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "600"
@@ -11522,7 +10982,7 @@
                   "id": "VTPU7",
                   "name": "nav1Text",
                   "fill": "$foreground.secondary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -11558,7 +11018,7 @@
                   "id": "KLpjB",
                   "name": "nav2Text",
                   "fill": "$foreground.secondary",
-                  "content": "Detection",
+                  "content": "検出",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -11594,7 +11054,7 @@
                   "id": "dP0up",
                   "name": "nav3Text",
                   "fill": "$foreground.secondary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -11630,7 +11090,7 @@
                   "id": "C82oL",
                   "name": "nav4Text",
                   "fill": "$foreground.secondary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -11671,7 +11131,7 @@
                   "id": "v9Afh",
                   "name": "nav5Text",
                   "fill": "$foreground.primary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "600"
@@ -11707,7 +11167,7 @@
                   "id": "mrHRo",
                   "name": "nav6Text",
                   "fill": "$foreground.secondary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -11741,7 +11201,7 @@
                   "id": "gLqJu",
                   "name": "localNoteTitle",
                   "fill": "$foreground.primary",
-                  "content": "Local-first capture",
+                  "content": "ローカル優先で記録",
                   "fontFamily": "Geist",
                   "fontSize": 11,
                   "fontWeight": "700"
@@ -11753,7 +11213,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "AI sending is off until you enable minutes generation.",
+                  "content": "議事録生成を有効にするまでAI送信はオフです。",
                   "lineHeight": 1.35,
                   "fontFamily": "Funnel Sans",
                   "fontSize": 10,
@@ -11794,7 +11254,7 @@
                   "id": "NKj5X",
                   "name": "headerTitle",
                   "fill": "$foreground.primary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Inter",
                   "fontSize": 25,
                   "fontWeight": "700"
@@ -11806,7 +11266,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Send transcripts to an AI provider to generate structured meeting minutes — only with your explicit consent.",
+                  "content": "文字起こしをAIプロバイダーに送り、構造化された議事録を生成します。明示的な許可があるときだけ送信されます。",
                   "lineHeight": 1.35,
                   "fontFamily": "Geist",
                   "fontSize": 13,
@@ -11900,7 +11360,7 @@
                                   "id": "PKEUY",
                                   "name": "provTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "AI provider",
+                                  "content": "AIプロバイダー",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -11912,7 +11372,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Off by default. Picking a provider sends transcripts only when generation is triggered.",
+                                  "content": "デフォルトはオフ。プロバイダーを選んでも生成を実行したときだけ送信されます。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -11995,7 +11455,7 @@
                                       "id": "c5CftH",
                                       "name": "prov1Title",
                                       "fill": "$foreground.primary",
-                                      "content": "Anthropic · Claude Sonnet 4.6",
+                                      "content": "Anthropic・Claude Sonnet 4.6",
                                       "fontFamily": "Geist",
                                       "fontSize": 12,
                                       "fontWeight": "600"
@@ -12005,7 +11465,7 @@
                                       "id": "l34TMu",
                                       "name": "prov1Sub",
                                       "fill": "$foreground.secondary",
-                                      "content": "API key configured · ~$0.012 / 30 min meeting",
+                                      "content": "APIキー設定済・30分の会議で約$0.012",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
@@ -12034,7 +11494,7 @@
                                       "id": "Q0WeBb",
                                       "name": "prov1TagText",
                                       "fill": "$accent.deep",
-                                      "content": "Active",
+                                      "content": "使用中",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 9,
                                       "fontWeight": "700"
@@ -12082,7 +11542,7 @@
                                       "id": "Punbc",
                                       "name": "prov2Title",
                                       "fill": "$foreground.primary",
-                                      "content": "OpenAI · GPT-4o",
+                                      "content": "OpenAI・GPT-4o",
                                       "fontFamily": "Geist",
                                       "fontSize": 12,
                                       "fontWeight": "600"
@@ -12092,7 +11552,7 @@
                                       "id": "m8B18",
                                       "name": "prov2Sub",
                                       "fill": "$foreground.secondary",
-                                      "content": "API key needed · cloud",
+                                      "content": "APIキーが必要・クラウド",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
@@ -12140,7 +11600,7 @@
                                       "id": "EAA0X",
                                       "name": "prov3Title",
                                       "fill": "$foreground.primary",
-                                      "content": "Local · Ollama (llama3.1:8b)",
+                                      "content": "ローカル・Ollama（llama3.1:8b）",
                                       "fontFamily": "Geist",
                                       "fontSize": 12,
                                       "fontWeight": "600"
@@ -12150,7 +11610,7 @@
                                       "id": "l7dyw",
                                       "name": "prov3Sub",
                                       "fill": "$foreground.secondary",
-                                      "content": "runs on-device · no API cost",
+                                      "content": "端末内処理・API費用なし",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
@@ -12175,7 +11635,7 @@
                                       "id": "z1BWEL",
                                       "name": "prov3TagText",
                                       "fill": "#167A45",
-                                      "content": "Local",
+                                      "content": "ローカル",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 9,
                                       "fontWeight": "700"
@@ -12257,7 +11717,7 @@
                                   "id": "gKcOT",
                                   "name": "tplTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Minutes template",
+                                  "content": "議事録テンプレート",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -12269,7 +11729,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Choose what sections the AI will produce.",
+                                  "content": "AIに生成させるセクションを選びます。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -12318,7 +11778,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Summary (3 bullets)",
+                                  "content": "サマリー（3項目）",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -12378,7 +11838,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Action items with owners",
+                                  "content": "担当者付きアクションアイテム",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -12438,7 +11898,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Decisions made",
+                                  "content": "決定事項",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -12550,7 +12010,7 @@
                                   "id": "E0SuLo",
                                   "name": "runsTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Recent runs",
+                                  "content": "最近の実行履歴",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -12562,7 +12022,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Each run is logged with cost and provider.",
+                                  "content": "各実行はコストとプロバイダー付きで記録されます。",
                                   "lineHeight": 1.25,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -12598,7 +12058,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Weekly sync · Apr 28",
+                                  "content": "週次定例・4月28日",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -12621,7 +12081,7 @@
                                       "id": "Zm26U",
                                       "name": "runRow1BadgeText",
                                       "fill": "#167A45",
-                                      "content": "Done",
+                                      "content": "完了",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 9,
                                       "fontWeight": "700"
@@ -12635,7 +12095,7 @@
                               "id": "ZQI8p",
                               "name": "runRow1Meta",
                               "fill": "$foreground.secondary",
-                              "content": "Claude Sonnet 4.6 · 1,842 tokens · $0.011",
+                              "content": "Claude Sonnet 4.6・1,842トークン・$0.011",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -12668,7 +12128,7 @@
                                   "fill": "$foreground.primary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "1:1 with Mei · Apr 27",
+                                  "content": "Meiとの1on1・4月27日",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -12691,7 +12151,7 @@
                                       "id": "OqXht",
                                       "name": "runRow2BadgeText",
                                       "fill": "$status.warn",
-                                      "content": "Held",
+                                      "content": "保留",
                                       "fontFamily": "Funnel Sans",
                                       "fontSize": 9,
                                       "fontWeight": "700"
@@ -12705,7 +12165,7 @@
                               "id": "QabcL",
                               "name": "runRow2Meta",
                               "fill": "$foreground.secondary",
-                              "content": "awaiting consent · transcript stored locally",
+                              "content": "同意待ち・文字起こしはローカル保存中",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -12737,7 +12197,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "April spend",
+                              "content": "4月の利用額",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "600"
@@ -12747,7 +12207,7 @@
                               "id": "H9IR0N",
                               "name": "costValue",
                               "fill": "$accent.deep",
-                              "content": "$0.42 / $5 cap",
+                              "content": "$0.42 / 上限$5",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "700"
@@ -12900,7 +12360,7 @@
                   "id": "c0nXl",
                   "name": "windowTitle",
                   "fill": "$foreground.primary",
-                  "content": "Settings",
+                  "content": "設定",
                   "fontFamily": "Inter",
                   "fontSize": 14,
                   "fontWeight": "700"
@@ -12910,7 +12370,7 @@
                   "id": "WWDuS",
                   "name": "windowSub",
                   "fill": "$foreground.secondary",
-                  "content": "meet-jerky controls recording, detection, and AI processing transparency.",
+                  "content": "meet-jerkyは録音・検知・AI処理を透明に管理します。",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -12947,7 +12407,7 @@
                   "id": "g5vlei",
                   "name": "recText",
                   "fill": "$accent.deep",
-                  "content": "Visible while recording",
+                  "content": "録音中に表示されます",
                   "fontFamily": "Funnel Sans",
                   "fontSize": 11,
                   "fontWeight": "600"
@@ -13079,7 +12539,7 @@
                   "id": "S7QvOz",
                   "name": "nav1Text",
                   "fill": "$foreground.secondary",
-                  "content": "General",
+                  "content": "一般",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -13115,7 +12575,7 @@
                   "id": "NlMyM",
                   "name": "nav2Text",
                   "fill": "$foreground.secondary",
-                  "content": "Detection",
+                  "content": "検知",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -13151,7 +12611,7 @@
                   "id": "uA68K",
                   "name": "nav3Text",
                   "fill": "$foreground.secondary",
-                  "content": "Audio",
+                  "content": "音声",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -13187,7 +12647,7 @@
                   "id": "WBmMH",
                   "name": "nav4Text",
                   "fill": "$foreground.secondary",
-                  "content": "Transcription",
+                  "content": "文字起こし",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -13223,7 +12683,7 @@
                   "id": "FRcJW",
                   "name": "nav5Text",
                   "fill": "$foreground.secondary",
-                  "content": "AI Minutes",
+                  "content": "AI議事録",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "normal"
@@ -13264,7 +12724,7 @@
                   "id": "OXPKA",
                   "name": "nav6Text",
                   "fill": "$foreground.primary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Geist",
                   "fontSize": 13,
                   "fontWeight": "600"
@@ -13298,7 +12758,7 @@
                   "id": "a87p0",
                   "name": "localNoteTitle",
                   "fill": "$foreground.primary",
-                  "content": "Local-first capture",
+                  "content": "ローカル優先で記録",
                   "fontFamily": "Geist",
                   "fontSize": 11,
                   "fontWeight": "700"
@@ -13310,7 +12770,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "AI sending is off until you enable minutes generation.",
+                  "content": "議事録生成を有効にするまでAI送信はオフです。",
                   "lineHeight": 1.35,
                   "fontFamily": "Funnel Sans",
                   "fontSize": 10,
@@ -13351,7 +12811,7 @@
                   "id": "b5NEFJ",
                   "name": "headerTitle",
                   "fill": "$foreground.primary",
-                  "content": "Privacy",
+                  "content": "プライバシー",
                   "fontFamily": "Inter",
                   "fontSize": 25,
                   "fontWeight": "700"
@@ -13363,7 +12823,7 @@
                   "fill": "$foreground.secondary",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "Decide what stays on this Mac, what leaves it, and how long anything is retained.",
+                  "content": "このMacに残すもの・外に出すもの・保持期間を決めます。",
                   "lineHeight": 1.35,
                   "fontFamily": "Geist",
                   "fontSize": 13,
@@ -13457,7 +12917,7 @@
                                   "id": "urf7s",
                                   "name": "retTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Data retention",
+                                  "content": "データ保持期間",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -13469,7 +12929,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Auto-delete recordings, transcripts, and minutes after this many days.",
+                                  "content": "録音・文字起こし・議事録を指定日数後に自動削除します。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -13505,7 +12965,7 @@
                                   "id": "dSaoU",
                                   "name": "ret7Text",
                                   "fill": "$foreground.secondary",
-                                  "content": "7 days",
+                                  "content": "7日",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -13532,7 +12992,7 @@
                                   "id": "skfBU",
                                   "name": "ret30Text",
                                   "fill": "$foreground.primary",
-                                  "content": "30 days",
+                                  "content": "30日",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -13555,7 +13015,7 @@
                                   "id": "s3afvL",
                                   "name": "ret90Text",
                                   "fill": "$foreground.secondary",
-                                  "content": "90 days",
+                                  "content": "90日",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -13578,7 +13038,7 @@
                                   "id": "g4pB9A",
                                   "name": "retNeverText",
                                   "fill": "$foreground.secondary",
-                                  "content": "Never",
+                                  "content": "削除しない",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -13658,7 +13118,7 @@
                                   "id": "xFpGU",
                                   "name": "ctrlTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Local data",
+                                  "content": "ローカルデータ",
                                   "fontFamily": "Inter",
                                   "fontSize": 15,
                                   "fontWeight": "700"
@@ -13670,7 +13130,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "All recordings live in your home folder until you remove them.",
+                                  "content": "録音は削除するまでホームフォルダに保存されます。",
                                   "lineHeight": 1.3,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 11,
@@ -13708,7 +13168,7 @@
                                   "id": "IHmos",
                                   "name": "locOnlyLabel",
                                   "fill": "$foreground.primary",
-                                  "content": "Local-only mode",
+                                  "content": "ローカル限定モード",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -13718,7 +13178,7 @@
                                   "id": "YuaM5",
                                   "name": "locOnlySub",
                                   "fill": "$foreground.secondary",
-                                  "content": "Blocks every cloud call regardless of provider",
+                                  "content": "プロバイダーに関わらずクラウド通信をすべて遮断",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
                                   "fontWeight": "normal"
@@ -13770,7 +13230,7 @@
                               "fill": "$foreground.secondary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Stored on disk",
+                              "content": "ディスク使用量",
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -13780,7 +13240,7 @@
                               "id": "RUQKe",
                               "name": "sizeValue",
                               "fill": "$foreground.primary",
-                              "content": "3.4 GB · 47 sessions",
+                              "content": "3.4 GB・47セッション",
                               "fontFamily": "Geist",
                               "fontSize": 11,
                               "fontWeight": "700"
@@ -13828,7 +13288,7 @@
                                   "id": "f0smE",
                                   "name": "revealText",
                                   "fill": "$foreground.primary",
-                                  "content": "Reveal in Finder",
+                                  "content": "Finderで表示",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "600"
@@ -13869,7 +13329,7 @@
                                   "id": "kz3G8",
                                   "name": "clearText",
                                   "fill": "#B83B3B",
-                                  "content": "Delete all data",
+                                  "content": "すべて削除",
                                   "fontFamily": "Geist",
                                   "fontSize": 11,
                                   "fontWeight": "700"
@@ -13960,7 +13420,7 @@
                                   "id": "OTskv",
                                   "name": "permTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "System permissions",
+                                  "content": "システム権限",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -13972,7 +13432,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Granted in macOS System Settings.",
+                                  "content": "macOSのシステム設定で付与済み。",
                                   "lineHeight": 1.25,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -14004,7 +13464,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Microphone",
+                              "content": "マイク",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -14035,7 +13495,7 @@
                                   "id": "ydnGK",
                                   "name": "permRow1Tag",
                                   "fill": "#167A45",
-                                  "content": "Granted",
+                                  "content": "許可済み",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 9,
                                   "fontWeight": "700"
@@ -14066,7 +13526,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Screen & system audio",
+                              "content": "画面と音声収録",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -14097,7 +13557,7 @@
                                   "id": "X9OIyp",
                                   "name": "permRow2Tag",
                                   "fill": "#167A45",
-                                  "content": "Granted",
+                                  "content": "許可済み",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 9,
                                   "fontWeight": "700"
@@ -14128,7 +13588,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Accessibility",
+                              "content": "アクセシビリティ",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -14159,7 +13619,7 @@
                                   "id": "QoUMF",
                                   "name": "permRow3Tag",
                                   "fill": "$status.warn",
-                                  "content": "Optional",
+                                  "content": "任意",
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 9,
                                   "fontWeight": "700"
@@ -14239,7 +13699,7 @@
                                   "id": "e2zoN",
                                   "name": "teleTitle",
                                   "fill": "$foreground.primary",
-                                  "content": "Telemetry",
+                                  "content": "テレメトリー",
                                   "fontFamily": "Inter",
                                   "fontSize": 14,
                                   "fontWeight": "700"
@@ -14251,7 +13711,7 @@
                                   "fill": "$foreground.secondary",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "All telemetry is opt-in. Transcripts are never sent.",
+                                  "content": "テレメトリーはすべてオプトイン。文字起こしは送信されません。",
                                   "lineHeight": 1.25,
                                   "fontFamily": "Funnel Sans",
                                   "fontSize": 10,
@@ -14283,7 +13743,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Anonymous usage stats",
+                              "content": "匿名利用統計",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -14333,7 +13793,7 @@
                               "fill": "$foreground.primary",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Crash reports",
+                              "content": "クラッシュレポート",
                               "fontFamily": "Geist",
                               "fontSize": 10,
                               "fontWeight": "normal"
@@ -14396,7 +13856,7 @@
                               "fill": "$accent.deep",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Crash reports include macOS version and meet-jerky build only — never transcripts or audio.",
+                              "content": "クラッシュレポートに含まれるのはmacOSバージョンとmeet-jerkyビルド情報のみで、文字起こしや音声は含まれません。",
                               "lineHeight": 1.3,
                               "fontFamily": "Funnel Sans",
                               "fontSize": 10,
