@@ -12581,3 +12581,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: research `mj-research-recording-transparency-20260501` は保存出力に進まず探索途中で停滞し、worker `mj-worker-transcription-source-add-no-double-start-20260501` は 1 分以上プロンプト表示のまま出力ファイルなし・差分ゼロで停滞したため、main が自律運用停止回避として最小範囲で例外実装した。
 - 次アクション: 検証後、実機で文字起こし中に片方の音声ソースを追加したとき、追加ソースが短時間で停止/再開されず、両トラックの文字起こしが継続することを確認する。
+
+### Transcript view: keep source state aligned during resync failures
+
+- 開始日時: 2026-05-01 10:45:02 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: `restartTranscriptionForAudioSources` について、`stop_transcription` 後の `start_recording` / `start_system_audio` / `start_transcription` 失敗時に UI の録音/文字起こし状態が実態とずれにくいよう最小修正する。既存 Apple Speech dual source block、通常の meeting start/stop、UI 文言、CSS、Tauri/Rust/Swift、`.pen` は変更しない。コミット禁止。
+- 結果: `restartTranscriptionForAudioSources` 内で、マイク/相手側音声の start 成功直後に対応する React state を true、level を 0 に更新するようにした。各音声ソース start が失敗した場合は、対応する React state を false、level を 0、`isTranscribing` を false に倒して例外を再送出する。`start_transcription` だけが失敗した場合は、成功済み音声ソース state は true のまま、`isTranscribing` だけ false にする。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で文字起こし中の音声ソース再同期時に、マイク start 失敗、相手側音声 start 失敗、`start_transcription` 失敗の各ケースで UI 状態が実態に沿うことを確認する。

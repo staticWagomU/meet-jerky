@@ -911,19 +911,40 @@ export function TranscriptView() {
       setIsTranscribing(false);
 
       if (nextMicRecording) {
-        await startMicCapture();
-        setMicLevel(0);
+        try {
+          await startMicCapture();
+          setIsMicRecording(true);
+          setMicLevel(0);
+        } catch (e) {
+          setIsMicRecording(false);
+          setMicLevel(0);
+          setIsTranscribing(false);
+          throw e;
+        }
       }
       if (nextSystemAudioRecording) {
-        await invoke("start_system_audio");
-        setSystemAudioLevel(0);
+        try {
+          await invoke("start_system_audio");
+          setIsSystemAudioRecording(true);
+          setSystemAudioLevel(0);
+        } catch (e) {
+          setIsSystemAudioRecording(false);
+          setSystemAudioLevel(0);
+          setIsTranscribing(false);
+          throw e;
+        }
       }
 
-      await invoke("start_transcription", {
-        modelName: selectedModel,
-        source: transcriptionSource,
-      });
-      setIsTranscribing(true);
+      try {
+        await invoke("start_transcription", {
+          modelName: selectedModel,
+          source: transcriptionSource,
+        });
+        setIsTranscribing(true);
+      } catch (e) {
+        setIsTranscribing(false);
+        throw e;
+      }
     },
     [selectedModel, settings?.transcriptionEngine, startMicCapture],
   );
