@@ -49,8 +49,7 @@ function isMeetingAppDetectedBrowserPayload(
     isNonEmptyTrimmedString(candidate.service) &&
     isHostOnlyString(candidate.urlHost) &&
     isNonEmptyTrimmedString(candidate.browserName) &&
-    (!hasProperty(candidate, "windowTitle") ||
-      isNonEmptyTrimmedString(candidate.windowTitle))
+    !hasProperty(candidate, "windowTitle")
   );
 }
 

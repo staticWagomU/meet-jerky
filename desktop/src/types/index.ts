@@ -81,7 +81,7 @@ export interface MeetingAppDetectedBrowserPayload {
   service: string;
   urlHost: string;
   browserName: string;
-  windowTitle?: string;
+  windowTitle?: never;
 }
 
 export type MeetingAppDetectedPayload =

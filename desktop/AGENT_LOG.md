@@ -1,5 +1,19 @@
 # Agent Log
 
+### Browser meeting payload privacy: reject window title
+
+- 開始日時: 2026-05-01 10:25 JST
+- 担当セッション: 作業担当エージェント（本セッション）
+- 役割: 作業担当エージェント
+- 作業範囲: `src/types/index.ts`, `src/utils/meetingDetection.ts`, 必要なら関連する既存テスト/型チェックのみ, `AGENT_LOG.md`
+- 指示内容: Rust 側 `MeetingAppDetectedPayload::Browser` が URL 全文や window title を payload に含めない方針に合わせ、フロントの browser payload 型と `isMeetingAppDetectedPayload` でも `windowTitle` を受け付けない。app payload 側の既存拒否、browser payload の必須フィールド、host-only 検証は維持する。UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。コミットは禁止。
+- 結果: `MeetingAppDetectedBrowserPayload` の `windowTitle` を `never` に変更し、browser payload の runtime guard でも `windowTitle` プロパティが存在する payload を拒否するようにした。app payload の拒否条件、browser payload の必須フィールド、`urlHost` の host-only 検証は維持した。
+- 変更ファイル: `src/types/index.ts`, `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/types/index.ts src/utils/meetingDetection.ts AGENT_LOG.md` 成功。通常 PATH では `npm` が見つからず `npm run build` は実行不可だったため、過去ログと同じく `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` を実行して成功。メイン側で `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/types/index.ts src/utils/meetingDetection.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし（通常 PATH で `npm` が見つからない環境制約は PATH 補正で解消）。
+- 次アクション: 実機または Tauri イベントモックで、browser payload に `windowTitle` が混入した場合に会議検知通知へ進まないことを確認する。
+
 ### Google Meet lookup URL classification
 
 - 開始日時: 2026-04-30 18:47 JST
