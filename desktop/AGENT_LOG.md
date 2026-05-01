@@ -1,5 +1,19 @@
 # Agent Log
 
+### Overlay windows: align transparent canvas with pen mocks
+
+- 開始日時: 2026-05-01 11:54 JST
+- 担当セッション: mj-main（worker `mj-worker-overlay-pen-alignment-20260501` は起動後に進捗出力がなく停滞したため停止し、運用停止を避ける最小例外としてメインが編集）
+- 役割: メインエージェント（例外編集）
+- 作業範囲: `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認した `D0qo1` / `kxgH8` / `vxLPK` に合わせ、会議検知通知とライブ字幕 overlay の Tauri window を透明 canvas として扱い、白いパネルが window 全面を塗りつぶさないようにする。通知/字幕の hide 経路は既存 Rust command 経由を維持し、`.pen` は変更しない。
+- 結果: 会議検知通知 window を 560x280 に広げ、カードを `.pen` の 360x172 at x=100 y=38 に近い位置へ固定し、下部 pill を透明 canvas 内に追加した。ライブ字幕 window を 900x360 に広げ、白いパネルを 788x306 at x=56 y=24 に寄せ、下部 pill が window 内に収まるようにした。通知 top offset はノッチ/メニューバー衝突リスクを下げるため 64px 定数へ寄せた。直接 `getCurrentWindow().hide()` は追加せず、既存 backend command 経路を維持した。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。初回 `cargo fmt --manifest-path src-tauri/Cargo.toml --check` は改行整形差分で失敗したため `cargo fmt --manifest-path src-tauri/Cargo.toml` を実行。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。実機 macOS の透明 window、Google Meet 上の位置、ノッチ回避、閉じる/開始/状態確認後の白枠残りは未実機確認。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker セッションが起動後 5 分以上実作業出力へ進まず、出力ファイルも生成されなかったため停止した。
+- 次アクション: 実機 Google Meet 上で通知/ライブ字幕の外側が透明で、閉じる/開始/状態確認後に白枠が残らず、`core:window:allow-hide` エラーが出ないことを確認する。
+
 ### Transcription error payload: typed Rust Serialize shape
 
 - 開始日時: 2026-05-01 11:42 JST

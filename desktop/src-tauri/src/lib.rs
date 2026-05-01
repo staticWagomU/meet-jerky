@@ -31,10 +31,11 @@ const MAIN_WINDOW_LABEL: &str = "main";
 const MEETING_PROMPT_WINDOW_LABEL: &str = "meeting-prompt";
 const LIVE_CAPTION_WINDOW_LABEL: &str = "live-caption";
 const RING_LIGHT_WINDOW_LABEL: &str = "ring-light";
-const MEETING_PROMPT_WIDTH: f64 = 360.0;
-const MEETING_PROMPT_HEIGHT: f64 = 172.0;
-const LIVE_CAPTION_WIDTH: f64 = 784.0;
-const LIVE_CAPTION_HEIGHT: f64 = 246.0;
+const MEETING_PROMPT_WIDTH: f64 = 560.0;
+const MEETING_PROMPT_HEIGHT: f64 = 280.0;
+const MEETING_PROMPT_TOP_OFFSET: i32 = 64;
+const LIVE_CAPTION_WIDTH: f64 = 900.0;
+const LIVE_CAPTION_HEIGHT: f64 = 360.0;
 const RING_LIGHT_FALLBACK_WIDTH: f64 = 1280.0;
 const RING_LIGHT_FALLBACK_HEIGHT: f64 = 800.0;
 
@@ -214,7 +215,7 @@ fn position_window_bottom_center(app: &tauri::AppHandle, label: &str, bottom_off
 }
 
 pub(crate) fn show_meeting_prompt_window(app: &tauri::AppHandle) {
-    position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, 38);
+    position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, MEETING_PROMPT_TOP_OFFSET);
     if let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) {
         let _ = window.show();
     }
@@ -226,7 +227,7 @@ fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Re
         return Err("会議検知通知ウィンドウが見つかりません".to_string());
     };
     if visible {
-        position_window_top_center(&app, MEETING_PROMPT_WINDOW_LABEL, 38);
+        position_window_top_center(&app, MEETING_PROMPT_WINDOW_LABEL, MEETING_PROMPT_TOP_OFFSET);
         window
             .show()
             .map_err(|e| format!("会議検知通知ウィンドウを表示できません: {e}"))?;
