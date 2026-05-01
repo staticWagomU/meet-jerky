@@ -1,5 +1,19 @@
 # Agent Log
 
+### App detection: pin browser payload privacy boundary test
+
+- 開始日時: 2026-05-01 13:02:29 JST
+- 担当セッション: `mj-research-meeting-detection-guard-followup-20260501`, `mj-worker-app-detection-payload-url-test-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（差分レビュー・ログ整形・検証）
+- 作業範囲: `src-tauri/src/app_detection.rs` の既存 tests、`AGENT_LOG.md`
+- 指示内容: `browser_meeting_payload_serializes_without_full_url` を最小変更し、browser payload が URL 全文や raw URL field を出さない privacy boundary を Rust 側テストで固定する。JSON に `"url"` field、`"fullUrl"` field、`"windowTitle"` field が含まれないことを明示的に検証し、会議コードや query 文字列など URL の一部が payload に混ざらない既存意図を維持する。実装ロジック、UI/CSS/TypeScript/Swift/Tauri window/`.pen` は変更しない。
+- 結果: 既存 browser payload serialization テストで JSON を `serde_json::Value` として読み直し、object key として `url` / `fullUrl` / `windowTitle` が存在しないことを明示的に検証する assertion を追加した。既存の会議コード非混入チェックを維持し、query 文字列断片 `authuser=0` も混入しないことを確認する assertion を追加した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed, 166 filtered out）。`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。メイン側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは保存出力を残さず終了したため、main の直接読解と worker 差分レビューで判断した。worker は実装・個別検証を完了した。
+- 次アクション: 今後 payload field を増やす場合は、この privacy boundary test と TypeScript runtime guard の両方を更新要否込みでレビューする。
+
 ### Meeting detection payload guard: reject raw URL fields
 
 - 開始日時: 2026-05-01 12:42 JST

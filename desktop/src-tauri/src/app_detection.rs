@@ -639,7 +639,13 @@ mod tests {
         assert!(json.contains("\"service\":\"Google Meet\""));
         assert!(json.contains("\"urlHost\":\"meet.google.com\""));
         assert!(json.contains("\"browserName\":\"Safari\""));
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let object = value.as_object().unwrap();
+        assert!(!object.contains_key("url"));
+        assert!(!object.contains_key("fullUrl"));
+        assert!(!object.contains_key("windowTitle"));
         assert!(!json.contains("abc-defg-hij"));
+        assert!(!json.contains("authuser=0"));
         assert!(!json.contains("windowTitle"));
     }
 
