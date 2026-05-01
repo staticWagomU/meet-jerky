@@ -27,6 +27,10 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isNonEmptyTrimmedString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export function isTranscriptSegmentPayload(
   value: unknown,
 ): value is TranscriptSegment {
@@ -35,12 +39,15 @@ export function isTranscriptSegmentPayload(
   }
   const candidate = value as Partial<TranscriptSegment>;
   return (
-    typeof candidate.text === "string" &&
+    isNonEmptyTrimmedString(candidate.text) &&
     isFiniteNumber(candidate.startMs) &&
+    candidate.startMs >= 0 &&
     isFiniteNumber(candidate.endMs) &&
+    candidate.endMs >= candidate.startMs &&
     (candidate.source === undefined ||
       isTranscriptAudioSource(candidate.source)) &&
-    (candidate.speaker === undefined || typeof candidate.speaker === "string") &&
+    (candidate.speaker === undefined ||
+      isNonEmptyTrimmedString(candidate.speaker)) &&
     (candidate.isError === undefined || typeof candidate.isError === "boolean")
   );
 }
@@ -53,7 +60,7 @@ export function isTranscriptionErrorPayload(
   }
   const candidate = value as Partial<TranscriptionErrorPayload>;
   return (
-    typeof candidate.error === "string" &&
+    isNonEmptyTrimmedString(candidate.error) &&
     (candidate.source === undefined || isTranscriptAudioSource(candidate.source))
   );
 }

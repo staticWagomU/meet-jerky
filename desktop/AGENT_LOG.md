@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcription payload guards: reject empty text and invalid timestamps
+
+- 開始日時: 2026-05-01 11:23 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/utils/transcriptSegment.ts`, `AGENT_LOG.md`
+- 指示内容: `transcription-result` / `transcription-error` の runtime guard を最小強化し、壊れた event payload が `TranscriptDisplay` / `LiveCaptionWindow` / `TranscriptView` の state に入らないようにする。`text` / `error` / optional `speaker` は trim 後に非空の string のみ許可し、`startMs` / `endMs` は finite number、0 以上、`endMs >= startMs` のみ許可する。`source` と `isError` の既存判定は維持し、長さ上限、表示短縮、CSS/UI、Tauri/Rust/Swift、`.pen` は変更しない。コミット禁止。
+- 結果: `isNonEmptyTrimmedString` を追加し、`isTranscriptSegmentPayload` で空白のみの `text` / `speaker`、負数時刻、`endMs < startMs` を拒否するようにした。`isTranscriptionErrorPayload` では空白のみの `error` を拒否するようにした。`source` と `isError` の既存判定、payload の値を整形せず渡す挙動は維持した。
+- 変更ファイル: `src/utils/transcriptSegment.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/transcriptSegment.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/transcriptSegment.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または Tauri イベントモックで、空白のみの transcript/error と負数・逆転時刻の result payload が各表示 state に追加されないことを確認する。
+
 ### Transcript view: stop transcribing on worker error event
 
 - 開始日時: 2026-05-01 11:04 JST
