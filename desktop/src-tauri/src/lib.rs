@@ -259,11 +259,11 @@ fn show_main_window(app: tauri::AppHandle) {
 
 #[tauri::command]
 fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
-    position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 56);
     let Some(window) = app.get_webview_window(LIVE_CAPTION_WINDOW_LABEL) else {
         return Err("ライブ文字起こしウィンドウが見つかりません".to_string());
     };
     if visible {
+        position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 56);
         let was_visible = window
             .is_visible()
             .map_err(|e| format!("ライブ文字起こしウィンドウの表示状態を確認できません: {e}"))?;

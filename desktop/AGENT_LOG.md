@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live caption window: skip reposition when hiding
+
+- 開始日時: 2026-05-01 14:51:39 JST
+- 担当セッション: `mj-research-live-caption-hide-position-20260501`, `mj-worker-live-caption-hide-position-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（差分レビュー・検証）
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: overlay の白枠残り/閉じた後の空白ウィンドウ残りリスクを下げるため、`set_live_caption_window_visible` で hide 操作時に不要な `position_window_bottom_center` を呼ばず、表示時のみ位置更新する。`live-caption-reset` は従来どおり表示時かつ直前に非表示だった場合だけ emit する。meeting prompt、ring-light、透明 window 設定、CSS、React、`.pen` は変更しない。コミットは禁止。
+- 結果: `set_live_caption_window_visible` の `position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 56);` を `visible` 分岐内へ移動し、`visible == false` では既存どおり `window.hide()` のみ実行するようにした。`live-caption-reset` の条件は変更していない。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: worker 側で `git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機でライブ字幕 overlay を閉じたときに白枠残り/空白ウィンドウ残りが再発しないことを確認する。
+
 ### Overlay windows: html dataset transparency and cursor monitor placement
 
 - 開始日時: 2026-05-01 14:27:49 JST
