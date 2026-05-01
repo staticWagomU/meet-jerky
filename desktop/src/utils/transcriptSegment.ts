@@ -27,8 +27,17 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-function isNonEmptyTrimmedString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
+
+function isSafeTrimmedString(
+  value: unknown,
+  maxTrimmedLength: number,
+): value is string {
+  if (typeof value !== "string" || CONTROL_CHARACTER_PATTERN.test(value)) {
+    return false;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 && trimmed.length <= maxTrimmedLength;
 }
 
 export function isTranscriptSegmentPayload(
@@ -39,7 +48,7 @@ export function isTranscriptSegmentPayload(
   }
   const candidate = value as Partial<TranscriptSegment>;
   return (
-    isNonEmptyTrimmedString(candidate.text) &&
+    isSafeTrimmedString(candidate.text, 4000) &&
     isFiniteNumber(candidate.startMs) &&
     candidate.startMs >= 0 &&
     isFiniteNumber(candidate.endMs) &&
@@ -47,7 +56,7 @@ export function isTranscriptSegmentPayload(
     (candidate.source === undefined ||
       isTranscriptAudioSource(candidate.source)) &&
     (candidate.speaker === undefined ||
-      isNonEmptyTrimmedString(candidate.speaker)) &&
+      isSafeTrimmedString(candidate.speaker, 80)) &&
     (candidate.isError === undefined || typeof candidate.isError === "boolean")
   );
 }
@@ -60,7 +69,7 @@ export function isTranscriptionErrorPayload(
   }
   const candidate = value as Partial<TranscriptionErrorPayload>;
   return (
-    isNonEmptyTrimmedString(candidate.error) &&
+    isSafeTrimmedString(candidate.error, 4000) &&
     (candidate.source === undefined || isTranscriptAudioSource(candidate.source))
   );
 }

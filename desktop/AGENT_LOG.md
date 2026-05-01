@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcript segment payload: reject unsafe strings
+
+- 開始日時: 2026-05-01 14:21:52 JST
+- 担当セッション: `mj-research-transcript-string-guard-20260501`, `mj-worker-transcript-string-guard-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（差分レビュー・ログ整形・検証）
+- 作業範囲: `src/utils/transcriptSegment.ts`, `AGENT_LOG.md`
+- 指示内容: `isTranscriptSegmentPayload` / `isTranscriptionErrorPayload` が受け付ける文字列を最小強化し、壊れた event payload 由来の過大文字列や制御文字入り文字列を UI state に入れない。`text` / `error` は trim 後に非空、4000文字以下、制御文字なしの string のみ許可し、optional `speaker` は trim 後に非空、80文字以下、制御文字なしの string のみ許可する。既存の source/isError/time guard は維持し、UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。
+- 結果: 制御文字検出用の正規表現と `isSafeTrimmedString` を追加し、`text` / `error` / `speaker` の guard を指定上限と制御文字拒否に切り替えた。source、time、isError の既存 guard は維持した。
+- 変更ファイル: `src/utils/transcriptSegment.ts`, `AGENT_LOG.md`
+- 検証結果: worker 側で `git diff --check -- src/utils/transcriptSegment.ts AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側で `git diff --check -- src/utils/transcriptSegment.ts AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/transcriptSegment.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。research と worker は保存出力を残して完了した。worker は実装・個別検証を完了した。
+- 次アクション: 実機またはイベント注入で、通常の日本語・英数字・句読点・スペースを含む transcript/error payload が通り、制御文字入り・trim 後空・上限超過 payload が UI state に入らないことを確認する。
+
 ### Live caption status: reject long/control labels
 
 - 開始日時: 2026-05-01 14:01:49 JST
