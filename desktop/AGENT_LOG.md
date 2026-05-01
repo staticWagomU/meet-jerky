@@ -1,5 +1,19 @@
 # Agent Log
 
+### Meeting prompt pill: render only with banner content
+
+- 開始日時: 2026-05-01 12:13 JST
+- 担当セッション: `mj-research-overlay-followup-20260501`, `mj-worker-meeting-prompt-pill-dom-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 直近の overlay `.pen` alignment 修正で CSS 疑似要素として追加した会議検知通知の下部 pill が、`MeetingDetectedBanner` が `null` を返す状態でも単独表示されるリスクをなくす。pill は React DOM として通知コンポーネントの返却ツリー内に移し、通知カードが描画されないときは pill も描画しない。`.pen` と direct hide 経路は変更しない。
+- 結果: `MeetingDetectedBanner` の返却を fragment にし、通知カードの sibling として `meeting-detected-status-pill` を追加した。既存の `!detected && !listenerError` 早期 return により、通知内容がない状態ではカードも pill も描画されない。CSS の `.meeting-prompt-window::before/::after` 疑似要素を削除し、同じ位置・サイズ・文言を `.meeting-detected-status-pill` と内側 dot へ移した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。実機 macOS の透明 window / Google Meet 上の視覚確認は未実機確認。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker が長い `AGENT_LOG.md` 読解後に差分ゼロのまま停滞したため、main が自律運用停止回避として最小範囲で例外実装した。
+- 次アクション: 実機で会議検知通知がない状態では下部 pill も表示されず、通知表示中は `.pen` と同じ位置に pill が出ることを確認する。
+
 ### Overlay windows: align transparent canvas with pen mocks
 
 - 開始日時: 2026-05-01 11:54 JST

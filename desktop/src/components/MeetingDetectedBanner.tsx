@@ -273,15 +273,16 @@ export function MeetingDetectedBanner() {
   if (!detected && !listenerError) return null;
 
   return (
-    <div
-      className={bannerClassName}
-      data-tauri-drag-region
-      role={bannerRole}
-      aria-live={bannerRole === "alert" ? "assertive" : "polite"}
-      aria-atomic="true"
-      aria-label={bannerAriaLabel}
-      title={bannerAriaLabel}
-    >
+    <>
+      <div
+        className={bannerClassName}
+        data-tauri-drag-region
+        role={bannerRole}
+        aria-live={bannerRole === "alert" ? "assertive" : "polite"}
+        aria-atomic="true"
+        aria-label={bannerAriaLabel}
+        title={bannerAriaLabel}
+      >
       <span className="meeting-detected-ribbon" aria-hidden="true" />
       {!listenerError && (
         <span className="meeting-detected-banner-top" data-tauri-drag-region>
@@ -429,7 +430,16 @@ export function MeetingDetectedBanner() {
           </button>
         </div>
       )}
-    </div>
+      </div>
+      <div
+        className="meeting-detected-status-pill"
+        data-tauri-drag-region
+        aria-hidden="true"
+      >
+        <span aria-hidden="true" />
+        記録状態を表示中
+      </div>
+    </>
   );
 }
 

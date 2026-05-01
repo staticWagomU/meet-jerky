@@ -284,8 +284,7 @@ body[data-window="ring-light"] .overlay-window {
   height: 100vh;
 }
 
-.meeting-prompt-window::after {
-  content: "記録状態を表示中";
+.meeting-detected-status-pill {
   position: absolute;
   left: 184px;
   top: 210px;
@@ -306,17 +305,12 @@ body[data-window="ring-light"] .overlay-window {
   pointer-events: none;
 }
 
-.meeting-prompt-window::before {
-  content: "";
-  position: absolute;
-  left: 208px;
-  top: 224px;
-  z-index: 1;
+.meeting-detected-status-pill span {
+  flex: 0 0 auto;
   width: 6px;
   height: 6px;
   border-radius: 999px;
   background: #ff5c00;
-  pointer-events: none;
 }
 
 .container {
