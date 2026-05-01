@@ -1,5 +1,19 @@
 # Agent Log
 
+### Transcription error payload: typed Rust Serialize shape
+
+- 開始日時: 2026-05-01 11:42 JST
+- 担当セッション: Codex 作業担当エージェント（本セッション）
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: `transcription-error` の Rust payload を `serde_json::Value` 手組みから typed `Serialize` struct に寄せ、フロントの `TranscriptionErrorPayload` / `isTranscriptionErrorPayload` と shape を合わせて固定する。`error: String` と optional `source: TranscriptionSource` を持ち、`source` は `None` なら serialize しない。`microphone` / `system_audio` の snake_case serializing と worker panic details 非露出を維持し、UI/TypeScript/CSS/Tauri window/Swift/`.pen` は変更しない。コミットは禁止。
+- 結果: `TranscriptionErrorPayload` Rust struct を追加し、`build_transcription_error_payload` / `build_worker_panic_error_payload` が typed payload を返すようにした。emit call site はイベント名とエラー文を維持し、`TranscriptionSource` の既存 `snake_case` serialize を使う。worker panic payload の非露出テストを typed payload 対応に更新し、`source` あり/なしの JSON shape 固定テストを追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml transcription` 成功（29 passed, 144 filtered out）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または Tauri イベントモックで、`transcription-error` の `source` あり/なし payload がフロントの guard を通り、worker panic 時は詳細を表示しないことを確認する。
+
 ### Transcription payload guards: reject empty text and invalid timestamps
 
 - 開始日時: 2026-05-01 11:23 JST

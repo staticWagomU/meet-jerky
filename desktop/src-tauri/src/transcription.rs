@@ -38,6 +38,14 @@ pub struct TranscriptionSegment {
     pub is_error: Option<bool>,
 }
 
+/// 文字起こし worker から UI へ通知するエラー payload。
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct TranscriptionErrorPayload {
+    pub error: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<TranscriptionSource>,
+}
+
 /// 利用可能なモデルの情報
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -1027,16 +1035,19 @@ struct TranscriptionLoopConfig {
 fn build_transcription_error_payload(
     error: String,
     source: Option<TranscriptionSource>,
-) -> serde_json::Value {
-    let mut payload = serde_json::json!({ "error": error });
-    if let Some(source) = source {
-        payload["source"] = serde_json::json!(source);
-    }
-    payload
+) -> TranscriptionErrorPayload {
+    TranscriptionErrorPayload { error, source }
 }
 
-fn build_worker_panic_error_payload(source: Option<TranscriptionSource>) -> serde_json::Value {
+fn build_worker_panic_error_payload(
+    source: Option<TranscriptionSource>,
+) -> TranscriptionErrorPayload {
     build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
+}
+
+#[cfg(test)]
+fn transcription_error_payload_to_value(payload: &TranscriptionErrorPayload) -> serde_json::Value {
+    serde_json::to_value(payload).expect("transcription error payload should serialize to JSON")
 }
 
 fn is_realtime_stream_already_stopped_error(error: &str) -> bool {
@@ -1252,6 +1263,7 @@ mod tests {
     #[test]
     fn test_worker_panic_payload_does_not_expose_panic_details() {
         let payload = build_worker_panic_error_payload(Some(TranscriptionSource::Microphone));
+        let payload = transcription_error_payload_to_value(&payload);
         assert_eq!(
             payload.get("error").and_then(|value| value.as_str()),
             Some("文字起こしワーカーが異常終了しました")
@@ -1263,6 +1275,34 @@ mod tests {
         let serialized = payload.to_string();
         assert!(!serialized.contains("panic"));
         assert!(!serialized.contains("payload"));
+    }
+
+    #[test]
+    fn test_transcription_error_payload_serialization_with_source() {
+        let payload = build_transcription_error_payload(
+            "入力音声の処理に失敗しました".to_string(),
+            Some(TranscriptionSource::SystemAudio),
+        );
+
+        assert_eq!(
+            transcription_error_payload_to_value(&payload),
+            serde_json::json!({
+                "error": "入力音声の処理に失敗しました",
+                "source": "system_audio",
+            })
+        );
+    }
+
+    #[test]
+    fn test_transcription_error_payload_serialization_omits_missing_source() {
+        let payload = build_transcription_error_payload("初期化に失敗しました".to_string(), None);
+
+        assert_eq!(
+            transcription_error_payload_to_value(&payload),
+            serde_json::json!({
+                "error": "初期化に失敗しました",
+            })
+        );
     }
 
     #[test]
