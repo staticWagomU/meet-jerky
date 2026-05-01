@@ -12511,3 +12511,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機の会議検知通知で可視表示が `.pen` の `Mic: 自分` / `System: 相手側` のまま、VoiceOver/tooltip が録音開始前に取得済みと読めないことを確認する。
+
+### Transcription: reject invalid source argument
+
+- 開始日時: 2026-05-01 09:04:00 JST
+- 担当セッション: mj-main
+- 役割: メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: `start_transcription` の Tauri command 境界で `source` が不正値の場合に、録音状態由来の「音声ソースが利用可能ではありません」へ落ちず、許可値を明示して失敗するようにする。正規値 `microphone` / `system_audio` / `both` / 未指定の挙動は維持し、UI/CSS/Pencil は変更しない。
+- 結果: `parse_requested_transcription_sources` を追加し、`source` を trim したうえで `microphone` / `system_audio` / `both` / 未指定だけを受け付けるようにした。未知値や空文字は「文字起こしソースが不正です」として早期に拒否する。既存のサンプルレート確認、engine 切り替え、worker 起動処理は維持した。正規値と不正値の回帰テストを追加した。
+- 変更ファイル: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml transcription` 成功（27 passed, 144 filtered out）。`scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src-tauri/src/transcription.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: フロントの正規 `source` 指定で従来どおり mic/system/both の文字起こしが開始され、壊れた invoke だけが明示的な不正 source エラーになることを実機で確認する。

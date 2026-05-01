@@ -764,18 +764,15 @@ pub fn start_transcription(
 
     let running = manager.running_flag();
 
-    let source_str = source.as_deref().unwrap_or("both");
-
-    let use_mic = source_str == "microphone" || source_str == "both";
-    let use_system = source_str == "system_audio" || source_str == "both";
+    let requested_sources = parse_requested_transcription_sources(source.as_deref())?;
     let stream_language = Some(language.trim().to_string()).filter(|value| !value.is_empty());
 
-    let mic_sample_rate = if use_mic {
+    let mic_sample_rate = if requested_sources.use_mic {
         audio_state.get_sample_rate()
     } else {
         None
     };
-    let system_sample_rate = if use_system {
+    let system_sample_rate = if requested_sources.use_system {
         audio_state.get_system_audio_sample_rate()
     } else {
         None
@@ -985,6 +982,36 @@ const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) 
 struct PendingTranscriptionStream {
     source: TranscriptionSource,
     stream: Box<dyn TranscriptionStream>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct RequestedTranscriptionSources {
+    use_mic: bool,
+    use_system: bool,
+}
+
+fn parse_requested_transcription_sources(
+    source: Option<&str>,
+) -> Result<RequestedTranscriptionSources, String> {
+    let source = source.unwrap_or("both").trim();
+    match source {
+        "microphone" => Ok(RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        }),
+        "system_audio" => Ok(RequestedTranscriptionSources {
+            use_mic: false,
+            use_system: true,
+        }),
+        "both" => Ok(RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true,
+        }),
+        _ => Err(
+            "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+                .to_string(),
+        ),
+    }
 }
 
 struct TranscriptionLoopConfig {
@@ -1236,6 +1263,56 @@ mod tests {
         let serialized = payload.to_string();
         assert!(!serialized.contains("panic"));
         assert!(!serialized.contains("payload"));
+    }
+
+    #[test]
+    fn test_parse_requested_transcription_sources_accepts_known_values() {
+        assert_eq!(
+            parse_requested_transcription_sources(None).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            }
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some(" both ")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            }
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some("microphone")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            }
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some("system_audio")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: false,
+                use_system: true,
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_requested_transcription_sources_rejects_unknown_values() {
+        for source in ["", " ", "mic", "system", "both,microphone"] {
+            let error = parse_requested_transcription_sources(Some(source))
+                .expect_err("unknown source should be rejected");
+            assert!(
+                error.contains("文字起こしソースが不正です"),
+                "unexpected error for {source:?}: {error}"
+            );
+            assert!(
+                error.contains("microphone")
+                    && error.contains("system_audio")
+                    && error.contains("both"),
+                "error should list accepted source values: {error}"
+            );
+        }
     }
 
     #[test]
