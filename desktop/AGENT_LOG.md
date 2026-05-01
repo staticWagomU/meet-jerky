@@ -1,5 +1,19 @@
 # Agent Log
 
+### App detection tests: assert app payload privacy keys by object key
+
+- 開始日時: 2026-05-01 13:21:45 JST
+- 担当セッション: `mj-research-app-payload-privacy-contract-20260501`, `mj-worker-app-payload-privacy-test-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（差分レビュー・ログ整形・検証）
+- 作業範囲: `src-tauri/src/app_detection.rs` の既存 tests, `AGENT_LOG.md`
+- 指示内容: `meeting_app_detected_payload_serializes_camel_case` を最小変更し、App payload でも raw URL/privacy field が object key として存在しないことを固定する。少なくとも `url`, `fullUrl`, `urlHost`, `browserName`, `windowTitle`, `service` が key として存在しないことを確認し、既存の camelCase / snake_case 非混入意図は維持する。実装ロジック、UI/CSS/TypeScript/Swift/Tauri window/`.pen` は変更しない。
+- 結果: App payload serialization test で `serde_json::Value` の object key を取得し、`url`, `fullUrl`, `urlHost`, `browserName`, `windowTitle`, `service` が存在しないことを明示検証するようにした。既存の `bundleId`, `appName`, `source` の camelCase 確認と `bundle_id` 非混入確認は維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（app_detection 7 passed, 166 filtered out）。メイン側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは保存出力を残さず終了したため、main の直接読解と worker 差分レビューで判断した。worker は実装・個別検証を完了した。
+- 次アクション: 今後 App payload field を増やす場合は、この Rust serialization test と TypeScript App payload guard の両方を更新要否込みでレビューする。
+
 ### App detection: pin browser payload privacy boundary test
 
 - 開始日時: 2026-05-01 13:02:29 JST

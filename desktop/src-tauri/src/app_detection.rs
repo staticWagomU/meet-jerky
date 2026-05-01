@@ -616,10 +616,14 @@ mod tests {
         assert!(json.contains("\"bundleId\":\"us.zoom.xos\""));
         assert!(json.contains("\"appName\":\"Zoom\""));
         assert!(json.contains("\"source\":\"app\""));
-        assert!(!json.contains("service"));
-        assert!(!json.contains("urlHost"));
-        assert!(!json.contains("browserName"));
-        assert!(!json.contains("windowTitle"));
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let object = value.as_object().unwrap();
+        assert!(!object.contains_key("url"));
+        assert!(!object.contains_key("fullUrl"));
+        assert!(!object.contains_key("urlHost"));
+        assert!(!object.contains_key("browserName"));
+        assert!(!object.contains_key("windowTitle"));
+        assert!(!object.contains_key("service"));
         assert!(!json.contains("bundle_id"));
     }
 
