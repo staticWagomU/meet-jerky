@@ -6,17 +6,26 @@ const EXTERNAL_TRANSMISSION_LABELS = new Set([
   "送信先 OpenAI",
   "送信先 ElevenLabs",
 ]);
+const MAX_STATUS_LABEL_LENGTH = 80;
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
 
-function toNonEmptyTrimmedString(value: unknown): string | null {
+function toValidStatusLabel(value: unknown): string | null {
   if (typeof value !== "string") {
     return null;
   }
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  if (
+    trimmed.length === 0 ||
+    trimmed.length > MAX_STATUS_LABEL_LENGTH ||
+    CONTROL_CHARACTER_PATTERN.test(trimmed)
+  ) {
+    return null;
+  }
+  return trimmed;
 }
 
 function statusLabelOrDefault(value: unknown, fallback: string): string {
-  return toNonEmptyTrimmedString(value) ?? fallback;
+  return toValidStatusLabel(value) ?? fallback;
 }
 
 export interface LiveCaptionStatusPayload {
@@ -54,13 +63,13 @@ export function isLiveCaptionStatusPayload(
   }
   const candidate = value as Partial<LiveCaptionStatusPayload>;
   return (
-    toNonEmptyTrimmedString(candidate.engineLabel) !== null &&
-    toNonEmptyTrimmedString(candidate.aiTransmissionLabel) !== null &&
+    toValidStatusLabel(candidate.engineLabel) !== null &&
+    toValidStatusLabel(candidate.aiTransmissionLabel) !== null &&
     typeof candidate.isExternalTransmission === "boolean" &&
     (candidate.microphoneTrackLabel === undefined ||
-      toNonEmptyTrimmedString(candidate.microphoneTrackLabel) !== null) &&
+      toValidStatusLabel(candidate.microphoneTrackLabel) !== null) &&
     (candidate.systemAudioTrackLabel === undefined ||
-      toNonEmptyTrimmedString(candidate.systemAudioTrackLabel) !== null)
+      toValidStatusLabel(candidate.systemAudioTrackLabel) !== null)
   );
 }
 

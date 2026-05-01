@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live caption status: reject long/control labels
+
+- 開始日時: 2026-05-01 14:01:49 JST
+- 担当セッション: `mj-research-live-caption-status-guard-20260501`, `mj-worker-live-caption-status-label-guard-20260501`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント（差分レビュー・ログ整形・検証）
+- 作業範囲: `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 指示内容: `isLiveCaptionStatusPayload` が受け付ける `engineLabel`, `aiTransmissionLabel`, optional `microphoneTrackLabel`, optional `systemAudioTrackLabel` を最小強化し、trim 後に非空、80文字以下、制御文字（U+0000-U+001F と U+007F）なしの string のみ許可する。既存の既知ラベルと normalize/default fallback の意図は維持する。UI/CSS/Tauri/Rust/Swift/`.pen` は変更しない。
+- 結果: ラベル検証ヘルパーを `toValidStatusLabel` に更新し、trim 後の非空判定に加えて 80 文字上限と制御文字拒否を適用した。`statusLabelOrDefault` も同じ検証を使うため、normalize/build 経路では壊れたラベルを既存 default へフォールバックする。既存の短い日本語ラベル、`送信先 OpenAI`, `送信先 ElevenLabs`, `Apple Speech`, `Whisper` は通る条件を維持した。
+- 変更ファイル: `src/utils/liveCaptionStatus.ts`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。メイン側の `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/utils/liveCaptionStatus.ts AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは保存出力を残さず終了したため、main の直接読解と worker 差分レビューで判断した。worker は実装・個別検証を完了した。
+- 次アクション: 壊れた event/localStorage payload の過大・複数行・制御文字ラベルが UI state に入らず、正規 payload の表示が従来どおりであることを実機またはコンポーネント経路で確認する。
+
 ### Meeting detection payload: reject malformed DNS urlHost
 
 - 開始日時: 2026-05-01 13:41:38 JST
