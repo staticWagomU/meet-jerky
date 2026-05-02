@@ -96,6 +96,20 @@
 - 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
 - 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
 
+# Settings brand icon: match Pencil corner radius
+
+- 開始日時: 2026-05-03 05:57:40 JST
+- 担当セッション: `Codex main`
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の app label icon を再確認し、brand icon の角丸が 1px だけ強ければ、そこだけ Pencil の 8px に揃える。サイズ、配色、レイアウト、ロジックは変更しない。
+- 結果: `settings-sidebar-brand-icon` の `border-radius` を 8px に変更し、Pencil の app label icon に合わせた。その他の Settings sidebar の見た目と挙動は維持した。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
+- 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
 # Meeting detected banner: align notch icon and start button with Pencil
 
 - 開始日時: 2026-05-03 03:11:15 JST

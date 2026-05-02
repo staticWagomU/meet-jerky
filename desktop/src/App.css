@@ -2984,7 +2984,7 @@ body[data-window="ring-light"] .overlay-window {
   flex: 0 0 30px;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: 8px;
   color: #fff;
   background: linear-gradient(135deg, #ff7a1a, #ff5c00);
   font-family: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
