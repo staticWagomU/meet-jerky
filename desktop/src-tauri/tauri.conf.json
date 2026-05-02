@@ -15,14 +15,14 @@
       {
         "label": "main",
         "title": "meet-jerky",
-        "width": 400,
-        "height": 600,
+        "width": 312,
+        "height": 500,
         "visible": false,
         "decorations": false,
         "transparent": true,
         "shadow": false,
         "alwaysOnTop": true,
-        "resizable": true,
+        "resizable": false,
         "skipTaskbar": true
       }
     ],

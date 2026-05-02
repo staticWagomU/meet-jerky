@@ -13183,3 +13183,16 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker が prompt 受理後に停滞したため、自律運用停止回避としてメインが最小範囲で例外実装した。
 - 次アクション: 実機では非表示からライブ字幕 window を表示した瞬間に古いステータスが見えないことを確認する。
+### Menu bar initial UI: align to Pencil Mock 1A/1B
+
+- 開始日時: 2026-05-02 21:44:46 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: UI 実装担当
+- 作業範囲: `src/App.tsx`, `src/routes/TranscriptView.tsx`, `src/App.css`, `src-tauri/tauri.conf.json`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP を使ってメニューバーの初期 UI を `Mock 1A - Idle (Monitoring)` に合わせる。権限許可前は `Mock 1B - First Launch` に合わせる。追加指示として、無駄な背景を削除し、透過にする。
+- 結果: Pencil MCP で `Mock 1A - Idle (Monitoring)` と `Mock 1B - First Launch` の構造・スクリーンショットを確認した。`App.tsx` から旧ヘッダー/タブを取り除き、メニューバー用シェルを `Outlet` のみにした。`TranscriptView` で権限未許可時は First Launch の権限セットアップ、許可後は Idle Monitoring の監視中ポップオーバーを表示するよう分岐した。Tauri main window を 312x500 / non-resizable に変更し、CSS の root/body/app shell を透明・内容サイズに寄せた。アイドル時にモック外へ出ていた外部 Realtime 注意は非表示にし、録音/文字起こし中のみ表示するようにした。
+- 変更ファイル: `src/App.tsx`, `src/routes/TranscriptView.tsx`, `src/App.css`, `src-tauri/tauri.conf.json`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.tsx src/routes/TranscriptView.tsx src/App.css src-tauri/tauri.conf.json` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run dev -- --host 127.0.0.1` を起動し、`curl -I --max-time 5 http://127.0.0.1:1420/` が HTTP 200 を返すことを確認した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 Tauri のメニューバー表示で、ウィンドウ外周が透明になり、右側と下部の余白が消えていることを確認する。

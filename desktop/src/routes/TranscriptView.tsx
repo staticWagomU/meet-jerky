@@ -1,8 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import {
+  Check,
+  CircleDot,
+  Globe,
+  History,
+  Mic,
+  Settings as SettingsIcon,
+  ShieldCheck,
+  SlidersHorizontal,
+  Target,
+  Volume2,
+} from "lucide-react";
 import type {
   AppSettings,
   AudioDevice,
@@ -13,12 +26,13 @@ import { MicrophoneSection } from "../components/MicrophoneSection";
 import { SystemAudioSection } from "../components/SystemAudioSection";
 import { TranscriptionControls } from "../components/TranscriptionControls";
 import { TranscriptDisplay } from "../components/TranscriptDisplay";
-import { PermissionBanner } from "../components/PermissionBanner";
 import {
   startSession,
   finalizeAndSaveSession,
   discardSession,
 } from "../hooks/useSession";
+import { usePermissions } from "../hooks/usePermissions";
+import { useSessionList } from "../hooks/useSessionList";
 import {
   clearPendingMeetingStartRequest,
   hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
@@ -36,6 +50,14 @@ import {
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
 import { isTranscriptionErrorPayload } from "../utils/transcriptSegment";
+import {
+  MACOS_ACCESSIBILITY_PRIVACY_URL,
+  MACOS_MICROPHONE_PRIVACY_URL,
+  MACOS_SCREEN_RECORDING_PRIVACY_URL,
+  OPEN_ACCESSIBILITY_PRIVACY_LABEL,
+  OPEN_MICROPHONE_PRIVACY_LABEL,
+  OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
+} from "../utils/macosPrivacySettings";
 
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
@@ -53,6 +75,59 @@ function formatOperationError(prefix: string, e: unknown): string {
 
 function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() || path;
+}
+
+function getCompactSessionTitle(title: string): string {
+  const displayTitle = title
+    .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
+    .trim();
+  return displayTitle || "無題の会議";
+}
+
+function getRecentSessionMeta(startedAtSecs: number): string {
+  const startedAtMs = startedAtSecs * 1000;
+  if (!Number.isFinite(startedAtMs)) {
+    return "日時不明";
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return "日時不明";
+  }
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(startedAtDate);
+}
+
+function getPermissionStatusLabel(
+  status: string | undefined,
+  error: unknown,
+  isChecking: boolean,
+): string {
+  if (isChecking) {
+    return "確認中";
+  }
+  if (error) {
+    return "確認不可";
+  }
+  if (status === "granted") {
+    return "許可済み";
+  }
+  if (status === "denied") {
+    return "未許可";
+  }
+  return "未確認";
+}
+
+function getPermissionRowClassName(
+  status: string | undefined,
+  error: unknown,
+): string {
+  return status === "granted" && !error
+    ? "menu-permission-row menu-permission-row-granted"
+    : "menu-permission-row";
 }
 
 function clearRelatedMeetingError(
@@ -527,6 +602,26 @@ export function TranscriptView() {
   >(null);
   const [hasPendingMeetingStartRequest, setHasPendingMeetingStartRequest] =
     useState(false);
+  const [permissionSettingsOpenError, setPermissionSettingsOpenError] =
+    useState<string | null>(null);
+  const [hasSkippedFirstLaunch, setHasSkippedFirstLaunch] = useState(false);
+
+  const {
+    micPermission,
+    micPermissionError,
+    isFetchingMicPermission,
+    screenPermission,
+    screenPermissionError,
+    isFetchingScreenPermission,
+    isCheckingPermissions,
+    refetchAll: refetchPermissions,
+  } = usePermissions();
+
+  const {
+    data: recentSessions,
+    isLoading: isLoadingRecentSessions,
+    error: recentSessionsError,
+  } = useSessionList();
 
   const {
     data: devices,
@@ -1374,7 +1469,7 @@ export function TranscriptView() {
   const externalRealtimeRiskNotice = externalApiProvider
     ? isMeetingActive || isTranscribing
       ? `${externalApiProvider} Realtime へ音声を送信中です。プロバイダ側の利用量課金が発生する可能性があります。`
-      : `${externalApiProvider} Realtime は音声を外部 API へ送信します。プロバイダ側の利用量課金が発生する可能性があります。`
+      : null
     : null;
   const aiTransmissionStatusLabel = settingsError
     ? "確認できません"
@@ -1555,6 +1650,48 @@ export function TranscriptView() {
   const externalApiKeyErrorMessage = externalApiKeyErrorForUi
     ? toErrorMessage(externalApiKeyErrorForUi)
     : "";
+  const micPermissionStatusLabel = getPermissionStatusLabel(
+    micPermission,
+    micPermissionError,
+    isFetchingMicPermission,
+  );
+  const screenPermissionStatusLabel = getPermissionStatusLabel(
+    screenPermission,
+    screenPermissionError,
+    isFetchingScreenPermission,
+  );
+  const accessibilityPermissionStatusLabel = "任意";
+  const grantedPermissionCount =
+    (micPermission === "granted" && !micPermissionError ? 1 : 0) +
+    (screenPermission === "granted" && !screenPermissionError ? 1 : 0);
+  const shouldShowFirstLaunch =
+    !hasSkippedFirstLaunch &&
+    (micPermission !== "granted" ||
+      screenPermission !== "granted" ||
+      Boolean(micPermissionError) ||
+      Boolean(screenPermissionError));
+  const permissionSetupLabel = isCheckingPermissions
+    ? "権限状態を確認中"
+    : `はじめての方へ ・ ${grantedPermissionCount} / 3 許可済み`;
+  const firstLaunchSummaryLabel = [
+    permissionSetupLabel,
+    `${SELF_TRACK_DEVICE_LABEL}: ${micPermissionStatusLabel}`,
+    `${OTHER_TRACK_DEVICE_LABEL}: ${screenPermissionStatusLabel}`,
+    `ブラウザ監視: ${accessibilityPermissionStatusLabel}`,
+    permissionSettingsOpenError,
+  ]
+    .filter(Boolean)
+    .join("、");
+  const sortedRecentSessions = [...(recentSessions ?? [])]
+    .sort((a, b) => b.startedAtSecs - a.startedAtSecs)
+    .slice(0, 2);
+  const recentRecordingsLabel = recentSessionsError
+    ? "直近の録音を取得できません"
+    : isLoadingRecentSessions
+      ? "直近の録音を確認中"
+      : sortedRecentSessions.length > 0
+        ? "直近の録音"
+        : "直近の録音はまだありません";
   const handleShowLiveCaptionWindow = useCallback(() => {
     if (!canShowLiveCaptionWindow) {
       return;
@@ -1565,6 +1702,33 @@ export function TranscriptView() {
       setMeetingError(`ライブ文字起こしウィンドウを表示できませんでした: ${msg}`);
     });
   }, [canShowLiveCaptionWindow]);
+  const handleOpenFirstLaunchPermissions = useCallback(() => {
+    setPermissionSettingsOpenError(null);
+    const targetUrl =
+      micPermission !== "granted"
+        ? MACOS_MICROPHONE_PRIVACY_URL
+        : screenPermission !== "granted"
+          ? MACOS_SCREEN_RECORDING_PRIVACY_URL
+          : MACOS_ACCESSIBILITY_PRIVACY_URL;
+    void openUrl(targetUrl)
+      .then(() => {
+        refetchPermissions();
+      })
+      .catch((e) => {
+        const msg = toErrorMessage(e);
+        console.error("macOS 権限設定を開けませんでした:", msg);
+        setPermissionSettingsOpenError(msg);
+      });
+  }, [micPermission, refetchPermissions, screenPermission]);
+
+  const handleOpenAccessibilityPermission = useCallback(() => {
+    setPermissionSettingsOpenError(null);
+    void openUrl(MACOS_ACCESSIBILITY_PRIVACY_URL).catch((e) => {
+      const msg = toErrorMessage(e);
+      console.error("アクセシビリティ権限設定を開けませんでした:", msg);
+      setPermissionSettingsOpenError(msg);
+    });
+  }, []);
 
   useEffect(() => {
     if (!hasPendingMeetingStartRequest) {
@@ -1611,90 +1775,218 @@ export function TranscriptView() {
       aria-label={transcriptViewLabel}
       title={transcriptViewLabel}
     >
-      <PermissionBanner />
-
       <div className="meeting-control meeting-popover-control">
-        <div className="meeting-popover-main">
-          <div className="meeting-popover-header">
-            <div className="meeting-popover-logo" aria-hidden="true">
-              <span />
-              <span />
-              <span />
+        {shouldShowFirstLaunch ? (
+          <div
+            className="meeting-popover-main menu-first-launch"
+            role="group"
+            aria-busy={isCheckingPermissions}
+            aria-label={firstLaunchSummaryLabel}
+            title={firstLaunchSummaryLabel}
+          >
+            <div className="meeting-popover-header">
+              <div className="meeting-popover-logo" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="meeting-popover-heading">
+                <h2>Meet Jerky</h2>
+                <p>自動会議録音アプリ</p>
+              </div>
+              <span className="menu-welcome-pill">ようこそ</span>
             </div>
-            <div className="meeting-popover-heading">
-              <h2>{meetingPopoverTitle}</h2>
-              <p>{meetingPopoverSubtitle}</p>
+
+            <section className="meeting-popover-detected menu-setup-hero">
+              <span>{permissionSetupLabel}</span>
+              <strong>セットアップを完了しましょう</strong>
+              <p>
+                3つの権限を許可すると、Google Meet を開いたときに自動で録音が始まります。
+              </p>
+            </section>
+
+            <div className="menu-permission-list" aria-label="必要な権限">
+              <div
+                className={getPermissionRowClassName(
+                  micPermission,
+                  micPermissionError,
+                )}
+              >
+                <span className="menu-permission-icon menu-permission-icon-hot">
+                  <Mic size={16} aria-hidden="true" />
+                </span>
+                <span className="menu-permission-copy">
+                  <strong>マイク</strong>
+                  <span>あなたの音声を録音</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPermissionSettingsOpenError(null);
+                    void openUrl(MACOS_MICROPHONE_PRIVACY_URL).catch((e) => {
+                      const msg = toErrorMessage(e);
+                      console.error("マイク権限設定を開けませんでした:", msg);
+                      setPermissionSettingsOpenError(msg);
+                    });
+                  }}
+                  aria-label={OPEN_MICROPHONE_PRIVACY_LABEL}
+                  title={OPEN_MICROPHONE_PRIVACY_LABEL}
+                >
+                  {micPermissionStatusLabel === "許可済み" ? "済み" : "許可"}
+                </button>
+              </div>
+              <div
+                className={getPermissionRowClassName(
+                  screenPermission,
+                  screenPermissionError,
+                )}
+              >
+                <span className="menu-permission-icon menu-permission-icon-cool">
+                  <Volume2 size={16} aria-hidden="true" />
+                </span>
+                <span className="menu-permission-copy">
+                  <strong>システム音声</strong>
+                  <span>通話相手の声を録音</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPermissionSettingsOpenError(null);
+                    void openUrl(MACOS_SCREEN_RECORDING_PRIVACY_URL).catch(
+                      (e) => {
+                        const msg = toErrorMessage(e);
+                        console.error("画面収録設定を開けませんでした:", msg);
+                        setPermissionSettingsOpenError(msg);
+                      },
+                    );
+                  }}
+                  aria-label={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
+                  title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
+                >
+                  {screenPermissionStatusLabel === "許可済み" ? "済み" : "許可"}
+                </button>
+              </div>
+              <div className="menu-permission-row">
+                <span className="menu-permission-icon menu-permission-icon-soft">
+                  <Globe size={16} aria-hidden="true" />
+                </span>
+                <span className="menu-permission-copy">
+                  <strong>ブラウザ監視（任意）</strong>
+                  <span>Chrome の URL から Meet を自動検知</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleOpenAccessibilityPermission}
+                  aria-label={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
+                  title={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
+                >
+                  許可
+                </button>
+              </div>
             </div>
-            <span
-              className={`meeting-popover-rec-pill ${meetingRecordingStatusClass}`}
-              role="status"
-              aria-label={`記録の録音: ${meetingPopoverRecordingLabel}`}
-              title={`記録の録音: ${meetingPopoverRecordingLabel}`}
-            >
-              <span aria-hidden="true" />
-              {meetingPopoverRecordingLabel}
-            </span>
+
+            <div className="meeting-popover-actions">
+              <button
+                type="button"
+                className="meeting-btn meeting-popover-primary-action"
+                onClick={handleOpenFirstLaunchPermissions}
+                disabled={isCheckingPermissions}
+              >
+                <Check size={14} aria-hidden="true" />
+                すべて許可する
+              </button>
+              <button
+                type="button"
+                className="meeting-popover-secondary-action menu-secondary-link"
+                onClick={() => setHasSkippedFirstLaunch(true)}
+              >
+                後で
+              </button>
+            </div>
+
+            <div className="meeting-popover-footer">
+              <ShieldCheck size={14} aria-hidden="true" />
+              <span>録音はこのMacにのみ保存されます</span>
+              <button type="button" onClick={refetchPermissions}>
+                再確認
+              </button>
+            </div>
+            {permissionSettingsOpenError && (
+              <p className="meeting-error meeting-alert" role="alert">
+                macOS 設定を開けませんでした: {permissionSettingsOpenError}
+              </p>
+            )}
           </div>
-
-          <section className="meeting-popover-detected" aria-label="自動検知された会議">
-            <span>自動検知</span>
-            <strong>{meetingDetectionCardTitle}</strong>
-            <p>{meetingDetectionCardDetail}</p>
-          </section>
-
-          <div className="meeting-popover-tracks" aria-label="分離取得中の音声トラック">
-            <div
-              className="meeting-popover-track-row"
-              aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
-              title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
-            >
-              <span className="meeting-popover-track-icon" aria-hidden="true">
-                Mic
-              </span>
-              <span className="meeting-popover-track-copy">
-                <strong>マイク入力</strong>
-                <span>{micPopoverSubtitle}</span>
-              </span>
-              <span className="meeting-popover-level" aria-hidden="true">
-                {micPopoverBars.map((bar, index) => (
-                  <span
-                    key={`mic-${index}`}
-                    style={{ transform: `scaleY(${bar})` }}
-                  />
-                ))}
+        ) : (
+          <div className="meeting-popover-main menu-idle">
+            <div className="meeting-popover-header">
+              <div className="meeting-popover-logo menu-idle-logo" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="meeting-popover-heading">
+                <h2>Meet Jerky</h2>
+                <p>{isMeetingActive ? meetingPopoverSubtitle : "会議の自動録音をスタンバイ"}</p>
+              </div>
+              <span
+                className={`meeting-popover-rec-pill ${meetingRecordingStatusClass}`}
+                role="status"
+                aria-label={`記録の録音: ${meetingPopoverRecordingLabel}`}
+                title={`記録の録音: ${meetingPopoverRecordingLabel}`}
+              >
+                <span aria-hidden="true" />
+                {isMeetingActive ? meetingPopoverTitle : "監視中"}
               </span>
             </div>
-            <div
-              className="meeting-popover-track-row"
-              aria-label={getSystemAudioTrackStatusAriaLabel(
-                systemAudioTrackStatusLabel,
-              )}
-              title={getSystemAudioTrackStatusAriaLabel(
-                systemAudioTrackStatusLabel,
-              )}
-            >
-              <span className="meeting-popover-track-icon" aria-hidden="true">
-                Sys
-              </span>
-              <span className="meeting-popover-track-copy">
-                <strong>システム音声</strong>
-                <span>{systemAudioPopoverSubtitle}</span>
-              </span>
-              <span className="meeting-popover-level" aria-hidden="true">
-                {systemAudioPopoverBars.map((bar, index) => (
-                  <span
-                    key={`system-${index}`}
-                    style={{ transform: `scaleY(${bar})` }}
-                  />
-                ))}
-              </span>
-            </div>
-          </div>
 
-          <div className="meeting-popover-actions">
+            <section
+              className="meeting-popover-detected menu-empty-card"
+              aria-label="自動検知された会議"
+            >
+              <span className="menu-empty-icon" aria-hidden="true">
+                <Target size={20} />
+              </span>
+              <strong>
+                {isMeetingActive
+                  ? meetingDetectionCardTitle
+                  : "現在検知中のミーティングはありません"}
+              </strong>
+              <p>
+                {isMeetingActive
+                  ? meetingDetectionCardDetail
+                  : "Google Meet を開くと自動で録音が始まります"}
+              </p>
+            </section>
+
+            <section className="menu-history-section" aria-label={recentRecordingsLabel}>
+              <span>{recentRecordingsLabel}</span>
+              <div className="menu-history-list">
+                {sortedRecentSessions.map((session) => (
+                  <Link
+                    key={session.path}
+                    to="/sessions"
+                    className="menu-history-row"
+                    title={getFileName(session.path)}
+                  >
+                    <span aria-hidden="true" />
+                    <strong>{getCompactSessionTitle(session.title)}</strong>
+                    <small>{getRecentSessionMeta(session.startedAtSecs)}</small>
+                  </Link>
+                ))}
+                {sortedRecentSessions.length === 0 && (
+                  <div className="menu-history-row menu-history-row-empty">
+                    <span aria-hidden="true" />
+                    <strong>録音履歴はまだありません</strong>
+                    <small>最初の会議を録音するとここに表示されます</small>
+                  </div>
+                )}
+              </div>
+            </section>
+
             <button
               type="button"
-              className={`meeting-btn meeting-popover-primary-action ${
+              className={`meeting-btn meeting-popover-primary-action menu-record-action ${
                 isMeetingActive ? "meeting-btn-active" : ""
               }`}
               onClick={handleToggleMeeting}
@@ -1709,46 +2001,103 @@ export function TranscriptView() {
                   : undefined
               }
             >
+              <CircleDot size={15} aria-hidden="true" />
               {isMeetingOperationPending
                 ? isMeetingActive
                   ? "終了中..."
                   : "開始中..."
                 : isMeetingActive
-                  ? "記録を終了"
-                  : "開始"}
+                  ? "録音を終了"
+                  : "手動で録音を開始"}
             </button>
-            <button
-              type="button"
-              className="control-btn control-btn-clear meeting-caption-window-btn meeting-popover-secondary-action"
-              aria-label={showLiveCaptionWindowLabel}
-              title={showLiveCaptionWindowLabel}
-              onClick={handleShowLiveCaptionWindow}
-              disabled={!canShowLiveCaptionWindow}
-            >
-              字幕ウィンドウ
-            </button>
-          </div>
 
-          <div className="meeting-popover-utilities" aria-label="会議補助機能">
-            <span>辞書補正は設定で管理</span>
-            <span>履歴はこのMacに保存</span>
-          </div>
+            <div className="menu-secondary-links">
+              <Link to="/sessions">
+                <History size={14} aria-hidden="true" />
+                履歴を開く
+              </Link>
+              <Link to="/settings">
+                <SlidersHorizontal size={14} aria-hidden="true" />
+                環境設定
+              </Link>
+            </div>
 
-          <div className="meeting-popover-footer">
-            <span>常に録音状態を表示</span>
-            <button
-              type="button"
-              onClick={handleToggleMeeting}
-              disabled={!isMeetingActive || isMeetingOperationPending}
-              aria-label={meetingFooterEndLabel}
-              title={meetingFooterEndLabel}
+            <div
+              className="menu-live-tracks"
+              hidden={!isMeetingActive && !isTranscribing}
             >
-              終了
-            </button>
+              <div
+                className="meeting-popover-track-row"
+                aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
+                title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
+              >
+                <span className="meeting-popover-track-icon">MIC</span>
+                <span className="meeting-popover-track-copy">
+                  <strong>マイク入力</strong>
+                  <span>{micPopoverSubtitle}</span>
+                </span>
+                <span className="meeting-popover-level" aria-hidden="true">
+                  {micPopoverBars.map((bar, index) => (
+                    <span
+                      key={`mic-${index}`}
+                      style={{ transform: `scaleY(${bar})` }}
+                    />
+                  ))}
+                </span>
+              </div>
+              <div
+                className="meeting-popover-track-row"
+                aria-label={getSystemAudioTrackStatusAriaLabel(
+                  systemAudioTrackStatusLabel,
+                )}
+                title={getSystemAudioTrackStatusAriaLabel(
+                  systemAudioTrackStatusLabel,
+                )}
+              >
+                <span className="meeting-popover-track-icon">SYS</span>
+                <span className="meeting-popover-track-copy">
+                  <strong>システム音声</strong>
+                  <span>{systemAudioPopoverSubtitle}</span>
+                </span>
+                <span className="meeting-popover-level" aria-hidden="true">
+                  {systemAudioPopoverBars.map((bar, index) => (
+                    <span
+                      key={`system-${index}`}
+                      style={{ transform: `scaleY(${bar})` }}
+                    />
+                  ))}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="control-btn control-btn-clear meeting-popover-secondary-action"
+                aria-label={showLiveCaptionWindowLabel}
+                title={showLiveCaptionWindowLabel}
+                onClick={handleShowLiveCaptionWindow}
+                disabled={!canShowLiveCaptionWindow}
+              >
+                字幕ウィンドウ
+              </button>
+            </div>
+
+            <div className="meeting-popover-footer">
+              <SettingsIcon size={14} aria-hidden="true" />
+              <span>自動検知が有効</span>
+              <button
+                type="button"
+                onClick={handleToggleMeeting}
+                disabled={!isMeetingActive || isMeetingOperationPending}
+                aria-label={meetingFooterEndLabel}
+                title={meetingFooterEndLabel}
+              >
+                終了
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         <div
           className="meeting-status-strip meeting-popover-status-strip"
+          hidden
           role="status"
           aria-busy={isMeetingStatusBusy}
           aria-live="polite"
@@ -1962,54 +2311,59 @@ export function TranscriptView() {
         )}
       </div>
 
-      <div className="section-divider" />
+      <div
+        className="menu-advanced-controls"
+        hidden={!isMeetingActive && !isTranscribing}
+      >
+        <div className="section-divider" />
 
-      <MicrophoneSection
-        isMicRecording={isMicRecording}
-        micLevel={micLevel}
-        selectedDeviceId={selectedDeviceId}
-        audioDevices={devices}
-        audioDevicesError={devicesError}
-        isReloadingAudioDevices={isFetchingDevices}
-        isOperationPending={isMicSourceOperationPending}
-        isControlDisabled={isAudioSourceOperationPending}
-        isCompact={isMeetingActive || isTranscribing}
-        onDeviceChange={setSelectedDeviceId}
-        onRetryDevices={() => refetchDevices()}
-        onToggleRecording={handleToggleMicRecording}
-      />
+        <MicrophoneSection
+          isMicRecording={isMicRecording}
+          micLevel={micLevel}
+          selectedDeviceId={selectedDeviceId}
+          audioDevices={devices}
+          audioDevicesError={devicesError}
+          isReloadingAudioDevices={isFetchingDevices}
+          isOperationPending={isMicSourceOperationPending}
+          isControlDisabled={isAudioSourceOperationPending}
+          isCompact={isMeetingActive || isTranscribing}
+          onDeviceChange={setSelectedDeviceId}
+          onRetryDevices={() => refetchDevices()}
+          onToggleRecording={handleToggleMicRecording}
+        />
 
-      <SystemAudioSection
-        isSystemAudioRecording={isSystemAudioRecording}
-        systemAudioLevel={systemAudioLevel}
-        isOperationPending={isSystemAudioSourceOperationPending}
-        isControlDisabled={isAudioSourceOperationPending}
-        isCompact={isMeetingActive || isTranscribing}
-        onToggleSystemAudio={handleToggleSystemAudio}
-      />
+        <SystemAudioSection
+          isSystemAudioRecording={isSystemAudioRecording}
+          systemAudioLevel={systemAudioLevel}
+          isOperationPending={isSystemAudioSourceOperationPending}
+          isControlDisabled={isAudioSourceOperationPending}
+          isCompact={isMeetingActive || isTranscribing}
+          onToggleSystemAudio={handleToggleSystemAudio}
+        />
 
-      <div className="section-divider" />
+        <div className="section-divider" />
 
-      <TranscriptionControls
-        isTranscribing={isTranscribing}
-        selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
-        showModelSelector={requiresLocalModel}
-        onToggleTranscription={handleToggleTranscription}
-        canStartTranscription={canStartTranscription}
-        isTranscriptionOperationPending={isTranscriptionOperationPending}
-        startBlockedReason={transcriptionStartBlockedReason}
-        sourceStatusText={transcriptionSourceStatus}
-        sourceStatusAriaText={transcriptionSourceStatusAriaText}
-        sourceStatusIsWarning={transcriptionSourceStatusIsWarning}
-        segmentsCount={segments.length}
-        onClearTranscript={handleClearTranscript}
-      />
+        <TranscriptionControls
+          isTranscribing={isTranscribing}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+          showModelSelector={requiresLocalModel}
+          onToggleTranscription={handleToggleTranscription}
+          canStartTranscription={canStartTranscription}
+          isTranscriptionOperationPending={isTranscriptionOperationPending}
+          startBlockedReason={transcriptionStartBlockedReason}
+          sourceStatusText={transcriptionSourceStatus}
+          sourceStatusAriaText={transcriptionSourceStatusAriaText}
+          sourceStatusIsWarning={transcriptionSourceStatusIsWarning}
+          segmentsCount={segments.length}
+          onClearTranscript={handleClearTranscript}
+        />
 
-      <TranscriptDisplay
-        segments={segments}
-        onNewSegment={handleNewSegment}
-      />
+        <TranscriptDisplay
+          segments={segments}
+          onNewSegment={handleNewSegment}
+        />
+      </div>
     </div>
   );
 }
