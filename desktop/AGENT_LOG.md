@@ -1,5 +1,19 @@
 # Agent Log
 
+### Ring light overlay: use current monitor placement
+
+- 開始日時: 2026-05-02 18:50:10 JST
+- 担当セッション: `mj-research-overlay-ring-light-lifecycle-20260502`, `mj-worker-ring-light-current-monitor-20260502`, `mj-main`
+- 役割: research/worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの透明 canvas 前提と、通知/ライブ字幕 overlay の cursor monitor 優先配置に合わせ、ring-light overlay も primary monitor 固定ではなくカーソル所在 monitor 優先にする。CSS、Pencil、window builder、frontend、capability は変更しない。
+- 結果: `set_ring_light_visible` の monitor 取得を `app.primary_monitor()` から既存 helper `current_monitor_or_primary(&app)` に変更した。位置・サイズ更新、クリック透過、show/hide の順序と error message は維持した。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: メイン側で `git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research は読解途中で停滞し、worker `mj-worker-ring-light-current-monitor-20260502` は入力待ちから進まなかったため、自律運用停止回避として main が最小範囲で例外実装した。
+- 次アクション: 検証後、実機複数 monitor 環境で ring-light が操作中 monitor に出て、背後操作を妨げないことを確認する。実機確認は未実機確認。
+
 ### Live caption overlay: reset after show and initial sync
 
 - 開始日時: 2026-05-02 18:47:11 JST

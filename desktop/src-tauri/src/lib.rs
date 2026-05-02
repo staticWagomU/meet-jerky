@@ -286,7 +286,7 @@ fn set_ring_light_visible(app: tauri::AppHandle, visible: bool) -> Result<(), St
     let Some(window) = app.get_webview_window(RING_LIGHT_WINDOW_LABEL) else {
         return Err("リングライトウィンドウが見つかりません".to_string());
     };
-    if let Ok(Some(monitor)) = app.primary_monitor() {
+    if let Ok(Some(monitor)) = current_monitor_or_primary(&app) {
         window
             .set_position(PhysicalPosition::new(
                 monitor.position().x,
