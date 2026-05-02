@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
-import { Captions, Video } from "lucide-react";
+import { Captions } from "lucide-react";
 import type { MeetingAppDetectedPayload } from "../types";
 import {
   clearPendingMeetingStartRequest,
@@ -430,7 +430,7 @@ export function MeetingDetectedBanner() {
                   void handleStartRecording();
                 }}
               >
-                <Video
+                <Captions
                   className="meeting-detected-start-icon"
                   aria-hidden="true"
                   size={14}
