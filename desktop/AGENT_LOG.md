@@ -13475,3 +13475,38 @@
 - 依存関係追加の有無と理由: なし。`std::time::Duration` は標準ライブラリ。
 - 失敗理由: なし。
 - 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `fix(transcription): ElevenLabs Realtime の最終セグメント取りこぼしを 10 秒待機で防ぐ`)
+
+### Whisper チャンク早期フラッシュ: RMS ベース沈黙検知で 5 秒固定遅延を短縮
+
+- 開始日時: 2026-05-03 JST
+- 担当セッション: `mjc-worker-whisper-silence-detection-20260503`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/transcription.rs`, `AGENT_LOG.md`
+- 指示内容: WhisperStream の `flush_full_chunks` を改修し、5 秒以上たまった場合は従来通り 5 秒単位で flush、5 秒未満でも最小チャンク長 (1 秒) 以上かつ末尾 0.5 秒の RMS が閾値 (0.01 ≈ -40dBFS) 以下の場合に早期 flush する「RMS ベース沈黙検知」を実装する。調査担当 (`mjc-research-whisper-silence-detection-20260502`) の擬似コードに論理上の誤りがあったため、メイン指示に従い正しい設計 (while / if 分離) で実装した。`silence_lookback_buffer: VecDeque<f32>` の追加フィールド案は不採用とし、`accumulation_buffer` 末尾スライスを直接参照する設計を採用した。
+- 結果:
+  - 定数 3 件を既存 `CHUNK_SAMPLES` 付近 (line 988 周辺) に追加:
+    - `MIN_FLUSH_SAMPLES = WHISPER_SAMPLE_RATE as usize` (= 16000, 1 秒)
+    - `SILENCE_LOOKBACK_SAMPLES = WHISPER_SAMPLE_RATE as usize / 2` (= 8000, 0.5 秒)
+    - `SILENCE_THRESHOLD_RMS: f32 = 0.01` (-40dBFS 相当)
+  - 純粋関数 2 件を `impl TranscriptionStream for WhisperStream` の直後 (モジュールスコープ) に追加:
+    - `fn calculate_rms(samples: &[f32]) -> f32`
+    - `fn is_tail_silent(buffer: &[f32], lookback: usize, threshold: f32) -> bool`
+  - `flush_full_chunks` を (a) `while >= CHUNK_SAMPLES` 従来パス + (b) `if >= MIN_FLUSH_SAMPLES && is_tail_silent(...)` 早期 flush パスの 2 ブロック構成に変更
+  - テスト 6 件を `mod tests` 末尾に追加:
+    1. `test_calculate_rms_empty_slice_returns_zero`
+    2. `test_calculate_rms_silence_signal_below_threshold`
+    3. `test_calculate_rms_voice_signal_above_threshold`
+    4. `test_is_tail_silent_returns_false_when_buffer_too_short`
+    5. `test_is_tail_silent_detects_voice_then_silence_pattern`
+    6. `test_is_tail_silent_rejects_voice_then_voice`
+- 変更ファイル: `src-tauri/src/transcription.rs` (+106 行), `AGENT_LOG.md`
+- 検証結果:
+  1. `cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功 (出力なし)
+  2. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功 (出力なし)
+  3. `cargo test --manifest-path src-tauri/Cargo.toml --lib transcription` → 成功 (35 passed / 0 failed: 既存 29 件 + 新規 6 件、0.07s)
+  4. `git diff --check -- src-tauri/src/transcription.rs AGENT_LOG.md` → 成功 (出力なし)
+  5. `npm run build` → 成功 (vite build 940ms)
+  6. `cargo test` 全体: 未実施 (cmake を伴う whisper-rs-sys ビルドは時間制約のため省略)
+- 依存関係追加の有無と理由: なし。標準ライブラリのみで実装。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `feat(transcription): RMS ベース沈黙検知で Whisper チャンク遅延を短縮する`)。実機検証で `SILENCE_THRESHOLD_RMS` (初期値 0.01) を環境ノイズに合わせて調整する余地あり。

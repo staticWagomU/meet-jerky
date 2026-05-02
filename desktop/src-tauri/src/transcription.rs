@@ -252,9 +252,22 @@ impl WhisperStream {
     }
 
     /// 5 秒チャンクが溜まっていれば推論し、`pending_segments` に積む。
+    /// 5 秒未満でも最小チャンク長以上かつ末尾が沈黙の場合は早期 flush する。
     fn flush_full_chunks(&mut self) -> Result<(), String> {
+        // (a) 5 秒以上たまったら従来通り 5 秒で flush (現状維持、回帰なし)
         while self.accumulation_buffer.len() >= CHUNK_SAMPLES {
             let chunk: Vec<f32> = self.accumulation_buffer.drain(..CHUNK_SAMPLES).collect();
+            self.run_inference(&chunk)?;
+        }
+        // (b) 5 秒未満でも、最小チャンク長以上 + 末尾が沈黙なら早期 flush
+        if self.accumulation_buffer.len() >= MIN_FLUSH_SAMPLES
+            && is_tail_silent(
+                &self.accumulation_buffer,
+                SILENCE_LOOKBACK_SAMPLES,
+                SILENCE_THRESHOLD_RMS,
+            )
+        {
+            let chunk: Vec<f32> = std::mem::take(&mut self.accumulation_buffer);
             self.run_inference(&chunk)?;
         }
         Ok(())
@@ -362,6 +375,29 @@ impl TranscriptionStream for WhisperStream {
 
         Ok(std::mem::take(&mut self.pending_segments))
     }
+}
+
+// ─────────────────────────────────────────────
+// 沈黙検知ユーティリティ (純粋関数)
+// ─────────────────────────────────────────────
+
+/// `samples` の RMS (Root Mean Square) を計算する。空 slice では 0.0 を返す。
+fn calculate_rms(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+    let sum_sq: f32 = samples.iter().map(|s| s * s).sum();
+    (sum_sq / samples.len() as f32).sqrt()
+}
+
+/// `buffer` の末尾 `lookback` サンプルの RMS が `threshold` 以下なら true を返す。
+/// `buffer.len() < lookback` の場合は判定不可とみなして false を返す (誤って早期 flush しない安全側)。
+fn is_tail_silent(buffer: &[f32], lookback: usize, threshold: f32) -> bool {
+    if buffer.len() < lookback {
+        return false;
+    }
+    let tail = &buffer[buffer.len() - lookback..];
+    calculate_rms(tail) <= threshold
 }
 
 // ─────────────────────────────────────────────
@@ -986,6 +1022,16 @@ const CHUNK_DURATION_SECS: f64 = 5.0;
 
 /// 16kHz での5秒分のサンプル数
 const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
+
+/// 早期 flush を許可する最小チャンク長 (1 秒 @ 16kHz)。これ未満では Whisper の精度が落ちるため flush しない。
+const MIN_FLUSH_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize; // 16000
+
+/// 末尾の沈黙判定に使うウィンドウ長 (0.5 秒 @ 16kHz)。
+const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 2; // 8000
+
+/// 沈黙とみなす RMS 閾値 (-40dBFS 相当 ≈ 0.01)。実機の背景ノイズで再調整が必要。
+/// 調査担当推奨の -60dBFS (= 0.001) は会議室背景ノイズより低く誤判定リスクが大きいため、より安全側を選択。
+const SILENCE_THRESHOLD_RMS: f32 = 0.01;
 
 struct PendingTranscriptionStream {
     source: TranscriptionSource,
@@ -1729,5 +1775,65 @@ mod tests {
             )
             .expect("ElevenLabs エンジンの ensure_engine は同期的には成功する");
         assert!(manager.is_engine_loaded());
+    }
+
+    // ─────────────────────────────────────────
+    // 沈黙検知ロジック テスト
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn test_calculate_rms_empty_slice_returns_zero() {
+        assert_eq!(calculate_rms(&[]), 0.0);
+    }
+
+    #[test]
+    fn test_calculate_rms_silence_signal_below_threshold() {
+        let samples = vec![0.0001_f32; 16000]; // -80dBFS 相当
+        let rms = calculate_rms(&samples);
+        assert!(
+            rms < SILENCE_THRESHOLD_RMS,
+            "rms={rms} should be below SILENCE_THRESHOLD_RMS={SILENCE_THRESHOLD_RMS}"
+        );
+    }
+
+    #[test]
+    fn test_calculate_rms_voice_signal_above_threshold() {
+        let samples = vec![0.1_f32; 16000]; // -20dBFS 相当
+        let rms = calculate_rms(&samples);
+        assert!(
+            rms > SILENCE_THRESHOLD_RMS,
+            "rms={rms} should be above SILENCE_THRESHOLD_RMS={SILENCE_THRESHOLD_RMS}"
+        );
+    }
+
+    #[test]
+    fn test_is_tail_silent_returns_false_when_buffer_too_short() {
+        // buffer.len() < lookback の場合は誤検知防止のため false を返す
+        let buffer = vec![0.0001_f32; SILENCE_LOOKBACK_SAMPLES - 1];
+        assert!(
+            !is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
+            "buffer shorter than lookback should return false"
+        );
+    }
+
+    #[test]
+    fn test_is_tail_silent_detects_voice_then_silence_pattern() {
+        // 1 秒の音声 (-20dBFS) + 0.5 秒の沈黙 (-80dBFS)
+        let mut buffer = vec![0.1_f32; MIN_FLUSH_SAMPLES];
+        buffer.extend(vec![0.0001_f32; SILENCE_LOOKBACK_SAMPLES]);
+        assert!(
+            is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
+            "tail silence should be detected in voice+silence pattern"
+        );
+    }
+
+    #[test]
+    fn test_is_tail_silent_rejects_voice_then_voice() {
+        // 全部音声レベル (0.1) では沈黙と判定されないこと
+        let buffer = vec![0.1_f32; MIN_FLUSH_SAMPLES + SILENCE_LOOKBACK_SAMPLES];
+        assert!(
+            !is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
+            "all-voice buffer should not be detected as silent"
+        );
     }
 }
