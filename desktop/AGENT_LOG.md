@@ -12791,3 +12791,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で `meeting-prompt`, `live-caption`, `ring-light` の初期描画時に Webview 全面の白矩形が出ないこと、白いカード本体と録音状態表示が従来どおり見えることを確認する。
+
+### Meeting prompt: show overlay after detected payload emit
+
+- 開始日時: 2026-05-02 16:57:20 JST
+- 担当セッション: `mj-worker-meeting-prompt-show-after-payload-20260502-2`, `mj-main`
+- 役割: worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: 会議検知 prompt の空白/透明 overlay 表示を減らすため、app 検知と browser URL 検知の両方で `meeting-app-detected` payload の emit 成功後にだけ `show_meeting_prompt_window` を呼ぶ順序へ変更する。emit 失敗時は prompt window を表示せず、Notification Center の通知表示は維持する。UI/CSS/Pencil は変更しない。
+- 結果: `handle_detection` と `handle_browser_url_detection` で、先に `show_meeting_prompt_window` を呼ぶ処理をやめ、`state.app_handle.emit("meeting-app-detected", &payload)` が `Ok(())` の場合のみ prompt window を表示するようにした。これにより `MeetingDetectedBanner` が payload 受信前に `return null` の空 overlay として表示されるリスクを下げた。Notification Center の通知表示順は維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed, 166 filtered out）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker `mj-worker-meeting-prompt-show-after-payload-20260502-1` は長大なログ読解で差分ゼロのまま停滞したため停止。再投入した worker `mj-worker-meeting-prompt-show-after-payload-20260502-2` も差分ゼロのまま同じ読解範囲で停滞したため、自律運用停止回避として main が最小範囲で例外実装した。
+- 次アクション: 実機で検知時に空の prompt overlay が先に表示されず、payload 受信後に Pencil と同じ通知カードだけが表示されることを確認する。

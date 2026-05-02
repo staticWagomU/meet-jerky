@@ -108,7 +108,7 @@ pub fn start(app_handle: AppHandle) {
 
 /// Swift 側コールバックから呼ばれる共通ハンドラ。
 ///
-/// スロットリング → 通知表示 → Tauri イベント emit の順に処理する。
+/// スロットリング → 通知表示 → Tauri イベント emit → prompt 表示の順に処理する。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn handle_detection(bundle_id: &str, app_name: &str) {
     let state = match STATE.get() {
@@ -128,9 +128,6 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
         last_seen.insert(bundle_id.to_string(), now);
     }
 
-    // 隠れている場合でも、専用の録音開始プロンプトが見えるようにする。
-    crate::show_meeting_prompt_window(&state.app_handle);
-
     // 通知センターに通知を出す
     show_notification(&state.app_handle, app_name);
 
@@ -139,8 +136,14 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
         bundle_id: bundle_id.to_string(),
         app_name: app_name.to_string(),
     };
-    if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
-        eprintln!("[app_detection] emit failed: {e}");
+    match state.app_handle.emit("meeting-app-detected", &payload) {
+        Ok(()) => {
+            // Payload がフロントへ渡ってから表示し、空の overlay だけが見える瞬間を避ける。
+            crate::show_meeting_prompt_window(&state.app_handle);
+        }
+        Err(e) => {
+            eprintln!("[app_detection] emit failed: {e}");
+        }
     }
 }
 
@@ -178,7 +181,6 @@ fn handle_browser_url_detection(
         last_seen.insert(throttle_key, now);
     }
 
-    crate::show_meeting_prompt_window(&state.app_handle);
     show_notification(&state.app_handle, &classification.service);
 
     let payload = MeetingAppDetectedPayload::Browser {
@@ -188,8 +190,13 @@ fn handle_browser_url_detection(
         url_host: classification.host,
         browser_name: browser_name.to_string(),
     };
-    if let Err(e) = state.app_handle.emit("meeting-app-detected", &payload) {
-        eprintln!("[app_detection] browser emit failed: {e}");
+    match state.app_handle.emit("meeting-app-detected", &payload) {
+        Ok(()) => {
+            crate::show_meeting_prompt_window(&state.app_handle);
+        }
+        Err(e) => {
+            eprintln!("[app_detection] browser emit failed: {e}");
+        }
     }
 }
 
