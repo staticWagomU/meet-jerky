@@ -13029,3 +13029,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、Settings General の subtitle が Pencil の Settings Window と整合し、レイアウト内に自然に収まることを確認する。実機画面確認は未実施。
+
+### Live caption: align compact pill frame with Pencil
+
+- 開始日時: 2026-05-02 19:49:13 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP 確認済みの `meet-jerky-desktop.pen` / `Mock 5 - Caption Window Detail` (`vxLPK`) の compact caption pill (`hWr3c`) に合わせ、`.live-transcript-collapsed-preview` の `gap`, `border-radius` のみを調整する。`left`/`top` は `.live-transcript-panel-window` 内の相対座標として `249px`/`308px` を維持する。CSS の他箇所、React、Tauri/Rust、Pencil ファイル、白化/透明背景対策の大きな変更は行わない。コミット禁止。
+- 結果: `.live-transcript-collapsed-preview` の `left: 249px`, `top: 308px` を維持し、`.live-transcript-panel-window` の overlay root 座標 `left: 56px`, `top: 24px` と合算して Pencil の `x=305`, `y=332` に整合するようにした。`gap: 8px`, `border-radius: 13px` は Pencil の `gap=8`, `cornerRadius=13` と一致するため維持した。width/height/fill/stroke/dot/text は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、compact pill が Pencil 位置と視覚的分離に整合することを確認する。実機画面確認は未実施。
