@@ -12805,3 +12805,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker `mj-worker-meeting-prompt-show-after-payload-20260502-1` は長大なログ読解で差分ゼロのまま停滞したため停止。再投入した worker `mj-worker-meeting-prompt-show-after-payload-20260502-2` も差分ゼロのまま同じ読解範囲で停滞したため、自律運用停止回避として main が最小範囲で例外実装した。
 - 次アクション: 実機で検知時に空の prompt overlay が先に表示されず、payload 受信後に Pencil と同じ通知カードだけが表示されることを確認する。
+
+### Settings view: localize primary copy to match Pencil
+
+- 開始日時: 2026-05-02 17:14:18 JST
+- 担当セッション: `mj-worker-settings-copy-ja-20260502-1`, `mj-main`
+- 役割: worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認した設定画面（`SmOt4`, `DCzQ2`, `ZmyUB` など）の日本語中心コピーに合わせ、設定画面の主要カテゴリ、タイトルバー、録音透明性バッジ、サイドバー注記を日本語へ寄せる。挙動、CSS、設定保存ロジック、Pencil ファイルは変更しない。
+- 結果: `SETTINGS_CATEGORIES` の `label`, `kicker`, `title`, `subtitle` を日本語化した。タイトルバーの `Settings` と説明文、録音中表示バッジ、サイドバー注記 `Local-first capture` を日本語へ変更した。API名、モデル名、プロバイダ名、既に日本語化されている詳細文は維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker `mj-worker-settings-copy-ja-20260502-1` が長い `AGENT_LOG.md` 読解に入り、継続指示後も差分ゼロのまま停滞したため、自律運用停止回避として main が最小範囲で例外実装した。
+- 次アクション: 実機または画面確認でサイドバー文言が収まり、Pencil の日本語中心UIと整合することを確認する。

@@ -62,55 +62,53 @@ const LANGUAGES = [
 const SETTINGS_CATEGORIES = [
   {
     key: "general",
-    label: "General",
+    label: "一般",
     icon: Settings,
-    kicker: "General",
-    title: "General",
-    subtitle: "Core preferences, storage, and permission status for meeting capture.",
+    kicker: "基本設定",
+    title: "一般",
+    subtitle: "会議記録の保存先、権限状態、基本動作を確認します。",
   },
   {
     key: "detection",
-    label: "Detection",
+    label: "検知",
     icon: Search,
-    kicker: "Detection",
-    title: "Detection",
-    subtitle:
-      "Detect meetings reliably across browsers, conferencing apps, and audio cues.",
+    kicker: "会議検知",
+    title: "検知",
+    subtitle: "ブラウザ、会議アプリ、音声状態からオンライン会議を見つけます。",
   },
   {
     key: "audio",
-    label: "Audio",
+    label: "音声",
     icon: Mic,
-    kicker: "Audio",
-    title: "Audio",
-    subtitle:
-      "Input devices, separation, and quality - tuned for clean meeting capture.",
+    kicker: "音声取得",
+    title: "音声",
+    subtitle: "マイクと相手側音声を別トラックで安定して取得します。",
   },
   {
     key: "transcription",
-    label: "Transcription",
+    label: "文字起こし",
     icon: Type,
-    kicker: "Transcription",
-    title: "Transcription",
+    kicker: "リアルタイム文字起こし",
+    title: "文字起こし",
     subtitle:
-      "Choose how meet-jerky converts captured audio into searchable text - locally first, with optional services.",
+      "取得した音声を検索できるテキストへ変換する方法を選びます。",
   },
   {
     key: "aiMinutes",
-    label: "AI Minutes",
+    label: "AI議事録",
     icon: Sparkles,
-    kicker: "AI Minutes",
-    title: "AI Minutes",
+    kicker: "AI議事録",
+    title: "AI議事録",
     subtitle:
-      "Send transcripts to an AI provider to generate structured meeting minutes - only with your explicit consent.",
+      "明示的に許可した場合だけ、文字起こしから議事録やToDoを生成します。",
   },
   {
     key: "privacy",
-    label: "Privacy",
+    label: "プライバシー",
     icon: Shield,
-    kicker: "Privacy",
-    title: "Privacy",
-    subtitle: "Review local storage, external sending, and macOS permission transparency.",
+    kicker: "透明性",
+    title: "プライバシー",
+    subtitle: "ローカル保存、外部送信、macOS権限の状態を確認します。",
   },
 ] satisfies ReadonlyArray<{
   key: string;
@@ -530,10 +528,9 @@ export function SettingsView() {
             <span className="settings-window-control settings-window-control-zoom" />
           </div>
           <div className="settings-titlebar-copy">
-            <h2>Settings</h2>
+            <h2>設定</h2>
             <p className="settings-titlebar-subtitle">
-              meet-jerky controls recording, detection, and AI processing
-              transparency.
+              meet-jerky の録音、会議検知、AI処理の透明性を管理します。
             </p>
           </div>
           <span
@@ -545,7 +542,7 @@ export function SettingsView() {
               className="settings-recording-visibility-dot"
               aria-hidden="true"
             />
-            Visible while recording
+            録音中も表示されます
           </span>
         </div>
 
@@ -586,8 +583,8 @@ export function SettingsView() {
               })}
             </nav>
             <div className="settings-sidebar-note">
-              <span className="settings-sidebar-note-title">Local-first capture</span>
-              <span>AI sending is off until you enable minutes generation.</span>
+              <span className="settings-sidebar-note-title">ローカル優先</span>
+              <span>AI議事録を有効にするまで外部送信は行いません。</span>
             </div>
           </aside>
 
