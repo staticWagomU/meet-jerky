@@ -13238,3 +13238,44 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `meet-jerky-desktop.pen` を除外してコードとログのみコミットする。実機では会議検知通知が右上に表示され、透明フレーム内のカード/ピルが Pencil と一致し、初期描画で白い全面矩形が出ないことを確認する。
+
+### Claude 版メイン bootstrap: 自律改善ループ開始
+
+- 開始日時: 2026-05-02 23:00:20 JST
+- 担当セッション: `mjc-main`
+- 役割: メインエージェント (Claude Code 版 bootstrap)
+- 作業範囲: 自律運用開始確認、状態スナップショット記録、ユーザー直伝ガイダンス記録 (`AGENT_LOG.md` のみ最小例外として直接編集)
+- 指示内容: `docs/autonomous-main-prompt-claude.md` の手順に従って Claude 版メインを開始する。今後は実装・修正は worker (`scripts/claude-agent-start-worker.sh`) と調査担当 (`scripts/claude-agent-start-research.sh`) に委譲し、メインは調査・分解・監視・差分レビュー・検証・コミット・引き継ぎに専念する。Codex 版 (`mj-*`) のセッションには触らない。
+- 結果: 必須ドキュメント (`AGENTS.md`, `docs/product-concept.md`, `docs/agent-harness-claude.md`, `AGENT_LOG.md` 末尾) を確認した。`git status --short --branch` は `## main...origin/main [ahead 6]` でツリーは clean。直近コミットは `ca650eb feat(agent): Claude Code 用自律ハーネスを追加する` ほか UI 改善 5 件。`tmux list-sessions` で Codex 版 (`mj-main`, `mj-watchdog`, ペイン `0`) と Claude 版 (`mjc-main`, `mjc-watchdog`) が併存していることを確認した。`mjc-watchdog` は 2026-05-02 22:57:47 JST に起動済みで `logs/agent/claude-watchdog.log` に記録。toolchain は `cmake 4.1.2` / `cargo 1.95.0` / `npm 11.11.1` / `claude 2.1.126` がすべて利用可能で、Codex 版で記録されていた `cmake` 不在による Rust 全体テスト skip 制約は本セッションでは解消している (`scripts/agent-verify.sh` の挙動は要再確認)。
+- 変更ファイル: `AGENT_LOG.md`
+- 検証結果: 状態確認のみ。コード変更・検証コマンド実行はなし。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `mjc-research-priority-detection-audio-20260502` を `scripts/claude-agent-start-research.sh` で起動し、優先度1〜4 (クラッシュ修正、会議検知の網羅性と信頼性、マイク/デスクトップ音声の別トラック取得、リアルタイム文字起こしの低遅延化) のうち、Codex 版の直近ループで触れられていない領域を中心に、実装可能で価値が高い改善候補を整理させる。並行して、UI 系 worker を後で起動する場合に備え、ユーザー直伝の Pencil MCP 起点ワークフロー ((1) get_editor_state / batch_get / get_screenshot / snapshot_layout で現行モック取得 → (2) 実装側の対応コンポーネントとの差分抽出 → (3) 差分に絞った担当範囲を worker prompt に明記して `claude-agent-start-worker.sh` 起動 → (4) 差分レビュー時にも Pencil 座標と実装値を再照合) を遵守し、`.pen` ファイルは Pencil MCP 経由のみで参照しコミット対象から除外する。UI 改善コミットと機能改善コミットは粒度を分ける。
+- 指示元: ユーザー直伝 (bootstrap 経由)
+
+### ScreenCaptureKit audio format validation: block silent quality degradation
+
+- 開始日時: 2026-05-02 23:14:27 JST
+- 担当セッション: `mjc-worker-system-audio-format-validate-20260502`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 指示内容: ScreenCaptureKit の `CMSampleBuffer` フォーマット検証を追加し、想定外フォーマット (非 f32 PCM / channel 数不一致 / BigEndian) によるサイレント文字起こし品質劣化を防ぐ防御層を導入する。`screencapturekit` 1.5 crate が ASBD を公開していれば ASBD 検証、公開していなければ frame 寸法整合チェックに切り替える分岐実装。
+- 結果: **ステップ 2 (ASBD 検証) を採用**。`screencapturekit` 1.5.4 が `CMSampleBuffer::format_description()` → `CMFormatDescription` を公開しており、`audio_is_float()`, `audio_is_big_endian()`, `audio_bits_per_channel()`, `audio_channel_count()` が利用可能であることを確認した。純粋関数 `validate_audio_format_properties(is_float, is_big_endian, bits_per_channel, channel_count, expected_channels)` を追加し、macOS ラッパー `validate_audio_format_description(fmt, expected_channels)` から呼ぶ設計とした。`add_output_handler` 内で `audio_buffer_list` 取得後・サンプル処理前に検証し、不一致時は `FORMAT_WARN_ONCE`（`std::sync::Once`）で 1 度だけ `eprintln!` を出力してバッファを破棄する。TODO コメントを将来課題（`app.emit` 経由 UI 通知）に更新した。
+- 変更ファイル: `src-tauri/src/system_audio.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功 (出力なし)
+  2. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功 (出力なし)
+  3. `cargo test --manifest-path src-tauri/Cargo.toml --lib system_audio` → 成功 (13 passed: 既存 8 件 + 新規 5 件)
+  4. `git diff --check -- src-tauri/src/system_audio.rs AGENT_LOG.md` → 成功 (出力なし)
+  5. `npm run build` → 成功 (vite build 965ms)
+  6. メイン側追加検証: `scripts/agent-verify.sh src-tauri/src/system_audio.rs AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。**Rust 全体テスト 178 passed / 0 failed**。本セッションでは `cmake 4.1.2` が PATH 上に存在し、Codex 版で記録されていた `whisper-rs-sys` ビルド失敗による Rust 全体テスト skip 制約は解消されている。)
+- 追加関数: `validate_audio_format_properties` (純粋関数), `validate_audio_format_description` (macOS ラッパー)
+- 追加テスト: 5 件 (`test_validate_audio_format_valid_f32_native_mono`, `test_validate_audio_format_rejects_non_float`, `test_validate_audio_format_rejects_big_endian`, `test_validate_audio_format_rejects_channel_count_mismatch`, `test_validate_audio_format_rejects_unexpected_bits_per_channel`)
+- 警告抑制方式: `static FORMAT_WARN_ONCE: Once = Once::new()` で 1 度のみ `eprintln!`
+- 変更規模: `src-tauri/src/system_audio.rs` +118/-3 行
+- 依存関係追加の有無と理由: なし。`screencapturekit` の既存 re-export (`CMFormatDescription`) のみ使用。
+- 失敗理由: なし。
+- メイン側補足 (mjc-main, 最小例外): worker は新エントリをファイル**先頭** (`# Agent Log` 直後) へ追加してしまったため、本リポジトリの慣習である末尾追記順 (時系列順) を維持するため、メインがエントリ全体を末尾へ移動した。本文・検証結果・追加関数・追加テスト等の内容は worker が書いたまま改変していない。差分レビュー結果として、純粋関数の分離設計、macOS ラッパーの薄さ、`std::sync::Once` による警告抑制、既存 8 テストの非改変、新規 5 テストの網羅性は妥当と判断した。`format_description() == None` 時は検証をスキップする保守的な選択を採っているが、これは検証なしの現状実装と比べて後退ではないため許容。後続ループで「None も 1 度だけ警告」追加の余地あり。
+- 次アクション: 日本語 Conventional Commits 形式で `feat(audio): ScreenCaptureKit 入力フォーマットの整合検証を追加する` をコミットする (対象は `src-tauri/src/system_audio.rs` と `AGENT_LOG.md` のみ)。次の改善ループで残候補 B〜F (ElevenLabs/OpenAI Realtime 最終セグメント取りこぼし、Whisper 5 秒固定チャンク、Window Title 会議検知 fallback、Observer リーク) のいずれかを選定する。
+- 指示元: 調査担当 `mjc-research-priority-detection-audio-20260502` の推奨候補 A

@@ -6,7 +6,7 @@
 #[cfg(target_os = "macos")]
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 #[cfg(target_os = "macos")]
-use std::sync::Arc;
+use std::sync::{Arc, Once};
 #[cfg(target_os = "macos")]
 use std::time::Duration;
 
@@ -24,6 +24,8 @@ use tauri::Emitter;
 
 #[cfg(target_os = "macos")]
 use screencapturekit::prelude::*;
+#[cfg(target_os = "macos")]
+use screencapturekit::CMFormatDescription;
 
 #[cfg(target_os = "macos")]
 use crate::audio::{calculate_rms, AudioCapture};
@@ -76,6 +78,55 @@ fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32> {
         })
         .collect()
 }
+
+/// フォーマット検証の内部ロジック。純粋関数としてテスト可能。
+/// ScreenCaptureKit が配信する Float32 / NativeEndian / 設定チャンネル数を確認する。
+fn validate_audio_format_properties(
+    is_float: bool,
+    is_big_endian: bool,
+    bits_per_channel: Option<u32>,
+    channel_count: Option<u32>,
+    expected_channels: u32,
+) -> Result<(), &'static str> {
+    if !is_float {
+        return Err("非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)");
+    }
+    if is_big_endian {
+        return Err("BigEndian フォーマット (NativeEndian が必要)");
+    }
+    match bits_per_channel {
+        Some(32) => {}
+        Some(_) => return Err("bits_per_channel が 32 ではない"),
+        None => return Err("bits_per_channel を取得できない"),
+    }
+    match channel_count {
+        Some(ch) if ch == expected_channels => {}
+        Some(_) => return Err("channel 数が設定値と不一致"),
+        None => return Err("channel 数を取得できない"),
+    }
+    Ok(())
+}
+
+/// CMFormatDescription を受け取り ASBD 相当の検証を行う。
+/// screencapturekit 1.5 で CMFormatDescription が公開されているため ASBD 検証が可能。
+/// crate の音声フォーマット API が変化した場合はここを更新すること。
+#[cfg(target_os = "macos")]
+fn validate_audio_format_description(
+    fmt: &CMFormatDescription,
+    expected_channels: u32,
+) -> Result<(), &'static str> {
+    validate_audio_format_properties(
+        fmt.audio_is_float(),
+        fmt.audio_is_big_endian(),
+        fmt.audio_bits_per_channel(),
+        fmt.audio_channel_count(),
+        expected_channels,
+    )
+}
+
+/// フォーマット不一致の警告を 1 度だけ出力するための制御フラグ。
+#[cfg(target_os = "macos")]
+static FORMAT_WARN_ONCE: Once = Once::new();
 
 // ─────────────────────────────────────────────
 // ScreenCaptureKitCapture
@@ -192,8 +243,25 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     None => return,
                 };
 
-                // 各バッファから f32 PCM サンプルを安全に抽出する。
-                // TODO: format description を見て非 f32 PCM も判定・変換する。
+                // screencapturekit 1.5 の CMFormatDescription で ASBD 相当を検証し、
+                // 非 f32 PCM / BigEndian / channel 数不一致をサイレント品質劣化前にブロックする。
+                // 警告は FORMAT_WARN_ONCE で 1 度のみ出力。
+                // TODO(将来課題): app.emit 経由で UI へ警告を送る場合は FORMAT_WARN_ONCE を
+                //   Arc<AtomicBool> に置き換えて AppHandle をクロージャにキャプチャすること。
+                if let Some(fmt) = sample.format_description() {
+                    if let Err(reason) =
+                        validate_audio_format_description(&fmt, SYSTEM_AUDIO_CHANNELS as u32)
+                    {
+                        FORMAT_WARN_ONCE.call_once(|| {
+                            eprintln!(
+                                "[system_audio] 入力フォーマット検証失敗: {reason}。バッファを破棄します。"
+                            );
+                        });
+                        return;
+                    }
+                }
+
+                // 各バッファから f32 PCM サンプルを抽出する。
                 let mut mono_samples: Vec<f32> = Vec::new();
 
                 for buffer in audio_buffer_list.iter() {
@@ -424,5 +492,52 @@ mod tests {
         let data = pcm_bytes(&[f32::NAN, 1.0, 2.0, -2.0]);
 
         assert_eq!(f32_pcm_bytes_to_mono(&data, 2), vec![0.5, 0.0]);
+    }
+
+    // ── validate_audio_format_properties テスト ─────────────────────────────
+
+    #[test]
+    fn test_validate_audio_format_valid_f32_native_mono() {
+        // Float32 / NativeEndian / 32bit / 1ch (設定値と一致) → Ok
+        assert!(
+            validate_audio_format_properties(true, false, Some(32), Some(1), 1).is_ok(),
+            "正常な f32 モノラルフォーマットは Ok でなければならない"
+        );
+    }
+
+    #[test]
+    fn test_validate_audio_format_rejects_non_float() {
+        // Integer PCM (is_float = false) → Err
+        assert!(
+            validate_audio_format_properties(false, false, Some(32), Some(1), 1).is_err(),
+            "非 float フォーマットは拒否されなければならない"
+        );
+    }
+
+    #[test]
+    fn test_validate_audio_format_rejects_big_endian() {
+        // BigEndian フォーマット → Err (Apple Silicon / Intel は NativeEndian)
+        assert!(
+            validate_audio_format_properties(true, true, Some(32), Some(1), 1).is_err(),
+            "BigEndian フォーマットは拒否されなければならない"
+        );
+    }
+
+    #[test]
+    fn test_validate_audio_format_rejects_channel_count_mismatch() {
+        // ステレオ (2ch) だが設定は 1ch → Err
+        assert!(
+            validate_audio_format_properties(true, false, Some(32), Some(2), 1).is_err(),
+            "channel 数不一致は拒否されなければならない"
+        );
+    }
+
+    #[test]
+    fn test_validate_audio_format_rejects_unexpected_bits_per_channel() {
+        // 16-bit PCM → Err (f32 = 32bit が必須)
+        assert!(
+            validate_audio_format_properties(true, false, Some(16), Some(1), 1).is_err(),
+            "bits_per_channel が 32 以外は拒否されなければならない"
+        );
     }
 }
