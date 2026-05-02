@@ -12861,3 +12861,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、Pencil と同じ 76px の dismiss ボタンと、残り幅を取る `開始` ボタンが通知カード内で安定して収まることを確認する。
+
+### Live caption: match Pencil compact pill text and dot
+
+- 開始日時: 2026-05-02 17:34:11 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 5 - Caption Window Detail (`vxLPK`, `PxCi1`) に合わせ、下部 `.live-transcript-collapsed-preview` の visible text から `{visibleTrackSummary}` を外し、`録音中 · 字幕を表示中` のみにする。上部 health pill の `{visibleTrackSummary}`、aria-label/title、track 状態ロジックは維持する。collapsed preview の font-size を 10px、dot 色を `#ff6a00` にする。Tauri/Rust、overlay hide、イベント購読、透明背景、Pencil ファイルは変更しない。コミット禁止。
+- 結果: 下部 compact caption pill の可視文言を `録音中 · 字幕を表示中` のみに短縮した。上部 health pill の `visibleTrackSummary` 表示、aria-label/title、track 状態ロジックは変更していない。`.live-transcript-collapsed-preview` の font-size を 10px、dot 色を `#ff6a00` に変更した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、compact pill が Pencil の 290x26 表示内に収まることを確認する。

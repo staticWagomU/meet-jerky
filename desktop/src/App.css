@@ -1585,7 +1585,7 @@ body[data-window="ring-light"] .overlay-window {
   border-radius: 9px;
   color: #1d1d1f;
   background: #fafafae6;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -1593,7 +1593,7 @@ body[data-window="ring-light"] .overlay-window {
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #ff5c00;
+  background: #ff6a00;
 }
 
 @media (prefers-reduced-motion: reduce) {
