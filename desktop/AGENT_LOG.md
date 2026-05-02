@@ -12959,3 +12959,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で payload 欠落時に空/白い overlay が残らず、通常 payload 受信時の通知が隠れないことを確認する。
+
+### Settings privacy: align read-only copy with Pencil
+
+- 開始日時: 2026-05-02 19:05:55 JST
+- 担当セッション: mj-worker-settings-privacy-pencil-copy-20260502
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 4f - Settings Privacy に合わせ、privacy subtitle を `このMacに残すもの・外に出すもの・保持期間を決めます。` へ変更し、privacy の read-only card を `ローカルデータ`, `外部送信`, `テレメトリー` が分かるコピーへ整理する。未実装の保持期間/自動削除は今後の設定と明記し、OpenAI Realtime API / ElevenLabs Scribe v2 Realtime 選択時のみ外部送信が発生し得ること、ローカル Whisper / macOS SpeechAnalyzer は端末内処理であること、テレメトリーはオプトイン方針で文字起こしや音声を送らないことを伝える。CSS、設定保存ロジック、active category key、Tauri/Rust、Pencil ファイル、コミットは禁止。
+- 結果: privacy subtitle を Pencil 文言へ変更した。privacy read-only card に `ローカルデータ`, `外部送信`, `テレメトリー` の説明を追加し、保持期間/自動削除は未実装の今後設定であること、外部送信条件、端末内処理対象、テレメトリーのオプトイン方針と文字起こし本文/音声を送る設定未実装を明記した。実機画面確認は未実施。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: worker は実装とログ追記後に検証未実行のままだったため、メイン側で `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で privacy card の文言が Pencil の Settings Privacy 画面意図と整合し、カード内に収まることを確認する。実機画面確認は未実機確認。
