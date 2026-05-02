@@ -64,13 +64,17 @@ pub fn language_to_locale(language: &str) -> &'static str {
     }
 }
 
+fn normalize_segment_text(text: &str) -> String {
+    text.trim().to_string()
+}
+
 #[cfg(target_os = "macos")]
 mod macos {
     use std::ffi::{c_char, CStr, CString};
 
     use serde::Deserialize;
 
-    use super::language_to_locale;
+    use super::{language_to_locale, normalize_segment_text};
     use crate::transcription::{
         StreamConfig, TranscriptionSegment, TranscriptionSource, TranscriptionStream,
     };
@@ -167,7 +171,7 @@ mod macos {
 
             raw.into_iter()
                 .map(|r| TranscriptionSegment {
-                    text: r.text,
+                    text: normalize_segment_text(&r.text),
                     start_ms: r.start_ms,
                     end_ms: r.end_ms,
                     source: self.source,
@@ -241,6 +245,18 @@ mod tests {
         assert_eq!(language_to_locale("auto"), "ja-JP");
         assert_eq!(language_to_locale(""), "ja-JP");
         assert_eq!(language_to_locale("xx"), "ja-JP");
+    }
+
+    #[test]
+    fn normalize_segment_text_trims_edges_only() {
+        assert_eq!(
+            normalize_segment_text(" \tHello,  world.\n"),
+            "Hello,  world."
+        );
+        assert_eq!(
+            normalize_segment_text("句読点。  内部  空白"),
+            "句読点。  内部  空白"
+        );
     }
 
     #[test]

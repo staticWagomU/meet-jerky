@@ -13566,6 +13566,25 @@
 
 ### トランスクリプト保存前正規化: セグメント本文の前後空白をトリム
 
+- 開始日時: 2026-05-03 00:50:54 JST
+- 担当セッション: `mjc-worker-transcript-bridge-text-normalization-20260503`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: ライブ文字起こしの `TranscriptionSegment` を保存用 append 引数へ変換する際、`speaker` の既存正規化を維持しつつ、`segment.text` は保存前に前後空白だけをトリムする。内部空白や句読点などの本文表現は変更しない。
+- 結果: `segment_to_append_args_at` の戻り値 `text` を `segment.text.trim().to_string()` に変更し、保存前の最小後処理として前後空白のみ除去するコメントを追加した。`speaker` 正規化は変更なし。内部空白を維持したまま前後空白が落ちる回帰テストを 1 件追加した。
+- 変更ファイル: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果:
+  - `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml` -> 成功 (出力なし)
+  - `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` -> 成功 (出力なし)
+  - `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --lib transcript_bridge` -> 成功 (11 passed / 0 failed / 194 filtered out)
+  - `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" git diff --check -- src-tauri/src/transcript_bridge.rs AGENT_LOG.md` -> 成功 (ログ追記後に再実行)
+  - `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` -> 成功 (tsc && vite build、1915 modules transformed、built in 897ms)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューと必要なら追加の後処理候補検討、コミット候補を提示する。
+
+### トランスクリプト保存前正規化: セグメント本文の前後空白をトリム
+
 - 開始日時: 2026-05-03 00:51:23 JST
 - 担当セッション: `mjc-worker-transcript-bridge-text-normalization-20260503`
 - 役割: 作業担当エージェント (Claude Code 版)
@@ -13585,3 +13604,44 @@
 - 依存関係追加の有無と理由: なし。標準ライブラリのみで実装。
 - 失敗理由: なし。
 - 次アクション: メインエージェントによる差分レビューと必要なら次の後処理候補検討、コミット候補を提示する。
+
+### Apple Speech 保存前正規化: セグメント本文の前後空白をトリム
+
+- 開始日時: 2026-05-03 01:15:19 JST
+- 担当セッション: `mjc-worker-apple-speech-text-normalization-20260503`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 指示内容: Apple Speech の `RawSegment.text` を `TranscriptionSegment.text` に入れる前に、前後空白だけを落とす。`speaker` / `source` / `start_ms` / `end_ms` は維持し、内部空白は変えない。
+- 結果: `normalize_segment_text(text: &str) -> String` を追加し、Apple Speech の `drain_inner()` から前後空白トリムを通すようにした。内部空白を保持する回帰テスト 1 件を追加した。
+- 変更ファイル: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml` -> 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` -> 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --lib apple_speech` -> 成功 (6 passed / 0 failed / 200 filtered out)
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` -> 成功
+  5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/apple_speech.rs AGENT_LOG.md` -> 成功、Rust 全体テストは `cmake` 不在のため skip
+- 依存関係追加の有無と理由: なし。標準ライブラリのみで実装。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューとコミット判断。必要なら他の保存経路の同種正規化候補を検討する。
+
+### Apple Speech 保存前正規化: セグメント本文の前後空白をトリム
+
+- 開始日時: 2026-05-03 01:16:27 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 指示内容: `apple_speech.rs` の `drain_inner()` で `RawSegment.text` を `TranscriptionSegment.text` に入れる前に前後空白だけを `trim()` し、内部空白・句読点・`speaker` / `source` / `start_ms` / `end_ms` は変更しない。可能なら小さな純粋関数へ切り出して単体テストする。コミットは禁止。
+- 結果:
+  - `normalize_segment_text(text: &str) -> String` を追加し、`drain_inner()` の `TranscriptionSegment.text` 生成時に `normalize_segment_text(&r.text)` を使うようにした。
+  - 追加テストで前後の空白・タブ・改行だけが落ち、内部の連続スペースと句読点が保持されることを確認した。
+  - `speaker` / `source` / `start_ms` / `end_ms` は変更していない。
+- 変更ファイル: `src-tauri/src/apple_speech.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --lib apple_speech` → 成功 (6 passed / 0 failed / 200 filtered out)
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/apple_speech.rs AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のためスキップ)
+- 依存関係追加の有無と理由: なし。標準ライブラリの `trim()` のみ使用。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビュー。必要なら Apple Speech 実機経路でライブ字幕・履歴保存の前後空白が除去されることを確認する。
