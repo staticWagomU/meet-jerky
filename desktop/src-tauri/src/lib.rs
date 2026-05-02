@@ -267,12 +267,12 @@ fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) -> Resu
         let was_visible = window
             .is_visible()
             .map_err(|e| format!("ライブ文字起こしウィンドウの表示状態を確認できません: {e}"))?;
-        window
-            .show()
-            .map_err(|e| format!("ライブ文字起こしウィンドウを表示できません: {e}"))?;
         if !was_visible {
             let _ = window.emit("live-caption-reset", ());
         }
+        window
+            .show()
+            .map_err(|e| format!("ライブ文字起こしウィンドウを表示できません: {e}"))?;
     } else {
         window
             .hide()

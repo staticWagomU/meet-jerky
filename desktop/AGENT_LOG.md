@@ -13071,3 +13071,17 @@
 - 依存関係追加の有無と理由: なし。Tauri capability の既存権限追加のみで依存関係追加は不要。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、通知・ライブキャプション window の drag region から浮遊 window を移動できることを確認する。実機でのドラッグ操作確認は未実施。
+
+### Live caption: reset before showing hidden window
+
+- 開始日時: 2026-05-02 20:14:18 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: `set_live_caption_window_visible` の `visible == true` 分岐で、非表示から表示する場合は `window.show()` より前に `live-caption-reset` を emit する。表示済みの場合は reset を emit しない意図を維持する。位置決め、hide、エラーメッセージ、window builder、CSS、React、Pencil ファイルは変更しない。reset emit の失敗は既存方針に合わせ、表示自体を壊さない小さな変更にする。コミット禁止。
+- 結果: `was_visible` が false の場合だけ `window.show()` 前に `live-caption-reset` を emit する順序へ変更した。emit 失敗は従来通り握りつぶし、表示処理は継続する。表示済みの場合は reset を emit しない挙動を維持した。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で非表示からライブ字幕ウィンドウを再表示した際に、前回字幕や中間状態が一瞬見えないことを確認する。
