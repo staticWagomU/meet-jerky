@@ -12777,3 +12777,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で文字起こし中の音声ソース再同期時に、マイク start 失敗、相手側音声 start 失敗、`start_transcription` 失敗の各ケースで UI 状態が実態に沿うことを確認する。
+
+### Overlay windows: set transparent boot surface before React/CSS
+
+- 開始日時: 2026-05-02 16:48:57 JST
+- 担当セッション: `mj-worker-overlay-bootstrap-transparency-20260502-1`
+- 役割: 作業担当エージェント
+- 作業範囲: `index.html`, `src-tauri/src/lib.rs`, `src/main.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Tauri overlay window（`meeting-prompt`, `live-caption`, `ring-light`）の初期描画で CSS/React 初期化前に白い矩形が出るリスクを下げる。`meet-jerky-desktop.pen` の黒/透明キャンバス上に白いカードだけが浮く意図を保ち、Webview 全面を白く塗らないことを優先する。既存 command/permission 経路、Pencil 寸法、通知/字幕 UI 本体、hide 処理の意味は変えない。コミット禁止。
+- 結果: `index.html` に最小 inline CSS を追加し、bundle 読み込み前から `html`, `body`, `#root` の背景を透明、`body` の margin を 0 にした。overlay window の初期 URL を `index.html?window=...` に変更し、head 内の inline script で module 実行前に `document.documentElement.dataset.window` を設定するようにした。`src/main.tsx` は Tauri window label を主として維持し、query が label と一致する場合のみ dataset に反映することで初期 dataset と React 側の window 判定が矛盾しないようにした。`src/App.css` は既存透明背景指定で足りるため変更していない。
+- 変更ファイル: `index.html`, `src-tauri/src/lib.rs`, `src/main.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- index.html src-tauri/src/lib.rs src/main.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh index.html src-tauri/src/lib.rs src/main.tsx src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。実機 macOS の overlay 初期描画、通知/ライブキャプションの白化/不安定化解消は未実機確認（環境制約）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で `meeting-prompt`, `live-caption`, `ring-light` の初期描画時に Webview 全面の白矩形が出ないこと、白いカード本体と録音状態表示が従来どおり見えることを確認する。

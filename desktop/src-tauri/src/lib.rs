@@ -117,7 +117,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     WebviewWindowBuilder::new(
         app,
         MEETING_PROMPT_WINDOW_LABEL,
-        WebviewUrl::App("index.html".into()),
+        WebviewUrl::App("index.html?window=meeting-prompt".into()),
     )
     .title("meet-jerky recording prompt")
     .inner_size(MEETING_PROMPT_WIDTH, MEETING_PROMPT_HEIGHT)
@@ -135,7 +135,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     WebviewWindowBuilder::new(
         app,
         LIVE_CAPTION_WINDOW_LABEL,
-        WebviewUrl::App("index.html".into()),
+        WebviewUrl::App("index.html?window=live-caption".into()),
     )
     .title("meet-jerky live caption")
     .inner_size(LIVE_CAPTION_WIDTH, LIVE_CAPTION_HEIGHT)
@@ -153,7 +153,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     WebviewWindowBuilder::new(
         app,
         RING_LIGHT_WINDOW_LABEL,
-        WebviewUrl::App("index.html".into()),
+        WebviewUrl::App("index.html?window=ring-light".into()),
     )
     .title("meet-jerky ring light")
     .inner_size(RING_LIGHT_FALLBACK_WIDTH, RING_LIGHT_FALLBACK_HEIGHT)

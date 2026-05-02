@@ -11,8 +11,10 @@ import { RingLightWindow } from "./components/RingLightWindow";
 import "./App.css";
 
 const currentWindowLabel = getCurrentWindow().label;
-document.documentElement.dataset.window = currentWindowLabel;
-document.body.dataset.window = currentWindowLabel;
+const urlWindowLabel = new URLSearchParams(window.location.search).get("window");
+const windowLabel = urlWindowLabel === currentWindowLabel ? urlWindowLabel : currentWindowLabel;
+document.documentElement.dataset.window = windowLabel;
+document.body.dataset.window = windowLabel;
 
 const root =
   currentWindowLabel === "meeting-prompt" ? (
