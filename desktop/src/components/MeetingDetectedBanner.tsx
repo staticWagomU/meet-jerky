@@ -93,7 +93,6 @@ export function MeetingDetectedBanner() {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("会議検知通知の受信開始に失敗しました:", msg);
-          hasReceivedPromptContentRef.current = true;
           setListenerError(`会議検知通知の受信開始に失敗しました: ${msg}`);
         }
         return null;
@@ -109,7 +108,16 @@ export function MeetingDetectedBanner() {
             setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
             return;
           }
-          hasReceivedPromptContentRef.current = true;
+          if (!hasReceivedPromptContentRef.current) {
+            setListenerError(null);
+            void hideMeetingPromptWindow().catch((e) => {
+              console.error(
+                "会議検知前の不正な文字起こしステータス通知によるプロンプト非表示に失敗しました:",
+                toErrorMessage(e),
+              );
+            });
+            return;
+          }
           setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
         }
       },
@@ -120,7 +128,6 @@ export function MeetingDetectedBanner() {
           "会議検知プロンプトの文字起こしステータス受信開始に失敗しました:",
           msg,
         );
-        hasReceivedPromptContentRef.current = true;
         setListenerError(
           `会議検知プロンプトの文字起こしステータス受信開始に失敗しました: ${msg}`,
         );

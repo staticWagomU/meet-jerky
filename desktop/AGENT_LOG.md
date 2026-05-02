@@ -13085,3 +13085,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機で非表示からライブ字幕ウィンドウを再表示した際に、前回字幕や中間状態が一瞬見えないことを確認する。
+
+### Meeting prompt: ignore invalid status before meeting detection
+
+- 開始日時: 2026-05-02 20:17:16 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: `MeetingDetectedBanner` で、有効な会議検知 payload または `meeting-app-detected` の不正 payload を受け取った場合だけ「会議検知 prompt として表示する内容を受け取った」と扱う。`LIVE_CAPTION_STATUS_EVENT` の不正 payload は、会議検知 payload をまだ受け取っていない場合は prompt window を隠すだけにし、listenerError の通知カードを残さない。既に会議検知 payload を受け取っている場合は従来通り status payload 不正を listenerError として表示する。通常表示、2秒 empty boot hide、15秒 auto hide、開始/今回はしない、Escape、CSS、Tauri/Rust、Pencil ファイルは変更しない。コミット禁止。
+- 結果: `LIVE_CAPTION_STATUS_EVENT` の不正 payload 受信時に、会議検知由来の prompt 内容をまだ受け取っていなければ `listenerError` を残さず `set_meeting_prompt_window_visible(false)` で prompt window を隠す分岐を追加した。会議検知由来の payload 受信後は、従来通り不正 status payload を `listenerError` として表示する。listener 登録失敗は「payload 受信済み」として扱わないようにし、2秒 empty boot hide の判定を会議検知由来の表示内容に限定した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または統合イベント確認で、会議検知前の不正 status payload では通知カードが残らず、会議検知後の不正 status payload では listenerError が表示されることを確認する。
