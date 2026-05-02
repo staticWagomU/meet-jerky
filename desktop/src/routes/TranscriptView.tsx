@@ -1918,9 +1918,18 @@ export function TranscriptView() {
             )}
           </div>
         ) : (
-          <div className="meeting-popover-main menu-idle">
+          <div
+            className={`meeting-popover-main ${
+              isMeetingActive ? "menu-recording" : "menu-idle"
+            }`}
+          >
             <div className="meeting-popover-header">
-              <div className="meeting-popover-logo menu-idle-logo" aria-hidden="true">
+              <div
+                className={`meeting-popover-logo ${
+                  isMeetingActive ? "menu-recording-logo" : "menu-idle-logo"
+                }`}
+                aria-hidden="true"
+              >
                 <span />
                 <span />
                 <span />

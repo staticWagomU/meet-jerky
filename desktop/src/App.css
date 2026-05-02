@@ -2354,6 +2354,10 @@ body[data-window="ring-light"] .overlay-window {
   background: #1d1d1f;
 }
 
+.menu-recording-logo {
+  background: #ff6a00;
+}
+
 .menu-idle .meeting-popover-rec-pill {
   color: #128246;
   background: #eef6f0;

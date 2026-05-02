@@ -13170,6 +13170,20 @@
 - 失敗理由: worker は非対話実行中の追加修正指示を処理できず、メインがレビュー上の問題を最小修正した。
 - 次アクション: 意図しない `meet-jerky-desktop.pen` 変更をコミット対象から除外してコミットする。実機で event 配送済み/未配送の両ケースは未確認。
 
+### Menu popover: split idle and recording visual state
+
+- 開始日時: 2026-05-02 21:46:11 JST
+- 担当セッション: `mj-research-menu-popover-dirty-review-20260502`, `mj-worker-menu-recording-state-class-20260502`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント最小例外実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 直近コミット `3a3a911 feat(ui): update` の Pencil 更新に合わせた未コミットのメニューバーポップオーバー実装を前提に、`Menu Bar Popover Idle` (`H8YB18`) の黒ロゴ/緑 `監視中` pill と、Recording state のオレンジロゴ/オレンジ `録音中` pill が混ざらないよう状態別 class に分ける。`src/App.tsx`、録音開始/終了 handler、権限導線、履歴、Rust/Tauri、Pencil ファイルは変更しない。
+- 結果: 調査担当と worker は prompt 受理後の進行が遅く、最終出力が生成されなかったため停止した。`mj-main` が最小例外として first launch 以外の popover container を `isMeetingActive ? "menu-recording" : "menu-idle"` へ分岐し、logo も `menu-recording-logo` / `menu-idle-logo` に分けた。`menu-recording-logo` は Pencil の Recording state に合わせて `#ff6a00` にした。`menu-idle .meeting-popover-rec-pill` の green override は idle のみに限定され、recording では既存の orange rec pill base が効く。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css src/App.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research/worker が prompt 受理後に停滞したため、自律運用停止回避としてメインが最小範囲で例外実装した。
+- 次アクション: 実機では idle と recording のロゴ/pill 色が Pencil と一致することを確認する。
+
 ### Live caption: sync status before visibility toggle effect
 
 - 開始日時: 2026-05-02 21:28:04 JST
