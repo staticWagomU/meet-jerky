@@ -101,7 +101,7 @@ const SETTINGS_CATEGORIES = [
     kicker: "AI議事録",
     title: "AI議事録",
     subtitle:
-      "明示的に許可した場合だけ、文字起こしから議事録やToDoを生成します。",
+      "文字起こしをAIプロバイダーに送り、構造化された議事録を生成します。明示的な許可があるときだけ送信されます。",
   },
   {
     key: "privacy",
@@ -1134,9 +1134,20 @@ export function SettingsView() {
 
             {activeCategory === "aiMinutes" && (
               <div className="settings-readonly-card">
-                <h3 className="settings-readonly-card-title">AI 議事録</h3>
+                <h3 className="settings-readonly-card-title">AIプロバイダー</h3>
                 <p>
-                  AI 議事録の provider/template 設定はまだ実装していません。外部送信やプロバイダ側の課金が関わるため、明示的な同意を得たあとに今後の設定として扱います。
+                  AI 議事録の provider 設定はまだ実装していません。外部送信やプロバイダ側の課金が関わるため、明示的な同意を得たあとに今後の設定として扱います。
+                </p>
+                <p>
+                  Anthropic、OpenAI、ローカル処理候補は今後の選択肢として扱います。ローカル連携は現時点では有効化していません。
+                </p>
+                <h3 className="settings-readonly-card-title">議事録テンプレート</h3>
+                <p>
+                  サマリー、担当者付きアクションアイテム、決定事項などの生成セクションは今後の設定です。現在はテンプレート選択 UI を表示していません。
+                </p>
+                <h3 className="settings-readonly-card-title">実行履歴と利用額</h3>
+                <p>
+                  AI 議事録の実行履歴、利用額、月額上限は今後の透明性表示として扱います。課金が発生する操作はこの画面から自動実行しません。
                 </p>
               </div>
             )}

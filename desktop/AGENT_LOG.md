@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings AI minutes: align read-only copy with Pencil
+
+- 開始日時: 2026-05-02 19:08:12 JST
+- 担当セッション: `mj-worker-settings-ai-minutes-pencil-copy-20260502`, `mj-main`
+- 役割: worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 4e - Settings AI Minutes に合わせ、AI議事録 subtitle と read-only card を `AIプロバイダー`, `議事録テンプレート`, `実行履歴と利用額` の意図へ寄せる。ただし provider/template/利用額上限/ローカル連携を実装済みに見せず、外部送信や課金が絡むため明示的な同意後に扱う方針を維持する。CSS、設定保存ロジック、Tauri/Rust、Pencil ファイルは変更しない。
+- 結果: `aiMinutes` subtitle を Pencil 文言へ変更した。AI議事録の read-only card に provider、template、実行履歴/利用額の説明を追加し、各設定が未実装であること、ローカル連携は現時点で有効化していないこと、課金操作を自動実行しないことを明記した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: メイン側で `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker `mj-worker-settings-ai-minutes-pencil-copy-20260502` は長いドキュメント読解後に差分ゼロのまま進まなかったため、自律運用停止回避として main が最小範囲で例外実装した。
+- 次アクション: 検証後、実機または画面確認で AI議事録 read-only card の文言が Pencil の Settings AI Minutes 画面意図と整合し、カード内に収まることを確認する。実機画面確認は未実機確認。
+
 ### Ring light overlay: use current monitor placement
 
 - 開始日時: 2026-05-02 18:50:10 JST
