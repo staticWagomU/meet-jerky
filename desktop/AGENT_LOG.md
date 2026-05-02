@@ -13645,3 +13645,24 @@
 - 依存関係追加の有無と理由: なし。標準ライブラリの `trim()` のみ使用。
 - 失敗理由: なし。
 - 次アクション: メインエージェントによる差分レビュー。必要なら Apple Speech 実機経路でライブ字幕・履歴保存の前後空白が除去されることを確認する。
+
+### ライブ字幕ウィンドウ: 未実装ツール表示の削除
+
+- 開始日時: 2026-05-03 01:31:20 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `LiveCaptionWindow` の tools 側にある `マーク機能は未実装です` / `辞書表示機能は未実装です` / `あとで要約は未実装です` の表示を外し、音声メーター、録音中表示、閉じる操作、待機時 compact pill、エラー表示を壊さない。未使用 icon import や CSS ルールを最小限整理する。コミットは禁止。
+- 結果:
+  - `LiveCaptionWindow` の音声入力 aside から disabled のマーク、辞書、あとで要約ボタンを削除した。
+  - 未使用になった `BookOpen` / `Bookmark` / `Sparkles` の import を削除し、`Minus` import のみにした。
+  - 削除したボタン専用の `.live-transcript-tool-row` / `.live-transcript-ai-preview` CSS を削除した。
+  - 音声メーター、録音中表示、閉じる操作、待機時 compact pill、エラー表示の分岐・表示は変更していない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果:
+  1. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功 (`tsc && vite build`)
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust tests は `cmake` 不在のためスキップ)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビュー。必要なら実機またはスクリーンショットで expanded state の視覚確認を行う。

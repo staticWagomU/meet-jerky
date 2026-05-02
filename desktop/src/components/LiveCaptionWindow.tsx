@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { BookOpen, Bookmark, Minus, Sparkles } from "lucide-react";
+import { Minus } from "lucide-react";
 import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
@@ -571,24 +571,6 @@ export function LiveCaptionWindow() {
                 </span>
               </div>
             ))}
-            <div className="live-transcript-tool-row" data-tauri-drag-region>
-              <button type="button" disabled aria-label="マーク機能は未実装です">
-                <Bookmark aria-hidden="true" size={14} strokeWidth={2} />
-              </button>
-              <button type="button" disabled aria-label="辞書表示機能は未実装です">
-                <BookOpen aria-hidden="true" size={14} strokeWidth={2} />
-              </button>
-            </div>
-            <button
-              type="button"
-              className="live-transcript-ai-preview"
-              disabled
-              aria-label="あとで要約は未実装です。外部AI送信は開始しません"
-              title="あとで要約は未実装です。外部AI送信は開始しません。"
-            >
-              <Sparkles aria-hidden="true" size={14} strokeWidth={2} />
-              あとで要約
-            </button>
           </aside>
         </div>
 
