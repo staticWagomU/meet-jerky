@@ -13001,3 +13001,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で privacy card の文言が Pencil の Settings Privacy 画面意図と整合し、カード内に収まることを確認する。実機画面確認は未実機確認。
+
+### Settings audio: align system audio copy with Pencil
+
+- 開始日時: 2026-05-02 19:43:45 JST
+- 担当セッション: mj-worker-settings-audio-pencil-copy-20260502
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 4c - Settings Audio に合わせ、`SETTINGS_CATEGORIES` の audio subtitle を `入力デバイス・分離・品質を会議録音向けに最適化します。` へ変更し、audio category の相手側システム音声 read-only card に `システム音声ルーティング` の意図が分かる説明を追加する。既存の「相手側トラックはデスクトップ/アプリ音声」「画面収録権限に依存」は維持し、ループバック/テスト音/品質調整 UI は今後の設定で現時点では操作できないことを明記する。CSS、設定保存ロジック、Tauri/Rust、Pencil ファイルは変更しない。コミット禁止。
+- 結果: audio subtitle を Pencil 文言へ変更した。相手側システム音声 read-only card に、今後のシステム音声ルーティング設定では `ループバック: 会議アプリ` として Zoom・Meet・Teams・Webex の音声取得を扱う想定であること、ループバック、2秒のテスト音による取得信号プレビュー、音声品質調整は今後の設定項目で現時点ではこの画面から操作できないことを追記した。既存のデスクトップ/アプリ音声と画面収録権限の説明は維持した。実機画面確認は未実施。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。実機画面確認は未実施。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で audio read-only card の文言が Pencil の Settings Audio 画面意図と整合し、カード内に収まることを確認する。実機画面確認は未実機確認。
