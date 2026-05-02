@@ -2974,7 +2974,7 @@ body[data-window="ring-light"] .overlay-window {
   align-items: center;
   gap: 0.58rem;
   min-width: 0;
-  padding: 0 0.38rem 0.72rem 0.24rem;
+  padding: 0 6px 12px 4px;
 }
 
 .settings-sidebar-brand-icon {
