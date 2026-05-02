@@ -13224,3 +13224,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 Tauri のメニューバー表示で、右端の border/shadow が切れず、外側余白が透明であることを確認する。
+
+### Meeting prompt: keep Pencil inner layout while positioning window top-right
+
+- 開始日時: 2026-05-02 22:47:42 JST
+- 担当セッション: `019de8f1-9481-7502-a9c9-bc8be052790a`（調査担当）, `mj-main`
+- 役割: Pencil 照合、差分レビュー、メインエージェント最小例外修正
+- 作業範囲: `src-tauri/src/lib.rs`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: 未コミット差分として残っていた会議検知通知の右上表示変更を、Pencil の `Mock 2 - Notch Notification` (`D0qo1`) と照合し、透明 overlay の白化対策と UI 一致を崩さない小さな修正に絞る。`meet-jerky-desktop.pen` は参照のみでコミット対象にしない。
+- 結果: Pencil MCP で `D0qo1` を確認し、透明 560x280 フレーム内の通知カードは `x=100 y=38 width=360 height=172`、下部ピルは `x=184 y=210 width=192 height=34` のまま維持されていることを確認した。未コミット CSS は内部カードを右端へ寄せて Pencil と不一致だったため、内部配置は Pencil 座標へ戻した。Tauri 側は表示前に meeting prompt window 全体を上部右寄せへ配置する変更を維持し、右マージン計算が小さい画面で負側へはみ出しにくいよう `saturating_sub` で丸めた。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`（`src/App.css` は Pencil 座標と照合し、最終差分なし）
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `meet-jerky-desktop.pen` を除外してコードとログのみコミットする。実機では会議検知通知が右上に表示され、透明フレーム内のカード/ピルが Pencil と一致し、初期描画で白い全面矩形が出ないことを確認する。

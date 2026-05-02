@@ -34,6 +34,7 @@ const RING_LIGHT_WINDOW_LABEL: &str = "ring-light";
 const MEETING_PROMPT_WIDTH: f64 = 560.0;
 const MEETING_PROMPT_HEIGHT: f64 = 280.0;
 const MEETING_PROMPT_TOP_OFFSET: i32 = 64;
+const MEETING_PROMPT_RIGHT_MARGIN: i32 = 16;
 const LIVE_CAPTION_WIDTH: f64 = 900.0;
 const LIVE_CAPTION_HEIGHT: f64 = 360.0;
 const RING_LIGHT_FALLBACK_WIDTH: f64 = 1280.0;
@@ -182,7 +183,12 @@ fn current_monitor_or_primary(app: &tauri::AppHandle) -> tauri::Result<Option<Mo
     app.primary_monitor()
 }
 
-fn position_window_top_center(app: &tauri::AppHandle, label: &str, top_offset: i32) {
+fn position_window_top_right(
+    app: &tauri::AppHandle,
+    label: &str,
+    top_offset: i32,
+    right_margin: i32,
+) {
     let Some(window) = app.get_webview_window(label) else {
         return;
     };
@@ -195,8 +201,11 @@ fn position_window_top_center(app: &tauri::AppHandle, label: &str, top_offset: i
 
     let monitor_position = monitor.position();
     let monitor_size = monitor.size();
-    let x =
-        monitor_position.x + ((monitor_size.width.saturating_sub(window_size.width)) / 2) as i32;
+    let x = monitor_position.x
+        + monitor_size
+            .width
+            .saturating_sub(window_size.width)
+            .saturating_sub(right_margin.max(0) as u32) as i32;
     let y = monitor_position.y + top_offset;
     let _ = window.set_position(PhysicalPosition::new(x, y));
 }
@@ -230,7 +239,12 @@ fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Re
         return Err("会議検知通知ウィンドウが見つかりません".to_string());
     };
     if visible {
-        position_window_top_center(&app, MEETING_PROMPT_WINDOW_LABEL, MEETING_PROMPT_TOP_OFFSET);
+        position_window_top_right(
+            &app,
+            MEETING_PROMPT_WINDOW_LABEL,
+            MEETING_PROMPT_TOP_OFFSET,
+            MEETING_PROMPT_RIGHT_MARGIN,
+        );
         window
             .show()
             .map_err(|e| format!("会議検知通知ウィンドウを表示できません: {e}"))?;
