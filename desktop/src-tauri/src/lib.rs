@@ -346,6 +346,7 @@ pub fn run() {
             session_commands::finalize_and_save_session,
             session_commands::discard_session,
             session_commands::list_session_summaries_cmd,
+            app_detection::take_latest_meeting_detection,
             show_main_window,
             set_meeting_prompt_window_visible,
             set_live_caption_window_visible,

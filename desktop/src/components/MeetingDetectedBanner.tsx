@@ -67,6 +67,49 @@ export function MeetingDetectedBanner() {
 
   useEffect(() => {
     let disposed = false;
+    const applyMeetingDetectionPayload = (
+      payload: MeetingAppDetectedPayload,
+    ) => {
+      hasReceivedPromptContentRef.current = true;
+      setListenerError(null);
+      setPendingAction(null);
+      setStatusPayload(readPromptLiveCaptionStatus());
+      setDetected(payload);
+    };
+    const recoverLatestMeetingDetection = async () => {
+      const payload = await invoke<unknown>("take_latest_meeting_detection");
+      if (disposed || payload == null) {
+        return;
+      }
+      if (!isMeetingAppDetectedPayload(payload)) {
+        return;
+      }
+      applyMeetingDetectionPayload(payload);
+    };
+    const isSameMeetingDetectionPayload = (
+      a: MeetingAppDetectedPayload,
+      b: MeetingAppDetectedPayload,
+    ) =>
+      a.source === b.source &&
+      a.bundleId === b.bundleId &&
+      a.appName === b.appName &&
+      a.service === b.service &&
+      a.urlHost === b.urlHost &&
+      a.browserName === b.browserName;
+    const consumeLatestMeetingDetection = async (
+      deliveredPayload: MeetingAppDetectedPayload,
+    ) => {
+      const payload = await invoke<unknown>("take_latest_meeting_detection");
+      if (
+        disposed ||
+        payload == null ||
+        !isMeetingAppDetectedPayload(payload) ||
+        isSameMeetingDetectionPayload(payload, deliveredPayload)
+      ) {
+        return;
+      }
+      applyMeetingDetectionPayload(payload);
+    };
     const detectedUnlistenPromise = listen<unknown>(
       "meeting-app-detected",
       (e) => {
@@ -80,16 +123,28 @@ export function MeetingDetectedBanner() {
           setListenerError("会議検知通知の形式が不正です。");
           return;
         }
-        hasReceivedPromptContentRef.current = true;
-        setListenerError(null);
-        setPendingAction(null);
-        setStatusPayload(readPromptLiveCaptionStatus());
-        setDetected(e.payload);
+        applyMeetingDetectionPayload(e.payload);
+        void consumeLatestMeetingDetection(e.payload).catch((e) => {
+          console.error(
+            "受信済み会議検知通知の消費に失敗しました:",
+            toErrorMessage(e),
+          );
+        });
       },
     )
       .then((unlisten) => {
         if (!disposed) {
-          setListenerError(null);
+          setListenerError((current) =>
+            current?.startsWith("会議検知通知の受信開始に失敗しました:")
+              ? null
+              : current,
+          );
+          void recoverLatestMeetingDetection().catch((e) => {
+            console.error(
+              "最新の会議検知通知の回収に失敗しました:",
+              toErrorMessage(e),
+            );
+          });
         }
         return unlisten;
       })

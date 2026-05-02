@@ -83,6 +83,7 @@ pub struct MeetingUrlClassification {
 struct DetectionState {
     app_handle: AppHandle,
     last_seen: Mutex<HashMap<String, Instant>>,
+    latest_payload: Mutex<Option<MeetingAppDetectedPayload>>,
 }
 
 static STATE: OnceLock<DetectionState> = OnceLock::new();
@@ -96,6 +97,7 @@ pub fn start(app_handle: AppHandle) {
         .set(DetectionState {
             app_handle,
             last_seen: Mutex::new(HashMap::new()),
+            latest_payload: Mutex::new(None),
         })
         .is_ok();
 
@@ -135,6 +137,7 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
         bundle_id: bundle_id.to_string(),
         app_name: app_name.to_string(),
     };
+    *state.latest_payload.lock() = Some(payload.clone());
     match state.app_handle.emit("meeting-app-detected", &payload) {
         Ok(()) => {}
         Err(e) => {
@@ -186,12 +189,20 @@ fn handle_browser_url_detection(
         url_host: classification.host,
         browser_name: browser_name.to_string(),
     };
+    *state.latest_payload.lock() = Some(payload.clone());
     match state.app_handle.emit("meeting-app-detected", &payload) {
         Ok(()) => {}
         Err(e) => {
             eprintln!("[app_detection] browser emit failed: {e}");
         }
     }
+}
+
+#[tauri::command]
+pub fn take_latest_meeting_detection() -> Option<MeetingAppDetectedPayload> {
+    STATE
+        .get()
+        .and_then(|state| state.latest_payload.lock().take())
 }
 
 fn show_notification(app: &AppHandle, app_name: &str) {

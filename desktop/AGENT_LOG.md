@@ -13141,3 +13141,31 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `mj-main` はここで停止する。`mj-watchdog` が残っているため、恒久停止が必要な場合は watchdog 停止も別途必要。
+
+### Meeting prompt: recover latest detection after listener registration
+
+- 開始日時: 2026-05-02 21:16:30 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `src-tauri/src/lib.rs`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: hidden `meeting-prompt` webview の listener 登録前に Rust が `meeting-app-detected` を emit した場合でも、最新の会議検知 payload を一度だけ回収できるようにする。`DetectionState` に最新 `MeetingAppDetectedPayload` を保持し、app 検知・browser URL 検知の両方で emit 前に保存する。`take_latest_meeting_detection` command を追加して invoke handler に登録し、`MeetingDetectedBanner` では listener 登録成功後に command で回収した payload を event 受信時と同じ state 更新へ通す。通知、スロットリング、emit 失敗ログ、描画後に prompt window を表示する意図、会議検知前の status 不正や listener 登録失敗だけでは prompt window を表示しない意図は維持する。CSS、Pencil ファイル、window builder、capability、コミットは禁止。
+- 結果: `DetectionState` に `latest_payload` を追加し、app 検知と browser URL 検知で payload 構築後かつ emit 前に保存するようにした。`take_latest_meeting_detection` command は `STATE` 未初期化時に `None`、初期化済みなら `take()` で最新 payload を一度だけ返す。`MeetingDetectedBanner` は `meeting-app-detected` listener 登録成功後に最新 payload を回収し、有効 payload の場合は event 受信時と同じ `applyMeetingDetectionPayload` で状態更新する。listener 登録失敗や会議検知前の status 不正だけでは prompt window を表示しない既存意図は維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `src-tauri/src/lib.rs`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/lib.rs src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または統合イベント確認で、hidden `meeting-prompt` webview の listener 登録前に検知 event が発火しても prompt が表示されることと、複数検知時に最新 payload だけが一度回収されることを確認する。
+
+### Meeting prompt: clear delivered latest detection payload
+
+- 開始日時: 2026-05-02 21:20:14 JST
+- 担当セッション: `mj-worker-meeting-prompt-payload-clear-20260502`, `mj-main`
+- 役割: 作業担当エージェント、メインエージェント差分レビュー・最小修正
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 正常に `meeting-app-detected` event を受信できた場合に、Rust 側の `take_latest_meeting_detection` 用 payload が残り続け、後の hidden `meeting-prompt` webview 再読み込みで古い通知が再表示されるリスクを潰す。listener 登録成功直後は未配送 payload を回収して表示に反映し、正常 event 受信後は保存済み payload を消費する。ただし UI state の同一 payload 二重更新や後続 payload の取り落としを避ける。
+- 結果: worker は `recoverLatestMeetingDetection` と `consumeLatestMeetingDetection` の分割を追加し、検証を実行したが、不正な `meeting-app-detected` payload の既存表示挙動を不要に変更し、正常 event 後の単純消費で後続 payload を落とし得る差分になった。非対話 worker へ追加修正を投入できなかったため、`mj-main` が worker セッションを停止し、最小修正として不正 payload 分岐を既存挙動へ戻したうえで、消費時に返った payload が同一なら state 更新せず、異なる valid payload なら表示に反映する同一判定を追加した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: worker 実行時点で `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/lib.rs src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（Rust 全体テストは `cmake` 不在のため skip）。`mj-main` の追加修正後も `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/lib.rs src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml app_detection` 成功（7 passed）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker は非対話実行中の追加修正指示を処理できず、メインがレビュー上の問題を最小修正した。
+- 次アクション: 意図しない `meet-jerky-desktop.pen` 変更をコミット対象から除外してコミットする。実機で event 配送済み/未配送の両ケースは未確認。
