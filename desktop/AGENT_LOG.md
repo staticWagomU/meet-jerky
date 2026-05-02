@@ -1,5 +1,19 @@
 # Agent Log
 
+### Live caption overlay: reset after show and initial sync
+
+- 開始日時: 2026-05-02 18:47:11 JST
+- 担当セッション: `mj-worker-live-caption-show-reset-sync-20260502`, `mj-worker-live-caption-show-reset-sync-20260502-2`, `mj-main`
+- 役割: worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src-tauri/src/lib.rs`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの透明キャンバス/半透明カード前提を維持したまま、ライブ字幕 overlay の非表示から表示への境界で `live-caption-reset` を show 後に送るようにし、フロント側 reset 処理を単一関数化して初回 mount でも同期する。CSS、window size、透明 builder、meeting prompt、ring-light、capability、Pencil ファイルは変更しない。
+- 結果: `set_live_caption_window_visible(true)` で非表示から表示に戻す場合、`window.show()` 成功後に `live-caption-reset` を 1 回だけ emit するようにした。`LiveCaptionWindow` では reset 処理を `resetLiveCaptionState` に切り出し、初回 mount と `live-caption-reset` listener が同じ同期処理を使うようにした。
+- 変更ファイル: `src-tauri/src/lib.rs`, `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: メイン側で `git diff --check -- src-tauri/src/lib.rs src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs src/components/LiveCaptionWindow.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker セッション `mj-worker-live-caption-show-reset-sync-20260502` は読解後に実装へ進まず、`mj-worker-live-caption-show-reset-sync-20260502-2` も入力待ちから進まなかったため、自律運用停止回避として main が最小範囲で例外実装した。
+- 次アクション: 検証後、実機でライブ字幕 overlay の表示再開時に白い/空の window や古い字幕が残らないことを確認する。実機確認は未実機確認。
+
 ### Live caption window: skip reposition when hiding
 
 - 開始日時: 2026-05-01 14:51:39 JST

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { BookOpen, Bookmark, Minus, Sparkles } from "lucide-react";
@@ -145,6 +145,25 @@ export function LiveCaptionWindow() {
   );
   const [listenerError, setListenerError] = useState<string | null>(null);
 
+  const resetLiveCaptionState = useCallback(() => {
+    setLatestSegment(null);
+    setRecentSegments([]);
+    setLatestBySource(createEmptyLatestBySource());
+    setStatusPayload(
+      readStoredLiveCaptionStatus((e) => {
+        console.error(
+          "ライブ字幕ステータスの読み取りに失敗しました:",
+          toErrorMessage(e),
+        );
+      }),
+    );
+    setListenerError(null);
+  }, []);
+
+  useEffect(() => {
+    resetLiveCaptionState();
+  }, [resetLiveCaptionState]);
+
   useEffect(() => {
     let disposed = false;
     const statusUnlistenPromise = listen<unknown>(
@@ -167,18 +186,7 @@ export function LiveCaptionWindow() {
       if (disposed) {
         return;
       }
-      setLatestSegment(null);
-      setRecentSegments([]);
-      setLatestBySource(createEmptyLatestBySource());
-      setStatusPayload(
-        readStoredLiveCaptionStatus((e) => {
-          console.error(
-            "ライブ字幕ステータスの読み取りに失敗しました:",
-            toErrorMessage(e),
-          );
-        }),
-      );
-      setListenerError(null);
+      resetLiveCaptionState();
     });
     const resultUnlistenPromise = listen<unknown>(
       "transcription-result",
@@ -279,7 +287,7 @@ export function LiveCaptionWindow() {
           ),
         );
     };
-  }, []);
+  }, [resetLiveCaptionState]);
 
   const isErrorState = Boolean(
     listenerError || isTranscriptErrorSegment(latestSegment),
