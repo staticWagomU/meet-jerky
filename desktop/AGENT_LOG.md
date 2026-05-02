@@ -13057,3 +13057,17 @@
 - 依存関係追加の有無と理由: なし。CSS の透明背景補強のみで追加依存は不要。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、通知・ライブキャプション window の白い矩形化が再発しないことを確認する。実機画面確認は未実施。
+
+### Overlay windows: allow drag-region window movement
+
+- 開始日時: 2026-05-02 20:09:08 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/capabilities/default.json`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP 確認済みの透明親フレーム上に通知・字幕カード/ピルだけが浮く設計、および `MeetingDetectedBanner` と `LiveCaptionWindow` の広い `data-tauri-drag-region` を会議中の邪魔にならない浮遊 window として移動可能にする意図に合わせ、`src-tauri/capabilities/default.json` の `permissions` に `core:window:allow-start-dragging` を追加する。既存の `core:default`, `core:window:allow-hide`, opener, notification 権限は維持し、React、CSS、Rust、Pencil ファイル、他の capability scope は変更しない。コミット禁止。
+- 結果: `permissions` に `core:window:allow-start-dragging` を追加した。既存の `core:default`, `core:window:allow-hide`, opener, notification 権限は維持した。指定外ファイルは変更していない。
+- 変更ファイル: `src-tauri/capabilities/default.json`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/capabilities/default.json AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/capabilities/default.json AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。Tauri capability の既存権限追加のみで依存関係追加は不要。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、通知・ライブキャプション window の drag region から浮遊 window を移動できることを確認する。実機でのドラッグ操作確認は未実施。
