@@ -2845,7 +2845,7 @@ body[data-window="ring-light"] .overlay-window {
   align-items: center;
   gap: 0.85rem;
   min-height: 52px;
-  padding: 0.62rem 1rem;
+  padding: 0 18px;
   border-bottom: 1px solid #e9e9eb;
   background-color: #ffffff99;
   -webkit-backdrop-filter: blur(18px);
