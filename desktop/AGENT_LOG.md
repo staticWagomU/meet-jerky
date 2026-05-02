@@ -13169,3 +13169,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker は非対話実行中の追加修正指示を処理できず、メインがレビュー上の問題を最小修正した。
 - 次アクション: 意図しない `meet-jerky-desktop.pen` 変更をコミット対象から除外してコミットする。実機で event 配送済み/未配送の両ケースは未確認。
+
+### Live caption: sync status before visibility toggle effect
+
+- 開始日時: 2026-05-02 21:28:04 JST
+- 担当セッション: `mj-research-overlay-lifecycle-next-20260502`, `mj-worker-live-caption-status-before-show-20260502`, `mj-main`
+- 役割: research 起動・監視、worker 起動・監視、メインエージェント最小例外実装
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認した `Expanded · Display controls` (`PxCi1`) のように透明 canvas 上の字幕カードへ現在の Mic/System 状態を表示する意図に合わせ、live-caption window 表示切替 effect を `writeStoredLiveCaptionStatus` / `LIVE_CAPTION_STATUS_EVENT` emit effect より後に実行される順序へ移す。Rust 側の reset-before-show 方針、表示条件、unmount hide cleanup、status payload 内容、CSS、Pencil ファイルは変更しない。
+- 結果: 調査担当は `src-tauri/src/lib.rs` の `live-caption-reset` を show 後へ移す案を推奨したが、直近の既存意図は reset-before-show であり、白化/古い状態対策としては frontend の status 同期順序を直す方が小さく整合的と判断した。worker は prompt 受理後に進捗せず出力ファイルも生成しなかったため停止し、`mj-main` が `set_live_caption_window_visible` 表示切替 effect を live-caption status 保存/emit effect の後ろへ移動した。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker が prompt 受理後に停滞したため、自律運用停止回避としてメインが最小範囲で例外実装した。
+- 次アクション: 実機では非表示からライブ字幕 window を表示した瞬間に古いステータスが見えないことを確認する。

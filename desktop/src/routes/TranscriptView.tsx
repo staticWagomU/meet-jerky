@@ -1223,17 +1223,6 @@ export function TranscriptView() {
   }, []);
 
   useEffect(() => {
-    void invoke("set_live_caption_window_visible", {
-      visible: isMeetingActive || isTranscribing,
-    }).catch((e) => {
-      console.error(
-        "ライブ字幕ウィンドウの表示切替に失敗しました:",
-        toErrorMessage(e),
-      );
-    });
-  }, [isMeetingActive, isTranscribing]);
-
-  useEffect(() => {
     return () => {
       void invoke("set_live_caption_window_visible", { visible: false }).catch(
         (e) => {
@@ -1417,6 +1406,17 @@ export function TranscriptView() {
     micTrackStatusLabel,
     systemAudioTrackStatusLabel,
   ]);
+
+  useEffect(() => {
+    void invoke("set_live_caption_window_visible", {
+      visible: isMeetingActive || isTranscribing,
+    }).catch((e) => {
+      console.error(
+        "ライブ字幕ウィンドウの表示切替に失敗しました:",
+        toErrorMessage(e),
+      );
+    });
+  }, [isMeetingActive, isTranscribing]);
 
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,
