@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import type { MeetingAppDetectedPayload } from "../types";
@@ -21,6 +21,7 @@ import { BOTH_TRACKS_DEVICE_LABEL } from "../utils/audioTrackLabels";
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
+const PROMPT_EMPTY_BOOT_HIDE_MS = 2000;
 const INVALID_STATUS_PAYLOAD_ERROR =
   "会議検知プロンプトの状態通知の形式が不正です。";
 const PROMPT_OPERATION_LABEL =
@@ -58,6 +59,7 @@ export function MeetingDetectedBanner() {
   const [listenerError, setListenerError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] =
     useState<PendingPromptAction>(null);
+  const hasReceivedPromptContentRef = useRef(false);
 
   useEffect(() => {
     let disposed = false;
@@ -68,11 +70,13 @@ export function MeetingDetectedBanner() {
           return;
         }
         if (!isMeetingAppDetectedPayload(e.payload)) {
+          hasReceivedPromptContentRef.current = true;
           setDetected(null);
           setPendingAction(null);
           setListenerError("会議検知通知の形式が不正です。");
           return;
         }
+        hasReceivedPromptContentRef.current = true;
         setListenerError(null);
         setPendingAction(null);
         setStatusPayload(readPromptLiveCaptionStatus());
@@ -89,6 +93,7 @@ export function MeetingDetectedBanner() {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("会議検知通知の受信開始に失敗しました:", msg);
+          hasReceivedPromptContentRef.current = true;
           setListenerError(`会議検知通知の受信開始に失敗しました: ${msg}`);
         }
         return null;
@@ -104,6 +109,7 @@ export function MeetingDetectedBanner() {
             setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
             return;
           }
+          hasReceivedPromptContentRef.current = true;
           setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
         }
       },
@@ -114,6 +120,7 @@ export function MeetingDetectedBanner() {
           "会議検知プロンプトの文字起こしステータス受信開始に失敗しました:",
           msg,
         );
+        hasReceivedPromptContentRef.current = true;
         setListenerError(
           `会議検知プロンプトの文字起こしステータス受信開始に失敗しました: ${msg}`,
         );
@@ -136,6 +143,24 @@ export function MeetingDetectedBanner() {
             toErrorMessage(e),
           );
         });
+    };
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      if (hasReceivedPromptContentRef.current) {
+        return;
+      }
+      void hideMeetingPromptWindow().catch((e) => {
+        console.error(
+          "空の会議検知プロンプトの非表示に失敗しました:",
+          toErrorMessage(e),
+        );
+      });
+    }, PROMPT_EMPTY_BOOT_HIDE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
     };
   }, []);
 

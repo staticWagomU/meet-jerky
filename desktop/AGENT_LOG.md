@@ -12917,3 +12917,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 指定検証を実行し、保存済み履歴表示で Pencil の `履歴で開く` 表記と整合していることを必要に応じて実機または画面で確認する。
+
+### Meeting prompt: hide empty boot overlay when payload is missing
+
+- 開始日時: 2026-05-02 18:26:01 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: `MeetingDetectedBanner` で起動後しばらく `detected` も `listenerError` も受け取れない場合、`set_meeting_prompt_window_visible(false)` で prompt window を隠すガードを追加する。通常の auto-hide 15秒、Escape、開始/今回はしない、表示文言、Pencil の2ボタン構成は維持する。Tauri/Rust、CSS、Pencilファイルは変更しない。コミット禁止。
+- 結果: 初回マウント後 2 秒以内に有効な会議検知 payload または listener error を受け取れない場合だけ、既存の `set_meeting_prompt_window_visible(false)` 経路で prompt window を隠す起動時ガードを追加した。payload 不正、listener 登録失敗、status payload 不正などで `listenerError` を表示する場合は受信済みとして扱い、ガードで隠さないようにした。React StrictMode の二重 effect でも古いタイマーが残らないよう cleanup で timeout を解除する。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。実機での白化再現確認は未実施。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で payload 欠落時に空/白い overlay が残らず、通常 payload 受信時の通知が隠れないことを確認する。
