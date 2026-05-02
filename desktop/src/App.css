@@ -3068,14 +3068,14 @@ body[data-window="ring-light"] .overlay-window {
   border: 1px solid #e9e9eb;
   border-radius: 8px;
   color: #666;
-  background-color: #ffffffb8;
-  font-size: 0.68rem;
+  background-color: #ffffff80;
+  font-size: 0.625rem;
   line-height: 1.35;
 }
 
 .settings-sidebar-note-title {
   color: #1a1a1a;
-  font-size: 0.72rem;
+  font-size: 0.6875rem;
   font-weight: 760;
 }
 

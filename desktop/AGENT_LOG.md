@@ -12,6 +12,20 @@
 - 失敗理由: research セッションは thread limit で起動できなかったため、調査結果は Pencil 画面と既存 CSS の静的比較で判断した。
 - 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
 
+# Settings sidebar note: match Pencil local privacy note density
+
+- 開始日時: 2026-05-03 04:18:22 JST
+- 担当セッション: `Codex main`
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の local privacy note を確認し、設定サイドバー下部の注記がやや濃く大きく見えるなら、背景と文字密度だけを最小差分で寄せる。文言、レイアウト、ロジック、検出、保存処理は変更しない。
+- 結果: `settings-sidebar-note` の背景をより薄い白へ、本文とタイトルのサイズを Pencil に近い密度へ調整した。その他の Settings レイアウト、文言、挙動は維持した。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
+- 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
 # Meeting detected banner: align notch icon and start button with Pencil
 
 - 開始日時: 2026-05-03 03:11:15 JST
