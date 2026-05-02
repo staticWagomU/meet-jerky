@@ -2843,7 +2843,7 @@ body[data-window="ring-light"] .overlay-window {
 .settings-titlebar {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 14px;
   min-height: 52px;
   padding: 0 18px;
   border-bottom: 1px solid #e9e9eb;
