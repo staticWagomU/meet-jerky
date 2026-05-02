@@ -12875,3 +12875,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、compact pill が Pencil の 290x26 表示内に収まることを確認する。
+
+### Settings view: align detection and transparency copy with Pencil
+
+- 開始日時: 2026-05-02 17:37:40 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 4 - Settings Window (`SmOt4`) と Settings 系フレームに合わせ、`SETTINGS_CATEGORIES` の detection category 可視コピー、titlebar subtitle、録音透明性 pill、sidebar note を Pencil 表記へ寄せる。設定保存ロジック、カテゴリ key、CSS、Tauri/Rust、Pencil ファイルは変更しない。コミット禁止。
+- 結果: detection category の `label` を `検出`、`kicker` を `会議検出`、`title` を `検出`、`subtitle` を `ブラウザ・会議アプリ・音声手がかりを横断して会議を確実に検出します。` に変更した。titlebar subtitle を `録音・検出・AI処理の透明性を管理します。` に変更した。`.settings-recording-visibility-pill` の `aria-label`、`title`、可視テキストを `録音中は表示されます` に統一した。sidebar note を `ローカル優先で記録` / `議事録生成を有効にするまでAI送信はオフです。` に変更した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、設定画面の Detection/検出 系コピーが Pencil と整合し、サイドバーと titlebar 内で自然に収まることを確認する。

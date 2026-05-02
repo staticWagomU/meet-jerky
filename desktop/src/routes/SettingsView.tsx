@@ -70,11 +70,12 @@ const SETTINGS_CATEGORIES = [
   },
   {
     key: "detection",
-    label: "検知",
+    label: "検出",
     icon: Search,
-    kicker: "会議検知",
-    title: "検知",
-    subtitle: "ブラウザ、会議アプリ、音声状態からオンライン会議を見つけます。",
+    kicker: "会議検出",
+    title: "検出",
+    subtitle:
+      "ブラウザ・会議アプリ・音声手がかりを横断して会議を確実に検出します。",
   },
   {
     key: "audio",
@@ -530,19 +531,19 @@ export function SettingsView() {
           <div className="settings-titlebar-copy">
             <h2>設定</h2>
             <p className="settings-titlebar-subtitle">
-              meet-jerky の録音、会議検知、AI処理の透明性を管理します。
+              録音・検出・AI処理の透明性を管理します。
             </p>
           </div>
           <span
             className="settings-recording-visibility-pill"
-            aria-label="録音中も表示されます"
-            title="録音中も表示されます"
+            aria-label="録音中は表示されます"
+            title="録音中は表示されます"
           >
             <span
               className="settings-recording-visibility-dot"
               aria-hidden="true"
             />
-            録音中も表示されます
+            録音中は表示されます
           </span>
         </div>
 
@@ -583,8 +584,10 @@ export function SettingsView() {
               })}
             </nav>
             <div className="settings-sidebar-note">
-              <span className="settings-sidebar-note-title">ローカル優先</span>
-              <span>AI議事録を有効にするまで外部送信は行いません。</span>
+              <span className="settings-sidebar-note-title">
+                ローカル優先で記録
+              </span>
+              <span>議事録生成を有効にするまでAI送信はオフです。</span>
             </div>
           </aside>
 
