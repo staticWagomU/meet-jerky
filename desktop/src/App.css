@@ -340,8 +340,10 @@ body[data-window="ring-light"] .overlay-window {
   display: flex;
   flex-direction: column;
   gap: 0;
-  width: 312px;
+  box-sizing: border-box;
+  width: 328px;
   min-height: 0;
+  padding: 8px;
   color: var(--color-text);
   background: transparent;
   border: 0;
@@ -514,6 +516,7 @@ body[data-window="ring-light"] .overlay-window {
   display: flex;
   flex-direction: column;
   gap: 0;
+  box-sizing: border-box;
   width: 312px;
   height: auto;
 }
@@ -2015,7 +2018,8 @@ body[data-window="ring-light"] .overlay-window {
 .meeting-popover-control {
   align-items: stretch;
   flex-direction: column;
-  width: min(100%, 312px);
+  box-sizing: border-box;
+  width: 312px;
   padding: 0;
   border-radius: 14px;
   border-color: #d7d7d9aa;

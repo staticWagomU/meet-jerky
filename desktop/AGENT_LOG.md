@@ -13210,3 +13210,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機 Tauri のメニューバー表示で、ウィンドウ外周が透明になり、右側と下部の余白が消えていることを確認する。
+
+### Menu bar popover: keep transparent gutter for card edge
+
+- 開始日時: 2026-05-02 21:51:01 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: UI 修正担当
+- 作業範囲: `src/App.css`, `src-tauri/tauri.conf.json`, `AGENT_LOG.md`
+- 指示内容: メニューバー UI の右側が切れているため修正する。
+- 結果: Tauri main window を 328x516 に広げ、app shell に透明な 8px padding を追加した。カード本体は 312px のまま維持し、`box-sizing: border-box` を明示して border が幅外にはみ出さないようにした。背景は透明のまま。
+- 変更ファイル: `src/App.css`, `src-tauri/tauri.conf.json`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`git diff --check -- src/App.css src-tauri/tauri.conf.json` 成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機 Tauri のメニューバー表示で、右端の border/shadow が切れず、外側余白が透明であることを確認する。
