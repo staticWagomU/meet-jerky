@@ -182,8 +182,8 @@ function sessionMatchesQuery(
 }
 
 /**
- * 保存済みセッションの一覧画面。
- * 各行から「履歴ファイルを開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
+ * 保存済み文字起こし履歴の一覧画面。
+ * 各行から「履歴を開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
  * 解決させる。
  */
 export function SessionList() {
@@ -290,7 +290,7 @@ export function SessionList() {
   );
 
   if (isLoading) {
-    const loadingLabel = "セッション履歴一覧を読み込み中";
+    const loadingLabel = "文字起こし履歴一覧を読み込み中";
     return (
       <div
         className="session-list"
@@ -308,10 +308,10 @@ export function SessionList() {
 
   if (error) {
     const errorMessage = toErrorMessage(error);
-    const errorLabel = `セッション履歴一覧エラー: ${errorMessage}`;
+    const errorLabel = `文字起こし履歴一覧エラー: ${errorMessage}`;
     const retryErrorLabel = isFetching
-      ? "セッション履歴一覧を読み込み中"
-      : "セッション履歴一覧を再読み込み";
+      ? "文字起こし履歴一覧を読み込み中"
+      : "文字起こし履歴一覧を再読み込み";
     return (
       <div className="session-list" aria-busy={isFetching}>
         <p
@@ -320,7 +320,7 @@ export function SessionList() {
           aria-label={errorLabel}
           title={errorLabel}
         >
-          セッション履歴一覧の取得に失敗しました: {errorMessage}
+          文字起こし履歴一覧の取得に失敗しました: {errorMessage}
         </p>
         <button
           type="button"
@@ -339,15 +339,15 @@ export function SessionList() {
   const isSessionListBusy = isFetching || pendingAction !== null;
   const searchQueryLabel = formatSearchQueryForLabel(trimmedSearchQuery);
   const reloadSessionsLabel = isFetching
-    ? "セッション履歴一覧を読み込み中"
-    : "セッション履歴一覧を再読み込み";
+    ? "文字起こし履歴一覧を読み込み中"
+    : "文字起こし履歴一覧を再読み込み";
   const sessionCountLabel = isFetching
     ? `保存済み ${sessions.length} 件、更新中`
     : trimmedSearchQuery
       ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
       : `保存済み ${sessions.length} 件`;
   const sessionSearchLabel =
-    "セッション履歴を検索。スペース区切りで複数語を指定できます";
+    "文字起こし履歴を検索。スペース区切りで複数語を指定できます";
   const sessionSearchInputLabel = trimmedSearchQuery
     ? `${sessionSearchLabel}。現在の検索語 ${searchQueryLabel}。Escape キーでクリアできます`
     : sessionSearchLabel;
@@ -357,7 +357,7 @@ export function SessionList() {
       : "入力中の空白検索をクリア"
     : "検索語は入力されていません";
   const sessionListLabel = [
-    "セッション履歴",
+    "文字起こし履歴",
     sessionCountLabel,
     trimmedSearchQuery ? `検索語 ${searchQueryLabel}` : null,
     pendingAction ? "履歴ファイル操作中" : null,
@@ -374,7 +374,7 @@ export function SessionList() {
     >
       <div className="session-list-header">
         <div className="session-list-heading">
-          <h2 className="session-list-title">セッション履歴</h2>
+          <h2 className="session-list-title">文字起こし履歴</h2>
           <span
             className="session-list-count"
             role="status"
@@ -434,16 +434,16 @@ export function SessionList() {
         <div
           className="session-list-error"
           role="alert"
-          aria-label={`セッション履歴ファイル操作エラー: ${actionError}`}
-          title={`セッション履歴ファイル操作エラー: ${actionError}`}
+          aria-label={`文字起こし履歴ファイル操作エラー: ${actionError}`}
+          title={`文字起こし履歴ファイル操作エラー: ${actionError}`}
         >
           <span>{actionError}</span>
           <button
             type="button"
             className="control-btn control-btn-clear"
             onClick={() => setActionError(null)}
-            aria-label="セッション履歴ファイル操作エラーを閉じる"
-            title="セッション履歴ファイル操作エラーを閉じる"
+            aria-label="文字起こし履歴ファイル操作エラーを閉じる"
+            title="文字起こし履歴ファイル操作エラーを閉じる"
           >
             閉じる
           </button>
@@ -678,7 +678,7 @@ function SessionRow({
             ? "開いています..."
             : isWaitingForOtherAction
               ? otherActionButtonText
-              : "履歴ファイルを開く"}
+              : "履歴を開く"}
         </button>
         <button
           type="button"

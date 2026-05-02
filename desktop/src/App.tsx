@@ -166,7 +166,7 @@ function App() {
         <Link
           to="/sessions"
           className="nav-link"
-          title="保存済みセッション履歴"
+          title="保存済み文字起こし履歴"
           activeProps={{ "aria-current": "page" }}
         >
           履歴

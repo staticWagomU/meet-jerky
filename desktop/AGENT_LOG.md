@@ -12889,3 +12889,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、設定画面の Detection/検出 系コピーが Pencil と整合し、サイドバーと titlebar 内で自然に収まることを確認する。
+
+### Session list: align history wording with Pencil
+
+- 開始日時: 2026-05-02 17:57:13 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SessionList.tsx`, 必要最小限の `src/App.tsx` 履歴ナビゲーション title, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で履歴専用一覧画面は未確認/見つからない前提で、Pencil 内の `履歴を開く`、`履歴で開く`、メニューバー側の履歴確認、設定文言の `履歴` 表記、およびプロダクトコンセプトの `文字起こし履歴` に合わせ、`SessionList.tsx` のユーザー可視文言と aria-label/title を `セッション履歴` から自然な `文字起こし履歴` / `履歴` 表記へ寄せる。挙動、検索ロジック、CSS、Tauri/Rust、Pencil ファイルは変更しない。コミット禁止。
+- 結果: 履歴一覧の読み込み、エラー、再読み込み、検索、一覧ラベル、見出し、操作エラーの `セッション履歴` 表記を `文字起こし履歴` へ変更した。可視ボタン `履歴ファイルを開く` は Pencil の `履歴を開く` に寄せた一方、aria-label/title では `履歴ファイルを macOS の既定アプリで開く` の具体性を維持した。`src/App.tsx` の履歴ナビゲーション title を `保存済み文字起こし履歴` に変更した。行単位の `セッション ${displayTitle}` はデータモデル説明として維持した。
+- 変更ファイル: `src/routes/SessionList.tsx`, `src/App.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SessionList.tsx src/App.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SessionList.tsx src/App.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、実機または画面確認で履歴一覧の短い日本語表記が Pencil 系UIと違和感なく並ぶことを確認する。
