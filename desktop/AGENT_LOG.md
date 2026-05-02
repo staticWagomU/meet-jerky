@@ -13099,3 +13099,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または統合イベント確認で、会議検知前の不正 status payload では通知カードが残らず、会議検知後の不正 status payload では listenerError が表示されることを確認する。
+
+### Meeting prompt: show after rendered prompt content
+
+- 開始日時: 2026-05-02 20:35:38 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/app_detection.rs`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: app 検知・browser URL 検知の両方で `meeting-app-detected` emit 成功直後に Rust 側から `show_meeting_prompt_window()` を呼ばない。Notification Center 通知と emit 失敗ログは維持する。`MeetingDetectedBanner` 側で、有効 payload または `meeting-app-detected` 不正 payload を受け取り、描画内容がある状態になった後に `useEffect` で `set_meeting_prompt_window_visible(true)` を呼ぶ。通常 payload、`meeting-app-detected` 不正 payload、会議検知 payload 後の status 不正 listenerError は表示対象にし、会議検知前の status 不正や listener 登録失敗だけでは prompt window を表示しない。2秒 empty boot hide、15秒 auto hide、開始/今回はしない、Escape、Pencil の2ボタンUI、CSS、window builder、Pencil ファイルは変更しない。コミット禁止。
+- 結果: Rust 側の app 検知・browser URL 検知で emit 成功直後の `show_meeting_prompt_window()` 呼び出しを削除し、通知と emit 失敗ログは維持した。`MeetingDetectedBanner` に `showMeetingPromptWindow()` と描画後 `useEffect` を追加し、`detected` がある場合、または会議検知由来の `listenerError` がある場合だけ `set_meeting_prompt_window_visible(true)` を呼ぶようにした。会議検知前の status 不正や listener 登録失敗だけでは表示しない既存意図を維持した。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/app_detection.rs src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または統合イベント確認で、会議検知時に空/透明 overlay だけが先に表示されず、通知カードと `記録状態を表示中` pill が描画後に表示されることを確認する。

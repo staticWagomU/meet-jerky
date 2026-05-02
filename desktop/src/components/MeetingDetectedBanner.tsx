@@ -32,6 +32,10 @@ async function hideMeetingPromptWindow(): Promise<void> {
   await invoke("set_meeting_prompt_window_visible", { visible: false });
 }
 
+async function showMeetingPromptWindow(): Promise<void> {
+  await invoke("set_meeting_prompt_window_visible", { visible: true });
+}
+
 function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
   return readStoredLiveCaptionStatus((e) => {
     console.error(
@@ -170,6 +174,15 @@ export function MeetingDetectedBanner() {
       window.clearTimeout(timeoutId);
     };
   }, []);
+
+  useEffect(() => {
+    if (!detected && !(listenerError && hasReceivedPromptContentRef.current)) {
+      return;
+    }
+    void showMeetingPromptWindow().catch((e) => {
+      console.error("会議検知プロンプトの表示に失敗しました:", toErrorMessage(e));
+    });
+  }, [detected, listenerError]);
 
   useEffect(() => {
     if (!detected || listenerError || pendingAction) {

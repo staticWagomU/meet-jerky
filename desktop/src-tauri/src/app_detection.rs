@@ -12,10 +12,9 @@
 //!    Rust 側の純粋関数で会議 URL だけを分類する
 //! 4. Rust 側で:
 //!    - スロットリング (同一 bundle は 60 秒以内に再通知しない)
-//!    - 専用 prompt window を上部中央へ表示し、アプリ内プロンプトを見せる
 //!    - macOS 通知センターに通知を出す
 //!    - フロントエンドへ `meeting-app-detected` イベントを emit
-//! 5. フロントエンドがバナーを表示し、ユーザーがアプリ側で録音と文字起こしの状態を確認する
+//! 5. フロントエンドがバナー描画後に専用 prompt window を表示し、ユーザーがアプリ側で録音と文字起こしの状態を確認する
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -108,7 +107,7 @@ pub fn start(app_handle: AppHandle) {
 
 /// Swift 側コールバックから呼ばれる共通ハンドラ。
 ///
-/// スロットリング → 通知表示 → Tauri イベント emit → prompt 表示の順に処理する。
+/// スロットリング → 通知表示 → Tauri イベント emit の順に処理する。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn handle_detection(bundle_id: &str, app_name: &str) {
     let state = match STATE.get() {
@@ -137,10 +136,7 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
         app_name: app_name.to_string(),
     };
     match state.app_handle.emit("meeting-app-detected", &payload) {
-        Ok(()) => {
-            // Payload がフロントへ渡ってから表示し、空の overlay だけが見える瞬間を避ける。
-            crate::show_meeting_prompt_window(&state.app_handle);
-        }
+        Ok(()) => {}
         Err(e) => {
             eprintln!("[app_detection] emit failed: {e}");
         }
@@ -191,9 +187,7 @@ fn handle_browser_url_detection(
         browser_name: browser_name.to_string(),
     };
     match state.app_handle.emit("meeting-app-detected", &payload) {
-        Ok(()) => {
-            crate::show_meeting_prompt_window(&state.app_handle);
-        }
+        Ok(()) => {}
         Err(e) => {
             eprintln!("[app_detection] browser emit failed: {e}");
         }
