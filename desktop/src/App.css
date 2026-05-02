@@ -2947,6 +2947,11 @@ body[data-window="ring-light"] .overlay-window {
   line-height: 1.2;
 }
 
+.settings-titlebar-copy h2 {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
 .settings-window-body {
   display: grid;
   grid-template-columns: 214px minmax(0, 1fr);
