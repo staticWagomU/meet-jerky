@@ -365,6 +365,8 @@ export function LiveCaptionWindow() {
       : latestSegment
         ? [latestSegment]
         : [];
+  const isWaitingState = transcriptLines.length === 0 && !listenerError;
+  const compactCaptionLabel = "録音中 · 字幕を表示中";
   const hideLiveCaptionWindow = () => {
     void hideLiveCaptionOverlayWindow()
       .catch((e) => {
@@ -383,6 +385,32 @@ export function LiveCaptionWindow() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  if (isWaitingState) {
+    return (
+      <div
+        className="overlay-window live-caption-window live-caption-window-compact"
+        data-tauri-drag-region
+        role={liveCaptionRole}
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={label}
+        title={label}
+      >
+        <div
+          className="live-caption-compact-pill"
+          data-tauri-drag-region
+          aria-label={`${compactCaptionLabel}。${trackRowLabel}`}
+          title={`${compactCaptionLabel}。${trackRowLabel}`}
+        >
+          <span className="live-caption-compact-dot" aria-hidden="true" />
+          <span className="live-caption-compact-text" data-tauri-drag-region>
+            {compactCaptionLabel}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -564,10 +592,6 @@ export function LiveCaptionWindow() {
           </aside>
         </div>
 
-        <div className="live-transcript-collapsed-preview" data-tauri-drag-region>
-          <span aria-hidden="true" />
-          録音中 · 字幕を表示中
-        </div>
       </div>
     </div>
   );

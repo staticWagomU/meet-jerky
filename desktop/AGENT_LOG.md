@@ -13528,3 +13528,38 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker のコミット禁止違反は worker prompt の「強い禁止文言」だけでは抑止できないことが判明。再発防止策の候補は以下: (a) worker prompt の冒頭に「**コミットすると本タスクは失敗扱いとなり、メインが revert します**」のような強い文言を追加、(b) ハーネス側で `git commit.template` などを通じて claude セッションがコミット時にエラーになる仕掛けを追加、(c) worker 起動時に `git config commit.gpgsign true` 相当の制約をかける、(d) sonnet ではなく haiku で worker を動かして単純作業に絞る。**今回は (a) を試す方針**: 次回 worker prompt から冒頭で強く禁止文言を入れる。
 - 次アクション: 本エントリを `docs(agent): worker のコミット禁止違反を記録し、独立検証で内容妥当を確認` でコミットする (`AGENT_LOG.md` のみ)。次の改善ループへ進む。優先度 4 (リアルタイム文字起こしの低遅延化) は本コミットで一段落したため、次は優先度 5 (文字起こし精度・辞書補正)、優先度 9 (録音状態の透明性) や、UI 改善 (Pencil MCP 起点) を検討する。候補 F (Observer リーク `app_detection.rs:499`) は Codex 版が直近 2 コミット (`155f986`, `a651b4b`) でこの領域を触っており、まだ落ち着いていないため引き続き保留。
+
+### ライブ字幕待機表示: Pencil の compact pill に寄せる
+
+- 開始日時: 2026-05-03 00:34:17 JST
+- 担当セッション: `mjc-main`
+- 役割: メインエージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `meet-jerky-desktop.pen` の `Minimal · Compact pill` / `Minimal · Collapsed strip` を Pencil MCP で確認し、`LiveCaptionWindow` の待機状態を大きいパネルではなく小さいピルへ切り替える。透明 overlay の白化を増やさず、既存の録音中/エラー表示は壊さない。
+- 結果:
+  - 待機時 (`transcriptLines.length === 0` かつ `listenerError` なし) は `live-caption-window-compact` を返す分岐を追加し、`録音中 · 字幕を表示中` の compact pill を表示するようにした。
+  - `src/App.css` に compact pill 用の最小スタイルを追加し、Pencil の `hWr3c` に近い 290x26 の白ピル、6px dot、Geist 優先フォント、薄い shadow を適用した。
+  - 従来のフルパネルは、文字起こし結果が出たときとエラー時だけ表示するように維持した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果:
+  1. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css` → 成功
+  2. `npm run build` → 成功
+  3. `git diff --check` → 成功
+  4. Rust 系テスト → 今回未実行 (Rust ファイル未変更)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 差分レビュー後に必要なら実機で待機状態の compact pill を確認し、コミット候補を提示する。
+
+### ライブ字幕待機表示: Pencil の compact pill に寄せる
+
+- 開始日時: 2026-05-03 00:32:39 JST
+- 担当セッション: `mjc-worker-live-caption-compact-state-20260503`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `LiveCaptionWindow` の待機時 (`transcriptLines.length === 0` かつ `listenerError` なし) だけ大きいパネルを出さず、Pencil の `Mock - Caption Window Variations` にある `Minimal · Compact pill` / `Minimal · Collapsed strip` に近い小さい表示へ寄せる。エラー時と文字起こし表示時はフルパネルを維持し、透明 overlay の白化を増やさない。
+- 結果: 待機時専用の明示分岐 `isWaitingState` を追加し、透明な `live-caption-window` 上に `録音中 · 字幕待機中 · <音声取得状態>` の 26px 高 compact pill だけを表示するようにした。Pencil の `Minimal · Compact pill` の幅 290px / 高さ 26px / 角丸 13px / `#FAFAFAE6` / オレンジ dot に寄せ、長い状態文字列は 1 行で ellipsis する。フルパネル内に常時表示されていた collapsed preview は削除した。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` → 成功 (`git diff --check` 成功、`npm run build` 成功、Rust format 成功、Rust tests は cmake 不在のためスキップ)。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。補足: 必読指定の `logs/agent/research-live-caption-compact-state-20260503.txt` は存在しなかったため、Pencil MCP と既存実装を根拠に実装した。
+- 次アクション: メインエージェントによる差分レビューと必要なら実機確認、コミット候補を提示する。
