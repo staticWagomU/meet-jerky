@@ -3016,10 +3016,10 @@ body[data-window="ring-light"] .overlay-window {
 .settings-sidebar-item {
   display: flex;
   align-items: center;
-  gap: 0.52rem;
+  gap: 10px;
   width: 100%;
-  min-height: 32px;
-  padding: 0.42rem 0.56rem;
+  height: 34px;
+  padding: 0 10px;
   border: 1px solid transparent;
   border-radius: 8px;
   color: #666;
