@@ -2993,8 +2993,8 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
   overflow: hidden;
   color: #1a1a1a;
-  font-size: 0.92rem;
-  font-weight: 760;
+  font-size: 0.875rem;
+  font-weight: 700;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
