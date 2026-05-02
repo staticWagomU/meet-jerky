@@ -1,3 +1,17 @@
+# Meeting detected banner: align visible copy with Pencil
+
+- 開始日時: 2026-05-03 02:51:19 JST
+- 担当セッション: `Codex 作業担当エージェント（本セッション）`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 指示内容: 会議検知バナーの visible copy を Pencil の `Mock 2 - Notch Notification` に寄せる。`displayName` は service 優先で短く保ち、host は visible text から外してよい。見出し直下の detail を `Google Meet · URL と音声アクティビティで確認` のような短い表現に揃え、browser/app の区別はできる範囲で保持する。通知タイミング、ボタン、aria、ロジック、CSS は壊さず、文字列変更は最小に留める。コミットは禁止。
+- 結果: `getMeetingDetectedDisplayName` を service/appName 優先に簡略化し、visible detail を browser/app ごとに `... · URL と音声アクティビティで確認` / `... · アプリ名と音声アクティビティで確認` に変更した。host を visible copy から外し、通知タイミング、ボタン、aria、CSS、検知ロジックは維持した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` 成功（206 passed / 0 failed）。`npm run build` は一度 `displayName` の null 伝播で失敗したが、`bannerDisplayName` へ修正して解消した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で会議検知バナーの visible copy が host を出さず、detail が Pencil の意図どおり短く表示されることを確認する。
+
 # Settings recording visibility pill: align titlebar copy with Pencil
 
 - 開始日時: 2026-05-03 02:12:04 JST

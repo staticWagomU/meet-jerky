@@ -261,6 +261,7 @@ export function MeetingDetectedBanner() {
   }, [detected, listenerError, pendingAction]);
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
+  const bannerDisplayName = displayName ?? detected?.appName ?? "";
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
   const transmissionAriaLabel = getTransmissionStatusAriaLabel(statusPayload);
   const bannerTitle = listenerError
@@ -268,9 +269,9 @@ export function MeetingDetectedBanner() {
     : "会議を検知しました";
   const bannerDetail = listenerError
     ? null
-    : sourceLabel
-      ? `${displayName} · ${sourceLabel} で確認`
-      : `${displayName} · 会議候補として検知`;
+    : detected
+      ? getMeetingDetectedBannerDetail(detected, bannerDisplayName)
+      : null;
   const bannerAriaLabel = listenerError
     ? listenerError
     : `${displayName} を検出しました。${
@@ -458,11 +459,7 @@ export function MeetingDetectedBanner() {
 export function getMeetingDetectedDisplayName(
   payload: MeetingAppDetectedPayload,
 ): string {
-  const hostLabel = getMeetingDetectedHostLabel(payload.urlHost);
-  if (payload.service && hostLabel) {
-    return `${payload.service} (${hostLabel})`;
-  }
-  return payload.service || hostLabel || payload.appName;
+  return payload.service || payload.appName;
 }
 
 export function getMeetingDetectedSourceLabel(
@@ -504,4 +501,14 @@ function getMeetingDetectedHostLabel(urlHost: string | undefined): string | null
         ?.replace(/:\d+$/, "") || null
     );
   }
+}
+
+function getMeetingDetectedBannerDetail(
+  payload: MeetingAppDetectedPayload,
+  displayName: string,
+): string {
+  if (payload.source === "browser") {
+    return `${displayName} · URL と音声アクティビティで確認`;
+  }
+  return `${displayName} · アプリ名と音声アクティビティで確認`;
 }
