@@ -13239,6 +13239,34 @@
 - 失敗理由: なし。
 - 次アクション: `meet-jerky-desktop.pen` を除外してコードとログのみコミットする。実機では会議検知通知が右上に表示され、透明フレーム内のカード/ピルが Pencil と一致し、初期描画で白い全面矩形が出ないことを確認する。
 
+### Settings recording status pill: match Pencil titlebar typography
+
+- 開始日時: 2026-05-02 23:31:52 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェント最小例外修正
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `SettingsView` の録音中表示 pill を Pencil の `Recording transparency status` に寄せる。Pencil では文字面が `Funnel Sans`、dot にハローは見えないため、既存の構造は維持しつつ typography と dot 表現だけを最小修正する。`meet-jerky-desktop.pen` は変更しない。
+- 結果: `.settings-recording-visibility-pill` に `Funnel Sans` を優先する font-family を追加し、`.settings-recording-visibility-dot` の box-shadow を削除した。pill のサイズ・配色・配置は維持しているので、settings titlebar の見た目だけを Pencil に近づける変更になっている。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから `scripts/agent-verify.sh src/App.css src/utils/meetingDetection.ts src-tauri/src/app_detection.rs AGENT_LOG.md` を実行する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、`src/App.css` と `AGENT_LOG.md` をコミットする。実機では settings titlebar の録音中 pill が Pencil の文字面に近く、dot の余計な輪郭が消えていることを確認する。
+
+### Browser title fallback: accept empty host for browser payloads
+
+- 開始日時: 2026-05-02 23:34:06 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェント最小例外修正
+- 作業範囲: `src-tauri/src/app_detection.rs`, `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 指示内容: URL が取れないブラウザ会議で window title をフォールバックに使えるようにする。Rust 側では `classify_meeting_window_title` を追加し、`Google Meet` と `Zoom` の title パターンだけを厳格に拾う。frontend 側は `urlHost: ""` の browser payload を fallback 用に受け入れる。`windowTitle` は payload に持ち出さず、privacy field は増やさない。
+- 結果: Rust の browser detection は URL を優先し、失敗時のみ window title へフォールバックするようになった。window title 由来の payload は `service` と `browserName` を保持しつつ `urlHost` を空文字で送る。frontend validation は空 host を許可し、既存の host 表示は空文字時に省略されるため、UI は service / browser 名ベースで自然に表示される。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
+- 検証結果: これから `scripts/agent-verify.sh src-tauri/src/app_detection.rs src/utils/meetingDetection.ts src/App.css AGENT_LOG.md` を実行する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 検証後、settings pill と browser title fallback のどちらを別コミットに分けるか判断する。実機またはモックで、URL 取得失敗時に window title が会議検知の退避路として動き、`urlHost` 空文字でも banner が表示されることを確認する。
+
 ### Claude 版メイン bootstrap: 自律改善ループ開始
 
 - 開始日時: 2026-05-02 23:00:20 JST
@@ -13279,3 +13307,44 @@
 - メイン側補足 (mjc-main, 最小例外): worker は新エントリをファイル**先頭** (`# Agent Log` 直後) へ追加してしまったため、本リポジトリの慣習である末尾追記順 (時系列順) を維持するため、メインがエントリ全体を末尾へ移動した。本文・検証結果・追加関数・追加テスト等の内容は worker が書いたまま改変していない。差分レビュー結果として、純粋関数の分離設計、macOS ラッパーの薄さ、`std::sync::Once` による警告抑制、既存 8 テストの非改変、新規 5 テストの網羅性は妥当と判断した。`format_description() == None` 時は検証をスキップする保守的な選択を採っているが、これは検証なしの現状実装と比べて後退ではないため許容。後続ループで「None も 1 度だけ警告」追加の余地あり。
 - 次アクション: 日本語 Conventional Commits 形式で `feat(audio): ScreenCaptureKit 入力フォーマットの整合検証を追加する` をコミットする (対象は `src-tauri/src/system_audio.rs` と `AGENT_LOG.md` のみ)。次の改善ループで残候補 B〜F (ElevenLabs/OpenAI Realtime 最終セグメント取りこぼし、Whisper 5 秒固定チャンク、Window Title 会議検知 fallback、Observer リーク) のいずれかを選定する。
 - 指示元: 調査担当 `mjc-research-priority-detection-audio-20260502` の推奨候補 A
+
+### Window Title 会議検知 fallback: URL 取得失敗時のフォールバック追加
+
+- 開始日時: 2026-05-02 23:30:57 JST
+- 担当セッション: `mjc-worker-window-title-meeting-fallback-20260502`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 指示内容: ブラウザ URL 取得失敗時 (空文字・`about:blank`・AppleScript 権限不足等) に `_window_title` (これまで無視) を会議検知のフォールバックに活用し、`product-concept.md` の「ウィンドウ情報からの検知」と実装の乖離を埋める。
+- 結果:
+  - **採用サービスと分類ルール**:
+    - **Google Meet**: `"Meet - "` (ASCII ハイフン) / `"Meet – "` (U+2013 en-dash) / `"Meet — "` (U+2014 em-dash) で始まり、続く名前が非空のもの。Chrome/Safari/Edge のタブタイトルを想定。
+    - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` で始まるもの (prefix 一致)。`starts_with` のみ使い "Zoom について - Wikipedia" 等の誤検知を防ぐ。
+    - **Microsoft Teams**: ブラウザ版タイトルパターン (`"Microsoft Teams"` suffix 等) は外部チュートリアルや解説ページと区別できないため今回は fallback 対象外。Teams はデスクトップアプリ (Bundle ID: `com.microsoft.teams2`) 経由で検知される。
+  - **host フィールド設計**: window title 由来の場合は `MeetingUrlClassification::host` に空文字 `""` を返し、`Browser` variant の `url_host` フィールドも空文字で emit する。理由: sentinel 文字列 (`"window-title"` 等) は frontend が `urlHost` を表示・ログに使う場合に意図しない文字列として現れるリスクがある。空文字は現在 URL 取得失敗時にも発生しうる自然な値であり最も後方互換を壊さない。
+  - **throttle_key 設計**: URL 由来は既存の `"browser:{bundle_id}:{service}:{host}"` を維持。window title 由来は `"window-title:{bundle_id}:{service}"` に変更し、2 つのソースが互いの 60 秒スロットリングに干渉しないよう区別した。
+  - **追加した関数**: `classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlClassification>` (純粋関数、`pub`)
+  - **修正した関数**: `handle_browser_url_detection` — `_window_title` を `window_title` に変更し、URL 分類失敗時の window title フォールバック分岐と throttle_key 計算を追加。
+- 変更ファイル: `src-tauri/src/app_detection.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功 (フォーマット適用)
+  2. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功 (出力なし)
+  3. `cargo test --manifest-path src-tauri/Cargo.toml --lib app_detection` → 成功 (19 passed: 既存 7 件 + 新規 12 件、0 failed)
+  4. `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md` → 成功 (出力なし)
+  5. `npm run build` → 成功 (vite build 901ms)
+- 追加関数: `classify_meeting_window_title` — ウィンドウタイトルから会議サービスを分類する純粋関数。標準ライブラリ (`starts_with`, `strip_prefix`, `is_some_and`) のみ使用。
+- 追加テスト: 12 件
+  - `classify_meeting_window_title_google_meet_hyphen`
+  - `classify_meeting_window_title_google_meet_dash_variants` (en-dash / em-dash の両方)
+  - `classify_meeting_window_title_zoom_meeting_english`
+  - `classify_meeting_window_title_zoom_meeting_english_with_suffix`
+  - `classify_meeting_window_title_zoom_meeting_japanese`
+  - `classify_meeting_window_title_zoom_meeting_japanese_with_suffix`
+  - `classify_meeting_window_title_rejects_empty_string`
+  - `classify_meeting_window_title_rejects_zoom_wikipedia`
+  - `classify_meeting_window_title_rejects_meet_alone`
+  - `classify_meeting_window_title_rejects_meet_prefix_only`
+  - `classify_meeting_window_title_rejects_teams_excluded`
+  - `classify_meeting_window_title_rejects_unrelated_title`
+- 依存関係追加の有無と理由: なし。標準ライブラリのみで実装。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `feat(detection): ブラウザ URL 取得失敗時の Window Title フォールバックを追加する`)

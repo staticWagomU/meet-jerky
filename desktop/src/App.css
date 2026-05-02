@@ -2823,6 +2823,8 @@ body[data-window="ring-light"] .overlay-window {
   border-radius: 8px;
   color: #b83b00;
   background-color: #fff3ec;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   font-size: 0.7rem;
   font-weight: 600;
   line-height: 1.2;
@@ -2835,7 +2837,6 @@ body[data-window="ring-light"] .overlay-window {
   height: 7px;
   border-radius: 999px;
   background-color: #ff5c00;
-  box-shadow: 0 0 0 2px rgba(255, 92, 0, 0.12);
 }
 
 .settings-window-controls {

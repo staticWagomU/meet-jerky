@@ -149,14 +149,26 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
 /// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
 ///
 /// URL 全文はここで分類にのみ使い、payload / 通知 / log には出さない。
+/// URL 取得失敗時 (空文字・`about:blank`・AppleScript 権限不足等) は
+/// `window_title` から会議サービスを推定するフォールバックを試みる。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn handle_browser_url_detection(
     bundle_id: &str,
     browser_name: &str,
     url: &str,
-    _window_title: &str,
+    window_title: &str,
 ) {
-    let Some(classification) = classify_meeting_url(url) else {
+    // URL ベースの分類を優先し、失敗した場合のみウィンドウタイトルをフォールバックとして試みる。
+    // throttle_key はソース (browser / window-title) を区別するためプレフィックスを変える。
+    // これにより URL 由来と window title 由来の検知が互いのスロットリングに干渉しない。
+    let (classification, throttle_key) = if let Some(c) = classify_meeting_url(url) {
+        let key = format!("browser:{bundle_id}:{}:{}", c.service, c.host);
+        (c, key)
+    } else if let Some(c) = classify_meeting_window_title(window_title) {
+        // window title 由来: host は空文字。URL ベースと throttle_key を区別する。
+        let key = format!("window-title:{bundle_id}:{}", c.service);
+        (c, key)
+    } else {
         return;
     };
 
@@ -165,10 +177,6 @@ fn handle_browser_url_detection(
         None => return,
     };
 
-    let throttle_key = format!(
-        "browser:{bundle_id}:{}:{}",
-        classification.service, classification.host
-    );
     {
         let mut last_seen = state.last_seen.lock();
         let now = Instant::now();
@@ -186,7 +194,7 @@ fn handle_browser_url_detection(
         bundle_id: bundle_id.to_string(),
         app_name: browser_name.to_string(),
         service: classification.service,
-        url_host: classification.host,
+        url_host: classification.host, // window title 由来の場合は空文字 ""
         browser_name: browser_name.to_string(),
     };
     *state.latest_payload.lock() = Some(payload.clone());
@@ -245,6 +253,58 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         service: service.to_string(),
         host,
     })
+}
+
+/// ブラウザのウィンドウタイトルから会議サービスを分類する純粋関数。
+///
+/// `classify_meeting_url` が `None` を返した場合 (URL 空・`about:blank`・AppleScript
+/// 権限不足等) のフォールバックとして `handle_browser_url_detection` 内で使う。
+///
+/// 戻り値は [`MeetingUrlClassification`] を再利用するが、`host` フィールドは URL ホスト名
+/// ではなく **空文字 `""`** を返す。window title 由来であることは呼び出し側の throttle_key
+/// (`"window-title:{bundle_id}:{service}"` 形式) で区別する。
+///
+/// # 分類ルール (厳格・誤検知防止を優先)
+///
+/// - **Google Meet**: `"Meet - "` / `"Meet – "` (U+2013) / `"Meet — "` (U+2014) で始まり、
+///   続く会議コードまたは名前が非空のもの。Chrome/Safari/Edge のタブタイトルを想定。
+/// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` で始まるもの (prefix 一致)。
+///   デスクトップアプリのウィンドウタイトルを想定。`starts_with` のみ使い
+///   `"Zoom について - Wikipedia"` のような単語含みによる誤検知を防ぐ。
+/// - **Microsoft Teams**: ブラウザ版のタイトルパターン (`"Microsoft Teams"` suffix 等) は
+///   外部チュートリアルや解説ページと区別できないため今回は fallback 対象外とする。
+///   Teams はデスクトップアプリ (Bundle ID: `com.microsoft.teams2`) 経由で検知される。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlClassification> {
+    // Google Meet のタブタイトルは Chrome/Safari/Edge とも "Meet - <code or name>" 形式。
+    // ASCII ハイフン・en-dash (U+2013)・em-dash (U+2014) の3種をカバーし、
+    // 続く名前が空 ("Meet - " のみ) の場合は会議ではないとして除外する。
+    let google_meet_detected =
+        ["Meet - ", "Meet \u{2013} ", "Meet \u{2014} "]
+            .iter()
+            .any(|prefix| {
+                window_title
+                    .strip_prefix(prefix)
+                    .is_some_and(|rest| !rest.is_empty())
+            });
+    if google_meet_detected {
+        return Some(MeetingUrlClassification {
+            service: "Google Meet".to_string(),
+            host: String::new(),
+        });
+    }
+
+    // Zoom デスクトップアプリのウィンドウタイトルは "Zoom Meeting" / "Zoom ミーティング"
+    // で始まる。続く文字列 (参加者名等) があってもよい (prefix 一致)。
+    if window_title.starts_with("Zoom Meeting") || window_title.starts_with("Zoom ミーティング")
+    {
+        return Some(MeetingUrlClassification {
+            service: "Zoom".to_string(),
+            host: String::new(),
+        });
+    }
+
+    None
 }
 
 fn normalize_url_host(host: &str) -> Option<String> {
@@ -1175,5 +1235,136 @@ mod tests {
             classify_meeting_url("https://evil.example@meet.google.com/abc-defg-hij"),
             None
         );
+    }
+
+    // ─────────────────────────────────────────────
+    // classify_meeting_window_title のテスト
+    // ─────────────────────────────────────────────
+
+    #[test]
+    fn classify_meeting_window_title_google_meet_hyphen() {
+        assert_eq!(
+            classify_meeting_window_title("Meet - abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_google_meet_dash_variants() {
+        // en-dash (U+2013)
+        assert_eq!(
+            classify_meeting_window_title("Meet \u{2013} チームミーティング"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+        // em-dash (U+2014)
+        assert_eq!(
+            classify_meeting_window_title("Meet \u{2014} Team Sync"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_zoom_meeting_english() {
+        assert_eq!(
+            classify_meeting_window_title("Zoom Meeting"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_zoom_meeting_english_with_suffix() {
+        assert_eq!(
+            classify_meeting_window_title("Zoom Meeting (山田太郎)"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_zoom_meeting_japanese() {
+        assert_eq!(
+            classify_meeting_window_title("Zoom ミーティング"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_zoom_meeting_japanese_with_suffix() {
+        assert_eq!(
+            classify_meeting_window_title("Zoom ミーティング (田中一郎)"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_empty_string() {
+        assert_eq!(classify_meeting_window_title(""), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_zoom_wikipedia() {
+        // "Zoom" という単語を含むだけのページは誤検知しない
+        assert_eq!(
+            classify_meeting_window_title("Zoom について - Wikipedia"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_window_title("How to use Zoom Meeting feature"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_meet_alone() {
+        // "Meet" 単独・空のコードは会議タブではない
+        assert_eq!(classify_meeting_window_title("Meet"), None);
+        assert_eq!(classify_meeting_window_title("Google Meet"), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_meet_prefix_only() {
+        // "Meet - " の後ろが空 (= 会議コード未セット) は除外する
+        assert_eq!(classify_meeting_window_title("Meet - "), None);
+        assert_eq!(classify_meeting_window_title("Meet \u{2013} "), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_teams_excluded() {
+        // Microsoft Teams のブラウザ版タイトルは誤検知リスクから今回は fallback 対象外
+        assert_eq!(classify_meeting_window_title("Microsoft Teams"), None);
+        assert_eq!(
+            classify_meeting_window_title("週次定例 | Microsoft Teams"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_unrelated_title() {
+        assert_eq!(
+            classify_meeting_window_title("Google カレンダー - 2026年5月"),
+            None
+        );
+        assert_eq!(classify_meeting_window_title("about:blank"), None);
+        assert_eq!(classify_meeting_window_title("新しいタブ"), None);
     }
 }

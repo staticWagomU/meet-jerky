@@ -27,6 +27,10 @@ function isHostOnlyString(value: unknown): value is string {
   return host.split(".").every((label) => dnsHostLabel.test(label));
 }
 
+function isHostOnlyStringOrEmpty(value: unknown): value is string {
+  return value === "" || isHostOnlyString(value);
+}
+
 function hasProperty(value: Record<string, unknown>, key: string): boolean {
   return key in value;
 }
@@ -61,7 +65,7 @@ function isMeetingAppDetectedBrowserPayload(
     isNonEmptyTrimmedString(candidate.appName) &&
     candidate.source === "browser" &&
     isNonEmptyTrimmedString(candidate.service) &&
-    isHostOnlyString(candidate.urlHost) &&
+    isHostOnlyStringOrEmpty(candidate.urlHost) &&
     isNonEmptyTrimmedString(candidate.browserName) &&
     !hasDisallowedPrivacyField(candidate)
   );
