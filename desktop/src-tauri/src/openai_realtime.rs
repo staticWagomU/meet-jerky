@@ -186,6 +186,7 @@ impl Drop for OpenAIRealtimeStream {
 
 mod ws_task {
     use std::sync::Arc;
+    use std::time::Duration;
 
     use base64::Engine;
     use futures_util::{SinkExt, StreamExt};
@@ -198,6 +199,8 @@ mod ws_task {
     use crate::transcription::{TranscriptionSegment, TranscriptionSource};
 
     use super::{AudioCommand, REALTIME_SAMPLE_RATE};
+
+    const READER_FINALIZE_TIMEOUT: Duration = Duration::from_secs(10);
 
     pub async fn run(
         api_key: String,
@@ -351,9 +354,9 @@ mod ws_task {
         }
         let _ = ws_tx.send(Message::Close(None)).await;
 
-        // 受信タスクを少しだけ待つ (確定イベントの取りこぼしを抑える)。
-        // タイムアウトを設けて永久ブロックを避ける。
-        let _ = tokio::time::timeout(std::time::Duration::from_secs(3), reader_task).await;
+        // 受信タスクの自然終了 (Message::Close 受信か WS エラー) を最大 10 秒待つ。
+        // OpenAI Realtime の最終 transcription_completed 到着を取りこぼさないため。
+        let _ = tokio::time::timeout(READER_FINALIZE_TIMEOUT, reader_task).await;
 
         Ok(())
     }
@@ -505,5 +508,100 @@ mod tests {
         assert_eq!(segments[0].speaker, speaker);
         assert_eq!(segments[0].source, Some(TranscriptionSource::Microphone));
         assert_eq!(segments[0].is_error, Some(true));
+    }
+
+    #[test]
+    fn handle_event_pushes_completed_transcript() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+
+        ws_task::handle_event(
+            r#"{"type":"conversation.item.input_audio_transcription.completed","transcript":"会議の内容です"}"#,
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+        );
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].text, "会議の内容です");
+        assert_eq!(segments[0].is_error, None);
+        assert_eq!(segments[0].speaker, speaker);
+        assert_eq!(segments[0].source, Some(TranscriptionSource::Microphone));
+    }
+
+    #[test]
+    fn handle_event_ignores_delta_events() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+
+        ws_task::handle_event(
+            r#"{"type":"conversation.item.input_audio_transcription.delta","delta":"会"}"#,
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+        );
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 0);
+    }
+
+    #[test]
+    fn handle_event_pushes_error_message() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+
+        ws_task::handle_event(
+            r#"{"type":"error","error":{"message":"rate limit exceeded"}}"#,
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+        );
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].is_error, Some(true));
+        assert!(segments[0].text.contains("rate limit exceeded"));
+    }
+
+    #[test]
+    fn handle_event_handles_multiple_completed_events_sequentially() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+
+        for text in &["第一発言", "第二発言", "第三発言"] {
+            let json = format!(
+                r#"{{"type":"conversation.item.input_audio_transcription.completed","transcript":"{}"}}"#,
+                text
+            );
+            ws_task::handle_event(
+                &json,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+        }
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 3);
+        assert_eq!(segments[0].text, "第一発言");
+        assert_eq!(segments[1].text, "第二発言");
+        assert_eq!(segments[2].text, "第三発言");
+    }
+
+    #[test]
+    fn handle_event_ignores_invalid_json() {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+
+        ws_task::handle_event(
+            "not valid json {{{",
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+        );
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 0);
     }
 }

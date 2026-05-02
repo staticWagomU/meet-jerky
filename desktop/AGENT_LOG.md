@@ -13348,3 +13348,46 @@
 - 依存関係追加の有無と理由: なし。標準ライブラリのみで実装。
 - 失敗理由: なし。
 - 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `feat(detection): ブラウザ URL 取得失敗時の Window Title フォールバックを追加する`)
+
+### Cross-harness 競合検知と回避: window title fallback 重複作業の停止
+
+- 開始日時: 2026-05-02 23:38:50 JST
+- 担当セッション: `mjc-main`
+- 役割: メインエージェント (Claude Code 版、競合検知と回避、最小例外として `AGENT_LOG.md` を直接編集)
+- 作業範囲: `AGENT_LOG.md` のみ (記録)、および `mjc-worker-window-title-meeting-fallback-20260502` セッションの kill (`tmux kill-session`)
+- 指示内容: `docs/agent-harness-claude.md` の「同じファイルを編集する worker を両方の harness で同時起動しないこと」に違反する状況を検知したため、Claude 版 worker を即座に停止し、Codex 版 (`mj-main`) の作業を尊重して別領域へ切り替える。
+- 結果: 候補 E (Window Title fallback、`src-tauri/src/app_detection.rs`) の worker `mjc-worker-window-title-meeting-fallback-20260502` を起動した直後、`tmux capture-pane -t mj-main -p` で Codex 版 `mj-main` が同じ `app_detection.rs` を編集中であり「window title fallback と settings pill を整える」というほぼ同一の方針で実装を進めていることを確認した。即座に `tmux kill-session -t mjc-worker-window-title-meeting-fallback-20260502` で Claude 版 worker を停止した。停止時点で Claude 版 worker の出力ファイルは file size 0 で、Edit ツールによる実ファイル編集は到達していなかった (現在の `app_detection.rs` 差分は完全に Codex 版実装のもの)。Codex 版は `155f986 fix(app): window title fallback と settings pill を整える` でコミット完了済み。次の改善ループでは Codex 版が触っていない領域 (`src-tauri/src/openai_realtime.rs`) を選び、調査担当 `mjc-research-priority-detection-audio-20260502` の候補 C (OpenAI Realtime reader_task 3 秒タイムアウト) へ進む。
+- 変更ファイル: `AGENT_LOG.md` (本エントリのみ)
+- 検証結果: 検証コマンドの実行は不要 (kill とログ追記のみで、コード変更はゼロ)。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: 私 (mjc-main) が bootstrap 時に Codex 版 `mj-main` の現在スコープを `tmux capture-pane` で確認していなかったため、競合する worker を起動してしまった。今後は新 worker 起動前に必ず `mj-main` のペインを capture-pane で確認するルールを自分に課す。
+- 次アクション: `mjc-worker-openai-realtime-reader-timeout-20260502` を起動し、`src-tauri/src/openai_realtime.rs:354-356` の `tokio::time::timeout(3s, reader_task)` を延長して最終 transcription_completed 取りこぼしを防ぐ最小修正を依頼する。worker 起動直前に再度 `tmux capture-pane -t mj-main -p` で Codex 版が `openai_realtime.rs` を触っていないことを確認する。
+
+### OpenAI Realtime reader_task タイムアウト延長: 最終 transcription_completed 取りこぼし抑止
+
+- 開始日時: 2026-05-02 23:42:57 JST
+- 担当セッション: `mjc-worker-openai-realtime-reader-timeout-20260502`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/openai_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: `ws_task::run` の reader_task 終了タイムアウト 3 秒を延長し、長めの最終発話による `transcription_completed` 取りこぼしを抑える。最小修正で定数化と const 名付けを行い、`handle_event` の動作確認テストを追加する。
+- 結果: **アプローチ (a)+(b) 同時採用** (単純延長 + const 切り出し)。
+  - `mod ws_task` に `use std::time::Duration;` を追加。
+  - `const READER_FINALIZE_TIMEOUT: Duration = Duration::from_secs(10);` を `mod ws_task` スコープ内に定義。
+  - コメント更新: `受信タスクを少しだけ待つ (確定イベントの取りこぼしを抑える)。\nタイムアウトを設けて永久ブロックを避ける。` → `受信タスクの自然終了 (Message::Close 受信か WS エラー) を最大 10 秒待つ。\nOpenAI Realtime の最終 transcription_completed 到着を取りこぼさないため。`
+  - タイムアウト行: `tokio::time::timeout(std::time::Duration::from_secs(3), reader_task)` → `tokio::time::timeout(READER_FINALIZE_TIMEOUT, reader_task)`
+  - 追加テスト: 5 件 (既存 4 件を維持)
+    1. `handle_event_pushes_completed_transcript` — completed イベントで pending に 1 件追加
+    2. `handle_event_ignores_delta_events` — delta イベントで pending に追加なし
+    3. `handle_event_pushes_error_message` — error イベントで is_error=Some(true) セグメント追加
+    4. `handle_event_handles_multiple_completed_events_sequentially` — completed 3 連続で 3 件追加
+    5. `handle_event_ignores_invalid_json` — 不正 JSON でパニックせず pending に追加なし
+- 変更ファイル: `src-tauri/src/openai_realtime.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功 (出力なし)
+  2. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功 (出力なし)
+  3. `cargo test --manifest-path src-tauri/Cargo.toml --lib openai_realtime` → 成功 (9 passed / 0 failed: 既存 4 件 + 新規 5 件)
+  4. `git diff --check -- src-tauri/src/openai_realtime.rs AGENT_LOG.md` → 成功 (出力なし)
+  5. `npm run build` → 成功 (vite build 910ms)
+- 依存関係追加の有無と理由: なし。`std::time::Duration` は標準ライブラリ。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `fix(transcription): OpenAI Realtime の最終 transcript 取りこぼしを 10 秒待機で防ぐ`)
