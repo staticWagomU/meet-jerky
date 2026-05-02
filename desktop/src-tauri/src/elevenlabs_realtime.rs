@@ -153,6 +153,7 @@ impl Drop for ElevenLabsRealtimeStream {
 
 mod ws_task {
     use std::sync::Arc;
+    use std::time::Duration;
 
     use base64::Engine;
     use futures_util::{SinkExt, StreamExt};
@@ -165,6 +166,8 @@ mod ws_task {
     use crate::transcription::{TranscriptionSegment, TranscriptionSource};
 
     use super::{AudioCommand, ELEVENLABS_REALTIME_SAMPLE_RATE};
+
+    const PENDING_AFTER_COMMIT_TIMEOUT: Duration = Duration::from_secs(10);
 
     pub async fn run(
         api_key: String,
@@ -284,7 +287,12 @@ mod ws_task {
         }
 
         if sent_finalize_commit {
-            wait_for_pending_after_commit(&pending, pending_len_before_finalize).await;
+            wait_for_pending_after_commit(
+                &pending,
+                pending_len_before_finalize,
+                PENDING_AFTER_COMMIT_TIMEOUT,
+            )
+            .await;
         }
         let _ = ws_tx.send(Message::Close(None)).await;
         let _ = tokio::time::timeout(std::time::Duration::from_secs(3), reader_task).await;
@@ -354,16 +362,19 @@ mod ws_task {
         event_name.starts_with("scribe_") && event_name.ends_with("_error")
     }
 
+    // commit 送信後、ElevenLabs Realtime の最終 committed_transcript 到着を最大 timeout 秒待つ。
+    // 長めの最終発話による取りこぼしを抑制するための値で、OpenAI 側 READER_FINALIZE_TIMEOUT と整合させている。
     async fn wait_for_pending_after_commit(
         pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
         previous_len: usize,
+        timeout: Duration,
     ) {
-        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(3);
+        let deadline = tokio::time::Instant::now() + timeout;
         while tokio::time::Instant::now() < deadline {
             if pending.lock().len() > previous_len {
                 return;
             }
-            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            tokio::time::sleep(Duration::from_millis(50)).await;
         }
     }
 
@@ -453,6 +464,74 @@ mod ws_task {
             out.extend_from_slice(&i.to_le_bytes());
         }
         out
+    }
+
+    #[cfg(test)]
+    mod pending_timeout_tests {
+        use std::sync::Arc;
+        use std::time::{Duration, Instant};
+
+        use parking_lot::Mutex;
+
+        use crate::transcription::TranscriptionSegment;
+
+        use super::wait_for_pending_after_commit;
+
+        fn make_segment() -> TranscriptionSegment {
+            TranscriptionSegment {
+                text: "segment".to_string(),
+                start_ms: 0,
+                end_ms: 0,
+                source: None,
+                speaker: None,
+                is_error: None,
+            }
+        }
+
+        #[tokio::test]
+        async fn wait_for_pending_after_commit_returns_when_pending_grows() {
+            let pending: Arc<Mutex<Vec<TranscriptionSegment>>> = Arc::new(Mutex::new(vec![]));
+            let clone = Arc::clone(&pending);
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(50)).await;
+                clone.lock().push(make_segment());
+            });
+            let t = Instant::now();
+            wait_for_pending_after_commit(&pending, 0, Duration::from_millis(500)).await;
+            assert_eq!(
+                pending.lock().len(),
+                1,
+                "pending が成長したら早期 return するはず"
+            );
+            assert!(
+                t.elapsed() < Duration::from_millis(400),
+                "deadline より早く return するはず"
+            );
+        }
+
+        #[tokio::test]
+        async fn wait_for_pending_after_commit_returns_after_deadline_when_pending_unchanged() {
+            let pending: Arc<Mutex<Vec<TranscriptionSegment>>> = Arc::new(Mutex::new(vec![]));
+            let t = Instant::now();
+            wait_for_pending_after_commit(&pending, 0, Duration::from_millis(150)).await;
+            assert!(
+                t.elapsed() >= Duration::from_millis(100),
+                "deadline 経過後に return するはず"
+            );
+            assert_eq!(pending.lock().len(), 0);
+        }
+
+        #[tokio::test]
+        async fn wait_for_pending_after_commit_returns_immediately_when_already_grown() {
+            let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
+                Arc::new(Mutex::new(vec![make_segment()]));
+            let t = Instant::now();
+            wait_for_pending_after_commit(&pending, 0, Duration::from_secs(10)).await;
+            assert!(
+                t.elapsed() < Duration::from_millis(100),
+                "既に pending > previous_len なら即 return するはず"
+            );
+        }
     }
 }
 

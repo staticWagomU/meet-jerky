@@ -13428,3 +13428,50 @@
 - 依存関係追加の有無と理由: なし。既存の Tauri event API と ScreenCaptureKit の公開 API だけを使用。
 - 失敗理由: なし。
 - 次アクション: 差分レビュー後に日本語 Conventional Commits 形式でコミットする。候補メッセージは `fix(audio): システム音声フォーマット不一致を UI に通知する`。
+
+### Claude 版メイン引き継ぎ完了: `mjc-main-20260502-2` を canonical `mjc-main` へ adopt し候補 B 着手
+
+- 開始日時: 2026-05-02 23:55 頃 JST
+- 担当セッション: `mjc-main` (canonical、旧 `mjc-main-20260502-2`)
+- 役割: 後継メインエージェント (引き継ぎ完了確認、最小例外として `AGENT_LOG.md` を直接編集)
+- 作業範囲: `AGENT_LOG.md` のみ (本エントリ追記、自セッション rename 実行、候補 B worker 起動)
+- 指示内容: 旧メインの引き継ぎエントリ (line 13395-13408) の「次アクション」で「後継メインまたはユーザーが `scripts/agent-adopt-main.sh mjc-main-20260502-2 mjc-main` を実行する」とあった。後継 (本エージェント) が必須ドキュメント (`AGENTS.md`, `docs/product-concept.md`, `docs/agent-harness-claude.md`, `docs/autonomous-main-prompt-claude.md`, `AGENT_LOG.md` 末尾 200 行強) を読了し、`tmux capture-pane -t mj-main -p` で Codex 版 (`mj-main`) の現在スコープが `system_audio.rs` 探索 (Claude 版が `9dc7b39` で導入した防御層を UI 警告へ拡張する作業) で `elevenlabs_realtime.rs` には触れていないことを確認したうえで adopt を実行する。
+- 結果:
+  - `scripts/agent-adopt-main.sh mjc-main-20260502-2 mjc-main` を実行した。旧 `mjc-main` セッション (149% コンテキストの旧メイン、`Newspapering` 中) は `mjc-main-retired-...` へリネーム後 kill された。後継 (本エージェント) の tmux session 名は `mjc-main` (canonical) に変更され、`mjc-watchdog` の監視対象と一致した。`tmux list-sessions` で確認: `mjc-main: 1 windows (created Sat May 2 23:49:17 2026)` (=後継の起動時刻のまま)、`mjc-watchdog: 1 windows (created Sat May 2 22:57:47 2026)`。Codex 版 `mj-main` / `mj-watchdog` には触れていない。
+  - 候補 B (ElevenLabs Realtime 最終セグメント取りこぼし、`elevenlabs_realtime.rs:357-368` の `wait_for_pending_after_commit`) を進めるため、`logs/agent/prompts/worker-elevenlabs-realtime-pending-timeout-20260502.md` を作成し、`scripts/claude-agent-start-worker.sh mjc-worker-elevenlabs-realtime-pending-timeout-20260502 ...` で worker を起動した (model=sonnet)。OpenAI Realtime 側 (commit `ca34ea6`) と同じパターン (定数化 + 10 秒延長 + テスト追加) を採用方針に明記し、`PENDING_AFTER_COMMIT_TIMEOUT` const と `tokio::time::pause + advance` ベースの高速テスト、関数シグネチャに `timeout` 引数を追加する小規模リファクタを推奨した。
+  - Codex 版 (`mj-main`) は本エントリ直前に `system_audio.rs` のフォーマット警告を `system-audio-format-warning` event として `TranscriptView.tsx` へ流す変更 (line 13410-13430 のエントリ) を完了した。Claude 版の防御層を UI 透明性まで広げる発展形で、優先度 9 (録音状態の透明性) に直結する有益な改善。重複作業ではない。
+- 変更ファイル: `AGENT_LOG.md` (本エントリのみ)、`logs/agent/prompts/worker-elevenlabs-realtime-pending-timeout-20260502.md` (新規 worker prompt)
+- 検証結果: 状態確認のみ。コード変更なし。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `mjc-worker-elevenlabs-realtime-pending-timeout-20260502` の完了を待ち、差分レビュー → `scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` → コミット (`fix(transcription): ElevenLabs Realtime の最終セグメント取りこぼしを 10 秒待機で防ぐ`) を実施する。並行して候補 D (Whisper 5 秒固定チャンク短縮、`transcription.rs:255 flush_full_chunks` / `:985 CHUNK_DURATION_SECS`) を 1 ターン制 worker に収まる形へ分解する設計を検討する: 第 1 段は `flush_full_chunks` の単独 refactor (沈黙検知ロジックを後で組み込みやすい構造への変更だけ。例: チャンクサイズを引数化し、戻り値で実際に処理したチャンク数を返す)、第 2 段は VAD/沈黙検知ロジック追加。実機で 5 秒固定遅延が縮むのは第 2 段以降だが、第 1 段単独でも回帰テストの容易さが上がる。
+
+### ElevenLabs Realtime 最終セグメント取りこぼし抑止: pending 待機タイムアウト 10 秒化
+
+- 開始日時: 2026-05-02 JST (mjc-worker-elevenlabs-realtime-pending-timeout-20260502)
+- 担当セッション: `mjc-worker-elevenlabs-realtime-pending-timeout-20260502`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 指示内容: `wait_for_pending_after_commit` のタイムアウトを 3 秒から 10 秒に延長し、const 化 + テスト追加。OpenAI Realtime 側 `READER_FINALIZE_TIMEOUT` と整合させる。
+- 結果: **アプローチ (a)+(b)+(シグネチャ変更) 同時採用**
+  - `mod ws_task` に `use std::time::Duration;` を追加。
+  - `const PENDING_AFTER_COMMIT_TIMEOUT: Duration = Duration::from_secs(10);` を `mod ws_task` スコープ内に定義。
+  - `wait_for_pending_after_commit` に `timeout: Duration` 引数を追加 (テストから短い値を注入可能にする推奨構造)。
+  - 呼び出し側 (line ~290) を `wait_for_pending_after_commit(&pending, pending_len_before_finalize, PENDING_AFTER_COMMIT_TIMEOUT)` に更新。
+  - コメント追加: 「commit 送信後、ElevenLabs Realtime の最終 committed_transcript 到着を最大 timeout 秒待つ。長めの最終発話による取りこぼしを抑制するための値で、OpenAI 側 READER_FINALIZE_TIMEOUT と整合させている。」
+  - `mod ws_task` 内に `#[cfg(test)] mod pending_timeout_tests` を追加し 3 テストを実装:
+    1. `wait_for_pending_after_commit_returns_when_pending_grows`: 50ms 後に pending を 1 件 push し、500ms deadline 内で早期 return することを確認。
+    2. `wait_for_pending_after_commit_returns_after_deadline_when_pending_unchanged`: pending を変えないまま 150ms deadline を経過させ return することを確認。
+    3. `wait_for_pending_after_commit_returns_immediately_when_already_grown`: 関数呼び出し前から pending > previous_len の場合に即 return することを確認。
+  - `tokio::test-util` は `tokio = { features = ["full"] }` に含まれないため、`pause+advance` 方式ではなく短い Duration を注入するシグネチャ方式を採用。
+- 変更ファイル: `src-tauri/src/elevenlabs_realtime.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功 (出力なし)
+  2. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功 (出力なし)
+  3. `cargo test --manifest-path src-tauri/Cargo.toml --lib elevenlabs_realtime` → 成功 (8 passed / 0 failed: 既存 5 件 + 新規 3 件、0.16s)
+  4. `git diff --check -- src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` → 成功 (出力なし)
+  5. `npm run build` → 成功 (vite build 924ms)
+  6. cargo test 全体: 未実施 (時間制約)
+- 依存関係追加の有無と理由: なし。`std::time::Duration` は標準ライブラリ。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `fix(transcription): ElevenLabs Realtime の最終セグメント取りこぼしを 10 秒待機で防ぐ`)
