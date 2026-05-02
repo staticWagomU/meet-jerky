@@ -152,6 +152,20 @@
 - 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
 - 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
 
+# Settings brand gap: match Pencil app label spacing
+
+- 開始日時: 2026-05-03 06:09:05 JST
+- 担当セッション: `Codex main`
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の app label の icon/text gap を再確認し、brand row の残り差分が gap だけなら 10px に揃える。サイズ、配色、ロジックは変更しない。
+- 結果: `settings-sidebar-brand` の `gap` を 10px に変更し、Pencil の app label spacing に合わせた。その他の Settings sidebar の見た目と挙動は維持した。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
+- 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
 # Meeting detected banner: align notch icon and start button with Pencil
 
 - 開始日時: 2026-05-03 03:11:15 JST
