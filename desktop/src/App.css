@@ -295,6 +295,7 @@ body[data-window="ring-light"] .overlay-window {
   justify-content: flex-start;
   width: 100vw;
   height: 100vh;
+  background: transparent;
 }
 
 .meeting-detected-status-pill {
@@ -1236,6 +1237,7 @@ body[data-window="ring-light"] .overlay-window {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  background: transparent;
 }
 
 .live-transcript-panel-window {
