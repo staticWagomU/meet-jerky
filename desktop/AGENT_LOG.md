@@ -1,3 +1,17 @@
+# Settings recording visibility pill: align titlebar copy with Pencil
+
+- 開始日時: 2026-05-03 02:12:04 JST
+- 担当セッション: `codex-worker-settings-recording-visibility-pill-20260503`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Settings 画面 titlebar の `settings-recording-visibility-pill` を Pencil の `Mock 4 - Settings Window` に合わせ、`録音中は表示されます` を `録音中に表示されます` に揃える。visible text, aria-label, title だけを最小変更し、titlebar / sidebar / content layout / CSS / ロジックには触れない。コミットは禁止。
+- 結果: `settings-recording-visibility-pill` の visible text, aria-label, title を Pencil 文言に合わせて更新した。その他の Settings 画面レイアウト、CSS、状態ロジックは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功（`tsc && vite build`）。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml` 成功（206 passed / 0 failed）。更新後に `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` を再実行し成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で titlebar pill の文言と配置に崩れがないか確認する。
+
 # TranscriptDisplay pause pill: align auto-scroll stop state with Pencil
 
 - 開始日時: 2026-05-03 01:53:59 JST
