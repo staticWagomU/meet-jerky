@@ -92,7 +92,7 @@ const SETTINGS_CATEGORIES = [
     kicker: "リアルタイム文字起こし",
     title: "文字起こし",
     subtitle:
-      "取得した音声を検索できるテキストへ変換する方法を選びます。",
+      "録音音声を検索可能なテキストに変換する方法を選びます。ローカル優先、必要に応じて外部サービスも使えます。",
   },
   {
     key: "aiMinutes",
@@ -623,6 +623,9 @@ export function SettingsView() {
                   <h3 className="settings-section-title" id="transcription-engine-title">
                     文字起こしエンジン
                   </h3>
+                  <p className="settings-note">
+                    メインエンジンを選択。クラウドエンジンはオプトイン時のみ使用します。
+                  </p>
         <div
           className="settings-radio-group"
           role="radiogroup"

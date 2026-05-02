@@ -1,5 +1,19 @@
 # Agent Log
 
+### Settings transcription: align engine copy with Pencil
+
+- 開始日時: 2026-05-02 19:23:49 JST
+- 担当セッション: `mj-worker-settings-transcription-pencil-copy-20260502`, `mj-main`
+- 役割: worker 起動・監視、メインエージェント（worker 停滞後の最小例外実装）
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 4d - Settings Transcription に合わせ、文字起こし subtitle と engine section copy をローカル優先/クラウドはオプトインの意図へ寄せる。未実装の単語登録、ライブプレビュー、書き出し形式 UI は追加せず、CSS、設定保存ロジック、Tauri/Rust、Pencil ファイルは変更しない。
+- 結果: `transcription` subtitle を Pencil 文言へ変更した。文字起こしエンジン section に、メインエンジン選択とクラウドエンジンがオプトイン時のみ使われることを示す note を追加した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: メイン側で `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: worker `mj-worker-settings-transcription-pencil-copy-20260502` は長いドキュメント読解後に差分ゼロのまま進まなかったため、自律運用停止回避として main が最小範囲で例外実装した。
+- 次アクション: 検証後、実機または画面確認で文字起こし設定の subtitle/note が Pencil の Settings Transcription 画面意図と整合し、カード内に収まることを確認する。実機画面確認は未実機確認。
+
 ### Settings AI minutes: align read-only copy with Pencil
 
 - 開始日時: 2026-05-02 19:08:12 JST
