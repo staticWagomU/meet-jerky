@@ -13694,3 +13694,20 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: メインエージェントによる差分レビュー。必要なら実機またはスクリーンショットで expanded state の視覚確認を行う。
+
+### Settings titlebar subtitle: align with Pencil Mock 4 - Settings Window
+
+- 開始日時: 2026-05-03 02:30:26 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Settings 画面 titlebar の subtitle を Pencil の `Mock 4 - Settings Window` に合わせ、`録音・検出・AI処理の透明性を管理します。` を `meet-jerkyは録音・検出・AI処理を透明に管理します。` に最小差分で更新する。`settings-titlebar-subtitle` の visible text / aria-label / title があれば必要最小限で揃え、titlebar / sidebar / content layout は維持する。CSS、レイアウト、ロジック、担当範囲外は変更しない。コミットは禁止。
+- 結果: `settings-titlebar-subtitle` の visible text を Pencil 文言へ更新した。`aria-label` / `title` はこの要素には設定されていなかったため変更なし。CSS、レイアウト、ロジック、その他文言は変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果:
+  1. `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、Settings titlebar の subtitle が Pencil の `Mock 4 - Settings Window` と整合し、レイアウトへ自然に収まることを確認する。実機画面確認は未実施。
