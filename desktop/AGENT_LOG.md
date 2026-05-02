@@ -13248,10 +13248,10 @@
 - 指示内容: `SettingsView` の録音中表示 pill を Pencil の `Recording transparency status` に寄せる。Pencil では文字面が `Funnel Sans`、dot にハローは見えないため、既存の構造は維持しつつ typography と dot 表現だけを最小修正する。`meet-jerky-desktop.pen` は変更しない。
 - 結果: `.settings-recording-visibility-pill` に `Funnel Sans` を優先する font-family を追加し、`.settings-recording-visibility-dot` の box-shadow を削除した。pill のサイズ・配色・配置は維持しているので、settings titlebar の見た目だけを Pencil に近づける変更になっている。
 - 変更ファイル: `src/App.css`, `AGENT_LOG.md`
-- 検証結果: これから `scripts/agent-verify.sh src/App.css src/utils/meetingDetection.ts src-tauri/src/app_detection.rs AGENT_LOG.md` を実行する。
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css src/utils/meetingDetection.ts src-tauri/src/app_detection.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
-- 次アクション: 検証後、`src/App.css` と `AGENT_LOG.md` をコミットする。実機では settings titlebar の録音中 pill が Pencil の文字面に近く、dot の余計な輪郭が消えていることを確認する。
+- 次アクション: `src/App.css`、`src/utils/meetingDetection.ts`、`src-tauri/src/app_detection.rs`、`AGENT_LOG.md` をコミットする。実機では settings titlebar の録音中 pill が Pencil の文字面に近く、dot の余計な輪郭が消えていることを確認する。
 
 ### Browser title fallback: accept empty host for browser payloads
 
@@ -13262,10 +13262,10 @@
 - 指示内容: URL が取れないブラウザ会議で window title をフォールバックに使えるようにする。Rust 側では `classify_meeting_window_title` を追加し、`Google Meet` と `Zoom` の title パターンだけを厳格に拾う。frontend 側は `urlHost: ""` の browser payload を fallback 用に受け入れる。`windowTitle` は payload に持ち出さず、privacy field は増やさない。
 - 結果: Rust の browser detection は URL を優先し、失敗時のみ window title へフォールバックするようになった。window title 由来の payload は `service` と `browserName` を保持しつつ `urlHost` を空文字で送る。frontend validation は空 host を許可し、既存の host 表示は空文字時に省略されるため、UI は service / browser 名ベースで自然に表示される。
 - 変更ファイル: `src-tauri/src/app_detection.rs`, `src/utils/meetingDetection.ts`, `AGENT_LOG.md`
-- 検証結果: これから `scripts/agent-verify.sh src-tauri/src/app_detection.rs src/utils/meetingDetection.ts src/App.css AGENT_LOG.md` を実行する。
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs src/utils/meetingDetection.ts src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip）。
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
-- 次アクション: 検証後、settings pill と browser title fallback のどちらを別コミットに分けるか判断する。実機またはモックで、URL 取得失敗時に window title が会議検知の退避路として動き、`urlHost` 空文字でも banner が表示されることを確認する。
+- 次アクション: `src/App.css`、`src/utils/meetingDetection.ts`、`src-tauri/src/app_detection.rs`、`AGENT_LOG.md` をコミットする。実機またはモックで、URL 取得失敗時に window title が会議検知の退避路として動き、`urlHost` 空文字でも banner が表示されることを確認する。
 
 ### Claude 版メイン bootstrap: 自律改善ループ開始
 
@@ -13391,3 +13391,40 @@
 - 依存関係追加の有無と理由: なし。`std::time::Duration` は標準ライブラリ。
 - 失敗理由: なし。
 - 次アクション: メインエージェントによる差分レビューと `scripts/agent-verify.sh` 実行、コミット (推奨メッセージ: `fix(transcription): OpenAI Realtime の最終 transcript 取りこぼしを 10 秒待機で防ぐ`)
+
+### Claude 版メイン引き継ぎ: 後継 `mjc-main-20260502-2` 起動
+
+- 開始日時: 2026-05-02 23:49:17 JST
+- 担当セッション: `mjc-main` (旧)、`mjc-main-20260502-2` (後継)
+- 役割: メインエージェント (引き継ぎ管理、最小例外として `AGENT_LOG.md` を直接編集)
+- 作業範囲: 後継メイン起動 + `AGENT_LOG.md` への引き継ぎ記録
+- 指示内容: 旧 `mjc-main` のコンテキストが 2 改善ループ + 1 競合回避記録 + 大量の差分レビューで肥大化したため、`docs/autonomous-main-prompt-claude.md` の「コンテキスト引き継ぎ」方針に従って後継メインを起動する。引き継ぎプロンプト (`logs/agent/mjc-main-20260502-2-prompt.md`) には現在の git 状態、直近 5 コミット、進行中セッション、未完了タスク (調査結果の候補 B/D/F)、検証制約 (cmake 利用可能で whisper-rs-sys ビルド可能になっている事実)、Cross-harness 競合回避ルール、ユーザー直伝 Pencil MCP ワークフロー、起動直後の手順 (Codex 版 pane 確認を起動ルーティン化) を網羅した。
+- 結果: `scripts/claude-agent-handoff-main.sh mjc-main-20260502-2 logs/agent/mjc-main-20260502-2-prompt.md` で後継メイン (model=opus、対話モード) を起動した。tmux session は `mjc-main` (旧、引き継ぎ後 retire 予定) / `mjc-main-20260502-2` (後継) / `mjc-watchdog` (canonical `mjc-main` 監視中) の 3 つ。Codex 版 (`mj-*`) は触らずに併存。
+- 変更ファイル: `AGENT_LOG.md` (本エントリのみ)
+- 検証結果: `tmux list-sessions` で後継セッションが `created Sat May 2 23:49:17 2026` で起動していることを確認。後継の起動時 prompt 出力は `logs/agent/mjc-main-20260502-2.txt` に追記される。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: **後継メインまたはユーザー** が `scripts/agent-adopt-main.sh mjc-main-20260502-2 mjc-main` を実行して、後継を canonical な `mjc-main` 名へ rename する (旧 `mjc-main` tmux session は kill される)。**旧メイン (本エージェント) が adopt を実行すると自分自身を kill するため、本エントリ追記後は新たな改善ループに入らずに休止する**。後継は引き継ぎプロンプトに従って候補 B (ElevenLabs Realtime 最終セグメント取りこぼし) または候補 D 分割 (Whisper チャンク refactor) から開始する想定。
+- 完了した本セッションのループ: 候補 A (`9dc7b39 feat(audio): 相手側音声の非 f32 PCM をブロックして文字起こし破損を防ぐ`)、候補 C (`ca34ea6 fix(transcription): OpenAI Realtime の最終 transcript 取りこぼしを 10 秒待機で防ぐ`)。Cross-harness 競合により候補 E は Codex 版 (`155f986 fix(app): window title fallback と settings pill を整える`) が完了。
+
+### システム音声フォーマット不一致: UI 警告を TranscriptView に接続
+
+- 開始日時: 2026-05-02 23:56:00 JST
+- 担当セッション: `mj-main`
+- 役割: メインエージェント
+- 作業範囲: `src-tauri/src/system_audio.rs`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: ScreenCaptureKit の入力フォーマット検証で検出した不一致を、`TranscriptView` の音声ソース通知へ流し込み、相手側音声の白化・無音化を見逃さないようにする。Rust 側は既存の `FORMAT_WARN_ONCE` と `AppHandle::emit` を使って最小実装し、フロントは既存の notice 領域に統合する。
+- 結果:
+  - `src-tauri/src/system_audio.rs` で `warn_system_audio_format_once(app_handle, message)` を使い、`CMFormatDescription` 未取得または ASBD 相当の不一致を検出したら `system-audio-format-warning` を 1 度だけ emit するようにした。
+  - `src/routes/TranscriptView.tsx` に `systemAudioFormatWarning` state を追加し、`system-audio-format-warning` を listen して `audioSourceNotice` に反映した。
+  - 既存の音声レベル監視や会議状態表示は維持し、警告は音声ソース notice の最優先表示にした。
+- 変更ファイル: `src-tauri/src/system_audio.rs`, `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果:
+  1. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/system_audio.rs src/routes/TranscriptView.tsx` → 成功
+  2. `git diff --check` → 成功
+  3. `npm run build` → 成功
+  4. `cargo fmt` 系 → 成功
+  5. `cargo test` 系 → `cmake` 不在のため `whisper-rs-sys` ビルドを伴う Rust 全体テストは skip
+- 依存関係追加の有無と理由: なし。既存の Tauri event API と ScreenCaptureKit の公開 API だけを使用。
+- 失敗理由: なし。
+- 次アクション: 差分レビュー後に日本語 Conventional Commits 形式でコミットする。候補メッセージは `fix(audio): システム音声フォーマット不一致を UI に通知する`。

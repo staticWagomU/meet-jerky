@@ -128,6 +128,15 @@ fn validate_audio_format_description(
 #[cfg(target_os = "macos")]
 static FORMAT_WARN_ONCE: Once = Once::new();
 
+#[cfg(target_os = "macos")]
+fn warn_system_audio_format_once(app_handle: &tauri::AppHandle, message: &'static str) {
+    let app_handle = app_handle.clone();
+    FORMAT_WARN_ONCE.call_once(move || {
+        eprintln!("[system_audio] 入力フォーマット検証失敗: {message}。バッファを破棄します。");
+        let _ = app_handle.emit("system-audio-format-warning", message);
+    });
+}
+
 // ─────────────────────────────────────────────
 // ScreenCaptureKitCapture
 // ─────────────────────────────────────────────
@@ -228,6 +237,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
         let mut stream = SCStream::new(&filter, &config);
 
         // オーディオ出力ハンドラをクロージャで登録
+        let app_handle_for_warning = app_handle.clone();
         let level_for_callback = Arc::clone(&level);
         let producer_for_callback = Arc::clone(&producer);
 
@@ -243,22 +253,19 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     None => return,
                 };
 
-                // screencapturekit 1.5 の CMFormatDescription で ASBD 相当を検証し、
-                // 非 f32 PCM / BigEndian / channel 数不一致をサイレント品質劣化前にブロックする。
-                // 警告は FORMAT_WARN_ONCE で 1 度のみ出力。
-                // TODO(将来課題): app.emit 経由で UI へ警告を送る場合は FORMAT_WARN_ONCE を
-                //   Arc<AtomicBool> に置き換えて AppHandle をクロージャにキャプチャすること。
                 if let Some(fmt) = sample.format_description() {
                     if let Err(reason) =
                         validate_audio_format_description(&fmt, SYSTEM_AUDIO_CHANNELS as u32)
                     {
-                        FORMAT_WARN_ONCE.call_once(|| {
-                            eprintln!(
-                                "[system_audio] 入力フォーマット検証失敗: {reason}。バッファを破棄します。"
-                            );
-                        });
+                        warn_system_audio_format_once(&app_handle_for_warning, reason);
                         return;
                     }
+                } else {
+                    warn_system_audio_format_once(
+                        &app_handle_for_warning,
+                        "CMFormatDescription を取得できません",
+                    );
+                    return;
                 }
 
                 // 各バッファから f32 PCM サンプルを抽出する。

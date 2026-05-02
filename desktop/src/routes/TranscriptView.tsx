@@ -368,9 +368,15 @@ function getAudioSourceNotice(
   isAudioCaptureOperationPending: boolean,
   isMicRecording: boolean,
   isSystemAudioRecording: boolean,
+  systemAudioFormatWarning: string | null,
 ): string | null {
+  if (!isVisible) {
+    return null;
+  }
+  if (systemAudioFormatWarning) {
+    return `相手側音声入力の形式に問題があります: ${systemAudioFormatWarning}`;
+  }
   if (
-    !isVisible ||
     isAudioCaptureOperationPending ||
     (isMicRecording && isSystemAudioRecording)
   ) {
@@ -600,6 +606,9 @@ export function TranscriptView() {
   const [audioLevelListenerError, setAudioLevelListenerError] = useState<
     string | null
   >(null);
+  const [systemAudioFormatWarning, setSystemAudioFormatWarning] = useState<
+    string | null
+  >(null);
   const [hasPendingMeetingStartRequest, setHasPendingMeetingStartRequest] =
     useState(false);
   const [permissionSettingsOpenError, setPermissionSettingsOpenError] =
@@ -785,6 +794,44 @@ export function TranscriptView() {
         .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error("音声レベル監視の解除に失敗しました:", toErrorMessage(e));
+        });
+    };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    const unlistenPromise = listen<string>(
+      "system-audio-format-warning",
+      (event) => {
+        if (disposed) {
+          return;
+        }
+        const warning = event.payload.trim();
+        setSystemAudioFormatWarning(
+          warning.length > 0
+            ? warning
+            : "相手側音声入力の形式を確認できません。",
+        );
+      },
+    )
+      .then((unlisten) => unlisten)
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("音声形式警告通知の受信開始に失敗しました:", msg);
+        }
+        return null;
+      });
+
+    return () => {
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error(
+            "音声形式警告通知の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
   }, []);
@@ -1465,6 +1512,7 @@ export function TranscriptView() {
     isAudioCaptureOperationPending,
     isMicRecording,
     isSystemAudioRecording,
+    systemAudioFormatWarning,
   );
   const externalRealtimeRiskNotice = externalApiProvider
     ? isMeetingActive || isTranscribing
