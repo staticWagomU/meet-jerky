@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
-import { Captions } from "lucide-react";
+import { Captions, Video } from "lucide-react";
 import type { MeetingAppDetectedPayload } from "../types";
 import {
   clearPendingMeetingStartRequest,
@@ -357,7 +357,7 @@ export function MeetingDetectedBanner() {
             data-tauri-drag-region
             aria-hidden="true"
           >
-            <Captions
+            <Video
               className="meeting-detected-attention-icon"
               aria-hidden="true"
               size={18}
