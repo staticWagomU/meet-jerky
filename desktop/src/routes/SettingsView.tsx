@@ -66,7 +66,7 @@ const SETTINGS_CATEGORIES = [
     icon: Settings,
     kicker: "基本設定",
     title: "一般",
-    subtitle: "会議記録の保存先、権限状態、基本動作を確認します。",
+    subtitle: "自動キャプチャを安定させつつ、録音とAI処理を可視化します。",
   },
   {
     key: "detection",

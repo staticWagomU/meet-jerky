@@ -13015,3 +13015,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で audio read-only card の文言が Pencil の Settings Audio 画面意図と整合し、カード内に収まることを確認する。実機画面確認は未実機確認。
+
+### Settings general: align subtitle with Pencil
+
+- 開始日時: 2026-05-02 19:46:49 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP 確認済みの Mock 4 - Settings Window (`SmOt4`) に合わせ、`SETTINGS_CATEGORIES` 内 `general` の `subtitle` を `自動キャプチャを安定させつつ、録音とAI処理を可視化します。` に変更する。CSS、設定保存ロジック、カテゴリ key、Tauri/Rust、Pencil ファイル、他カテゴリ文言、未実装機能を実装済みに見せる追加UIは変更しない。コミット禁止。
+- 結果: `general` category の `subtitle` だけを Pencil 文言へ変更した。CSS、設定保存ロジック、カテゴリ key、Tauri/Rust、Pencil ファイル、他カテゴリ文言、追加UIは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、Settings General の subtitle が Pencil の Settings Window と整合し、レイアウト内に自然に収まることを確認する。実機画面確認は未実施。
