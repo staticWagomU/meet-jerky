@@ -3912,17 +3912,26 @@ body[data-window="ring-light"] .overlay-window {
   flex: 0 0 auto;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
-  background-color: #fff3ea;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fff9f3 0%, #fff1e6 100%);
+  color: #d45b00;
 }
 
-.meeting-detected-attention-dot {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  border-radius: 4px;
-  background-color: #ff6a00;
-  clip-path: polygon(12% 20%, 62% 20%, 62% 38%, 88% 26%, 88% 74%, 62% 62%, 62% 80%, 12% 80%);
+.meeting-detected-attention-mark svg {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.meeting-detected-attention-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.meeting-detected-start-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
 }
 
 .meeting-detected-banner-actions {
@@ -3949,6 +3958,10 @@ body[data-window="ring-light"] .overlay-window {
 
 .meeting-detected-banner-actions .control-btn-transcribe:hover:not(:disabled) {
   background-color: #e65f00;
+}
+
+.meeting-detected-banner-actions .control-btn-transcribe svg {
+  display: block;
 }
 
 .meeting-detected-dismiss-btn {

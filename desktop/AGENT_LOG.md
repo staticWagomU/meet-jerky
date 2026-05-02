@@ -1,3 +1,17 @@
+# Meeting detected banner: align notch icon and start button with Pencil
+
+- 開始日時: 2026-05-03 03:11:15 JST
+- 担当セッション: `Codex 作業担当エージェント（本セッション）`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `MeetingDetectedBanner` を Pencil の `Mock 2 - Notch Notification` にさらに寄せる。左上の 32px アイコン枠を `lucide-react` の `Video` または `Captions` 系 icon で置き換え、開始ボタンにもアイコンを追加して見た目の差分を小さくする。通知タイミング、文言、aria、ロジック、CSS の構造は壊さず、変更はバナーの見た目に限定する。コミットは禁止。
+- 結果: 左上のカスタム attention mark を `Captions` icon に置き換え、32px の専用枠をノッチ通知風の淡いグラデーションと境界線で整えた。開始ボタンには `Video` icon を追加し、既存の `開始` / `開始要求中...` 文言、aria、通知タイミング、検知ロジックは維持した。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`git diff --check` 成功、`npm run build` 成功（`tsc && vite build`）、`cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`cargo test --manifest-path src-tauri/Cargo.toml` は `cmake` 不在のため skip。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機で左上 icon と開始ボタン icon のサイズ、余白、透明 window 上での見え方を確認する。
+
 # Meeting detected banner: align visible copy with Pencil
 
 - 開始日時: 2026-05-03 02:51:19 JST
