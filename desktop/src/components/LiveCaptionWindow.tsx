@@ -558,7 +558,7 @@ export function LiveCaptionWindow() {
 
         <div className="live-transcript-collapsed-preview" data-tauri-drag-region>
           <span aria-hidden="true" />
-          ライブ文字起こし · 録音中 · {visibleTrackSummary}
+          録音中 · 字幕を表示中 · {visibleTrackSummary}
         </div>
       </div>
     </div>

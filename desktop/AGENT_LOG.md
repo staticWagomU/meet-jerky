@@ -12819,3 +12819,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: worker `mj-worker-settings-copy-ja-20260502-1` が長い `AGENT_LOG.md` 読解に入り、継続指示後も差分ゼロのまま停滞したため、自律運用停止回避として main が最小範囲で例外実装した。
 - 次アクション: 実機または画面確認でサイドバー文言が収まり、Pencil の日本語中心UIと整合することを確認する。
+
+### Live caption: shorten compact pill status copy
+
+- 開始日時: 2026-05-02 17:16:42 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 3/5 ライブキャプションにある下部 compact pill の「短く状態を示す」意図へ寄せるため、`.live-transcript-collapsed-preview` の文言を短くする。`visibleTrackSummary` は維持し、レイアウト/CSS、overlay hide、イベント購読、Tauri/Rust、Pencil ファイルは変更しない。コミット禁止。
+- 結果: 下部 compact pill の文言を `ライブ文字起こし · 録音中 · {visibleTrackSummary}` から `録音中 · 字幕を表示中 · {visibleTrackSummary}` に変更した。`visibleTrackSummary` は維持し、CSS や挙動は変更していない。
+- 変更ファイル: `src/components/LiveCaptionWindow.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、下部 compact pill の文言が幅内に収まり、上部タイトルとの重複感が減っていることを確認する。
