@@ -13563,3 +13563,25 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。補足: 必読指定の `logs/agent/research-live-caption-compact-state-20260503.txt` は存在しなかったため、Pencil MCP と既存実装を根拠に実装した。
 - 次アクション: メインエージェントによる差分レビューと必要なら実機確認、コミット候補を提示する。
+
+### トランスクリプト保存前正規化: セグメント本文の前後空白をトリム
+
+- 開始日時: 2026-05-03 00:51:23 JST
+- 担当セッション: `mjc-worker-transcript-bridge-text-normalization-20260503`
+- 役割: 作業担当エージェント (Claude Code 版)
+- 作業範囲: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 指示内容: 保存前の最小後処理として `TranscriptionSegment.text` の前後空白だけを落とし、speaker の既存正規化は維持したまま履歴・Markdown の検索性を少し上げる。
+- 結果:
+  - `segment_to_append_args_at` で返す `text` を `segment.text.trim().to_string()` に変更した。
+  - `speaker` 正規化や offset 計算はそのまま維持し、内部空白の圧縮や句読点変換は入れていない。
+  - 追加テスト 1 件で、前後空白が落ちる一方、内部の連続スペースは保持されることを確認した。
+- 変更ファイル: `src-tauri/src/transcript_bridge.rs`, `AGENT_LOG.md`
+- 検証結果:
+  1. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --lib transcript_bridge` → 成功
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" git diff --check -- src-tauri/src/transcript_bridge.rs AGENT_LOG.md` → 成功
+  5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+- 依存関係追加の有無と理由: なし。標準ライブラリのみで実装。
+- 失敗理由: なし。
+- 次アクション: メインエージェントによる差分レビューと必要なら次の後処理候補検討、コミット候補を提示する。

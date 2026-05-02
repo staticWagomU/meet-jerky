@@ -41,7 +41,9 @@ pub fn segment_to_append_args_at(
         observed_at_secs.unwrap_or(stream_started_at_secs)
     };
     let offset = segment_abs_secs.saturating_sub(session_started_at_secs);
-    (speaker, offset, segment.text.clone())
+    // 保存前の最小後処理として前後空白だけを落とし、内部表現は保持する。
+    let text = segment.text.trim().to_string();
+    (speaker, offset, text)
 }
 
 /// セグメント emit 直前に、`SessionManager::append` に渡す引数を計算するヘルパー。
@@ -283,5 +285,15 @@ mod tests {
         assert_eq!(speaker, "自分");
         assert_eq!(offset, 42);
         assert_eq!(text, "こんにちは");
+    }
+
+    #[test]
+    fn text_is_trimmed_before_append_without_collapsing_inner_whitespace() {
+        let mut segment = sample_segment();
+        segment.text = " \n  hello   world \t ".to_string();
+
+        let (_, _, text) = segment_to_append_args(&segment, 1000, 1040);
+
+        assert_eq!(text, "hello   world");
     }
 }
