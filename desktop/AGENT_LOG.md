@@ -13113,3 +13113,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または統合イベント確認で、会議検知時に空/透明 overlay だけが先に表示されず、通知カードと `記録状態を表示中` pill が描画後に表示されることを確認する。
+
+### Meeting prompt: remove unused immediate show entry
+
+- 開始日時: 2026-05-02 20:54:27 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 指示内容: `src-tauri/src/lib.rs` から未使用の `pub(crate) fn show_meeting_prompt_window(...)` だけを削除する。`position_window_top_center`, `MEETING_PROMPT_TOP_OFFSET`, `set_meeting_prompt_window_visible` は現在も使われるため残す。window builder、command、capability、React/CSS、Pencil ファイルは変更しない。コミット禁止。
+- 結果: 旧 Rust 側即時表示入口である `show_meeting_prompt_window` の定義のみを削除した。描画後に frontend から `set_meeting_prompt_window_visible(true)` を呼ぶ現行方針で使う位置決め関数、上端 offset、Tauri command は残した。
+- 変更ファイル: `src-tauri/src/lib.rs`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/lib.rs AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または統合イベント確認で、会議検知 prompt が frontend 描画後の `set_meeting_prompt_window_visible(true)` 経由で引き続き表示されることを確認する。

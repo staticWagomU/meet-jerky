@@ -224,13 +224,6 @@ fn position_window_bottom_center(app: &tauri::AppHandle, label: &str, bottom_off
     let _ = window.set_position(PhysicalPosition::new(x, y));
 }
 
-pub(crate) fn show_meeting_prompt_window(app: &tauri::AppHandle) {
-    position_window_top_center(app, MEETING_PROMPT_WINDOW_LABEL, MEETING_PROMPT_TOP_OFFSET);
-    if let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) {
-        let _ = window.show();
-    }
-}
-
 #[tauri::command]
 fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
     let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) else {
