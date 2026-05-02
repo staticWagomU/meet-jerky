@@ -12903,3 +12903,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 検証後、実機または画面確認で履歴一覧の短い日本語表記が Pencil 系UIと違和感なく並ぶことを確認する。
+
+### Transcript view: align saved history open button with Pencil
+
+- 開始日時: 2026-05-02 18:01:33 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの `Mock 6 - Menu Bar Window Variants` / `Variant - Meeting Finished` にある保存後の主ボタン `履歴で開く` に合わせ、保存済み履歴ファイル表示の可視ボタン `開く` だけを変更する。pending 中の `開いています...`、Finder 表示ボタン、aria-label/title の具体説明、ファイル操作ロジック、保存ロジック、CSS、Tauri/Rust、Pencil ファイルは変更しない。コミット禁止。
+- 結果: 保存済み履歴ファイル表示の open ボタン通常時可視ラベルを `開く` から `履歴で開く` に変更し、pending 中の `開いています...` と aria-label/title、Finder 表示ボタン、各種ロジックは維持した。実機/画面確認は未実施。
+- 変更ファイル: `src/routes/TranscriptView.tsx`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/TranscriptView.tsx AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。実機/画面確認は未実施。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 指定検証を実行し、保存済み履歴表示で Pencil の `履歴で開く` 表記と整合していることを必要に応じて実機または画面で確認する。

@@ -1922,7 +1922,7 @@ export function TranscriptView() {
                 aria-label={lastSavedOpenLabel}
                 title={lastSavedOpenLabel}
               >
-                {savedFileActionPending === "open" ? "開いています..." : "開く"}
+                {savedFileActionPending === "open" ? "開いています..." : "履歴で開く"}
               </button>
               <button
                 type="button"
