@@ -10,7 +10,6 @@ import { isMeetingAppDetectedPayload } from "../utils/meetingDetection";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
-  getVisibleTransmissionLabel,
   getTransmissionStatusAriaLabel,
   isLiveCaptionStatusPayload,
   normalizeLiveCaptionStatusPayload,
@@ -20,14 +19,13 @@ import {
 import { BOTH_TRACKS_DEVICE_LABEL } from "../utils/audioTrackLabels";
 
 const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
-const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 const INVALID_STATUS_PAYLOAD_ERROR =
   "会議検知プロンプトの状態通知の形式が不正です。";
 const PROMPT_OPERATION_LABEL =
   "「記録を開始」を選ぶまで録音は開始しません。バナーはドラッグで移動でき、Escape キーで閉じられます";
-type PendingPromptAction = "start" | "confirm" | null;
+type PendingPromptAction = "start" | null;
 
 async function hideMeetingPromptWindow(): Promise<void> {
   await invoke("set_meeting_prompt_window_visible", { visible: false });
@@ -164,7 +162,6 @@ export function MeetingDetectedBanner() {
 
   const displayName = detected ? getMeetingDetectedDisplayName(detected) : null;
   const sourceLabel = detected ? getMeetingDetectedSourceLabel(detected) : null;
-  const visibleTransmissionLabel = getVisibleTransmissionLabel(statusPayload);
   const transmissionAriaLabel = getTransmissionStatusAriaLabel(statusPayload);
   const bannerTitle = listenerError
     ? listenerError
@@ -179,18 +176,9 @@ export function MeetingDetectedBanner() {
     : `${displayName} を検出しました。${
         sourceLabel ? `検知元 ${sourceLabel}。` : ""
       }${PROMPT_OPERATION_LABEL}。文字起こしエンジン ${statusPayload.engineLabel}。${transmissionAriaLabel}。${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしの状態を確認してください。約${PROMPT_AUTO_HIDE_SECONDS}秒後に自動で隠れます。`;
-  const confirmRecordingLabel = detected
-    ? pendingAction === "confirm"
-      ? `${displayName} の録音と文字起こしの状態確認画面を開いています`
-      : pendingAction === "start"
-        ? `${displayName} の録音開始要求を送信中のため状態確認画面を開けません`
-      : `${displayName} の ${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしの状態を確認`
-    : "録音と文字起こしの状態を確認";
   const startRecordingLabel = detected
     ? pendingAction === "start"
       ? `${displayName} の録音開始要求を送信中`
-      : pendingAction === "confirm"
-        ? `${displayName} の状態確認画面を開いているため録音開始要求を送信できません`
       : `${displayName} の ${BOTH_TRACKS_DEVICE_LABEL} の録音と文字起こしを開始`
     : "録音と文字起こしを開始";
   const dismissBannerLabel = pendingAction
@@ -212,30 +200,6 @@ export function MeetingDetectedBanner() {
       clearPendingMeetingStartRequest();
       setPendingAction(null);
       console.error("録音開始要求または会議検知バナー非表示に失敗しました:", toErrorMessage(e));
-      return;
-    }
-    try {
-      await hideMeetingPromptWindow();
-      setDetected(null);
-    } catch (e) {
-      setPendingAction(null);
-      console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
-    }
-  };
-  const handleConfirmRecordingState = async () => {
-    if (pendingAction) {
-      return;
-    }
-    setPendingAction("confirm");
-    clearPendingMeetingStartRequest();
-    try {
-      await emit(SHOW_MAIN_WINDOW_REQUEST_EVENT);
-    } catch (e) {
-      setPendingAction(null);
-      console.error(
-        "録音状態確認画面の表示要求に失敗しました:",
-        toErrorMessage(e),
-      );
       return;
     }
     try {
@@ -343,38 +307,6 @@ export function MeetingDetectedBanner() {
               System: 相手側
             </span>
           </span>
-          <span className="meeting-detected-meta" data-tauri-drag-region>
-            {sourceLabel && (
-              <span
-                className="meeting-detected-source-badge"
-                data-tauri-drag-region
-                aria-label={`検知元: ${sourceLabel}`}
-                title={`検知元: ${sourceLabel}`}
-              >
-                {sourceLabel}
-              </span>
-            )}
-            <span
-              className="meeting-detected-source-badge meeting-detected-engine-badge"
-              data-tauri-drag-region
-              aria-label={`文字起こしエンジン: ${statusPayload.engineLabel}`}
-              title={`文字起こしエンジン: ${statusPayload.engineLabel}`}
-            >
-              {statusPayload.engineLabel}
-            </span>
-            <span
-              className={`meeting-detected-source-badge meeting-detected-privacy-badge${
-                statusPayload.isExternalTransmission
-                  ? " meeting-detected-privacy-badge-warning"
-                  : ""
-              }`}
-              data-tauri-drag-region
-              aria-label={transmissionAriaLabel}
-              title={transmissionAriaLabel}
-            >
-              {visibleTransmissionLabel}
-            </span>
-          </span>
         </>
       )}
       {(detected || listenerError) && (
@@ -391,27 +323,7 @@ export function MeetingDetectedBanner() {
                   void handleStartRecording();
                 }}
               >
-                {pendingAction === "start"
-                  ? "開始要求中..."
-                  : pendingAction === "confirm"
-                    ? "表示要求中..."
-                    : "開始"}
-              </button>
-              <button
-                type="button"
-                className="control-btn control-btn-clear meeting-detected-confirm-btn"
-                disabled={Boolean(pendingAction)}
-                aria-label={confirmRecordingLabel}
-                title={confirmRecordingLabel}
-                onClick={() => {
-                  void handleConfirmRecordingState();
-                }}
-              >
-                {pendingAction === "confirm"
-                  ? "表示要求中..."
-                  : pendingAction === "start"
-                    ? "開始要求中..."
-                    : "状態を確認"}
+                {pendingAction === "start" ? "開始要求中..." : "開始"}
               </button>
             </>
           )}

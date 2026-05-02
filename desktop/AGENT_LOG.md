@@ -12833,3 +12833,31 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、下部 compact pill の文言が幅内に収まり、上部タイトルとの重複感が減っていることを確認する。
+
+### Meeting prompt: match Pencil two-button notification UI
+
+- 開始日時: 2026-05-02 17:20:48 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil MCP で確認済みの Mock 2 - Notch Notification (`D0qo1`, `XUVhM`) に合わせ、通常の会議検知通知の visible UI から `状態を確認` ボタンと `.meeting-detected-meta` 行を外し、`開始` / `今回はしない` の2ボタン構成にする。detail と aria-label/title の情報、listener error 時の `閉じる`、Escape、auto hide、backend command hide、録音開始イベントは維持する。Tauri/Rust、window builder、透明背景CSS、Pencilファイルは変更しない。コミット禁止。
+- 結果: 通常通知の可視ボタンを `開始` と `今回はしない` の2つに整理し、状態確認ボタン用の event/handler/label と `confirm` pending state を削除した。source/engine/privacy badge の meta 行を通常通知の可視UIから削除し、検知元 detail と aria-label/title 内の engine/privacy 情報は維持した。不要になった `.meeting-detected-confirm-btn` と meta badge 系 CSS を削除し、dismiss ボタン幅を広げて2ボタン構成に合わせた。
+- 変更ファイル: `src/components/MeetingDetectedBanner.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功（`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため `whisper-rs-sys` をビルドできず skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で Pencil と同じ 360x172 通知カード内に2ボタンと下部 pill が安定して収まることを確認する。
+
+### Meeting prompt: restore Pencil dismiss button width
+
+- 開始日時: 2026-05-02 17:24:38 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `.meeting-detected-dismiss-btn` を Pencil の dismiss ボタン (`m3TSqB`) と同じ 76px 幅へ戻し、`開始` ボタンが残り幅を取る構成は維持する。`src/components/MeetingDetectedBanner.tsx`、Tauri/Rust、透明背景CSS、Pencilファイルは変更しない。コミット禁止。
+- 結果: `.meeting-detected-dismiss-btn` の `flex-basis`、`width`、`min-width` を 112px から 76px に戻した。`.control-btn-transcribe` の `flex: 1 1 0` は維持した。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check -- src/App.css AGENT_LOG.md` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機または画面確認で、Pencil と同じ 76px の dismiss ボタンと、残り幅を取る `開始` ボタンが通知カード内で安定して収まることを確認する。
