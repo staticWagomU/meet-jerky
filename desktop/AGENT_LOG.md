@@ -26,6 +26,20 @@
 - 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
 - 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
 
+# Settings sidebar note: align title weight with Pencil
+
+- 開始日時: 2026-05-03 04:22:11 JST
+- 担当セッション: `Codex main`
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の local privacy note を再確認し、注記タイトルの太さがまだやや強いなら、そこだけ Pencil の weight に揃える。本文、レイアウト、ロジックは変更しない。
+- 結果: `settings-sidebar-note-title` の `font-weight` を 760 から 700 に下げ、Pencil の注記タイトルに近づけた。その他の Settings サイドバー注記の見た目と挙動は維持した。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
+- 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
 # Meeting detected banner: align notch icon and start button with Pencil
 
 - 開始日時: 2026-05-03 03:11:15 JST
