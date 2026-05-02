@@ -1,3 +1,17 @@
+# TranscriptDisplay pause pill: align auto-scroll stop state with Pencil
+
+- 開始日時: 2026-05-03 01:53:59 JST
+- 担当セッション: `codex-worker-transcript-pause-pill-20260503`
+- 役割: 作業担当エージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: `TranscriptDisplay` の auto-scroll 停止状態を Pencil の `Mock - Caption Window Variations` にある `pausePill` 寄りの compact pill に置き換える。`autoScroll === false && segments.length > 0` のときだけ表示し、`最新へ戻る` のテキストボタンではなく `一時停止中` を中心にした小さな pill 表現にする。meeting 名は捏造せず、意味の通る代替ラベルを使う。既存の segments 表示、コピー、エラー表示、スクロール挙動は壊さない。検証はこのプロジェクトで妥当な lint / typecheck / build / test を実行し、結果を記録する。コミットは禁止。
+- 結果: TranscriptDisplay の自動スクロール停止時に、counts と copy ボタンの右側へ compact な pause pill を表示するようにした。pill は Pause アイコン、`一時停止中`、`自動追従`、Play アイコン付きの `再開` ボタンで構成し、既存の `handleScrollToLatest` を使って再開する。従来の `最新へ戻る` テキストボタンは削除した。segment 表示、コピー、エラー表示、スクロール制御のロジックは維持した。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` 成功。`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/App.css` 成功（`git diff --check` 成功、`npm run build` 成功、`cargo fmt --manifest-path src-tauri/Cargo.toml --check` 成功、`cargo test --manifest-path src-tauri/Cargo.toml` は `cmake` 不在のため skip）。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: 実機またはブラウザ/アプリ上で、auto-scroll を手動停止したときだけ pause pill が出て、`再開` で即座に末尾追従へ戻ることを確認する。
+
 # Agent Log
 
 ### Settings transcription: align engine copy with Pencil

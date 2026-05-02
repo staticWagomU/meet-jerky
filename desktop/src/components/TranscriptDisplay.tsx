@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { Pause, Play } from "lucide-react";
 import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
@@ -120,6 +121,7 @@ export function TranscriptDisplay({
   );
   const segmentCounts = useMemo(() => getSegmentCounts(segments), [segments]);
   const copyableSegmentsCount = segmentCounts.copyable;
+  const isPaused = !autoScroll && segments.length > 0;
 
   // Listen to transcription-result events
   useEffect(() => {
@@ -402,22 +404,51 @@ export function TranscriptDisplay({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            className="copy-btn"
-            aria-label={copyButtonLabel}
-            aria-live="polite"
-            aria-atomic="true"
-            title={copyButtonLabel}
-            onClick={handleCopyAll}
-            disabled={copyableSegmentsCount === 0 || isCopying}
-          >
-            {isCopying
-              ? "コピー中..."
-              : copyFeedback
-                ? "コピー済み"
-                : "本文をコピー"}
-          </button>
+          <div className="transcript-toolbar-actions">
+            <button
+              type="button"
+              className="copy-btn"
+              aria-label={copyButtonLabel}
+              aria-live="polite"
+              aria-atomic="true"
+              title={copyButtonLabel}
+              onClick={handleCopyAll}
+              disabled={copyableSegmentsCount === 0 || isCopying}
+            >
+              {isCopying
+                ? "コピー中..."
+                : copyFeedback
+                  ? "コピー済み"
+                  : "本文をコピー"}
+            </button>
+            {isPaused && (
+              <div
+                className="transcript-pause-pill"
+                aria-label="最新追従は一時停止中"
+                title="最新追従は一時停止中"
+              >
+                <Pause aria-hidden="true" size={11} strokeWidth={2.4} />
+                <span className="transcript-pause-pill-label">一時停止中</span>
+                <span
+                  className="transcript-pause-pill-separator"
+                  aria-hidden="true"
+                >
+                  ·
+                </span>
+                <span className="transcript-pause-pill-track">自動追従</span>
+                <button
+                  type="button"
+                  className="transcript-pause-pill-resume"
+                  aria-label="文字起こしログの最新追従を再開"
+                  title="文字起こしログの最新追従を再開"
+                  onClick={handleScrollToLatest}
+                >
+                  <Play aria-hidden="true" size={9} strokeWidth={2.5} />
+                  <span>再開</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {copyError && (
@@ -524,17 +555,6 @@ export function TranscriptDisplay({
           })
         )}
       </div>
-      {!autoScroll && (
-        <button
-          type="button"
-          className="scroll-to-bottom-btn"
-          aria-label="文字起こしログの最新位置へ戻る"
-          title="文字起こしログの最新位置へ戻る"
-          onClick={handleScrollToLatest}
-        >
-          最新へ戻る
-        </button>
-      )}
     </div>
   );
 }
