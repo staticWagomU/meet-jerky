@@ -16279,3 +16279,52 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### [SESSION SUMMARY @ 2026-05-04 ~16:00 JST] mjc-main (旧 mjc-main-20260504-5) 状況メモ
+
+- Active main: mjc-main (Claude Code, opus, canonical 名は 2026-05-04 ~12:30 JST に mjc-main-20260504-5 → mjc-main へ adopt-main で移譲済み)。watchdog は mjc-watchdog で interval=180s/cooldown=300s で稼働継続。
+- このセッションで完了した 5 ループ (順番):
+  1. `39ffa31` test(cloud_whisper_errors): 5xx 境界 (499/600) と 200 系誤呼出の safe 分類、private fn `sanitize_error_body` の whitespace 多様性、multibyte char base 切り詰め (byte 切り→ UTF-8 panic 検知装置) の 5 件で classify_cloud_whisper_error の分類契約と sanitize 仕様を直接テストで補強 → 289 → 294 passed
+  2. `4662791` test(apple_speech): `normalize_segment_text` の境界 (空入力/whitespace-only/内部空白保持の 3 ケース日本語含む) と `language_to_locale` の case-sensitive 完全一致 (大文字/mixed-case/trailing space fallback) の 5 件で private fn 直接呼び出しテストを補強し全エンジン共通の最終出力契約を保護 → 294 → 299 passed
+  3. `8235878` test(elevenlabs_realtime): `mod ws_task` 内 private fn 3 つ (`is_scribe_error_event` の AND 境界 + case-sensitive、`extract_transcript` の transcript→text→words[] 3 段優先順位 + `Some("")` vs `None` 区別、`extract_error_message` の message→error:string→error.message:object の 3 段 fallback) を 6 件で直接テスト化し WebSocket イベント→UI 表示の根幹契約を保護 → 299 → 305 passed
+  4. `2fb305a` test(cloud_whisper): `parse_whisper_verbose_response` の境界 (1 segment 境界 + source/speaker/is_error 全 default None / f64 round() の floor/ceil/trunc 検知 / text 前後 trim のみ内部空白保持 / segments 必須 field の serde 契約 / start>end 順序逆転は parse 段階バリデーションなし現挙動) の 5 件で核心 parser 契約と現仕様を補強 → 305 → 310 passed
+  5. `7ef5e68` test(datetime_fmt): UTC offset 0 / negative offset (UTC-5) 日付繰り下がり / unix epoch 0 (1970-01-01) / error 文言完全一致 + 両 fn cross-function invariant / header と segment の HH:MM 整合性 の 5 件で時刻整形契約を補強し JST hard-code 化や片側 format 変更を即座検知 → 310 → 315 passed
+- 累積成果:
+  - **テスト 289 → 315 passed** (+26 件、5 ループ、すべて新規追加)
+  - **clippy 警告ゼロ維持** (default lints, `-W uninlined_format_args` も継続ゼロ)
+  - cargo fmt --check 通過、cargo test 全合格
+  - **本セッションで定着した追加パターン**:
+    1. **HTTP status 境界網羅** (ループ 1): `match status { 500..=599 => ... }` の range 両端 (499/600) を test し、5xx upper/lower bound の誤リファクタを即座に検知。
+    2. **multibyte char base 切り詰め検知装置** (ループ 1): `"あ".repeat(N)` で `.bytes().take()` への誤リファクタが invalid UTF-8 panic に至るバグを `starts_with("あ")` で検知。
+    3. **case-sensitive 仕様の文書化** (ループ 2): `match language { "ja" => ..., _ => ... }` の case-sensitive 仕様を「大文字/mixed-case → fallback」の 4 ケースで test。case-insensitive 化リファクタの意図明示化。
+    4. **3 段 fallback 優先順位の網羅** (ループ 3): `extract_transcript` (transcript→text→words[]) と `extract_error_message` (message→error:string→error.message:object) を共存ケース + 個別 fallback ケースで網羅。
+    5. **f64 round() 識別パターン** (ループ 4): `0.4999 / 0.5001 / 0.5` の 3 値で round vs floor vs ceil vs trunc をすべて検知できる秀逸な fractional 設計。
+    6. **cross-function error 文言 invariant** (ループ 5): `assert_eq!(err1, err2)` で 2 つの fn が同じ error 形式を返す不変条件を 1 行で固定。片方の文言だけが変わった時の即座検知装置。
+    7. **UTC offset 多様性 (negative offset 繰り下がり)** (ループ 5): JST midnight cross と UTC-5 midnight 繰り下がりの対称テストで、offset 計算が正方向のみ動く誤実装を検知。
+- Codex 直近の作業領域 (衝突避ける): `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `src/components/TranscriptDisplay.tsx`。本セッション中も codex 側の活動なし (handoff 後 ~16 時間以上継続して静か)。
+- 今セッションでの判断履歴と注意点:
+  - **テストのみのループは安定して ~10-15 分/ループ**で完了。worker 起動コスト ~2-3 分 + テスト実装 ~5-7 分 + 検証 ~1-2 分 + commit ~1-2 分。コミット周期目標 15 分はほぼ達成 (5/5)。
+  - **worker prompt の構造化**: 「背景/Why」「具体的 test 案 (assertion レベル)」「実装上の注意」「検証手順」「AGENT_LOG.md 記載項目」の 5 セクションで書くことで、worker (sonnet) は 1 ターンで完走。5 件中 4 件が初回合格 (1 件は fmt 自動修正のみ)。
+  - **`audio_utils.rs` は補強余地ほぼゼロ**: 既存 6 件で NaN/+Inf/-Inf/clamp above/clamp below/finite range (0.0/0.5/-0.5/1.0/-1.0) を全分岐カバー。`-0.0` や subnormal は実装バグになりにくい範囲で価値低い。
+  - **`openai_realtime.rs` の `push_error` は elevenlabs と完全対称**: `error_events_are_queued_as_error_segments` (handle_event 経由) で間接カバー済の可能性高く、独立 test 価値は中程度。次セッションで補完余地あり (5 件で `[OpenAI Realtime エラー: ...]` prefix 文言契約 + start_ms=0/end_ms=0/is_error=Some(true) の不変条件固定)。
+  - **`transcript.rs` は Phase 4 用 placeholder** (TODO 1 行のみ)。テスト追加対象外と判明。次セッションも対象外。
+  - **`cloud_whisper.rs` の `build_*` 系は既に充実**: 既存 16 件でかなりカバー済。残る gap は HTTP body の binary upload 周辺 (実装にもよる) で、価値は中程度。
+- 次ループ候補 (優先順位順):
+  - **W'. openai_realtime.rs の push_error 直接テスト + float_to_pcm16 境界補完** (規模 XS, テストのみ, 5 件想定): 既存 9 件 (handle_event 系 5 件 + float_to_pcm16 2 件 + engine_construction 1 件 + error_events 1 件) を補完。`push_error` の `[OpenAI Realtime エラー: ...]` prefix 文言契約 + start_ms=0/end_ms=0/is_error=Some(true) + speaker clone + source passthrough を 4-5 件で固定。elevenlabs と対称。
+  - **W. transcription.rs の追加 error path** (規模 S〜M、引き継ぎ済み候補): 既存 3 件。`load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺 (既存 test あり、補強余地)、AppleSpeech / OpenAIRealtime / ElevenLabsRealtime のエラーパス (実環境依存性高)。実環境依存性高い fn を避ければ 5-7 件補完可能。
+  - **U. cloud_whisper_errors.rs の variant Eq / 200/400 系の追加 sanitize 確認** (規模 XS, テストのみ): 本セッションループ 1 で 5 件追加 (4→9 件) 済み。残る余地は CloudWhisperError の 4 variant 全 PartialEq (auto derive) の追加確認、201/204 などの稀な status code 確認。価値低め。
+  - **V'. cloud_whisper.rs の build_whisper_authorization_header 空 api_key 確認 + build_whisper_api_url 空 base_url 確認** (規模 XS, テストのみ, 3-4 件): 16 件既存だが、`""` 入力時の `"Bearer "` (空 token) や `"/audio/transcriptions"` (絶対パス) の現挙動は未確認。価値中。
+  - **F (引き継ぎ済み候補): drop メトリクスを Tauri イベント化** (規模 M): 価値: 録音状態の透明性 (優先度 9)。最小スライス案: rust 側に payload struct + emit のみ追加 (frontend hookup なし) で 1 ループ。AppHandle 渡し方は研究担当に先に確認。
+  - **G' (引き継ぎ済み候補): 会議終了検知の遅延監視** (規模 S〜M): handle_detection 内で watched bundle が起動 → アクティブから外れた経過時間を測り、N 分以上アクティブ無しなら会議終了通知を出すロジックの整備。
+  - **K (引き継ぎ済み候補): clippy::pedantic の選択的有効化** (規模 L、非優先)。
+  - **P 候補は引き続き保留**: settings.rs error path (Tidy First リファクタ要 → 2 ループ構成)。
+- 既知の制約 (再掲):
+  - cmake あり → cargo test 315 件全 pass する (verify.sh OK)
+  - 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁)
+  - `--no-verify` 禁止
+  - Keychain 実通信禁止 (macOS 権限ダイアログ防止、test ではバリデーション層まで)
+  - メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+  - 1 ループ目標 15 分 / 本セッション実績平均 ~12.4 分/ループ
+- AGENT_LOG.md は ~16500 行 / 1.5MB+。worker は `tail -200 AGENT_LOG.md` 相当で末尾だけ参照する運用継続。
+- ユーザー直伝指示 (未消化): なし。watchdog 継続指示は受領済み・既に従って 5 ループ完了済み。
+- 後続メイン候補名: `mjc-main-20260504-6`。本セッションは 5 ループ + SESSION SUMMARY で良い区切り (前セッションは 6 ループ + 1 SESSION SUMMARY)、判断履歴 rotate 安全性のため予防的ハンドオフを判断。
