@@ -3147,6 +3147,10 @@ body[data-window="ring-light"] .overlay-window {
   margin: 0;
 }
 
+.settings-section-title-compact {
+  font-size: 14px;
+}
+
 .settings-radio-group {
   display: flex;
   flex-direction: column;

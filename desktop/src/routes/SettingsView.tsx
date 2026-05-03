@@ -987,7 +987,9 @@ export function SettingsView() {
 
                 {/* 権限ステータス */}
                 <div className="settings-section">
-                  <h3 className="settings-section-title">権限ステータス</h3>
+                  <h3 className="settings-section-title settings-section-title-compact">
+                    権限ステータス
+                  </h3>
         <div className="settings-permissions">
           <div className="settings-permission-row">
             <span className="settings-permission-label">

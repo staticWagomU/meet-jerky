@@ -250,6 +250,20 @@
 - 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
 - 次アクション: `git diff --check`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
 
+# Settings permissions title: match Pencil 14px heading size
+
+- 開始日時: 2026-05-03 06:31:32 JST
+- 担当セッション: `Codex main`
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の権限ステータス見出しを再確認し、他の section 見出しには触れず、このカードだけ 14px へ揃える。
+- 結果: `settings-section-title-compact` を追加して権限ステータス見出しだけを 14px に調整した。その他の section 見出し、カード本文、ロジックは維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: research セッションは thread limit で起動できなかったため、Pencil 画面と既存 CSS の静的比較で判断した。
+- 次アクション: `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`、`npm run build`、`cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` を実行する。
+
 # Meeting detected banner: align notch icon and start button with Pencil
 
 - 開始日時: 2026-05-03 03:11:15 JST
