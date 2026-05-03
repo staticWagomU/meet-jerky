@@ -1458,4 +1458,115 @@ mod tests {
         // elapsed = 30s > 9s だが 30s 前に警告済み (throttle=60s) → None
         assert_eq!(should_warn_polling_stall(1000, 970, 970, 3, 60), None);
     }
+
+    #[test]
+    fn classify_meeting_url_rejects_empty_and_whitespace_only() {
+        assert_eq!(classify_meeting_url(""), None);
+        assert_eq!(classify_meeting_url("   "), None);
+        assert_eq!(classify_meeting_url("\t\n"), None);
+        assert_eq!(classify_meeting_url("\u{3000}"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_non_http_schemes() {
+        assert_eq!(classify_meeting_url("file:///path/to/file"), None);
+        assert_eq!(
+            classify_meeting_url("ftp://meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("ws://meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(classify_meeting_url("chrome://settings/"), None);
+        assert_eq!(classify_meeting_url("javascript:alert(1)"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_missing_scheme() {
+        assert_eq!(classify_meeting_url("meet.google.com/abc-defg-hij"), None);
+        assert_eq!(classify_meeting_url("//meet.google.com/abc-defg-hij"), None);
+        assert_eq!(classify_meeting_url("/abc-defg-hij"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_userinfo_in_authority() {
+        assert_eq!(
+            classify_meeting_url("https://attacker@meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://user:pass@meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com@evil.example.com/abc-defg-hij"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_invalid_port() {
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:abc/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:99999/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:65536/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:-1/abc-defg-hij"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_accepts_valid_port() {
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:8443/abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com:0/abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_ipv6_host_for_meeting_services() {
+        assert_eq!(classify_meeting_url("https://[::1]/j/123456789"), None);
+        assert_eq!(
+            classify_meeting_url("https://[2001:db8::1]/abc-defg-hij"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://[::1]:8443/l/meetup-join/secret"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_double_scheme_separator() {
+        assert_eq!(
+            classify_meeting_url("https://://meet.google.com/abc-defg-hij"),
+            None
+        );
+        assert_eq!(classify_meeting_url("https://"), None);
+        assert_eq!(classify_meeting_url("https:///abc-defg-hij"), None);
+    }
 }

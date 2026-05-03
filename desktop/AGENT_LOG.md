@@ -14970,3 +14970,32 @@
 - 依存関係追加の有無: なし
 - 失敗理由: なし
 - 次アクション: 他エージェントへの引き渡し。実機での Swift Timer 停滞シナリオ検証は未実施 (残リスク)
+
+### classify_meeting_url の境界仕様テストを 8 種類追加し回帰防止カバレッジを拡張
+
+- 開始日時: 2026-05-04 (JST、セッション開始時刻)
+- 担当セッション: mjc-worker-classify-url-edge-tests-20260504-1
+- 役割: 作業担当エージェント (Claude Code, print mode)
+- 作業範囲: `src-tauri/src/app_detection.rs` (tests モジュール末尾への追加のみ)、`AGENT_LOG.md` 末尾追記
+- 指示内容: `classify_meeting_url` の境界仕様 8 カテゴリ (空文字/空白のみ、非 HTTP スキーム、スキームなし、userinfo 混入、無効ポート、有効ポートの肯定ケース、IPv6 ホスト、二重スキームセパレータ) を裏付ける `#[test]` 関数を追加。実装ロジックは一切変更しない。
+- 結果: 8 つの `#[test]` 関数を `mod tests` 末尾に追加。合計 assertion 件数 28 件。実装が誤って `Some` を返したケースは発見されなかった (バグ報告なし)。
+- 追加したテスト関数:
+  1. `classify_meeting_url_rejects_empty_and_whitespace_only` — 4 assertions
+  2. `classify_meeting_url_rejects_non_http_schemes` — 5 assertions
+  3. `classify_meeting_url_rejects_missing_scheme` — 3 assertions
+  4. `classify_meeting_url_rejects_userinfo_in_authority` — 3 assertions
+  5. `classify_meeting_url_rejects_invalid_port` — 5 assertions
+  6. `classify_meeting_url_accepts_valid_port` — 2 assertions
+  7. `classify_meeting_url_rejects_ipv6_host_for_meeting_services` — 3 assertions
+  8. `classify_meeting_url_rejects_double_scheme_separator` — 3 assertions
+- 変更ファイル: `src-tauri/src/app_detection.rs` (tests モジュール末尾のみ)、`AGENT_LOG.md`
+- 検証結果:
+  - `git diff --check`: OK (ホワイトスペースエラーなし)
+  - `cargo fmt --check`: 初回 3 箇所で行長超過を指摘 → 多行形式に修正後 OK
+  - `cargo clippy --no-deps --all-targets --all-features -- -D warnings`: OK (警告ゼロ)
+  - `cargo test --no-fail-fast`: OK (210 passed → 218 passed、追加 8 件すべて合格)
+  - `scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md`: OK
+- 依存関係追加の有無: なし
+- 失敗理由: なし (fmt 指摘のみ、2 回目で全パス)
+- 残リスク: 実機 URL での挙動未確認 / parser の他サニタイズ層との重複確認未実施
+- 次アクション: メインが diff レビューしてコミット
