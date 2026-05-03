@@ -350,4 +350,50 @@ mod tests {
             "unexpected error message: {err}"
         );
     }
+
+    // Cycle 6a: start_session_inner が output_dir がファイルの場合に日本語エラーを返す
+    // start_with_output より先に create_dir_all が失敗するため manager はアイドルのまま
+    #[test]
+    fn start_session_inner_returns_error_when_output_dir_path_is_a_file() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        let output_dir = dir.path().join("output_dir");
+        std::fs::write(&output_dir, b"").unwrap();
+
+        let err = start_session_inner(&manager, "title".into(), 1_713_333_000, &output_dir, jst())
+            .expect_err("should error when output_dir path is a file");
+
+        assert!(
+            err.starts_with("出力ディレクトリの作成に失敗しました"),
+            "unexpected error message: {err}"
+        );
+        // create_dir_all 失敗のため start_with_output は呼ばれず manager はアイドルのまま
+        assert!(!manager.is_active());
+    }
+
+    // Cycle 6b: finalize_and_save_session_inner が save_session_markdown 失敗時に日本語エラーを返す
+    // started_at = MAX_JS_DATE_UNIX_SECS + 1 は chrono 表現範囲外のため save が失敗する経路
+    #[test]
+    fn finalize_and_save_session_inner_returns_error_with_jp_prefix_when_save_fails() {
+        let manager = SessionManager::new();
+        // MAX_JS_DATE_UNIX_SECS + 1 = 8_640_000_000_001; chrono の NaiveDate 上限を超えるため
+        // save_session_markdown が "out of range" エラーを返す
+        manager
+            .start("会議".into(), 8_640_000_000_001)
+            .expect("start should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+
+        let dir = tempdir().unwrap();
+        let err = finalize_and_save_session_inner(&manager, dir.path(), 8_640_000_000_100, jst())
+            .expect_err("should error when save_session_markdown fails");
+
+        assert!(
+            err.starts_with("セッションファイルの書き込みに失敗しました"),
+            "unexpected error message: {err}"
+        );
+        // finalize() は create_dir_all より先に呼ばれるため、save 失敗後も manager はアイドル
+        assert!(!manager.is_active());
+    }
 }

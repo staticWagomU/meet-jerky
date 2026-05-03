@@ -15299,3 +15299,58 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### session_commands.rs の start_session_inner / save 失敗エラー経路を 2 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 06:35 JST
+- **担当セッション**: `mjc-worker-session-commands-error-tests-20260504-2`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/session_commands.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+以下 2 つのエラー経路を裏付ける `#[test]` 関数 2 件を追加し、ユーザー向け日本語エラーメッセージの prefix が壊れた時に検知できるようにする:
+1. `start_session_inner` が `output_dir` がファイルの場合に「出力ディレクトリの作成に失敗しました:」prefix を返すこと
+2. `finalize_and_save_session_inner` が内部の `save_session_markdown` 失敗時に「セッションファイルの書き込みに失敗しました:」prefix を返すこと
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| A | `start_session_inner_returns_error_when_output_dir_path_is_a_file` | `output_dir` がファイルの場合 `create_dir_all` 失敗 → `"出力ディレクトリの作成に失敗しました"` prefix、かつ manager がアイドルのまま (`is_active() == false`) |
+| B | `finalize_and_save_session_inner_returns_error_with_jp_prefix_when_save_fails` | `started_at = 8_640_000_000_001` (MAX_JS_DATE_UNIX_SECS + 1) で start → finalize → `save_session_markdown` が chrono 範囲外で失敗 → `"セッションファイルの書き込みに失敗しました"` prefix、かつ manager はアイドル |
+
+#### 設計確認事項
+- Test A: `create_dir_all` は `start_with_output` より先に呼ばれるため、失敗しても manager は一度も活性化しない (アイドルのまま)
+- Test B: `finalize_and_save_session_inner` は `manager.finalize()` → `create_dir_all` → `save_session_markdown` の順。`finalize()` で manager がアイドルに戻った後に `save_session_markdown` が失敗するため、save 失敗後も `is_active() == false`
+- `8_640_000_000_001` 秒は `i64` の範囲内だが chrono の `NaiveDate` 最大年 (≈262,142) を大幅に超えるため `timestamp_opt` が `None` を返し、`format_session_header_timestamp_with_offset` がエラーを返す
+
+#### 変更ファイル
+- `src-tauri/src/session_commands.rs` (tests モジュール末尾に 2 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 初回 2 箇所で行分割形式の修正指摘 → 1 行形式に修正後 OK |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **245 passed** (243 → 245、追加 2 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/session_commands.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 2 件
+- 追加後 total passed: 245
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし (cargo fmt による行形式の修正指摘のみ、即解消)
+
+#### 残リスク
+- Test B の `8_640_000_000_001` は chrono の `NaiveDate` 上限起因で失敗する実装依存の境界値。将来 chrono が年範囲を拡張した場合、別のエラーパスが必要になる可能性あり
+- `MAX_JS_DATE_UNIX_SECS` は `parse_session_started_at_secs` (READ 経路) のみに使われる private const であり、WRITE 経路の失敗は chrono の型変換によるもの。定数変更が WRITE 側に波及しない点は設計の注意点
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
