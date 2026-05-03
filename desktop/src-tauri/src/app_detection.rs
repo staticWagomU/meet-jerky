@@ -1569,4 +1569,109 @@ mod tests {
         assert_eq!(classify_meeting_url("https://"), None);
         assert_eq!(classify_meeting_url("https:///abc-defg-hij"), None);
     }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_leading_whitespace() {
+        // strict prefix 一致: 前置空白は reject
+        assert_eq!(classify_meeting_window_title(" Meet - abc-defg-hij"), None);
+        assert_eq!(classify_meeting_window_title("\tMeet - abc-defg-hij"), None);
+        assert_eq!(classify_meeting_window_title("  Zoom Meeting"), None);
+        assert_eq!(
+            classify_meeting_window_title("\u{3000}Zoom ミーティング"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_case_mismatch() {
+        // 大文字小文字は strict: normalize しない
+        assert_eq!(classify_meeting_window_title("MEET - abc-defg-hij"), None);
+        assert_eq!(classify_meeting_window_title("meet - abc-defg-hij"), None);
+        assert_eq!(classify_meeting_window_title("ZOOM Meeting"), None);
+        assert_eq!(classify_meeting_window_title("zoom meeting"), None);
+        assert_eq!(classify_meeting_window_title("ZOOM ミーティング"), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_meet_without_space_after_dash() {
+        // prefix は "Meet - " (末尾スペース必須)
+        assert_eq!(classify_meeting_window_title("Meet -abc-defg-hij"), None);
+        assert_eq!(classify_meeting_window_title("Meet-abc-defg-hij"), None);
+        assert_eq!(classify_meeting_window_title("Meet  - abc-defg-hij"), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_accepts_meet_with_extra_trailing_content() {
+        let gm = Some(MeetingUrlClassification {
+            service: "Google Meet".to_string(),
+            host: String::new(),
+        });
+        assert_eq!(
+            classify_meeting_window_title("Meet - abc-defg-hij - 追加情報"),
+            gm.clone()
+        );
+        assert_eq!(
+            classify_meeting_window_title("Meet \u{2013} 名前 with spaces"),
+            gm.clone()
+        );
+        assert_eq!(classify_meeting_window_title("Meet \u{2014} \u{1F389}"), gm);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_accepts_zoom_with_unusual_suffix() {
+        let zm = Some(MeetingUrlClassification {
+            service: "Zoom".to_string(),
+            host: String::new(),
+        });
+        assert_eq!(
+            classify_meeting_window_title("Zoom Meeting - paused"),
+            zm.clone()
+        );
+        assert_eq!(
+            classify_meeting_window_title("Zoom ミーティング (録画停止中)"),
+            zm.clone()
+        );
+        assert_eq!(
+            classify_meeting_window_title("Zoom Meeting\n参加者: 山田"),
+            zm
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_handles_only_whitespace_after_meet_dash() {
+        // 現仕様: "Meet - " の rest が whitespace のみでも is_empty() == false → Some を返す
+        assert_eq!(
+            classify_meeting_window_title("Meet -  "),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+        // 現仕様: en-dash prefix の rest = "\t" は非空 → Some を返す
+        assert_eq!(
+            classify_meeting_window_title("Meet \u{2013} \t"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_control_characters() {
+        // NULL / BOM 前置は prefix 不一致 → None
+        assert_eq!(classify_meeting_window_title("\0"), None);
+        assert_eq!(
+            classify_meeting_window_title("\u{FEFF}Meet - abc-defg-hij"),
+            None
+        );
+        // 現仕様: rest に改行含むが is_empty() == false → Some を返す
+        assert_eq!(
+            classify_meeting_window_title("Meet - \nabc"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+    }
 }

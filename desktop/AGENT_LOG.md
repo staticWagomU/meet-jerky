@@ -15071,3 +15071,42 @@
 - 失敗理由: なし (cargo fmt 指摘のみ、1 行化で即解消)
 - 残リスク: なし (機械的な形式変換のみ。行番号が実際と 1〜2 ずれていた場合は old_string マッチで自動補正済み)
 - 次アクション: メインが diff レビューしてコミット
+
+### classify_meeting_window_title の境界仕様テスト 7 種類を追加し回帰防止カバレッジを拡張
+
+- 開始日時: 2026-05-04 (JST)
+- 担当セッション: mjc-worker-window-title-edge-tests-20260504-1
+- 役割: 作業担当エージェント (Claude Code, print mode)
+- 作業範囲: `src-tauri/src/app_detection.rs` (tests モジュール末尾への追加のみ)、`AGENT_LOG.md` 末尾追記
+- 指示内容:
+  - `classify_meeting_window_title` の境界仕様を裏付ける `#[test]` 関数 7 件を追加
+  - 前置空白・大文字小文字・"Meet - " prefix の厳密一致・肯定ケース回帰防止・Zoom suffix バリエーション・whitespace-only rest の挙動確認・制御文字/BOM 前置の reject を網羅
+  - 実装ロジックは一切変更しない
+  - テスト 6/7 は「実装の現挙動を裏付ける」性格: 実行後に assertion を実装に合わせて確定
+- 結果: 7 つの `#[test]` 関数を `mod tests` 末尾に追加。合計 assertion 件数 23 件。
+- 追加したテスト関数:
+  1. `classify_meeting_window_title_rejects_leading_whitespace` — 4 assertions (前置空白)
+  2. `classify_meeting_window_title_rejects_case_mismatch` — 5 assertions (大文字小文字)
+  3. `classify_meeting_window_title_rejects_meet_without_space_after_dash` — 3 assertions (prefix 厳密一致)
+  4. `classify_meeting_window_title_accepts_meet_with_extra_trailing_content` — 3 assertions (肯定ケース回帰防止)
+  5. `classify_meeting_window_title_accepts_zoom_with_unusual_suffix` — 3 assertions (Zoom suffix バリエーション)
+  6. `classify_meeting_window_title_handles_only_whitespace_after_meet_dash` — 2 assertions (whitespace-only rest)
+  7. `classify_meeting_window_title_rejects_control_characters` — 3 assertions (NULL/BOM/改行)
+- テスト 6/7 の実際の挙動:
+  - `"Meet -  "` → 現仕様: rest = " " (非空) → Some(Google Meet) ✓
+  - `"Meet \u{2013} \t"` → 現仕様: rest = "\t" (非空) → Some(Google Meet) ✓
+  - `"Meet - \nabc"` → 現仕様: rest = "\nabc" (非空) → Some(Google Meet) ✓
+  - `"\0"` → None ✓ / `"\u{FEFF}Meet - abc-defg-hij"` → None ✓
+- 変更ファイル: `src-tauri/src/app_detection.rs` (tests モジュール末尾のみ)、`AGENT_LOG.md`
+- 検証結果:
+  - `git diff --check`: OK
+  - `cargo fmt --check`: 初回 1 箇所で行長超過指摘 (`\u{3000}Zoom ミーティング` を多行に展開) → 修正後 OK
+  - `cargo clippy --no-deps --all-targets --all-features -- -D warnings`: OK (警告ゼロ)
+  - `cargo test --no-fail-fast`: OK (223 passed → 230 passed、追加 7 件すべて合格)
+  - `scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md`: OK
+- 追加 test 件数: 7 関数 / 23 assertions
+- 追加後 total passed: 230
+- 依存関係追加の有無: なし
+- 失敗理由: なし (fmt 指摘のみ、多行展開で即解消)
+- 残リスク: whitespace-only rest と改行含み rest が Some を返す現仕様はドキュメント化されていないため、将来の実装変更で test 6/7 が先行して失敗する可能性あり (意図的な仕様変更の早期検知になるため許容)
+- 次アクション: メインが diff レビューしてコミット
