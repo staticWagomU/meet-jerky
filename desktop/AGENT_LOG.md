@@ -14932,3 +14932,16 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし (audio.rs は最初 3 行形式にしたが rustfmt が 1 行折り畳みを要求、system_audio.rs は逆に行長超過で多行維持が必要と判明し二段修正)
 - 次アクション: メインが diff レビューしてコミット。
+
+### コンテキスト管理アクション: handoff (mjc-main → mjc-main-20260504-2)
+
+- 開始日時: 2026-05-04 ~07:10 JST
+- 担当セッション: mjc-main (旧 mjc-main-20260504-1, Claude Code opus)
+- 役割: メインエージェント (handoff 実行側)
+- 判断時の使用率: 推定 70-85% (詳細は TUI で確認、Read/Bash 多用で context 消費が大きい状態)
+- 引き継ぎ先: mjc-main-20260504-2 (claude-agent-handoff-main.sh 経由で起動済み)
+- 引き継ぎプロンプト: `docs/handoff/mjc-main-20260504-2.txt`
+- 旧メイン (mjc-main) は本コミット後、後継が `agent-adopt-main.sh` を実行するときに kill される予定。
+- このセッションでの完了 5 ループ + 1 サマリコミット (詳細は SESSION SUMMARY 参照、最後の commit は 13b4b87 chore(rust): clippy uninlined_format_args 統一)
+- 残 clippy 警告: ゼロ ✓
+- 次ループ候補は handoff prompt の「次ループ候補」セクションを参照 (F/G/H/I/J/K)

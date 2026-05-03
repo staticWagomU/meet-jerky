@@ -1,0 +1,110 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-2) です。
+旧 mjc-main (= 旧 mjc-main-20260504-1) から context 圧迫予防のため引き継ぎを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md は ~14900 行 / 1.5MB あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。末尾には [SESSION SUMMARY @ 2026-05-04 06:30 JST] とそれ以降の 5 ループ追記があります。
+
+# 引き継ぎサマリ (2026-05-04 ~07:10 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 15 (origin/main から先行)
+- working tree: clean
+- 旧 mjc-main-20260504-1 が canonical 名 mjc-main を持っており、このセッションで 5 ループ実行 + 1 セッションサマリコミットを完了:
+  1. `004f3e6` feat(audio): マイクのリングバッファ満杯で破棄したサンプル数を可視化
+  2. `2a03fe4` refactor(elevenlabs_realtime): ws_task::run の引数を RunParams 構造体に集約
+  3. `0465834` refactor(openai_realtime): ws_task::run の引数を RunParams 構造体に集約し clippy 警告ゼロ達成
+  4. `5b11672` feat(app_detection): ブラウザ URL 取得失敗時の診断ログを 60 秒スロットリングで出力
+  5. `dd90aee` chore(agent-log): セッションサマリを追記し次セッションが状況復元しやすいよう整理
+  6. `13b4b87` chore(rust): clippy uninlined_format_args 4 件を Rust 2021 慣用形に統一
+
+## 現在の品質状態
+- cargo test 206 passed / 0 failed
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+- frontend build: 通過 (codex 並行作業で UI 微調整連発中だが衝突なし)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-1、handoff 直前)
+- mjc-main-20260504-2 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションがあれば触らないでください。
+
+## あなたが最初にすべきこと
+1. 上記必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-2 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+- **app_detection.rs の Teams ブラウザタイトル fallback は禁止**: 旧 mjc-main の研究担当 (haiku) は候補 1 として Teams ブラウザ版タイトル fallback を提案したが、L1352 の test `classify_meeting_window_title_rejects_teams_excluded` が明示的にこれを reject していて、関数 doc コメントにも「Teams はデスクトップアプリ経由で検知する方針」と書かれている。**この方針に逆らわないこと**。
+- **WATCHED_BUNDLE_IDS への新規追加は要慎重**: Webex / Discord / Slack 等は app 起動 ≠ 会議中というケースがあり、誤検知につながる。bundle ID も実機で verify できないと危険。優先度は低い。
+- **uninlined_format_args は 4 件すべて修正済み**: 残りの pedantic lint は default off のまま放置でよい (uninlined_format_args 単独でも警告ゼロを維持)。
+- **transcription.rs の 50ms sleep × 2 (L1143/L1151) は最適化対象外**: `available == 0` のアイドル yield のため、これ以上短くすると CPU を浪費するだけ。
+
+## 次ループ候補 (優先順位順)
+
+### F. system_audio/audio drop メトリクスを Tauri イベント化して UI に表示 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。eprintln! は dev 用、UI 表示は user 用。
+- リスク: codex が UI 側 (App.css / TranscriptDisplay.tsx) を頻繁に変更中。コンフリクトの可能性。
+- 提案: rust 側だけまず emit を入れ、UI 側は次々ループまたは codex 終息後に。
+
+### G. 検知ループ周期可視化 (規模 M, app_detection.rs)
+- 価値: 会議検知信頼性 (優先度 2) と透明性 (優先度 9)。
+- 提案: detection_callback / browser_url_callback (line 570-600 付近) で `Instant::now()` を保存し、前回コールバックからの elapsed が長すぎる (>5s) ときに警告ログ。
+
+### H. handle_browser_url_detection の url 非空 / window_title 空ケースの追加診断 (規模 S)
+- 価値: 補完。今回の commit 5b11672 で「両方空」だけ覆ったが、片方だけ取れる中間状態の診断は未対応。
+- 提案: 一時的に dev-only feature gate で詳細 log を出すか、debug_assertions のみで動かす。
+
+### I. classify_meeting_url の edge case test 追加 (規模 S, テストのみ)
+- 価値: 既存 test カバレッジ拡張。port 番号付き URL、IPv6 host 等の corner case。
+- リスク: 極小。tests モジュールへの追加のみ。
+
+### J. session_store / session_manager の error path テスト不足
+- 価値: クラッシュ修正 (優先度 1) の予防。
+- 提案: 不完全な JSON パース・disk full 等の error case test を追加。
+
+### K. cargo clippy の `clippy::pedantic` を選択的に有効化
+- 価値: 残り pedantic 警告を見直し、納得できるものを fix、納得できないものは allow attribute で意図を明示。
+- 提案: 規模 L。一気にやらず 1 lint ずつ。
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 206 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。再起動不要。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-2 mjc-main`
+
+## コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 旧セッションでの実績平均 ~15-22 分/loop (worker 出力 buffer 待ちで数分かかるため最低 5 分は確保)。
+- trivial 変更 (1 行 fix、CSS 数値合わせ) は research 担当を立てずメインから直接 worker へ。
+- 担当範囲が衝突しない 2 件は worker 並列起動可。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示 2 件は受領済み・自走中で消化済み。
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-2 mjc-main` を実行。
+4. 候補 G (検知ループ周期可視化) または候補 I (classify_meeting_url edge case test) を最小スライスとして worker に発注して 1 ループ目を始める。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
