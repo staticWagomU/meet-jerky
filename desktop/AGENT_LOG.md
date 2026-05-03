@@ -15149,3 +15149,47 @@
 - ユーザー直伝指示 (未消化): なし。watchdog 継続指示 2 件 (autonomous prompt に従う) は受領済み・既に従って 5 ループ完了済み。
 - このセッションで終始衝突なし: codex 側 (UI), Claude 側 (Rust) の住み分けが効いている。
 - 後続メイン候補名: `mjc-main-20260504-3` (本セッションの数字 +1)。
+
+---
+
+### session_commands.rs のユーザー向けエラーメッセージ経路を 2 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 (worker 起動)
+- **担当セッション**: `mjc-worker-session-commands-error-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/session_commands.rs` の `mod tests` 末尾への test 追加のみ
+
+#### 指示内容 (要約)
+`finalize_and_save_session_inner` (L86-100) と `list_session_summaries_inner` (L139-145) のユーザー向け日本語エラーメッセージが実際に返される経路を 2 件のテストで裏付ける。実装変更・コミット禁止。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| 1 | `finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file` | `output_dir` がファイルの場合 `create_dir_all` 失敗 → `"出力ディレクトリの作成に失敗しました"` prefix、かつ manager がアイドルに戻っている |
+| 2 | `list_session_summaries_inner_returns_error_when_path_is_a_file` | `output_dir` がファイルの場合 `read_dir` 失敗 → `"セッション一覧の取得に失敗しました"` prefix |
+
+#### finalize_and_save の副作用確認
+`manager.finalize()` が L92 で `create_dir_all` より先に呼ばれるため、ディレクトリ作成失敗後も `manager.is_active() == false` であることをアサートで確認。仕様通り。
+
+#### 変更ファイル
+- `src-tauri/src/session_commands.rs` (tests モジュール末尾に 2 関数追加、実装変更なし)
+
+#### 検証結果
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy -D warnings` | 合格 (警告ゼロ) |
+| `cargo test` | **232 passed** (230 → 232、追加 2 件) |
+| `scripts/agent-verify.sh` | 合格 |
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- 他エージェントとの衝突: なし
+
+#### 失敗理由
+なし
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

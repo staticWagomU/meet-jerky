@@ -306,4 +306,48 @@ mod tests {
 
         assert!(summaries.is_empty());
     }
+
+    // Cycle 5a: output_dir がファイルの場合 create_dir_all が失敗し日本語エラーを返す
+    // finalize は create_dir_all より先に呼ばれるため manager はアイドルに戻っている
+    #[test]
+    fn finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        let blocking_file = dir.path().join("blocking");
+        std::fs::write(&blocking_file, b"existing content").unwrap();
+
+        start_session_inner(&manager, "会議".into(), 100, dir.path(), jst())
+            .expect("start should succeed");
+        manager
+            .append("user".to_string(), 5, "hello".to_string())
+            .expect("append should succeed");
+
+        let err = finalize_and_save_session_inner(&manager, &blocking_file, 1_713_333_100, jst())
+            .expect_err("should error when path is a file not a directory");
+
+        assert!(
+            err.starts_with("出力ディレクトリの作成に失敗しました"),
+            "unexpected error message: {err}"
+        );
+        // finalize() は create_dir_all より先に呼ばれるため manager はアイドルに戻っている
+        assert!(!manager.is_active());
+    }
+
+    // Cycle 5b: output_dir がファイルの場合 list_session_summaries_inner が日本語エラーを返す
+    #[test]
+    fn list_session_summaries_inner_returns_error_when_path_is_a_file() {
+        let dir = tempdir().unwrap();
+        let blocking_file = dir.path().join("not_a_dir.txt");
+        std::fs::write(&blocking_file, b"hello").unwrap();
+        assert!(blocking_file.exists());
+        assert!(blocking_file.is_file());
+
+        let err = list_session_summaries_inner(&blocking_file)
+            .expect_err("should error when path is a file not a directory");
+
+        assert!(
+            err.starts_with("セッション一覧の取得に失敗しました"),
+            "unexpected error message: {err}"
+        );
+    }
 }
