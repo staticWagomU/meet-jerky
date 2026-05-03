@@ -15888,3 +15888,57 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### secret_store.rs の空入力バリデーション・account 区別・whitespace 多様性を 3 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 08:10 JST
+- **担当セッション**: `mjc-worker-secret-store-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/secret_store.rs` の `mod tests` 末尾への `#[test]` 関数 3 件追加のみ
+
+#### 指示内容 (要約)
+`secret_store.rs` の既存テスト 4 件は `is_err()` のみで文言を未確認、account 文字列の衝突不変条件が未確認、tab/newline の whitespace が trim() で除去される確認も不足していた。以下 3 件を追加。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| A | `set_api_keys_return_consistent_japanese_message_for_empty_input` | 3 | `set_openai_api_key("")` / `set_elevenlabs_api_key("")` の両方が `"API キーが空です"` と完全一致し、両者の文言が同一であること |
+| B | `secret_key_accounts_are_distinct` | 1 | `SecretKey::OpenAIApiKey.account() != SecretKey::ElevenLabsApiKey.account()` (copy-paste 衝突検知) |
+| C | `set_api_keys_treat_various_whitespace_chars_as_empty` | 8 | tab のみ/改行のみ/混在 × 2 API の計 8 assertions で trim() の whitespace 多様性を裏付け |
+
+#### 不変条件 / 設計意図
+
+- **A**: 既存テストは `is_err()` のみ。UI 表示文言 `"API キーが空です"` が壊れても気付けない。文言完全一致の契約強制で UI 体験を保護。両 API の文言が同一であること (体験統一性) も `assert_eq!` で保証。
+- **B**: `secret_key_account_is_stable` は絶対値を個別固定するが「両者が異なる」不変条件は未確認。`assert_ne!` 1 件で補完。Keychain の namespace 衝突は silent data corruption につながるため、検知装置として必須。
+- **C**: 既存テストは `"   "` (半角空白のみ) を確認。tab/newline を含む多様な whitespace で `trim().is_empty()` の仕様変更を検知できるよう強化。前セッション (session_manager, transcript_bridge) の whitespace 多様性パターンの正統な拡張。
+
+#### 変更ファイル
+- `src-tauri/src/secret_store.rs` (tests モジュール末尾に 3 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (初回から差分なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **289 passed** (286 → 289、追加 3 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/secret_store.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 3 件 (assertion 計 12 件)
+- 追加後 total passed: 289
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+- なし (全チェック初回合格)
+
+#### 残リスク
+- テスト A の assertion 3 件目 (両 API 文言一致) は 1 件目・2 件目を前提とするため、実装がどちらか一方だけ文言を変えた場合は 1 or 2 が落ちて 3 も落ちる。エラー切り分けは容易。
+- Keychain 実通信テストは macOS 権限ダイアログを呼ぶため禁止。バリデーション層 (空判定 → `"API キーが空です"`) までの保護に留まる。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

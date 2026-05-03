@@ -190,4 +190,48 @@ mod tests {
         let err = get_secret(SecretKey::OpenAIApiKey).unwrap_err();
         assert!(err.contains("プラットフォーム"));
     }
+
+    #[test]
+    fn set_api_keys_return_consistent_japanese_message_for_empty_input() {
+        // 既存テストは is_err() のみ。UI 表示文言が壊れても気付けないため、
+        // 文言完全一致の契約強制で UI 体験を保護する。
+        assert_eq!(
+            set_openai_api_key(String::new()).unwrap_err(),
+            "API キーが空です"
+        );
+        assert_eq!(
+            set_elevenlabs_api_key(String::new()).unwrap_err(),
+            "API キーが空です"
+        );
+        // 両 API の文言が同一であること (体験統一性の不変条件)
+        assert_eq!(
+            set_openai_api_key(String::new()).unwrap_err(),
+            set_elevenlabs_api_key(String::new()).unwrap_err()
+        );
+    }
+
+    #[test]
+    fn secret_key_accounts_are_distinct() {
+        // copy-paste による account 文字列の衝突を検知する。
+        // secret_key_account_is_stable は絶対値を固定するが「両者が異なる」
+        // 不変条件は明示していないため、このテストで補完する。
+        assert_ne!(
+            SecretKey::OpenAIApiKey.account(),
+            SecretKey::ElevenLabsApiKey.account()
+        );
+    }
+
+    #[test]
+    fn set_api_keys_treat_various_whitespace_chars_as_empty() {
+        // 既存テストは半角空白のみ確認。trim() の仕様変更で tab/newline が
+        // 素通りするリグレッションを検知するため多様な whitespace で裏付ける。
+        assert!(set_openai_api_key("\t".to_string()).is_err());
+        assert!(set_openai_api_key("\n".to_string()).is_err());
+        assert!(set_openai_api_key("\t\n  ".to_string()).is_err());
+        assert!(set_openai_api_key("  \t \n ".to_string()).is_err());
+        assert!(set_elevenlabs_api_key("\t".to_string()).is_err());
+        assert!(set_elevenlabs_api_key("\n".to_string()).is_err());
+        assert!(set_elevenlabs_api_key("\t\n  ".to_string()).is_err());
+        assert!(set_elevenlabs_api_key("  \t \n ".to_string()).is_err());
+    }
 }
