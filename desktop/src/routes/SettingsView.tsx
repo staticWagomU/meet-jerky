@@ -73,9 +73,9 @@ const SETTINGS_CATEGORIES = [
     label: "検出",
     icon: Search,
     kicker: "会議検出",
-    title: "検出",
+    title: "会議の検出",
     subtitle:
-      "ブラウザ・会議アプリ・音声手がかりを横断して会議を確実に検出します。",
+      "キャプチャ前にURL・アプリ名・アクティブウィンドウ・音声状態を確認します。",
   },
   {
     key: "audio",
