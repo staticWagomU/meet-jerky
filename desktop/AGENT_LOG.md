@@ -14693,3 +14693,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
+### Live transcript text wrapping: restore Pencil two-line clamp
+
+- 開始日時: 2026-05-04 03:45:37 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock - Caption Window Variations` の transcript body は 2 行程度で折り返されているため、`live-transcript-line .live-transcript-text` の nowrap を外し、2 行クランプへ戻す。文言、ロジック、他カテゴリは変更しない。
+- 結果: `live-transcript-line .live-transcript-text` を 2 行クランプへ戻し、字幕本文の可読性と Pencil の display-controls body に近い見え方を合わせた。文言、ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
