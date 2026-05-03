@@ -1427,7 +1427,7 @@ body[data-window="ring-light"] .overlay-window {
   flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
-  gap: 7px;
+  gap: 9px;
 }
 
 .live-transcript-tabs {
@@ -1466,7 +1466,7 @@ body[data-window="ring-light"] .overlay-window {
 .live-transcript-lines {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
 }
 
 .live-transcript-line {
@@ -1474,7 +1474,7 @@ body[data-window="ring-light"] .overlay-window {
   grid-template-columns: 38px 50px minmax(0, 1fr);
   align-items: start;
   gap: 8px;
-  padding: 2px 0;
+  padding: 4px 0;
 }
 
 .live-transcript-line .live-transcript-timestamp {

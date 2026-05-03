@@ -14707,3 +14707,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
+### Live transcript body spacing: match Pencil row density
+
+- 開始日時: 2026-05-04 04:05:54 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock - Caption Window Variations` の `Readable captions` は行間と行 padding がやや広いので、`live-transcript-stream` と `live-transcript-lines` の gap、および `live-transcript-line` の上下 padding を合わせる。文言、ロジック、他カテゴリは変更しない。
+- 結果: 字幕本文の行間を少し広げて、Pencil の readable captions に近い密度へ寄せた。文言、ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
