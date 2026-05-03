@@ -635,4 +635,65 @@ mod tests {
         let channel_mismatch = validate_audio_format_properties(true, false, Some(32), Some(2), 1);
         assert_eq!(channel_mismatch.unwrap_err(), "channel 数が設定値と不一致");
     }
+
+    // ── read_f32_ne bit-pattern 直接テスト ───────────────────────────────────
+
+    #[test]
+    fn read_f32_ne_decodes_zero_bytes_to_zero_float() {
+        // 4 byte 全 0 は f32 では 0.0 (どの endian でも符号なし)。
+        // bit-pattern 読み取りの基本契約を固定する。
+        let bytes = [0u8; 4];
+        assert_eq!(read_f32_ne(&bytes), 0.0);
+    }
+
+    #[test]
+    fn read_f32_ne_round_trips_one_point_zero() {
+        // f32::to_ne_bytes と read_f32_ne (= f32::from_ne_bytes) の双方向 round-trip を確認。
+        // from_le_bytes / from_be_bytes への誤リファクタを native endian 環境で検知する
+        // (multibyte cross-platform でも to_ne_bytes ↔ from_ne_bytes は常に round-trip 不変)。
+        let original: f32 = 1.0;
+        let bytes = original.to_ne_bytes();
+        assert_eq!(read_f32_ne(&bytes), original);
+    }
+
+    #[test]
+    fn read_f32_ne_decodes_nan_bit_pattern_to_nan() {
+        // NaN の bit-pattern は f32::NAN.to_ne_bytes() で取得し、read 結果が is_nan() を満たす。
+        // sanitize_pcm_sample の前段で NaN bit-pattern が正しく NaN として読まれることが
+        // 間接テストでは保証されない (sanitize で 0.0 に潰されてしまうため)。直接テストで保護。
+        let bytes = f32::NAN.to_ne_bytes();
+        assert!(read_f32_ne(&bytes).is_nan());
+    }
+
+    #[test]
+    fn read_f32_ne_decodes_negative_infinity_bit_pattern() {
+        // -Inf の bit-pattern が is_infinite() && is_sign_negative() を満たす。
+        // f32 IEEE 754 表現の符号ビット保持を確認 (sanitize 前段の保証)。
+        let bytes = f32::NEG_INFINITY.to_ne_bytes();
+        let result = read_f32_ne(&bytes);
+        assert!(result.is_infinite());
+        assert!(result.is_sign_negative());
+    }
+
+    // ── validate_audio_format_properties short-circuit 順序契約 ──────────────
+
+    #[test]
+    fn validate_audio_format_properties_returns_first_violation_when_multiple_invalid() {
+        // 4 関門 (is_float / is_big_endian / bits_per_channel / channel_count) すべて violation の場合、
+        // 第 1 関門 (is_float check) が最初に発火し "非 f32 PCM..." を返す現挙動を固定。
+        // 関門順序の入れ替えリファクタを CI で検知する装置として機能。
+        let result = validate_audio_format_properties(
+            /* is_float */ false,
+            /* is_big_endian */ true,
+            /* bits_per_channel */ Some(16),
+            /* channel_count */ Some(99),
+            /* expected_channels */ 2,
+        );
+
+        // 第 1 関門が最優先で発火することを文言完全一致で固定。
+        assert_eq!(
+            result,
+            Err("非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)")
+        );
+    }
 }
