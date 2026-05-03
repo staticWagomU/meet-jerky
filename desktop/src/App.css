@@ -4764,11 +4764,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 12px;
   flex-wrap: nowrap;
   font-size: 0.82rem;
-  box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.14),
-    0 2px 8px rgba(0, 0, 0, 0.06);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
   overflow: hidden;
 }
 
