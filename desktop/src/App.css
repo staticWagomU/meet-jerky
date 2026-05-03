@@ -3126,8 +3126,8 @@ body[data-window="ring-light"] .overlay-window {
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 0.52rem;
-  padding: 0.72rem;
+  gap: 12px;
+  padding: 16px;
   border: 1px solid #e9e9eb;
   border-radius: 8px;
   background-color: #fff;
@@ -3141,8 +3141,8 @@ body[data-window="ring-light"] .overlay-window {
 }
 
 .settings-section-title {
-  font-size: 0.78rem;
-  font-weight: 760;
+  font-size: 15px;
+  font-weight: 700;
   color: #1a1a1a;
   margin: 0;
 }
@@ -3178,8 +3178,8 @@ body[data-window="ring-light"] .overlay-window {
 .settings-readonly-card {
   display: flex;
   flex-direction: column;
-  gap: 0.42rem;
-  padding: 0.72rem;
+  gap: 10px;
+  padding: 14px;
   border: 1px solid #e9e9eb;
   border-radius: 8px;
   background-color: #fff;
@@ -3194,8 +3194,8 @@ body[data-window="ring-light"] .overlay-window {
 .settings-readonly-card-title {
   margin: 0;
   color: #1a1a1a;
-  font-size: 0.78rem;
-  font-weight: 760;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1.3;
 }
 
