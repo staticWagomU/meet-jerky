@@ -102,7 +102,7 @@ const SETTINGS_CATEGORIES = [
     icon: Shield,
     kicker: "透明性",
     title: "プライバシー",
-    subtitle: "このMacに残すもの・外に出すもの・保持期間を決めます。",
+    subtitle: "この Mac に残すもの・外に出すもの・保持期間を決めます。",
   },
 ] satisfies ReadonlyArray<{
   key: string;
