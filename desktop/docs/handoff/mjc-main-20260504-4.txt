@@ -1,0 +1,130 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-4) です。
+旧 mjc-main (= 旧 mjc-main-20260504-3) から 6 ループ完了の良い区切りでハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は ~15700 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。**末尾には [SESSION SUMMARY @ 2026-05-04 ~10:30 JST] mjc-main-20260504-3 状況メモ (ループ 5 まで) と、その後の Tidy First リファクタ作業ログ (ループ 6 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~11:30 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 30 (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/`, `docs/handoff/mjc-main-20260504-4.txt`, `src-tauri/src/audio_utils.rs` は既に commit 済み)
+- 旧 mjc-main-20260504-3 が canonical 名 mjc-main を持っており、本セッションで 6 ループ + 1 中間 SESSION SUMMARY コミットを完了:
+  1. `abdb40d` test(transcription): TranscriptionManager のモデル未ダウンロード エラーパステスト 3 件 (signature 汚染防止の不変条件) → 232 → 235 passed
+  2. `3968e5d` test(session_store): parse_session_started_at_secs の境界仕様 8 件を**直接呼び出し**で裏付け → 235 → 243 passed
+  3. `77a81da` test(session_commands): start_session_inner と finalize 経路の日本語エラー prefix 2 件 (create_dir_all/save_session_markdown 失敗時の不変条件) → 243 → 245 passed
+  4. `d312bb8` test(audio): sanitize_sample と calculate_rms_from_sum の境界仕様 9 件を直接呼び出しで裏付け → 245 → 254 passed
+  5. `cdb3625` test(system_audio): sanitize_pcm_sample 直接 5 件 + validate_audio_format_properties の None 2 件 + エラー文言契約 1 件で計 9 件追加 → 254 → 263 passed
+  6. `78f4f27` chore(agent-log): 5 ループ実績と次ループ候補を SESSION SUMMARY として追記
+  7. `fc3df89` refactor(audio): sanitize_sample / sanitize_pcm_sample の重複実装を audio_utils::sanitize_audio_sample へ集約 (Tidy First) → 263 → 269 passed (audio_utils.rs 新規 + テスト 6 件追加)
+
+## 現在の品質状態
+- cargo test: **269 passed / 0 failed**
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -W uninlined_format_args: **警告ゼロ** (前セッションから継続)
+- frontend build: 通過 (codex の活動は本セッション中ゼロで衝突なし、~7 時間以上静か)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-3、handoff 直前)
+- mjc-main-20260504-4 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションがあれば触らないでください。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-4 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着)
+- **テスト追加方針**: private fn の **直接呼び出しテスト**で境界仕様と防御コードの存在意義を裏付ける。間接テストとの重複を許容しつつ、関数分割リファクタリングへの耐性を獲得。
+- **エラー文言を test 側にも書く「contract enforcement」パターン**: 実装と test に同じ `&'static str` を書くことで、ユーザー向け文言を不用意に変えると CI が落ちて気付ける契約強制。
+- **境界値テストの「対称ペア」**: 同じ境界 (例: `MAX_JS_DATE_UNIX_SECS`) を **2 層の責任** (parser vs save wrapper) で観測。層の責任分離が崩れた時に両方落ちるか片方落ちるかで原因切り分けが容易。
+- **Tidy First の理想形** (ループ 6 で実証): 振る舞い完全保持・差分 −10/+3 行 + 新規ファイル 1 個。事前に test 12 件で「両側の sanitize が同じ仕様」を裏付けてからリファクタしたので、実装置換中に何が壊れても test が即座に教えてくれる安全網があった。
+- **3 層テスト構造** (ループ 6 の派生): 共通実装 (audio_utils.rs 6 件) + wrapper 経由 (audio.rs 6 件 + system_audio.rs 6 件) = 計 18 件で同じ仕様を 3 視点から守る。
+
+### 重要な技術的注意点 (踏みやすい罠)
+- **`persist_if_configured` の `?` リファクタリング罠** (旧セッションから継承): エラーを呑み込む設計を `?` に書き換えると in-memory consistency が壊れる。test D/E (`append_keeps_segment_in_memory_when_output_dir_does_not_exist` / `finalize_returns_session_when_output_dir_does_not_exist`) が回帰検知器として機能する。
+- **`classify_meeting_window_title` の whitespace-only rest 仕様**: 「`Meet -  ` (rest = whitespace のみ) は Some を返す」現挙動は docstring 未記載。test 6/7 が将来の仕様変更検知に機能。
+- **Teams ブラウザ版タイトル fallback は引き続き禁止** (既存方針): test `classify_meeting_window_title_rejects_teams_excluded` が明示的に reject。
+- **`validate_audio_format_properties` は cfg なし**: 同ファイルの `validate_audio_format_description` のみ `#[cfg(target_os = "macos")]` ガード。
+- **wrapper fn (sanitize_sample / sanitize_pcm_sample) は削除しない**: ループ 6 のリファクタで意図的に残した。理由は「モジュール境界での命名を保ち、呼び出し箇所を変える必要がない (Tidy First の最小スライス原則)」。
+
+## 次ループ候補 (優先順位順)
+
+### O. session_manager.rs の他の error path テスト追加 (規模 S, テストのみ)
+- 既存 6 件 + 前セッション 2 件 = 8 件あるが、`start_with_output` の error path や `discard` の他の状況などまだ余地。
+- リスク極小、価値は中程度。
+
+### P. settings.rs の error path テスト追加 (規模 S, テストのみ)
+- settings 読み込み/保存の I/O 失敗、JSON 不正、フィールド欠損などのカバレッジ確認。
+- 既存テスト状況を `awk '/^mod tests/,0' src-tauri/src/settings.rs | grep -c "fn "` 等で確認してから worker に発注。
+
+### Q. 既存 `is_err()` テストの文言確認への補強 (規模 XS, テストのみ)
+- 本セッション ループ 5 の H パターン (`validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths`) を transcription.rs / session_store.rs / session_manager.rs / session_commands.rs に拡大適用。
+- エラー文言の契約強制を全モジュールで実現。
+- ファイルごとに 1 ループに分けてもよい (XS × N)。
+
+### M.continued. transcription.rs の他の error path テスト (規模 S〜M)
+- 本セッション ループ 1 で `ensure_engine` の Whisper パスのみカバー。AppleSpeech / OpenAIRealtime / ElevenLabsRealtime のエラーパスや、`load_model` の path 変換失敗 (現状未カバー) など余地あり。
+- ただし AppleSpeech / OpenAIRealtime / ElevenLabsRealtime は実環境依存性が高く、テストしにくい可能性あり (要 worker 内で確認)。
+
+### F (引き継ぎ済み候補): drop メトリクスを Tauri イベント化 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: 最小スライスとして「rust 側に payload struct + emit のみ追加 (frontend hookup なし)」で 1 ループ完了させる。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。本セッションでは codex 静かだが、再開する可能性あり。
+
+### G' (引き継ぎ済み候補): 会議終了検知の遅延監視 (規模 S〜M)
+- handle_detection 内で、watched bundle が起動 → アクティブから外れた経過時間を測り、N 分以上アクティブ無しなら会議終了通知を出すロジックの整備。
+
+### K (引き継ぎ済み候補): clippy::pedantic の選択的有効化 (規模 L、非優先)。
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 269 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、前回引き継ぎから変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。再起動不要。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-4 mjc-main`
+
+## コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~13 分/loop (テストのみは ~10-12 分、リファクタ込みは ~15-20 分)。
+- trivial 変更 (1 行 fix、CSS 数値合わせ) は research 担当を立てずメインから直接 worker へ。
+- 担当範囲が衝突しない 2 件は worker 並列起動可。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 6 ループ + リファクタ 1 つを終え、context 余裕は中程度 (~50-65% 推定) で良い区切りでハンドオフ判断した。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は受領済み・自走中で消化済み。
+
+## 累積成果 (本セッション)
+- **テスト 232 → 269 passed** (+37 件、6 ループ)
+- **コミット 7 件** (うちテスト追加 5、リファクタ 1、SESSION SUMMARY 1)
+- **新規ファイル 1 個** (`src-tauri/src/audio_utils.rs`、共通 sanitize 実装)
+- **clippy 警告ゼロ維持** (default + uninlined_format_args)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -300 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-4 mjc-main` を実行。
+4. 候補 O (session_manager.rs error path) または候補 P (settings.rs error path) または候補 Q (is_err() 文言補強) のいずれかを最小スライスとして worker に発注して 1 ループ目を始める。Q は本セッションで確立した contract enforcement パターンの拡張なので、最も低リスクで価値の高い選択肢。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
