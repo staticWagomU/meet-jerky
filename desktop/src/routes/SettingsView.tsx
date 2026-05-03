@@ -914,6 +914,63 @@ export function SettingsView() {
 
             {activeCategory === "general" && (
               <>
+                <div className="settings-readonly-card">
+                  <div className="settings-detection-head">
+                    <div className="settings-detection-icon-box" aria-hidden="true">
+                      <Type size={14} strokeWidth={2} />
+                    </div>
+                    <div className="settings-detection-title-wrap">
+                      <h3 className="settings-readonly-card-title">出力とタイミング</h3>
+                      <p className="settings-detection-subtitle">
+                        通話中と通話後に文字起こしをどう扱うか
+                      </p>
+                    </div>
+                  </div>
+                  <div className="settings-permission-row">
+                    <span className="settings-permission-label">
+                      録音中はライブ字幕を表示
+                    </span>
+                    <span className="settings-permission-badge permission-manual">
+                      <span
+                        className="settings-permission-manual-dot"
+                        aria-hidden="true"
+                      />
+                      ON
+                    </span>
+                  </div>
+                  <div className="settings-permission-row">
+                    <span className="settings-permission-label">
+                      話者を分離（自分／相手）
+                    </span>
+                    <span className="settings-permission-badge permission-manual">
+                      <span
+                        className="settings-permission-manual-dot"
+                        aria-hidden="true"
+                      />
+                      ON
+                    </span>
+                  </div>
+                  <div className="settings-permission-row">
+                    <span className="settings-permission-label">
+                      停止時に文字起こしを自動保存
+                    </span>
+                    <span className="settings-permission-badge">
+                      OFF
+                    </span>
+                  </div>
+                  <div className="settings-permission-row">
+                    <span className="settings-permission-label">書き出し形式</span>
+                    <div className="settings-privacy-option-group">
+                      <span className="settings-privacy-option settings-privacy-option-active">
+                        Markdown
+                      </span>
+                      <span className="settings-privacy-option">VTT</span>
+                      <span className="settings-privacy-option">SRT</span>
+                      <span className="settings-privacy-option">JSON</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 出力先ディレクトリ */}
                 <div className="settings-section">
                   <h3 className="settings-section-title">出力先ディレクトリ</h3>

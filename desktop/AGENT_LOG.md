@@ -14259,3 +14259,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` を実行する。
+
+### General output timing: add Pencil-style output card
+
+- 開始日時: 2026-05-03 14:18:40 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4c - Settings General` の output/timing card を再確認し、general の先頭に静的な出力とタイミングカードを追加する。既存の出力先ディレクトリ設定は残し、文言、ロジック、他カテゴリは変えない。
+- 結果: general の先頭に `出力とタイミング` カードを追加し、ライブ字幕・話者分離・自動保存・書き出し形式を Pencil 寄りの静的表示で載せた。既存の出力先ディレクトリ設定はそのまま維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` を実行する。
