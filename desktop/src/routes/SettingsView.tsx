@@ -1499,7 +1499,7 @@ export function SettingsView() {
                       <div className="settings-detection-title-wrap">
                         <h3 className="settings-readonly-card-title">AIプロバイダー</h3>
                         <p className="settings-detection-subtitle">
-                          デフォルトはオフ。プロバイダーを選んでから使います。
+                          デフォルトはオフ。プロバイダーを選んでも生成を実行したときだけ送信されます。
                         </p>
                       </div>
                       <span
@@ -1516,35 +1516,35 @@ export function SettingsView() {
                         <div className="settings-ai-provider-item-line">
                           <span className="settings-ai-provider-dot" aria-hidden="true" />
                           <span className="settings-ai-provider-title">
-                            Anthropic - Claude Sonnet 4.6
+                            Anthropic・Claude Sonnet 4.6
                           </span>
                           <span className="settings-ai-provider-badge settings-ai-provider-badge-selected">
                             利用中
                           </span>
                         </div>
                         <span className="settings-ai-provider-desc">
-                          APIキーが必要・課金あり・外部送信あり
+                          APIキー設定済・30分の会議で約$0.012
                         </span>
                       </div>
                       <div className="settings-ai-provider-item">
                         <div className="settings-ai-provider-item-line">
                           <span className="settings-ai-provider-dot" aria-hidden="true" />
-                          <span className="settings-ai-provider-title">OpenAI - GPT-4o</span>
+                          <span className="settings-ai-provider-title">OpenAI・GPT-4o</span>
                           <span className="settings-ai-provider-badge">未設定</span>
                         </div>
-                        <span className="settings-ai-provider-desc">APIキーが必要</span>
+                        <span className="settings-ai-provider-desc">APIキーが必要・クラウド</span>
                       </div>
                       <div className="settings-ai-provider-item">
                         <div className="settings-ai-provider-item-line">
                           <span className="settings-ai-provider-dot" aria-hidden="true" />
                           <span className="settings-ai-provider-title">
-                            ローカル - Ollama (llama3.1:8b)
+                            ローカル・Ollama（llama3.1:8b）
                           </span>
                           <span className="settings-ai-provider-badge settings-ai-provider-badge-local">
                             ローカル
                           </span>
                         </div>
-                        <span className="settings-ai-provider-desc">外部送信なし</span>
+                        <span className="settings-ai-provider-desc">端末内処理・API費用なし</span>
                       </div>
                     </div>
                   </div>
