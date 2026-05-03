@@ -1144,23 +1144,29 @@ export function SettingsView() {
             )}
 
             {activeCategory === "aiMinutes" && (
-              <div className="settings-readonly-card">
-                <h3 className="settings-readonly-card-title">AIプロバイダー</h3>
-                <p>
-                  provider 設定はまだ実装していません。外部送信や課金が関わるため、明示的な同意後に扱います。
-                </p>
-                <p>
-                  Anthropic、OpenAI、ローカル処理候補は今後の選択肢です。ローカル連携は現時点では有効化していません。
-                </p>
-                <h3 className="settings-readonly-card-title">議事録テンプレート</h3>
-                <p>
-                  サマリー、担当者付きアクションアイテム、決定事項などは今後の設定です。現在はテンプレート選択 UI を表示していません。
-                </p>
-                <h3 className="settings-readonly-card-title">実行履歴と利用額</h3>
-                <p>
-                  実行履歴、利用額、月額上限は今後の透明性表示です。課金が発生する操作はこの画面から自動実行しません。
-                </p>
-              </div>
+              <>
+                <div className="settings-readonly-card">
+                  <h3 className="settings-readonly-card-title">AIプロバイダー</h3>
+                  <p>
+                    provider 設定はまだ実装していません。外部送信や課金が関わるため、明示的な同意後に扱います。
+                  </p>
+                  <p>
+                    Anthropic、OpenAI、ローカル処理候補は今後の選択肢です。ローカル連携は現時点では有効化していません。
+                  </p>
+                </div>
+                <div className="settings-readonly-card">
+                  <h3 className="settings-readonly-card-title">議事録テンプレート</h3>
+                  <p>
+                    サマリー、担当者付きアクションアイテム、決定事項などは今後の設定です。現在はテンプレート選択 UI を表示していません。
+                  </p>
+                </div>
+                <div className="settings-readonly-card">
+                  <h3 className="settings-readonly-card-title">実行履歴と利用額</h3>
+                  <p>
+                    実行履歴、利用額、月額上限は今後の透明性表示です。課金が発生する操作はこの画面から自動実行しません。
+                  </p>
+                </div>
+              </>
             )}
 
             {/* 保存ボタン */}

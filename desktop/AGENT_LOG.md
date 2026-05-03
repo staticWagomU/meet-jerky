@@ -14131,3 +14131,21 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: privacy の card density が Pencil と自然に揃うか、必要なら実機または画面確認で見る。
+
+### AI Minutes cards: align card count with Pencil Mock 4e - Settings AI Minutes
+
+- 開始日時: 2026-05-03 12:50:45 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4e - Settings AI Minutes` の card count を再確認し、1 枚の read-only card を 3 枚構成へ寄せる。見出し、文面の意味、レイアウトの大枠、CSS、ロジック、他カテゴリ、Pencil ファイルは変更しない。コミットは禁止。
+- 結果: AI Minutes の read-only card を provider / template / runs の 3 枚へ分割し、Pencil の card count に近づけた。見出し、意味、CSS、ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果:
+  1. `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: AI Minutes の 3 枚カードが Pencil のカード密度と自然に揃うか、必要なら実機または画面確認で見る。
