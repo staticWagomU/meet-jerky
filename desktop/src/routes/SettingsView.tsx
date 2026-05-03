@@ -1113,22 +1113,18 @@ export function SettingsView() {
                   <div className="settings-readonly-card">
                     <h3 className="settings-readonly-card-title">ローカルデータ</h3>
                     <p>
-                      ローカル優先で記録します。文字起こし履歴と設定はこの Mac
-                      に保存され、AI 議事録生成を有効にするまで AI
-                      送信はオフです。
+                      ローカル優先で記録します。文字起こし履歴と設定はこの Mac に保存されます。
                     </p>
                     <p>
-                      データ保持期間と自動削除は今後の設定です。現時点では、保持期間をこの画面から変更できません。
+                      データ保持期間と自動削除は今後の設定です。
                     </p>
                     <h3 className="settings-readonly-card-title">外部送信</h3>
                     <p>
-                      文字起こしの外部送信は、OpenAI Realtime API または ElevenLabs
-                      Scribe v2 Realtime を選択した場合に発生し得ます。ローカル
-                      Whisper と macOS SpeechAnalyzer は端末内で処理します。
+                      文字起こしの外部送信は、OpenAI Realtime API または ElevenLabs Scribe v2 Realtime を選択した場合に発生し得ます。
                     </p>
                     <h3 className="settings-readonly-card-title">テレメトリー</h3>
                     <p>
-                      テレメトリーは今後もオプトイン方針で扱います。利用状況の送信機能はこの画面にはまだなく、文字起こし本文や音声を送る設定も実装していません。
+                      テレメトリーは今後もオプトイン方針で扱います。利用状況の送信機能はまだありません。
                     </p>
                   </div>
                 )}
