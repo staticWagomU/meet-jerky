@@ -15193,3 +15193,53 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### transcription.rs の load_model / ensure_engine モデル未ダウンロードエラーパスを 3 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 06:20 JST
+- **担当セッション**: `mjc-worker-transcription-error-path-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/transcription.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`TranscriptionManager::load_model` と `ensure_engine` (Whisper パス) の「モデルがダウンロードされていない」エラーパスを 3 件のテストで裏付け、回帰防止カバレッジを拡張する。実装変更・コミット禁止。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| A | `load_model_returns_error_when_model_not_downloaded` | 存在しないモデル名で `load_model` → `"モデルがダウンロードされていません:"` prefix の Err かつ `is_engine_loaded() == false` |
+| B | `ensure_engine_returns_error_when_whisper_model_not_downloaded` | Whisper + 存在しないモデル名で `ensure_engine` → 同 prefix の Err かつ `is_engine_loaded() == false`、2 回目も Err (signature 未記録の間接確認) |
+| C | `ensure_engine_does_not_set_engine_on_whisper_failure` | `ensure_engine` の Err 後も engine/signature が汚染されないことを、別モデル名での 2 回目呼び出しが依然 Err を返すことで裏付け |
+
+#### 設計の確認事項
+- `ensure_engine` L624 の `self.load_model(whisper_model)?;` が失敗すると L645 の `loaded_engine_signature = Some(signature)` に到達しない → engine も signature も汚染されないという不変条件を確認済み。
+- `is_engine_loaded()` は L577 で `#[cfg(test)]` 付きで公開済み。直接呼べる。
+- `loaded_engine_signature` は private なので、テスト B/C は 2 回目呼び出しの挙動で間接確認。
+
+#### 変更ファイル
+- `src-tauri/src/transcription.rs` (tests モジュール末尾に 3 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **235 passed** (232 → 235、追加 3 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` | 合格 |
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- 実際のモデルが CI/開発環境にダウンロードされると「絶対不在」の前提が崩れるが、`__nonexistent_test_model_xyz_999__` という接頭辞が意図的に Whisper モデル命名規則から外れているため発生可能性は極めて低い。
+- `ensure_engine` の signature 汚染チェックは間接観測 (2 回目 Err) のみで、フィールド直接アクセスではない。将来のリファクタリングで挙動が変わった場合は追加検証が必要。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

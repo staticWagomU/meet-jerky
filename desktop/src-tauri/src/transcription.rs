@@ -1837,4 +1837,60 @@ mod tests {
             "all-voice buffer should not be detected as silent"
         );
     }
+
+    // ─────────────────────────────────────────
+    // モデル未ダウンロード エラーパス テスト
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn load_model_returns_error_when_model_not_downloaded() {
+        let mut manager = TranscriptionManager::new();
+        let err = manager
+            .load_model("__nonexistent_test_model_xyz_999__")
+            .unwrap_err();
+        assert!(
+            err.starts_with("モデルがダウンロードされていません:"),
+            "unexpected error: {err}"
+        );
+        assert!(!manager.is_engine_loaded());
+    }
+
+    #[test]
+    fn ensure_engine_returns_error_when_whisper_model_not_downloaded() {
+        let mut manager = TranscriptionManager::new();
+        let err = manager
+            .ensure_engine(
+                &crate::settings::TranscriptionEngineType::Whisper,
+                "__nonexistent_test_model_xyz_999__",
+            )
+            .unwrap_err();
+        assert!(
+            err.starts_with("モデルがダウンロードされていません:"),
+            "unexpected error: {err}"
+        );
+        assert!(!manager.is_engine_loaded());
+        // 2 回目も Err: loaded_engine_signature が記録されていないことの間接確認
+        let result2 = manager.ensure_engine(
+            &crate::settings::TranscriptionEngineType::Whisper,
+            "__nonexistent_test_model_xyz_999__",
+        );
+        assert!(result2.is_err());
+    }
+
+    #[test]
+    fn ensure_engine_does_not_set_engine_on_whisper_failure() {
+        let mut manager = TranscriptionManager::new();
+        let result = manager.ensure_engine(
+            &crate::settings::TranscriptionEngineType::Whisper,
+            "__nonexistent_test_model_xyz_999__",
+        );
+        assert!(result.is_err());
+        assert!(!manager.is_engine_loaded());
+        // 別モデル名でも依然 Err: engine も signature も汚染されていない
+        let result2 = manager.ensure_engine(
+            &crate::settings::TranscriptionEngineType::Whisper,
+            "__another_nonexistent_test_model_999__",
+        );
+        assert!(result2.is_err());
+    }
 }
