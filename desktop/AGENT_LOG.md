@@ -15586,3 +15586,59 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### session_store.rs の is_err() テストを ErrorKind::NotFound 契約強制に補強
+
+- **開始日時 (JST)**: 2026-05-04 07:05 JST
+- **担当セッション**: `mjc-worker-session-store-notefound-contract-20260504-1`
+- **役割**: テスト補強ワーカー (テスト内 assertion 変更のみ、新規テスト追加なし、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_store.rs` の `mod tests` 内 3 関数の assertion 変更のみ
+
+#### 指示内容 (要約)
+以下 3 テスト関数の `assert!(result.is_err(), "...")` を `unwrap_err().kind() == ErrorKind::NotFound` を `assert_eq!` で契約強制する形に補強する。
+- `list_session_files_returns_err_when_dir_does_not_exist`
+- `list_session_summaries_returns_err_when_dir_does_not_exist`
+- `save_session_markdown_returns_err_when_dir_does_not_exist`
+
+#### 追加した assertion
+
+| 関数名 | 変更前 | 変更後 |
+|--------|--------|--------|
+| `list_session_files_returns_err_when_dir_does_not_exist` | `assert!(result.is_err(), "should fail when dir does not exist")` | `let err = list_session_files(&missing).unwrap_err(); assert_eq!(err.kind(), ErrorKind::NotFound, "存在しないディレクトリは NotFound を返す契約: {err}")` |
+| `list_session_summaries_returns_err_when_dir_does_not_exist` | `assert!(result.is_err(), "should fail when dir does not exist")` | `let err = list_session_summaries(&missing).unwrap_err(); assert_eq!(err.kind(), ErrorKind::NotFound, "存在しないディレクトリは NotFound を返す契約: {err}")` |
+| `save_session_markdown_returns_err_when_dir_does_not_exist` | `assert!(result.is_err(), "should fail when dir does not exist")` | `let err = save_session_markdown(&missing_dir, &session, jst()).unwrap_err(); assert_eq!(err.kind(), ErrorKind::NotFound, "存在しないディレクトリは NotFound を返す契約: {err}")` |
+
+#### 設計上の判断
+- `ErrorKind` は L7 で `use std::io::{BufRead, BufReader, Error, ErrorKind, Read};` 済み。追加 use 不要。
+- 既存の `assert_eq!(err.kind(), ErrorKind::InvalidInput);` パターン (`save_session_markdown_returns_err_when_started_at_overflow_secs`, L444 付近) に完全に対称化。
+- OS 互換性: Windows/macOS/Linux でエラーメッセージ文言は異なるが `ErrorKind::NotFound` は統一されており、クロスプラットフォームで安全。
+
+#### 変更ファイル
+- `src-tauri/src/session_store.rs` (3 関数の assertion 変更のみ、新規テスト追加なし、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **269 passed** (補強前と同数、追加テストなし、補強した 3 件の assertion すべて通過) |
+| `scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 0 件 (assertion 補強のみ)
+- 補強後 total passed: 269
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- 補強した 3 件は存在しないディレクトリへのアクセスで OS が返す `ErrorKind::NotFound` に依存。将来 OS が別の ErrorKind を返す仕様変更があれば検知される (回帰検知器として意図通り)。
+- `save_session_markdown_returns_err_when_dir_does_not_exist` は `File::create` の失敗が `ErrorKind::NotFound` であることを前提。OS が `PermissionDenied` などを返す環境差異が将来起きた場合は再確認が必要 (現状 macOS/Linux/Windows でいずれも NotFound で安定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

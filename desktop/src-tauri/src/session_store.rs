@@ -453,9 +453,13 @@ mod tests {
         let tmp = tempdir().unwrap();
         let missing = tmp.path().join("not-exists");
 
-        let result = list_session_files(&missing);
+        let err = list_session_files(&missing).unwrap_err();
 
-        assert!(result.is_err(), "should fail when dir does not exist");
+        assert_eq!(
+            err.kind(),
+            ErrorKind::NotFound,
+            "存在しないディレクトリは NotFound を返す契約: {err}"
+        );
     }
 
     #[test]
@@ -463,9 +467,13 @@ mod tests {
         let tmp = tempdir().unwrap();
         let missing = tmp.path().join("not-exists");
 
-        let result = list_session_summaries(&missing);
+        let err = list_session_summaries(&missing).unwrap_err();
 
-        assert!(result.is_err(), "should fail when dir does not exist");
+        assert_eq!(
+            err.kind(),
+            ErrorKind::NotFound,
+            "存在しないディレクトリは NotFound を返す契約: {err}"
+        );
     }
 
     #[test]
@@ -475,9 +483,13 @@ mod tests {
         let mut session = Session::start("test".to_string(), 1700000000);
         session.finalize(1700000060);
 
-        let result = save_session_markdown(&missing_dir, &session, jst());
+        let err = save_session_markdown(&missing_dir, &session, jst()).unwrap_err();
 
-        assert!(result.is_err(), "should fail when dir does not exist");
+        assert_eq!(
+            err.kind(),
+            ErrorKind::NotFound,
+            "存在しないディレクトリは NotFound を返す契約: {err}"
+        );
     }
 
     #[test]
