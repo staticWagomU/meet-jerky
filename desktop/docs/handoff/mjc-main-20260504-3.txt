@@ -1,0 +1,115 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-3) です。
+旧 mjc-main (= 旧 mjc-main-20260504-2) から context 圧迫予防のため引き継ぎを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は ~15200 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。**末尾には最新の [SESSION SUMMARY @ 2026-05-04 ~07:50 JST] mjc-main (旧 mjc-main-20260504-2) 状況メモ があり、判断履歴・累積成果・次ループ候補が整理されています。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~08:30 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 22 (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/`, `docs/handoff/mjc-main-20260504-3.txt`)
+- 旧 mjc-main-20260504-2 が canonical 名 mjc-main を持っており、本セッションで 6 ループ + 1 SESSION SUMMARY コミットを完了:
+  1. `a7afae3` feat(app_detection): browser_url_callback 発火間隔停滞警告 + 純粋関数 `should_warn_polling_stall` + 4 tests (210 passed)
+  2. `ab85893` test(app_detection): classify_meeting_url 境界仕様 8 種類 (28 assertion) (218 passed)
+  3. `77127ee` test(session): session_store/manager ディスク IO エラーパステスト 5 件 (223 passed)
+  4. `9e61858` chore(rust): clippy uninlined_format_args 11 件をテストコードでも統一 (223 passed)
+  5. `36cabf3` test(app_detection): classify_meeting_window_title 境界仕様 7 種類 (23 assertion) (230 passed)
+  6. `60c7ccf` chore(agent-log): SESSION SUMMARY 追記
+  7. `b7a9b76` test(session_commands): output_dir がファイルの場合のエラー文言経路 2 件 (232 passed)
+
+## 現在の品質状態
+- cargo test: **232 passed / 0 failed**
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -W uninlined_format_args: **警告ゼロ** (production 4 件 + tests 11 件すべて統一済み)
+- frontend build: 通過 (codex の活動は本セッション中ゼロで衝突なし)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-2、handoff 直前)
+- mjc-main-20260504-3 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションがあれば触らないでください。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-3 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点 (詳細は AGENT_LOG.md 末尾の SESSION SUMMARY 参照)
+
+- **候補 H (handle_browser_url_detection の片方空ケース診断) は冗長と判定して却下済**: url 空 / title 非空 (および逆) は実は正常パス。
+- **候補 F (drop メトリクスを Tauri イベント化) は最小スライス困難で保留中**: AppHandle を audio.rs / system_audio.rs の callback / thread に渡す wiring が 1 ループに収まらない。後続セッションで AppHandle 引き渡し設計を先に研究担当 (haiku) で確認してから実装するのが安全。
+- **persist_if_configured の `?` リファクタリング罠** (重要): エラーを呑み込む設計を `?` に書き換えると in-memory consistency が壊れる。test D/E (`append_keeps_segment_in_memory_when_output_dir_does_not_exist` / `finalize_returns_session_when_output_dir_does_not_exist`) が回帰検知器として機能する。
+- **classify_meeting_window_title の whitespace-only rest 仕様**: 「`Meet -  ` (rest = whitespace のみ) は Some を返す」現挙動は docstring 未記載。test 6/7 が将来の仕様変更検知に機能。
+- **Teams ブラウザ版タイトル fallback は引き続き禁止** (既存方針): test `classify_meeting_window_title_rejects_teams_excluded` が明示的に reject。
+- **uninlined_format_args は production + tests 全て統一済み**: 残りの pedantic lint は default off のまま放置でよい。
+
+## 次ループ候補 (優先順位順、SESSION SUMMARY と同期)
+
+### M. transcription.rs / system_audio.rs / audio.rs の error path テスト追加 (規模 S〜M)
+- 価値: クラッシュ修正 (優先度 1) と低遅延化 (優先度 4) の両方に貢献。
+- 提案: まず `transcription.rs` の `ensure_engine_*` の API key 不在系などからスタート。1 ループ 1 関数。
+- リスク: 極小。テスト追加のみ。
+
+### F. drop メトリクスを Tauri イベント化 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: 最小スライスとして「rust 側に payload struct + emit のみ追加 (frontend hookup なし)」で 1 ループ完了させる。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。本セッションでは codex 静かだったが、再開する可能性あり。
+
+### G' (引き継ぎ済み候補の振り直し): detection_callback の代わりに「会議終了検知の遅延監視」 (規模 S)
+- 元の G は detection_callback の周期可視化だったが、NSWorkspace switch event 駆動なので「発火間隔監視」自体に意味なし。
+- 振り直し案: handle_detection 内で、watched bundle が起動 → アクティブから外れた経過時間を測り、N 分以上アクティブ無しなら会議終了通知を出すロジックの整備。複雑度高め。
+
+### N. session_store の parse_session_started_at_secs の追加 edge case test (規模 XS)
+- leading zeros / hex prefix / overflow / 巨大数 / 数値 + 区切り文字以外なし パターン
+- 価値は低めだが極小コミットで回せる。
+
+### L'. session_commands.rs / start_session_inner の他のエラーパス (規模 S)
+- ループ 6 で 2 件カバーしたが、まだ `start_session_inner` の output_dir = file ケース等が残っているはず。
+
+### J. session_store の他の error path 拡張 (規模 S)
+- ファイルが途中で消える、ファイルが UTF-8 不正、permission ない等。
+
+### K (引き継ぎ済み候補): clippy::pedantic の選択的有効化 (規模 L のままで非優先)。
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 232 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、前回引き継ぎから変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。再起動不要。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-3 mjc-main`
+
+## コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 旧セッションでの実績平均 ~16 分/loop (worker 出力 buffer 待ちで数分かかるため最低 5 分は確保、テストのみのループは ~10 分、実装込みは ~13 分)。
+- trivial 変更 (1 行 fix、CSS 数値合わせ) は research 担当を立てずメインから直接 worker へ。
+- 担当範囲が衝突しない 2 件は worker 並列起動可。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は受領済み・自走中で消化済み。
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -300 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-3 mjc-main` を実行。
+4. 候補 M (transcription.rs / system_audio.rs / audio.rs error path test) または候補 N (session_store edge tests) を最小スライスとして worker に発注して 1 ループ目を始める。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
