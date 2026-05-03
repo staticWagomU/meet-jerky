@@ -810,4 +810,39 @@ mod tests {
     fn calculate_rms_from_sum_clamps_above_one_to_one() {
         assert_eq!(calculate_rms_from_sum(100.0, 4), 1.0);
     }
+
+    #[test]
+    fn calculate_rms_from_sum_returns_zero_for_nan_sum_squares() {
+        // NaN sum_squares は sqrt(NaN/count) = NaN を生み、is_nan() の早期 return で 0.0 になる。
+        // is_nan() ブロックを消すと NaN.clamp(0, 1) の実装依存挙動で UI が化ける危険がある。
+        assert_eq!(calculate_rms_from_sum(f32::NAN, 4), 0.0);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_clamps_positive_infinity_to_one() {
+        // +Inf.sqrt() は +Inf。is_nan() は false なので早期 return しない。
+        // clamp(0, 1) で 1.0 に押さえられる。NaN → 0.0 と +Inf → 1.0 の非対称性は意図的。
+        assert_eq!(calculate_rms_from_sum(f32::INFINITY, 4), 1.0);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_returns_known_value_for_middle_range() {
+        // sum=4.0, count=16 → sqrt(4.0 / 16.0) = sqrt(0.25) = 0.5
+        // 中間値で sqrt 演算の数値精度退行を検知する。
+        assert_close(calculate_rms_from_sum(4.0, 16), 0.5, 1e-6);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_handles_single_sample_count() {
+        // count=1 では sum / count = sum なので sqrt(sum) が直接 RMS になる。
+        // sum=0.25 → sqrt(0.25) = 0.5。count=1 の境界で 0 除算や u32 cast の罠を検知する。
+        assert_close(calculate_rms_from_sum(0.25, 1), 0.5, 1e-6);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_at_clamp_upper_boundary() {
+        // sum=1.0, count=1 → sqrt(1.0) = 1.0。clamp(0, 1) は 1.0 を 1.0 のまま通す。
+        // 境界ジャスト値で「過剰な丸め」や「< 1.0 への押し下げ」リファクタを検知する。
+        assert_close(calculate_rms_from_sum(1.0, 1), 1.0, 1e-6);
+    }
 }
