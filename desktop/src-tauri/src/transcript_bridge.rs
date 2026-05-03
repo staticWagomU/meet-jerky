@@ -296,4 +296,34 @@ mod tests {
 
         assert_eq!(text, "hello   world");
     }
+
+    #[test]
+    fn normalize_speaker_returns_unknown_for_none() {
+        assert_eq!(normalize_speaker(None), "不明");
+    }
+
+    #[test]
+    fn normalize_speaker_returns_unknown_for_empty_string() {
+        assert_eq!(normalize_speaker(Some("")), "不明");
+    }
+
+    #[test]
+    fn normalize_speaker_returns_unknown_for_whitespace_only() {
+        assert_eq!(normalize_speaker(Some("   ")), "不明");
+        assert_eq!(normalize_speaker(Some("\t\n  ")), "不明");
+    }
+
+    #[test]
+    fn normalize_speaker_passes_through_normal_label() {
+        assert_eq!(normalize_speaker(Some("Alice")), "Alice");
+        assert_eq!(normalize_speaker(Some("自分")), "自分");
+        assert_eq!(normalize_speaker(Some("相手側")), "相手側");
+    }
+
+    #[test]
+    fn normalize_speaker_trims_surrounding_whitespace_only() {
+        // 前後の空白だけを落とし、内部の空白は保持する契約
+        assert_eq!(normalize_speaker(Some("  Alice  ")), "Alice");
+        assert_eq!(normalize_speaker(Some(" Alice Bob ")), "Alice Bob");
+    }
 }

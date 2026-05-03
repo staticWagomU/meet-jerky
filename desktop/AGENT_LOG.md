@@ -15708,3 +15708,64 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### transcript_bridge.rs の normalize_speaker 全分岐を 5 件の直接呼び出しテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: `mjc-worker-transcript-bridge-normalize-speaker-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`normalize_speaker` (private fn, L98-103) の全分岐 (None / 空文字列 / whitespace-only / 通常ラベル / trim 必要) を直接呼び出しテスト 5 件で裏付ける。既存テスト `speaker_is_trimmed_and_none_falls_back_to_unknown_label` は `segment_to_append_args` 経由の間接テストのみであり、本作業で直接テストを補完し、リファクタ耐性を獲得する。実装変更・コミット禁止。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| A | `normalize_speaker_returns_unknown_for_none` | 1 | `None` → `"不明"` |
+| B | `normalize_speaker_returns_unknown_for_empty_string` | 1 | `Some("")` → `"不明"` |
+| C | `normalize_speaker_returns_unknown_for_whitespace_only` | 2 | `Some("   ")` → `"不明"`, `Some("\t\n  ")` → `"不明"` (2 種類の whitespace を確認) |
+| D | `normalize_speaker_passes_through_normal_label` | 3 | `Some("Alice")` → `"Alice"`, `Some("自分")` → `"自分"`, `Some("相手側")` → `"相手側"` |
+| E | `normalize_speaker_trims_surrounding_whitespace_only` | 2 | `Some("  Alice  ")` → `"Alice"` (前後 trim), `Some(" Alice Bob ")` → `"Alice Bob"` (**内部空白は保持**) |
+
+#### 不変条件 / 契約仕様
+- `None` または trim 後空文字列は必ず `"不明"` を返す
+- whitespace のみの文字列 (スペース / タブ / 改行混在) も `"不明"` にフォールバック
+- 英数字・日本語いずれのラベルもそのまま通過する
+- **内部空白は collapse しない** (前後の trim のみ): `" Alice Bob "` → `"Alice Bob"` は最重要契約。会議中の連名話者ラベル対応の余地を保つ設計意図。
+
+#### 設計意図
+- `normalize_speaker` を別関数に抽出/インライン化するリファクタを行うと、責任が `normalize_speaker` か `segment_to_append_args` かの切り分けができない問題を解消
+- `Some(" Alice Bob ")` → `"Alice Bob"` のテスト (E の 2 件目) が特に重要: trim は前後のみ、内部空白は保持する契約を明示
+- 前セッション (audio_utils, session_store, session_manager) で確立した「private fn 直接テスト」パターンの正統な拡張
+
+#### 変更ファイル
+- `src-tauri/src/transcript_bridge.rs` (tests モジュール末尾に 5 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **277 passed** (272 → 277、追加 5 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/transcript_bridge.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 9 件)
+- 追加後 total passed: 277
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- 既存の間接テスト `speaker_is_trimmed_and_none_falls_back_to_unknown_label` との仕様重複あり (None → "不明" と前後空白 trim は両テストが確認)。重複を許容することで `segment_to_append_args` と `normalize_speaker` の責任分離が崩れた時に早期検知できる。
+- テスト C の whitespace 文字種は ASCII 範囲のみ確認。Unicode の全角スペース (`\u{3000}`) などは `str::trim` では除去されない (Rust の `trim` は Unicode Whitespace のみ処理するが全角スペースも含む) ため、将来確認が必要な場合は別テストで対応。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
