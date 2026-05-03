@@ -479,4 +479,58 @@ mod tests {
 
         assert!(result.is_err(), "should fail when dir does not exist");
     }
+
+    #[test]
+    fn parse_session_started_at_secs_returns_none_for_empty_string() {
+        assert_eq!(parse_session_started_at_secs(""), None);
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_accepts_pure_numeric_without_hyphen() {
+        assert_eq!(
+            parse_session_started_at_secs("1234567890"),
+            Some(1234567890)
+        );
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_accepts_numeric_with_suffix_after_hyphen() {
+        assert_eq!(
+            parse_session_started_at_secs("1234567890-meet-abc"),
+            Some(1234567890)
+        );
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_returns_none_for_leading_hyphen() {
+        assert_eq!(parse_session_started_at_secs("-1234567890"), None);
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_returns_none_for_overflow_u64() {
+        assert_eq!(
+            parse_session_started_at_secs("99999999999999999999999"),
+            None
+        );
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_returns_none_for_negative_sign_prefix() {
+        assert_eq!(parse_session_started_at_secs("-12345"), None);
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_accepts_boundary_max() {
+        // MAX_JS_DATE_UNIX_SECS = 8_640_000_000_000; the check is `>`, so == is accepted
+        assert_eq!(
+            parse_session_started_at_secs("8640000000000"),
+            Some(8_640_000_000_000)
+        );
+    }
+
+    #[test]
+    fn parse_session_started_at_secs_returns_none_just_above_boundary() {
+        // MAX_JS_DATE_UNIX_SECS + 1 = 8_640_000_000_001 is strictly > MAX, so None
+        assert_eq!(parse_session_started_at_secs("8640000000001"), None);
+    }
 }

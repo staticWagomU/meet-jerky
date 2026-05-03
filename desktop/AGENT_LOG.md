@@ -15243,3 +15243,59 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### session_store の parse_session_started_at_secs 境界仕様を 8 件のテストで直接裏付け
+
+- **開始日時 (JST)**: 2026-05-04 06:27 JST
+- **担当セッション**: `mjc-worker-parse-session-secs-edge-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/session_store.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`parse_session_started_at_secs` (private fn, L174-181) の境界仕様を 8 件の `#[test]` 関数で直接テストし、回帰防止カバレッジを拡張する。
+既存テストは `list_session_summaries` 経由の間接テストのみであり、parse の入力パターン網羅性を補強するため直接呼び出しテストを追加する。
+実装変更・コミット禁止。
+
+#### 追加したテスト
+
+| # | 関数名 | 入力 | 期待値 | 検証観点 |
+|---|--------|------|--------|----------|
+| A | `parse_session_started_at_secs_returns_none_for_empty_string` | `""` | `None` | split が `Some("")` → parse 失敗 |
+| B | `parse_session_started_at_secs_accepts_pure_numeric_without_hyphen` | `"1234567890"` | `Some(1234567890)` | ハイフンなし純粋数値 |
+| C | `parse_session_started_at_secs_accepts_numeric_with_suffix_after_hyphen` | `"1234567890-meet-abc"` | `Some(1234567890)` | 現実的なセッションファイル名形式 |
+| D | `parse_session_started_at_secs_returns_none_for_leading_hyphen` | `"-1234567890"` | `None` | ハイフン始まり → prefix `""` → parse 失敗 |
+| E | `parse_session_started_at_secs_returns_none_for_overflow_u64` | `"99999999999999999999999"` | `None` | u64 上限超 → parse Err |
+| F | `parse_session_started_at_secs_returns_none_for_negative_sign_prefix` | `"-12345"` | `None` | 負号はハイフンとして扱われ prefix `""` → parse 失敗 |
+| G | `parse_session_started_at_secs_accepts_boundary_max` | `"8640000000000"` | `Some(8_640_000_000_000)` | `== MAX_JS_DATE_UNIX_SECS` は `>` チェックを通過 |
+| H | `parse_session_started_at_secs_returns_none_just_above_boundary` | `"8640000000001"` | `None` | `MAX + 1` は `>` チェックで None |
+
+#### 変更ファイル
+- `src-tauri/src/session_store.rs` (tests モジュール末尾に 8 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 初回 test B で assert_eq! 単行指摘 → 多行形式に修正後 OK |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **243 passed** (235 → 243、追加 8 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 8 件
+- 追加後 total passed: 243
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし (cargo fmt による assert_eq! 多行化指摘のみ、修正後即解消)
+
+#### 残リスク
+- `split('-').next()` が `""` を返す挙動は Rust の仕様上変わらないが、将来の関数リファクタリングで `split` 以外の手法に変わると test A/D/F が変動する可能性あり (早期検知器として許容)
+- テスト G のマジックナンバー `8_640_000_000_000` は `MAX_JS_DATE_UNIX_SECS` のコピーであり、定数変更時に test も手動更新が必要 (コメントで明示済み)
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
