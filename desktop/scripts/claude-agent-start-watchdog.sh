@@ -18,8 +18,8 @@ require_cmd tmux
 WATCHDOG_SESSION="${1:-mjc-watchdog}"
 MAIN_SESSION="${2:-mjc-main}"
 PROMPT_FILE="${3:-$ROOT_DIR/docs/autonomous-main-prompt-claude.md}"
-INTERVAL_SECONDS="${4:-600}"
-NUDGE_COOLDOWN_SECONDS="${5:-${MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS:-600}}"
+INTERVAL_SECONDS="${4:-180}"
+NUDGE_COOLDOWN_SECONDS="${5:-${MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS:-300}}"
 
 if [[ ! -f "$PROMPT_FILE" ]]; then
   echo "prompt file not found: $PROMPT_FILE" >&2

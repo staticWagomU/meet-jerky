@@ -17,8 +17,9 @@ require_cmd tmux
 
 MAIN_SESSION="${1:-mjc-main}"
 PROMPT_FILE="${2:-$ROOT_DIR/docs/autonomous-main-prompt-claude.md}"
-INTERVAL_SECONDS="${3:-600}"
-NUDGE_COOLDOWN_SECONDS="${4:-${MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS:-600}}"
+INTERVAL_SECONDS="${3:-180}"
+NUDGE_COOLDOWN_SECONDS="${4:-${MJ_WATCHDOG_NUDGE_COOLDOWN_SECONDS:-300}}"
+CLEAR_COOLDOWN_SECONDS="${MJ_CLAUDE_WATCHDOG_CLEAR_COOLDOWN_SECONDS:-180}"
 WATCHDOG_LOG="${MJ_CLAUDE_WATCHDOG_LOG:-$AGENT_OUTPUT_DIR/claude-watchdog.log}"
 NUDGE_MESSAGE="${MJ_CLAUDE_WATCHDOG_NUDGE_MESSAGE:-watchdog継続指示: docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください。}"
 
@@ -28,6 +29,10 @@ if [[ ! "$INTERVAL_SECONDS" =~ ^[0-9]+$ ]] || [[ "$INTERVAL_SECONDS" -lt 10 ]]; 
 fi
 if [[ ! "$NUDGE_COOLDOWN_SECONDS" =~ ^[0-9]+$ ]] || [[ "$NUDGE_COOLDOWN_SECONDS" -lt 60 ]]; then
   echo "nudge cooldown must be an integer >= 60 seconds: $NUDGE_COOLDOWN_SECONDS" >&2
+  exit 2
+fi
+if [[ ! "$CLEAR_COOLDOWN_SECONDS" =~ ^[0-9]+$ ]] || [[ "$CLEAR_COOLDOWN_SECONDS" -lt 60 ]]; then
+  echo "clear cooldown must be an integer >= 60 seconds: $CLEAR_COOLDOWN_SECONDS" >&2
   exit 2
 fi
 
@@ -41,6 +46,16 @@ fi
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')" "$*" | tee -a "$WATCHDOG_LOG"
+}
+
+# Claude Code TUI prints "new task? /clear to save NNN.Nk tokens" only when the
+# session has hit its context limit and is blocked from accepting further input
+# until the user clears or compacts. We treat this as a hard freeze that prompt-
+# level instructions cannot recover from, and force /clear externally.
+main_session_overflow_warning() {
+  local pane_text
+  pane_text="$(tmux capture-pane -p -t "$MAIN_SESSION" -S -40 2>/dev/null || true)"
+  printf '%s\n' "$pane_text" | grep -Eq 'new task\? /clear to save'
 }
 
 # Claude Code TUI shows "esc to interrupt" only while it is generating.
@@ -57,6 +72,28 @@ main_session_waiting_for_input() {
   # in the last few lines. If we cannot find any of those, refuse to nudge to
   # avoid hammering a session that is in an unexpected state (e.g. error).
   printf '%s\n' "$pane_text" | tail -n 15 | grep -Eq '>|│|╰|╯|Try'
+}
+
+clear_main_session() {
+  log "main session shows context overflow; sending /clear and re-injecting prompt: $MAIN_SESSION"
+  # Send the /clear slash command literally, then submit.
+  tmux send-keys -t "$MAIN_SESSION" '/clear'
+  sleep 0.5
+  tmux send-keys -t "$MAIN_SESSION" Enter
+  # Give the TUI time to process the clear.
+  sleep 4
+
+  # Re-inject the autonomous prompt by pasting the prompt file as a single
+  # buffer. /clear wipes the conversation, so the prompt must be re-submitted.
+  local buffer="claude-watchdog-clear-$$"
+  if tmux load-buffer -b "$buffer" "$PROMPT_FILE" 2>/dev/null; then
+    tmux paste-buffer -d -b "$buffer" -t "$MAIN_SESSION"
+    sleep 0.5
+    tmux send-keys -t "$MAIN_SESSION" Enter
+    log "prompt re-injected after /clear: $MAIN_SESSION"
+  else
+    log "failed to load prompt file for re-injection: $PROMPT_FILE"
+  fi
 }
 
 nudge_main_session() {
@@ -77,14 +114,24 @@ nudge_main_session() {
 }
 
 LAST_NUDGE_AT=0
+LAST_CLEAR_AT=0
 
-log "claude watchdog started: main=$MAIN_SESSION prompt=$PROMPT_FILE interval=${INTERVAL_SECONDS}s nudge_cooldown=${NUDGE_COOLDOWN_SECONDS}s"
+log "claude watchdog started: main=$MAIN_SESSION prompt=$PROMPT_FILE interval=${INTERVAL_SECONDS}s nudge_cooldown=${NUDGE_COOLDOWN_SECONDS}s clear_cooldown=${CLEAR_COOLDOWN_SECONDS}s"
 
 while true; do
   if agent_session_exists "$MAIN_SESSION"; then
     log "main session alive: $MAIN_SESSION"
     now="$(date +%s)"
-    if main_session_waiting_for_input; then
+    if main_session_overflow_warning; then
+      if (( now - LAST_CLEAR_AT >= CLEAR_COOLDOWN_SECONDS )); then
+        clear_main_session
+        LAST_CLEAR_AT="$now"
+        # Re-injected prompt counts as fresh activity; reset nudge timer.
+        LAST_NUDGE_AT="$now"
+      else
+        log "main session shows context overflow; clear cooldown active: $MAIN_SESSION"
+      fi
+    elif main_session_waiting_for_input; then
       if (( now - LAST_NUDGE_AT >= NUDGE_COOLDOWN_SECONDS )); then
         log "main session appears idle; sending continuation nudge: $MAIN_SESSION"
         nudge_main_session
@@ -98,6 +145,7 @@ while true; do
     if "$ROOT_DIR/scripts/claude-agent-handoff-main.sh" "$MAIN_SESSION" "$PROMPT_FILE" >>"$WATCHDOG_LOG" 2>&1; then
       log "main session started: $MAIN_SESSION"
       LAST_NUDGE_AT=0
+      LAST_CLEAR_AT=0
     else
       log "failed to start main session: $MAIN_SESSION"
     fi
