@@ -16684,3 +16684,27 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 ### 後続メイン候補名
 - `mjc-main-20260504-7`
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-6 → mjc-main-20260504-7)
+
+- **判断時刻 (JST)**: 2026-05-04 ~09:00 JST
+- **判断理由**: 5 ループ完了 + SESSION SUMMARY 追記済の良い区切り。前セッション (5 ループハンドオフ) と同パターンで判断履歴を保存しつつ後継メインへ移譲。
+- **使用率 (推定)**: 約 60-70% (worker 5 件分の grep/diff/AGENT_LOG tail/コミット履歴を読んだ累積)
+- **引き継ぎ先**: `mjc-main-20260504-7`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-7.txt` (untracked、worktree 上のみ)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-7 docs/handoff/mjc-main-20260504-7.txt`
+- **canonical 名移譲コマンド**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-7 mjc-main`
+- **判断履歴の保存ポイント**:
+  - 両 Realtime engine の push_error 完全対称化 (本セッション ループ 1+4 で達成、prefix 文言のみ違う 10 件構造)
+  - sanitize 前段の bit-pattern 直接テストパターン (本セッション ループ 5 で確立、defensive pipeline で再利用可能)
+  - 「上位層責任境界の契約強制」パターン (本セッション ループ 2 で確立、validation/trim 一切しない fn の現挙動を上位層責任として固定)
+  - NaN/+Inf の非対称責務分離 (本セッション ループ 3 で確立)
+  - first-violation contract (本セッション ループ 5 で確立)
+- **次ループ候補の現状**:
+  - Q. transcription.rs error path (規模 S〜M)
+  - R. session_commands.rs (規模 S, 13 件既存)
+  - S. settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+  - T. session_manager / session_store の追加 (規模 XS〜S)
+  - F. drop メトリクス Tauri イベント化 (規模 M, 価値 9)
+  - G'. 会議終了検知の遅延監視 (規模 S〜M)
+- **未消化のユーザー直伝指示**: なし
