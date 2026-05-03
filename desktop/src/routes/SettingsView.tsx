@@ -1214,12 +1214,16 @@ export function SettingsView() {
                         <span className="settings-permission-label">
                           ローカル限定モード
                         </span>
-                        <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-privacy-switch settings-privacy-switch-off"
+                          role="status"
+                          aria-label="ローカル限定モード: オフ"
+                          title="ローカル限定モード: オフ"
+                        >
                           <span
-                            className="settings-permission-manual-dot"
+                            className="settings-privacy-switch-knob"
                             aria-hidden="true"
                           />
-                          オフ
                         </span>
                       </div>
                       <div className="settings-permission-row">
@@ -1299,18 +1303,30 @@ export function SettingsView() {
                     <div className="settings-permissions">
                       <div className="settings-permission-row">
                         <span className="settings-permission-label">匿名利用統計</span>
-                        <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-privacy-switch settings-privacy-switch-off"
+                          role="status"
+                          aria-label="匿名利用統計: オフ"
+                          title="匿名利用統計: オフ"
+                        >
                           <span
-                            className="settings-permission-manual-dot"
+                            className="settings-privacy-switch-knob"
                             aria-hidden="true"
                           />
-                          オフ
                         </span>
                       </div>
                       <div className="settings-permission-row">
                         <span className="settings-permission-label">クラッシュレポート</span>
-                        <span className="settings-permission-badge permission-granted">
-                          オン
+                        <span
+                          className="settings-privacy-switch settings-privacy-switch-on"
+                          role="status"
+                          aria-label="クラッシュレポート: オン"
+                          title="クラッシュレポート: オン"
+                        >
+                          <span
+                            className="settings-privacy-switch-knob"
+                            aria-hidden="true"
+                          />
                         </span>
                       </div>
                     </div>

@@ -4161,6 +4161,34 @@ body[data-window="ring-light"] .overlay-window {
   border-color: #ffd8c8;
 }
 
+.settings-privacy-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 34px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.settings-privacy-switch-off {
+  background-color: #e7e7ea;
+}
+
+.settings-privacy-switch-on {
+  justify-content: flex-end;
+  background-color: #ff5c00;
+}
+
+.settings-privacy-switch-knob {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background-color: #fff;
+}
+
 .settings-permission-row {
   display: flex;
   align-items: center;
