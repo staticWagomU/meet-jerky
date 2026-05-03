@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -55,6 +55,7 @@ pub struct CpalMicCapture {
     level: Arc<AtomicU32>,
     running: Arc<AtomicBool>,
     level_thread: Option<std::thread::JoinHandle<()>>,
+    dropped_samples: Arc<AtomicUsize>,
 }
 
 // cpal::Stream は macOS では Send ではないが、CpalMicCapture は
@@ -71,10 +72,12 @@ impl CpalMicCapture {
             level: Arc::new(AtomicU32::new(0)),
             running: Arc::new(AtomicBool::new(false)),
             level_thread: None,
+            dropped_samples: Arc::new(AtomicUsize::new(0)),
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_mic_input_stream_for_format<E>(
     sample_format: SampleFormat,
     device: &cpal::Device,
@@ -82,6 +85,7 @@ fn build_mic_input_stream_for_format<E>(
     channels: usize,
     level: Arc<AtomicU32>,
     producer: Arc<Mutex<ringbuf::HeapProd<f32>>>,
+    dropped_samples: Arc<AtomicUsize>,
     err_fn: E,
 ) -> Result<cpal::Stream, String>
 where
@@ -94,6 +98,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::F64 => build_mic_input_stream::<f64, E>(
@@ -102,6 +107,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::I8 => build_mic_input_stream::<i8, E>(
@@ -110,6 +116,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::I16 => build_mic_input_stream::<i16, E>(
@@ -118,6 +125,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::I24 => build_mic_input_stream::<cpal::I24, E>(
@@ -126,6 +134,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::I32 => build_mic_input_stream::<i32, E>(
@@ -134,6 +143,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::I64 => build_mic_input_stream::<i64, E>(
@@ -142,6 +152,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::U8 => build_mic_input_stream::<u8, E>(
@@ -150,6 +161,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::U16 => build_mic_input_stream::<u16, E>(
@@ -158,6 +170,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::U24 => build_mic_input_stream::<cpal::U24, E>(
@@ -166,6 +179,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::U32 => build_mic_input_stream::<u32, E>(
@@ -174,6 +188,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::U64 => build_mic_input_stream::<u64, E>(
@@ -182,6 +197,7 @@ where
             channels,
             level,
             producer,
+            dropped_samples.clone(),
             err_fn,
         ),
         SampleFormat::DsdU8 | SampleFormat::DsdU16 | SampleFormat::DsdU32 => {
@@ -191,12 +207,14 @@ where
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_mic_input_stream<T, E>(
     device: &cpal::Device,
     stream_config: &cpal::StreamConfig,
     channels: usize,
     level: Arc<AtomicU32>,
     producer: Arc<Mutex<ringbuf::HeapProd<f32>>>,
+    dropped_samples: Arc<AtomicUsize>,
     err_fn: E,
 ) -> Result<cpal::Stream, String>
 where
@@ -211,6 +229,7 @@ where
                 let mut sum_squares = 0.0f32;
                 let mut sample_count = 0usize;
                 let mut producer_guard = producer.try_lock();
+                let mut dropped = 0usize;
 
                 for_each_mono_sample(data, channels, |sample| {
                     sum_squares += sample * sample;
@@ -218,9 +237,15 @@ where
 
                     if let Some(guard) = producer_guard.as_mut() {
                         // バッファが満杯の場合は古いサンプルを捨てる（書き込まない）
-                        let _ = guard.try_push(sample);
+                        if guard.try_push(sample).is_err() {
+                            dropped += 1;
+                        }
                     }
                 });
+
+                if dropped > 0 {
+                    dropped_samples.fetch_add(dropped, Ordering::Relaxed);
+                }
 
                 let rms = calculate_rms_from_sum(sum_squares, sample_count);
                 level.store(rms.to_bits(), Ordering::Relaxed);
@@ -336,6 +361,8 @@ impl AudioCapture for CpalMicCapture {
         // オーディオコールバック用のクローン
         let level_for_callback = Arc::clone(&level);
         let producer_for_callback = Arc::clone(&producer);
+        let dropped_for_callback = Arc::clone(&self.dropped_samples);
+        let dropped_for_emitter = Arc::clone(&self.dropped_samples);
 
         let err_fn = |err: cpal::StreamError| {
             eprintln!("オーディオストリームエラー: {err}");
@@ -349,6 +376,7 @@ impl AudioCapture for CpalMicCapture {
             channels,
             level_for_callback,
             producer_for_callback,
+            dropped_for_callback,
             err_fn,
         )
         .map_err(|e| format!("入力ストリームの構築に失敗しました: {e}"))?;
@@ -370,6 +398,13 @@ impl AudioCapture for CpalMicCapture {
                     "audio-level",
                     json!({ "level": level_value, "source": "microphone" }),
                 );
+                let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
+                if dropped > 0 {
+                    eprintln!(
+                        "[microphone] リングバッファ満杯で {} sample を破棄しました",
+                        dropped
+                    );
+                }
                 std::thread::sleep(Duration::from_millis(100));
             }
         });

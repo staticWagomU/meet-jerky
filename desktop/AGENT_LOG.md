@@ -14830,3 +14830,17 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし
 - 次アクション: 後継メイン (mjc-main-20260504-1) が docs/autonomous-main-prompt-claude.md に従って次ループ (audio.rs マイク側 try_push drop メトリクス) から自走。
+
+### audio: マイク (cpal) ringbuf 満杯時の drop sample 数を可視化
+
+- 開始日時: 2026-05-04 06:15 JST
+- 担当セッション: mjc-worker-mic-drop-metric-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/audio.rs (CpalMicCapture / build_mic_input_stream*), AGENT_LOG.md
+- 指示内容: commit 7cfb97c でデスクトップ音声側に入れた drop メトリクスと同じパターンをマイク側に移植。CpalMicCapture に Arc<AtomicUsize> を追加、build_mic_input_stream の callback で try_push 失敗を fetch_add、level emitter スレッドの 100ms 周期で swap+eprintln。
+- 結果: import に AtomicUsize 追加。CpalMicCapture に dropped_samples: Arc<AtomicUsize> フィールド追加 (new() でゼロ初期化)。build_mic_input_stream_for_format に #[allow(clippy::too_many_arguments)] + dropped_samples 引数追加、12 種類の SampleFormat ディスパッチに dropped_samples.clone() 追加。build_mic_input_stream に同 #[allow] + 引数追加、callback 内で try_push 失敗時 dropped 局所変数を増分し dropped_samples.fetch_add で蓄積。start() 内で dropped_for_callback / dropped_for_emitter を Arc::clone し、前者を build_mic_input_stream_for_format に渡し、後者を emitter スレッドで swap(0)+eprintln! に使用。変更は +36/-3 行。
+- 変更ファイル: src-tauri/src/audio.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功、cargo test 206 passed / 0 failed。cargo clippy (-A too_many_arguments) 警告ゼロ。cargo clippy フル実行で too_many_arguments 警告 2 件 (elevenlabs_realtime / openai_realtime の既存分のみ、audio.rs の新関数は #[allow] で抑制済み)。
+- 依存関係追加の有無と理由: なし (std::sync::atomic::AtomicUsize は std)
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット。
