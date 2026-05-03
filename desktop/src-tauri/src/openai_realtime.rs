@@ -99,16 +99,16 @@ impl OpenAIRealtimeStream {
         let sample_rate = config.sample_rate;
 
         let task_handle = tauri::async_runtime::spawn(async move {
-            if let Err(e) = ws_task::run(
+            if let Err(e) = ws_task::run(ws_task::RunParams {
                 api_key,
                 model,
                 language,
                 sample_rate,
                 audio_rx,
-                pending_for_task.clone(),
-                speaker.clone(),
+                pending: pending_for_task.clone(),
+                speaker: speaker.clone(),
                 source,
-            )
+            })
             .await
             {
                 // タスク内で発生した致命的エラーをユーザーにも分かるように
@@ -202,16 +202,28 @@ mod ws_task {
 
     const READER_FINALIZE_TIMEOUT: Duration = Duration::from_secs(10);
 
-    pub async fn run(
-        api_key: String,
-        model: String,
-        language: Option<String>,
-        sample_rate: u32,
-        mut audio_rx: UnboundedReceiver<AudioCommand>,
-        pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
-        speaker: Option<String>,
-        source: Option<TranscriptionSource>,
-    ) -> Result<(), String> {
+    pub struct RunParams {
+        pub api_key: String,
+        pub model: String,
+        pub language: Option<String>,
+        pub sample_rate: u32,
+        pub audio_rx: UnboundedReceiver<AudioCommand>,
+        pub pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
+        pub speaker: Option<String>,
+        pub source: Option<TranscriptionSource>,
+    }
+
+    pub async fn run(params: RunParams) -> Result<(), String> {
+        let RunParams {
+            api_key,
+            model,
+            language,
+            sample_rate,
+            mut audio_rx,
+            pending,
+            speaker,
+            source,
+        } = params;
         // ─── 1. WebSocket 接続 ───
         let url = "wss://api.openai.com/v1/realtime?intent=transcription";
         let mut request = url

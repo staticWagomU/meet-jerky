@@ -14858,3 +14858,17 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット。次ループで openai_realtime.rs にも同パターンを適用する。
+
+### clippy: openai_realtime::ws_task::run の引数を RunParams 構造体化、警告ゼロ達成
+
+- 開始日時: 2026-05-04 05:04 JST
+- 担当セッション: mjc-worker-openai-runparams-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/openai_realtime.rs (mod ws_task), AGENT_LOG.md
+- 指示内容: clippy::too_many_arguments(8/7) を消すため、ws_task::run の 8 引数を RunParams 構造体に集約。commit 2a03fe4 と同パターンで、呼び出し側も struct リテラルへ書き換え、関数本体は変更せず destructure で同じ変数名を取り出す。
+- 結果: mod ws_task の READER_FINALIZE_TIMEOUT 直後に RunParams 構造体 (フィールド 8 個) を追加。pub async fn run(params: RunParams) に変更し、let RunParams { .. } = params; で同名 binding に destructure (mut audio_rx も保持)。呼び出し側 (line 102) を ws_task::run(ws_task::RunParams { ... }) の struct リテラル形式に書き換え。関数本体のロジックは一切変更なし。差分 +24/-12 行 (合計 35 行程度)。
+- 変更ファイル: src-tauri/src/openai_realtime.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功 (agent-verify.sh 経由)、cargo test 206 passed / 0 failed。cargo clippy --no-deps: warning 行ゼロ (grep -E "^warning:|-> " で出力なし、Finished のみ)。clippy 警告ゼロ達成確認。
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット。clippy 警告ゼロ達成。
