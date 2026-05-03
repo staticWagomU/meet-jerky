@@ -14735,3 +14735,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: コミット後、次ループは Codex の UI 微調整と衝突しない優先度上位タスク (検知信頼性 / 音声取得 / 低遅延 / 録音状態の透明性) を調査担当に投げる。
+
+### Transcription loop tail sleep: 50ms→5ms で低遅延化
+
+- 開始日時: 2026-05-04 04:28 JST
+- 担当セッション: mjc-worker-transcription-tail-sleep-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/transcription.rs (run_transcription_loop), AGENT_LOG.md
+- 指示内容: `run_transcription_loop` の末尾 `std::thread::sleep(Duration::from_millis(50))` をリングバッファに音声がある場合でも毎ループ 50ms 待機していた問題を解消するため 5ms に短縮した。アイドル時の安全弁 (available==0, read_count==0) は変更せず維持した。
+- 結果: 1183 行目の sleep を 5ms に変更し、1 行コメントを追加。変更は数値 1 点 + コメント 1 行のみ。
+- 変更ファイル: src-tauri/src/transcription.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功、cargo test 206 passed / 0 failed。frontend build は rust 専用変更のため skip。
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット

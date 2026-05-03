@@ -1180,7 +1180,8 @@ fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
             stream_started_at_secs,
         );
 
-        std::thread::sleep(Duration::from_millis(50));
+        // CPU spin 防止のための短い yield — データがある間も常時 polling しない
+        std::thread::sleep(Duration::from_millis(5));
     }
 
     if feed_failed {
