@@ -15354,3 +15354,64 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### audio.rs の sanitize_sample / calculate_rms_from_sum 境界仕様を 9 件のテストで直接裏付け
+
+- **開始日時 (JST)**: 2026-05-04 06:40 JST
+- **担当セッション**: `mjc-worker-audio-private-fn-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/audio.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`sanitize_sample` (private fn, L287-293) と `calculate_rms_from_sum` (private fn, L295-305) の直接呼び出しテストを 8〜9 件追加し、回帰防止カバレッジを拡張する。実装変更・コミット禁止。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| A | `sanitize_sample_returns_zero_for_nan` | `f32::NAN` → 0.0 (非有限値防御) |
+| B | `sanitize_sample_returns_zero_for_positive_infinity` | `f32::INFINITY` → 0.0 (非有限値防御) |
+| C | `sanitize_sample_returns_zero_for_negative_infinity` | `f32::NEG_INFINITY` → 0.0 (非有限値防御) |
+| D | `sanitize_sample_clamps_above_one_to_one` | `1.5` → 1.0 (上限クランプ) |
+| E | `sanitize_sample_clamps_below_minus_one_to_minus_one` | `-1.5` → -1.0 (下限クランプ) |
+| F | `sanitize_sample_passes_through_finite_values_in_range` | `0.0`, `0.5`, `-0.5`, `1.0`, `-1.0` がそのまま通過 (正常パス 5 assertions) |
+| G | `calculate_rms_from_sum_returns_zero_for_zero_sample_count` | `(10.0, 0)` → 0.0 (ゼロ除算防御) |
+| H | `calculate_rms_from_sum_returns_zero_for_negative_sum_squares` | `(-1.0, 4)` → `sqrt(-0.25)` は NaN → 0.0 (NaN 防御) |
+| I | `calculate_rms_from_sum_clamps_above_one_to_one` | `(100.0, 4)` → `sqrt(25.0) = 5.0` → clamp → 1.0 |
+
+#### 設計確認事項
+- いずれも `super::sanitize_sample` / `super::calculate_rms_from_sum` 直接呼び出し (private fn は `mod tests { use super::*; }` から可視)
+- NaN の `assert_eq!` は `sanitize_sample` が `0.0` (有限値) を返すので安全
+- `calculate_rms_from_sum(-1.0, 4)` → `(-0.25f32).sqrt()` は IEEE 754 規定で NaN → L301 の `rms.is_nan()` 防御コードの直接テストになっている
+- sanitize_sample の範囲内通過テスト (F) を 1 件追加した (worker 判断)
+
+#### 変更ファイル
+- `src-tauri/src/audio.rs` (tests モジュール末尾に 9 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **254 passed** (245 → 254、追加 9 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/audio.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 9 件
+- 追加後 total passed: 254
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- `sanitize_sample_passes_through_finite_values_in_range` (F) は境界 ±1.0 を含むが、これは既存の `test_normalize_sample_to_f32_sanitizes_invalid_f32` が間接的にも網羅している。重複気味だが直接呼び出しによる明示的な仕様裏付けとして価値がある。
+- `calculate_rms_from_sum_returns_zero_for_negative_sum_squares` (H) は「float 計算誤差で sum_squares が稀に負になる可能性」を前提にした防御コードのテスト。実際に負になるケースが実装上発生しなくなった場合でも、防御コード自体は残る (デッドコードにはならない) ので test も有効。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

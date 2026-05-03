@@ -765,4 +765,53 @@ mod tests {
         // start() 前は consumer が None であること
         assert!(capture.take_consumer().is_none());
     }
+
+    #[test]
+    fn sanitize_sample_returns_zero_for_nan() {
+        assert_eq!(sanitize_sample(f32::NAN), 0.0);
+    }
+
+    #[test]
+    fn sanitize_sample_returns_zero_for_positive_infinity() {
+        assert_eq!(sanitize_sample(f32::INFINITY), 0.0);
+    }
+
+    #[test]
+    fn sanitize_sample_returns_zero_for_negative_infinity() {
+        assert_eq!(sanitize_sample(f32::NEG_INFINITY), 0.0);
+    }
+
+    #[test]
+    fn sanitize_sample_clamps_above_one_to_one() {
+        assert_eq!(sanitize_sample(1.5), 1.0);
+    }
+
+    #[test]
+    fn sanitize_sample_clamps_below_minus_one_to_minus_one() {
+        assert_eq!(sanitize_sample(-1.5), -1.0);
+    }
+
+    #[test]
+    fn sanitize_sample_passes_through_finite_values_in_range() {
+        assert_eq!(sanitize_sample(0.0), 0.0);
+        assert_eq!(sanitize_sample(0.5), 0.5);
+        assert_eq!(sanitize_sample(-0.5), -0.5);
+        assert_eq!(sanitize_sample(1.0), 1.0);
+        assert_eq!(sanitize_sample(-1.0), -1.0);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_returns_zero_for_zero_sample_count() {
+        assert_eq!(calculate_rms_from_sum(10.0, 0), 0.0);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_returns_zero_for_negative_sum_squares() {
+        assert_eq!(calculate_rms_from_sum(-1.0, 4), 0.0);
+    }
+
+    #[test]
+    fn calculate_rms_from_sum_clamps_above_one_to_one() {
+        assert_eq!(calculate_rms_from_sum(100.0, 4), 1.0);
+    }
 }
