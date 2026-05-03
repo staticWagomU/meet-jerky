@@ -389,4 +389,81 @@ mod tests {
         assert!(!debug.contains("sk-test-abc"));
         assert!(!debug.contains("Bearer sk-test-abc"));
     }
+
+    #[test]
+    fn parse_whisper_verbose_response_handles_single_segment_with_all_default_fields_none() {
+        let body =
+            r#"{"segments": [{"id": 0, "seek": 0, "start": 1.5, "end": 3.0, "text": "single"}]}"#;
+
+        let segments = parse_whisper_verbose_response(body).expect("should parse");
+
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].text, "single");
+        assert_eq!(segments[0].start_ms, 1500);
+        assert_eq!(segments[0].end_ms, 3000);
+        assert!(segments[0].source.is_none());
+        assert!(segments[0].speaker.is_none());
+        assert!(segments[0].is_error.is_none());
+    }
+
+    #[test]
+    fn parse_whisper_verbose_response_rounds_fractional_milliseconds_to_nearest() {
+        let body = r#"{
+            "segments": [
+                {"id": 0, "seek": 0, "start": 0.0001, "end": 0.4999, "text": "a"},
+                {"id": 1, "seek": 0, "start": 0.5001, "end": 0.9999, "text": "b"},
+                {"id": 2, "seek": 0, "start": 0.5, "end": 1.0, "text": "c"}
+            ]
+        }"#;
+
+        let segments = parse_whisper_verbose_response(body).expect("should parse");
+
+        assert_eq!(segments[0].start_ms, 0);
+        assert_eq!(segments[0].end_ms, 500);
+        assert_eq!(segments[1].start_ms, 500);
+        assert_eq!(segments[1].end_ms, 1000);
+        assert_eq!(segments[2].start_ms, 500);
+        assert_eq!(segments[2].end_ms, 1000);
+    }
+
+    #[test]
+    fn parse_whisper_verbose_response_trims_text_edges_only_preserves_internal_whitespace() {
+        let body = r#"{
+            "segments": [
+                {"id": 0, "seek": 0, "start": 0.0, "end": 1.0, "text": "  hello world  "},
+                {"id": 1, "seek": 0, "start": 1.0, "end": 2.0, "text": "  日本語  テキスト  "}
+            ]
+        }"#;
+
+        let segments = parse_whisper_verbose_response(body).expect("should parse");
+
+        assert_eq!(segments[0].text, "hello world");
+        assert_eq!(segments[1].text, "日本語  テキスト");
+    }
+
+    #[test]
+    fn parse_whisper_verbose_response_returns_err_when_segments_field_missing() {
+        let body = r#"{"task": "transcribe", "language": "ja"}"#;
+
+        let result = parse_whisper_verbose_response(body);
+
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .starts_with("cloud whisper parse error:"));
+    }
+
+    #[test]
+    fn parse_whisper_verbose_response_preserves_reverse_ordered_timestamps_without_validation() {
+        let body =
+            r#"{"segments": [{"id": 0, "seek": 0, "start": 5.0, "end": 2.0, "text": "reversed"}]}"#;
+
+        let result = parse_whisper_verbose_response(body);
+
+        assert!(result.is_ok());
+        let segments = result.unwrap();
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].start_ms, 5000);
+        assert_eq!(segments[0].end_ms, 2000);
+    }
 }

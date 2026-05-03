@@ -16160,3 +16160,63 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### cloud_whisper.rs の parse_whisper_verbose_response を 5 件のテストで直接裏付け
+
+- **開始日時 (JST)**: 2026-05-04 ~16:00 JST
+- **担当セッション**: `mjc-worker-cloud-whisper-tests-20260504-5-4`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/cloud_whisper.rs` の `mod tests` 末尾への `#[test]` 関数 5 件追加のみ
+
+#### 指示内容 (要約)
+`parse_whisper_verbose_response` (pub fn, L104-L120) の未カバー境界 5 つを直接テストで固定する。対象: 1 segment OFF-BY-ONE 境界・f64 round 仕様・text 内部空白保持・segments 必須 field (serde 契約)・タイムスタンプ順序バリデーションなし。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| 1 | `parse_whisper_verbose_response_handles_single_segment_with_all_default_fields_none` | 7 | 1 segment 境界 + source/speaker/is_error の 3 つの default None を一括固定 |
+| 2 | `parse_whisper_verbose_response_rounds_fractional_milliseconds_to_nearest` | 6 | 3 segment で fractional ms: 0.0001→0, 0.4999→500, 0.5001→500, 0.9999→1000, 0.5→500, 1.0→1000。round() vs floor()/trunc()/ceil() 識別 |
+| 3 | `parse_whisper_verbose_response_trims_text_edges_only_preserves_internal_whitespace` | 2 | 前後 trim + 内部空白保持 (英語 1 個 / 日本語 2 個)。split_whitespace().join(" ") 誤リファクタを検知 |
+| 4 | `parse_whisper_verbose_response_returns_err_when_segments_field_missing` | 2 | segments field 不在 → serde missing field エラー → `"cloud whisper parse error:"` prefix 確認 |
+| 5 | `parse_whisper_verbose_response_preserves_reverse_ordered_timestamps_without_validation` | 4 | start=5.0, end=2.0 (逆順) → result.is_ok() + start_ms=5000, end_ms=2000 (parse 段階でバリデーションなし) |
+
+#### 不変条件 / 設計意図
+
+- **1 segment 境界 (テスト 1)**: 0 件 / 2 件のみで未確認だった「1 件 case」を固定。Vec 構築の OFF-BY-ONE を即座に検知。source/speaker/is_error が None である serde 外デフォルト値の 3 フィールドも一括確認。
+- **f64 round 仕様 (テスト 2)**: `(seg.start * 1000.0).round() as i64` の `round()` を `floor()` / `ceil()` / `as i64` のみ (truncation) に変える誤リファクタを 6 assertion で検知。0.4999→500 は floor/trunc では 499 になるため識別器として機能。0.5001→500 は ceil では 501 になるため識別器として機能。assert 値は初回 cargo test で全合格 (調整不要)。
+- **text 内部空白保持 (テスト 3)**: `seg.text.trim()` の「前後のみ trim、内部保持」仕様を 2 ケース (英語/日本語) で固定。`split_whitespace().join(" ")` による意図しない collapse を検知。
+- **segments 必須 field (テスト 4)**: `VerboseResponse { segments: Vec<VerboseSegment> }` が serde で必須であること (Option でないこと) を欠損 JSON で固定。`Option<Vec<...>>` への誤変更を即座に検知。
+- **タイムスタンプ順序バリデーションなし (テスト 5)**: 現実装が parse 段階で start > end を拒否しない挙動を明示固定。将来 validation 追加リファクタが入った場合、この test を意図的に更新する形で議論を促す (回帰検知器 + 仕様文書化)。
+
+#### 変更ファイル
+- `src-tauri/src/cloud_whisper.rs` (tests モジュール末尾に 5 関数追加、実装変更なし; `cargo fmt` により長行 2 箇所を自動 wrap)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 初回失敗 (2 行長超過) → `cargo fmt` 修正後合格 |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **310 passed** (305 → 310、追加 5 件すべて合格) |
+| `bash scripts/agent-verify.sh src-tauri/src/cloud_whisper.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 21 件)
+- 追加後 total passed: 310
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由 / assert 値調整の経緯
+- `cargo fmt --check` 初回失敗: L448 の `assert!(result.unwrap_err().starts_with(...))` が行長超過、L455 の `let body = r#"..."#` が行長超過。`cargo fmt` で自動 wrap 後 2 回目 check 合格。
+- テスト 2 (f64 rounding) の assert 値調整: **なし**。初回 cargo test で全 6 assertion が合格。使用した値 (0.0001/0.4999/0.5001/0.9999/0.5/1.0) は IEEE 754 f64 の表現誤差が round() の境界に影響しない安全な値域。
+
+#### 残リスク
+- **テスト 2 の f64 機械精度依存**: 0.4999 * 1000.0 は f64 演算で `499.89999...` 相当となり round() で 500 を返す (初回 cargo test 合格済み)。将来 rustc の最適化が変わった場合でも IEEE 754 準拠の範囲では不変のはず。ただし理論的には極端なアーキテクチャ (x87 FPU 80bit 拡張精度モード等) で結果が変わる可能性は残る。
+- **テスト 5 のタイムスタンプ逆順**: 将来 parse 段階で validation を追加する場合、テスト 5 (`parse_whisper_verbose_response_preserves_reverse_ordered_timestamps_without_validation`) が失敗する。これは**意図的な回帰検知**であり、validation 追加時にテストを更新することで仕様変更を明示的に議論できる設計。
+- **テスト 2 と 5 の意図的更新方針**: 上記 2 件は「現挙動の固定」であって「理想仕様の固定」ではない。いずれも test 名に `without_validation` / `to_nearest` という意図が明示されているため、将来の担当者が更新時に意図を読み取れる。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
