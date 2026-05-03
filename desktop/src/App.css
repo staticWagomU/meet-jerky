@@ -1247,9 +1247,9 @@ body[data-window="ring-light"] .overlay-window {
 }
 
 .live-caption-window-compact {
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: center;
-  padding-top: 24px;
+  padding-bottom: 34px;
 }
 
 .live-caption-compact-pill {
