@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Mic,
@@ -15,14 +14,6 @@ import {
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
-import {
-  MACOS_ACCESSIBILITY_PRIVACY_URL,
-  MACOS_MICROPHONE_PRIVACY_URL,
-  MACOS_SCREEN_RECORDING_PRIVACY_URL,
-  OPEN_ACCESSIBILITY_PRIVACY_LABEL,
-  OPEN_MICROPHONE_PRIVACY_LABEL,
-  OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
-} from "../utils/macosPrivacySettings";
 import {
   buildLiveCaptionStatusFromEngine,
   LIVE_CAPTION_STATUS_EVENT,
@@ -136,8 +127,7 @@ export function SettingsView() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [permissionSettingsOpenError, setPermissionSettingsOpenError] =
-    useState<string | null>(null);
+  const [permissionSettingsOpenError] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
@@ -187,7 +177,6 @@ export function SettingsView() {
     screenPermissionError,
     isFetchingScreenPermission,
     isCheckingPermissions,
-    refetchAll: refetchPermissions,
   } = usePermissions();
 
   const updateMutation = useMutation({
@@ -304,20 +293,6 @@ export function SettingsView() {
     );
   }, []);
 
-  const handleOpenPermissionSettings = useCallback(
-    async (url: string, label: string) => {
-      setPermissionSettingsOpenError(null);
-      try {
-        await openUrl(url);
-      } catch (e) {
-        const msg = toErrorMessage(e);
-        console.error(`${label}を開けませんでした:`, msg);
-        setPermissionSettingsOpenError(msg);
-      }
-    },
-    [],
-  );
-
   if (settingsError) {
     const settingsErrorMessage = toErrorMessage(settingsError);
     const reloadSettingsLabel = isFetchingSettings
@@ -425,13 +400,10 @@ export function SettingsView() {
   const defaultOutputDirErrorMessage = defaultOutputDirError
     ? toErrorMessage(defaultOutputDirError)
     : "";
-  const permissionRetryLabel = isCheckingPermissions
-    ? "macOS 権限状態を確認中"
-    : "macOS の権限を再チェック";
   const permissionSettingsOpenErrorLabel = permissionSettingsOpenError
     ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
     : null;
-  const aiMinutesManualLabel = "AI議事録は手動で管理されます";
+  const accessibilityPermissionLabel = "アクセシビリティ権限は任意です";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -441,9 +413,6 @@ export function SettingsView() {
       micPermission === "undetermined" ||
       screenPermission === "denied" ||
       screenPermission === "undetermined");
-  const permissionStatusNote = hasPermissionCheckError
-    ? "macOS の権限状態を読み取れませんでした。自分トラックの録音・文字起こしや相手側のシステム音声取得・文字起こしができるか分からないため、システム設定のプライバシーとセキュリティでマイクと画面収録を確認してください。"
-    : "マイクは自分トラックの録音、画面収録は相手側のシステム音声取得に必要です。未許可または未確認の場合はシステム設定のプライバシーとセキュリティで確認してください。";
   const unsavedSettingsLabel = "未保存の変更があります";
   const saveSettingsLabel = updateMutation.isPending
     ? "設定を保存中"
@@ -912,223 +881,219 @@ export function SettingsView() {
               </>
             )}
 
-            {(activeCategory === "general" || activeCategory === "privacy") && (
+            {activeCategory === "general" && (
               <>
                 {/* 出力先ディレクトリ */}
                 <div className="settings-section">
                   <h3 className="settings-section-title">出力先ディレクトリ</h3>
-        <div className="settings-output-dir">
-          <div className="settings-output-summary">
-            <span
-              className="settings-output-mode"
-              aria-label={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
-              title={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
-            >
-              {outputDirectoryModeLabel}
-            </span>
-            <span
-              className="settings-output-path"
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-              aria-label={outputDirectoryLabel}
-              title={outputDirectoryLabel}
-            >
-              {outputDirectoryDisplayText}
-            </span>
-          </div>
-          {defaultOutputDirError && !localSettings.outputDirectory && (
-            <div
-              className="settings-inline-error"
-              role="alert"
-              aria-label={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
-              title={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
-            >
-              <span>
-                デフォルト出力先の取得に失敗しました:{" "}
-                {defaultOutputDirErrorMessage}
-              </span>
-              <button
-                type="button"
-                className="control-btn control-btn-clear"
-                onClick={() => refetchDefaultOutputDir()}
-                disabled={isFetchingDefaultOutputDir}
-                aria-label={retryDefaultOutputDirLabel}
-                title={retryDefaultOutputDirLabel}
-              >
-                {isFetchingDefaultOutputDir ? "取得中..." : "出力先を再取得"}
-              </button>
-            </div>
-          )}
-          <div className="settings-output-actions">
-            <button
-              type="button"
-              className="control-btn control-btn-transcribe"
-              onClick={handleSelectOutputDirectory}
-              disabled={isSelectingOutputDirectory}
-              aria-label={selectOutputDirectoryLabel}
-              title={selectOutputDirectoryLabel}
-            >
-              {isSelectingOutputDirectory ? "選択中..." : "出力先を選択"}
-            </button>
-            <button
-              type="button"
-              className="control-btn control-btn-clear"
-              onClick={handleResetOutputDirectory}
-              disabled={isSelectingOutputDirectory || !localSettings.outputDirectory}
-              aria-label={resetOutputDirectoryLabel}
-              title={resetOutputDirectoryLabel}
-            >
-              デフォルトに戻す
-            </button>
-          </div>
-        </div>
+                  <div className="settings-output-dir">
+                    <div className="settings-output-summary">
+                      <span
+                        className="settings-output-mode"
+                        aria-label={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
+                        title={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
+                      >
+                        {outputDirectoryModeLabel}
+                      </span>
+                      <span
+                        className="settings-output-path"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        aria-label={outputDirectoryLabel}
+                        title={outputDirectoryLabel}
+                      >
+                        {outputDirectoryDisplayText}
+                      </span>
+                    </div>
+                    {defaultOutputDirError && !localSettings.outputDirectory && (
+                      <div
+                        className="settings-inline-error"
+                        role="alert"
+                        aria-label={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
+                        title={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
+                      >
+                        <span>
+                          デフォルト出力先の取得に失敗しました:{" "}
+                          {defaultOutputDirErrorMessage}
+                        </span>
+                        <button
+                          type="button"
+                          className="control-btn control-btn-clear"
+                          onClick={() => refetchDefaultOutputDir()}
+                          disabled={isFetchingDefaultOutputDir}
+                          aria-label={retryDefaultOutputDirLabel}
+                          title={retryDefaultOutputDirLabel}
+                        >
+                          {isFetchingDefaultOutputDir ? "取得中..." : "出力先を再取得"}
+                        </button>
+                      </div>
+                    )}
+                    <div className="settings-output-actions">
+                      <button
+                        type="button"
+                        className="control-btn control-btn-transcribe"
+                        onClick={handleSelectOutputDirectory}
+                        disabled={isSelectingOutputDirectory}
+                        aria-label={selectOutputDirectoryLabel}
+                        title={selectOutputDirectoryLabel}
+                      >
+                        {isSelectingOutputDirectory ? "選択中..." : "出力先を選択"}
+                      </button>
+                      <button
+                        type="button"
+                        className="control-btn control-btn-clear"
+                        onClick={handleResetOutputDirectory}
+                        disabled={
+                          isSelectingOutputDirectory || !localSettings.outputDirectory
+                        }
+                        aria-label={resetOutputDirectoryLabel}
+                        title={resetOutputDirectoryLabel}
+                      >
+                        デフォルトに戻す
+                      </button>
+                    </div>
+                  </div>
                 </div>
+              </>
+            )}
 
-                {/* 権限ステータス */}
-                <div className="settings-section">
-                  <h3 className="settings-section-title settings-section-title-compact">
-                    権限ステータス
-                  </h3>
-        <div className="settings-permissions">
-          <div className="settings-permission-row">
-            <span className="settings-permission-label">
-              マイク
-            </span>
-            <PermissionBadge
-              label={`${SELF_TRACK_DEVICE_LABEL} macOS マイク権限`}
-              status={micPermission}
-              error={micPermissionError}
-              isChecking={isFetchingMicPermission}
-            />
-          </div>
-          <div className="settings-permission-row">
-            <span className="settings-permission-label">
-              システム音声
-            </span>
-            <PermissionBadge
-              label={`${OTHER_TRACK_PERMISSION_LABEL} macOS 画面収録権限`}
-              status={screenPermission}
-              error={screenPermissionError}
-              isChecking={isFetchingScreenPermission}
-            />
-          </div>
-          <div className="settings-permission-row">
-            <span className="settings-permission-label">
-              AI議事録
-            </span>
-            <span
-              className="settings-permission-badge permission-manual"
-              role="status"
-              aria-label={aiMinutesManualLabel}
-              title={aiMinutesManualLabel}
-            >
-              <span
-                className="settings-permission-manual-dot"
-                aria-hidden="true"
-              />
-              手動
-            </span>
-          </div>
-          <div className="settings-permission-actions">
-            <button
-              type="button"
-              className="control-btn control-btn-clear"
-              onClick={() => {
-                setPermissionSettingsOpenError(null);
-                refetchPermissions();
-              }}
-              disabled={isCheckingPermissions}
-              aria-label={permissionRetryLabel}
-              title={permissionRetryLabel}
-            >
-              {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
-            </button>
-            <button
-              type="button"
-              className="control-btn control-btn-clear"
-              onClick={() =>
-                void handleOpenPermissionSettings(
-                  MACOS_MICROPHONE_PRIVACY_URL,
-                  "マイク権限設定",
-                )
-              }
-              aria-label={OPEN_MICROPHONE_PRIVACY_LABEL}
-              title={OPEN_MICROPHONE_PRIVACY_LABEL}
-            >
-              マイク設定を開く
-            </button>
-            <button
-              type="button"
-              className="control-btn control-btn-clear"
-              onClick={() =>
-                void handleOpenPermissionSettings(
-                  MACOS_SCREEN_RECORDING_PRIVACY_URL,
-                  "画面収録設定",
-                )
-              }
-              aria-label={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
-              title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
-            >
-              画面収録設定を開く
-            </button>
-            <button
-              type="button"
-              className="control-btn control-btn-clear"
-              onClick={() =>
-                void handleOpenPermissionSettings(
-                  MACOS_ACCESSIBILITY_PRIVACY_URL,
-                  "アクセシビリティ権限設定",
-                )
-              }
-              aria-label={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
-              title={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
-            >
-              アクセシビリティ設定を開く
-            </button>
-          </div>
-          {permissionSettingsOpenErrorLabel && (
-            <p
-              className="settings-inline-error"
-              role="alert"
-              aria-label={permissionSettingsOpenErrorLabel}
-              title={permissionSettingsOpenErrorLabel}
-            >
-              <span>{permissionSettingsOpenErrorLabel}</span>
-            </p>
-          )}
-          {hasPermissionStatusAttention && (
-            <p className="settings-note">
-              {permissionStatusNote}
-            </p>
-          )}
-          <p className="settings-note">
-            ブラウザ会議 URL 検知では、macOS が Safari、Chrome、Edge、Brave、Arc、Firefox
-            の自動操作またはアクセシビリティ許可を求める場合があります。URL 全体は表示・保存せず、会議サービスとホスト名だけを使います。
-          </p>
-        </div>
-                </div>
-
-                {activeCategory === "privacy" && (
+            {activeCategory === "privacy" && (
+              <div className="settings-readonly-grid settings-readonly-grid-privacy">
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card">
+                    <h3 className="settings-readonly-card-title">データ保持期間</h3>
+                    <p>
+                      録音・文字起こし・議事録を指定日数後に自動削除します。
+                    </p>
+                    <div className="settings-permission-row">
+                      <span className="settings-permission-label">保持期間</span>
+                      <div className="settings-privacy-option-group">
+                        <span className="settings-privacy-option settings-privacy-option-active">
+                          7日
+                        </span>
+                        <span className="settings-privacy-option">30日</span>
+                        <span className="settings-privacy-option">90日</span>
+                        <span className="settings-privacy-option">削除しない</span>
+                      </div>
+                    </div>
+                  </div>
                   <div className="settings-readonly-card">
                     <h3 className="settings-readonly-card-title">ローカルデータ</h3>
                     <p>
-                      ローカル優先で記録します。文字起こし履歴と設定はこの Mac に保存されます。
+                      録音は削除するまでホームフォルダに保存されます。
                     </p>
-                    <p>
-                      データ保持期間と自動削除は今後の設定です。
-                    </p>
-                    <h3 className="settings-readonly-card-title">外部送信</h3>
-                    <p>
-                      文字起こしの外部送信は、OpenAI Realtime API または ElevenLabs Scribe v2 Realtime を選択した場合に発生し得ます。
-                    </p>
+                    <div className="settings-permissions">
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">
+                          ローカル限定モード
+                        </span>
+                        <span className="settings-permission-badge permission-manual">
+                          <span
+                            className="settings-permission-manual-dot"
+                            aria-hidden="true"
+                          />
+                          オフ
+                        </span>
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">ディスク使用量</span>
+                        <span className="settings-permission-badge">
+                          今後表示
+                        </span>
+                      </div>
+                    </div>
+                    <div className="settings-permission-actions">
+                      <button
+                        type="button"
+                        className="control-btn control-btn-clear"
+                        aria-label="Finder で表示"
+                        title="Finder で表示"
+                      >
+                        Finderで表示
+                      </button>
+                      <button
+                        type="button"
+                        className="control-btn control-btn-clear"
+                        aria-label="すべて削除"
+                        title="すべて削除"
+                      >
+                        すべて削除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card">
+                    <h3 className="settings-readonly-card-title">システム権限</h3>
+                    <p>macOS のシステム設定で付与済み。</p>
+                    <div className="settings-permissions">
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">マイク</span>
+                        <PermissionBadge
+                          label={`${SELF_TRACK_DEVICE_LABEL} macOS マイク権限`}
+                          status={micPermission}
+                          error={micPermissionError}
+                          isChecking={isFetchingMicPermission}
+                        />
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">
+                          画面と音声収録
+                        </span>
+                        <PermissionBadge
+                          label={`${OTHER_TRACK_PERMISSION_LABEL} macOS 画面収録権限`}
+                          status={screenPermission}
+                          error={screenPermissionError}
+                          isChecking={isFetchingScreenPermission}
+                        />
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">アクセシビリティ</span>
+                        <span
+                          className="settings-permission-badge permission-manual"
+                          role="status"
+                          aria-label={accessibilityPermissionLabel}
+                          title={accessibilityPermissionLabel}
+                        >
+                          <span
+                            className="settings-permission-manual-dot"
+                            aria-hidden="true"
+                          />
+                          任意
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="settings-readonly-card">
                     <h3 className="settings-readonly-card-title">テレメトリー</h3>
                     <p>
-                      テレメトリーは今後もオプトイン方針で扱います。利用状況の送信機能はまだありません。
+                      テレメトリーはすべてオプトイン。文字起こしは送信されません。
+                    </p>
+                    <div className="settings-permissions">
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">匿名利用統計</span>
+                        <span className="settings-permission-badge permission-manual">
+                          <span
+                            className="settings-permission-manual-dot"
+                            aria-hidden="true"
+                          />
+                          オフ
+                        </span>
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">クラッシュレポート</span>
+                        <span className="settings-permission-badge permission-granted">
+                          オン
+                        </span>
+                      </div>
+                    </div>
+                    <p>
+                      クラッシュレポートには macOS のバージョンとビルド情報だけが含まれます。
                     </p>
                   </div>
-                )}
-              </>
+                </div>
+              </div>
             )}
 
             {activeCategory === "detection" && (

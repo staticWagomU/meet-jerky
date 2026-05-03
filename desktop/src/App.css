@@ -3341,6 +3341,36 @@ body[data-window="ring-light"] .overlay-window {
   flex-wrap: wrap;
 }
 
+.settings-privacy-option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-privacy-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 1px solid #e9e9eb;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #666;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.settings-privacy-option-active {
+  color: #b83b00;
+  background-color: #fff3ec;
+  border-color: #ffd8c8;
+}
+
 .settings-permission-row {
   display: flex;
   align-items: center;
