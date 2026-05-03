@@ -211,13 +211,12 @@ mod tests {
             .expect("append should succeed");
 
         let files = list_md_files(dir.path());
-        assert_eq!(files.len(), 1, "exactly one .md should exist: {:?}", files);
+        assert_eq!(files.len(), 1, "exactly one .md should exist: {files:?}");
 
         let contents = std::fs::read_to_string(&files[0]).unwrap();
         assert!(
             contents.contains("**[14:50:15] 自分:** hello"),
-            "segment line missing after append. contents=\n{}",
-            contents
+            "segment line missing after append. contents=\n{contents}"
         );
     }
 
@@ -245,13 +244,11 @@ mod tests {
 
         assert!(
             contents.contains("**[14:50:05] 自分:** 一言目"),
-            "first segment lost. contents=\n{}",
-            contents
+            "first segment lost. contents=\n{contents}"
         );
         assert!(
             contents.contains("**[14:50:12] 相手側:** 二言目"),
-            "second segment missing. contents=\n{}",
-            contents
+            "second segment missing. contents=\n{contents}"
         );
     }
 

@@ -583,8 +583,7 @@ mod tests {
 
         for text in &["第一発言", "第二発言", "第三発言"] {
             let json = format!(
-                r#"{{"type":"conversation.item.input_audio_transcription.completed","transcript":"{}"}}"#,
-                text
+                r#"{{"type":"conversation.item.input_audio_transcription.completed","transcript":"{text}"}}"#
             );
             ws_task::handle_event(
                 &json,

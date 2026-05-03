@@ -190,7 +190,7 @@ mod tests {
         let path = finalize_and_save_session_inner(&manager, dir.path(), 1_713_333_100, jst())
             .expect("finalize_and_save should succeed");
 
-        assert!(path.exists(), "written file should exist at {:?}", path);
+        assert!(path.exists(), "written file should exist at {path:?}");
         let contents = std::fs::read_to_string(&path).unwrap();
         let first_line = contents.lines().next().unwrap();
         assert_eq!(first_line, "# 会議メモ - 2024-04-17 14:50");
@@ -225,8 +225,7 @@ mod tests {
         let files = list_md_files(dir.path());
         assert!(
             files.is_empty(),
-            "discard without appended transcript should not create files: {:?}",
-            files
+            "discard without appended transcript should not create files: {files:?}"
         );
     }
 

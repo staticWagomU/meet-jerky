@@ -230,12 +230,7 @@ mod tests {
 
         let files = list_session_files(dir.path()).unwrap();
 
-        assert_eq!(
-            files.len(),
-            2,
-            "should list only .md files, got {:?}",
-            files
-        );
+        assert_eq!(files.len(), 2, "should list only .md files, got {files:?}");
         let names: Vec<String> = files
             .iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
@@ -400,8 +395,7 @@ mod tests {
         let contents = fs::read_to_string(&path).unwrap();
         assert!(
             contents.contains("**[14:50:15] 自分:** hello"),
-            "segment line missing. contents=\n{}",
-            contents
+            "segment line missing. contents=\n{contents}"
         );
     }
 
@@ -417,13 +411,11 @@ mod tests {
         let contents = fs::read_to_string(&path).unwrap();
         assert!(
             contents.contains("**[14:50:15] 自分:** hello  "),
-            "first segment line missing hard break. contents=\n{}",
-            contents
+            "first segment line missing hard break. contents=\n{contents}"
         );
         assert!(
             contents.contains("**[14:51:15] 相手側:** world  "),
-            "second segment line missing distinct timestamp or hard break. contents=\n{}",
-            contents
+            "second segment line missing distinct timestamp or hard break. contents=\n{contents}"
         );
     }
 

@@ -15028,3 +15028,46 @@
 - 失敗理由: なし (fmt 指摘のみ、cargo fmt 適用で即解消)
 - 残リスク: ディスク full / permission denied など他のエラーパスは未テスト。エラー種別 (ErrorKind) は is_err() のみで確認しており OS 依存の kind() バリエーションは検証外
 - 次アクション: メインが diff レビューしてコミット
+
+### clippy uninlined_format_args 11 件をテストコードでも Rust 2021 慣用形に統一
+
+- 開始日時: 2026-05-04 (JST)
+- 担当セッション: mjc-worker-uninlined-tests-20260504-1
+- 役割: 作業担当エージェント (Claude Code, print mode)
+- 作業範囲: `src-tauri/src/openai_realtime.rs` (テストコード内 1 箇所)、`src-tauri/src/session_commands.rs` (テストコード内 2 箇所)、`src-tauri/src/session_manager.rs` (テストコード内 4 箇所)、`src-tauri/src/session_store.rs` (テストコード内 4 箇所)、`AGENT_LOG.md` 末尾追記
+- 指示内容:
+  - `cargo clippy -- -W clippy::uninlined_format_args` で検出されたテストコード内の残存 11 件を手動修正
+  - `"{}"` + 末尾引数 の形式を `"{var}"` / `"{var:?}"` の直接埋め込み形式に置換
+  - `cargo clippy --fix` は使用禁止 (他 lint への巻き込み防止)
+  - メッセージ文言・assertion 内容・テストロジックは完全保持
+- 結果:
+  - 修正前: `uninlined_format_args` 警告 11 件
+  - 修正後: `uninlined_format_args` 警告 0 件
+  - `cargo test`: 223 passed 維持 (0 failed)
+- 修正箇所一覧:
+
+  | # | ファイル | 旧形式 | 新形式 |
+  |---|---------|--------|--------|
+  | 1 | openai_realtime.rs:585 | `"...\"{}\"", text` | `"...\"{text}\""` |
+  | 2 | session_commands.rs:193 | `"...at {:?}", path` | `"...at {path:?}"` |
+  | 3 | session_commands.rs:226 | `"...files: {:?}", files` | `"...files: {files:?}"` |
+  | 4 | session_manager.rs:214 | `"...: {:?}", files` | `"...: {files:?}"` |
+  | 5 | session_manager.rs:217 | `"...append. contents=\n{}", contents` | `"...append. contents=\n{contents}"` |
+  | 6 | session_manager.rs:246 | `"...lost. contents=\n{}", contents` | `"...lost. contents=\n{contents}"` |
+  | 7 | session_manager.rs:251 | `"...missing. contents=\n{}", contents` | `"...missing. contents=\n{contents}"` |
+  | 8 | session_store.rs:233 | `"...got {:?}", files` | `"...got {files:?}"` (1行化も実施) |
+  | 9 | session_store.rs:401 | `"...missing. contents=\n{}", contents` | `"...missing. contents=\n{contents}"` |
+  | 10 | session_store.rs:418 | `"...break. contents=\n{}", contents` | `"...break. contents=\n{contents}"` |
+  | 11 | session_store.rs:423 | `"...break. contents=\n{}", contents` | `"...break. contents=\n{contents}"` |
+
+- 検証結果:
+  - `git diff --check`: OK (ホワイトスペースエラーなし)
+  - `cargo fmt --check`: 初回 session_store.rs:233 で assert_eq! 折り畳み指摘 → 1行化して再チェック OK
+  - `cargo clippy --no-deps --all-targets --all-features -- -D warnings`: OK (警告ゼロ)
+  - `cargo clippy --no-deps --all-targets -- -W clippy::uninlined_format_args 2>&1 | grep -c uninlined_format_args`: 0 (期待通り)
+  - `cargo test --no-fail-fast`: OK (223 passed, 0 failed)
+  - `scripts/agent-verify.sh`: OK
+- 依存関係追加の有無: なし
+- 失敗理由: なし (cargo fmt 指摘のみ、1 行化で即解消)
+- 残リスク: なし (機械的な形式変換のみ。行番号が実際と 1〜2 ずれていた場合は old_string マッチで自動補正済み)
+- 次アクション: メインが diff レビューしてコミット
