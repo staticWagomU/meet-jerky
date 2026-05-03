@@ -1514,7 +1514,7 @@ export function SettingsView() {
                           </span>
                         </div>
                         <span className="settings-ai-provider-desc">
-                          APIキーが必要・課金あり・外部送信あり
+                          API キーが必要・課金あり・外部送信あり
                         </span>
                       </div>
                       <div className="settings-ai-provider-item">
@@ -1523,7 +1523,7 @@ export function SettingsView() {
                           <span className="settings-ai-provider-title">OpenAI - GPT-4o</span>
                           <span className="settings-ai-provider-badge">未設定</span>
                         </div>
-                        <span className="settings-ai-provider-desc">APIキーが必要</span>
+                        <span className="settings-ai-provider-desc">API キーが必要</span>
                       </div>
                       <div className="settings-ai-provider-item">
                         <div className="settings-ai-provider-item-line">
