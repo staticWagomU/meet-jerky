@@ -331,8 +331,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
                 let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
                 if dropped > 0 {
                     eprintln!(
-                        "[system_audio] リングバッファ満杯で {} sample を破棄しました",
-                        dropped
+                        "[system_audio] リングバッファ満杯で {dropped} sample を破棄しました"
                     );
                 }
                 std::thread::sleep(Duration::from_millis(100));

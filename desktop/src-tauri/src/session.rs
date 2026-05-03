@@ -22,7 +22,7 @@ pub struct Session {
 impl Session {
     pub fn start(title: String, started_at: u64) -> Self {
         let seq = SESSION_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let id = format!("{}-{}", started_at, seq);
+        let id = format!("{started_at}-{seq}");
         Self {
             id,
             title,

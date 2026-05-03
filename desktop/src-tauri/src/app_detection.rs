@@ -171,8 +171,7 @@ fn handle_browser_url_detection(
         if now_secs.saturating_sub(last) >= NOTIFICATION_THROTTLE.as_secs() {
             LAST_EMPTY_BROWSER_LOG_SECS.store(now_secs, Ordering::Relaxed);
             eprintln!(
-                "[app_detection] {} (bundle: {}) で URL/タイトル両方取得失敗。AppleScript 権限を確認してください。",
-                browser_name, bundle_id
+                "[app_detection] {browser_name} (bundle: {bundle_id}) で URL/タイトル両方取得失敗。AppleScript 権限を確認してください。"
             );
         }
         return;

@@ -14918,3 +14918,17 @@
 - ユーザー直伝指示 (未消化): なし。watchdog 継続指示 1 件 (autonomous prompt に従う) は受領済み・既に従って自走中。
 - AGENT_LOG.md は ~14800 行 / 1.5MB。worker は `tail -100` 〜 `tail -200` 相当で末尾だけ参照する運用。
 - transcription.rs の残り 2 箇所の 50ms sleep (L1143/L1151) は `available == 0` のアイドル yield のため最適化対象外と確認済み。
+
+### clippy pedantic: uninlined_format_args 4 件を {var_name} 直接埋め込み形式に統一
+
+- 開始日時: 2026-05-04 08:30 JST
+- 担当セッション: mjc-worker-uninlined-format-args-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/{app_detection.rs, audio.rs, system_audio.rs, session.rs}, AGENT_LOG.md
+- 指示内容: clippy::uninlined_format_args 警告 4 件を Rust 2021 以降の慣用形に置換。eprintln! / format! の引数を `{var_name}` 直接埋め込みに変更し、メッセージ文言とロジックは完全に保持。
+- 結果: app_detection.rs L173-176: `{browser_name}` / `{bundle_id}` 直接埋め込み (引数 2 個削除)。audio.rs L403-406: `{dropped}` 直接埋め込み + rustfmt により 3 行→1 行に折り畳み。system_audio.rs L333-336: `{dropped}` 直接埋め込み (行長制限で多行形式維持)。session.rs L25: `{started_at}-{seq}` 直接埋め込み。4 ファイル計 -9/+4 行。
+- 変更ファイル: src-tauri/src/app_detection.rs, src-tauri/src/audio.rs, src-tauri/src/system_audio.rs, src-tauri/src/session.rs, AGENT_LOG.md
+- 検証結果: cargo fmt --check 成功、cargo test 206 passed / 0 failed、cargo clippy --no-deps 警告ゼロ (Finished のみ)、uninlined_format_args 警告カウント 4→0 確認。
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし (audio.rs は最初 3 行形式にしたが rustfmt が 1 行折り畳みを要求、system_audio.rs は逆に行長超過で多行維持が必要と判明し二段修正)
+- 次アクション: メインが diff レビューしてコミット。
