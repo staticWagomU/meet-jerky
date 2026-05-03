@@ -82,8 +82,9 @@ const SETTINGS_CATEGORIES = [
     label: "音声",
     icon: Mic,
     kicker: "音声取得",
-    title: "音声",
-    subtitle: "入力デバイス・分離・品質を会議録音向けに最適化します。",
+    title: "音声トラックを分離",
+    subtitle:
+      "自分の声と会議音声を別々に録音し、文字起こしを明瞭にします。",
   },
   {
     key: "transcription",
