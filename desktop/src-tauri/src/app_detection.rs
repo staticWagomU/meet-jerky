@@ -335,7 +335,7 @@ fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
     }
 
     let authority_end = after_scheme
-        .find(|c| c == '/' || c == '?' || c == '#')
+        .find(['/', '?', '#'])
         .unwrap_or(after_scheme.len());
     let authority = &after_scheme[..authority_end];
     if authority.contains('@') {
@@ -350,7 +350,7 @@ fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
     let path =
         if authority_end < after_scheme.len() && after_scheme[authority_end..].starts_with('/') {
             let rest = &after_scheme[authority_end..];
-            let path_end = rest.find(|c| c == '?' || c == '#').unwrap_or(rest.len());
+            let path_end = rest.find(['?', '#']).unwrap_or(rest.len());
             rest[..path_end].to_string()
         } else {
             "/".to_string()
@@ -462,7 +462,7 @@ fn is_google_meet_code_path(path: &str) -> bool {
 }
 
 fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
-    value.len() == len && value.bytes().all(|byte| matches!(byte, b'a'..=b'z'))
+    value.len() == len && value.bytes().all(|byte: u8| byte.is_ascii_lowercase())
 }
 
 fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
@@ -479,7 +479,7 @@ fn is_zoom_meeting_url(host: &str, path: &str) -> bool {
 
 fn is_zoom_meeting_id(value: &str) -> bool {
     let value = value.strip_suffix('/').unwrap_or(value);
-    (9..=11).contains(&value.len()) && value.bytes().all(|byte| matches!(byte, b'0'..=b'9'))
+    (9..=11).contains(&value.len()) && value.bytes().all(|byte: u8| byte.is_ascii_digit())
 }
 
 fn is_zoom_web_client_meeting_url(path: &str) -> bool {

@@ -14749,3 +14749,17 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット
+
+### Clippy 自動修正: 機械的な lint 警告を解消
+
+- 開始日時: 2026-05-04 JST
+- 担当セッション: mjc-worker-clippy-autofix-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/app_detection.rs, src-tauri/src/settings.rs, AGENT_LOG.md
+- 指示内容: cargo clippy --fix で 6 件の機械的修正 (needless_return / unnecessary_sort_by / manual_is_ascii_check 等) を適用。too_many_arguments × 2 はスコープ外として allow 指定。
+- 結果: `cargo clippy --fix --lib` で app_detection.rs に 4 件 (manual char comparison × 2 → 配列パターン、manual_is_ascii_check × 2 → is_ascii_lowercase/is_ascii_digit)、settings.rs に 2 件 (needless_return × 2 → 末尾式) を修正。session_store.rs の sort_by_key (std::cmp::Reverse が必要な逆順ソート) は clippy が自動適用せず 1 件残存。機能変更なし。
+- 変更ファイル: src-tauri/src/app_detection.rs, src-tauri/src/settings.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功、cargo test 206 passed / 0 failed。frontend build は rust 専用変更のため自動 skip。clippy 警告: 修正前 9 件 (too_many_arguments × 2 + 自動修正対象 7 件) → 修正後 3 件 (too_many_arguments × 2 + sort_by_key × 1)。
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット

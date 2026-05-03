@@ -214,7 +214,7 @@ fn permission_status_to_string(status: i32) -> String {
 pub fn check_microphone_permission() -> String {
     #[cfg(target_os = "macos")]
     {
-        return permission_status_to_string(macos_permissions::microphone_permission_status());
+        permission_status_to_string(macos_permissions::microphone_permission_status())
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -228,7 +228,7 @@ pub fn check_microphone_permission() -> String {
 pub fn check_screen_recording_permission() -> String {
     #[cfg(target_os = "macos")]
     {
-        return permission_status_to_string(macos_permissions::screen_recording_permission_status());
+        permission_status_to_string(macos_permissions::screen_recording_permission_status())
     }
 
     #[cfg(not(target_os = "macos"))]
