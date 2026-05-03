@@ -431,8 +431,7 @@ export function SettingsView() {
   const permissionSettingsOpenErrorLabel = permissionSettingsOpenError
     ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
     : null;
-  const browserAutomationPermissionLabel =
-    "自動操作/アクセシビリティ ブラウザ URL 検知: Safari、Chrome、Edge、Brave、Arc、Firefox の URL 検知時に macOS が確認。録音や音声取得の権限ではありません";
+  const aiMinutesManualLabel = "AI議事録は手動で管理されます";
   const hasPermissionCheckError =
     Boolean(micPermissionError) || Boolean(screenPermissionError);
   const hasPermissionStatusAttention =
@@ -994,7 +993,7 @@ export function SettingsView() {
         <div className="settings-permissions">
           <div className="settings-permission-row">
             <span className="settings-permission-label">
-              <span className="settings-permission-track">自分</span> マイク
+              マイク
             </span>
             <PermissionBadge
               label={`${SELF_TRACK_DEVICE_LABEL} macOS マイク権限`}
@@ -1005,8 +1004,7 @@ export function SettingsView() {
           </div>
           <div className="settings-permission-row">
             <span className="settings-permission-label">
-              <span className="settings-permission-track">相手側</span>{" "}
-              画面収録/システム音声
+              システム音声
             </span>
             <PermissionBadge
               label={`${OTHER_TRACK_PERMISSION_LABEL} macOS 画面収録権限`}
@@ -1017,16 +1015,19 @@ export function SettingsView() {
           </div>
           <div className="settings-permission-row">
             <span className="settings-permission-label">
-              自動操作/アクセシビリティ{" "}
-              <span className="settings-permission-track">ブラウザ URL</span>
+              AI議事録
             </span>
             <span
-              className="settings-permission-badge permission-undetermined"
+              className="settings-permission-badge permission-manual"
               role="status"
-              aria-label={browserAutomationPermissionLabel}
-              title={browserAutomationPermissionLabel}
+              aria-label={aiMinutesManualLabel}
+              title={aiMinutesManualLabel}
             >
-              URL 検知時に確認
+              <span
+                className="settings-permission-manual-dot"
+                aria-hidden="true"
+              />
+              手動
             </span>
           </div>
           <div className="settings-permission-actions">

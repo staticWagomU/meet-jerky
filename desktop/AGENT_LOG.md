@@ -14077,3 +14077,21 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: titlebar pill の文言が Pencil の実値と一致するか、必要なら実機または画面確認で見る。
+
+### Settings permission rows: align with Pencil Mock 4 - Settings Window
+
+- 開始日時: 2026-05-03 11:51:39 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の permissions card を再確認し、行ラベルと badge 形状だけを Pencil の実値へ寄せる。権限判定ロジック、保存ロジック、他カテゴリ、Pencil ファイルは変更しない。コミットは禁止。
+- 結果: permissions card の 3 行を `マイク` / `システム音声` / `AI議事録` に寄せ、補足チップを外した。3 行目は `手動` badge に変更し、badge を 10px / 700 / Funnel Sans / 8px radius に揃えた。権限判定ロジック、保存ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果:
+  1. `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: permissions card の 3 行構成と badge スタイルが Pencil に自然に収まるか、必要なら実機または画面確認で見る。
