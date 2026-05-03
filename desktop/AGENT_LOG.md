@@ -14872,3 +14872,17 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット。clippy 警告ゼロ達成。
+
+### app_detection: ブラウザ URL 取得失敗時の診断ログを 60 秒スロットリングで出力
+
+- 開始日時: 2026-05-04 07:45 JST
+- 担当セッション: mjc-worker-app-detection-empty-log-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/app_detection.rs (handle_browser_url_detection), AGENT_LOG.md
+- 指示内容: handle_browser_url_detection が url と window_title 両方空 (AppleScript 権限不足や取得失敗の疑い) で silent return していた箇所に、AtomicU64 で 60 秒スロットリングした eprintln 警告を追加。会議検知の透明性と信頼性向上。
+- 結果: import に `use std::sync::atomic::{AtomicU64, Ordering}` を追加 (+1 行)。handle_browser_url_detection の先頭に url.is_empty() && window_title.is_empty() の early return ブロック (+21 行) を追加。関数内 static LAST_EMPTY_BROWSER_LOG_SECS: AtomicU64 で 60 秒スロットリング、NOTIFICATION_THROTTLE を再利用、saturating_sub で時刻巻き戻り耐性あり。
+- 変更ファイル: src-tauri/src/app_detection.rs, AGENT_LOG.md
+- 検証結果: cargo fmt --check 成功 (agent-verify.sh)、cargo test 206 passed / 0 failed、cargo clippy --no-deps 警告ゼロ (Finished のみ)。diff +22 行のみ。
+- 依存関係追加の有無と理由: なし (std::sync::atomic::AtomicU64 は std)
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット。

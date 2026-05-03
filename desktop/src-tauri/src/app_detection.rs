@@ -17,6 +17,7 @@
 //! 5. フロントエンドがバナー描画後に専用 prompt window を表示し、ユーザーがアプリ側で録音と文字起こしの状態を確認する
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
@@ -158,6 +159,25 @@ fn handle_browser_url_detection(
     url: &str,
     window_title: &str,
 ) {
+    // url と window_title の両方が空 → AppleScript 権限不足や取得失敗の疑い。
+    // 60 秒スロットリング付きで診断ログを出す (静かに silent fail させない)。
+    if url.is_empty() && window_title.is_empty() {
+        static LAST_EMPTY_BROWSER_LOG_SECS: AtomicU64 = AtomicU64::new(0);
+        let now_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let last = LAST_EMPTY_BROWSER_LOG_SECS.load(Ordering::Relaxed);
+        if now_secs.saturating_sub(last) >= NOTIFICATION_THROTTLE.as_secs() {
+            LAST_EMPTY_BROWSER_LOG_SECS.store(now_secs, Ordering::Relaxed);
+            eprintln!(
+                "[app_detection] {} (bundle: {}) で URL/タイトル両方取得失敗。AppleScript 権限を確認してください。",
+                browser_name, bundle_id
+            );
+        }
+        return;
+    }
+
     // URL ベースの分類を優先し、失敗した場合のみウィンドウタイトルをフォールバックとして試みる。
     // throttle_key はソース (browser / window-title) を区別するためプレフィックスを変える。
     // これにより URL 由来と window title 由来の検知が互いのスロットリングに干渉しない。
