@@ -3888,10 +3888,48 @@ body[data-window="ring-light"] .overlay-window {
 }
 
 .settings-ai-template-row {
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
   background-color: #f8f8f9;
   border-radius: 8px;
-  padding: 0 0 0 0;
+  padding: 8px 10px;
+}
+
+.settings-ai-template-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #ff5c00;
+}
+
+.settings-ai-template-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 30px;
+  height: 18px;
+  padding: 3px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.settings-ai-template-switch-on {
+  background-color: #ff5c00;
+  justify-content: flex-end;
+}
+
+.settings-ai-template-switch-off {
+  background-color: #d8d8db;
+}
+
+.settings-ai-template-switch-knob {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background-color: #fff;
 }
 
 .settings-ai-runs-list {

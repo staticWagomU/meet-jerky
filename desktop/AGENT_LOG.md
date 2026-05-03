@@ -14483,3 +14483,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` を実行する。
+
+### AI Minutes template and runs: match Pencil copy
+
+- 開始日時: 2026-05-03 22:04:55 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4e - Settings AI Minutes` の template card と runs card を再確認し、見出し、副文、template 行、runs 行、利用額表記を Pencil の実値に揃える。ロジック、他カテゴリは変更しない。
+- 結果: AI Minutes の template card を 3 行スイッチ構成に、runs card を Pencil の実値に揃えた。ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` を実行する。

@@ -3,6 +3,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Check,
+  Flag,
+  History,
+  LayoutTemplate,
+  ListChecks,
   Mic,
   Search,
   Settings,
@@ -1552,43 +1557,57 @@ export function SettingsView() {
                   <div className="settings-readonly-card settings-ai-template-card">
                     <div className="settings-detection-head">
                       <div className="settings-detection-icon-box" aria-hidden="true">
-                        <Type size={15} strokeWidth={2.2} />
+                        <LayoutTemplate size={15} strokeWidth={2.2} />
                       </div>
                       <div className="settings-detection-title-wrap">
                         <h3 className="settings-readonly-card-title">議事録テンプレート</h3>
                         <p className="settings-detection-subtitle">
-                          会議に応じたセクションの出し方を選びます。
+                          AIに生成させるセクションを選びます。
                         </p>
                       </div>
                     </div>
                     <div className="settings-permission-row settings-ai-template-row">
+                      <span className="settings-ai-template-row-icon" aria-hidden="true">
+                        <Check size={13} strokeWidth={2.2} />
+                      </span>
                       <span className="settings-permission-label">サマリー（3項目）</span>
-                      <span className="settings-permission-badge permission-manual">
-                        <span
-                          className="settings-permission-manual-dot"
-                          aria-hidden="true"
-                        />
-                        ON
+                      <span
+                        className="settings-ai-template-switch settings-ai-template-switch-on"
+                        role="status"
+                        aria-label="サマリー（3項目）: オン"
+                        title="サマリー（3項目）: オン"
+                      >
+                        <span className="settings-ai-template-switch-knob" aria-hidden="true" />
                       </span>
                     </div>
                     <div className="settings-permission-row settings-ai-template-row">
-                      <span className="settings-permission-label">アクションアイテム</span>
-                      <span className="settings-permission-badge permission-manual">
-                        <span
-                          className="settings-permission-manual-dot"
-                          aria-hidden="true"
-                        />
-                        ON
+                      <span className="settings-ai-template-row-icon" aria-hidden="true">
+                        <ListChecks size={13} strokeWidth={2.2} />
+                      </span>
+                      <span className="settings-permission-label">
+                        担当者付きアクションアイテム
+                      </span>
+                      <span
+                        className="settings-ai-template-switch settings-ai-template-switch-on"
+                        role="status"
+                        aria-label="担当者付きアクションアイテム: オン"
+                        title="担当者付きアクションアイテム: オン"
+                      >
+                        <span className="settings-ai-template-switch-knob" aria-hidden="true" />
                       </span>
                     </div>
                     <div className="settings-permission-row settings-ai-template-row">
+                      <span className="settings-ai-template-row-icon" aria-hidden="true">
+                        <Flag size={13} strokeWidth={2.2} />
+                      </span>
                       <span className="settings-permission-label">決定事項</span>
-                      <span className="settings-permission-badge permission-manual">
-                        <span
-                          className="settings-permission-manual-dot"
-                          aria-hidden="true"
-                        />
-                        ON
+                      <span
+                        className="settings-ai-template-switch settings-ai-template-switch-off"
+                        role="status"
+                        aria-label="決定事項: オフ"
+                        title="決定事項: オフ"
+                      >
+                        <span className="settings-ai-template-switch-knob" aria-hidden="true" />
                       </span>
                     </div>
                   </div>
@@ -1597,12 +1616,12 @@ export function SettingsView() {
                   <div className="settings-readonly-card settings-ai-runs-card">
                     <div className="settings-detection-head">
                       <div className="settings-detection-icon-box" aria-hidden="true">
-                        <Sparkles size={15} strokeWidth={2.2} />
+                        <History size={15} strokeWidth={2.2} />
                       </div>
                       <div className="settings-detection-title-wrap">
                         <h3 className="settings-readonly-card-title">最近の実行履歴</h3>
                         <p className="settings-detection-subtitle">
-                          各実行にはコストとプロバイダーを記録します。
+                          各実行にはコストとプロバイダー付きで記録されます。
                         </p>
                       </div>
                       <span className="settings-detection-live-badge">
@@ -1613,34 +1632,33 @@ export function SettingsView() {
                     <div className="settings-ai-runs-list">
                       <div className="settings-ai-run-item">
                         <div className="settings-ai-run-item-head">
-                          <span className="settings-ai-run-date">4月29日</span>
+                          <span className="settings-ai-run-date">週次定例・4月28日</span>
                           <span className="settings-ai-run-status settings-ai-run-status-ready">
-                            RT
+                            完了
                           </span>
                         </div>
                         <div className="settings-ai-run-item-body">
-                          <span className="settings-ai-run-model">
-                            Claude Sonnet 4.6
-                          </span>
-                          <span className="settings-ai-run-cost">1,482トークン · $0.01</span>
+                          <span className="settings-ai-run-model">Claude Sonnet 4.6</span>
+                          <span className="settings-ai-run-cost">1,842トークン · $0.011</span>
                         </div>
                       </div>
                       <div className="settings-ai-run-item">
                         <div className="settings-ai-run-item-head">
-                          <span className="settings-ai-run-date">4月27日</span>
+                          <span className="settings-ai-run-date">Meiとの1on1・4月27日</span>
                           <span className="settings-ai-run-status settings-ai-run-status-warn">
-                            要確認
+                            保留
                           </span>
                         </div>
                         <div className="settings-ai-run-item-body">
-                          <span className="settings-ai-run-model">月末の要約</span>
-                          <span className="settings-ai-run-cost">プロバイダーの切替後に再実行</span>
+                          <span className="settings-ai-run-cost">
+                            同意待ち・文字起こしはローカル保存中
+                          </span>
                         </div>
                       </div>
                     </div>
                     <div className="settings-ai-runs-summary">
                       <span className="settings-ai-runs-summary-label">4月の利用額</span>
-                      <span className="settings-ai-runs-summary-value">$0.42 / 上限 $5</span>
+                      <span className="settings-ai-runs-summary-value">$0.42 / 上限$5</span>
                     </div>
                   </div>
                 </div>
