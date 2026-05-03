@@ -455,4 +455,36 @@ mod tests {
             "unexpected error message: {err}"
         );
     }
+
+    #[test]
+    fn list_session_files_returns_err_when_dir_does_not_exist() {
+        let tmp = tempdir().unwrap();
+        let missing = tmp.path().join("not-exists");
+
+        let result = list_session_files(&missing);
+
+        assert!(result.is_err(), "should fail when dir does not exist");
+    }
+
+    #[test]
+    fn list_session_summaries_returns_err_when_dir_does_not_exist() {
+        let tmp = tempdir().unwrap();
+        let missing = tmp.path().join("not-exists");
+
+        let result = list_session_summaries(&missing);
+
+        assert!(result.is_err(), "should fail when dir does not exist");
+    }
+
+    #[test]
+    fn save_session_markdown_returns_err_when_dir_does_not_exist() {
+        let tmp = tempdir().unwrap();
+        let missing_dir = tmp.path().join("not-exists");
+        let mut session = Session::start("test".to_string(), 1700000000);
+        session.finalize(1700000060);
+
+        let result = save_session_markdown(&missing_dir, &session, jst());
+
+        assert!(result.is_err(), "should fail when dir does not exist");
+    }
 }

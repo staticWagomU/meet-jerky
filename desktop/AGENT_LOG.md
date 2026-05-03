@@ -14999,3 +14999,32 @@
 - 失敗理由: なし (fmt 指摘のみ、2 回目で全パス)
 - 残リスク: 実機 URL での挙動未確認 / parser の他サニタイズ層との重複確認未実施
 - 次アクション: メインが diff レビューしてコミット
+
+### session_store / session_manager のディスクIOエラーパステストを 5 件追加しクラッシュ耐性の不変条件を裏付け
+
+- 開始日時: 2026-05-04 (JST)
+- 担当セッション: mjc-worker-session-error-path-tests-20260504-1
+- 役割: 作業担当エージェント (Claude Code, print mode)
+- 作業範囲: `src-tauri/src/session_store.rs` (tests モジュール末尾への追加のみ)、`src-tauri/src/session_manager.rs` (tests モジュール末尾への追加のみ)、`AGENT_LOG.md` 末尾追記
+- 指示内容:
+  - `session_store::list_session_files` / `list_session_summaries` / `save_session_markdown` が dir 不在時に Err を返すことを保証するテスト 3 件を追加
+  - `session_manager::persist_if_configured` がディスク書き出し失敗しても in-memory 状態を壊さないことを裏付けるテスト 2 件を追加 (append / finalize 経路)
+  - 実装ロジックは一切変更しない
+- 結果: 5 つの `#[test]` 関数を追加。実装が仕様と異なるケースは発見されなかった (バグ報告なし)。
+- 追加したテスト関数:
+  - A. `session_store::tests::list_session_files_returns_err_when_dir_does_not_exist`
+  - B. `session_store::tests::list_session_summaries_returns_err_when_dir_does_not_exist`
+  - C. `session_store::tests::save_session_markdown_returns_err_when_dir_does_not_exist`
+  - D. `session_manager::tests::append_keeps_segment_in_memory_when_output_dir_does_not_exist`
+  - E. `session_manager::tests::finalize_returns_session_when_output_dir_does_not_exist`
+- 変更ファイル: `src-tauri/src/session_store.rs`、`src-tauri/src/session_manager.rs`、`AGENT_LOG.md`
+- 検証結果:
+  - `git diff --check`: OK (ホワイトスペースエラーなし)
+  - `cargo fmt --check`: 初回 2 箇所で行長超過を指摘 → `cargo fmt` 適用後 OK
+  - `cargo clippy --no-deps --all-targets --all-features -- -D warnings`: OK (警告ゼロ)
+  - `cargo test --no-fail-fast`: OK (218 passed → 223 passed、追加 5 件すべて合格)
+  - `scripts/agent-verify.sh`: OK
+- 依存関係追加の有無: なし
+- 失敗理由: なし (fmt 指摘のみ、cargo fmt 適用で即解消)
+- 残リスク: ディスク full / permission denied など他のエラーパスは未テスト。エラー種別 (ErrorKind) は is_err() のみで確認しており OS 依存の kind() バリエーションは検証外
+- 次アクション: メインが diff レビューしてコミット

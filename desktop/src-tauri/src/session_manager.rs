@@ -428,4 +428,42 @@ mod tests {
 
         assert_eq!(manager.current_segment_count(), Some(1));
     }
+
+    #[test]
+    fn append_keeps_segment_in_memory_when_output_dir_does_not_exist() {
+        let manager = SessionManager::new();
+        let tmp = tempdir().unwrap();
+        let missing_dir = tmp.path().join("not-exists");
+        manager
+            .start_with_output("test".to_string(), 1700000000, missing_dir, jst())
+            .expect("start should succeed even when output_dir does not exist");
+
+        manager
+            .append("user".to_string(), 5, "hello".to_string())
+            .expect("append should not propagate disk error");
+
+        assert_eq!(manager.current_segment_count(), Some(1));
+        assert!(manager.is_active());
+    }
+
+    #[test]
+    fn finalize_returns_session_when_output_dir_does_not_exist() {
+        let manager = SessionManager::new();
+        let tmp = tempdir().unwrap();
+        let missing_dir = tmp.path().join("not-exists");
+        manager
+            .start_with_output("test".to_string(), 1700000000, missing_dir, jst())
+            .expect("start should succeed");
+        manager
+            .append("user".to_string(), 5, "hello".to_string())
+            .expect("append should not propagate disk error");
+
+        let session = manager
+            .finalize(1700000060)
+            .expect("finalize should succeed even with persist error");
+
+        assert_eq!(session.title, "test");
+        assert_eq!(session.segments.len(), 1);
+        assert!(!manager.is_active());
+    }
 }
