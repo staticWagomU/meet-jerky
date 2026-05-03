@@ -466,4 +466,51 @@ mod tests {
         assert_eq!(segments[0].start_ms, 5000);
         assert_eq!(segments[0].end_ms, 2000);
     }
+
+    #[test]
+    fn build_whisper_api_url_with_empty_base_url_returns_absolute_path() {
+        // base_url = "" でも fn は何も検証せず "/audio/transcriptions" を返す現挙動を固定。
+        let url = build_whisper_api_url("");
+
+        assert_eq!(url, "/audio/transcriptions");
+    }
+
+    #[test]
+    fn build_whisper_api_url_with_only_slash_returns_absolute_path() {
+        // "/" は trim_end_matches('/') で完全に剥がされ "/audio/transcriptions" になる現挙動を固定。
+        let url = build_whisper_api_url("/");
+
+        assert_eq!(url, "/audio/transcriptions");
+    }
+
+    #[test]
+    fn build_whisper_api_url_strips_multiple_trailing_slashes() {
+        // trim_end_matches('/') は連続する '/' をすべて削除する。strip_suffix("/") への誤リファクタを検知。
+        let url = build_whisper_api_url("https://api.openai.com/v1///");
+
+        assert_eq!(url, "https://api.openai.com/v1/audio/transcriptions");
+    }
+
+    #[test]
+    fn build_whisper_authorization_header_with_empty_api_key_yields_bearer_with_trailing_space() {
+        // 空 api_key でも fn は validation 無しで "Bearer " を返す現挙動を固定。
+        let header = build_whisper_authorization_header("");
+
+        assert_eq!(header, "Bearer ");
+    }
+
+    #[test]
+    fn build_whisper_authorization_header_does_not_trim_or_validate_input() {
+        // ケース 1: 前後 whitespace は trim されず Bearer の後ろにそのまま埋め込まれる現挙動を固定。
+        {
+            let header = build_whisper_authorization_header(" sk-xxx ");
+            assert_eq!(header, "Bearer  sk-xxx ");
+        }
+
+        // ケース 2: multibyte api_key は UTF-8 panic を起こさず Bearer の後ろに埋め込まれる現挙動を固定。
+        {
+            let header = build_whisper_authorization_header("日本語キー");
+            assert_eq!(header, "Bearer 日本語キー");
+        }
+    }
 }
