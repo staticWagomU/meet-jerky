@@ -567,4 +567,76 @@ mod tests {
             "bits_per_channel が 32 以外は拒否されなければならない"
         );
     }
+
+    // ── sanitize_pcm_sample 直接呼び出しテスト ─────────────────────────────
+
+    #[test]
+    fn sanitize_pcm_sample_returns_zero_for_nan() {
+        assert_eq!(sanitize_pcm_sample(f32::NAN), 0.0);
+    }
+
+    #[test]
+    fn sanitize_pcm_sample_returns_zero_for_positive_infinity() {
+        assert_eq!(sanitize_pcm_sample(f32::INFINITY), 0.0);
+    }
+
+    #[test]
+    fn sanitize_pcm_sample_returns_zero_for_negative_infinity() {
+        assert_eq!(sanitize_pcm_sample(f32::NEG_INFINITY), 0.0);
+    }
+
+    #[test]
+    fn sanitize_pcm_sample_clamps_above_one_to_one() {
+        assert_eq!(sanitize_pcm_sample(1.5), 1.0);
+    }
+
+    #[test]
+    fn sanitize_pcm_sample_clamps_below_minus_one_to_minus_one() {
+        assert_eq!(sanitize_pcm_sample(-1.5), -1.0);
+    }
+
+    #[test]
+    fn sanitize_pcm_sample_passes_through_finite_values_in_range() {
+        assert_eq!(sanitize_pcm_sample(0.0), 0.0);
+        assert_eq!(sanitize_pcm_sample(0.5), 0.5);
+        assert_eq!(sanitize_pcm_sample(-0.5), -0.5);
+        assert_eq!(sanitize_pcm_sample(1.0), 1.0);
+        assert_eq!(sanitize_pcm_sample(-1.0), -1.0);
+    }
+
+    // ── validate_audio_format_properties 未カバーケース ──────────────────────
+
+    #[test]
+    fn validate_audio_format_properties_rejects_when_bits_per_channel_unknown() {
+        let result = validate_audio_format_properties(true, false, None, Some(1), 1);
+        assert_eq!(result.unwrap_err(), "bits_per_channel を取得できない");
+    }
+
+    #[test]
+    fn validate_audio_format_properties_rejects_when_channel_count_unknown() {
+        let result = validate_audio_format_properties(true, false, Some(32), None, 1);
+        assert_eq!(result.unwrap_err(), "channel 数を取得できない");
+    }
+
+    // 既存 5 件は is_err() のみでエラー文言未確認。本テストがそれを補強する。
+    #[test]
+    fn validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths() {
+        let non_float = validate_audio_format_properties(false, false, Some(32), Some(1), 1);
+        assert_eq!(
+            non_float.unwrap_err(),
+            "非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)"
+        );
+
+        let big_endian = validate_audio_format_properties(true, true, Some(32), Some(1), 1);
+        assert_eq!(
+            big_endian.unwrap_err(),
+            "BigEndian フォーマット (NativeEndian が必要)"
+        );
+
+        let wrong_bits = validate_audio_format_properties(true, false, Some(16), Some(1), 1);
+        assert_eq!(wrong_bits.unwrap_err(), "bits_per_channel が 32 ではない");
+
+        let channel_mismatch = validate_audio_format_properties(true, false, Some(32), Some(2), 1);
+        assert_eq!(channel_mismatch.unwrap_err(), "channel 数が設定値と不一致");
+    }
 }

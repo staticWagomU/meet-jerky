@@ -15415,3 +15415,64 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### system_audio.rs の sanitize_pcm_sample / validate_audio_format_properties 境界仕様を 9 件のテストで直接裏付け
+
+- **開始日時 (JST)**: 2026-05-04 (worker 起動)
+- **担当セッション**: `mjc-worker-system-audio-private-fn-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/system_audio.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`sanitize_pcm_sample` (private fn, L44-50) の直接呼び出しテスト 6 件と、`validate_audio_format_properties` (private fn, L84-108) の未カバー None ケース 2 件 + エラー文言完全一致確認 1 件 (4 assertion) を追加し、回帰防止カバレッジを拡張する。実装変更・コミット禁止。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| A | `sanitize_pcm_sample_returns_zero_for_nan` | `f32::NAN` → 0.0 (非有限値防御) |
+| B | `sanitize_pcm_sample_returns_zero_for_positive_infinity` | `f32::INFINITY` → 0.0 (非有限値防御) |
+| C | `sanitize_pcm_sample_returns_zero_for_negative_infinity` | `f32::NEG_INFINITY` → 0.0 (非有限値防御) |
+| D | `sanitize_pcm_sample_clamps_above_one_to_one` | `1.5` → 1.0 (上限クランプ) |
+| E | `sanitize_pcm_sample_clamps_below_minus_one_to_minus_one` | `-1.5` → -1.0 (下限クランプ) |
+| F | `sanitize_pcm_sample_passes_through_finite_values_in_range` | `0.0`, `0.5`, `-0.5`, `1.0`, `-1.0` がそのまま通過 (正常パス 5 assertion)。audio.rs の同パターン (commit d312bb8) に対称的に追加。|
+| G | `validate_audio_format_properties_rejects_when_bits_per_channel_unknown` | `bits_per_channel=None` → `"bits_per_channel を取得できない"` exact match |
+| H | `validate_audio_format_properties_rejects_when_channel_count_unknown` | `channel_count=None` → `"channel 数を取得できない"` exact match |
+| I | `validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths` | 既存 5 件の `is_err()` 確認を補強。non_float / big_endian / wrong_bits / channel_mismatch の 4 path を `unwrap_err()` で exact match 確認 |
+
+#### 設計確認事項
+- `sanitize_pcm_sample` と `validate_audio_format_properties` はどちらも `#[cfg(target_os = "macos")]` ガードなし。`validate_audio_format_description` (L113) だけが macOS gate を持つ。よって tests も cfg なしで OK。
+- `validate_audio_format_properties` の戻り型は `Result<(), &'static str>` → `unwrap_err()` で `&'static str` を直接取り出して `assert_eq!` が書ける。
+- NaN の `assert_eq!` は `sanitize_pcm_sample(f32::NAN)` が `0.0` (有限値) を返すため安全。
+- テスト G/H の入力 `None` が先の match arm に到達するよう、前条件 (is_float=true, is_big_endian=false, bits_per_channel=Some(32)) を正常値に設定してある。
+
+#### 変更ファイル
+- `src-tauri/src/system_audio.rs` (tests モジュール末尾に 9 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **263 passed** (254 → 263、追加 9 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/system_audio.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 9 件
+- 追加後 total passed: 263
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- `sanitize_pcm_sample_passes_through_finite_values_in_range` (F) は既存の `test_f32_pcm_bytes_to_mono_sanitizes_invalid_samples` が間接的にも網羅している。重複気味だが直接呼び出しによる明示的な仕様裏付けとして価値がある。
+- テスト I の 4 エラー文言は `&'static str` リテラルとの exact match。将来のリファクタリングで文言が変わった場合にテストが先行失敗する (回帰検知器として意図通り)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
