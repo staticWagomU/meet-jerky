@@ -14721,3 +14721,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
+### Harness alignment: commit pending autonomous-prompt / verify / watchdog改善
+
+- 開始日時: 2026-05-04 04:30:00 JST
+- 担当セッション: mjc-main (Claude Code)
+- 役割: メインエージェント
+- 作業範囲: `docs/autonomous-main-prompt-claude.md`, `scripts/agent-verify.sh`, `scripts/claude-agent-start-watchdog.sh`, `scripts/claude-agent-watchdog.sh`, `AGENT_LOG.md`
+- 指示内容: 既に運用ルール (起動プロンプト) として読み込まれている harness 改善差分が git に未コミットだったため、ステート不整合解消としてまとめてコミットする。差分は (1) 15 分/コミット周期と watchdog 責務分離の追記、(2) `agent-verify.sh` を変更ファイルから rust/frontend を判定して skip 化、(3) watchdog interval を 600s→180s、nudge cooldown を 600s→300s、`new task? /clear to save` overflow 検知の追加。アプリコードは触らない。例外的にメインが直接ハンドリングする理由は「自律運用を停止させないための harness 整備」かつ既に prompt 経由でルールへ取り込まれているため。
+- 結果: 差分内容は autonomous prompt 本文と一致しており、frontend build (886ms) と git diff --check が成功した。harness 整備のみで Codex の Pencil 微調整ループとは衝突しない。
+- 変更ファイル: `docs/autonomous-main-prompt-claude.md`, `scripts/agent-verify.sh`, `scripts/claude-agent-start-watchdog.sh`, `scripts/claude-agent-watchdog.sh`, `AGENT_LOG.md`
+- 検証結果: `scripts/agent-verify.sh` で `git diff --check` 成功、`npm run build` 成功 (886ms)、rust 検査は変更ファイルから自動 skip。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: コミット後、次ループは Codex の UI 微調整と衝突しない優先度上位タスク (検知信頼性 / 音声取得 / 低遅延 / 録音状態の透明性) を調査担当に投げる。
