@@ -463,4 +463,88 @@ mod tests {
         assert_eq!(session.segments.len(), 1);
         assert!(!manager.is_active());
     }
+
+    #[test]
+    fn start_with_output_returns_already_active_when_started_via_basic_start() {
+        let manager = SessionManager::new();
+        let tmp = tempdir().unwrap();
+        manager
+            .start("title-A".into(), 1700000000)
+            .expect("first start should succeed");
+
+        let err = manager
+            .start_with_output(
+                "title-B".into(),
+                1700000010,
+                tmp.path().to_path_buf(),
+                jst(),
+            )
+            .expect_err("start_with_output while already active should fail");
+
+        assert_eq!(err, SessionManagerError::AlreadyActive);
+        assert!(manager.is_active());
+        assert_eq!(
+            manager.current_title(),
+            Some("title-A".into()),
+            "元のタイトルが保たれる"
+        );
+        assert_eq!(
+            manager.current_started_at_secs(),
+            Some(1700000000),
+            "元の started_at が保たれる"
+        );
+    }
+
+    #[test]
+    fn start_returns_already_active_when_started_via_start_with_output() {
+        let manager = SessionManager::new();
+        let tmp = tempdir().unwrap();
+        manager
+            .start_with_output(
+                "title-A".into(),
+                1700000000,
+                tmp.path().to_path_buf(),
+                jst(),
+            )
+            .expect("first start_with_output should succeed");
+
+        let err = manager
+            .start("title-B".into(), 1700000010)
+            .expect_err("start while already active should fail");
+
+        assert_eq!(err, SessionManagerError::AlreadyActive);
+        assert!(manager.is_active());
+        assert_eq!(
+            manager.current_title(),
+            Some("title-A".into()),
+            "元のタイトルが保たれる"
+        );
+        assert_eq!(
+            manager.current_started_at_secs(),
+            Some(1700000000),
+            "元の started_at が保たれる"
+        );
+    }
+
+    #[test]
+    fn discard_clears_session_started_with_output_and_subsequent_append_returns_not_active() {
+        let manager = SessionManager::new();
+        let tmp = tempdir().unwrap();
+        manager
+            .start_with_output("title".into(), 1700000000, tmp.path().to_path_buf(), jst())
+            .expect("start_with_output should succeed");
+
+        manager.discard().expect("discard should succeed");
+
+        let err = manager
+            .append("speaker".into(), 0, "text".into())
+            .expect_err("append after discard should fail");
+
+        assert_eq!(err, SessionManagerError::NotActive);
+        assert!(!manager.is_active());
+        assert!(
+            list_md_files(tmp.path()).is_empty(),
+            "discard はファイルを書かずに sweep する契約"
+        );
+    }
 }

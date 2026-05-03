@@ -15642,3 +15642,69 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### session_manager.rs の state machine 混在遷移テスト 3 件追加
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: `mjc-worker-session-manager-state-machine-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/session_manager.rs` の `mod tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`session_manager.rs` の state machine 混在遷移 (start → start_with_output / start_with_output → start / start_with_output → discard → append) を直接検証する 3 件のテストを追加する。既存テストは `start` 経由の AlreadyActive のみ確認しており、`start_with_output` 経由の AlreadyActive 不変条件と output 設定がある状態での discard → NotActive は未カバーだった。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| A | `start_with_output_returns_already_active_when_started_via_basic_start` | `start` で active 後に `start_with_output` が AlreadyActive を返し、元のタイトル/started_at が保たれる |
+| B | `start_returns_already_active_when_started_via_start_with_output` | `start_with_output` で active 後に `start` が AlreadyActive を返し、元のタイトル/started_at が保たれる |
+| C | `discard_clears_session_started_with_output_and_subsequent_append_returns_not_active` | `start_with_output` → `discard` Ok → `append` が NotActive を返す。ディスクにファイルが書かれていないことも確認 |
+
+#### 不変条件確認 (テストごと)
+
+**A/B 共通:**
+- 戻り値が `SessionManagerError::AlreadyActive`
+- `is_active() == true`
+- `current_title() == Some("title-A".into())` (元のタイトルが保たれる)
+- `current_started_at_secs() == Some(1700000000)` (元の started_at が保たれる)
+
+**C:**
+- `discard()` の戻り値が `Ok(())`
+- 後続 `append` の戻り値が `SessionManagerError::NotActive`
+- `is_active() == false`
+- `list_md_files(tmp.path()).is_empty()` (ファイルが書かれていない)
+
+#### 設計意図
+- A/B は state machine の対称性を裏付ける。start で active になった状態でも start_with_output でも同じく AlreadyActive が返ることを対称ペアで保証。
+- C は output 設定がある状態での discard が何も書かずに sweep することを直接ディスク確認で保証。`persist_if_configured` が `discard()` 経路で呼ばれないことのブラックボックス証明。
+- 3 件とも将来 `start` と `start_with_output` の guard logic を統合/分離するリファクタへの安全網。
+
+#### 変更ファイル
+- `src-tauri/src/session_manager.rs` (tests モジュール末尾に 3 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **272 passed** (269 → 272、追加 3 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/session_manager.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 3 件
+- 追加後 total passed: 272
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- なし。既存テストの組み合わせを変えただけで新しい依存関係は不要。3 件とも `tempdir()` / `jst()` ヘルパーのみ使用。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
