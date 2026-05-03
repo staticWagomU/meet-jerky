@@ -16220,3 +16220,62 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### datetime_fmt.rs の UTC offset 多様性・負 offset 繰り下がり・epoch zero・error 文言完全一致・HH:MM 整合性を 5 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 ~17:00 JST
+- **担当セッション**: `mjc-worker-datetime-fmt-tests-20260504-5-5`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/datetime_fmt.rs` の `mod tests` 末尾への `#[test]` 関数 5 件追加のみ
+
+#### 指示内容 (要約)
+`format_session_header_timestamp_with_offset` / `format_segment_timestamp_with_offset` の未カバー境界 5 つを直接テストで固定する。対象: UTC offset=0、negative offset 日付繰り下がり、unix epoch 0、error 文言完全一致 + 両 fn 統一性、header と segment の HH:MM 整合性。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| 1 | `format_session_header_and_segment_with_utc_offset_zero_match_utc_time` | 2 | UTC offset=0 で 1_713_333_000 → header "2024-04-17 05:50" / segment "05:50:00" (hard-coded JST 化の誤リファクタ検知) |
+| 2 | `format_session_header_with_negative_offset_crosses_midnight_to_previous_day` | 1 | UTC-5 で 1_713_326_400 (2024-04-17 04:00 UTC) → header "2024-04-16 23:00" (日付繰り下がり対称) |
+| 3 | `format_session_header_and_segment_at_unix_epoch_zero_returns_1970_01_01` | 2 | epoch 0 + UTC offset=0 → header "1970-01-01 00:00" / segment "00:00:00" |
+| 4 | `format_error_message_includes_specific_unix_secs_value` | 3 | err1 / err2 それぞれが `"Unix timestamp is out of range: 9223372036854775807"` に完全一致 + err1==err2 で両 fn 統一性固定 |
+| 5 | `format_session_header_and_segment_timestamps_share_hour_minute_for_same_unix_secs` | 3 | 1_713_333_045 UTC+0 → header "2024-04-17 05:50" / segment "05:50:45" / `header.ends_with(&segment[..5])` で HH:MM 不変条件固定 |
+
+#### 不変条件 / 設計意図
+- **UTC offset 多様性 (テスト 1)**: `FixedOffset::east_opt(0)` で offset 引数が JST 以外でも正しく動作する契約を固定。全テストが JST のみだと実装が hard-coded JST 化されても気付けない。
+- **negative offset 繰り下がり対称 (テスト 2)**: `FixedOffset::west_opt(5 * 3600)` で UTC-5 の日付繰り下がりを JST (+9) の繰り上がりと対称的にテスト。offset 計算が正方向のみ機能する誤実装を検知。
+- **epoch 0 境界 (テスト 3)**: unix epoch の特殊値 0 が正常処理される契約を固定。1 や -1 などの周辺値は将来のループで補完可能。
+- **error 文言完全一致 + 両 fn 統一性 (テスト 4)**: 既存テストの `contains("out of range")` より強い完全一致 (`assert_eq!`) で `"Unix timestamp is out of range: {unix_secs}"` の構造を固定。unix_secs 値が含まれる形式が変わると debug 困難になるため UI/log 体験を保護。`err1 == err2` で両 fn の error 文言が一致する不変条件も固定。
+- **header と segment の HH:MM 整合性 (テスト 5)**: `header.ends_with(&segment[..5])` で同じ unix_secs に対して両 fn の時:分が必ず一致する不変条件を固定。片方の format 文字列のみ更新する誤リファクタ (例: header が "%Y-%m-%d %H:%M:%S" に変わるなど) を検知。
+
+#### 変更ファイル
+- `src-tauri/src/datetime_fmt.rs` (tests モジュール末尾に 5 関数追加、実装変更なし; `cargo fmt` により行 wrap 2 箇所を自動修正)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 初回失敗 (行 wrap 2 箇所) → `cargo fmt` 修正後合格 |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **315 passed** (310 → 315、追加 5 件すべて合格) |
+| `bash scripts/agent-verify.sh src-tauri/src/datetime_fmt.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 11 件)
+- 追加後 total passed: 315
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由 / test 2 boundary unix_secs 調整経緯
+- `cargo fmt --check` 初回失敗: 2 行の `let header = format_session_header_timestamp_with_offset(...).unwrap();` が行長超過。`cargo fmt` で自動修正後 2 回目 check 合格。
+- test 2 の boundary unix_secs 調整: **なし**。1_713_326_400 (2024-04-17 04:00:00 UTC → UTC-5 では 2024-04-16 23:00) を初回設定のまま cargo test 全合格。計算: 2024-04-17 UTC 開始 = 1_713_312_000、+4h = 1_713_326_400。UTC-5 (west=18000秒) では 1_713_326_400 - 18000 = 1_713_308_400 に相当する local → "2024-04-16 23:00" (初回 cargo test 合格済み)。
+
+#### 残リスク
+- **chrono の leap second 扱い**: chrono はデフォルトで「leap second なし」のプロレプティック・グレゴリオ暦を採用。POSIX epoch は leap second を無視するため、実運用では差異が生じる可能性があるが、現テストの値はすべて実用的な範囲内で問題なし。
+- **i64::MIN の out-of-range 挙動**: 既存テスト・今回追加テストともに `i64::MAX` のみ確認。`i64::MIN` も `timestamp_opt` が `None` を返す可能性があるが、未確認。別ループで補完余地あり。
+- **UTC offset=0 の `east_opt(0)` vs `west_opt(0)`**: chrono の実装上どちらも同じ 0 秒オフセットを返す設計だが、テストでは `east_opt(0)` のみ確認。`west_opt(0)` での挙動差異は実質なし。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
