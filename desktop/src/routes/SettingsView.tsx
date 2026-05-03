@@ -537,14 +537,14 @@ export function SettingsView() {
           </div>
           <span
             className="settings-recording-visibility-pill"
-            aria-label="録音中は表示されます"
-            title="録音中は表示されます"
+            aria-label="録音中に表示されます"
+            title="録音中に表示されます"
           >
             <span
               className="settings-recording-visibility-dot"
               aria-hidden="true"
             />
-            録音中は表示されます
+            録音中に表示されます
           </span>
         </div>
 

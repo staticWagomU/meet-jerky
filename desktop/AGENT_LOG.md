@@ -14059,3 +14059,21 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: audio の main heading が Pencil の見え方に近いか、必要なら実機または画面確認で見る。
+
+### Settings titlebar pill: align with Pencil Mock 4 - Settings Window
+
+- 開始日時: 2026-05-03 11:30:41 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の titlebar recording pill を再確認し、visible text / aria-label / title だけを実値へ揃える。CSS、レイアウト、ロジック、他カテゴリは変更しない。コミットは禁止。
+- 結果: `settings-recording-visibility-pill` の visible text / aria-label / title を `録音中に表示されます` に変更した。CSS、レイアウト、ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `AGENT_LOG.md`
+- 検証結果:
+  1. `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: titlebar pill の文言が Pencil の実値と一致するか、必要なら実機または画面確認で見る。
