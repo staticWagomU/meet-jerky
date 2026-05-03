@@ -15988,3 +15988,60 @@
 - AGENT_LOG.md は ~15990 行 / 1.5MB+。worker は `tail -300 AGENT_LOG.md` 相当で末尾だけ参照する運用継続。
 - ユーザー直伝指示 (未消化): なし。watchdog 継続指示は受領済み・既に従って 6 ループ完了済み。
 - 後続メイン候補名: `mjc-main-20260504-5`。本セッションは context 余裕あれば数ループ追加可能だったが、判断履歴の rotate 安全性のため予防的ハンドオフを判断。
+
+### cloud_whisper_errors.rs の 5xx 境界・multibyte 切り詰め・private fn 直接テストを 5 件で裏付け
+
+- **開始日時 (JST)**: 2026-05-04 ~13:00 JST
+- **担当セッション**: `mjc-worker-cloud-whisper-errors-tests-20260504-5-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾への `#[test]` 関数 5 件追加のみ
+
+#### 指示内容 (要約)
+`classify_cloud_whisper_error` の 5xx 境界 (499/600)・200 系誤呼出・private fn `sanitize_error_body` の whitespace 多様性・multibyte char base 切り詰めを直接テストで裏付ける。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| A | `classify_499_returns_other` | 1 | status 499 → `Other { status: 499, message: "boundary-before-5xx" }` (5xx lower bound 壊れを検知) |
+| B | `classify_600_returns_other` | 1 | status 600 → `Other { status: 600, message: "boundary-after-5xx" }` (5xx upper bound 広げを検知) |
+| C | `classify_200_returns_other_safely` | 1 | status 200 → `Other { status: 200, ... }` (success を error path に誤渡し時の safe 分類を固定) |
+| D | `sanitize_error_body_falls_back_to_empty_marker_for_whitespace_only_inputs` | 3 | `""` / `"   "` / `"\t\n  "` → `"HTTP error body was empty"` (tab/newline 混在の whitespace 多様性) |
+| E | `sanitize_error_body_truncates_multibyte_text_by_char_count_not_byte_count` | 3 | `"あ".repeat(205)` → chars().count()==203 / ends_with("...") / starts_with("あ") (byte base 誤リファクタで panic を検知) |
+
+#### 不変条件 / 設計意図
+
+- **5xx 境界 (499/600)**: `match status { 500..=599 => ServerError, _ => Other { ... } }` の range 両端が壊れた瞬間 (499 を ServerError に分類 or 600 を ServerError に分類するリファクタ) を即座に検知。
+- **200 系誤呼出の safe 分類**: `_` ワイルドカードが `400..=499` などに絞られる誤リファクタを検知。上位層が誤って success status を error path に渡しても crash しない契約を明示。
+- **sanitize_error_body whitespace 多様性**: tab/newline 混在を `split_whitespace` → empty → `"HTTP error body was empty"` に倒す仕様を private fn 直接呼び出しで固定。`classify_cloud_whisper_error(418, "")` 経由のみでは tab/改行の多様性が未確認だった。
+- **multibyte char base 切り詰め**: `"あ".repeat(205)` は 615 バイト。`chars().take(200)` の char base 切り詰めが `bytes().take(N)` に誤リファクタされると invalid UTF-8 panic。テスト E が `starts_with("あ")` (1 文字目が完全な "あ" であること) を確認することで byte 切りを検知。
+
+#### 変更ファイル
+- `src-tauri/src/cloud_whisper_errors.rs` (tests モジュール末尾に 5 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (初回から差分なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **294 passed** (289 → 294、追加 5 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/cloud_whisper_errors.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 9 件)
+- 追加後 total passed: 294
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+- なし (全チェック初回合格)
+
+#### 残リスク
+- テスト E の `assert_eq!(result.chars().count(), super::MAX_ERROR_BODY_CHARS + 3)` は `MAX_ERROR_BODY_CHARS` の値 (200) が変わると成立しなくなる。ただし定数値を変更するリファクタは意図的なものであり、テストが壊れることでその変更を意識させる設計意図あり。
+- `sanitize_error_body` はスペース結合 (`split_whitespace().collect::<Vec<_>>().join(" ")`) を行うため、`"あ".repeat(205)` は whitespace なしの 1 トークンとして処理され、`normalized` も 205 文字の "あ" 連続になる。これが前提。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

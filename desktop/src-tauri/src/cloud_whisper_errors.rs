@@ -101,4 +101,59 @@ mod tests {
         assert_eq!(message.len(), MAX_ERROR_BODY_CHARS + 3);
         assert!(message.ends_with("..."));
     }
+
+    #[test]
+    fn classify_499_returns_other() {
+        assert_eq!(
+            classify_cloud_whisper_error(499, "boundary-before-5xx"),
+            CloudWhisperError::Other {
+                status: 499,
+                message: "boundary-before-5xx".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn classify_600_returns_other() {
+        assert_eq!(
+            classify_cloud_whisper_error(600, "boundary-after-5xx"),
+            CloudWhisperError::Other {
+                status: 600,
+                message: "boundary-after-5xx".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn classify_200_returns_other_safely() {
+        assert_eq!(
+            classify_cloud_whisper_error(200, "unexpected success in error path"),
+            CloudWhisperError::Other {
+                status: 200,
+                message: "unexpected success in error path".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn sanitize_error_body_falls_back_to_empty_marker_for_whitespace_only_inputs() {
+        assert_eq!(super::sanitize_error_body(""), "HTTP error body was empty");
+        assert_eq!(
+            super::sanitize_error_body("   "),
+            "HTTP error body was empty"
+        );
+        assert_eq!(
+            super::sanitize_error_body("\t\n  "),
+            "HTTP error body was empty"
+        );
+    }
+
+    #[test]
+    fn sanitize_error_body_truncates_multibyte_text_by_char_count_not_byte_count() {
+        let body = "あ".repeat(super::MAX_ERROR_BODY_CHARS + 5);
+        let result = super::sanitize_error_body(&body);
+        assert_eq!(result.chars().count(), super::MAX_ERROR_BODY_CHARS + 3);
+        assert!(result.ends_with("..."));
+        assert!(result.starts_with("あ"));
+    }
 }
