@@ -1470,28 +1470,153 @@ export function SettingsView() {
             {activeCategory === "aiMinutes" && (
               <div className="settings-readonly-grid settings-readonly-grid-ai-minutes">
                 <div className="settings-readonly-column">
-                  <div className="settings-readonly-card">
-                    <h3 className="settings-readonly-card-title">AIプロバイダー</h3>
-                    <p>
-                      provider 設定はまだ実装していません。外部送信や課金が関わるため、明示的な同意後に扱います。
-                    </p>
-                    <p>
-                      Anthropic、OpenAI、ローカル処理候補は今後の選択肢です。ローカル連携は現時点では有効化していません。
-                    </p>
+                  <div className="settings-readonly-card settings-ai-provider-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Sparkles size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">AIプロバイダー</h3>
+                        <p className="settings-detection-subtitle">
+                          デフォルトはオフ。プロバイダーを選んでから使います。
+                        </p>
+                      </div>
+                      <span className="settings-detection-status">
+                        <span className="settings-detection-status-dot" aria-hidden="true" />
+                        使用中
+                      </span>
+                    </div>
+                    <div className="settings-ai-provider-list">
+                      <div className="settings-ai-provider-item settings-ai-provider-item-selected">
+                        <div className="settings-ai-provider-item-line">
+                          <span className="settings-ai-provider-dot" aria-hidden="true" />
+                          <span className="settings-ai-provider-title">
+                            Anthropic - Claude Sonnet 4.6
+                          </span>
+                          <span className="settings-ai-provider-badge settings-ai-provider-badge-selected">
+                            利用中
+                          </span>
+                        </div>
+                        <span className="settings-ai-provider-desc">
+                          APIキーが必要・課金あり・外部送信あり
+                        </span>
+                      </div>
+                      <div className="settings-ai-provider-item">
+                        <div className="settings-ai-provider-item-line">
+                          <span className="settings-ai-provider-dot" aria-hidden="true" />
+                          <span className="settings-ai-provider-title">OpenAI - GPT-4o</span>
+                          <span className="settings-ai-provider-badge">未設定</span>
+                        </div>
+                        <span className="settings-ai-provider-desc">APIキーが必要</span>
+                      </div>
+                      <div className="settings-ai-provider-item">
+                        <div className="settings-ai-provider-item-line">
+                          <span className="settings-ai-provider-dot" aria-hidden="true" />
+                          <span className="settings-ai-provider-title">
+                            ローカル - Ollama (llama3.1:8b)
+                          </span>
+                          <span className="settings-ai-provider-badge settings-ai-provider-badge-local">
+                            ローカル
+                          </span>
+                        </div>
+                        <span className="settings-ai-provider-desc">外部送信なし</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="settings-readonly-card">
-                    <h3 className="settings-readonly-card-title">議事録テンプレート</h3>
-                    <p>
-                      サマリー、担当者付きアクションアイテム、決定事項などは今後の設定です。現在はテンプレート選択 UI を表示していません。
-                    </p>
+
+                  <div className="settings-readonly-card settings-ai-template-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Type size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">議事録テンプレート</h3>
+                        <p className="settings-detection-subtitle">
+                          会議に応じたセクションの出し方を選びます。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="settings-permission-row settings-ai-template-row">
+                      <span className="settings-permission-label">サマリー（3項目）</span>
+                      <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-permission-manual-dot"
+                          aria-hidden="true"
+                        />
+                        ON
+                      </span>
+                    </div>
+                    <div className="settings-permission-row settings-ai-template-row">
+                      <span className="settings-permission-label">アクションアイテム</span>
+                      <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-permission-manual-dot"
+                          aria-hidden="true"
+                        />
+                        ON
+                      </span>
+                    </div>
+                    <div className="settings-permission-row settings-ai-template-row">
+                      <span className="settings-permission-label">決定事項</span>
+                      <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-permission-manual-dot"
+                          aria-hidden="true"
+                        />
+                        ON
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="settings-readonly-column">
-                  <div className="settings-readonly-card">
-                    <h3 className="settings-readonly-card-title">実行履歴と利用額</h3>
-                    <p>
-                      実行履歴、利用額、月額上限は今後の透明性表示です。課金が発生する操作はこの画面から自動実行しません。
-                    </p>
+                  <div className="settings-readonly-card settings-ai-runs-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Sparkles size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">最近の実行履歴</h3>
+                        <p className="settings-detection-subtitle">
+                          各実行にはコストとプロバイダーを記録します。
+                        </p>
+                      </div>
+                      <span className="settings-detection-live-badge">
+                        <span className="settings-detection-live-dot" aria-hidden="true" />
+                        7T
+                      </span>
+                    </div>
+                    <div className="settings-ai-runs-list">
+                      <div className="settings-ai-run-item">
+                        <div className="settings-ai-run-item-head">
+                          <span className="settings-ai-run-date">4月29日</span>
+                          <span className="settings-ai-run-status settings-ai-run-status-ready">
+                            RT
+                          </span>
+                        </div>
+                        <div className="settings-ai-run-item-body">
+                          <span className="settings-ai-run-model">
+                            Claude Sonnet 4.6
+                          </span>
+                          <span className="settings-ai-run-cost">1,482トークン · $0.01</span>
+                        </div>
+                      </div>
+                      <div className="settings-ai-run-item">
+                        <div className="settings-ai-run-item-head">
+                          <span className="settings-ai-run-date">4月27日</span>
+                          <span className="settings-ai-run-status settings-ai-run-status-warn">
+                            要確認
+                          </span>
+                        </div>
+                        <div className="settings-ai-run-item-body">
+                          <span className="settings-ai-run-model">月末の要約</span>
+                          <span className="settings-ai-run-cost">プロバイダーの切替後に再実行</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="settings-ai-runs-summary">
+                      <span className="settings-ai-runs-summary-label">4月の利用額</span>
+                      <span className="settings-ai-runs-summary-value">$0.42 / 上限 $5</span>
+                    </div>
                   </div>
                 </div>
               </div>

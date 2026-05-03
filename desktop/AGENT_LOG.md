@@ -14301,3 +14301,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。必要なら Pencil の transcription と実機を再比較する。
+
+### AI Minutes layout: match Pencil provider, template, and runs cards
+
+- 開始日時: 2026-05-03 16:11:37 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4e - Settings AI Minutes` の provider/template/runs 構成を再確認し、左に AIプロバイダーと議事録テンプレート、右に最近の実行履歴と利用額サマリーを寄せる。文言、ロジック、他カテゴリは壊さない。
+- 結果: AI議事録を Pencil 寄りの 2 カラムへ再編し、プロバイダー候補、テンプレート行、実行履歴、月額サマリーを静的に配置した。既存の API キー条件表示と settings sidebar は維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` が成功した。Rust 全体テストはこの環境で `cmake` が見つからないため `whisper-rs-sys` を skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。必要なら Pencil の AI Minutes と実機を再比較する。

@@ -3784,6 +3784,218 @@ body[data-window="ring-light"] .overlay-window {
   font-weight: 700;
 }
 
+.settings-readonly-grid-ai-minutes {
+  grid-template-columns: minmax(0, 348px) minmax(0, 1fr);
+}
+
+.settings-ai-provider-card,
+.settings-ai-template-card,
+.settings-ai-runs-card {
+  gap: 12px;
+}
+
+.settings-ai-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-ai-provider-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #ececee;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.settings-ai-provider-item-selected {
+  background-color: #fff7ed;
+  border-color: #ffd9b8;
+}
+
+.settings-ai-provider-item-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-ai-provider-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background-color: #ff5c00;
+  flex: 0 0 auto;
+}
+
+.settings-ai-provider-title {
+  min-width: 0;
+  color: #1a1a1a;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  flex: 1 1 auto;
+}
+
+.settings-ai-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 3px 7px;
+  color: #666;
+  background-color: #f8f8f9;
+  border: 1px solid #ececee;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.settings-ai-provider-badge-selected {
+  color: #b83b00;
+  background-color: #fff3ec;
+  border-color: #ffd9c2;
+}
+
+.settings-ai-provider-badge-local {
+  color: #167a45;
+  background-color: #ecfdf3;
+  border-color: #cfeFdc;
+}
+
+.settings-ai-provider-desc {
+  min-width: 0;
+  color: #666;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.settings-ai-template-row {
+  justify-content: space-between;
+  background-color: #f8f8f9;
+  border-radius: 8px;
+  padding: 0 0 0 0;
+}
+
+.settings-ai-runs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.settings-ai-run-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background-color: #f8f8f9;
+}
+
+.settings-ai-run-item-head,
+.settings-ai-run-item-body {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.settings-ai-run-item-body {
+  justify-content: space-between;
+}
+
+.settings-ai-run-date,
+.settings-ai-run-model {
+  min-width: 0;
+  color: #1a1a1a;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.settings-ai-run-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  padding: 3px 7px;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.settings-ai-run-status-ready {
+  color: #167a45;
+  background-color: #ecfdf3;
+  border: 1px solid #cfeFdc;
+}
+
+.settings-ai-run-status-warn {
+  color: #b83b00;
+  background-color: #fff3ec;
+  border: 1px solid #ffd9c2;
+}
+
+.settings-ai-run-cost {
+  min-width: 0;
+  color: #666;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.settings-ai-runs-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #ffd9c2;
+  border-radius: 8px;
+  background-color: #fff7ed;
+}
+
+.settings-ai-runs-summary-label {
+  color: #b83b00;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.settings-ai-runs-summary-value {
+  color: #b83b00;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 .settings-readonly-grid-ai-minutes
   > .settings-readonly-column:first-child
   > .settings-readonly-card {
