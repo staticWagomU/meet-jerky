@@ -435,7 +435,7 @@ export function TranscriptDisplay({
                 >
                   ·
                 </span>
-                <span className="transcript-pause-pill-track">自動追従</span>
+                <span className="transcript-pause-pill-track">会議中</span>
                 <button
                   type="button"
                   className="transcript-pause-pill-resume"

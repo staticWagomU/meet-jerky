@@ -14511,3 +14511,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
+
+### Transcript pause pill label: clarify pause context
+
+- 開始日時: 2026-05-03 23:11:13 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 指示内容: Pencil の pause pill は会議コンテキストを補助表示しているため、`transcript-pause-pill` の補助ラベルを `自動追従` から、構造変更なしでより自然な会議文脈へ寄せる。ロジック、他カテゴリ、CSS は変更しない。
+- 結果: pause pill の補助ラベルを `会議中` に変更し、Pencil の pause pill が持つ文脈補助に近づけた。ロジック、CSS、他カテゴリは変更していない。
+- 変更ファイル: `src/components/TranscriptDisplay.tsx`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` を実行する。
