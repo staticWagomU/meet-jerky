@@ -80,16 +80,16 @@ impl ElevenLabsRealtimeStream {
         let language = config.language.clone();
 
         let task_handle = tauri::async_runtime::spawn(async move {
-            if let Err(e) = ws_task::run(
+            if let Err(e) = ws_task::run(ws_task::RunParams {
                 api_key,
                 model_id,
                 language,
                 sample_rate,
                 audio_rx,
-                pending_for_task.clone(),
-                speaker.clone(),
+                pending: pending_for_task.clone(),
+                speaker: speaker.clone(),
                 source,
-            )
+            })
             .await
             {
                 pending_for_task.lock().push(TranscriptionSegment {
@@ -169,16 +169,28 @@ mod ws_task {
 
     const PENDING_AFTER_COMMIT_TIMEOUT: Duration = Duration::from_secs(10);
 
-    pub async fn run(
-        api_key: String,
-        model_id: String,
-        language: Option<String>,
-        sample_rate: u32,
-        mut audio_rx: UnboundedReceiver<AudioCommand>,
-        pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
-        speaker: Option<String>,
-        source: Option<TranscriptionSource>,
-    ) -> Result<(), String> {
+    pub struct RunParams {
+        pub api_key: String,
+        pub model_id: String,
+        pub language: Option<String>,
+        pub sample_rate: u32,
+        pub audio_rx: UnboundedReceiver<AudioCommand>,
+        pub pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
+        pub speaker: Option<String>,
+        pub source: Option<TranscriptionSource>,
+    }
+
+    pub async fn run(params: RunParams) -> Result<(), String> {
+        let RunParams {
+            api_key,
+            model_id,
+            language,
+            sample_rate,
+            mut audio_rx,
+            pending,
+            speaker,
+            source,
+        } = params;
         let url = build_realtime_url(&model_id, language.as_deref());
         let mut request = url
             .into_client_request()

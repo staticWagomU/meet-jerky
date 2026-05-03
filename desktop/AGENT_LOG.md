@@ -14844,3 +14844,17 @@
 - 依存関係追加の有無と理由: なし (std::sync::atomic::AtomicUsize は std)
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット。
+
+### clippy: elevenlabs_realtime::ws_task::run の引数を RunParams 構造体化
+
+- 開始日時: 2026-05-04 06:45 JST
+- 担当セッション: mjc-worker-elevenlabs-runparams-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/elevenlabs_realtime.rs (mod ws_task), AGENT_LOG.md
+- 指示内容: clippy::too_many_arguments(8/7) を消すため、ws_task::run の 8 引数を RunParams 構造体に集約。呼び出し側も struct リテラルへ書き換え、関数本体は変更せず destructure で同じ変数名を取り出す形に。
+- 結果: mod ws_task の PENDING_AFTER_COMMIT_TIMEOUT 直後に RunParams 構造体 (フィールド 8 個) を追加。pub async fn run(params: RunParams) に変更し、let RunParams { .. } = params; で同名 binding に destructure。呼び出し側 (line 83) を ws_task::run(ws_task::RunParams { ... }) の struct リテラル形式に書き換え。関数本体のロジックは一切変更なし。差分 +28/-11 行 (合計 38 行程度)。
+- 変更ファイル: src-tauri/src/elevenlabs_realtime.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功、cargo test 206 passed / 0 failed。cargo clippy: elevenlabs_realtime.rs の too_many_arguments 警告消滅を確認。残存警告は openai_realtime.rs:205 の 1 件のみ (対象外、次ループで対応)。新規 warning 増加なし。
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット。次ループで openai_realtime.rs にも同パターンを適用する。
