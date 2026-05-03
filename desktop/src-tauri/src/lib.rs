@@ -1,6 +1,7 @@
 mod app_detection;
 mod apple_speech;
 mod audio;
+mod audio_utils;
 mod cloud_whisper;
 mod cloud_whisper_errors;
 mod datetime_fmt;

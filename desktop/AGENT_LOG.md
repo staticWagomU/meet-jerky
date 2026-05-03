@@ -15516,3 +15516,73 @@
 - ユーザー直伝指示 (未消化): なし。watchdog 継続指示は受領済み・既に従って 5 ループ完了済み。
 - このセッションで終始衝突なし: codex 側 (UI), Claude 側 (Rust) の住み分けが効いている。
 - 後続メイン候補名: `mjc-main-20260504-4` (本セッションの数字 +1)。本セッションは context 余裕あれば数ループ追加可能だが、判断履歴を残したい場合は次ループ前後でハンドオフ準備すべき。
+
+### audio_utils.rs 新規作成による sanitize_sample 共通化リファクタ (Tidy First)
+
+- **開始日時 (JST)**: 2026-05-04 06:56 JST
+- **担当セッション**: `mjc-worker-audio-utils-tidy-first-20260504-1`
+- **役割**: Tidy First リファクタワーカー (振る舞い完全保持、構造改善のみ)
+- **作業範囲**: 4 ファイル変更 (新規作成 1 件、既存 3 件の最小編集)
+
+#### 指示内容 (要約)
+`audio.rs:sanitize_sample` (L287-293) と `system_audio.rs:sanitize_pcm_sample` (L44-50) が完全に同一実装であるため、共通実装 `crate::audio_utils::sanitize_audio_sample` に切り出し、両者から委譲呼び出しする。Tidy First の最小スライス原則に従い、wrapper fn は削除せず、各モジュール内の呼び出し箇所を変更しない。
+
+#### 変更内容
+
+| ファイル | 変更種別 | 詳細 |
+|----------|----------|------|
+| `src-tauri/src/audio_utils.rs` | 新規作成 | `pub fn sanitize_audio_sample(sample: f32) -> f32` + `#[cfg(test)] mod tests` 6 件 |
+| `src-tauri/src/lib.rs` | 1 行追加 | `mod audio_utils;` を `mod audio;` と `mod cloud_whisper;` の間に挿入 (アルファベット順) |
+| `src-tauri/src/audio.rs` | 実装置換 | `sanitize_sample` の 5 行実装 → `crate::audio_utils::sanitize_audio_sample(sample)` の 1 行委譲 |
+| `src-tauri/src/system_audio.rs` | 実装置換 | `sanitize_pcm_sample` の 5 行実装 → `crate::audio_utils::sanitize_audio_sample(sample)` の 1 行委譲 |
+
+#### 追加したテスト (audio_utils.rs 内)
+
+| # | 関数名 | 検証内容 |
+|---|--------|----------|
+| 1 | `sanitize_audio_sample_returns_zero_for_nan` | `f32::NAN` → 0.0 |
+| 2 | `sanitize_audio_sample_returns_zero_for_positive_infinity` | `f32::INFINITY` → 0.0 |
+| 3 | `sanitize_audio_sample_returns_zero_for_negative_infinity` | `f32::NEG_INFINITY` → 0.0 |
+| 4 | `sanitize_audio_sample_clamps_above_one_to_one` | `1.5` → 1.0 |
+| 5 | `sanitize_audio_sample_clamps_below_minus_one_to_minus_one` | `-1.5` → -1.0 |
+| 6 | `sanitize_audio_sample_passes_through_finite_values_in_range` | `0.0`, `0.5`, `-0.5`, `1.0`, `-1.0` がそのまま通過 |
+
+#### 設計上の判断
+- wrapper fn (`sanitize_sample` / `sanitize_pcm_sample`) は**削除しない**。理由: モジュール内の呼び出し箇所を変えずに済み、最小スライス原則に適合。
+- `crate::audio_utils::sanitize_audio_sample` は fully qualified パスで呼ぶため `use` 追加不要。
+- `pub fn` (crate-public) にした。lib crate なので外部 binary への露出なし。`pub(crate)` でも可だが将来性を考慮。
+- 新規 dependency 追加なし。
+
+#### 変更ファイル
+- `src-tauri/src/audio_utils.rs` (新規作成)
+- `src-tauri/src/lib.rs` (`mod audio_utils;` 1 行追加)
+- `src-tauri/src/audio.rs` (`sanitize_sample` 実装を 1 行委譲に置換)
+- `src-tauri/src/system_audio.rs` (`sanitize_pcm_sample` 実装を 1 行委譲に置換)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `git diff --check` | 合格 (出力なし) |
+| `cargo fmt --check` | 合格 (出力なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **269 passed** (263 → 269、追加 6 件すべて合格、既存 12 件も引き続き合格) |
+| `scripts/agent-verify.sh src-tauri/src/audio_utils.rs src-tauri/src/lib.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 6 件 (audio_utils.rs に新規)
+- 追加後 total passed: 269
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+なし
+
+#### 残リスク
+- `audio.rs::sanitize_sample` と `system_audio.rs::sanitize_pcm_sample` の 2 つの wrapper fn は引き続き独立して存在。将来さらに同名の関数が増えた場合は wrapper の整理を再検討。
+- `audio_utils.rs` の tests 6 件は `audio.rs::sanitize_sample_*` 6 件 / `system_audio.rs::sanitize_pcm_sample_*` 6 件と仕様を 3 層で裏付ける重複テスト構造。重複を許容することで層の責任分離が崩れた時に早期検知できる。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

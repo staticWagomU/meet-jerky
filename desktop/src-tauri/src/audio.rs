@@ -285,11 +285,7 @@ where
 }
 
 fn sanitize_sample(sample: f32) -> f32 {
-    if sample.is_finite() {
-        sample.clamp(-1.0, 1.0)
-    } else {
-        0.0
-    }
+    crate::audio_utils::sanitize_audio_sample(sample)
 }
 
 fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32 {

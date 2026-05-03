@@ -42,11 +42,7 @@ fn read_f32_ne(sample_bytes: &[u8]) -> f32 {
 }
 
 fn sanitize_pcm_sample(sample: f32) -> f32 {
-    if sample.is_finite() {
-        sample.clamp(-1.0, 1.0)
-    } else {
-        0.0
-    }
+    crate::audio_utils::sanitize_audio_sample(sample)
 }
 
 fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32> {
