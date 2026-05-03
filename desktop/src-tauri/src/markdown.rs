@@ -138,4 +138,49 @@ mod tests {
 **[14:30:05] 自分\[メモ\]:** literal \`code\` and \*\*bold\*\* \\ slash  "#;
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
+
+    #[test]
+    fn inline_markdown_text_returns_empty_for_empty_input() {
+        assert_eq!(super::inline_markdown_text(""), "");
+    }
+
+    #[test]
+    fn inline_markdown_text_returns_empty_for_whitespace_only_input() {
+        assert_eq!(super::inline_markdown_text("   "), "");
+        assert_eq!(super::inline_markdown_text("\t\n  "), "");
+        assert_eq!(super::inline_markdown_text(" \t \n "), "");
+    }
+
+    #[test]
+    fn inline_markdown_text_escapes_underscore_explicitly() {
+        assert_eq!(super::inline_markdown_text("_"), "\\_");
+        assert_eq!(super::inline_markdown_text("hello_world"), "hello\\_world");
+        assert_eq!(super::inline_markdown_text("__bold__"), "\\_\\_bold\\_\\_");
+    }
+
+    #[test]
+    fn inline_markdown_text_escapes_each_special_char_individually() {
+        assert_eq!(super::inline_markdown_text("\\"), "\\\\");
+        assert_eq!(super::inline_markdown_text("`"), "\\`");
+        assert_eq!(super::inline_markdown_text("*"), "\\*");
+        assert_eq!(super::inline_markdown_text("_"), "\\_");
+        assert_eq!(super::inline_markdown_text("["), "\\[");
+        assert_eq!(super::inline_markdown_text("]"), "\\]");
+    }
+
+    #[test]
+    fn format_session_markdown_handles_single_segment_correctly() {
+        let meta = SessionMeta {
+            title: "会議".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments = vec![SessionSegment {
+            speaker: "自分".to_string(),
+            timestamp_display: "14:30:05".to_string(),
+            text: "hello".to_string(),
+        }];
+
+        let expected = "# 会議 - 2026-04-17 14:30\n\n**[14:30:05] 自分:** hello  ";
+        assert_eq!(format_session_markdown(&meta, &segments), expected);
+    }
 }

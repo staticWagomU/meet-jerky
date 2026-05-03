@@ -15825,3 +15825,66 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### markdown.rs の inline_markdown_text private fn 契約と 1 segment 出力を 5 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 07:26 JST
+- **担当セッション**: `mjc-worker-markdown-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/markdown.rs` の `mod tests` 末尾への `#[test]` 関数 5 件追加のみ
+
+#### 指示内容 (要約)
+`markdown.rs` の private fn `inline_markdown_text` は既存テストで `*`, `[`, `]`, `` ` ``, `\\` をカバーするが、**`_` (アンダースコア) のエスケープが未確認**という致命的な検知漏れがあった。また空入力/whitespace-only 入力の境界値と 1 segment 出力の振る舞いが test で固定されていなかった。以下 5 件を追加。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| A | `inline_markdown_text_returns_empty_for_empty_input` | 1 | `""` → `""` (`split_whitespace().join("")` の空入力仕様を固定) |
+| B | `inline_markdown_text_returns_empty_for_whitespace_only_input` | 3 | `"   "` / `"\t\n  "` / `" \t \n "` → `""` (tab/newline 混在の whitespace すべてを除去する仕様) |
+| C | `inline_markdown_text_escapes_underscore_explicitly` | 3 | `"_"` → `"\_"`, `"hello_world"` → `"hello\_world"`, `"__bold__"` → `"\_\_bold\_\_"` (既存テスト未カバーの致命的欠落を補完) |
+| D | `inline_markdown_text_escapes_each_special_char_individually` | 6 | エスケープ対象 6 文字 (`\`, `` ` ``, `*`, `_`, `[`, `]`) を1文字ずつ個別確認 (完全網羅仕様書) |
+| E | `format_session_markdown_handles_single_segment_correctly` | 1 | 1 segment 入力 → `"# 会議 - 2026-04-17 14:30\n\n**[14:30:05] 自分:** hello  "` (既存 happy_path は 2 segments のみ) |
+
+#### 不変条件 / 契約仕様
+- `inline_markdown_text("")` は `""` を返す (`split_whitespace` の空入力 → 空 vec → `join("")` の仕様)
+- whitespace のみの文字列 (ASCII スペース/タブ/改行の任意の組み合わせ) は `""` にフォールバック
+- **`_` は必ずエスケープされる**: `\\_` として出力。`_` をエスケープ対象から外すリファクタで即座に検知。
+- エスケープ対象 6 文字 (`\`, `` ` ``, `*`, `_`, `[`, `]`) はすべて個別に確認済み
+- 1 segment 時の `lines.join("\n")` は改行なしで `"**[...] ...:** ...  "` を正常出力する
+
+#### 設計意図
+- markdown は履歴ファイルの最終出力形式。エスケープ契約が壊れると保存済み履歴の markdown renderer で文字化け・構造破綻・XSS 類似の問題が起き得る。
+- テスト C が最も重要: `_` のエスケープは既存 4 テストすべてで一度も確認されておらず、将来の「6文字 → 5文字」縮小リファクタへの唯一の検知装置。
+- テスト D と C は `"_"→"\_"` の重複を許容することで「仕様書」としての完全性を優先。
+- private fn 直接呼び出しテストは前セッション (audio_utils, system_audio, transcript_bridge, session) で確立したパターンの正統な拡張。
+
+#### 変更ファイル
+- `src-tauri/src/markdown.rs` (tests モジュール末尾に 5 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 初回失敗 → `cargo fmt` で自動修正後 合格 |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **286 passed** (281 → 286、追加 5 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/markdown.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 14 件)
+- 追加後 total passed: 286
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+- `cargo fmt --check` 初回失敗: テスト C の `assert_eq!(super::inline_markdown_text("__bold__"), "\\_\\_bold\\_\\_")` を複数行展開して記述したが、rustfmt の行長設定により1行に収まると判定されたため展開が不要だった。`cargo fmt` 実行後に再チェックで合格。
+
+#### 残リスク
+- テスト D と C は `"_"→"\_"` の assert が重複しているが、意図的 (6文字網羅の文書化を優先)。重複除去を行うと D の「全 6 文字が個別確認された仕様書」としての役割が薄れる。
+- Unicode whitespace (全角スペース `\u{3000}`) は Rust の `split_whitespace` では区切り文字として扱われない可能性があるが、現実のユーザー入力での混入頻度は低く、別テストで対応する余地あり。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
