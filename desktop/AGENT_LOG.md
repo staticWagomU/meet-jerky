@@ -16328,3 +16328,56 @@
 - AGENT_LOG.md は ~16500 行 / 1.5MB+。worker は `tail -200 AGENT_LOG.md` 相当で末尾だけ参照する運用継続。
 - ユーザー直伝指示 (未消化): なし。watchdog 継続指示は受領済み・既に従って 5 ループ完了済み。
 - 後続メイン候補名: `mjc-main-20260504-6`。本セッションは 5 ループ + SESSION SUMMARY で良い区切り (前セッションは 6 ループ + 1 SESSION SUMMARY)、判断履歴 rotate 安全性のため予防的ハンドオフを判断。
+
+### openai_realtime.rs ws_task::push_error 直接テストを 5 件追加
+
+- **開始日時 (JST)**: 2026-05-04 ~08:24 JST
+- **担当セッション**: `mjc-worker-openai-realtime-push-error-tests-20260504-6-1`
+- **役割**: テスト追加ワーカー (visibility 変更 1 行 + テスト 5 件)
+- **作業範囲**: `src-tauri/src/openai_realtime.rs` の `mod ws_task` 内
+  `fn push_error` の visibility 変更 (`pub(crate)`) と `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+ws_task 内 private fn `push_error` (L418-L432) の visibility を `pub(crate)` に広げ、
+外側 `mod tests` から直接呼べるようにする。その上で、prefix/suffix 文言契約・
+zero timestamps + is_error=Some(true) の不変条件・source/speaker passthrough・
+empty/multibyte message の text format 保持を 5 件で直接テストする。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | push_error_format_prefix_and_suffix_are_fixed | text 完全一致で prefix `"[OpenAI Realtime エラー: "` と suffix `"]"` を契約強制 |
+| T2 | push_error_sets_zero_timestamps_and_is_error_true | start_ms=0 / end_ms=0 / is_error=Some(true) を 1 fn で固定 |
+| T3 | push_error_passes_source_through | Some(Microphone) / None の双方向 passthrough |
+| T4 | push_error_clones_speaker_field | Some("自分") の clone 確認 (元保持) と None passthrough |
+| T5 | push_error_with_empty_and_multibyte_messages_preserve_text_format | 空 message → "[OpenAI Realtime エラー: ]" / 日本語 message → そのまま埋め込み |
+
+#### 不変条件 / 設計意図
+- elevenlabs_realtime と完全対称な error path 直接テスト構造を確立。
+- prefix/suffix 文言は UI ユーザー文言契約として CI で強制。
+- visibility 変更は同 mod 内 `pub(crate) fn float_to_pcm16` と同流儀。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 315 → 320 passed (新規 5 件、既存 0 件破壊)
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 12 件)
+- 追加後 total passed: 320
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+- なし (該当する場合のみ記載)
+
+#### 残リスク
+- T5 の "[OpenAI Realtime エラー: ]" は空 message 時の現挙動を固定しており、
+  将来「空 message なら push しない」リファクタを採用する場合は test 修正が必要。
+  ただし「エラーは UI に必ず表示される」契約を保つ意図なら現挙動が望ましい。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
