@@ -499,229 +499,353 @@ export function SettingsView() {
             </div>
 
             {activeCategory === "transcription" && (
-              <>
-                {/* 文字起こしエンジン */}
-                <div className="settings-section">
-                  <h3 className="settings-section-title" id="transcription-engine-title">
-                    文字起こしエンジン
-                  </h3>
-                  <p className="settings-note">
-                    メインエンジンを選択。クラウドエンジンはオプトイン時のみ使用します。
-                  </p>
-        <div
-          className="settings-radio-group"
-          role="radiogroup"
-          aria-labelledby="transcription-engine-title"
-        >
-          <label className="settings-radio-label" title={whisperEngineLabel}>
-            <input
-              type="radio"
-              name="engine"
-              value="whisper"
-              aria-describedby={ENGINE_NOTE_IDS.whisper}
-              checked={localSettings.transcriptionEngine === "whisper"}
-              onChange={() =>
-                setLocalSettings((current) =>
-                  current
-                    ? {
-                        ...current,
-                        transcriptionEngine: "whisper" as TranscriptionEngineType,
-                      }
-                    : current,
-                )
-              }
-            />
-            <span>ローカル (Whisper)</span>
-            <span id={ENGINE_NOTE_IDS.whisper} className="settings-note">
-              端末内のみ、外部送信なし
-            </span>
-          </label>
-          <label className="settings-radio-label" title={appleSpeechEngineLabel}>
-            <input
-              type="radio"
-              name="engine"
-              value="appleSpeech"
-              aria-describedby={appleSpeechDescribedBy}
-              checked={localSettings.transcriptionEngine === "appleSpeech"}
-              onChange={() =>
-                setLocalSettings((current) =>
-                  current
-                    ? {
-                        ...current,
-                        transcriptionEngine:
-                          "appleSpeech" as TranscriptionEngineType,
-                      }
-                    : current,
-                )
-              }
-            />
-            <span>macOS SpeechAnalyzer</span>
-            <span id={ENGINE_NOTE_IDS.appleSpeech} className="settings-note">
-              端末内のみ、macOS 26+ 専用。現在は自分または相手側の片側トラック向け
-            </span>
-          </label>
-          <label
-            className="settings-radio-label"
-            title={openAIRealtimeEngineLabel}
-          >
-            <input
-              type="radio"
-              name="engine"
-              value="openAIRealtime"
-              aria-describedby={openAIRealtimeDescribedBy}
-              checked={localSettings.transcriptionEngine === "openAIRealtime"}
-              onChange={() =>
-                setLocalSettings((current) =>
-                  current
-                    ? {
-                        ...current,
-                        transcriptionEngine:
-                          "openAIRealtime" as TranscriptionEngineType,
-                      }
-                    : current,
-                )
-              }
-            />
-            <span>OpenAI Realtime API</span>
-            <span id={ENGINE_NOTE_IDS.openAIRealtime} className="settings-note">
-              外部送信あり、送信先 OpenAI、API キーが必要
-            </span>
-          </label>
-          <label
-            className="settings-radio-label"
-            title={elevenLabsRealtimeEngineLabel}
-          >
-            <input
-              type="radio"
-              name="engine"
-              value="elevenLabsRealtime"
-              aria-describedby={elevenLabsRealtimeDescribedBy}
-              checked={localSettings.transcriptionEngine === "elevenLabsRealtime"}
-              onChange={() =>
-                setLocalSettings((current) =>
-                  current
-                    ? {
-                        ...current,
-                        transcriptionEngine:
-                          "elevenLabsRealtime" as TranscriptionEngineType,
-                      }
-                    : current,
-                )
-              }
-            />
-            <span>ElevenLabs Scribe v2 Realtime</span>
-            <span
-              id={ENGINE_NOTE_IDS.elevenLabsRealtime}
-              className="settings-note"
-            >
-              外部送信あり、送信先 ElevenLabs、API キーが必要
-            </span>
-          </label>
-        </div>
-        {externalRealtimeRiskLabel && (
-          <p
-            id={EXTERNAL_REALTIME_RISK_NOTE_ID}
-            className="settings-risk-note"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            aria-label={externalRealtimeRiskAriaLabel ?? undefined}
-            title={externalRealtimeRiskAriaLabel ?? undefined}
-          >
-            {externalRealtimeRiskLabel}
-            API キーは Keychain に保存され、画面には再表示されません。
-          </p>
-        )}
-        {localSettings.transcriptionEngine === "appleSpeech" && (
-          <p
-            id={APPLE_SPEECH_LIMIT_NOTE_ID}
-            className="settings-risk-note"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            aria-label="Apple Speech 制約: 現在の記録開始ボタンは自分と相手側の両トラックを同時に開始するため、Apple Speech では安全のため無効化されます。片側トラックだけを手動開始して利用してください。"
-            title="Apple Speech 制約: 現在の記録開始ボタンは自分と相手側の両トラックを同時に開始するため、Apple Speech では安全のため無効化されます。片側トラックだけを手動開始して利用してください。"
-          >
-            記録開始ボタンは両トラックを同時に開始するため、Apple Speech
-            では安全のため無効化されます。片側トラックだけを手動開始して利用してください。
-          </p>
-        )}
-                </div>
-
-                {/* 外部 Realtime API キー */}
-                {localSettings.transcriptionEngine === "openAIRealtime" && (
-                  <ExternalApiKeySection
-                    providerName="OpenAI"
-                    noteId={OPENAI_API_KEY_NOTE_ID}
-                    queryKey={["openaiApiKey", "has"]}
-                    hasCommand="has_openai_api_key"
-                    setCommand="set_openai_api_key"
-                    clearCommand="clear_openai_api_key"
-                    placeholder="sk-..."
-                    clearToast={clearToast}
-                    showToast={showToast}
-                  />
-                )}
-                {localSettings.transcriptionEngine === "elevenLabsRealtime" && (
-                  <ExternalApiKeySection
-                    providerName="ElevenLabs"
-                    noteId={ELEVENLABS_API_KEY_NOTE_ID}
-                    queryKey={["elevenlabsApiKey", "has"]}
-                    hasCommand="has_elevenlabs_api_key"
-                    setCommand="set_elevenlabs_api_key"
-                    clearCommand="clear_elevenlabs_api_key"
-                    placeholder="xi-..."
-                    clearToast={clearToast}
-                    showToast={showToast}
-                  />
-                )}
-
-                {/* Whisper モデル */}
-                {localSettings.transcriptionEngine === "whisper" && (
-                  <div className="settings-section">
-                    <h3 className="settings-section-title">Whisper モデル</h3>
-                    <select
-                      aria-label={whisperModelLabel}
-                      title={whisperModelLabel}
-                      value={localSettings.whisperModel}
-                      onChange={(e) =>
-                        setLocalSettings((current) =>
-                          current ? { ...current, whisperModel: e.target.value } : current,
-                        )
-                      }
-                      className="settings-select"
+              <div className="settings-readonly-grid settings-readonly-grid-transcription">
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card settings-transcription-engine-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Type size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">
+                          文字起こしエンジン
+                        </h3>
+                        <p className="settings-detection-subtitle">
+                          メインエンジンを選択。クラウドエンジンはオプトイン時のみ使用します。
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className="settings-transcription-engine-list"
+                      role="radiogroup"
+                      aria-labelledby="transcription-engine-title"
                     >
-                      {WHISPER_MODELS.map((model) => (
-                        <option key={model.value} value={model.value}>
-                          {model.label}
-                        </option>
-                      ))}
-                    </select>
+                      <h4 id="transcription-engine-title" className="sr-only">
+                        文字起こしエンジン
+                      </h4>
+                      <label className="settings-radio-label" title={whisperEngineLabel}>
+                        <input
+                          type="radio"
+                          name="engine"
+                          value="whisper"
+                          aria-describedby={ENGINE_NOTE_IDS.whisper}
+                          checked={localSettings.transcriptionEngine === "whisper"}
+                          onChange={() =>
+                            setLocalSettings((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    transcriptionEngine: "whisper" as TranscriptionEngineType,
+                                  }
+                                : current,
+                            )
+                          }
+                        />
+                        <span>ローカル (Whisper)</span>
+                        <span id={ENGINE_NOTE_IDS.whisper} className="settings-note">
+                          端末内のみ、外部送信なし
+                        </span>
+                      </label>
+                      <label
+                        className="settings-radio-label"
+                        title={appleSpeechEngineLabel}
+                      >
+                        <input
+                          type="radio"
+                          name="engine"
+                          value="appleSpeech"
+                          aria-describedby={appleSpeechDescribedBy}
+                          checked={localSettings.transcriptionEngine === "appleSpeech"}
+                          onChange={() =>
+                            setLocalSettings((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    transcriptionEngine:
+                                      "appleSpeech" as TranscriptionEngineType,
+                                  }
+                                : current,
+                            )
+                          }
+                        />
+                        <span>macOS SpeechAnalyzer</span>
+                        <span id={ENGINE_NOTE_IDS.appleSpeech} className="settings-note">
+                          端末内のみ、macOS 26+ 専用。現在は自分または相手側の片側トラック向け
+                        </span>
+                      </label>
+                      <label
+                        className="settings-radio-label"
+                        title={openAIRealtimeEngineLabel}
+                      >
+                        <input
+                          type="radio"
+                          name="engine"
+                          value="openAIRealtime"
+                          aria-describedby={openAIRealtimeDescribedBy}
+                          checked={localSettings.transcriptionEngine === "openAIRealtime"}
+                          onChange={() =>
+                            setLocalSettings((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    transcriptionEngine:
+                                      "openAIRealtime" as TranscriptionEngineType,
+                                  }
+                                : current,
+                            )
+                          }
+                        />
+                        <span>OpenAI Realtime API</span>
+                        <span id={ENGINE_NOTE_IDS.openAIRealtime} className="settings-note">
+                          外部送信あり、送信先 OpenAI、API キーが必要
+                        </span>
+                      </label>
+                      <label
+                        className="settings-radio-label"
+                        title={elevenLabsRealtimeEngineLabel}
+                      >
+                        <input
+                          type="radio"
+                          name="engine"
+                          value="elevenLabsRealtime"
+                          aria-describedby={elevenLabsRealtimeDescribedBy}
+                          checked={localSettings.transcriptionEngine === "elevenLabsRealtime"}
+                          onChange={() =>
+                            setLocalSettings((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    transcriptionEngine:
+                                      "elevenLabsRealtime" as TranscriptionEngineType,
+                                  }
+                                : current,
+                            )
+                          }
+                        />
+                        <span>ElevenLabs Scribe v2 Realtime</span>
+                        <span
+                          id={ENGINE_NOTE_IDS.elevenLabsRealtime}
+                          className="settings-note"
+                        >
+                          外部送信あり、送信先 ElevenLabs、API キーが必要
+                        </span>
+                      </label>
+                    </div>
+                    {externalRealtimeRiskLabel && (
+                      <p
+                        id={EXTERNAL_REALTIME_RISK_NOTE_ID}
+                        className="settings-risk-note"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        aria-label={externalRealtimeRiskAriaLabel ?? undefined}
+                        title={externalRealtimeRiskAriaLabel ?? undefined}
+                      >
+                        {externalRealtimeRiskLabel}
+                        API キーは Keychain に保存され、画面には再表示されません。
+                      </p>
+                    )}
+                    {localSettings.transcriptionEngine === "appleSpeech" && (
+                      <p
+                        id={APPLE_SPEECH_LIMIT_NOTE_ID}
+                        className="settings-risk-note"
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        aria-label="Apple Speech 制約: 現在の記録開始ボタンは自分と相手側の両トラックを同時に開始するため、Apple Speech では安全のため無効化されます。片側トラックだけを手動開始して利用してください。"
+                        title="Apple Speech 制約: 現在の記録開始ボタンは自分と相手側の両トラックを同時に開始するため、Apple Speech では安全のため無効化されます。片側トラックだけを手動開始して利用してください。"
+                      >
+                        記録開始ボタンは両トラックを同時に開始するため、Apple Speech
+                        では安全のため無効化されます。片側トラックだけを手動開始して利用してください。
+                      </p>
+                    )}
                   </div>
-                )}
 
-                {/* 言語 */}
-                <div className="settings-section">
-                  <h3 className="settings-section-title">文字起こし言語</h3>
-                  <select
-                    aria-label={languageLabel}
-                    title={languageLabel}
-                    value={localSettings.language}
-                    onChange={(e) =>
-                      setLocalSettings((current) =>
-                        current ? { ...current, language: e.target.value } : current,
-                      )
-                    }
-                    className="settings-select"
-                  >
-                    {LANGUAGES.map((lang) => (
-                      <option key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </option>
-                    ))}
-                  </select>
+                  {localSettings.transcriptionEngine === "openAIRealtime" && (
+                    <ExternalApiKeySection
+                      providerName="OpenAI"
+                      noteId={OPENAI_API_KEY_NOTE_ID}
+                      queryKey={["openaiApiKey", "has"]}
+                      hasCommand="has_openai_api_key"
+                      setCommand="set_openai_api_key"
+                      clearCommand="clear_openai_api_key"
+                      placeholder="sk-..."
+                      clearToast={clearToast}
+                      showToast={showToast}
+                    />
+                  )}
+                  {localSettings.transcriptionEngine === "elevenLabsRealtime" && (
+                    <ExternalApiKeySection
+                      providerName="ElevenLabs"
+                      noteId={ELEVENLABS_API_KEY_NOTE_ID}
+                      queryKey={["elevenlabsApiKey", "has"]}
+                      hasCommand="has_elevenlabs_api_key"
+                      setCommand="set_elevenlabs_api_key"
+                      clearCommand="clear_elevenlabs_api_key"
+                      placeholder="xi-..."
+                      clearToast={clearToast}
+                      showToast={showToast}
+                    />
+                  )}
+
+                  {localSettings.transcriptionEngine === "whisper" && (
+                    <div className="settings-section">
+                      <h3 className="settings-section-title">Whisper モデル</h3>
+                      <select
+                        aria-label={whisperModelLabel}
+                        title={whisperModelLabel}
+                        value={localSettings.whisperModel}
+                        onChange={(e) =>
+                          setLocalSettings((current) =>
+                            current ? { ...current, whisperModel: e.target.value } : current,
+                          )
+                        }
+                        className="settings-select"
+                      >
+                        {WHISPER_MODELS.map((model) => (
+                          <option key={model.value} value={model.value}>
+                            {model.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="settings-readonly-card settings-transcription-language-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Type size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">言語と単語登録</h3>
+                        <p className="settings-detection-subtitle">
+                          メイン言語を選び、よく出る単語を補正します。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="settings-transcription-language-row">
+                      <span className="settings-transcription-language-label">
+                        メイン言語
+                      </span>
+                      <select
+                        aria-label={languageLabel}
+                        title={languageLabel}
+                        value={localSettings.language}
+                        onChange={(e) =>
+                          setLocalSettings((current) =>
+                            current ? { ...current, language: e.target.value } : current,
+                          )
+                        }
+                        className="settings-select settings-transcription-language-select"
+                      >
+                        {LANGUAGES.map((lang) => (
+                          <option key={lang.value} value={lang.value}>
+                            {lang.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="settings-transcription-glossary-label">単語登録（4件）</div>
+                    <div className="settings-privacy-option-group">
+                      <span className="settings-privacy-option settings-privacy-option-active">
+                        FY26 OKR
+                      </span>
+                      <span className="settings-privacy-option">roadmap</span>
+                      <span className="settings-privacy-option">QBR</span>
+                      <span className="settings-privacy-option">add</span>
+                    </div>
+                  </div>
                 </div>
-              </>
+
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card settings-transcription-output-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Type size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">出力とタイミング</h3>
+                        <p className="settings-detection-subtitle">
+                          通話中と通話後に文字起こしをどう扱うか
+                        </p>
+                      </div>
+                    </div>
+                    <div className="settings-permission-row">
+                      <span className="settings-permission-label">
+                        録音中はライブ字幕を表示
+                      </span>
+                      <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-permission-manual-dot"
+                          aria-hidden="true"
+                        />
+                        ON
+                      </span>
+                    </div>
+                    <div className="settings-permission-row">
+                      <span className="settings-permission-label">
+                        話者を分離（自分／相手）
+                      </span>
+                      <span className="settings-permission-badge permission-manual">
+                        <span
+                          className="settings-permission-manual-dot"
+                          aria-hidden="true"
+                        />
+                        ON
+                      </span>
+                    </div>
+                    <div className="settings-permission-row">
+                      <span className="settings-permission-label">
+                        停止時に文字起こしを自動保存
+                      </span>
+                      <span className="settings-permission-badge">
+                        OFF
+                      </span>
+                    </div>
+                    <div className="settings-permission-row">
+                      <span className="settings-permission-label">書き出し形式</span>
+                      <div className="settings-privacy-option-group">
+                        <span className="settings-privacy-option settings-privacy-option-active">
+                          Markdown
+                        </span>
+                        <span className="settings-privacy-option">VTT</span>
+                        <span className="settings-privacy-option">SRT</span>
+                        <span className="settings-privacy-option">JSON</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="settings-readonly-card settings-transcription-preview-card">
+                    <div className="settings-transcription-preview-head">
+                      <h3 className="settings-readonly-card-title">ライブプレビュー</h3>
+                      <span className="settings-detection-live-badge">
+                        <span className="settings-detection-live-dot" aria-hidden="true" />
+                        サンプル
+                      </span>
+                    </div>
+                    <div className="settings-transcription-preview-list">
+                      <div className="settings-transcription-preview-line">
+                        <span className="settings-transcription-preview-time">00:12</span>
+                        <span className="settings-transcription-preview-speaker settings-transcription-preview-speaker-self">
+                          自分
+                        </span>
+                        <span className="settings-transcription-preview-body">
+                          FY26 OKRのドラフトを擦り合わせよう。
+                        </span>
+                      </div>
+                      <div className="settings-transcription-preview-line">
+                        <span className="settings-transcription-preview-time">00:18</span>
+                        <span className="settings-transcription-preview-speaker">
+                          相手
+                        </span>
+                        <span className="settings-transcription-preview-body">
+                          了解です。meet-jerkyの文字起こしで正確に記録されます。
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeCategory === "audio" && (

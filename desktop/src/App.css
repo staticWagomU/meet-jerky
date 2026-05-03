@@ -3225,6 +3225,10 @@ body[data-window="ring-light"] .overlay-window {
   grid-template-columns: minmax(0, 348px) minmax(0, 1fr);
 }
 
+.settings-readonly-grid-transcription {
+  grid-template-columns: minmax(0, 348px) minmax(0, 1fr);
+}
+
 .settings-general-audio-card {
   gap: 12px;
 }
@@ -3319,6 +3323,159 @@ body[data-window="ring-light"] .overlay-window {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+.settings-transcription-engine-card,
+.settings-transcription-language-card {
+  gap: 12px;
+}
+
+.settings-transcription-engine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-transcription-engine-list .settings-radio-label {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: 0.55rem;
+  row-gap: 0.12rem;
+  align-items: start;
+  padding: 8px 10px;
+  border: 1px solid #ececee;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.settings-transcription-engine-list .settings-radio-label:has(input:checked) {
+  background-color: #fff7ed;
+  border-color: #ffd9b8;
+}
+
+.settings-transcription-engine-list .settings-radio-label input {
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin: 0.18rem 0 0;
+}
+
+.settings-transcription-engine-list .settings-radio-label > span:first-of-type {
+  grid-column: 2;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.settings-transcription-engine-list .settings-note {
+  grid-column: 2;
+  margin-left: 0;
+}
+
+.settings-transcription-language-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.settings-transcription-language-label {
+  flex: 0 0 auto;
+  min-width: 4.5rem;
+  color: #666;
+  font-family: "Funnel Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.settings-transcription-language-select {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+.settings-transcription-glossary-label {
+  color: #1a1a1a;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.settings-transcription-output-card {
+  gap: 10px;
+}
+
+.settings-transcription-preview-card {
+  gap: 10px;
+}
+
+.settings-transcription-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-transcription-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.settings-transcription-preview-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.settings-transcription-preview-time {
+  flex: 0 0 auto;
+  color: #666;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.settings-transcription-preview-speaker {
+  flex: 0 0 auto;
+  color: #666;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.settings-transcription-preview-speaker-self {
+  color: #b83b00;
+}
+
+.settings-transcription-preview-body {
+  min-width: 0;
+  color: #1a1a1a;
+  font-family: "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-size: 11px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .settings-detection-card,

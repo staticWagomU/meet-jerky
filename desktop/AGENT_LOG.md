@@ -14287,3 +14287,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。必要なら Pencil の general overview と実機を再比較する。
+
+### Transcription layout: split into Pencil-style columns
+
+- 開始日時: 2026-05-03 15:52:38 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4d - Settings Transcription` の 2 カラム構成を再確認し、左に文字起こしエンジンと言語、右に出力とライブプレビューを寄せる。既存の engine / API key / Whisper / language ロジックは壊さない。
+- 結果: transcription を 2 カラム構成へ再編し、左にエンジン・単語登録・言語、右に出力とライブプレビューを配置した。既存の API key 条件表示と Whisper モデル設定は維持した。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` が成功した。Rust 全体テストはこの環境で `cmake` が見つからないため `whisper-rs-sys` を skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。必要なら Pencil の transcription と実機を再比較する。
