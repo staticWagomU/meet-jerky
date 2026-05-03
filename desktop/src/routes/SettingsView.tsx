@@ -1228,7 +1228,12 @@ export function SettingsView() {
                       </div>
                       <div className="settings-permission-row">
                         <span className="settings-permission-label">ディスク使用量</span>
-                        <span className="settings-permission-badge">
+                        <span
+                          className="settings-privacy-storage-badge"
+                          role="status"
+                          aria-label="ディスク使用量: 3.4 GB・47セッション"
+                          title="ディスク使用量: 3.4 GB・47セッション"
+                        >
                           3.4 GB・47セッション
                         </span>
                       </div>
