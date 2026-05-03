@@ -433,7 +433,7 @@ export function MeetingDetectedBanner() {
                 <Captions
                   className="meeting-detected-start-icon"
                   aria-hidden="true"
-                  size={14}
+                  size={15}
                   strokeWidth={2.4}
                 />
                 {pendingAction === "start" ? "開始要求中..." : "開始"}
