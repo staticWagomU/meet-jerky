@@ -14886,3 +14886,35 @@
 - 依存関係追加の有無と理由: なし (std::sync::atomic::AtomicU64 は std)
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット。
+
+### [SESSION SUMMARY @ 2026-05-04 06:30 JST] mjc-main (旧 mjc-main-20260504-1) 状況メモ
+
+- Active main: mjc-main (Claude Code, opus)。watchdog は mjc-watchdog で interval=180s/cooldown=300s で稼働。
+- 旧 mjc-main は context 108% で stuck していたため、watchdog/harness 経由で `mjc-main-20260504-1` が canonical 名 `mjc-main` へ rename 済み (commit 681317a 経由)。
+- このセッションで完了した 4 ループ:
+  1. `004f3e6` feat(audio): マイクのリングバッファ満杯で破棄したサンプル数を可視化 (commit 7cfb97c の system_audio.rs と対称な実装)
+  2. `2a03fe4` refactor(elevenlabs_realtime): ws_task::run の引数を RunParams 構造体に集約
+  3. `0465834` refactor(openai_realtime): ws_task::run の引数を RunParams 構造体に集約し clippy 警告ゼロ達成
+  4. `5b11672` feat(app_detection): ブラウザ URL 取得失敗時の診断ログを 60 秒スロットリングで出力
+- 主な成果:
+  - **clippy 警告ゼロ達成** (too_many_arguments × 2 を解消)
+  - **録音状態の透明性向上** (audio.rs / system_audio.rs / app_detection.rs に診断 eprintln!)
+  - cargo test 206 passing 維持
+- Codex 直近の作業領域 (衝突避ける): `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `src/components/TranscriptDisplay.tsx`。Pencil 寄せ系の細かい UI 調整。
+- 今セッションでの研究結果: app_detection.rs 候補 1 (Teams ブラウザ版タイトル fallback) は **既存設計と衝突** (Teams はデスクトップアプリ専用検知が方針、L1352 test が明示的に reject)。研究担当が見落とした点。
+- 次ループ候補 (優先順位):
+  - **F. WATCHED_BUNDLE_IDS に Cisco Webex 等の追加検証** (要 Bundle ID 実機確認、規模 S)
+  - **G. system_audio/audio drop メトリクスを Tauri イベント化** (codex の UI 変更と要調整、規模 M)
+  - **H. 検知ループ周期可視化** (callback timestamp ログ、規模 M)
+  - **I. handle_browser_url_detection の url 非空 / window_title 空ケースの診断** (今回の補完、規模 S)
+  - **J. session_store の `out.sort_by_key(...)` を逆順以外もチェック** (clippy clean ですでに解消済みの可能性大)
+- 既知の制約:
+  - cmake あり → cargo test 206 件走る (verify.sh OK)
+  - 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁)
+  - `--no-verify` 禁止
+  - メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+  - 1 ループ目標 15 分 / 実績平均 ~22 分 (worker 出力 buffer 待ちで数分かかるため)
+- 残 clippy 警告: ゼロ ✓
+- ユーザー直伝指示 (未消化): なし。watchdog 継続指示 1 件 (autonomous prompt に従う) は受領済み・既に従って自走中。
+- AGENT_LOG.md は ~14800 行 / 1.5MB。worker は `tail -100` 〜 `tail -200` 相当で末尾だけ参照する運用。
+- transcription.rs の残り 2 箇所の 50ms sleep (L1143/L1151) は `available == 0` のアイドル yield のため最適化対象外と確認済み。
