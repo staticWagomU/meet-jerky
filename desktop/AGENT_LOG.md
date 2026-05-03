@@ -16573,3 +16573,114 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~08:55 JST] mjc-main-20260504-6 状況メモ (ループ 1-5 詳細)
+
+### 本セッション (mjc-main-20260504-6) の累積実績
+- **5 ループ完了** / **+25 テスト** / **5 コミット** / **平均 ~15 分/ループ** (目標達成)
+- すべてテスト追加のみ (実装変更は visibility 変更 1 行のみ in ループ 1)
+- cargo test: 315 → 340 passed (+25)
+- cargo clippy default: 警告ゼロ維持
+- cargo clippy -W uninlined_format_args: 警告ゼロ維持
+- フロントエンド build: 通過 (codex 活動ゼロ、~24 時間以上静か)
+
+### コミット履歴 (本セッション 5 件)
+1. `d002aac` test(openai_realtime): ws_task::push_error の visibility を pub(crate) に広げ prefix/suffix 文言完全一致 + zero timestamps + is_error=Some(true) 不変条件 + source/speaker passthrough + 空/multibyte message format 保持 の 5 件で elevenlabs と対称な error path 直接テスト構造を確立 (315→320 passed)
+2. `b29818a` test(cloud_whisper): build_whisper_api_url の空 base_url / "/" のみ / 多重 trailing slash 全削除 (trim_end_matches 連続 char 削除挙動) と build_whisper_authorization_header の空 api_key / 前後 whitespace 込み / multibyte api_key の no-trim/no-validation 現挙動 の 5 件で URL/api_key バリデーションを上位層に委ねる責任境界を契約として固定 (320→325 passed)
+3. `50497d7` test(audio): calculate_rms_from_sum の NaN sum (is_nan() 防御コード保護) / +Inf sum (NaN との非対称な responsibility = NaN→0.0 vs +Inf→1.0 を明示) / sum=4 count=16 の sqrt 中間値精度 (eps 1e-6) / count=1 単一サンプル境界 / clamp 上限 1.0 ジャスト の 5 件で UI レベルメーター駆動の核心 fn を直接テストで保護 (325→330 passed)
+4. `775d396` test(elevenlabs_realtime): ws_task::push_error 直接テスト 5 件 (prefix/suffix 文言完全一致 "[ElevenLabs Realtime エラー: "/"]" + zero timestamps + is_error=Some(true) + source/speaker passthrough + 空/multibyte message format 保持) を inner mod pending_timeout_tests に追加し openai_realtime と完全対称な error path 直接テスト構造を確立 (330→335 passed)
+5. `4e8ed85` test(system_audio): read_f32_ne の bit-pattern 直接読み取り 4 件 (zero / 1.0 round-trip / NaN / -Inf で sanitize 前段の正確性保護 + from_le_bytes/from_be_bytes 誤リファクタ検知) と validate_audio_format_properties の 4 関門全 violation 入力での short-circuit 順序契約 1 件 (第 1 関門 is_float 最優先発火を文言完全一致で固定) の 5 件を追加 (335→340 passed)
+
+### 確立したパターン (本セッション)
+- **両 Realtime engine の push_error 完全対称構造** (ループ 1+4): openai と elevenlabs の `[XX Realtime エラー: {message}]` prefix 文言契約 + start_ms=0/end_ms=0/is_error=Some(true) 不変条件 + source/speaker passthrough を 5 件×2 = 10 件で対称的に保護。openai 側は visibility を `pub(crate)` 化、elevenlabs 側は inner mod (`pending_timeout_tests`) に `super::push_error` で呼ぶ visibility 維持アプローチ。
+- **「上位層責任境界の契約強制」パターン** (ループ 2): build_whisper_api_url / build_whisper_authorization_header が validation/trim を一切しない現挙動を「`""`/`"/"`/前後 whitespace/multibyte」で固定。「ここでは何もしない、上位層がチェックする」契約をテストで明示。
+- **NaN/+Inf の非対称責務分離パターン** (ループ 3): is_nan() 早期 return → 0.0 vs clamp → 1.0 の意図的な非対称を NaN/+Inf で対称ペアテストして「異常値種別ごとの最小/最大値返却」設計を契約として固定。
+- **sanitize 前段の bit-pattern 直接テストパターン** (ループ 5): defensive pipeline (read → sanitize → process) で、sanitize 後では観測不能な NaN/Inf bit-pattern の正確性を、read 段階で直接 test。`f32::NAN.to_ne_bytes()` ↔ `read_f32_ne` の round-trip を IEEE 754 仕様の保証とする。
+- **first-violation contract** (ループ 5): 複数 violation 同時入力で関門順序を文言完全一致で固定。順序入れ替えリファクタの検知装置。
+
+### 既存累積パターン (前セッションから継承)
+- private fn 直接呼び出しテスト: 関数分離リファクタへの耐性 + 防御コード存在意義の裏付け
+- エラー文言の contract enforcement: 実装と test に同じ `&'static str` を書いて UI 文言の不用意な変更を CI で検知
+- 境界値テストの「対称ペア」: 同じ境界を 2 層の責任で観測 (parser vs save wrapper など)
+- 3 層テスト構造: 共通実装 + wrapper 経由で同じ仕様を 3 視点保護
+- OS 互換 ErrorKind 契約強制: `unwrap_err().kind() == ErrorKind::NotFound` で OS 文言差異吸収
+- state machine 混在遷移テスト: guard logic 統合/分離リファクタへの耐性
+- format prefix の層内独立確認: id format `"{started_at}-{seq}"` の前半を session 側で test
+- エスケープ漏れの網羅補完: エスケープ対象 6 文字すべて個別確認
+- UI 文言一致の契約強制: 2 つの API の error 文言完全一致を `assert_eq!(a, b)` で確認
+
+### 重要な技術的注意点 (踏みやすい罠、本セッション分含む)
+- **visibility 拡大の流儀** (本セッション ループ 1 確立): openai_realtime ws_task では `pub(crate) fn float_to_pcm16` の流儀に合わせ `fn push_error` → `pub(crate) fn push_error` に統一。elevenlabs_realtime はすでに ws_task 内 inner mod があるため visibility 維持で `super::xxx` 呼び出し。**fn ごとの可視性方針は同 mod 内既存パターンに揃える**。
+- **read_f32_ne は private のまま** (本セッション ループ 5 確立): `use super::*;` 経由で同 mod 内テストから呼べる。visibility 変更は不要。
+- **trim_end_matches('/') の連続 char 削除挙動** (本セッション ループ 2): `"/v1///"` も `"/"` も末尾 slash 連続を全削除する Rust 標準ライブラリ仕様。`strip_suffix("/")` への誤リファクタを T3 で検知。
+- **`audio_utils.rs` は補強余地ほぼゼロ**: 既存 6 件で全分岐カバー (前セッション確認済み、変わらず)。
+- **`transcript.rs` は Phase 4 用 placeholder** (TODO 1 行のみ)、テスト追加対象外。
+- **`persist_if_configured` の `?` リファクタリング罠** (継承): エラーを呑み込む設計を `?` に書き換えると in-memory consistency が壊れる。test D/E が回帰検知器。
+- **session.rs の SESSION_COUNTER はグローバル**: 並列実行下で絶対値 assert 禁止、差異 assert のみ。
+- **secret_store の Keychain 実通信テスト禁止**: バリデーション層 (空判定 → `"API キーが空です"`) まで。
+- **markdown.rs `inline_markdown_text` のエスケープ対象は 6 文字 + whitespace 正規化** (継承)。
+- **cloud_whisper_errors.rs `MAX_ERROR_BODY_CHARS = 200` は char base** (前セッション ループ 1)、byte base 誤リファクタは UTF-8 panic 致命バグ。
+- **chrono の `FixedOffset::east_opt(0)` と `west_opt(0)` は同等** (前セッション)、leap second 非対応。
+- **Teams ブラウザ版タイトル fallback は引き続き禁止** (既存方針)。
+- **`validate_audio_format_properties` は cfg なし**: 同ファイルの `validate_audio_format_description` のみ macOS gate。
+- **wrapper fn (sanitize_sample / sanitize_pcm_sample) は削除しない**: 前セッションで意図的に残した。
+
+### 次ループ候補 (優先順位順)
+
+#### Q. transcription.rs の追加 error path (規模 S〜M、引き継ぎ済み候補 W から改名)
+- 既存 37 件 (file size 1896 行)。`load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺、AppleSpeech / OpenAIRealtime / ElevenLabsRealtime のエラーパス。
+- 実環境依存性高い fn を避ければ 5-7 件補完可能。要 worker 内で確認。
+
+#### R. session_commands.rs (規模 S, 13 件既存、399 行)
+- tauri command 層、UI と直接関わる。command 引数バリデーション層が直接テストで補強できる可能性。要事前確認。
+
+#### S. settings.rs error path (規模 M、Tidy First リファクタ要、引き継ぎ済み候補 P)
+- `load()` / `save()` は `Self::config_path()` を直接呼ぶため path 注入できる API が無い。
+- `load_from_path` 抽出 (1 ループ) + テスト追加 (1 ループ) の 2 ループ構成必要。価値中。
+
+#### T. session_manager.rs / session_store.rs の追加 (規模 XS〜S)
+- 既存 16/25 件で前セッションで補強済み。残り gap は cross-fn invariant や error path の 2-3 件程度の可能性。価値低中。
+
+#### F (継承候補): drop メトリクスを Tauri イベント化 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: rust 側に payload struct + emit のみ追加 (frontend hookup なし) で 1 ループ完了させる。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。
+
+#### G' (継承候補): 会議終了検知の遅延監視 (規模 S〜M)
+- handle_detection 内で watched bundle が起動 → アクティブから外れた経過時間を測り、N 分以上アクティブ無しなら会議終了通知を出すロジック。
+
+#### K (継承候補): clippy::pedantic の選択的有効化 (規模 L、非優先)。
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 340 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+### ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>`
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>`
+- watchdog: `mjc-watchdog` 既に走行中、interval=180s, nudge_cooldown=300s
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh <successor> mjc-main`
+
+### コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~15 分/loop (5 ループ全テストのみで安定)。
+- worker prompt は **5 セクション構造** (背景/Why、具体的 test 案 assertion レベル、実装上の注意、検証手順、AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい (本セッション 5/5 完走実績)。
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション。
+- ハンドオフは `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt → `scripts/claude-agent-handoff-main.sh` 起動 → `scripts/agent-adopt-main.sh` で canonical 移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残すことで watchdog 自動 /clear 復活時も状況復元可能。
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は受領済み・自走中で消化済み (本セッション中 2 回受領、全て予定通り改善ループに進行)。
+
+### 後続メイン候補名
+- `mjc-main-20260504-7`
