@@ -4,7 +4,7 @@
 //! ビデオは不要だが、ScreenCaptureKit のフィルタにはディスプレイが必要。
 
 #[cfg(target_os = "macos")]
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 #[cfg(target_os = "macos")]
 use std::sync::{Arc, Once};
 #[cfg(target_os = "macos")]
@@ -149,6 +149,8 @@ pub struct ScreenCaptureKitCapture {
     running: Arc<AtomicBool>,
     stream: Option<SCStream>,
     level_thread: Option<std::thread::JoinHandle<()>>,
+    // transcription loop が遅延した時のリングバッファ満杯発生を可視化するためのカウンタ
+    dropped_samples: Arc<AtomicUsize>,
 }
 
 #[cfg(target_os = "macos")]
@@ -164,6 +166,7 @@ impl ScreenCaptureKitCapture {
             running: Arc::new(AtomicBool::new(false)),
             stream: None,
             level_thread: None,
+            dropped_samples: Arc::new(AtomicUsize::new(0)),
         }
     }
 }
@@ -233,6 +236,9 @@ impl AudioCapture for ScreenCaptureKitCapture {
         self.running = Arc::clone(&running);
         self.consumer = Some(consumer);
 
+        let dropped_samples = Arc::new(AtomicUsize::new(0));
+        self.dropped_samples = Arc::clone(&dropped_samples);
+
         // SCStream を作成
         let mut stream = SCStream::new(&filter, &config);
 
@@ -240,6 +246,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
         let app_handle_for_warning = app_handle.clone();
         let level_for_callback = Arc::clone(&level);
         let producer_for_callback = Arc::clone(&producer);
+        let dropped_for_callback = Arc::clone(&dropped_samples);
 
         stream.add_output_handler(
             move |sample: CMSampleBuffer, of_type: SCStreamOutputType| {
@@ -288,8 +295,14 @@ impl AudioCapture for ScreenCaptureKitCapture {
 
                 // リングバッファにサンプルを書き込む
                 if let Some(mut guard) = producer_for_callback.try_lock() {
+                    let mut dropped = 0usize;
                     for &sample in &mono_samples {
-                        let _ = guard.try_push(sample);
+                        if guard.try_push(sample).is_err() {
+                            dropped += 1;
+                        }
+                    }
+                    if dropped > 0 {
+                        dropped_for_callback.fetch_add(dropped, Ordering::Relaxed);
                     }
                 }
             },
@@ -306,6 +319,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
         // バックグラウンドスレッドで audio-level イベントを送信
         let level_for_emitter = Arc::clone(&level);
         let running_for_emitter = Arc::clone(&running);
+        let dropped_for_emitter = Arc::clone(&dropped_samples);
         let handle = std::thread::spawn(move || {
             while running_for_emitter.load(Ordering::SeqCst) {
                 let bits = level_for_emitter.load(Ordering::Relaxed);
@@ -314,6 +328,13 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     "audio-level",
                     json!({ "level": level_value, "source": "system_audio" }),
                 );
+                let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
+                if dropped > 0 {
+                    eprintln!(
+                        "[system_audio] リングバッファ満杯で {} sample を破棄しました",
+                        dropped
+                    );
+                }
                 std::thread::sleep(Duration::from_millis(100));
             }
         });

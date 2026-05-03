@@ -14777,3 +14777,41 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット
+
+### [SESSION SUMMARY @ 2026-05-04 04:55 JST] mjc-main 状況メモ
+
+- Active main: mjc-main (Claude Code, opus)。watchdog は mjc-watchdog で interval=180s/cooldown=300s で稼働。
+- 完了済 4 ループ:
+  1. `653e280` chore(harness): autonomous prompt と verify/watchdog のハーネス改善を反映
+  2. `f0b5913` fix(transcription): リアルタイム文字起こしループの末尾 sleep を 50ms→5ms に短縮
+  3. `fbb0b43` chore(rust): clippy --fix で機械的な lint 警告を 6 件解消
+  4. `41f1626` chore(rust): session_store の降順ソートを sort_by_key + Reverse に置換
+- Codex 直近の作業領域 (衝突避ける): `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `src/components/TranscriptDisplay.tsx`。Pencil 寄せ系の細かい UI 調整を連発している。
+- 次ループ候補 (優先順位):
+  - A. **system_audio.rs の try_push drop メトリクス** (1 ファイル / ~20 行、優先度中、debug 可視化向上)
+  - B. **audio.rs (マイク側) の同等 try_push drop メトリクス** (B は A 後に同パターンで)
+  - C. **elevenlabs_realtime/openai_realtime の too_many_arguments → 構造体化** (規模中、リファクタ系)
+  - D. **app_detection.rs の検知信頼性深掘り** (大規模、要研究担当)
+  - E. **transcription.rs のホットパス追加調査** (中規模、低レイヤ)
+- 既知の制約:
+  - cmake あり → cargo test 206 件走る (verify.sh OK)
+  - 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁)
+  - `--no-verify` 禁止
+  - メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+- 残 clippy 警告: `too_many_arguments` × 2 のみ (elevenlabs_realtime / openai_realtime, 引数構造体化が必要)
+- ユーザー直伝指示 (未消化): なし。起動 prompt (docs/autonomous-main-prompt-claude.md) のみ。
+- AGENT_LOG.md は 14753 行 / 1.5MB。worker は `tail -100` 相当で末尾だけ参照する運用。
+
+### system_audio: ringbuf 満杯時の drop sample 数を可視化
+
+- 開始日時: 2026-05-04 05:25 JST
+- 担当セッション: mjc-worker-sysaudio-drop-metric-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/system_audio.rs (ScreenCaptureKitCapture), AGENT_LOG.md
+- 指示内容: SCStream callback の try_push 失敗を AtomicUsize で計測し、level emitter スレッドの 100ms 周期で eprintln! 警告を出す。
+- 結果: `ScreenCaptureKitCapture` 構造体に `dropped_samples: Arc<AtomicUsize>` を追加。`start()` でライブ Arc を生成し callback 用・emitter 用に clone。callback 内の `try_push` を drop カウント付きに書き換え、level emitter ループの sleep 直前に `swap(0)` してゼロでなければ eprintln! で報告するロジックを追加した。変更は +22/-3 行。
+- 変更ファイル: src-tauri/src/system_audio.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功、cargo test 206 passed / 0 failed、cargo clippy (-A too_many_arguments) 警告ゼロ。
+- 依存関係追加の有無と理由: なし (std::sync::atomic::AtomicUsize は std)
+- 失敗理由: なし (初回 fmt --check で eprintln! が行長超過 → 複数行に分割して再実行、2 回目で全パス)
+- 次アクション: メインが diff レビューしてコミット。次ループは audio.rs (マイク側) に同パターンを適用予定。
