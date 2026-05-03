@@ -14203,3 +14203,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: privacy の 2 カラム構成が Pencil の実値に近いか、必要なら実機で一度だけ確認する。
+
+### AI Minutes card padding: match Pencil left/right card density
+
+- 開始日時: 2026-05-03 13:48:02 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4e - Settings AI Minutes` の left/right card padding 差を確認し、AI Minutes の provider/template cards を 16px / 12px、runs card を 14px / 10px に寄せる。文言、ロジック、他カテゴリ、privacy は変更しない。
+- 結果: `settings-readonly-grid-ai-minutes` に column 依存の padding/gap を追加し、AI Minutes の left column と right column の余白を Pencil に近づけた。文言、ロジック、他カテゴリ、privacy は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。

@@ -3224,6 +3224,20 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
 }
 
+.settings-readonly-grid-ai-minutes
+  > .settings-readonly-column:first-child
+  > .settings-readonly-card {
+  padding: 16px;
+  gap: 12px;
+}
+
+.settings-readonly-grid-ai-minutes
+  > .settings-readonly-column:last-child
+  > .settings-readonly-card {
+  padding: 14px;
+  gap: 10px;
+}
+
 .settings-warning {
   font-size: 0.75rem;
   color: #d33;
