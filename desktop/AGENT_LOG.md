@@ -15110,3 +15110,42 @@
 - 失敗理由: なし (fmt 指摘のみ、多行展開で即解消)
 - 残リスク: whitespace-only rest と改行含み rest が Some を返す現仕様はドキュメント化されていないため、将来の実装変更で test 6/7 が先行して失敗する可能性あり (意図的な仕様変更の早期検知になるため許容)
 - 次アクション: メインが diff レビューしてコミット
+
+### [SESSION SUMMARY @ 2026-05-04 ~07:50 JST] mjc-main (旧 mjc-main-20260504-2) 状況メモ
+
+- Active main: mjc-main (Claude Code, opus, canonical 名は 2026-05-04 ~07:15 JST に mjc-main-20260504-2 → mjc-main へ adopt-main で移譲済み)。watchdog は mjc-watchdog で interval=180s/cooldown=300s で稼働継続。
+- このセッションで完了した 5 ループ + 1 SESSION SUMMARY コミット:
+  1. `a7afae3` feat(app_detection): browser_url_callback の発火間隔停滞を 60 秒スロットリングで警告 (純粋関数 `should_warn_polling_stall` + 4 unit tests)
+  2. `ab85893` test(app_detection): classify_meeting_url の境界仕様 8 種類 (28 assertion) 追加
+  3. `77127ee` test(session): session_store / session_manager のディスク IO エラーパステスト 5 件追加 (クラッシュ耐性の不変条件を裏付け)
+  4. `9e61858` chore(rust): clippy uninlined_format_args 11 件をテストコードでも Rust 2021 慣用形に統一
+  5. `36cabf3` test(app_detection): classify_meeting_window_title の境界仕様 7 種類 (23 assertion) 追加
+- 累積成果:
+  - **テスト 206 → 230 passed** (+24 関数 / +84 assertion 程度)
+  - **clippy 警告ゼロ維持** (default lints)
+  - **uninlined_format_args 警告ゼロ達成** (production 4 + tests 11 全部統一)
+  - cargo fmt --check 通過、cargo test 全合格
+- Codex 直近の作業領域 (衝突避ける): `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `src/components/TranscriptDisplay.tsx`。Pencil 寄せ系の細かい UI 調整。本セッション中は codex 側の活動なし (handoff 後 ~80 分は静か)。
+- 今セッションでの判断履歴と注意点:
+  - **候補 H (handle_browser_url_detection の片方空ケース診断) は冗長と判定して却下**: url 空 / title 非空 (および逆) は実は正常パスで、片方の classifier が Some を返せば機能する。両方 None の場合も「watched ブラウザに会議が無い」だけで失敗ではない。
+  - **候補 F (drop メトリクスを Tauri イベント化) は最小スライス困難で保留**: AppHandle を audio.rs / system_audio.rs の callback / thread に渡す wiring が 1 ループに収まらない (規模 M)。後続セッションで AppHandle 引き渡し設計を先に検討してから実装するのが安全。
+  - **persist_if_configured の `?` リファクタリング罠**: ループ 3 で worker が指摘した重要な観点。エラーを呑み込む設計を `?` に書き換えると in-memory consistency が壊れる。今回追加した test D/E (`append_keeps_segment_in_memory_when_output_dir_does_not_exist` / `finalize_returns_session_when_output_dir_does_not_exist`) が回帰検知器として機能する。
+  - **classify_meeting_window_title の whitespace-only rest 仕様**: ループ 5 の test 6/7 で確認した「`Meet -  ` (rest = whitespace のみ) は Some を返す」現挙動は docstring 未記載。将来 `trim()` を加えると test 6/7 が先行失敗する設計。
+  - **Teams ブラウザ版タイトル fallback は引き続き禁止** (前セッションからの引き継ぎ事項): L1419-1426 の test `classify_meeting_window_title_rejects_teams_excluded` が明示的に reject し、関数 doc にも「Teams はデスクトップアプリ経由で検知する方針」と記載。逆らうと衝突する。
+- 次ループ候補 (優先順位順):
+  - **L. session_commands.rs の他のエラーパステスト追加** (規模 S, テストのみ)。`finalize_and_save_session_inner` の dir 不在ケース、permission 不足ケースなど。session_store / session_manager と同パターンで容易。
+  - **M. transcription.rs / system_audio.rs / audio.rs の error path テスト追加** (規模 S〜M)。エンジン未読時の `ensure_engine_*` 等で error path 多数あり。
+  - **F (引き継ぎ済み候補の再評価): drop メトリクス Tauri イベント化** (規模 M)。最小スライスとして「rust 側に payload struct + emit のみ追加 (frontend hookup なし)」で 1 ループ目を完了させ、frontend は次ループ。AppHandle の thread-safe な渡し方を先に研究担当 (haiku) で確認。
+  - **G (引き継ぎ済み候補): detection_callback の周期可視化** (規模 S, ただし detection_callback は NSWorkspace の switch event 駆動なので「発火間隔監視」は意味なし。代わりに「会議終了検知の遅延監視」など別観点へ振り直しが必要)。
+  - **N. session_store の parse_session_started_at_secs の追加 edge case test** (規模 XS, leading zeros / hex prefix / overflow など)。
+  - **K (引き継ぎ済み候補): clippy::pedantic の選択的有効化** (規模 L のままで非優先)。
+- 既知の制約 (再掲):
+  - cmake あり → cargo test 230 件全 pass する (verify.sh OK)
+  - 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁)
+  - `--no-verify` 禁止
+  - メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+  - 1 ループ目標 15 分 / 本セッション実績平均 ~16 分 (テストのみのループは ~10 分、実装込みは ~13 分、worker 起動コスト常に ~2-3 分)
+- AGENT_LOG.md は ~15100 行 / 1.5MB+。worker は `tail -300 AGENT_LOG.md` 相当で末尾だけ参照する運用。
+- ユーザー直伝指示 (未消化): なし。watchdog 継続指示 2 件 (autonomous prompt に従う) は受領済み・既に従って 5 ループ完了済み。
+- このセッションで終始衝突なし: codex 側 (UI), Claude 側 (Rust) の住み分けが効いている。
+- 後続メイン候補名: `mjc-main-20260504-3` (本セッションの数字 +1)。
