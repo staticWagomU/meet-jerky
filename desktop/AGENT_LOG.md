@@ -14149,3 +14149,21 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: AI Minutes の 3 枚カードが Pencil のカード密度と自然に揃うか、必要なら実機または画面確認で見る。
+
+### AI Minutes layout: align columns with Pencil Mock 4e - Settings AI Minutes
+
+- 開始日時: 2026-05-03 13:10:46 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4e - Settings AI Minutes` の 2 カラム構成を再確認し、AI Minutes の 3 枚カードを左右 2 カラムへ寄せる。カード本文、意味、見出し、他カテゴリ、Pencil ファイルは変更しない。コミットは禁止。
+- 結果: AI Minutes を 2 カラム grid に変更し、provider / template を左、runs を右へ寄せた。カード本文、意味、見出し、他カテゴリは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果:
+  1. `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: AI Minutes の 2 カラム配置が Pencil の左右バランスに収まるか、必要なら実機または画面確認で見る。
