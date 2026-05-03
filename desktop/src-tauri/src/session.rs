@@ -105,4 +105,79 @@ mod tests {
         assert_eq!(session.segments[1].timestamp_offset_secs, 12);
         assert_eq!(session.segments[1].text, "world");
     }
+
+    #[test]
+    fn start_assigns_unique_ids_across_consecutive_calls() {
+        let s1 = Session::start("title".into(), 9000000000);
+        let s2 = Session::start("title".into(), 9000000000);
+        let s3 = Session::start("title".into(), 9000000000);
+
+        assert_ne!(s1.id, s2.id, "連続生成した id は衝突しない契約");
+        assert_ne!(s2.id, s3.id, "連続生成した id は衝突しない契約");
+        assert_ne!(s1.id, s3.id, "連続生成した id は衝突しない契約");
+    }
+
+    #[test]
+    fn start_id_starts_with_started_at_prefix_and_hyphen() {
+        let session = Session::start("title".into(), 1700000000);
+
+        assert!(
+            session.id.starts_with("1700000000-"),
+            "id は started_at で始まる契約 (session_store の parse_session_started_at_secs の前提): got {}",
+            session.id
+        );
+        assert!(
+            session.id.contains('-'),
+            "id に '-' が含まれる契約: got {}",
+            session.id
+        );
+    }
+
+    #[test]
+    fn append_segment_after_finalize_records_post_finalize_segment() {
+        let mut session = Session::start("title".into(), 1000);
+        session.append_segment("pre-finalize-speaker".into(), 5, "before".into());
+        session.finalize(1300);
+        session.append_segment("post-finalize-speaker".into(), 10, "after".into());
+
+        assert!(session.is_finalized(), "finalize 後の状態は変わらない");
+        assert_eq!(
+            session.segments.len(),
+            2,
+            "finalize 後の append も segments に push される"
+        );
+        assert_eq!(
+            session.segments[1].speaker, "post-finalize-speaker",
+            "finalize 後の append が確実に push される契約"
+        );
+    }
+
+    #[test]
+    fn finalize_called_twice_overwrites_ended_at_with_latest_value() {
+        let mut session = Session::start("title".into(), 1000);
+
+        session.finalize(1300);
+        assert_eq!(
+            session.ended_at,
+            Some(1300),
+            "1 回目 finalize 後の ended_at"
+        );
+        assert_eq!(
+            session.duration_secs(),
+            Some(300),
+            "1 回目 finalize 後の duration_secs"
+        );
+
+        session.finalize(1500);
+        assert_eq!(
+            session.ended_at,
+            Some(1500),
+            "2 回目 finalize で後勝ち上書き"
+        );
+        assert_eq!(
+            session.duration_secs(),
+            Some(500),
+            "2 回目 finalize 後の duration_secs"
+        );
+    }
 }

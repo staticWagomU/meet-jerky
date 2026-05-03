@@ -15769,3 +15769,59 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### session.rs の id format 契約・counter 一意性・finalize 後仕様を 4 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 07:21 JST
+- **担当セッション**: `mjc-worker-session-tests-20260504-1`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/session.rs` の `mod tests` 末尾への `#[test]` 関数 4 件追加のみ
+
+#### 指示内容 (要約)
+`session.rs` は既存テスト 4 件のみで、**id format 契約** (session_store の parse_session_started_at_secs の前提) と **counter 一意性** (履歴ファイル名衝突回避の根幹) が未確認だった。また `finalize` 後の append 可否・`finalize` 冪等性の現状仕様も test で固定する必要があった。以下 4 件を追加。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| A | `start_assigns_unique_ids_across_consecutive_calls` | 3 | 同じ started_at で 3 回連続 start → 3 id がすべて異なる (counter 単調増加保証) |
+| B | `start_id_starts_with_started_at_prefix_and_hyphen` | 2 | id が `"1700000000-"` で始まる + `'-'` を含む (format 契約の二重確認) |
+| C | `append_segment_after_finalize_records_post_finalize_segment` | 3 | start → append(1) → finalize → append(1) → `is_finalized()==true`, `len()==2`, `segments[1].speaker=="post-finalize-speaker"` |
+| D | `finalize_called_twice_overwrites_ended_at_with_latest_value` | 4 | 1 回目 finalize(1300): ended_at=1300/duration=300, 2 回目 finalize(1500): ended_at=1500/duration=500 (後勝ち上書き) |
+
+#### 不変条件 / 設計意図
+
+- **A**: グローバル `SESSION_COUNTER` は並列テスト環境で絶対値が不定なため、差異のみ確認。`assert_ne!` 3 ペアで衝突なし保証。履歴ファイル名衝突回避の根幹を session 側で裏付け。
+- **B**: `session_store::parse_session_started_at_secs` は id を `'-'` で split して started_at_secs を取り出す。format が `"{seq}-{started_at}"` のような順序逆転に書き換えられたら即座に検知できる回帰検知器。
+- **C**: 現状仕様 (finalize 後も append 可能) を test で固定。将来「finalize 後の append は禁止」というリファクタが入った場合に気付ける。仕様変更が必要なら test を意図的に書き換える形で議論できる。
+- **D**: 現状仕様 (finalize 冪等性なし、後勝ち) を test で固定。realtime engine が「会議終了タイミングを更新する」ような場合、最新値が反映される動作の前提。1 回目 finalize 後と 2 回目 finalize 後の両方を assert することで、上書きが確実に起きることを保証。
+
+#### 変更ファイル
+- `src-tauri/src/session.rs` (tests モジュール末尾に 4 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 初回失敗 → `cargo fmt` で自動修正後 合格 |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **281 passed** (277 → 281、追加 4 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/session.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 4 件 (assertion 計 12 件)
+- 追加後 total passed: 281
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+- `cargo fmt --check` 初回失敗: 長い `assert!` / `assert_eq!` の引数が rustfmt のラインリミットを超え、自動的に複数行展開が必要だった。`cargo fmt` 実行後に再チェックで合格。
+
+#### 残リスク
+- テスト A は `started_at = 9000000000` (将来の現実の Unix 時刻範囲内) を使用。`SESSION_COUNTER` がオーバーフローするほどのテスト実行は現実的ではないため問題なし。
+- テスト B は絶対値 `"1700000000-"` を使用するが、`started_at` パラメータとして渡した値をプレフィックスとして確認しており、実装の format 文字列変更に対して確実に検知できる。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
