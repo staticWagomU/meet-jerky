@@ -544,6 +544,89 @@ mod ws_task {
                 "既に pending > previous_len なら即 return するはず"
             );
         }
+
+        #[test]
+        fn is_scribe_error_event_returns_true_for_scribe_prefix_and_error_suffix() {
+            assert!(super::is_scribe_error_event("scribe_validation_error"));
+            assert!(super::is_scribe_error_event("scribe_audio_error"));
+            assert!(super::is_scribe_error_event(
+                "scribe_some_long_underscore_error"
+            ));
+        }
+
+        #[test]
+        fn is_scribe_error_event_returns_false_when_either_prefix_or_suffix_missing() {
+            assert!(!super::is_scribe_error_event("scribe_audio"));
+            assert!(!super::is_scribe_error_event("audio_error"));
+            assert!(!super::is_scribe_error_event(""));
+            assert!(!super::is_scribe_error_event("non_scribe_error"));
+            assert!(!super::is_scribe_error_event("SCRIBE_ERROR"));
+        }
+
+        #[test]
+        fn extract_transcript_prefers_transcript_field_over_text_field() {
+            let value = serde_json::json!({ "transcript": "hello", "text": "ignored" });
+            assert_eq!(super::extract_transcript(&value), Some("hello".to_string()));
+
+            let value = serde_json::json!({ "text": "fallback only" });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("fallback only".to_string())
+            );
+        }
+
+        #[test]
+        fn extract_transcript_falls_back_to_words_array_with_text_or_word_keys() {
+            let value = serde_json::json!({
+                "words": [{"text": "hello"}, {"word": " world"}, {"text": "!"}]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("hello world!".to_string())
+            );
+
+            let value = serde_json::json!({ "words": [] });
+            assert_eq!(super::extract_transcript(&value), Some("".to_string()));
+
+            let value = serde_json::json!({ "words": [{"unrelated": "x"}] });
+            assert_eq!(super::extract_transcript(&value), Some("".to_string()));
+        }
+
+        #[test]
+        fn extract_transcript_returns_none_when_no_relevant_field_present() {
+            let value = serde_json::json!({});
+            assert_eq!(super::extract_transcript(&value), None);
+
+            let value = serde_json::json!({ "unrelated": "x", "other": 42 });
+            assert_eq!(super::extract_transcript(&value), None);
+
+            let value = serde_json::json!({ "transcript": 123 });
+            assert_eq!(super::extract_transcript(&value), None);
+        }
+
+        #[test]
+        fn extract_error_message_traverses_three_priority_paths() {
+            let value = serde_json::json!({ "message": "top-level message", "error": "ignored" });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("top-level message".to_string())
+            );
+
+            let value = serde_json::json!({ "error": "string-error" });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("string-error".to_string())
+            );
+
+            let value = serde_json::json!({ "error": { "message": "nested" } });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("nested".to_string())
+            );
+
+            let value = serde_json::json!({});
+            assert_eq!(super::extract_error_message(&value), None);
+        }
     }
 }
 

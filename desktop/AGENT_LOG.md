@@ -16102,3 +16102,61 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### elevenlabs_realtime.rs の is_scribe_error_event・extract_transcript・extract_error_message を 6 件のテストで直接裏付け
+
+- **開始日時 (JST)**: 2026-05-04 ~15:00 JST
+- **担当セッション**: `mjc-worker-elevenlabs-realtime-tests-20260504-5-3`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task` 内 `mod pending_timeout_tests` 末尾への `#[test]` 関数追加のみ
+
+#### 指示内容 (要約)
+`ws_task` 内の 3 private fn (`is_scribe_error_event`, `extract_transcript`, `extract_error_message`) は WebSocket イベント → UI 表示の根幹であり、直接テストが存在しなかった。6 件のテストで各 fn の優先順位仕様・AND 条件・case-sensitive・None 返却契約を固定する。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| 1 | `is_scribe_error_event_returns_true_for_scribe_prefix_and_error_suffix` | 3 | AND 条件両マッチ (典型 3 パターン) |
+| 2 | `is_scribe_error_event_returns_false_when_either_prefix_or_suffix_missing` | 5 | suffix なし / prefix なし / 空文字列 / non_scribe prefix / SCRIBE_ERROR 大文字 (case-sensitive 仕様明示) |
+| 3 | `extract_transcript_prefers_transcript_field_over_text_field` | 2 | `transcript` > `text` の優先順位固定 + text-only fallback |
+| 4 | `extract_transcript_falls_back_to_words_array_with_text_or_word_keys` | 3 | words の text/word key 混在 join / 空 array → `""` / 無関係 key → `""` |
+| 5 | `extract_transcript_returns_none_when_no_relevant_field_present` | 3 | 空 object / 無関係 field のみ / transcript が number 型 (as_str() None で後続 fallback も None) |
+| 6 | `extract_error_message_traverses_three_priority_paths` | 4 | message 優先 / error:string / error.message:object / 全 field 不在 None |
+
+#### 不変条件 / 設計意図
+
+- **event filter AND 条件 + case-sensitive**: `starts_with("scribe_") && ends_with("_error")` の両端が AND で成立する必要があること、かつ case-sensitive であることを 8 ケースで固定。片方だけ変えるリファクタ (case-insensitive 化など) を即座に検知。
+- **transcript 優先順位 3 段 fallback**: `transcript` → `text` → `words[].text/.word` join の順序を型違い含む 8 assertion で明示。ElevenLabs API のレスポンス形式バリエーションが API 側で変化した場合や、実装が reordering された場合に検知。
+- **error_message 3 段 fallback**: `message` → `error:string` → `error.message:object` の 3 段を 4 assertion で網羅。`"message"` と `"error"` が共存する場合の優先順位も確認済み。
+- **words array の text/word 両 key**: `filter_map` で text key 優先・なければ word key を試みる実装を text/word 混在 array で確認。どちらも欠ける場合は空 join → `Some("")` (None ではない) の契約も固定。
+
+#### 変更ファイル
+- `src-tauri/src/elevenlabs_realtime.rs` (`mod ws_task` 内 `mod pending_timeout_tests` 末尾に 6 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (初回 diff あり → `cargo fmt` 自動修正後 pass) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **305 passed** (299 → 305、追加 6 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 6 件 (assertion 計 20 件)
+- 追加後 total passed: 305
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+- `cargo fmt --check` 初回失敗: 行長超過による自動 wrap 差分 2 件。`cargo fmt` で修正後、2 回目の `--check` は合格。他チェックは初回から合格。
+
+#### 残リスク
+- `mod pending_timeout_tests` はもともと `wait_for_pending_after_commit` のタイムアウト挙動を検証するための mod であり、今回追加した 6 件 (`is_scribe_error_event`, `extract_transcript`, `extract_error_message` の直接テスト) は意味的に mod 名と乖離する。mod を `ws_task_unit_tests` などに分離するリファクタは別ループで検討する。機能的な問題はない。
+- `serde_json::json!` をフルパスで使用 (parent module の `use serde_json::{json, Value}` は子 mod に継承されないため)。Rust 2021 edition では問題なく動作。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
