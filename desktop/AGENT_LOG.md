@@ -14815,3 +14815,18 @@
 - 依存関係追加の有無と理由: なし (std::sync::atomic::AtomicUsize は std)
 - 失敗理由: なし (初回 fmt --check で eprintln! が行長超過 → 複数行に分割して再実行、2 回目で全パス)
 - 次アクション: メインが diff レビューしてコミット。次ループは audio.rs (マイク側) に同パターンを適用予定。
+
+### コンテキスト管理アクション: 旧 mjc-main から mjc-main-20260504-1 へハンドオフ
+
+- 開始日時: 2026-05-04 05:05 JST
+- 担当セッション: mjc-main (Claude Code, opus) → mjc-main-20260504-1 (Claude Code, opus)
+- 役割: メインエージェント引き継ぎ
+- 作業範囲: docs/handoff/mjc-main-20260504-1.txt (新規作成), AGENT_LOG.md
+- 指示内容: 旧 mjc-main で 5 ループ完了 (harness, transcription 5ms, clippy autofix, sort_by_key, system_audio drop metric)。context が 60-70% 帯と推定され、判断履歴を継承して新メインに引き継ぐため予防的ハンドオフを実行。
+- 結果: docs/handoff/mjc-main-20260504-1.txt を作成 (現状サマリ・次ループ候補・検証制約・ハーネス使用法を含む)。`scripts/claude-agent-handoff-main.sh mjc-main-20260504-1 docs/handoff/mjc-main-20260504-1.txt` で後継起動。次に `scripts/agent-adopt-main.sh mjc-main-20260504-1 mjc-main` で canonical 名 `mjc-main` を移譲し、旧 mjc-main は kill されて終了する。
+- 変更ファイル: docs/handoff/mjc-main-20260504-1.txt (新規), AGENT_LOG.md
+- 検証結果: tmux list-sessions で mjc-main-20260504-1 が起動済を確認。
+- コンテキスト管理アクション: handoff (判断時の使用率推定 60-70%、引き継ぎ先 mjc-main-20260504-1)
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし
+- 次アクション: 後継メイン (mjc-main-20260504-1) が docs/autonomous-main-prompt-claude.md に従って次ループ (audio.rs マイク側 try_push drop メトリクス) から自走。
