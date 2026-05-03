@@ -14273,3 +14273,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx AGENT_LOG.md` を実行する。
+
+### General overview: match Pencil 4 - Settings Window layout
+
+- 開始日時: 2026-05-03 15:38:36 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の general overview を再確認し、出力先ディレクトリの静的ブロックを外して、会議の検出・音声トラック分離・録音の透明性の 3 カード構成へ寄せる。文言、ロジック、他カテゴリは壊さない。
+- 結果: general を 2 カラム構成へ再編し、左に会議の検出と音声トラック分離、右に録音の透明性を配置した。出力先ディレクトリ UI は general から外し、既存の settings / permission ロジックを流用して Pencil の見た目に寄せた。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` が成功した。Rust 全体テストはこの環境で `cmake` が見つからないため `whisper-rs-sys` を skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。必要なら Pencil の general overview と実機を再比較する。

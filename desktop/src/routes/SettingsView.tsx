@@ -11,6 +11,7 @@ import {
   Type,
   type LucideIcon,
 } from "lucide-react";
+import { AudioLevelMeter } from "../components/AudioLevelMeter";
 import type { AppSettings, AudioDevice, TranscriptionEngineType } from "../types";
 import { usePermissions } from "../hooks/usePermissions";
 import { toErrorMessage } from "../utils/errorMessage";
@@ -132,11 +133,8 @@ export function SettingsView() {
   const isMountedRef = useRef(true);
   const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
   const isSavingSettingsRef = useRef(false);
-  const [isSelectingOutputDirectory, setIsSelectingOutputDirectory] =
-    useState(false);
   const [activeCategory, setActiveCategory] =
     useState<SettingsCategoryKey>("general");
-  const isSelectingOutputDirectoryRef = useRef(false);
 
   const {
     data: settings,
@@ -157,16 +155,6 @@ export function SettingsView() {
   } = useQuery<AudioDevice[]>({
     queryKey: ["audioDevices"],
     queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
-  });
-
-  const {
-    data: defaultOutputDir,
-    error: defaultOutputDirError,
-    isFetching: isFetchingDefaultOutputDir,
-    refetch: refetchDefaultOutputDir,
-  } = useQuery<string>({
-    queryKey: ["defaultOutputDirectory"],
-    queryFn: () => invoke<string>("get_default_output_directory"),
   });
 
   const {
@@ -264,35 +252,6 @@ export function SettingsView() {
     }
   }, [clearToast, localSettings, updateMutation]);
 
-  const handleSelectOutputDirectory = useCallback(async () => {
-    if (isSelectingOutputDirectory || isSelectingOutputDirectoryRef.current) {
-      return;
-    }
-    isSelectingOutputDirectoryRef.current = true;
-    setIsSelectingOutputDirectory(true);
-    clearToast();
-    try {
-      const selected = await invoke<string | null>("select_output_directory");
-      if (selected) {
-        setLocalSettings((current) =>
-          current ? { ...current, outputDirectory: selected } : current,
-        );
-      }
-    } catch (e) {
-      console.error("出力先フォルダの選択に失敗しました:", e);
-      showToast(`出力先フォルダの選択に失敗しました: ${toErrorMessage(e)}`);
-    } finally {
-      isSelectingOutputDirectoryRef.current = false;
-      setIsSelectingOutputDirectory(false);
-    }
-  }, [clearToast, isSelectingOutputDirectory, showToast]);
-
-  const handleResetOutputDirectory = useCallback(() => {
-    setLocalSettings((current) =>
-      current ? { ...current, outputDirectory: null } : current,
-    );
-  }, []);
-
   if (settingsError) {
     const settingsErrorMessage = toErrorMessage(settingsError);
     const reloadSettingsLabel = isFetchingSettings
@@ -339,42 +298,6 @@ export function SettingsView() {
   }
 
   const hasChanges = JSON.stringify(localSettings) !== JSON.stringify(settings);
-  const outputDirectoryDisplayText =
-    localSettings.outputDirectory ??
-    defaultOutputDir ??
-    (isFetchingDefaultOutputDir
-      ? "取得中..."
-      : defaultOutputDirError
-        ? "取得できません"
-        : "未設定");
-  const outputDirectoryLabel = localSettings.outputDirectory
-    ? `現在の出力先ディレクトリ: ${localSettings.outputDirectory}`
-    : defaultOutputDir
-      ? `現在の出力先ディレクトリはデフォルトです: ${defaultOutputDir}`
-      : isFetchingDefaultOutputDir
-        ? "現在の出力先ディレクトリを取得中です"
-      : defaultOutputDirError
-        ? "現在の出力先ディレクトリを取得できません"
-      : "現在の出力先ディレクトリは未設定です";
-  const outputDirectoryModeLabel = localSettings.outputDirectory
-    ? "カスタム"
-    : isFetchingDefaultOutputDir
-      ? "取得中"
-    : defaultOutputDirError
-      ? "確認できません"
-    : "デフォルト";
-  const selectOutputDirectoryLabel = isSelectingOutputDirectory
-    ? "出力先ディレクトリを選択中"
-    : "今後の履歴保存に使う出力先ディレクトリを選択。既存の履歴ファイルは移動しません";
-  const resetOutputDirectoryLabel = isSelectingOutputDirectory
-    ? "出力先ディレクトリを選択中"
-    : localSettings.outputDirectory
-      ? "出力先ディレクトリ設定をデフォルトに戻す。既存の履歴ファイルは削除しません"
-    : isFetchingDefaultOutputDir
-      ? "出力先ディレクトリを取得中"
-    : defaultOutputDirError
-      ? "出力先ディレクトリを取得できないため戻せません"
-      : "出力先ディレクトリはデフォルトです";
   const whisperModelName =
     WHISPER_MODELS.find((model) => model.value === localSettings.whisperModel)
       ?.label ?? localSettings.whisperModel;
@@ -394,12 +317,6 @@ export function SettingsView() {
     : `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を再取得`;
   const languageLabel = `文字起こし言語: ${languageName}`;
   const devicesErrorMessage = devicesError ? toErrorMessage(devicesError) : "";
-  const retryDefaultOutputDirLabel = isFetchingDefaultOutputDir
-    ? "デフォルト出力先ディレクトリを取得中"
-    : "デフォルト出力先ディレクトリを再取得";
-  const defaultOutputDirErrorMessage = defaultOutputDirError
-    ? toErrorMessage(defaultOutputDirError)
-    : "";
   const permissionSettingsOpenErrorLabel = permissionSettingsOpenError
     ? `macOS 設定を開けませんでした: ${permissionSettingsOpenError}`
     : null;
@@ -453,18 +370,14 @@ export function SettingsView() {
       : ENGINE_NOTE_IDS.appleSpeech;
   const isSettingsViewBusy =
     updateMutation.isPending ||
-    isSelectingOutputDirectory ||
     isFetchingSettings ||
     isFetchingDevices ||
-    isFetchingDefaultOutputDir ||
     isCheckingPermissions;
   const settingsViewLabel = [
     "アプリ設定",
     updateMutation.isPending ? "設定を保存中" : null,
-    isSelectingOutputDirectory ? "出力先フォルダを選択中" : null,
     isFetchingSettings ? "設定を読み込み中" : null,
     isFetchingDevices ? "マイクデバイス一覧を取得中" : null,
-    isFetchingDefaultOutputDir ? "デフォルト出力先を取得中" : null,
     isCheckingPermissions ? "macOS 権限状態を確認中" : null,
     hasPermissionStatusAttention ? "権限確認が必要" : null,
     permissionSettingsOpenErrorLabel,
@@ -913,137 +826,238 @@ export function SettingsView() {
             )}
 
             {activeCategory === "general" && (
-              <>
-                <div className="settings-readonly-card">
-                  <div className="settings-detection-head">
-                    <div className="settings-detection-icon-box" aria-hidden="true">
-                      <Type size={14} strokeWidth={2} />
-                    </div>
-                    <div className="settings-detection-title-wrap">
-                      <h3 className="settings-readonly-card-title">出力とタイミング</h3>
-                      <p className="settings-detection-subtitle">
-                        通話中と通話後に文字起こしをどう扱うか
-                      </p>
-                    </div>
-                  </div>
-                  <div className="settings-permission-row">
-                    <span className="settings-permission-label">
-                      録音中はライブ字幕を表示
-                    </span>
-                    <span className="settings-permission-badge permission-manual">
-                      <span
-                        className="settings-permission-manual-dot"
-                        aria-hidden="true"
-                      />
-                      ON
-                    </span>
-                  </div>
-                  <div className="settings-permission-row">
-                    <span className="settings-permission-label">
-                      話者を分離（自分／相手）
-                    </span>
-                    <span className="settings-permission-badge permission-manual">
-                      <span
-                        className="settings-permission-manual-dot"
-                        aria-hidden="true"
-                      />
-                      ON
-                    </span>
-                  </div>
-                  <div className="settings-permission-row">
-                    <span className="settings-permission-label">
-                      停止時に文字起こしを自動保存
-                    </span>
-                    <span className="settings-permission-badge">
-                      OFF
-                    </span>
-                  </div>
-                  <div className="settings-permission-row">
-                    <span className="settings-permission-label">書き出し形式</span>
-                    <div className="settings-privacy-option-group">
-                      <span className="settings-privacy-option settings-privacy-option-active">
-                        Markdown
+              <div className="settings-readonly-grid settings-readonly-grid-detection">
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card settings-detection-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Search size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">会議の検出</h3>
+                        <p className="settings-detection-subtitle">
+                          キャプチャ前にURL・アプリ名・アクティブウィンドウ・音声状態を確認します。
+                        </p>
+                      </div>
+                      <span className="settings-detection-status">
+                        <span className="settings-detection-status-dot" aria-hidden="true" />
+                        動作中
                       </span>
-                      <span className="settings-privacy-option">VTT</span>
-                      <span className="settings-privacy-option">SRT</span>
-                      <span className="settings-privacy-option">JSON</span>
+                    </div>
+                    <div
+                      className="settings-detection-service-chips"
+                      aria-label="検出対象"
+                    >
+                      <span className="settings-detection-chip settings-detection-chip-active">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        Meet
+                      </span>
+                      <span className="settings-detection-chip settings-detection-chip-active">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        Zoom
+                      </span>
+                      <span className="settings-detection-chip settings-detection-chip-muted">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        Teams
+                      </span>
+                      <span className="settings-detection-chip settings-detection-chip-muted">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        URL
+                      </span>
+                    </div>
+                    <div className="settings-detection-auto-row">
+                      <span className="settings-detection-auto-label">
+                        会議音声を検出したら自動開始
+                      </span>
+                      <span className="settings-detection-auto-switch" aria-hidden="true">
+                        <span className="settings-detection-auto-knob" />
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="settings-readonly-card settings-detection-card settings-general-audio-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Mic size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title settings-general-audio-title">
+                          音声トラックを分離
+                        </h3>
+                        <p className="settings-detection-subtitle">
+                          自分の声と会議音声を別々に録音し、文字起こしを明瞭にします。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="settings-general-audio-grid">
+                      <div className="settings-general-audio-mini">
+                        <div className="settings-general-audio-mini-head">
+                          <div
+                            className="settings-detection-icon-box settings-detection-icon-box-small"
+                            aria-hidden="true"
+                          >
+                            <Mic size={14} strokeWidth={2} />
+                          </div>
+                          <div className="settings-general-audio-mini-title-wrap">
+                            <h4 className="settings-general-audio-mini-title">
+                              マイク入力
+                            </h4>
+                            <p className="settings-general-audio-mini-subtitle">
+                              自分の声を録音
+                            </p>
+                          </div>
+                        </div>
+                        <select
+                          aria-label="自分の声の入力デバイス"
+                          title="自分の声の入力デバイス"
+                          value={localSettings.microphoneDeviceId ?? ""}
+                          onChange={(e) =>
+                            setLocalSettings((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    microphoneDeviceId: e.target.value || null,
+                                  }
+                                : current,
+                            )
+                          }
+                          className="settings-select"
+                        >
+                          <option value="">MacBook Pro Microphone</option>
+                          {devices?.map((device) => (
+                            <option key={device.id} value={device.id}>
+                              {device.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="settings-general-audio-mini">
+                        <div className="settings-general-audio-mini-head">
+                          <div
+                            className="settings-detection-icon-box settings-detection-icon-box-small"
+                            aria-hidden="true"
+                          >
+                            <Type size={14} strokeWidth={2} />
+                          </div>
+                          <div className="settings-general-audio-mini-title-wrap">
+                            <h4 className="settings-general-audio-mini-title">
+                              システム音声
+                            </h4>
+                            <p className="settings-general-audio-mini-subtitle">
+                              ループバック: 会議アプリ
+                            </p>
+                          </div>
+                        </div>
+                        <select
+                          aria-label="会議音声のループバック設定"
+                          title="会議音声のループバック設定"
+                          defaultValue="meeting-apps"
+                          disabled
+                          className="settings-select"
+                        >
+                          <option value="meeting-apps">ループバック: 会議アプリ</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="settings-general-meter-row">
+                      <span className="settings-general-meter-label">自分</span>
+                      <div className="settings-general-meter-bar">
+                        <AudioLevelMeter level={0.74} label="自分トラックの音量" />
+                      </div>
+                    </div>
+                    <div className="settings-general-meter-row">
+                      <span className="settings-general-meter-label">相手</span>
+                      <div className="settings-general-meter-bar">
+                        <AudioLevelMeter level={0.58} label="相手側トラックの音量" />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* 出力先ディレクトリ */}
-                <div className="settings-section">
-                  <h3 className="settings-section-title">出力先ディレクトリ</h3>
-                  <div className="settings-output-dir">
-                    <div className="settings-output-summary">
-                      <span
-                        className="settings-output-mode"
-                        aria-label={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
-                        title={`出力先ディレクトリ: ${outputDirectoryModeLabel}`}
-                      >
-                        {outputDirectoryModeLabel}
-                      </span>
-                      <span
-                        className="settings-output-path"
-                        role="status"
-                        aria-live="polite"
-                        aria-atomic="true"
-                        aria-label={outputDirectoryLabel}
-                        title={outputDirectoryLabel}
-                      >
-                        {outputDirectoryDisplayText}
-                      </span>
-                    </div>
-                    {defaultOutputDirError && !localSettings.outputDirectory && (
-                      <div
-                        className="settings-inline-error"
-                        role="alert"
-                        aria-label={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
-                        title={`デフォルト出力先ディレクトリエラー: ${defaultOutputDirErrorMessage}`}
-                      >
-                        <span>
-                          デフォルト出力先の取得に失敗しました:{" "}
-                          {defaultOutputDirErrorMessage}
-                        </span>
-                        <button
-                          type="button"
-                          className="control-btn control-btn-clear"
-                          onClick={() => refetchDefaultOutputDir()}
-                          disabled={isFetchingDefaultOutputDir}
-                          aria-label={retryDefaultOutputDirLabel}
-                          title={retryDefaultOutputDirLabel}
-                        >
-                          {isFetchingDefaultOutputDir ? "取得中..." : "出力先を再取得"}
-                        </button>
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card settings-detection-log-card settings-general-transparency-card">
+                    <div className="settings-detection-log-head">
+                      <div className="settings-detection-icon-box settings-detection-icon-box-small" aria-hidden="true">
+                        <Shield size={15} strokeWidth={2.2} />
                       </div>
-                    )}
-                    <div className="settings-output-actions">
-                      <button
-                        type="button"
-                        className="control-btn control-btn-transcribe"
-                        onClick={handleSelectOutputDirectory}
-                        disabled={isSelectingOutputDirectory}
-                        aria-label={selectOutputDirectoryLabel}
-                        title={selectOutputDirectoryLabel}
-                      >
-                        {isSelectingOutputDirectory ? "選択中..." : "出力先を選択"}
-                      </button>
-                      <button
-                        type="button"
-                        className="control-btn control-btn-clear"
-                        onClick={handleResetOutputDirectory}
-                        disabled={
-                          isSelectingOutputDirectory || !localSettings.outputDirectory
-                        }
-                        aria-label={resetOutputDirectoryLabel}
-                        title={resetOutputDirectoryLabel}
-                      >
-                        デフォルトに戻す
-                      </button>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">録音の透明性</h3>
+                        <p className="settings-detection-subtitle">
+                          メニューバー・字幕ウィンドウ・履歴で録音状態を確認できます。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="settings-permissions">
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">マイク</span>
+                        <span
+                          className={`settings-permission-badge ${
+                            micPermission === "granted"
+                              ? "permission-granted"
+                              : micPermission === "denied"
+                                ? "permission-denied"
+                                : "permission-undetermined"
+                          }`}
+                        >
+                          <span
+                            className={
+                              micPermission === "granted"
+                                ? "settings-detection-status-dot"
+                                : "settings-permission-manual-dot"
+                            }
+                            aria-hidden="true"
+                          />
+                          {isCheckingPermissions
+                            ? "確認中"
+                            : micPermission === "granted"
+                              ? "許可済み"
+                              : micPermission === "denied"
+                                ? "未許可"
+                                : "未確認"}
+                        </span>
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">システム音声</span>
+                        <span
+                          className={`settings-permission-badge ${
+                            screenPermission === "granted"
+                              ? "permission-granted"
+                              : screenPermission === "denied"
+                                ? "permission-denied"
+                                : "permission-undetermined"
+                          }`}
+                        >
+                          <span
+                            className={
+                              screenPermission === "granted"
+                                ? "settings-detection-status-dot"
+                                : "settings-permission-manual-dot"
+                            }
+                            aria-hidden="true"
+                          />
+                          {isCheckingPermissions
+                            ? "確認中"
+                            : screenPermission === "granted"
+                              ? "許可済み"
+                              : screenPermission === "denied"
+                                ? "未許可"
+                                : "未確認"}
+                        </span>
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">AI議事録</span>
+                        <span className="settings-permission-badge permission-manual">
+                          <span
+                            className="settings-permission-manual-dot"
+                            aria-hidden="true"
+                          />
+                          手動
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {activeCategory === "privacy" && (
