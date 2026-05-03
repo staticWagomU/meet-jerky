@@ -15476,3 +15476,43 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### [SESSION SUMMARY @ 2026-05-04 ~10:30 JST] mjc-main (旧 mjc-main-20260504-3) 状況メモ
+
+- Active main: mjc-main (Claude Code, opus, canonical 名は 2026-05-04 ~08:30 JST に mjc-main-20260504-3 → mjc-main へ adopt-main で移譲済み)。watchdog は mjc-watchdog で interval=180s/cooldown=300s で稼働継続。
+- このセッションで完了した 5 ループ (順番):
+  1. `abdb40d` test(transcription): TranscriptionManager のモデル未ダウンロード エラーパステスト 3 件 (signature 汚染防止の不変条件) → 232 → 235 passed
+  2. `3968e5d` test(session_store): parse_session_started_at_secs の境界仕様 8 件を**直接呼び出し**で裏付け → 235 → 243 passed
+  3. `77a81da` test(session_commands): start_session_inner と finalize 経路の日本語エラー prefix 2 件 (create_dir_all/save_session_markdown 失敗時の不変条件) → 243 → 245 passed
+  4. `d312bb8` test(audio): sanitize_sample と calculate_rms_from_sum の境界仕様 9 件を直接呼び出しで裏付け (NaN/Inf/clamp/ゼロ除算/負平方和の防御コード) → 245 → 254 passed
+  5. `cdb3625` test(system_audio): sanitize_pcm_sample 直接 5 件 + validate_audio_format_properties の None 2 件 + エラー文言契約 1 件で計 9 件追加 → 254 → 263 passed
+- 累積成果:
+  - **テスト 232 → 263 passed** (+31 件、5 ループ)
+  - **clippy 警告ゼロ維持** (default lints, `-W uninlined_format_args` も継続ゼロ)
+  - cargo fmt --check 通過、cargo test 全合格
+  - **テスト追加方針の確立**: private fn の **直接呼び出しテスト**で境界仕様と防御コードの存在意義を裏付ける。間接テストとの重複を許容しつつ、関数分割リファクタリングへの耐性を獲得。
+- Codex 直近の作業領域 (衝突避ける): `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `src/components/TranscriptDisplay.tsx`。本セッション中も codex 側の活動なし (handoff 後 ~7 時間継続して静か)。
+- 今セッションでの判断履歴と注意点:
+  - **テスト追加の優先順位確立**: テストのみのループは平均 ~13 分/ループで安定稼働。worker 起動コスト ~3-4 分 + テスト実装 ~5-7 分 + 検証 ~2 分 + commit ~1 分。コミット周期目標 15 分/ループはほぼ達成。
+  - **エラー文言を test 側にも書く「contract enforcement」パターン**: ループ 5 で `validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths` を 1 件追加。実装と test に同じ `&'static str` を書くことで、ユーザー向け文言を不用意に変えると CI が落ちて気付ける契約強制。前ループで `is_err()` のみでカバーされていた既存 5 件を補強。
+  - **境界値テストの「対称ペア」**: ループ 2 (parse_session_started_at_secs) と ループ 3 (session_commands save 失敗) で、同じ境界 `MAX_JS_DATE_UNIX_SECS = 8_640_000_000_000` を **2 層の責任** (parser vs save wrapper) で観測。層の責任分離が崩れた時に両方落ちるか片方落ちるかで原因切り分けが容易に。
+  - **「audio.rs と system_audio.rs の sanitize_sample/sanitize_pcm_sample が別実装」**: 同じロジックだが別 fn として存在 (リポジトリ全体で sanitize ロジックは 2 箇所)。今後リファクタリングで共通化する余地あり (規模 S、リスクなし、候補 R)。両方に対称的なテストを追加したことで、共通化リファクタの基盤は整った。
+  - **`validate_audio_format_properties` は cfg なし**: 同ファイルの `validate_audio_format_description` のみ `#[cfg(target_os = "macos")]` ガード。test 側は cfg なしで動く。
+- 次ループ候補 (優先順位順):
+  - **R. sanitize_sample / sanitize_pcm_sample の共通化リファクタ** (規模 S, テスト基盤あり)。両ファイルから `crate::utils::sanitize_audio_sample` 等に切り出し、両側で参照。test も移転。リスク極小、価値は重複コード削減と将来の sanitize 仕様統一性。**注意**: 共通化先のクレート名/モジュール名は要設計判断 (audio_utils.rs 新規作成 or 既存 module 内追加)。
+  - **O. session_manager.rs の他の error path テスト追加** (規模 S, テストのみ)。既存 6 件 + 前ループ 2 件 = 8 件あるが、`start_with_output` の error path や `discard` の他の状況 (active session 中のみ) などまだ余地。
+  - **P. settings.rs の error path テスト追加** (規模 S, テストのみ)。settings 読み込み/保存の I/O 失敗、JSON 不正、フィールド欠損などのカバレッジ確認。
+  - **Q. 既存 `is_err()` テストの文言確認への補強** (規模 XS, テストのみ)。ループ 5 の H パターンを transcription.rs / session_store.rs / session_manager.rs / session_commands.rs に拡大適用。エラー文言の契約強制を全モジュールで実現。
+  - **F (引き継ぎ済み候補): drop メトリクス Tauri イベント化** (規模 M)。AppHandle 渡し方研究 → 最小スライス。前セッションから保留中。
+  - **G' (引き継ぎ済み候補): 会議終了検知の遅延監視** (規模 S〜M)。
+  - **K (引き継ぎ済み候補): clippy::pedantic の選択的有効化** (規模 L、非優先)。
+- 既知の制約 (再掲):
+  - cmake あり → cargo test 263 件全 pass する (verify.sh OK)
+  - 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁)
+  - `--no-verify` 禁止
+  - メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+  - 1 ループ目標 15 分 / 本セッション実績平均 ~13 分 (テストのみのループは ~10 分、テスト + 補助確認込みは ~15 分)
+- AGENT_LOG.md は ~15500 行 / 1.5MB+。worker は `tail -300 AGENT_LOG.md` 相当で末尾だけ参照する運用継続。
+- ユーザー直伝指示 (未消化): なし。watchdog 継続指示は受領済み・既に従って 5 ループ完了済み。
+- このセッションで終始衝突なし: codex 側 (UI), Claude 側 (Rust) の住み分けが効いている。
+- 後続メイン候補名: `mjc-main-20260504-4` (本セッションの数字 +1)。本セッションは context 余裕あれば数ループ追加可能だが、判断履歴を残したい場合は次ループ前後でハンドオフ準備すべき。
