@@ -14245,3 +14245,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` を実行する。
+
+### Detection layout: split meeting detection into Pencil-style columns
+
+- 開始日時: 2026-05-03 14:10:58 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4b - Settings Detection` の左右 2 カラム構成を再確認し、会議の検出・検出ルールを左、検出ログを右へ寄せる。文言、ロジック、他カテゴリは変えない。
+- 結果: `settings-readonly-grid-detection` を 348px 左列 + flexible 右列にし、検出サービスとルールを左、検出ログと判定理由を右へ分けた。文言、ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/routes/SettingsView.tsx`, `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` を実行する。

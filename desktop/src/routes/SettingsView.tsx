@@ -1128,14 +1128,147 @@ export function SettingsView() {
             )}
 
             {activeCategory === "detection" && (
-              <div className="settings-readonly-card">
-                <h3 className="settings-readonly-card-title">会議検知</h3>
-                <p>
-                  現在はブラウザ URL、会議アプリ、アクティブアプリの検知に対応しています。音声状態は現時点では会議検知の根拠として断定せず、録音可否とマイク/画面収録権限の文脈で扱います。
-                </p>
-                <p>
-                  検知ルールをユーザーが編集する UI はまだ実装していません。
-                </p>
+              <div className="settings-readonly-grid settings-readonly-grid-detection">
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card settings-detection-card">
+                    <div className="settings-detection-head">
+                      <div className="settings-detection-icon-box" aria-hidden="true">
+                        <Search size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">会議の検出</h3>
+                        <p className="settings-detection-subtitle">
+                          キャプチャ前にURL・アプリ名・アクティブウィンドウ・音声状態を確認します。
+                        </p>
+                      </div>
+                      <span className="settings-detection-status">
+                        <span className="settings-detection-status-dot" aria-hidden="true" />
+                        動作中
+                      </span>
+                    </div>
+                    <div className="settings-detection-service-chips" aria-label="検出対象">
+                      <span className="settings-detection-chip settings-detection-chip-active">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        Meet
+                      </span>
+                      <span className="settings-detection-chip settings-detection-chip-active">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        Zoom
+                      </span>
+                      <span className="settings-detection-chip settings-detection-chip-muted">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        Teams
+                      </span>
+                      <span className="settings-detection-chip settings-detection-chip-muted">
+                        <span className="settings-detection-chip-dot" aria-hidden="true" />
+                        URL
+                      </span>
+                    </div>
+                    <div className="settings-detection-auto-row">
+                      <span className="settings-detection-auto-label">
+                        会議音声を検出したら自動開始
+                      </span>
+                      <span className="settings-detection-auto-switch" aria-hidden="true">
+                        <span className="settings-detection-auto-knob" />
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="settings-readonly-card settings-detection-card">
+                    <div className="settings-detection-card-head">
+                      <div className="settings-detection-icon-box settings-detection-icon-box-small" aria-hidden="true">
+                        <Type size={14} strokeWidth={2} />
+                      </div>
+                      <h3 className="settings-readonly-card-title">検出ルール</h3>
+                    </div>
+                    <div className="settings-detection-rule-tabs" aria-label="検出ルールの種類">
+                      <span className="settings-detection-tab settings-detection-tab-active">URL</span>
+                      <span className="settings-detection-tab">アプリ</span>
+                      <span className="settings-detection-tab">ウィンドウ</span>
+                      <span className="settings-detection-tab">音声</span>
+                    </div>
+                    <div className="settings-detection-rule-list">
+                      <div className="settings-detection-rule-item settings-detection-rule-item-active">
+                        <span className="settings-detection-rule-item-icon" aria-hidden="true">
+                          <Search size={12} strokeWidth={2} />
+                        </span>
+                        <span className="settings-detection-rule-item-text">meet.google.com/*</span>
+                        <span className="settings-detection-rule-item-remove" aria-hidden="true">
+                          ×
+                        </span>
+                      </div>
+                      <div className="settings-detection-rule-item">
+                        <span className="settings-detection-rule-item-icon" aria-hidden="true">
+                          <Mic size={12} strokeWidth={2} />
+                        </span>
+                        <span className="settings-detection-rule-item-text">
+                          ループバックで音声が8秒以上継続
+                        </span>
+                        <span className="settings-detection-rule-item-remove" aria-hidden="true">
+                          ×
+                        </span>
+                      </div>
+                      <div className="settings-detection-rule-item settings-detection-rule-item-add">
+                        <span className="settings-detection-rule-item-icon" aria-hidden="true">
+                          ＋
+                        </span>
+                        <span className="settings-detection-rule-item-text">ルールを追加</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card settings-detection-log-card">
+                    <div className="settings-detection-log-head">
+                      <div className="settings-detection-icon-box settings-detection-icon-box-small" aria-hidden="true">
+                        <Search size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="settings-detection-title-wrap">
+                        <h3 className="settings-readonly-card-title">検出ログ</h3>
+                        <p className="settings-detection-subtitle">最近の候補と判定理由</p>
+                      </div>
+                      <span className="settings-detection-live-badge">
+                        <span className="settings-detection-live-dot" aria-hidden="true" />
+                        ライブ
+                      </span>
+                    </div>
+                    <div className="settings-detection-log-list">
+                      <div className="settings-detection-log-entry">
+                        <div className="settings-detection-log-entry-head">
+                          <span className="settings-detection-log-entry-dot" aria-hidden="true" />
+                          <span className="settings-detection-log-entry-title">meet.google.com URL一致</span>
+                        </div>
+                        <p>音声が14秒以上継続</p>
+                      </div>
+                      <div className="settings-detection-log-entry">
+                        <div className="settings-detection-log-entry-head">
+                          <span className="settings-detection-log-entry-dot" aria-hidden="true" />
+                          <span className="settings-detection-log-entry-title">アプリ: zoom.us がフォアグラウンド</span>
+                        </div>
+                        <p>ループバック有効</p>
+                      </div>
+                      <div className="settings-detection-log-entry">
+                        <div className="settings-detection-log-entry-head">
+                          <span className="settings-detection-log-entry-dot settings-detection-log-entry-dot-warn" aria-hidden="true" />
+                          <span className="settings-detection-log-entry-title">音声アクティビティしきい値未満</span>
+                        </div>
+                        <p>0.41 &lt; 0.82</p>
+                      </div>
+                    </div>
+                    <div className="settings-detection-reason">
+                      <div className="settings-detection-reason-head">
+                        <span className="settings-detection-reason-icon" aria-hidden="true">
+                          i
+                        </span>
+                        <span>判定の理由</span>
+                      </div>
+                      <p>
+                        直近の採用は有効な3シグナル中2件と一致しました: URLパターン+ループバックの継続音声。アプリ名シグナルは判定保留ですが減点はしていません。
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
