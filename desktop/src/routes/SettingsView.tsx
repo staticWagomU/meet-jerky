@@ -411,7 +411,7 @@ export function SettingsView() {
             <span className="settings-window-control settings-window-control-zoom" />
           </div>
           <div className="settings-titlebar-copy">
-            <h2>Meet Jerky 設定</h2>
+            <h2>設定</h2>
             <p className="settings-titlebar-subtitle">
               meet-jerkyは録音・検出・AI処理を透明に管理します。
             </p>
