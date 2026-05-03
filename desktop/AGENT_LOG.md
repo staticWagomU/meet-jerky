@@ -14005,3 +14005,21 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: 実機または画面確認で、Settings titlebar の subtitle が Pencil の `Mock 4 - Settings Window` と整合し、レイアウトへ自然に収まることを確認する。実機画面確認は未実施。
+
+### Settings permissions row labels: align with Pencil Mock 4 - Settings Window
+
+- 開始日時: 2026-05-03 10:31:26 JST
+- 担当セッション: Codex 作業担当エージェント
+- 役割: 作業担当エージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4 - Settings Window` の権限ステータスカードを再確認し、各行ラベルだけを 10px / normal の密度へ寄せる。バッジ、カード余白、行高、ロジック、文言は維持する。コミットは禁止。
+- 結果: `.settings-permission-label` を 10px / normal / `#1a1a1a` に調整し、`min-width` を外して Pencil の行ラベル密度に寄せた。バッジ、カード余白、行高、ロジック、文言は変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果:
+  1. `git diff --check -- src/App.css AGENT_LOG.md` → 成功
+  2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build` → 成功
+  3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check` → 成功
+  4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` → 成功 (`git diff --check`, `npm run build`, `cargo fmt --check` 成功。Rust 全体テストは `cmake` 不在のため skip)
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: main pane の権限カードが Pencil の 10px 行ラベルに自然に読めるか、必要なら実機または画面確認で見る。

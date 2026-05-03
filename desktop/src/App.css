@@ -3340,8 +3340,10 @@ body[data-window="ring-light"] .overlay-window {
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
-  font-weight: 500;
-  min-width: 7em;
+  color: #1a1a1a;
+  font-size: 10px;
+  font-weight: 400;
+  min-width: 0;
 }
 
 .settings-permission-track {
