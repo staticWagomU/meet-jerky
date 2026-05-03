@@ -14315,3 +14315,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: なし。必要なら Pencil の AI Minutes と実機を再比較する。
+
+### Privacy and AI Minutes grids: match Pencil column widths
+
+- 開始日時: 2026-05-03 16:30:28 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock 4e - Settings AI Minutes` と `Mock 4f - Settings Privacy` の左右カラム幅を再確認し、左列 348px / 右列 flexible の重心へ揃える。文言とロジックは触らない。
+- 結果: AI議事録とプライバシーの 2 カラム幅を Pencil 寄りの 348px 左列に揃えた。カード構造、文言、ロジックは維持した。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` が成功した。Rust 全体テストはこの環境で `cmake` が見つからないため `whisper-rs-sys` を skip した。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: なし。必要なら Pencil の AI Minutes / Privacy と実機を再比較する。

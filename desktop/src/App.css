@@ -3788,6 +3788,10 @@ body[data-window="ring-light"] .overlay-window {
   grid-template-columns: minmax(0, 348px) minmax(0, 1fr);
 }
 
+.settings-readonly-grid-privacy {
+  grid-template-columns: minmax(0, 348px) minmax(0, 1fr);
+}
+
 .settings-ai-provider-card,
 .settings-ai-template-card,
 .settings-ai-runs-card {
