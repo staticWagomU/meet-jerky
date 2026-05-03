@@ -14763,3 +14763,17 @@
 - 依存関係追加の有無と理由: なし
 - 失敗理由: なし
 - 次アクション: メインが diff レビューしてコミット
+
+### Clippy: session_store.rs の sort_by を sort_by_key + Reverse に置換
+
+- 開始日時: 2026-05-04 05:00 JST
+- 担当セッション: mjc-worker-clippy-sort-by-key-20260504-1
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/session_store.rs (line 170), AGENT_LOG.md
+- 指示内容: clippy::unnecessary_sort_by 警告の最後 1 件を、sort_by_key + std::cmp::Reverse の等価実装に置換した。
+- 結果: line 170 の `out.sort_by(|a, b| b.started_at_secs.cmp(&a.started_at_secs))` を `out.sort_by_key(|b| std::cmp::Reverse(b.started_at_secs))` に 1 行置換。意味・動作は等価 (started_at_secs 降順)。
+- 変更ファイル: src-tauri/src/session_store.rs, AGENT_LOG.md
+- 検証結果: git diff --check 成功、cargo fmt --check 成功、cargo test 206 passed / 0 failed。cargo clippy (-A too_many_arguments) 警告ゼロ (unnecessary_sort_by 消滅確認)。
+- 依存関係追加の有無と理由: なし
+- 失敗理由: なし
+- 次アクション: メインが diff レビューしてコミット

@@ -167,7 +167,7 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
             search_text,
         });
     }
-    out.sort_by(|a, b| b.started_at_secs.cmp(&a.started_at_secs));
+    out.sort_by_key(|b| std::cmp::Reverse(b.started_at_secs));
     Ok(out)
 }
 
