@@ -14525,3 +14525,17 @@
 - 依存関係追加の有無と理由: なし。
 - 失敗理由: なし。
 - 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/components/TranscriptDisplay.tsx AGENT_LOG.md` を実行する。
+
+### Caption compact pill shadow: match Pencil minimal effect
+
+- 開始日時: 2026-05-03 23:29:19 JST
+- 担当セッション: Codex main
+- 役割: メインエージェント
+- 作業範囲: `src/App.css`, `AGENT_LOG.md`
+- 指示内容: Pencil `Mock - Caption Window Variations` の `Minimal · Compact pill` に対して、`live-caption-compact-pill` の影だけが強すぎるので、白化を抑える方向で実値に寄せる。文言、ロジック、他カテゴリは変更しない。
+- 結果: `live-caption-compact-pill` の `box-shadow` を Pencil の弱い影に近い値へ下げ、コンパクト待機表示の白化感を抑えた。文言、ロジック、他カテゴリは変更していない。
+- 変更ファイル: `src/App.css`, `AGENT_LOG.md`
+- 検証結果: これから実施する。
+- 依存関係追加の有無と理由: なし。
+- 失敗理由: なし。
+- 次アクション: `git diff --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" npm run build`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`、`PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src/App.css AGENT_LOG.md` を実行する。
