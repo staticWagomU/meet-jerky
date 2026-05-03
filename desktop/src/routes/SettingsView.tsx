@@ -1497,9 +1497,13 @@ export function SettingsView() {
                           デフォルトはオフ。プロバイダーを選んでから使います。
                         </p>
                       </div>
-                      <span className="settings-detection-status">
-                        <span className="settings-detection-status-dot" aria-hidden="true" />
-                        使用中
+                      <span
+                        className="settings-detection-auto-switch"
+                        role="status"
+                        aria-label="AIプロバイダー: 有効"
+                        title="AIプロバイダー: 有効"
+                      >
+                        <span className="settings-detection-auto-knob" aria-hidden="true" />
                       </span>
                     </div>
                     <div className="settings-ai-provider-list">
