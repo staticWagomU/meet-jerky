@@ -15942,3 +15942,49 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### [SESSION SUMMARY @ 2026-05-04 ~12:30 JST] mjc-main (旧 mjc-main-20260504-4) 状況メモ
+
+- Active main: mjc-main (Claude Code, opus, canonical 名は 2026-05-04 ~11:30 JST に mjc-main-20260504-4 → mjc-main へ adopt-main で移譲済み)。watchdog は mjc-watchdog で interval=180s/cooldown=300s で稼働継続。
+- このセッションで完了した 6 ループ (順番):
+  1. `88c1f4e` test(session_store): dir 不在時 3 件 (list_session_files / list_session_summaries / save_session_markdown) を `is_err()` → `unwrap_err().kind() == ErrorKind::NotFound` 完全一致契約に補強 (OS 互換維持・型レベル不変条件強化) → 269 passed (件数変わらず、3 件補強)
+  2. `ba0ad79` test(session_manager): state machine 混在遷移 3 件 (start↔start_with_output AlreadyActive 対称テスト + start_with_output→discard→append NotActive と未書き込み契約) を追加 → 269 → 272 passed
+  3. `d423211` test(transcript_bridge): private fn `normalize_speaker` の全分岐 5 件 (None/空文字列/whitespace-only/正常/trim-only-内部空白保持) を直接呼び出しテストで裏付け → 272 → 277 passed
+  4. `53e5766` test(session): id 一意性 / id format prefix (session_store の parse_session_started_at_secs 入力契約) / finalize 後 append / finalize 後勝ち の 4 件で session 中核仕様の不変条件と現行仕様を裏付け → 277 → 281 passed
+  5. `3f6f0a9` test(markdown): private fn `inline_markdown_text` の 5 件追加で **`_` (アンダースコア) エスケープの致命的検知漏れを補完** + エスケープ対象 6 文字すべての回帰検知器確立 (空入力/whitespace-only/単一 segment 含む) → 281 → 286 passed
+  6. `0cdabc1` test(secret_store): UI 体験を保護する文言完全一致 (両 API で `"API キーが空です"` 統一) と SecretKey accounts 区別 (`assert_ne!`) + whitespace 多様性 (tab/改行) の 3 件で API キー入力バリデーションの契約強制を強化 → 286 → 289 passed
+- 累積成果:
+  - **テスト 269 → 289 passed** (+20 件、6 ループ、内訳: 補強 3 + 新規 17)
+  - **clippy 警告ゼロ維持** (default lints, `-W uninlined_format_args` も継続ゼロ)
+  - cargo fmt --check 通過、cargo test 全合格
+  - **本セッションで定着した追加パターン**:
+    1. **OS 互換 ErrorKind 契約強制** (ループ 1): `is_err()` のみだとエラー種別が pinned されない。`unwrap_err().kind() == ErrorKind::NotFound` に補強することで OS 文言差異を吸収しつつ type-level の不変条件を守る。
+    2. **state machine 混在遷移テスト** (ループ 2): 同じ guard logic を持つ複数 entry point (`start` vs `start_with_output`) について「片方が active な状態で他方を呼ぶ」遷移を直接 test することで、guard 統合/分離リファクタへの耐性を獲得。
+    3. **format prefix の層内独立確認** (ループ 4): id format `"{started_at}-{seq}"` の前半が `"{started_at}-"` で始まることを **session.rs 側で直接 test**。session_store のパーサーに依存せず、format 引数順序の入れ替えを session 側で即座に検知。
+    4. **エスケープ漏れの網羅補完** (ループ 5): 既存テスト 4 件で `_` エスケープが一度も確認されていない致命的検知漏れを補完。エスケープ対象 6 文字すべてを個別 1 文字 + escape 確認で網羅。
+    5. **UI 文言一致の契約強制** (ループ 6): 2 つの API の error 文言が完全一致 (`"API キーが空です"`) であることを `assert_eq!(a, b)` で確認 → 体験統一性の不変条件。
+- Codex 直近の作業領域 (衝突避ける): `src/App.css`, `src/components/MeetingDetectedBanner.tsx`, `src/components/TranscriptDisplay.tsx`。本セッション中も codex 側の活動なし (handoff 後 ~12 時間以上継続して静か)。
+- 今セッションでの判断履歴と注意点:
+  - **テストのみのループは安定して ~10 分/ループ**で完了。worker 起動コスト ~3-4 分 + テスト実装 ~4-5 分 + 検証 ~1 分 + commit ~1 分。コミット周期目標 15 分はほぼ達成。
+  - **候補 P (settings.rs error path) 保留**: settings.rs の `load()` / `save()` は `Self::config_path()` を直接呼ぶため、test から path 注入できる API が無い。追加するには軽量 Tidy First リファクタ (`load_from_path` 抽出) が必要 → 1 ループ 15 分目標に収まらないため後回し。
+  - **候補 Q (is_err() の文言補強) は本セッションで概ね消化**: session_store, transcript_bridge, session, markdown, secret_store でカバー。残るは transcription.rs:1877/1894 のみだが、直前の行で既に `starts_with` 文言確認済みで価値が低い。
+  - **候補 R (sanitize 共通化) は前セッション ループ 6 で完了済み** (audio_utils.rs)。
+  - **候補 O (session_manager other error path) はループ 2 で消化**。
+- 次ループ候補 (優先順位順):
+  - **V. cloud_whisper_errors.rs テスト補強** (規模 XS〜S, テストのみ)。エラー分類ロジック (401/429/server/other) のテストは既に 4 件あるが、HTTP status 境界 (399/400/499/500/999) や複合シナリオは未カバーの可能性。要 grep で確認。
+  - **W. transcription.rs の追加 error path** (規模 S〜M)。`load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺 (既存 test あり、補強余地)、AppleSpeech / OpenAIRealtime / ElevenLabsRealtime のエラーパス (実環境依存性高)。要 worker 内で確認。
+  - **X. session_commands.rs テスト補強** (規模 XS, テストのみ)。既存 8 件 + 前セッション補強済み。`list_session_summaries_inner` の他のエラー、`discard_session_inner` の他の状況など余地はあるかも。
+  - **Y. apple_speech.rs テスト補強** (規模 XS, テストのみ)。現在 3 件 (language mapping + text trim)。`request_authorization` 周辺は実環境依存だが、normalize_segment_text / language_to_locale の境界値補完は可能。
+  - **F (引き継ぎ済み候補): drop メトリクス Tauri イベント化** (規模 M)。AppHandle 渡し方研究 → 最小スライス。前セッションから保留中。
+  - **G' (引き継ぎ済み候補): 会議終了検知の遅延監視** (規模 S〜M)。
+  - **K (引き継ぎ済み候補): clippy::pedantic の選択的有効化** (規模 L、非優先)。
+- 既知の制約 (再掲):
+  - cmake あり → cargo test 289 件全 pass する (verify.sh OK)
+  - 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁)
+  - `--no-verify` 禁止
+  - Keychain 実通信禁止 (macOS 権限ダイアログ防止、test ではバリデーション層まで)
+  - メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+  - 1 ループ目標 15 分 / 本セッション実績平均 ~10.7 分/ループ
+- AGENT_LOG.md は ~15990 行 / 1.5MB+。worker は `tail -300 AGENT_LOG.md` 相当で末尾だけ参照する運用継続。
+- ユーザー直伝指示 (未消化): なし。watchdog 継続指示は受領済み・既に従って 6 ループ完了済み。
+- 後続メイン候補名: `mjc-main-20260504-5`。本セッションは context 余裕あれば数ループ追加可能だったが、判断履歴の rotate 安全性のため予防的ハンドオフを判断。
