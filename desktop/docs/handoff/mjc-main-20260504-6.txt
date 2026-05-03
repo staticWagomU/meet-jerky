@@ -1,0 +1,160 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-6) です。
+旧 mjc-main (= 旧 mjc-main-20260504-5) から 5 ループ完了の良い区切りでハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16500 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。**末尾には [SESSION SUMMARY @ 2026-05-04 ~16:00 JST] mjc-main-20260504-5 状況メモ (ループ 1-5 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~16:00 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 45 (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/`, `docs/handoff/mjc-main-20260504-6.txt` は本ハンドオフ用)
+- 旧 mjc-main-20260504-5 が canonical 名 mjc-main を持っており、本セッションで 5 ループ + 1 中間 SESSION SUMMARY コミットを完了:
+  1. `39ffa31` test(cloud_whisper_errors): 5xx 境界 (499/600) と 200 系誤呼出の safe 分類 + sanitize_error_body の whitespace 多様性 + multibyte char base 切り詰め (UTF-8 panic 検知装置) の 5 件 → 289 → 294 passed
+  2. `4662791` test(apple_speech): normalize_segment_text の境界 (空入力/whitespace-only/内部空白保持の 3 ケース日本語含む) と language_to_locale の case-sensitive 完全一致 (大文字/mixed-case/trailing space fallback) の 5 件 → 294 → 299 passed
+  3. `8235878` test(elevenlabs_realtime): mod ws_task 内 private fn 3 つ (is_scribe_error_event AND 境界 + case-sensitive、extract_transcript の 3 段優先順位 + Some("") vs None 区別、extract_error_message の 3 段 fallback) を 6 件 → 299 → 305 passed
+  4. `2fb305a` test(cloud_whisper): parse_whisper_verbose_response の境界 (1 segment + default None / f64 round() の floor/ceil/trunc 検知 / text 内部空白保持 / segments 必須 field / start>end 順序逆転は parse 段階バリデーションなし現挙動) の 5 件 → 305 → 310 passed
+  5. `7ef5e68` test(datetime_fmt): UTC offset 0 / negative offset (UTC-5) 日付繰り下がり / unix epoch 0 / error 文言完全一致 + 両 fn cross-function invariant / header と segment の HH:MM 整合性 の 5 件 → 310 → 315 passed
+  6. `cc0e789` chore(agent-log): 5 ループ実績と次ループ候補を SESSION SUMMARY として追記
+
+## 現在の品質状態
+- cargo test: **315 passed / 0 failed**
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -W uninlined_format_args: **警告ゼロ** (前セッションから継続)
+- frontend build: 通過 (codex の活動は本セッション中ゼロで衝突なし、~16 時間以上静か)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-5、handoff 直前)
+- mjc-main-20260504-6 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションがあれば触らないでください。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-6 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着・累積)
+- **HTTP status 境界網羅** (本セッション ループ 1): `match status { 500..=599 => ... }` の range 両端 (499/600) を test し、5xx upper/lower bound の誤リファクタを即座に検知。`200` (success) を error path に誤渡された場合も Other で safe 分類されることを契約として固定。
+- **multibyte char base 切り詰め検知装置** (本セッション ループ 1): `"あ".repeat(N)` で `.bytes().take()` への誤リファクタが invalid UTF-8 panic に至るバグを `starts_with("あ")` で検知。`MAX_ERROR_BODY_CHARS` の char base 切り詰め契約を保護。
+- **case-sensitive 仕様の文書化** (本セッション ループ 2): `match language { "ja" => ..., _ => ... }` の case-sensitive 仕様を「大文字/mixed-case → fallback」の 4 ケースで test。case-insensitive 化リファクタの意図明示化と上位層の正規化責任の境界を明示。
+- **3 段 fallback 優先順位の網羅** (本セッション ループ 3): `extract_transcript` (transcript→text→words[]) と `extract_error_message` (message→error:string→error.message:object) を共存ケース + 個別 fallback ケースで網羅。`Some("")` vs `None` の意味区別 (field 存在 vs 不在) を明示。
+- **f64 round() 識別パターン** (本セッション ループ 4): `0.4999 / 0.5001 / 0.5` の 3 値で round vs floor vs ceil vs trunc をすべて検知できる秀逸な fractional 設計。
+- **cross-function error 文言 invariant** (本セッション ループ 5): `assert_eq!(err1, err2)` で 2 つの fn が同じ error 形式を返す不変条件を 1 行で固定。片方の文言だけが変わった時の即座検知装置。
+- **UTC offset 多様性 (negative offset 繰り下がり)** (本セッション ループ 5): JST midnight cross と UTC-5 midnight 繰り下がりの対称テストで、offset 計算が正方向のみ動く誤実装を検知。
+
+### 累積パターン (前セッションから継承)
+- **テスト追加方針**: private fn の **直接呼び出しテスト**で境界仕様と防御コードの存在意義を裏付ける。間接テストとの重複を許容しつつ、関数分割リファクタリングへの耐性を獲得。
+- **エラー文言の「contract enforcement」パターン**: 実装と test に同じ `&'static str` を書くことで、ユーザー向け文言を不用意に変えると CI が落ちて気付ける契約強制。
+- **境界値テストの「対称ペア」**: 同じ境界 (例: `MAX_JS_DATE_UNIX_SECS`) を 2 層の責任 (parser vs save wrapper) で観測。
+- **3 層テスト構造** (前セッション ループ 6): 共通実装 + wrapper 経由 = 18 件で同じ仕様を 3 視点から守る (audio_utils 例)。
+- **OS 互換 ErrorKind 契約強制**: `is_err()` のみだとエラー種別が pinned されない。`unwrap_err().kind() == ErrorKind::NotFound` に補強することで OS 文言差異を吸収しつつ type-level の不変条件を守る。
+- **state machine 混在遷移テスト**: 同じ guard logic を持つ複数 entry point について「片方が active な状態で他方を呼ぶ」遷移を直接 test することで、guard 統合/分離リファクタへの耐性を獲得。
+- **format prefix の層内独立確認**: id format `"{started_at}-{seq}"` の前半を session.rs 側で直接 test。session_store のパーサーに依存せず、format 引数順序の入れ替えを session 側で即座に検知。
+- **エスケープ漏れの網羅補完**: エスケープ対象 6 文字すべてを個別 1 文字 + escape 確認で網羅。
+- **UI 文言一致の契約強制**: 2 つの API の error 文言が完全一致 (`"API キーが空です"`) であることを `assert_eq!(a, b)` で確認 → 体験統一性の不変条件。
+
+### 重要な技術的注意点 (踏みやすい罠)
+- **`audio_utils.rs` は補強余地ほぼゼロ**: 既存 6 件で NaN/+Inf/-Inf/clamp above/clamp below/finite range (0.0/0.5/-0.5/1.0/-1.0) を全分岐カバー。`-0.0` や subnormal は実装バグになりにくい範囲で価値低い。
+- **`transcript.rs` は Phase 4 用 placeholder** (TODO 1 行のみ)。テスト追加対象外。
+- **`persist_if_configured` の `?` リファクタリング罠** (継承): エラーを呑み込む設計を `?` に書き換えると in-memory consistency が壊れる。test D/E (`append_keeps_segment_in_memory_when_output_dir_does_not_exist` / `finalize_returns_session_when_output_dir_does_not_exist`) が回帰検知器として機能する。
+- **`classify_meeting_window_title` の whitespace-only rest 仕様**: 「`Meet -  ` (rest = whitespace のみ) は Some を返す」現挙動は docstring 未記載。
+- **Teams ブラウザ版タイトル fallback は引き続き禁止** (既存方針)。
+- **`validate_audio_format_properties` は cfg なし**: 同ファイルの `validate_audio_format_description` のみ `#[cfg(target_os = "macos")]` ガード。
+- **wrapper fn (sanitize_sample / sanitize_pcm_sample) は削除しない**: 前セッションのリファクタで意図的に残した。
+- **session.rs の SESSION_COUNTER はグローバル**: テスト並列実行下で絶対値 (`"1000-0"` 等) を assert しない。差異 (`s1.id != s2.id`) のみ確認することで安全に保つ。
+- **secret_store の Keychain 実通信テスト禁止**: macOS 権限ダイアログを呼ぶため、test ではバリデーション層 (空判定 → `"API キーが空です"`) までで止める。
+- **markdown.rs `inline_markdown_text` のエスケープ対象は 6 文字 + whitespace 正規化**: `\\`, `` ` ``, `*`, `_`, `[`, `]` のすべてが test 済み。
+- **cloud_whisper_errors.rs `MAX_ERROR_BODY_CHARS = 200` は char base** (本セッション ループ 1 で test 化): byte base への誤リファクタは UTF-8 panic 致命バグ。`starts_with("あ")` で検知。
+- **chrono の `FixedOffset::east_opt(0)` と `west_opt(0)` は同等** (本セッション ループ 5 で確認): どちらも 0 秒オフセット。leap second 非対応 (POSIX epoch ベース)。
+- **elevenlabs_realtime と openai_realtime の `push_error` は完全対称** (本セッション 確認): text format prefix だけ違う (`"[OpenAI Realtime エラー: ..."` vs `"[ElevenLabs Realtime エラー: ..."`)。
+
+## 次ループ候補 (優先順位順)
+
+### W'. openai_realtime.rs の push_error 直接テスト + float_to_pcm16 境界補完 (規模 XS, テストのみ)
+- 既存 9 件 (handle_event 系 5 件 + float_to_pcm16 2 件 + engine_construction 1 件 + error_events 1 件)。
+- `push_error` (L418-L432) の `[OpenAI Realtime エラー: {message}]` prefix 文言契約 + start_ms=0/end_ms=0/is_error=Some(true) + speaker clone + source passthrough を 4-5 件で固定。elevenlabs と完全対称。
+- 既存 `error_events_are_queued_as_error_segments` で間接カバー済の可能性高いが、private fn 直接テストで関数分離リファクタへの耐性を獲得。
+- 確認: `awk '/^mod tests/,0' src-tauri/src/openai_realtime.rs | grep -c "fn "` で件数確認、push_error 周辺を grep。
+- リスク極小、価値中。
+
+### W. transcription.rs の追加 error path (規模 S〜M)
+- 既存 3 件。`load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺 (既存 test あり、補強余地)、AppleSpeech / OpenAIRealtime / ElevenLabsRealtime のエラーパス (実環境依存性高)。
+- 実環境依存性高い fn を避ければ 5-7 件補完可能。要 worker 内で確認。
+
+### V'. cloud_whisper.rs の build_whisper_authorization_header 空 api_key + build_whisper_api_url 空 base_url 確認 (規模 XS, テストのみ)
+- 16 件既存だが、`""` 入力時の `"Bearer "` (空 token) や `"/audio/transcriptions"` (絶対パス) の現挙動は未確認。
+- 価値中、3-4 件で完了。
+
+### U. cloud_whisper_errors.rs の variant Eq / 200/400 系の追加 sanitize 確認 (規模 XS, テストのみ)
+- 本セッション ループ 1 で 5 件追加 (4→9 件) 済み。
+- 残る余地: CloudWhisperError の 4 variant 全 PartialEq (auto derive) の追加確認、201/204 などの稀な status code 確認。
+- 価値低め。
+
+### F (引き継ぎ済み候補): drop メトリクスを Tauri イベント化 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: 最小スライスとして「rust 側に payload struct + emit のみ追加 (frontend hookup なし)」で 1 ループ完了させる。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。
+
+### G' (引き継ぎ済み候補): 会議終了検知の遅延監視 (規模 S〜M)
+- handle_detection 内で、watched bundle が起動 → アクティブから外れた経過時間を測り、N 分以上アクティブ無しなら会議終了通知を出すロジックの整備。
+
+### K (引き継ぎ済み候補): clippy::pedantic の選択的有効化 (規模 L、非優先)。
+
+### P 候補は引き続き保留: settings.rs error path
+- settings.rs の `load()` / `save()` は `Self::config_path()` を直接呼ぶため、test から path 注入できる API が無い。追加するには軽量 Tidy First リファクタ (`load_from_path` 抽出) が必要 → 1 ループ 15 分目標に収まらないため後回し。
+- 着手するなら Tidy First リファクタ (`load_from_path` 抽出) を 1 ループ + テスト追加を 1 ループ の 2 ループ構成にする。
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 315 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、前回引き継ぎから変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。再起動不要。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-6 mjc-main`
+
+## コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~12.4 分/loop (5 ループ全てテストのみで安定)。
+- trivial 変更 (1 行 fix、CSS 数値合わせ) は research 担当を立てずメインから直接 worker へ。
+- 担当範囲が衝突しない 2 件は worker 並列起動可。
+- worker prompt は「背景/Why」「具体的 test 案 (assertion レベル)」「実装上の注意」「検証手順」「AGENT_LOG.md 記載項目」の 5 セクション構造で書くと sonnet が 1 ターンで完走しやすい。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 5 ループ + SESSION SUMMARY を終え、context 余裕中程度 (~60-70% 推定) で良い区切りでハンドオフ判断した (前セッションの 6 ループ判断より控えめだが安全)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は受領済み・自走中で消化済み。
+
+## 累積成果 (本セッション)
+- **テスト 289 → 315 passed** (+26 件、5 ループ、すべて新規追加)
+- **コミット 6 件** (うちテスト追加 5、SESSION SUMMARY 1)
+- **新規ファイル 0 個** (worker prompts は untracked のまま、handoff prompt も untracked)
+- **clippy 警告ゼロ維持** (default + uninlined_format_args)
+- **致命的検知漏れの予防装置 1 件確立** (cloud_whisper_errors.rs の multibyte char base 切り詰めへの byte 切り誤リファクタ検知装置)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -300 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-6 mjc-main` を実行。
+4. 候補 W' (openai_realtime.rs の push_error 直接テスト) または V' (cloud_whisper.rs の build_* 系の空入力境界) のいずれかを最小スライスとして worker に発注して 1 ループ目を始める。W' は elevenlabs と完全対称な構造の test 化で価値中、V' は build_whisper_* 系の空入力 corner case 確認でリスク極小・価値中。**確認を兼ねて、まず W' または V' のテスト件数と対象 fn の構造を grep で確認してから worker prompt を書くこと。**
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
