@@ -413,7 +413,7 @@ export function SettingsView() {
           <div className="settings-titlebar-copy">
             <h2>設定</h2>
             <p className="settings-titlebar-subtitle">
-              meet-jerkyは録音・検出・AI処理を透明に管理します。
+              録音・検出・AI処理の透明性を管理します。
             </p>
           </div>
           <span
