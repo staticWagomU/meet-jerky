@@ -147,6 +147,32 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
     }
 }
 
+/// browser_url_callback の発火間隔が想定より大幅に遅延しているかを判定する純粋関数。
+/// `Some(elapsed)` は警告対象の経過秒数、`None` は警告不要。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn should_warn_polling_stall(
+    now_secs: u64,
+    last_seen_secs: u64,
+    last_warned_secs: u64,
+    expected_interval_secs: u64,
+    throttle_secs: u64,
+) -> Option<u64> {
+    if last_seen_secs == 0 {
+        return None;
+    }
+    if now_secs <= last_seen_secs {
+        return None;
+    }
+    let elapsed = now_secs - last_seen_secs;
+    if elapsed <= expected_interval_secs * 3 {
+        return None;
+    }
+    if now_secs.saturating_sub(last_warned_secs) < throttle_secs {
+        return None;
+    }
+    Some(elapsed)
+}
+
 /// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
 ///
 /// URL 全文はここで分類にのみ使い、payload / 通知 / log には出さない。
@@ -159,6 +185,28 @@ fn handle_browser_url_detection(
     url: &str,
     window_title: &str,
 ) {
+    static LAST_BROWSER_CALLBACK_SEEN_SECS: AtomicU64 = AtomicU64::new(0);
+    static LAST_BROWSER_CALLBACK_WARN_SECS: AtomicU64 = AtomicU64::new(0);
+
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    if let Some(elapsed_secs) = should_warn_polling_stall(
+        now_secs,
+        LAST_BROWSER_CALLBACK_SEEN_SECS.load(Ordering::Relaxed),
+        LAST_BROWSER_CALLBACK_WARN_SECS.load(Ordering::Relaxed),
+        3,
+        NOTIFICATION_THROTTLE.as_secs(),
+    ) {
+        eprintln!(
+            "[app_detection] browser_url_callback の前回発火から {elapsed_secs}s 経過 (期待 ~3s)。Swift Timer または AppleScript が停滞している可能性。"
+        );
+        LAST_BROWSER_CALLBACK_WARN_SECS.store(now_secs, Ordering::Relaxed);
+    }
+    LAST_BROWSER_CALLBACK_SEEN_SECS.store(now_secs, Ordering::Relaxed);
+
     // url と window_title の両方が空 → AppleScript 権限不足や取得失敗の疑い。
     // 60 秒スロットリング付きで診断ログを出す (静かに silent fail させない)。
     if url.is_empty() && window_title.is_empty() {
@@ -1385,5 +1433,29 @@ mod tests {
         );
         assert_eq!(classify_meeting_window_title("about:blank"), None);
         assert_eq!(classify_meeting_window_title("新しいタブ"), None);
+    }
+
+    #[test]
+    fn should_warn_polling_stall_first_call_returns_none() {
+        // last_seen_secs == 0 は初回起動: 警告しない
+        assert_eq!(should_warn_polling_stall(1000, 0, 0, 3, 60), None);
+    }
+
+    #[test]
+    fn should_warn_polling_stall_within_normal_range_returns_none() {
+        // elapsed = 5s <= expected(3) * 3 = 9s: 正常範囲なので警告しない
+        assert_eq!(should_warn_polling_stall(1000, 995, 0, 3, 60), None);
+    }
+
+    #[test]
+    fn should_warn_polling_stall_stalled_returns_some_elapsed() {
+        // elapsed = 30s > 9s, 未警告 → Some(30)
+        assert_eq!(should_warn_polling_stall(1000, 970, 0, 3, 60), Some(30));
+    }
+
+    #[test]
+    fn should_warn_polling_stall_throttled_returns_none() {
+        // elapsed = 30s > 9s だが 30s 前に警告済み (throttle=60s) → None
+        assert_eq!(should_warn_polling_stall(1000, 970, 970, 3, 60), None);
     }
 }

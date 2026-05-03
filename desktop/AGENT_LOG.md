@@ -14945,3 +14945,28 @@
 - このセッションでの完了 5 ループ + 1 サマリコミット (詳細は SESSION SUMMARY 参照、最後の commit は 13b4b87 chore(rust): clippy uninlined_format_args 統一)
 - 残 clippy 警告: ゼロ ✓
 - 次ループ候補は handoff prompt の「次ループ候補」セクションを参照 (F/G/H/I/J/K)
+
+### 検知ループ周期可視化: browser_url_callback の発火間隔監視と純粋関数化
+
+- 開始日時: 2026-05-04 JST (セッション開始時刻)
+- 担当セッション: mjc-worker-detection-cadence-20260504-1
+- 役割: 作業担当エージェント (Claude Code, print mode)
+- 作業範囲: `src-tauri/src/app_detection.rs`、`AGENT_LOG.md` 末尾追記
+- 指示内容:
+  - Swift Timer (`Timer(timeInterval: 3.0, repeats: true)`) の停滞を検知するため `handle_browser_url_detection` 冒頭にポーリング間隔監視を追加
+  - 純粋関数 `should_warn_polling_stall(now_secs, last_seen_secs, last_warned_secs, expected_interval_secs, throttle_secs) -> Option<u64>` を切り出し
+  - 経過秒数 > expected × 3 (= 9s) かつスロットリング (60s) 未適用の場合 `eprintln!` で診断ログを出力
+  - 静的 `AtomicU64` (`LAST_BROWSER_CALLBACK_SEEN_SECS` / `LAST_BROWSER_CALLBACK_WARN_SECS`) を関数スコープに追加
+  - 初回 (last_seen==0) / 時刻巻き戻り / 正常範囲 / throttle 中はいずれも None
+  - テスト 4 ケース追加: 初回 None / 正常範囲 None / 閾値超 Some(elapsed) / throttle 中 None
+- 結果: 実装・テスト完了
+- 変更ファイル: `src-tauri/src/app_detection.rs`
+- 検証結果:
+  - `git diff --check`: OK (ホワイトスペースエラーなし)
+  - `cargo fmt --check`: OK
+  - `cargo clippy --no-deps --all-targets --all-features -- -D warnings`: OK (警告ゼロ)
+  - `cargo test --no-fail-fast`: OK (210 passed / 0 failed)
+  - `scripts/agent-verify.sh`: OK
+- 依存関係追加の有無: なし
+- 失敗理由: なし
+- 次アクション: 他エージェントへの引き渡し。実機での Swift Timer 停滞シナリオ検証は未実施 (残リスク)
