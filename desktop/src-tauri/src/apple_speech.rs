@@ -268,4 +268,47 @@ mod tests {
         let err = AppleSpeechEngine::new().unwrap_err();
         assert!(err.contains("macOS"));
     }
+
+    #[test]
+    fn normalize_segment_text_returns_empty_for_empty_input() {
+        assert_eq!(super::normalize_segment_text(""), "");
+    }
+
+    #[test]
+    fn normalize_segment_text_returns_empty_for_whitespace_only_inputs() {
+        assert_eq!(super::normalize_segment_text("   "), "");
+        assert_eq!(super::normalize_segment_text("\t\n  "), "");
+        assert_eq!(super::normalize_segment_text(" \t \n "), "");
+    }
+
+    #[test]
+    fn normalize_segment_text_preserves_internal_whitespace_only_trims_edges() {
+        assert_eq!(
+            super::normalize_segment_text("  hello world  "),
+            "hello world"
+        );
+        assert_eq!(
+            super::normalize_segment_text("  hello   world  "),
+            "hello   world"
+        );
+        assert_eq!(
+            super::normalize_segment_text("  日本語  テキスト  "),
+            "日本語  テキスト"
+        );
+    }
+
+    #[test]
+    fn language_to_locale_is_case_sensitive_and_falls_back_for_uppercase() {
+        assert_eq!(super::language_to_locale("JA"), "ja-JP");
+        assert_eq!(super::language_to_locale("EN"), "ja-JP");
+        assert_eq!(super::language_to_locale("Ja"), "ja-JP");
+        assert_eq!(super::language_to_locale("jA"), "ja-JP");
+    }
+
+    #[test]
+    fn language_to_locale_falls_back_for_empty_and_whitespace_inputs() {
+        assert_eq!(super::language_to_locale(""), "ja-JP");
+        assert_eq!(super::language_to_locale(" "), "ja-JP");
+        assert_eq!(super::language_to_locale("ja "), "ja-JP");
+    }
 }

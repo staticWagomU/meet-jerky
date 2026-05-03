@@ -16045,3 +16045,60 @@
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### apple_speech.rs の normalize_segment_text・language_to_locale 境界仕様を 5 件のテストで裏付け
+
+- **開始日時 (JST)**: 2026-05-04 ~14:00 JST
+- **担当セッション**: `mjc-worker-apple-speech-tests-20260504-5-2`
+- **役割**: テスト追加ワーカー (実装変更なし)
+- **作業範囲**: `src-tauri/src/apple_speech.rs` の `mod tests` 末尾への `#[test]` 関数 5 件追加のみ
+
+#### 指示内容 (要約)
+`normalize_segment_text` (private fn, L67-L69) と `language_to_locale` (pub fn, L57-L65) の未カバー境界仕様を直接テストで固定する。対象: 空入力・whitespace-only・内部空白保持・case-sensitive 大文字フォールバック・trailing space フォールバック。
+
+#### 追加したテスト
+
+| # | 関数名 | assertion 数 | 検証内容 |
+|---|--------|-------------|----------|
+| A | `normalize_segment_text_returns_empty_for_empty_input` | 1 | `""` → `""` (空入力時の private fn 直接呼び出しで `""` 経路を固定) |
+| B | `normalize_segment_text_returns_empty_for_whitespace_only_inputs` | 3 | `"   "` / `"\t\n  "` / `" \t \n "` → `""` (ASCII whitespace 全種類が trim で除去される仕様を固定) |
+| C | `normalize_segment_text_preserves_internal_whitespace_only_trims_edges` | 3 | 前後 trim + 内部空白保持 / 連続空白保持 / 日本語 + 内部空白保持 (split_whitespace().join(" ") 誤リファクタを 3 ケースで検知) |
+| D | `language_to_locale_is_case_sensitive_and_falls_back_for_uppercase` | 4 | `"JA"` / `"EN"` / `"Ja"` / `"jA"` → `"ja-JP"` (case-insensitive 化の誤リファクタを 4 ケースで検知) |
+| E | `language_to_locale_falls_back_for_empty_and_whitespace_inputs` | 3 | `""` / `" "` / `"ja "` → `"ja-JP"` (trailing space が trim されず fallback する上位層の責任境界を明示) |
+
+#### 不変条件 / 設計意図
+- **空入力 (A)**: `text.trim().to_string()` が `""` を受けて `""` を返す経路を private fn 直接呼び出しで固定。実装を `if text.is_empty() { return String::new() }` 等に誤変更しても壊れないが、`text.trim_matches(...)` など別の trim 実装へのリファクタで検知器として機能。
+- **ASCII whitespace 多様性 (B)**: Apple Speech ffi が空白だけの segment を返した場合の最終出力が確実に空文字列になる契約。tab/newline 混在を `str::trim` が処理する仕様を 3 パターンで固定。
+- **内部空白保持 (C)**: `split_whitespace().join(" ")` のような collapse 誤リファクタを日本語+連続空白含む 3 ケースで検知。既存テスト `normalize_segment_text_trims_edges_only` の 2 ケースを補完する形で多角的に確認。
+- **case-sensitive (D)**: `match language { "ja" => "ja-JP", ... }` の完全一致仕様を 4 ケースで明示。上位層が正規化済み小文字文字列を渡す前提を test で表現し、case-insensitive 化を検討するリファクタへの意図明示化。
+- **trailing space fallback (E)**: 既存テスト 2 件目が `""` を含むが whitespace のみ・trailing space は未確認。`" "` (trim しない) と `"ja "` (trim すれば "ja" でマッチするが trim しないので fallback) の 2 ケースで上位層の trim 責任を明示。
+
+#### 変更ファイル
+- `src-tauri/src/apple_speech.rs` (tests モジュール末尾に 5 関数追加、実装変更なし)
+- `AGENT_LOG.md` (本セクション追記)
+
+#### 検証結果
+
+| チェック | 結果 |
+|----------|------|
+| `cargo fmt --check` | 合格 (初回から差分なし) |
+| `cargo clippy --no-deps --all-targets --all-features -- -D warnings` | 合格 (警告ゼロ) |
+| `cargo test --no-fail-fast` | **299 passed** (294 → 299、追加 5 件すべて合格) |
+| `scripts/agent-verify.sh src-tauri/src/apple_speech.rs AGENT_LOG.md` | 合格 |
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 14 件)
+- 追加後 total passed: 299
+
+#### 依存関係
+- 新規 Cargo.toml 依存: **なし**
+
+#### 失敗理由
+- なし (全チェック初回合格)
+
+#### 残リスク
+- Unicode 全角スペース (`\u{3000}`) は Rust の `str::trim` では除去されない (ASCII whitespace のみ対象)。Apple Speech ffi が全角スペースを含む segment を返した場合は trim されずそのまま残る。現実の混入頻度は低いが、将来 Unicode whitespace 対応が必要になる場合は別課題として追加テストを検討。
+- テスト E の `assert_eq!(super::language_to_locale(""), "ja-JP")` は既存テスト 2 件目 (`language_to_locale_falls_back_to_japanese_for_auto_or_unknown`) と重複するが、意図的 (whitespace 多様性の文書化を優先)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
