@@ -812,73 +812,104 @@ export function SettingsView() {
             )}
 
             {activeCategory === "audio" && (
-              <>
-                {/* マイクデバイス */}
-                <div className="settings-section">
-                  <h3 className="settings-section-title">自分トラックのマイク</h3>
-        <select
-          aria-label={microphoneDeviceLabel}
-          title={microphoneDeviceLabel}
-          value={localSettings.microphoneDeviceId ?? ""}
-          onChange={(e) =>
-            setLocalSettings((current) =>
-              current
-                ? { ...current, microphoneDeviceId: e.target.value || null }
-                : current,
-            )
-          }
-          className="settings-select"
-        >
-          <option value="">デフォルト</option>
-          {devices?.map((device) => (
-            <option key={device.id} value={device.id}>
-              {device.name}
-            </option>
-          ))}
-        </select>
-        {devicesError && (
-          <div
-            className="settings-inline-error"
-            role="alert"
-            aria-label={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${devicesErrorMessage}`}
-            title={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${devicesErrorMessage}`}
-          >
-            <span>
-              自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
-              {devicesErrorMessage}
-            </span>
-            <button
-              type="button"
-              className="control-btn control-btn-clear"
-              onClick={() => refetchDevices()}
-              disabled={isFetchingDevices}
-              aria-label={retryDevicesLabel}
-              title={retryDevicesLabel}
-            >
-              {isFetchingDevices ? "取得中..." : "デバイスを再取得"}
-            </button>
-          </div>
-        )}
+              <div className="settings-readonly-grid settings-readonly-grid-audio">
+                <div className="settings-readonly-column">
+                  <div className="settings-section">
+                    <h3 className="settings-section-title">自分トラックのマイク</h3>
+                    <select
+                      aria-label={microphoneDeviceLabel}
+                      title={microphoneDeviceLabel}
+                      value={localSettings.microphoneDeviceId ?? ""}
+                      onChange={(e) =>
+                        setLocalSettings((current) =>
+                          current
+                            ? { ...current, microphoneDeviceId: e.target.value || null }
+                            : current,
+                        )
+                      }
+                      className="settings-select"
+                    >
+                      <option value="">デフォルト</option>
+                      {devices?.map((device) => (
+                        <option key={device.id} value={device.id}>
+                          {device.name}
+                        </option>
+                      ))}
+                    </select>
+                    {devicesError && (
+                      <div
+                        className="settings-inline-error"
+                        role="alert"
+                        aria-label={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${devicesErrorMessage}`}
+                        title={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${devicesErrorMessage}`}
+                      >
+                        <span>
+                          自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
+                          {devicesErrorMessage}
+                        </span>
+                        <button
+                          type="button"
+                          className="control-btn control-btn-clear"
+                          onClick={() => refetchDevices()}
+                          disabled={isFetchingDevices}
+                          aria-label={retryDevicesLabel}
+                          title={retryDevicesLabel}
+                        >
+                          {isFetchingDevices ? "取得中..." : "デバイスを再取得"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="settings-readonly-card">
+                    <h3 className="settings-readonly-card-title">
+                      相手側システム音声
+                    </h3>
+                    <p>
+                      相手側トラックはデスクトップ/アプリ音声として扱います。macOS
+                      ではシステム音声取得が画面収録権限に依存するため、画面収録が未許可の場合は相手側音声を取得できません。
+                    </p>
+                    <p>
+                      今後のシステム音声ルーティング設定では、ループバック:
+                      会議アプリとして Zoom・Meet・Teams・Webex
+                      の音声取得を分かりやすく扱う想定です。
+                    </p>
+                  </div>
+
+                  <div className="settings-readonly-card">
+                    <h3 className="settings-readonly-card-title">音声品質</h3>
+                    <p>
+                      ループバック、2秒のテスト音による取得信号プレビュー、音声品質の調整は今後の設定項目です。現時点ではこの画面から操作できません。
+                    </p>
+                  </div>
                 </div>
 
-                <div className="settings-readonly-card">
-                  <h3 className="settings-readonly-card-title">
-                    相手側システム音声
-                  </h3>
-                  <p>
-                    相手側トラックはデスクトップ/アプリ音声として扱います。macOS
-                    ではシステム音声取得が画面収録権限に依存するため、画面収録が未許可の場合は相手側音声を取得できません。
-                  </p>
-                  <p>
-                    今後のシステム音声ルーティング設定では、ループバック:
-                    会議アプリとして Zoom・Meet・Teams・Webex
-                    の音声取得を分かりやすく扱う想定です。
-                  </p>
-                  <p>
-                    ループバック、2秒のテスト音による取得信号プレビュー、音声品質の調整は今後の設定項目です。現時点ではこの画面から操作できません。
-                  </p>
+                <div className="settings-readonly-column">
+                  <div className="settings-readonly-card">
+                    <h3 className="settings-readonly-card-title">録音トラック</h3>
+                    <p>
+                      会議中は自分トラックと相手側トラックを別々に扱います。
+                    </p>
+                    <div className="settings-permissions">
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">自分</span>
+                        <span className="settings-permission-badge permission-granted">
+                          マイク
+                        </span>
+                      </div>
+                      <div className="settings-permission-row">
+                        <span className="settings-permission-label">相手側</span>
+                        <span className="settings-permission-badge permission-granted">
+                          システム音声
+                        </span>
+                      </div>
+                    </div>
+                    <p>
+                      取得した音声はタイムスタンプで統合し、履歴や議事録に回します。
+                    </p>
+                  </div>
                 </div>
-              </>
+              </div>
             )}
 
             {activeCategory === "general" && (

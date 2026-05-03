@@ -3217,6 +3217,10 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
 }
 
+.settings-readonly-grid-audio {
+  grid-template-columns: minmax(0, 348px) minmax(0, 1fr);
+}
+
 .settings-readonly-column {
   display: flex;
   flex-direction: column;
