@@ -24945,3 +24945,96 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - コミット周期 Loop 17 ~6 分 / Loop 18 ~4 分 平均 ~5 分で目標 15 分以内達成
 
 ---
+[WORKER COMPLETED @ 2026-05-05 ~Loop19 JST] mjc-worker-panic-guard-extract-20260505-10-1
+- Phase 4-C panic_guard 抽出完了 (Tidy First)
+- 移動: run_transcription_worker_with_panic_guard (~18 行) → src-tauri/src/transcription_panic_guard.rs (pub(crate))
+- pub(crate) 昇格: TranscriptionLoopConfig (struct + 7 fields) + run_transcription_loop
+- 互換層: transcription.rs 冒頭に use 1 行追加 (crate::transcription_panic_guard::run_transcription_worker_with_panic_guard) で L277 呼び出し維持
+- lib.rs: mod transcription_panic_guard; を transcription_model_manager と transcription_traits の間に挿入 (alphabetical 順維持)
+- 追加判断: build_worker_panic_error_payload は削除した panic_guard 関数のみで使用→テスト専用と判明 = Loop 17 の is_realtime_stream_already_stopped_error precedent を踏襲し test mod 内 import に移動 (clippy -D warnings 適合)
+- 検証: cargo test --lib **685 passed** (件数不変) / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK (cargo fmt 自動吸収: use std::sync 内の alphabetical 順修正) / git diff --check trailing whitespace なし
+- transcription.rs: 2231 → 2213 行 (~18 行削減、累計 ~786 行 / ~26.2% 縮小)
+- transcription-refactor-plan.md L86 worker サブ分割計画 (panic_guard) 完了
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- commit 30bf073
+
+---
+[WORKER COMPLETED @ 2026-05-05 ~Loop20 JST] mjc-worker-transcription-loop-extract-20260505-10-2
+- Phase 4-D run_transcription_loop 抽出完了 (Tidy First) = Phase 4 全体完了
+- 移動: run_transcription_loop (~81 行) → src-tauri/src/transcription_worker_loop.rs (pub(crate))
+- panic_guard.rs の use 文を分離: TranscriptionLoopConfig は transcription.rs から / run_transcription_loop は transcription_worker_loop.rs から
+- TranscriptionLoopConfig struct は transcription.rs に残置 (panic_guard と worker_loop の共通型)
+- lib.rs: mod transcription_worker_loop; を最後 (transcription_whisper_stream の後) に追加
+- 追加判断: use std::time::Duration + use ringbuf::traits::{Consumer, Observer} は run_transcription_loop のみで使用 → transcription.rs top-level から削除 (新ファイルに移動)
+- 追加判断: build_transcription_error_payload + should_emit_realtime_stream_error は run_transcription_loop 移動後はテスト専用 → top-level use 削除 + tests mod 内 use crate::transcription_error_payload に明示追加
+- 検証: cargo test --lib **685 passed** (件数不変) / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK (cargo fmt 自動吸収) / git diff --check trailing whitespace なし
+- transcription.rs: 2213 → 2125 行 (~88 行削減、累計 ~874 行 / ~29.1% 縮小)
+- transcription-refactor-plan.md L86 worker サブ分割計画 (emission + error_payload + panic_guard + loop) **すべて完了** = Phase 4 完了
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- commit 634997e
+
+---
+[SESSION SUMMARY @ 2026-05-05 ~XX:XX JST] mjc-main-20260505-10
+- 2 ループ完走 + 早期ハンドオフ判断 (precedent 連続 7 セッション目)
+- Loop 19 = Phase 4-C panic_guard 抽出 (commit 30bf073, ~18 行 + use 1 行互換 + lib.rs mod 宣言, 685 passed 件数不変, ~3 分)
+  - 移動: run_transcription_worker_with_panic_guard → transcription_panic_guard.rs (pub(crate))
+  - pub(crate) 昇格: TranscriptionLoopConfig (struct + 7 fields) + run_transcription_loop
+  - sonnet worker の追加判断 (Tidy First 質的高さ連続 4 セッション目): build_worker_panic_error_payload は panic_guard 移動後 transcription.rs では tests からのみ参照 → tests mod 内 import に絞り visibility 最小化 = Loop 17 の is_realtime_stream_already_stopped_error precedent 踏襲
+- Loop 20 = Phase 4-D run_transcription_loop 抽出 (commit 634997e, ~81 行抽出 + 4 ファイル編集 + lib.rs mod 宣言, 685 passed 件数不変, ~5 分) = **Phase 4 全体完了**
+  - 移動: run_transcription_loop → transcription_worker_loop.rs (pub(crate))
+  - panic_guard.rs の use 文分離: TranscriptionLoopConfig は transcription.rs から / run_transcription_loop は transcription_worker_loop.rs から
+  - TranscriptionLoopConfig struct は transcription.rs に残置 (panic_guard と worker_loop の共通型)
+  - sonnet worker の追加判断 (Tidy First 質的高さ連続 5 セッション目):
+    - use std::time::Duration + use ringbuf::traits::{Consumer, Observer} は run_transcription_loop のみで使用 → transcription.rs top-level から削除 (新ファイルに移動)
+    - build_transcription_error_payload + should_emit_realtime_stream_error は移動後テスト専用 → top-level use 削除 + tests mod 内 use crate::transcription_error_payload に明示追加 = Loop 17/19 precedent 踏襲
+
+## 戦略転換の継承 (26 連続「Debug 軸補強」 + 5 連続「Webex sweep」両方からの脱却維持)
+- mjc-main-20260505-1: Debug sweep ローカル最適化からの完全脱却
+- mjc-main-20260505-2: variety 規則確立 (3 連続→4 ループ目 pivot)
+- mjc-main-20260505-3: 批判的再評価 + grep を Read で精読 precedent
+- mjc-main-20260505-4: stdin redirect + Whereby base + Phase 2-A 着手 (audio_utils 集約)
+- mjc-main-20260505-5: stdin redirect 焼き付け + ファイル参照型 handoff + Phase 2-B ModelManager
+- mjc-main-20260505-6: Phase 2-A WhisperLocal + Audio resampling + bfb9846 PATH inner shell escape
+- mjc-main-20260505-7: Phase 2-A 完全完了 + Whereby blacklist 4 件 (variety pivot)
+- mjc-main-20260505-8: Phase 3 TranscriptionManager + Phase 4-A emit_segments
+- mjc-main-20260505-9: Phase 4-B error_payload + GoToMeeting URL 検知 (variety pivot)
+- mjc-main-20260505-10 (本セッション): Phase 4-C panic_guard (Loop 19) + Phase 4-D run_transcription_loop (Loop 20) = **Phase 4 全体完了**
+
+## 後継 mjc-main-20260505-11 への引き継ぎ要点
+
+- **Phase 4 全体完了** = transcription-refactor-plan.md の責務 8 (worker, ~1900 行) のサブ分割 (emission + error_payload + panic_guard + loop) **すべて完了** = 巨大ホットスポット完全分解
+- **次の大きな抽出候補**:
+  - **Phase 3-B** (Loop 21+): Tauri commands 抽出 (`list_models` / `is_model_downloaded` / `download_model` / `start_transcription` / `stop_transcription` / `validate_stream_count_for_engine` / `parse_requested_transcription_sources` / `build_download_*_payload` 等) を `transcription_commands.rs` 等に抽出 (~250 行 = 規模 M-L、lib.rs invoke_handler 登録変更必要 = リスク中、2-3 ループ分割推奨)
+  - **transcription.rs 残り 2125 行の更なる責務分離**: 残りは struct 定義 + Tauri commands + tests mod が主 = まだ責務分離できる余地あり (要 grep で構造再確認)
+- **variety 規則の状態** = Loop 19 + Loop 20 = extraction 2 連続 = **Loop 21 で extraction 続行可、Loop 22 で variety pivot 必須**
+  - **Loop 21 候補 (extraction 続行可)**: Phase 3-B Tauri commands 抽出 (Phase 4 完了後の自然な次候補)
+  - **Loop 22 候補 (variety pivot 必須)**: GoToMeeting 拡張 (legacy URL `global.gotomeeting.com/join/<id>` + アプリ launcher `app.goto.com/meet/<id>`、ただし「2 連続にしない約束」のため Loop 22 が初の解禁) / 新サービス検知 (Discord stage / Slack Huddle) / app_detection.rs Webex モジュール抽出 / harness 衛生 / frontend 軸
+- **避けるべき**:
+  - **Whereby に戻って 2 連続にしない** (Loop 14 の「sweep 化しない約束」、最低 Loop 22-24 程度の間隔)
+  - **GoToMeeting に戻って 2 連続にしない** (Loop 18 の「sweep 化しない約束」、最低 Loop 22-24 程度の間隔)
+  - **「Webex sweep」「Phase 2 sweep」「Phase 4 sweep」のような単一軸 4 連続集中をしない**
+  - **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **harness 衛生**: canonical 移譲時 scripts/* M 再出現は本セッションで観測継続 = 前任 bfb9846 が永続的解決の結論を **連続 4 セッション目で追認** = 結論超強化
+- **「sonnet worker の Tidy First 質的高さ」連続 5 セッション目達成** (Loop 13/15/17/19 + Loop 20) = visibility 最小化 + use 文分離 + test 専用 import 移動 の 3 軸で精緻化判断が一貫
+
+## 累計 transcription.rs 削減 (Phase 1〜4 完了)
+- 元 2999 行 → 現在 **2125 行** = **~29.1% 縮小** (~874 行削減)
+- 内訳: Phase 1 (types + traits) ~90 行 + Phase 2-A 最小 ~22 行 + Phase 2-A WhisperLocal ~76 行 + Phase 2-A Audio resampling ~90 行 + Phase 2-B ModelManager ~149 行 + Phase 2-A WhisperStream ~189 行 + Phase 3 TranscriptionManager ~120 行 + Phase 4-A emit_segments ~40 行 + Phase 4-B error_payload ~25 行 + Phase 4-C panic_guard ~18 行 + Phase 4-D run_transcription_loop ~81 行 (本セッション +99 行 = ~3.3 ポイント)
+
+## コンテキスト管理アクション
+- 判断時の使用率: 推定 ~55-65% (handoff prompt 完全読 + transcription-refactor-plan.md sed + AGENT_LOG.md tail + 2 worker prompt + grep 群 + Loop 20 進行観測 sleep)
+- 引き継ぎ先: mjc-main-20260505-11
+- 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
+
+## 「2 ループ + 早期 handoff」precedent 連続 7 セッション目達成
+- mjc-main-20260505-4 (初強化) + 5 (連続 2) + 6 (連続 3) + 7 (連続 4) + 8 (連続 5) + 9 (連続 6) + 10 (本セッション = 連続 7)
+- 引き継ぎ時の context (大量必読ドキュメント + grep + diff) を考慮した予防的判断
+- 「ファイル参照型 handoff prompt」precedent も連続 7 セッション目継承
+
+## worker 完走 2/2 (累計 120/120 100% 維持)
+- harness silent fail mitigation pattern 連続 44 ループ実証達成 (git status M 監視で 2/2 完走判定)
+- stdin redirect 化 script の安定運用 12-13 件目 precedent 達成 (Loop 10 焼き付けが連続 6 セッション継承で実証)
+- canonical 名移譲完了 (24 セッション連続適用)
+- コミット周期 Loop 19 ~3 分 / Loop 20 ~5 分 平均 ~4 分で目標 15 分以内大幅達成
+
+---
