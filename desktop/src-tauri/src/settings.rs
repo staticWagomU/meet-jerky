@@ -644,4 +644,163 @@ mod tests {
             "known 値 \"whisper\" の前後に空白を含む形は catch-all で Whisper に倒される: trim しない設計を CI 固定 = 「将来 trim 処理を追加する誤改修」を遮断する装置"
         );
     }
+
+    #[test]
+    fn transcription_engine_type_debug_output_contains_each_variant_name_per_variant() {
+        let whisper = TranscriptionEngineType::Whisper;
+        let apple = TranscriptionEngineType::AppleSpeech;
+        let openai = TranscriptionEngineType::OpenAIRealtime;
+        let elevenlabs = TranscriptionEngineType::ElevenLabsRealtime;
+        assert!(
+            format!("{:?}", whisper).contains("Whisper"),
+            "Debug 出力に variant 'Whisper' が含まれる契約: got {:?}",
+            whisper
+        );
+        assert!(
+            format!("{:?}", apple).contains("AppleSpeech"),
+            "Debug 出力に variant 'AppleSpeech' が含まれる契約: got {:?}",
+            apple
+        );
+        assert!(
+            format!("{:?}", openai).contains("OpenAIRealtime"),
+            "Debug 出力に variant 'OpenAIRealtime' が含まれる契約: got {:?}",
+            openai
+        );
+        assert!(
+            format!("{:?}", elevenlabs).contains("ElevenLabsRealtime"),
+            "Debug 出力に variant 'ElevenLabsRealtime' が含まれる契約: got {:?}",
+            elevenlabs
+        );
+        let dbg_w = format!("{:?}", whisper);
+        let dbg_a = format!("{:?}", apple);
+        let dbg_o = format!("{:?}", openai);
+        let dbg_e = format!("{:?}", elevenlabs);
+        assert_ne!(
+            dbg_w, dbg_a,
+            "異なる variant の Debug 出力は異なる契約 (Whisper vs AppleSpeech)"
+        );
+        assert_ne!(
+            dbg_w, dbg_o,
+            "異なる variant の Debug 出力は異なる契約 (Whisper vs OpenAIRealtime)"
+        );
+        assert_ne!(
+            dbg_w, dbg_e,
+            "異なる variant の Debug 出力は異なる契約 (Whisper vs ElevenLabsRealtime)"
+        );
+        assert_ne!(
+            dbg_a, dbg_o,
+            "異なる variant の Debug 出力は異なる契約 (AppleSpeech vs OpenAIRealtime)"
+        );
+        assert_ne!(
+            dbg_a, dbg_e,
+            "異なる variant の Debug 出力は異なる契約 (AppleSpeech vs ElevenLabsRealtime)"
+        );
+        assert_ne!(
+            dbg_o, dbg_e,
+            "異なる variant の Debug 出力は異なる契約 (OpenAIRealtime vs ElevenLabsRealtime)"
+        );
+    }
+
+    #[test]
+    fn transcription_engine_type_partial_eq_holds_reflexive_and_differs_between_variants() {
+        assert_eq!(
+            TranscriptionEngineType::Whisper,
+            TranscriptionEngineType::Whisper,
+            "PartialEq reflexive: Whisper == Whisper"
+        );
+        assert_eq!(
+            TranscriptionEngineType::AppleSpeech,
+            TranscriptionEngineType::AppleSpeech,
+            "PartialEq reflexive: AppleSpeech == AppleSpeech"
+        );
+        assert_eq!(
+            TranscriptionEngineType::OpenAIRealtime,
+            TranscriptionEngineType::OpenAIRealtime,
+            "PartialEq reflexive: OpenAIRealtime == OpenAIRealtime"
+        );
+        assert_eq!(
+            TranscriptionEngineType::ElevenLabsRealtime,
+            TranscriptionEngineType::ElevenLabsRealtime,
+            "PartialEq reflexive: ElevenLabsRealtime == ElevenLabsRealtime"
+        );
+        assert_ne!(
+            TranscriptionEngineType::Whisper,
+            TranscriptionEngineType::AppleSpeech,
+            "異 variant 不等値: Whisper != AppleSpeech"
+        );
+        assert_ne!(
+            TranscriptionEngineType::Whisper,
+            TranscriptionEngineType::OpenAIRealtime,
+            "異 variant 不等値: Whisper != OpenAIRealtime"
+        );
+        assert_ne!(
+            TranscriptionEngineType::Whisper,
+            TranscriptionEngineType::ElevenLabsRealtime,
+            "異 variant 不等値: Whisper != ElevenLabsRealtime"
+        );
+        assert_ne!(
+            TranscriptionEngineType::AppleSpeech,
+            TranscriptionEngineType::OpenAIRealtime,
+            "異 variant 不等値: AppleSpeech != OpenAIRealtime"
+        );
+        assert_ne!(
+            TranscriptionEngineType::AppleSpeech,
+            TranscriptionEngineType::ElevenLabsRealtime,
+            "異 variant 不等値: AppleSpeech != ElevenLabsRealtime"
+        );
+        assert_ne!(
+            TranscriptionEngineType::OpenAIRealtime,
+            TranscriptionEngineType::ElevenLabsRealtime,
+            "異 variant 不等値: OpenAIRealtime != ElevenLabsRealtime"
+        );
+    }
+
+    #[test]
+    fn transcription_engine_type_serde_serialize_uses_camel_case_for_each_variant() {
+        assert_eq!(
+            serde_json::to_value(&TranscriptionEngineType::Whisper)
+                .unwrap()
+                .as_str(),
+            Some("whisper"),
+            "Whisper variant が JSON 文字列 'whisper' (camelCase) に serialize される契約"
+        );
+        assert_eq!(
+            serde_json::to_value(&TranscriptionEngineType::AppleSpeech)
+                .unwrap()
+                .as_str(),
+            Some("appleSpeech"),
+            "AppleSpeech variant が JSON 文字列 'appleSpeech' (camelCase) に serialize される契約"
+        );
+        assert_eq!(
+            serde_json::to_value(&TranscriptionEngineType::OpenAIRealtime)
+                .unwrap()
+                .as_str(),
+            Some("openAIRealtime"),
+            "OpenAIRealtime variant が JSON 文字列 'openAIRealtime' (camelCase, 連続大文字 'AI' 維持) に serialize される契約"
+        );
+        assert_eq!(
+            serde_json::to_value(&TranscriptionEngineType::ElevenLabsRealtime)
+                .unwrap()
+                .as_str(),
+            Some("elevenLabsRealtime"),
+            "ElevenLabsRealtime variant が JSON 文字列 'elevenLabsRealtime' (camelCase) に serialize される契約"
+        );
+        let snake_w = serde_json::to_string(&TranscriptionEngineType::Whisper).unwrap();
+        assert!(
+            !snake_w.contains("WHISPER"),
+            "snake_case / SCREAMING_CASE への誤改修を遮断: got {}",
+            snake_w
+        );
+        let snake_o = serde_json::to_string(&TranscriptionEngineType::OpenAIRealtime).unwrap();
+        assert!(
+            !snake_o.contains("open_a_i_realtime"),
+            "snake_case 'open_a_i_realtime' への誤改修を遮断: got {}",
+            snake_o
+        );
+        assert!(
+            !snake_o.contains("OpenAIRealtime"),
+            "PascalCase そのままへの誤改修を遮断: got {}",
+            snake_o
+        );
+    }
 }

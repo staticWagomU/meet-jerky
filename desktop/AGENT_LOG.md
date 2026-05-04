@@ -22761,3 +22761,43 @@ test result: ok. 592 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-transcription-engine-type-debug-partialeq-serde-tests-20260504-34-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-engine-type-debug-partialeq-serde-tests-20260504-34-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-34 Loop 2
+
+### 作業範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 12 連続 application + 「format 不変条件」serde camelCase enum variant 系統への application 拡張 = TranscriptionEngineType (#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)] + #[serde(rename_all = "camelCase")] + 4 unit variants Whisper / AppleSpeech / OpenAIRealtime / ElevenLabsRealtime) への Debug + PartialEq + serde camelCase 3 軸 application。
+- T1: transcription_engine_type_debug_output_contains_each_variant_name_per_variant (4 variants 名 contains + 4! = 6 通り pair の Debug 出力相違)
+- T2: transcription_engine_type_partial_eq_holds_reflexive_and_differs_between_variants (4 reflexive + 6 不等)
+- T3: transcription_engine_type_serde_serialize_uses_camel_case_for_each_variant (4 variants の camelCase JSON 文字列固定 + snake_case / PascalCase 不在)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 592 → 595 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に T1/T2/T3 追加、enum / 既存 #[derive] / 既存 25 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 595 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
