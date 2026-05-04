@@ -518,6 +518,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Zoom"
     } else if is_webex_meeting_url(&host, &parsed.path)
         || is_webex_jphp_meeting_url(&host, &parsed.path, parsed.query.as_deref())
+        || is_webex_wbxmjs_meeting_url(&host, &parsed.path)
     {
         "Webex"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
@@ -793,8 +794,9 @@ fn is_webex_host(host: &str) -> bool {
 }
 
 fn is_webex_meeting_url(host: &str, path: &str) -> bool {
-    // Personal Room (`/meet/<id>`) と j.php 招待 URL (`/<site>/j.php?MTID=<token>`) に対応。
-    // wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
+    // Personal Room (`/meet/<id>`) / j.php 招待 URL (`/<site>/j.php?MTID=<token>`) /
+    // wbxmjs Meeting Join Service URL (`/wbxmjs/joinservice/sites/<site>/meeting/...`) に対応。
+    // webappng 等の他形式は誤検知防止のため将来課題。
     is_webex_host(host)
         && path
             .strip_prefix("/meet/")
@@ -814,6 +816,27 @@ fn is_jphp_path(path: &str) -> bool {
 
 fn is_webex_jphp_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
     is_webex_host(host) && is_jphp_path(path) && query_has_non_empty_param(query, "MTID")
+}
+
+fn is_wbxmjs_path(path: &str) -> bool {
+    let path = path.strip_suffix('/').unwrap_or(path);
+    let Some(rest) = path.strip_prefix("/wbxmjs/joinservice/sites/") else {
+        return false;
+    };
+    let Some((site, after_site)) = rest.split_once('/') else {
+        return false;
+    };
+    if site.is_empty() {
+        return false;
+    }
+    let meeting_segment = after_site
+        .split_once('/')
+        .map_or(after_site, |(head, _)| head);
+    meeting_segment == "meeting"
+}
+
+fn is_webex_wbxmjs_meeting_url(host: &str, path: &str) -> bool {
+    is_webex_host(host) && is_wbxmjs_path(path)
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -2819,6 +2842,81 @@ mod tests {
     fn classify_meeting_url_returns_none_for_webex_jphp_with_extra_path_segment() {
         assert_eq!(
             classify_meeting_url("https://acme.webex.com/acme/foo/j.php?MTID=mxyz"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_wbxmjs_with_meeting_segment() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting/m123abc"
+            ),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_wbxmjs_with_extra_token_segment() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting/download/m123abc"
+            ),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_wbxmjs_with_trailing_slash() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting/m123abc/"
+            ),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_wbxmjs_without_meeting_segment() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/wbxmjs/joinservice/sites/acme"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_wbxmjs_wrong_path_prefix() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/wbxmjs/foo/bar"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_non_webex_host_with_wbxmjs() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://fake-webex.example.com/wbxmjs/joinservice/sites/acme/meeting/m123abc"
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_wbxmjs_with_empty_site_segment() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/wbxmjs/joinservice/sites//meeting/m123abc"
+            ),
             None
         );
     }
