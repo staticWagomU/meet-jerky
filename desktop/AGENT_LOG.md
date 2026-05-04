@@ -21981,3 +21981,44 @@ test result: ok. 565 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 - worker 起動 health check (小 prompt で claude bin 動作確認)。
 - Loop 2 (本セッション) 候補は session.rs SessionSegment / Session の Debug 軸補強 (struct with fields への拡張)。
 ---
+
+## mjc-worker-session-debug-axis-tests-20260504-31-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-debug-axis-tests-20260504-31-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-31 Loop 2
+
+### 作業範囲
+- `src-tauri/src/session.rs` の `mod tests` 末尾 (l.502 直後) への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強パターン」を struct with fields に拡張する 3 連続 application。
+- T19: session_segment_debug_output_contains_struct_name_and_all_three_field_names (SessionSegment の型名+全 field 名+値が Debug 出力に含まれる契約)
+- T20: session_debug_output_contains_struct_name_and_all_five_field_names_including_options_and_vec (Session の型名+全 5 field 名+None+[] が Debug 出力に含まれる契約)
+- T21: session_segment_debug_output_equals_after_clone_for_all_field_types (clone 後の Debug 出力が元と完全一致する契約)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 568 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s`
+
+### 変更ファイル
+- src-tauri/src/session.rs (mod tests 末尾に T19/T20/T21 追加、pub struct / impl / 既存 18 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 568 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

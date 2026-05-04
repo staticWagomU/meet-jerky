@@ -500,4 +500,121 @@ mod tests {
         assert!(s_max.segments.is_empty());
         assert!(!s_max.id.is_empty());
     }
+
+    #[test]
+    fn session_segment_debug_output_contains_struct_name_and_all_three_field_names() {
+        let segment = SessionSegment {
+            speaker: "alice".to_string(),
+            timestamp_offset_secs: 42,
+            text: "hi".to_string(),
+        };
+        let output = format!("{:?}", segment);
+        assert!(
+            output.contains("SessionSegment"),
+            "型名 'SessionSegment' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("speaker"),
+            "field 名 'speaker' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("timestamp_offset_secs"),
+            "field 名 'timestamp_offset_secs' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("text"),
+            "field 名 'text' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("alice"),
+            "値 'alice' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("42"),
+            "値 '42' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("hi"),
+            "値 'hi' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+    }
+
+    #[test]
+    fn session_debug_output_contains_struct_name_and_all_five_field_names_including_options_and_vec(
+    ) {
+        let session = Session::start("Daily".to_string(), 1_234_567_890);
+        let output = format!("{:?}", session);
+        assert!(
+            output.contains("Session"),
+            "型名 'Session' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("id"),
+            "field 名 'id' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("title"),
+            "field 名 'title' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("started_at"),
+            "field 名 'started_at' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("ended_at"),
+            "field 名 'ended_at' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("segments"),
+            "field 名 'segments' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("Daily"),
+            "値 'Daily' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("1234567890"),
+            "値 '1234567890' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("None"),
+            "Option::None が 'None' として Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("[]"),
+            "空 Vec が '[]' として Debug 出力に含まれる契約: got {}",
+            output
+        );
+    }
+
+    #[test]
+    fn session_segment_debug_output_equals_after_clone_for_all_field_types() {
+        let original = SessionSegment {
+            speaker: "bob".to_string(),
+            timestamp_offset_secs: 100,
+            text: "hello world".to_string(),
+        };
+        let cloned = original.clone();
+        assert_eq!(
+            format!("{:?}", original),
+            format!("{:?}", cloned),
+            "#[derive(Debug, Clone)] の組み合わせで Debug 出力が clone 後も完全一致する契約"
+        );
+    }
 }
