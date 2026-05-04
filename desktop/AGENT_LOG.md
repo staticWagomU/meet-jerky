@@ -21933,3 +21933,51 @@ test result: ok. 563 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-30) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-31 へ予防的ハンドオフ判断 (前 23 セッション (mjc-main-7〜29) と同じ 3 ループパターン継承を期待、ただし worker 起動問題切り分けが必要)
 ---
+
+## mjc-main-20260504-31 Loop 1 (= 旧 mjc-main-30 Loop 2 残務回収)
+
+- **開始日時 (JST)**: 2026-05-04 ~22:30
+- **担当セッション**: mjc-main-20260504-31 (canonical 名 mjc-main へ移譲済)
+- **役割**: メイン (worker 役務代行 = 前 worker silent fail のため AGENT_LOG.md 追記をメイン側で実施)
+- **セッション**: mjc-main-20260504-31 Loop 1
+
+### 作業範囲
+- 旧 mjc-main-30 Loop 2 で apple_speech.rs に書き込まれていた変更 (T10/T11/T12) を検証して commit。
+- AGENT_LOG.md 末尾に本エントリ追記。
+
+### 経緯 (報告と実態の不整合)
+- 旧 mjc-main-30 SUMMARY は「Loop 2 worker 起動失敗 (output 0 byte / pane 完全空白)」と報告。
+- ハンドオフ受領直後に `git diff src-tauri/src/apple_speech.rs` を確認したところ、+69 行 (T10/T11/T12 の 3 test) が prompt 仕様と完全一致して残存していた = worker は実際にはコード編集を完遂していたが、output ログ (`logs/agent/mjc-worker-apple-speech-meta-symmetric-tests-20260504-30-2.txt` = 0 byte) と AGENT_LOG.md 追記がなぜか欠落 = harness 観測層の隠れた失敗。
+- 検証で 565 passed 確認 (T11/T12 が active、T10 は `#[cfg(not(target_os = "macos"))]` で macOS 上では skip = prompt 仕様通り)。
+- 「ルール上、メインは原則アプリコード/ハーネスを直接編集しない」を維持しつつ、AGENT_LOG.md SESSION SUMMARY 系の追記はメイン直接編集の precedent ありで本ケースに適用。
+
+### 指示内容 (= 元 worker prompt の T10/T11/T12 と一致)
+- T10: `apple_speech_engine_new_returns_exact_japanese_error_message_on_non_macos_build` (#[cfg(not(target_os = "macos"))], error message 文言完全一致 by `assert_eq!`)
+- T11: `language_to_locale_returns_values_always_in_bcp47_pattern_for_supported_and_fallback_inputs` (BCP-47 format 不変条件: 8 input 走査 + ハイフン区切り 2 部分 + 左側 ASCII 小文字 + 右側 ASCII 大文字)
+- T12: `apple_speech_engine_debug_output_uses_struct_name_without_internal_field_leakage` (unit struct Debug 出力 = 型名のみ + 波括弧不在の二段 assert)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 565 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+  - 旧 mjc-main-30 Loop 1 commit 後 = 563 → 565 (+2、T10 は cfg gate で macOS 上 skip = 仕様通り)
+
+### 変更ファイル
+- src-tauri/src/apple_speech.rs (`mod tests` 末尾に T10/T11/T12 追加、関数本体・既存 9 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 565 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+旧 mjc-main-30 Loop 2 で worker output ログ + AGENT_LOG 追記が欠落した原因は未解明 (claude print mode の出力 redirect 失敗 / harness と claude binary 間の I/O 連携不具合の可能性)。後続 Loop でも observability の改善余地あり = harness 改善候補として記録。
+
+### 次アクション
+- worker 起動 health check (小 prompt で claude bin 動作確認)。
+- Loop 2 (本セッション) 候補は session.rs SessionSegment / Session の Debug 軸補強 (struct with fields への拡張)。
+---

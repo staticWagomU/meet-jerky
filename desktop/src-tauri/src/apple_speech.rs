@@ -311,4 +311,73 @@ mod tests {
         assert_eq!(super::language_to_locale(" "), "ja-JP");
         assert_eq!(super::language_to_locale("ja "), "ja-JP");
     }
+
+    #[test]
+    #[cfg(not(target_os = "macos"))]
+    fn apple_speech_engine_new_returns_exact_japanese_error_message_on_non_macos_build() {
+        // 既存 engine_errors_on_non_macos は contains 判定のみで、文言が "macOS" を
+        // 含む別文字列に変えられても検知できない。完全一致 assert で UI 表示文言の
+        // 体験保護を CI 固定する。Whisper 案内文の維持を保証する装置。
+        let err = AppleSpeechEngine::new().unwrap_err();
+        assert_eq!(
+            err,
+            "Apple SpeechAnalyzer は macOS でのみ利用できます。Whisper など別エンジンを選択してください。"
+        );
+    }
+
+    #[test]
+    fn language_to_locale_returns_values_always_in_bcp47_pattern_for_supported_and_fallback_inputs()
+    {
+        // BCP-47 形式 (xx-XX = 小文字-大文字) を全 input で保証する。既存 test は
+        // 絶対値を固定するが format 規則は未明示のため、将来 variant 追加時の format
+        // 一貫性を CI 固定する。「ISO 639-1 単独 ("ja") への変更」「format 変更」の
+        // 誤改修を遮断する装置。
+        for input in ["ja", "en", "auto", "", "xx", "Ja", "JA", "fr"] {
+            let locale = language_to_locale(input);
+            let parts: Vec<&str> = locale.split('-').collect();
+            assert_eq!(
+                parts.len(),
+                2,
+                "BCP-47 ハイフン区切りが 2 部分でない (input={input}, locale={locale})"
+            );
+            let (lang, region) = (parts[0], parts[1]);
+            assert!(
+                !lang.is_empty(),
+                "ハイフン左側 (language) が空 (input={input}, locale={locale})"
+            );
+            assert!(
+                !region.is_empty(),
+                "ハイフン右側 (region) が空 (input={input}, locale={locale})"
+            );
+            assert!(
+                lang.chars().all(|c| c.is_ascii_lowercase()),
+                "ハイフン左側に小文字以外 (input={input}, locale={locale})"
+            );
+            assert!(
+                region.chars().all(|c| c.is_ascii_uppercase()),
+                "ハイフン右側に大文字以外 (input={input}, locale={locale})"
+            );
+        }
+    }
+
+    #[test]
+    fn apple_speech_engine_debug_output_uses_struct_name_without_internal_field_leakage() {
+        // unit struct の Debug 出力は型名のみで構成される (#[derive(Debug)] 自動派生
+        // による Rust 言語仕様) 現契約を CI 固定する。将来「internal state 追加で
+        // Debug にフィールドが漏れる誤改修」を遮断する装置。enum 派生 (Loop 1) と
+        // 相補的に struct 派生をカバーすることで Debug 軸補強パターンを 2 連続適用。
+        let dbg_output = format!("{:?}", AppleSpeechEngine);
+        assert!(
+            dbg_output.contains("AppleSpeechEngine"),
+            "Debug 出力に struct 名がない: {dbg_output}"
+        );
+        assert!(
+            !dbg_output.contains('{'),
+            "Debug 出力に内部フィールドの波括弧が含まれる (unit struct 契約違反): {dbg_output}"
+        );
+        assert!(
+            !dbg_output.contains('}'),
+            "Debug 出力に内部フィールドの波括弧が含まれる (unit struct 契約違反): {dbg_output}"
+        );
+    }
 }
