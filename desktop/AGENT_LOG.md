@@ -25763,3 +25763,31 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - watchdog nudge 1 件: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」(Loop 29 worker 観測中に受信、worker 完走を待ってから対応 = 正しい運用 = mjc-main-20260505-12/13/14 と同パターン)
 
 ---
+[mjc-main-20260505-16 Loop 31 / 2026-05-05 ~JST]
+
+## What
+- `is_whereby_host` / `is_whereby_meeting_url` の 2 関数 + `WHEREBY_NON_ROOM_PATHS` const を `src-tauri/src/app_detection_whereby.rs` に移動
+- `classify_meeting_url` L529 を `crate::app_detection_whereby::is_whereby_meeting_url` 経由参照に更新
+- `lib.rs` に `mod app_detection_whereby;` 追加 (alphabetical 順 = app_detection_webex の直後)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3279 行 app_detection.rs の理解性向上)
+- mjc-main-20260505-15 Loop 29 (Webex 抽出 = commit b4a0098) の precedent を Whereby に応用
+- variety 規則: Loop 30 で docs 軸 pivot 経由のため、Loop 31 で extraction 再開しても sweep 違反でない
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- pub(crate) で visibility 最小化 (関数 2 つ)
+- WHEREBY_NON_ROOM_PATHS は Whereby モジュール内 private で済む
+- ヘルパー `is_valid_dns_label` は Loop 29 で pub(crate) 化済 (追加変更不要)
+- tests は classify_meeting_url 経由のため app_detection.rs 残置 = Loop 23 / Loop 29 precedent 踏襲
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+## commit
+- (commit hash を後で記入)
+
+---

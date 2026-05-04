@@ -526,7 +526,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         || crate::app_detection_webex::is_webex_webappng_meeting_url(&host, &parsed.path)
     {
         "Webex"
-    } else if is_whereby_meeting_url(&host, &parsed.path) {
+    } else if crate::app_detection_whereby::is_whereby_meeting_url(&host, &parsed.path) {
         "Whereby"
     } else if is_goto_meeting_url(&host, &parsed.path)
         || is_goto_legacy_meeting_url(&host, &parsed.path)
@@ -795,58 +795,10 @@ fn is_zoom_web_client_meeting_url(path: &str) -> bool {
     action == "join" && is_zoom_meeting_id(meeting_id)
 }
 
-const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
-    "about",
-    "pricing",
-    "blog",
-    "login",
-    "signup",
-    "help",
-    "terms",
-    "privacy",
-    "contact",
-    "features",
-    "customers",
-    "embedded",
-    "embed",
-    "information",
-    "api",
-    "products",
-    "integrations",
-    "security",
-    "careers",
-    "status",
-    "download",
-    "app",
-    "for-teams",
-    "developers",
-];
-
 const GOTO_NON_ROOM_PATHS: &[&str] = &[
     "about", "pricing", "blog", "login", "signup", "help", "terms", "privacy", "contact",
     "products", "features", "download", "app", "api", "security", "status",
 ];
-
-fn is_whereby_host(host: &str) -> bool {
-    if host == "whereby.com" {
-        return true;
-    }
-    let Some(subdomain) = host.strip_suffix(".whereby.com") else {
-        return false;
-    };
-    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
-}
-
-fn is_whereby_meeting_url(host: &str, path: &str) -> bool {
-    if !is_whereby_host(host) {
-        return false;
-    }
-    let Some(room) = path.strip_prefix('/') else {
-        return false;
-    };
-    let room = room.strip_suffix('/').unwrap_or(room);
-    !room.is_empty() && !room.contains('/') && !WHEREBY_NON_ROOM_PATHS.contains(&room)
-}
 
 fn is_goto_host(host: &str) -> bool {
     if host == "meet.goto.com" {
