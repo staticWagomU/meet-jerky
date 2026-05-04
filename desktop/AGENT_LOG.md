@@ -22249,3 +22249,44 @@ test result: ok. 574 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## mjc-worker-transcription-source-enum-symmetric-tests-20260504-32-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-source-enum-symmetric-tests-20260504-32-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-32 Loop 2
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「対称的補強の 3 軸構造」+「Debug 軸補強」6 連続 application = TranscriptionSource enum (Microphone/SystemAudio) への Debug + Copy + serde snake_case format 3 軸 application = mjc-main-30 Loop 1 で確立した SecretKey enum (Debug + Copy + kebab-case format) と対称な enum 派生対称軸補強パターンの 2 連続 application。
+- T1: transcription_source_debug_output_contains_each_variant_name_per_variant (Debug 出力に各 variant 名が含まれる + 両 variant の Debug 出力が異なる契約)
+- T2: transcription_source_copy_trait_keeps_original_usable_after_assignment (Copy 派生で original が assign 後も使える契約 = move されない)
+- T3: transcription_source_serde_serializes_each_variant_with_snake_case_value (serde Serialize で全 variant が snake_case 文字列になる契約 = for ループ走査)
+
+### 結果
+- cargo fmt --check: 差分なし (exit 0) ※ cargo fmt 自動整形後に確認
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 574 → 577 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub enum / pub struct / 既存 64 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 577 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

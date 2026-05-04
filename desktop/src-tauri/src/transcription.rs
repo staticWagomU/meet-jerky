@@ -2512,4 +2512,76 @@ mod tests {
             "TranscriptionSource::SystemAudio の serde 値は snake_case (system_audio): {json}"
         );
     }
+
+    #[test]
+    fn transcription_source_debug_output_contains_each_variant_name_per_variant() {
+        let mic = TranscriptionSource::Microphone;
+        let sys = TranscriptionSource::SystemAudio;
+        let dbg_mic = format!("{:?}", mic);
+        let dbg_sys = format!("{:?}", sys);
+        assert!(
+            dbg_mic.contains("Microphone"),
+            "Microphone variant の Debug 出力に variant 名 Microphone が含まれる: {dbg_mic}"
+        );
+        assert!(
+            dbg_sys.contains("SystemAudio"),
+            "SystemAudio variant の Debug 出力に variant 名 SystemAudio が含まれる: {dbg_sys}"
+        );
+        assert_ne!(
+            dbg_mic, dbg_sys,
+            "Microphone と SystemAudio の Debug 出力は異なる"
+        );
+    }
+
+    #[test]
+    fn transcription_source_copy_trait_keeps_original_usable_after_assignment() {
+        let original = TranscriptionSource::Microphone;
+        let copied = original;
+        assert_eq!(
+            original, copied,
+            "Copy 派生で copied が original の値と等しい"
+        );
+        assert_eq!(
+            original,
+            TranscriptionSource::Microphone,
+            "Copy 後も original は Microphone のまま使える"
+        );
+        let s_original = TranscriptionSource::SystemAudio;
+        let s_copied = s_original;
+        assert_eq!(
+            s_original, s_copied,
+            "Copy 派生で SystemAudio も copy される"
+        );
+        assert_eq!(
+            s_original,
+            TranscriptionSource::SystemAudio,
+            "Copy 後も SystemAudio の original は使える"
+        );
+    }
+
+    #[test]
+    fn transcription_source_serde_serializes_each_variant_with_snake_case_value() {
+        let cases: &[(TranscriptionSource, &str)] = &[
+            (TranscriptionSource::Microphone, "microphone"),
+            (TranscriptionSource::SystemAudio, "system_audio"),
+        ];
+        for (variant, expected) in cases {
+            let value = serde_json::to_value(variant).unwrap();
+            assert_eq!(
+                value,
+                serde_json::Value::String((*expected).to_string()),
+                "{:?} は serde で {} に serialize される",
+                variant,
+                expected
+            );
+            let s = serde_json::to_string(variant).unwrap();
+            assert_eq!(
+                s,
+                format!("\"{}\"", expected),
+                "{:?} は serde で \"{}\" に文字列化される",
+                variant,
+                expected
+            );
+        }
+    }
 }
