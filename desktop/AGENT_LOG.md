@@ -20001,3 +20001,120 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 メイン側で commit (B-Loop XS = parse 境界 test 4 件追加) + 残候補 (B 別 fn / D / S / F-Loop6 timer shutdown / K)
 
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~19:00 JST] mjc-main-20260504-21 状況メモ (3 ループ完了 + F-Loop5 機能完結 + parse 境界 test 補強)
+
+### 累積成果 (本セッション 3 ループ)
+- **テスト 478 → 488 passed** (+10 件 = Loop 1 で parse 純粋関数 6 件 + Loop 2 で内部状態のみ件数不変 + Loop 3 で parse 境界 test 4 件)
+- **コミット 3 件** (cceffa3, 4ca7e34, e34ba0e) + 本 SUMMARY 1 件
+- **clippy 警告ゼロ維持** (default + -D warnings, dead_code 再発なし)
+- **F-Loop5 機能完結** (parse 純粋関数 → iteration 変更 + display name 解決 の 2 段階 Tidy First 多段スライス完了 = エンドツーエンドで browser-only セッションでも会議終了通知が動く)
+- **parse 関数境界補強完了** = T7 (host 内 `:` 含む) / T8-T9 (prefix 単体) / T10 (service 欠落) で機能完結直後の境界補強を消化
+- **AGENT_LOG.md 先頭追記事故 1 回再発 → 即時修正済** = mjc-main-15 から始まった事故が 5 セッション (mjc-main-17/18/19/20) 連続で防げていたが Loop 1 worker で再発、Loop 2 / Loop 3 worker は prompt 改善で防止に成功
+- **累積 worker 完走 50/50** (100%)
+
+### 完了した 3 ループの詳細
+1. **Loop 1 (cceffa3)**: `refactor(app_detection)`: F-Loop5 Loop 1 = `parse_throttle_key_to_display_name(key: &str) -> Option<String>` 純粋関数追加 + test 6 件 + AGENT_LOG.md 先頭追記事故修正 = 3 経路 (`bundle_id` 単独 / `"browser:..."` / `"window-title:..."`) の throttle_key を display name に変換、`strip_prefix` + `splitn(N, ':')` で安全実装、`#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` + `#[allow(dead_code)]` の二重 attribute (mjc-main-20 Loop 1 precedent 踏襲) = Tidy First (誰も parse 関数を呼ばない、Loop 2 で iteration が呼ぶ予定)
+2. **Loop 2 (4ca7e34)**: `feat(app_detection)`: F-Loop5 機能完結 = `check_all_inactive_bundles` の iteration を `WATCHED_BUNDLE_IDS` から `last_seen_secs.lock().keys().cloned().collect::<Vec<String>>()` 全件巡回に変更 + `parse_throttle_key_to_display_name` で display name 解決 + `check_meeting_inactive_for_bundle` の引数 rename (`bundle_id` → `throttle_key`, ロジック完全不変) + parse 関数の dead_code 二重 attribute 削除 (推移的 dead_code 判定で警告ゼロ確認) = MutexGuard を Vec collect で即解放してデッドロック回避、parse が None なら skip = 通知発火せず安全側
+3. **Loop 3 (e34ba0e)**: `test(app_detection)`: B-Loop XS = parse 関数の境界 test 4 件追加 = T7 (host 内 `:` ポート番号付きで service 抽出が `parts[1]` で正しく動作 = `splitn(3, ':')` の安全性を実例で固定) + T8 (`"browser:"` prefix のみで残り空 → None) + T9 (`"window-title:"` prefix のみで残り空 → None) + T10 (`"browser:com.apple.Safari"` で service 欠落 → None) = 関数本体完全無変更、test 追加のみで Tidy First
+
+### 確立されたパターン (本セッション)
+- **「F-Loop5 2 段階 Tidy First 機能完結」パターン** (1 セッション内累積成果): Loop 1 (parse 純粋関数, ユーザー観測不可) → Loop 2 (iteration 変更 + 引数 rename + dead_code 削除, ユーザー観測可能) = 1 機能を 2 つの Tidy First スライスに分解 = mjc-main-19/20 で確立した「F-Loop3 4 段階」パターンより小規模 (S-M スコープ向け) = `「機能完結を 2 段スライスに分解する」` パターン (handoff サマリ予測通り)
+- **「機能完結直後の境界補強」パターン** (Loop 3): parse 関数が runtime で呼ばれるようになった直後 (= Loop 2 完了直後) のタイミングで境界 test 補強 = 未対応境界が実機で踏まれるリスクが上昇する瞬間に CI 保護を追加 = 「機能完結 → 境界補強」の 3 ループ目締めパターンとして application 可能
+- **「worker prompt で末尾追記を明示するパターン」** (Loop 2 / Loop 3): Loop 1 で先頭追記事故が発生 → Loop 2 / Loop 3 では worker prompt に「**ファイル末尾追記必須**」+「先頭は **絶対に触らない**」+ 「具体手順 = `tail -10 AGENT_LOG.md` で末尾を確認」を明示 = Loop 2 / Loop 3 で事故防止に成功 = 後続セッションも継続適用必要
+
+### 累積パターン (前 mjc-main-7〜20 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### F-Loop5 機能完結によるユーザー体験 (新機能、本セッション提供)
+- **Safari / Chrome 等で Google Meet / Zoom Web / Teams Web に参加 → 10 分間 URL 変化なし → macOS 通知センターに「<service 名> が <分数> 分以上検知されていません。会議が終了している場合は録音と文字起こしを停止してください。」通知**
+- アプリ経路 (Zoom/Teams/FaceTime) の終了通知 (mjc-main-20 で完成) と同等の体験を browser-only セッションにも拡張完了
+- product-concept.md「ユーザーが録音の開始を忘れても 検知・通知・開始できる体験」の **終了側体験が 全経路で揃った**
+
+#### parse 関数の dead_code 戦略 (Loop 2 で確認済み)
+- `parse_throttle_key_to_display_name` は `check_all_inactive_bundles` から呼ばれるようになって、両 attribute (`#[cfg_attr]` + `#[allow]`) 削除可能
+- ただし `check_all_inactive_bundles` 自体は依然 `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` を持つ = 推移的に parse 関数も非 macOS で dead_code 扱いになるはずだが、clippy が警告を出さない = Rust コンパイラの dead_code 判定が cfg_attr ありの呼び出し元から呼ばれる関数を別扱いしている可能性
+- 今後類似のシナリオ (`#[cfg_attr]` 付き呼び出し元から純粋関数を呼ぶ) ではまず両 attribute 削除を試して clippy で確認する戦略を採用
+
+#### Vec collect パターン (Loop 2 で採用)
+- `state.last_seen_secs.lock().keys().cloned().collect::<Vec<String>>()` で MutexGuard を即解放してから iterate = `for key in guard.keys()` のまま iterate すると `check_meeting_inactive_for_bundle` 内で `last_seen_secs.lock()` を再取得してデッドロックする
+- String allocation のオーバーヘッドは無視できる (last_seen_secs 内のエントリ数 = 検知済み会議数 = 通常 1-3 件)
+- 代替案 (drain や into_iter 等) は MutexGuard 内で iterator を保持できないため不採用
+- Rust 標準的な lock-then-collect イディオムの典型例
+
+#### parse 関数の境界処理範囲 (Loop 3 で補強)
+- 対応済境界: T1-T6 (mjc-main-21 Loop 1) + T7-T10 (本 Loop 3) = 計 10 件
+- T7 = host 内 `:` ポート番号付き / T8 = `"browser:"` prefix のみ / T9 = `"window-title:"` prefix のみ / T10 = browser key で service 欠落
+- 未対応境界 = 5 セグメント超え, Unicode bundle_id, 異常に長い文字列等 = 別 Loop で必要に応じて追加可
+
+#### MEETING_INACTIVE_THRESHOLD = 600 秒の妥当性 (継承)
+- 画面共有・録画開始等で URL polling が一時停止する正常パターンの最大スパンを超える想定だが **実機調整未確認**
+- 別 Loop で実機データに基づき調整可能
+- **新たな統合候補**: settings.rs リファクタ (S 候補) と統合して、設定画面から変更可能にする (前 mjc-main-20 SUMMARY で既に明示)
+
+#### コミットメッセージ書き方の運用知見 (本セッションで継承遵守)
+- 全 3 ループとも `Read → Write → commit` の 3 ステップを **事故なく実行** = mjc-main-19 Loop 2 で再発した事故と本セッション Loop 1 の AGENT_LOG.md 先頭追記事故は別事象、commit message は OK
+- 補助ツール `scripts/mjc-commit-with-read.sh` 等の作成は依然未着手 (本セッション scope 外)、後継セッションで余裕あれば検討
+
+#### worker prompt の事故防止強化 (本セッション Loop 2 / Loop 3 で確立)
+- AGENT_LOG.md 先頭追記事故を Loop 1 で発生させた後、Loop 2 / Loop 3 の worker prompt に **「ファイル末尾追記必須 + 先頭は絶対に触らない + 具体手順 = `tail -10 AGENT_LOG.md` で末尾を確認」** を明記 → 事故防止成功
+- **後続セッションも継続適用必要** = mjc-main-22 worker prompt にもこの段落を含める
+
+#### 既存累積技術注意点 (前 mjc-main-7〜20 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### B (継承). transcript_bridge.rs / session_store.rs 周辺 別 fn ターゲット (規模 S, 価値中)
+- transcript_bridge.rs `normalize_speaker` は完備済 = 別 fn ターゲット必要
+- 候補: `segment_to_append_args` / `build_append_args_for_emission` / `build_append_args_for_emission_at` の境界 test 補強
+
+#### D (継承). transcription.rs error path 残り (規模 S〜M, 複数ループ)
+
+#### S (継承, 統合候補あり). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+- 統合候補: `MEETING_INACTIVE_THRESHOLD` を const から settings 経由で変更可能にする
+
+#### F-Loop6 (継承). タイマースレッド shutdown 対応 (規模 M, 価値中)
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+- 既存 detection_callback / browser_url_callback の shutdown と整合性検討必要
+
+#### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+### AGENT_LOG.md 構造の問題 (要整理、優先度低)
+- 本セッションの 3 worker log のうち Loop 1 が先頭追記事故 → メイン側で末尾移動して回復、Loop 2 / Loop 3 は末尾追記成功
+- AGENT_LOG.md 全体は **20003 行** (前 mjc-main-20 終了時 19903 行 + 100 行 = 約 +100 行/セッション 増加)
+- 構造的整理は依然必要 = 別 Loop 候補 (低優先)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 488 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用 (本セッションは frontend 触らず)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり、本 SUMMARY も同様)
+
+### 後継 mjc-main-20260504-22 への予防的ハンドオフ判断
+- 前 14 セッション (mjc-main-7〜20) と同じ 3 ループパターン継承で予測可能性最優先
+- context 推定 ~70-80% でハンドオフ余裕あり (3 ループ + worker 監視 + AGENT_LOG.md 先頭追記事故修正 + AGENT_LOG.md SUMMARY 編集を経過)
+- 後継は **B (transcript_bridge.rs 別 fn 境界 test 補強, 規模 S, 価値中)** または **F-Loop6 (タイマースレッド shutdown, 規模 M, 価値中)** が候補
+- 推奨: **B** = 別ファイルで認知文脈リセット + 規模 S で確実完走 + 前 mjc-main-20 SUMMARY で「部分着手済み」とされていた継承課題消化
+- フォールバック候補: D (transcription.rs error path) / S (settings.rs リファクタ + MEETING_INACTIVE_THRESHOLD 統合) / F-Loop6 (timer shutdown) / parse 関数追加境界 test (Unicode/5 セグメント超え 等)
+
+### コミット周期目標達成状況
+- 1 ループ目標 15 分以内
+- 本セッション実績: Loop 1 = ~22 分 (worker ~5 分 + 先頭追記事故修正 + verify + commit, AGENT_LOG.md 修正で +5 分), Loop 2 = ~17 分 (worker ~3 分 + verify + commit), Loop 3 = ~14 分 (worker ~2.5 分 + verify + commit)
+- 平均 ~17 分/loop = 目標 15 分以内をやや超過 (前 mjc-main-20 の ~12 分/loop より遅め、AGENT_LOG.md 先頭追記事故修正の影響)
+- 後継セッションは AGENT_LOG.md 先頭追記事故防止により目標 ~12-14 分/loop に戻るはず
+
+### ユーザー直伝指示 (未消化): なし
+- watchdog 継続指示 3 回受領 (sleep が長くて idle 判定された) = 既に進行中の loop に支障なし
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-21 → mjc-main-20260504-22)
+- **判断時刻 (JST)**: 2026-05-04 ~19:00 JST (推定)
+- **判断理由**: 3 ループ完了の良い区切り。前 14 セッション同型の 3 ループパターン。F-Loop5 機能完結 + parse 境界補強 = browser 経路の終了通知体験が完全に確立 + parse 関数のロバストネス CI 保護完了。
+- **使用率 (推定)**: 約 70-80%
+- **引き継ぎ先**: `mjc-main-20260504-22`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-22.txt` (作成予定)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-22 docs/handoff/mjc-main-20260504-22.txt`
+- **canonical 名移譲コマンド**: 後継から `bash scripts/agent-adopt-main.sh mjc-main-20260504-22 mjc-main`
