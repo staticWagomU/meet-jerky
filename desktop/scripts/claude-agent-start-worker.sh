@@ -38,8 +38,11 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
 
 # stdin redirect: large prompts (4KB+) trip tmux argv limits when expanded via
 # `-p "$(cat ...)"`. Pipe the prompt instead — claude -p reads it from stdin.
+# PATH is also rebuilt inside the inner shell (escaped \$PATH) because the
+# outer shell's $PATH can be 16KB+ and would push the tmux command string past
+# its limit if AGENT_PATH was expanded here.
 tmux new-session -d -s "$SESSION" \
-  "cd \"$ROOT_DIR\" && cat \"$PROMPT_FILE\" | PATH=\"$AGENT_PATH\" claude --model \"$CLAUDE_MODEL_WORKER\" --dangerously-skip-permissions -p 2>&1 | tee \"$OUTPUT_FILE\""
+  "cd \"$ROOT_DIR\" && cat \"$PROMPT_FILE\" | PATH=\"\$HOME/.local/bin:/opt/homebrew/bin:\$HOME/.cargo/bin:\$PATH\" claude --model \"$CLAUDE_MODEL_WORKER\" --dangerously-skip-permissions -p 2>&1 | tee \"$OUTPUT_FILE\""
 
 echo "started worker session: $SESSION"
 echo "model: $CLAUDE_MODEL_WORKER"

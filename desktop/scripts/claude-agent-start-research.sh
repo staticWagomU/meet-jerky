@@ -39,8 +39,11 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
 # Print mode: claude reads the prompt from stdin and writes the answer to stdout,
 # then exits. Tee both stdout/stderr to the output file for later inspection.
 # stdin redirect avoids the tmux argv limit when prompts grow past ~4KB.
+# PATH is also rebuilt inside the inner shell (escaped \$PATH) because the
+# outer shell's $PATH can be 16KB+ and would blow the tmux command-string limit
+# if AGENT_PATH was expanded at this layer.
 tmux new-session -d -s "$SESSION" \
-  "cd \"$ROOT_DIR\" && cat \"$PROMPT_FILE\" | PATH=\"$AGENT_PATH\" claude --model \"$CLAUDE_MODEL_RESEARCH\" --dangerously-skip-permissions -p 2>&1 | tee \"$OUTPUT_FILE\""
+  "cd \"$ROOT_DIR\" && cat \"$PROMPT_FILE\" | PATH=\"\$HOME/.local/bin:/opt/homebrew/bin:\$HOME/.cargo/bin:\$PATH\" claude --model \"$CLAUDE_MODEL_RESEARCH\" --dangerously-skip-permissions -p 2>&1 | tee \"$OUTPUT_FILE\""
 
 echo "started research session: $SESSION"
 echo "model: $CLAUDE_MODEL_RESEARCH"

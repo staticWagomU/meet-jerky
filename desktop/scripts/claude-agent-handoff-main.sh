@@ -39,8 +39,11 @@ mkdir -p "$(dirname "$OUTPUT_FILE")"
 # Interactive: passing the prompt as a positional arg makes claude submit it as
 # the first user turn and keep the TUI open afterwards, so the watchdog can
 # inspect the pane and nudge it on idle.
+# PATH is constructed inside the inner shell (escaped \$PATH) because the outer
+# shell's $PATH can be 16KB+ and would blow past tmux's command-string limit if
+# expanded into AGENT_PATH at this point.
 tmux new-session -d -s "$SESSION" \
-  "cd \"$ROOT_DIR\" && PATH=\"$AGENT_PATH\" claude --model \"$CLAUDE_MODEL_MAIN\" --dangerously-skip-permissions \"\$(cat \"$PROMPT_FILE\")\""
+  "cd \"$ROOT_DIR\" && PATH=\"\$HOME/.local/bin:/opt/homebrew/bin:\$HOME/.cargo/bin:\$PATH\" claude --model \"$CLAUDE_MODEL_MAIN\" --dangerously-skip-permissions \"\$(cat \"$PROMPT_FILE\")\""
 tmux pipe-pane -o -t "$SESSION" "cat >> \"$OUTPUT_FILE\""
 
 echo "started successor main session: $SESSION"
