@@ -17422,3 +17422,154 @@ is_scribe_error_event の boundary jets ("scribe_error" 最短 / "scribe__error"
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~10:25 JST] mjc-main-20260504-9 状況メモ (ループ 1-3 詳細)
+
+### 本セッション (mjc-main-20260504-9) の累積実績
+- **3 ループ完了** / **+15 テスト** / **3 コミット** / **平均 ~10-15 分/ループ** (目標達成)
+- すべてテスト追加のみ (実装変更ゼロ、visibility 変更ゼロ、新規 import ゼロ)
+- cargo test: 370 → 385 passed (+15)
+- cargo clippy default: 警告ゼロ維持
+- cargo clippy -W uninlined_format_args: 警告ゼロ維持
+- フロントエンド build: 通過 (codex 活動本セッション中ゼロ、~28 時間以上静か)
+
+### コミット履歴 (本セッション 3 件)
+1. `61e282a` test(cloud_whisper_errors): sanitize_error_body の boundary 199/200/201 + 正規化順序 + multibyte 境界ジャスト 5 件 (199 chars で truncate されない / 200 chars ジャスト で truncate されない `>` 比較固定 + `>=` 誤改修検知装置 / 201 chars で初めて truncate (MAX+3=203 chars + suffix '...') / raw 496 chars + 正規化後 199 chars で truncate されない line 26→27 の whitespace 正規化先行順序契約 / 'あ' x 201 で multibyte 境界ジャスト + byte count 誤改修検知) で MAX_ERROR_BODY_CHARS=200 周辺の振る舞いを完全網羅 (370→375 passed)
+2. `7cc7f94` test(transcript_bridge): normalize_speaker の Unicode whitespace 境界 5 件 (U+3000 全角空白 + ASCII spaces 混在も str::trim 対象 / U+3000 のみと U+3000+ASCII whitespace 混在で trim 後 empty → '不明' fallback / NUL byte は char::is_whitespace で false で trim 対象外 passthrough / SOH (\x01) と DEL (U+007F) は ASCII control だが whitespace ではない passthrough / ZWSP (U+200B) と ZWJ (U+200D) は不可視だが whitespace ではない passthrough + ZWSP のみでも fallback ではなく passthrough) で str::trim の Unicode White_Space プロパティ準拠と char::is_whitespace の現契約を完全に固定 (375→380 passed)
+3. `6760d58` test(elevenlabs_realtime): is_scribe_error_event の boundary jets + extract_error_message の non-string fallback chain 5 件 ('scribe_error' (中間 0 長 = 共有 _ で接する最短形) と 'scribe_x_error' (中間 1 文字) で true / 'scribe__error' (独立 _ 2 個 + 中間 0 長) と 'scribe_a_error' で true、'scribe' / '_error' 単体で false / priority1 (message) が null/number/array なら priority2 (error string) fallback の 3 シナリオ / priority2 (error) が object/null なら priority3 (error.message) nested fallback、'error': null で None / 全 priority 非文字列な 4 シナリオで終端 None) で starts_with+ends_with の && 最小条件 boundary と or_else fallback chain の as_str() 1 階層判定契約を完全固定 (380→385 passed)
+
+### 確立したパターン (本セッション)
+- **`>` 境界の上下 + 境界ジャストの 3 点対称網羅** (ループ 1, T1+T2+T3): 199/200/201 で truncation 分岐の境目を `>=` 誤改修検知装置として確立。前セッション「boundary 上限/下限の対称網羅」を 3 点 (下限/境界/上限) へ拡張。
+- **正規化フェーズ順序契約の test 文書化** (ループ 1, T4): line 26 (whitespace 正規化) → line 27 (char count 判定) の順序を「raw 496 chars → 正規化後 199 chars → truncate されない」という決定的差で固定。phases-order test pattern。
+- **multibyte 境界ジャスト + byte count 誤改修検知** (ループ 1, T5): "あ" × 201 で「200 個の "あ" + '...'」を期待することで、UTF-8 1 文字 = 3 bytes として扱う誤実装を検知。
+- **`str::trim` の Unicode `White_Space` プロパティ準拠の test 文書化** (ループ 2, T1+T2): U+3000 全角空白を ASCII whitespace と同等に trim する現契約を固定、ASCII-only trim の独自実装誤リファクタを検知。
+- **`char::is_whitespace` の例外契約 (control/zero-width passthrough) の test 文書化** (ループ 2, T3+T4+T5): NUL/SOH/DEL/ZWSP/ZWJ などが「不可視/制御だが whitespace ではない」境界を 3 種類で固定、独自 sanitize 実装への誤リファクタを検知。
+- **`&&` 連接の最小条件 boundary jets (中間 0 長 / 1 文字)** (ループ 3, T1+T2): "scribe_error" (中間 0 長 = 共有 _ で接する最短形) と "scribe__error" (独立 _ 2 個) で starts_with + ends_with の overlap 検出なし契約を固定。前セッション first-violation contract と対称的に「最小成立条件」boundary を確立。
+- **`or_else` fallback chain の 1 階層 as_str() 判定契約の test 文書化** (ループ 3, T3+T4+T5): priority chain を「priority1 が non-string なら priority2 へ静かに fallback」する現契約を 3 priority × 各 non-string パターン (null/number/array/object) で網羅、chain の途中段で as_str() 失敗時の fallback 連鎖を保護。
+
+### 既存累積パターン (前 mjc-main-20260504-8 から継承、本セッションで再利用)
+- private fn 直接呼び出しテスト
+- エラー文言の contract enforcement
+- 境界値テストの「対称ペア」(本セッション ループ 1 で 3 点対称へ拡張)
+- 3 層テスト構造、OS 互換 ErrorKind 契約強制
+- state machine 混在遷移テスト
+- format prefix の層内独立確認
+- エスケープ漏れの網羅補完
+- UI 文言一致の契約強制
+- 上位層責任境界の契約強制 (本セッション再利用なし、normalize_speaker の Unicode 境界へ移行)
+- NaN/+Inf 非対称責務分離
+- sanitize 前段の bit-pattern 直接テストパターン
+- first-violation contract (本セッション ループ 3 で「最小成立条件」boundary へ対称展開)
+- 3 軸テスト戦略 (boundary + invariant + format)
+- markdown encode/decode 双方向対称契約
+- JST 固定値の二重軸固定
+- 観測時刻注入経路 (observed=Some) の direct test
+- cross-fn invariant の 5 フィールド全確認
+- 「薄いデータコンテナ」設計を test で文書化
+- boundary 上限/下限の対称網羅 (本セッション 3 点拡張)
+- エラー文言完全一致 + boundary 同一性
+
+### 重要な技術的注意点 (踏みやすい罠、本セッション分含む)
+- **`sanitize_error_body` の truncation 条件は `>` であり `>=` ではない** (cloud_whisper_errors.rs line 27): MAX_ERROR_BODY_CHARS=200 ジャストでは truncate されず passthrough。これが分岐の境目で、本セッション T2 で固定済み。
+- **`sanitize_error_body` は whitespace 正規化が char count 判定より先に走る** (line 26 → 27): 入力 raw が MAX 超でも正規化後に MAX 以下なら truncate されない。本セッション T4 で固定済み。順序入れ替え誤改修検知装置。
+- **`str::trim` は Unicode `White_Space` プロパティ準拠**: U+3000 全角空白も trim 対象。ASCII-only trim を期待した独自実装に誤リファクタすると本セッション T1/T2 が失敗。
+- **`char::is_whitespace` は ASCII の限定 set + Unicode space**: ASCII control の `\t \n \r \x0B \x0C` の 5 種だけが whitespace。NUL byte / SOH / DEL / ZWSP / ZWJ は false。本セッション T3/T4/T5 で固定済み。
+- **`is_scribe_error_event` (elevenlabs_realtime.rs line 373-375)**: `starts_with("scribe_") && ends_with("_error")` の単純連接で overlap 検出なし。"scribe_error" (12 chars) でも true、最短ジャスト境界。本セッション T1/T2 で固定済み。
+- **`extract_error_message` (line 414-426) は priority chain で as_str() 1 階層判定**: priority1 (message) が null/number/array なら priority2 (error string) へ静かに fallback、priority2 が object/null なら priority3 (error.message) nested へ fallback。本セッション T3/T4/T5 で固定済み。
+- **`pending_timeout_tests` mod は `mod ws_task` 内 (line 482)**: private fn (`is_scribe_error_event` / `extract_error_message` / `push_error` / `wait_for_pending_after_commit`) を `super::*` 経由で直接呼べる。
+- **既存累積パターン継承** (前 SESSION SUMMARY 参照、変更なし、本セッションで触れていない領域は前セッション SUMMARY を参照)
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### A. session_manager.rs `persist_if_configured` direct test (規模 XS、価値中、gap 薄め)
+- private fn (line 164-175)。既存 16 件は pub fn 経由で間接テスト。
+- direct test なら ActiveSession + ActiveOutput を tests mod 内で直接構築可能 (private struct だが同 mod 内なら field アクセス可)。
+- 5 件案: output=None で no-op / output=Some + 正常 path で .md 書き出し / output=Some + 不正 path でエラーが eprintln されるが panic しない / phase ラベル "append"/"finalize" の eprintln 文字列に含まれる / persist 後でも in-memory consistency が保たれる
+- **注意**: eprintln 観測は test では難しい (stderr 捕捉が必要)、価値は中程度。worker prompt で gap 明示必須。
+
+#### D'. openai_realtime.rs の追加テスト (規模 XS〜S、価値中、要事前 grep)
+- elevenlabs_realtime と対称な ws_task private fn が存在する可能性。本セッション ループ 3 で elevenlabs 側を補強した対称形として、openai 側の同等補強を検討。
+- 既存 14 件 (mod tests line 473-720+ 周辺)。`is_scribe_error_event` 相当は openai にはない (openai 固有の error event 名規則)。
+- 残り gap 候補: openai 固有の error event 種別 (`response.error` / `error.message` / `session.error` 等)、`extract_*` 系の priority chain。要事前 grep で gap 確認必須。
+
+#### Y. elevenlabs_realtime.rs `extract_transcript` の追加 boundary (規模 XS、価値低)
+- 既存 3 件 (`_prefers_transcript_field_over_text_field` / `_falls_back_to_words_array_with_text_or_word_keys` / `_returns_none_when_no_relevant_field_present`) でかなりカバー済み。
+- 残り gap: `words` array 内に `text` も `word` も無い entry が混在する場合の skip 動作 (既存 line 592 の `unrelated` 1 件のみではなく混在パターン)、`words` array 内 entry の `text` が non-string (null/number) の場合、`transcript` field が non-string の場合の他 priority への fallback。
+
+#### E (継承). transcription.rs の追加 error path (規模 S〜M)
+- 1896 行最大規模。前 mjc-main-20260504-8 ループ 3 で `validate_stream_count_for_engine` 5 件補強済 (本セッションでは未着手)。
+- 残り gap: `load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺 (実環境依存高い fn が多い)。
+- worker 1 ループで完結しにくい可能性、複数ループ構成 (1 件 ≒ 1 fn の direct test) が安全。
+
+#### F (継承). drop メトリクスを Tauri イベント化 (規模 M、価値 9)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: rust 側に payload struct + emit のみ追加 (frontend hookup なし) で 1 ループ。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。
+
+#### G' (継承). 会議終了検知の遅延監視 (規模 S〜M)
+
+#### S (継承). settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+
+#### K (継承). clippy::pedantic の選択的有効化 (規模 L、非優先)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 385 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+### ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>`
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>`
+- watchdog: `mjc-watchdog` 既に走行中、interval=180s, nudge_cooldown=300s
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh <successor> mjc-main`
+
+### コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~10-15 分/loop (3 ループ全テストのみで安定、累積 14/14 worker 完走)。
+- worker prompt の **5 セクション構造** (背景/Why、test 案 assertion レベル、実装上の注意、検証手順、AGENT_LOG.md 記載項目) は本セッション 3/3 完走、累積 14/14 完走。
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション。
+- 本セッションは前 2 セッション同様 3 ループでハンドオフ判断。
+  理由: ハンドオフ prompt 受領 (約 13K token) + Read 多め (cloud_whisper_errors / transcript_bridge / elevenlabs_realtime partial × 複数) + worker tail × 4 + grep 多数 + 必読ドキュメント 4 ファイル read で context 70-75% 推定。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残すことで watchdog 自動 /clear 復活時も状況復元可能。
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は本セッション中 3 回受領、すべて改善ループ進行で消化済み。
+
+### 後続メイン候補名
+- `mjc-main-20260504-10`
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-9 → mjc-main-20260504-10)
+
+- **判断時刻 (JST)**: 2026-05-04 ~10:25 JST (実時刻)
+- **判断理由**: 3 ループ完了の良い区切り。前 2 セッション (mjc-main-20260504-7 / mjc-main-20260504-8) と同じ 3 ループパターン。context 推定 70-75% 近辺で予防的ハンドオフ。
+- **使用率 (推定)**: 約 70-75%
+- **引き継ぎ先**: `mjc-main-20260504-10`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-10.txt` (作成予定)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-10 docs/handoff/mjc-main-20260504-10.txt`
+- **canonical 名移譲コマンド**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-10 mjc-main`
+- **判断履歴の保存ポイント**:
+  - `>` 境界の 3 点対称網羅パターン (ループ 1)
+  - 正規化フェーズ順序契約 test 文書化 (ループ 1, T4)
+  - multibyte 境界ジャスト + byte count 誤改修検知 (ループ 1, T5)
+  - str::trim の Unicode White_Space 準拠 test 文書化 (ループ 2, T1+T2)
+  - char::is_whitespace の例外 (control/zero-width passthrough) test 文書化 (ループ 2, T3+T4+T5)
+  - && 連接の最小成立条件 boundary jets (ループ 3, T1+T2)
+  - or_else fallback chain の 1 階層 as_str() 判定契約 test 文書化 (ループ 3, T3+T4+T5)
+- **次ループ候補の現状**:
+  - A. session_manager.rs persist_if_configured direct test (規模 XS、価値中、gap 薄め)
+  - D'. openai_realtime.rs の対称補強 (規模 XS〜S、価値中、要事前 grep)
+  - Y. elevenlabs_realtime.rs extract_transcript boundary (規模 XS、価値低)
+  - E (継承). transcription.rs error path 残り (規模 S〜M)
+  - F (継承). drop メトリクス Tauri イベント化 (規模 M, 価値 9)
+  - G' (継承). 会議終了検知の遅延監視 (規模 S〜M)
+  - S (継承). settings.rs Tidy First (規模 M、2 ループ)
+- **未消化のユーザー直伝指示**: なし
