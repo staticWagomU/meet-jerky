@@ -24526,3 +24526,20 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 依存関係追加: なし (transcription_types.rs の ModelInfo を crate::transcription_types::ModelInfo で直接 import)
 - 次アクション: Phase 2-A 続き (WhisperLocal) または variety pivot 判断はメインエージェントが Loop 10 で行う
 ---
+
+## mjc-main-20260505-5 Loop 10 — harness 改善 J: stdin redirect 化を script に焼き付け (variety pivot)
+
+- 開始日時: 2026-05-05T03:05:00Z 頃 (mjc-main-20260505-5 セッション内)
+- 担当セッション: mjc-main (mjc-main-20260505-5 = canonical 移譲済)
+- 役割: メイン直接編集 (autonomous-main-prompt-claude.md の例外規定「自律運用を停止させないための最小限のハーネス修正」に該当)
+- 作業範囲: scripts/claude-agent-start-worker.sh + scripts/claude-agent-start-research.sh の起動コマンド 1 行ずつを stdin redirect 方式 (`cat "$PROMPT_FILE" | PATH=... claude -p`) に書き換え + 説明コメント 1 行ずつ追加。handoff-main.sh は interactive モード必須 (rustdoc コメント line 39-41 の前任者意図) のため触らない
+- 指示内容: tmux 引数長制限 (4209 bytes でも too long エラー、handoff 時に 19054 bytes prompt が too long で短縮 prompt 経由になった precedent あり) を完全回避するため、引数展開方式 `-p "$(cat "$PROMPT_FILE")"` を pipe 方式 `cat "$PROMPT_FILE" | claude -p` に変更
+- main 直接編集の理由: 1 行 × 2 ファイルの trivial scope + ハーネス自身の編集なので worker overhead より bootstrapping リスク (worker 起動に現スクリプトを使う + 編集途中で worker 起動失敗 → 次 Loop 不能) 回避 + autonomous-main-prompt-claude.md の例外規定明示
+- 結果: 成功
+- 変更ファイル: scripts/claude-agent-start-worker.sh (line 39-40 = stdin redirect 化 + 説明コメント 2 行追加) + scripts/claude-agent-start-research.sh (line 41 = stdin redirect 化 + 説明コメント 1 行追加)
+- 検証結果: bash -n syntax check 両 script OK / git diff --check (trailing whitespace なし) / 実起動テストは省略 (次 Loop の worker 起動で自然検証される設計、リスク = bash 構文 OK の段階で起動失敗の可能性は極小)
+- 依存関係追加: なし (シェル組み込み機能のみ)
+- variety 規則: Loop 8/9 の extraction 連続から harness 軸への完全 pivot = priority 直接寄与は弱いが「自律運用継続性 = 全 priority への間接寄与」と判断 + extraction 3 連続を回避する素直な variety pivot 発動 = 規則準拠
+- 残リスク: 実起動テスト未実施 = 次 Loop 開始時に worker 起動が壊れていれば即露見 (ロールバック容易、--amend 禁止のため revert commit で復旧)。pipe 方式の precedent は handoff prompt によると本セッション含めて 3 件成功実証済 = 動作確実度高
+- 次アクション: Loop 10 完走 + コンテキスト管理判断 → 「2 ループ + 早期 handoff」precedent 強化 (mjc-main-20260505-4 で確立) を継承し、後継 mjc-main-20260505-6 への予防的 handoff 準備
+---
