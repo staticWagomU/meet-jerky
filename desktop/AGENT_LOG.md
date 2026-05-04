@@ -17425,6 +17425,55 @@ is_scribe_error_event の boundary jets ("scribe_error" 最短 / "scribe__error"
 
 ---
 
+### session_manager.rs `persist_if_configured` の direct test 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-session-manager-persist-direct-tests-20260504-10-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_manager.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+persist_if_configured の direct test を 5 件で固定 (output=None no-op / output=Some 正常書き出し / 不正 path で panic-free / 同一 active 2 回呼びの idempotency / phase ラベル一般性)。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | persist_if_configured_is_no_op_when_output_is_none | output=None で disk 副作用ゼロ + session state 不変 |
+| T2 | persist_if_configured_writes_markdown_when_output_is_some | output=Some 正常 path で .md 書き出し + 本文に title/segment 含む |
+| T3 | persist_if_configured_does_not_panic_when_path_parent_is_missing | 親ディレクトリ無しでも panic せず session state 不変 |
+| T4 | persist_if_configured_is_idempotent_when_called_repeatedly | 同じ active を 2 回 persist しても disk content 同一 (overwrite idempotency) |
+| T5 | persist_if_configured_accepts_arbitrary_phase_label_without_panic | "append"/"finalize"/""/"🔥"/改行/"phase=test" でも panic せず disk content に phase 文字列漏れない |
+
+#### 不変条件 / 設計意図
+- T1 は output=None 分岐の no-op を direct で固定、output=None 経路を pub fn より独立に保護。
+- T2 は disk 書き出し最小契約の direct 版固定 (既存 pub fn 経由テストとの三角測量)。
+- T3 は I/O エラー時 panic-free 契約の direct 固定 (`?` リファクタへの誤改修検知)。
+- T4 は overwrite idempotency 契約の固定 (新規ファイル追加されないこと併せて固定)。
+- T5 は phase 引数が eprintln 専用 free string である現契約の固定。任意文字列で crash しないこと + disk content に漏れないことの 2 軸。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 385 → 390 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 390
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 `use super::*;` と `use tempfile::tempdir;` で完結)
+
+#### 残リスク
+- T3 は eprintln の中身を観測していない (stderr capture を入れる脆さを避けた選択)。eprintln の format 変更は別 test で固定する余地あり。
+- T5 の phase ラベル一覧は将来「特定 phase 名のみ受け入れる」防御強化を入れたら test 修正が必要 (現契約 = 自由文字列を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+
+---
+
 ## [SESSION SUMMARY @ 2026-05-04 ~10:25 JST] mjc-main-20260504-9 状況メモ (ループ 1-3 詳細)
 
 ### 本セッション (mjc-main-20260504-9) の累積実績

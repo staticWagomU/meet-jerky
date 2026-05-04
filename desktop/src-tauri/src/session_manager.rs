@@ -547,4 +547,152 @@ mod tests {
             "discard はファイルを書かずに sweep する契約"
         );
     }
+
+    #[test]
+    fn persist_if_configured_is_no_op_when_output_is_none() {
+        let dir = tempdir().unwrap();
+        let active = ActiveSession {
+            session: Session::start("title".into(), 1_700_000_000),
+            output: None,
+        };
+
+        persist_if_configured(&active, "append");
+
+        let files = list_md_files(dir.path());
+        assert!(
+            files.is_empty(),
+            "output=None なら disk 副作用ゼロのはず: files={files:?}"
+        );
+        assert_eq!(active.session.segments.len(), 0);
+        assert_eq!(active.session.started_at, 1_700_000_000);
+        assert_eq!(active.session.title, "title");
+    }
+
+    #[test]
+    fn persist_if_configured_writes_markdown_when_output_is_some() {
+        let dir = tempdir().unwrap();
+        let mut session = Session::start("会議メモ".into(), 1_713_333_000);
+        session.append_segment("自分".into(), 15, "hello".into());
+        let path = crate::session_store::path_for_session(dir.path(), &session);
+        let active = ActiveSession {
+            session,
+            output: Some(ActiveOutput {
+                path: path.clone(),
+                offset: jst(),
+            }),
+        };
+
+        persist_if_configured(&active, "append");
+
+        assert!(
+            path.exists(),
+            "direct persist で .md が作成されるはず: {path:?}"
+        );
+        let contents = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            contents.contains("会議メモ"),
+            "session の title が markdown 本文に含まれるはず. contents=\n{contents}"
+        );
+        assert!(
+            contents.contains("**[14:50:15] 自分:** hello"),
+            "append された segment 行が含まれるはず. contents=\n{contents}"
+        );
+    }
+
+    #[test]
+    fn persist_if_configured_does_not_panic_when_path_parent_is_missing() {
+        let dir = tempdir().unwrap();
+        let missing_parent = dir.path().join("not-exists-yet");
+        let invalid_path = missing_parent.join("session.md");
+        let active = ActiveSession {
+            session: Session::start("title".into(), 1_700_000_000),
+            output: Some(ActiveOutput {
+                path: invalid_path.clone(),
+                offset: jst(),
+            }),
+        };
+
+        persist_if_configured(&active, "finalize");
+
+        assert!(
+            !invalid_path.exists(),
+            "親ディレクトリ無しなら write は失敗、ファイルは作成されないはず: {invalid_path:?}"
+        );
+        assert_eq!(active.session.segments.len(), 0);
+        assert_eq!(active.session.title, "title");
+    }
+
+    #[test]
+    fn persist_if_configured_is_idempotent_when_called_repeatedly() {
+        let dir = tempdir().unwrap();
+        let mut session = Session::start("idempotent".into(), 1_713_333_000);
+        session.append_segment("Alice".into(), 10, "first".into());
+        let path = crate::session_store::path_for_session(dir.path(), &session);
+        let active = ActiveSession {
+            session,
+            output: Some(ActiveOutput {
+                path: path.clone(),
+                offset: jst(),
+            }),
+        };
+
+        persist_if_configured(&active, "append");
+        let contents_first =
+            std::fs::read_to_string(&path).expect("first persist should write file");
+
+        persist_if_configured(&active, "append");
+        let contents_second =
+            std::fs::read_to_string(&path).expect("second persist should keep file");
+
+        assert_eq!(
+            contents_first, contents_second,
+            "同じ active を 2 回 persist しても disk content は同一 (overwrite idempotency) のはず"
+        );
+        let files = list_md_files(dir.path());
+        assert_eq!(
+            files.len(),
+            1,
+            "2 回 persist しても .md ファイルは 1 件のはず: {files:?}"
+        );
+    }
+
+    #[test]
+    fn persist_if_configured_accepts_arbitrary_phase_label_without_panic() {
+        let dir = tempdir().unwrap();
+        let mut session = Session::start("phase-label".into(), 1_713_333_000);
+        session.append_segment("Bob".into(), 0, "msg".into());
+        let path = crate::session_store::path_for_session(dir.path(), &session);
+        let active = ActiveSession {
+            session,
+            output: Some(ActiveOutput {
+                path: path.clone(),
+                offset: jst(),
+            }),
+        };
+
+        for phase in [
+            "append",
+            "finalize",
+            "",
+            "🔥",
+            "改行\nincluded",
+            "phase=test",
+        ] {
+            persist_if_configured(&active, phase);
+        }
+
+        let contents = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            !contents.contains("🔥"),
+            "phase ラベルは disk content には漏れないはず. contents=\n{contents}"
+        );
+        assert!(
+            !contents.contains("phase=test"),
+            "phase ラベルは disk content には漏れないはず. contents=\n{contents}"
+        );
+        assert!(
+            contents.contains("phase-label"),
+            "session の title は依然 disk content に含まれるはず. contents=\n{contents}"
+        );
+    }
 }
