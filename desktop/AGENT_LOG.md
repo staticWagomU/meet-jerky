@@ -26192,5 +26192,5 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - trailing whitespace: ゼロ
 
 ## commit
-- <commit hash 後で別 chore で記入>
+- dde8175
 ---
