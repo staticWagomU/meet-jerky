@@ -25574,3 +25574,192 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - watchdog nudge 2 件: 「自律改善ループへ進む」(Loop 27 worker 起動直後 + Loop 28 worker 観測中、いずれも worker 完走を待ってから対応 = 正しい運用 = mjc-main-20260505-12/13 と同パターン)
 
 ---
+[mjc-main-20260505-15 Loop 29 / 2026-05-05 ~JST]
+
+## What
+- `is_webex_host` / `is_webex_meeting_url` / `is_jphp_path` / `is_webex_jphp_meeting_url` / `is_wbxmjs_path` / `is_webex_wbxmjs_meeting_url` / `is_webappng_path` / `is_webex_webappng_meeting_url` の 8 関数を `src-tauri/src/app_detection_webex.rs` に移動
+- `is_valid_dns_label` / `has_single_non_empty_segment` / `query_has_non_empty_param` を `pub(crate)` に変更 (Webex モジュールから参照のため)
+- `classify_meeting_url` L519-522 を `crate::app_detection_webex::*` 経由参照に更新
+- `lib.rs` に `mod app_detection_webex;` 追加 (alphabetical 順)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3356 行 app_detection.rs の理解性向上)
+- transcription-refactor-plan.md L117-121 「将来課題」着手 = transcription.rs Phase 3-B 完了後の自然 pivot
+- mjc-main-20260505-2 で Webex 招待 URL 主要 4 系統 (Personal Room / j.php / wbxmjs / webappng) の網羅完了の延長
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- pub(crate) で visibility 最小化 (関数 8 つ + ヘルパー 3 つ)
+- ヘルパーは Webex 以外でも使われるため app_detection.rs 残置 + pub(crate) 化
+- tests は classify_meeting_url 経由のため app_detection.rs 残置 (Loop 23 precedent)
+- worker 自律 Tidy: cargo fmt が use 文を複数行展開 (行長制限超過) → 受け入れ (Loop 28 precedent)
+- classify_meeting_url の is_webex_jphp_meeting_url 呼び出しも cargo fmt が複数行展開 (3 引数) → 受け入れ
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+## commit
+- b4a0098
+
+
+---
+[mjc-main-20260505-15 Loop 30 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` 更新
+  - 9 責務マップ表直後に「進捗サマリ (mjc-main-20260505-15 Loop 29 時点)」セクション新設
+  - 「残存課題 (Phase 5 候補、未着手)」セクション新設
+  - L117-121 (関連: app_detection.rs Webex 抽出 = 将来課題) を「✅ 完了 (mjc-main-20260505-15 Loop 29 = commit b4a0098)」に更新
+  - 末尾参考セクションに最新行数 (1536 行 = 48.8% 縮小) 追記
+
+## Why
+- AGENTS.md 優先順位 1 への予防的寄与 = 計画文書と現状の同期 = 後継エージェントの「未着手」誤判断予防
+- Loop 29 (Webex 抽出) 完了 + Phase 1〜4 + Phase 3-B 全完了の里程標を文書化
+- 計画駆動の継続性を担保
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置、最新情報は別セクションに追記
+- 9 責務マップ表のフォーマットは保持
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- cargo test/clippy/fmt は本ループでは未実行 (前 Loop 29 で 700 passed 確認済)
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+
+## commit
+- 32885b5
+[SESSION SUMMARY @ 2026-05-05 ~07:00 JST] mjc-main-20260505-15
+
+## ループ実績 (2 ループ完走 = 「2 ループ + 早期 handoff」precedent 連続 12 セッション目)
+
+### Loop 29 = app_detection.rs Webex モジュール抽出 (variety 自然 pivot = 別ファイル軸)
+- commit: b4a0098
+- priority 1 予防的寄与 (3356 行 app_detection.rs の理解性向上)
+- ~80 行関数 + ヘルパー 3 つ pub(crate) 化 + lib.rs mod 宣言 + classify_meeting_url 呼び出し path 更新
+- Webex 関連 8 関数 (`is_webex_host` / `is_webex_meeting_url` / `is_jphp_path` / `is_webex_jphp_meeting_url` / `is_wbxmjs_path` / `is_webex_wbxmjs_meeting_url` / `is_webappng_path` / `is_webex_webappng_meeting_url`) を `src-tauri/src/app_detection_webex.rs` に集約
+- ヘルパー (`is_valid_dns_label` / `has_single_non_empty_segment` / `query_has_non_empty_param`) は他サービス (Whereby/GoToMeeting/Google Meet/Zoom) でも使用のため app_detection.rs 残置 + pub(crate) 化
+- tests は classify_meeting_url 経由のため app_detection.rs 残置 = Loop 23 (list_models) precedent 踏襲
+- worker 自律 Tidy 2 件 = cargo fmt が use 文と classify_meeting_url の is_webex_jphp_meeting_url 引数 (3 引数) を複数行展開 → 受け入れ判断 (Loop 28 precedent 継承)
+- 変更ファイル 3: src-tauri/src/app_detection.rs (-80 行 + ヘルパー pub(crate) 化) / src-tauri/src/app_detection_webex.rs (+90 行新規) / src-tauri/src/lib.rs (1 行追加)
+- 検証: 700 passed 件数不変, clippy 警告ゼロ, fmt OK
+- 所要時間: ~3.5 分 (worker 起動から commit まで)
+- transcription-refactor-plan.md L117-121 の「将来課題」着手 = 計画駆動の延長 = mjc-main-20260505-2 の Webex URL 4 系統網羅完了から 13 セッション越しの構造改善
+
+### Loop 30 = transcription-refactor-plan.md 更新 (variety pivot = docs 軸)
+- commit: 32885b5
+- priority 1 予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- 9 責務マップ表直後に「進捗サマリ (mjc-main-20260505-15 Loop 29 時点)」セクション新設 + 「残存課題 (Phase 5 候補、未着手)」セクション新設
+- L117-121 (関連: app_detection.rs Webex 抽出 = 将来課題) を「✅ 完了 (mjc-main-20260505-15 Loop 29 = commit b4a0098)」に書き換え
+- 末尾参考セクションに最新行数 (1536 行 = 48.8% 縮小) 追記
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置 = 「最新情報を別セクションで追記」アプローチ
+- 変更ファイル 1: docs/architecture/transcription-refactor-plan.md (+~30 行追記、既存削除なし)
+- 検証: 該当 docs のみ更新でコード変更なし、agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- 所要時間: ~1.5 分 (worker 起動から commit まで)
+
+## 累計 transcription.rs 削減 (Phase 1〜4 完了 + Phase 3-B 完全完了、本セッションで変更なし)
+- 元 2999 行 → 現在 **1536 行** = **~48.8% 縮小** (~1463 行削減) = 前任セッション (mjc-main-20260505-14) の里程標から不変
+- transcription_commands.rs 累計: 598 行 (本セッションで不変)
+- app_detection_webex.rs (本セッション新設): ~90 行
+- 内訳 (本セッション分): Phase 5 (transcription.rs 残存) 未着手、別ファイル軸 (app_detection_webex 新設) で構造改善
+
+## variety 規則の状態 (Loop 31 開始時点)
+
+直近 4 ループ: Loop 27 (extraction = stop_transcription) → 28 (extraction = start_transcription) → 29 (extraction = Webex 別ファイル軸) → 30 (docs 軸 pivot = plan.md 更新)。
+- **直近 docs 連続 = 1 (Loop 30)**
+- **直近 extraction 連続 = 0 (Loop 30 で pivot 達成)**
+- Loop 31 で extraction 続行可、または別軸続行可
+- 「2 連続にしない約束」の状態:
+  - Webex 関連: Loop 29 で 1 件目 (関数抽出のみ、URL 検知は不変)、最低 Loop 33 程度まで間隔を空ける
+  - GoToMeeting 関連: Loop 22 (legacy URL) + Loop 26 (アプリ launcher) = 4 ループ間隔、Loop 30 まで触れず = Loop 30 で間隔 4、次回再訪は Loop 30+ で OK だが variety 観点で別軸推奨
+  - Whereby: 14 セッション維持中の variety pivot 完成、再訪は最低 Loop 35+
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 9 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-15 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 前任 mjc-main-20260505-7/8/9/10/11/12/13/14 の観測継続結論 (前任 mjc-main-20260505-6 の `bfb9846` chore(harness) commit が永続的解決) を **連続 9 セッション目で追認** = 結論最強化
+- 「観測してから判断する」運用の効果実例
+
+## worker 統計
+- worker 完走 2/2 (累計 130/130 = 100% 維持)
+- stdin redirect 化 script の安定運用 22-23 件目 precedent 達成 (Loop 10 焼き付けが連続 11 セッション継承で実証)
+- 「sonnet worker の Tidy First 質的高さ」連続 10 セッション目で実証 (Loop 29 で cargo fmt 自動整形 + classify_meeting_url 3 引数 wrap の自律 2 件判断、Loop 30 で trailing whitespace 自主確認 + agent-verify.sh 自走実施)
+
+## 本セッションの commit 周期
+- Loop 29: ~3.5 分 (起動 ~06:48 → commit ~06:51)
+- Loop 30: ~1.5 分 (起動 ~06:55 → commit ~06:57)
+- 平均 ~2.5 分/loop = **目標 15 分以内大幅達成** (本セッションは特に高速、SS 規模 docs 軸の効率性が際立つ)
+
+## 後継への引き継ぎ判断 (Loop 31 候補、優先順位順)
+
+### variety 規則の状態 (Loop 31 開始時点 = 再掲)
+
+直近 4 ループ: Loop 27 (extraction) → 28 (extraction) → 29 (extraction = 別ファイル軸) → 30 (docs 軸)。
+- 直近 docs 連続 = 1
+- Loop 31 で extraction 続行可 or service detection / docs / harness 軸続行可
+
+### 候補 A (推奨 Loop 31): app_detection.rs Whereby モジュール抽出 = Webex precedent 同パターン
+- mjc-main-20260505-15 Loop 29 (Webex 抽出) の precedent をそのまま応用
+- Whereby 関連関数 (要 grep 確認、`is_whereby_host` / `is_whereby_meeting_url` 等)
+- 規模 M (~50-100 行?)、tests は classify_meeting_url 経由なので app_detection.rs 残置パターン
+- variety 規則: extraction 軸再開だが別サービス分離 = 自然 pivot
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3356 行ファイルの理解性向上)
+
+### 候補 B (Loop 32+ pivot): app_detection.rs GoToMeeting モジュール抽出
+- Webex 同パターン、GoToMeeting 関連関数 (`is_goto_host` / `is_goto_meeting_url` / `is_goto_legacy_meeting_url` / `is_goto_app_meeting_url`) の集約
+- 規模 SS-S (~30-50 行?)
+- 「2 連続にしない約束」のため Webex の Loop 29 から最低 Loop 33+ まで間隔を空ける推奨
+- ただし sweep 化リスク = Whereby + GoToMeeting + Zoom + Teams 連続抽出は variety 違反
+
+### 候補 C (Loop 32+ pivot): GoToMeeting TLD 拡張 (`app.goto.eu` / `app.goto.co.uk` 等)
+- priority 2 直接寄与
+- URL spec 調査が前段必要 = 1 ループ完結が不確実
+- 「最低 4 ループ間隔」遵守
+
+### 候補 D (Loop 32+ pivot): 新サービス検知 (Discord stage / Slack Huddle)
+- priority 2 直接寄与
+- URL pattern 調査が前段必要 = 1 ループ完結が不確実
+- Discord stage = `discord.com/channels/<server-id>/<stage-id>` 形式? 要検証
+- Slack Huddle = `app.slack.com/client/<workspace>/<channel-id>` 形式? 要検証
+
+### 候補 E: transcription.rs 残存責務分離 (Phase 5 新設)
+- transcription.rs 1536 行残存 = Worker loop 内部 helper / responses processing / Whisper helper
+- 規模 M-L、複数ループ計画推奨
+- 具体スライスは grep + Read で精読してから判断
+
+### 候補 F: frontend 軸 pivot
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行) は規模あり
+- 浅 grep で具体的な不足を 1 つ特定してから worker 発注、主観的探索は避ける
+
+### 低優先 (継承、再考の価値限定的)
+
+#### B1. Microsoft Teams window title fallback
+- mjc-main-20260505-3 で批判的に却下済 (前任者 rustdoc 注記との矛盾)
+
+#### A1. Webex 日本語 window title (`Webex ミーティング`)
+- 規模: 極小 (3-4 行)
+- Webex sweep precedent 14 セッション維持を破る、Loop 35+ 程度まで間隔を空ける推奨
+
+### 低優先 (harness 衛生、未着手)
+
+#### H. 大量 untracked ファイル整理判断
+- `docs/handoff/`, `docs/worker-prompts/` に 110+ untracked
+- ユーザー直伝指示があるまで保留
+
+#### I. AGENT_LOG.md 25,500+ 行の archive 戦略
+- 未着手、未消化
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 700 件全 pass (verify.sh OK) = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネス直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent)
+
+## ユーザー直伝指示 (本セッション)
+- watchdog nudge 1 件: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」(Loop 29 worker 観測中に受信、worker 完走を待ってから対応 = 正しい運用 = mjc-main-20260505-12/13/14 と同パターン)
+
+---
