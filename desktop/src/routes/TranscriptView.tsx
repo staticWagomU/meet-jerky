@@ -2367,18 +2367,6 @@ export function TranscriptView() {
             {audioDropCountListenerError}
           </p>
         )}
-        {(microphoneDropCountTotal > 0 || systemAudioDropCountTotal > 0) && (
-          <p
-            className="meeting-error meeting-alert"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            aria-label={`音声サンプル破棄: マイク ${microphoneDropCountTotal} サンプル, システム音声 ${systemAudioDropCountTotal} サンプル`}
-            title={`音声サンプル破棄: マイク ${microphoneDropCountTotal} サンプル, システム音声 ${systemAudioDropCountTotal} サンプル`}
-          >
-            音声サンプル破棄: マイク {microphoneDropCountTotal} サンプル / システム音声 {systemAudioDropCountTotal} サンプル
-          </p>
-        )}
         {lastSavedPath && lastSavedFileName && (
           <div
             className="meeting-saved-path"
@@ -2455,6 +2443,7 @@ export function TranscriptView() {
         <MicrophoneSection
           isMicRecording={isMicRecording}
           micLevel={micLevel}
+          micDropCountTotal={microphoneDropCountTotal}
           selectedDeviceId={selectedDeviceId}
           audioDevices={devices}
           audioDevicesError={devicesError}
@@ -2470,6 +2459,7 @@ export function TranscriptView() {
         <SystemAudioSection
           isSystemAudioRecording={isSystemAudioRecording}
           systemAudioLevel={systemAudioLevel}
+          systemAudioDropCountTotal={systemAudioDropCountTotal}
           isOperationPending={isSystemAudioSourceOperationPending}
           isControlDisabled={isAudioSourceOperationPending}
           isCompact={isMeetingActive || isTranscribing}

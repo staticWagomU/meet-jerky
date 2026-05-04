@@ -9,6 +9,7 @@ import { toErrorMessage } from "../utils/errorMessage";
 interface MicrophoneSectionProps {
   isMicRecording: boolean;
   micLevel: number;
+  micDropCountTotal: number;
   selectedDeviceId: string;
   audioDevices: AudioDevice[] | undefined;
   audioDevicesError: unknown;
@@ -24,6 +25,7 @@ interface MicrophoneSectionProps {
 export function MicrophoneSection({
   isMicRecording,
   micLevel,
+  micDropCountTotal,
   selectedDeviceId,
   audioDevices,
   audioDevicesError,
@@ -111,6 +113,18 @@ export function MicrophoneSection({
             title={micInputWaitingLabel}
           >
             入力待ち
+          </span>
+        )}
+        {micDropCountTotal > 0 && (
+          <span
+            className="audio-source-silence-badge"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`マイク: ${micDropCountTotal} サンプル破棄`}
+            title={`マイク: ${micDropCountTotal} サンプル破棄`}
+          >
+            破棄 {micDropCountTotal}
           </span>
         )}
       </div>

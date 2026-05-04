@@ -7,6 +7,7 @@ import { OTHER_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";
 interface SystemAudioSectionProps {
   isSystemAudioRecording: boolean;
   systemAudioLevel: number;
+  systemAudioDropCountTotal: number;
   isOperationPending: boolean;
   isControlDisabled: boolean;
   isCompact?: boolean;
@@ -16,6 +17,7 @@ interface SystemAudioSectionProps {
 export function SystemAudioSection({
   isSystemAudioRecording,
   systemAudioLevel,
+  systemAudioDropCountTotal,
   isOperationPending,
   isControlDisabled,
   isCompact = false,
@@ -86,6 +88,18 @@ export function SystemAudioSection({
             title={systemAudioInputWaitingLabel}
           >
             入力待ち
+          </span>
+        )}
+        {systemAudioDropCountTotal > 0 && (
+          <span
+            className="audio-source-silence-badge"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`システム音声: ${systemAudioDropCountTotal} サンプル破棄`}
+            title={`システム音声: ${systemAudioDropCountTotal} サンプル破棄`}
+          >
+            破棄 {systemAudioDropCountTotal}
           </span>
         )}
       </div>
