@@ -522,6 +522,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         || is_webex_webappng_meeting_url(&host, &parsed.path)
     {
         "Webex"
+    } else if is_whereby_meeting_url(&host, &parsed.path) {
+        "Whereby"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
         "Microsoft Teams"
     } else {
@@ -863,6 +865,50 @@ fn is_webappng_path(path: &str) -> bool {
 
 fn is_webex_webappng_meeting_url(host: &str, path: &str) -> bool {
     is_webex_host(host) && is_webappng_path(path)
+}
+
+const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
+    "about",
+    "pricing",
+    "blog",
+    "login",
+    "signup",
+    "help",
+    "terms",
+    "privacy",
+    "contact",
+    "features",
+    "customers",
+    "embedded",
+    "embed",
+    "information",
+    "api",
+    "products",
+    "integrations",
+    "security",
+    "careers",
+    "status",
+];
+
+fn is_whereby_host(host: &str) -> bool {
+    if host == "whereby.com" {
+        return true;
+    }
+    let Some(subdomain) = host.strip_suffix(".whereby.com") else {
+        return false;
+    };
+    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
+}
+
+fn is_whereby_meeting_url(host: &str, path: &str) -> bool {
+    if !is_whereby_host(host) {
+        return false;
+    }
+    let Some(room) = path.strip_prefix('/') else {
+        return false;
+    };
+    let room = room.strip_suffix('/').unwrap_or(room);
+    !room.is_empty() && !room.contains('/') && !WHEREBY_NON_ROOM_PATHS.contains(&room)
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -3013,5 +3059,55 @@ mod tests {
             classify_meeting_url("https://acme.webex.com/webappng/sites//meeting/info/m123abc"),
             None
         );
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_apex_room() {
+        assert_eq!(
+            classify_meeting_url("https://whereby.com/team-meeting"),
+            Some(MeetingUrlClassification {
+                service: "Whereby".to_string(),
+                host: "whereby.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_subdomain_room() {
+        assert_eq!(
+            classify_meeting_url("https://mycompany.whereby.com/quick-call"),
+            Some(MeetingUrlClassification {
+                service: "Whereby".to_string(),
+                host: "mycompany.whereby.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_about() {
+        assert_eq!(classify_meeting_url("https://whereby.com/about"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_pricing() {
+        assert_eq!(classify_meeting_url("https://whereby.com/pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_extra_segment() {
+        assert_eq!(
+            classify_meeting_url("https://whereby.com/team-room/extra"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_dns_label_spoofing() {
+        assert_eq!(classify_meeting_url("https://fake-whereby.com/room"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_empty_room_name() {
+        assert_eq!(classify_meeting_url("https://whereby.com/"), None);
     }
 }
