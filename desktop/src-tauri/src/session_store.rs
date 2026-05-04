@@ -1016,4 +1016,160 @@ mod tests {
             "render error は書き出し前なのでファイル未作成 = T4 と同じ ? 早期 return 契約の別経路確認"
         );
     }
+
+    #[test]
+    fn session_summary_debug_output_contains_struct_name_and_all_four_field_names() {
+        let summary = SessionSummary {
+            path: PathBuf::from("/tmp/sessions/1234-0.md"),
+            started_at_secs: 1_234_567_890,
+            title: "Daily Standup".to_string(),
+            search_text: "hello world".to_string(),
+        };
+        let output = format!("{:?}", summary);
+        assert!(
+            output.contains("SessionSummary"),
+            "型名 'SessionSummary' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("path"),
+            "field 名 'path' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("started_at_secs"),
+            "field 名 'started_at_secs' (snake_case) が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("title"),
+            "field 名 'title' が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("search_text"),
+            "field 名 'search_text' (snake_case) が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("1234567890"),
+            "値 '1234567890' (started_at_secs) が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("Daily Standup"),
+            "値 'Daily Standup' (title) が Debug 出力に含まれる契約: got {}",
+            output
+        );
+        assert!(
+            output.contains("hello world"),
+            "値 'hello world' (search_text) が Debug 出力に含まれる契約: got {}",
+            output
+        );
+    }
+
+    #[test]
+    fn session_summary_partial_eq_holds_reflexive_and_differs_for_each_field() {
+        let base = SessionSummary {
+            path: PathBuf::from("/a"),
+            started_at_secs: 100,
+            title: "t".to_string(),
+            search_text: "s".to_string(),
+        };
+        let same = SessionSummary {
+            path: PathBuf::from("/a"),
+            started_at_secs: 100,
+            title: "t".to_string(),
+            search_text: "s".to_string(),
+        };
+        let path_diff = SessionSummary {
+            path: PathBuf::from("/b"),
+            ..base.clone()
+        };
+        let started_diff = SessionSummary {
+            started_at_secs: 200,
+            ..base.clone()
+        };
+        let title_diff = SessionSummary {
+            title: "u".to_string(),
+            ..base.clone()
+        };
+        let search_diff = SessionSummary {
+            search_text: "x".to_string(),
+            ..base.clone()
+        };
+        assert_eq!(base, same, "PartialEq reflexive: 同 4 field 値で等値");
+        assert_ne!(base, path_diff, "PartialEq: path のみ違うと不等値");
+        assert_ne!(
+            base, started_diff,
+            "PartialEq: started_at_secs のみ違うと不等値"
+        );
+        assert_ne!(base, title_diff, "PartialEq: title のみ違うと不等値");
+        assert_ne!(base, search_diff, "PartialEq: search_text のみ違うと不等値");
+    }
+
+    #[test]
+    fn session_summary_serde_serialize_uses_camel_case_for_all_four_fields() {
+        let summary = SessionSummary {
+            path: PathBuf::from("/tmp/x.md"),
+            started_at_secs: 42,
+            title: "T".to_string(),
+            search_text: "S".to_string(),
+        };
+        let value = serde_json::to_value(&summary).unwrap();
+        let obj = value
+            .as_object()
+            .expect("SessionSummary should serialize as JSON object");
+        assert!(
+            obj.contains_key("path"),
+            "key 'path' が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("startedAtSecs"),
+            "key 'startedAtSecs' (camelCase) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("title"),
+            "key 'title' が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("searchText"),
+            "key 'searchText' (camelCase) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            obj.len(),
+            4,
+            "SessionSummary の JSON object は 4 key 厳密: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            !obj.contains_key("started_at_secs"),
+            "snake_case key 'started_at_secs' が JSON に含まれない契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            !obj.contains_key("search_text"),
+            "snake_case key 'search_text' が JSON に含まれない契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            obj.get("startedAtSecs").and_then(|v| v.as_u64()),
+            Some(42),
+            "startedAtSecs 値が JSON に正しく載る契約"
+        );
+        assert_eq!(
+            obj.get("title").and_then(|v| v.as_str()),
+            Some("T"),
+            "title 値が JSON に正しく載る契約"
+        );
+        assert_eq!(
+            obj.get("searchText").and_then(|v| v.as_str()),
+            Some("S"),
+            "searchText 値が JSON に正しく載る契約"
+        );
+    }
 }
