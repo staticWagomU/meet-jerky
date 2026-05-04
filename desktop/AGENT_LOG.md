@@ -24322,3 +24322,23 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: 後継 mjc-main-20260505-3 が docs/handoff/mjc-main-20260505-2.txt を読み Loop 4 を始動。本セッションは終了。
 
 ---
+
+## 2026-05-05 JST mjc-main-20260505-3 Loop 4 (transcription.rs 責務分離プラン docs 作成)
+- 担当セッション: mjc-main (canonical 移譲済) = mjc-main-20260505-3 (メイン, opus)
+- 役割: 旧 mjc-main-20260505-2 から「Webex 4 系統網羅完了 + variety pivot」継承の最初のループ。AGENTS.md 優先順位 1 (クラッシュ修正) への予防的寄与 + Webex sweep からの完全 variety pivot を兼ねる構造改善プラン作成。
+- 作業範囲: docs/architecture/transcription-refactor-plan.md (新規作成、メイン直接編集) + AGENT_LOG.md (末尾追記、メイン直接編集)
+- 指示内容: handoff prompt の主要候補を批判的再評価し、B1 (Teams window title) は前任者 rustdoc 注記 (line 555-557 「外部チュートリアルや解説ページと区別できないため fallback 対象外」) との矛盾で却下、A1/A2/A3 (Webex/Whereby/Zoom) は variety 規則 (最低 1 ループ間隔) で却下、F (app_detection.rs Webex モジュール抽出) は Webex 関連で却下、G (panic 監査) は実質完了済み、として E (transcription.rs 構造調査) を選択。「research のみで commit 困難」という handoff 評価を批判的に却下し、main 直接 grep ベース分析 → docs ファイル作成で 1 ループ完結可能と判断。
+- 結果: docs/architecture/transcription-refactor-plan.md 作成 (新ディレクトリ docs/architecture/ + プランファイル本体、9 責務マップ + Phase 1-4 段階分割 + 検証戦略 + リスク管理 + AGENTS.md 優先順位対応 + app_detection.rs の Webex モジュール抽出 future scope 言及を含む包括的プラン)。
+- 変更ファイル: docs/architecture/transcription-refactor-plan.md (新規) + AGENT_LOG.md (末尾追記)
+- 検証結果: rust 変更なし → cargo fmt/clippy/test 検証は skip (agent-verify.sh が rust 変更有無を自動判定する)。frontend 変更なし → npm run build も skip。docs-only 変更。
+- 依存関係追加: なし
+- 失敗理由: なし
+- 戦略判断詳細:
+  - **handoff prompt の B1 (Teams window title) 提案を批判的に却下**: 前任者の意図的未対応の rustdoc 注記 (line 555-557) を尊重。AGENTS.md「鵜呑みにせず、批判的・中立的に判断する」原則に従う。
+  - **Mutex poison panic 候補発見の自己誤認も訂正**: session_manager.rs:400/417/758 は production code ではなく test code (`is_active_recovers_from_poisoned_mutex_without_panic` 等) であり、handoff prompt の panic 監査結論「3 件 provably-safe」は正確だった。grep 結果を Read で精読する重要性を再確認。
+  - **「research のみで commit 困難」評価を批判的却下**: main 直接 grep ベース分析 + main 直接 Write の precedent (handoff prompt 作成、SESSION SUMMARY 追記) を docs ファイル作成にも応用可能と判断。worker 起動を省略するハーネス省略策 (handoff prompt 認可、コミット周期 15 分目標のため)。
+  - **Webex sweep からの完全 variety pivot 達成**: 5 連続 Webex 補強 (mjc-20260505-1 Loop 2-3 + mjc-20260505-2 Loop 1-3) → Loop 4 で構造改善プラン docs (Rust → docs) という明確な軸転換。
+  - **「同じパターン 3 ループ続いたら 4 ループ目に variety pivot」ルールを継承維持**。
+- 次アクション: agent-commit.sh で docs/architecture/transcription-refactor-plan.md + AGENT_LOG.md を commit → 次ループへ進む (Loop 5 候補は Phase 1 着手 = データ型 transcription/types.rs 抽出、または別 priority への variety 維持)。
+
+---
