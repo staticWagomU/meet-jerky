@@ -22208,3 +22208,44 @@ test result: ok. 571 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-31) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-32 へ予防的ハンドオフ判断 (前 24 セッション (mjc-main-7〜30) と同じ 3 ループパターン継承を期待、harness silent fail に対しては `git status` ベースの mitigation pattern が確立済)
 ---
+
+## mjc-worker-transcription-segment-debug-axis-tests-20260504-32-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-segment-debug-axis-tests-20260504-32-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-32 Loop 1
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強パターン」5 連続 application = TranscriptionSegment (struct with 6 fields including 3 Option fields + serde camelCase) への Debug + Clone + serde format 軸の 3 種混合 application。
+- T1: transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values (Debug 出力に型名+全 6 snake_case field 名+値+Some/None+enum variant 名が含まれる契約)
+- T2: transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants (clone 後の Debug 出力が元と完全一致、Some 全埋め+None 混合の 2 case)
+- T3: transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options (serde JSON 出力が camelCase + None Option skip + snake_case 不在の契約)
+
+### 結果
+- cargo fmt --check: 差分なし (exit 0)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 571 → 574 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / pub enum / 既存 61 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 574 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

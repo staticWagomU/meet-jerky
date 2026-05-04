@@ -2358,4 +2358,158 @@ mod tests {
         };
         assert_ne!(a, none_source, "同 error / Some vs None の source 差は不等");
     }
+
+    #[test]
+    fn transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values() {
+        // #[derive(Debug)] 派生で struct 名・全 6 snake_case field 名・値・Some/None・enum variant 名が
+        // Debug 出力に含まれる契約を CI 固定。将来 Debug を手動実装して field を隠蔽する誤改修を遮断する。
+        let segment = TranscriptionSegment {
+            text: "hello".to_string(),
+            start_ms: 100,
+            end_ms: 2000,
+            source: Some(TranscriptionSource::SystemAudio),
+            speaker: Some("自分".to_string()),
+            is_error: Some(true),
+        };
+        let dbg = format!("{:?}", segment);
+        assert!(
+            dbg.contains("TranscriptionSegment"),
+            "型名 TranscriptionSegment が含まれる: {dbg}"
+        );
+        assert!(dbg.contains("text"), "field 名 text が含まれる: {dbg}");
+        assert!(
+            dbg.contains("start_ms"),
+            "field 名 start_ms が含まれる: {dbg}"
+        );
+        assert!(dbg.contains("end_ms"), "field 名 end_ms が含まれる: {dbg}");
+        assert!(dbg.contains("source"), "field 名 source が含まれる: {dbg}");
+        assert!(
+            dbg.contains("speaker"),
+            "field 名 speaker が含まれる: {dbg}"
+        );
+        assert!(
+            dbg.contains("is_error"),
+            "field 名 is_error が含まれる: {dbg}"
+        );
+        assert!(
+            dbg.contains("hello"),
+            "text field の値 hello が含まれる: {dbg}"
+        );
+        assert!(dbg.contains("100"), "start_ms の値 100 が含まれる: {dbg}");
+        assert!(dbg.contains("2000"), "end_ms の値 2000 が含まれる: {dbg}");
+        assert!(dbg.contains("自分"), "speaker の値 自分 が含まれる: {dbg}");
+        assert!(dbg.contains("true"), "is_error の値 true が含まれる: {dbg}");
+        assert!(
+            dbg.contains("Some"),
+            "Option::Some の Debug 表現 Some が含まれる: {dbg}"
+        );
+        assert!(
+            dbg.contains("SystemAudio"),
+            "enum variant 名 SystemAudio が含まれる: {dbg}"
+        );
+    }
+
+    #[test]
+    fn transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants() {
+        // #[derive(Debug, Clone)] の組み合わせで clone 後の Debug 出力が 100% 同一である契約を CI 固定。
+        // 将来 Clone を手動実装して Option field を加工する誤改修を遮断する。
+        let full = TranscriptionSegment {
+            text: "full".to_string(),
+            start_ms: 0,
+            end_ms: 500,
+            source: Some(TranscriptionSource::Microphone),
+            speaker: Some("自分".to_string()),
+            is_error: Some(false),
+        };
+        assert_eq!(
+            format!("{:?}", full),
+            format!("{:?}", full.clone()),
+            "全 Some 埋め segment の Debug 出力は clone 後と完全一致する"
+        );
+        let bare = TranscriptionSegment {
+            text: "bare".to_string(),
+            start_ms: -1,
+            end_ms: 0,
+            source: None,
+            speaker: None,
+            is_error: None,
+        };
+        assert_eq!(
+            format!("{:?}", bare),
+            format!("{:?}", bare.clone()),
+            "全 Option None segment の Debug 出力は clone 後と完全一致する"
+        );
+    }
+
+    #[test]
+    fn transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options() {
+        // #[serde(rename_all = "camelCase")] + #[serde(skip_serializing_if = "Option::is_none")] の
+        // 組み合わせ契約を CI 固定。将来 serde 属性が外されたり個別 rename された誤改修を遮断する。
+        let bare = TranscriptionSegment {
+            text: "bare".to_string(),
+            start_ms: -5,
+            end_ms: 0,
+            source: None,
+            speaker: None,
+            is_error: None,
+        };
+        let json = serde_json::to_string(&bare).unwrap();
+        assert!(
+            json.contains("\"text\""),
+            "必須 field text が JSON に含まれる: {json}"
+        );
+        assert!(
+            json.contains("\"startMs\""),
+            "camelCase field startMs が JSON に含まれる: {json}"
+        );
+        assert!(
+            json.contains("\"endMs\""),
+            "camelCase field endMs が JSON に含まれる: {json}"
+        );
+        assert!(
+            !json.contains("\"start_ms\""),
+            "snake_case field start_ms は JSON に出ない: {json}"
+        );
+        assert!(
+            !json.contains("\"end_ms\""),
+            "snake_case field end_ms は JSON に出ない: {json}"
+        );
+        assert!(
+            !json.contains("\"is_error\""),
+            "snake_case field is_error は JSON に出ない: {json}"
+        );
+        assert!(
+            !json.contains("\"isError\""),
+            "None の isError は JSON に含まれない: {json}"
+        );
+        assert!(
+            !json.contains("\"speaker\""),
+            "None の speaker は JSON に含まれない: {json}"
+        );
+        assert!(
+            !json.contains("\"source\""),
+            "None の source は JSON に含まれない: {json}"
+        );
+        let full = TranscriptionSegment {
+            text: "full".to_string(),
+            start_ms: 10,
+            end_ms: 20,
+            source: Some(TranscriptionSource::SystemAudio),
+            speaker: Some("相手側".to_string()),
+            is_error: Some(true),
+        };
+        let json = serde_json::to_string(&full).unwrap();
+        assert!(
+            json.contains("\"isError\""),
+            "Some の isError は camelCase で JSON に含まれる: {json}"
+        );
+        assert!(
+            !json.contains("\"is_error\""),
+            "snake_case の is_error は JSON に出ない: {json}"
+        );
+        assert!(
+            json.contains("\"system_audio\"") || json.contains("system_audio"),
+            "TranscriptionSource::SystemAudio の serde 値は snake_case (system_audio): {json}"
+        );
+    }
 }
