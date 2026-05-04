@@ -20184,3 +20184,68 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **失敗理由**: なし
 - **次アクション**: メインが agent-verify + commit を担当
 ---
+
+[SESSION SUMMARY @ 2026-05-04 ~19:30 JST] mjc-main (mjc-main-20260504-22) の 3 ループ実績 (488 → 497 passed +9 件 + transcript_bridge.rs の 3 層垂直保護 + saturating_sub 両境界 0/u64::MAX 固定) と次ループ候補 (D / S / F-Loop6 / B 別 fn 拡張 / K) を SESSION SUMMARY として追記:
+
+## 完了した 3 ループ
+1. **Loop 1 (38297e0)** test(transcript_bridge): segment_to_append_args の境界 test 3 件 = (T1) zero_start + observed=None happy path で stream_started_at_secs フォールバック (低層) / (T2) text U+3000 trim 契約 (str::trim Unicode White_Space 準拠) / (T3) text 全 whitespace → "" 契約 (empty fallback なしの非対称契約) = +3 件 → 491 passed
+2. **Loop 2 (ed6c6ce)** test(transcript_bridge): build_append_args_for_emission_at の境界 test 3 件 = (T1) emission helper 中層で zero_start + observed=None フォールバック / (T2) zero_start + clock 逆転で saturating_sub の通常範囲 0 飽和 / (T3) is_error=Some(false) + zero_start + observed の 3 軸合流 = +3 件 → 494 passed
+3. **Loop 3 (0db65c7)** test(transcript_bridge): emission helper 3 層保護 + u64::MAX 極端値 3 件 = (T1) wrapper 高層 build_append_args_for_emission の zero_start fallback (低/中/高 3 層垂直保護完成) / (T2) observed=Some(u64::MAX) + zero_start で saturating_sub 右境界 u64::MAX no-op / (T3) session=Some(u64::MAX) + zero_start で saturating_sub 左境界 0 飽和 + ?演算子 Some(u64::MAX) 通過契約 = +3 件 → 497 passed
+
+## 確立されたパターン (本セッション)
+- **「階層+極限の 2 軸対称的補強」パターン**: Loop 1 (低層 happy) → Loop 2 (中層 happy + 通常 clock 逆転) → Loop 3 (高層 wrapper happy + 両軸極端値) という階層 (低/中/高) と極限 (通常/極端値) の 2 軸でテスト密度を補強する 3 ループ構成 = mjc-main-21 の「F-Loop5 2 段階機能完結」と同様に application 可能パターン
+- **「saturating_sub 両境界 1 commit 固定」パターン** (Loop 3): T2 で右境界 u64::MAX no-op、T3 で左境界 0 飽和を 1 commit に統合 = Rust 整数演算の防御的特性 (panic より飽和) を CI で executable specification 化 = `checked_sub` 化や signed cast 化への誤改修を全て検知できる二重保険
+- **「worker prompt で末尾追記を明示するパターン」** (mjc-main-21 で確立、本セッション継続適用): 全 3 ループの worker prompt に「ファイル末尾追記必須 + 先頭は絶対に触らない + tail -10 で末尾確認」を明示 → 全 3 ループで AGENT_LOG.md 先頭追記事故ゼロ = 後続セッション継続適用必要
+
+## 重要発見
+- **transcript_bridge.rs の 3 層垂直保護 (低層/中層/高層 wrapper) が完成** = 同一の `unwrap_or(stream_started_at_secs)` フォールバック契約が 3 つの呼び出し深度全てで CI 固定 = 内部実装が将来 segment_to_append_args_at から direct calculation 等に変わっても 3 層全てで契約破壊を検知可能
+- **transcript_bridge.rs の test 件数 31 → 40 (+9 件)** = normalize_speaker に偏っていた密度を segment_to_append_args / build_append_args_for_emission_at / build_append_args_for_emission に拡散 = 関数別の保護密度がバランス
+- **既存 test の精査で発見した 3 つの未保護経路を本セッションで全て消化** = Loop 1 で低層 zero_start + observed=None / Loop 2 で中層 clock 逆転 + Some(false) zero_start / Loop 3 で wrapper zero_start + u64::MAX 極端値 = 異なる軸の組み合わせを 9 件で網羅
+
+## 検証制約 (継承)
+- cargo test (lib): **497 passed / 0 failed** (前 488 → +9 件)
+- cargo clippy default lint + -D warnings: **警告ゼロ** (Loop 全 3 で維持)
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし
+- cmake あり / verify.sh OK / 課金禁止 / Keychain 実通信禁止 (継承)
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### D (継承). transcription.rs error path 残り (規模 S〜M, 複数ループ, 推奨)
+- 別ファイル切り替えで認知文脈リセット可能
+- transcription.rs は本セッションで触れていない領域 = 累積 test 密度が偏っていない = 価値が出やすい
+
+### S (継承, 統合候補あり). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+- 統合候補: `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする (mjc-main-20 SUMMARY で既に明示、未消化)
+
+### F-Loop6 (継承). タイマースレッド shutdown 対応 (規模 M, 価値中)
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+- 既存 detection_callback / browser_url_callback の shutdown と整合性検討必要
+- 2 段階 Tidy First スライス可能 = mjc-main-20 / 本 mjc-main-22 の precedent application
+
+### B 別 fn 拡張 (新, 価値小)
+- transcript_bridge.rs は 40 件 test で密度十分 = 拡張余地は build_append_args_for_emission の cfg(test) wrapper の更なる境界 (例: 全 axis u64::MAX 同時, stream_started_at_secs=u64::MAX 等) のみ = 価値が低下傾向
+- transcript_bridge.rs から離れる時期
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 残リスク (本セッションで触れていない領域)
+- MEETING_INACTIVE_THRESHOLD = 600 秒の妥当性は依然実機調整未確認 (継承)
+- タイマースレッド shutdown 未対応 (F-Loop6 候補、継承)
+- AGENT_LOG.md 全体は 20120+ 行で構造的整理が必要 (低優先、継承)
+
+## コミット周期実績
+- Loop 1 = ~10 分 (worker 起動 → 完了 → verify → commit)
+- Loop 2 = ~9 分
+- Loop 3 = ~8 分
+- 平均 ~9 分/loop = 目標 15 分/loop を大幅にクリア = mjc-main-21 (~17 分) より 50% 短縮
+- 短縮要因 = AGENT_LOG.md 先頭追記事故ゼロ (worker prompt 改善継続 application) + worker prompt の精緻化 (test 3 件で固定) + commit メッセージファイル運用安定化
+
+## 累積 worker 完走
+- 本セッション 3/3 (100%) = 累積 53/53 (100%)
+
+## ハンドオフ判断
+- 3 ループ + SESSION SUMMARY 完了 = mjc-main-21 と完全同一のテンポ = 予測可能性最大化
+- context 推定 ~70-80% = 70-85% 帯の予防的ハンドオフ判断レンジ
+- 後継 mjc-main-20260504-23 へ予防的ハンドオフ実行 (前 15 セッション (mjc-main-7〜21) と同じ 3 ループパターン継承)
+- 推奨次ループ = D (transcription.rs error path) = 別ファイル切り替えで認知文脈リセット + 価値が出やすい未着手領域
+---
