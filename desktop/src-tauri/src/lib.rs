@@ -2,6 +2,7 @@ mod app_detection;
 mod app_detection_goto;
 mod app_detection_webex;
 mod app_detection_whereby;
+mod app_detection_zoom;
 mod apple_speech;
 mod audio;
 mod audio_event;

@@ -26629,3 +26629,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 7a7e549
+
+---
+
+[mjc-main-20260505-20 Loop 40 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs から Zoom URL 検知関連 4 関数 (is_zoom_host / is_zoom_meeting_url / is_zoom_meeting_id / is_zoom_web_client_meeting_url) を src-tauri/src/app_detection_zoom.rs に抽出
+- src-tauri/src/lib.rs に `mod app_detection_zoom;` 追加 (mod app_detection_whereby; の直後、アルファベット順)
+- app_detection.rs L517 caller を `crate::app_detection_zoom::is_zoom_meeting_url` 経由に更新
+- 直接呼びテストなし (Zoom 関数は全て classify_meeting_url 経由のテストのみ) = use 文更新不要
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 縮小 = 理解性向上)
+- Webex (Loop 29) / Whereby (Loop 31) / GoToMeeting (Loop 36) precedent 完全踏襲 (4 件目)
+- variety pivot 軸 = extraction 軸 = Loop 36 から 4 ループ間隔、別軸 (docs/test/docs) 3 件挟んだ後 = 許容範囲
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 702 passed 件数不変
+- pub(crate) visibility で外部参照可能 (is_zoom_host / is_zoom_meeting_url、Webex precedent 同パターン)
+- is_zoom_meeting_id / is_zoom_web_client_meeting_url は Zoom 内部依存のため private (fn) のまま
+- is_valid_dns_label は app_detection.rs に残置 + pub(crate) のまま、app_detection_zoom.rs から use 文で取り込み
+- has_single_non_empty_segment は Loop 36 以前に pub(crate) 化済 = 同様に use 文で取り込み
+- tests は classify_meeting_url 経由のものは app_detection.rs 残置、直接呼びテストなしのため use 文更新不要
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash、後で記入)
