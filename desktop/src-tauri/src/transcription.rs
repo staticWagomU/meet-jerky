@@ -1893,4 +1893,63 @@ mod tests {
         );
         assert!(result2.is_err());
     }
+
+    #[test]
+    fn parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value() {
+        let err = parse_requested_transcription_sources(Some("xyz"))
+            .expect_err("unknown source should be rejected");
+        assert_eq!(
+            err,
+            "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+        );
+    }
+
+    #[test]
+    fn parse_requested_transcription_sources_rejects_uppercase_known_values() {
+        for source in ["BOTH", "Microphone", "System_Audio", "Both"] {
+            let err = parse_requested_transcription_sources(Some(source))
+                .expect_err("uppercase source should be rejected");
+            assert_eq!(
+                err,
+                "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。",
+                "unexpected error for {source:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn should_emit_realtime_stream_error_is_logical_negation_of_already_stopped() {
+        for input in [
+            "Realtime ストリームが既に停止しています",
+            "リサンプリングエラー: invalid",
+            "",
+            "Realtime ストリーム",
+            "OpenAI Realtime ストリームが既に停止しています extra suffix",
+        ] {
+            assert_eq!(
+                should_emit_realtime_stream_error(input),
+                !is_realtime_stream_already_stopped_error(input),
+                "symmetry violated for input: {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn build_worker_panic_error_payload_omits_source_when_none() {
+        let payload = build_worker_panic_error_payload(None);
+        let v = transcription_error_payload_to_value(&payload);
+        assert!(v.get("source").is_none());
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some("文字起こしワーカーが異常終了しました")
+        );
+    }
+
+    #[test]
+    fn build_transcription_error_payload_preserves_empty_error_string() {
+        let payload =
+            build_transcription_error_payload(String::new(), Some(TranscriptionSource::Microphone));
+        let v = transcription_error_payload_to_value(&payload);
+        assert_eq!(v.get("error").and_then(|x| x.as_str()), Some(""));
+    }
 }

@@ -16755,3 +16755,51 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+### transcription.rs private fn (parse_requested_transcription_sources エラー文言完全一致 + case-sensitive、should_emit_realtime_stream_error の is_already_stopped との対称契約、build_worker_panic_error_payload の source=None omit、build_transcription_error_payload の空文字 passthrough) を 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~10:00 JST
+- **担当セッション**: `mjc-worker-transcription-private-fn-tests-20260504-7-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcription.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`parse_requested_transcription_sources` のエラー文言完全一致と case-sensitive 契約 (T1/T2)、`should_emit_realtime_stream_error` と `is_realtime_stream_already_stopped_error` の対称契約 (T3)、`build_worker_panic_error_payload` の source=None omit 契約 (T4)、`build_transcription_error_payload` の空文字 passthrough (T5) を 5 件で固定。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value | Some("xyz") → `assert_eq!(err, "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。")` 完全一致 |
+| T2 | parse_requested_transcription_sources_rejects_uppercase_known_values | ["BOTH", "Microphone", "System_Audio", "Both"] → 全 reject + 同一エラー文言完全一致 (case-sensitive 契約) |
+| T3 | should_emit_realtime_stream_error_is_logical_negation_of_already_stopped | 5 入力で `should_emit == !is_already_stopped` 対称契約を全入力で assert |
+| T4 | build_worker_panic_error_payload_omits_source_when_none | source=None → JSON の "source" key が omit + "error" 文言固定 |
+| T5 | build_transcription_error_payload_preserves_empty_error_string | String::new() を渡した場合 JSON の "error" が `""` として保持される上位層責任境界契約 |
+
+#### 不変条件 / 設計意図
+- T1+T2 はエラー文言の完全一致と case-sensitive 契約を 2 軸で固定。文言変更や lowercase 化リファクタを即検知。
+- T3 は同一 input での should_emit == !is_already_stopped 対称契約。両 fn の inline 化リファクタへの耐性 + 一方の文言変更で他方が追従しないバグを検知。
+- T4 は build_worker_panic_error_payload の source=None omit 契約 (build_transcription_error_payload との対称性確保)。
+- T5 は validation しない上位層責任境界 fn の現挙動 (空文字 passthrough) 固定 (前セッション ループ 2 確立パターン再利用)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 345 → 350 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 12 件)
+- 追加後 total passed: 350
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T1/T2 のエラー文言完全一致は文言変更時に test 修正が必要 (UI 文言契約として意図的)。
+- T2 の case-sensitive 契約は将来 case-insensitive match へ変更したら test 改修が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
