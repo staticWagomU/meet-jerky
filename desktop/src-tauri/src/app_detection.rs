@@ -2456,4 +2456,155 @@ mod tests {
             "JSON 内で service が host より先に出現すること (struct 宣言順を反映)"
         );
     }
+
+    #[test]
+    fn parsed_url_parts_debug_contains_field_values_with_option_some_and_none() {
+        let case_a = ParsedUrlParts {
+            host: "meet.google.com".to_string(),
+            path: "/abc-defg-hij".to_string(),
+            query: Some("auth=xyz".to_string()),
+        };
+        let debug_a = format!("{:?}", case_a);
+        assert!(debug_a.contains("ParsedUrlParts"), "struct 名を含む");
+        assert!(debug_a.contains("host"), "host フィールド名を含む");
+        assert!(debug_a.contains("path"), "path フィールド名を含む");
+        assert!(debug_a.contains("query"), "query フィールド名を含む");
+        assert!(debug_a.contains("meet.google.com"), "host 値を含む");
+        assert!(debug_a.contains("/abc-defg-hij"), "path 値を含む");
+        assert!(debug_a.contains("auth=xyz"), "query 内の値を含む");
+        assert!(debug_a.contains("Some"), "Option::Some の Debug format を含む");
+        assert!(
+            debug_a.find("host").unwrap() < debug_a.find("path").unwrap(),
+            "host が path より先に出現する"
+        );
+        assert!(
+            debug_a.find("path").unwrap() < debug_a.find("query").unwrap(),
+            "path が query より先に出現する"
+        );
+
+        let case_b = ParsedUrlParts {
+            host: "teams.microsoft.com".to_string(),
+            path: "/".to_string(),
+            query: None,
+        };
+        let debug_b = format!("{:?}", case_b);
+        assert!(debug_b.contains("None"), "Option::None の Debug format を含む");
+        assert!(
+            !debug_b.contains("auth=xyz"),
+            "case A の query 値が混入しないこと"
+        );
+    }
+
+    #[test]
+    fn parsed_url_parts_partial_eq_field_independent_and_option_some_vs_none_distinct() {
+        let original = ParsedUrlParts {
+            host: "meet.google.com".to_string(),
+            path: "/abc-defg-hij".to_string(),
+            query: Some("auth=xyz".to_string()),
+        };
+        assert_eq!(original, original.clone(), "reflexive: 同一インスタンスは等しい");
+
+        let diff_host = ParsedUrlParts {
+            host: "other.example.com".to_string(),
+            path: "/abc-defg-hij".to_string(),
+            query: Some("auth=xyz".to_string()),
+        };
+        assert_ne!(diff_host, original, "host のみ異なるインスタンスは不等");
+
+        let diff_path = ParsedUrlParts {
+            host: "meet.google.com".to_string(),
+            path: "/other-path".to_string(),
+            query: Some("auth=xyz".to_string()),
+        };
+        assert_ne!(diff_path, original, "path のみ異なるインスタンスは不等");
+
+        let diff_query = ParsedUrlParts {
+            host: "meet.google.com".to_string(),
+            path: "/abc-defg-hij".to_string(),
+            query: Some("other=val".to_string()),
+        };
+        assert_ne!(diff_query, original, "query のみ異なるインスタンスは不等");
+
+        let with_none = ParsedUrlParts {
+            host: "meet.google.com".to_string(),
+            path: "/abc-defg-hij".to_string(),
+            query: None,
+        };
+        assert_ne!(with_none, original, "query=None と query=Some は不等");
+
+        let with_empty = ParsedUrlParts {
+            host: "meet.google.com".to_string(),
+            path: "/abc-defg-hij".to_string(),
+            query: Some("".to_string()),
+        };
+        assert_ne!(with_empty, with_none, "query=Some(\"\") と query=None は不等");
+
+        let some_a = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/".to_string(),
+            query: Some("a".to_string()),
+        };
+        let some_b = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/".to_string(),
+            query: Some("b".to_string()),
+        };
+        assert_ne!(some_a, some_b, "query=Some(\"a\") と query=Some(\"b\") は不等");
+
+        let some_x1 = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/".to_string(),
+            query: Some("x".to_string()),
+        };
+        let some_x2 = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/".to_string(),
+            query: Some("x".to_string()),
+        };
+        assert_eq!(some_x1, some_x2, "query=Some(\"x\") 同士は等しい");
+
+        let none1 = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/".to_string(),
+            query: None,
+        };
+        let none2 = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/".to_string(),
+            query: None,
+        };
+        assert_eq!(none1, none2, "query=None 同士は等しい");
+    }
+
+    #[test]
+    fn parsed_url_parts_clone_is_deep_and_distinct_after_mutation_including_option() {
+        let original = ParsedUrlParts {
+            host: "x.com".to_string(),
+            path: "/p".to_string(),
+            query: Some("k=v".to_string()),
+        };
+
+        let mut cloned1 = original.clone();
+        assert_eq!(cloned1, original, "clone 直後は元と等しい");
+        cloned1.host = "changed.com".to_string();
+        assert_ne!(cloned1, original, "host 変更後は元と不等");
+
+        let mut cloned2 = original.clone();
+        cloned2.path = "/other".to_string();
+        assert_ne!(cloned2, original, "path 変更後は元と不等");
+
+        let mut cloned3 = original.clone();
+        cloned3.query = Some("k=other".to_string());
+        assert_ne!(cloned3, original, "query を別 Some 値に変更後は元と不等");
+
+        let mut cloned4 = original.clone();
+        cloned4.query = None;
+        assert_ne!(cloned4, original, "query を None に変更後は元と不等");
+
+        assert_eq!(
+            original.query,
+            Some("k=v".to_string()),
+            "元の query は Some(\"k=v\") のまま不変"
+        );
+    }
 }
