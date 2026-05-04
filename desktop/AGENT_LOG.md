@@ -23060,3 +23060,43 @@ test result: ok. 604 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-whisper-request-params-debug-partialeq-clone-tests-20260504-35-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-whisper-request-params-debug-partialeq-clone-tests-20260504-35-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-35 Loop 3
+
+### 作業範囲
+- `src-tauri/src/cloud_whisper.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 16 連続 application + 7 ファイル目展開 (cloud_whisper.rs) + 「Clone 独立性軸」5 連続 application (PartialEq 直接判定の新手法) = WhisperRequestParams (#[derive(Debug, Clone, PartialEq)] + 4 fields including Option<String> + f32) への Debug + PartialEq field 単位独立 + Clone 独立性 (PartialEq + Debug 二重保険) 3 軸 application。
+- T1: whisper_request_params_debug_output_contains_struct_name_and_all_four_field_names_with_option_variants
+- T2: whisper_request_params_partial_eq_holds_reflexive_and_differs_per_field
+- T3: whisper_request_params_clone_is_deep_and_mutation_breaks_partial_eq
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 604 → 607 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/cloud_whisper.rs (mod tests 末尾に T1/T2/T3 追加、struct / build_whisper_request_params / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 607 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

@@ -513,4 +513,110 @@ mod tests {
             assert_eq!(header, "Bearer 日本語キー");
         }
     }
+
+    #[test]
+    fn whisper_request_params_debug_output_contains_struct_name_and_all_four_field_names_with_option_variants(
+    ) {
+        let with_lang = WhisperRequestParams {
+            model: "small".to_string(),
+            language: Some("ja".to_string()),
+            response_format: "verbose_json".to_string(),
+            temperature: 0.0,
+        };
+        let without_lang = WhisperRequestParams {
+            model: "large-v3".to_string(),
+            language: None,
+            response_format: "json".to_string(),
+            temperature: 0.5,
+        };
+        let with_dbg = format!("{with_lang:?}");
+        let without_dbg = format!("{without_lang:?}");
+
+        assert!(with_dbg.contains("WhisperRequestParams"));
+        assert!(with_dbg.contains("model"));
+        assert!(with_dbg.contains("language"));
+        assert!(with_dbg.contains("response_format"));
+        assert!(with_dbg.contains("temperature"));
+        assert!(with_dbg.contains("\"small\""));
+        assert!(with_dbg.contains("\"ja\""));
+        assert!(with_dbg.contains("Some"));
+        assert!(without_dbg.contains("None"));
+        assert!(without_dbg.contains("\"large-v3\""));
+        assert!(without_dbg.contains("\"json\""));
+        assert!(with_dbg.contains("0.0"));
+        assert!(without_dbg.contains("0.5"));
+    }
+
+    #[test]
+    fn whisper_request_params_partial_eq_holds_reflexive_and_differs_per_field() {
+        let base = WhisperRequestParams {
+            model: "small".to_string(),
+            language: Some("ja".to_string()),
+            response_format: "verbose_json".to_string(),
+            temperature: 0.0,
+        };
+
+        assert_eq!(base, base.clone());
+
+        let m_diff = WhisperRequestParams {
+            model: "large-v3".to_string(),
+            ..base.clone()
+        };
+        assert_ne!(base, m_diff);
+
+        let l_diff = WhisperRequestParams {
+            language: Some("en".to_string()),
+            ..base.clone()
+        };
+        assert_ne!(base, l_diff);
+
+        let l_none = WhisperRequestParams {
+            language: None,
+            ..base.clone()
+        };
+        assert_ne!(base, l_none);
+
+        let r_diff = WhisperRequestParams {
+            response_format: "json".to_string(),
+            ..base.clone()
+        };
+        assert_ne!(base, r_diff);
+
+        let t_diff = WhisperRequestParams {
+            temperature: 0.5,
+            ..base.clone()
+        };
+        assert_ne!(base, t_diff);
+    }
+
+    #[test]
+    fn whisper_request_params_clone_is_deep_and_mutation_breaks_partial_eq() {
+        let original = WhisperRequestParams {
+            model: "small".to_string(),
+            language: Some("ja".to_string()),
+            response_format: "verbose_json".to_string(),
+            temperature: 0.0,
+        };
+        let mut cloned = original.clone();
+
+        assert_eq!(original, cloned, "Clone 直後は等値");
+
+        cloned.model = "large-v3".to_string();
+        cloned.language = None;
+        cloned.response_format = "json".to_string();
+        cloned.temperature = 0.5;
+
+        assert_ne!(original, cloned, "全 field mutate 後は不等値");
+
+        let original_dbg = format!("{original:?}");
+        assert!(original_dbg.contains("\"small\""));
+        assert!(original_dbg.contains("Some"));
+        assert!(original_dbg.contains("\"ja\""));
+        assert!(original_dbg.contains("\"verbose_json\""));
+        assert!(original_dbg.contains("0.0"));
+        assert!(!original_dbg.contains("\"large-v3\""));
+        assert!(!original_dbg.contains("None"));
+        assert!(!original_dbg.contains("response_format: \"json\""));
+        assert!(!original_dbg.contains("0.5"));
+    }
 }
