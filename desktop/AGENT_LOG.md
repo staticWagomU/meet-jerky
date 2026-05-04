@@ -19612,3 +19612,52 @@ Loop 3 (commit 457a545) で定数化済みの `TRANSCRIPTION_SOURCE_MICROPHONE` 
 - **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-20.txt` (作成予定)
 - **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-20 docs/handoff/mjc-main-20260504-20.txt`
 - **canonical 名移譲コマンド**: 後継から `bash scripts/agent-adopt-main.sh mjc-main-20260504-20 mjc-main`
+
+---
+
+## Worker Log: mjc-worker-meeting-inactive-wrapper-fn-20260504-20-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-meeting-inactive-wrapper-fn-20260504-20-1
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs に wrapper 関数 + state 追加 + const 追加 + test 1 件 (F-Loop3 Loop 3a, Tidy First, ユーザー観測不可)
+
+### 指示内容の要約
+F-Loop3 の Tidy First 多段スライス Loop 3a として以下を実施:
+1. `MEETING_INACTIVE_THRESHOLD` const 追加 (NOTIFICATION_THROTTLE 直後、#[allow(dead_code)] 二重付与)
+2. `DetectionState` に `last_notified_secs: Mutex<HashMap<String, u64>>` フィールド追加 (last_seen_secs と対称)
+3. `start()` の STATE.set(...) 初期化に `last_notified_secs: Mutex::new(HashMap::new())` 追加
+4. wrapper 関数 `check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64>` を should_notify_meeting_inactive 直後に追加 (STATE 読み取り + 純粋関数呼び出し + last_notified_secs 書き込み)
+5. `check_meeting_inactive_for_bundle_returns_none_when_state_uninitialized` test 1 件追加 (STATE 未初期化時の安全 None 返し契約)
+
+### 結果
+- test 数推移: 475 → 476 passed (+1 件)
+- clippy: warning 0 維持
+- fmt: 差分なし
+- STATE 干渉問題: なし (既存テストで start() を呼んでいる箇所はなく、OnceLock の未初期化 None 返し契約がそのまま test として機能した)
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (1 ファイルのみ)
+
+### 検証結果
+1. cargo test --lib --no-run: Finished (compile OK)
+2. cargo test --lib check_meeting_inactive_for_bundle: 1 passed
+3. cargo test --lib should_notify_meeting_inactive: 10 passed (T1-T10 全維持)
+4. cargo test --lib: 476 passed (475 → +1)
+5. cargo clippy --all-targets -- -D warnings: warning 0
+6. cargo fmt --check: 差分なし
+7. bash scripts/agent-verify.sh src-tauri/src/app_detection.rs: 全段 OK
+
+### 実装上の注意点
+- MEETING_INACTIVE_THRESHOLD の dead_code: `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` だけでは macOS でも wrapper 関数が dead_code のため定数も未使用扱いになる → `#[allow(dead_code)]` を追加で重ねて対処
+- lock 順序: wrapper 内では last_seen_secs と last_notified_secs を別スコープで取得・即解放 (デッドロック回避)
+- 既存パターン踏襲: SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) は handle_detection 内 (Loop 2) の既確立パターンと完全一致
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインで commit + Loop 3b (tokio timer 統合 + show_inactive_notification + dead_code 削除) または別タスク

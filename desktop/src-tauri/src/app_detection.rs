@@ -42,6 +42,13 @@ const WATCHED_BUNDLE_IDS: &[(&str, &str)] = &[
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 const NOTIFICATION_THROTTLE: Duration = Duration::from_secs(60);
 
+/// 会議アプリが「inactive (終了した可能性が高い)」と判定する閾値。
+/// `should_notify_meeting_inactive` の `inactive_threshold_secs` 引数に渡す。
+/// 600 秒 = 10 分。これより短いと画面共有等で URL polling が止まる正常状態を誤検知する恐れ。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+const MEETING_INACTIVE_THRESHOLD: Duration = Duration::from_secs(600);
+
 /// フロントエンドに送る通知ペイロード (Tauri event)。
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "source")]
@@ -88,6 +95,11 @@ struct DetectionState {
     /// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。Loop 2 以降で update。
     #[allow(dead_code)]
     last_seen_secs: Mutex<HashMap<String, u64>>,
+    /// `should_notify_meeting_inactive` 用の最終 inactive 通知時刻 (epoch secs)。
+    /// wrapper 関数 `check_meeting_inactive_for_bundle` がスロットリング判定に使う。
+    /// Loop 3b で timer から呼ばれるまでは write されないため lint suppress。
+    #[allow(dead_code)]
+    last_notified_secs: Mutex<HashMap<String, u64>>,
 }
 
 static STATE: OnceLock<DetectionState> = OnceLock::new();
@@ -103,6 +115,7 @@ pub fn start(app_handle: AppHandle) {
             last_seen: Mutex::new(HashMap::new()),
             latest_payload: Mutex::new(None),
             last_seen_secs: Mutex::new(HashMap::new()),
+            last_notified_secs: Mutex::new(HashMap::new()),
         })
         .is_ok();
 
@@ -214,6 +227,51 @@ fn should_notify_meeting_inactive(
         return None;
     }
     Some(elapsed)
+}
+
+/// 指定 bundle id が会議 inactive 通知の発火対象かを判定する wrapper。
+///
+/// `DetectionState` から `last_seen_secs` / `last_notified_secs` を読み、
+/// 純粋関数 `should_notify_meeting_inactive` を呼ぶ。`Some(elapsed)` を返した
+/// ときは副作用として `last_notified_secs` も書き込む (スロットリング更新)。
+///
+/// `STATE` 未初期化または対象 bundle が一度も検知されていない場合は `None`。
+/// Loop 3b で std::thread タイマーから呼ばれる予定。本 Loop では誰も呼ばないため
+/// `#[allow(dead_code)]` を付与。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
+    let state = STATE.get()?;
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let last_seen_secs = state
+        .last_seen_secs
+        .lock()
+        .get(bundle_id)
+        .copied()
+        .unwrap_or(0);
+    let last_notified_secs = state
+        .last_notified_secs
+        .lock()
+        .get(bundle_id)
+        .copied()
+        .unwrap_or(0);
+    let result = should_notify_meeting_inactive(
+        now_secs,
+        last_seen_secs,
+        last_notified_secs,
+        MEETING_INACTIVE_THRESHOLD.as_secs(),
+        NOTIFICATION_THROTTLE.as_secs(),
+    );
+    if result.is_some() {
+        state
+            .last_notified_secs
+            .lock()
+            .insert(bundle_id.to_string(), now_secs);
+    }
+    result
 }
 
 /// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
@@ -1638,6 +1696,14 @@ mod tests {
             should_notify_meeting_inactive(u64::MAX, 1, 0, 300, 600),
             Some(u64::MAX - 1)
         );
+    }
+
+    #[test]
+    fn check_meeting_inactive_for_bundle_returns_none_when_state_uninitialized() {
+        // STATE を初期化していないテスト環境で wrapper が安全に None を返す契約を固定。
+        // STATE.get() が None のとき early return することで AppHandle や lock を触らず
+        // panic / hang を回避する設計を CI で検知する。
+        assert_eq!(check_meeting_inactive_for_bundle("us.zoom.xos"), None);
     }
 
     #[test]
