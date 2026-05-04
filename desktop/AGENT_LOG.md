@@ -26596,3 +26596,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt のみ。watchdog からの nudge は本セッション中ゼロ (worker 完走が早く、待機時間が短かったため)。
 
 ---
+[mjc-main-20260505-20 Loop 39 / 2026-05-05 ~JST]
+
+## What
+- Case B 実施: `src-tauri/src/app_detection_goto.rs` の `is_goto_host` に rustdoc コメント 8 行追加
+  - GoToMeeting が単一グローバルドメイン (`goto.com` / 旧 `gotomeeting.com`) で運用される理由を明文化
+  - GoTo 公式 Allowlist ドキュメント (support.goto.com/meeting/help/allowlisting-and-firewall-configuration) を cite
+  - EU/UK 等のリージョン専用 TLD が 2026-05-05 時点で存在しないことを明文化
+  - 現在の 3 host pattern (meet.goto.com / app.goto.com / global.gotomeeting.com) で網羅完了と宣言
+- negative test 2 件を `app_detection_goto.rs` に新規 `#[cfg(test)] mod tests` として追加:
+  - `is_goto_host_rejects_hypothetical_eu_tld`: `app.goto.eu` が `false` を返す (存在しないリージョン TLD の explicit rejection)
+  - `is_goto_host_rejects_bare_goto_com_without_subdomain`: `goto.com` (サブドメインなし) が `false` を返す
+
+## Why
+- AGENTS.md 優先順位 2 = 会議検知の網羅性向上 (Case B = 単一 TLD 方針の rationale 明文化)
+- service detection 軸 = 直近 5 ループ (docs/test/extraction/docs/test) 全てと別軸 = 純粋 variety pivot
+- WebSearch 2 query による批判的調査: GoTo 公式 `*.goto.com` ワイルドカード方針確認 → EU/UK 専用 TLD 不在を公式情報で確認
+- Webex / Whereby / Google Meet と同じ単一 TLD 方針 = 既存 is_goto_host 3 host 構造が網羅済
+
+## How (振る舞い不変 + negative test 追加)
+- rustdoc `///` 8 行を `is_goto_host` の直上に追加 (関数本体変更なし)
+- `#[cfg(test)] mod tests` を `app_detection_goto.rs` 末尾に新設 (`use super::*`)
+- negative test 2 件 = is_goto_host を直接呼び出し (Loop 35/38 の直接呼び precedent 踏襲)
+- WebSearch query: 1. "GoToMeeting URL host domain regional EU UK app.goto.com" / 2. "GoToMeeting allowlist firewall domain list"
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (700 + 2 件増加、件数増加は negative test 2 件追加による)
+- cargo clippy --lib --tests -- -D warnings: warnings 0
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (後で記入)
