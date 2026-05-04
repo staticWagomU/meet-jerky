@@ -46,7 +46,6 @@ const NOTIFICATION_THROTTLE: Duration = Duration::from_secs(60);
 /// `should_notify_meeting_inactive` の `inactive_threshold_secs` 引数に渡す。
 /// 600 秒 = 10 分。これより短いと画面共有等で URL polling が止まる正常状態を誤検知する恐れ。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-#[allow(dead_code)]
 const MEETING_INACTIVE_THRESHOLD: Duration = Duration::from_secs(600);
 
 /// フロントエンドに送る通知ペイロード (Tauri event)。
@@ -92,13 +91,10 @@ struct DetectionState {
     app_handle: AppHandle,
     last_seen: Mutex<HashMap<String, Instant>>,
     latest_payload: Mutex<Option<MeetingAppDetectedPayload>>,
-    /// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。Loop 2 以降で update。
-    #[allow(dead_code)]
+    /// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。
     last_seen_secs: Mutex<HashMap<String, u64>>,
     /// `should_notify_meeting_inactive` 用の最終 inactive 通知時刻 (epoch secs)。
     /// wrapper 関数 `check_meeting_inactive_for_bundle` がスロットリング判定に使う。
-    /// Loop 3b で timer から呼ばれるまでは write されないため lint suppress。
-    #[allow(dead_code)]
     last_notified_secs: Mutex<HashMap<String, u64>>,
 }
 
@@ -121,7 +117,16 @@ pub fn start(app_handle: AppHandle) {
 
     if first_time {
         #[cfg(target_os = "macos")]
-        macos::start_detection();
+        {
+            macos::start_detection();
+
+            // 会議終了検知タイマー: 60 秒周期で全 watched bundle を check し、
+            // 必要なら inactive 通知を発火する。
+            std::thread::spawn(|| loop {
+                std::thread::sleep(std::time::Duration::from_secs(60));
+                check_all_inactive_bundles();
+            });
+        }
     }
 }
 
@@ -236,10 +241,8 @@ fn should_notify_meeting_inactive(
 /// ときは副作用として `last_notified_secs` も書き込む (スロットリング更新)。
 ///
 /// `STATE` 未初期化または対象 bundle が一度も検知されていない場合は `None`。
-/// Loop 3b で std::thread タイマーから呼ばれる予定。本 Loop では誰も呼ばないため
-/// `#[allow(dead_code)]` を付与。
+/// std::thread タイマーから定期的に呼ばれる。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-#[allow(dead_code)]
 fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
     let state = STATE.get()?;
     let now_secs = std::time::SystemTime::now()
@@ -272,6 +275,22 @@ fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
             .insert(bundle_id.to_string(), now_secs);
     }
     result
+}
+
+/// `WATCHED_BUNDLE_IDS` 全件に対して `check_meeting_inactive_for_bundle` を呼び、
+/// `Some(elapsed)` が返ったら `show_inactive_notification` を発火する。
+/// タイマースレッドから定期的に呼ばれる。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn check_all_inactive_bundles() {
+    let state = match STATE.get() {
+        Some(s) => s,
+        None => return,
+    };
+    for (bundle_id, app_name) in WATCHED_BUNDLE_IDS {
+        if let Some(elapsed) = check_meeting_inactive_for_bundle(bundle_id) {
+            show_inactive_notification(&state.app_handle, app_name, elapsed);
+        }
+    }
 }
 
 /// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
@@ -392,10 +411,35 @@ fn show_notification(app: &AppHandle, app_name: &str) {
     }
 }
 
+/// 会議アプリが long time 検知されていない場合の inactive 通知を発火する。
+/// `show_notification` と同じ Tauri Notification API を使い、本文だけ
+/// `inactive_notification_body` で生成する別 body にする。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn show_inactive_notification(app: &AppHandle, app_name: &str, elapsed_secs: u64) {
+    use tauri_plugin_notification::NotificationExt;
+
+    let title = "Meet Jerky";
+    let body = inactive_notification_body(app_name, elapsed_secs);
+
+    if let Err(e) = app.notification().builder().title(title).body(&body).show() {
+        eprintln!("[app_detection] inactive notification show failed: {e}");
+    }
+}
+
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 fn notification_body(app_name: &str) -> String {
     format!(
         "{app_name} を検出しました。自分/相手側トラックの録音と文字起こしの状態をアプリで確認してください。"
+    )
+}
+
+/// inactive 通知の本文を生成する純粋関数。
+/// app_name と elapsed_secs を受け取って表示文を整形する。test 容易性のため `show_inactive_notification` から分離。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn inactive_notification_body(app_name: &str, elapsed_secs: u64) -> String {
+    let elapsed_min = elapsed_secs / 60;
+    format!(
+        "{app_name} が {elapsed_min} 分以上検知されていません。会議が終了している場合は録音と文字起こしを停止してください。"
     )
 }
 
@@ -1704,6 +1748,30 @@ mod tests {
         // STATE.get() が None のとき early return することで AppHandle や lock を触らず
         // panic / hang を回避する設計を CI で検知する。
         assert_eq!(check_meeting_inactive_for_bundle("us.zoom.xos"), None);
+    }
+
+    #[test]
+    fn inactive_notification_body_includes_app_name_and_elapsed_minutes() {
+        // 通知文が「<app_name> が <分数> 分以上検知されていません」を含む契約を固定。
+        // app_name と分数の両方が body に embed される設計を CI で検知。
+        let body = inactive_notification_body("Zoom", 720); // 720 秒 = 12 分
+        assert!(
+            body.contains("Zoom"),
+            "body should contain app_name: {body}"
+        );
+        assert!(
+            body.contains("12"),
+            "body should contain elapsed_min: {body}"
+        );
+    }
+
+    #[test]
+    fn inactive_notification_body_truncates_seconds_to_minutes() {
+        // 600 秒 = 10 分、659 秒 = 10 分 (整数除算で truncate される契約)、660 秒 = 11 分。
+        // 整数除算で minutes に丸める設計を CI で検知。
+        assert!(inactive_notification_body("X", 600).contains("10"));
+        assert!(inactive_notification_body("X", 659).contains("10"));
+        assert!(inactive_notification_body("X", 660).contains("11"));
     }
 
     #[test]

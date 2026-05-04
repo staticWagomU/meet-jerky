@@ -19661,3 +19661,60 @@ F-Loop3 の Tidy First 多段スライス Loop 3a として以下を実施:
 
 ### 次アクション
 メインで commit + Loop 3b (tokio timer 統合 + show_inactive_notification + dead_code 削除) または別タスク
+
+---
+
+## Worker Log: mjc-worker-meeting-inactive-timer-20260504-20-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-meeting-inactive-timer-20260504-20-2
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs にタイマー + show_inactive_notification + check_all_inactive_bundles + inactive_notification_body 純粋関数 + dead_code attribute 削除 + test 2 件 (F-Loop3 Loop 3b 機能完結, 振る舞い変更)
+
+### 指示内容の要約
+F-Loop3 Loop 3b として以下を実施:
+1. `inactive_notification_body(app_name, elapsed_secs)` 純粋関数を `notification_body` 直後に追加 (テスト容易性のため `show_inactive_notification` から分離)
+2. `show_inactive_notification(app, app_name, elapsed_secs)` を `show_notification` 直後に追加 (Tauri Notification API 経由、本文は `inactive_notification_body` で生成)
+3. `check_all_inactive_bundles()` を `check_meeting_inactive_for_bundle` 直後に追加 (WATCHED_BUNDLE_IDS 全件を巡回し `show_inactive_notification` を呼ぶ)
+4. `start()` に macOS 限定 `std::thread::spawn(|| loop { sleep(60s); check_all_inactive_bundles(); })` タイマー追加
+5. `#[allow(dead_code)]` を 4 箇所から削除: `MEETING_INACTIVE_THRESHOLD` / `last_seen_secs` フィールド / `last_notified_secs` フィールド / `check_meeting_inactive_for_bundle` 関数
+6. テスト 2 件追加: `inactive_notification_body_includes_app_name_and_elapsed_minutes` / `inactive_notification_body_truncates_seconds_to_minutes`
+
+### 結果
+- test 数推移: 476 → 478 passed (+2 件)
+- clippy: warning 0 維持 (dead_code 再発なし)
+- fmt: 差分なし (assert! 複数行フォーマット修正 1 件あり)
+- dead_code 削除箇所:
+  - `MEETING_INACTIVE_THRESHOLD` const の `#[allow(dead_code)]`
+  - `DetectionState.last_seen_secs` フィールドの `#[allow(dead_code)]`
+  - `DetectionState.last_notified_secs` フィールドの `#[allow(dead_code)]` + stale コメント削除
+  - `check_meeting_inactive_for_bundle` 関数の `#[allow(dead_code)]`
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (1 ファイルのみ)
+
+### 検証結果
+1. `cargo test --lib --no-run`: Finished (compile OK)
+2. `cargo test --lib inactive_notification_body`: 2 passed
+3. `cargo test --lib check_meeting_inactive_for_bundle`: 1 passed (前 Loop 維持)
+4. `cargo test --lib should_notify_meeting_inactive`: 10 passed (既存維持)
+5. `cargo test --lib`: 478 passed (476 → +2)
+6. `cargo clippy --all-targets -- -D warnings`: warning 0
+7. `cargo fmt --check`: 差分なし
+8. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs`: 全段 OK
+
+### 設計判断
+- `show_inactive_notification` の unit test 省略理由: `AppHandle` 依存のため unit test 不能。純粋関数 `inactive_notification_body` の test 2 件で本文生成ロジックを CI 保護する
+- タイマースレッド shutdown: アプリ終了時に明示的 join せず (既存 `detection_callback` / `browser_url_callback` の `std::thread::spawn` パターン踏襲)
+- frontend event emit 省略理由: 本 Loop は macOS 通知センター発火のみに絞る (Tidy First 単一責務)
+- `cargo fmt` 差分発生: `assert!(body.contains(...), "...")` が行長超過で rustfmt が複数行に分割 → 修正して差分解消
+- macOS cfg gate: タイマー起動は `#[cfg(target_os = "macos")]` ブロック内。`check_all_inactive_bundles` / `show_inactive_notification` / `inactive_notification_body` には `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` を付与
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインで commit + 残り候補 (F-Loop4 = browser_url_callback 経路の last_seen_secs 更新 / B カテゴリ別 fn 補強 / D / S 等)
