@@ -22022,3 +22022,44 @@ test result: ok. 568 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-transcription-error-payload-debug-axis-tests-20260504-31-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-error-payload-debug-axis-tests-20260504-31-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-31 Loop 3
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾 (既存 58 test の後) への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強パターン」を struct with Option<enum> field に拡張する 4 連続 application。
+TranscriptionErrorPayload (error: String, source: Option<TranscriptionSource>) の Debug / Clone / PartialEq 軸を executable specification 化。
+- T1: transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name (型名+全 field 名+Some/None+enum variant 名が Debug 出力に含まれる契約)
+- T2: transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants (clone 後の Debug 出力が元と完全一致する契約、Some/None 両 case)
+- T3: transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source (reflexive + 異 error + 異 source + Some vs None の 4 case で等値/不等を確認)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 571 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s`
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / pub enum / 既存 58 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 571 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

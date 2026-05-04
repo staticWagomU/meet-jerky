@@ -2254,4 +2254,108 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name(
+    ) {
+        // #[derive(Debug)] 自動派生による「struct with Option<enum> field の Debug 出力」契約の
+        // executable specification 化 = 将来 source field の Debug 表現変更や TranscriptionSource
+        // variant rename の波及を遮断する装置。
+        let payload = TranscriptionErrorPayload {
+            error: "msg".to_string(),
+            source: Some(TranscriptionSource::SystemAudio),
+        };
+        let output = format!("{:?}", payload);
+        assert!(
+            output.contains("TranscriptionErrorPayload"),
+            "型名 TranscriptionErrorPayload が含まれる: {output}"
+        );
+        assert!(
+            output.contains("error"),
+            "field 名 error が含まれる: {output}"
+        );
+        assert!(
+            output.contains("source"),
+            "field 名 source が含まれる: {output}"
+        );
+        assert!(
+            output.contains("msg"),
+            "error field の値 msg が含まれる: {output}"
+        );
+        assert!(
+            output.contains("Some"),
+            "Option::Some の Debug 表現 Some が含まれる: {output}"
+        );
+        assert!(
+            output.contains("SystemAudio"),
+            "enum variant 名 SystemAudio が含まれる: {output}"
+        );
+        let none_payload = TranscriptionErrorPayload {
+            error: "err".to_string(),
+            source: None,
+        };
+        let none_output = format!("{:?}", none_payload);
+        assert!(
+            none_output.contains("None"),
+            "source: None の Debug 出力に None が含まれる: {none_output}"
+        );
+    }
+
+    #[test]
+    fn transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants() {
+        // #[derive(Debug, Clone)] の組み合わせで clone 後の Debug 出力が 100% 同一である契約を CI 固定。
+        // 将来 Clone を手動実装して Option field を加工する誤改修を遮断する装置。
+        let some_payload = TranscriptionErrorPayload {
+            error: "original".to_string(),
+            source: Some(TranscriptionSource::Microphone),
+        };
+        assert_eq!(
+            format!("{:?}", some_payload),
+            format!("{:?}", some_payload.clone()),
+            "Some 持ち payload の Debug 出力は clone 後と完全一致する"
+        );
+        let none_payload = TranscriptionErrorPayload {
+            error: "no_source".to_string(),
+            source: None,
+        };
+        assert_eq!(
+            format!("{:?}", none_payload),
+            format!("{:?}", none_payload.clone()),
+            "None 持ち payload の Debug 出力は clone 後と完全一致する"
+        );
+    }
+
+    #[test]
+    fn transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source(
+    ) {
+        // #[derive(PartialEq, Eq)] による「全 field が等値判定対象」契約を CI 固定。
+        // 将来 PartialEq を手動実装して source を等値判定から除外する誤改修を遮断する装置。
+        let a = TranscriptionErrorPayload {
+            error: "same".to_string(),
+            source: Some(TranscriptionSource::Microphone),
+        };
+        let b = TranscriptionErrorPayload {
+            error: "same".to_string(),
+            source: Some(TranscriptionSource::Microphone),
+        };
+        assert_eq!(a, b, "同 error + 同 source は等値 (reflexive)");
+        let diff_error = TranscriptionErrorPayload {
+            error: "different".to_string(),
+            source: Some(TranscriptionSource::Microphone),
+        };
+        assert_ne!(a, diff_error, "異 error / 同 source は不等");
+        let diff_source = TranscriptionErrorPayload {
+            error: "same".to_string(),
+            source: Some(TranscriptionSource::SystemAudio),
+        };
+        assert_ne!(
+            a, diff_source,
+            "同 error / 異 source (Microphone vs SystemAudio) は不等"
+        );
+        let none_source = TranscriptionErrorPayload {
+            error: "same".to_string(),
+            source: None,
+        };
+        assert_ne!(a, none_source, "同 error / Some vs None の source 差は不等");
+    }
 }
