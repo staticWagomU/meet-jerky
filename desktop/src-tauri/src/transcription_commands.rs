@@ -1,5 +1,6 @@
 use tauri::Emitter;
 
+use crate::transcription_manager::TranscriptionStateHandle;
 use crate::transcription_model_manager::ModelManager;
 use crate::transcription_types::ModelInfo;
 
@@ -116,6 +117,17 @@ pub(crate) fn parse_requested_transcription_sources(
                 .to_string(),
         ),
     }
+}
+
+/// 文字起こしを停止する
+#[tauri::command]
+pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> Result<(), String> {
+    let mut manager = state.0.lock();
+    if !manager.is_running() {
+        return Err("文字起こしは実行されていません".to_string());
+    }
+    manager.stop();
+    Ok(())
 }
 
 #[cfg(test)]

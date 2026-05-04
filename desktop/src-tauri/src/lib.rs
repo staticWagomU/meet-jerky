@@ -355,7 +355,7 @@ pub fn run() {
             transcription_commands::is_model_downloaded,
             transcription_commands::download_model,
             transcription::start_transcription,
-            transcription::stop_transcription,
+            transcription_commands::stop_transcription,
             settings::get_settings,
             settings::update_settings,
             settings::get_default_output_directory,

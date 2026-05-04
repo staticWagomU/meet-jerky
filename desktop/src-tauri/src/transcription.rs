@@ -190,17 +190,6 @@ pub fn start_transcription(
     Ok(())
 }
 
-/// 文字起こしを停止する
-#[tauri::command]
-pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> Result<(), String> {
-    let mut manager = state.0.lock();
-    if !manager.is_running() {
-        return Err("文字起こしは実行されていません".to_string());
-    }
-    manager.stop();
-    Ok(())
-}
-
 /// Whisper の入力サンプルレート（16kHz）
 pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;
 
