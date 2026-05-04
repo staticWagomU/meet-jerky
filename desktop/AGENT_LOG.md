@@ -20118,3 +20118,25 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-22.txt` (作成予定)
 - **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-22 docs/handoff/mjc-main-20260504-22.txt`
 - **canonical 名移譲コマンド**: 後継から `bash scripts/agent-adopt-main.sh mjc-main-20260504-22 mjc-main`
+
+---
+[WORKER LOG @ 2026-05-04 ~20:00 JST] mjc-main-20260504-22 worker (transcript_bridge test 3 件追加, 規模 XS, Tidy First, ユーザー観測不可)
+- **開始日時**: 2026-05-04 ~20:00 JST (推定)
+- **担当セッション**: mjc-main-20260504-22 用 worker (メイン委任)
+- **役割**: 作業担当エージェント (Claude Code, print mode)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル一切不変。
+- **指示内容**: B 候補 = `segment_to_append_args` の未保護境界に対し test 3 件追加
+  - T1: `segment_to_append_args_falls_back_to_stream_started_when_zero_start_and_observed_none` = zero_start + observed=None の `unwrap_or(stream_started_at_secs)` None 分岐を CI 固定
+  - T2: `segment_to_append_args_trims_unicode_full_width_space_in_text` = U+3000 trim の text 側契約 CI 固定 (speaker 側は既存で保護済)
+  - T3: `segment_to_append_args_returns_empty_text_when_text_is_only_whitespace` = text 全 whitespace → `""` 返す契約 CI 固定 (empty 時 fallback なし)
+- **結果**: 全 3 件 pass。cargo fmt 差分修正 (assert_eq! 引数改行位置を rustfmt 準拠に修正) を 1 往復で適用。
+- **変更ファイル**: `src-tauri/src/transcript_bridge.rs` のみ (mod tests 末尾 3 test 追加)
+- **検証結果**:
+  - `cargo test --lib transcript_bridge::tests` = 34 passed (transcript_bridge::tests 内 31 → 34)
+  - `cargo test --lib` 全体 = **491 passed** (488 → +3, 0 failed)
+  - `cargo clippy --all-targets -- -D warnings` = 警告ゼロ
+  - `cargo fmt --check` = 差分なし (1 往復修正後)
+- **依存追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メインが agent-verify + commit を担当
+---

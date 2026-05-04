@@ -625,4 +625,59 @@ mod tests {
             "i64::MAX start_ms → saturating_add(u64::MAX) → u64::MAX に飽和 + offset = u64::MAX - 0 = u64::MAX"
         );
     }
+
+    #[test]
+    fn segment_to_append_args_falls_back_to_stream_started_when_zero_start_and_observed_none() {
+        // zero_start segment + observed=None で `unwrap_or(stream_started_at_secs)` の None 分岐が動く契約。
+        // observed=None 経路は segment_to_append_args の内部固定。
+        let segment = TranscriptionSegment {
+            text: "test".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+        let (_, offset, _) = segment_to_append_args(&segment, 1_000, 1_040);
+        assert_eq!(
+            offset,
+            40,
+            "zero_start + observed=None → stream_started_at_secs(1040) - session_started_at_secs(1000) = 40"
+        );
+    }
+
+    #[test]
+    fn segment_to_append_args_trims_unicode_full_width_space_in_text() {
+        // U+3000 は str::trim 対象 (Unicode White_Space プロパティ準拠)。
+        // speaker 側で確認済の現契約を text 側でも固定。
+        let mut segment = sample_segment();
+        segment.text = "\u{3000}\u{3000}hello\u{3000}\u{3000}".to_string();
+
+        let (_, _, text) = segment_to_append_args(&segment, 1_000, 1_040);
+
+        assert_eq!(
+            text, "hello",
+            "前後の U+3000 が trim される。内部 \"hello\" はそのまま"
+        );
+    }
+
+    #[test]
+    fn segment_to_append_args_returns_empty_text_when_text_is_only_whitespace() {
+        // text 全 whitespace → trim 後 "" を返す契約。
+        // empty 時の fallback (例: "(空)" 等) を後付けする誤改修への検知。
+        // speaker 側 (`speaker_is_trimmed_and_none_falls_back_to_unknown_label` の None fallback) と非対称な契約 = text には "不明" 相当のフォールバックは存在しない。
+        let segment = TranscriptionSegment {
+            text: "\u{3000}\t\n  \u{3000}".to_string(),
+            start_ms: 2_000,
+            end_ms: 3_500,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+        let (_, _, text) = segment_to_append_args(&segment, 1_000, 1_040);
+        assert_eq!(
+            text, "",
+            "text が全 whitespace のとき trim 後 \"\" を返す契約 = empty 時のフォールバックなし"
+        );
+    }
 }
