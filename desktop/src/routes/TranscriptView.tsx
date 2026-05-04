@@ -817,7 +817,7 @@ export function TranscriptView() {
       }
       setAudioDropCountListenerError(null);
       console.warn(
-        `[audio-drop-count] ${payload.source} で ${payload.dropped} sample 破棄 (mic_prev=${microphoneDropCountTotal}, sys_prev=${systemAudioDropCountTotal}, err_prev=${audioDropCountListenerError})`,
+        `[audio-drop-count] ${payload.source} で ${payload.dropped} sample 破棄`,
       );
       if (payload.source === "microphone") {
         setMicrophoneDropCountTotal((prev) => prev + payload.dropped);
@@ -850,7 +850,7 @@ export function TranscriptView() {
           console.error("音声 drop 監視の解除に失敗しました:", toErrorMessage(e));
         });
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -2353,6 +2353,28 @@ export function TranscriptView() {
             title={`音量レベル監視エラー: ${audioLevelListenerError}`}
           >
             {audioLevelListenerError}
+          </p>
+        )}
+        {audioDropCountListenerError && (
+          <p
+            className="meeting-error meeting-alert"
+            role="alert"
+            aria-label={`音声 drop 監視エラー: ${audioDropCountListenerError}`}
+            title={`音声 drop 監視エラー: ${audioDropCountListenerError}`}
+          >
+            {audioDropCountListenerError}
+          </p>
+        )}
+        {(microphoneDropCountTotal > 0 || systemAudioDropCountTotal > 0) && (
+          <p
+            className="meeting-error meeting-alert"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={`音声サンプル破棄: マイク ${microphoneDropCountTotal} サンプル, システム音声 ${systemAudioDropCountTotal} サンプル`}
+            title={`音声サンプル破棄: マイク ${microphoneDropCountTotal} サンプル, システム音声 ${systemAudioDropCountTotal} サンプル`}
+          >
+            音声サンプル破棄: マイク {microphoneDropCountTotal} サンプル / システム音声 {systemAudioDropCountTotal} サンプル
           </p>
         )}
         {lastSavedPath && lastSavedFileName && (

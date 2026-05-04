@@ -1,5 +1,23 @@
 ---
 
+## セッション: mjc-worker-audio-drop-ui-display
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-drop-ui-display
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src/routes/TranscriptView.tsx (1 ファイル / 3 箇所変更 = console.warn の stale 参照除去 + eslint-disable コメント除去 + JSX に drop count 表示 2 ブロック追加 / Tidy After + Behavioral Change 統合スライス)
+- **指示内容**: (1) console.warn の stale state 参照 3 変数を除去してシンプルな 1 行メッセージに書き換え、(2) eslint-disable-line react-hooks/exhaustive-deps コメントを除去 (変更 1 により不要になるため)、(3) audioLevelListenerError 表示ブロック直後に audioDropCountListenerError (role="alert") と累積 drop count (role="status" / 両方 0 なら非表示) の 2 ブロックを追加。product-concept 優先度 9 (録音状態の透明性) を user-visible 指標として完結させる最小スライス。
+- **結果**: 成功
+- **変更ファイル**: 更新 1 (src/routes/TranscriptView.tsx)
+- **検証結果**:
+  - npm run build (tsc + vite build): 成功 (型エラーなし、vite build 完走 899ms)
+  - cargo test -p meet-jerky --lib: 450 passed / 0 failed (frontend 変更のみ、影響なし)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main-20260504-14) によるレビュー → コミット
+
+---
+
 ## セッション: mjc-worker-audio-drop-frontend-listener
 
 - **開始日時 (JST)**: 2026-05-04
