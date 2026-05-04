@@ -24370,3 +24370,38 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Phase 1 完了 = データ型 + トレイト定義分離、Phase 2 候補は Whisper エンジン抽出 = WhisperLocal + WhisperStream + 純粋関数を transcription_whisper.rs などに抽出)
 
 ---
+
+## 2026-05-05 JST [SESSION SUMMARY] mjc-main-20260505-3 (3 ループ完走 + transcription.rs Phase 1 完了 + 予防的ハンドオフ判断)
+- 担当セッション: mjc-main (canonical 移譲済) = mjc-main-20260505-3 (メイン, opus, 後継 mjc-main-20260505-4)
+- 役割: 旧 mjc-main-20260505-2 から「Webex 4 系統網羅完了 + variety pivot」継承し、AGENTS.md 優先順位 1 (クラッシュ修正) への予防的寄与 (= 巨大ファイル肥大の解消) を達成。docs/architecture/ 新ディレクトリ創出 + transcription.rs 責務分離プラン作成 + Phase 1 完了 (データ型 + トレイト定義の分離達成、累計 ~90 行 transcription.rs から削減)。
+- 作業範囲:
+  - Loop 4: docs/architecture/transcription-refactor-plan.md (新規、メイン直接) + AGENT_LOG.md (末尾追記、メイン直接)
+  - Loop 5: src-tauri/src/transcription_types.rs (新規、worker 経由) + src-tauri/src/transcription.rs (削除/追加、worker) + src-tauri/src/lib.rs (mod 追加、worker) + AGENT_LOG.md (worker)
+  - Loop 6: src-tauri/src/transcription_traits.rs (新規、worker 経由) + src-tauri/src/transcription.rs (削除/追加、worker) + src-tauri/src/lib.rs (mod 追加、worker) + AGENT_LOG.md (worker)
+- 累積成果 (本セッション 3 ループ):
+  - Loop 4 = b5dcff9 = transcription.rs (3000 行) の責務分離プランを記録 (docs commit, ~12 分)
+  - Loop 5 = a7d9fc8 = データ型 4 つを transcription_types.rs に抽出 (Tidy First, Phase 1, ~10 分, ~40 行削減)
+  - Loop 6 = cafbef6 = トレイト定義 3 つを transcription_traits.rs に抽出 (Tidy First, Phase 1 仕上げ, ~10 分, ~50 行削減)
+  - **transcription.rs は 2999 → ~2910 行に縮小 (累計 ~90 行削減)**
+  - **Phase 1 完了 (データ型 + トレイト定義の分離達成)、Phase 2-4 未着手**
+- 検証結果: cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 667 passed (件数不変、Tidy First は振る舞い不変が指標)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 戦略判断詳細:
+  - **「handoff prompt の主要候補を批判的に再評価する」precedent 創出**: B1 (Teams window title) を前任者 rustdoc 注記 (line 555-557) との矛盾で批判的却下。AGENTS.md「鵜呑みにせず批判的・中立的に判断」原則の具体的実践。
+  - **「Mutex poison panic 候補発見」の自己誤認訂正**: session_manager.rs:400/417/758 を panic 候補と誤検知 → Read で精読 → test code と判明 → 「grep 結果は Read で精読する」運用ルール強化。
+  - **「research のみで commit 困難」評価への批判的却下**: main 直接 grep + Write の precedent (handoff prompt 作成、SESSION SUMMARY 追記) を docs ファイル作成にも応用 = worker 起動を省略するハーネス省略策の新 precedent。
+  - **「plan → 実行への段階的推進」パターン創出**: Loop 4 (docs commit) → Loop 5/6 (実コード抽出) で plan を実行に移す自然な流れ = variety 規則発動回避の好例。
+  - **5 連続 Webex sweep からの完全 variety pivot 達成**: mjc-main-20260505-1 Loop 2-3 + mjc-main-20260505-2 Loop 1-3 の Webex 補強 5 連続 → 本セッション Loop 4-6 で transcription.rs 構造改善という明確な軸転換。
+  - **harness silent fail mitigation pattern (git status 主観測 + log/tmux 補助) 連続 31 ループ実証達成**
+  - **コミット周期 ~10 分/loop で目標 15 分以内達成**
+  - **コミット累積 worker 完走 107/107 (本セッション +2 件 Loop 5/6 = Loop 4 は main 直接で worker 起動なし、100% 維持)**
+- 後継への引き継ぎ要点:
+  - Phase 1 完了 = データ型 + トレイト定義の分離達成、累計 ~90 行 transcription.rs から削減
+  - **Phase 2 (Whisper エンジン抽出) は規模 M (~270 行) で 1 ループ超過リスク + 3 連続 extraction = variety 規則発動条件のため Loop 7 では推奨せず**
+  - 推奨次ループ候補: A2 (Whereby) / Z (録音状態 UI = AGENTS.md 優先順位 9) / B1 (Teams window title、ただし批判的再評価必須)
+  - 避けるべき: Phase 2-A (Whisper エンジン抽出) Phase 2-B (ModelManager 抽出) は Loop 8 以降に回す
+  - canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-4 mjc-main` (冪等)
+- 次アクション: 後継 mjc-main-20260505-4 が docs/handoff/mjc-main-20260505-3.txt を読み Loop 7 を始動。本セッションは終了。
+
+---
