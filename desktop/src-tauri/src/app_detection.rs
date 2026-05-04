@@ -516,7 +516,9 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Google Meet"
     } else if is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
-    } else if is_webex_meeting_url(&host, &parsed.path) {
+    } else if is_webex_meeting_url(&host, &parsed.path)
+        || is_webex_jphp_meeting_url(&host, &parsed.path, parsed.query.as_deref())
+    {
         "Webex"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
         "Microsoft Teams"
@@ -791,12 +793,27 @@ fn is_webex_host(host: &str) -> bool {
 }
 
 fn is_webex_meeting_url(host: &str, path: &str) -> bool {
-    // Personal Room (`/meet/<id>`) のみ対応。
-    // j.php / wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
+    // Personal Room (`/meet/<id>`) と j.php 招待 URL (`/<site>/j.php?MTID=<token>`) に対応。
+    // wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
     is_webex_host(host)
         && path
             .strip_prefix("/meet/")
             .is_some_and(has_single_non_empty_segment)
+}
+
+fn is_jphp_path(path: &str) -> bool {
+    let path = path.strip_suffix('/').unwrap_or(path);
+    let Some(inner) = path.strip_prefix('/') else {
+        return false;
+    };
+    let Some((segment, tail)) = inner.split_once('/') else {
+        return false;
+    };
+    !segment.is_empty() && tail == "j.php"
+}
+
+fn is_webex_jphp_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
+    is_webex_host(host) && is_jphp_path(path) && query_has_non_empty_param(query, "MTID")
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -836,6 +853,15 @@ fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
         query.split('&').any(|param| {
             let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
             param_key.eq_ignore_ascii_case(key) && param_value.eq_ignore_ascii_case(value)
+        })
+    })
+}
+
+fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {
+    query.is_some_and(|query| {
+        query.split('&').any(|param| {
+            let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
+            param_key.eq_ignore_ascii_case(key) && !param_value.is_empty()
         })
     })
 }
@@ -2730,5 +2756,70 @@ mod tests {
     #[test]
     fn classify_meeting_url_returns_none_for_webex_with_empty_meet_segment() {
         assert_eq!(classify_meeting_url("https://webex.com/meet/"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_jphp_on_subdomain() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/acme/j.php?MTID=mabc123"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_jphp_on_root_host() {
+        assert_eq!(
+            classify_meeting_url("https://webex.com/webex/j.php?MTID=mxyz"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_jphp_with_trailing_slash() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/acme/j.php/?MTID=mxyz"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webex_jphp_without_mtid() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/acme/j.php"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webex_jphp_with_empty_mtid() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/acme/j.php?MTID="),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_non_webex_host_with_jphp() {
+        assert_eq!(
+            classify_meeting_url("https://fake-webex.example.com/acme/j.php?MTID=mxyz"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webex_jphp_with_extra_path_segment() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/acme/foo/j.php?MTID=mxyz"),
+            None
+        );
     }
 }

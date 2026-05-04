@@ -24252,3 +24252,17 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 旧 mjc-main (= mjc-main-20260505-1) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260505-2 へ予防的ハンドオフ判断 (戦略転換は完成 = 後続は本路線継続が望ましい、最有力候補は「Whereby 検知 / Webex 他形式 / panic 監査 / transcription.rs 構造調査」、harness silent fail に対しては git status ベースの mitigation pattern が連続 26 ループ実証済)
 
 ---
+## 2026-05-05 JST mjc-worker-app-detection-webex-jphp-20260505-2-1
+- 担当セッション: mjc-worker-app-detection-webex-jphp-20260505-2-1 (作業担当, sonnet)
+- 役割: classify_meeting_url の Webex 検知に `j.php?MTID=<token>` 形式 (Webex 招待メール旧形式 URL) を追加 (AGENTS.md 優先順位 2 = 会議検知の網羅性、TDD Red→Green)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: mjc-main-20260505-1 Loop 2 で追加した `is_webex_meeting_url` 内コメントの「将来課題」から j.php 形式のみを今ループで対応。TDD Red→Green: 1 件失敗テスト先追加 → cargo test 失敗確認 → ヘルパー 2 関数追加 (query_has_non_empty_param / is_jphp_path) + is_webex_jphp_meeting_url 追加 + classify_meeting_url Webex 分岐に OR 条件追加 → 残 6 件テスト追加で計 7 件 (646+7=653)
+- 結果: 653 passed (全体, 前 646 + 7 件), 無破壊
+- 変更ファイル: src-tauri/src/app_detection.rs (+ 72 行 / - 2 行、関数 3 件追加 + classify_meeting_url Webex 分岐 OR 条件追加 + is_webex_meeting_url rustdoc コメント更新 + 7 件 test 追加)
+- 検証結果: cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 653 passed (前 646 + 7 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 実装詳細: is_jphp_path は strip_suffix('/') で trailing slash 吸収 + split_once('/') で正確に 1 セグメント+j.php 構造検証 (acme/foo/j.php 等の多段 path を reject)。query_has_non_empty_param は query_has_param の対称形 (値完全一致 → 値非空チェック)。誤検知防止: is_webex_host の DNS label 検証 + MTID 非空必須 + path 段数厳格チェックの 3 重ガード。
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
