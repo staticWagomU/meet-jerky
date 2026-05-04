@@ -24722,3 +24722,38 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 戦略判断: 前任 mjc-main-20260505-6 が「Webex sweep の延長と同質 variety リスク」と懸念したが批判的再評価 = Webex sweep (4-5 連続) と単発補強は本質的に異なる、ユーザー方針「鵜呑みにせず批判的判断」継承
 - 次アクション: 後継 mjc-main-20260505-8 への予防的 handoff = 「2 ループ + 早期 handoff」precedent 連続 4 セッション目達成
 ---
+## SESSION SUMMARY @ 2026-05-05 ~03:50 JST mjc-main (mjc-main-20260505-7) 2 ループ実績 + 後継 mjc-main-20260505-8 への予防的 handoff 判断
+- 担当セッション: mjc-main (canonical 移譲済) = mjc-main-20260505-7 (メイン, opus)
+- 本セッション実績 (2 commit + 1 chore + 1 SUMMARY chore):
+  1. **Loop 13** (commit `76eeb92`): Phase 2-A WhisperStream 抽出 → `src-tauri/src/transcription_whisper_stream.rs` (新規 200 行) + `transcription.rs` ~189 行削除 + 定数 6 つ `pub(crate)` 昇格 + `is_tail_silent` を tests mod 内 import に整理 + `lib.rs` mod 宣言追加 = **Phase 2-A 完全完了** (transcription.rs 累計削減 ~599 行 = 元 2999 → 現在 2400 行)、cargo test --lib 674 passed 件数不変、clippy 警告ゼロ、fmt OK、~8 分
+  2. **Loop 14** (commit `3a8c68e`): Whereby blacklist marketing pages (`download` / `app` / `for-teams` / `developers`) を `WHEREBY_NON_ROOM_PATHS` に追加 + テスト 4 件追加 = 678 passed (= 674 + 4)、clippy 警告ゼロ、fmt OK、Loop 7 から 6 ループ間隔の単発補強 = **「sweep 化しない約束」** = Loop 15 以降は別軸、~3 分
+
+- 戦略 / precedent 達成:
+  - **Phase 2-A 完全完了** (6 件責務分離 = データ型 + トレイト + WhisperLocal + Audio resampling + ModelManager + WhisperStream) = transcription.rs ~599 行削減 (~20% 縮小) → Phase 3 (TranscriptionManager) への自然な区切り
+  - **「2 ループ + 早期 handoff」precedent 連続 4 セッション目達成** (mjc-main-20260505-4 初強化 + 5 連続 2 + 6 連続 3 + 本セッション連続 4)
+  - **variety 規則の規律実証** (extraction 3 連続到達 (Loop 11+12+13) → Loop 14 で必須 service detection 軸 pivot 発動 = 規則準拠)
+  - **「鵜呑みにせず批判的判断」継承実例** = 前任 mjc-main-20260505-6 が「Whereby blacklist は Webex sweep の延長同質リスク」と懸念したが批判的再評価で「単発補強と sweep 化は本質的に異なる」と判定して採用
+  - **harness 衛生事象の観測終了** = canonical 移譲後 scripts/* に M 表示再出現せず観測 = 前任 `bfb9846` chore(harness) commit (PATH inner shell escape 化) が **永続的解決** と確認 = 「観測してから判断」運用の効果実例 (= 推測ではなく観測で結論出し)
+  - **「ファイル参照型 handoff prompt」precedent 継承** (mjc-main-20260505-4 / 5 / 6 から連続 4 セッション目)
+  - **harness silent fail mitigation pattern 連続 38 ループ実証達成** (git status M 監視で 2/2 完走判定)
+  - **worker 完走 2/2** (累計 114/114 100% 維持)
+  - **stdin redirect 化 script の安定運用 6-7 件目 precedent 達成** (Loop 10 焼き付けが連続 3 セッション継承で実証)
+  - **canonical 名移譲完了** (21 セッション連続適用)
+  - **コミット周期 平均 ~5.5 分/loop** で目標 15 分以内達成 (Loop 13 ~8 分 + Loop 14 ~3 分)
+
+- 後継 mjc-main-20260505-8 への引き継ぎ要点:
+  - **Phase 2-A 完全完了** = 次は Phase 3 (TranscriptionManager 抽出, ~110 行) または Phase 4 (Worker loop, ~1900 行 = 最大ホットスポット、3-5 ループ要見積)
+  - **variety 規則の状態** = Loop 14 で service detection 軸 pivot 完了 = extraction 連続カウント 0 にリセット = Loop 15 で extraction 再開可、Loop 17 で 3 連続到達なら Loop 18 で variety pivot 必要
+  - **Loop 15 候補** (variety 規則準拠):
+    - **Phase 3 TranscriptionManager 抽出** (規模 M ~110 行、1 ループ完結見込み、priority 1 予防的寄与継続)
+    - **GoToMeeting URL 検知** (research 必要、URL 形式は `meet.goto.com/<id>` / `global.gotomeeting.com/join/<id>` / `app.goto.com/meet/<id>` 等、規模未知だが Whereby と同パターンなら 1 ループ完結見込み = priority 2 直接寄与)
+    - **app_detection.rs (3017 行) の Webex モジュール抽出** (docs/architecture/transcription-refactor-plan.md L117-121 で「将来課題」記載済、transcription.rs で確立した抽出パターンを app_detection.rs に応用可)
+  - **避けるべき**: Whereby に戻って 2 連続にしない (Loop 14 の「sweep 化しない約束」を破る)、Phase 4 Worker loop は Phase 3 完了まで未着手
+  - **harness 衛生**: canonical 移譲時 scripts/* M 再出現は本セッションで観測終了 = 後継は同調査不要 (前任 bfb9846 が永続的解決)、ただし新たな harness 動作変化があれば観測継続
+
+- コンテキスト管理アクション:
+  - 判断時の使用率: 推定 ~60-65% (大量必読 docs + 2 worker prompt + 検証 + AGENTS.md + autonomous-main-prompt-claude.md)
+  - 引き継ぎ先: mjc-main-20260505-8
+  - 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
+
+---
