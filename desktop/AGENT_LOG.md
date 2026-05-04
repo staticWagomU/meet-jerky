@@ -1,5 +1,38 @@
 ---
 
+## セッション: mjc-worker-render-session-markdown-direct-test
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-render-session-markdown-direct-test
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: session_store.rs tests mod に render_session_markdown direct test 5 件追加
+- **指示内容**:
+  - T1: render_session_markdown の出力が save_session_markdown+read と完全一致することを検証
+  - T2: started_at = u64::MAX で started_at の i64 cast 失敗を独立検証
+  - T3: started_at = 1_700_000_000 + timestamp_offset_secs = u64::MAX で checked_add overflow 経路を独立検証 (prompt 指定の i64::MAX as u64 - 100 は chrono range 外のため自律修正)
+  - T4: 空 segments で collect が成功し segment 行が生成されないことを検証
+  - T5: started_at = 1_700_000_000 + offset_secs = (i64::MAX as u64 + 1) - started_at で checked_add 通過後の i64 cast 失敗経路を独立検証 (prompt 指定の i64::MAX as u64 は chrono range 外のため自律修正)
+- **結果**: 成功
+- **変更ファイル**: src-tauri/src/session_store.rs のみ
+- **追加テスト名** (5 件):
+  - render_session_markdown_returns_same_content_as_save_session_markdown
+  - render_session_markdown_returns_invalid_input_error_when_started_at_exceeds_i64
+  - render_session_markdown_returns_invalid_input_error_when_segment_timestamp_overflows_checked_add
+  - render_session_markdown_succeeds_with_zero_segments
+  - render_session_markdown_returns_invalid_input_error_when_segment_abs_exceeds_i64
+- **検証結果**:
+  - cargo fmt -p meet-jerky: 成功 (差分なし)
+  - cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings: 警告ゼロ
+  - cargo test -p meet-jerky --lib: **456 passed / 0 failed** (前回 451 + 新規 5)
+  - agent-verify.sh: 全段 OK (456 passed / 0 failed)
+- **依存関係追加**: なし
+- **失敗理由**: なし (初回実行で T3・T5 が失敗 = prompt の started_at 値が chrono range 外、自律修正して再実行で全通過)
+  - T3 修正: `i64::MAX as u64 - 100` → `1_700_000_000` (chrono 有効範囲内の通常タイムスタンプ)
+  - T5 修正: `i64::MAX as u64` → `1_700_000_000` + `offset_secs = (i64::MAX as u64 + 1) - started_at` で segment abs = i64::MAX + 1 を u64 範囲内で確保
+- **次アクション**: メイン (mjc-main = mjc-main-20260504-15) によるレビュー → コミット
+
+---
+
 ## セッション: mjc-worker-audio-drop-event-name-const
 
 - **開始日時 (JST)**: 2026-05-04

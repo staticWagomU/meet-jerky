@@ -449,6 +449,79 @@ mod tests {
     }
 
     #[test]
+    fn render_session_markdown_returns_same_content_as_save_session_markdown() {
+        let mut session = Session::start("会議メモ".to_string(), 1_700_000_000);
+        session.append_segment("自分".into(), 15, "hello".into());
+        let dir = tempdir().unwrap();
+
+        let rendered = render_session_markdown(&session, jst()).unwrap();
+        let saved_path = save_session_markdown(dir.path(), &session, jst()).unwrap();
+        let saved_content = fs::read_to_string(&saved_path).unwrap();
+
+        assert_eq!(
+            rendered, saved_content,
+            "render_session_markdown と save_session_markdown+read は同じ markdown を生成する契約"
+        );
+    }
+
+    #[test]
+    fn render_session_markdown_returns_invalid_input_error_when_started_at_exceeds_i64() {
+        let session = Session::start("会議メモ".to_string(), u64::MAX);
+
+        let err = render_session_markdown(&session, jst()).unwrap_err();
+
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(
+            err.to_string().contains("session started_at"),
+            "error message に 'session started_at' が含まれる契約: {err}"
+        );
+    }
+
+    #[test]
+    fn render_session_markdown_returns_invalid_input_error_when_segment_timestamp_overflows_checked_add(
+    ) {
+        let mut session = Session::start("会議メモ".to_string(), 1_700_000_000);
+        session.append_segment("自分".into(), u64::MAX, "hello".into());
+
+        let err = render_session_markdown(&session, jst()).unwrap_err();
+
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(
+            err.to_string()
+                .contains("session segment timestamp overflow"),
+            "error message に 'session segment timestamp overflow' が含まれる契約: {err}"
+        );
+    }
+
+    #[test]
+    fn render_session_markdown_succeeds_with_zero_segments() {
+        let session = Session::start("会議メモ".to_string(), 1_700_000_000);
+
+        let result = render_session_markdown(&session, jst()).unwrap();
+
+        assert!(
+            !result.contains("session segment timestamp"),
+            "空 segments では segment 行が生成されない契約: {result}"
+        );
+    }
+
+    #[test]
+    fn render_session_markdown_returns_invalid_input_error_when_segment_abs_exceeds_i64() {
+        let started_at = 1_700_000_000u64;
+        let offset_secs = (i64::MAX as u64 + 1) - started_at;
+        let mut session = Session::start("会議メモ".to_string(), started_at);
+        session.append_segment("自分".into(), offset_secs, "hello".into());
+
+        let err = render_session_markdown(&session, jst()).unwrap_err();
+
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert!(
+            err.to_string().contains("session segment timestamp"),
+            "error message に 'session segment timestamp' が含まれる契約: {err}"
+        );
+    }
+
+    #[test]
     fn list_session_files_returns_err_when_dir_does_not_exist() {
         let tmp = tempdir().unwrap();
         let missing = tmp.path().join("not-exists");
