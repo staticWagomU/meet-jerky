@@ -21259,3 +21259,44 @@ worker prompt には以下を **必ず** 含める:
 
 - 旧 mjc-main (= mjc-main-20260504-27) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-28 へ予防的ハンドオフ判断 (前 20 セッション (mjc-main-7〜26) と同じ 3 ループパターン継承)
 ---
+
+## mjc-worker-session-manager-discard-state-matrix-tests-20260504-28-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-manager-discard-state-matrix-tests-20260504-28-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-28 Loop 1
+
+### 作業範囲
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+B 候補 (SessionManager::discard 境界補強) として、状態遷移マトリクス + 冪等性 N 回 + 経路対称の 3 軸を CI 固定する test を追加:
+- T1: finalize_then_discard_returns_not_active (状態遷移: finalized × discard → NotActive)
+- T2: discard_thrice_returns_not_active_on_third_call (冪等性 2 → N 拡張)
+- T3: discard_after_start_with_output_clears_all_accessors_to_none (start_with_output 経路対称軸)
+
+### 結果
+- cargo fmt --check: 差分なし (出力なし = OK)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (Finished `dev` profile in 0.68s)
+- cargo test --lib -- --test-threads=1: `test result: ok. 545 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+
+### 変更ファイル
+- src-tauri/src/session_manager.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 545 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

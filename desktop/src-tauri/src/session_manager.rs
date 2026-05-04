@@ -1128,4 +1128,92 @@ mod tests {
             "10_000 char path でも session は activate される: 将来の size limit 誤追加を遮断する装置"
         );
     }
+
+    #[test]
+    fn finalize_then_discard_returns_not_active() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
+        manager.finalize(200).expect("finalize should succeed");
+
+        let err = manager
+            .discard()
+            .expect_err("discard after finalize should fail with NotActive");
+        assert_eq!(
+            err,
+            SessionManagerError::NotActive,
+            "finalize 後の discard は NotActive を返す契約 (状態遷移: finalized × discard → NotActive)"
+        );
+        assert!(
+            !manager.is_active(),
+            "finalize 後の discard も非活性を維持する契約"
+        );
+    }
+
+    #[test]
+    fn discard_thrice_returns_not_active_on_third_call() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
+
+        manager.discard().expect("first discard should succeed");
+
+        let err2 = manager
+            .discard()
+            .expect_err("second discard should fail with NotActive");
+        assert_eq!(err2, SessionManagerError::NotActive);
+
+        let err3 = manager
+            .discard()
+            .expect_err("third discard should fail with NotActive");
+        assert_eq!(
+            err3,
+            SessionManagerError::NotActive,
+            "3 回連続 discard も NotActive を維持する冪等性契約 (l.700 の 2 回保証を N 回拡張)"
+        );
+        assert!(!manager.is_active(), "3 回目以降も非活性を維持");
+    }
+
+    #[test]
+    fn discard_after_start_with_output_clears_all_accessors_to_none() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        manager
+            .start_with_output(
+                "meeting".into(),
+                1_700_000_000,
+                dir.path().to_path_buf(),
+                jst(),
+            )
+            .expect("start_with_output should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+
+        assert!(manager.is_active());
+        assert_eq!(manager.current_title(), Some("meeting".into()));
+        assert_eq!(manager.current_started_at_secs(), Some(1_700_000_000));
+        assert_eq!(manager.current_segment_count(), Some(1));
+
+        manager.discard().expect("discard should succeed");
+
+        assert!(!manager.is_active());
+        assert_eq!(
+            manager.current_title(),
+            None,
+            "start_with_output 経由 discard 後 title=None を維持する契約 (l.716 start 経路の対称軸)"
+        );
+        assert_eq!(
+            manager.current_started_at_secs(),
+            None,
+            "start_with_output 経由 discard 後 started_at_secs=None を維持する契約 (l.716 start 経路の対称軸)"
+        );
+        assert_eq!(
+            manager.current_segment_count(),
+            None,
+            "start_with_output 経由 discard 後 segment_count=None を維持する契約 (l.716 start 経路の対称軸)"
+        );
+    }
 }
