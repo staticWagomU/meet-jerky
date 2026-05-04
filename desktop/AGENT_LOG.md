@@ -17289,3 +17289,48 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
   - G' (継承): 会議終了検知の遅延監視 (規模 S〜M)
   - S (継承): settings.rs Tidy First (規模 M、2 ループ)
 - **未消化のユーザー直伝指示**: なし
+
+### cloud_whisper_errors.rs `sanitize_error_body` の boundary (199/200/201) + 正規化順序契約 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~11:00 JST
+- **担当セッション**: `mjc-worker-cloud-whisper-errors-boundary-tests-20260504-9-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+sanitize_error_body の境界 199/200/201 + whitespace 正規化順序 + multibyte 境界ジャストを 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | sanitize_error_body_does_not_truncate_at_199_chars | 199 chars 入力 → そのまま、"..." 含まない |
+| T2 | sanitize_error_body_does_not_truncate_at_exactly_200_chars | 200 chars ジャスト → そのまま (`>` 比較固定) |
+| T3 | sanitize_error_body_truncates_at_201_chars | 201 chars → 200 chars + "..." (MAX + 3 = 203 chars) |
+| T4 | sanitize_error_body_normalizes_whitespace_before_counting_chars | raw 496 chars / 正規化後 199 chars → そのまま (順序契約) |
+| T5 | sanitize_error_body_truncates_multibyte_at_exactly_201_chars | "あ" × 201 → 200 個の "あ" + "..." (byte count 誤改修検知) |
+
+#### 不変条件 / 設計意図
+- T1+T2+T3 は `>` boundary の上下 + 境界ジャストを対称網羅、`>=` 誤改修検知装置。
+- T4 は line 26 (正規化) → line 27 (char count 判定) の順序契約を raw / 正規化後の chars 数差で固定。
+- T5 は既存 `+ 5` test を `+ 1` ジャストに置き換える形で multibyte 境界の決定的差を固定、byte count 誤改修検知。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 370 → 375 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 375
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存の super::sanitize_error_body / super::MAX_ERROR_BODY_CHARS を使用)
+
+#### 残リスク
+- T4 の "    " (4 spaces) 区切りと 100/199/496 のマジックナンバーは「正規化前後の chars 数差を作る」ための構成であり、将来正規化アルゴリズムを変えたら再計算が必要 (現契約を意図的に固定)。
+- T2 の `>` 境界契約は将来防御強化で `>=` (199 で truncate) に変更したい場合は test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

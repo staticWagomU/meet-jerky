@@ -156,4 +156,56 @@ mod tests {
         assert!(result.ends_with("..."));
         assert!(result.starts_with("あ"));
     }
+
+    #[test]
+    fn sanitize_error_body_does_not_truncate_at_199_chars() {
+        let body = "x".repeat(super::MAX_ERROR_BODY_CHARS - 1);
+        let result = super::sanitize_error_body(&body);
+        assert_eq!(result.chars().count(), 199);
+        assert_eq!(result, "x".repeat(199));
+        assert!(!result.ends_with("..."));
+    }
+
+    #[test]
+    fn sanitize_error_body_does_not_truncate_at_exactly_200_chars() {
+        let body = "x".repeat(super::MAX_ERROR_BODY_CHARS);
+        let result = super::sanitize_error_body(&body);
+        assert_eq!(result.chars().count(), 200);
+        assert_eq!(result, "x".repeat(200));
+        assert!(!result.ends_with("..."));
+    }
+
+    #[test]
+    fn sanitize_error_body_truncates_at_201_chars() {
+        let body = "x".repeat(super::MAX_ERROR_BODY_CHARS + 1);
+        let result = super::sanitize_error_body(&body);
+        assert_eq!(result.chars().count(), super::MAX_ERROR_BODY_CHARS + 3);
+        assert!(result.ends_with("..."));
+        assert!(result.starts_with(&"x".repeat(super::MAX_ERROR_BODY_CHARS)));
+    }
+
+    #[test]
+    fn sanitize_error_body_normalizes_whitespace_before_counting_chars() {
+        // 100 "x"s joined by 4 spaces: raw = 100 + 99*4 = 496 chars (> MAX=200),
+        // but split_whitespace().join(" ") yields 100 + 99 = 199 chars (< MAX).
+        let body = (0..100).map(|_| "x").collect::<Vec<_>>().join("    ");
+        assert_eq!(body.chars().count(), 496);
+        let result = super::sanitize_error_body(&body);
+        assert_eq!(result.chars().count(), 199);
+        assert!(!result.ends_with("..."));
+        assert_eq!(result, (0..100).map(|_| "x").collect::<Vec<_>>().join(" "));
+    }
+
+    #[test]
+    fn sanitize_error_body_truncates_multibyte_at_exactly_201_chars() {
+        let body = "あ".repeat(super::MAX_ERROR_BODY_CHARS + 1);
+        let result = super::sanitize_error_body(&body);
+        assert_eq!(result.chars().count(), super::MAX_ERROR_BODY_CHARS + 3);
+        assert!(result.ends_with("..."));
+        assert!(result.starts_with("あ"));
+        assert!(result
+            .chars()
+            .take(super::MAX_ERROR_BODY_CHARS)
+            .all(|c| c == 'あ'));
+    }
 }
