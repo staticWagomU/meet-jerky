@@ -183,4 +183,94 @@ mod tests {
         let expected = "# 会議 - 2026-04-17 14:30\n\n**[14:30:05] 自分:** hello  ";
         assert_eq!(format_session_markdown(&meta, &segments), expected);
     }
+
+    #[test]
+    fn format_session_markdown_joins_three_or_more_segments_with_single_newline_between() {
+        let meta = SessionMeta {
+            title: "会議".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments = vec![
+            SessionSegment {
+                speaker: "A".to_string(),
+                timestamp_display: "14:30:01".to_string(),
+                text: "first".to_string(),
+            },
+            SessionSegment {
+                speaker: "B".to_string(),
+                timestamp_display: "14:30:02".to_string(),
+                text: "second".to_string(),
+            },
+            SessionSegment {
+                speaker: "C".to_string(),
+                timestamp_display: "14:30:03".to_string(),
+                text: "third".to_string(),
+            },
+        ];
+
+        let expected = "# 会議 - 2026-04-17 14:30\n\n**[14:30:01] A:** first  \n**[14:30:02] B:** second  \n**[14:30:03] C:** third  ";
+        assert_eq!(format_session_markdown(&meta, &segments), expected);
+
+        let result = format_session_markdown(&meta, &segments);
+        let pos_a = result.find("first").unwrap();
+        let pos_b = result.find("second").unwrap();
+        let pos_c = result.find("third").unwrap();
+        assert!(
+            pos_a < pos_b && pos_b < pos_c,
+            "segment 順序が出力に保たれる契約"
+        );
+    }
+
+    #[test]
+    fn format_session_markdown_escapes_special_chars_in_started_at_display_and_timestamp_display() {
+        let meta = SessionMeta {
+            title: "title".to_string(),
+            started_at_display: "*2026*_04_[17]".to_string(),
+        };
+        let segments = vec![SessionSegment {
+            speaker: "speaker".to_string(),
+            timestamp_display: "[14:30:05]".to_string(),
+            text: "text".to_string(),
+        }];
+
+        let result = format_session_markdown(&meta, &segments);
+
+        assert!(
+            result.contains("\\*2026\\*\\_04\\_\\[17\\]"),
+            "started_at_display も escape される契約: result=\n{result}"
+        );
+        assert!(
+            result.contains("\\[14:30:05\\]"),
+            "timestamp_display も escape される契約: result=\n{result}"
+        );
+    }
+
+    #[test]
+    fn inline_markdown_text_escapes_each_char_in_consecutive_or_mixed_special_runs() {
+        assert_eq!(super::inline_markdown_text("***"), "\\*\\*\\*");
+        assert_eq!(super::inline_markdown_text("[[]]"), "\\[\\[\\]\\]");
+        assert_eq!(super::inline_markdown_text("\\\\\\"), "\\\\\\\\\\\\");
+        assert_eq!(super::inline_markdown_text("*_*"), "\\*\\_\\*");
+        assert_eq!(super::inline_markdown_text("[`code`]"), "\\[\\`code\\`\\]");
+    }
+
+    #[test]
+    fn inline_markdown_text_passes_through_emoji_combining_and_zwj_chars_without_escape() {
+        assert_eq!(super::inline_markdown_text("🎉"), "🎉");
+        assert_eq!(super::inline_markdown_text("hello🎉world"), "hello🎉world");
+        let combining = "e\u{0301}";
+        assert_eq!(super::inline_markdown_text(combining), combining);
+        let zwj_family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}";
+        assert_eq!(super::inline_markdown_text(zwj_family), zwj_family);
+        assert_eq!(super::inline_markdown_text("「重要」※"), "「重要」※");
+    }
+
+    #[test]
+    fn inline_markdown_text_treats_full_width_space_and_nbsp_as_split_whitespace() {
+        assert_eq!(super::inline_markdown_text("a\u{3000}b"), "a b");
+        assert_eq!(super::inline_markdown_text("a\u{00A0}b"), "a b");
+        assert_eq!(super::inline_markdown_text("a\u{2028}b"), "a b");
+        assert_eq!(super::inline_markdown_text("x \u{00A0}\u{3000}\ty"), "x y");
+        assert_eq!(super::inline_markdown_text("\u{3000}\u{3000}\u{3000}"), "");
+    }
 }
