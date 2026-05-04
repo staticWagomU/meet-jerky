@@ -25,7 +25,7 @@
 | 8 | Worker loop (run_transcription_loop / panic_guard / emit_segments / 各種 helper) | L1110-2999+ | ~1900 | `transcription/worker.rs` (更にサブ分割推奨) | **高** |
 | 9 | Helper (validate_stream_count / parse_requested_sources / error payload builders 等) | L741-1109 | ~370 | 各責務の private モジュール | 中 |
 
-## 進捗サマリ (mjc-main-20260505-18 Loop 35 + 36 時点)
+## 進捗サマリ (mjc-main-20260505-20 Loop 38 + 40 時点)
 
 - **Phase 1 (責務 1-2 = データ型 + トレイト)**: ✅ 完了 (mjc-main-20260505-3)
 - **Phase 2-A (責務 3 = Whisper エンジン)**: ✅ 完了 (mjc-main-20260505-4 ~ 7)
@@ -39,15 +39,16 @@
     stop_transcription / start_transcription / PendingTranscriptionStream
     すべて transcription_commands.rs に集約
 - **Phase 4 (責務 8 = Worker loop)**: ✅ 完了 (mjc-main-20260505-8 ~ 10, Phase 4-A emission + 4-B error_payload + 4-C panic_guard + 4-D run_transcription_loop)
-- **transcription.rs 累計削減**: 元 2999 行 → 現在 **1175 行** = **約 60.8% 縮小** (~1824 行削減) = **「60% 里程標突破」**
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **749 行** = **約 75.0% 縮小** (~2250 行削減) = **「75% 里程標突破」**
 
 ## 残存課題 (Phase 5 候補)
 
 - **mjc-main-20260505-16 Loop 32 ✅ 完了**: resample_audio テスト 4 件を audio_utils.rs に移動 (commit `192faae`、-44 行)
 - **mjc-main-20260505-17 Loop 33 ✅ 完了**: TranscriptionLoopConfig struct を transcription_worker_loop.rs に移動 (互換 re-export pattern、commit `5a5c814`、-6 行)
 - **mjc-main-20260505-18 Loop 35 ✅ 完了**: transcription_error_payload 関連テスト 15 件 (ブロック A 4 件 + ブロック B 11 件) を transcription_error_payload.rs に移動 (commit `dde8175`、-311 行)
-- transcription.rs 残存 **1175 行** の更なる責務分離 (Worker loop 内部 helper / responses processing / Whisper 関連 helper)
-- 候補: TranscriptionStateHandle / WhisperStream の locality 改善、テスト移動続編 (`calculate_rms` / `is_tail_silent` 系)、TranscriptionSegment テスト移動、WhisperStream テスト移動
+- **mjc-main-20260505-19 Loop 38 ✅ 完了**: transcription_types 関連テスト 10 件 (TranscriptionSegment 4 + TranscriptionSource 3 + ModelInfo 3) を transcription_types.rs に移動 (commit `64fe9cd`、-426 行 = 75% 里程標突破)
+- transcription.rs 残存 **749 行** の更なる責務分離 (Worker loop 内部 helper / responses processing / Whisper 関連 helper)
+- 候補: TranscriptionStateHandle / WhisperStream の locality 改善、テスト移動続編 (`calculate_rms` / `is_tail_silent` 系)、WhisperStream テスト移動
 - 規模 M-L、複数ループ計画推奨
 - 各 Phase 着手時は最新の transcription.rs を read して、本プランの行範囲とずれていないか確認する
 
@@ -151,7 +152,7 @@ mjc-main-20260505-2 で Webex 招待 URL 主要 4 系統 (Personal Room / j.php 
 - tests は classify_meeting_url 経由のため app_detection.rs 残置
 - 振る舞い不変 = 700 passed 件数不変
 
-同パターン (サービス別関数の独立モジュール化) は Whereby が Loop 31、GoToMeeting が Loop 36 で完了済み。残るは Zoom / Microsoft Teams (今後の Tidy First 候補だが、app_detection.rs サービス別抽出 sweep 化リスクあり = Webex (29) + Whereby (31) + GoToMeeting (36) で 3/7 ループ間隔、4 件目連続は sweep 警告超過 = 次回再訪は Loop 39+ 推奨)。
+同パターン (サービス別関数の独立モジュール化) は Whereby が Loop 31、GoToMeeting が Loop 36、Zoom が Loop 40 で完了済み。残るは Microsoft Teams (今後の Tidy First 候補だが、app_detection.rs サービス別抽出 sweep 化リスクあり = Webex (29) + Whereby (31) + GoToMeeting (36) + Zoom (40) で 4/11 ループ間隔、5 件目連続は sweep 警告超過 = 次回再訪は Loop 42+ 推奨で別軸 1-2 ループ挟む)。
 
 ### app_detection_whereby.rs ✅ 完了 (mjc-main-20260505-16 Loop 31 = commit `a523edd`)
 
@@ -176,6 +177,20 @@ mjc-main-20260505-18 Loop 36 で GoToMeeting 検知関数群を `src-tauri/src/a
 - 振る舞い不変 = 700 passed 件数不変
 - app_detection.rs 3231 → 3184 行 (-47 行)、app_detection_goto.rs 0 → 49 行 (新規)
 
+### app_detection_zoom.rs ✅ 完了 (mjc-main-20260505-20 Loop 40 = commit `99baa26`)
+
+mjc-main-20260505-20 Loop 40 で Zoom 検知関数群を `src-tauri/src/app_detection_zoom.rs` に集約した。
+
+- 関数 4 つ (`is_zoom_host` / `is_zoom_meeting_url` / `is_zoom_meeting_id` / `is_zoom_web_client_meeting_url`) を移動
+- pub(crate) で公開 = `is_zoom_host` / `is_zoom_meeting_url`、Zoom 内部依存の `is_zoom_meeting_id` / `is_zoom_web_client_meeting_url` は private 維持
+- ヘルパー `is_valid_dns_label` は Loop 29 (Webex 抽出) で `pub(crate)` 化済 = `use crate::app_detection::is_valid_dns_label` で取り込み
+- ヘルパー `has_single_non_empty_segment` も既 `pub(crate)` のまま = `use crate::app_detection::has_single_non_empty_segment` で取り込み
+- caller (`classify_meeting_url` 内の `is_zoom_meeting_url` 呼び出し) は `crate::app_detection_zoom::is_zoom_meeting_url` 経由に更新
+- tests は classify_meeting_url 経由テストのみ = 直接呼びテストなし = use 文更新不要
+- lib.rs に `mod app_detection_zoom` 宣言追加
+- 振る舞い不変 = 702 passed 件数不変
+- app_detection.rs 3184 → 3141 行 (-43 行)、app_detection_zoom.rs 0 → 44 行 (新規)
+
 ## 関連: TranscriptionLoopConfig struct 移動 ✅ 完了 (mjc-main-20260505-17 Loop 33 = commit `5a5c814`)
 
 mjc-main-20260505-17 Loop 33 で `TranscriptionLoopConfig` struct を transcription.rs から `src-tauri/src/transcription_worker_loop.rs` に移動した。
@@ -199,9 +214,22 @@ mjc-main-20260505-18 Loop 35 で transcription_error_payload 関連テスト 15 
 - 振る舞い不変 = 700 passed 件数不変、clippy 警告ゼロ、fmt OK
 - transcription.rs 1486 → 1175 行 (-311 行) = **60% 里程標突破**、transcription_error_payload.rs 29 → 343 行 (+314 行)
 
+## 関連: transcription_types tests 移動 ✅ 完了 (mjc-main-20260505-19 Loop 38 = commit `64fe9cd`)
+
+mjc-main-20260505-19 Loop 38 で transcription_types 関連テスト 10 件 (~426 行) を transcription.rs から `src-tauri/src/transcription_types.rs` に移動した。
+
+- TranscriptionSegment 4 件: serialize / deserialize / debug / clone 系
+- TranscriptionSource 3 件: from_str / display / round-trip 系
+- ModelInfo 3 件: serialize / deserialize / equality 系
+- 移動先には `mod tests` 新設 + `use super::*` を取り込み
+- ModelInfo の unused import を削除 (移動時 cargo clippy --lib で検出 → 修正)
+- 規模 M 一括 (Loop 35 15 件 ~290 行 precedent 1.4 倍規模 = バンドル判断 sweep 1 件 vs 単独 3 ループ分割 sweep 3 件 で variety 規則的に圧倒的有利と批判判断)
+- 振る舞い不変 = 700 passed 件数不変、clippy 警告ゼロ、fmt OK
+- transcription.rs 1175 → 749 行 (-426 行) = **75% 里程標突破**、transcription_types.rs 41 → 471 行 (+430 行)
+
 ## 参考
 
 - 本プランは mjc-main-20260505-3 (Loop 4) で grep ベース構造分析により作成。
 - 実コードは生きており、Phase 着手時に再度行範囲・責務分類の妥当性を検証する必要がある。
 - 各 Phase 着手時は必ず最新の `transcription.rs` を read して、本プランの行範囲とずれていないか確認する。
-- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-18 Loop 35 + 36 時点で 1175 行 = 約 60.8% 縮小達成 = 60% 里程標突破)
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-20 Loop 38 + 40 時点で 749 行 = 約 75.0% 縮小達成 = 75% 里程標突破)
