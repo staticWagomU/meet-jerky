@@ -16708,3 +16708,50 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
   - F. drop メトリクス Tauri イベント化 (規模 M, 価値 9)
   - G'. 会議終了検知の遅延監視 (規模 S〜M)
 - **未消化のユーザー直伝指示**: なし
+
+---
+
+### session_commands.rs resolve_output_directory の 4 ケース + default_offset の JST 定数契約 を 5 件で固定
+
+- **開始日時 (JST)**: 2026-05-04 ~09:30 JST
+- **担当セッション**: `mjc-worker-session-commands-resolve-output-directory-tests-20260504-7-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_commands.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`resolve_output_directory` (None/Some("")→default / Some(非空)→PathBuf / whitespace trim しない上位層責任境界) の 4 ケースと、`default_offset` の JST 固定値 (`9 * 3600`) を二重検知する 1 ケースを 5 件で固定。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | resolve_output_directory_returns_default_when_setting_is_none | None → default_output_directory() と等しい PathBuf |
+| T2 | resolve_output_directory_returns_default_when_setting_is_empty | Some("") → T1 と同じ結果 (guard `if !dir.is_empty()` の削除リファクタ検知) |
+| T3 | resolve_output_directory_returns_setting_path_when_set_to_nonempty | Some("/tmp/custom-output") → PathBuf::from("/tmp/custom-output") (assert_eq! + assert_ne! with default) |
+| T4 | resolve_output_directory_does_not_trim_whitespace_in_setting_path | Some(" /tmp/path ") → PathBuf::from(" /tmp/path ") そのまま (上位層責任境界の契約強制) |
+| T5 | default_offset_returns_jst_offset_constant | default_offset() == FixedOffset::east_opt(9 * 3600).unwrap() + .local_minus_utc() == 32400 の二重固定 |
+
+#### 不変条件 / 設計意図
+- T1+T2 は None / Some("") を default に倒す guard `if !dir.is_empty()` の対称ペアテスト。
+- T4 は前後 whitespace を trim しない上位層責任境界 fn の契約強制 (前セッション ループ 2 確立パターン再利用)。
+- T5 は default_offset の `9 * 3600` 二重固定 (== assert + .local_minus_utc() == 32400) で 9 → 8 / 3600 → 60 typo を別軸検知。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 340 → 345 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 8 件)
+- 追加後 total passed: 345
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T4 の whitespace 込みパスは将来 trim を追加すると test 修正が必要 (現契約保持なら意図通り、誤リファクタ検知装置)。
+- T5 の 9 * 3600 は将来ユーザー設定化したら test 全面書き換え (コメント済みの方針なので意図通り)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

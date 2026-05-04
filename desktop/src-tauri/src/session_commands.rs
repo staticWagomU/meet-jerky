@@ -396,4 +396,49 @@ mod tests {
         // finalize() は create_dir_all より先に呼ばれるため、save 失敗後も manager はアイドル
         assert!(!manager.is_active());
     }
+
+    fn build_settings_handle_with_dir(dir: Option<String>) -> SettingsStateHandle {
+        use crate::settings::AppSettings;
+        use parking_lot::Mutex;
+        SettingsStateHandle(Mutex::new(AppSettings {
+            output_directory: dir,
+            ..AppSettings::default()
+        }))
+    }
+
+    #[test]
+    fn resolve_output_directory_returns_default_when_setting_is_none() {
+        let handle = build_settings_handle_with_dir(None);
+        let result = resolve_output_directory(&handle);
+        assert_eq!(result, default_output_directory());
+    }
+
+    #[test]
+    fn resolve_output_directory_returns_default_when_setting_is_empty() {
+        let handle = build_settings_handle_with_dir(Some(String::new()));
+        let result = resolve_output_directory(&handle);
+        assert_eq!(result, default_output_directory());
+    }
+
+    #[test]
+    fn resolve_output_directory_returns_setting_path_when_set_to_nonempty() {
+        let handle = build_settings_handle_with_dir(Some("/tmp/custom-output".into()));
+        let result = resolve_output_directory(&handle);
+        assert_eq!(result, PathBuf::from("/tmp/custom-output"));
+        assert_ne!(result, default_output_directory());
+    }
+
+    #[test]
+    fn resolve_output_directory_does_not_trim_whitespace_in_setting_path() {
+        let handle = build_settings_handle_with_dir(Some(" /tmp/path ".into()));
+        let result = resolve_output_directory(&handle);
+        assert_eq!(result, PathBuf::from(" /tmp/path "));
+    }
+
+    #[test]
+    fn default_offset_returns_jst_offset_constant() {
+        let offset = default_offset();
+        assert_eq!(offset, FixedOffset::east_opt(9 * 3600).unwrap());
+        assert_eq!(offset.local_minus_utc(), 9 * 3600);
+    }
 }
