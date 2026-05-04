@@ -24438,3 +24438,77 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 残リスク: なし (純粋関数移動のみ、外部 API 変更なし)
 - 次アクション: メイン側 diff レビュー + commit
 - mjc-main-20260505-4 Loop 8
+
+---
+
+## [SESSION SUMMARY @ 2026-05-05 ~02:40 JST] mjc-main-20260505-4
+
+**実績サマリ (Loop 7 + Loop 8 = 2 ループ完了)**:
+
+- Loop 7 = `feat(app_detection)`: Whereby (`whereby.com` / `<sub>.whereby.com`) ミーティング URL 検知を classify_meeting_url に追加
+  - 既存 4 サービス (Google Meet / Zoom / Webex / Teams) に **Whereby を 5 サービス目として追加**
+  - 4 重ガード (DNS host + path 単一 segment + 非空 room + 21 エントリ blacklist) で誤検知リスク最小化
+  - テスト 7 件追加で 667 → 674 passed
+  - **AGENTS.md 優先順位 2 = 会議検知の網羅性への直接寄与**
+  - 5 連続 Webex sweep からの完全 variety pivot 達成 (4 セッション連続維持後の新サービス対応)
+  - commit: d0ba7df (feat) + fbac06f (chore agent-log)
+
+- Loop 8 = `refactor(transcription)`: 純粋関数 calculate_rms / is_tail_silent を audio_utils.rs に集約
+  - Phase 2-A 最小安全スライス (Tidy First)
+  - transcription.rs −22 行 / audio_utils.rs +23 行 = 累計 ~112 行 transcription.rs から削減 (Phase 1 の 90 行 + Phase 2-A 最小の 22 行)
+  - visibility は pub(crate) で crate 内部 API 維持
+  - import 分離 (非テスト用 is_tail_silent + テスト用 calculate_rms) で clippy unused_imports 警告ゼロ維持
+  - テストは transcription 文脈の定数を参照するため transcription.rs に維持 (統合的振る舞いテスト)
+  - 振る舞い完全不変 = 674 passed 件数不変 + clippy 警告ゼロ + fmt OK
+  - **AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続**
+  - commit: 2e9b923 (refactor + AGENT_LOG.md 同梱)
+
+**新 precedent 創出**:
+
+1. **stdin redirect 起動 (`cat $FILE | claude -p`)**: tmux 引数長制限 (4209 bytes prompt でも too long エラー) を完全回避する harness 改善 = 2 連続成功で安定運用 precedent 化
+   - 従来: `tmux new-session -d -s NAME "claude -p \"$(cat $FILE)\""` で prompt が引数展開 → command line 長制限ヒット
+   - 新方式: `tmux new-session -d -s NAME "cat $FILE | claude -p"` で prompt を stdin pipe 経由 → 制限完全回避
+   - scripts/claude-agent-start-worker.sh への harness 改善 = 後継または harness 担当が反映可能
+
+2. **「2 ループ完了 + 早期 handoff」precedent 強化**: 過去 32 セッションで mjc-main-20260504-39 が「1 ループ + 早期 handoff」を初創出、本セッションは「2 ループ + 早期 handoff (context 管理予防的判断)」で同パターン強化
+
+3. **「Loop 7 = pivot → Loop 8 = extraction 再開」の variety 規則検証**: Loop 5/6 (extraction 2 連続) → Loop 7 (Whereby = pivot で連続カウントリセット) → Loop 8 (extraction 再開) は「3 連続違反」ではないと判定 = 規則の動的適用 precedent
+
+**重要な批判的判断 precedent (継承)**:
+
+- **「録音状態 UI 改善 (handoff 候補 Z) は浅 grep で具体スライス特定困難」と判定**: aria 属性 375 個、TranscriptionControls.tsx に既に role="status" / aria-live="polite" / aria-atomic / aria-busy / aria-label 充実 = 「主観的判断のリスク」を回避
+- **「panic 候補発見の自己誤認」を再確認**: session.rs:645/697/751/759 と session_manager.rs:183/189 を grep で発見 → Read で精読 → 全て `#[cfg(test)] mod tests` 内 (line 177 で mod tests 開始) と判定 = 前セッションの「production panic 候補は 3 件 provably-safe」結論は正確だった = 「grep 結果は Read で精読する」運用ルールの追加根拠
+
+**現在の品質状態**:
+
+- branch: main, ahead 200 (origin/main 比 +3 commits in this session)
+- cargo test --lib: **674 passed / 0 failed**
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- npm run build: 本セッション frontend 触れていないため変更なし
+- worker 完走: 2/2 (累計 109/109 100% 維持)
+- harness silent fail mitigation pattern 連続 33 ループ実証達成
+
+**次セッション (mjc-main-20260505-5) への引き継ぎ候補** (ハンドオフファイル docs/handoff/mjc-main-20260505-4.txt 参照):
+
+1. **Phase 2-A 完全版**: WhisperLocal struct + impl の transcription_whisper.rs 抽出 (~80-100 行、規模 M)
+2. **Phase 2-A 続き**: WhisperStream struct + impl の transcription_whisper_stream.rs 抽出 (~150 行、規模 M-L、1 ループ超過リスク)
+3. **Phase 2-B**: ModelManager の transcription_model_manager.rs 抽出 (~150 行、規模 M、独立性高い)
+4. **Phase 2-A 続き**: Audio resampling (sinc_params / resample_audio) の audio_utils.rs 統合 (~100 行、規模 M、Phase 2-A 最小と同パターン)
+5. **新サービス追加**: GoToMeeting / Slack Huddle / Discord などの新会議サービス検知 (variety 維持上、Whereby と異なる軸を選ぶ)
+6. **frontend 軸 pivot**: TranscriptionControls / LiveCaptionWindow / SessionList の小スライス改善 (priority 6 = 履歴・検索・AI 議事録、または priority 8 = macOS ネイティブ UI/UX)
+
+**variety 規則の状態 (Loop 9 開始時点)**:
+- 直近 4 ループ: Loop 5 (extraction) → 6 (extraction) → 7 (Whereby pivot) → 8 (extraction)
+- 連続カウント: extraction が 1 連続中 (Loop 8 のみ)
+- Loop 9 で extraction 続けると 2 連続、Loop 10 で 3 連続到達 = Loop 11 で variety pivot 検討
+- 安全選択: Loop 9 で Phase 2-B (ModelManager) を選び、Loop 10 で variety pivot (frontend or 新サービス) = 規則を素直に発動
+
+**避けるべきパターン**:
+- 「Debug 軸補強」「Webex sweep」「serde 軸補強」「PartialEq 軸補強」等の派生型 CI 保護パターン
+- 「Whereby sweep」「Phase 2 sweep」等の単一軸 4 連続集中
+- 「録音状態 UI 主観改善」のスライス特定困難な探索
+
+**ハンドオフファイル**: docs/handoff/mjc-main-20260505-4.txt (本セッション内で作成)
+
+---
