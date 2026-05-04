@@ -516,10 +516,14 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Google Meet"
     } else if is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
-    } else if is_webex_meeting_url(&host, &parsed.path)
-        || is_webex_jphp_meeting_url(&host, &parsed.path, parsed.query.as_deref())
-        || is_webex_wbxmjs_meeting_url(&host, &parsed.path)
-        || is_webex_webappng_meeting_url(&host, &parsed.path)
+    } else if crate::app_detection_webex::is_webex_meeting_url(&host, &parsed.path)
+        || crate::app_detection_webex::is_webex_jphp_meeting_url(
+            &host,
+            &parsed.path,
+            parsed.query.as_deref(),
+        )
+        || crate::app_detection_webex::is_webex_wbxmjs_meeting_url(&host, &parsed.path)
+        || crate::app_detection_webex::is_webex_webappng_meeting_url(&host, &parsed.path)
     {
         "Webex"
     } else if is_whereby_meeting_url(&host, &parsed.path) {
@@ -718,7 +722,7 @@ fn is_zoom_host(host: &str) -> bool {
     !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
 }
 
-fn is_valid_dns_label(label: &str) -> bool {
+pub(crate) fn is_valid_dns_label(label: &str) -> bool {
     let bytes = label.as_bytes();
     !bytes.is_empty()
         && bytes.len() <= 63
@@ -789,87 +793,6 @@ fn is_zoom_web_client_meeting_url(path: &str) -> bool {
         return false;
     };
     action == "join" && is_zoom_meeting_id(meeting_id)
-}
-
-fn is_webex_host(host: &str) -> bool {
-    if host == "webex.com" {
-        return true;
-    }
-    let Some(subdomain) = host.strip_suffix(".webex.com") else {
-        return false;
-    };
-    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
-}
-
-fn is_webex_meeting_url(host: &str, path: &str) -> bool {
-    // Personal Room (`/meet/<id>`) / j.php 招待 URL (`/<site>/j.php?MTID=<token>`) /
-    // wbxmjs Meeting Join Service URL (`/wbxmjs/joinservice/sites/<site>/meeting/...`) /
-    // webappng URL (`/webappng/sites/<site>/meeting/info/<token>`) に対応。
-    // 他の Webex URL 形式は誤検知防止のため将来課題。
-    is_webex_host(host)
-        && path
-            .strip_prefix("/meet/")
-            .is_some_and(has_single_non_empty_segment)
-}
-
-fn is_jphp_path(path: &str) -> bool {
-    let path = path.strip_suffix('/').unwrap_or(path);
-    let Some(inner) = path.strip_prefix('/') else {
-        return false;
-    };
-    let Some((segment, tail)) = inner.split_once('/') else {
-        return false;
-    };
-    !segment.is_empty() && tail == "j.php"
-}
-
-fn is_webex_jphp_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
-    is_webex_host(host) && is_jphp_path(path) && query_has_non_empty_param(query, "MTID")
-}
-
-fn is_wbxmjs_path(path: &str) -> bool {
-    let path = path.strip_suffix('/').unwrap_or(path);
-    let Some(rest) = path.strip_prefix("/wbxmjs/joinservice/sites/") else {
-        return false;
-    };
-    let Some((site, after_site)) = rest.split_once('/') else {
-        return false;
-    };
-    if site.is_empty() {
-        return false;
-    }
-    let meeting_segment = after_site
-        .split_once('/')
-        .map_or(after_site, |(head, _)| head);
-    meeting_segment == "meeting"
-}
-
-fn is_webex_wbxmjs_meeting_url(host: &str, path: &str) -> bool {
-    is_webex_host(host) && is_wbxmjs_path(path)
-}
-
-fn is_webappng_path(path: &str) -> bool {
-    let path = path.strip_suffix('/').unwrap_or(path);
-    let Some(rest) = path.strip_prefix("/webappng/sites/") else {
-        return false;
-    };
-    let Some((site, after_site)) = rest.split_once('/') else {
-        return false;
-    };
-    if site.is_empty() {
-        return false;
-    }
-    let Some(after_meeting) = after_site.strip_prefix("meeting/") else {
-        return false;
-    };
-    let Some((action, token)) = after_meeting.split_once('/') else {
-        return false;
-    };
-    action == "info" && !token.is_empty()
-}
-
-fn is_webex_webappng_meeting_url(host: &str, path: &str) -> bool {
-    is_webex_host(host) && is_webappng_path(path)
 }
 
 const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
@@ -995,7 +918,7 @@ fn has_non_empty_path_segments(value: &str) -> bool {
     !value.is_empty() && value.split('/').all(|segment| !segment.is_empty())
 }
 
-fn has_single_non_empty_segment(value: &str) -> bool {
+pub(crate) fn has_single_non_empty_segment(value: &str) -> bool {
     let value = value.strip_suffix('/').unwrap_or(value);
     !value.is_empty() && !value.contains('/')
 }
@@ -1009,7 +932,7 @@ fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
     })
 }
 
-fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {
+pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {
     query.is_some_and(|query| {
         query.split('&').any(|param| {
             let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
