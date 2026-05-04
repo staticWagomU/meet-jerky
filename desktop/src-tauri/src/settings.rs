@@ -803,4 +803,151 @@ mod tests {
             snake_o
         );
     }
+
+    #[test]
+    fn app_settings_debug_output_contains_struct_name_and_all_six_field_names() {
+        let settings = AppSettings {
+            transcription_engine: TranscriptionEngineType::AppleSpeech,
+            whisper_model: "base".to_string(),
+            microphone_device_id: Some("dev-mic-001".to_string()),
+            language: "ja".to_string(),
+            output_directory: Some("/tmp/out".to_string()),
+            api_key: Some("sk-test-001".to_string()),
+        };
+        let debug = format!("{settings:?}");
+        assert!(debug.contains("AppSettings"), "型名を含む契約");
+        assert!(
+            debug.contains("transcription_engine"),
+            "field 名 transcription_engine"
+        );
+        assert!(debug.contains("whisper_model"), "field 名 whisper_model");
+        assert!(
+            debug.contains("microphone_device_id"),
+            "field 名 microphone_device_id"
+        );
+        assert!(debug.contains("language"), "field 名 language");
+        assert!(
+            debug.contains("output_directory"),
+            "field 名 output_directory"
+        );
+        assert!(debug.contains("api_key"), "field 名 api_key");
+        assert!(debug.contains("AppleSpeech"), "値 AppleSpeech");
+        assert!(debug.contains("base"), "値 base");
+        assert!(debug.contains("dev-mic-001"), "値 dev-mic-001");
+        assert!(debug.contains("ja"), "値 ja");
+        assert!(debug.contains("/tmp/out"), "値 /tmp/out");
+        assert!(debug.contains("sk-test-001"), "値 sk-test-001");
+    }
+
+    #[test]
+    fn app_settings_clone_is_deep_and_does_not_mutate_original() {
+        let original = AppSettings {
+            transcription_engine: TranscriptionEngineType::Whisper,
+            whisper_model: "small".to_string(),
+            microphone_device_id: Some("mic-A".to_string()),
+            language: "auto".to_string(),
+            output_directory: None,
+            api_key: Some("k1".to_string()),
+        };
+        let mut cloned = original.clone();
+        cloned.transcription_engine = TranscriptionEngineType::OpenAIRealtime;
+        cloned.whisper_model = "large-v3".to_string();
+        cloned.microphone_device_id = Some("mic-B".to_string());
+        cloned.language = "en".to_string();
+        cloned.output_directory = Some("/var/log".to_string());
+        cloned.api_key = None;
+        let original_debug = format!("{original:?}");
+        assert!(original_debug.contains("Whisper"), "original: Whisper 維持");
+        assert!(
+            !original_debug.contains("OpenAIRealtime"),
+            "original: OpenAIRealtime 混入なし"
+        );
+        assert!(
+            original_debug.contains("\"small\""),
+            "original: whisper_model 'small' 維持"
+        );
+        assert!(
+            !original_debug.contains("\"large-v3\""),
+            "original: large-v3 混入なし"
+        );
+        assert!(original_debug.contains("\"mic-A\""), "original: mic-A 維持");
+        assert!(
+            !original_debug.contains("\"mic-B\""),
+            "original: mic-B 混入なし"
+        );
+        assert!(original_debug.contains("\"auto\""), "original: auto 維持");
+        assert!(!original_debug.contains("\"en\""), "original: en 混入なし");
+        assert!(
+            original_debug.contains("None"),
+            "original: output_directory None 維持"
+        );
+        assert!(
+            !original_debug.contains("\"/var/log\""),
+            "original: /var/log 混入なし"
+        );
+        assert!(
+            original_debug.contains("\"k1\""),
+            "original: api_key k1 維持"
+        );
+    }
+
+    #[test]
+    fn app_settings_serde_serialize_uses_camel_case_for_all_six_fields() {
+        let settings = AppSettings {
+            transcription_engine: TranscriptionEngineType::ElevenLabsRealtime,
+            whisper_model: "tiny".to_string(),
+            microphone_device_id: Some("device-X".to_string()),
+            language: "ja".to_string(),
+            output_directory: Some("/home/u/out".to_string()),
+            api_key: Some("eleven-key".to_string()),
+        };
+        let json = serde_json::to_value(&settings).expect("serialize ok");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.len(), 6, "field 数厳密 = 6");
+        assert!(
+            obj.contains_key("transcriptionEngine"),
+            "camelCase key transcriptionEngine"
+        );
+        assert!(
+            obj.contains_key("whisperModel"),
+            "camelCase key whisperModel"
+        );
+        assert!(
+            obj.contains_key("microphoneDeviceId"),
+            "camelCase key microphoneDeviceId"
+        );
+        assert!(obj.contains_key("language"), "key language");
+        assert!(
+            obj.contains_key("outputDirectory"),
+            "camelCase key outputDirectory"
+        );
+        assert!(obj.contains_key("apiKey"), "camelCase key apiKey");
+        assert!(!obj.contains_key("transcription_engine"), "snake_case 不在");
+        assert!(!obj.contains_key("whisper_model"), "snake_case 不在");
+        assert!(!obj.contains_key("microphone_device_id"), "snake_case 不在");
+        assert!(!obj.contains_key("output_directory"), "snake_case 不在");
+        assert!(!obj.contains_key("api_key"), "snake_case 不在");
+        assert_eq!(
+            obj["transcriptionEngine"],
+            serde_json::json!("elevenLabsRealtime"),
+            "nested enum camelCase serialize"
+        );
+        assert_eq!(
+            obj["whisperModel"],
+            serde_json::json!("tiny"),
+            "whisperModel 値"
+        );
+        assert_eq!(
+            obj["microphoneDeviceId"],
+            serde_json::json!("device-X"),
+            "microphoneDeviceId 値"
+        );
+        assert_eq!(obj["language"], serde_json::json!("ja"), "language 値");
+        assert_eq!(
+            obj["outputDirectory"],
+            serde_json::json!("/home/u/out"),
+            "outputDirectory 値"
+        );
+        assert_eq!(obj["apiKey"], serde_json::json!("eleven-key"), "apiKey 値");
+    }
 }

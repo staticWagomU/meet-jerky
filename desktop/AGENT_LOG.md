@@ -22979,3 +22979,44 @@ test result: ok. 598 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-34) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-35 へ予防的ハンドオフ判断 (前 27 セッション (mjc-main-7〜33) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 12 ループ実証済、「Debug 軸補強」14 連続 application 候補 = AppSettings struct (settings.rs, 6 fields including nested enum + Option 多用) / AudioDevice struct (audio.rs, simple 2 fields) / app_detection.rs の derive 派生 struct 群)
 ---
+
+## mjc-worker-app-settings-debug-clone-serde-tests-20260504-35-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-app-settings-debug-clone-serde-tests-20260504-35-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-35 Loop 1
+
+### 作業範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 14 連続 application + 「Clone 独立性軸」3 連続 application + 「format 不変条件 application」serde camelCase struct 系統 4 連続 application = AppSettings (#[derive(Debug, Clone, Serialize, Deserialize)] + #[serde(rename_all = "camelCase", default)] + 6 fields including nested TranscriptionEngineType + 3 Option<String>) への Debug + Clone 独立性 + serde camelCase 3 軸 application。
+- T1: app_settings_debug_output_contains_struct_name_and_all_six_field_names
+- T2: app_settings_clone_is_deep_and_does_not_mutate_original
+- T3: app_settings_serde_serialize_uses_camel_case_for_all_six_fields
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 598 → 601 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / impl Default / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 601 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
