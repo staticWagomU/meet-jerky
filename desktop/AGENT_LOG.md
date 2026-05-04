@@ -16803,3 +16803,51 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+### session_store.rs private fn (unix_secs_i64 の 3 軸 + io_invalid + unescape_inline_markdown_text 6 文字 + 非対象 + lone trailing backslash) を 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~10:30 JST
+- **担当セッション**: `mjc-worker-session-store-private-fn-tests-20260504-7-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_store.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`unix_secs_i64` の境界値 (0 / i64::MAX) + overflow 2 軸 + エラー文言完全一致、`io_invalid` の kind 不変条件 + message passthrough、`unescape_inline_markdown_text` の 6 文字 unescape + 非対象 passthrough + lone trailing backslash 保持を 5 件で固定。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | unix_secs_i64_returns_value_for_valid_u64_inputs | `unix_secs_i64("test", 0).unwrap() == 0` + `unix_secs_i64("test", i64::MAX as u64).unwrap() == i64::MAX` (両端境界の正常系) |
+| T2 | unix_secs_i64_returns_invalid_input_error_for_overflow | `(i64::MAX as u64) + 1` と `u64::MAX` の 2 軸で `ErrorKind::InvalidInput` を確認 |
+| T3 | unix_secs_i64_error_message_includes_label_and_value_exactly | `"session started_at is out of i64 range: 18446744073709551615"` の完全一致 |
+| T4 | io_invalid_always_returns_invalid_input_kind_with_passed_message | `"any message"` と `"別のメッセージ"` の 2 input で kind 不変条件 + message passthrough を確認 |
+| T5 | unescape_inline_markdown_text_unescapes_six_target_chars_and_passes_others | 6 文字 unescape の for ループ assert + `r"\!"` / `r"\X"` passthrough + lone trailing `r"\"` 保持 |
+
+#### 不変条件 / 設計意図
+- T1+T2 は unix_secs_i64 の 0 / i64::MAX as u64 / overflow 2 軸を boundary + invariant の対称ペアで固定。
+- T3 はエラー文言の format ("{label} is out of i64 range: {unix_secs}") を完全一致で固定 (UI/log 文言契約)。
+- T4 は io_invalid の `ErrorKind::InvalidInput` 不変条件 + message passthrough を 2 input で固定。
+- T5 は markdown.rs `inline_markdown_text` (encode 側) と対称な decode 側の 6 文字 unescape + 非対象 backslash sequence の passthrough + lone trailing backslash 保持を contract として固定。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 350 → 355 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 13 件)
+- 追加後 total passed: 355
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T3 の文言完全一致は将来 format 変更時に test 修正が必要 (UI 文言契約として意図的)。
+- T5 の `\X` passthrough 現挙動は markdown spec 拡張で 7 文字目以降を unescape する設計に変えたら test 修正が必要。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

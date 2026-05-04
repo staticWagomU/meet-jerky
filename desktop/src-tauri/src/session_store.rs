@@ -545,4 +545,67 @@ mod tests {
         // MAX_JS_DATE_UNIX_SECS + 1 = 8_640_000_000_001 is strictly > MAX, so None
         assert_eq!(parse_session_started_at_secs("8640000000001"), None);
     }
+
+    #[test]
+    fn unix_secs_i64_returns_value_for_valid_u64_inputs() {
+        assert_eq!(unix_secs_i64("test", 0).unwrap(), 0);
+        assert_eq!(unix_secs_i64("test", i64::MAX as u64).unwrap(), i64::MAX);
+    }
+
+    #[test]
+    fn unix_secs_i64_returns_invalid_input_error_for_overflow() {
+        use std::io::ErrorKind;
+        assert_eq!(
+            unix_secs_i64("test", (i64::MAX as u64) + 1)
+                .unwrap_err()
+                .kind(),
+            ErrorKind::InvalidInput
+        );
+        assert_eq!(
+            unix_secs_i64("test", u64::MAX).unwrap_err().kind(),
+            ErrorKind::InvalidInput
+        );
+    }
+
+    #[test]
+    fn unix_secs_i64_error_message_includes_label_and_value_exactly() {
+        assert_eq!(
+            unix_secs_i64("session started_at", u64::MAX)
+                .unwrap_err()
+                .to_string(),
+            "session started_at is out of i64 range: 18446744073709551615"
+        );
+    }
+
+    #[test]
+    fn io_invalid_always_returns_invalid_input_kind_with_passed_message() {
+        use std::io::ErrorKind;
+        let e1 = io_invalid("any message");
+        assert_eq!(e1.kind(), ErrorKind::InvalidInput);
+        assert_eq!(e1.to_string(), "any message");
+        let e2 = io_invalid("別のメッセージ");
+        assert_eq!(e2.kind(), ErrorKind::InvalidInput);
+        assert_eq!(e2.to_string(), "別のメッセージ");
+    }
+
+    #[test]
+    fn unescape_inline_markdown_text_unescapes_six_target_chars_and_passes_others() {
+        for (input, expected) in [
+            (r"\\", "\\"),
+            (r"\`", "`"),
+            (r"\*", "*"),
+            (r"\_", "_"),
+            (r"\[", "["),
+            (r"\]", "]"),
+        ] {
+            assert_eq!(
+                unescape_inline_markdown_text(input),
+                expected,
+                "input={input:?}"
+            );
+        }
+        assert_eq!(unescape_inline_markdown_text(r"\!"), r"\!");
+        assert_eq!(unescape_inline_markdown_text(r"\X"), r"\X");
+        assert_eq!(unescape_inline_markdown_text(r"\"), r"\");
+    }
 }
