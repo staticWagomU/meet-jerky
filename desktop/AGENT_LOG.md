@@ -22842,3 +22842,140 @@ test result: ok. 598 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~21:45 JST] mjc-main-20260504-34 状況メモ (3 ループ完走 + 「Debug 軸補強」13 連続 application 系譜達成 + 5 ファイル目への展開 + 「format 不変条件 application」6 系統目拡張 + harness silent fail mitigation pattern 連続 12 ループ実証)
+
+### 本セッションの 3 ループ実績 (589 → 598 passed +9 件)
+
+- **Loop 1** (`1f6f993`) test(session): Session 全体の Debug-Clone 一致 + SessionSegment / Session の serde JSON key 名 snake_case 厳密の 3 軸で「Debug 軸補強」11 連続 application + 「format 不変条件」5 系統目 (serde default snake_case) 拡張 +3 件 → 592 passed
+  - Session: #[derive(Debug, Clone, Serialize, Deserialize)] + 5 fields (id String, title String, started_at u64, ended_at Option<u64>, segments Vec<SessionSegment>)
+  - T1 = Session 全体 Debug-Clone 一致 (mjc-main-31 Loop 2 SessionSegment との対称形完成)
+  - T2 = SessionSegment の serde JSON key 名 snake_case 厳密 (3 key + camelCase 不在 + 値正しさ 8 段 assert)
+  - T3 = Session の serde JSON key 名 snake_case 厳密 + nested Vec<SessionSegment> 形態固定 (5 key + nested 3 key + 値正しさ 13 段 assert)
+  - **「format 不変条件 application」5 系統目** (serde default snake_case = #[serde(rename_all)] 未指定で field 名そのまま JSON key 化される Rust + serde 仕様)
+
+- **Loop 2** (`741db26`) test(settings): TranscriptionEngineType の Debug + PartialEq reflexive・variant 単位独立判定 + serde camelCase 4 variants 順向き JSON 文字列固定の 3 軸で「Debug 軸補強」12 連続 application + 「format 不変条件」serde camelCase enum variant 系統 application 拡張 +3 件 → 595 passed
+  - TranscriptionEngineType: #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)] + #[serde(rename_all = "camelCase")] + 4 unit variants (Whisper / AppleSpeech / OpenAIRealtime / ElevenLabsRealtime)
+  - T1 = 4 variants 名 contains + 4! = 6 通り pair の Debug 出力相違
+  - T2 = 4 reflexive + 6 不等の PartialEq 軸独立補強
+  - T3 = 4 variants の camelCase JSON 文字列 (whisper / appleSpeech / openAIRealtime / elevenLabsRealtime) 固定 + snake_case / PascalCase 不在 (連続大文字 'AI' の 'open_a_i_realtime' 誤改修遮断)
+  - **enum 形態 3 連続 application 達成** (TranscriptionSource → SessionManagerError → TranscriptionEngineType)
+  - **「format 不変条件 application」6 系統目** (serde camelCase enum variant)
+
+- **Loop 3** (`3389916`) test(session_store): SessionSummary の Debug 出力 + PartialEq 4 fields 単位独立判定 + serde camelCase 4 fields 順向き JSON key 名固定の 3 軸で「Debug 軸補強」13 連続 application + 「format 不変条件」serde camelCase struct 系統 application 拡張 +3 件 → 598 passed
+  - SessionSummary: #[derive(Debug, Clone, PartialEq, Serialize)] + #[serde(rename_all = "camelCase")] + 4 fields (path PathBuf, started_at_secs u64, title String, search_text String)
+  - T1 = 4 snake_case field 名 contains + 値 contains の 8 段 assert
+  - T2 = `..base.clone()` short-hand で 1 field のみ違う 4 種インスタンス + 5 段 assert (4 不等 + 1 reflexive)
+  - T3 = 4 fields の camelCase JSON key 名 (path / startedAtSecs / title / searchText) 固定 + .len() == 4 厳密 + snake_case 不在 + 値正しさ 11 段 assert
+  - **struct + camelCase 形態 3 連続 application 達成** (TranscriptionSegment → ModelInfo → SessionSummary)
+  - **5 ファイル目への展開** (transcription / settings / session / session_manager / session_store)
+
+### 確立されたパターン
+
+#### 1. 「対称的補強の 3 軸構造」パターン (継続 application、14 連続セッション目)
+- mjc-main-21〜34 で全 37 ループに application
+
+#### 2. 「Debug 軸補強」パターン 13 連続 application 系譜達成
+- 系譜: SecretKey enum (mjc-main-30 Loop 1) → AppleSpeechEngine unit struct (mjc-main-31 Loop 1) → SessionSegment / Session (mjc-main-31 Loop 2) → TranscriptionErrorPayload (mjc-main-31 Loop 3) → TranscriptionSegment (mjc-main-32 Loop 1) → TranscriptionSource enum (mjc-main-32 Loop 2) → StreamConfig (mjc-main-32 Loop 3) → ModelInfo (mjc-main-33 Loop 1) → RequestedTranscriptionSources (mjc-main-33 Loop 2) → SessionManagerError (mjc-main-33 Loop 3) → Session 全体 (本 Loop 1) → TranscriptionEngineType enum camelCase (本 Loop 2) → SessionSummary struct camelCase (本 Loop 3)
+- 派生型カバレッジ: 12 形態
+- 5 ファイルに渡る統一的補強完成 (transcription.rs / settings.rs / session.rs / session_manager.rs / session_store.rs)
+
+#### 3. 「format 不変条件 application」パターン 6 系統に拡張
+- 1: kebab-case (mjc-main-30 Loop 1, SecretKey)
+- 2: serde snake_case enum (mjc-main-32 Loop 2, TranscriptionSource)
+- 3: serde camelCase struct (mjc-main-32 Loop 1 TranscriptionSegment / mjc-main-33 Loop 1 ModelInfo / 本 Loop 3 SessionSummary)
+- 4: thiserror #[error] 文言 (mjc-main-33 Loop 3, SessionManagerError)
+- 5: serde default snake_case (本 Loop 1, Session / SessionSegment)
+- 6: serde camelCase enum variant (本 Loop 2, TranscriptionEngineType)
+
+#### 4. 「Clone 独立性軸」(mjc-main-32 Loop 3 で確立、mjc-main-33 Loop 1 で 2 連続適用、現セッションでは新規開拓なし)
+
+#### 5. 「同一関数の完全網羅戦略」パターン継続 application
+
+#### 6. 「worker prompt 末尾追記明示」パターン継続適用 (14 連続セッション目)
+
+#### 7. 「worker prompt trailing whitespace 禁止明示」パターン継続適用 (7 連続セッション、21 ループ警告ゼロ)
+
+### 重要発見
+
+#### 1. **harness silent fail mitigation pattern 連続 12 ループ実証達成** (mjc-main-31 で確立、mjc-main-32 で 6 連続実証、mjc-main-33 で 9 連続実証、本セッション 3 連続 application で計 12 連続)
+- 本セッション 3 ループ全てで logs/agent/<session>.txt は 0 byte で観測層 silent fail 継続
+- worker のファイル編集機能 (Edit/Write) は全 3 ループで正常稼働 = session.rs / settings.rs / session_store.rs / AGENT_LOG.md は worker 経由で正しく追記される
+- **`git status --short` で `M` 表示確認 → 検証 (cargo fmt/clippy/test) → diff レビュー → commit** の workflow が連続 12 ループ安定動作
+- 観測時間目安: worker 起動 → 110 秒で対象ファイルに M 表示 → さらに 70 秒で AGENT_LOG.md に M 表示 = 合計 ~180 秒で完走 (本セッション 3 ループ全てで実測)
+- 改善候補 (将来の harness 改善 Loop): script(1) / unbuffer / direct > redirect への切替検討、`scripts/claude-agent-await-worker.sh` の新設で git status 観測を harness 側に組み込む
+
+#### 2. handoff サマリの予測精度 (本セッションでは予測通り)
+- 本セッション handoff SUMMARY が示した ActiveSession / ActiveOutput (l.19-22, 24-27) は実コードと一致するが、**derive 派生がなかった**ため Debug 軸補強の対象外と判定
+- 代替候補として session.rs / settings.rs / session_store.rs にピボットし、3 ループ全て完走
+- `sed` で derive 派生 + field 名確認するルーチンは継続必須 (handoff サマリの「11 連続 application 候補」予測がそのまま使えるとは限らない precedent を本セッションで実証)
+
+#### 3. 3 ループ平均 ~13 分/loop で目標 (15 分以内) クリア
+- Loop 1: ~14 分 / Loop 2: ~13 分 / Loop 3: ~13 分 = 平均 ~13 分
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### 「Debug 軸補強」パターン 14 連続 application 候補
+- **AppSettings struct (settings.rs l.56)** = `#[derive(Debug, Clone, Serialize, Deserialize)]` + `#[serde(rename_all = "camelCase", default)]` + 6 fields (transcription_engine TranscriptionEngineType + whisper_model String + microphone_device_id Option<String> + language String + output_directory Option<String> + api_key Option<String>) = 主要設定 DTO + nested enum field + Option 多用 = struct 系統への 4 連続 application 候補
+- **AudioDevice struct (audio.rs l.16)** = `#[derive(Debug, Clone, serde::Serialize)]` + 2 fields (name, id) = simple DTO + camelCase 指定なし (default snake_case = field 名そのまま) = session.rs Session 系統と同形態
+- **app_detection.rs l.52, l.81, l.592** = `#[derive(Debug, Clone, Serialize)]` 系 struct 多数 = 候補豊富
+- **cloud_whisper.rs l.28** = `#[derive(Debug, Clone, PartialEq)]` + Serialize なし = StreamConfig (mjc-main-32 Loop 3) と類似形態
+
+#### 候補: harness 改善 (mjc-main-31 で発見、本セッションで連続 12 ループ実証達成、価値高、未着手)
+- `claude -p ... | tee` の pipe で stdout 欠落条件の特定と修正
+- script(1) / unbuffer / direct > redirect への切替検討
+- メインが `git status` ベースで完走判定する mitigation を harness 側に組み込む (例: scripts/claude-agent-await-worker.sh)
+
+#### B 候補 (audio.rs / system_audio.rs / markdown.rs の補強残境界、限定的)
+
+#### S 候補継続 (settings.rs 残関数、規模 M)
+- `default_output_directory` / `update_settings` / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` の settings 統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### F-Loop6 (継承、規模 M, 価値中) = タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 598 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 / `--no-verify` 禁止 / Keychain 実通信禁止 / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### worker prompt 必須要素 (14 連続セッションで実証済、継続適用、7 つ全て明示)
+1. AGENT_LOG.md tail -350 を読め
+2. 時系列順 = 末尾追記
+3. 先頭は絶対に触らない
+4. tail -10 で確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外編集禁止 + test 件数の上限明示
+6. 大型ファイルは tail/head/grep で対象範囲のみ参照
+7. 行末空白禁止
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標
+- 本セッション実績: Loop 1 ~14 分 / Loop 2 ~13 分 / Loop 3 ~13 分 = 平均 ~13 分/loop で目標クリア
+- 累積 worker 完走 86/86 (本セッション +3 件、harness silent fail 下でも 100% 完走維持)
+
+### context 管理
+- 本セッションは 3 ループ + SESSION SUMMARY を完了。context 推定 ~70-80% で予防的ハンドオフ判断
+- 後継 mjc-main-20260504-35 へ引き継ぎ (前 27 セッション (mjc-main-7〜33) と同じ 3 ループパターン継承を期待)
+
+### ユーザー直伝指示 (未消化)
+- watchdog からの nudge 1 件 (Loop 1 verification 中、「次の自律改善ループへ進んでください」) = 既に Loop 2/3 で消化済
+
+### 累積成果 (本セッション)
+- **テスト 589 → 598 passed** (+9 件、3 ループ = 旧セッションの +9 件/セッション スケール継続)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings、6 ループ累積)
+- **「Debug 軸補強」パターン 13 連続 application 系譜達成** (12 形態の派生型カバレッジ、5 ファイルに渡る統一的補強完成)
+- **「format 不変条件 application」パターン 6 系統に拡張** (kebab-case / serde snake_case enum / serde camelCase struct / thiserror / serde default snake_case / serde camelCase enum variant)
+- **enum 形態 3 連続 application 達成** (TranscriptionSource → SessionManagerError → TranscriptionEngineType)
+- **struct + camelCase 形態 3 連続 application 達成** (TranscriptionSegment → ModelInfo → SessionSummary)
+- **harness silent fail mitigation pattern 連続 12 ループ実証達成**
+- **canonical 名移譲完了** (mjc-main-20260504-33 → mjc-main-20260504-34 → mjc-main, 9 セッション連続適用)
+- **累積 worker 完走 86/86** (100% 維持)
+- **コミット周期 ~13 分/loop** (目標 15 分以内クリア、3 ループ平均)
+
+旧 mjc-main (= mjc-main-20260504-34) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-35 へ予防的ハンドオフ判断 (前 27 セッション (mjc-main-7〜33) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 12 ループ実証済、「Debug 軸補強」14 連続 application 候補 = AppSettings struct (settings.rs, 6 fields including nested enum + Option 多用) / AudioDevice struct (audio.rs, simple 2 fields) / app_detection.rs の derive 派生 struct 群)
+---
