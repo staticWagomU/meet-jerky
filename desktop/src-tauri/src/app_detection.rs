@@ -526,6 +526,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Whereby"
     } else if is_goto_meeting_url(&host, &parsed.path)
         || is_goto_legacy_meeting_url(&host, &parsed.path)
+        || is_goto_app_meeting_url(&host, &parsed.path)
     {
         "GoToMeeting"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
@@ -950,6 +951,17 @@ fn is_goto_legacy_meeting_url(host: &str, path: &str) -> bool {
         return false;
     }
     let Some(id) = path.strip_prefix("/join/") else {
+        return false;
+    };
+    let id = id.strip_suffix('/').unwrap_or(id);
+    id.len() == 9 && id.chars().all(|c| c.is_ascii_digit())
+}
+
+fn is_goto_app_meeting_url(host: &str, path: &str) -> bool {
+    if host != "app.goto.com" {
+        return false;
+    }
+    let Some(id) = path.strip_prefix("/meet/") else {
         return false;
     };
     let id = id.strip_suffix('/').unwrap_or(id);
@@ -3290,6 +3302,55 @@ mod tests {
         assert_eq!(
             classify_meeting_url("https://fake.global.gotomeeting.com/join/123456789"),
             None
+        );
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_accepts_9_digit_numeric_id() {
+        assert!(is_goto_app_meeting_url("app.goto.com", "/meet/123456789"));
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_accepts_trailing_slash() {
+        assert!(is_goto_app_meeting_url("app.goto.com", "/meet/123456789/"));
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_rejects_8_digit_id() {
+        assert!(!is_goto_app_meeting_url("app.goto.com", "/meet/12345678"));
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_rejects_10_digit_id() {
+        assert!(!is_goto_app_meeting_url("app.goto.com", "/meet/1234567890"));
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_rejects_alphanumeric_id() {
+        assert!(!is_goto_app_meeting_url("app.goto.com", "/meet/abc123def"));
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_rejects_other_host() {
+        assert!(!is_goto_app_meeting_url("evil.goto.com", "/meet/123456789"));
+    }
+
+    #[test]
+    fn is_goto_app_meeting_url_rejects_meet_path_other_format() {
+        assert!(!is_goto_app_meeting_url(
+            "app.goto.com",
+            "/meeting/123456789"
+        ));
+    }
+
+    #[test]
+    fn classify_meeting_url_accepts_goto_app_launcher() {
+        assert_eq!(
+            classify_meeting_url("https://app.goto.com/meet/123456789"),
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "app.goto.com".to_string(),
+            })
         );
     }
 }
