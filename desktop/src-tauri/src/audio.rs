@@ -392,14 +392,17 @@ impl AudioCapture for CpalMicCapture {
                 let level_value = f32::from_bits(bits);
                 let _ = app_handle.emit(
                     "audio-level",
-                    json!({ "level": level_value, "source": "microphone" }),
+                    json!({ "level": level_value, "source": crate::audio_event::AUDIO_SOURCE_MICROPHONE }),
                 );
                 let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
                 if dropped > 0 {
                     eprintln!("[microphone] リングバッファ満杯で {dropped} sample を破棄しました");
                     let _ = app_handle.emit(
                         crate::audio_event::AUDIO_DROP_EVENT_NAME,
-                        crate::audio_event::build_audio_drop_event_payload("microphone", dropped),
+                        crate::audio_event::build_audio_drop_event_payload(
+                            crate::audio_event::AUDIO_SOURCE_MICROPHONE,
+                            dropped,
+                        ),
                     );
                 }
                 std::thread::sleep(Duration::from_millis(100));

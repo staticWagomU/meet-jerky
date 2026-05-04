@@ -322,7 +322,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
                 let level_value = f32::from_bits(bits);
                 let _ = app_handle.emit(
                     "audio-level",
-                    json!({ "level": level_value, "source": "system_audio" }),
+                    json!({ "level": level_value, "source": crate::audio_event::AUDIO_SOURCE_SYSTEM_AUDIO }),
                 );
                 let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
                 if dropped > 0 {
@@ -331,7 +331,10 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     );
                     let _ = app_handle.emit(
                         crate::audio_event::AUDIO_DROP_EVENT_NAME,
-                        crate::audio_event::build_audio_drop_event_payload("system_audio", dropped),
+                        crate::audio_event::build_audio_drop_event_payload(
+                            crate::audio_event::AUDIO_SOURCE_SYSTEM_AUDIO,
+                            dropped,
+                        ),
                     );
                 }
                 std::thread::sleep(Duration::from_millis(100));
