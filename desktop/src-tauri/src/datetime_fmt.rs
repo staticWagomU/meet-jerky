@@ -133,4 +133,42 @@ mod tests {
         assert_eq!(segment, "05:50:45");
         assert!(header.ends_with(&segment[..5]));
     }
+
+    #[test]
+    fn format_session_header_timestamp_returns_error_for_i64_min_unix_secs() {
+        let err = format_session_header_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+        assert!(
+            err.contains("out of range"),
+            "i64::MIN (型最小値) も chrono::timestamp_opt() の out of range 境界として Err を返す現契約: i64::MAX 既存 test (l.64) との型対称軸を CI 固定 = unexpected error message: {err}"
+        );
+    }
+
+    #[test]
+    fn format_segment_timestamp_returns_error_for_i64_min_unix_secs() {
+        let err = format_segment_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+        assert!(
+            err.contains("out of range"),
+            "i64::MIN (型最小値) も chrono::timestamp_opt() の out of range 境界として Err を返す現契約: i64::MAX 既存 test (l.74) との型対称軸を CI 固定 = unexpected error message: {err}"
+        );
+    }
+
+    #[test]
+    fn format_error_message_includes_specific_i64_min_unix_secs_value() {
+        let err1 = format_session_header_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+        let err2 = format_segment_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+        assert_eq!(
+            err1,
+            format!("Unix timestamp is out of range: {}", i64::MIN),
+            "header の i64::MIN error message に具体値を含む現契約を CI 固定 (l.111 の i64::MAX 対称軸)"
+        );
+        assert_eq!(
+            err2,
+            format!("Unix timestamp is out of range: {}", i64::MIN),
+            "segment の i64::MIN error message に具体値を含む現契約を CI 固定 (l.111 の i64::MAX 対称軸)"
+        );
+        assert_eq!(
+            err1, err2,
+            "i64::MIN で 2 関数のエラー値が一致する現契約を CI 固定 = 既存 l.123 の i64::MAX 一致と型対称"
+        );
+    }
 }
