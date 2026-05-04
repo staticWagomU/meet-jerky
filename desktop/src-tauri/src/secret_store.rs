@@ -234,4 +234,70 @@ mod tests {
         assert!(set_elevenlabs_api_key("\t\n  ".to_string()).is_err());
         assert!(set_elevenlabs_api_key("  \t \n ".to_string()).is_err());
     }
+
+    #[test]
+    fn secret_key_debug_output_uses_variant_name_without_leaking_account_string() {
+        // Debug 出力は variant 名のみで構成され、account 文字列を含まない現契約を固定する。
+        // 将来「Debug を手動実装に切替えて account 値を含めてしまう誤改修」「panic 時の
+        // ログに機密文字列が漏れる誤改修」を遮断する装置。
+        let openai_dbg = format!("{:?}", SecretKey::OpenAIApiKey);
+        let elevenlabs_dbg = format!("{:?}", SecretKey::ElevenLabsApiKey);
+        assert!(
+            openai_dbg.contains("OpenAIApiKey"),
+            "Debug 出力に variant 名がない: {openai_dbg}"
+        );
+        assert!(
+            elevenlabs_dbg.contains("ElevenLabsApiKey"),
+            "Debug 出力に variant 名がない: {elevenlabs_dbg}"
+        );
+        assert!(
+            !openai_dbg.contains("openai-api-key"),
+            "Debug 出力に account 文字列が漏出: {openai_dbg}"
+        );
+        assert!(
+            !elevenlabs_dbg.contains("elevenlabs-api-key"),
+            "Debug 出力に account 文字列が漏出: {elevenlabs_dbg}"
+        );
+    }
+
+    #[test]
+    fn secret_key_implements_copy_trait_so_value_remains_usable_after_assignment() {
+        // SecretKey は #[derive(Copy)] により値型として扱える現契約を固定する。
+        // 将来「Copy を消して move semantics に変える誤改修」が起きると、呼び出し元
+        // (entry_for(key) と key.account() の順次使用) で borrow checker error が
+        // 発生し API 表面が壊れるため遮断装置として機能する。
+        let key = SecretKey::OpenAIApiKey;
+        let copied = key; // Copy で move されない
+        assert_eq!(
+            copied.account(),
+            "openai-api-key",
+            "Copy 後の値が元と異なる"
+        );
+        assert_eq!(
+            key.account(),
+            "openai-api-key",
+            "元の値が move されて使えなくなった"
+        );
+    }
+
+    #[test]
+    fn secret_key_account_strings_use_lowercase_kebab_case_format_for_all_variants() {
+        // account 文字列の format 規則 (lowercase kebab-case) を全 variant で固定する。
+        // 既存 secret_key_account_is_stable は絶対値を固定するが、format 規則は
+        // 明示していないため、将来 variant 追加時の命名一貫性を保証する装置として補完。
+        for key in [SecretKey::OpenAIApiKey, SecretKey::ElevenLabsApiKey] {
+            let account = key.account();
+            assert!(!account.is_empty(), "account 文字列が空: {account}");
+            assert!(
+                account.chars().all(|c| c.is_ascii_lowercase() || c == '-'),
+                "account に小文字・ハイフン以外の文字を含む: {account}"
+            );
+            assert!(
+                account.contains('-'),
+                "kebab-case 区切りのハイフンがない: {account}"
+            );
+            assert!(!account.starts_with('-'), "ハイフンで開始: {account}");
+            assert!(!account.ends_with('-'), "ハイフンで終了: {account}");
+        }
+    }
 }

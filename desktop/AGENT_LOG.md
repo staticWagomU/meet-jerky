@@ -21778,3 +21778,44 @@ test result: ok. 560 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-29) は本 SUMMARY を AGENT_LOG.md 末尾に残し、context 状況に応じて次ループ継続または後継 mjc-main-20260504-30 へ予防的ハンドオフ判断 (前 22 セッション (mjc-main-7〜28) と同じ 3 ループパターン継承)
 ---
+
+## mjc-worker-secret-store-mixed-axis-tests-20260504-30-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-secret-store-mixed-axis-tests-20260504-30-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-30 Loop 1
+
+### 作業範囲
+- `src-tauri/src/secret_store.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+混合 application パターン拡張で `secret_store.rs` (237 行 / 既存 7 test) を補強。Debug 軸 + trait 軸 + format 軸の 3 軸 application。
+- T8: secret_key_debug_output_uses_variant_name_without_leaking_account_string (Debug 出力対称軸 + 機密性軸)
+- T9: secret_key_implements_copy_trait_so_value_remains_usable_after_assignment (trait 対称軸 = Copy trait の executable specification)
+- T10: secret_key_account_strings_use_lowercase_kebab_case_format_for_all_variants (format 対称軸 = account 文字列の format 不変条件)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 563 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s`
+
+### 変更ファイル
+- src-tauri/src/secret_store.rs (mod tests 末尾に T8/T9/T10 追加、関数本体・enum 定義・既存 test 7 件無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 563 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
