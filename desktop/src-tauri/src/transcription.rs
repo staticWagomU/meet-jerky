@@ -9,9 +9,7 @@ use tauri::Emitter;
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
-pub use crate::transcription_types::{
-    ModelInfo, TranscriptionErrorPayload, TranscriptionSegment, TranscriptionSource,
-};
+pub use crate::transcription_types::{ModelInfo, TranscriptionSegment, TranscriptionSource};
 
 // ─────────────────────────────────────────────
 // TranscriptionEngine / TranscriptionStream トレイト (transcription_traits.rs に分離、互換層として再エクスポート)
@@ -36,6 +34,11 @@ pub use crate::transcription_model_manager::ModelManager;
 // ─────────────────────────────────────────────
 
 pub use crate::transcription_manager::TranscriptionStateHandle;
+
+use crate::transcription_error_payload::{
+    build_transcription_error_payload, build_worker_panic_error_payload,
+    should_emit_realtime_stream_error,
+};
 
 // ─────────────────────────────────────────────
 // Tauri コマンド
@@ -360,32 +363,6 @@ struct TranscriptionLoopConfig {
     stream_started_at_secs: u64,
 }
 
-fn build_transcription_error_payload(
-    error: String,
-    source: Option<TranscriptionSource>,
-) -> TranscriptionErrorPayload {
-    TranscriptionErrorPayload { error, source }
-}
-
-fn build_worker_panic_error_payload(
-    source: Option<TranscriptionSource>,
-) -> TranscriptionErrorPayload {
-    build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
-}
-
-#[cfg(test)]
-fn transcription_error_payload_to_value(payload: &TranscriptionErrorPayload) -> serde_json::Value {
-    serde_json::to_value(payload).expect("transcription error payload should serialize to JSON")
-}
-
-fn is_realtime_stream_already_stopped_error(error: &str) -> bool {
-    error.contains("Realtime ストリームが既に停止しています")
-}
-
-fn should_emit_realtime_stream_error(error: &str) -> bool {
-    !is_realtime_stream_already_stopped_error(error)
-}
-
 fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
     let running = Arc::clone(&worker.running);
     let app = worker.app.clone();
@@ -497,7 +474,11 @@ use crate::transcription_emission::emit_segments;
 mod tests {
     use super::*;
     use crate::audio_utils::{calculate_rms, is_tail_silent, resample_audio};
+    use crate::transcription_error_payload::{
+        is_realtime_stream_already_stopped_error, transcription_error_payload_to_value,
+    };
     use crate::transcription_manager::TranscriptionManager;
+    use crate::transcription_types::TranscriptionErrorPayload;
 
     fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
         WhisperStream {

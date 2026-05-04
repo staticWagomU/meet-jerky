@@ -24855,3 +24855,19 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
 
 ---
+
+[WORKER COMPLETED @ 2026-05-05 ~JST] mjc-worker-error-payload-extract-20260505-9-1
+- Phase 4-B = error_payload 5 関数抽出完了
+- 新規: src-tauri/src/transcription_error_payload.rs (~30 行)
+- 削減: src-tauri/src/transcription.rs L363-L387 範囲 25 行 → 削除
+- transcription.rs use 文調整: pub use から TranscriptionErrorPayload 除去 (他モジュール参照ゼロ確認済み) + 本番 use 3 関数 import (build_transcription_error_payload / build_worker_panic_error_payload / should_emit_realtime_stream_error)
+- tests mod 内 use 文 2 行追加: is_realtime_stream_already_stopped_error + transcription_error_payload_to_value (crate::transcription_error_payload より import) + TranscriptionErrorPayload (crate::transcription_types より import = pub use 削除の補完)
+- src-tauri/src/lib.rs に mod transcription_error_payload; 宣言追加 (alphabetical: transcription_emission の次)
+- 検証: cargo test --lib 678 passed 件数不変 / clippy --lib -D warnings 警告ゼロ / fmt --check OK / git diff --check trailing whitespace なし
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription.rs 累計削減 ~774 行 (元 2999 → 現在 ~2225 行)
+- transcription-refactor-plan.md L86 worker サブ分割計画 (error_payload) 完了
+- 追加判断: is_realtime_stream_already_stopped_error はテスト専用呼び出しのため本番 use から除外 → tests mod 内 import に変更 (clippy -D warnings 適合)
+- 追加判断: TranscriptionErrorPayload は pub use で再エクスポートされていたが他モジュール参照ゼロ (grep 確認) のため pub use を削除 → tests mod 内で crate::transcription_types から直接 import に変更
+
+---
