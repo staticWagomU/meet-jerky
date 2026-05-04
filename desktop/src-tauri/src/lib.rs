@@ -22,6 +22,7 @@ mod transcription_emission;
 mod transcription_error_payload;
 mod transcription_manager;
 mod transcription_model_manager;
+mod transcription_panic_guard;
 mod transcription_traits;
 mod transcription_types;
 mod transcription_whisper_local;

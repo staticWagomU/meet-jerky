@@ -36,9 +36,9 @@ pub use crate::transcription_model_manager::ModelManager;
 pub use crate::transcription_manager::TranscriptionStateHandle;
 
 use crate::transcription_error_payload::{
-    build_transcription_error_payload, build_worker_panic_error_payload,
-    should_emit_realtime_stream_error,
+    build_transcription_error_payload, should_emit_realtime_stream_error,
 };
+use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
 
 // ─────────────────────────────────────────────
 // Tauri コマンド
@@ -353,36 +353,17 @@ fn parse_requested_transcription_sources(
     }
 }
 
-struct TranscriptionLoopConfig {
-    consumer: ringbuf::HeapCons<f32>,
-    source: TranscriptionSource,
-    stream: Box<dyn TranscriptionStream>,
-    running: Arc<AtomicBool>,
-    app: tauri::AppHandle,
-    session_manager: Arc<crate::session_manager::SessionManager>,
-    stream_started_at_secs: u64,
+pub(crate) struct TranscriptionLoopConfig {
+    pub(crate) consumer: ringbuf::HeapCons<f32>,
+    pub(crate) source: TranscriptionSource,
+    pub(crate) stream: Box<dyn TranscriptionStream>,
+    pub(crate) running: Arc<AtomicBool>,
+    pub(crate) app: tauri::AppHandle,
+    pub(crate) session_manager: Arc<crate::session_manager::SessionManager>,
+    pub(crate) stream_started_at_secs: u64,
 }
 
-fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
-    let running = Arc::clone(&worker.running);
-    let app = worker.app.clone();
-    let source = worker.source;
-
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        run_transcription_loop(worker);
-    }));
-
-    if result.is_err() {
-        running.store(false, Ordering::SeqCst);
-        eprintln!("[transcription] worker panic");
-        let _ = app.emit(
-            "transcription-error",
-            build_worker_panic_error_payload(Some(source)),
-        );
-    }
-}
-
-fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
+pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
     let TranscriptionLoopConfig {
         mut consumer,
         source,
@@ -475,7 +456,8 @@ mod tests {
     use super::*;
     use crate::audio_utils::{calculate_rms, is_tail_silent, resample_audio};
     use crate::transcription_error_payload::{
-        is_realtime_stream_already_stopped_error, transcription_error_payload_to_value,
+        build_worker_panic_error_payload, is_realtime_stream_already_stopped_error,
+        transcription_error_payload_to_value,
     };
     use crate::transcription_manager::TranscriptionManager;
     use crate::transcription_types::TranscriptionErrorPayload;
