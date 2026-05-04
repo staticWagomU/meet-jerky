@@ -1078,4 +1078,31 @@ mod tests {
         assert_eq!(segments[0].source, Some(TranscriptionSource::SystemAudio));
         assert_eq!(segments[0].is_error, Some(true));
     }
+
+    #[test]
+    fn engine_default_debug_format_contains_type_name_and_empty_model_id_field() {
+        let engine = ElevenLabsRealtimeEngine::default();
+        let formatted = format!("{engine:?}");
+        assert!(formatted.contains("ElevenLabsRealtimeEngine"), "型名: {formatted}");
+        assert!(formatted.contains("model_id"), "field 名: {formatted}");
+        assert!(formatted.contains("\"\""), "空 String を Debug 出力: {formatted}");
+    }
+
+    #[test]
+    fn engine_new_with_str_slice_debug_format_contains_provided_model_id_value() {
+        let engine = ElevenLabsRealtimeEngine::new("scribe_v2_realtime");
+        let formatted = format!("{engine:?}");
+        assert!(formatted.contains("ElevenLabsRealtimeEngine"));
+        assert!(formatted.contains("model_id"));
+        assert!(formatted.contains("\"scribe_v2_realtime\""));
+    }
+
+    #[test]
+    fn engine_new_with_owned_string_debug_format_contains_provided_model_id_value() {
+        let engine = ElevenLabsRealtimeEngine::new(String::from("scribe_v2_legacy"));
+        let formatted = format!("{engine:?}");
+        assert!(formatted.contains("ElevenLabsRealtimeEngine"));
+        assert!(formatted.contains("model_id"));
+        assert!(formatted.contains("\"scribe_v2_legacy\""));
+    }
 }
