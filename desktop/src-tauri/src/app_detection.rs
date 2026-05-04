@@ -85,6 +85,9 @@ struct DetectionState {
     app_handle: AppHandle,
     last_seen: Mutex<HashMap<String, Instant>>,
     latest_payload: Mutex<Option<MeetingAppDetectedPayload>>,
+    /// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。Loop 2 以降で update。
+    #[allow(dead_code)]
+    last_seen_secs: Mutex<HashMap<String, u64>>,
 }
 
 static STATE: OnceLock<DetectionState> = OnceLock::new();
@@ -99,6 +102,7 @@ pub fn start(app_handle: AppHandle) {
             app_handle,
             last_seen: Mutex::new(HashMap::new()),
             latest_payload: Mutex::new(None),
+            last_seen_secs: Mutex::new(HashMap::new()),
         })
         .is_ok();
 

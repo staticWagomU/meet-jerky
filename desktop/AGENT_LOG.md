@@ -19455,3 +19455,36 @@ Loop 3 (commit 457a545) で定数化済みの `TRANSCRIPTION_SOURCE_MICROPHONE` 
 - 1 ループ目標 15 分以内
 - 本セッション実績: Loop 1 = ~5 分, Loop 2 = ~5 分, Loop 3 = ~5 分、平均 ~5 分/loop = 目標 15 分以内達成 + 前 mjc-main-17 (~11 分/loop) より大幅短縮
 - 短縮要因: 前 SUMMARY の knowledge transfer + worker prompt の 5 セクション構造定着 + 同心円拡張パターン (Loop 1 → Loop 2 → Loop 3 で範囲を段階的に変化)
+
+---
+
+## worker: mjc-worker-should-warn-polling-stall-symmetry-completion
+
+- 開始日時: 2026-05-04 14:28 JST
+- 担当セッション: mjc-worker-should-warn-polling-stall-symmetry-completion
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/app_detection.rs に test 4 件追加 (Loop 1, W7+W8+W9+W10)
+- 指示内容の要約: should_warn_polling_stall の境界網羅を should_notify_meeting_inactive と完全対称に揃える 4 件追加 (W9 now=last_seen / W7 zero_expected / W8 zero_throttle / W10 u64::MAX)
+- 結果: test 数推移 471 → 475 passed (+4 件), clippy warning 0, fmt 差分なし
+- 変更ファイル: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- 検証結果: cargo test (475 pass) / clippy -D warnings (0) / fmt (clean) / agent-verify.sh (全段 OK)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインで commit + 次ループ判断
+
+---
+
+## セッション: mjc-worker-detection-state-last-seen-secs-add
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-detection-state-last-seen-secs-add
+- **役割**: worker (sonnet)
+- **担当範囲**: src-tauri/src/app_detection.rs DetectionState に last_seen_secs フィールド追加 (F-Loop3 Loop 1, Tidy First, 案 A 二重管理)
+- **指示内容**: `should_notify_meeting_inactive` 用 u64 epoch secs ベース state を別途追加。既存 Instant ベース throttle ロジックは完全無変更。dead_code allow 必要なら付与。
+- **結果**: 成功
+- **dead_code 状況**: macOS ビルドで `last_seen_secs` フィールドは Loop 2 まで誰も読み書きしないため unused となる。フィールドレベルに `#[allow(dead_code)]` を付与して対処 (struct 全体の `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` は macOS では効かないため)。clippy -D warnings ゼロを確認済み。
+- **変更ファイル**: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- **検証結果**: cargo test (475 pass) / clippy -D warnings (0) / fmt (clean) / agent-verify.sh (全段 OK)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メインで commit + Loop 2 (handle_detection 内 update 追加) または別タスクに進む
