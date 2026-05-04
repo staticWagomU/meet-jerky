@@ -2132,4 +2132,31 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn classify_meeting_url_rejects_google_meet_code_path_with_short_first_segment() {
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/ab-defg-hij"),
+            None,
+            "Google Meet path code は first segment 3 桁が必須 (現契約: has_ascii_lowercase_len(first, 3)) = 2 桁 (左境界外側) は reject される必要がある"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_google_meet_code_path_with_long_second_segment() {
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defgh-hij"),
+            None,
+            "Google Meet path code は second segment 4 桁が必須 (現契約: has_ascii_lowercase_len(second, 4)) = 5 桁 (右境界外側) は reject される必要がある"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_google_meet_code_path_with_long_third_segment() {
+        assert_eq!(
+            classify_meeting_url("https://meet.google.com/abc-defg-hijk"),
+            None,
+            "Google Meet path code は third segment 3 桁が必須 (現契約: has_ascii_lowercase_len(third, 3)) = 4 桁 (右境界外側) は reject される必要がある"
+        );
+    }
 }

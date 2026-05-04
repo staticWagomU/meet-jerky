@@ -20598,3 +20598,24 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **コミット周期 ~12 分/loop** (目標 15 分以内クリア)
 
 - 旧 mjc-main (= mjc-main-20260504-24) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
+
+---
+
+## mjc-worker-google-meet-code-path-segment-length-tests-20260504-25-1 (Loop 1)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-25 Loop 1
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/app_detection.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: 既存最終 test `classify_meeting_window_title_rejects_control_characters` (l.2118-2133) の直後に、Google Meet path code segment 桁契約の境界 test 3 件追加 (T1: first 2 桁 reject / T2: second 5 桁 reject / T3: third 4 桁 reject)
+- **結果**: 全 test PASS (515 → 518 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/app_detection.rs` のみ
+- **検証結果**: cargo test 518 passed / clippy -D warnings 警告ゼロ / cargo fmt 差分なし / agent-verify 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: 「対称的補強の 3 軸構造」パターンを 3 セグメントの桁契約 (first 3 桁 / second 4 桁 / third 3 桁) に完全対応で application = 1 commit で 3-4-3 桁契約全部の executable specification 化を完成
+- **設計判断 2**: 「区切り `-` は正しく 2 つあるが各セグメント桁数だけ違反する」境界 reject が既存 test では未保護 = 既存 reject test (`/abc-defg` 区切り不足、`/ABC-defg-hij` 大文字混入) と相補的なカバー
+- **設計判断 3**: 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与 = Google Meet 公式 URL 形式 (3-4-3) を test で固定して偽認識を遮断する装置
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---
