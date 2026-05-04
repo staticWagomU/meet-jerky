@@ -26014,5 +26014,5 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - markdown 構文整合性確認: head/tail で先頭末尾破壊なし
 
 ## commit
-- (commit hash 反映 chore commit で別途記入)
+- ecbf1af
 ---
