@@ -1,3 +1,19 @@
+use crate::transcription_model_manager::ModelManager;
+use crate::transcription_types::ModelInfo;
+
+/// 利用可能なモデル一覧を返す
+#[tauri::command]
+pub fn list_models() -> Vec<ModelInfo> {
+    ModelManager::list_available_models()
+}
+
+/// モデルがダウンロード済みかを確認する
+#[tauri::command]
+pub fn is_model_downloaded(model_name: String) -> bool {
+    let manager = ModelManager::new();
+    manager.is_model_downloaded(&model_name)
+}
+
 /// `model-download-progress` イベントの payload を組み立てる（純粋関数）
 pub(crate) fn build_download_progress_payload(progress: f64, model: &str) -> serde_json::Value {
     serde_json::json!({ "progress": progress, "model": model })

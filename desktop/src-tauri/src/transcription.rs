@@ -7,7 +7,7 @@ use tauri::Emitter;
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
-pub use crate::transcription_types::{ModelInfo, TranscriptionSegment, TranscriptionSource};
+pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
 // ─────────────────────────────────────────────
 // TranscriptionEngine / TranscriptionStream トレイト (transcription_traits.rs に分離、互換層として再エクスポート)
@@ -41,19 +41,6 @@ use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
 // ─────────────────────────────────────────────
 // Tauri コマンド
 // ─────────────────────────────────────────────
-
-/// 利用可能なモデル一覧を返す
-#[tauri::command]
-pub fn list_models() -> Vec<ModelInfo> {
-    ModelManager::list_available_models()
-}
-
-/// モデルがダウンロード済みかを確認する
-#[tauri::command]
-pub fn is_model_downloaded(model_name: String) -> bool {
-    let manager = ModelManager::new();
-    manager.is_model_downloaded(&model_name)
-}
 
 /// モデルをダウンロードする（プログレスイベントを送信）
 ///
@@ -365,6 +352,7 @@ mod tests {
         transcription_error_payload_to_value,
     };
     use crate::transcription_manager::TranscriptionManager;
+    use crate::transcription_types::ModelInfo;
     use crate::transcription_types::TranscriptionErrorPayload;
 
     fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {

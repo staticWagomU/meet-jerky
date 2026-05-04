@@ -25132,3 +25132,31 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - コミット周期 Loop 21 ~3 分 / Loop 22 ~5 分 平均 ~4 分で目標 15 分以内大幅達成 (前任 mjc-main-20260505-10 と同水準)
 
 ---
+
+[mjc-main-20260505-12 Loop 23 / 2026-05-05 ~XX:XX JST]
+
+## What
+- `list_models` + `is_model_downloaded` の 2 つの Tauri command 関数を `src-tauri/src/transcription_commands.rs` に移動
+- `src-tauri/src/transcription.rs` から該当 12 行を削除（L44-56 = doc コメント + #[tauri::command] + 関数本体 2 つ）
+- `src-tauri/src/transcription.rs` L10 の `pub use` から `ModelInfo` を除去し、tests mod 内に `use crate::transcription_types::ModelInfo;` を直接追加（clippy -D warnings 対応）
+- `src-tauri/src/lib.rs` invoke_handler L354-355 のパス `transcription::*` → `transcription_commands::*` に更新
+- `src-tauri/src/transcription_commands.rs` 先頭に `use crate::transcription_model_manager::ModelManager;` + `use crate::transcription_types::ModelInfo;` 追加
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) の Phase 3-B 続き
+- mjc-main-20260505-11 Loop 21 (build_download_*_payload helper 2 件) の延長 = 純粋委譲関数の安全側スライス先行
+- variety 規則: Loop 22 service detection pivot で extraction 連続カウント 0 リセット済 = 1 連続到達
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 692 passed 件数不変
+- pub(crate) ではなく `pub` を維持（`#[tauri::command]` 経由で外部公開）
+- use 文 2 行追加: `use crate::transcription_types::ModelInfo;` + `use crate::transcription_model_manager::ModelManager;`
+- ModelInfo の pub use 除去 → tests mod 内直接 import への移動 = clippy -D warnings 対応の追加 Tidy = Loop 17/19 visibility 最小化 precedent 踏襲
+
+## Verify
+- cargo test --lib: 692 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
