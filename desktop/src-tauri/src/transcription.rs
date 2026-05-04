@@ -33,21 +33,14 @@ pub use crate::transcription_model_manager::ModelManager;
 
 pub use crate::transcription_manager::TranscriptionStateHandle;
 
+use crate::transcription_commands::{
+    build_download_error_payload, build_download_progress_payload,
+};
 use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
 
 // ─────────────────────────────────────────────
 // Tauri コマンド
 // ─────────────────────────────────────────────
-
-/// `model-download-progress` イベントの payload を組み立てる（純粋関数）
-fn build_download_progress_payload(progress: f64, model: &str) -> serde_json::Value {
-    serde_json::json!({ "progress": progress, "model": model })
-}
-
-/// `model-download-error` イベントの payload を組み立てる（純粋関数）
-fn build_download_error_payload(model: &str, message: &str) -> serde_json::Value {
-    serde_json::json!({ "model": model, "message": message })
-}
 
 /// 利用可能なモデル一覧を返す
 #[tauri::command]
@@ -414,26 +407,6 @@ mod tests {
         // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
         let manager = ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
         assert!(!manager.is_model_downloaded("small"));
-    }
-
-    #[test]
-    fn test_download_progress_payload_serialization() {
-        // 既存 progress イベントの payload 形を固定化（回帰防止）。
-        // 型側 DownloadProgressPayload { progress, model } と噛み合う形を保証する。
-        let payload = build_download_progress_payload(0.5, "small");
-        let s = payload.to_string();
-        assert!(s.contains("\"progress\":0.5"), "got: {s}");
-        assert!(s.contains("\"model\":\"small\""), "got: {s}");
-    }
-
-    #[test]
-    fn test_download_error_payload_serialization() {
-        // model-download-error の payload は { model, message } のフラットキー。
-        // TypeScript 側 DownloadErrorPayload と噛み合う形を保証する。
-        let payload = build_download_error_payload("small", "HTTP 404");
-        let s = payload.to_string();
-        assert!(s.contains("\"model\":\"small\""), "got: {s}");
-        assert!(s.contains("\"message\":\"HTTP 404\""), "got: {s}");
     }
 
     #[test]
