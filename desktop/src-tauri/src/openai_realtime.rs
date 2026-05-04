@@ -1034,4 +1034,31 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn engine_default_debug_format_contains_type_name_and_empty_model_field() {
+        let engine = OpenAIRealtimeEngine::default();
+        let formatted = format!("{engine:?}");
+        assert!(formatted.contains("OpenAIRealtimeEngine"), "型名: {formatted}");
+        assert!(formatted.contains("model"), "field 名: {formatted}");
+        assert!(formatted.contains("\"\""), "空 String を Debug 出力: {formatted}");
+    }
+
+    #[test]
+    fn engine_new_with_str_slice_debug_format_contains_provided_model_value() {
+        let engine = OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
+        let formatted = format!("{engine:?}");
+        assert!(formatted.contains("OpenAIRealtimeEngine"));
+        assert!(formatted.contains("model"));
+        assert!(formatted.contains("\"gpt-4o-mini-transcribe\""));
+    }
+
+    #[test]
+    fn engine_new_with_owned_string_debug_format_contains_provided_model_value() {
+        let engine = OpenAIRealtimeEngine::new(String::from("gpt-4o-transcribe"));
+        let formatted = format!("{engine:?}");
+        assert!(formatted.contains("OpenAIRealtimeEngine"));
+        assert!(formatted.contains("model"));
+        assert!(formatted.contains("\"gpt-4o-transcribe\""));
+    }
 }
