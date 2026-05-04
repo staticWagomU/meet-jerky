@@ -750,4 +750,288 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn handle_event_ignores_completed_event_when_transcript_field_is_non_string() {
+        let speaker = Some("自分".to_string());
+
+        // ケース 1: transcript=null
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"conversation.item.input_audio_transcription.completed","transcript":null}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "transcript=null は as_str() で None、silent return のはず"
+            );
+        }
+
+        // ケース 2: transcript=number
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"conversation.item.input_audio_transcription.completed","transcript":42}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "transcript=number は as_str() で None、silent return のはず"
+            );
+        }
+
+        // ケース 3: transcript=array
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"conversation.item.input_audio_transcription.completed","transcript":["a","b"]}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "transcript=array は as_str() で None、silent return のはず"
+            );
+        }
+    }
+
+    #[test]
+    fn handle_event_ignores_completed_event_when_transcript_is_whitespace_only_or_empty() {
+        let speaker = Some("自分".to_string());
+        // 4 種の空白系 + 全角空白 (U+3000) を一気に網羅。すべて trim 後 empty で push されない。
+        for transcript in &["", "   ", "\t", "\n\n", "　　"] {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            let json = format!(
+                r#"{{"type":"conversation.item.input_audio_transcription.completed","transcript":"{transcript}"}}"#
+            );
+            ws_task::handle_event(
+                &json,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "trim 後 empty な transcript={transcript:?} では push されないはず"
+            );
+        }
+    }
+
+    #[test]
+    fn handle_event_does_not_push_error_when_error_message_is_non_string() {
+        let speaker = Some("自分".to_string());
+
+        // ケース 1: error.message=null
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error","error":{"message":null}}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error.message=null は as_str() で None、push_error されないはず"
+            );
+        }
+
+        // ケース 2: error.message=number
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error","error":{"message":500}}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error.message=number は as_str() で None、push_error されないはず"
+            );
+        }
+
+        // ケース 3: error.message=array
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error","error":{"message":["nested","array"]}}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error.message=array は as_str() で None、push_error されないはず"
+            );
+        }
+    }
+
+    #[test]
+    fn handle_event_does_not_push_error_when_error_lacks_message_field() {
+        let speaker = Some("自分".to_string());
+
+        // ケース 1: error: {} (message field 無し)
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error","error":{}}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error: {{}} は message が None、push_error されないはず"
+            );
+        }
+
+        // ケース 2: error: null
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error","error":null}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error: null は get(\"message\") が None、push_error されないはず"
+            );
+        }
+
+        // ケース 3: error が flat string (nested object じゃない)
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error","error":"something went wrong"}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            // 重要: openai 側は elevenlabs と違い flat string への fallback は持たない (実装 line 408-413 は nested message のみ参照)
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error が flat string でも nested message は無いので push_error されないはず (elevenlabs との差分契約)"
+            );
+        }
+
+        // ケース 4: error field 自体無し
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":"error"}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "error field 自体無しなら push_error されないはず"
+            );
+        }
+    }
+
+    #[test]
+    fn handle_event_returns_silently_when_type_field_is_non_string_or_missing() {
+        let speaker = Some("自分".to_string());
+
+        // ケース 1: type=null (transcript はあっても処理されない)
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":null,"transcript":"would-be-ignored"}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "type=null は as_str() で None、silent return のはず"
+            );
+        }
+
+        // ケース 2: type=number
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":42,"error":{"message":"would-be-ignored"}}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "type=number は as_str() で None、silent return のはず"
+            );
+        }
+
+        // ケース 3: type=array
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"type":["error"],"error":{"message":"would-be-ignored"}}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "type=array は as_str() で None、silent return のはず"
+            );
+        }
+
+        // ケース 4: type field 自体無し (空 object 含む)
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{"transcript":"orphan"}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "type field 自体無しなら silent return のはず"
+            );
+        }
+
+        // ケース 5: 完全空 object
+        {
+            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+            ws_task::handle_event(
+                r#"{}"#,
+                &pending,
+                &speaker,
+                Some(TranscriptionSource::Microphone),
+            );
+            assert_eq!(
+                pending.lock().len(),
+                0,
+                "完全空 object は type 無しと同義、silent return のはず"
+            );
+        }
+    }
 }

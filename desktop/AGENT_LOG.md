@@ -17474,6 +17474,53 @@ persist_if_configured の direct test を 5 件で固定 (output=None no-op / ou
 
 ---
 
+### openai_realtime.rs `handle_event` の non-string silent return + trim-empty skip 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-openai-realtime-handle-event-non-string-tests-20260504-10-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/openai_realtime.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+handle_event の non-string field silent return + trim 後 empty skip + error field 構造ロバスト性 + type field absence/non-string を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | handle_event_ignores_completed_event_when_transcript_field_is_non_string | transcript=null/number/array で push なし |
+| T2 | handle_event_ignores_completed_event_when_transcript_is_whitespace_only_or_empty | transcript="" / " " / "\t" / "\n\n" / "　　" (全角) で trim 後 empty skip |
+| T3 | handle_event_does_not_push_error_when_error_message_is_non_string | error.message=null/number/array で push_error なし |
+| T4 | handle_event_does_not_push_error_when_error_lacks_message_field | error: {} / error: null / error: "string" / error 自体無し で push_error なし |
+| T5 | handle_event_returns_silently_when_type_field_is_non_string_or_missing | type=null/number/array / type 無し / 完全空 object で silent return |
+
+#### 不変条件 / 設計意図
+- T1+T3+T5 は `as_str()` 1 階層判定の silent return 契約を 3 field 横断で固定。fallback chain なし (openai と elevenlabs の構造差分を test で明示)。
+- T2 は trim 後 empty skip 分岐 (line 396 `!trimmed.is_empty()`) を ASCII whitespace + 全角空白で網羅。
+- T4 ケース 3 (error が flat string) は openai 側の特徴的 contract: nested message のみ参照する設計を fallback 追加誤改修への検知装置として固定 (elevenlabs の `extract_error_message` の or_else chain と対照)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 390 → 395 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 395
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 `use super::*;` で完結)
+
+#### 残リスク
+- T4 ケース 3 (error が flat string) の no-push 契約は将来「flat string error にも fallback する」防御強化を入れたら test 修正が必要 (現契約 = nested message のみを意図的に固定、elevenlabs との差分明示)。
+- T2 の全角空白 (U+3000) ケースは `serde_json::Value::trim()` (Rust std) の Unicode 対応に依存。Rust std の現契約に追随。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+
+---
+
 ## [SESSION SUMMARY @ 2026-05-04 ~10:25 JST] mjc-main-20260504-9 状況メモ (ループ 1-3 詳細)
 
 ### 本セッション (mjc-main-20260504-9) の累積実績
