@@ -20305,3 +20305,29 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **残リスク**: なし (関数本体無変更、test 追加のみ)
 - **次アクション**: メイン側でレビュー → コミット
 ---
+
+## mjc-worker-parse-sources-input-boundary-tests-20260504-23-3 (Loop 3)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-23 Loop 3
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/transcription.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更 (AGENT_LOG.md 末尾追記のみ)。
+- **指示内容**: 最終 test `build_transcription_error_payload_escapes_newlines_in_error_string` の直後に test 3 件追加
+  - T1: `parse_requested_transcription_sources_trims_tab_and_newline_whitespace` = `\t` / `\n` 等の ASCII whitespace が str::trim() で削除される現契約を CI 固定。`trim_matches(' ')` 等の限定 trim への誤改修を検知する装置。既存テストは半角 SP のみカバー
+  - T2: `parse_requested_transcription_sources_trims_unicode_full_width_space_u3000` = U+3000 (全角空白) が Unicode White_Space プロパティにより str::trim() で削除される現契約を CI 固定。将来 trim_ascii() への「最適化」誤改修を検知する装置
+  - T3: `parse_requested_transcription_sources_rejects_prefix_extension_inputs` = "microphone_extra" / "both_only" 等の prefix 一致拡張入力が match 完全一致により reject される現契約を CI 固定。`starts_with` / `contains` 化への誤改修を検知する装置
+- **結果**: 全 test PASS (503 → 506 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/transcription.rs` のみ (mod tests 末尾 3 test 追加。cargo fmt 1 往復修正あり = T3 の for ループ配列フォーマットを fmt で整形)
+- **検証結果**:
+  - `cargo test --lib parse_requested_transcription_sources` = 8 passed (既存 5 件 + 新規 3 件)
+  - `cargo test --lib` 全体 = **506 passed** (503 → +3, 0 failed)
+  - `cargo clippy --all-targets -- -D warnings` = 警告ゼロ
+  - `cargo fmt --check` = 差分なし (fmt 1 往復修正後)
+  - `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` = 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし (cargo fmt 1 往復修正のみ = T3 の配列リテラルが長行のためフォーマット調整)
+- **設計判断 1**: T1/T2/T3 の 3 件で `parse_requested_transcription_sources` の 3 段階パイプライン (str::trim() → 完全一致 match → 結果) の未保護境界を対称的にカバー = trim の ASCII whitespace 全般 (T1) / Unicode White_Space 全般 (T2) / match 完全一致仕様 (T3) の 3 軸
+- **設計判断 2**: T2 で U+3000 を選択 = str::trim() と str::trim_ascii() の分岐点として最も代表的な Unicode whitespace。trim_ascii() への変更で T2 が即座に壊れる = 変更検知装置として機能が明確
+- **設計判断 3**: T3 で for ループ構造を採用 = 4 入力 ("microphone_extra" / "system_audio_full" / "both_only" / "microphoneX") を 1 test 内で対称的に網羅。各入力に対して error 文字列の完全一致も確認することで starts_with 化と contains 化の両方を同時に検知
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット → SESSION SUMMARY

@@ -2183,4 +2183,75 @@ mod tests {
             "to_string() の生 JSON 文字列では改行が \\\\n にエスケープされる: {serialized}"
         );
     }
+
+    #[test]
+    fn parse_requested_transcription_sources_trims_tab_and_newline_whitespace() {
+        // 既存 test_parse_requested_transcription_sources_accepts_known_values は
+        // ASCII 半角 SP の前後 trim のみカバー。
+        // タブ (\t) と改行 (\n) も str::trim() 対象 (ASCII whitespace) であることを CI 固定。
+        // trim_matches(' ') 等の限定 trim への誤改修を検知する装置。
+        assert_eq!(
+            parse_requested_transcription_sources(Some("\tmicrophone\n")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            },
+            "タブと改行も str::trim() で除去される (ASCII whitespace 全般)"
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some(" \t\nboth\n\t ")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            },
+            "複数種類の ASCII whitespace 混在も全て trim される"
+        );
+    }
+
+    #[test]
+    fn parse_requested_transcription_sources_trims_unicode_full_width_space_u3000() {
+        // Rust の str::trim() は Unicode White_Space プロパティ (UCD) に従い、
+        // U+3000 (全角空白) も削除する。
+        // 既存 test は U+3000 trim を未保護 = 将来 trim_ascii() 等への変更で挙動変わる。
+        // 現契約 (Unicode whitespace 全般を trim) を CI 固定する装置。
+        assert_eq!(
+            parse_requested_transcription_sources(Some("\u{3000}microphone\u{3000}")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            },
+            "U+3000 (全角空白) も str::trim() で除去される現契約 (Unicode White_Space 準拠)"
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some("\u{3000}\u{3000}both\u{3000}\u{3000}"))
+                .unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            },
+            "複数の U+3000 連続も全て trim される"
+        );
+    }
+
+    #[test]
+    fn parse_requested_transcription_sources_rejects_prefix_extension_inputs() {
+        // 既存 rejects_unknown_values は "mic" / "system" 等の短縮形のみカバー。
+        // "microphone_extra" / "both_only" のような prefix が known value と一致するが
+        // suffix が付いた拡張入力は未保護。match 完全一致仕様 (= starts_with でない) を
+        // CI 固定する装置 = `starts_with` / `contains` 化への誤改修を検知。
+        for source in [
+            "microphone_extra",
+            "system_audio_full",
+            "both_only",
+            "microphoneX",
+        ] {
+            let err = parse_requested_transcription_sources(Some(source))
+                .expect_err("prefix 一致のみの拡張入力は reject されるべき");
+            assert_eq!(
+                err,
+                "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。",
+                "prefix 拡張入力 {source:?} は完全一致 match を通らず reject される現契約"
+            );
+        }
+    }
 }
