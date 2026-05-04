@@ -823,4 +823,124 @@ mod tests {
             "title 内 special char が path に漏れない契約"
         );
     }
+
+    #[test]
+    fn write_session_markdown_to_writes_same_content_as_save_session_markdown_for_explicit_path() {
+        // T1: write_session_markdown_to の direct 呼び出し結果が save_session_markdown と内容一致
+        let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+        session.append_segment("自分".into(), 15, "hello".into());
+        let dir1 = tempdir().unwrap();
+        let dir2 = tempdir().unwrap();
+
+        let direct_path = dir1.path().join("explicit_name.md");
+        write_session_markdown_to(&direct_path, &session, jst()).unwrap();
+
+        let composed_path = save_session_markdown(dir2.path(), &session, jst()).unwrap();
+
+        let direct_content = fs::read_to_string(&direct_path).unwrap();
+        let composed_content = fs::read_to_string(&composed_path).unwrap();
+        assert_eq!(
+            direct_content, composed_content,
+            "write_session_markdown_to と save_session_markdown は path 以外で内容差分なしの契約 = 構成要素 2 つの分離"
+        );
+    }
+
+    #[test]
+    fn write_session_markdown_to_truncates_and_overwrites_existing_file_completely() {
+        // T2: 既存ファイルの完全上書き (truncate) 契約 = fs::write の truncate 挙動 = OpenOptions::append への誤改修検知装置
+        let session = Session::start("新内容".to_string(), 1_713_333_000);
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("target.md");
+
+        let pre_existing = "# 旧内容ヘッダ\n\n".to_string() + &"x".repeat(10_000);
+        fs::write(&path, &pre_existing).unwrap();
+        assert!(
+            fs::read_to_string(&path).unwrap().len() > 10_000,
+            "前提: 既存ファイルが長い"
+        );
+
+        write_session_markdown_to(&path, &session, jst()).unwrap();
+
+        let after = fs::read_to_string(&path).unwrap();
+        assert!(
+            after.starts_with("# 新内容 - "),
+            "新内容で完全上書きされる契約: {}",
+            &after[..40.min(after.len())]
+        );
+        assert!(
+            !after.contains("旧内容ヘッダ"),
+            "旧内容が残らない契約 = fs::write の truncate 挙動 = OpenOptions::append への誤改修検知装置"
+        );
+        assert!(
+            !after.contains("xxxxxxxxxx"),
+            "旧 body の長い x 列が残らない契約"
+        );
+    }
+
+    #[test]
+    fn write_session_markdown_to_returns_not_found_when_parent_dir_missing() {
+        // T3: 親ディレクトリ無しで NotFound を返す path 単独契約
+        let tmp = tempdir().unwrap();
+        let missing_dir_path = tmp.path().join("does-not-exist").join("file.md");
+        let session = Session::start("test".to_string(), 1_700_000_000);
+
+        let err = write_session_markdown_to(&missing_dir_path, &session, jst()).unwrap_err();
+
+        assert_eq!(
+            err.kind(),
+            ErrorKind::NotFound,
+            "親ディレクトリ無し path 単独で NotFound 契約: {err}"
+        );
+        assert!(!missing_dir_path.exists(), "ファイルが作成されていないこと");
+    }
+
+    #[test]
+    fn write_session_markdown_to_propagates_render_error_for_out_of_range_started_at_without_creating_file(
+    ) {
+        // T4: render エラーが ? で素通り伝播し、書き出し前 error なのでファイル未作成
+        let session = Session::start("会議メモ".to_string(), i64::MAX as u64 + 1);
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("should_not_exist.md");
+
+        let err = write_session_markdown_to(&path, &session, jst()).unwrap_err();
+
+        assert_eq!(
+            err.kind(),
+            ErrorKind::InvalidInput,
+            "render エラーの ErrorKind が write 側まで ? で素通り伝播する契約"
+        );
+        assert!(
+            err.to_string().contains("out of i64 range"),
+            "error message も握り潰されず伝播する契約: {err}"
+        );
+        assert!(
+            !path.exists(),
+            "render error は書き出し前なのでファイル未作成 = ? が握り潰されず render を先に評価する契約"
+        );
+    }
+
+    #[test]
+    fn write_session_markdown_to_propagates_segment_overflow_error_without_creating_file() {
+        // T5: segment timestamp overflow → render error → write 側まで ? で素通り伝播 (T4 と対をなす別経路)
+        let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+        session.append_segment("自分".into(), u64::MAX, "hello".into());
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("should_not_exist_either.md");
+
+        let err = write_session_markdown_to(&path, &session, jst()).unwrap_err();
+
+        assert_eq!(
+            err.kind(),
+            ErrorKind::InvalidInput,
+            "segment overflow の ErrorKind が write 側まで ? で素通り伝播する契約"
+        );
+        assert!(
+            err.to_string().contains("overflow"),
+            "error message も握り潰されず伝播する契約: {err}"
+        );
+        assert!(
+            !path.exists(),
+            "render error は書き出し前なのでファイル未作成 = T4 と同じ ? 早期 return 契約の別経路確認"
+        );
+    }
 }
