@@ -24342,3 +24342,17 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: agent-commit.sh で docs/architecture/transcription-refactor-plan.md + AGENT_LOG.md を commit → 次ループへ進む (Loop 5 候補は Phase 1 着手 = データ型 transcription/types.rs 抽出、または別 priority への variety 維持)。
 
 ---
+
+## 2026-05-05 JST mjc-worker-transcription-types-extract-20260505-3-1
+- 担当セッション: mjc-worker-transcription-types-extract-20260505-3-1 (作業担当, sonnet)
+- 役割: transcription.rs (2999 行) から データ型 4 つ (TranscriptionSource / TranscriptionSegment / TranscriptionErrorPayload / ModelInfo) を src-tauri/src/transcription_types.rs に抽出 (Tidy First、振る舞い不変、Phase 1 着手 = docs/architecture/transcription-refactor-plan.md の最初のステップ)
+- 作業範囲: src-tauri/src/transcription_types.rs (新規) + src-tauri/src/transcription.rs (line 15-57 削除 + 互換層 pub use 追加) + src-tauri/src/lib.rs (mod transcription_types; 追加) + AGENT_LOG.md (末尾追記)
+- 指示内容: mjc-main-20260505-3 Loop 5 のタスクとして、transcription_types.rs を新規作成し 4 型を移植 → transcription.rs 該当箇所を削除し pub use crate::transcription_types::{...}; で再エクスポート互換層を残す → lib.rs に mod transcription_types; を追加 → cargo fmt/clippy/test 検証 (667 件不変、警告ゼロ、整形 OK)
+- 結果: 全 Step 完了。transcription_types.rs 新規作成、transcription.rs のデータ型セクション + use serde::Serialize を削除し互換層に置換、lib.rs に mod transcription_types; を追加。cargo fmt/clippy/test 全 pass、667 件不変。
+- 変更ファイル: src-tauri/src/transcription_types.rs (新規) + src-tauri/src/transcription.rs (削除/追加) + src-tauri/src/lib.rs (mod 追加)
+- 検証結果: cargo fmt --check = OK (exit 0) / cargo clippy --lib -- -D warnings = 警告ゼロ (Finished dev profile) / cargo test --lib = 667 passed; 0 failed (件数不変)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Phase 2 候補は Whisper エンジンまたは Model 管理の抽出)
+
+---

@@ -18,6 +18,7 @@ mod settings;
 mod system_audio;
 mod transcript_bridge;
 mod transcription;
+mod transcription_types;
 
 use tauri::{
     image::Image,
