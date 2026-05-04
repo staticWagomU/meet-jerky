@@ -22063,3 +22063,148 @@ test result: ok. 571 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~22:50 JST] mjc-main-20260504-31 状況メモ (3 ループ完走 + harness silent fail 観測層バグ発見 + Debug 軸補強 4 連続 application 系譜完成)
+
+### 本セッションの 3 ループ実績 (563 → 571 passed +8 件)
+
+- **Loop 1** (`57dfb1a`) test(apple_speech): AppleSpeechEngine の error message / BCP-47 format / Debug 出力 3 軸でメタ対称軸補強 +2 件 → 565 passed (= 旧 mjc-main-30 Loop 2 残務回収)
+  - 旧 mjc-main-30 SUMMARY は「Loop 2 worker 起動失敗」と報告したが、実際は worker がコード編集を完遂し output ログ + AGENT_LOG.md 追記のみ欠落 = harness silent fail
+  - 本セッションが git diff で実態確認 → Loop 1 残務回収として commit + AGENT_LOG.md メイン直接追記 (worker 役務代行)
+  - T10 (cfg Linux only) / T11 (BCP-47 format 不変条件) / T12 (unit struct Debug 軸)
+  - **「Debug 軸補強」パターン 2 連続 application** = SecretKey enum (mjc-main-30) → AppleSpeechEngine unit struct (本 Loop 1)
+
+- **Loop 2** (`4ddd854`) test(session): SessionSegment / Session の Debug 出力 + Clone 派生 3 軸で Debug 軸補強パターンを struct with fields へ拡張 +3 件 → 568 passed
+  - SessionSegment field: speaker (String) / timestamp_offset_secs (u64) / text (String)
+  - Session field: id (String) / title (String) / started_at (u64) / ended_at (Option<u64>) / segments (Vec<SessionSegment>)
+  - T19 (SessionSegment Debug 出力 = 型名+全 3 field 名+各値の 7 contains assert)
+  - T20 (Session Debug 出力 = 型名+全 5 field 名+値+None+[] の 10 contains assert)
+  - T21 (clone 後 Debug 完全一致 assert_eq!)
+  - **harness silent fail パターン再現** = log file 0 byte / pane 空白でも worker のファイル編集機能は正常稼働 = `git status` / `git diff` を worker 完走判定の正の手段として確立
+  - **「Debug 軸補強」パターン 3 連続 application** = struct with primitive/Option/Vec fields へ拡張
+
+- **Loop 3** (`58c82f8`) test(transcription): TranscriptionErrorPayload の Debug 出力 / Clone 後 Debug 一致 / PartialEq 等値性 3 軸で Debug 軸補強パターンを struct with Option<enum> field へ拡張 +3 件 → 571 passed
+  - TranscriptionErrorPayload field: error (String) / source (Option<TranscriptionSource>)
+  - TranscriptionSource enum variant: Microphone / SystemAudio
+  - T1 (Debug 出力 = 型名+全 2 field 名+enum variant 名+Some/None の 7 contains assert)
+  - T2 (clone 後 Debug 完全一致 = Some/None 両 variant 各 1 件)
+  - T3 (PartialEq の field 単位独立等値判定 = reflexive + 異 error + 異 source + Some vs None の 4 case)
+  - **「Debug 軸補強」パターン 4 連続 application 系譜完成** = enum (SecretKey) → unit struct (AppleSpeechEngine) → struct with primitive/Option/Vec fields (SessionSegment/Session) → struct with Option<enum> field (TranscriptionErrorPayload)
+
+### 確立されたパターン
+
+#### 1. 「対称的補強の 3 軸構造」パターン (継続 application、11 連続セッション目)
+- mjc-main-21〜31 で全 28 ループに application
+
+#### 2. 「Debug 軸補強」パターン 4 連続 application 系譜完成
+- 系譜: SecretKey enum (mjc-main-30 Loop 1) → AppleSpeechEngine unit struct (本 Loop 1) → SessionSegment / Session struct with primitive/Option/Vec fields (本 Loop 2) → TranscriptionErrorPayload struct with Option<enum> field (本 Loop 3)
+- 派生型カバレッジ: enum / unit struct / struct with fields / struct with Option<enum> の 4 形態
+- 残候補: transcription.rs の他 5 type (TranscriptionSource enum / TranscriptionSegment / ModelInfo / StreamConfig / RequestedTranscriptionSources) / session_manager 系
+
+#### 3. 「メタ対称軸補強」パターン継続 application (mjc-main-29 Loop 3 で確立、本 Loop 1 で継続)
+- error message 軸 + format 不変条件 + Debug 軸 = 異なる種類の軸を 1 ループで束ねる構造
+
+#### 4. 「format 不変条件 application」パターン継続 application (mjc-main-30 Loop 1 で確立、本 Loop 1 で継続)
+- T11 で 8 input variant を for ループ走査 = 拡張追従型 test 設計
+
+#### 5. 「同一関数の完全網羅戦略」パターン継続 application (mjc-main-26 で確立、本 3 ループ全てで application)
+- Loop 1: language_to_locale を 8 input × 5 format 規則で完全網羅
+- Loop 2: SessionSegment / Session の Debug 派生を 7 + 10 assert で完全網羅
+- Loop 3: TranscriptionErrorPayload の Debug + Clone + PartialEq を 4 case で完全網羅
+
+#### 6. 「worker prompt 末尾追記明示」パターン継続適用 (11 連続セッション目)
+
+#### 7. 「worker prompt trailing whitespace 禁止明示」パターン継続適用 (4 連続セッション、12 ループ警告ゼロ)
+
+### 重要発見
+
+#### 1. **harness silent fail パターン (本セッション最重要)**
+- `claude -p` の stdout が tee に届かず log file が 0 byte / tmux pane が空白になる条件で発生
+- 大型 prompt (7000+ byte) で 100% 再現する観測 (Loop 2/3 両方)
+- **小型 prompt (200 byte) では正常**: health check (`mjc-worker-test-startup-31`) で確認
+- worker のファイル編集機能 (Edit/Write) は正常稼働 = AGENT_LOG.md 追記も `tee` 経由ではなく Edit/Write 経由なので **正常追記される**
+- 後続セッションは `git status` / `git diff` / 対象ファイルの直接確認を worker 完走判定の **正の手段** として採用すべき
+- tmux pane と log file は補助観測手段に格下げ
+- 原因: `tmux new-session -d` 配下の `claude -p ... | tee` の pipe チェーンで stdout が捨てられる経路 (推測)
+- 改善候補 (将来の harness 改善 Loop): `script(1)` / `unbuffer` / direct `>` redirect への切替検討
+
+#### 2. handoff サマリのフィールド名予測誤認 (継承)
+- 旧 mjc-main-30 SUMMARY が示した SessionSegment field 名「text/start_ms/end_ms」は **実コードと不一致** (実際: speaker/timestamp_offset_secs/text)
+- mjc-main-29 SUMMARY のファイル名誤認 (browser_detection/commands は実在せず) と同種
+- **後続セッションは候補ファイル名 + field 名を必ず実コード grep/sed で確認**
+
+#### 3. 報告と実態の不整合検出手法 (本 Loop 1 で確立)
+- ハンドオフ受領直後に `git status` / `git diff` で working tree dirty file を確認
+- 旧セッションの「失敗」報告と実態の不整合 (apple_speech.rs +69 行残存) を検出
+- 本セッションが Loop 1 残務回収で commit 化 = harness silent fail に対する mitigation pattern として確立
+
+#### 4. 4 連続 application 系譜完成のスケール
+- 1 セッション内で 3 ループ application + 旧セッション 1 ループ application = 4 形態の派生型カバレッジ完成
+- 残る Debug 派生 type は transcription.rs (5 type) + session_manager (要調査) で同パターン継続可能
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### 「Debug 軸補強」パターン 5 連続 application 候補
+- **TranscriptionSegment (transcription.rs l.29-39)** = struct with String/i64/i64/Option<TranscriptionSource>/Option<String>/Option<bool> fields = #[derive(Debug, Clone, Serialize)] = serde rename_all = camelCase = Debug 出力 + Clone 後 Debug 一致 + multiple Option fields の format 軸候補
+- **ModelInfo (transcription.rs l.50-57)** = struct with String/String/u64/String fields = #[derive(Debug, Clone, Serialize)] = camelCase
+- **StreamConfig (transcription.rs l.64-72)** = struct with u32/Option<String>/Option<TranscriptionSource>/Option<String> fields = #[derive(Debug, Clone)]
+- **TranscriptionSource enum (transcription.rs l.21-25)** = pub enum with 2 variant (Microphone/SystemAudio) = #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)] = SecretKey enum と同じ enum-with-variant 形態
+
+#### B 候補 (audio.rs / system_audio.rs / markdown.rs の補強残境界)
+- audio_event.rs (mjc-main-29 で +3 件)、audio_utils.rs (mjc-main-29 で +3 件) の追加軸候補限定的
+
+#### S 候補継続 (settings.rs 残関数)
+- `default_output_directory` / `update_settings` / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### F-Loop6 (継承、規模 M, 価値中)
+- タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+
+#### **harness 改善候補 (本セッションで silent fail 発見、価値高)**
+- `claude -p` の stdout が tee に届かない経路の特定と修正
+- `script(1)` / `unbuffer` / direct `>` redirect への切替検討
+- メインが `git status` ベースで完走判定する mitigation を harness 側に組み込む (例: scripts/claude-agent-await-worker.sh)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 571 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 / `--no-verify` 禁止 / Keychain 実通信禁止 / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり、Loop 1 残務回収では worker 役務代行で例外的に AGENT_LOG.md worker entry もメイン直接追記)
+
+### worker prompt 必須要素 (11 連続セッションで実証済、継続適用、7 つ全て明示)
+1. AGENT_LOG.md tail -350 を読め
+2. 時系列順 = 末尾追記
+3. 先頭は絶対に触らない
+4. tail -10 で確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外編集禁止 + test 件数の上限明示
+6. 大型ファイルは tail/head/grep で対象範囲のみ参照
+7. 行末空白禁止
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標
+- 本セッション実績: Loop 1 ~10 分 / health check ~3 分 / Loop 2 ~13 分 / Loop 3 ~13 分 = 平均 ~12 分/loop で目標クリア
+- 累積 worker 完走 77/77 (本セッション +2 件、Loop 1 残務回収は worker 起動なしでカウント外)
+
+### context 管理
+- 本セッションは 3 ループ + SESSION SUMMARY を完了。context 推定 ~70-80% で予防的ハンドオフ判断
+- 後継 mjc-main-20260504-32 へ引き継ぎ (前 24 セッション (mjc-main-7〜30) と同じ 3 ループパターン継承を期待)
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge も本セッション中ゼロ。
+
+### 累積成果 (本セッション)
+- **テスト 563 → 571 passed** (+8 件)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings)
+- **「Debug 軸補強」パターン 4 連続 application 系譜完成** (4 形態の派生型カバレッジ)
+- **harness silent fail パターン特定** = `claude -p ... | tee` の pipe で stdout 欠落条件を再現確認
+- **「報告と実態の不整合検出手法」確立** = `git status` / `git diff` ベースで旧セッションの「失敗」報告から残務を回収する mitigation pattern
+- **canonical 名移譲完了** (mjc-main-20260504-31 → mjc-main, 6 セッション連続適用)
+- **累積 worker 完走 77/77** (100% 維持、Loop 1 残務回収は worker 起動なしのため counter 外)
+- **コミット周期 ~12 分/loop** (目標 15 分以内クリア、3 ループ平均)
+
+旧 mjc-main (= mjc-main-20260504-31) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-32 へ予防的ハンドオフ判断 (前 24 セッション (mjc-main-7〜30) と同じ 3 ループパターン継承を期待、harness silent fail に対しては `git status` ベースの mitigation pattern が確立済)
+---
