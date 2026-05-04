@@ -1006,6 +1006,8 @@ export function TranscriptView() {
       setLastSavedPath(null);
       setSavedFileActionError(null);
       setMeetingError(null);
+      setMicrophoneDropCountTotal(0);
+      setSystemAudioDropCountTotal(0);
       const title = `会議 ${new Date().toLocaleString("ja-JP")}`;
       let sessionStarted = false;
       let micStarted = false;
