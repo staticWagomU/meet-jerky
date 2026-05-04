@@ -20140,3 +20140,25 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **失敗理由**: なし
 - **次アクション**: メインが agent-verify + commit を担当
 ---
+
+## mjc-worker-build-append-emission-at-boundary-tests-20260504-22-2 (Loop 2)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-22 Loop 2
+- **役割**: 作業担当エージェント (worker, print mode)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: `build_append_args_for_emission_at` (高層 emission helper) を対象とした境界 test 3 件を追加 (Loop 1 で低層 `segment_to_append_args` に追加した T1-T3 と対称な高層カバー)
+  - T1: `build_append_args_for_emission_at_falls_back_to_stream_started_when_zero_start_and_observed_none` = zero_start + observed=None で stream_started_at_secs フォールバックが emission helper 経由でも動く契約を固定
+  - T2: `build_append_args_for_emission_at_saturates_offset_when_session_after_observed_with_zero_start` = zero_start + observed < session で saturating_sub が 0 に飽和する emission helper 経由の現契約を固定
+  - T3: `build_append_args_for_emission_at_returns_some_for_zero_start_with_is_error_some_false` = is_error=Some(false) + zero_start + observed=Some の 3 軸合流で Some 経路 + offset 計算が動く契約を固定
+- **結果**: 全 test PASS (491 → 494 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/transcript_bridge.rs` のみ (mod tests 末尾 3 test 追加 + cargo fmt 対応 1 往復)
+- **検証結果**:
+  - `cargo test --lib transcript_bridge::tests` = 37 passed (34 → +3)
+  - `cargo test --lib` 全体 = **494 passed** (491 → +3, 0 failed)
+  - `cargo clippy --all-targets -- -D warnings` = 警告ゼロ
+  - `cargo fmt --check` = 差分なし (1 往復修正後)
+- **依存追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メインが agent-verify + commit を担当
+---

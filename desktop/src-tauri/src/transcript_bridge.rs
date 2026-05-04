@@ -680,4 +680,81 @@ mod tests {
             "text が全 whitespace のとき trim 後 \"\" を返す契約 = empty 時のフォールバックなし"
         );
     }
+
+    #[test]
+    fn build_append_args_for_emission_at_falls_back_to_stream_started_when_zero_start_and_observed_none(
+    ) {
+        // emission helper 経由でも zero_start + observed=None の場合に stream_started_at_secs フォールバックが効く現契約。
+        // Loop 1 T1 (segment_to_append_args 低層) と対称な emission helper 高層の test。
+        // 既存 `build_append_args_for_emission_at_uses_observed_time_for_zero_start_segment` は
+        // observed=Some(1075) のみ、本 test は observed=None (None 分岐) を固定。
+        let segment = TranscriptionSegment {
+            text: "test".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+        let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_040, None)
+            .expect("session 開始済みかつ is_error=None なら Some を返す");
+        assert_eq!(result.0, "自分", "speaker は正規化された 'self'");
+        assert_eq!(
+            result.1, 40,
+            "zero_start + observed=None → stream_started_at_secs(1040) - session_started_at_secs(1000) = 40"
+        );
+        assert_eq!(result.2, "test", "text はそのまま返る");
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_saturates_offset_when_session_after_observed_with_zero_start(
+    ) {
+        // zero_start segment (has_engine_timestamp=false) で observed_at_secs < session_started_at_secs のとき、
+        // saturating_sub によって offset が 0 に飽和する emission helper 経由の現契約。
+        // Loop 1 で範囲外だった zero_start + clock 逆転の組み合わせを emission helper 経由で固定。
+        // 既存 `build_append_args_saturates_offset_when_stream_precedes_session` は
+        // (start_ms=0, end_ms=100) で has_engine_timestamp=true 経路、本 test は end_ms=0 の zero_start 経路。
+        let segment = TranscriptionSegment {
+            text: "early".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("相手側".to_string()),
+            is_error: None,
+        };
+        let result = build_append_args_for_emission_at(&segment, Some(1_000), 990, Some(995))
+            .expect("session 開始済みかつ is_error=None なら Some を返す");
+        assert_eq!(
+            result.1, 0,
+            "zero_start segment で observed(995) < session(1000) → saturating_sub で offset=0 に飽和"
+        );
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_returns_some_for_zero_start_with_is_error_some_false() {
+        // is_error=Some(false) かつ zero_start segment かつ observed=Some の 3 軸合流。
+        // Some(false) は unwrap_or(false) で false → 早期 return せず Some を返し、
+        // zero_start 経路で observed_at_secs を使う現契約を固定。
+        // 既存 `build_append_args_for_emission_returns_some_when_is_error_is_some_false` は
+        // sample_segment (start_ms=2000, engine 経路) のみ、zero_start 経路は未保護。
+        let segment = TranscriptionSegment {
+            text: "realtime".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: Some(false),
+        };
+        let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_000, Some(1_075))
+            .expect("is_error=Some(false) は早期 return せず Some を返す契約");
+        assert_eq!(
+            result.0, "自分",
+            "is_error=Some(false) + zero_start でも speaker は正規化されて返る"
+        );
+        assert_eq!(
+            result.1, 75,
+            "is_error=Some(false) + zero_start → observed(1075) - session(1000) = 75"
+        );
+        assert_eq!(result.2, "realtime", "text はそのまま返る");
+    }
 }
