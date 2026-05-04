@@ -16851,3 +16851,151 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~10:30 JST] mjc-main-20260504-7 状況メモ (ループ 1-3 詳細)
+
+### 本セッション (mjc-main-20260504-7) の累積実績
+- **3 ループ完了** / **+15 テスト** / **3 コミット** / **平均 ~12-15 分/ループ** (目標達成)
+- すべてテスト追加のみ (実装変更ゼロ、visibility 変更もなし)
+- cargo test: 340 → 355 passed (+15)
+- cargo clippy default: 警告ゼロ維持
+- cargo clippy -W uninlined_format_args: 警告ゼロ維持
+- フロントエンド build: 通過 (codex 活動本セッション中ゼロ)
+
+### コミット履歴 (本セッション 3 件)
+1. `8083f07` test(session_commands): resolve_output_directory の None/Some("")/Some(非空)/whitespace 込み 4 ケース と default_offset の JST 固定値 (== FixedOffset::east_opt(9*3600) + .local_minus_utc() == 32400 の二重固定) の 5 件で private fn 契約を補強 (340→345 passed)
+2. `f8cbea1` test(transcription): private fn 5 件 (parse_requested_transcription_sources のエラー文言完全一致 + 大文字 4 種 reject の case-sensitive 契約 + should_emit_realtime_stream_error と is_realtime_stream_already_stopped_error の同一 input 5 種対称契約 + build_worker_panic_error_payload の source=None omit 契約 + build_transcription_error_payload の空文字 passthrough 上位層責任境界) を追加 (345→350 passed)
+3. `8b55bf4` test(session_store): private fn 5 件 (unix_secs_i64 の boundary + overflow + エラー文言完全一致 / io_invalid の kind 不変条件 + message passthrough / unescape_inline_markdown_text 6 文字 + \X passthrough + lone \ 保持) で markdown.rs encode 側と対称な decode 契約を補強 (350→355 passed)
+
+### 確立したパターン (本セッション)
+- **「上位層責任境界の契約強制」パターン再利用** (ループ 1, 2): resolve_output_directory が whitespace trim しない / build_transcription_error_payload が空文字を passthrough する現挙動を「validation/normalization は上位層の責任」契約として固定。前セッション ループ 2 (cloud_whisper) パターンを 2 fn で再利用。
+- **JST 固定値の二重軸固定** (ループ 1, T5): `default_offset() == FixedOffset::east_opt(9 * 3600).unwrap()` + `.local_minus_utc() == 9 * 3600` の 2 軸 assert で 9 → 8 typo と 3600 → 60 typo を別軸検知。同一定数を異なる視点で固定する手法。
+- **対称契約 (always opposite) を 1 件で固定** (ループ 2, T3): `should_emit_realtime_stream_error(s) == !is_realtime_stream_already_stopped_error(s)` を 5 種類 input でループ assert。NaN/+Inf 非対称ペア (前セッション ループ 3) と対をなす「同一 input での対称ペア」パターン。
+- **markdown encode/decode 双方向対称契約** (ループ 3, T5): markdown.rs `inline_markdown_text` (encode 側、前セッション既存) と session_store.rs `unescape_inline_markdown_text` (decode 側) の同じ 6 文字 (`\\`, `` ` ``, `*`, `_`, `[`, `]`) を別ファイル別ループで固定。双方向 escape 契約を独立に保護。
+- **3 軸テスト戦略 (boundary + invariant + format)** (ループ 3, T1+T2+T3): unix_secs_i64 の (a) 0/i64::MAX as u64 boundary 正常系 (b) overflow 2 軸 ErrorKind::InvalidInput (c) エラー文言完全一致 format。1 fn を 3 軸で多角的に保護。前セッション cloud_whisper_errors (335→340) で確立したパターン。
+- **case-sensitive 契約の文言完全一致 + 4 input ループ** (ループ 2, T1+T2): エラー文言完全一致 (T1 で `assert_eq!`) と case-sensitive (T2 で 4 大文字 variant ループ + 同じ完全一致文言) を 2 件に分けて 2 軸で固定。文言変更と case-handling 変更の両方を別軸検知。
+
+### 既存累積パターン (前 mjc-main-20260504-6 から継承、本セッション再利用)
+- private fn 直接呼び出しテスト: 関数分離リファクタへの耐性 + 防御コード存在意義の裏付け
+- エラー文言の contract enforcement: 実装と test に同じ `&'static str` を書いて UI 文言の不用意な変更を CI で検知
+- 境界値テストの「対称ペア」: 同じ境界を 2 層の責任で観測
+- 3 層テスト構造、OS 互換 ErrorKind 契約強制
+- state machine 混在遷移テスト
+- format prefix の層内独立確認
+- エスケープ漏れの網羅補完
+- UI 文言一致の契約強制
+- 上位層責任境界の契約強制 (本セッションでも 2 ループ再利用)
+- NaN/+Inf 非対称責務分離
+- sanitize 前段の bit-pattern 直接テストパターン
+- first-violation contract
+
+### 重要な技術的注意点 (踏みやすい罠、本セッション分含む)
+- **SettingsStateHandle の test 構築**: `SettingsStateHandle(parking_lot::Mutex::new(AppSettings { ..AppSettings::default() }))` で直接構築可。**`SettingsStateHandle::new()` は呼ばないこと** (`AppSettings::load()` 経由で実環境 `~/Library/Application Support/meet-jerky/settings.json` を読みに行き、テスト副作用と並列実行不安定の元になる)。
+- **resolve_output_directory の guard `if !dir.is_empty()`**: None と Some("") を default に倒す対称ペアテストの設計意図 (T2 削除リファクタ検知装置)。
+- **default_offset の `9 * 3600`**: 「将来ユーザー設定化する際はここを差し替えれば良い」コメント付き hard-code。`local_minus_utc()` メソッド経由で秒値を別軸固定可能。
+- **transcription.rs エラー文言完全一致**: `"文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"` (全角句点 + 全角カンマ「、」混在) は実装からコピー必須。typo 入りやすい。
+- **transcription.rs `parse_requested_transcription_sources` は `.trim()` 後 match**: `Some(" both ")` は match 成功するが、`Some(" Microphone ")` は trim 後 "Microphone" で match 失敗 (case-sensitive)。
+- **`is_realtime_stream_already_stopped_error` は `contains` 判定**: `"Realtime ストリーム"` (substring のみ) は false を返す (完全文言を含むかをチェック)。T3 対称性 assert で確認。
+- **session_store.rs `unix_secs_i64`**: `i64::try_from(unix_secs)` で overflow → `io_invalid(format!(...))`。`u64::MAX = 18446744073709551615` (20 桁)、文言テストで完全一致書く時に注意。
+- **`io_invalid` は最小 helper**: `Error::new(ErrorKind::InvalidInput, message.into())`。1 件で kind 不変条件 + 2 message passthrough を確認可能。
+- **`unescape_inline_markdown_text` の 6 文字 + lone backslash**: 実装は `if ch == '\\'` → `chars.peek().copied()` で 6 文字判定 → match 成功なら次 char を out へ、失敗 or peek None なら `\\` をそのまま push。lone trailing backslash `r"\"` は backslash 1 文字のまま返る。
+- **既存パターン継承** (前 SESSION SUMMARY 参照、変更なし):
+  - `audio_utils.rs`、`transcript.rs` Phase 4 placeholder、Teams ブラウザ版タイトル fallback 禁止、`validate_audio_format_properties` cfg なし、wrapper fn 削除しない、SESSION_COUNTER 並列対応、Keychain 実通信禁止、markdown.rs 6 文字 + whitespace 正規化、cloud_whisper_errors.rs `MAX_ERROR_BODY_CHARS = 200` char base、chrono `FixedOffset` leap second 非対応、両 Realtime engine の push_error 完全対称、persist_if_configured `?` リファクタ罠 など。
+
+### 次ループ候補 (優先順位順)
+
+#### A. session_manager.rs `persist_if_configured` direct test (規模 XS、ただし価値中)
+- private fn (line 164-175)。既存 16 件は pub fn 経由で間接テスト。
+- direct test なら ActiveSession + ActiveOutput を tests mod 内で直接構築可能 (private struct だが同 mod 内なら field アクセス可)。
+- 5 件案: output=None で no-op / output=Some + 正常 path で .md 書き出し / output=Some + 不正 path (file already as dir) でエラーが eprintln されるが panic しない / phase ラベル "append"/"finalize" の eprintln 文字列に含まれる / persist 後でも in-memory consistency が保たれる
+- **注意**: 既存 pub fn 経由テストと重複する範囲は避ける必要あり、worker prompt で gap 明示必須。
+
+#### B. markdown.rs `inline_markdown_text` (encode 側) の追加補強 (規模 XS)
+- session_store.rs decode 側 (T5、本セッション ループ 3) と対称。encode 側の direct test 補強で双方向対称契約を強化。
+- 既存テスト件数の事前 grep 必要 (前 SESSION SUMMARY「6 文字 + whitespace 正規化」の記述あり、direct test 既にあるかも)。
+- 規模小、1 ループで完結可能性高い。
+
+#### C. transcript_bridge.rs `build_append_args_for_emission_at` direct test (規模 S)
+- private fn と思われる。transcription.rs から呼ばれる重要 fn。grep + 構造確認が必要。
+- 価値: 文字起こし → session 書き込みの bridging 層の不変条件保護。
+
+#### D. session.rs cross-fn invariant 補強 (規模 XS)
+- `Session::start` / `append_segment` / `finalize` の cross-fn invariant。
+- SESSION_COUNTER 並列禁止 (絶対値 assert 禁止) を守りつつ、状態遷移の relative 検証は可能。
+
+#### E. Q (継承候補): transcription.rs の追加 error path (規模 S〜M)
+- 1896 行最大規模。本セッション ループ 2 で private fn 5 件補強済 (parse_requested_*, build_*_error_payload, should_emit_*, is_realtime_*)。
+- 残り gap: `validate_stream_count_for_engine` (既存 1 件のみ?)、`load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺。
+- 実環境依存性高い fn を避ければ補強可能。
+
+#### F (継承候補): drop メトリクスを Tauri イベント化 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: rust 側に payload struct + emit のみ追加 (frontend hookup なし) で 1 ループ。AppHandle 渡し方は研究担当に先に確認。
+
+#### G' (継承候補): 会議終了検知の遅延監視 (規模 S〜M)
+
+#### S (継承候補): settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+- `load_from_path` 抽出 (1 ループ) + テスト追加 (1 ループ) の 2 ループ構成必要。価値中。
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 355 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+### ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>`
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>`
+- watchdog: `mjc-watchdog` 既に走行中、interval=180s, nudge_cooldown=300s
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh <successor> mjc-main`
+
+### コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~12-15 分/loop (3 ループ全テストのみで安定)。
+- worker prompt は **5 セクション構造** (背景/Why、具体的 test 案 assertion レベル、実装上の注意、検証手順、AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい (本セッション 3/3 完走実績)。
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション。
+- ハンドオフは `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt → `scripts/claude-agent-handoff-main.sh` 起動 → `scripts/agent-adopt-main.sh` で canonical 移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残すことで watchdog 自動 /clear 復活時も状況復元可能。
+- 本セッションは前セッション (5 ループ) より早く 3 ループでハンドオフ判断。
+  理由: 大きいハンドオフ prompt 受領 (約 13K token) + Read 多め (settings.rs / session_store.rs / session_manager.rs / transcription.rs partial × 複数) + worker tail × 3 + grep 多数 で context 70% 推定。
+  予防的に 4 ループ目を回さず安全側へ。
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は本セッション中 3 回受領、すべて改善ループ進行で消化済み。
+
+### 後続メイン候補名
+- `mjc-main-20260504-8`
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-7 → mjc-main-20260504-8)
+
+- **判断時刻 (JST)**: 2026-05-04 ~10:30 JST
+- **判断理由**: 3 ループ完了の良い区切り。context 推定 70% 近辺で予防的ハンドオフ。前セッション (5 ループ) より早めだが、ハンドオフ prompt 受領分の context 占有が大きいため安全側に倒す。
+- **使用率 (推定)**: 約 60-70% (worker 3 件分 + 5 ファイル partial Read + 多数 grep + ハンドオフ prompt 受領の累積)
+- **引き継ぎ先**: `mjc-main-20260504-8`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-8.txt` (作成予定)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-8 docs/handoff/mjc-main-20260504-8.txt`
+- **canonical 名移譲コマンド**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-8 mjc-main`
+- **判断履歴の保存ポイント**:
+  - 「上位層責任境界の契約強制」パターンを 2 ループで再利用 (本セッション ループ 1, 2)
+  - markdown encode/decode 双方向対称契約の独立保護パターン (本セッション ループ 3 で確立)
+  - JST 固定値の二重軸固定パターン (本セッション ループ 1)
+  - 対称契約 (always opposite) を 1 件で固定するパターン (本セッション ループ 2)
+  - 3 軸テスト戦略 (boundary + invariant + format) の再利用 (本セッション ループ 3)
+- **次ループ候補の現状**:
+  - A. session_manager.rs persist_if_configured direct test (規模 XS、価値中)
+  - B. markdown.rs inline_markdown_text encode 側補強 (規模 XS)
+  - C. transcript_bridge.rs build_append_args_for_emission_at direct test (規模 S)
+  - D. session.rs cross-fn invariant (規模 XS)
+  - E. Q (継承): transcription.rs error path 残り (規模 S〜M)
+  - F (継承): drop メトリクス Tauri イベント化 (規模 M, 価値 9)
+  - G' (継承): 会議終了検知の遅延監視 (規模 S〜M)
+  - S (継承): settings.rs Tidy First (規模 M、2 ループ)
+- **未消化のユーザー直伝指示**: なし
