@@ -1,5 +1,36 @@
 ---
 
+## セッション: mjc-worker-audio-drop-event-name-const
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-drop-event-name-const
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: rust 側 audio-drop-count event 名の重複文字列リテラル 2 箇所を audio_event::AUDIO_DROP_EVENT_NAME 定数に集約 + 定数値固定 test 1 件追加
+- **指示内容**:
+  - audio_event.rs に `pub(crate) const AUDIO_DROP_EVENT_NAME: &str = "audio-drop-count";` を追加
+  - audio.rs line 401 の `"audio-drop-count"` を `crate::audio_event::AUDIO_DROP_EVENT_NAME` に置換
+  - system_audio.rs line 333 の `"audio-drop-count"` を `crate::audio_event::AUDIO_DROP_EVENT_NAME` に置換
+  - audio_event.rs に `#[cfg(test)] mod tests` を追加し `audio_drop_event_name_is_audio_drop_count_kebab_case` test 1 件追加
+  - 既存 10 件テスト (audio.rs × 5 + system_audio.rs × 5) は変更しない
+  - `use crate::audio_event::AUDIO_DROP_EVENT_NAME;` は追加せず fully-qualified path のまま使用
+  - frontend (TranscriptView.tsx) は touch しない (別言語空間、手動同期責任)
+- **結果**: 成功
+- **変更ファイル**:
+  - src-tauri/src/audio_event.rs (定数 + 1 件 test 追加)
+  - src-tauri/src/audio.rs (line 401 を定数参照化)
+  - src-tauri/src/system_audio.rs (line 333 を定数参照化)
+- **追加テスト名**: audio_drop_event_name_is_audio_drop_count_kebab_case
+- **検証結果**:
+  - cargo fmt -p meet-jerky: 成功 (差分なし)
+  - cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings: 警告ゼロ
+  - cargo test -p meet-jerky --lib: **451 passed / 0 failed** (前回 450 + 新規 1)
+  - agent-verify.sh: 全段 OK (451 passed / 0 failed)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main = mjc-main-20260504-15) によるレビュー → コミット
+
+---
+
 ## [SESSION SUMMARY @ 2026-05-04 ~13:30 JST] mjc-main-20260504-14 状況メモ
 
 ### 本セッションの 3 ループ実績 (450 → 450 passed 維持 + frontend 配線完成、test 数据は不変だが価値 9 (録音状態の透明性) を実装層まで届けた)

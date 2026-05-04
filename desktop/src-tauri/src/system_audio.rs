@@ -330,7 +330,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
                         "[system_audio] リングバッファ満杯で {dropped} sample を破棄しました"
                     );
                     let _ = app_handle.emit(
-                        "audio-drop-count",
+                        crate::audio_event::AUDIO_DROP_EVENT_NAME,
                         crate::audio_event::build_audio_drop_event_payload("system_audio", dropped),
                     );
                 }
