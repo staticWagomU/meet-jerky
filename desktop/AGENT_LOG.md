@@ -20331,3 +20331,116 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **設計判断 3**: T3 で for ループ構造を採用 = 4 入力 ("microphone_extra" / "system_audio_full" / "both_only" / "microphoneX") を 1 test 内で対称的に網羅。各入力に対して error 文字列の完全一致も確認することで starts_with 化と contains 化の両方を同時に検知
 - **残リスク**: なし (関数本体無変更、test 追加のみ)
 - **次アクション**: メイン側でレビュー → コミット → SESSION SUMMARY
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~16:50 JST] mjc-main-20260504-23 状況メモ (3 ループ実績 + ハンドオフ判断)
+
+### セッション概要
+- **期間**: 2026-05-04 ~16:00-16:50 JST (~50 分)
+- **canonical 名**: mjc-main (mjc-main-20260504-23 から `agent-adopt-main.sh` で移譲済)
+- **担当主軸**: 候補 D = transcription.rs error path 系の境界補強 (3 ループ完了)
+- **テスト件数**: 497 → 506 passed (+9 件)、mjc-main-22 (488 → 497 +9 件) と完全対称な成果
+- **コミット**: 3 件 (Loop 1 / 2 / 3) + 本 SUMMARY 1 件
+- **clippy**: 警告ゼロ維持 (default + -D warnings)
+- **fmt**: 差分なし (Loop 2/3 で worker 1 往復修正、Loop 1 は修正不要)
+- **累積 worker 完走**: 56/56 (100%)
+
+### 3 ループ詳細
+
+#### Loop 1 (commit `7b4db11`, ~8 分)
+- **対象**: `is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` (transcription.rs l.1102-1108)
+- **追加 test 3 件**: ASCII 大小区別 (T1 = `realtime` 小文字 → false) / 中間 substring 一致 (T2 = `WARNING: ... (graceful)` → true) / 改行越え contains 一致 (T3 = `ERROR\nstack trace\n...` → true)
+- **保護した「3 方向の改善誤改修」**: case-insensitive 化 / startsWith 化 / lines() 化 = `contains()` の 3 つの逸脱方向を CI で全遮断する三重保険
+
+#### Loop 2 (commit `e1dbf4c`, ~9 分)
+- **対象**: `build_transcription_error_payload` / `build_worker_panic_error_payload` (transcription.rs l.1084-1095)
+- **追加 test 3 件**: build_transcription × Microphone enum (T1) / build_worker_panic × SystemAudio enum (T2) / 改行入り error 文字列の JSON escape (T3, raw string `r"..."` 使用)
+- **2x2 マトリクス充填**: 関数 (build_transcription / build_worker_panic) × source enum (Microphone / SystemAudio) の未保護セル 2 つ充填 + 別軸 (改行 escape) で 3 件 = serde rename_all = "snake_case" の宣言契約を CI 固定
+
+#### Loop 3 (commit `2172151`, ~9 分)
+- **対象**: `parse_requested_transcription_sources` (transcription.rs l.1050-1072)
+- **追加 test 3 件**: ASCII whitespace 拡張 trim (T1 = `\t`/`\n` 対応) / Unicode 全角空白 trim (T2 = U+3000 対応) / prefix 拡張入力 reject (T3 = `microphone_extra` 等 4 入力)
+- **入力空間境界の対称構造**: T1 (成功側 ASCII 拡張) + T2 (成功側 Unicode 全角境界) + T3 (失敗側 prefix 拡張境界) で 3 段階パイプライン (str::trim() → 完全一致 match → 結果) の未保護境界を網羅
+
+### 確立パターン (本セッションで application 確認)
+
+#### 1. 「対称的補強の 3 軸構造」パターン (本セッション全 3 ループで application)
+- Loop 1: `contains()` の 3 つの逸脱方向 (case / position / newline) で対称構造
+- Loop 2: 関数 × enum の 2x2 マトリクス + 別軸 (escape) で対称構造
+- Loop 3: 入力空間の 3 段階パイプライン (trim ASCII / trim Unicode / match exact) で対称構造
+- = **「N 軸の独立変数を 3 件で全カバー」** という設計思想が普遍的に application 可能
+
+#### 2. 「2x2 マトリクス充填」パターン (Loop 2 確立、後続 application 可能)
+- 関数 (A, B) × データ型 (X, Y) の 4 セルを既存 test の埋まり方で診断
+- 未充填セル 2 つを 1 commit で同時充填 = 関数 × 型の cross product 網羅を最小コストで完成
+- application 候補: settings.rs の TranscriptionEngineType × 関数 cross product, session_manager の append × source cross product
+
+#### 3. 「入力空間境界の 3 段階パイプライン保護」パターン (Loop 3 確立、後続 application 可能)
+- 入力 → trim → match → 結果 の各段階で 1 軸ずつ未保護境界を選定
+- application 候補: `parse_throttle_key_to_display_name` (app_detection.rs)、`build_meeting_link_from_url` (browser_detection.rs) 等の正規化系関数
+
+#### 4. 「worker prompt で末尾追記を明示するパターン」(継続 application、本セッション全 3 ループで先頭追記事故ゼロ)
+- 全 3 ループで「ファイル末尾追記必須 + 先頭は絶対に触らない + tail -10 で末尾確認」明示 → 事故ゼロ
+- mjc-main-21 (worker prompt 改善開始) → mjc-main-22 (3 ループ事故ゼロ) → 本セッション (3 ループ事故ゼロ) で **3 連続セッション事故ゼロ** = 後続セッションも継続適用必要
+
+### 重要発見
+
+#### 1. transcription.rs の test 件数密度バランスが大幅改善
+- 497 → 506 件 (+9 件)、本セッションで `is_realtime_stream_*` / `build_*_error_payload` / `parse_requested_transcription_sources` の 3 関数群に分散
+- mjc-main-22 (transcript_bridge.rs +9 件) と本セッション (transcription.rs +9 件) で **2 セッション連続 +9 件** = 「別ファイル切り替えで認知文脈リセット」戦略が有効
+
+#### 2. コミット周期実績 平均 ~9 分/loop (mjc-main-22 と完全同等)
+- Loop 1 ~8 分 / Loop 2 ~9 分 / Loop 3 ~9 分、平均 ~9 分/loop
+- 目標 15 分/loop を大幅にクリア = mjc-main-22 と同等の高速 cadence を 2 セッション連続維持
+- 短縮要因 = worker prompt 末尾追記明示 + 3 件固定 + commit メッセージファイル運用安定化
+
+#### 3. Rust `str::trim()` の Unicode White_Space 仕様の executable specification 化 (Loop 3)
+- T2 で U+3000 trim を CI 固定 = `trim_ascii()` (Rust 1.80+ の ASCII 限定 trim) への変更で即座に検知できる装置
+- 日本語入力文脈 (全角空白が source 値に紛れ込む可能性) での安全性を test で明示
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### D 候補継続 (推奨)
+- `validate_stream_count_for_engine` の更なる境界補強 (mjc-main-22 で 5 件追加済、追加余地は限定的)
+- `transcription_error_payload_to_value` の境界補強 (cfg(test) ヘルパだが panic 経路含めて確認価値あり)
+- `run_transcription_loop` / `run_transcription_worker_with_panic_guard` の test (Tauri AppHandle 必要 = mock 必要、規模 M-L)
+
+#### B 候補 (別ファイル切り替えで認知文脈リセット、推奨)
+- session_manager.rs の append 系関数の境界補強 (本セッション未着手)
+- app_detection.rs の `check_all_inactive_bundles` 関連 test (mjc-main-21 で完成、追加余地は限定的)
+- browser_detection.rs の URL classification (mjc-main-1 で完成済、追加余地は限定的)
+
+#### S 候補 (継承、統合候補あり)
+- settings.rs Tidy First リファクタ + `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする統合 (mjc-main-20 SUMMARY 既明示)
+
+#### F-Loop6 (継承)
+- タイマースレッド shutdown 対応 (規模 M, 価値中)
+
+#### K (継承、非優先)
+- clippy::pedantic の選択的有効化
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 506 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### ハンドオフ判断
+- context 推定 ~70-80% で予防的ハンドオフ判断 (前 16 セッション (mjc-main-7〜22) と同じ 3 ループパターン継承で予測可能性優先)
+- 後継 mjc-main-20260504-24 へ予防的ハンドオフ
+- 旧 mjc-main (= mjc-main-20260504-23) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示 1 回受領も自然に消化済 (3 ループを通常テンポで進めたため)。
+
+### 累積成果 (本セッション)
+- **テスト 497 → 506 passed** (+9 件、mjc-main-22 と完全対称)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **transcription.rs 3 関数群への密度分散完成** (`is_realtime_stream_*` / `build_*_error_payload` / `parse_requested_transcription_sources`)
+- **「対称的補強の 3 軸構造」パターン全 3 ループで application 確認**
+- **worker prompt 末尾追記明示の継続適用** (3 連続セッション先頭追記事故ゼロ)
+- **累積 worker 完走 56/56** (100%)
+- **コミット周期 ~9 分/loop** (mjc-main-22 と同等の高速 cadence を 2 セッション連続維持)
