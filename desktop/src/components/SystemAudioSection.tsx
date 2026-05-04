@@ -92,7 +92,7 @@ export function SystemAudioSection({
         )}
         {systemAudioDropCountTotal > 0 && (
           <span
-            className="audio-source-silence-badge"
+            className="audio-source-drop-badge"
             role="status"
             aria-live="polite"
             aria-atomic="true"

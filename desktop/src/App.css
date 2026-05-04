@@ -832,6 +832,17 @@ body[data-window="ring-light"] .overlay-window {
   border: 1px solid var(--color-border-light);
 }
 
+.audio-source-drop-badge {
+  border-radius: 999px;
+  padding: 0.12rem 0.42rem;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
+  border: 1px solid color-mix(in srgb, var(--transcript-error-color) 30%, transparent);
+}
+
 .section-divider {
   border-top: 1px solid color-mix(in srgb, var(--color-border) 56%, transparent);
   margin: 0.05rem 0;
