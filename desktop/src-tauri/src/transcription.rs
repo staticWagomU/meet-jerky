@@ -1,6 +1,3 @@
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-
 // ─────────────────────────────────────────────
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
 // ─────────────────────────────────────────────
@@ -52,15 +49,11 @@ pub(crate) const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize 
 /// 調査担当推奨の -60dBFS (= 0.001) は会議室背景ノイズより低く誤判定リスクが大きいため、より安全側を選択。
 pub(crate) const SILENCE_THRESHOLD_RMS: f32 = 0.01;
 
-pub(crate) struct TranscriptionLoopConfig {
-    pub(crate) consumer: ringbuf::HeapCons<f32>,
-    pub(crate) source: TranscriptionSource,
-    pub(crate) stream: Box<dyn TranscriptionStream>,
-    pub(crate) running: Arc<AtomicBool>,
-    pub(crate) app: tauri::AppHandle,
-    pub(crate) session_manager: Arc<crate::session_manager::SessionManager>,
-    pub(crate) stream_started_at_secs: u64,
-}
+// ─────────────────────────────────────────────
+// TranscriptionLoopConfig (transcription_worker_loop.rs に分離、互換層として再エクスポート)
+// ─────────────────────────────────────────────
+
+pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;
 
 // ─────────────────────────────────────────────
 // テスト
@@ -256,6 +249,7 @@ mod tests {
     // finalize) を記録し、新 trait の契約が壊れていないことを確認する。
 
     use std::sync::atomic::AtomicUsize;
+    use std::sync::Arc;
 
     /// テスト用モックエンジン。`feed` で受け取ったサンプル合計を記録し、
     /// `feed` 1 回ごとに 1 セグメントを出す。`finalize` 時には特殊セグメントを 1 つ追加する。

@@ -1,14 +1,26 @@
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use ringbuf::traits::{Consumer, Observer};
 use tauri::Emitter;
 
-use crate::transcription::TranscriptionLoopConfig;
 use crate::transcription_emission::emit_segments;
 use crate::transcription_error_payload::{
     build_transcription_error_payload, should_emit_realtime_stream_error,
 };
+use crate::transcription_traits::TranscriptionStream;
+use crate::transcription_types::TranscriptionSource;
+
+pub(crate) struct TranscriptionLoopConfig {
+    pub(crate) consumer: ringbuf::HeapCons<f32>,
+    pub(crate) source: TranscriptionSource,
+    pub(crate) stream: Box<dyn TranscriptionStream>,
+    pub(crate) running: Arc<AtomicBool>,
+    pub(crate) app: tauri::AppHandle,
+    pub(crate) session_manager: Arc<crate::session_manager::SessionManager>,
+    pub(crate) stream_started_at_secs: u64,
+}
 
 pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
     let TranscriptionLoopConfig {

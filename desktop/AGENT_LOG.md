@@ -25956,3 +25956,33 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - なし。watchdog からの nudge は本セッション中ゼロ。
 
 ---
+[mjc-main-20260505-17 Loop 33 / 2026-05-05 ~JST]
+
+## What
+- `TranscriptionLoopConfig` struct を `src-tauri/src/transcription.rs` から `src-tauri/src/transcription_worker_loop.rs` に移動
+- transcription.rs に `pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;` 互換 re-export 追加
+- transcription_worker_loop.rs L7 の `use crate::transcription::TranscriptionLoopConfig;` 削除 (self 定義になるため)
+- transcription.rs の `use std::sync::atomic::AtomicBool;` 削除 (struct 移動後 unused) / `use std::sync::Arc;` をテストモジュール内に移動 (struct 移動後 non-test コードでは unused)
+- cargo fmt による use 文順序の自動整形を適用
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 縮小 + 責務分離)
+- struct は `run_transcription_loop` の入力 = 同一ファイル locality 最大
+- 互換 re-export pattern 継承 = caller (panic_guard / commands) 変更ゼロ
+- variety pivot 軸 = 「struct 移動」軸 = Loop 31 (extraction) / Loop 32 (test 移動) と異なる新軸
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- pub(crate) visibility 維持 = 元 struct と同じ
+- 互換 re-export で外部参照変更ゼロ (panic_guard / commands の use 文変更不要)
+- `use std::sync::Arc;` をテストモジュール内 (`use std::sync::atomic::AtomicUsize;` 直後) に移動 = 必要箇所に局所化
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- trailing whitespace: ゼロ
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+---
