@@ -23100,3 +23100,139 @@ test result: ok. 607 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~22:30 JST] mjc-main-20260504-35 状況メモ (3 ループ完走 + 「Debug 軸補強」16 連続 application 系譜達成 + 7 ファイル目展開 + 「Clone 独立性軸」5 種手法照射完成 + 「format 不変条件 application」7 系統目 + harness silent fail mitigation pattern 連続 15 ループ実証)
+
+### 本セッションの 3 ループ実績 (598 → 607 passed +9 件)
+
+- **Loop 1** (`e6810b9`) test(settings): AppSettings の Debug 出力 / Clone 独立性 / serde camelCase 6 fields 順向き JSON key 名固定 +3 件 → 601 passed
+  - AppSettings: `#[derive(Debug, Clone, Serialize, Deserialize)]` + `#[serde(rename_all = "camelCase", default)]` + 6 fields (transcription_engine TranscriptionEngineType nested enum + whisper_model String + microphone_device_id Option<String> + language String + output_directory Option<String> + api_key Option<String>) = **PartialEq 未派生**
+  - T1 (Debug 出力 = 型名 + 全 6 snake_case field 名 + 全 6 値 13 段 contains assert)
+  - T2 (Clone 独立性軸 = cloned 全 6 field 変更 → original を Debug 文字列で間接判定 11 段 assert)
+  - T3 (serde camelCase format 不変条件 = 6 fields の camelCase JSON key 名 + .len()==6 厳密 + snake_case 不在 + nested enum elevenLabsRealtime 値固定 17 段 assert)
+  - **「Clone 独立性軸」3 連続 application** (StreamConfig → ModelInfo → AppSettings)、**struct + camelCase 形態 4 連続 application** (TranscriptionSegment → ModelInfo → SessionSummary → AppSettings)、**settings.rs 同一ファイル内 2 形態目 application**
+
+- **Loop 2** (`65751df`) test(app_detection): MeetingAppDetectedPayload の Debug 出力 / Clone 独立性 / serde tagged enum + field-level rename +3 件 → 604 passed
+  - MeetingAppDetectedPayload: `#[derive(Debug, Clone, Serialize)]` + `#[serde(tag = "source")]` + 2 variants (App { 2 fields with rename } / Browser { 5 fields with rename }) = **PartialEq 未派生** + tagged enum 形態
+  - T1 (Debug 出力 = 2 variants 名 + 7 snake_case field 名 + 7 値 16 段 assert)
+  - T2 (Clone 独立性軸 = cloned 後 → original 変数を別 enum 値に **再束縛** → cloned が変わらない 9 段 assert、enum 特有の「変数 binding と heap data の分離」契約)
+  - T3 (serde tagged enum + field-level rename format 不変条件 = App variant `{"source":"app"}` 3 keys + Browser variant 6 keys + camelCase 6 keys + snake_case 不在 + 値正しさ 23 段 assert)
+  - **enum 形態 4 連続 application** (TranscriptionSource → SessionManagerError → TranscriptionEngineType → MeetingAppDetectedPayload)、**「Clone 独立性軸」4 連続 application**、**「format 不変条件 application」7 系統目** (tagged enum + field-level rename)、**6 ファイル目展開** (app_detection.rs)
+
+- **Loop 3** (`8f2fde2`) test(cloud_whisper): WhisperRequestParams の Debug 出力 / PartialEq field 単位独立判定 / Clone 独立性 (PartialEq + Debug 二重保険) +3 件 → 607 passed
+  - WhisperRequestParams: `#[derive(Debug, Clone, PartialEq)]` + `#[allow(dead_code)]` + 4 fields (model String + language Option<String> + response_format String + temperature **f32**) = Serialize なし内部表現 + **f32 Float field 初対応**
+  - T1 (Debug 出力 = 型名 + 4 snake_case field 名 + Some/None 両 Option variant + f32 数値表示 0.0/0.5 13 段 contains assert)
+  - T2 (PartialEq 軸 = `..base.clone()` short-hand で 1 field のみ違う 5 種 instance + reflexive 6 段 assert、Option Some vs None 不等 + f32 non-NaN 比較を保護)
+  - T3 (Clone 独立性軸 = `assert_eq!` 初期一致 → cloned 全 4 field 変更 → `assert_ne!` で **PartialEq 直接判定** + original Debug 文字列で 5 値維持 + 4 値混入なしを 11 段二重保険 assert)
+  - **「Clone 独立性軸」5 連続 application 達成 + 5 種手法照射完成**、**7 ファイル目展開** (cloud_whisper.rs)、**f32 Float field を持つ struct への補強形態を初確立**
+
+### 確立されたパターン
+
+#### 1. 「対称的補強の 3 軸構造」パターン (継続 application、15 連続セッション目)
+- mjc-main-21〜35 で全 40 ループに application
+
+#### 2. 「Debug 軸補強」パターン 16 連続 application 系譜達成
+- 系譜: SecretKey enum (mjc-main-30 Loop 1) → AppleSpeechEngine unit struct (mjc-main-31 Loop 1) → SessionSegment / Session (mjc-main-31 Loop 2) → TranscriptionErrorPayload (mjc-main-31 Loop 3) → TranscriptionSegment (mjc-main-32 Loop 1) → TranscriptionSource enum (mjc-main-32 Loop 2) → StreamConfig (mjc-main-32 Loop 3) → ModelInfo (mjc-main-33 Loop 1) → RequestedTranscriptionSources (mjc-main-33 Loop 2) → SessionManagerError (mjc-main-33 Loop 3) → Session 全体 (mjc-main-34 Loop 1) → TranscriptionEngineType (mjc-main-34 Loop 2) → SessionSummary (mjc-main-34 Loop 3) → AppSettings (本 Loop 1) → MeetingAppDetectedPayload tagged enum (本 Loop 2) → WhisperRequestParams f32 Float field (本 Loop 3)
+- 派生型カバレッジ: 15 形態
+- 7 ファイルに渡る統一的補強完成 (transcription / settings / session / session_manager / session_store / app_detection / cloud_whisper)
+
+#### 3. 「Clone 独立性軸」5 連続 application + 5 種手法照射完成 (本セッション最重要)
+- 1: StreamConfig (mjc-main-32 Loop 3) = `assert_eq!` 単純、Serialize なし
+- 2: ModelInfo (mjc-main-33 Loop 1) = `assert_eq!` + 数値、Serialize あり全 required
+- 3: AppSettings (本 Loop 1) = Debug 文字列間接判定、PartialEq 未派生 struct + Option 多用 + nested enum
+- 4: MeetingAppDetectedPayload (本 Loop 2) = enum re-binding、PartialEq 未派生 enum + tagged + field-level rename
+- 5: WhisperRequestParams (本 Loop 3) = `assert_ne!` 直接 + Debug 二重保険、PartialEq 派生 + f32 Float field
+- **2×2 象限を網羅** (PartialEq 派生有無 × 直接判定/間接判定) + struct/enum 双方を照射 = 後続セッションが新型に当たっても decision matrix が成立
+
+#### 4. 「format 不変条件 application」パターン 7 系統に拡張
+- 1: kebab-case (SecretKey)
+- 2: serde snake_case enum (TranscriptionSource)
+- 3: serde camelCase struct (TranscriptionSegment / ModelInfo / SessionSummary / AppSettings 4 連続)
+- 4: thiserror #[error] 文言 (SessionManagerError)
+- 5: serde default snake_case (Session / SessionSegment)
+- 6: serde camelCase enum variant (TranscriptionEngineType)
+- 7: **tagged enum + field-level rename (本 Loop 2 MeetingAppDetectedPayload で新規追加)**
+
+#### 5. 「同一関数の完全網羅戦略」パターン継続 application
+
+### 重要発見
+
+#### 1. **harness silent fail mitigation pattern 連続 15 ループ実証達成 + 部分正常出力条件発見**
+- 本セッション Loop 1 / Loop 3 は珍しく log file が 31 / 数十行で出力あり (silent fail なしの正常出力) = harness silent fail パターンが「常時発生」ではなく「特定条件で発生」と判明 = mitigation pattern が機能する一方で root cause 推定の精度が向上 (worker 完了直前に何か特定の操作がある場合は出力が捨てられない可能性)
+- 本セッション Loop 2 (大型 prompt + app_detection.rs 2263 行 grep で worker 探索時間長め) は通常通り logs 0 byte = 大型 prompt 条件下では continue silent fail
+- **`git status --short` で `M` 表示確認** の workflow が連続 15 ループ安定動作
+- 観測時間目安: 110-180 秒で対象ファイル + AGENT_LOG.md 両方に M 表示 (本セッション 3 ループ実測: Loop 1 110s / Loop 2 180s / Loop 3 120s)
+
+#### 2. handoff サマリの予測精度 (本セッションでは AppSettings の予測が **derive 正確、PartialEq 未派生も判明**)
+- AppSettings (settings.rs l.56, 6 fields) は実コードと一致
+- **ただし PartialEq 派生欠如は予測されていなかった** ため、Loop 1 の T2 を「PartialEq」から「Clone 独立性軸 (Debug 文字列間接判定)」に振り直し = mjc-main-34 SUMMARY の ActiveSession derive 派生欠如発見と同種の precedent
+- `sed` で derive 派生 + field 名 + PartialEq 有無 を確認するルーチンは継続必須
+
+#### 3. 3 ループ平均 ~14 分/loop で目標 (15 分以内) クリア
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### 「Debug 軸補強」パターン 17 連続 application 候補
+- **MeetingUrlClassification (app_detection.rs l.81-86)** = `#[derive(Debug, Clone, PartialEq, Eq, Serialize)]` + `#[serde(rename_all = "camelCase")]` + 2 fields (service: String, host: String) = struct + camelCase + PartialEq 派生 形態 (5 連続 application 候補、TranscriptionSegment → ModelInfo → SessionSummary → AppSettings に続く)、ただし 2 fields でやや簡素
+- **ParsedUrlParts (app_detection.rs l.592-596)** = `#[derive(Debug, Clone, PartialEq, Eq)]` + 3 fields (host: String, path: String, query: Option<String>) = private struct + Option = mjc-main-33 Loop 2 RequestedTranscriptionSources と類似形態 = app_detection.rs 内 3 形態目展開
+- **AudioDevice (audio.rs l.16)** = `#[derive(Debug, Clone, serde::Serialize)]` + 2 fields (name, id) = simple DTO + camelCase 指定なし (default snake_case) = 8 ファイル目展開
+- **openai_realtime.rs / elevenlabs_realtime.rs / system_audio.rs / markdown.rs / audio_event.rs / transcript_bridge.rs** = 派生型はあるはず、要 grep
+
+#### 候補: harness 改善 (mjc-main-31 で発見、本セッションで連続 15 ループ実証達成、価値高、未着手)
+- 本セッション Loop 1/3 で正常出力した条件と Loop 2 で silent fail した条件の比較から root cause 切り分け可能
+- script(1) / unbuffer / direct > redirect への切替検討
+- メインが `git status` ベースで完走判定する mitigation を harness 側に組み込む
+
+#### S 候補継続 (settings.rs 残関数、規模 M)
+- `MEETING_INACTIVE_THRESHOLD = 600s` の settings 統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### F-Loop6 (継承、規模 M, 価値中) = タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+- cloud_whisper.rs は本 Loop 3 で WhisperRequestParams 補強済、build_whisper_endpoint / build_whisper_authorization_header 等の string format 不変条件は別 Loop 候補
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 607 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 / `--no-verify` 禁止 / Keychain 実通信禁止 / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### worker prompt 必須要素 (15 連続セッションで実証済、継続適用、7 つ全て明示)
+1. AGENT_LOG.md tail -350 を読め
+2. 時系列順 = 末尾追記
+3. 先頭は絶対に触らない
+4. tail -10 で確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外編集禁止 + test 件数の上限明示
+6. 大型ファイルは tail/head/grep で対象範囲のみ参照
+7. 行末空白禁止
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標
+- 本セッション実績: Loop 1 ~14 分 / Loop 2 ~15 分 / Loop 3 ~13 分 = 平均 ~14 分/loop で目標クリア
+- 累積 worker 完走 89/89 (本セッション +3 件、harness silent fail 下でも 100% 完走維持)
+
+### context 管理
+- 本セッションは 3 ループ + SESSION SUMMARY を完了。context 推定 ~70-80% で予防的ハンドオフ判断
+- 後継 mjc-main-20260504-36 へ引き継ぎ (前 28 セッション (mjc-main-7〜34) と同じ 3 ループパターン継承を期待)
+
+### ユーザー直伝指示 (未消化)
+- watchdog からの nudge 3 件 (Loop 1 / Loop 2 / Loop 3 verification 中、「次の自律改善ループへ進んでください」) = 全て本セッション内で各 Loop 完了で消化済
+
+### 累積成果 (本セッション)
+- **テスト 598 → 607 passed** (+9 件、3 ループ = 旧セッションの +9 件/セッション スケール継続)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings、6 ループ累積)
+- **「Debug 軸補強」パターン 16 連続 application 系譜達成** (15 形態の派生型カバレッジ、7 ファイルに渡る統一的補強完成)
+- **「Clone 独立性軸」5 連続 application + 5 種手法照射完成** (PartialEq 派生有無 × 直接/間接判定の 2×2 象限を struct/enum 双方で完全網羅)
+- **「format 不変条件 application」パターン 7 系統に拡張** (tagged enum + field-level rename を新規追加)
+- **enum 形態 4 連続 application 達成** (TranscriptionSource → SessionManagerError → TranscriptionEngineType → MeetingAppDetectedPayload)
+- **struct + camelCase 形態 4 連続 application 達成** (TranscriptionSegment → ModelInfo → SessionSummary → AppSettings)
+- **f32 Float field を持つ struct への補強形態を初確立** (WhisperRequestParams)
+- **harness silent fail mitigation pattern 連続 15 ループ実証達成 + 部分正常出力条件発見** (Loop 1/3 正常出力、Loop 2 silent fail = root cause 切り分け候補が明確化)
+- **canonical 名移譲完了** (mjc-main-20260504-34 → mjc-main-20260504-35 → mjc-main, 10 セッション連続適用)
+- **累積 worker 完走 89/89** (100% 維持)
+- **コミット周期 ~14 分/loop** (目標 15 分以内クリア、3 ループ平均)
+
+旧 mjc-main (= mjc-main-20260504-35) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-36 へ予防的ハンドオフ判断 (前 28 セッション (mjc-main-7〜34) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 15 ループ実証済 + 部分正常出力条件発見、「Debug 軸補強」17 連続 application 候補 = MeetingUrlClassification (app_detection.rs l.81, struct + camelCase + PartialEq 5 連続候補) / ParsedUrlParts (app_detection.rs l.592, private struct + Option) / AudioDevice (audio.rs l.16, 8 ファイル目展開))
+---
