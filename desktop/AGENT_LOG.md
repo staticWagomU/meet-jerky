@@ -17334,3 +17334,47 @@ sanitize_error_body の境界 199/200/201 + whitespace 正規化順序 + multiby
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### transcript_bridge.rs `normalize_speaker` の Unicode whitespace 境界 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~JST
+- **担当セッション**: `mjc-worker-transcript-bridge-normalize-speaker-boundary-tests-20260504-9-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+normalize_speaker の Unicode whitespace 境界を 5 件で固定 (U+3000 trim / U+3000 のみ fallback / NUL passthrough / control char passthrough / ZWSP passthrough)。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | normalize_speaker_trims_unicode_full_width_space_u3000 | U+3000 で挟まれた "相手側" が trim される (str::trim の Unicode 対応固定) |
+| T2 | normalize_speaker_returns_unknown_for_only_unicode_full_width_spaces | U+3000 のみ / U+3000 + ASCII whitespace 混在 → "不明" fallback |
+| T3 | normalize_speaker_passes_through_nul_byte_label | NUL byte は trim 対象外、passthrough |
+| T4 | normalize_speaker_passes_through_control_character_label | SOH (\x01) / DEL (U+007F) は whitespace ではない、passthrough |
+| T5 | normalize_speaker_passes_through_zero_width_space_label | ZWSP (U+200B) / ZWJ (U+200D) は whitespace ではない、passthrough |
+
+#### 不変条件 / 設計意図
+- T1+T2 は str::trim の Unicode `White_Space` プロパティ準拠を固定、ASCII-only trim の独自実装への誤リファクタを検知。
+- T3+T4+T5 は char::is_whitespace の「ASCII tab/newline/CR/VT/FF + 一部 Unicode space」のみ true である現契約を、3 種類の不可視/制御文字で固定。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 375 → 380 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 380
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし
+
+#### 残リスク
+- T3/T4/T5 の passthrough 契約は将来「control character / zero-width 文字も sanitize 対象に含める」設計に変えたら test 修正が必要 (現契約を意図的に固定)。
+- T1/T2 の U+3000 trim 契約は str::trim の Unicode 仕様変更に追随する (Rust std の現契約に依存)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

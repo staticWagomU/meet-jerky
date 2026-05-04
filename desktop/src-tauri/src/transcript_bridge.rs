@@ -404,4 +404,52 @@ mod tests {
             "is_error と session 未開始の二重違反でも None (どちらが先でも結果同じ)"
         );
     }
+
+    #[test]
+    fn normalize_speaker_trims_unicode_full_width_space_u3000() {
+        // U+3000 は str::trim の対象 (Unicode White_Space プロパティ準拠の現契約を固定)
+        assert_eq!(normalize_speaker(Some("\u{3000}相手側\u{3000}")), "相手側");
+        // U+3000 + ASCII spaces 混在も trim される
+        assert_eq!(
+            normalize_speaker(Some("\u{3000}  Alice  \u{3000}")),
+            "Alice"
+        );
+    }
+
+    #[test]
+    fn normalize_speaker_returns_unknown_for_only_unicode_full_width_spaces() {
+        // U+3000 のみ → trim 後 empty → "不明" fallback
+        assert_eq!(normalize_speaker(Some("\u{3000}\u{3000}")), "不明");
+        // U+3000 + ASCII whitespace 混在のみ → trim 後 empty → "不明" fallback
+        assert_eq!(normalize_speaker(Some("\u{3000}\t\n\u{3000}")), "不明");
+    }
+
+    #[test]
+    fn normalize_speaker_passes_through_nul_byte_label() {
+        // NUL byte は char::is_whitespace で false → trim 対象外、passthrough の現契約を固定
+        assert_eq!(normalize_speaker(Some("\0")), "\0");
+        // NUL + 通常文字: 前置 NUL も trim されない
+        assert_eq!(normalize_speaker(Some("\0Alice")), "\0Alice");
+    }
+
+    #[test]
+    fn normalize_speaker_passes_through_control_character_label() {
+        // SOH (U+0001) は ASCII control だが whitespace ではない → passthrough の現契約を固定
+        assert_eq!(normalize_speaker(Some("\x01alpha")), "\x01alpha");
+        // DEL (U+007F) も control だが whitespace ではない → passthrough
+        assert_eq!(normalize_speaker(Some("\u{007F}beta")), "\u{007F}beta");
+    }
+
+    #[test]
+    fn normalize_speaker_passes_through_zero_width_space_label() {
+        // ZWSP (U+200B) は char::is_whitespace で false → trim 対象外の現契約を固定
+        assert_eq!(normalize_speaker(Some("\u{200B}name")), "\u{200B}name");
+        // ZWJ (U+200D) も passthrough
+        assert_eq!(normalize_speaker(Some("\u{200D}name")), "\u{200D}name");
+        // ZWSP のみでも trim されないので passthrough (fallback にはならない)
+        assert_eq!(
+            normalize_speaker(Some("\u{200B}\u{200B}")),
+            "\u{200B}\u{200B}"
+        );
+    }
 }
