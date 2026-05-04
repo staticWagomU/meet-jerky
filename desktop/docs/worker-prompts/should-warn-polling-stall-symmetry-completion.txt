@@ -1,0 +1,82 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 背景
+src-tauri/src/app_detection.rs には対称な 2 つの純粋関数があります:
+- `should_warn_polling_stall` (line 153-174): 既存 test 6 件 (W1-W6) = first_call / within_normal_range / stalled / throttled / boundary_at_expected_times_three / clock_skew_last_warned_after_now
+- `should_notify_meeting_inactive` (line 176-): 既存 test 10 件 (T1-T10) = T5/T7/T8/T10 等価が `should_warn_polling_stall` 側に欠けている状態
+
+## Why
+2 つの純粋関数は構造的に対称 (引数 5 個 / 戻り値 Option<u64> / saturating_sub による clock skew 防御 / 境界判定) ですが、test の網羅範囲に非対称があります。本 Loop で W7+W8+W9+W10 の 4 件を追加し、2 つの関数の境界保護を完全対称に揃えます。これにより「設計判断を test で executable specification 化」パターンが両関数で揃い、保守時の認知負荷が均等化されます。
+
+## 担当範囲
+- ファイル: `src-tauri/src/app_detection.rs` のみ (1 ファイル)
+- 既存関数本体 (line 153-174 の `should_warn_polling_stall`、line 176- の `should_notify_meeting_inactive`) は **完全無変更**
+- 既存 test 6 件 (W1-W6, line 1466-1502 付近) も **完全無変更**
+- 追加箇所: `should_warn_polling_stall_clock_skew_last_warned_after_now_returns_none` (= W6) test の **直後**、`should_notify_meeting_inactive_first_call_returns_none` (= T1) の **直前** に新規 test 4 件を挿入
+
+## 追加する 4 件の test (T5/T7/T8/T10 と完全対称)
+
+### W9 (T5 対称): `should_warn_polling_stall_now_equals_last_seen_returns_none`
+- 既存 T5 (`should_notify_meeting_inactive_now_equals_last_seen_returns_none`, line 1539 付近) と完全対称
+- 実装の `if now_secs <= last_seen_secs { return None; }` (line 163) を固定
+- assert: `should_warn_polling_stall(1000, 1000, 0, 3, 60)` → `None`
+- コメント例: `// now_secs <= last_seen_secs (同時刻) → None (時刻同期問題への保守的扱い)`
+
+### W7 (T7 対称): `should_warn_polling_stall_zero_expected_returns_some_when_elapsed_positive`
+- 既存 T7 (`should_notify_meeting_inactive_zero_threshold_returns_some_when_elapsed_positive`) と完全対称
+- 実装の `if elapsed <= expected_interval_secs * 3 { return None; }` (line 167) で `expected = 0` → `0 * 3 = 0` → `elapsed > 0` で必ず Some を返す挙動を固定
+- assert: `should_warn_polling_stall(1001, 1000, 0, 0, 60)` → `Some(1)`
+- コメント例: `// expected_interval_secs = 0, elapsed = 1: 1 <= 0 は偽なので警告発火 → Some(1)` + `// 検知装置: expected=0 を「無効化」と読み替えて None を返す誤改修`
+
+### W8 (T8 対称): `should_warn_polling_stall_zero_throttle_returns_some_when_stalled`
+- 既存 T8 (`should_notify_meeting_inactive_zero_throttle_returns_some_when_inactive`) と完全対称
+- 実装の `if now_secs.saturating_sub(last_warned_secs) < throttle_secs { return None; }` (line 170) で `throttle = 0` → 必ず通過 → Some を返す挙動を固定
+- assert: `should_warn_polling_stall(1000, 970, 999, 3, 0)` → `Some(30)` (last_warned=999 で saturating_sub=1 >= throttle=0)
+- コメント例: `// throttle_secs = 0, elapsed = 30 > 9: saturating_sub(999) = 1 >= 0 → Some(30)` + `// 検知装置: throttle=0 を「無効化」と読み替えて None を返す誤改修`
+
+### W10 (T10 対称): `should_warn_polling_stall_now_secs_max_with_seen_returns_some_huge_elapsed`
+- 既存 T10 (`should_notify_meeting_inactive_now_secs_max_with_seen_returns_some_huge_elapsed`) と完全対称
+- 実装が u64 overflow で panic しないことを固定
+- assert: `should_warn_polling_stall(u64::MAX, 1, 0, 3, 60)` → `Some(u64::MAX - 1)`
+- コメント例: `// now=u64::MAX, last_seen=1: elapsed = u64::MAX - 1 (overflow なし) → Some(u64::MAX - 1)` + `// 検知装置: u64 overflow への panic 化 / 不要なキャスト追加による精度損失`
+- 注意: `expected_interval_secs = 3` で `3 * 3 = 9 << u64::MAX` のため掛け算 overflow なし。expected を大きくしないこと。
+
+## 実装上の注意
+- 4 件全て `#[test]` を付ける
+- 4 件とも `tests` モジュール内に追加
+- 既存 W1-W6 / T1-T10 の test 名命名規則を継承 (`should_warn_polling_stall_<状況>_<期待結果>` 形式)
+- 既存 W6 (`should_warn_polling_stall_clock_skew_last_warned_after_now_returns_none`) は line 1499 付近にあるはず。その直後に W9, W7, W8, W10 の順 (= T5, T7, T8, T10 と同じ順) で挿入
+- 各 test 内のコメントは 1-2 行で、**設計判断と検知装置の役割** を明示 (上記コメント例を参考)
+- 関数本体 (line 153-174) と既存 test (W1-W6) は **絶対に touch しない** (Tidy First, 振る舞い不変)
+- TRANSCRIPTION_SOURCE_* のような const 化は本 Loop scope 外 (別 Loop 送り)
+
+## 検証手順
+1. `cargo test --lib --no-run` (compile OK 確認)
+2. `cargo test --lib should_warn_polling_stall` (新規 4 件 + 既存 6 件 = 10 件 全 pass)
+3. `cargo test --lib` (全体 471 → 475 passed +4 件確認)
+4. `cargo clippy --all-targets -- -D warnings` (warning 0 維持)
+5. `cargo fmt --check` (差分なし)
+6. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK 確認)
+
+## AGENT_LOG.md 記載項目 (ファイル末尾に追記)
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-should-warn-polling-stall-symmetry-completion
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/app_detection.rs に test 4 件追加 (Loop 1, W7+W8+W9+W10)
+- 指示内容の要約: should_warn_polling_stall の境界網羅を should_notify_meeting_inactive と完全対称に揃える 4 件追加 (W9 now=last_seen / W7 zero_expected / W8 zero_throttle / W10 u64::MAX)
+- 結果: test 数推移 471 → 475 passed (+4 件), clippy warning 0, fmt 差分なし
+- 変更ファイル: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- 検証結果: cargo test (475 pass) / clippy -D warnings (0) / fmt (clean) / agent-verify.sh (全段 OK)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインで commit + 次ループ判断
+
+## 重要禁則
+- 他者の変更を戻さないこと
+- 担当範囲外 (他ファイル / 他関数) を編集しないこと
+- コミット禁止 (メインが行う)
+- `cargo test` の代わりに `cargo check` で済ませないこと
+- 関数本体 / 既存 test の touch 禁止 (Tidy First, 振る舞い不変)
+
+1 ターンで完結する報告を返してください。

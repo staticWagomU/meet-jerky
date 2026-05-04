@@ -1,0 +1,76 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 背景
+src-tauri/src/app_detection.rs には:
+- `DetectionState` 構造体 (line 84-88) が既存 `last_seen: Mutex<HashMap<String, Instant>>` を保持
+- 純粋関数 `should_notify_meeting_inactive` (line 176-) が引数 `last_seen_secs: u64` (epoch secs) を受け取る設計
+- 設計乖離: Instant (実機時刻) vs u64 (epoch secs) の型差で、純粋関数を直接 `last_seen` に繋げられない
+
+## Why
+F-Loop3 (会議終了検知のアプリ統合, 価値 8) の **Loop 1 完結スライス**:
+- 案 A 採用: `last_seen_secs: Mutex<HashMap<String, u64>>` を **別途追加** して二重管理する (既存 `last_seen: Instant` 系のスロットリングロジックは完全無変更)
+- 本 Loop は **state 追加と初期化のみ** = Tidy First (構造変更を振る舞い変更前に分離)
+- Loop 2 (後続セッション or 本セッション後続 Loop) で handle_detection 内の update を追加
+- Loop 3 で wrapper 関数 + 実機タイマー組み込み
+- 案 B (Instant→u64 型変更, 規模 M, 既存ロジック影響) と案 C (純粋関数を Instant 受け取り化, 既存 16 件 test 全 fix 必要) は規模超過で却下
+
+## 担当範囲
+- ファイル: `src-tauri/src/app_detection.rs` のみ (1 ファイル)
+- 変更箇所:
+  1. `struct DetectionState` (line 84-88) に新規フィールド `last_seen_secs: Mutex<HashMap<String, u64>>` を追加
+  2. `start()` 関数内 `STATE.set(DetectionState { ... })` (line 97-103) の初期化に `last_seen_secs: Mutex::new(HashMap::new())` を追加
+- **既存 `last_seen` フィールドと既存 handle_detection 内の throttling ロジック (line 122-130 / line 274-281) は完全無変更**
+- **純粋関数 (line 153-204) と既存 test 全件 (W1-W10, T1-T10) は完全無変更**
+
+## 実装上の注意
+
+### dead_code allow 戦略
+- 新規フィールド `last_seen_secs` は本 Loop では誰も読み書きしないため、コンパイラが unused field 警告を出す
+- 既存 `DetectionState` には既に `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` (line 83) が struct 全体に付いているため、macOS 以外では既に警告抑制されている
+- **macOS 上で field unused 警告が出るかを確認する必要あり**: もし出るなら、新規フィールド単独に `#[allow(dead_code)]` を付ける (struct 全体ではなくフィールドピンポイントで)
+  - 例: `#[allow(dead_code)] last_seen_secs: Mutex<HashMap<String, u64>>,`
+- 出ない場合は attribute 不要
+
+### 命名
+- フィールド名: `last_seen_secs` (`should_notify_meeting_inactive` の引数名と同一)
+- 既存 `last_seen` (Instant) との対比が明確
+- HashMap のキーは既存 `last_seen` と同じ `String` (bundle_id を入れる予定だが、本 Loop では update しないので問題なし)
+
+### コメント
+- struct 内の新規フィールド直前に **1 行コメント** を追加: `/// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。Loop 2 以降で update。`
+- 過剰なコメントは禁止 (CLAUDE.md 準拠)
+
+### Tidy First 厳守
+- 振る舞い不変であること (cargo test で 475 件全 pass を維持、件数変化なし)
+- 既存フィールド・既存メソッド・既存 lock 取得順序は完全無変更
+- 新規メソッド・helper の追加禁止 (本 Loop scope 外、Loop 2 で追加)
+
+## 検証手順
+1. `cargo test --lib --no-run` (compile OK 確認)
+2. `cargo test --lib` (全体 **475 passed 維持** = test 件数変化なし)
+3. `cargo clippy --all-targets -- -D warnings` (warning 0 維持。dead_code allow が必要なら追加)
+4. `cargo fmt --check` (差分なし)
+5. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK 確認)
+
+## AGENT_LOG.md 記載項目 (ファイル末尾に追記)
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-detection-state-last-seen-secs-add
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/app_detection.rs DetectionState に last_seen_secs フィールド追加 (F-Loop3 Loop 1, Tidy First, 案 A 二重管理)
+- 指示内容の要約: should_notify_meeting_inactive 用 u64 epoch secs ベース state を別途追加。既存 Instant ベース throttle ロジックは完全無変更。dead_code allow 必要なら付与。
+- 結果: cargo test 475 件維持, clippy warning 0, fmt 差分なし, dead_code 状況の報告必須
+- 変更ファイル: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- 検証結果: cargo test (475 pass) / clippy -D warnings (0) / fmt (clean) / agent-verify.sh (全段 OK)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインで commit + Loop 2 (handle_detection 内 update 追加) または別タスクに進む
+
+## 重要禁則
+- 他者の変更を戻さないこと
+- 担当範囲外 (handle_detection 本体, 純粋関数, test) を編集しないこと
+- handle_detection 内で update を追加しないこと (Loop 2 scope)
+- helper 関数 (例: `update_last_seen_secs`) を追加しないこと (Loop 2 scope)
+- コミット禁止 (メインが行う)
+
+1 ターンで完結する報告を返してください。

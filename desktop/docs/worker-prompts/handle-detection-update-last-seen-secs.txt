@@ -1,0 +1,92 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 背景
+src-tauri/src/app_detection.rs:
+- 前 commit `e94293c` (F-Loop3 Loop 1) で `DetectionState` に `last_seen_secs: Mutex<HashMap<String, u64>>` フィールドを追加 + `start()` で初期化したが、まだ誰も update していない
+- `handle_detection` (line 115-149) は `bundle_id` ベースの throttle ロジックで `last_seen: Mutex<HashMap<String, Instant>>` を更新中
+- 既存 `browser_url_callback` (line 213+) には既に SystemTime パターン (line 221-224 と line 244-248) が確立されている
+
+## Why
+F-Loop3 Loop 2 完結スライス: `handle_detection` 内で `last_seen_secs.insert(bundle_id, now_secs)` を 1 箇所追加することで、後続 Loop 3 の wrapper 関数 + 実機タイマーが `should_notify_meeting_inactive` を呼べる foundation が完成する。本 Loop は **既存 throttle ロジックを完全無変更で並走する形で last_seen_secs を更新** する。Tidy First 厳守: ユーザー観測可能な振る舞いは変わらない (誰も last_seen_secs を読まないため)。
+
+## 担当範囲
+- ファイル: `src-tauri/src/app_detection.rs` のみ (1 ファイル)
+- 変更箇所:
+  1. `handle_detection` (line 115-149) 内、既存 throttle 取得ブロック (line 122-130) の **直後** に新規ブロックで `last_seen_secs.insert(bundle_id.to_string(), now_secs)` を追加
+- **既存 throttle ロジック (line 122-130) は完全無変更**
+- **`browser_url_callback` 系 (line 213+) は本 Loop scope 外** = 別 Loop 送り (browser 検知も last_seen_secs 更新するかは Loop 3 後再評価)
+- **純粋関数 (line 153-204) と既存 test 全件は完全無変更**
+- **`#[allow(dead_code)]` attribute (line 88) は本 Loop では削除しない** = Rust の dead_code lint は「書き込みだけ」では消えず「読み取り」が必要なため、Loop 3 で wrapper 関数が reader として field を読むまで attribute は残す
+
+## 実装上の注意
+
+### コード追加例
+既存 throttle ブロック (line 122-130 付近の `{ let mut last_seen = ... }`) の **直後** に挿入:
+
+```rust
+// `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
+// (案 A 二重管理: 既存 Instant ベース throttle と並走、Loop 3 で wrapper 関数が読み取る予定)。
+{
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    state
+        .last_seen_secs
+        .lock()
+        .insert(bundle_id.to_string(), now_secs);
+}
+```
+
+### SystemTime パターンの再利用
+- `std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)` は既存 line 221-224 / 244-248 と同じ書き方を踏襲
+- `unwrap_or(0)`: pre-1970 clock skew 時に 0 を返す = `should_notify_meeting_inactive` の `last_seen_secs == 0` ガードと整合 (= 通知しない、保守的)
+- `use std::time::SystemTime` の追加 import は不要 (既存 `use std::time::{Duration, Instant};` line 22 のままで `std::time::SystemTime` は fully-qualified path で使用可能 = 既存パターン踏襲)
+
+### Lock 順序
+- 新規 `state.last_seen_secs.lock()` は既存 `state.last_seen.lock()` (= line 123 で取得済の MutexGuard) の **drop 後** に取得 = 既存 throttle ブロック `{ ... }` の閉じ括弧の **後** に挿入することで guarantee
+- これにより既存 lock 取得順序 (last_seen → latest_payload) を干渉せず、新規 last_seen_secs は独立した critical section
+- デッドロック回避
+
+### 既存ロジック完全無変更
+- 既存 throttle ブロック (line 122-130) は touch しない
+- `show_notification(&state.app_handle, app_name);` (line 132 付近) も touch しない
+- payload emit (line 134 付近) も touch しない
+- `MeetingAppDetectedPayload::App { ... }` も touch しない
+
+### Tidy First
+- ユーザー観測可能な振る舞いは変わらない (誰も last_seen_secs を読まない)
+- cargo test 件数は 475 件のまま (件数変化なし)
+- 内部状態は変わる (last_seen_secs が空 HashMap から bundle_id ごとの epoch secs を持つ HashMap になる) が、これはまだ誰も観測しない
+
+## 検証手順
+1. `cargo test --lib --no-run` (compile OK 確認)
+2. `cargo test --lib` (全体 **475 passed 維持** = test 件数変化なし)
+3. `cargo clippy --all-targets -- -D warnings` (warning 0 維持)
+4. `cargo fmt --check` (差分なし)
+5. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK 確認)
+
+## AGENT_LOG.md 記載項目 (ファイル末尾に追記)
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-handle-detection-update-last-seen-secs
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/app_detection.rs handle_detection 内に last_seen_secs.insert(now_secs) を追加 (F-Loop3 Loop 2, Tidy First, 振る舞い不変)
+- 指示内容の要約: 既存 Instant ベース throttle ブロック直後に SystemTime ベースの epoch secs を計算して last_seen_secs に insert。既存ロジック完全無変更、ロック順序維持、dead_code attribute 維持。
+- 結果: cargo test 475 件維持, clippy warning 0, fmt 差分なし
+- 変更ファイル: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- 検証結果: cargo test (475 pass) / clippy -D warnings (0) / fmt (clean) / agent-verify.sh (全段 OK)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインで commit + Loop 3 (wrapper 関数 + 実機タイマー組み込み, F-Loop3 Loop 3) は後続セッションへ送る判断 OR セッション内 Loop 3 として進める判断
+
+## 重要禁則
+- 他者の変更を戻さないこと
+- 担当範囲外 (browser_url_callback, 純粋関数, test) を編集しないこと
+- 既存 throttle ロジック (line 122-130) を touch しないこと
+- `#[allow(dead_code)]` attribute (line 88) を削除しないこと (= Loop 3 で wrapper 追加時に削除予定)
+- wrapper 関数 (例: `check_meeting_inactive_for_bundle`) を追加しないこと (Loop 3 scope)
+- 実機タイマー (tokio::time::interval) を追加しないこと (Loop 3 scope)
+- コミット禁止 (メインが行う)
+
+1 ターンで完結する報告を返してください。

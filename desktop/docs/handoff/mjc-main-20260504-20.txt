@@ -1,0 +1,148 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-20) です。
+旧 mjc-main (= 旧 mjc-main-20260504-19) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 19500+ 行 / 1.7MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~17:35 JST] mjc-main-20260504-19 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~17:35 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 106+ (origin/main から先行)
+- working tree: AGENT_LOG.md modified (本 SUMMARY 追記分の commit が次), untracked は前と同じ docs/handoff/* と docs/worker-prompts/
+- 旧 mjc-main-20260504-19 が canonical 名 mjc-main を持ち、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `820cce5` test(app_detection): should_warn_polling_stall 境界 test 4 件 W7+W8+W9+W10 追加 (+4 件 → 475 passed)
+  2. `e94293c` refactor(app_detection): DetectionState に last_seen_secs フィールド追加 (F-Loop3 Loop 1, Tidy First)
+  3. `09d191c` refactor(app_detection): handle_detection 内 last_seen_secs.insert(now_secs) 追加 (F-Loop3 Loop 2, Tidy First)
+  4. (本 SUMMARY 追記の commit が次 = 旧メインが終了直前に commit する想定)
+
+## 現在の品質状態
+- cargo test (lib): **475 passed / 0 failed** (前 471 → +4 件 Loop 1 のみ、Loop 2-3 は state 追加で件数不変)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -D warnings: **警告ゼロ**
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-19、handoff 直前)
+- mjc-main-20260504-20 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-20 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着)
+- **「2 つの対称な純粋関数の境界網羅を 3 セッションかけて完全揃える」パターン** (Loop 1): mjc-main-17 Loop 2 で T1-T10 整備 → mjc-main-18 Loop 3 で W5+W6 → mjc-main-19 Loop 1 で W7+W8+W9+W10 完了 = 認知負荷を 3 セッションに分散
+- **「Tidy First 多段スライス」パターン** (Loop 2 と Loop 3): F-Loop3 を「state 追加 (構造変更)」→「update 追加 (内部状態変更, ユーザー観測不可)」→「wrapper + timer (振る舞い変更, ユーザー観測可能)」の 3 段に分解 = 各 Loop が単一責務、Tidy First 厳守
+- **「同ファイル連続 3 ループ + 機能完結優先」パターン** (本セッション全体): handoff サマリの「同心円拡張パターン」(別ファイル転換で多様性回復) ではなく「同ファイルで機能 1 つの多段スライスを連続消化」を採用 = 認知文脈を保つ + multi-loop タスクの完結優先 = 適用条件: multi-loop タスクが半分以上残っている時
+
+### 累積パターン (前 mjc-main-7〜18 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### F-Loop3 残作業 (Loop 3 = wrapper + timer) — **後継 Loop 1 最有力候補**
+- **wrapper 関数**: `fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64>` を追加して `should_notify_meeting_inactive` 純粋関数を呼ぶ
+- **state 読み取り**: `STATE.get().and_then(|s| s.last_seen_secs.lock().get(bundle_id).copied())` パターン
+- **`#[allow(dead_code)]` (line 89) を削除する trigger** = wrapper が field を読み始めた時点で attribute が不要になる = 削除しないと dead_code lint がそのまま suppress 状態
+- **実機タイマー**: `tokio::time::interval(Duration::from_secs(60))` で定期 check + show_notification (別 body で「会議が長時間検知されていません」など) 発火
+- **整合性**: `should_notify_meeting_inactive` の throttle ロジックを保つために、wrapper も `last_notified_secs` 用 state 追加が必要かもしれない (= F-Loop3 Loop 3 の sub-decision)
+- **integration test 追加**: wrapper 関数の test (state を mock してフロー検証) と、可能なら handle_detection との結合 test
+- **規模**: S-M = 1 ループでぎりぎり完走可能、規模超過リスクは「実機タイマー部分の cfg_attr macos 切り分け」と「show_notification 別 body 追加」と「last_notified_secs state 追加要否判断」
+
+#### browser_url_callback 経路の last_seen_secs 未対応
+- 本セッション Loop 3 では `handle_detection` のみ update 追加
+- `browser_url_callback` (line 213+) も将来的に last_seen_secs.insert(throttle_key, now_secs) する必要性あり
+- 影響: should_notify_meeting_inactive が wrapper で呼ばれた時に **browser-only 検知のセッションは「inactive 通知が発火しない」** 状態になる
+- F-Loop3 Loop 3 完了後の別 Loop で消化 (= F-Loop4 候補)
+
+#### コミットメッセージ書き方の運用知見 (本セッションで再発)
+- **`/tmp/mjc-commit-msg-loopN.txt` の Read 必須警告は handoff サマリで明示されていたが Loop 2 で再発**
+- 経緯: Loop 2 commit 時に Read スキップ → Write 失敗 → `&&` で続く git commit が **mjc-main-17 Loop 2 の T6-T10 メッセージ** で commit (commit ac74b9a) → `git reset --soft HEAD~1` で訂正復旧 → Read → Write → 再 commit (e94293c) で正しいメッセージ確定
+- **改善案** (後継セッション余裕あれば検討): scripts/agent-commit.sh または scripts/mjc-commit-with-read.sh のような補助ツールを作って Read 強制する
+- **後継セッションも徹底**: 初回 commit 時は **必ず Read → Write → commit の 3 ステップ** を意識
+
+#### 既存累積技術注意点 (前 mjc-main-7〜18 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### AGENT_LOG.md 構造の問題 (要整理、優先度低)
+- 本セッションの 3 worker は AGENT_LOG.md の **末尾** に正しく追記済 (前 mjc-main-15 から続く先頭追記事故が継続的に防げている)
+- ただし AGENT_LOG.md 全体は **19500+ 行** で構造的に整理が必要 = 別 Loop 候補 (低優先)
+
+## 次ループ候補 (優先順位順、本セッションで未着手 + 部分着手)
+
+### F-Loop3 Loop 3 (最有力, 部分着手済み). wrapper 関数 + 実機タイマー組み込み (規模 S-M, 価値 8)
+- 本セッションで Loop 1 (state) + Loop 2 (update) 完了 = 残 1 ループで機能完結
+- 実装: wrapper 関数 + tokio::time::interval + show_notification(別 body) 発火 + integration test 1-2 件
+- `#[allow(dead_code)]` (line 89) 削除も同時に
+- 規模 S-M = 1 ループでぎりぎり完走可能。規模超過リスクは前述
+
+### B (継承, 部分着手済み). transcript_bridge.rs / session_store.rs 周辺 別 fn ターゲット (規模 S, 価値中)
+- transcript_bridge.rs `normalize_speaker` は完備済 = 別 fn ターゲット必要
+- 候補: `segment_to_append_args` / `build_append_args_for_emission` / `build_append_args_for_emission_at` の境界 test 補強
+
+### D (継承). transcription.rs error path 残り (規模 S〜M, 複数ループ)
+
+### S (継承). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+
+### F-Loop4 (新, 派生). browser_url_callback 経路の last_seen_secs 対応 (規模 S, 価値中)
+- F-Loop3 完結後の自然な続編
+- handle_detection と同じ pattern を browser_url_callback に application
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 475 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` に **Read → Write の 2 ステップ** でメッセージを書く (初回も既存ファイル想定で先に Read 必須)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-20 mjc-main`
+
+## コミット周期目標
+- 1 ループ 10-15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績: Loop 1 = ~10 分 / Loop 2 = ~12 分 (commit accident 訂正含む) / Loop 3 = ~10 分、平均 ~11 分/loop = 目標 15 分以内達成、累積 worker 完走 44/44 = 全完走率 100%。
+- worker prompt は **5 セクション構造** (背景/Why/担当範囲/実装上の注意/検証手順 + AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい。
+- Tidy First 系では「既存 precedent との完全対称構造を採用」を強調すると worker が設計判断に時間を使わず手筋を 1 つに固定できる。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~65-75% で予防的ハンドオフ判断 (前 12 セッション (mjc-main-7〜18) と同じ 3 ループパターン継承で予測可能性優先)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示も本セッション中ゼロ受領 (3 ループを通常テンポで進めたため idle 化せず)。
+
+## 累積成果 (本セッション)
+- **テスト 471 → 475 passed** (+4 件 Loop 1 のみ、Loop 2-3 は state 追加で件数不変)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **F-Loop3 進捗 2/3** (Loop 1 state 追加 + Loop 2 update 追加完了, Loop 3 wrapper+timer は次セッション送り)
+- **W7-W10 完了で should_warn_polling_stall と should_notify_meeting_inactive の境界網羅を完全対称化** (3 セッションかけた累積成果)
+- **累積 worker 完走 44/44** (100%)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-20 mjc-main` を実行 (冪等)。
+4. 候補 **F-Loop3 Loop 3 (wrapper + timer 追加で機能完結, 規模 S-M, 価値 8)** を最有力として進める。1 ループでぎりぎり完走可能だが、規模超過リスクあり (実機タイマー cfg_attr / show_notification 別 body / last_notified_secs state 追加要否判断) → worker 起動前に **設計判断 (last_notified_secs を追加するか否か, 実機タイマー追加スコープ)** を一度整理してから worker prompt を書くことを強く推奨。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
