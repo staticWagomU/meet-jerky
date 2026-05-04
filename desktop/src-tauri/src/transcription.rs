@@ -1044,16 +1044,19 @@ struct RequestedTranscriptionSources {
     use_system: bool,
 }
 
+const TRANSCRIPTION_SOURCE_MICROPHONE: &str = "microphone";
+const TRANSCRIPTION_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
+
 fn parse_requested_transcription_sources(
     source: Option<&str>,
 ) -> Result<RequestedTranscriptionSources, String> {
     let source = source.unwrap_or("both").trim();
     match source {
-        "microphone" => Ok(RequestedTranscriptionSources {
+        TRANSCRIPTION_SOURCE_MICROPHONE => Ok(RequestedTranscriptionSources {
             use_mic: true,
             use_system: false,
         }),
-        "system_audio" => Ok(RequestedTranscriptionSources {
+        TRANSCRIPTION_SOURCE_SYSTEM_AUDIO => Ok(RequestedTranscriptionSources {
             use_mic: false,
             use_system: true,
         }),
@@ -1350,6 +1353,12 @@ mod tests {
                 "error": "初期化に失敗しました",
             })
         );
+    }
+
+    #[test]
+    fn transcription_source_constants_are_snake_case_lowercase() {
+        assert_eq!(TRANSCRIPTION_SOURCE_MICROPHONE, "microphone");
+        assert_eq!(TRANSCRIPTION_SOURCE_SYSTEM_AUDIO, "system_audio");
     }
 
     #[test]
