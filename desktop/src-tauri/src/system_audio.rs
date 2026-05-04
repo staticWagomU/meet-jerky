@@ -329,6 +329,10 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     eprintln!(
                         "[system_audio] リングバッファ満杯で {dropped} sample を破棄しました"
                     );
+                    let _ = app_handle.emit(
+                        "audio-drop-count",
+                        build_audio_drop_event_payload("system_audio", dropped),
+                    );
                 }
                 std::thread::sleep(Duration::from_millis(100));
             }
@@ -441,6 +445,11 @@ pub fn stop_system_audio(
     _state: tauri::State<'_, crate::audio::AudioStateHandle>,
 ) -> Result<(), String> {
     Err("相手側音声の取得は macOS でのみ利用可能です".to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    json!({ "source": source, "dropped": dropped })
 }
 
 #[cfg(test)]
@@ -695,5 +704,75 @@ mod tests {
             result,
             Err("非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)")
         );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn build_audio_drop_event_payload_includes_source_and_dropped_fields_with_system_audio() {
+        // T1: source="system_audio" + dropped=N で payload 構造を固定
+        let payload = build_audio_drop_event_payload("system_audio", 42);
+        assert_eq!(
+            payload.get("source").and_then(|v| v.as_str()),
+            Some("system_audio"),
+            "source field が文字列で含まれる契約"
+        );
+        assert_eq!(
+            payload.get("dropped").and_then(|v| v.as_u64()),
+            Some(42),
+            "dropped field が u64 として含まれる契約"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn build_audio_drop_event_payload_serializes_zero_dropped_count_explicitly() {
+        // T2: dropped=0 でも payload 生成可能 (呼び出し側 if dropped > 0 で実際は呼ばれないが、関数自体は 0 を扱える純粋契約)
+        let payload = build_audio_drop_event_payload("system_audio", 0);
+        assert_eq!(payload.get("dropped").and_then(|v| v.as_u64()), Some(0));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn build_audio_drop_event_payload_handles_usize_max_boundary() {
+        // T3: dropped=usize::MAX で u64 オーバーフローや panic しない契約
+        let payload = build_audio_drop_event_payload("system_audio", usize::MAX);
+        assert_eq!(
+            payload.get("dropped").and_then(|v| v.as_u64()),
+            Some(usize::MAX as u64),
+            "usize::MAX が u64 として serde_json に渡せる契約"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn build_audio_drop_event_payload_passes_through_arbitrary_source_label() {
+        // T4: source 文字列は arbitrary な値が passthrough される契約 (関数自体は source を判定しない)
+        let payload = build_audio_drop_event_payload("microphone", 1);
+        assert_eq!(
+            payload.get("source").and_then(|v| v.as_str()),
+            Some("microphone")
+        );
+        let payload2 = build_audio_drop_event_payload("any_other_label", 1);
+        assert_eq!(
+            payload2.get("source").and_then(|v| v.as_str()),
+            Some("any_other_label"),
+            "source は arbitrary passthrough = source を判定する誤改修への検知装置"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn build_audio_drop_event_payload_has_exactly_two_top_level_fields() {
+        // T5: payload は source と dropped の 2 field のみ (将来 timestamp 等を追加する誤改修を field 数で検知)
+        let payload = build_audio_drop_event_payload("system_audio", 5);
+        let obj = payload.as_object().expect("payload は JSON object");
+        assert_eq!(
+            obj.len(),
+            2,
+            "top-level field は exactly 2 つ (source + dropped) の契約: 実際 = {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(obj.contains_key("source"));
+        assert!(obj.contains_key("dropped"));
     }
 }
