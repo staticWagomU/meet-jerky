@@ -21645,3 +21645,136 @@ test result: ok. 560 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~20:30 JST] mjc-main-20260504-29 状況メモ (ループ 1-3 詳細)
+
+### 本セッションの 3 ループ実績 (551 → 560 passed +9 件)
+
+- **Loop 1** (`ae3890c`) test(audio_event): build_audio_drop_event_payload の関数本体未保護を 3 軸 (happy path + フィールド対称軸 + 型対称軸) で executable specification 化 +3 件 → 554 passed
+  - audio_event.rs (25 行) の既存 test 2 件は全て定数値の確認のみで関数完全未保護を発見
+  - フィールド対称軸 (空 source) + 型対称軸 (usize::MAX dropped) の **混合 application** パターンを 1 ループで実証
+- **Loop 2** (`ba5dd31`) test(audio_utils): sanitize_audio_sample の IEEE 754 特殊値 3 軸 (negative zero bit pattern + f32::MAX/MIN clamp + subnormal passthrough) で型対称軸補強 +3 件 → 557 passed
+  - 「型対称軸補強」パターン (mjc-main-27 Loop 3 i64::MAX/MIN を f32 へ拡張 application) の f32 application = 第 3 application (i64 → usize → f32)
+  - `to_bits()` 二重 assert で sign bit 保持を CI 固定
+- **Loop 3** (`a4c2802`) test(cloud_whisper_errors): classify_cloud_whisper_error の status / body / pure function 軸でメタ対称軸補強 3 軸 (3xx redirect + NUL byte passthrough + 同 status 異 body) +3 件 → 560 passed
+  - **「メタ対称軸補強」パターン新規確立** = 異なる種類の対称軸を 1 ループで束ねる application 型 = 過去 4 特殊形 (型/経路/フィールド/層) を「メタ的に統合」する 5 つ目の application 型
+  - T3 (`assert_ne!`) で「同 status × 異 body で message 異なる」を保護 = 既存 T19 (異 status × 同 body で message 一致) の逆対称軸補強
+
+### 確立されたパターン
+
+#### 1. 「対称的補強の 3 軸構造」パターン (継続 application、9 連続セッション目)
+- mjc-main-21〜29 で全 24 ループに application
+
+#### 2. 「同一関数の完全網羅戦略」パターン (mjc-main-26 で確立、本セッション全 3 ループで application)
+- Loop 1: build_audio_drop_event_payload の 0 件 → 3 件で完全網羅
+- Loop 2: sanitize_audio_sample の 6 件 → 9 件で IEEE 754 特殊値網羅
+- Loop 3: classify_cloud_whisper_error の 19 件 → 22 件でメタ対称軸網羅
+
+#### 3. 「型対称軸補強」パターン (Loop 1 + Loop 2 で application)
+- 系譜: i64 (mjc-main-27) → usize (Loop 1) → f32 (Loop 2) で 3 段拡張
+
+#### 4. **新規パターン (本 Loop 1 で application)**: 「混合 application」(2 軸を 1 ループで)
+- フィールド対称軸 + 型対称軸を 1 関数で同時保護
+- 1 関数の境界仕様を最小ループ数で完全網羅できる効率パターン
+- application 候補: 小規模ファイル (< 100 行 / 関数 1-2 個) の関数完全未保護状態
+
+#### 5. **新規パターン (本 Loop 3 で確立)**: 「メタ対称軸補強」
+- 異なる種類の対称軸 (status / body / pure function 等の異なる抽象レベル) を 1 ループで一通り application する 3 軸構造
+- 過去 4 特殊形 (型/経路/フィールド/層) を「メタ的に統合」する 5 つ目の application 型
+- 高密度に補強された関数 (既存 test 多数) で残りの「異なる軸の薄い箇所」を 1 件ずつ補強する application
+- application 候補: 既存 test 15+ 件のファイル (transcript_bridge.rs / session_manager.rs 等)
+
+#### 6. 「worker prompt 末尾追記明示」パターン継続適用 (9 連続セッション目)
+#### 7. 「worker prompt trailing whitespace 禁止明示」パターン継続適用 (3 連続セッション、9 ループ警告ゼロ)
+
+### 重要発見
+
+#### 1. 関数完全未保護状態の効率発見 (Loop 1)
+- audio_event.rs の既存 test 2 件は両方とも **定数値の確認のみ** で関数自体は test 0 件 = 完全未保護
+- 検出手法: `wc -l <file>` + `grep -c '#\[test\]' <file>` + `grep -c 'pub fn' <file>` で「test/pub_fn 比率が 0」のファイルを優先
+
+#### 2. メタ対称軸補強パターンの新規確立 (Loop 3)
+- 1 ループで 3 つの異なる対称軸を「水平展開」できる application 型
+- 既存 test 多数のファイル (cloud_whisper_errors.rs 19 件) で「保護の均一性を高める」用途に最適
+
+#### 3. 3 ファイル横断補強の継続 (本セッション完成)
+- 本セッション: audio_event.rs (Loop 1) → audio_utils.rs (Loop 2) → cloud_whisper_errors.rs (Loop 3) = 「audio 系 2 + transcribe 系 1」構造
+- 今後は markdown.rs / commands.rs / browser_detection.rs / session_commands.rs 等の保護密度を上げる時期
+
+#### 4. cadence 改善達成 (mjc-main-28 ~17 分/loop → 本セッション ~11 分/loop)
+- 平均 ~11 分/loop で目標 15 分以内クリア
+- 改善要因: メイン側の調査時間短縮 (大型 git status をスキップ / 必読ドキュメント既知扱い / 並列で次 Loop の下調べ)
+
+#### 5. trailing whitespace 警告ゼロ達成 (継続パターン適用、3 連続セッション目)
+
+#### 6. canonical 名移譲が初回必要だった (handoff 直後の運用注意、4 セッション連続)
+- handoff 起動直後の tmux session 名は `mjc-main-20260504-29` で `mjc-main` ではない
+- `bash scripts/agent-adopt-main.sh mjc-main-20260504-29 mjc-main` を実行 (冪等処理)
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### 別ファイル切替候補 (推奨、規模 S-M、密度低めファイル)
+- **browser_detection.rs (サイズ未確認、本セッションで未着手)** ← 高価値、密度未確認で要分析
+- **commands.rs (主要 Tauri commands、密度未確認)** ← 高価値、要分析
+- **markdown.rs / session_commands.rs** ← 残境界候補限定的 (mjc-main-28 で補強済)
+
+#### B 候補継続 (commands 層の他関数、層対称軸補強パターン継続)
+- finalize_and_save_session_inner / discard_session_inner / list_session_summaries_inner の境界
+
+#### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `default_output_directory` (l.139) / `update_settings` (l.171) / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### audio_utils.rs / cloud_whisper_errors.rs 継続候補 (規模 S, 限定的)
+- audio_utils.rs: NaN の signaling/quiet variant 区別、`-f32::NAN` の sign bit 軸、subnormal の真の最小値 (1.4e-45) 軸
+- cloud_whisper_errors.rs: 3xx interior 一様性 (300/308 等)、NUL 以外の制御文字 (\v / \f / DEL = 0x7F) の passthrough 軸
+
+#### F-Loop6 (継承、規模 M, 価値中)
+- タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 560 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 / `--no-verify` 禁止 / Keychain 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない
+
+### worker prompt 必須要素 (9 連続セッションで実証済、継続適用、7 つ全て明示)
+1. AGENT_LOG.md tail -350 を読め
+2. 時系列順 = 末尾追記
+3. 先頭は絶対に触らない
+4. tail -10 で確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外編集禁止 + test 件数の上限明示
+6. 大型ファイルは tail/head/grep で対象範囲のみ参照
+7. 行末空白禁止
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション実績 ~11 分/loop で目標クリア)
+- 累積 worker 完走 74/74 = 全完走率 100%
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~70-80% で予防的ハンドオフ判断 (前 22 セッション (mjc-main-7〜28) と同じ 3 ループパターン継承で予測可能性優先)
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge も本セッション中ゼロ。
+
+### 累積成果 (本セッション)
+- **テスト 551 → 560 passed** (+9 件、**9 連続セッション「+9 件/セッション」記録更新**)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings)
+- **3 ファイル横断補強完成** (audio_event.rs / audio_utils.rs / cloud_whisper_errors.rs = audio 系 2 + transcribe 系 1)
+- **「同一関数の完全網羅戦略」パターン全 3 ループで application 確認**
+- **「型対称軸補強」パターン Loop 1 + Loop 2 で 2 ループ application** (usize / f32 拡張)
+- **「混合 application」パターン Loop 1 で新規 application** (フィールド + 型を 1 ループで束ねる効率型)
+- **「メタ対称軸補強」パターン Loop 3 で新規確立** (異なる対称軸を 1 ループで一通り application する 5 つ目の特殊形)
+- **対称軸補強パターンの 5 特殊形が出揃った** (型/経路/フィールド/層 + メタ)
+- **「worker prompt 末尾追記明示」パターン継続適用** (9 連続セッション先頭追記事故ゼロ)
+- **「worker prompt trailing whitespace 禁止明示」パターン継続適用** (3 連続セッション、9 ループ警告ゼロ)
+- **累積 worker 完走 74/74** (100%)
+- **コミット周期 ~11 分/loop** (mjc-main-28 ~17 分/loop から大幅改善、目標 15 分以内クリア)
+
+旧 mjc-main (= mjc-main-20260504-29) は本 SUMMARY を AGENT_LOG.md 末尾に残し、context 状況に応じて次ループ継続または後継 mjc-main-20260504-30 へ予防的ハンドオフ判断 (前 22 セッション (mjc-main-7〜28) と同じ 3 ループパターン継承)
+---
