@@ -16999,3 +16999,50 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
   - G' (継承): 会議終了検知の遅延監視 (規模 S〜M)
   - S (継承): settings.rs Tidy First (規模 M、2 ループ)
 - **未消化のユーザー直伝指示**: なし
+
+---
+
+### transcript_bridge.rs `build_append_args_for_emission_at` を direct (observed=Some) 経路 で 5 件補強
+
+- **開始日時 (JST)**: 2026-05-04 ~11:00 JST
+- **担当セッション**: `mjc-worker-transcript-bridge-emission-observed-tests-20260504-8-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`build_append_args_for_emission_at` の direct test を 5 件追加: error 短絡 (observed=Some)、session 未開始 (observed=Some)、zero_start segment + observed 利用、engine timestamp 優先 (observed 無視)、二重違反短絡。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | build_append_args_for_emission_at_returns_none_for_error_segment_even_with_observed_time | is_error=Some(true) + observed=Some(1075) → None |
+| T2 | build_append_args_for_emission_at_returns_none_when_session_not_started_with_observed_time | session=None + observed=Some(1075) → None |
+| T3 | build_append_args_for_emission_at_uses_observed_time_for_zero_start_segment | start_ms=0/end_ms=0 + observed=Some(1075) → Some(("相手側", 75, "realtime")) |
+| T4 | build_append_args_for_emission_at_keeps_engine_timestamp_when_present_ignoring_observed_time | start_ms=2000 + observed=Some(9999) → Some(("自分", 42, "こんにちは")) (observed 無視) |
+| T5 | build_append_args_for_emission_at_short_circuits_on_error_before_checking_session_started | is_error=Some(true) + session=None → None (二重違反でも None) |
+
+#### 不変条件 / 設計意図
+- T1+T2 は早期リターン 2 段階のそれぞれが observed 経路でも有効である現契約を固定。
+- T3 は emission helper 経由で `segment_to_append_args_at` の zero_start ロジックが正しく接続されていることを保証 (Realtime 系の重要 path)。
+- T4 は engine timestamp 優先の現契約を emission helper 経由でも維持していることを保証。observed=9999 の極端値で「engine timestamp が確実に勝つ」を示す。
+- T5 は first-violation contract: 二重違反でも結果は None (どちらが先でも構わないが結果が None)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 355 → 360 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 360
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存の super::* で十分)
+
+#### 残リスク
+- T4 の 9_999 マジックナンバーは「engine timestamp が確実に勝つ」を示すための極端値で、将来 observed_at_secs の優先順位を変更する設計に変えたら test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

@@ -326,4 +326,82 @@ mod tests {
         assert_eq!(normalize_speaker(Some("  Alice  ")), "Alice");
         assert_eq!(normalize_speaker(Some(" Alice Bob ")), "Alice Bob");
     }
+
+    #[test]
+    fn build_append_args_for_emission_at_returns_none_for_error_segment_even_with_observed_time() {
+        // build_append_args_for_emission (observed=None 固定) 経由の既存 test とは異なり、
+        // _at を直接呼んで observed=Some(1075) を渡しても is_error の早期リターンが有効である現契約を固定。
+        let mut segment = sample_segment();
+        segment.is_error = Some(true);
+        let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_000, Some(1_075));
+        assert!(
+            result.is_none(),
+            "is_error の早期リターンは observed_at_secs があっても有効"
+        );
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_returns_none_when_session_not_started_with_observed_time()
+    {
+        // build_append_args_for_emission (observed=None 固定) 経由の既存 test とは異なり、
+        // _at を直接呼んで observed=Some(1075) を渡しても session 未開始の早期リターンが優先される現契約を固定。
+        let segment = sample_segment(); // is_error = None
+        let result = build_append_args_for_emission_at(&segment, None, 1_000, Some(1_075));
+        assert!(
+            result.is_none(),
+            "session_started_at_secs == None なら observed があっても None"
+        );
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_uses_observed_time_for_zero_start_segment() {
+        // Realtime 系の zero_start segment (start_ms=0, end_ms=0) は observed_at_secs に倒れる。
+        // emission helper 経由でも segment_to_append_args_at の zero_start ロジックが正しく接続されていることを保証。
+        let segment = TranscriptionSegment {
+            text: "realtime".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("相手側".to_string()),
+            is_error: None,
+        };
+        let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_000, Some(1_075))
+            .expect("observed があれば Some を返す");
+        assert_eq!(result.0, "相手側");
+        assert_eq!(
+            result.1, 75,
+            "zero_start segment は observed_at_secs - session_started_at_secs を使う"
+        );
+        assert_eq!(result.2, "realtime");
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_keeps_engine_timestamp_when_present_ignoring_observed_time(
+    ) {
+        // engine timestamp ありなら observed は無視される。
+        // emission helper 経由でも「engine timestamp 優先」の現契約が維持されていることを保証。
+        // observed=9_999 という極端値を渡しても 42 になることで「engine timestamp が確実に勝つ」を示す。
+        let segment = sample_segment(); // start_ms=2000, end_ms=3500, speaker="自分", text="こんにちは"
+        let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_040, Some(9_999))
+            .expect("Some を返す");
+        assert_eq!(result.0, "自分");
+        assert_eq!(
+            result.1, 42,
+            "engine timestamp あり時は observed を無視し engine timestamp が勝つ"
+        );
+        assert_eq!(result.2, "こんにちは");
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_short_circuits_on_error_before_checking_session_started() {
+        // is_error=true かつ session_started_at_secs=None の二重違反。
+        // どちらの早期リターンが先に来ても結果は None である現契約を固定。
+        let mut segment = sample_segment();
+        segment.is_error = Some(true);
+        let result = build_append_args_for_emission_at(&segment, None, 1_000, Some(1_075));
+        assert!(
+            result.is_none(),
+            "is_error と session 未開始の二重違反でも None (どちらが先でも結果同じ)"
+        );
+    }
 }
