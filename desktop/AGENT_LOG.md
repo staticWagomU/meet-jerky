@@ -26384,3 +26384,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - なし。watchdog からの nudge は本セッション中 2 回 (両方とも「次の自律改善ループへ進んでください」continuity 指示、Loop 35 worker 観測中と Loop 36 完了後の SESSION SUMMARY 作成中)。
 
 ---
+
+[mjc-main-20260505-19 Loop 37 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-17 Loop 33 → mjc-main-20260505-18 Loop 35 + 36
+  - 累計削減行数: 1486 行 (50.5%) → 1175 行 (60.8%) = 60% 里程標突破
+  - 残存課題セクション: Loop 35 (transcription_error_payload tests 移動 -311 行) 反映
+  - app_detection.rs 関連: GoToMeeting 抽出 ✅ 完了 (Loop 36 = 1904e04) サブセクション新設 + L153 文章更新 (Webex/Whereby/GoToMeeting 完了、Zoom/Teams 残)
+  - transcription_error_payload tests 移動 ✅ 完了 (Loop 35 = dde8175) サブセクション新設
+  - 末尾参考: 1486 行 (50.5%) → 1175 行 (60.8%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-18 Loop 35 (test 移動 -311 行) と Loop 36 (extraction -47 行) の 2 件を 1 ループで一括反映
+- variety pivot = docs 軸 = 直近 5 ループ (test/struct/docs/test/extraction) のうち docs は Loop 34 から 3 ループ間隔 = 許容範囲
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 最新情報は別セクションで追記する方式 (Loop 30 / Loop 34 = commit 32885b5 / ecbf1af と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+- transcription.rs 1175 行 wc -l 実数確認済
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+
+---
