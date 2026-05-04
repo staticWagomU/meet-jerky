@@ -20780,4 +20780,54 @@ test result: ok. 527 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 ### 次アクション
 メインへ報告、commit 待ち
+
+---
+
+## mjc-worker-session-manager-start-title-passthrough-tests-20260504-26-2 (Loop 2)
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-manager-start-title-passthrough-tests-20260504-26-2
+- **役割**: 作業担当エージェント (worker, print mode)
+- **セッション**: mjc-main-20260504-26 Loop 2
+
+### 作業範囲
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾 (l.1017 直前) への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+`SessionManager::start` の title passthrough 契約 3 軸 (SessionManager 層が一切加工しない) を executable specification 化:
+- **T1**: `start_passes_empty_title_through_to_session_without_normalization` — 空 title でも SessionManager 層は validation せず passthrough する契約を CI 固定。session.rs:249 で保護済の Session struct level 契約と**層をまたぐ** SessionManager level 契約を別途保護。
+- **T2**: `start_passes_title_with_nul_bytes_through_to_session_without_sanitization` — NUL byte 含む title でも SessionManager 層は sanitization せず passthrough する契約を CI 固定。将来 control char filtering 誤追加を遮断する装置。
+- **T3**: `start_passes_huge_title_through_to_session_without_truncation` — 10_000 chars 巨大 title でも SessionManager 層は truncation せず passthrough する契約を CI 固定。将来 size limit 誤追加を遮断する装置。
+
+### 結果
+- `cargo fmt --check`: 差分なし (EXIT:0)。T3 第 2 `assert_eq!` の `session.title, huge_title` を同一行にまとめる 1 往復修正あり。
+- `cargo clippy -- -D warnings`: 警告ゼロ (`Finished dev profile ... in 0.87s`, EXIT:0)
+- `cargo test --lib -- --test-threads=1`: **527 → 530 passed** (+3 件、0 failed)
+
+### 変更ファイル
+- `src-tauri/src/session_manager.rs` (mod tests 末尾 l.1018-1078 に T1/T2/T3 追加、関数本体無変更)
+- `AGENT_LOG.md` (本エントリ末尾追記)
+
+### 検証結果 (各コマンド末尾抜粋)
+
+```
+# cargo fmt --check
+(出力なし = フォーマット差分ゼロ)
+
+# cargo clippy -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.87s
+
+# cargo test --lib -- --test-threads=1
+test result: ok. 530 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
 ---

@@ -1014,4 +1014,64 @@ mod tests {
             "後続 append は前 segment に影響なく保存される"
         );
     }
+
+    #[test]
+    fn start_passes_empty_title_through_to_session_without_normalization() {
+        // Session::start の空 title passthrough は session.rs:249 で session-struct level として保護済。
+        // 本 test は SessionManager (上位層) → Session (下位層) の **層をまたぐ passthrough 契約** を保護する。
+        // 将来 SessionManager 層に title trim/normalize/validation が混入するリファクタを CI で検知する装置。
+        let manager = SessionManager::new();
+        manager
+            .start(String::new(), 1_700_000_000)
+            .expect(
+                "start with empty title should succeed (SessionManager 層は validation しない passthrough 契約)",
+            );
+        let session = manager.finalize(1_700_000_100).expect("finalize");
+        assert_eq!(
+            session.title,
+            "",
+            "SessionManager::start は title を一切加工せず Session::start へ forwarding する passthrough 契約。空文字も原値透過で finalize 後の Session.title に保持される。"
+        );
+    }
+
+    #[test]
+    fn start_passes_title_with_nul_bytes_through_to_session_without_sanitization() {
+        // 制御文字 (NUL byte) を含む title でも SessionManager 層は sanitization せず passthrough する契約を保護。
+        // 将来 SessionManager 層に control char filtering が混入するリファクタを CI で検知する装置。
+        let manager = SessionManager::new();
+        let title_with_nul = "\0\0\0".to_string();
+        manager
+            .start(title_with_nul.clone(), 1_700_000_000)
+            .expect(
+                "start with NUL bytes in title should succeed (SessionManager 層は sanitization しない passthrough 契約)",
+            );
+        let session = manager.finalize(1_700_000_100).expect("finalize");
+        assert_eq!(
+            session.title,
+            title_with_nul,
+            "SessionManager::start は title 内の制御文字 (NUL byte) を sanitization せず原値透過で保持する。filtering は呼び出し側の責務。"
+        );
+    }
+
+    #[test]
+    fn start_passes_huge_title_through_to_session_without_truncation() {
+        // size 制約なし passthrough。将来 SessionManager 層に title size limit (例: > 1024 chars truncate) が混入するリファクタを CI で検知する装置。
+        let manager = SessionManager::new();
+        let huge_title = "a".repeat(10_000);
+        manager
+            .start(huge_title.clone(), 1_700_000_000)
+            .expect(
+                "start with 10_000-char title should succeed (SessionManager 層は size 制約しない passthrough 契約)",
+            );
+        let session = manager.finalize(1_700_000_100).expect("finalize");
+        assert_eq!(
+            session.title.len(),
+            10_000,
+            "SessionManager::start は title 長を truncation せず原値透過で保持する。size 制約は呼び出し側の責務。"
+        );
+        assert_eq!(
+            session.title, huge_title,
+            "10_000 chars 全文が一致 (truncation なし、加工なし)"
+        );
+    }
 }
