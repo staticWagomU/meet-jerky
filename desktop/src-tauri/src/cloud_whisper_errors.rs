@@ -422,4 +422,90 @@ mod tests {
             panic!("both 404 calls should classify as Other");
         }
     }
+
+    #[test]
+    fn cloud_whisper_error_debug_format_contains_variant_names_and_other_field_values() {
+        let invalid = CloudWhisperError::InvalidApiKey;
+        let rate = CloudWhisperError::RateLimited;
+        let server = CloudWhisperError::ServerError;
+        let other = CloudWhisperError::Other {
+            status: 418,
+            message: String::from("teapot"),
+        };
+
+        let invalid_dbg = format!("{invalid:?}");
+        let rate_dbg = format!("{rate:?}");
+        let server_dbg = format!("{server:?}");
+        let other_dbg = format!("{other:?}");
+
+        assert!(
+            invalid_dbg.contains("InvalidApiKey"),
+            "InvalidApiKey variant: {invalid_dbg}"
+        );
+        assert!(
+            rate_dbg.contains("RateLimited"),
+            "RateLimited variant: {rate_dbg}"
+        );
+        assert!(
+            server_dbg.contains("ServerError"),
+            "ServerError variant: {server_dbg}"
+        );
+        assert!(other_dbg.contains("Other"), "Other variant: {other_dbg}");
+        assert!(
+            other_dbg.contains("status"),
+            "Other status field: {other_dbg}"
+        );
+        assert!(other_dbg.contains("418"), "Other status value: {other_dbg}");
+        assert!(
+            other_dbg.contains("message"),
+            "Other message field: {other_dbg}"
+        );
+        assert!(
+            other_dbg.contains("teapot"),
+            "Other message value: {other_dbg}"
+        );
+    }
+
+    #[test]
+    fn cloud_whisper_error_other_clone_is_independent_and_equal_to_original() {
+        let original = CloudWhisperError::Other {
+            status: 503,
+            message: String::from("upstream"),
+        };
+        let cloned = original.clone();
+        assert_eq!(original, cloned, "Clone は原本と等しい");
+
+        let original_dbg = format!("{original:?}");
+        let cloned_dbg = format!("{cloned:?}");
+        assert_eq!(original_dbg, cloned_dbg, "Clone の Debug 表示も一致");
+    }
+
+    #[test]
+    fn cloud_whisper_error_partial_eq_distinguishes_other_fields_and_variant_kinds() {
+        let base = CloudWhisperError::Other {
+            status: 500,
+            message: String::from("a"),
+        };
+        let diff_status = CloudWhisperError::Other {
+            status: 502,
+            message: String::from("a"),
+        };
+        let diff_message = CloudWhisperError::Other {
+            status: 500,
+            message: String::from("b"),
+        };
+
+        assert_ne!(base, diff_status, "status 違い: 不等");
+        assert_ne!(base, diff_message, "message 違い: 不等");
+        assert_ne!(
+            CloudWhisperError::InvalidApiKey,
+            CloudWhisperError::RateLimited,
+            "variant 間不等"
+        );
+        assert_ne!(
+            CloudWhisperError::ServerError,
+            base,
+            "ServerError と Other は不等"
+        );
+    }
 }

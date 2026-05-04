@@ -23777,3 +23777,16 @@ test result: ok. 625 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
 
 ---
+## 2026-05-04 JST mjc-worker-cloud-whisper-error-debug-clone-partialeq-tests-20260504-38-2
+- 担当セッション: mjc-worker-cloud-whisper-error-debug-clone-partialeq-tests-20260504-38-2 (作業担当, sonnet)
+- 役割: CloudWhisperError enum (`#[derive(Debug, Clone, PartialEq, Eq)]` + 4 variants 含む struct variant `Other { status: u16, message: String }`) の Debug 出力契約 / Clone 独立性 / PartialEq 軸を直接的に CI 保護
+- 作業範囲: src-tauri/src/cloud_whisper_errors.rs の `mod tests` 末尾に 3 件の test 関数追加 (Debug 軸全 variants 網羅 / Clone 独立性 (PartialEq 直接判定) / PartialEq struct variant field 単位独立判定 + variant 間不等)
+- 指示内容: enum 形態 7 連続 application + Debug 軸補強 24 連続 application + 11 ファイル目展開 (cloud_whisper_errors.rs 初) + 「struct variant 形態 (Other { ... })」初対応 + 既存 classify_* 戻り値テストとは別の「enum 自体の契約」直接保護
+- 結果: pass 25 passed (cloud_whisper_errors, +3 件), 631 passed (全体, +3 件)
+- 変更ファイル: src-tauri/src/cloud_whisper_errors.rs (+ 68 行 / - 0 行、3 件 test 追加 + cargo fmt 適用)
+- 検証結果: cargo test --lib cloud_whisper_errors 25 passed、cargo test --lib 全体 631 passed、cargo clippy --lib -- -D warnings 警告ゼロ、cargo fmt --check OK (fmt 適用後)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
