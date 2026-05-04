@@ -26449,4 +26449,4 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - transcription.rs 行数: 749 行 (目標 ~770 ±20 の範囲内)
 
 ## commit
-- (commit hash は commit 後に確定)
+- 64fe9cd
