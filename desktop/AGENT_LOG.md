@@ -26223,3 +26223,164 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 ## commit
 - 1904e04
 ---
+[SESSION SUMMARY @ 2026-05-05 ~07:35 JST] mjc-main-20260505-18
+
+## ループ実績 (2 ループ完走 = 「2 ループ + 早期 handoff」precedent 連続 15 セッション目)
+
+### Loop 35 = transcription_error_payload 関連テスト 15 件を transcription_error_payload.rs に移動 (variety = test 移動軸、Loop 32 から 3 ループ間隔)
+- commit: dde8175 (本体) + caea654 (commit hash 反映 chore)
+- priority 1 予防的寄与 (テスト局所化 = SLAP 改善 = 「定義と同じファイル」原則)
+- 移動対象 15 件:
+  - ブロック A (4 件、transcription.rs L120-180): test_worker_panic_payload_does_not_expose_panic_details / test_transcription_error_payload_serialization_with_source / test_transcription_error_payload_serialization_omits_missing_source / test_stopped_realtime_stream_errors_are_not_emitted_to_ui
+  - ブロック B (11 件、transcription.rs L600-847): build_worker_panic_error_payload_omits_source_when_none / build_transcription_error_payload_preserves_empty_error_string / is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix / is_realtime_stream_already_stopped_error_matches_substring_at_any_position / is_realtime_stream_already_stopped_error_matches_across_newlines / build_transcription_error_payload_serialization_with_microphone_source / build_worker_panic_error_payload_serialization_with_system_audio_source / build_transcription_error_payload_escapes_newlines_in_error_string / transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name / transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants / transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source
+- transcription_error_payload.rs に新規 #[cfg(test)] mod tests を新設、`use super::*; use crate::transcription_types::{TranscriptionErrorPayload, TranscriptionSource};` で取り込み
+- transcription.rs から該当 use 文 (L67-71 の transcription_error_payload からの 5 つ + L75 の TranscriptionErrorPayload import) を整理
+- 変更ファイル 3: src-tauri/src/transcription.rs / src-tauri/src/transcription_error_payload.rs / AGENT_LOG.md
+- 検証: 700 passed 件数不変, clippy 警告ゼロ, fmt OK, trailing whitespace ゼロ
+- 所要時間: ~7 分 (worker 起動 ~07:24 → commit ~07:31、cargo test 30-60 秒で時間かかる)
+- worker 自走 2 件 commit (本体 + commit hash 反映 chore = Loop 22/31/32/33 precedent 完全踏襲)
+
+### Loop 36 = app_detection.rs GoToMeeting モジュール抽出 (variety pivot = extraction 軸、Loop 31 から 5 ループ間隔)
+- commit: 1904e04 (本体) + 40c301b (commit hash 反映 chore)
+- priority 1 予防的寄与 (app_detection.rs 3231 → 3184 行縮小、理解性向上)
+- Webex (mjc-main-20260505-15 Loop 29) / Whereby (mjc-main-20260505-16 Loop 31) と同パターン継承
+- 抽出対象:
+  - 4 関数: is_goto_host / is_goto_meeting_url / is_goto_legacy_meeting_url / is_goto_app_meeting_url
+  - 1 const: GOTO_NON_ROOM_PATHS (16 要素、blacklist)
+- 共通ヘルパー is_valid_dns_label (app_detection.rs に pub(crate) で残置) を `use crate::app_detection::is_valid_dns_label;` で取り込み (Webex precedent と同パターン)
+- caller 更新: app_detection.rs L531-533 の classify_meeting_url 内呼び出し (3 関数 OR 連結) を `crate::app_detection_goto::is_goto_*` 経由に変更
+- tests: classify_meeting_url 経由は app_detection.rs 残置、直接呼び (is_goto_app_meeting_url_*) は use 文経由参照に更新 (Loop 23/29 precedent 踏襲)
+- lib.rs に `mod app_detection_goto;` 追加
+- 変更ファイル 4: src-tauri/src/app_detection.rs / src-tauri/src/app_detection_goto.rs / src-tauri/src/lib.rs / AGENT_LOG.md
+- 検証: 700 passed 件数不変, clippy 警告ゼロ, fmt OK, trailing whitespace ゼロ
+- 所要時間: ~3 分 (worker 起動 → commit、cargo test を含む)
+- worker 自走 2 件 commit
+
+## 累計 transcription.rs 削減 (本セッションで -311 行 = 60% 里程標突破)
+- 元 2999 行 → 現在 **1175 行** = **~60.8% 縮小** (~1824 行削減)
+- 前任 mjc-main-20260505-17 Loop 34 終了時 1486 行 (50.5%) → 本セッション Loop 35 で -311 行 = +10.3 pt 進展 = **「60% 里程標突破」**
+- 残存 1175 行のうち多くは tests + 互換 re-export 6 種 + const 4 種
+
+## 累計 app_detection.rs 削減 (本セッションで -47 行)
+- 前 3231 行 → 現在 3184 行 = -47 行 (Loop 36 での GoToMeeting 抽出による)
+- サービス別抽出 3 件目 (Webex 29 + Whereby 31 + GoToMeeting 36)
+- 残るサービス: Zoom / Microsoft Teams (sweep 警告ライン上のため Loop 37+ で連続抽出するなら別軸 pivot 推奨)
+
+## 累計 transcription_error_payload.rs 拡大
+- 29 → 343 行 (+314 行 = mod tests 新設 + 15 件テスト)
+
+## 累計 app_detection_goto.rs (新規)
+- 0 → 49 行 (本セッション Loop 36 で新規作成)
+
+## variety 規則の状態 (Loop 37 開始時点)
+
+直近 5 ループ: Loop 32 (test 移動) → 33 (struct 移動) → 34 (docs) → 35 (test 移動) → 36 (extraction)。
+- 直近 docs 連続 = 0
+- 直近 extraction 連続 = 1 (Loop 36 のみ、Loop 31 から 5 ループ間隔)
+- 直近 test 移動 連続 = 0 (Loop 35 で実施、Loop 36 で別軸 pivot 済)
+- 直近 struct 移動 連続 = 0 (Loop 33 で実施、その後別軸)
+- 「app_detection.rs サービス別抽出 sweep 化リスク」= Webex (29) + Whereby (31) + GoToMeeting (36) で 3 件目 = Loop 37 でさらに別サービス (Zoom / Teams) を抽出すると sweep 警告が強化される。**Loop 37 で extraction 続行は別ファイル軸 (例: transcription.rs 別関数抽出) なら OK、app_detection.rs 続行は Loop 38+ 推奨**
+- Loop 37 で test 移動 / struct 移動 / docs 続行可。docs は Loop 34 から 3 ループ間隔 = OK (許容範囲)。
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 12 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-18 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 前任 mjc-main-20260505-7/8/9/10/11/12/13/14/15/16/17 の観測継続結論 (前任 mjc-main-20260505-6 の `bfb9846` chore(harness) commit が永続的解決) を **連続 12 セッション目で追認** = 結論超強化、永続的解決確定
+
+## worker 統計
+- worker 完走 2/2 (累計 136/136 = 100% 維持)
+- stdin redirect 化 script の安定運用 28-29 件目 precedent 達成 (Loop 10 焼き付けが連続 14 セッション継承で実証)
+- 「sonnet worker の Tidy First 質的高さ」連続 14 セッション目で実証 (Loop 35 で 15 件 ~290 行 一括移動 + use 文整理 + cargo fmt 自走 + agent-verify.sh 自走、Loop 36 で 4 関数 + const 抽出 + caller 更新 + 直接呼びテスト use 経由更新 + lib.rs mod 宣言追加)
+- harness silent fail mitigation pattern 連続 60 ループ実証達成 (Loop 35 + 36 共に M 表示主観測手段が機能)
+
+## 本セッションの commit 周期
+- Loop 35: ~7 分 (起動 ~07:24 → commit ~07:31、cargo test 30-60 秒で時間)
+- Loop 36: ~3 分 (起動 ~07:32 → commit ~07:34)
+- 平均 ~5 分/loop = **目標 15 分以内大幅達成** (本セッションは 15 件移動の規模 S を含むため通常より長め)
+
+## 後継 (mjc-main-20260505-19) への引き継ぎ判断 (Loop 37 候補、優先順位順)
+
+### variety 規則の状態 (Loop 37 開始時点 = 再掲)
+
+直近 5 ループ: Loop 32 (test 移動) → 33 (struct 移動) → 34 (docs) → 35 (test 移動) → 36 (extraction)。
+- 直近 docs 連続 = 0
+- 直近 extraction 連続 = 1 (Loop 36)
+- 「app_detection.rs サービス別抽出 sweep 化リスク」= Webex (29) + Whereby (31) + GoToMeeting (36) で 3 件目 = Loop 37 で Zoom/Teams 抽出は sweep 警告強化、Loop 38+ 推奨
+
+### 候補 A (推奨 Loop 37): transcription-refactor-plan.md 更新 (docs 軸 = Loop 34 から 3 ループ間隔 = 許容)
+- priority 1 予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- Loop 35 (transcription_error_payload tests 移動 -311 行 = 60% 里程標突破) + Loop 36 (GoToMeeting 抽出 -47 行) を 1 ループ一括反映
+- 進捗サマリ更新 (50.5% → 60.8%)、累計削減 1486 行 → 1175 行、関連: GoToMeeting モジュール抽出 ✅ 完了 サブセクション追加、transcription_error_payload tests 移動 ✅ 完了 サブセクション追加
+- 規模: SS-S、確実性高、変動性ゼロ
+- variety pivot = docs 軸 = 直近 5 ループ全てと別軸 (Loop 34 で 1 件、Loop 37 で 1 件 = 3 ループ間隔 OK)
+
+### 候補 B (Loop 37+): transcription.rs 残存テストの test 移動続編
+- 例: TranscriptionSegment 関連テスト (test_transcription_segment_serialization L181 / transcription_segment_debug_output_* 系) を transcription_types.rs に移動
+- 規模 SS-S、変動性低
+- variety: test 移動軸 = Loop 35 から 2 ループ間隔 = 許容範囲 (Loop 32→35→37 で 3 件目だが間隔ある)
+- ただし Loop 37 で test 移動続行 → Loop 38 で別軸必須
+
+### 候補 C (Loop 37+): WhisperStream / TranscriptionStream 関連テスト移動
+- transcription.rs L182, L230, L237, L317, L358, L395, L424, L442, L456 等の test_whisper_stream_* / test_stream_lifecycle_* / test_stream_config_* / test_feed_empty_* / test_ensure_engine_*
+- 移動先: transcription_whisper_stream.rs / transcription_traits.rs (engine トレイト関連は trait ファイル側)
+- 規模 M、test 移動軸 = Loop 35 と連続違反警告 (B と同じ)、慎重に判断
+- 1 ループ完結が不確実 (規模 M で 30-60 件のテスト)
+
+### 候補 D (Loop 38+): app_detection.rs Zoom / Microsoft Teams 抽出
+- sweep 警告ライン超過 (Webex 29 + Whereby 31 + GoToMeeting 36 + Zoom 38 = 4 件目)
+- Loop 38 で Zoom 抽出 = 7 ループ間隔は許容範囲だが、別軸を 2 ループ挟む方が安全
+- Loop 39+ 推奨
+
+### 候補 E (Loop 37+): GoToMeeting TLD 拡張 (`app.goto.eu` / `app.goto.co.uk` 等)
+- priority 2 直接寄与 (会議検知の網羅性)
+- service detection 軸 = 直近 5 ループ全てと別軸
+- URL 仕様調査が前段必要 (`app.goto.eu` が実在するか? GoToMeeting EU TLD パターン)
+- 1 ループ完結が不確実 = 偵察 + 1 軸抽出に分けて 2 ループに割る案も
+- **批判的観点**: URL 仕様調査だけなら Read + 既存 is_goto_app_meeting_url 実装を base に拡張可能。WebSearch は控えめに使う。
+
+### 候補 F (Loop 37+): 新サービス検知 (Discord stage / Slack Huddle / Zoom Phone)
+- priority 2 直接寄与
+- URL pattern 調査が前段必要 = 1 ループ完結が不確実
+- Discord stage = `discord.com/channels/<server-id>/<stage-id>` 形式? 要検証
+- Slack Huddle = `app.slack.com/client/<workspace>/<channel-id>` 形式? 要検証
+
+### 候補 G (Loop 37+): struct 移動軸続編 (TranscriptionStateHandle / WhisperStream の locality 改善)
+- transcription.rs L26 で `pub use crate::transcription_manager::TranscriptionStateHandle;`
+- transcription.rs L20 で `pub use crate::transcription_whisper_stream::WhisperStream;`
+- これらは既に satellite ファイルに集約済 = 互換 re-export 維持のみ = struct 単独移動の余地は限定的
+- 価値は限定的、Loop 37 では他候補優先
+
+### 候補 H: frontend 軸 pivot (主観的判断のリスクあり、慎重に選ぶ)
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行) は規模あり = 責務分離 docs commit 候補
+- 浅 grep で具体的な不足を 1 つ特定してから worker 発注、主観的探索は避ける
+
+### 低優先 (継承、再考の価値限定的)
+
+#### B1. Microsoft Teams window title fallback
+- mjc-main-20260505-3 で批判的に却下済 (前任者 rustdoc 注記との矛盾)
+
+#### A1. Webex 日本語 window title (`Webex ミーティング`)
+- 規模: 極小 (3-4 行)
+- Webex sweep precedent 18 セッション維持を破る、Loop 39+ 程度まで間隔を空ける推奨
+
+### 低優先 (harness 衛生、未着手)
+
+#### H. 大量 untracked ファイル整理判断
+- `docs/handoff/`, `docs/worker-prompts/` に 110+ untracked
+- ユーザー直伝指示があるまで保留
+
+#### I. AGENT_LOG.md ~26,000 行の archive 戦略
+- 未着手、未消化
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 700 件全 pass (verify.sh OK) = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネス直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションでも Loop 35 + 36 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+- なし。watchdog からの nudge は本セッション中 2 回 (両方とも「次の自律改善ループへ進んでください」continuity 指示、Loop 35 worker 観測中と Loop 36 完了後の SESSION SUMMARY 作成中)。
+
+---
