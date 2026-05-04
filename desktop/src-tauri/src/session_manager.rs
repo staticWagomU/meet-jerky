@@ -695,4 +695,151 @@ mod tests {
             "session の title は依然 disk content に含まれるはず. contents=\n{contents}"
         );
     }
+
+    #[test]
+    fn discard_twice_returns_not_active_on_second_call() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
+
+        manager.discard().expect("first discard should succeed");
+
+        let err = manager
+            .discard()
+            .expect_err("second discard should fail with NotActive");
+        assert_eq!(err, SessionManagerError::NotActive);
+        assert!(!manager.is_active(), "2 回目以降も非活性を維持");
+    }
+
+    #[test]
+    fn discard_clears_all_accessors_to_none() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 1_700_000_000)
+            .expect("start should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+
+        assert!(manager.is_active());
+        assert_eq!(manager.current_title(), Some("meeting".into()));
+        assert_eq!(manager.current_started_at_secs(), Some(1_700_000_000));
+        assert_eq!(manager.current_segment_count(), Some(1));
+
+        manager.discard().expect("discard should succeed");
+
+        assert!(!manager.is_active());
+        assert_eq!(
+            manager.current_title(),
+            None,
+            "discard 後 title=None を維持する契約"
+        );
+        assert_eq!(
+            manager.current_started_at_secs(),
+            None,
+            "discard 後 started_at_secs=None を維持する契約"
+        );
+        assert_eq!(
+            manager.current_segment_count(),
+            None,
+            "discard 後 segment_count=None を維持する契約"
+        );
+    }
+
+    #[test]
+    fn discard_recovers_from_poisoned_mutex_without_panic() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 100)
+            .expect("start should succeed");
+
+        let poison_result = std::panic::catch_unwind(|| {
+            let _guard = manager.current.lock().unwrap();
+            panic!("poison session manager mutex");
+        });
+        assert!(poison_result.is_err());
+
+        manager
+            .discard()
+            .expect("discard should recover from poisoned mutex and succeed");
+
+        assert!(!manager.is_active());
+        let err = manager
+            .discard()
+            .expect_err("second discard after recover should be NotActive");
+        assert_eq!(err, SessionManagerError::NotActive);
+    }
+
+    #[test]
+    fn discard_does_not_remove_already_persisted_disk_file_when_appended() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        manager
+            .start_with_output(
+                "title".into(),
+                1_700_000_000,
+                dir.path().to_path_buf(),
+                jst(),
+            )
+            .expect("start_with_output should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+
+        let files_before = list_md_files(dir.path());
+        assert_eq!(
+            files_before.len(),
+            1,
+            "append 後に disk file が 1 件存在しているはず: {files_before:?}"
+        );
+        let path_before = files_before[0].clone();
+        let contents_before = std::fs::read_to_string(&path_before).unwrap();
+
+        manager.discard().expect("discard should succeed");
+
+        assert!(!manager.is_active());
+        let files_after = list_md_files(dir.path());
+        assert_eq!(
+            files_after.len(),
+            1,
+            "discard 後も disk file は 1 件残るはず (ステルス削除しない契約): {files_after:?}"
+        );
+        assert_eq!(
+            files_after[0], path_before,
+            "discard 後も同じ path のファイルが残るはず"
+        );
+        let contents_after = std::fs::read_to_string(&files_after[0]).unwrap();
+        assert_eq!(
+            contents_after, contents_before,
+            "discard はディスク内容を改変しない契約"
+        );
+    }
+
+    #[test]
+    fn discard_allows_restart_with_same_title_and_started_at() {
+        let manager = SessionManager::new();
+        manager
+            .start("meeting".into(), 1_700_000_000)
+            .expect("first start should succeed");
+        manager
+            .append("Alice".into(), 5, "hello".into())
+            .expect("append should succeed");
+        assert_eq!(manager.current_segment_count(), Some(1));
+
+        manager.discard().expect("discard should succeed");
+
+        manager
+            .start("meeting".into(), 1_700_000_000)
+            .expect("restart with same title and started_at after discard should succeed");
+
+        assert!(manager.is_active());
+        assert_eq!(manager.current_title(), Some("meeting".into()));
+        assert_eq!(manager.current_started_at_secs(), Some(1_700_000_000));
+        assert_eq!(
+            manager.current_segment_count(),
+            Some(0),
+            "discard 後の再 start は新 session のため segments=0 のはず"
+        );
+    }
 }
