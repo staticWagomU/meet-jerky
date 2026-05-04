@@ -22510,3 +22510,44 @@ test result: ok. 583 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## mjc-worker-requested-transcription-sources-debug-copy-partialeq-tests-20260504-33-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-requested-transcription-sources-debug-copy-partialeq-tests-20260504-33-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-33 Loop 2
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 9 連続 application + 「対称的補強の 3 軸構造」継続 application = RequestedTranscriptionSources (private struct with 2 bool fields, #[derive(Debug, Clone, Copy, PartialEq, Eq)], Serialize なし) への Debug + Copy + PartialEq 3 軸 application。
+- T1: requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names (Debug 出力に型名+両 snake_case field 名+bool 値が含まれる契約、4 case)
+- T2: requested_transcription_sources_copy_semantics_allow_use_after_move (Copy semantics: let copied = original 後も original が使える契約)
+- T3: requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field (PartialEq の field 単位独立等値判定)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 583 → 586 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / 既存 73 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 586 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
