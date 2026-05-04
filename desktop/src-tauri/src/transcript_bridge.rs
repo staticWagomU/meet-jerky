@@ -452,4 +452,177 @@ mod tests {
             "\u{200B}\u{200B}"
         );
     }
+
+    #[test]
+    fn segment_to_append_args_ignores_source_field_completely() {
+        // T1: source field は normalize_speaker / offset 計算 / text trim のどれでも参照されない契約を固定。
+        // 将来 source を判定に組み込む誤改修 (例: Microphone と SystemAudio で speaker 自動上書き) への検知装置。
+        let make_seg =
+            |source: Option<crate::transcription::TranscriptionSource>| TranscriptionSegment {
+                text: "  hello  ".to_string(),
+                start_ms: 2_000,
+                end_ms: 3_500,
+                source,
+                speaker: Some("自分".to_string()),
+                is_error: None,
+            };
+
+        let baseline = segment_to_append_args(&make_seg(None), 1_000, 1_040);
+        let with_mic = segment_to_append_args(
+            &make_seg(Some(crate::transcription::TranscriptionSource::Microphone)),
+            1_000,
+            1_040,
+        );
+        let with_sys = segment_to_append_args(
+            &make_seg(Some(crate::transcription::TranscriptionSource::SystemAudio)),
+            1_000,
+            1_040,
+        );
+
+        assert_eq!(
+            baseline, with_mic,
+            "source=None と Microphone で結果差分なし契約"
+        );
+        assert_eq!(
+            baseline, with_sys,
+            "source=None と SystemAudio で結果差分なし契約 = source field は無視される"
+        );
+        assert_eq!(
+            with_mic, with_sys,
+            "Microphone と SystemAudio でも差分なし = source 全 variant 無視契約"
+        );
+        assert_eq!(baseline.0, "自分");
+        assert_eq!(baseline.1, 42);
+        assert_eq!(baseline.2, "hello");
+    }
+
+    #[test]
+    fn build_append_args_for_emission_returns_some_when_is_error_is_some_false() {
+        // T2: is_error の Option<bool> 3 状態のうち Some(false) 経路を固定。
+        // unwrap_or(false) で false → early return せず Some を返す現契約。
+        // None と Some(true) は既存 test 済、Some(false) のみ空白だった。
+        // unwrap_or(true) 等への誤改修への検知装置 = Option 3 状態の semantics 反転検知。
+        let mut segment = sample_segment();
+        segment.is_error = Some(false);
+
+        let result = build_append_args_for_emission(&segment, Some(1_000), 1_040);
+
+        assert!(
+            result.is_some(),
+            "is_error=Some(false) は早期 return せず Some を返す契約 = unwrap_or(false) の false 分岐"
+        );
+        let expected = segment_to_append_args(&segment, 1_000, 1_040);
+        assert_eq!(
+            result.unwrap(),
+            expected,
+            "is_error=Some(false) なら is_error=None と同じ結果 (None と Some(false) は等価)"
+        );
+    }
+
+    #[test]
+    fn build_append_args_for_emission_returns_some_when_session_started_at_is_some_zero() {
+        // T3: session_started_at_secs=Some(0) boundary で ? 演算子は Some(0) を通す現契約を固定。
+        // ? を unwrap_or(default) や 0 == None 扱いへの誤改修 (Some(0) を None として扱う) への検知装置。
+        // session_started_at_secs=0 自体は session 開始時刻 = epoch を意味し、有効な session 状態。
+        let segment = sample_segment(); // start_ms=2000
+
+        let result = build_append_args_for_emission(&segment, Some(0), 0);
+
+        assert!(
+            result.is_some(),
+            "Some(0) は ? を通る契約 = 0 値を None と混同しない"
+        );
+        let (speaker, offset, text) = result.unwrap();
+        assert_eq!(speaker, "自分");
+        // session_started_at=0, stream_started_at=0, start_ms=2000 → segment_abs=2s, offset = 2 - 0 = 2
+        assert_eq!(
+            offset, 2,
+            "Some(0) base で offset 計算が正常動作する契約 (saturating_sub 0 base)"
+        );
+        assert_eq!(text, "こんにちは");
+    }
+
+    #[test]
+    fn segment_to_append_args_at_has_engine_timestamp_or_boundary_complete_decomposition() {
+        // T4: line 36 `segment.start_ms > 0 || segment.end_ms > 0` の OR 短絡評価の 5 状態完全分解。
+        // (0, 0): false → observed fallback 経路
+        // (1000, 0): true → engine timestamp 経路 (start_ms 単独 true)
+        // (0, 1000): true → engine timestamp 経路 (end_ms 単独 true, start_ms.max(0)=0 → offset=0)
+        // (-1000, 0): false → observed fallback 経路 (start_ms 負値は > 0 でない)
+        // (-1000, 1000): true → engine timestamp 経路 (end_ms 単独 true, start_ms.max(0)=0 → offset=0)
+        // || を && に変更する、片側だけチェックする誤改修を完全分解で検知。
+        let cases: Vec<(i64, i64, u64, &str)> = vec![
+            (
+                0,
+                0,
+                75,
+                "(0,0) → has_engine_timestamp=false → observed fallback offset=75",
+            ),
+            (
+                1_000,
+                0,
+                1,
+                "(1000ms,0) → has_engine_timestamp=true → engine: stream+1s → offset=1",
+            ),
+            (
+                0,
+                1_000,
+                0,
+                "(0,1000ms) → has_engine_timestamp=true → start_ms.max(0)=0 → offset=0",
+            ),
+            (
+                -1_000,
+                0,
+                75,
+                "(-1000ms,0) → has_engine_timestamp=false → observed fallback offset=75",
+            ),
+            (
+                -1_000,
+                1_000,
+                0,
+                "(-1000ms,1000ms) → has_engine_timestamp=true → start_ms.max(0)=0 → offset=0",
+            ),
+        ];
+        for (start_ms, end_ms, expected_offset, label) in cases {
+            let segment = TranscriptionSegment {
+                text: "test".to_string(),
+                start_ms,
+                end_ms,
+                source: None,
+                speaker: Some("自分".to_string()),
+                is_error: None,
+            };
+            // session_started_at=1000, stream_started_at=1000 (同値 → engine 経路で stream + offset_secs)
+            // observed_at_secs=Some(1075) → fallback 経路で 75 offset
+            let (_, offset, _) = segment_to_append_args_at(&segment, 1_000, 1_000, Some(1_075));
+            assert_eq!(
+                offset, expected_offset,
+                "OR 境界完全分解: {label} で expected_offset={expected_offset}"
+            );
+        }
+    }
+
+    #[test]
+    fn segment_to_append_args_saturates_to_u64_max_for_extreme_start_ms() {
+        // T5: start_ms = i64::MAX 経由の (i64::MAX.max(0) / 1000) as u64 + saturating_add(u64::MAX) で飽和契約を固定。
+        // i64::MAX / 1000 = 9_223_372_036_854_775 → as u64 → saturating_add(u64::MAX) → u64::MAX に張り付く。
+        // session_started_at=0 なので final offset = u64::MAX - 0 = u64::MAX。
+        // panic 化や別キャスト方式への誤改修検知。
+        let segment = TranscriptionSegment {
+            text: "extreme".to_string(),
+            start_ms: i64::MAX,
+            end_ms: 0,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+
+        let (_, offset, _) = segment_to_append_args(&segment, 0, u64::MAX);
+
+        assert_eq!(
+            offset,
+            u64::MAX,
+            "i64::MAX start_ms → saturating_add(u64::MAX) → u64::MAX に飽和 + offset = u64::MAX - 0 = u64::MAX"
+        );
+    }
 }
