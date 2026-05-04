@@ -26843,3 +26843,34 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 ## commit
 - 322b38d
 
+
+---
+
+[mjc-main-20260505-21 Loop 42 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から沈黙検知ロジック関連テスト 6 件 (test_calculate_rms_* 3 件 + test_is_tail_silent_* 3 件) を src-tauri/src/audio_utils.rs のテストモジュールに移動
+- transcription.rs L65 の `use crate::audio_utils::{calculate_rms, is_tail_silent};` を削除 (移動後 unused)
+- audio_utils.rs テストモジュール内に `use crate::transcription::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS};` を追加 (移動先で必要)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (関数とテストの locality 回復、transcription.rs 縮小 = 理解性向上)
+- 関数 (calculate_rms / is_tail_silent) の実体は audio_utils.rs L26 / L36 に存在 = locality 回復
+- variety pivot 軸 = test 移動軸 = Loop 38 (transcription_types tests 10 件) から 4 ループ間隔 = sweep 警告クリア
+- メインが handoff candidate C の前提 (移動先 = transcription_whisper_local.rs) を grep で実態確認 → audio_utils.rs に訂正 = Loop 39 と同じ批判的判断の継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- audio_utils.rs 既存 tests mod (`use super::*`) に追加 = calculate_rms / is_tail_silent は super::* 経由でアクセス
+- 定数参照のため `use crate::transcription::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS}` を追加
+- transcription.rs 側 separator コメント 1 件削除
+- transcription.rs: 749 → 688 行 (-61 行) / audio_utils.rs: 250 → 312 行 (+62 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)

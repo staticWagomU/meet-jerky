@@ -62,7 +62,6 @@ pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio_utils::{calculate_rms, is_tail_silent};
     use crate::transcription_commands::RequestedTranscriptionSources;
     use crate::transcription_error_payload::{
         is_realtime_stream_already_stopped_error, should_emit_realtime_stream_error,
@@ -351,66 +350,6 @@ mod tests {
             )
             .expect("ElevenLabs エンジンの ensure_engine は同期的には成功する");
         assert!(manager.is_engine_loaded());
-    }
-
-    // ─────────────────────────────────────────
-    // 沈黙検知ロジック テスト
-    // ─────────────────────────────────────────
-
-    #[test]
-    fn test_calculate_rms_empty_slice_returns_zero() {
-        assert_eq!(calculate_rms(&[]), 0.0);
-    }
-
-    #[test]
-    fn test_calculate_rms_silence_signal_below_threshold() {
-        let samples = vec![0.0001_f32; 16000]; // -80dBFS 相当
-        let rms = calculate_rms(&samples);
-        assert!(
-            rms < SILENCE_THRESHOLD_RMS,
-            "rms={rms} should be below SILENCE_THRESHOLD_RMS={SILENCE_THRESHOLD_RMS}"
-        );
-    }
-
-    #[test]
-    fn test_calculate_rms_voice_signal_above_threshold() {
-        let samples = vec![0.1_f32; 16000]; // -20dBFS 相当
-        let rms = calculate_rms(&samples);
-        assert!(
-            rms > SILENCE_THRESHOLD_RMS,
-            "rms={rms} should be above SILENCE_THRESHOLD_RMS={SILENCE_THRESHOLD_RMS}"
-        );
-    }
-
-    #[test]
-    fn test_is_tail_silent_returns_false_when_buffer_too_short() {
-        // buffer.len() < lookback の場合は誤検知防止のため false を返す
-        let buffer = vec![0.0001_f32; SILENCE_LOOKBACK_SAMPLES - 1];
-        assert!(
-            !is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
-            "buffer shorter than lookback should return false"
-        );
-    }
-
-    #[test]
-    fn test_is_tail_silent_detects_voice_then_silence_pattern() {
-        // 1 秒の音声 (-20dBFS) + 0.5 秒の沈黙 (-80dBFS)
-        let mut buffer = vec![0.1_f32; MIN_FLUSH_SAMPLES];
-        buffer.extend(vec![0.0001_f32; SILENCE_LOOKBACK_SAMPLES]);
-        assert!(
-            is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
-            "tail silence should be detected in voice+silence pattern"
-        );
-    }
-
-    #[test]
-    fn test_is_tail_silent_rejects_voice_then_voice() {
-        // 全部音声レベル (0.1) では沈黙と判定されないこと
-        let buffer = vec![0.1_f32; MIN_FLUSH_SAMPLES + SILENCE_LOOKBACK_SAMPLES];
-        assert!(
-            !is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
-            "all-voice buffer should not be detected as silent"
-        );
     }
 
     // ─────────────────────────────────────────
