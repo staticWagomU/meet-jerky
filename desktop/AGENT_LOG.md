@@ -22469,3 +22469,44 @@ test result: ok. 580 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-32) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-33 へ予防的ハンドオフ判断 (前 25 セッション (mjc-main-7〜31) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 6 ループ実証済)
 ---
+
+## mjc-worker-model-info-debug-clone-independence-tests-20260504-33-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-model-info-debug-clone-independence-tests-20260504-33-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-33 Loop 1
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 8 連続 application + 「Clone 独立性軸」2 連続 application + 「format 不変条件 application」継続 = ModelInfo (struct with String×3 + u64, #[derive(Debug, Clone, Serialize)] + #[serde(rename_all = "camelCase")]) への Debug + Clone deep 独立性 + serde camelCase format 3 軸 application。
+- T1: model_info_debug_output_contains_struct_name_and_all_four_field_names (Debug 出力に型名+全 4 snake_case field 名+値が含まれる契約)
+- T2: model_info_clone_produces_independent_copy_for_string_fields_and_size_mb (Clone の deep clone 性 = String×3 + u64 の 4 field 全てで cloned mutation 後 original 不変)
+- T3: model_info_serialize_uses_camel_case_for_all_four_fields (serde camelCase format 不変条件 = name/displayName/sizeMb/url 4 key + snake_case 不在)
+
+### 結果
+- cargo fmt --check: 差分あり → cargo fmt 実行後に差分なし確認
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 580 → 583 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / 既存 #[derive] / 既存 70 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 583 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし (cargo fmt 差分のみ = 自動修正で解消)
+
+### 次アクション
+メインへ報告、commit 待ち
+---

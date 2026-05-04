@@ -2717,4 +2717,155 @@ mod tests {
             "cloned の language は None に変わる"
         );
     }
+
+    #[test]
+    fn model_info_debug_output_contains_struct_name_and_all_four_field_names() {
+        let info = ModelInfo {
+            name: "tiny-q5_1".to_string(),
+            display_name: "Tiny (Q5_1)".to_string(),
+            size_mb: 31,
+            url: "https://example.com/tiny.bin".to_string(),
+        };
+        let s = format!("{:?}", info);
+
+        // 型名
+        assert!(
+            s.contains("ModelInfo"),
+            "Debug should contain type name 'ModelInfo': {}",
+            s
+        );
+        // snake_case field 名 (4 個)
+        assert!(
+            s.contains("name"),
+            "Debug should contain field 'name': {}",
+            s
+        );
+        assert!(
+            s.contains("display_name"),
+            "Debug should contain field 'display_name': {}",
+            s
+        );
+        assert!(
+            s.contains("size_mb"),
+            "Debug should contain field 'size_mb': {}",
+            s
+        );
+        assert!(s.contains("url"), "Debug should contain field 'url': {}", s);
+        // 値
+        assert!(
+            s.contains("\"tiny-q5_1\""),
+            "Debug should contain name value: {}",
+            s
+        );
+        assert!(
+            s.contains("\"Tiny (Q5_1)\""),
+            "Debug should contain display_name value: {}",
+            s
+        );
+        assert!(
+            s.contains("31"),
+            "Debug should contain size_mb value: {}",
+            s
+        );
+        assert!(
+            s.contains("\"https://example.com/tiny.bin\""),
+            "Debug should contain url value: {}",
+            s
+        );
+    }
+
+    #[test]
+    fn model_info_clone_produces_independent_copy_for_string_fields_and_size_mb() {
+        let original = ModelInfo {
+            name: "tiny".to_string(),
+            display_name: "Tiny".to_string(),
+            size_mb: 31,
+            url: "https://example.com/tiny.bin".to_string(),
+        };
+        let mut cloned = original.clone();
+
+        // cloned を変更
+        cloned.name.push_str("-q5_1");
+        cloned.display_name = "Tiny (Q5_1)".to_string();
+        cloned.size_mb = 99;
+        cloned.url = "https://example.com/other.bin".to_string();
+
+        // original が変化していない (deep clone 契約)
+        assert_eq!(
+            original.name, "tiny",
+            "original.name should be unchanged after cloned mutation"
+        );
+        assert_eq!(
+            original.display_name, "Tiny",
+            "original.display_name should be unchanged"
+        );
+        assert_eq!(original.size_mb, 31, "original.size_mb should be unchanged");
+        assert_eq!(
+            original.url, "https://example.com/tiny.bin",
+            "original.url should be unchanged"
+        );
+
+        // cloned が確かに変更されている (mutation 自体が起きた裏付け)
+        assert_eq!(cloned.name, "tiny-q5_1");
+        assert_eq!(cloned.display_name, "Tiny (Q5_1)");
+        assert_eq!(cloned.size_mb, 99);
+        assert_eq!(cloned.url, "https://example.com/other.bin");
+    }
+
+    #[test]
+    fn model_info_serialize_uses_camel_case_for_all_four_fields() {
+        let info = ModelInfo {
+            name: "tiny-q5_1".to_string(),
+            display_name: "Tiny (Q5_1)".to_string(),
+            size_mb: 31,
+            url: "https://example.com/tiny.bin".to_string(),
+        };
+        let s = serde_json::to_string(&info).expect("ModelInfo should serialize");
+
+        // camelCase 4 key 存在
+        assert!(s.contains("\"name\":"), "should contain 'name' key: {}", s);
+        assert!(
+            s.contains("\"displayName\":"),
+            "should contain 'displayName' key: {}",
+            s
+        );
+        assert!(
+            s.contains("\"sizeMb\":"),
+            "should contain 'sizeMb' key: {}",
+            s
+        );
+        assert!(s.contains("\"url\":"), "should contain 'url' key: {}", s);
+        // snake_case 不在 (rename_all 適用の証明)
+        assert!(
+            !s.contains("\"display_name\":"),
+            "should NOT contain snake_case 'display_name': {}",
+            s
+        );
+        assert!(
+            !s.contains("\"size_mb\":"),
+            "should NOT contain snake_case 'size_mb': {}",
+            s
+        );
+        // 値正しさ
+        assert!(
+            s.contains("\"tiny-q5_1\""),
+            "should contain name value: {}",
+            s
+        );
+        assert!(
+            s.contains("\"Tiny (Q5_1)\""),
+            "should contain display_name value: {}",
+            s
+        );
+        assert!(
+            s.contains(":31"),
+            "should contain size_mb numeric value 31: {}",
+            s
+        );
+        assert!(
+            s.contains("\"https://example.com/tiny.bin\""),
+            "should contain url value: {}",
+            s
+        );
+    }
 }
