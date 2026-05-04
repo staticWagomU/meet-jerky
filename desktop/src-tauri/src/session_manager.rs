@@ -1074,4 +1074,58 @@ mod tests {
             "10_000 chars 全文が一致 (truncation なし、加工なし)"
         );
     }
+
+    #[test]
+    fn start_with_output_passes_empty_path_through_to_session_without_validation() {
+        let manager = SessionManager::new();
+        let result =
+            manager.start_with_output("title".to_string(), 1_700_000_000, PathBuf::new(), jst());
+        assert!(
+            result.is_ok(),
+            "SessionManager 層は output_dir の空 path に対する validation を行わない passthrough 契約: 呼び出し側責務として委譲する"
+        );
+        assert!(
+            manager.is_active(),
+            "空 path でも session は activate される: in-memory 状態と path 妥当性は独立した責務"
+        );
+    }
+
+    #[test]
+    fn start_with_output_passes_path_with_parent_traversal_through_without_sanitization() {
+        let manager = SessionManager::new();
+        let result = manager.start_with_output(
+            "title".to_string(),
+            1_700_000_000,
+            PathBuf::from("../../etc"),
+            jst(),
+        );
+        assert!(
+            result.is_ok(),
+            "SessionManager 層は path traversal (`../`) の sanitization を行わない passthrough 契約: traversal 検査は呼び出し側 / OS 責務"
+        );
+        assert!(
+            manager.is_active(),
+            "traversal を含む path でも session は activate される: validation 不在を CI 固定"
+        );
+    }
+
+    #[test]
+    fn start_with_output_passes_huge_path_through_to_session_without_size_limit() {
+        let manager = SessionManager::new();
+        let huge_component = "a".repeat(10_000);
+        let result = manager.start_with_output(
+            "title".to_string(),
+            1_700_000_000,
+            PathBuf::from(&huge_component),
+            jst(),
+        );
+        assert!(
+            result.is_ok(),
+            "SessionManager 層は output_dir の長さに対する size limit を持たない passthrough 契約: size 制約は OS 責務"
+        );
+        assert!(
+            manager.is_active(),
+            "10_000 char path でも session は activate される: 将来の size limit 誤追加を遮断する装置"
+        );
+    }
 }

@@ -21003,3 +21003,44 @@ worker prompt には以下を **必ず** 含める:
 
 - 旧 mjc-main (= mjc-main-20260504-26) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
 ---
+
+## mjc-worker-start-with-output-passthrough-tests-20260504-27-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-start-with-output-passthrough-tests-20260504-27-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-27 Loop 1
+
+### 作業範囲
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+B 候補 (SessionManager::start_with_output 境界補強) として、output_dir 引数の passthrough 契約を CI 固定する test を 3 件追加:
+- T1: 空 PathBuf passthrough
+- T2: traversal `../` 含む path passthrough
+- T3: 10_000 char 巨大 path passthrough
+
+### 結果
+- cargo fmt --check: 差分なし (出力なし = OK、1 往復 cargo fmt 修正後)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (Finished `dev` profile in 0.70s)
+- cargo test --lib -- --test-threads=1: `test result: ok. 536 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s`
+
+### 変更ファイル
+- src-tauri/src/session_manager.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 536 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
