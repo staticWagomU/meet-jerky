@@ -21,6 +21,7 @@ mod transcription;
 mod transcription_model_manager;
 mod transcription_traits;
 mod transcription_types;
+mod transcription_whisper_local;
 
 use tauri::{
     image::Image,
