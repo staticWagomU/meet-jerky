@@ -25788,6 +25788,6 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - cargo fmt --check: OK
 
 ## commit
-- (commit hash を後で記入)
+- a523edd
 
 ---
