@@ -19761,3 +19761,115 @@ handle_browser_url_detection 関数内で既存 Instant ベース throttle (last
 
 ### 次アクション
 メインで commit + 残候補 (B / D / S / iteration extension F-Loop5 / etc.)
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~18:10 JST] mjc-main-20260504-20 状況メモ (3 ループ完了 + F-Loop3 機能完結 + F-Loop4 mirror)
+
+### 累積成果 (本セッション 3 ループ)
+- **テスト 475 → 478 passed** (+3 件 = Loop 1 で wrapper STATE 未初期化 None 1 件 + Loop 2 で inactive_notification_body 2 件、Loop 3 は内部状態のみで件数不変)
+- **コミット 3 件** (2196065, 4482bb0, 527a2a3) + 本 SUMMARY 1 件
+- **clippy 警告ゼロ維持** (default + -D warnings, dead_code 再発なし)
+- **F-Loop3 機能完結** (state → update → wrapper+2nd state → timer+notification の 4 段階 Tidy First 多段スライス完了 = エンドツーエンドで動く)
+- **F-Loop4 (browser path mirror) 完了** = アプリ経路と browser 経路が同じ runtime invariant を満たす対称性回復
+- **累積 worker 完走 47/47** (100%)
+
+### 完了した 3 ループの詳細
+1. **Loop 1 (2196065)**: `refactor(app_detection)`: F-Loop3 Loop 3a = wrapper 関数 `check_meeting_inactive_for_bundle` + `last_notified_secs: Mutex<HashMap<String, u64>>` フィールド追加 + `MEETING_INACTIVE_THRESHOLD: Duration = 600s` const 追加 + STATE 未初期化時 None test 1 件 = handoff サブ判断「last_notified_secs を追加するか否か」に対して Yes 採用、純粋関数のシグネチャ要求に応じた state 二重管理拡張 = Tidy First (誰も wrapper を呼ばない、`#[allow(dead_code)]` 二重 attribute 付与)
+2. **Loop 2 (4482bb0)**: `feat(app_detection)`: F-Loop3 Loop 3b 機能完結 = `std::thread::spawn(|| loop { sleep(60s); check_all_inactive_bundles(); })` タイマー追加 (macOS 限定) + `show_inactive_notification` (Tauri Notification API 別 body) + `check_all_inactive_bundles` (WATCHED_BUNDLE_IDS 巡回 helper) + `inactive_notification_body` (純粋関数、test 容易性のため分離) + `#[allow(dead_code)]` 4 箇所削除 + test 2 件 (body が app_name と分数を含む契約 / 整数除算で分に丸める契約) = 既存 `std::thread::spawn` パターン (line 701, 736) と完全対称、tokio::time::interval を新規導入する選択肢を回避
+3. **Loop 3 (527a2a3)**: `refactor(app_detection)`: F-Loop4 = `handle_browser_url_detection` 内に `last_seen_secs.insert(throttle_key, now_secs)` 追加 = mjc-main-19 Loop 2 (commit 09d191c) で handle_detection に追加した update ブロックの完全対称コピーを browser 経路に application = throttle_key.clone() で 2 つの insert を最小 clone で対応 = Tidy First (誰も browser 経路の last_seen_secs エントリを読まない、check_all_inactive_bundles の iteration extension は将来 F-Loop5 送り)
+
+### 確立されたパターン (本セッション)
+- **「F-Loop3 4 段階 Tidy First 機能完結」パターン** (3 セッションかけた累積成果): mjc-main-19 Loop 1 (state) → mjc-main-19 Loop 2 (update) → 本 mjc-main-20 Loop 1 (wrapper + 2nd state) → 本 mjc-main-20 Loop 2 (timer + notification) = 1 機能を 4 つの最小 Tidy First スライスに分解 = 各 Loop が単一責務、規模を最小化、確実完走 = `「機能完結を Tidy First 多段スライスに分解する」` という application 可能パターン
+- **「ユーザー観測不可な内部準備 → ユーザー観測可能な完結」分割パターン** (Loop 1 と Loop 2): wrapper 関数追加と `last_notified_secs` state 追加は新機能的だが誰も呼ばないため Tidy First 厳守 (Loop 1) → Loop 2 で timer がそれを呼んだ瞬間にユーザー観測可能になる = 振る舞い変更点を 1 つの commit に集中させる構造
+- **「対称コピー Loop」パターン** (Loop 3): 既存 commit (mjc-main-19 Loop 2 = 09d191c) と完全対称な構造を別の経路に copy = 設計の対称性回復 = handoff サブ判断にも対応 (browser_url_callback 経路の last_seen_secs 未対応問題を消化)
+
+### 累積パターン (前 mjc-main-7〜19 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### F-Loop3 機能完結によるユーザー体験
+- **会議アプリ (Zoom/Teams/FaceTime) を起動 → 10 分間検知なし → 通知センターに「<アプリ名> が <分数> 分以上検知されていません。会議が終了している場合は録音と文字起こしを停止してください。」通知** = 会議終了体験の foundation
+- product-concept.md「ユーザーが録音の開始を忘れても 検知・通知・開始できる体験」の **終了側体験を初めて提供**
+- ステルス禁止原則と整合 (録音状態の透明性)
+
+#### F-Loop3 機能完結後の残課題 (= F-Loop5 候補)
+- **`check_all_inactive_bundles` の iteration extension**: 現状 `WATCHED_BUNDLE_IDS` のみ巡回 (Zoom/Teams/Teams legacy/FaceTime) = browser 経路で書き込まれた throttle_key (`"browser:<bundle_id>:<service>:<host>"` / `"window-title:<bundle_id>:<service>"`) は **読まれない** = browser-only セッションは inactive 通知発火しない (Loop 3 で foundation だけ作った状態)
+- **解決アプローチ案 A**: `check_all_inactive_bundles` を `last_seen_secs` の **key 全件巡回** に変更 + key parsing 純粋関数 `parse_throttle_key_to_display_name` を新規追加 (例: `"browser:com.apple.Safari:Google Meet:meet.google.com"` → `"Google Meet"`) = 規模 S-M、純粋関数 test 追加可能
+- **解決アプローチ案 B**: 別の helper `check_all_inactive_browser_bundles` を追加して 2 つの iteration を分離 = 規模 S だが重複コード発生
+- **推奨**: 案 A (key 全件巡回 + parsing 純粋関数) = Tidy First 多段スライスで Loop 1 = parse 純粋関数追加 + test、Loop 2 = check_all_inactive_bundles の iteration 変更、の 2 段に分解可能
+
+#### タイマースレッド shutdown 未対応
+- 既存 `std::thread::spawn` パターン (line 701, 736 = detection_callback / browser_url_callback) と同じく、shutdown 時に明示 join せず Tauri アプリ終了で thread 殺し = orphan 化のリスクは既存パターンと同等
+- shutdown 対応する場合は `Arc<AtomicBool>` flag + `start_detection` 終了時に notify する pattern が必要 = 規模 M、別 Loop 候補
+
+#### MEETING_INACTIVE_THRESHOLD = 600 秒の妥当性
+- 画面共有・録画開始等で URL polling が一時停止する正常パターンの最大スパンを超える想定だが **実機調整未確認**
+- 別 Loop で実機データに基づき調整可能 (例: 設定画面から変更可能にする = settings.rs リファクタと連動)
+
+#### コミットメッセージ書き方の運用知見 (本セッションで継承遵守)
+- 全 3 ループとも `Read → Write → commit` の 3 ステップを **事故なく実行** = mjc-main-19 Loop 2 で再発した事故を本セッションで防止
+- 補助ツール `scripts/mjc-commit-with-read.sh` 等の作成は未着手 (本セッション scope 外)、後継セッションで余裕あれば検討
+- **後継セッションも徹底**: 既存 `/tmp/mjc-commit-msg-loopN.txt` ファイルがある前提で必ず Read を先に実行
+
+#### 既存累積技術注意点 (前 mjc-main-7〜19 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### 次ループ候補 (優先順位順、本セッションで未着手 + 部分着手)
+
+#### F-Loop5 (新, 部分着手済み). check_all_inactive_bundles の iteration extension (規模 S-M, 価値 7)
+- **本セッション Loop 3 で foundation 完成 = browser 経路の last_seen_secs 書き込みは動く状態**
+- 残作業: 案 A (key 全件巡回 + parsing 純粋関数追加) を 2 段スライスで実装
+- Loop 1 = parse_throttle_key_to_display_name 純粋関数追加 + test 数件 (規模 XS)
+- Loop 2 = check_all_inactive_bundles の iteration を WATCHED_BUNDLE_IDS から last_seen_secs.lock().keys() に変更 + display name 解決 (規模 S)
+- 完了で browser-only セッション (Safari の Google Meet 等) も inactive 通知発火対象に
+
+#### B (継承, 部分着手済み). transcript_bridge.rs / session_store.rs 周辺 別 fn ターゲット (規模 S, 価値中)
+- transcript_bridge.rs `normalize_speaker` は完備済 = 別 fn ターゲット必要
+- 候補: `segment_to_append_args` / `build_append_args_for_emission` / `build_append_args_for_emission_at` の境界 test 補強
+
+#### D (継承). transcription.rs error path 残り (規模 S〜M, 複数ループ)
+
+#### S (継承). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+- **新たな統合候補**: MEETING_INACTIVE_THRESHOLD を const から settings 経由で変更可能にする統合可能性あり
+
+#### F-Loop6 (新). タイマースレッド shutdown 対応 (規模 M, 価値中)
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+- 既存 detection_callback / browser_url_callback の shutdown と整合性検討必要
+
+#### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+### AGENT_LOG.md 構造の問題 (要整理、優先度低)
+- 本セッションの 3 worker は AGENT_LOG.md の **末尾** に正しく追記済 = mjc-main-15 から続く先頭追記事故が継続的に防げている (mjc-main-17/18/19/20 で 4 セッション連続 OK)
+- ただし AGENT_LOG.md 全体は **19700+ 行** で構造的に整理が必要 = 別 Loop 候補 (低優先)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 478 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用 (本セッションは frontend 触らず)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### 後継 mjc-main-20260504-21 への予防的ハンドオフ判断
+- 前 13 セッション (mjc-main-7〜19) と同じ 3 ループパターン継承で予測可能性最優先
+- context 推定 ~75-85% でハンドオフ余裕あり (3 ループ + worker 監視 + AGENT_LOG.md SUMMARY 編集を経過)
+- 後継は **F-Loop5 (iteration extension, 規模 S-M, 価値 7)** が最有力 = 本セッションで Loop 3 = F-Loop4 で foundation を完成させたため、後続は browser 経路の inactive 通知が実機で動く状態を 1-2 ループで取りに行ける段階
+- フォールバック候補: B (別 fn 補強), D, S (settings + MEETING_INACTIVE_THRESHOLD 統合), F-Loop6 (timer shutdown) 等
+
+### コミット周期目標達成状況
+- 1 ループ目標 15 分以内
+- 本セッション実績: Loop 1 = ~12 分 (worker ~3 分 + verify + commit), Loop 2 = ~14 分 (worker ~3 分 + verify + commit, dead_code 削除確認時間), Loop 3 = ~10 分 (worker ~2 分 + verify + commit)
+- 平均 ~12 分/loop = 目標 15 分以内達成 (前 mjc-main-19 の ~11 分/loop と同等、commit accident なし)
+
+### ユーザー直伝指示 (未消化): なし
+- watchdog 継続指示 2 回受領 (sleep が長くて idle 判定された) = 既に進行中の loop に支障なし
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-20 → mjc-main-20260504-21)
+- **判断時刻 (JST)**: 2026-05-04 ~18:10 JST (推定)
+- **判断理由**: 3 ループ完了の良い区切り。前 13 セッション同型の 3 ループパターン。F-Loop3 機能完結 + F-Loop4 mirror = エンドツーエンドで会議終了通知が動く状態到達。F-Loop5 を後継が機能完結を取りに行ける段階。
+- **使用率 (推定)**: 約 75-85%
+- **引き継ぎ先**: `mjc-main-20260504-21`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-21.txt` (作成予定)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-21 docs/handoff/mjc-main-20260504-21.txt`
+- **canonical 名移譲コマンド**: 後継から `bash scripts/agent-adopt-main.sh mjc-main-20260504-21 mjc-main`
