@@ -441,4 +441,82 @@ mod tests {
         assert_eq!(offset, FixedOffset::east_opt(9 * 3600).unwrap());
         assert_eq!(offset.local_minus_utc(), 9 * 3600);
     }
+
+    #[test]
+    fn start_session_inner_passes_empty_title_through_to_session_without_normalization() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+
+        start_session_inner(&manager, String::new(), 1_700_000_000, dir.path(), jst())
+            .expect("start_session_inner should succeed even with empty title");
+
+        assert!(
+            manager.is_active(),
+            "空 title でも session が activate される: commands 層は title を加工しない passthrough 契約"
+        );
+        assert_eq!(
+            manager.current_title(),
+            Some(String::new()),
+            "空 title が SessionManager::start_with_output へそのまま forwarded される passthrough 契約 (commands 層は空 title reject しない)"
+        );
+    }
+
+    #[test]
+    fn start_session_inner_passes_title_with_nul_bytes_through_without_sanitization() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        let nul_title = "\0\0\0".to_string();
+
+        start_session_inner(
+            &manager,
+            nul_title.clone(),
+            1_700_000_000,
+            dir.path(),
+            jst(),
+        )
+        .expect("start_session_inner should succeed even with NUL byte title");
+
+        assert!(
+            manager.is_active(),
+            "NUL byte 含む title でも session が activate される: commands 層は control char filtering しない passthrough 契約"
+        );
+        assert_eq!(
+            manager.current_title(),
+            Some(nul_title),
+            "NUL byte 含む title が SessionManager::start_with_output へそのまま forwarded される passthrough 契約"
+        );
+    }
+
+    #[test]
+    fn start_session_inner_passes_huge_title_through_without_size_limit() {
+        let manager = SessionManager::new();
+        let dir = tempdir().unwrap();
+        let huge_title = "a".repeat(10_000);
+
+        start_session_inner(
+            &manager,
+            huge_title.clone(),
+            1_700_000_000,
+            dir.path(),
+            jst(),
+        )
+        .expect("start_session_inner should succeed even with 10_000 char title");
+
+        assert!(
+            manager.is_active(),
+            "10_000 chars title でも session が activate される: commands 層は size limit を持たない passthrough 契約"
+        );
+        let current = manager
+            .current_title()
+            .expect("current_title should be Some");
+        assert_eq!(
+            current.len(),
+            10_000,
+            "10_000 chars title が truncate されず forwarded される passthrough 契約 (size assert)"
+        );
+        assert_eq!(
+            current, huge_title,
+            "10_000 chars title が内容変換 (replace_all 等) されず forwarded される passthrough 契約 (内容 assert)"
+        );
+    }
 }

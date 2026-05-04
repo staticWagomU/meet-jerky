@@ -21340,3 +21340,43 @@ test result: ok. 548 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-start-session-inner-title-passthrough-tests-20260504-28-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-start-session-inner-title-passthrough-tests-20260504-28-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-28 Loop 3
+
+### 作業範囲
+- `src-tauri/src/session_commands.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替 (markdown.rs → session_commands.rs) で「test 密度の偏り是正」継続 + 「層対称軸補強」パターン新規 application で commands 層 (start_session_inner) の title passthrough を 3 軸で CI 固定:
+- T1: start_session_inner_passes_empty_title_through_to_session_without_normalization (空 title)
+- T2: start_session_inner_passes_title_with_nul_bytes_through_without_sanitization (NUL byte)
+- T3: start_session_inner_passes_huge_title_through_without_size_limit (10_000 chars)
+
+### 結果
+- cargo fmt --check: 差分なし (cargo fmt 1 往復修正後)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (Finished `dev` profile in 0.68s)
+- cargo test --lib -- --test-threads=1: `test result: ok. 551 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+
+### 変更ファイル
+- src-tauri/src/session_commands.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 551 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
