@@ -1,0 +1,185 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-3) です。
+旧 mjc-main (= mjc-main-20260505-2) から **3 ループ完走 + Webex 招待 URL 主要 4 系統 (Personal Room / j.php / wbxmjs / webappng) 網羅完了 + 26 連続「Debug 軸補強」のローカル最適化からの脱却を継続維持 + AGENTS.md 優先順位 2 (会議検知の網羅性) への直接寄与継続 + harness silent fail mitigation pattern 連続 29 ループ実証達成 + コミット周期 ~5 分/loop で目標 15 分を 3 倍上回る達成 + 「Webex sweep の自然境界での予防的ハンドオフ」判断 = 4 ループ目以降の Webex 軸補強への自己批判的逸脱判断** の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 24,200+ 行 / 1.9MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-05 ~01:50 JST] mjc-main-20260505-2 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (最重要、後継が継承すべき判断)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」。
+
+## mjc-main-20260505-1 が確立した戦略転換 (継承中)
+旧 mjc-main-20260505-1 が、前 32 セッション連続 26 ループの「Debug 軸補強テスト追加」だけ繰り返していたローカル最適化を批判的評価し、**意図的に逸脱して優先順位 1〜4 の本質改善へ転換**した。
+
+## mjc-main-20260505-2 (本セッション) が新たに確立した判断
+**「Webex sweep」も同じ罠になりうる**ことを Loop 3 完了時に自己批判的に判断。Loop 1 (j.php) → Loop 2 (wbxmjs) → Loop 3 (webappng) で Webex 招待 URL 主要 4 系統を網羅完了したが、Loop 4 で「Webex Japanese 窓タイトル / Whereby / Teams 窓タイトル」等の Webex 周辺改良に進むと、**「Debug 軸補強」と同じ「直接寄与は薄いがコミットしやすいローカル最適化」**になる懸念を察知。
+
+**自然境界 (Webex 4 系統網羅完了) で予防的ハンドオフ**を行い、後継には Webex sweep に**戻らない**よう明示する判断を下した。
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- **「Webex sweep」「Zoom sweep」「Teams sweep」等の単一サービス補強パターンに 4 ループ以上集中しない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- 寄与が薄い場合は **その候補をスキップして次を探す**
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**
+
+# 引き継ぎサマリ (2026-05-05 ~01:50 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 192 (origin/main から先行、本セッション +3 commit (Loop 1-3))
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 旧 mjc-main-20260505-2 が canonical 名 mjc-main を持ち、本セッションで 3 ループを完了:
+  1. `bd41d05` feat(app_detection): Cisco Webex `j.php?MTID=<token>` 招待 URL 検知を classify_meeting_url に追加 (Loop 1, +7 件 → 653 passed, ~6 分)
+  2. `2587b7a` feat(app_detection): Cisco Webex `wbxmjs/joinservice/sites/<site>/meeting/...` Meeting Join Service URL 検知を追加 (Loop 2, +7 件 → 660 passed, ~5 分)
+  3. `06caf10` feat(app_detection): Cisco Webex `webappng/sites/<site>/meeting/info/<token>` Web App Next Generation URL 検知を追加 (Loop 3, +7 件 → 667 passed, ~5 分)
+
+## 現在の品質状態
+- cargo test (lib): **667 passed / 0 failed** (前 646 → +21 件、3 ループ)
+- cargo clippy --lib -- -D warnings: **警告ゼロ** (3 ループ全てで維持)
+- cargo fmt --check: OK
+- npm run build: 本セッションで frontend 触れていないため変更なし
+
+## 完成した Webex 検知の到達点
+**Webex 招待 URL 4 系統網羅完了** (`classify_meeting_url` の Webex 分岐):
+- Personal Room: `*.webex.com/meet/<id>` (Loop mjc-main-20260505-1 Loop 2)
+- j.php 招待: `*.webex.com/<site>/j.php?MTID=<token>` (本セッション Loop 1)
+- wbxmjs Meeting Join Service: `*.webex.com/wbxmjs/joinservice/sites/<site>/meeting/...` (本セッション Loop 2)
+- webappng Web App Next Generation: `*.webex.com/webappng/sites/<site>/meeting/info/<token>` (本セッション Loop 3)
+
+**Webex 検知の窓タイトル fallback** (`classify_meeting_window_title`):
+- 英語: `Webex Meeting` prefix (mjc-main-20260505-1 Loop 3)
+- 日本語: 未対応 (将来課題、後述)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-2、handoff 直前)
+- mjc-main-20260505-3 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ)。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認 (上 3 コミットが本セッションの実績)。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260505-3` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-3 mjc-main` を実行 (前 16 セッションで実証済 precedent あり、冪等)。
+5. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-2) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + 「Webex sweep 自然境界での予防的ハンドオフ」判断 + 次ループ候補を確認**
+6. **最初の Loop 候補は下記「次ループ候補」から選ぶ**。**Webex 関連候補 (A1, A2, A3) は variety 維持のため少なくとも 1 ループは飛ばす**。**Debug / Copy / serde / PartialEq 等の派生型補強パターンには絶対に戻らない**。
+7. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 次ループ候補 (優先順位順、variety pivot 推奨)
+
+### 最優先 (variety pivot を兼ねた priority 1〜4 への直接寄与)
+
+#### B1. Microsoft Teams window title fallback (規模 M, 価値高、AGENTS.md 優先順位 2)
+- 現状: `classify_meeting_window_title` は Google Meet / Zoom / Webex の 3 サービスのみ。Teams 完全未対応
+- リスク: Teams は外部解説 (help center, learn.microsoft.com) との区別が難しい = 実機 / Web 検証が事前に望ましい
+- **推奨アプローチ**: 1 ループ目に **haiku research** で Teams 実機 / Web タブタイトル形式を調査 (1 turn, ~1-2 分)。
+  - 想定形式: `Microsoft Teams` (idle) / `<meeting>... | Microsoft Teams` (in-meeting) / `(<count>) Microsoft Teams` 等
+  - 仕様明確化後、2 ループ目で安全側スライス (例: 完全一致 `Microsoft Teams` のみ accept、suffix 一致は将来) で実装
+- 価値: AGENTS.md 優先順位 2 への直接寄与、Webex sweep からの明確な pivot
+
+#### E. transcription.rs 構造調査 (規模 M, 価値高、構造改善 = priority 1 の予防的寄与)
+- 現状: transcription.rs 2999 行 = リポジトリ最大ファイル (次は app_detection.rs 2999 行 → 本セッション +91 行で 3090 行)
+- AGENTS.md 優先順位 1 (クラッシュ修正) の予防的寄与: 巨大ファイルの理解難度がクラッシュバグ混入リスクを高める
+- **推奨アプローチ**: 1 ループで haiku research に「transcription.rs の責務分離候補」を調査させる (cargo モジュール / 関数群分離戦略を提案)
+- 後続ループで段階的に Tidy First で分割 (`streaming::*` / `engine_factory::*` 等のサブモジュール抽出)
+
+#### F. app_detection.rs の責務肥大対応 (規模 M, 価値中)
+- 現状: app_detection.rs 2999 → 3090 行 (本セッション + ~90 行)。 `classify_meeting_url` の OR 条件が 3 サービス × 4 形態でスケール
+- Webex 検知関数が 4 個 (`is_webex_*`) に増えたため、`webex` モジュールへ分離する余地
+- 1 ループで Tidy First で `mod webex { ... }` インラインモジュール化、または別ファイル `webex.rs` 抽出
+
+### 中優先 (priority 1 = クラッシュ修正の追加調査)
+
+#### G. unwrap / expect / panic 監査の他軸再点検 (規模 S, 価値低 ※本セッション結果)
+- 本セッションで grep ベース監査済 = production code の panic 候補は **3 件のみ、すべて provably-safe**:
+  - `app_detection.rs:940` (静的配列 serialization、不可能なエラー)
+  - `lib.rs:383` (Tauri main entry、標準パターン)
+  - `session_commands.rs:29` (JST FixedOffset、数学的に valid)
+- **「panic 候補は実は少ない」が結論** = 候補 D は実質完了、再点検不要
+
+### 中優先 (priority 2 残課題、ただし variety 維持のため Loop 4 直後は避ける)
+
+#### A1. Webex Japanese window title (`Webex ミーティング`) — variety 維持のため Loop 4 では推奨しない
+- 規模: 極小 (3-4 行)
+- 価値: 低-中 (Webex 検知の英 / 日 symmetry)
+- **後継メインの 5 ループ目以降で検討** (本セッションが Loop 1-3 で Webex sweep したため、すぐ続けると 4 連続 Webex 補強 = ローカル最適化リスク)
+
+#### A2. Whereby サポート (規模 S-M, 価値中)
+- URL: `whereby.com/<room-name>` または `<subdomain>.whereby.com/<room-name>`
+- リスク: about / pricing / blog 等の通常ページとの区別が難しい = 仕様調査必須
+- 1 ループ目に research、2 ループ目で実装 (Webex 直後は避ける)
+
+#### A3. Zoom URL gap-fill (規模 S, 価値低)
+- 現状の Zoom 検知は十分包括的 (`/j/<id>` / `/wc/join/<id>` / `/wc/<id>/join` / `/my/<id>`)
+- gap は薄い、低優先
+
+### 低優先 (harness 衛生)
+
+#### H. 大量 untracked ファイル整理判断
+- `docs/handoff/`, `docs/worker-prompts/` に 100+ untracked ファイル
+- 既 commit 済 (`-1`, `-2`, `-3`, `-11`, `-20`) と untracked が **非対称放置**
+- `.gitignore` 化 vs 全 commit の議論を要する = 1 ループで決めず、**ユーザー直伝指示があるまで保留**
+
+#### I. AGENT_LOG.md 24,200+ 行の archive 戦略
+- 末尾 400 行のみ active、それ以前は読まれない
+- archive ディレクトリ (`docs/agent-log-archive/`) への分離戦略を検討
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 667 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` (本セッションで動作実証、エスケープ問題なし)
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append (Edit ツールでは末尾 `---` が unique にならない)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-3 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認** (本セッションでも mitigation pattern 連続 29 ループ実証)
+  - log file (`logs/agent/<session>.txt`) と tmux pane は補助観測手段
+  - 観測時間目安: worker 起動 → 90-180 秒で対象ファイル + AGENT_LOG.md 両方に M 表示
+
+## worker prompt 必須要素 (29 連続セッションで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション平均 ~5 分/loop で目標を **3 倍上回る達成**)
+- worker 1 件 ≒ 1 コミット
+- 累積 worker 完走 105/105 (本セッション +3 件、100% 維持)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge は本セッション中 2 件 (Loop 1 worker 起動後 + Loop 2 worker 起動後) を「Loop 進行 + commit」で消化済
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ)。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260505-3` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-3 mjc-main` を実行 (冪等)。
+4. **戦略転換の核心を継承**: 26 連続「Debug 軸補強」 + 4 連続「Webex sweep」**両方** に戻らない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ。**同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**。
+5. **最初の Loop 候補**: 上記 B1 (Teams window title research) / E (transcription.rs 構造調査) / F (app_detection.rs 責務分離) を優先。**A1 / A2 / A3 等の Webex 関連は最低 1 ループ間隔を空けてから**。
+6. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (handoff サマリの予測は誤認の precedent あり)
+7. 待機モード禁止。final answer で停止せず、改善ループを継続する。
+8. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**
+9. **worker 完走確認は `git status --short` を主観測手段とする** (連続 29 ループで実証した mitigation pattern、log file は補助、観測時間目安 90-180 秒)

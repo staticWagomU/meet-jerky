@@ -24294,3 +24294,31 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Webex 招待 URL 主要 4 系統網羅完了 = Personal Room / j.php / wbxmjs / webappng)
 
 ---
+## 2026-05-05 JST [SESSION SUMMARY] mjc-main-20260505-2 (3 ループ完走 + Webex 4 系統網羅完了 + 予防的ハンドオフ判断)
+- 担当セッション: mjc-main (canonical 移譲済) = mjc-main-20260505-2 (メイン, opus, 後継 mjc-main-20260505-3)
+- 役割: 旧 mjc-main-20260505-1 から 26 連続「Debug 軸補強」のローカル最適化からの脱却戦略を継承し、AGENTS.md 優先順位 2 (会議検知の網羅性) への直接寄与を継続。Webex 招待 URL 主要 4 系統網羅完了 (Personal Room / j.php / wbxmjs / webappng) を達成し、4 ループ目の Webex sweep 続行が新たなローカル最適化リスクと判断、自然境界 (4 系統網羅完了) で予防的ハンドオフ。
+- 作業範囲: 3 ループ全て src-tauri/src/app_detection.rs (worker 経由) + AGENT_LOG.md (worker 経由) + docs/handoff/mjc-main-20260505-2.txt (メイン直接、ハンドオフ)
+- 累積成果 (本セッション 3 ループ):
+  - Loop 1 = bd41d05 = `j.php?MTID=<token>` 招待 URL 検知追加 (646→653, +7 件, ~6 分)
+  - Loop 2 = 2587b7a = `wbxmjs/joinservice/sites/.../meeting/...` Meeting Join Service URL 検知追加 (653→660, +7 件, ~5 分)
+  - Loop 3 = 06caf10 = `webappng/sites/.../meeting/info/<token>` Web App Next Generation URL 検知追加 (660→667, +7 件, ~5 分)
+- 検証結果: cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 667 passed (前 646 + 21 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 戦略判断詳細:
+  - **mjc-main-20260505-1 が確立した「26 連続 Debug 軸補強からの脱却」戦略を継承維持**
+  - **Loop 3 完了時に「Webex sweep」自体がローカル最適化に変質する懸念を察知 = 自己批判的逸脱判断**
+  - **「同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討」を新ルールとして後継に明示**
+  - **panic 監査 (handoff 候補 D) を grep ベースで実施 = production code の panic 候補は 3 件のみ、すべて provably-safe (静的配列 serialization / Tauri main entry / JST FixedOffset) と判明 = 本質的にやることがないと結論**
+  - **harness silent fail mitigation pattern (git status 主観測 + log/tmux 補助) 連続 29 ループ実証達成**
+  - **コミット周期 ~5 分/loop で目標 15 分を 3 倍上回る達成**
+  - **コミット累積 worker 完走 105/105 (本セッション +3 件、100% 維持)**
+- 後継への引き継ぎ要点:
+  - Webex 4 系統網羅完了 = 5 ループ目以降は **Webex に戻らない**
+  - 推奨次ループ候補: B1 (Microsoft Teams window title research → 実装) / E (transcription.rs 構造調査) / F (app_detection.rs 責務分離 = `is_webex_*` 4 関数の `mod webex` 抽出)
+  - 避けるべき: A1 (Webex Japanese title) / A2 (Whereby) / A3 (Zoom gap-fill) は variety 確保のため最低 1 ループ間隔
+  - panic 監査は実質完了 = 候補 D 再点検不要
+  - canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-3 mjc-main` (冪等)
+- 次アクション: 後継 mjc-main-20260505-3 が docs/handoff/mjc-main-20260505-2.txt を読み Loop 4 を始動。本セッションは終了。
+
+---
