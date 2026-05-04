@@ -1,5 +1,3 @@
----
-
 ## worker: mjc-worker-handle-detection-update-last-seen-secs
 
 - 開始日時: 2026-05-04 14:40 JST
@@ -19873,3 +19871,33 @@ handle_browser_url_detection 関数内で既存 Instant ベース throttle (last
 - **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-21.txt` (作成予定)
 - **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-21 docs/handoff/mjc-main-20260504-21.txt`
 - **canonical 名移譲コマンド**: 後継から `bash scripts/agent-adopt-main.sh mjc-main-20260504-21 mjc-main`
+---
+
+## worker: mjc-worker-parse-throttle-key-display-name-20260504-21-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-parse-throttle-key-display-name-20260504-21-1
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs のみ (純粋関数 1 個 + test 6 件追加)
+- **指示内容の要約**: F-Loop5 Loop 1 = `parse_throttle_key_to_display_name` 純粋関数を `inactive_notification_body` 直後・`classify_meeting_url` 直前に追加。`last_seen_secs` HashMap の 3 形式 key (bundle_id 単独 / `"browser:..."` / `"window-title:..."`) を display name に変換。test 6 件追加。Tidy First, ユーザー観測不可。
+- **結果**: 成功
+- **変更ファイル**: src-tauri/src/app_detection.rs (純粋関数 1 個 + test 6 件追加)
+- **検証結果**:
+  - cargo build: 成功 (compile エラーなし)
+  - cargo test --lib parse_throttle_key_to_display_name: **6 passed / 0 failed**
+  - cargo test --lib: **484 passed / 0 failed** (前回 478 + 新規 6)
+  - cargo clippy --all-targets -- -D warnings: 警告ゼロ
+  - cargo fmt --check: 差分なし
+  - agent-verify.sh: 全段 OK (484 passed / 0 failed)
+- **設計判断**:
+  - `"browser:..."` → `splitn(3, ':')` で `rest.splitn(3, ':')` を使用。strip_prefix 後の文字列に対して bundle_id / service / host の 3 セグメントを固定。host 内に `:` が含まれても問題なし
+  - `"window-title:..."` → `splitn(2, ':')` で bundle_id / service の 2 セグメントに固定
+  - service セグメントが空文字の場合は `None` (例: `"browser:bundle::host"`)
+  - dead_code 二重 attribute = `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` + `#[allow(dead_code)]` (mjc-main-20 Loop 1 precedent 踏襲)
+  - Loop 2 で iteration が呼んだ瞬間に両 attribute を削除する trigger として機能
+- **依存関係追加**: なし (標準ライブラリのみで実装)
+- **失敗理由**: なし
+- **次アクション**: Loop 2 = `check_all_inactive_bundles` の iteration を `WATCHED_BUNDLE_IDS` から `last_seen_secs.lock().keys()` 全件巡回に変更 + `parse_throttle_key_to_display_name` を呼んで display name 解決 (規模 S, 振る舞い変更, ユーザー観測可能, 別ループ)
+
+---
+

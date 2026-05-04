@@ -453,6 +453,51 @@ fn inactive_notification_body(app_name: &str, elapsed_secs: u64) -> String {
     )
 }
 
+/// throttle_key を会議アプリ表示名に変換する純粋関数。
+///
+/// `last_seen_secs` HashMap に格納される 3 つの key 形式を解釈する:
+/// - **アプリ経路 (handle_detection)**: bundle_id 単独 (例: `"us.zoom.xos"`) → `WATCHED_BUNDLE_IDS` lookup で `Some("Zoom")`
+/// - **browser 経路**: `"browser:<bundle_id>:<service>:<host>"` → 3 つ目のセグメント (service) を `Some` で返す
+/// - **window-title 経路**: `"window-title:<bundle_id>:<service>"` → 3 つ目のセグメント (service) を `Some` で返す
+/// - 上記いずれにも該当しない不正形式・未知 bundle_id は `None` を返す
+///
+/// `check_all_inactive_bundles` の iteration extension (= F-Loop5 Loop 2) で、
+/// `last_seen_secs` の key 全件巡回時に display name を解決するために呼ばれる予定。
+/// 本 Loop ではまだ誰も呼ばないため `#[allow(dead_code)]` を付ける。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+fn parse_throttle_key_to_display_name(key: &str) -> Option<String> {
+    if let Some(rest) = key.strip_prefix("browser:") {
+        // "browser:<bundle_id>:<service>:<host>" → splitn(3, ':') → [bundle_id, service, host]
+        let parts: Vec<&str> = rest.splitn(3, ':').collect();
+        if parts.len() < 2 {
+            return None;
+        }
+        let service = parts[1];
+        if service.is_empty() {
+            return None;
+        }
+        return Some(service.to_string());
+    }
+    if let Some(rest) = key.strip_prefix("window-title:") {
+        // "window-title:<bundle_id>:<service>" → splitn(2, ':') → [bundle_id, service]
+        let parts: Vec<&str> = rest.splitn(2, ':').collect();
+        if parts.len() < 2 {
+            return None;
+        }
+        let service = parts[1];
+        if service.is_empty() {
+            return None;
+        }
+        return Some(service.to_string());
+    }
+    // アプリ経路: bundle_id 単独 → WATCHED_BUNDLE_IDS lookup
+    WATCHED_BUNDLE_IDS
+        .iter()
+        .find(|(bundle_id, _)| *bundle_id == key)
+        .map(|(_, app_name)| app_name.to_string())
+}
+
 /// ブラウザ URL の実機取得が入った後に使う、会議 URL 分類用の純粋関数。
 ///
 /// 標準文字列処理だけで host/path/query を見て分類し、URL 全文は返さない。
@@ -1782,6 +1827,56 @@ mod tests {
         assert!(inactive_notification_body("X", 600).contains("10"));
         assert!(inactive_notification_body("X", 659).contains("10"));
         assert!(inactive_notification_body("X", 660).contains("11"));
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_app_name_for_known_bundle_id() {
+        // 契約: WATCHED_BUNDLE_IDS に登録済みの bundle_id 単独 key は app name を返す
+        assert_eq!(
+            parse_throttle_key_to_display_name("us.zoom.xos"),
+            Some("Zoom".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_service_for_browser_key() {
+        // 契約: "browser:<bundle_id>:<service>:<host>" 形式は 3 つ目の service セグメントを返す
+        assert_eq!(
+            parse_throttle_key_to_display_name(
+                "browser:com.apple.Safari:Google Meet:meet.google.com"
+            ),
+            Some("Google Meet".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_service_for_window_title_key() {
+        // 契約: "window-title:<bundle_id>:<service>" 形式は service セグメントを返す
+        assert_eq!(
+            parse_throttle_key_to_display_name("window-title:com.apple.Safari:Zoom"),
+            Some("Zoom".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_none_for_unknown_bundle_id() {
+        // 契約: WATCHED_BUNDLE_IDS に存在しない bundle_id 単独は None を返す
+        assert_eq!(parse_throttle_key_to_display_name("com.unknown.app"), None);
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_none_for_empty_key() {
+        // 契約: 空文字は WATCHED_BUNDLE_IDS にもプレフィックスにも一致せず None を返す
+        assert_eq!(parse_throttle_key_to_display_name(""), None);
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_none_for_browser_key_with_empty_service() {
+        // 契約: service セグメントが空文字 ("browser:bundle::host") は None を返す
+        assert_eq!(
+            parse_throttle_key_to_display_name("browser:bundle::host"),
+            None
+        );
     }
 
     #[test]
