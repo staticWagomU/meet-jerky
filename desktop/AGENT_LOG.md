@@ -25280,3 +25280,154 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - watchdog nudge 1 件: 「自律改善ループへ進む」(Loop 24 完走前に受信、Loop 24 検証中だったため完走を待ってから対応 = 正しい運用)
 
 ---
+[mjc-main-20260505-13 Loop 25 / 2026-05-05 ~JST]
+
+## What
+- `validate_stream_count_for_engine` + `parse_requested_transcription_sources` を `src-tauri/src/transcription_commands.rs` に移動
+- `RequestedTranscriptionSources` struct + `TRANSCRIPTION_SOURCE_MICROPHONE` / `TRANSCRIPTION_SOURCE_SYSTEM_AUDIO` const を移動
+- 関連 17 tests を transcription_commands.rs の tests mod に移動
+- transcription.rs 呼び出し元 2 箇所 (L84, L101) を `crate::transcription_commands::*` 経由に変更
+- transcription.rs tests mod に `use crate::transcription_commands::RequestedTranscriptionSources;` 追加 (残存テスト L1910+ が参照するため)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) の Phase 3-B 続き
+- mjc-main-20260505-12 Loop 23 (list_models + is_model_downloaded) + Loop 24 (download_model) の延長 = 純粋 helper の集約場所として transcription_commands.rs の役割確立
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 692 passed 件数不変
+- pub(crate) で visibility 最小化 (関数 + struct + struct fields + const 全て)
+- 17 tests のセット移動でモジュール責務一致
+- fmt 修正: crate::transcription_commands:: prefix による行長超過を 2 箇所 wrap
+
+## Verify
+- cargo test --lib: 692 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+[mjc-main-20260505-13 Loop 26 / 2026-05-05 ~JST]
+
+## What
+- `is_goto_app_meeting_url(host, path)` 関数を `src-tauri/src/app_detection.rs` に追加
+- `classify_meeting_url` の OR 条件 (L527-529) に新規関数を追加 = GotoMeeting 分類に統合
+- TDD で 8 件のテストを app_detection.rs tests mod に追加 (単独テスト 7 件 + classify_meeting_url 統合テスト 1 件)
+
+## Why
+- AGENTS.md 優先順位 2 = 会議検知の網羅性向上
+- mjc-main-20260505-11 Loop 22 (legacy URL = global.gotomeeting.com/join/<9-digits>) の延長 = GoToMeeting 段階的精緻化
+- variety pivot: extraction 3 連続 (Loop 23, 24, 25) から service detection 軸への完全 pivot
+- Whereby Loop 7→14 同パターン継承
+
+## How (TDD Red→Green)
+- host 完全一致 (`host == "app.goto.com"`) で subdomain spoofing 防御
+- path = `/meet/<9-digit-id>` 制約 (9 桁 numeric ID = legacy URL pattern と統一)
+- 既存 `is_goto_legacy_meeting_url` と独立分離 (host pattern が異なる)
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (692 + 8 new tests)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+[SESSION SUMMARY @ 2026-05-05 ~05:51 JST] mjc-main-20260505-13
+
+## ループ実績 (2 ループ完走 = 「2 ループ + 早期 handoff」precedent 連続 10 セッション目)
+
+### Loop 25 = Phase 3-B 続き = validate_stream_count_for_engine + parse_requested_transcription_sources 抽出
+- commit: 1f6e585
+- priority 1 予防的寄与 (Tauri commands 集約)
+- ~39 行関数 (validate 16 行 + parse 23 行) + RequestedTranscriptionSources struct (4 行) + TRANSCRIPTION_SOURCE_* const 2 行 + 全 17 tests 移動
+- transcription.rs 呼び出し元 2 箇所 (L84, L101) を `crate::transcription_commands::*` 経由に変更
+- worker 自律 Tidy 実例:
+  1. `RequestedTranscriptionSources` struct の field-level `pub(crate)` 化判断 (pattern matching で他モジュールから参照されるため必須)
+  2. transcription.rs tests mod に `use crate::transcription_commands::RequestedTranscriptionSources;` 追加 (残存テスト L1910+ が参照)
+  3. fmt 修正: `crate::transcription_commands::` prefix の行長超過を 2 箇所 wrap = sonnet worker の自律判断
+- 変更ファイル 2: src-tauri/src/transcription.rs (-322 行) / src-tauri/src/transcription_commands.rs (+327 行)
+- 検証: 692 passed 件数不変, clippy 警告ゼロ, fmt OK
+- 所要時間: ~6 分 (worker 起動から commit まで)
+
+### Loop 26 = GoToMeeting アプリ launcher 検知追加 (variety pivot)
+- commit: 95822d2
+- priority 2 直接寄与 (会議検知の網羅性向上)
+- variety pivot: extraction 3 連続 (Loop 23, 24, 25) から service detection 軸への完全 pivot
+- ~12 行新関数 + classify_meeting_url L527-529 への OR 統合 + tests 8 件 (単独 7 件 + 統合 1 件)
+- `is_goto_app_meeting_url(host, path)`: host 完全一致 (`host == "app.goto.com"`) で subdomain spoofing 防御 + path = `/meet/<9-digit-id>` 制約
+- 設計判断: 既存 `is_goto_legacy_meeting_url` (global.gotomeeting.com/join/<9-digits>) と独立分離 (host pattern が本質的に異なる)
+- mjc-main-20260505-11 Loop 22 (GoToMeeting legacy URL) の延長 = 4 ループ間隔で「2 連続にしない約束」遵守 = Whereby Loop 7→14 段階的精緻化パターン継承
+- 変更ファイル 1: src-tauri/src/app_detection.rs (+61 行)
+- 検証: 700 passed (= 692 + 8 new tests), clippy 警告ゼロ, fmt OK
+- 所要時間: ~3 分 (worker 起動から commit まで)
+
+## 累計 transcription.rs 削減 (Phase 1〜4 完了 + Phase 3-B 進行中)
+- 元 2999 行 → 現在 **1712 行** = **~42.9% 縮小** (~1287 行削減) = **「42% 達成」 = 本セッションで 32.2% → 42.9% = +10.7 pt 一気**
+- transcription_commands.rs 累計: 94 → 421 行 (本セッション +327 行)
+- 内訳 (本セッション分): Phase 3-B Loop 25 (validate + parse + struct + const + 17 tests) ~327 行
+
+## variety 規則の状態
+- 直近 4 ループ: Loop 23 (extraction = list_models + is_model_downloaded) → 24 (extraction = download_model) → 25 (extraction = validate + parse + 17 tests) → 26 (service detection pivot = GoToMeeting アプリ launcher)
+- 直近の extraction 連続 = 0 (Loop 26 で pivot 達成)
+- Loop 27 で extraction 続行可、または別軸続行可
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 7 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-13 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 前任 mjc-main-20260505-7/8/9/10/11/12 の観測継続結論 (前任 mjc-main-20260505-6 の `bfb9846` chore(harness) commit が永続的解決) を **連続 7 セッション目で追認** = 結論超強化
+- 「観測してから判断する」運用の効果実例
+
+## worker 統計
+- worker 完走 2/2 (累計 126/126 = 100% 維持)
+- stdin redirect 化 script の安定運用 18-19 件目 precedent 達成 (Loop 10 焼き付けが連続 9 セッション継承で実証)
+- 「sonnet worker の Tidy First 質的高さ」連続 8 セッション目で実証 (Loop 25 で field-level pub(crate) + tests mod use 追加 + fmt wrap の自律 3 件判断)
+
+## 本セッションの commit 周期
+- Loop 25: ~6 分 (起動 ~05:40 → commit ~05:46)
+- Loop 26: ~3 分 (起動 ~05:46 → commit ~05:50)
+- 平均 ~4.5 分/loop = **目標 15 分以内大幅達成**
+
+## 後継への引き継ぎ判断 (Loop 27 候補)
+
+### 候補 A (推奨 Loop 27): Phase 3-B 続き = stop_transcription 抽出
+- transcription.rs L260 周辺 (handoff サマリ予測、要 grep 確認): `pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> Result<(), String>`
+- 規模: SS (~12 行)
+- リスク: 低 (tauri::State 経由だが内部で TranscriptionStateHandle::stop_transcription を呼ぶだけ)
+- 1 ループ完結確実
+- variety 規則: Loop 26 で pivot 達成済 = Loop 27 で extraction 続行可
+
+### 候補 B (Loop 28+): Phase 3-B 続き = start_transcription 分割抽出
+- transcription.rs L113-258 (handoff サマリ予測、要 grep 確認): `pub fn start_transcription(...)`
+- 規模: 大 (~145 行 = thread spawn + ringbuf + tauri::State 多数連携)
+- リスク: 中-高、1 ループ完結困難 = 2-3 段階分割推奨
+- 段階案:
+  - 28-A: engine init / state lock 部 (~30 行)
+  - 28-B: stream prep 部 (~50 行)
+  - 28-C: thread spawn 部 (~65 行)
+- 後継メインに譲るのが安全
+
+### 候補 C (Loop 27 別案): app_detection.rs Webex モジュール抽出 (3356 行)
+- transcription-refactor-plan.md L117-121 で「将来課題」記載済
+- Webex 関連 8 関数の抽出
+- 規模 M (~200 行?)、transcription.rs 抽出パターンを app_detection.rs に応用可
+- variety 規則: extraction 軸再開だが別ファイル軸 = 自然 pivot
+
+### 候補 D (Loop 28+): 新サービス検知 (Discord stage / Slack Huddle)
+- priority 2 直接寄与
+- URL pattern 調査が前段必要 = 1 ループ完結が不確実
+
+### 候補 E (Loop 28+): app.goto.com 系の TLD 拡張 (app.goto.eu / app.goto.co.uk 等)
+- priority 2 直接寄与、Loop 26 (本セッション) の延長
+- 「2 連続にしない約束」のため最低 Loop 30 まで間隔を空ける
+
+### 候補 F: frontend 軸 pivot
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- 浅 grep で具体的な不足を 1 つ特定してから worker 発注
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 700 件全 pass
+- cargo は `cd src-tauri` してから実行
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁)
+- `--no-verify` 禁止
+- メインは原則アプリコード/ハーネス直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+- watchdog nudge 1 件: 「自律改善ループへ進む」(Loop 26 worker 起動直後に受信、worker 観測中だったため worker 完走を待ってから対応 = 正しい運用 = mjc-main-20260505-12 と同パターン)
+
+---
