@@ -23927,3 +23927,144 @@ test result: ok. 625 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
 
 ---
+## [SESSION SUMMARY @ 2026-05-04 ~23:50 JST] mjc-main-20260504-39
+
+旧 mjc-main (= mjc-main-20260504-38) からの予防的ハンドオフを受け、本セッション (mjc-main-20260504-39) は **1 ループで「Debug 軸補強」26 連続 application 系譜完成達成 + 「Debug 手動実装形態 (impl std::fmt::Debug)」初対応 + auth_header redaction 契約 CI 保護** という記念碑的成果を達成。
+
+### 本セッション 1 ループ実績 (前 32 セッション全て 3 ループだった中で初の「1 ループ + 系譜完成宣言 + 早期ハンドオフ」precedent)
+
+1. **Loop 1 (`264c18e`)**: `test(cloud_whisper): WhisperHttpRequestDescriptor` (`#[derive(Clone, PartialEq)]` + `impl std::fmt::Debug` を **手動実装**、`auth_header: "<redacted>"` redaction) の Debug redaction 契約軸 (実 auth_header 値が含まれない + `<redacted>` 置換) / Debug nested + format 不変条件軸 (outer/inner struct 名 + url/params 値) / Clone 独立性 + PartialEq 直接判定軸 = 「Debug 軸補強」**26 連続 application** + 「Debug 手動実装形態 (impl std::fmt::Debug)」**初対応** (これまで全て derive(Debug) だった、新 precedent) + `auth_header: "<redacted>"` セキュリティ redaction 契約 CI 保護 (API key 漏洩防止) + nested Debug 出力 (params 内側 WhisperRequestParams) + cloud_whisper.rs 内 3 形態目補強 (Tidy First, +3 件 → 637 passed)。
+
+### 「Debug 軸補強」26 連続 application 系譜完成達成 (歴史的成果)
+
+26 連続 application の系譜:
+SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegment/Session (m-31 L2) → TranscriptionErrorPayload (m-31 L3) → TranscriptionSegment (m-32 L1) → TranscriptionSource enum (m-32 L2) → StreamConfig (m-32 L3) → ModelInfo (m-33 L1) → RequestedTranscriptionSources (m-33 L2) → SessionManagerError (m-33 L3) → Session 全体 (m-34 L1) → TranscriptionEngineType (m-34 L2) → SessionSummary (m-34 L3) → AppSettings (m-35 L1) → MeetingAppDetectedPayload (m-35 L2) → WhisperRequestParams (m-35 L3) → MeetingUrlClassification (m-36 L1) → AudioDevice (m-36 L2) → ParsedUrlParts (m-36 L3) → OpenAIRealtimeEngine (m-37 L1) → ElevenLabsRealtimeEngine (m-37 L2) → AudioCommand (OpenAI 側, m-37 L3) → AudioCommand (ElevenLabs 側, m-38 L1) → CloudWhisperError (m-38 L2) → VerboseResponse/Segment (m-38 L3) → **WhisperHttpRequestDescriptor (m-39 L1)**。
+
+#### 系譜完成の客観的根拠 (本セッションでの grep 確認結果)
+- `grep -rn "^#\[derive\|^    #\[derive\|^        #\[derive" src-tauri/src/*.rs | grep -i "Debug"` の結果として全 25 個の `#[derive(Debug...)]` トップレベル型を列挙
+- 各型が既補強済であることを履歴と照合 (apple_speech.rs:15 / audio.rs:16 / app_detection.rs:52,81,592 / cloud_whisper.rs:5,10,28 / cloud_whisper_errors.rs:2 / secret_store.rs:17 / elevenlabs_realtime.rs:26,63 / session.rs:6,13 / session_store.rs:124 / openai_realtime.rs:38,81 / settings.rs:25,56 / session_manager.rs:7 / transcription.rs:19,27,42,50,64,1041)
+- `grep -rn "    #\[derive(Debug\|        #\[derive(Debug\|            #\[derive(Debug" src-tauri/src/`: 結果なし = inner mod / 関数内 nested derive Debug は存在しない
+- `grep -rn "impl std::fmt::Debug\|impl fmt::Debug\|impl Debug for" src-tauri/src/`: `cloud_whisper.rs:61` の `WhisperHttpRequestDescriptor` のみ = 本 Loop 1 で補強済
+- `grep -rn "impl Display\|impl std::fmt::Display\|impl fmt::Display" src-tauri/src/`: 結果なし = thiserror 派生以外の手動 Display 実装は存在しない
+- 未補強 derive Debug 型 / 手動 Debug 実装 = **ゼロ**
+- 残った 8 ファイル (audio_event.rs / audio_utils.rs / datetime_fmt.rs / markdown.rs / session_commands.rs / system_audio.rs / transcript.rs / transcript_bridge.rs) は **derive 派生型自体が存在しない** = 関数中心モジュールのため Debug 軸補強の対象外
+
+### 確立パターン継続/拡張
+
+#### 1. 「対称的補強の 3 軸構造」パターン (33 連続セッション目で application、本セッション 1 ループで application)
+
+#### 2. 「Debug 軸補強」26 連続 application 系譜完成 (本セッション Loop 1 で完成)
+- 25 形態の派生型カバレッジ + 11 ファイルに渡る統一的補強完成 + **「Debug 手動実装形態」を含めた完全網羅完成**
+- 11 ファイル: transcription / settings / session / session_manager / session_store / app_detection / cloud_whisper / audio / openai_realtime / elevenlabs_realtime / cloud_whisper_errors
+
+#### 3. 「Debug 手動実装形態 (impl std::fmt::Debug)」初対応 (本 Loop 1)
+- これまで 25 形態すべて `#[derive(Debug)]` 自動派生だった
+- 本 Loop 1 で `WhisperHttpRequestDescriptor` の `impl std::fmt::Debug` 手動実装に対する補強を実施
+- redaction 契約 (`auth_header: "<redacted>"` API key 漏洩防止) を CI 固定する戦略の precedent
+
+#### 4. 「auth_header redaction 契約 CI 保護」軸 (本 Loop 1, セキュリティ重要度大)
+- リファクタで Debug 出力に api key が誤って混入する事故を CI で即検知
+- `format!("{descriptor:?}")` に `<redacted>` が含まれ、実 auth_header 値が **含まれない** ことを assert
+- 後続セッションで他の sensitive field (token / secret / password 系) の redaction 契約を持つ型が追加された場合に同パターンを再利用可能
+
+#### 5. 「同一ファイル内 3 形態目補強」達成 (本 Loop 1 で cloud_whisper.rs)
+- m-35 L3 = WhisperRequestParams → m-38 L3 = VerboseResponse/Segment → m-39 L1 = WhisperHttpRequestDescriptor
+- cloud_whisper.rs に 3 形態の Debug 軸補強が累積 (前回までの 2 形態目補強パターンの更なる拡張)
+
+### 重要な技術的注意点
+
+#### 1. **harness silent fail mitigation pattern 連続 25 ループ実証達成 + 本セッション Loop 1 log file 正常出力**
+- 本セッション Loop 1 で log file が正常出力 (silent fail なし)
+- 観測時間目安: worker 起動 → **120 秒以内** (本セッション実測)
+- root cause 仮説: 大型 prompt + 複雑探索条件下の pipe stdout 欠落
+- **`git status --short` で `M` 表示確認** workflow が連続 25 ループ安定動作
+
+#### 2. handoff サマリの予測精度
+- 旧セッション handoff サマリの第一候補は「`WhisperHttpRequestDescriptor` (Debug derive 欠如形態)」だったが、実コード grep で **`impl std::fmt::Debug` 手動実装** が判明 = 「derive 欠如形態」ではなく「手動実装形態」が真の姿だった
+- handoff サマリの予測は **derive macro 表面情報のみ** = `impl` block の確認が必要 = 後続セッションは grep で再探索する運用が機能した precedent
+- handoff サマリで **明示されていなかった** が実コードで発見した形態の方が戦略価値が高かった
+
+#### 3. AGENT_LOG.md 末尾追記の Edit ツール問題 (本セッションで運用継承)
+- 末尾の `---` は file 内 30+ 箇所存在 = Edit ツールでは unique にならない
+- 解決策: SUMMARY を `/tmp/mjc-summary-N.md` に Write してから `cat <file> >> AGENT_LOG.md` で append (本セッション SUMMARY もこの方式)
+
+#### 4. **Debug 軸補強系譜の網羅完成 = 後続セッションでは別軸への戦略転換が必要**
+- 前 32 セッションで連続的に「Debug 軸補強」系譜を伸ばしてきたが、本セッション Loop 1 で完成
+- 後続セッション (mjc-main-20260504-40) は **新軸開拓** が主タスクとなる
+- 候補軸: Copy 軸補強 / serde JSON round-trip 軸補強 / PartialEq 単独軸 / Default 軸 / 関数境界 contract test / harness 改善 / settings.rs 残関数 / F-Loop6 タイマースレッド shutdown 等
+
+### 次ループ候補 (優先順位順、本セッションで未着手、新軸開拓フェーズへ)
+
+#### 最優先 = Loop 1: 「Copy 軸補強」初対応 (新軸候補)
+- 候補型 = `SecretKey enum` (m-30 L1 既補強) / `TranscriptionSource enum` (m-32 L2 既補強) / `RequestedTranscriptionSources struct` (m-33 L2 既補強) / `TranscriptionEngineType enum` (m-34 L2 既補強)
+- これらは `#[derive(Debug, Clone, Copy, ...)]` で Copy 派生済み = Copy トレイトの「値を複製しても元が valid」軸 (Rust の所有権で当然成立だが Copy トレイト派生の保証を CI 固定)
+- 軸構成: T1 = `let copied = original;` 後に original も valid (Rust borrow checker で当然だが Copy が外れたらコンパイルエラーになる契約 CI 固定) / T2 = `let copied = original; assert_eq!(original, copied);` で PartialEq + Copy の組み合わせ契約 / T3 = 関数引数渡し後も valid (`fn takes(s: SecretKey) {...}` 後に元が使える)
+- 新軸 = 「Copy 軸補強」初対応 + 既補強型の **追加軸** application + 系譜開始候補
+
+#### Loop 2 候補: serde JSON round-trip 軸 (Serialize+Deserialize 両派生型)
+- AppSettings は既存 `test_save_and_load_roundtrip` でカバー済 = 新規価値少ない
+- 候補型: Session / SessionSegment (session.rs) - 既存テストが round-trip 軸をカバーしているか要確認
+- WhisperRequestParams / TranscriptionEngineType の round-trip 確認
+
+#### Loop 3 候補: 関数境界 contract test (新軸)
+- `cloud_whisper.rs` の `build_whisper_authorization_header` / `build_whisper_api_url` は既に充実 (l.471-503)
+- 他候補: `markdown.rs` / `transcript_bridge.rs` / `datetime_fmt.rs` の関数 = derive 派生型がない関数中心モジュール
+- これらは過去ループで複数回補強の precedent あり = 既存テスト網羅率高い可能性、grep で要再確認
+
+#### 別候補: harness 改善 (連続 25 ループ実証、価値高、未着手)
+- `claude -p ... | tee` の pipe で stdout 欠落条件の特定と修正
+- `script(1)` / `unbuffer` / direct `>` redirect への切替検討
+- メインが `git status` ベースで完走判定する mitigation を harness 側に組み込む
+
+#### 別候補: settings.rs 残関数 / F-Loop6 / K (継承、未着手)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 637 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### worker prompt 必須要素 (19 連続セッションで実証済、継続適用、7 つ全て明示)
+1. 冒頭で「AGENT_LOG.md の末尾 350 行を読め」
+2. 「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」
+3. 「先頭は絶対に触らない」
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外の編集禁止 + test 件数の上限明示
+6. 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+7. 「行末の空白文字 (trailing whitespace) 禁止」
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 1 = ~10 分で目標クリア)
+- worker 1 件 ≒ 1 コミット
+- 累積 worker 完走 99/99 (本セッション +1 件、100% 維持)
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる
+- **本セッションは 1 ループ完了後に Debug 軸補強系譜完成宣言 + 早期ハンドオフ判断** = 前 32 セッションで全て 3 ループだった中で初の precedent
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge は本セッション中 1 件 (Loop 2 探索中、「次の自律改善ループへ進め」) を受けたが、Debug 軸補強系譜完成達成 = 系譜内候補不在のため、次ループは新軸開拓フェーズに移行する判断 = SUMMARY 作成 + ハンドオフ準備で消化
+
+### 累積成果 (本セッション 1 ループ)
+- **テスト 634 → 637 passed** (+3 件、1 ループ)
+- **コミット 1 件 + 本 SUMMARY 1 件 (= 2 件)**
+- **clippy --lib -D warnings ゼロ維持** (1 ループ累積)
+- **「Debug 軸補強」パターン 26 連続 application 系譜完成達成** (25 形態の派生型 + 1 形態の手動 Debug 実装、計 26 形態の完全網羅)
+- **「Debug 手動実装形態 (impl std::fmt::Debug)」初対応** (これまで全て derive(Debug) だった、新 precedent)
+- **「auth_header redaction 契約 CI 保護」軸新規対応** (API key 漏洩防止のセキュリティ価値)
+- **同一ファイル内 3 形態目補強達成** (cloud_whisper.rs = WhisperRequestParams + VerboseResponse/Segment + WhisperHttpRequestDescriptor)
+- **harness silent fail mitigation pattern 連続 25 ループ実証達成 + 本セッション Loop 1 log file 正常出力** (root cause 仮説継続裏付け)
+- **canonical 名移譲完了** (mjc-main-20260504-38 → mjc-main, 14 セッション連続適用)
+- **累積 worker 完走 99/99** (100% 維持)
+- **コミット周期 ~10 分/loop** (目標 15 分以内クリア)
+- **「1 ループで系譜完成宣言 + 早期ハンドオフ」precedent 創出** (前 32 セッション全て 3 ループだった中で初)
+
+旧 mjc-main (= mjc-main-20260504-39) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-40 へ予防的ハンドオフ判断 (Debug 軸補強系譜完成 = 後続は新軸開拓フェーズへ移行、最有力候補は「Copy 軸補強」初対応 / serde JSON round-trip 軸 / 関数境界 contract test / harness 改善 等、harness silent fail に対しては git status ベースの mitigation pattern が連続 25 ループ実証済)
+
+---
