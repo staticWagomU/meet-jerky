@@ -524,7 +524,9 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Webex"
     } else if is_whereby_meeting_url(&host, &parsed.path) {
         "Whereby"
-    } else if is_goto_meeting_url(&host, &parsed.path) {
+    } else if is_goto_meeting_url(&host, &parsed.path)
+        || is_goto_legacy_meeting_url(&host, &parsed.path)
+    {
         "GoToMeeting"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
         "Microsoft Teams"
@@ -941,6 +943,17 @@ fn is_goto_meeting_url(host: &str, path: &str) -> bool {
     };
     let room = room.strip_suffix('/').unwrap_or(room);
     !room.is_empty() && !room.contains('/') && !GOTO_NON_ROOM_PATHS.contains(&room)
+}
+
+fn is_goto_legacy_meeting_url(host: &str, path: &str) -> bool {
+    if host != "global.gotomeeting.com" {
+        return false;
+    }
+    let Some(id) = path.strip_prefix("/join/") else {
+        return false;
+    };
+    let id = id.strip_suffix('/').unwrap_or(id);
+    id.len() == 9 && id.chars().all(|c| c.is_ascii_digit())
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -3214,5 +3227,69 @@ mod tests {
     #[test]
     fn classify_meeting_url_goto_rejects_empty_room_name() {
         assert_eq!(classify_meeting_url("https://meet.goto.com/"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_recognizes_goto_legacy_join_url() {
+        let result = classify_meeting_url("https://global.gotomeeting.com/join/123456789");
+        assert_eq!(
+            result,
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "global.gotomeeting.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_recognizes_goto_legacy_join_url_with_trailing_slash() {
+        let result = classify_meeting_url("https://global.gotomeeting.com/join/987654321/");
+        assert_eq!(
+            result,
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "global.gotomeeting.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_goto_legacy_non_numeric_id() {
+        assert_eq!(
+            classify_meeting_url("https://global.gotomeeting.com/join/abc123def"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_goto_legacy_short_id() {
+        assert_eq!(
+            classify_meeting_url("https://global.gotomeeting.com/join/12345678"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_goto_legacy_long_id() {
+        assert_eq!(
+            classify_meeting_url("https://global.gotomeeting.com/join/1234567890"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_goto_legacy_non_join_path() {
+        assert_eq!(
+            classify_meeting_url("https://global.gotomeeting.com/about"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_goto_legacy_subdomain_spoofing() {
+        assert_eq!(
+            classify_meeting_url("https://fake.global.gotomeeting.com/join/123456789"),
+            None
+        );
     }
 }

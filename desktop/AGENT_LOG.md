@@ -25038,3 +25038,26 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - コミット周期 Loop 19 ~3 分 / Loop 20 ~5 分 平均 ~4 分で目標 15 分以内大幅達成
 
 ---
+[WORKER COMPLETED @ 2026-05-05 ~Loop21 JST] mjc-worker-download-payload-extract-20260505-11-1
+- Phase 3-B Tauri commands 抽出の前段準備 (Tidy First) = 純粋関数 2 つ + tests 2 件を transcription_commands.rs に移動
+- 移動: build_download_progress_payload (3 行) + build_download_error_payload (3 行) → src-tauri/src/transcription_commands.rs (pub(crate))
+- テスト 2 件 (test_download_progress_payload_serialization + test_download_error_payload_serialization) も transcription_commands.rs の cfg(test) mod に移動
+- 互換層: transcription.rs 冒頭に use 1 行追加 (crate::transcription_commands::{build_download_error_payload, build_download_progress_payload}) で L81/L93/L100 の download_model 内呼び出し維持 (rustfmt により 2 行展開)
+- lib.rs: mod transcription_commands; を mod transcription; と mod transcription_emission; の間に挿入 (alphabetical 順維持)
+- 検証: cargo test --lib **685 passed** (件数不変) / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK / git diff --check 警告ゼロ
+- transcription.rs: 2125 → 約 2106 行 (~19 行削減: 関数 9 行 + tests 19 行 - 互換 use 2 行 (rustfmt 展開))
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) の安全側スライス先行 = Phase 4-A emission (40 行) precedent と同パターン
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- commit: b9e5b8e
+
+---
+[WORKER COMPLETED @ 2026-05-05 ~Loop22 JST] mjc-worker-goto-legacy-url-20260505-11-2
+- GoToMeeting legacy URL (global.gotomeeting.com/join/<9-digit-id>) 検知追加 (TDD Red→Green、variety pivot = extraction 3 連続から service detection 軸への完全 pivot)
+- 新関数: is_goto_legacy_meeting_url(host, path) を app_detection.rs に追加 (~12 行、host 完全一致で subdomain spoofing 防御 + 9 桁 numeric ID 制約)
+- classify_meeting_url 統合: is_goto_meeting_url || is_goto_legacy_meeting_url で "GoToMeeting" 分類 (L527-528)
+- テスト: 7 件追加 (positive 2 件 + negative 5 件: 非 numeric / 短 ID / 長 ID / 非 join path / subdomain spoofing)
+- 検証: cargo test --lib **692 passed = 685 + 7** / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK / git diff --check 警告ゼロ
+- 設計判断: 既存 is_goto_host (meet.goto.com 専用) と path pattern が異なる (`/join/<9-digits>` vs 任意 room 名) ため独立関数で分離
+- sweep 化しない約束: app.goto.com/meet/<id> アプリ launcher 追加は本ループでは未着手 = 後続ループに譲る (Loop 18 base → 22 legacy URL の段階的精緻化、Whereby Loop 7→14 と同パターン)
+- AGENTS.md 優先順位 2 = 会議検知の網羅性に直接寄与
+- commit: (pending)
