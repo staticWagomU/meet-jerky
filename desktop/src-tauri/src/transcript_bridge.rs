@@ -757,4 +757,65 @@ mod tests {
         );
         assert_eq!(result.2, "realtime", "text はそのまま返る");
     }
+
+    #[test]
+    fn build_append_args_for_emission_falls_back_to_stream_started_when_zero_start_segment() {
+        // wrapper 経由でも zero_start + 内部固定 observed=None で stream_started_at_secs フォールバックが効く現契約。
+        // Loop 1 T1 (segment_to_append_args 低層) + Loop 2 T1 (build_append_args_for_emission_at 中層) と対称的に wrapper 高層で同境界を 3 層保護。
+        let segment = TranscriptionSegment {
+            text: "test".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+        let result = build_append_args_for_emission(&segment, Some(1_000), 1_040)
+            .expect("session 開始済みかつ is_error=None なら Some を返す");
+        assert!(result.1 == 40, "wrapper 経由で zero_start + observed=None → stream_started_at_secs(1040) - session(1000) = 40");
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_handles_extreme_observed_at_secs_max_with_zero_start() {
+        // zero_start + observed=Some(u64::MAX) + session=Some(0) → segment_abs=u64::MAX → offset=u64::MAX (saturating_sub の no-op 範囲)。
+        // panic 化や別キャスト方式への誤改修検知。Loop 1 T5 (engine path 極端値) と対称な observed path 極端値。
+        let segment = TranscriptionSegment {
+            text: "extreme".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+        let result = build_append_args_for_emission_at(&segment, Some(0), 0, Some(u64::MAX))
+            .expect("session=Some(0) かつ is_error=None なら Some を返す");
+        assert_eq!(
+            result.1,
+            u64::MAX,
+            "zero_start + observed=Some(u64::MAX) + session=Some(0) → segment_abs=u64::MAX → offset=u64::MAX (saturating_sub の no-op 範囲)"
+        );
+    }
+
+    #[test]
+    fn build_append_args_for_emission_at_saturates_to_zero_when_session_at_max_with_zero_start() {
+        // session=Some(u64::MAX) + zero_start + stream=0 + observed=None → segment_abs=0 → saturating_sub(0, u64::MAX)=0 (extreme clock 逆転)。
+        // Loop 2 T2 (通常範囲の clock 逆転) と対称な極端値版。?演算子は Some(u64::MAX) も通る (= 0 と混同しない) 契約も同時に固定。
+        let segment = TranscriptionSegment {
+            text: "boundary".to_string(),
+            start_ms: 0,
+            end_ms: 0,
+            source: None,
+            speaker: Some("相手側".to_string()),
+            is_error: None,
+        };
+        let result =
+            build_append_args_for_emission_at(&segment, Some(u64::MAX), 0, None).expect(
+                "session=Some(u64::MAX) かつ is_error=None なら Some を返す (? 演算子は Some(u64::MAX) を通す)",
+            );
+        assert_eq!(
+            result.1,
+            0,
+            "session=Some(u64::MAX) + zero_start + stream=0 + observed=None → segment_abs=0 → saturating_sub(0, u64::MAX)=0"
+        );
+    }
 }

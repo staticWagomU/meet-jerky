@@ -20162,3 +20162,25 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **失敗理由**: なし
 - **次アクション**: メインが agent-verify + commit を担当
 ---
+
+## mjc-worker-build-append-emission-wrapper-boundary-tests-20260504-22-3 (Loop 3)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-22 Loop 3
+- **役割**: 作業担当エージェント (worker, print mode)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: Loop 2 で追加した最終 test `build_append_args_for_emission_at_returns_some_for_zero_start_with_is_error_some_false` の直後に test 3 件追加
+  - T1: `build_append_args_for_emission_falls_back_to_stream_started_when_zero_start_segment` = `build_append_args_for_emission` wrapper 高層で zero_start + 内部固定 observed=None → stream_started_at_secs フォールバックが効く現契約を CI 固定 (低層/中層と 3 層保護完成)
+  - T2: `build_append_args_for_emission_at_handles_extreme_observed_at_secs_max_with_zero_start` = zero_start + observed=Some(u64::MAX) + session=Some(0) → offset=u64::MAX (saturating_sub no-op) の極端値保護
+  - T3: `build_append_args_for_emission_at_saturates_to_zero_when_session_at_max_with_zero_start` = session=Some(u64::MAX) + zero_start + stream=0 + observed=None → saturating_sub(0, u64::MAX)=0 の extreme clock 逆転保護
+- **結果**: 全 test PASS (494 → 497 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/transcript_bridge.rs` のみ (mod tests 末尾 3 test 追加, cargo fmt 差分なし = 1 往復不要)
+- **検証結果**:
+  - `cargo test --lib transcript_bridge::tests` = 40 passed (37 → +3)
+  - `cargo test --lib` 全体 = **497 passed** (494 → +3, 0 failed)
+  - `cargo clippy --all-targets -- -D warnings` = 警告ゼロ
+  - `cargo fmt --check` = 差分なし (1 往復修正不要)
+- **依存追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メインが agent-verify + commit を担当
+---
