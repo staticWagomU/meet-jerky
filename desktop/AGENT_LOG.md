@@ -24356,3 +24356,17 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Phase 2 候補は Whisper エンジンまたは Model 管理の抽出)
 
 ---
+
+## 2026-05-05 JST mjc-worker-transcription-traits-extract-20260505-3-2
+- 担当セッション: mjc-worker-transcription-traits-extract-20260505-3-2 (作業担当, sonnet)
+- 役割: transcription.rs から トレイト定義 3 つ (StreamConfig / TranscriptionEngine / TranscriptionStream) を src-tauri/src/transcription_traits.rs に抽出 (Tidy First、振る舞い不変、Phase 1 仕上げ = データ型 + トレイト定義の分離完了)
+- 作業範囲: src-tauri/src/transcription_traits.rs (新規) + src-tauri/src/transcription.rs (トレイト定義削除 + 互換層 pub use 追加) + src-tauri/src/lib.rs (mod transcription_traits; 追加) + AGENT_LOG.md (末尾追記)
+- 指示内容: mjc-main-20260505-3 Loop 6 のタスクとして、transcription_traits.rs を新規作成し 3 型を移植 → transcription.rs 該当箇所を削除し pub use crate::transcription_traits::{...}; で再エクスポート互換層を残す → lib.rs に mod transcription_traits; を追加 → cargo fmt/clippy/test 検証 (667 件不変、警告ゼロ、整形 OK)
+- 結果: 全 Step 完了。transcription_traits.rs 新規作成 (StreamConfig struct + TranscriptionEngine trait + TranscriptionStream trait を移植)、transcription.rs の traits セクション (旧 line 22-69 の ~50 行) を削除し pub use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream}; 互換層に置換、lib.rs に mod transcription_traits; を追加 (alphabetical order: transcription → transcription_traits → transcription_types)。cargo fmt/clippy/test 全 pass、667 件不変。
+- 変更ファイル: src-tauri/src/transcription_traits.rs (新規) + src-tauri/src/transcription.rs (削除/追加) + src-tauri/src/lib.rs (mod 追加)
+- 検証結果: cargo fmt --check = OK (exit 0, 出力なし) / cargo clippy --lib -- -D warnings = 警告ゼロ (Finished dev profile) / cargo test --lib = 667 passed; 0 failed (件数不変)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Phase 1 完了 = データ型 + トレイト定義分離、Phase 2 候補は Whisper エンジン抽出 = WhisperLocal + WhisperStream + 純粋関数を transcription_whisper.rs などに抽出)
+
+---
