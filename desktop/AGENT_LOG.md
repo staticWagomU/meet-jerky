@@ -23914,3 +23914,16 @@ test result: ok. 625 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 旧 mjc-main (= mjc-main-20260504-38) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-39 へ予防的ハンドオフ判断 (前 31 セッション (mjc-main-7〜37) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 24 ループ実証済 + 本セッション 3 ループ全て log file 正常出力で root cause 仮説継続裏付け、「Debug 軸補強」26 連続 application 候補 = WhisperHttpRequestDescriptor (Debug derive 欠如形態 初対応 候補) / harness 改善 / settings.rs 残関数 等)
 
 ---
+## 2026-05-04 JST mjc-worker-cloud-whisper-descriptor-debug-redact-tests-20260504-39-1
+- 担当セッション: mjc-worker-cloud-whisper-descriptor-debug-redact-tests-20260504-39-1 (作業担当, sonnet)
+- 役割: cloud_whisper.rs の `WhisperHttpRequestDescriptor` (`#[derive(Clone, PartialEq)]` + `impl std::fmt::Debug` を手動実装、`auth_header: "<redacted>"` redaction) の Debug 軸補強 / Clone 独立性軸を CI 保護
+- 作業範囲: src-tauri/src/cloud_whisper.rs の `mod tests` 末尾に 3 件の test 関数追加 (Debug redaction 軸 / Debug nested + format 不変条件軸 / Clone 独立性 + PartialEq 直接判定軸)
+- 指示内容: Debug 軸補強 26 連続 application 系譜継続 + 「Debug 手動実装形態 (impl std::fmt::Debug)」初対応 + `auth_header: "<redacted>"` セキュリティ redaction 契約 CI 保護 + nested Debug 出力 (params 内側 WhisperRequestParams) + cloud_whisper.rs 内 3 形態目補強 (WhisperRequestParams + VerboseResponse/Segment + WhisperHttpRequestDescriptor) の 5 軸戦略価値で T1/T2/T3 を 3 件追加
+- 結果: 60 passed (cloud_whisper, +3 件), 637 passed (全体, +3 件)
+- 変更ファイル: src-tauri/src/cloud_whisper.rs (+ 63 行 / - 0 行、3 件 test 追加)
+- 検証結果: cargo test --lib cloud_whisper 60 passed、cargo test --lib 全体 637 passed、cargo clippy --lib -- -D warnings 警告ゼロ、cargo fmt --check OK
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---

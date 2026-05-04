@@ -690,4 +690,89 @@ mod tests {
             "空 Vec の Debug 表示: {formatted}"
         );
     }
+
+    #[test]
+    fn whisper_http_request_descriptor_debug_redacts_auth_header() {
+        let descriptor = WhisperHttpRequestDescriptor {
+            url: String::from("https://api.openai.com/v1/audio/transcriptions"),
+            auth_header: String::from("Bearer secret-api-key-12345"),
+            params: WhisperRequestParams {
+                model: String::from("whisper-1"),
+                language: None,
+                response_format: String::from("verbose_json"),
+                temperature: 0.0,
+            },
+        };
+        let formatted = format!("{descriptor:?}");
+        assert!(
+            formatted.contains("<redacted>"),
+            "auth_header は <redacted> に置換される: {formatted}"
+        );
+        assert!(
+            !formatted.contains("secret-api-key-12345"),
+            "実 auth_header 値は Debug 出力に含まれない: {formatted}"
+        );
+        assert!(
+            !formatted.contains("Bearer secret"),
+            "Bearer prefix + 実値も含まれない: {formatted}"
+        );
+    }
+
+    #[test]
+    fn whisper_http_request_descriptor_debug_nests_params_and_url() {
+        let descriptor = WhisperHttpRequestDescriptor {
+            url: String::from("https://example.com/audio/transcriptions"),
+            auth_header: String::from("Bearer xxx"),
+            params: WhisperRequestParams {
+                model: String::from("whisper-1"),
+                language: Some(String::from("ja")),
+                response_format: String::from("verbose_json"),
+                temperature: 0.0,
+            },
+        };
+        let formatted = format!("{descriptor:?}");
+        assert!(
+            formatted.contains("WhisperHttpRequestDescriptor"),
+            "outer struct 名: {formatted}"
+        );
+        assert!(formatted.contains("url:"), "url field 名: {formatted}");
+        assert!(
+            formatted.contains("https://example.com/audio/transcriptions"),
+            "url 値: {formatted}"
+        );
+        assert!(
+            formatted.contains("WhisperRequestParams"),
+            "nested struct 名: {formatted}"
+        );
+        assert!(
+            formatted.contains("whisper-1"),
+            "params.model 値: {formatted}"
+        );
+        assert!(formatted.contains("ja"), "params.language 値: {formatted}");
+    }
+
+    #[test]
+    fn whisper_http_request_descriptor_clone_is_independent_and_eq() {
+        let original = WhisperHttpRequestDescriptor {
+            url: String::from("https://api.openai.com/v1/audio/transcriptions"),
+            auth_header: String::from("Bearer original-key"),
+            params: WhisperRequestParams {
+                model: String::from("whisper-1"),
+                language: Some(String::from("en")),
+                response_format: String::from("verbose_json"),
+                temperature: 0.0,
+            },
+        };
+        let cloned = original.clone();
+        assert_eq!(original, cloned);
+        assert_eq!(original.url, cloned.url);
+        assert_eq!(original.auth_header, cloned.auth_header);
+        assert_eq!(original.params, cloned.params);
+
+        let modified = WhisperHttpRequestDescriptor {
+            url: String::from("https://other.example.com/transcriptions"),
+            ..original.clone()
+        };
+        assert_ne!(original, modified, "url 変更で不等になる");
+    }
 }
