@@ -26167,3 +26167,30 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - なし。watchdog からの nudge は本セッション中ゼロ。
 
 ---
+[mjc-main-20260505-18 Loop 35 / 2026-05-05 ~JST]
+
+## What
+- transcription_error_payload 関連テスト 15 件を src-tauri/src/transcription.rs から src-tauri/src/transcription_error_payload.rs の新設 #[cfg(test)] mod tests に移動
+  - ブロック A (4 件): test_worker_panic_payload_does_not_expose_panic_details / test_transcription_error_payload_serialization_with_source / test_transcription_error_payload_serialization_omits_missing_source / test_stopped_realtime_stream_errors_are_not_emitted_to_ui
+  - ブロック B (11 件): build_worker_panic_error_payload_omits_source_when_none / build_transcription_error_payload_preserves_empty_error_string / is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix / is_realtime_stream_already_stopped_error_matches_substring_at_any_position / is_realtime_stream_already_stopped_error_matches_across_newlines / build_transcription_error_payload_serialization_with_microphone_source / build_worker_panic_error_payload_serialization_with_system_audio_source / build_transcription_error_payload_escapes_newlines_in_error_string / transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name / transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants / transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source
+- transcription.rs の use 文を整理 (移動先で不要になった build_transcription_error_payload / build_worker_panic_error_payload / transcription_error_payload_to_value / TranscriptionErrorPayload を削除; is_realtime_stream_already_stopped_error / should_emit_realtime_stream_error は残テストで使用継続)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (テスト局所化 = SLAP 改善)
+- 「本体関数の定義と同じファイルにテストを置く」 = transcription_error_payload.rs の責務集約
+- variety 軸 = 「テスト移動」軸 (Loop 32 から 3 ループ間隔 = 許容範囲)、Loop 25 (17 件) / Loop 32 (4 件) precedent と同パターン
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 700 passed 件数不変
+- mod tests 新設 + use 文取り込み (super::* + crate::transcription_types::TranscriptionErrorPayload + crate::transcription_types::TranscriptionSource)
+- transcription.rs use 文整理で unused import 警告防止
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- trailing whitespace: ゼロ
+
+## commit
+- <commit hash 後で別 chore で記入>
+---
