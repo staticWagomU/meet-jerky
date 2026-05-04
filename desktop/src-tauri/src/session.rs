@@ -180,4 +180,119 @@ mod tests {
             "2 回目 finalize 後の duration_secs"
         );
     }
+
+    // append_segment は segments のみ変更し他フィールドは変えない cross-fn invariant 契約
+    #[test]
+    fn append_segment_preserves_started_at_id_and_title_invariants() {
+        let mut session = Session::start("会議メモ".into(), 1_000);
+        let original_id = session.id.clone();
+        let original_started_at = session.started_at;
+        let original_title = session.title.clone();
+
+        for i in 0u64..5 {
+            session.append_segment(format!("speaker{i}"), i, format!("text{i}"));
+        }
+
+        assert_eq!(session.id, original_id, "append_segment は id を変えない");
+        assert_eq!(
+            session.started_at, original_started_at,
+            "append_segment は started_at を変えない"
+        );
+        assert_eq!(
+            session.title, original_title,
+            "append_segment は title を変えない"
+        );
+        assert_eq!(
+            session.ended_at, None,
+            "append_segment は ended_at に触らない"
+        );
+        assert_eq!(session.segments.len(), 5, "append された segment 数は維持");
+    }
+
+    // finalize は ended_at のみ変更し segments / started_at / id は変えない cross-fn invariant 契約
+    #[test]
+    fn finalize_preserves_started_at_and_segments_invariants() {
+        let mut session = Session::start("title".into(), 1_000);
+        session.append_segment("Alice".into(), 5, "hello".into());
+        session.append_segment("Bob".into(), 12, "world".into());
+
+        let original_id = session.id.clone();
+        let original_started_at = session.started_at;
+        let original_segments_len = session.segments.len();
+        let original_first_text = session.segments[0].text.clone();
+
+        session.finalize(2_000);
+
+        assert_eq!(session.id, original_id, "finalize は id を変えない");
+        assert_eq!(
+            session.started_at, original_started_at,
+            "finalize は started_at を変えない"
+        );
+        assert_eq!(
+            session.segments.len(),
+            original_segments_len,
+            "finalize は segments の長さを変えない"
+        );
+        assert_eq!(
+            session.segments[0].text, original_first_text,
+            "finalize は既存 segment 内容を変えない"
+        );
+        assert_eq!(
+            session.ended_at,
+            Some(2_000),
+            "finalize は ended_at だけを設定する"
+        );
+    }
+
+    // title の validation/normalization は上位層責任 — Session::start は空文字を passthrough する契約
+    #[test]
+    fn start_accepts_empty_title_as_passthrough() {
+        let session = Session::start(String::new(), 1_000);
+        assert_eq!(
+            session.title, "",
+            "Session::start は title バリデーションせず空文字を passthrough"
+        );
+        assert_eq!(session.started_at, 1_000);
+        assert!(!session.id.is_empty(), "title が空でも id は生成される");
+        assert!(session.segments.is_empty());
+        assert_eq!(session.ended_at, None);
+    }
+
+    // speaker/text の fallback は normalize_speaker (transcript_bridge.rs) の責務 — append_segment は passthrough のみ
+    #[test]
+    fn append_segment_accepts_empty_speaker_and_text_as_passthrough() {
+        let mut session = Session::start("title".into(), 1_000);
+        session.append_segment(String::new(), 5, String::new());
+
+        assert_eq!(
+            session.segments.len(),
+            1,
+            "空文字 speaker/text でも segment は push される"
+        );
+        assert_eq!(
+            session.segments[0].speaker, "",
+            "speaker の空文字は passthrough"
+        );
+        assert_eq!(session.segments[0].text, "", "text の空文字は passthrough");
+        assert_eq!(session.segments[0].timestamp_offset_secs, 5);
+    }
+
+    // timestamp_offset_secs は u64 全範囲を許容する現契約を boundary 値 (0 と u64::MAX) で固定
+    #[test]
+    fn append_segment_accepts_zero_and_max_u64_offset_as_passthrough() {
+        let mut session = Session::start("title".into(), 1_000);
+        session.append_segment("a".into(), 0, "zero".into());
+        session.append_segment("b".into(), u64::MAX, "max".into());
+
+        assert_eq!(session.segments.len(), 2);
+        assert_eq!(
+            session.segments[0].timestamp_offset_secs, 0,
+            "offset=0 boundary を passthrough"
+        );
+        assert_eq!(
+            session.segments[1].timestamp_offset_secs,
+            u64::MAX,
+            "offset=u64::MAX boundary を passthrough"
+        );
+    }
 }

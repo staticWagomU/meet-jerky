@@ -17046,3 +17046,50 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+### session.rs cross-fn invariant + 上位層責任境界 を 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~12:00 JST (実時刻)
+- **担当セッション**: `mjc-worker-session-cross-fn-invariant-tests-20260504-8-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`append_segment` / `finalize` の cross-fn invariant 2 件 + `Session::start` / `append_segment` の上位層責任境界 (空文字 + boundary u64) 3 件を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | append_segment_preserves_started_at_id_and_title_invariants | 5 回 append しても started_at / id / title / ended_at が変わらない invariant |
+| T2 | finalize_preserves_started_at_and_segments_invariants | append 2 件 → finalize で segments と started_at と id が変わらない invariant |
+| T3 | start_accepts_empty_title_as_passthrough | Session::start("", 1000) で title="" を validation せず passthrough する上位層責任境界 |
+| T4 | append_segment_accepts_empty_speaker_and_text_as_passthrough | append("", offset, "") を passthrough し speaker fallback は normalize_speaker の責務である境界を明示 |
+| T5 | append_segment_accepts_zero_and_max_u64_offset_as_passthrough | timestamp_offset_secs の 0 と u64::MAX boundary 入力を passthrough |
+
+#### 不変条件 / 設計意図
+- T1+T2 は「単一 method の単一責務」cross-fn invariant 契約。将来副作用追加リファクタを即検知。
+- T3 は title validation の上位層責任境界を固定 (前セッション「上位層責任境界の契約強制」パターン再利用)。
+- T4 は speaker/text の上位層責任境界を固定 (normalize_speaker は transcript_bridge.rs の責務)。
+- T5 は u64 全範囲 boundary 契約。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 360 → 365 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 365
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし
+
+#### 残リスク
+- T3/T4/T5 の passthrough 契約は将来 validation を導入したら test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
