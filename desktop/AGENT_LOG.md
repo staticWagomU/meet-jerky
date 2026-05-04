@@ -20657,3 +20657,76 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **残リスク**: なし (関数本体無変更、test 追加のみ)
 - **次アクション**: メイン側でレビュー → コミット
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~18:50 JST] mjc-main-20260504-25 状況メモ
+
+- **本セッション (mjc-main-25) 3 ループ実績**: 515 → 524 passed (+9 件)、全て `src-tauri/src/app_detection.rs` 内 = 「会議検知の信頼性」軸 (優先順位 #2) に集中寄与
+  - **Loop 1 (`3511921`)**: Google Meet path code 桁契約 3 軸 (first 3 桁 reject / second 5 桁 reject / third 4 桁 reject) +3 件 → 518 passed
+  - **Loop 2 (`47fb2bc`)**: Teams `/v2?meetingjoin` query 経路 3 軸 (中間 param accept / 重複 key accept / value 部分なし reject) +3 件 → 521 passed
+  - **Loop 3 (`a00d76d`)**: Zoom DNS label RFC 1035/1123 仕様 3 軸 (63 バイト accept / 64 バイト reject / 数字始まり accept) +3 件 → 524 passed
+
+- **確立パターン 1 (継続 application、5 連続セッション目)**: 「対称的補強の 3 軸構造」パターン
+  - mjc-main-22/23/24/25 で全 12 ループに application = 1 ループ = 3 軸 = 1 関数群の境界仕様の executable specification 化が標準形
+  - Loop 1 (Google Meet 桁契約 3-4-3) → Loop 2 (Teams query 3 仕様軸) → Loop 3 (Zoom RFC 3 軸) で完成
+
+- **確立パターン 2 (新規)**: 「サービス cross product による会議検知信頼性の集中強化」パターン
+  - 同一ファイル内で「3 大会議サービス (Google Meet / Microsoft Teams / Zoom)」× 「各サービスの境界仕様」を 1 セッション 3 ループで横断的に application
+  - 過去 4 セッション (mjc-main-22 transcript_bridge / mjc-main-23 transcription / mjc-main-24 session_manager) が「単一ファイル / 単一関数群への深掘り型」だったのに対し、本セッションは「複数関数を貫く横断型」
+  - application 候補: 同様に音声経路 (apple_speech / cloud_whisper / openai_realtime / elevenlabs_realtime) で「実装サービス × 共通エラー仕様」cross product の境界 test 化が可能
+
+- **確立パターン 3 (継続 application、5 連続セッション目事故ゼロ)**: 「worker prompt で末尾追記を明示するパターン」
+  - 全 3 ループで「ファイル末尾追記必須 + 先頭は絶対に触らない + tail -10 で末尾確認」明示 → 事故ゼロ
+  - mjc-main-21 → 22 → 23 → 24 → 25 で **5 連続セッション先頭追記事故ゼロ** = 後続継続適用必要
+
+- **重要発見 1**: app_detection.rs の test 件数密度バランスを大幅向上
+  - 既存 ~45 件 → 54 件 (+9 件)、URL classification 3 大経路 (Google Meet / Teams / Zoom) 全ての公式仕様を executable specification 化
+  - 関数別の保護密度バランス改善 = 今後は別ファイル (S settings 統合 / D transcription error path 残 / F-Loop6 timer shutdown) の保護密度を上げる時期
+
+- **重要発見 2**: RFC 仕様 (1035/1123) の executable specification 化
+  - Loop 3 で `is_valid_dns_label` の RFC 1035 (63 バイト上限) と RFC 1123 (数字始まり許容) を CI 固定 = 業界標準仕様 (RFC) を執行可能スペックとして codebase に永続化
+  - application 候補: URL Punycode / IDN handling、HTTP/HTTPS scheme validation、JWT トークン形式等の業界標準仕様も同様の RFC executable spec 化が可能
+
+- **重要発見 3**: コミット周期 ~12 分/loop 維持
+  - Loop 1 ~12 / Loop 2 ~12 / Loop 3 ~12、平均 ~12 分/loop = 目標 15 分以内クリア (mjc-main-24 と同等の cadence)
+  - mjc-main-22/23 (~9 分/loop) よりやや遅め = worker 出力タイミングのばらつき (sleep 180s で初回タイムアウトしたケース等) が原因 = **後続セッションも 12-15 分/loop を維持可能**
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### M 候補継続 (本セッション既存路線、推奨)
+- `is_zoom_meeting_url` の `/my/` 経路 (Personal Meeting Room)、`is_teams_meeting_url` の `/l/meetup-join/` 経路、`teams.live.com` 経路の更なる境界補強
+- `parse_url_host_and_path` (URL parsing core) の hostname 全体 253 バイト上限 / IDN/Punycode handling 等の境界
+- `classify_meeting_window_title` の Zoom Webinar / Workspace / 半角全角混在 title 等の境界
+- 「会議検知の信頼性」軸への寄与継続
+
+#### D 候補継続 (transcription.rs error path 残、別ファイル切替)
+- `validate_stream_count_for_engine` の更なる境界補強
+- `transcription_error_payload_to_value` の境界補強 (cfg(test) ヘルパだが panic 経路含めて確認価値あり)
+- `run_transcription_loop` / `run_transcription_worker_with_panic_guard` の test (Tauri AppHandle 必要 = mock 必要、規模 M-L)
+
+#### S (継承, 統合候補あり、規模 M, 2 ループ構成). settings.rs Tidy First リファクタ
+- 統合候補: `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### F-Loop6 (継承, 規模 M, 価値中). タイマースレッド shutdown 対応
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+- 既存 detection_callback / browser_url_callback の shutdown と整合性検討必要
+
+#### B 候補 (推奨度低、価値小)
+- session_manager.rs の append/finalize/current_started_at_secs は mjc-main-24 で網羅 = 残るは start / start_with_output / discard / current_title / current_segment_count / is_active
+- ただし current_title/current_segment_count/is_active は cfg(test) で production 経路ではない = 価値が低い
+- 別ファイル切り替え推奨
+
+#### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+### 累積指標 (本セッション)
+- **テスト 515 → 524 passed** (+9 件、mjc-main-22 / mjc-main-23 / mjc-main-24 と完全対称な「+9 件/セッション」を 4 セッション連続達成)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **app_detection.rs 3 大会議サービス境界補強完成** (Google Meet path 桁契約 / Teams query 経路 / Zoom DNS label RFC 仕様)
+- **「対称的補強の 3 軸構造」パターン全 3 ループで application 確認** (5 連続セッション)
+- **「サービス cross product による会議検知信頼性の集中強化」パターン新規確立** (Loop 1 + Loop 2 + Loop 3 で 3 大サービス境界を 1 セッション内完成)
+- **worker prompt 末尾追記明示の継続適用** (5 連続セッション先頭追記事故ゼロ)
+- **累積 worker 完走 62/62** (100%)
+- **コミット周期 ~12 分/loop** (目標 15 分以内クリア、mjc-main-24 と同等)
+
+- 旧 mjc-main (= mjc-main-20260504-25) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
+---
