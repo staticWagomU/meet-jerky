@@ -20460,3 +20460,19 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - 検証結果: cargo test --lib session_manager = 29 passed (26 → +3), cargo test --lib 全体 = **509 passed** (506 → +3, 0 failed), clippy -D warnings ゼロ, fmt 差分なし (1 往復修正後)
 - 依存追加: なし
 - 次アクション: メインへ報告 → メインが verify + commit
+
+---
+[WORKER LOG @ 2026-05-04 ~17:15 JST] mjc-main-20260504-24 worker (session_manager.rs finalize 境界 test 3 件追加, 規模 XS, Tidy First, ユーザー観測不可)
+- 開始日時: 2026-05-04 ~17:15 JST (推定)
+- 担当セッション: mjc-main-20260504-24 用 worker (メイン委任)
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/session_manager.rs の mod tests 末尾に test 3 件追加 (関数本体無変更)
+- 指示内容: SessionManager::finalize の ended_at 境界 test 3 軸補強 (equality / ordering reversal / 値域右境界)
+  - T1: `finalize_accepts_ended_at_equal_to_started_at_for_zero_duration_session` = ended_at == started_at (zero-duration) を SessionManager が拒否しない契約を CI 固定。ordering validation 誤追加を遮断する装置。
+  - T2: `finalize_accepts_ended_at_less_than_started_at_when_clock_goes_backwards` = ended_at < started_at (clock 逆転、NTP 補正) でも error なく ended_at が原値透過で保存される契約を CI 固定。SessionManager 層の ordering validation 追加誤改修を遮断し、Session::duration_secs の saturating_sub との設計整合性を保護。
+  - T3: `finalize_preserves_u64_max_ended_at_without_truncation` = ended_at=u64::MAX が truncation なく Session に保存される契約を CI 固定。Loop 1 の started_at T3 と鏡像的な対称性で ended_at 側の u64 型契約を CI 固定。
+- 結果: 全 3 件 pass。cargo fmt 1 往復修正あり (T2 の finalize チェーン呼び出しを rustfmt 準拠形式に整形)。
+- 変更ファイル: src-tauri/src/session_manager.rs (test 追加のみ)
+- 検証結果: cargo test --lib session_manager = 32 passed (29 → +3), cargo test --lib 全体 = **512 passed** (509 → +3, 0 failed), clippy -D warnings ゼロ, fmt 差分なし (1 往復修正後)
+- 依存追加: なし
+- 次アクション: メインへ報告 → メインが verify + commit

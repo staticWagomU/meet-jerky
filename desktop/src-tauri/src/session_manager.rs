@@ -890,4 +890,66 @@ mod tests {
             "started_at=u64::MAX は truncation なく返るはず。`as i64` cast 等の符号付き truncation を CI で遮断する。"
         );
     }
+
+    #[test]
+    fn finalize_accepts_ended_at_equal_to_started_at_for_zero_duration_session() {
+        let manager = SessionManager::new();
+        manager
+            .start("instant_session".into(), 1_700_000_000)
+            .expect("start");
+        let session = manager
+            .finalize(1_700_000_000)
+            .expect("finalize with ended_at == started_at should succeed");
+        assert_eq!(
+            session.ended_at,
+            Some(1_700_000_000),
+            "zero-duration session の ended_at は started_at と同値。ended_at == started_at は valid な finalize 契約。SessionManager 層への ordering validation 追加を CI で遮断する。"
+        );
+        assert_eq!(
+            session.duration_secs(),
+            Some(0),
+            "ended_at == started_at のとき duration は 0。ended_at == started_at は valid な finalize 契約。SessionManager 層への ordering validation 追加を CI で遮断する。"
+        );
+        assert!(
+            !manager.is_active(),
+            "finalize 後は非活性。ended_at == started_at は valid な finalize 契約。SessionManager 層への ordering validation 追加を CI で遮断する。"
+        );
+    }
+
+    #[test]
+    fn finalize_accepts_ended_at_less_than_started_at_when_clock_goes_backwards() {
+        let manager = SessionManager::new();
+        manager
+            .start("clock_backward_session".into(), 1_700_000_500)
+            .expect("start");
+        let session = manager.finalize(1_700_000_000).expect(
+            "finalize with ended_at < started_at should succeed (NTP correction tolerance)",
+        );
+        assert_eq!(
+            session.ended_at,
+            Some(1_700_000_000),
+            "clock 逆転時も ended_at は原値透過で保存される。clock 逆転 (ended_at < started_at) も valid な finalize 契約。SessionManager 層は ordering validation を行わず原値透過で保存する。NTP 補正への耐性を CI で固定する。"
+        );
+        assert_eq!(
+            session.duration_secs(),
+            Some(0),
+            "Session::duration_secs は saturating_sub で 0 に飽和する。clock 逆転 (ended_at < started_at) も valid な finalize 契約。SessionManager 層は ordering validation を行わず原値透過で保存する。NTP 補正への耐性を CI で固定する。"
+        );
+    }
+
+    #[test]
+    fn finalize_preserves_u64_max_ended_at_without_truncation() {
+        let manager = SessionManager::new();
+        manager
+            .start("far_future_session".into(), 1_700_000_000)
+            .expect("start");
+        let session = manager
+            .finalize(u64::MAX)
+            .expect("finalize with ended_at=u64::MAX should succeed");
+        assert_eq!(
+            session.ended_at,
+            Some(u64::MAX),
+            "ended_at=u64::MAX は truncation なく Session に保存される。`as i64` cast 等の符号付き truncation を CI で遮断する。"
+        );
+    }
 }
