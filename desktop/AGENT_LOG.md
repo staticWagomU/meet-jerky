@@ -24081,3 +24081,16 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
 
 ---
+## 2026-05-05 JST mjc-worker-app-detection-webex-classify-20260505-2
+- 担当セッション: mjc-worker-app-detection-webex-classify-20260505-2 (作業担当, sonnet)
+- 役割: Cisco Webex (`*.webex.com/meet/<id>`) を classify_meeting_url で検知できるようにする (AGENTS.md 優先順位 2 = 会議検知の網羅性、TDD: Red → Green)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: 26 連続「Debug 軸補強」からの戦略転換ループ 2 件目、新会議サービス追加 (Webex Personal Room 検知)、既存 is_zoom_host / is_google_meet_url パターン踏襲、5 件 test 追加
+- 結果: 642 passed (全体, 前 637 + 5 件), 無破壊
+- 変更ファイル: src-tauri/src/app_detection.rs (+ 57 行 / - 0 行、5 件 test 追加 + is_webex_host / is_webex_meeting_url 2 関数追加 + classify_meeting_url 分岐 1 つ追加)
+- 検証結果: cargo check --lib OK / cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 642 passed (前 637 + 5 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---

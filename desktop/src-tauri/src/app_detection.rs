@@ -516,6 +516,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Google Meet"
     } else if is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
+    } else if is_webex_meeting_url(&host, &parsed.path) {
+        "Webex"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
         "Microsoft Teams"
     } else {
@@ -764,6 +766,25 @@ fn is_zoom_web_client_meeting_url(path: &str) -> bool {
         return false;
     };
     action == "join" && is_zoom_meeting_id(meeting_id)
+}
+
+fn is_webex_host(host: &str) -> bool {
+    if host == "webex.com" {
+        return true;
+    }
+    let Some(subdomain) = host.strip_suffix(".webex.com") else {
+        return false;
+    };
+    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
+}
+
+fn is_webex_meeting_url(host: &str, path: &str) -> bool {
+    // Personal Room (`/meet/<id>`) のみ対応。
+    // j.php / wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
+    is_webex_host(host)
+        && path
+            .strip_prefix("/meet/")
+            .is_some_and(has_single_non_empty_segment)
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -2622,5 +2643,45 @@ mod tests {
             Some("k=v".to_string()),
             "元の query は Some(\"k=v\") のまま不変"
         );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_personal_room_on_root_host() {
+        assert_eq!(
+            classify_meeting_url("https://webex.com/meet/john"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_personal_room_on_subdomain_host() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/meet/jane"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webex_host_without_meet_path() {
+        assert_eq!(classify_meeting_url("https://webex.com/about"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_non_webex_host_with_meet_path() {
+        assert_eq!(
+            classify_meeting_url("https://fake-webex.example.com/meet/x"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webex_with_empty_meet_segment() {
+        assert_eq!(classify_meeting_url("https://webex.com/meet/"), None);
     }
 }
