@@ -22,4 +22,26 @@ mod tests {
         assert_eq!(AUDIO_SOURCE_MICROPHONE, "microphone");
         assert_eq!(AUDIO_SOURCE_SYSTEM_AUDIO, "system_audio");
     }
+
+    #[test]
+    fn build_audio_drop_event_payload_with_microphone_source_returns_json_with_source_and_dropped_fields(
+    ) {
+        let payload = build_audio_drop_event_payload(AUDIO_SOURCE_MICROPHONE, 5);
+        assert_eq!(payload["source"], "microphone");
+        assert_eq!(payload["dropped"], 5);
+    }
+
+    #[test]
+    fn build_audio_drop_event_payload_with_empty_source_passes_through_without_normalization() {
+        let payload = build_audio_drop_event_payload("", 0);
+        assert_eq!(payload["source"], "");
+        assert_eq!(payload["dropped"], 0);
+    }
+
+    #[test]
+    fn build_audio_drop_event_payload_with_usize_max_dropped_serializes_without_overflow() {
+        let payload = build_audio_drop_event_payload(AUDIO_SOURCE_SYSTEM_AUDIO, usize::MAX);
+        assert_eq!(payload["source"], "system_audio");
+        assert_eq!(payload["dropped"], usize::MAX);
+    }
 }
