@@ -24713,3 +24713,12 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 戦略判断: extraction 3 連続到達 (Loop 11 + Loop 12 + Loop 13) = Loop 14 で必須 variety pivot 約束、Phase 2-A 完全完了で Phase 3 (TranscriptionManager) に進める段階
 - 次アクション: Loop 14 で variety pivot 必須発動 (新サービス検知 / harness 衛生 / frontend 軸)
 ---
+## 2026-05-05 JST mjc-main-20260505-7 Loop 14 (Whereby blacklist marketing pages 追加)
+- 担当セッション: mjc-main (canonical) = mjc-main-20260505-7 (メイン, opus) → sonnet worker
+- 役割: variety pivot 必須発動 = extraction 3 連続 (Loop 11/12/13) からの service detection 軸への完全 pivot
+- 作業範囲: src-tauri/src/app_detection.rs (4 entries + 4 tests)
+- 指示内容: download / app / for-teams / developers の 4 marketing pages を WHEREBY_NON_ROOM_PATHS に追加。Loop 7 から 6 ループ間隔の単発補強 (sweep 化しない約束 = Loop 15 以降は別軸)。
+- 実行結果: cargo test --lib 678 passed (= 674 + 4 件)、cargo clippy --lib -D warnings 警告ゼロ、cargo fmt --check OK、git diff --check OK
+- 戦略判断: 前任 mjc-main-20260505-6 が「Webex sweep の延長と同質 variety リスク」と懸念したが批判的再評価 = Webex sweep (4-5 連続) と単発補強は本質的に異なる、ユーザー方針「鵜呑みにせず批判的判断」継承
+- 次アクション: 後継 mjc-main-20260505-8 への予防的 handoff = 「2 ループ + 早期 handoff」precedent 連続 4 セッション目達成
+---

@@ -888,6 +888,10 @@ const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
     "security",
     "careers",
     "status",
+    "download",
+    "app",
+    "for-teams",
+    "developers",
 ];
 
 fn is_whereby_host(host: &str) -> bool {
@@ -3091,6 +3095,26 @@ mod tests {
     #[test]
     fn classify_meeting_url_whereby_rejects_blacklist_pricing() {
         assert_eq!(classify_meeting_url("https://whereby.com/pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_download() {
+        assert_eq!(classify_meeting_url("https://whereby.com/download"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_app() {
+        assert_eq!(classify_meeting_url("https://whereby.com/app"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_for_teams() {
+        assert_eq!(classify_meeting_url("https://whereby.com/for-teams"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_developers() {
+        assert_eq!(classify_meeting_url("https://whereby.com/developers"), None);
     }
 
     #[test]
