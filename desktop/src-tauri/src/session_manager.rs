@@ -952,4 +952,66 @@ mod tests {
             "ended_at=u64::MAX は truncation なく Session に保存される。`as i64` cast 等の符号付き truncation を CI で遮断する。"
         );
     }
+
+    #[test]
+    fn append_preserves_offset_secs_zero_for_immediate_segment_at_session_start() {
+        let manager = SessionManager::new();
+        manager
+            .start("instant_segment_session".into(), 1_700_000_000)
+            .expect("start");
+        manager
+            .append("Alice".into(), 0, "immediate".into())
+            .expect("append with offset_secs=0 should succeed");
+        let session = manager.finalize(1_700_000_100).expect("finalize");
+        assert_eq!(session.segments.len(), 1, "1 segment が保存される");
+        assert_eq!(
+            session.segments[0].timestamp_offset_secs,
+            0,
+            "offset_secs=0 (session 開始直後の即時 segment) は原値透過で保存される。0 を unset として扱う防衛的最適化を CI で遮断する。"
+        );
+        assert_eq!(session.segments[0].text, "immediate", "text も原値透過");
+    }
+
+    #[test]
+    fn append_preserves_offset_secs_u64_max_without_truncation() {
+        let manager = SessionManager::new();
+        manager
+            .start("far_future_segment".into(), 1_700_000_000)
+            .expect("start");
+        manager
+            .append("Bob".into(), u64::MAX, "far future".into())
+            .expect("append with offset_secs=u64::MAX should succeed");
+        let session = manager.finalize(u64::MAX).expect("finalize");
+        assert_eq!(
+            session.segments[0].timestamp_offset_secs,
+            u64::MAX,
+            "offset_secs=u64::MAX は truncation なく保存される。`as i64` cast 等の符号付き truncation を CI で遮断する。"
+        );
+    }
+
+    #[test]
+    fn append_preserves_empty_text_and_empty_speaker_without_skipping_segment() {
+        let manager = SessionManager::new();
+        manager
+            .start("empty_string_session".into(), 1_700_000_000)
+            .expect("start");
+        manager
+            .append(String::new(), 0, String::new())
+            .expect("append with empty speaker and empty text should succeed");
+        manager
+            .append("Alice".into(), 5, "second".into())
+            .expect("second append");
+        let session = manager.finalize(1_700_000_100).expect("finalize");
+        assert_eq!(
+            session.segments.len(),
+            2,
+            "空文字列入力でも segment は skip されず保存される。append の責務は『呼ばれたら必ず push』。filtering は呼び出し側の責務という設計契約を CI で固定する。"
+        );
+        assert_eq!(session.segments[0].speaker, "", "empty speaker は原値透過");
+        assert_eq!(session.segments[0].text, "", "empty text は原値透過");
+        assert_eq!(
+            session.segments[1].speaker, "Alice",
+            "後続 append は前 segment に影響なく保存される"
+        );
+    }
 }

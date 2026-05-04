@@ -20476,3 +20476,18 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - 検証結果: cargo test --lib session_manager = 32 passed (29 → +3), cargo test --lib 全体 = **512 passed** (509 → +3, 0 failed), clippy -D warnings ゼロ, fmt 差分なし (1 往復修正後)
 - 依存追加: なし
 - 次アクション: メインへ報告 → メインが verify + commit
+---
+[WORKER LOG @ 2026-05-04 ~17:30 JST] mjc-main-20260504-24 worker (session_manager.rs append 境界 test 3 件追加, 規模 XS, Tidy First, ユーザー観測不可)
+- 開始日時: 2026-05-04 ~17:30 JST (推定)
+- 担当セッション: mjc-main-20260504-24 用 worker (メイン委任)
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/session_manager.rs の mod tests 末尾に test 3 件追加 (関数本体無変更)
+- 指示内容: SessionManager::append の境界 test 3 軸補強 (offset_secs 左境界 0 / 右境界 u64::MAX / 空文字列入力)
+  - T1: `append_preserves_offset_secs_zero_for_immediate_segment_at_session_start` = offset_secs=0 (session 開始直後の即時 segment) を原値透過で保存する契約を CI 固定。0 を unset として扱う防衛的最適化誤改修を遮断する装置。
+  - T2: `append_preserves_offset_secs_u64_max_without_truncation` = offset_secs=u64::MAX が truncation なく Session に保存される契約を CI 固定。Loop 1 (started_at u64::MAX) / Loop 2 (ended_at u64::MAX) と対称的に offset_secs 側も u64 型契約を CI 固定。
+  - T3: `append_preserves_empty_text_and_empty_speaker_without_skipping_segment` = text="" / speaker="" の空文字列入力を skip せず segment として保存する契約を CI 固定。append の責務「呼ばれたら必ず push」と filtering は呼び出し側の責務という設計契約を executable specification 化。
+- 結果: 全 3 件 pass。cargo fmt 1 往復修正あり (T3 の assert_eq! 引数改行位置を rustfmt 準拠形式に整形)。
+- 変更ファイル: src-tauri/src/session_manager.rs (test 追加のみ)
+- 検証結果: cargo test --lib session_manager = 35 passed (32 → +3), cargo test --lib 全体 = **515 passed** (512 → +3, 0 failed), clippy -D warnings ゼロ, fmt 差分なし (1 往復修正後)
+- 依存追加: なし
+- 次アクション: メインへ報告 → メインが verify + commit
