@@ -20638,3 +20638,22 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **残リスク**: なし (関数本体無変更、test 追加のみ)
 - **次アクション**: メイン側でレビュー → コミット
 ---
+
+## mjc-worker-zoom-host-dns-label-rfc-boundary-tests-20260504-25-3 (Loop 3)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-25 Loop 3
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/app_detection.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: Loop 2 の last test `classify_meeting_url_rejects_teams_v2_with_meetingjoin_key_only_no_equals` の直後に、`is_valid_dns_label` の RFC 1035/1123 仕様の境界 test 3 件追加 (T1: 長さ最大値 63 バイト accept / T2: 長さ右境界外側 64 バイト reject / T3: 数字始まり label accept)
+- **結果**: 全 test PASS (521 → 524 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/app_detection.rs` のみ
+- **検証結果**: cargo test 524 passed / clippy -D warnings 警告ゼロ / cargo fmt 差分なし / agent-verify 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: Loop 1 (Google Meet 桁契約) / Loop 2 (Teams query 経路) と同じ「対称的補強の 3 軸構造」パターンを `is_valid_dns_label` に application = 3 つの独立軸 (長さ左境界内側 / 長さ右境界外側 / 文字種 数字始まり) を 1 軸ずつ別 test で保護
+- **設計判断 2**: 既存 test は空 subdomain / 空 label / underscore / leading-trailing hyphen reject のみカバー = 「長さ最大値ぴったり」「長さ超過」「数字始まり」3 軸は完全未保護で相補的なカバー
+- **設計判断 3**: 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与継続 = Zoom 公式 host (subdomain 含む) の RFC 仕様認識を test で固定 = 本セッション 3 ループ全体で Google Meet (Loop 1) / Microsoft Teams (Loop 2) / Zoom (Loop 3) の 3 大会議サービス全てを境界 test で強化
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---

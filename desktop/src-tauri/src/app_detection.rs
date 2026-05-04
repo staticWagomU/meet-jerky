@@ -2192,4 +2192,42 @@ mod tests {
             "Teams /v2 経路の query_has_param は = が無い param を value=\"\" として扱う契約 (現契約: split_once('=').unwrap_or((param, \"\"))) = meetingjoin (= なし) は value=\"\" となり \"true\" と一致せず reject される必要がある"
         );
     }
+
+    #[test]
+    fn classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_max_length_63_bytes() {
+        let label = "a".repeat(63);
+        let url = format!("https://{}.zoom.us/j/123456789", label);
+        let expected_host = format!("{}.zoom.us", label);
+        assert_eq!(
+            classify_meeting_url(&url),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: expected_host,
+            }),
+            "is_valid_dns_label は RFC 1035 上限 63 バイトぴったり (現契約: bytes.len() <= 63) を accept する必要がある"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_zoom_subdomain_label_exceeding_dns_label_max_length_64_bytes() {
+        let label = "a".repeat(64);
+        let url = format!("https://{}.zoom.us/j/123456789", label);
+        assert_eq!(
+            classify_meeting_url(&url),
+            None,
+            "is_valid_dns_label は RFC 1035 上限 63 バイト超過 (現契約: bytes.len() <= 63) = 64 バイトは reject する必要がある"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_accepts_zoom_subdomain_label_starting_with_digit_per_rfc_1123() {
+        assert_eq!(
+            classify_meeting_url("https://1company.zoom.us/j/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "1company.zoom.us".to_string(),
+            }),
+            "is_valid_dns_label は RFC 1123 仕様で数字始まり label を accept する必要がある (現契約: bytes.first().is_some_and(is_ascii_alphanumeric))"
+        );
+    }
 }
