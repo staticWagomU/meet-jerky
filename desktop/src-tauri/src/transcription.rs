@@ -2113,4 +2113,74 @@ mod tests {
             "true なら UI emit 抑止 (多行 stack trace 含む graceful stop も noise として捨てる)"
         );
     }
+
+    #[test]
+    fn build_transcription_error_payload_serialization_with_microphone_source() {
+        // 既存 test_transcription_error_payload_serialization_with_source は SystemAudio のみカバー。
+        // Microphone enum バリアントの serialization (snake_case → "microphone") を CI 固定。
+        // 2x2 マトリクス (関数 × TranscriptionSource enum) の未保護セルを充填。
+        let payload = build_transcription_error_payload(
+            "マイク入力の処理に失敗しました".to_string(),
+            Some(TranscriptionSource::Microphone),
+        );
+        assert_eq!(
+            transcription_error_payload_to_value(&payload),
+            serde_json::json!({
+                "error": "マイク入力の処理に失敗しました",
+                "source": "microphone",
+            })
+        );
+    }
+
+    #[test]
+    fn build_worker_panic_error_payload_serialization_with_system_audio_source() {
+        // 既存 test_worker_panic_payload_does_not_expose_panic_details は Microphone のみ、
+        // build_worker_panic_error_payload_omits_source_when_none は None のみ。
+        // SystemAudio enum バリアントは未保護 = 2x2 マトリクス (関数 × source) の最後の未充填セル。
+        // panic details 漏洩防止と source 値の正確性を同時に CI 固定。
+        let payload = build_worker_panic_error_payload(Some(TranscriptionSource::SystemAudio));
+        let v = transcription_error_payload_to_value(&payload);
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some("文字起こしワーカーが異常終了しました"),
+            "panic 文言は固定 (panic details 漏洩防止)"
+        );
+        assert_eq!(
+            v.get("source").and_then(|x| x.as_str()),
+            Some("system_audio"),
+            "SystemAudio enum バリアントは snake_case で system_audio に serialize される"
+        );
+        let serialized = v.to_string();
+        assert!(
+            !serialized.contains("panic"),
+            "panic という文字列を含まない"
+        );
+        assert!(
+            !serialized.contains("payload"),
+            "payload という文字列を含まない"
+        );
+    }
+
+    #[test]
+    fn build_transcription_error_payload_escapes_newlines_in_error_string() {
+        // 改行を含む error 文字列が serde_json 標準で "\\n" にエスケープされる現契約を CI 固定。
+        // Tauri event payload (Rust → JS string) として渡る際、改行が JSON valid な escape sequence
+        // であることを保証 = フロントエンド側で JSON.parse 後に \n として復元される互換性を保護。
+        // 例: "ERROR\nstack trace\n  at line 42" のような複数行 error も payload として安全に運べる。
+        let payload = build_transcription_error_payload(
+            "ERROR\nstack trace\n  at line 42".to_string(),
+            Some(TranscriptionSource::SystemAudio),
+        );
+        let v = transcription_error_payload_to_value(&payload);
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some("ERROR\nstack trace\n  at line 42"),
+            "as_str() で取り出すと \\n は復元される (JSON 内部表現は \\\\n だが Value 経由で透過)"
+        );
+        let serialized = v.to_string();
+        assert!(
+            serialized.contains(r"ERROR\nstack trace\n  at line 42"),
+            "to_string() の生 JSON 文字列では改行が \\\\n にエスケープされる: {serialized}"
+        );
+    }
 }

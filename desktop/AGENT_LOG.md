@@ -20277,3 +20277,31 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **残リスク**: なし (関数本体無変更、test 追加のみ)
 - **次アクション**: メイン側でレビュー → コミット
 ---
+
+## mjc-worker-error-payload-symmetry-tests-20260504-23-2 (Loop 2)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-23 Loop 2
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/transcription.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: 最終 test `is_realtime_stream_already_stopped_error_matches_across_newlines` の直後に test 3 件追加
+  - T1: `build_transcription_error_payload_serialization_with_microphone_source` = 既存 test は SystemAudio のみカバー。Microphone enum バリアントの snake_case serialization ("microphone") を CI 固定。2x2 マトリクス (build_transcription_error_payload × TranscriptionSource) の未保護セルを充填
+  - T2: `build_worker_panic_error_payload_serialization_with_system_audio_source` = 既存 test は Microphone / None のみ。SystemAudio = 2x2 マトリクス (build_worker_panic_error_payload × source) の最後の未充填セル。panic details 漏洩防止 + source 正確性を同時に CI 固定
+  - T3: `build_transcription_error_payload_escapes_newlines_in_error_string` = 改行入り error 文字列が serde_json 標準で JSON escape される現契約を CI 固定。Tauri event payload (Rust → JS) 互換性保護。raw string literal r"..." を使用
+- **結果**: 全 test PASS (500 → 503 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/transcription.rs` のみ (mod tests 末尾 3 test 追加。cargo fmt 1 往復修正あり = T2 の assert! メッセージ行が fmt で調整)
+- **検証結果**:
+  - `cargo test --lib build_transcription_error_payload` = 3 passed (T1 + T3 + 既存 preserves_empty)
+  - `cargo test --lib build_worker_panic_error_payload` = 2 passed (T2 + 既存 omits_source_when_none)
+  - `cargo test --lib` 全体 = **503 passed** (500 → +3, 0 failed)
+  - `cargo clippy --all-targets -- -D warnings` = 警告ゼロ
+  - `cargo fmt --check` = 差分なし (fmt 1 往復修正後)
+  - `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` = 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: T1/T2 で 2x2 マトリクス充填 = (build_transcription_error_payload × Microphone) と (build_worker_panic_error_payload × SystemAudio) の 2 セルを対称的に充填。既存テストで SystemAudio/Microphone が入れ替わっていた空きを埋める構造
+- **設計判断 2**: T3 で raw string literal `r"..."` を使用 = `serialized.contains(r"ERROR\nstack trace\n  at line 42")` でバックスラッシュ + n を 2 文字として扱う。通常文字列だと Rust コンパイル時に改行 1 文字になり、テストの意味が逆になる
+- **設計判断 3**: 3 件のみに絞る = 規模 XS で確実完走優先 + 2x2 マトリクス未充填 2 セル + JSON escape 独立軸 の 3 境界に集中。4 件以上は scope 超過
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---
