@@ -20831,3 +20831,54 @@ test result: ok. 530 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## mjc-worker-permission-status-fail-safe-tests-20260504-26-3
+
+### 開始日時 (JST)
+2026-05-04 (mjc-main-20260504-26 Loop 3)
+
+### 担当セッション
+mjc-worker-permission-status-fail-safe-tests-20260504-26-3
+
+### 役割
+worker (print mode, 1 ターン完結)
+
+### 作業範囲
+- src-tauri/src/settings.rs の mod tests 末尾へ test 関数 3 件追加
+- AGENT_LOG.md 末尾追記 (本エントリ)
+
+### 指示内容
+S 候補 (settings.rs / fail-safe semantic の executable specification 化) として、`permission_status_to_string` の `_ => "denied"` fail-safe 契約を未保護だった 3 軸で CI 固定する test を追加:
+
+- T1: `permission_status_to_string_returns_denied_for_negative_values_as_fail_safe`  
+  負値 (-1 / i32::MIN) が `_ => "denied"` で受けられることを 2 assert で CI 固定。「負値専用ブランチ追加誤改修」を遮断。
+
+- T2: `permission_status_to_string_returns_denied_for_value_adjacent_to_granted_as_fail_safe`  
+  PERMISSION_GRANTED (=2) の +1 隣接値 (3) が unknown として denied に倒される現契約を CI 固定。OS 側の新値 (PROVISIONAL=3 等) が silent に granted 扱いされる誤改修を遮断。
+
+- T3: `permission_status_to_string_returns_denied_for_i32_max_as_fail_safe`  
+  i32::MAX (型上限) も `_ => "denied"` で受ける fail-safe 動作を CI 固定。型境界で panic/overflow しない安全性を保護。
+
+### 結果
+- cargo fmt --check: 差分なし (出力なし)
+- cargo clippy -- -D warnings: 警告ゼロ (Finished `dev` profile)
+- cargo test --lib -- --test-threads=1: `test result: ok. 533 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に test 3 件追加、関数本体・既存 test は無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 533 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

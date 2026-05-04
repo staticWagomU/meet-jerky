@@ -575,4 +575,46 @@ mod tests {
         assert_eq!(settings.whisper_model, "medium");
         assert_eq!(settings.language, "ja");
     }
+
+    #[test]
+    fn permission_status_to_string_returns_denied_for_negative_values_as_fail_safe() {
+        // 既存 l.295 (test_permission_status_to_string_maps_known_values) は known 3 値 + unknown 99 のみ。
+        // 負値は match の `_ => "denied"` で受けられる。誤って許可を付与しないための fail-safe 契約 (#9 透明性)。
+        // 「`_ => "granted"` に変える誤改修」「負値専用ブランチを追加して別文字列を返す誤改修」を遮断する装置。
+        assert_eq!(
+            permission_status_to_string(-1),
+            "denied",
+            "負値 -1 は fail-safe で 'denied' に倒す現契約。permission ダイアログで誤って granted を返さない安全性を CI 固定。"
+        );
+        assert_eq!(
+            permission_status_to_string(i32::MIN),
+            "denied",
+            "i32::MIN (極端な負値) も fail-safe で 'denied' に倒す現契約。overflow ガードなしの match で `_` で受ける挙動を CI 固定。"
+        );
+    }
+
+    #[test]
+    fn permission_status_to_string_returns_denied_for_value_adjacent_to_granted_as_fail_safe() {
+        // PERMISSION_GRANTED = 2 の +1 隣接値 (3) が unknown であることを CI 固定。
+        // OS 側の API が将来「PERMISSION_PROVISIONAL = 3」等の新値を返した場合に
+        // 「明示的に新値の意味を考えてから対応する」ことを強制する装置 (silent な誤分類を防ぐ)。
+        // 「3 を granted 扱いする誤改修」を遮断する。
+        assert_eq!(
+            permission_status_to_string(3),
+            "denied",
+            "PERMISSION_GRANTED (=2) 直後の 3 は unknown として 'denied' に倒す現契約。OS 側の新値追加に silent に追従しないための fail-safe を CI 固定。"
+        );
+    }
+
+    #[test]
+    fn permission_status_to_string_returns_denied_for_i32_max_as_fail_safe() {
+        // i32::MAX (2147483647) も match `_` で受ける fail-safe 動作を CI 固定。
+        // 過去 mjc-main-24 (current_started_at_secs u64::MAX 保護) と同種の「型上限境界での truncation/overflow ガード」軸。
+        // 「i32::MAX を特別扱いする (panic 等) 誤改修」を遮断する装置。
+        assert_eq!(
+            permission_status_to_string(i32::MAX),
+            "denied",
+            "i32::MAX (型上限) も fail-safe で 'denied' に倒す現契約。型境界で panic/overflow しない安全性を CI 固定。"
+        );
+    }
 }
