@@ -22551,3 +22551,43 @@ test result: ok. 586 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-session-manager-error-debug-display-partialeq-tests-20260504-33-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-manager-error-debug-display-partialeq-tests-20260504-33-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-33 Loop 3
+
+### 作業範囲
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 10 連続 application + thiserror::Error 派生 enum 形態への新規 application + 「format 不変条件」継続 application = SessionManagerError (pub enum with 2 variants AlreadyActive/NotActive, #[derive(Debug, thiserror::Error, PartialEq)]) への Debug + Display + PartialEq 3 軸 application。
+- T1: session_manager_error_debug_output_contains_each_variant_name_per_variant (両 variant の Debug 出力に variant 名 + 両 Debug 出力が異なる契約)
+- T2: session_manager_error_display_returns_thiserror_message_for_each_variant (thiserror Display 文言「session already active」「no active session」固定)
+- T3: session_manager_error_partial_eq_holds_reflexive_and_differs_between_variants (PartialEq の variant 単位等値判定)
+
+### 結果
+- cargo fmt --check: 差分あり → cargo fmt 実行後に差分なし確認
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 586 → 589 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/session_manager.rs (mod tests 末尾に T1/T2/T3 追加、enum / 既存 #[derive] / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 589 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし (cargo fmt 差分のみ = 自動修正で解消)
+
+### 次アクション
+メインへ報告、commit 待ち
+---

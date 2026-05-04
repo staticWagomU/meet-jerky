@@ -1216,4 +1216,59 @@ mod tests {
             "start_with_output 経由 discard 後 segment_count=None を維持する契約 (l.716 start 経路の対称軸)"
         );
     }
+
+    #[test]
+    fn session_manager_error_debug_output_contains_each_variant_name_per_variant() {
+        let already = format!("{:?}", SessionManagerError::AlreadyActive);
+        let not_active = format!("{:?}", SessionManagerError::NotActive);
+
+        assert!(
+            already.contains("AlreadyActive"),
+            "Debug should contain variant name 'AlreadyActive': {}",
+            already
+        );
+        assert!(
+            not_active.contains("NotActive"),
+            "Debug should contain variant name 'NotActive': {}",
+            not_active
+        );
+
+        assert_ne!(
+            already, not_active,
+            "two variants should produce distinct Debug output"
+        );
+    }
+
+    #[test]
+    fn session_manager_error_display_returns_thiserror_message_for_each_variant() {
+        assert_eq!(
+            SessionManagerError::AlreadyActive.to_string(),
+            "session already active",
+            "AlreadyActive Display should match #[error] attribute"
+        );
+        assert_eq!(
+            SessionManagerError::NotActive.to_string(),
+            "no active session",
+            "NotActive Display should match #[error] attribute"
+        );
+    }
+
+    #[test]
+    fn session_manager_error_partial_eq_holds_reflexive_and_differs_between_variants() {
+        let already_a = SessionManagerError::AlreadyActive;
+        let already_b = SessionManagerError::AlreadyActive;
+        let not_active_a = SessionManagerError::NotActive;
+        let not_active_b = SessionManagerError::NotActive;
+
+        assert_eq!(already_a, already_b);
+        assert_eq!(not_active_a, not_active_b);
+        assert_ne!(
+            SessionManagerError::AlreadyActive,
+            SessionManagerError::NotActive
+        );
+        assert_ne!(
+            SessionManagerError::NotActive,
+            SessionManagerError::AlreadyActive
+        );
+    }
 }
