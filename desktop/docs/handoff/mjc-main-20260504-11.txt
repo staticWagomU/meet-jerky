@@ -1,0 +1,196 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-11) です。
+旧 mjc-main (= 旧 mjc-main-20260504-10) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 17800+ 行 / 1.6MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~11:30 JST] mjc-main-20260504-10 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~11:30 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 71 (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/`、`docs/handoff/mjc-main-20260504-7.txt`、`docs/handoff/mjc-main-20260504-10.txt`、本ハンドオフ用 `docs/handoff/mjc-main-20260504-11.txt`)
+- 旧 mjc-main-20260504-10 が canonical 名 mjc-main を持っており、本セッションで 3 ループ + 1 SESSION SUMMARY コミットを完了:
+  1. `f12afdb` test(session_manager): persist_if_configured の direct test 5 件 (385→390 passed)
+  2. `266ef37` test(openai_realtime): handle_event の non-string silent return + trim-empty skip + error 構造ロバスト性 5 件 (390→395 passed)
+  3. `fed054d` test(elevenlabs_realtime): extract_transcript の 3 段 priority chain 各段 non-string fallback + words 構造ロバスト性 5 件 (395→400 passed)
+  4. `311c231` chore(agent-log): SESSION SUMMARY 追記
+
+## 現在の品質状態
+- cargo test (lib): **400 passed / 0 failed**
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -W uninlined_format_args: **警告ゼロ**
+- frontend build: 通過 (codex 活動本セッション中ゼロ、~30 時間以上静か)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-10、handoff 直前)
+- mjc-main-20260504-11 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションがあれば触らないでください。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-11 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。**注意**: スクリプトが `successor session does not exist` を返した場合、既に rename 完了済みのサインなので OK (旧 mjc-main を kill 後 successor を rename しているため successor 名は消える、冪等)。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着・累積)
+- **private fn の direct test で「pub fn 経由テストでは到達できない契約」を独立に固定する** (本セッション ループ 1, T1+T2+T3+T4+T5): private struct (`ActiveSession` / `ActiveOutput`) を同モジュール内 `tests` から構築できる Rust の visibility ルールを最大活用。pub fn 経由間接テストとの三角測量で、private fn 単体の振る舞いを保護。特に「output=None の no-op」「`?` 誤改修検知」「overwrite idempotency」「phase ラベル一般性 (eprintln 専用 free string)」の 4 軸を direct で固定するパターン。
+- **eprintln 観測を意図的に避けて contract を panic-free + observable state で固定する** (本セッション ループ 1, T3+T5): stderr capture を入れる脆さを避け、「panic しないこと」「disk state」「in-memory state」「disk content への漏れの無さ」だけで契約を固定。
+- **flat 1 段 silent return 契約 (openai) と elevenlabs の or_else fallback chain の構造差分を test 上で対比固定** (本セッション ループ 2, T4 ケース 3): `error: "flat string"` で push_error されない (= elevenlabs の `extract_error_message` ならここで採用される) という openai 固有の no-fallback 契約を明示固定。
+- **JSON null と Rust None を混同する誤改修検知パターン** (本セッション ループ 3, T4): `serde_json::Value::Null` は `Option::Some(Value::Null)` であり、`.or_else()` は起動しない。`text=null` で `word` field へ fallback されない現契約を 3 ケースで固定し、Rust Option 仕様への意外性高い依存を test で文書化。
+- **3 段 priority chain の各段 non-string fallback と空 array Some("") の境界を 1 ファミリで網羅** (本セッション ループ 3, T1+T2+T3+T5): chain の各段 (transcript / text / words) で non-string が適切に skip されるか、`words=[]` と `words=non-array` の Some("") vs None 境界を 5 件で系統的に網羅。
+
+### 累積パターン (前セッションから継承)
+- private fn 直接呼び出しテスト
+- エラー文言の contract enforcement
+- 境界値テストの「対称ペア」+ 3 点対称 (本セッション 3 点拡張済み、引き継ぎ)
+- 3 層テスト構造、OS 互換 ErrorKind 契約強制
+- state machine 混在遷移テスト
+- format prefix の層内独立確認
+- エスケープ漏れの網羅補完
+- UI 文言一致の契約強制
+- 上位層責任境界の契約強制
+- NaN/+Inf 非対称責務分離
+- sanitize 前段の bit-pattern 直接テストパターン
+- first-violation contract / 最小成立条件 boundary jets
+- 3 軸テスト戦略 (boundary + invariant + format)
+- markdown encode/decode 双方向対称契約
+- JST 固定値の二重軸固定
+- 観測時刻注入経路 (observed=Some) の direct test
+- cross-fn invariant の 5 フィールド全確認
+- 「薄いデータコンテナ」設計を test で文書化
+- boundary 上限/下限 + 3 点対称
+- エラー文言完全一致 + boundary 同一性
+- `>` 境界の 3 点対称網羅
+- 正規化フェーズ順序契約 test 文書化
+- multibyte 境界ジャスト + byte count 誤改修検知
+- str::trim の Unicode White_Space 準拠 test 文書化
+- char::is_whitespace の例外 (control/zero-width passthrough) test 文書化
+- `&&` 連接の最小成立条件 boundary jets
+- or_else fallback chain の 1 階層 as_str() 判定契約 test 文書化 (本セッション 3 段 chain 版へ拡張)
+
+### 重要な技術的注意点 (踏みやすい罠)
+- **`session_manager.rs persist_if_configured` (line 164-175)** は private fn だが同モジュール `tests` から `super::persist_if_configured` で直接呼べる。`ActiveSession`/`ActiveOutput` も同モジュール内なので field 直接構築 OK。`?` を使わず `eprintln` で握りつぶす設計を `?` リファクタへ誤改修すると in-memory consistency が壊れる。本セッション T3 がその検知装置。
+- **`persist_if_configured` の overwrite idempotency** (line 167 `write_session_markdown_to`): 同じ session で 2 回 persist しても disk content 同一、ファイル数 1 件のまま。append 系へ切り替えると T4 が失敗する。
+- **`persist_if_configured` の phase 引数は eprintln 専用 free string** (line 170): 任意文字列で crash しない、disk content には漏れない。将来「特定 phase 名のみ受け入れ」防御強化を入れたら T5 を修正。
+- **`openai_realtime.rs handle_event` (line 376-416)** は `.get(...).and_then(|v| v.as_str())` の flat 1 段 check のみ。`error: "flat string"` のような nested message を持たない構造には fallback しない。これが elevenlabs の `extract_error_message` の or_else 3 段 chain との設計差。
+- **`openai_realtime.rs handle_event` の trim 後 empty skip** (line 395-396): `transcript.trim().is_empty()` なら push されない。空白系 + 全角空白 (U+3000) で網羅。
+- **`elevenlabs_realtime.rs extract_transcript` (line 393-412)** は 3 段 priority chain。priority 3 (`words` array) の各 entry 内も「`text` field 優先、無ければ `word` field、両方無ければ skip」の構造。重要: `text=null` で `or_else` は **動かない** (Some(Value::Null) なので)。これは Rust の Option 仕様による。
+- **`elevenlabs_realtime.rs extract_transcript` の Some("") vs None 境界**: `words=[]` (空 array) は Some("")、`words=null/number/string/object` は None (`as_array()` 失敗で chain 全体が None に)。
+- **既存累積技術注意点** (前セッション SUMMARY 参照、変更なし):
+  - sanitize_error_body の `>` 境界 / 正規化順序 / multibyte 境界
+  - str::trim の Unicode White_Space 準拠 / char::is_whitespace の例外
+  - is_scribe_error_event の `&&` 最小成立条件
+  - extract_error_message の or_else fallback chain (本セッションで extract_transcript の 3 段版へ拡張)
+  - `pending_timeout_tests` mod は `mod ws_task` 内 (elevenlabs line 482)、private fn を `super::*` 経由で直接呼べる
+  - `build_append_args_for_emission` (test-only wrapper) と `build_append_args_for_emission_at` (実装本体) の 2 軸網羅
+  - `segment_to_append_args_at` の zero_start ロジック (line 36-42)
+  - `SESSION_COUNTER` (session.rs line 4) は静的 AtomicU64、絶対値 assert 禁止
+  - `Session` 構造体は薄いデータコンテナ
+  - `validate_stream_count_for_engine` のクラッシュ防止文言完全一致 (line 750-752)
+  - `SettingsStateHandle::new()` は呼ばないこと
+  - `resolve_output_directory` の guard `if !dir.is_empty()`、`default_offset` の `9 * 3600`
+  - `parse_requested_transcription_sources` のエラー文言完全一致 (全角句点/カンマ「、」混在)、case-sensitive
+  - `is_realtime_stream_already_stopped_error` は `contains` 判定
+  - `unix_secs_i64` の error format ("{label} is out of i64 range: {unix_secs}")
+  - `unescape_inline_markdown_text` の lone trailing backslash 保持
+  - `audio_utils.rs`、`transcript.rs` Phase 4 placeholder、Teams ブラウザ版タイトル fallback 禁止
+  - `validate_audio_format_properties` cfg なし、wrapper fn 削除しない
+  - `secret_store` の Keychain 実通信テスト禁止
+  - `markdown.rs inline_markdown_text` のエスケープ対象は 6 文字 + whitespace 正規化
+  - `cloud_whisper_errors.rs MAX_ERROR_BODY_CHARS = 200` は char base
+  - `chrono FixedOffset::east_opt(0)` と `west_opt(0)` 同等、leap second 非対応
+  - `elevenlabs_realtime` と `openai_realtime` の `push_error` は完全対称
+  - `parse_session_started_at_secs` は既に 7 件で網羅済 (追加補強不要)
+  - `persist_if_configured` の `?` リファクタリング罠 (エラーを呑み込む設計を `?` に書き換えると in-memory consistency が壊れる) ← 本セッション T3 で contract 固定済み
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### A'. session_manager.rs `discard` / `is_active` 系の追加補強 (規模 XS、価値中)
+- 既存 `discard_clears_session_started_with_output_and_subsequent_append_returns_not_active` (line 530) でほぼ網羅。
+- 残り gap: discard を 2 回連続呼ぶと 2 回目 NotActive / discard 直後の current_started_at_secs が None / poisoned mutex から discard が回復するか / discard 経由で disk file 残留しないか。
+- 5 件案: discard×2連続→2回目NotActive / discard直後 current_started_at_secs=None / poisoned mutex 経由 discard recover / output付きsession discard 後 disk 残留check / discard 後 同一 title で再 start 可能。
+
+### B'. cloud_whisper.rs / cloud_whisper_errors.rs の追加 boundary (規模 XS、価値中、要事前 grep)
+- 既存テスト 100+ 件あり gap 薄め。
+- 残り gap 候補: `build_descriptor` の追加 input pattern (e.g., 空 model 以外の境界)、`classify_*` の HTTP status 境界 (100/199/300/400 等の周辺、5xx vs 4xx 境界)。要事前 grep で gap 確認必須。
+
+### C'. transcript_bridge.rs `build_append_args_for_emission` の追加 boundary (規模 XS、価値中)
+- 既存 5+ 件、observed=Some/None 経路網羅済。
+- 残り gap: source=None vs Some の振る舞い対称性、segment.is_error の 2 段早期リターン (前セッション first-violation contract のさらなる boundary)、speaker fallback の normalize_speaker 委譲境界。
+
+### E (継承). transcription.rs error path 残り (規模 S〜M)
+- 1896 行最大規模。前 mjc-main-8 で `validate_stream_count_for_engine` 5 件補強済。
+- 残り gap: `load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺 (実環境依存高い fn が多い)。
+- worker 1 ループで完結しにくい可能性、複数ループ構成 (1 件 ≒ 1 fn の direct test) が安全。
+
+### F (継承). drop メトリクスを Tauri イベント化 (規模 M、価値 9)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: rust 側に payload struct + emit のみ追加 (frontend hookup なし) で 1 ループ。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。
+
+### G' (継承). 会議終了検知の遅延監視 (規模 S〜M)
+- handle_detection 内で watched bundle が起動 → アクティブから外れた経過時間を測り、N 分以上アクティブ無しなら会議終了通知。
+
+### S (継承). settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+- `load_from_path` 抽出 (1 ループ) + テスト追加 (1 ループ) の 2 ループ構成必要。価値中。
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L、非優先)。
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 400 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。再起動不要。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-11 mjc-main`
+
+## コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~10-15 分/loop (3 ループ全テストのみで安定)。
+- trivial 変更は research 担当を立てずメインから直接 worker へ。
+- 担当範囲が衝突しない 2 件は worker 並列起動可。
+- worker prompt は **5 セクション構造** (背景/Why、具体的 test 案 assertion レベル、実装上の注意、検証手順、AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい (本セッション 3/3 完走実績、累積 17/17 完走)。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 70-75% 推定で予防的ハンドオフ判断 (前 3 セッションと同じ 3 ループパターン)。
+  理由: ハンドオフ prompt 受領 (約 13K token) + 必読ドキュメント 4 ファイル read + Read 多め (session_manager / openai_realtime / elevenlabs_realtime 各セクション + cloud_whisper 検証出力等) + worker tail × 6+ + grep × 5+ + worker prompt 3 件 write。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は受領済み・自走中で消化済み (本セッション中 3 回受領)。
+
+## 累積成果 (本セッション)
+- **テスト 385 → 400 passed** (+15 件、3 ループ、すべて新規追加)
+- **コミット 4 件** (うちテスト追加 3、SESSION SUMMARY 1)
+- **新規ファイル 0 個** (worker prompts は untracked のまま、handoff prompt も untracked)
+- **clippy 警告ゼロ維持** (default + uninlined_format_args)
+- **「private fn の direct test で pub fn 経由では到達できない契約 4 軸固定」パターン確立** (本セッション ループ 1)
+- **「eprintln 観測を意図的に避けて panic-free + observable state で contract 固定」パターン確立** (本セッション ループ 1, T3+T5)
+- **「flat silent return (openai) vs or_else fallback chain (elevenlabs) の構造差分対比固定」パターン確立** (本セッション ループ 2, T4 ケース 3)
+- **「JSON null と Rust None を混同する誤改修検知 (Some(Value::Null) vs None)」パターン確立** (本セッション ループ 3, T4)
+- **「3 段 priority chain の各段 non-string fallback + Some("") vs None 境界網羅」パターン確立** (本セッション ループ 3, T1+T2+T3+T5)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -300 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-11 mjc-main` を実行 (冪等、既に成功してたら "successor session does not exist" を返す)。
+4. 候補 A' (session_manager.rs discard 補強)、B' (cloud_whisper(_errors).rs boundary)、C' (transcript_bridge.rs build_append_args boundary)、E (transcription.rs error path 残り) のいずれかを最小スライスとして worker に発注して 1 ループ目を始める。**A' は規模 XS で gap 明確、B' は事前 grep 必須 (既存 100+ 件で gap 薄め)、C' は既存 5+ 件の中身確認必須。E は実環境依存性高い fn 多めなので注意。**
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
