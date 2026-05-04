@@ -25061,3 +25061,74 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - sweep 化しない約束: app.goto.com/meet/<id> アプリ launcher 追加は本ループでは未着手 = 後続ループに譲る (Loop 18 base → 22 legacy URL の段階的精緻化、Whereby Loop 7→14 と同パターン)
 - AGENTS.md 優先順位 2 = 会議検知の網羅性に直接寄与
 - commit: a94ad63
+
+---
+[SESSION SUMMARY @ 2026-05-05 ~XX:XX JST] mjc-main-20260505-11
+- 2 ループ完走 + 早期ハンドオフ判断 (precedent 連続 8 セッション目達成)
+- Loop 21 = Phase 3-B Tauri commands 抽出の前段準備 (commit b9e5b8e, ~10 行関数 + tests 2 件 + use 1 行互換 + lib.rs mod 宣言, 685 passed 件数不変, ~3 分)
+  - 移動: build_download_progress_payload (3 行) + build_download_error_payload (3 行) → transcription_commands.rs (pub(crate))
+  - テスト 2 件も新ファイルの cfg(test) mod に移動
+  - lib.rs: mod transcription_commands; を mod transcription; と mod transcription_emission; の間に挿入 (alphabetical 順維持)
+  - transcription.rs: 2125 → 2106 行 (~19 行削減)
+  - transcription-refactor-plan.md L24 責務 7 (Tauri commands) の安全側スライス先行 = Phase 4-A emission (40 行) precedent と同パターン
+- Loop 22 = GoToMeeting legacy URL 検知追加 (commit a94ad63 + 7cf8fea, TDD Red→Green、variety pivot = extraction 3 連続から service detection 軸への完全 pivot, ~5 分)
+  - 新関数: is_goto_legacy_meeting_url(host, path) を app_detection.rs に追加 (~12 行、host 完全一致で subdomain spoofing 防御 + 9 桁 numeric ID 制約)
+  - classify_meeting_url 統合: is_goto_meeting_url || is_goto_legacy_meeting_url で "GoToMeeting" 分類 (L527-528)
+  - テスト 7 件追加で 692 passed = 685 + 7
+  - 設計判断: 既存 is_goto_host (meet.goto.com 専用) と path pattern が異なる (`/join/<9-digits>` vs 任意 room 名) ため独立関数で分離
+  - sweep 化しない約束: app.goto.com/meet/<id> アプリ launcher 追加は本ループ未着手 = 後続ループに譲る (Loop 18 base → 22 legacy URL の段階的精緻化、Whereby Loop 7→14 と同パターン)
+  - sonnet worker の自律 Tidy First 質的高さ連続 6 セッション目で実証 = AGENT_LOG.md commit hash placeholder の自己修正 (7cf8fea chore commit) で正しいハッシュを反映する判断
+
+## 戦略転換の継承 (26 連続「Debug 軸補強」 + 5 連続「Webex sweep」両方からの脱却維持)
+- mjc-main-20260505-1: Debug sweep ローカル最適化からの完全脱却
+- mjc-main-20260505-2: variety 規則確立 (3 連続→4 ループ目 pivot)
+- mjc-main-20260505-3: 批判的再評価 + grep を Read で精読 precedent
+- mjc-main-20260505-4: stdin redirect + Whereby base + Phase 2-A 着手 (audio_utils 集約)
+- mjc-main-20260505-5: stdin redirect 焼き付け + ファイル参照型 handoff + Phase 2-B ModelManager
+- mjc-main-20260505-6: Phase 2-A WhisperLocal + Audio resampling + bfb9846 PATH inner shell escape
+- mjc-main-20260505-7: Phase 2-A 完全完了 + Whereby blacklist 4 件 (variety pivot)
+- mjc-main-20260505-8: Phase 3 TranscriptionManager + Phase 4-A emit_segments
+- mjc-main-20260505-9: Phase 4-B error_payload + GoToMeeting URL 検知 (variety pivot)
+- mjc-main-20260505-10: Phase 4-C panic_guard + Phase 4-D run_transcription_loop = Phase 4 全体完了
+- mjc-main-20260505-11 (本セッション): Phase 3-B Tauri commands 前段準備 (Loop 21) + GoToMeeting legacy URL (Loop 22 = variety pivot)
+
+## 後継 mjc-main-20260505-12 への引き継ぎ要点
+
+- **transcription.rs 削減状況**: 元 2999 行 → 現在 **2098 行** = **~30.0% 縮小** (~901 行削減) = ついに **30% 達成**
+- **次の大きな抽出候補**:
+  - **Phase 3-B 続き** (Loop 23+): list_models / is_model_downloaded / download_model / start_transcription / stop_transcription / validate_stream_count_for_engine / parse_requested_transcription_sources の各 Tauri command を transcription_commands.rs に追加 (規模 M-L、lib.rs invoke_handler 登録変更必要)
+  - **app_detection.rs Webex モジュール抽出**: 3295 行 (本セッションで +118 行 = legacy URL 検知 7 tests + helper) = transcription Phase 4 完了パターンを app_detection.rs に応用可
+- **variety 規則の状態** = Loop 22 = service detection pivot で extraction 連続カウント 0 リセット = **Loop 23-25 で extraction 続行可、Loop 26 で variety pivot 検討**
+  - **Loop 23 候補 (extraction 続行可)**: Phase 3-B Tauri commands の次スライス (例: `list_models` / `is_model_downloaded` 純粋関数組 + 純粋テスト)
+  - **Loop 24-25 候補**: Phase 3-B 続き (download_model / start_transcription 等の中規模コマンド) or app_detection.rs Webex 1 関数抽出
+  - **Loop 26 候補 (variety pivot 必須)**: 新サービス検知 (Discord stage / Slack Huddle) / harness 衛生 / frontend 軸 / app.goto.com アプリ launcher (GoToMeeting Loop 22 から 4 ループ間隔で再訪解禁)
+- **避けるべき**:
+  - **Whereby に戻って 2 連続にしない** (Loop 14 の「sweep 化しない約束」、最低 Loop 22-24 程度の間隔)
+  - **GoToMeeting に戻って 2 連続にしない** (Loop 22 で legacy URL 追加、最低 Loop 26-28 程度の間隔。app.goto.com/meet/<id> アプリ launcher 追加は別ループ案件として保留)
+  - **「Webex sweep」「Phase 2 sweep」「Phase 4 sweep」のような単一軸 4 連続集中をしない**
+  - **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **harness 衛生**: canonical 移譲時 scripts/* M 再出現は本セッションで観測継続 = 前任 bfb9846 が永続的解決の結論を **連続 5 セッション目で追認** = 結論超強化、後継も同観測なら連続 6 セッション目で更に強化
+- **「sonnet worker の Tidy First 質的高さ」連続 6 セッション目達成** (Loop 13/15/17/19/20 + Loop 22) = visibility 最小化 + use 文分離 + test 専用 import 移動 + commit hash 自己修正 の 4 軸で精緻化判断が一貫
+
+## 累計 transcription.rs 削減 (~30.0% 達成)
+- 元 2999 行 → 現在 **2098 行** = **~30.0% 縮小** (~901 行削減)
+- 内訳: Phase 1 (types + traits) ~90 行 + Phase 2-A 最小 ~22 行 + Phase 2-A WhisperLocal ~76 行 + Phase 2-A Audio resampling ~90 行 + Phase 2-B ModelManager ~149 行 + Phase 2-A WhisperStream ~189 行 + Phase 3 TranscriptionManager ~120 行 + Phase 4-A emit_segments ~40 行 + Phase 4-B error_payload ~25 行 + Phase 4-C panic_guard ~18 行 + Phase 4-D run_transcription_loop ~81 行 + Phase 3-B 前段準備 ~19 行 (本セッション +19 行)
+- 2099 行に近づいた = 元の 30% 削減を達成 = 「巨大ホットスポット完全分解 + 新たな responsibility module への正規化」が完了に近い
+
+## コンテキスト管理アクション
+- 判断時の使用率: 推定 ~55-65% (handoff prompt 完全読 + transcription-refactor-plan.md 完全読 + AGENT_LOG.md tail + 2 worker prompt + grep 群)
+- 引き継ぎ先: mjc-main-20260505-12
+- 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
+
+## 「2 ループ + 早期 handoff」precedent 連続 8 セッション目達成
+- mjc-main-20260505-4 (初強化) + 5 (連続 2) + 6 (連続 3) + 7 (連続 4) + 8 (連続 5) + 9 (連続 6) + 10 (連続 7) + 11 (本セッション = 連続 8)
+- 引き継ぎ時の context (大量必読ドキュメント + grep + diff) を考慮した予防的判断
+- 「ファイル参照型 handoff prompt」precedent も連続 8 セッション目継承
+
+## worker 完走 2/2 (累計 122/122 100% 維持)
+- harness silent fail mitigation pattern 連続 46 ループ実証達成 (git status M 監視で 2/2 完走判定)
+- stdin redirect 化 script の安定運用 14-15 件目 precedent 達成 (Loop 10 焼き付けが連続 7 セッション継承で実証)
+- canonical 名移譲完了 (25 セッション連続適用)
+- コミット周期 Loop 21 ~3 分 / Loop 22 ~5 分 平均 ~4 分で目標 15 分以内大幅達成 (前任 mjc-main-20260505-10 と同水準)
+
+---
