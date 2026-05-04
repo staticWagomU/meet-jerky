@@ -17521,6 +17521,57 @@ handle_event の non-string field silent return + trim 後 empty skip + error fi
 
 ---
 
+### elevenlabs_realtime.rs `extract_transcript` の chain 各段 non-string fallback + words array 構造ロバスト性 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~11:10 JST
+- **担当セッション**: `mjc-worker-elevenlabs-extract-transcript-boundary-tests-20260504-10-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task::pending_timeout_tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+extract_transcript の 3 段 priority chain (transcript → text → words array) における各段 non-string fallback と words array の構造ロバスト性を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | extract_transcript_falls_back_to_text_when_transcript_is_non_string | transcript=null/number/array で text fallback |
+| T2 | extract_transcript_falls_back_to_words_when_transcript_and_text_are_non_string | transcript+text 両方 non-string で words array fallback、空 array で Some("") |
+| T3 | extract_transcript_returns_none_when_words_field_is_non_array | words=null/number/string/object で None |
+| T4 | extract_transcript_does_not_fall_back_within_word_entry_when_text_is_non_string | words entry の text=null/number で or_else 動かず skip (= Some("") 集約)、text absent + word=string で or_else 動く現契約 |
+| T5 | extract_transcript_joins_only_string_entries_in_mixed_words_array_in_order | 適合 + 非適合 entry 混在で適合分のみ join、全非適合で Some("")、3 entry 順序保証 |
+
+#### 不変条件 / 設計意図
+- T1+T2 は or_else chain が non-string Value::Null/Number/Array をスキップして次 priority へ進む現契約を 2 段にわたって固定 (openai の flat 1 段 check との構造差分明示)。
+- T3 は priority 3 の `as_array()` 失敗時の None 集約を 4 種類の non-array 値で網羅。
+- T4 は `Option<&Value>::or_else` が「Some(Value::Null) では起動しない」という Rust の Option 仕様の現契約依存を test 文書化。`text=null` で `word` fallback できないことが意外性の高い契約なので明示固定。
+- T5 は filter_map と join の順序保証を sanity check + 全非適合で None ではなく Some("") を返す境界 (既存 line 590, 593 の "空 array で Some" と整合)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 395 → 400 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 400
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 super::* + serde_json::json! で完結)
+
+#### T4 挙動確認メモ
+prompt の想定通り `text=null` は `Some(Value::Null)` のため `or_else` が動かず、`as_str()` が `None` を返してエントリが skip される。`cargo test` で `Some("")` を返すことを実際に確認。実装挙動と想定が一致したため test 期待値の修正は不要だった。
+
+#### 残リスク
+- T4 の「text=null では word fallback しない」現契約は、将来「text が non-string なら word へ fallback する」防御強化を入れたら test 修正が必要。**このテストはむしろ "意外性高い現契約" を test で明示することで将来の改修判断を支援する位置付け**。
+- T1/T2 の chain 段数依存契約は実装の or_else 連結を変えると壊れる (意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+
+---
+
 ## [SESSION SUMMARY @ 2026-05-04 ~10:25 JST] mjc-main-20260504-9 状況メモ (ループ 1-3 詳細)
 
 ### 本セッション (mjc-main-20260504-9) の累積実績

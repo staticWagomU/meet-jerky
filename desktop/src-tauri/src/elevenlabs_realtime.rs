@@ -842,6 +842,179 @@ mod ws_task {
             let value = serde_json::json!({ "message": 1.5, "error": [1, 2], "extra": "noise" });
             assert_eq!(super::extract_error_message(&value), None);
         }
+
+        #[test]
+        fn extract_transcript_falls_back_to_text_when_transcript_is_non_string() {
+            // ケース 1: transcript=null, text="fallback" → text を採用
+            let value = serde_json::json!({ "transcript": null, "text": "fallback" });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("fallback".to_string()),
+                "transcript=null は as_str() で None、text へ or_else fallback するはず"
+            );
+
+            // ケース 2: transcript=number, text="from text"
+            let value = serde_json::json!({ "transcript": 42, "text": "from text" });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("from text".to_string()),
+                "transcript=number は as_str() で None、text へ or_else fallback するはず"
+            );
+
+            // ケース 3: transcript=array, text="x"
+            let value = serde_json::json!({ "transcript": ["a", "b"], "text": "x" });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("x".to_string()),
+                "transcript=array は as_str() で None、text へ or_else fallback するはず"
+            );
+        }
+
+        #[test]
+        fn extract_transcript_falls_back_to_words_when_transcript_and_text_are_non_string() {
+            // ケース 1: transcript=null, text=null, words=[{"text":"a"},{"word":"b"}] → "ab"
+            let value = serde_json::json!({
+                "transcript": null,
+                "text": null,
+                "words": [{ "text": "a" }, { "word": "b" }]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("ab".to_string()),
+                "transcript/text 両方 null なら words array へ fallback、text/word 両方拾うはず"
+            );
+
+            // ケース 2: transcript=number, text=array, words=[{"text":"x"}] → "x"
+            let value = serde_json::json!({
+                "transcript": 42,
+                "text": ["nested", "array"],
+                "words": [{ "text": "x" }]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("x".to_string()),
+                "transcript=number と text=array で 2 段抜けて words へ fallback するはず"
+            );
+
+            // ケース 3: transcript field 無し、text=number, words=[] → Some("") (空 array でも Some)
+            let value = serde_json::json!({ "text": 99, "words": [] });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("".to_string()),
+                "text=number で 1 段抜け、words=[] でも array なので Some(\"\") のはず"
+            );
+        }
+
+        #[test]
+        fn extract_transcript_returns_none_when_words_field_is_non_array() {
+            // ケース 1: words=null
+            let value = serde_json::json!({ "words": null });
+            assert_eq!(
+                super::extract_transcript(&value),
+                None,
+                "words=null は as_array() で None、最終的に None のはず"
+            );
+
+            // ケース 2: words=number
+            let value = serde_json::json!({ "words": 42 });
+            assert_eq!(
+                super::extract_transcript(&value),
+                None,
+                "words=number は as_array() で None のはず"
+            );
+
+            // ケース 3: words=string
+            let value = serde_json::json!({ "words": "not-an-array" });
+            assert_eq!(
+                super::extract_transcript(&value),
+                None,
+                "words=string は as_array() で None のはず"
+            );
+
+            // ケース 4: words=object
+            let value = serde_json::json!({ "words": { "text": "still-not-array" } });
+            assert_eq!(
+                super::extract_transcript(&value),
+                None,
+                "words=object は as_array() で None のはず (top-level の text 探索とは独立)"
+            );
+        }
+
+        #[test]
+        fn extract_transcript_does_not_fall_back_within_word_entry_when_text_is_non_string() {
+            // ケース 1: words=[{"text":null,"word":"actual"}] → Some("")
+            // text=null は Some(Value::Null) なので or_else が動かず、as_str() で None、skip される現契約
+            let value = serde_json::json!({
+                "words": [{ "text": null, "word": "actual" }]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("".to_string()),
+                "text=null は or_else が動かず (Some(Null) だから)、as_str() で None、skip され Some(\"\") になる現契約のはず"
+            );
+
+            // ケース 2: words=[{"text":42,"word":"y"}] → Some("")
+            let value = serde_json::json!({
+                "words": [{ "text": 42, "word": "y" }]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("".to_string()),
+                "text=number でも or_else 動かず、word fallback されない現契約"
+            );
+
+            // ケース 3: text field absent、word="z" → Some("z") (or_else が初めて動く)
+            let value = serde_json::json!({
+                "words": [{ "word": "z" }]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("z".to_string()),
+                "text field 自体無しなら or_else で word が採用される (text=non-string とは違う経路)"
+            );
+        }
+
+        #[test]
+        fn extract_transcript_joins_only_string_entries_in_mixed_words_array_in_order() {
+            // ケース 1: 適合 (text=str, word=str) と非適合 (unrelated, text=null+word=null) が混在
+            let value = serde_json::json!({
+                "words": [
+                    { "text": "a" },
+                    { "unrelated": "skip" },
+                    { "text": null, "word": null },
+                    { "word": "c" }
+                ]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("ac".to_string()),
+                "適合 entry のみ順序保ったまま join、非適合は skip されるはず"
+            );
+
+            // ケース 2: 全 entry が non-string field のみ → Some("") (空 join)
+            let value = serde_json::json!({
+                "words": [
+                    { "text": 42 },
+                    { "word": 99 },
+                    { "text": null, "word": null }
+                ]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("".to_string()),
+                "全 entry が非適合なら空文字 Some(\"\") を返すはず (None ではない)"
+            );
+
+            // ケース 3: 順序保証 regression sanity check (text を 3 つ並べる)
+            let value = serde_json::json!({
+                "words": [{ "text": "x" }, { "text": "y" }, { "text": "z" }]
+            });
+            assert_eq!(
+                super::extract_transcript(&value),
+                Some("xyz".to_string()),
+                "filter_map と join の順序が保たれるはず"
+            );
+        }
     }
 }
 
