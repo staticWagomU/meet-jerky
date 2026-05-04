@@ -19374,3 +19374,84 @@ Loop 3 (commit 457a545) で定数化済みの `TRANSCRIPTION_SOURCE_MICROPHONE` 
 
 ### 次アクション
 メインで commit + 次ループ判断 (3 ループ完了で予防的ハンドオフ判断)
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~17:00 JST] mjc-main-20260504-18 状況メモ (3 ループ完了 + 予防的ハンドオフ)
+
+### 累積成果 (本セッション 3 ループ)
+- **テスト 468 → 471 passed** (+3 件、全て rust test 追加)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **累積 worker 完走 41/41** (100%)
+
+### 完了した 3 ループの詳細
+1. **Loop 1 (29e4a4a)**: `test(transcription)`: error message と TRANSCRIPTION_SOURCE_* 定数値の整合性 test 1 件追加 (G5 消化) - 引き継ぎサマリで挙げられていた候補 G5 (規模 XS, 価値小) の application = 既存 `transcription_source_constants_are_snake_case_lowercase` (line 1359) と `parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value` (line 1907) の 2 つの test を「橋渡し」する整合性検知装置として `parse_requested_transcription_sources_error_message_contains_source_constants` (line 1929-1942) を追加 = 将来定数値を変更したら error message も合わせる契約をコード埋め込み
+2. **Loop 2 (732d6aa)**: `test(transcription)`: parse_requested_transcription_sources の trim 動作対称性補強 = 既存 `test_parse_requested_transcription_sources_accepts_known_values` (line 1364) が ` both ` 1 ケースのみ trim 確認していた状態を ` microphone ` ` system_audio ` の対称ケース 2 assert で 3 値全部対称に拡張 = test 関数数を増やさず assert 数のみ +2 (test カウント 469 件維持)
+3. **Loop 3 (4b303bd)**: `test(app_detection)`: should_warn_polling_stall 境界条件 test 2 件追加 = 前 mjc-main-17 Loop 2 で `should_notify_meeting_inactive` に対して行った T6-T10 のパターン application を `should_warn_polling_stall` 側に対称展開 = W5 boundary_at_expected_times_three_returns_none + W6 clock_skew_last_warned_after_now_returns_none = 2 つの純粋関数の境界保護を揃える知見定着
+
+### 確立されたパターン (本セッション)
+- **「Loop 1 G5 → Loop 2 trim 対称性 → Loop 3 別ファイル転換」の同心円拡張パターン**: Loop 1 で touch した範囲の自然な隣接補強を Loop 2 で実施し、Loop 3 で別ファイル (transcription.rs → app_detection.rs) への転換でセッション後半の多様性を回復 = 認知負荷の局所化と知見の application 範囲拡張のバランス
+- **「2 つの対称な純粋関数 (`should_warn_polling_stall` と `should_notify_meeting_inactive`) の境界保護を揃える」application パターン** (Loop 3): 前 Loop 2 で確立した「設計判断を test で executable specification 化」パターンを 2 つ目の純粋関数に展開、境界の向きの違い (`<=` vs `<`) と saturating_sub 非 panic 契約を可視化
+- **「test 関数数を増やさず assert 数のみ増やす」テスト補強パターン** (Loop 2): test カウントは件数判定が容易だが、assert 拡張は同じ既存 test 関数内の補強余地を最大化する手段 = 既存 test 関数数を保ちつつカバレッジ密度を上げる
+
+### 累積パターン (前 mjc-main-7〜17 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+- **F-Loop3 (会議終了検知のアプリ統合) は Loop 3 単独完結が困難**: `should_notify_meeting_inactive` の引数型 u64 (epoch secs) と `DetectionState.last_seen` の型 Instant の **設計乖離** あり = 型統一方針 (Instant 一本化 / u64 一本化 / 別 state 二重保持) の選択が前段で必要 = 純粋単独ループに収まらない、規模 M 超過リスクが高い = 後継セッションで複数ループ構成での実装計画が必要
+- **既存 `test_parse_requested_transcription_sources_rejects_unknown_values`** (transcription.rs line 1397-1412): 文字列 literal `contains("microphone") && contains("system_audio") && contains("both")` を assert している = Loop 1 G5 test と機能的に重複する部分があるが、**違いは literal vs 定数値** = 整合性 (定数値変更時の同期) は新規 test だけが固定する 違いを認識する必要
+- **transcript_bridge.rs の `normalize_speaker`** (line 98) は **既に 10 件の direct test で完全補強済**: Unicode 全角空白 / 0 バイト / 制御文字 / zero-width space まで網羅 (line 301-451) = B カテゴリの典型タスクは消化済 = Loop 4+ で B 候補を選ぶ場合、別 fn ターゲットを探す必要
+- **既存累積技術注意点** (前 mjc-main-7〜17 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### コミットメッセージ書き方の運用知見 (本セッションで重要発見)
+- **`/tmp/mjc-commit-msg-loopN.txt` に Write する前は必ず `Read` を先に実行する必要あり**: 初回 Loop で `Read` をスキップして `Write` した結果 "File has not been read yet" エラーで Write 失敗 → `&&` で続く `git commit -F /tmp/mjc-commit-msg-loop1.txt` が **前セッション (mjc-main-17 Loop 1) の古いメッセージ** で commit してしまった事故あり → `git reset --soft HEAD~1` で訂正 + Read → Write → 再 commit で復旧 = `/tmp` のような短命ファイルでも Write のガードが適用されることを認識する必要 = 後継セッションも初回 commit 時は **Read → Write → commit** の 3 ステップを徹底
+
+### 次ループ候補 (優先順位順、本セッションで未着手 + 部分着手)
+
+#### F-Loop3 (継承). 会議終了検知のアプリ統合 (規模 M, 価値 8)
+- **本セッションで設計乖離発見**: `should_notify_meeting_inactive` (u64) と `DetectionState.last_seen` (Instant) の型が異なるため、**型統一方針の選択が前段で必要**
+- 案 A: `last_seen_secs: Mutex<HashMap<String, u64>>` を別途追加して二重管理 (既存 throttle ロジックは Instant のまま無変更, 規模 S, 確実)
+- 案 B: 既存 `last_seen` を Instant から u64 に変換 (規模 M 超過、既存 throttle ロジック影響あり)
+- 案 C: 純粋関数を Instant 受け取りに変更 (純粋関数の 10 件 test 全 fix が必要、規模 L)
+- **推奨**: 案 A 採用 + 複数ループ構成 (Loop 1 = state 追加, Loop 2 = handle_detection で update, Loop 3 = wrapper 関数 + 実機タイマー組み込み)
+
+#### B (継承, 部分着手済み). transcript_bridge.rs / session_store.rs 周辺の test 補強残り (規模 S, 価値中)
+- transcript_bridge.rs `normalize_speaker` は完備済 = 別 fn ターゲット必要
+- 候補: `segment_to_append_args` / `build_append_args_for_emission` / `build_append_args_for_emission_at` の境界 test 補強
+- session_store.rs は前 mjc-main-15 で `render_session_markdown` 完備済 = 別 fn ターゲット必要
+
+#### W7-W10 (新, 本セッション Loop 3 残し). should_warn_polling_stall T7-T10 等価 application (規模 XS, 価値小)
+- W7 候補: `expected_interval_secs = 0` での挙動固定 (`should_notify_meeting_inactive` T7 zero_threshold と対称)
+- W8 候補: `throttle_secs = 0` での挙動固定
+- W10 候補: `now_secs = u64::MAX` 踏破 panic 化検知 (`should_notify_meeting_inactive` T10 と対称)
+
+#### D (継承). transcription.rs error path 残り (規模 S〜M)
+- 1900 行最大規模。`load_model` path 変換失敗、`feed`/`finalize` resampler state missing 周辺
+- 複数ループ構成
+
+#### S (継承). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+
+#### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+### AGENT_LOG.md 構造の問題 (要整理、優先度低)
+- 本セッションの 3 worker (mjc-worker-transcription-source-error-message-contains, mjc-worker-transcription-source-trim-symmetry, mjc-worker-should-warn-polling-stall-boundary) は AGENT_LOG.md の **末尾** に正しく追記済 = 前 mjc-main-15/16/17 の先頭追記事故が再発しなかった
+- ただし AGENT_LOG.md 全体は 19000+ 行で構造的に整理が必要 = 後継セッションで余裕があれば検討 (低優先)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 471 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### 後継 mjc-main-20260504-19 への予防的ハンドオフ判断
+- 前 11 セッション (mjc-main-7〜17) と同じ 3 ループパターン継承で予測可能性最優先
+- context 推定 ~50-65% でハンドオフ余裕あり
+- 後継は Loop 4 候補から自由選択 = F-Loop3 (アプリ統合, 案 A 推奨, 複数ループ構成必要), W7-W10 (規模 XS, 1 ループ完結確実), B (別 fn ターゲット必要), D, S 等
+
+### コミット周期目標達成状況
+- 1 ループ目標 15 分以内
+- 本セッション実績: Loop 1 = ~5 分, Loop 2 = ~5 分, Loop 3 = ~5 分、平均 ~5 分/loop = 目標 15 分以内達成 + 前 mjc-main-17 (~11 分/loop) より大幅短縮
+- 短縮要因: 前 SUMMARY の knowledge transfer + worker prompt の 5 セクション構造定着 + 同心円拡張パターン (Loop 1 → Loop 2 → Loop 3 で範囲を段階的に変化)
