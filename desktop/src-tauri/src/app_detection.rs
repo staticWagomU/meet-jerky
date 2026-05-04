@@ -2377,4 +2377,83 @@ mod tests {
         assert_eq!(obj["urlHost"], serde_json::json!("meet.google.com"));
         assert_eq!(obj["browserName"], serde_json::json!("Chrome"));
     }
+
+    #[test]
+    fn meeting_url_classification_debug_contains_field_values() {
+        let value = MeetingUrlClassification {
+            service: "Google Meet".to_string(),
+            host: "meet.google.com".to_string(),
+        };
+        let debug_str = format!("{:?}", value);
+        assert!(debug_str.contains("MeetingUrlClassification"));
+        assert!(debug_str.contains("service"));
+        assert!(debug_str.contains("host"));
+        assert!(debug_str.contains("Google Meet"));
+        assert!(debug_str.contains("meet.google.com"));
+        assert!(
+            debug_str.find("service").unwrap() < debug_str.find("host").unwrap(),
+            "service が host より先に出現すること (struct 宣言順を反映)"
+        );
+    }
+
+    #[test]
+    fn meeting_url_classification_partial_eq_field_independent_and_clone_distinct() {
+        let original = MeetingUrlClassification {
+            service: "Zoom".to_string(),
+            host: "zoom.us".to_string(),
+        };
+        assert_eq!(original, original);
+
+        let diff_service = MeetingUrlClassification {
+            service: "OTHER".to_string(),
+            host: "zoom.us".to_string(),
+        };
+        assert_ne!(original, diff_service);
+
+        let diff_host = MeetingUrlClassification {
+            service: "Zoom".to_string(),
+            host: "other.example.com".to_string(),
+        };
+        assert_ne!(original, diff_host);
+
+        let cloned = original.clone();
+        assert_eq!(cloned, original);
+
+        let mut a = MeetingUrlClassification {
+            service: "Zoom".to_string(),
+            host: "zoom.us".to_string(),
+        };
+        let mut c = a.clone();
+        a.service = "MUTATED_A".to_string();
+        c.host = "MUTATED_C.example.com".to_string();
+        assert_ne!(a, c);
+        assert_ne!(a.service, c.service);
+    }
+
+    #[test]
+    fn meeting_url_classification_serde_camel_case_json_keys_fixed() {
+        let value = MeetingUrlClassification {
+            service: "Google Meet".to_string(),
+            host: "meet.google.com".to_string(),
+        };
+        let json = serde_json::to_string(&value).expect("serialize ok");
+        assert!(
+            json.contains("\"service\":"),
+            "service フィールドが JSON に含まれること"
+        );
+        assert!(
+            json.contains("\"host\":"),
+            "host フィールドが JSON に含まれること"
+        );
+        assert!(
+            !json.contains("\"Service\""),
+            "PascalCase キーが混入しないこと"
+        );
+        assert!(json.contains("\"Google Meet\""));
+        assert!(json.contains("\"meet.google.com\""));
+        assert!(
+            json.find("\"service\"").unwrap() < json.find("\"host\"").unwrap(),
+            "JSON 内で service が host より先に出現すること (struct 宣言順を反映)"
+        );
+    }
 }

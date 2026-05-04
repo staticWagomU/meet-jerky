@@ -23236,3 +23236,26 @@ test result: ok. 607 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-35) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-36 へ予防的ハンドオフ判断 (前 28 セッション (mjc-main-7〜34) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 15 ループ実証済 + 部分正常出力条件発見、「Debug 軸補強」17 連続 application 候補 = MeetingUrlClassification (app_detection.rs l.81, struct + camelCase + PartialEq 5 連続候補) / ParsedUrlParts (app_detection.rs l.592, private struct + Option) / AudioDevice (audio.rs l.16, 8 ファイル目展開))
 ---
+## [WORKER mjc-worker-meeting-url-classification-debug-partialeq-clone-tests-20260504-36-1] 開始: 2026-05-04T00:00:00+09:00
+
+### タスク
+mjc-main-20260504-36 Loop 1 = MeetingUrlClassification 構造体に Debug 出力 / PartialEq field 単位独立判定 + Clone 独立性 (assert_ne 直接判定) / serde camelCase JSON key 名固定 + 1 単語 field 名 snake_case 互換 の 3 軸テストを追加
+
+### 結果
+- 追加テスト: meeting_url_classification_debug_contains_field_values / meeting_url_classification_partial_eq_field_independent_and_clone_distinct / meeting_url_classification_serde_camel_case_json_keys_fixed (計 3 件)
+- cargo test --lib: 610 passed / 0 failed (前 607 → +3)
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- 「Debug 軸補強」17 連続 application 達成 (前 16 連続 → 17 連続)
+- 「struct + camelCase + PartialEq 派生」形態 5 連続 application 達成
+- 「Clone 独立性軸」直接判定 (assert_ne) 連続 application
+- 「format 不変条件 application」serde camelCase struct 系統 5 連続 application 達成
+- 8 ファイル目 = なし (app_detection.rs 内の 2 形態目補強、6 ファイル目深化)
+- ファイル: src-tauri/src/app_detection.rs (mod tests 内テスト追加のみ)
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+
+---
