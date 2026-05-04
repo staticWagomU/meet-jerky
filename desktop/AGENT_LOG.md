@@ -25791,3 +25791,29 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - a523edd
 
 ---
+[mjc-main-20260505-16 Loop 32 / 2026-05-05 ~JST]
+
+## What
+- `test_resample_same_rate` / `test_resample_downsample_length` / `test_resample_empty_input` / `test_resample_preserves_silence` の 4 テスト + コメントヘッダーを `src-tauri/src/transcription.rs` から `src-tauri/src/audio_utils.rs` の `mod tests` 内に移動
+- transcription.rs の use 文から `resample_audio` import を削除 (残存使用ゼロが確認できた)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (テスト責務分離 = transcription.rs の更なる縮小)
+- SLAP 改善: `audio_utils::resample_audio` のテストは audio_utils.rs に置くのが自然
+- variety pivot = 「テスト移動」軸 = Loop 31 (Whereby 関数抽出) と異なる軸
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- テスト本体は完全コピー (関数名・assertion・コメント全て不変)
+- audio_utils.rs L134 `mod tests { use super::*; }` のため `resample_audio` は `super::resample_audio` で参照可能 = 既存 import 追加不要
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+## commit
+- (commit hash を後で記入)
+
+
+---

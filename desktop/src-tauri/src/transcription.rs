@@ -69,7 +69,7 @@ pub(crate) struct TranscriptionLoopConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio_utils::{calculate_rms, is_tail_silent, resample_audio};
+    use crate::audio_utils::{calculate_rms, is_tail_silent};
     use crate::transcription_commands::RequestedTranscriptionSources;
     use crate::transcription_error_payload::{
         build_transcription_error_payload, build_worker_panic_error_payload,
@@ -230,50 +230,6 @@ mod tests {
         assert!(
             json_with_speaker.contains("\"isError\":true"),
             "is_error: Some(true) should serialize as isError"
-        );
-    }
-
-    // ─────────────────────────────────────────
-    // resample_audio テスト
-    // ─────────────────────────────────────────
-
-    #[test]
-    fn test_resample_same_rate() {
-        // 16kHz -> 16kHz: 同一レートではそのままコピーが返る
-        let input: Vec<f32> = (0..1600).map(|i| (i as f32 / 1600.0).sin()).collect();
-        let output = resample_audio(&input, 16000, 16000).unwrap();
-        assert_eq!(output.len(), input.len());
-        assert_eq!(output, input);
-    }
-
-    #[test]
-    fn test_resample_downsample_length() {
-        // 48kHz -> 16kHz: サンプル数がおよそ 1/3 になる
-        let input: Vec<f32> = vec![0.0; 48000]; // 1秒分 @ 48kHz
-        let output = resample_audio(&input, 48000, 16000).unwrap();
-        // リサンプラーのエッジ効果を許容
-        assert!(
-            (output.len() as f32 - 16000.0).abs() < 200.0,
-            "Expected ~16000 samples, got {}",
-            output.len()
-        );
-    }
-
-    #[test]
-    fn test_resample_empty_input() {
-        let output = resample_audio(&[], 48000, 16000).unwrap();
-        assert!(output.is_empty());
-    }
-
-    #[test]
-    fn test_resample_preserves_silence() {
-        // 無音入力は無音出力になるべき
-        let input: Vec<f32> = vec![0.0; 4800];
-        let output = resample_audio(&input, 48000, 16000).unwrap();
-        assert!(
-            output.iter().all(|&s| s.abs() < 0.001),
-            "Silent input should produce silent output, max abs value: {}",
-            output.iter().map(|s| s.abs()).fold(0.0f32, f32::max)
         );
     }
 
