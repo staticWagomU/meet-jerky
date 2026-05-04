@@ -524,6 +524,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Webex"
     } else if is_whereby_meeting_url(&host, &parsed.path) {
         "Whereby"
+    } else if is_goto_meeting_url(&host, &parsed.path) {
+        "GoToMeeting"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
         "Microsoft Teams"
     } else {
@@ -894,6 +896,11 @@ const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
     "developers",
 ];
 
+const GOTO_NON_ROOM_PATHS: &[&str] = &[
+    "about", "pricing", "blog", "login", "signup", "help", "terms", "privacy", "contact",
+    "products", "features", "download", "app", "api", "security", "status",
+];
+
 fn is_whereby_host(host: &str) -> bool {
     if host == "whereby.com" {
         return true;
@@ -913,6 +920,27 @@ fn is_whereby_meeting_url(host: &str, path: &str) -> bool {
     };
     let room = room.strip_suffix('/').unwrap_or(room);
     !room.is_empty() && !room.contains('/') && !WHEREBY_NON_ROOM_PATHS.contains(&room)
+}
+
+fn is_goto_host(host: &str) -> bool {
+    if host == "meet.goto.com" {
+        return true;
+    }
+    let Some(subdomain) = host.strip_suffix(".meet.goto.com") else {
+        return false;
+    };
+    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
+}
+
+fn is_goto_meeting_url(host: &str, path: &str) -> bool {
+    if !is_goto_host(host) {
+        return false;
+    }
+    let Some(room) = path.strip_prefix('/') else {
+        return false;
+    };
+    let room = room.strip_suffix('/').unwrap_or(room);
+    !room.is_empty() && !room.contains('/') && !GOTO_NON_ROOM_PATHS.contains(&room)
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -3133,5 +3161,58 @@ mod tests {
     #[test]
     fn classify_meeting_url_whereby_rejects_empty_room_name() {
         assert_eq!(classify_meeting_url("https://whereby.com/"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_apex_room() {
+        assert_eq!(
+            classify_meeting_url("https://meet.goto.com/team-standup"),
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "meet.goto.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_subdomain_room() {
+        assert_eq!(
+            classify_meeting_url("https://acme.meet.goto.com/quick-call"),
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "acme.meet.goto.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_blacklist_about() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/about"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_blacklist_pricing() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_extra_segment() {
+        assert_eq!(
+            classify_meeting_url("https://meet.goto.com/team-room/extra"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_dns_label_spoofing() {
+        assert_eq!(
+            classify_meeting_url("https://fake-meet.goto.com/room"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_empty_room_name() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/"), None);
     }
 }

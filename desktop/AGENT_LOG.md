@@ -24871,3 +24871,14 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 追加判断: TranscriptionErrorPayload は pub use で再エクスポートされていたが他モジュール参照ゼロ (grep 確認) のため pub use を削除 → tests mod 内で crate::transcription_types から直接 import に変更
 
 ---
+[WORKER COMPLETED @ 2026-05-05 ~Loop18 JST] mjc-worker-goto-url-detection-20260505-9-2
+- GoToMeeting URL 検知 (initial scope = `meet.goto.com` apex + subdomain) 追加完了
+- 新規: GOTO_NON_ROOM_PATHS const (16 entries) + is_goto_host + is_goto_meeting_url + classify_meeting_url 統合
+- テスト 7 件追加 (apex_room / subdomain_room / blacklist about / blacklist pricing / extra_segment / dns_label_spoofing / empty_room_name)
+- 検証: cargo test --lib 685 passed (678 + 7) / clippy --lib -D warnings 警告ゼロ / fmt --check OK / git diff --check trailing whitespace なし
+- AGENTS.md 優先順位 2 = 会議検知の網羅性 への直接寄与
+- variety pivot 成立 (Loop 15 + 16 + 17 = extraction 3 連続 → Loop 18 service detection 軸への完全 pivot で連続カウントリセット)
+- 「sweep 化しない約束」継承 = `global.gotomeeting.com/join/<id>` legacy URL や `app.goto.com/meet/<id>` は本ループで追加せず、後続ループに譲る (Whereby Loop 7 base → Loop 14 marketing 拡張 と同じ段階的精緻化パターン)
+- rustfmt 差分対応: GOTO_NON_ROOM_PATHS は 1 行形式に折り返し / classify_meeting_url_goto_rejects_dns_label_spoofing の assert_eq! は複数行形式に展開 (cargo fmt 自動適用)
+
+---
