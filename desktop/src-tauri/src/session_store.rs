@@ -610,6 +610,94 @@ mod tests {
     }
 
     #[test]
+    fn unescape_inline_markdown_text_handles_consecutive_backslash_escapes_independently() {
+        for (input, expected) in [
+            (r"\\\\", r"\\"),
+            (r"\\\\\\", r"\\\"),
+            (r"\\\\\\\\", r"\\\\"),
+        ] {
+            assert_eq!(
+                unescape_inline_markdown_text(input),
+                expected,
+                "input={input:?} で連続 backslash の独立 unescape"
+            );
+        }
+    }
+
+    #[test]
+    fn unescape_inline_markdown_text_handles_adjacent_six_target_escapes_independently() {
+        assert_eq!(
+            unescape_inline_markdown_text(r"\*\_"),
+            "*_",
+            "2 個隣接 escape → 2 chars"
+        );
+        assert_eq!(
+            unescape_inline_markdown_text(r#"\[\]\`"#),
+            "[]`",
+            "3 個隣接 escape → 3 chars"
+        );
+        assert_eq!(
+            unescape_inline_markdown_text(r#"\*\_\`\[\]\\"#),
+            "*_`[]\\",
+            "6 文字全種隣接 escape → 各独立 unescape"
+        );
+    }
+
+    #[test]
+    fn unescape_inline_markdown_text_passes_non_target_backslash_through_while_unescaping_target() {
+        for (input, expected) in [
+            (r"\X\*", r"\X*"),
+            (r"abc\*def\_ghi", "abc*def_ghi"),
+            (r"\!\*\$", r"\!*\$"),
+            (r"\1\*\2", r"\1*\2"),
+        ] {
+            assert_eq!(
+                unescape_inline_markdown_text(input),
+                expected,
+                "input={input:?} で非対象 backslash passthrough・対象のみ unescape"
+            );
+        }
+    }
+
+    #[test]
+    fn unescape_inline_markdown_text_handles_multibyte_chars_adjacent_to_escapes() {
+        for (input, expected) in [
+            (r"あ\*", "あ*"),
+            (r"\*あ", "*あ"),
+            (r"\*あ\_い", "*あ_い"),
+            (r"\*🎉\_", "*🎉_"),
+            (r"\🎉", r"\🎉"),
+        ] {
+            assert_eq!(
+                unescape_inline_markdown_text(input),
+                expected,
+                "input={input:?} で multibyte 隣接 escape の独立 unescape"
+            );
+        }
+    }
+
+    #[test]
+    fn unescape_after_explicit_six_char_escape_recovers_original_text_for_no_whitespace_inputs() {
+        let explicit_escape = |s: &str| -> String {
+            let mut out = String::new();
+            for ch in s.chars() {
+                if matches!(ch, '\\' | '`' | '*' | '_' | '[' | ']') {
+                    out.push('\\');
+                }
+                out.push(ch);
+            }
+            out
+        };
+        for original in ["hello", r"a*b_c", r"\backslash", r#"[`*_\\]"#, "あいう★"] {
+            assert_eq!(
+                unescape_inline_markdown_text(&explicit_escape(original)),
+                original,
+                "input={original:?} で explicit_escape → unescape round-trip が original を復元"
+            );
+        }
+    }
+
+    #[test]
     fn path_for_session_joins_dir_and_session_id_with_md_extension() {
         let dir = PathBuf::from("/tmp/meet-jerky-test");
         let session = Session::start("title".into(), 1_700_000_000);

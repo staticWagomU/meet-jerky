@@ -1,3 +1,17 @@
+# session_store: unescape_inline_markdown_text unit test 5 件追加
+
+- 開始日時: 2026-05-04 JST
+- 担当セッション: mjc-worker-session-store-unescape-1
+- 役割: 作業担当
+- 作業範囲: src-tauri/src/session_store.rs の mod tests 内に新規 unit test 5 件 (T1-T5) 追加
+- 指示内容: unescape_inline_markdown_text の boundary 補強 5 軸 (連続 escape 独立処理 / 隣接 6 文字組合せ / 非対象 + 対象混在 / multibyte 隣接 / 6 文字 round-trip 対称性 by explicit_escape)
+- 結果: 425 → 430 passed
+- 変更ファイル: src-tauri/src/session_store.rs のみ
+- 検証結果: cargo fmt 成功 / cargo clippy -D warnings ゼロ / cargo test --lib session_store::tests::unescape 6 passed (既存1+新規5) / cargo test --lib 430 passed
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインによるレビューとコミット待ち
+
 # session_store: path_for_session unit test 5 件追加
 
 - 開始日時: 2026-05-04 JST
