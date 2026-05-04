@@ -24882,3 +24882,66 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - rustfmt 差分対応: GOTO_NON_ROOM_PATHS は 1 行形式に折り返し / classify_meeting_url_goto_rejects_dns_label_spoofing の assert_eq! は複数行形式に展開 (cargo fmt 自動適用)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~XX:XX JST] mjc-main-20260505-9
+- 2 ループ完走 + 早期ハンドオフ判断
+- Loop 17 = Phase 4-B error_payload 5 関数抽出 (commit fb9fc1c, ~25 行 + use 1 行互換 + lib.rs mod 宣言, 678 passed 件数不変, ~6 分)
+  - 5 関数: build_transcription_error_payload / build_worker_panic_error_payload / transcription_error_payload_to_value (cfg test) / is_realtime_stream_already_stopped_error / should_emit_realtime_stream_error
+  - sonnet worker の追加判断 (Tidy First 質的高さ連続 3 セッション目): 孤立 `pub use TranscriptionErrorPayload` 削除 (他モジュール参照ゼロ grep 確認後) + テスト専用 `is_realtime_stream_already_stopped_error` を tests mod 内 import に絞り visibility 最小化 = Loop 13/15 の precedent 学習適用
+  - transcription-refactor-plan.md L86 worker サブ分割計画 (error_payload) 完了
+- Loop 18 = GoToMeeting URL 検知 (commit 25a82cf, variety pivot, ~70 行追加 + 7 テスト, 685 passed = 678 + 7, ~4 分)
+  - Whereby Loop 7 base パターン直接転用: is_goto_host (apex + subdomain + valid_dns_label による DNS spoofing 防御) + is_goto_meeting_url + GOTO_NON_ROOM_PATHS 16 entries blacklist + classify_meeting_url 統合
+  - initial scope = `meet.goto.com` のみ = Whereby と同じ段階的精緻化パターン継承で `global.gotomeeting.com` legacy URL や `app.goto.com` アプリ launcher は後続ループに譲る = sweep 化しない約束遵守
+  - sonnet worker の rustfmt 差分自動吸収判断 = `cargo fmt --check` で検出された差分を rollback せず `cargo fmt` で吸収再 commit = 「振る舞い不変 + 整形維持」の正解判断
+  - TDD Red→Green、テスト 7 件 (apex_room / subdomain_room / blacklist about/pricing / extra_segment / dns_label_spoofing / empty_room_name)
+
+## 戦略転換の継承 (26 連続「Debug 軸補強」 + 5 連続「Webex sweep」両方からの脱却維持)
+- mjc-main-20260505-1: Debug sweep ローカル最適化からの完全脱却
+- mjc-main-20260505-2: variety 規則確立 (3 連続→4 ループ目 pivot)
+- mjc-main-20260505-3: 批判的再評価 + grep を Read で精読 precedent
+- mjc-main-20260505-4: stdin redirect + Whereby base + Phase 2-A 着手 (audio_utils 集約)
+- mjc-main-20260505-5: stdin redirect 焼き付け + ファイル参照型 handoff + Phase 2-B ModelManager
+- mjc-main-20260505-6: Phase 2-A WhisperLocal + Audio resampling + bfb9846 PATH inner shell escape
+- mjc-main-20260505-7: Phase 2-A 完全完了 + Whereby blacklist 4 件 (variety pivot)
+- mjc-main-20260505-8: Phase 3 TranscriptionManager + Phase 4-A emit_segments
+- mjc-main-20260505-9 (本セッション): Phase 4-B error_payload (Loop 17) + GoToMeeting URL 検知 (Loop 18 = variety pivot, initial scope `meet.goto.com` のみ)
+
+## 後継 mjc-main-20260505-10 への引き継ぎ要点
+
+- **Phase 4-B + GoToMeeting 完了** = 次は:
+  - **Phase 4-C** (Loop 19 推奨): panic_guard (`run_transcription_worker_with_panic_guard`) を `transcription_panic_guard.rs` に抽出 (~19 行 = 規模 SS、Phase 4 段階的分解の継続)
+  - **Phase 4-D** (Loop 20-21): `run_transcription_loop` (~84 行) を `transcription_loop.rs` に抽出 = Phase 4 メイン loop の責務分離 (リスク中-高、TranscriptionLoopConfig 等 struct も抽出すべき)
+  - **Phase 3-B** (Loop 22+): Tauri commands 抽出 (~250 行 = 規模 M-L、lib.rs invoke_handler 登録変更必要 = リスク中)
+- **variety 規則の状態** = Loop 18 service detection pivot で extraction 連続カウント 0 リセット = **Loop 19-21 で extraction 続行可、Loop 22 で variety pivot 必須**
+  - **Loop 19 候補 (extraction 続行可、variety 規則準拠)**: Phase 4-C panic_guard 抽出 (規模 SS、純粋関数 = 安全側)
+  - **Loop 20-21 候補**: Phase 4-D run_transcription_loop 抽出 (規模 M-L、2 段階分割推奨)
+  - **Loop 22 候補 (variety pivot 必須)**: GoToMeeting 拡張 (legacy URL `global.gotomeeting.com/join/<id>` + アプリ launcher `app.goto.com/meet/<id>`、ただし「2 連続にしない約束」のため Loop 22 以降) / 新サービス検知 (Discord stage / Slack Huddle) / app_detection.rs Webex モジュール抽出 / harness 衛生 / frontend 軸
+- **避けるべき**:
+  - **Whereby に戻って 2 連続にしない** (Loop 14 の「sweep 化しない約束」を破る、最低 Loop 22-24 程度の間隔)
+  - **GoToMeeting に戻って 2 連続にしない** (本セッション Loop 18 の「sweep 化しない約束」を破る、最低 Loop 22-24 程度の間隔)
+  - **Phase 4-D run_transcription_loop は 1 ループでは厳しい可能性** (~84 行 + thread/channel/tauri::State 連携 = 高リスク)、まず Phase 4-C (panic_guard) → 4-D (loop) の段階順を推奨
+  - **「Webex sweep」「Phase 2 sweep」のような単一軸 4 連続集中をしない**
+  - **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **harness 衛生**: canonical 移譲時 scripts/* M 再出現は本セッションで観測継続 = 前任 bfb9846 が永続的解決の結論を **連続 3 セッション目で追認** = 結論超強化、後継も同観測なら連続 4 セッション目で更に強化
+
+## 累計 transcription.rs 削減
+- 元 2999 行 → 現在 **2231 行** = **~26% 縮小** (~768 行削減)
+- 内訳: Phase 1 (types + traits) ~90 行 + Phase 2-A 最小 ~22 行 + Phase 2-A WhisperLocal ~76 行 + Phase 2-A Audio resampling ~90 行 + Phase 2-B ModelManager ~149 行 + Phase 2-A WhisperStream ~189 行 + Phase 3 TranscriptionManager ~120 行 + Phase 4-A emit_segments ~40 行 + Phase 4-B error_payload ~25 行
+
+## コンテキスト管理アクション
+- 判断時の使用率: 推定 ~60-65% (大量必読 docs + 2 worker prompt + 検証 + AGENTS.md + autonomous-main-prompt-claude.md + Loop 17 + 18 sleep 観測)
+- 引き継ぎ先: mjc-main-20260505-10
+- 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
+
+## 「2 ループ + 早期 handoff」precedent 連続 6 セッション目達成
+- mjc-main-20260505-4 (初強化) + 5 (連続 2) + 6 (連続 3) + 7 (連続 4) + 8 (連続 5) + 9 (本セッション = 連続 6)
+- 引き継ぎ時の context (大量必読ドキュメント + grep + diff) を考慮した予防的判断
+- 「ファイル参照型 handoff prompt」precedent も連続 6 セッション目継承
+
+## worker 完走 2/2 (累計 118/118 100% 維持)
+- harness silent fail mitigation pattern 連続 42 ループ実証達成 (git status M 監視で 2/2 完走判定)
+- stdin redirect 化 script の安定運用 10-11 件目 precedent 達成 (Loop 10 焼き付けが連続 5 セッション継承で実証)
+- canonical 名移譲完了 (23 セッション連続適用)
+- コミット周期 Loop 17 ~6 分 / Loop 18 ~4 分 平均 ~5 分で目標 15 分以内達成
+
+---
