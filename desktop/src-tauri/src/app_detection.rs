@@ -546,6 +546,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 /// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` で始まるもの (prefix 一致)。
 ///   デスクトップアプリのウィンドウタイトルを想定。`starts_with` のみ使い
 ///   `"Zoom について - Wikipedia"` のような単語含みによる誤検知を防ぐ。
+/// - **Webex**: `"Webex Meeting"` で始まるもの (prefix 一致、Zoom と同型)。
+///   ブラウザタブタイトルを想定。実機で形式未確認のため、検知漏れ時は実環境観察後に拡張。
 /// - **Microsoft Teams**: ブラウザ版のタイトルパターン (`"Microsoft Teams"` suffix 等) は
 ///   外部チュートリアルや解説ページと区別できないため今回は fallback 対象外とする。
 ///   Teams はデスクトップアプリ (Bundle ID: `com.microsoft.teams2`) 経由で検知される。
@@ -575,6 +577,16 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
     {
         return Some(MeetingUrlClassification {
             service: "Zoom".to_string(),
+            host: String::new(),
+        });
+    }
+
+    // Webex のブラウザタブタイトルは "Webex Meeting | <site>" または "Webex Meeting" 始まり
+    // と仮定 (実機未確認、Zoom と同じ保守性レベル)。日本語タイトル ("Webex ミーティング" 等) は
+    // 仕様未確認のため将来課題。
+    if window_title.starts_with("Webex Meeting") {
+        return Some(MeetingUrlClassification {
+            service: "Webex".to_string(),
             host: String::new(),
         });
     }
@@ -2152,6 +2164,41 @@ mod tests {
                 host: String::new(),
             })
         );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_returns_webex_for_webex_meeting_with_pipe_suffix() {
+        assert_eq!(
+            classify_meeting_window_title("Webex Meeting | Acme Inc"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_returns_webex_for_webex_meeting_prefix_only() {
+        assert_eq!(
+            classify_meeting_window_title("Webex Meeting"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_returns_none_for_webex_meeting_not_at_start() {
+        assert_eq!(
+            classify_meeting_window_title("Microsoft Webex Meeting Tools"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_returns_none_for_cisco_webex_without_meeting_keyword() {
+        assert_eq!(classify_meeting_window_title("Cisco Webex"), None);
     }
 
     #[test]

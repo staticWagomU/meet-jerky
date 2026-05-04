@@ -24094,3 +24094,17 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
 
 ---
+## 2026-05-05 JST mjc-worker-app-detection-webex-window-title-20260505-3
+- 担当セッション: mjc-worker-app-detection-webex-window-title-20260505-3 (作業担当, sonnet)
+- 役割: classify_meeting_window_title に Webex のブラウザタブ fallback 検知を追加 (Loop 2 の続編、AGENTS.md 優先順位 2 = 会議検知の網羅性)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: 26 連続「Debug 軸補強」からの戦略転換ループ 3 件目、Webex window title fallback、Zoom 検知の prefix 一致パターン踏襲、4 件 test 追加、rustdoc コメント更新
+- 結果: 646 passed (全体, 前 642 + 4 件), 無破壊
+- 変更ファイル: src-tauri/src/app_detection.rs (+ 34 行 / - 0 行、4 件 test 追加 + Webex 判定ブロック追加 + rustdoc 2 行追加)
+- 検証結果: cargo check OK / cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 646 passed (前 642 + 4 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 仮定リスク: 実機で Webex web 版タブタイトルの形式未確認。"Webex Meeting" prefix で始まる仮定実装。検知漏れ発生時は実環境観察後に日本語版 ("Webex ミーティング" 等) または別形式追加で拡張。
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
