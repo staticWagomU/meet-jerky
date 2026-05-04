@@ -208,4 +208,154 @@ mod tests {
             .take(super::MAX_ERROR_BODY_CHARS)
             .all(|c| c == 'あ'));
     }
+
+    #[test]
+    fn classify_returns_other_for_status_adjacent_to_401_and_429() {
+        // 401 隣接: 402 (400 は既存 line 70 でテスト済なのでここでは含めない)
+        assert_eq!(
+            classify_cloud_whisper_error(402, "payment required"),
+            CloudWhisperError::Other {
+                status: 402,
+                message: "payment required".to_string(),
+            },
+            "402 は 401 の隣接 +1 でも Other に落ち、InvalidApiKey にならないこと"
+        );
+
+        // 429 隣接: 428 と 430
+        assert_eq!(
+            classify_cloud_whisper_error(428, "precondition required"),
+            CloudWhisperError::Other {
+                status: 428,
+                message: "precondition required".to_string(),
+            },
+            "428 は 429 の隣接 -1 でも Other に落ち、RateLimited にならないこと"
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(430, "rfc-unassigned"),
+            CloudWhisperError::Other {
+                status: 430,
+                message: "rfc-unassigned".to_string(),
+            },
+            "430 は 429 の隣接 +1 でも Other に落ち、RateLimited にならないこと"
+        );
+    }
+
+    #[test]
+    fn classify_returns_server_error_for_5xx_range_interior() {
+        // 500..=599 range の中間 4 点 (上下限 500/599 は既存 line 60-68 で網羅済)
+        for status in [501u16, 520, 550, 598] {
+            assert_eq!(
+                classify_cloud_whisper_error(status, "any body"),
+                CloudWhisperError::ServerError,
+                "5xx range 内の {status} は ServerError になるはず (range の一様性)"
+            );
+        }
+    }
+
+    #[test]
+    fn classify_returns_other_for_u16_endpoints_without_overflow() {
+        assert_eq!(
+            classify_cloud_whisper_error(0, "zero status"),
+            CloudWhisperError::Other {
+                status: 0,
+                message: "zero status".to_string(),
+            },
+            "u16::MIN (0) は Other に落ち、crash しない契約"
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(1, "one"),
+            CloudWhisperError::Other {
+                status: 1,
+                message: "one".to_string(),
+            },
+            "u16=1 は Other に落ちる (1xx 系の下端より下)"
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(u16::MAX, "max status"),
+            CloudWhisperError::Other {
+                status: u16::MAX,
+                message: "max status".to_string(),
+            },
+            "u16::MAX (65535) は Other に落ち、overflow なしで status field に正しく入る契約"
+        );
+    }
+
+    #[test]
+    fn classify_does_not_leak_body_into_invalid_api_key_or_rate_limited_or_server_error_variants() {
+        let long_body = "x".repeat(1000);
+        let multibyte_body = "あ".repeat(500);
+        let multiline_body = "line1\nline2\r\nline3\t  trailing  ";
+
+        for body in [
+            long_body.as_str(),
+            multibyte_body.as_str(),
+            multiline_body,
+            "",
+        ] {
+            let body_preview: String = body.chars().take(20).collect();
+            assert_eq!(
+                classify_cloud_whisper_error(401, body),
+                CloudWhisperError::InvalidApiKey,
+                "401 は body (`{body_preview}`...) を完全無視して InvalidApiKey に落ちる契約"
+            );
+            assert_eq!(
+                classify_cloud_whisper_error(429, body),
+                CloudWhisperError::RateLimited,
+                "429 は body を完全無視して RateLimited に落ちる契約"
+            );
+            assert_eq!(
+                classify_cloud_whisper_error(500, body),
+                CloudWhisperError::ServerError,
+                "500 は body を完全無視して ServerError に落ちる契約"
+            );
+            assert_eq!(
+                classify_cloud_whisper_error(599, body),
+                CloudWhisperError::ServerError,
+                "599 は body を完全無視して ServerError に落ちる契約"
+            );
+        }
+    }
+
+    #[test]
+    fn classify_other_is_pure_function_with_status_in_field_only_not_in_message() {
+        // (1) idempotency: 同じ (status, body) を 2 回呼ぶと結果が同一
+        let first = classify_cloud_whisper_error(404, "not found");
+        let second = classify_cloud_whisper_error(404, "not found");
+        assert_eq!(
+            first, second,
+            "同じ入力で 2 回呼んでも結果同一 (純粋関数性)"
+        );
+
+        // (2) status の数値が message に漏れない (404 という文字列が message に含まれない)
+        if let CloudWhisperError::Other { status, message } = first {
+            assert_eq!(status, 404, "status field に 404 が入る");
+            assert_eq!(
+                message, "not found",
+                "message field には body のみが入り、status の数値文字列は混入しない契約"
+            );
+            assert!(
+                !message.contains("404"),
+                "message に status の数値 '404' が漏れていない契約: message=`{message}`"
+            );
+        } else {
+            panic!("404 should classify as Other");
+        }
+
+        // (3) 異なる status・同じ body でも message が同一 (status 非依存)
+        let a = classify_cloud_whisper_error(403, "shared body");
+        let b = classify_cloud_whisper_error(409, "shared body");
+        if let (
+            CloudWhisperError::Other { message: msg_a, .. },
+            CloudWhisperError::Other { message: msg_b, .. },
+        ) = (a, b)
+        {
+            assert_eq!(
+                msg_a, msg_b,
+                "同じ body なら message は status 非依存で同一になる契約"
+            );
+            assert_eq!(msg_a, "shared body");
+        } else {
+            panic!("403 and 409 should both classify as Other");
+        }
+    }
 }
