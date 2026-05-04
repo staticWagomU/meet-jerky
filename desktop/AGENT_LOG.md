@@ -20882,3 +20882,124 @@ test result: ok. 533 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~18:05 JST] mjc-main-20260504-26 状況メモ
+
+### 概要
+- セッション期間: 17:35:12 開始 → 18:01:09 Loop 3 commit (約 26 分で 3 ループ完了)
+- 平均 cadence: ~9 分/loop (mjc-main-22/23 と同等の高速、目標 15 分/loop を大幅クリア)
+- 累積 worker 完走: 65/65 (100%)
+- テスト件数: 524 → 533 passed (+9 件、5 セッション連続「+9 件/セッション」記録)
+- clippy -D warnings ゼロ維持 / cargo fmt 差分なし維持
+
+### 3 ループ実績
+| Loop | Commit | ファイル | 関数 | 3 軸 | passed |
+|---|---|---|---|---|---|
+| 1 | a0a9c5f | app_detection.rs | is_valid_dns_label | 1B 最短 / 末尾ハイフン / 先頭ハイフン | 524→527 |
+| 2 | df34f05 | session_manager.rs | SessionManager::start | 空 title / NUL byte / 10_000 chars | 527→530 |
+| 3 | 999fdbc | settings.rs | permission_status_to_string | 負値 / 隣接 unknown / i32::MAX | 530→533 |
+
+### 確立パターン
+1. **「対称的補強の 3 軸構造」パターン (継続 application、6 連続セッション目)** = mjc-main-22/23/24/25/26 で全 15 ループに application = 1 ループ = 3 軸 = 1 関数群の境界仕様の executable specification 化が標準形
+2. **「同一関数の完全網羅戦略」パターン (mjc-main-26 で確立、本セッション全 3 ループで application)** = 前回未保護軸を残らず埋め切る application = Loop 1 で `is_valid_dns_label` を 6 軸全網羅、Loop 2/3 で他関数に拡張
+3. **「責務分離の executable specification 化」パターン (Loop 2 で application)** = 上位層が下位層の責務に干渉しない契約を test 化 = 既存 session.rs:249 (Session struct level) と相補的に SessionManager level で重ね保護
+4. **新規パターン: 「fail-safe semantic の executable specification 化」(Loop 3 で確立)** = match の `_` (catch-all) ブランチが「fail-safe = 安全側に倒す」設計の場合、catch-all 経路に到達する具体的な値を test で固定する application = 過去パターンと直交する 4 つ目の独立パターン = 今後 unknown 値処理を含む全関数 (e.g. error code → user message mapper、HTTP status → error category mapper 等) で application 可能
+5. **「worker prompt で末尾追記を明示するパターン」(継続 application、6 連続セッション目)** = mjc-main-21 → 22 → 23 → 24 → 25 → 26 で **6 連続セッション先頭追記事故ゼロ**
+
+### 重要発見
+
+#### 1. log file 直接 cat による worker 完走確認手法 (Loop 2 で発見)
+- `agent-tail-output.sh` は worker 完走 → tmux pane kill 直後に呼ぶと「pane not found」を返すが、`logs/agent/<session>.txt` (tee 出力) は完走報告を含む
+- 今後は `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/logs/agent/<session>.txt | tail -50` を直接実行する方が確実
+
+#### 2. 優先順位 #9 (権限・透明性) 軸への application 拡大 (Loop 3 で達成)
+- 過去 6 セッション (mjc-main-21〜25) は優先順位 #2 (会議検知信頼性) 中心
+- 本セッション Loop 3 で初めて #9 軸 (`permission_status_to_string` fail-safe) へ application 拡大
+- application 候補継続: `check_microphone_permission` / `check_screen_recording_permission` / commands.rs の権限ガード経路
+
+#### 3. 別ファイル切替による「test 密度の偏り是正」継続
+- 本セッション 3 ループで 3 ファイル横断: app_detection.rs (mjc-main-25 で集中強化済) → session_manager.rs (mjc-main-24 で集中強化済) → settings.rs (本 Loop 3 で初の本格補強)
+- 関数別の保護密度バランス改善 = 今後は browser_detection.rs / cloud_whisper.rs / openai_realtime.rs / elevenlabs_realtime.rs / commands.rs の保護密度を上げる時期
+
+#### 4. trailing whitespace warning の発生 (Loop 3 worker)
+- worker (sonnet) が AGENT_LOG.md 末尾追記時に trailing whitespace を含めた
+- git --check 警告のみで commit 阻害なし、ただし次セッション以降の worker prompt で「trailing whitespace 禁止」を明示推奨
+- 具体例: worker prompt に「行末の空白文字を含めない (trailing whitespace 禁止)」追記
+
+#### 5. cadence 短縮要因の同定
+- Loop 1 ~7 分 / Loop 2 ~10 分 / Loop 3 ~9 分、平均 ~9 分/loop
+- mjc-main-22/23 と同等の高速 cadence、mjc-main-25 (~12 分/loop) より速い
+- 短縮要因 = (a) sleep 待機を 90s から 240s への調整で worker 完走後の即座確認、(b) prompt 規模指定の functional 化、(c) メイン側でのカバレッジ重複事前確認 (Loop 1 で `/my/` 経路重複発見、別軸へ即切替)
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### B 候補継続 (推奨、規模 S, 即効性あり)
+- `SessionManager::start_with_output` の output_dir 引数境界 (空 path / 存在しない path / traversal `../` 等)
+- 「責務分離の executable specification 化」パターン継続 application
+- 1 ループで 3 軸網羅可能、cadence ~9 分維持見込み
+
+#### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `from_legacy_str` (l.41) の境界 (大文字混在、空文字、不明値)
+- `default_output_directory` (l.139) の境界 (環境変数欠如、Home 検出失敗)
+- `update_settings` (l.171) の境界 (mutex 競合、partial update)
+- `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### M 候補継続 (app_detection.rs 残境界、規模 S, 限定的)
+- `parse_url_host_and_path` の hostname 全体 253 バイト上限 (FQDN), IDN/Punycode handling
+- `validate_port` の境界 (0 / 65535 / 65536 / 非数字 / 空)
+- `extract_query` の境界 (fragment 含む / 複数 ? / empty query)
+
+#### F-Loop6 (継承、規模 M, 価値中)
+- タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+- 本セッションで未着手の音声経路も「サービス cross product による会議検知信頼性の集中強化」パターンに準じた application 可能 = 「実装系 × 共通エラー仕様」マトリクス充填型
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 533 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### worker prompt 必須要素 (本セッションで実証済、継続適用)
+
+worker prompt には以下を **必ず** 含める:
+1. 冒頭で「AGENT_LOG.md の末尾 350 行を読め」 = 末尾追記の場所を視覚的に学習させる
+2. 「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」を明記
+3. 「先頭は絶対に触らない」を明記
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外の編集禁止 + test 件数の上限明示
+6. 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照を明記
+7. **新規追加 (mjc-main-26 で発見)**: 「行末の空白文字 (trailing whitespace) 禁止」を明記 = AGENT_LOG.md 追記時の git --check warning 防止
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション実績 ~9 分/loop で目標大幅クリア)
+- worker 1 件 ≒ 1 コミット
+- 累積 worker 完走 65/65 = 全完走率 100%
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~70-80% で予防的ハンドオフ判断 (前 19 セッション (mjc-main-7〜25) と同じ 3 ループパターン継承で予測可能性優先)
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示 2 回受領も自然に消化済 (3 ループを通常テンポで進めたため)
+
+### 累積成果 (本セッション)
+- **テスト 524 → 533 passed** (+9 件、mjc-main-22/23/24/25 と完全対称な「+9 件/セッション」を 5 セッション連続達成)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **3 ファイル横断補強** (app_detection.rs / session_manager.rs / settings.rs)
+- **「同一関数の完全網羅戦略」パターン全 3 ループで application 確認** (本セッションで application 標準形化)
+- **「fail-safe semantic の executable specification 化」パターン新規確立** (Loop 3, 過去パターンと直交する 4 つ目の独立パターン)
+- **優先順位 #9 (権限・透明性) 軸への application 拡大** (Loop 3, 過去 6 セッション中心の #2 軸から横展開)
+- **worker prompt 末尾追記明示の継続適用** (6 連続セッション先頭追記事故ゼロ)
+- **累積 worker 完走 65/65** (100%)
+- **コミット周期 ~9 分/loop** (mjc-main-22/23 と同等の高速、目標 15 分以内大幅クリア)
+
+- 旧 mjc-main (= mjc-main-20260504-26) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
+---
