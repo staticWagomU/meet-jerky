@@ -2,7 +2,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use parking_lot::Mutex;
 use ringbuf::traits::{Consumer, Observer};
 use tauri::Emitter;
 
@@ -21,12 +20,6 @@ pub use crate::transcription_types::{
 pub use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
 
 // ─────────────────────────────────────────────
-// WhisperLocal (transcription_whisper_local.rs に分離、互換層として再エクスポート)
-// ─────────────────────────────────────────────
-
-pub use crate::transcription_whisper_local::WhisperLocal;
-
-// ─────────────────────────────────────────────
 // WhisperStream (transcription_whisper_stream.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
@@ -39,124 +32,10 @@ pub use crate::transcription_whisper_stream::WhisperStream;
 pub use crate::transcription_model_manager::ModelManager;
 
 // ─────────────────────────────────────────────
-// TranscriptionManager
+// TranscriptionManager / TranscriptionStateHandle (transcription_manager.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
-pub struct TranscriptionManager {
-    engine: Option<Arc<dyn TranscriptionEngine>>,
-    /// 現在ロード中のエンジン種別と、Whisper の場合のモデル名。
-    /// 同じ条件での再 ensure_engine 呼び出しでは再初期化をスキップする。
-    loaded_engine_signature: Option<(crate::settings::TranscriptionEngineType, String)>,
-    running: Arc<AtomicBool>,
-    model_manager: ModelManager,
-}
-
-impl TranscriptionManager {
-    pub fn new() -> Self {
-        Self {
-            engine: None,
-            loaded_engine_signature: None,
-            running: Arc::new(AtomicBool::new(false)),
-            model_manager: ModelManager::new(),
-        }
-    }
-
-    /// エンジンが読み込まれているか (テスト用 / 内部診断用)
-    #[cfg(test)]
-    pub fn is_engine_loaded(&self) -> bool {
-        self.engine.is_some()
-    }
-
-    /// 文字起こしが実行中か
-    pub fn is_running(&self) -> bool {
-        self.running.load(Ordering::SeqCst)
-    }
-
-    /// Whisper モデルを読み込む（まだ読み込まれていない場合）
-    pub fn load_model(&mut self, model_name: &str) -> Result<(), String> {
-        let model_path = self.model_manager.get_model_path(model_name);
-        if !model_path.exists() {
-            return Err(format!("モデルがダウンロードされていません: {model_name}"));
-        }
-
-        let path_str = model_path
-            .to_str()
-            .ok_or_else(|| "モデルパスの変換に失敗しました".to_string())?;
-        let engine = WhisperLocal::new(path_str)?;
-        self.engine = Some(Arc::new(engine));
-        Ok(())
-    }
-
-    /// 設定で選択されたエンジンに切り替える。
-    ///
-    /// 同じエンジン種別 (Whisper の場合は同じモデル名) が既に読み込まれていれば
-    /// 何もしない。条件が変わった場合は古いエンジンを破棄して新しいエンジンを
-    /// 初期化する。
-    ///
-    /// `whisper_model` は Whisper を選んだ時のみ参照される。
-    pub fn ensure_engine(
-        &mut self,
-        engine_type: &crate::settings::TranscriptionEngineType,
-        whisper_model: &str,
-    ) -> Result<(), String> {
-        use crate::settings::TranscriptionEngineType;
-
-        // 既にロード済みなら早期 return。Whisper は model 名一致が条件、
-        // それ以外は engine 種別一致のみで判定。
-        let signature = (engine_type.clone(), whisper_model.to_string());
-        if self.engine.is_some() && self.loaded_engine_signature.as_ref() == Some(&signature) {
-            return Ok(());
-        }
-
-        match engine_type {
-            TranscriptionEngineType::Whisper => {
-                self.load_model(whisper_model)?;
-            }
-            TranscriptionEngineType::AppleSpeech => {
-                let engine = crate::apple_speech::AppleSpeechEngine::new()?;
-                self.engine = Some(Arc::new(engine));
-            }
-            TranscriptionEngineType::OpenAIRealtime => {
-                // モデル名は今のところ固定値 (将来的には設定で切り替え可能にする)。
-                // gpt-4o-mini-transcribe は安価でレイテンシが低い。
-                let engine =
-                    crate::openai_realtime::OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
-                self.engine = Some(Arc::new(engine));
-            }
-            TranscriptionEngineType::ElevenLabsRealtime => {
-                let engine = crate::elevenlabs_realtime::ElevenLabsRealtimeEngine::new(
-                    crate::elevenlabs_realtime::SCRIBE_V2_REALTIME_MODEL_ID,
-                );
-                self.engine = Some(Arc::new(engine));
-            }
-        }
-
-        self.loaded_engine_signature = Some(signature);
-        Ok(())
-    }
-
-    /// 停止フラグを取得する（スレッド間共有用）
-    pub fn running_flag(&self) -> Arc<AtomicBool> {
-        Arc::clone(&self.running)
-    }
-
-    /// 文字起こしを停止する
-    pub fn stop(&mut self) {
-        self.running.store(false, Ordering::SeqCst);
-    }
-}
-
-// ─────────────────────────────────────────────
-// Tauri managed state
-// ─────────────────────────────────────────────
-
-pub struct TranscriptionStateHandle(pub Mutex<TranscriptionManager>);
-
-impl TranscriptionStateHandle {
-    pub fn new() -> Self {
-        Self(Mutex::new(TranscriptionManager::new()))
-    }
-}
+pub use crate::transcription_manager::TranscriptionStateHandle;
 
 // ─────────────────────────────────────────────
 // Tauri コマンド
@@ -648,6 +527,7 @@ fn emit_segments(
 mod tests {
     use super::*;
     use crate::audio_utils::{calculate_rms, is_tail_silent, resample_audio};
+    use crate::transcription_manager::TranscriptionManager;
 
     fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
         WhisperStream {
