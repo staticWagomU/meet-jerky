@@ -25060,4 +25060,4 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 設計判断: 既存 is_goto_host (meet.goto.com 専用) と path pattern が異なる (`/join/<9-digits>` vs 任意 room 名) ため独立関数で分離
 - sweep 化しない約束: app.goto.com/meet/<id> アプリ launcher 追加は本ループでは未着手 = 後続ループに譲る (Loop 18 base → 22 legacy URL の段階的精緻化、Whereby Loop 7→14 と同パターン)
 - AGENTS.md 優先順位 2 = 会議検知の網羅性に直接寄与
-- commit: (pending)
+- commit: a94ad63
