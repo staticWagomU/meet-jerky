@@ -23545,3 +23545,34 @@ test result: ok. 622 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## [2026-05-04 23:03 JST] mjc-worker-openai-realtime-audio-command-enum-debug-tests-20260504-37-3 (mjc-main-37 Loop 3)
+
+### 役割
+作業担当 / openai_realtime.rs AudioCommand (private enum) の Debug 軸補強
+
+### 作業範囲
+- src-tauri/src/openai_realtime.rs (mod tests 末尾に T1/T2/T3 追加、enum / struct / impl / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 指示内容
+mjc-main-37 から発注。「Debug 軸補強」22 連続 application + enum 形態 5 連続 application (TranscriptionSource → SessionManagerError → TranscriptionEngineType → MeetingAppDetectedPayload に続く 5 形態目) + 同一ファイル内 2 形態目補強 (Engine struct + AudioCommand enum) + 「private enum + tuple variant (Vec<f32> payload) + unit variant」混合形態への新形態 application + WebSocket task 内部制御コマンドの Debug 出力契約 CI 保護 の 5 軸戦略価値で T1 (Samples variant + 値) / T2 (Finalize variant 完全一致) / T3 (Samples 空 Vec) を 3 件追加。Tidy First = 振る舞い不変、enum/struct/impl 完全無変更、テスト件数厳密に 3 件のみ。
+
+### 結果
+3 件追加、cargo test --lib 625 件 passed (旧 622 → +3 件)。
+
+### 変更ファイル
+- src-tauri/src/openai_realtime.rs (mod tests 末尾 T1/T2/T3 追加)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+test result: ok. 625 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
