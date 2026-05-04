@@ -1525,6 +1525,56 @@ mod tests {
     }
 
     #[test]
+    fn should_notify_meeting_inactive_threshold_boundary_returns_some() {
+        // elapsed = 300 == threshold = 300: < 判定のため境界ちょうどで発火する → Some(300)
+        // 検知装置: `<` を `<=` に変える誤改修 (境界で発火しない化)
+        assert_eq!(
+            should_notify_meeting_inactive(1300, 1000, 0, 300, 600),
+            Some(300)
+        );
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_zero_threshold_returns_some_when_elapsed_positive() {
+        // inactive_threshold_secs = 0, elapsed = 1: 0 < 0 は偽なので通知発火 → Some(1)
+        // 検知装置: threshold=0 を「無効化」と読み替えて None を返す誤改修
+        assert_eq!(
+            should_notify_meeting_inactive(1001, 1000, 0, 0, 600),
+            Some(1)
+        );
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_zero_throttle_returns_some_when_inactive() {
+        // throttle_secs = 0, elapsed = 400 >= threshold = 300: saturating_sub(999) = 1 >= 0 → Some(400)
+        // 検知装置: throttle=0 を「無効化」と読み替えて None を返す誤改修
+        assert_eq!(
+            should_notify_meeting_inactive(1000, 600, 999, 300, 0),
+            Some(400)
+        );
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_clock_skew_last_notified_after_now_returns_none() {
+        // last_notified(1500) > now(1000): saturating_sub → 0 < throttle(600) → None
+        // 検知装置: saturating_sub を sub に変える panic 化 / または巻き戻し時 throttle 無視の誤改修
+        assert_eq!(
+            should_notify_meeting_inactive(1000, 600, 1500, 300, 600),
+            None
+        );
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_now_secs_max_with_seen_returns_some_huge_elapsed() {
+        // now=u64::MAX, last_seen=1: elapsed = u64::MAX - 1 (overflow なし) → Some(u64::MAX - 1)
+        // 検知装置: u64 overflow への panic 化 / 不要なキャスト追加による精度損失
+        assert_eq!(
+            should_notify_meeting_inactive(u64::MAX, 1, 0, 300, 600),
+            Some(u64::MAX - 1)
+        );
+    }
+
+    #[test]
     fn classify_meeting_url_rejects_empty_and_whitespace_only() {
         assert_eq!(classify_meeting_url(""), None);
         assert_eq!(classify_meeting_url("   "), None);
