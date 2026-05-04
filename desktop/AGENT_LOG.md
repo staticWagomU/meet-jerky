@@ -25986,3 +25986,33 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 ## commit
 - 5a5c814
 ---
+[mjc-main-20260505-17 Loop 34 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-15 Loop 29 → mjc-main-20260505-17 Loop 33
+  - 累計削減行数: 1536 行 (48.8%) → 1486 行 (50.5%) = 50% 里程標突破
+  - 残存課題セクション: Loop 32 (resample テスト移動) + Loop 33 (TranscriptionLoopConfig 移動) 反映
+  - app_detection.rs 関連: Whereby モジュール抽出 ✅ 完了 (Loop 31 = a523edd) サブセクション新設 + 末尾文章更新
+  - TranscriptionLoopConfig struct 移動 ✅ 完了 (Loop 33 = 5a5c814) セクション新設
+  - 末尾参考: 1536 行 (48.8%) → 1486 行 (50.5%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-16 Loop 31 (Whereby 抽出) と Loop 32 (テスト移動) と本セッション Loop 33 (struct 移動) の 3 件を 1 ループで一括反映
+- variety pivot = docs 軸 = 直近 4 ループ (extraction / test 移動 / struct 移動) と異なる
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 最新情報は別セクションで追記する方式 (Loop 30 = commit 32885b5 と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+---
