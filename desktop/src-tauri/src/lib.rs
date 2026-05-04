@@ -18,6 +18,7 @@ mod settings;
 mod system_audio;
 mod transcript_bridge;
 mod transcription;
+mod transcription_model_manager;
 mod transcription_traits;
 mod transcription_types;
 

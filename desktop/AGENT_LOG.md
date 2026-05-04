@@ -24512,3 +24512,17 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 **ハンドオフファイル**: docs/handoff/mjc-main-20260505-4.txt (本セッション内で作成)
 
 ---
+## mjc-worker-mdlmgr — Phase 2-B: ModelManager extraction (mjc-main-20260505-5 Loop 9)
+
+- 開始日時: 2026-05-05T08:00:00Z
+- 担当セッション: mjc-worker-mdlmgr
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/transcription.rs から ModelManager struct + impl ModelManager を新規 src-tauri/src/transcription_model_manager.rs へ抽出 (Phase 2-B)
+- 指示内容: ModelManager 抽出 + transcription.rs に pub use 互換層 + lib.rs に mod 宣言追加
+- 結果: 成功 + 振る舞い不変 (cargo test 674 passed 件数不変) + clippy 警告ゼロ + fmt OK
+- 変更ファイル: src-tauri/src/transcription_model_manager.rs (新規, 144 行) + src-tauri/src/transcription.rs (-148 行 = ModelManager 148 行削除 + pub use 1 行追加 + use PathBuf 1 行削除 = 合計 -148 行) + src-tauri/src/lib.rs (mod transcription_model_manager; 追加 1 行)
+- 検証結果: cargo fmt --check OK / cargo clippy --lib -- -D warnings OK (警告ゼロ) / cargo test --lib 674 passed 件数不変 / git diff --check OK (trailing whitespace なし)
+- 追加対応: PathBuf import が ModelManager 移動後に孤立 → transcription.rs から use std::path::PathBuf; を削除 (clippy -D warnings 対応)
+- 依存関係追加: なし (transcription_types.rs の ModelInfo を crate::transcription_types::ModelInfo で直接 import)
+- 次アクション: Phase 2-A 続き (WhisperLocal) または variety pivot 判断はメインエージェントが Loop 10 で行う
+---
