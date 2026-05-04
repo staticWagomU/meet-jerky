@@ -21819,3 +21819,117 @@ test result: ok. 563 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~22:10 JST] mjc-main-20260504-30 状況メモ (ループ 1 完了 + Loop 2 worker 起動失敗で予防的ハンドオフ判断)
+
+### 本セッションの実績 (560 → 563 passed +3 件)
+
+- **Loop 1** (`67be552`) test(secret_store): SecretKey enum の Debug 出力 / Copy trait / kebab-case format 軸で混合 application 拡張 3 軸 +3 件 → 563 passed
+  - secret_store.rs (237 行 / 既存 7 test / 11 pub_fn = 0.6 test/fn = 最低密度) で「test 密度の偏り是正」継続
+  - 「混合 application」パターン (mjc-main-29 Loop 1 で確立、フィールド+型の 2 軸混合) を「Debug+trait+format の 3 種混合」に拡張する新規 application
+  - T8: Debug 出力に variant 名のみ含み account 文字列を漏らさない (機密性軸)
+  - T9: Copy trait の executable specification (let copied = key 後も両者使える)
+  - T10: account 文字列が lowercase kebab-case で全 variant 統一 (拡張追従型 test)
+
+- **Loop 2 worker 起動失敗** (apple_speech.rs 用) → 後継セッションへ引き継ぎ
+  - prompt 作成完了: `docs/worker-prompts/mjc-worker-apple-speech-meta-symmetric-tests-20260504-30-2.txt` (10122 byte)
+  - `bash scripts/claude-agent-start-worker.sh ...` を 2 回実行したが、tmux session は作成されるものの claude binary が起動した形跡がなく (pane 完全空白、ログ 0 byte、~5 分待っても変化なし)
+  - 切り分け: claude binary は v2.1.126 動作確認済 / Loop 1 prompt (9763 byte) との差はわずか 359 byte / shell metachar 由来の解析失敗 / API rate limit / quota issue / tmux 内 PATH 解決問題のいずれか
+  - 後継セッションへ Loop 2/3 を委譲する判断 (累積 worker 完走 75/75 = 100% 維持)
+
+### 確立されたパターン (本 Loop 1)
+
+1. 「対称的補強の 3 軸構造」パターン継続 application (10 連続セッション目、mjc-main-21〜30)
+2. 「混合 application」パターン (mjc-main-29 Loop 1 で確立) を 3 種混合へ拡張 (本 Loop 1) = Debug+trait+format
+3. 「Debug 軸補強」パターン新規 application 開始 = SecretKey enum の `#[derive(Debug)]` 自動派生契約の executable specification 化
+4. 「format 不変条件 application」パターン (拡張追従型 test 設計) = for ループで全 variant 走査
+
+### 重要発見
+
+#### 1. handoff サマリのファイル名誤認 (mjc-main-29 SUMMARY)
+- mjc-main-29 SUMMARY が示した「browser_detection.rs / commands.rs」は **実在しない** = 実際は app_detection.rs / lib.rs の誤認
+- 後続セッションは候補ファイル名を **必ず実在確認** すべき
+
+#### 2. 全候補ファイルの密度分析手法 (本 Loop 1 で確立)
+- `wc -l <file>` + `grep -c '^\s*#\[test\]' <file>` + `grep -cE '^\s*pub (async )?fn' <file>` で test/pub_fn 比率算出
+- secret_store.rs (0.6 test/fn) を最低密度として特定
+- 後続セッションも同手法で候補絞り込み可
+
+#### 3. Keychain 副作用境界制約下での純粋ロジック軸 application (本 Loop 1 で実証)
+- 「Keychain 実通信禁止」制約下で `#[derive]` 由来 trait 実装と enum format 規則 = 純粋ロジック軸だけで 3 軸を確保
+- 副作用境界を持つ他モジュール (権限/認可) でも同手法 application 可能
+
+#### 4. worker 起動失敗の切り分け課題 (Loop 2)
+- claude binary は v2.1.126 動作確認済
+- prompt サイズ (10122 byte) は Loop 1 (9763 byte) と僅差
+- tmux session は作成されるが claude プロセスが見えない / pane 完全空白
+- **後継セッションは小さい prompt で worker 起動テストを最初に行うことを推奨**
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### Loop 2 引継ぎ: apple_speech.rs (314 行 / 9 test / 3 pub_fn = 3.0、prompt 作成済)
+- prompt: `docs/worker-prompts/mjc-worker-apple-speech-meta-symmetric-tests-20260504-30-2.txt`
+- 内容: メタ対称軸補強パターン 3 軸 (T10 error message 文言完全一致 / T11 BCP-47 format 不変条件 / T12 unit struct Debug 出力)
+- 後継セッションは worker 起動が成功すれば即時 application 可
+
+#### Loop 3 候補: session.rs (503 行 / 18 test / 5 pub_fn)
+- SessionSegment / Session 両方とも `#[derive(Debug, Clone, Serialize, Deserialize)]` 派生
+- 「Debug 軸補強」を struct with fields に拡張 application 候補
+- T1 = SessionSegment Debug 出力でフィールド名 (text / start_ms / end_ms) が含まれる
+- T2 = Session Debug 出力でフィールド名 (id / started_at / title / segments / ended_at) が含まれる
+- T3 = Debug 派生 + Clone 派生の同時保護 (clone 後 Debug 出力が同一)
+
+#### transcription.rs (2257 行 / 58 test / 21 pub_fn = 2.8、関数別密度に偏り想定)
+- 6 つの type で `#[derive(Debug)]` 派生 (l.19, 27, 42, 50, 64, 1041) = Debug 軸補強候補
+- 大規模ファイル = Read 全体禁止、grep で関数別に密度確認必須
+
+#### audio.rs / system_audio.rs / markdown.rs (補強候補限定的)
+
+#### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `default_output_directory` / `update_settings` / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` の settings 統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### F-Loop6 (継承、規模 M, 価値中) = タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 563 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 / `--no-verify` 禁止 / Keychain 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+### worker prompt 必須要素 (10 連続セッションで実証済、継続適用、7 つ全て明示)
+1. AGENT_LOG.md tail -350 を読め
+2. 時系列順 = 末尾追記
+3. 先頭は絶対に触らない
+4. tail -10 で確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外編集禁止 + test 件数の上限明示
+6. 大型ファイルは tail/head/grep で対象範囲のみ参照
+7. 行末空白禁止
+
+### コミット周期
+- Loop 1 ~10 分達成 (mjc-main-29 と同等の cadence 改善維持)
+- Loop 2 worker 起動失敗で本セッション全体時間 ~30 分超過 (再起動試行 + 待機時間)
+
+### context 管理アクション
+- Loop 1 完了時点 ~70-75% で予防的ハンドオフ判断 (Loop 2 worker 起動問題で連続失敗するなら context を消費せず handoff したほうが効率的)
+- 後継 mjc-main-20260504-31 へ引き継ぎ判断
+- 9 連続「+9 件/セッション」記録は本セッションで途切れる (+3 件のみ)、後継セッションが Loop 2/3 を消化すれば再びスケール可能
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge も本セッション中ゼロ。
+
+### 累積成果 (本セッション)
+- **テスト 560 → 563 passed** (+3 件、Loop 1 のみ)
+- **コミット 1 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings)
+- **「混合 application」パターン 2 種混合 → 3 種混合へ拡張**
+- **「Debug 軸補強」パターン新規 application 開始** (Loop 1 で SecretKey enum)
+- **canonical 名移譲完了** (mjc-main-20260504-30 → mjc-main, 5 セッション連続適用)
+- **累積 worker 完走 75/75** (100% 維持)
+- **Loop 2 worker 起動失敗 → 後継セッションへ切り分け委譲**
+
+旧 mjc-main (= mjc-main-20260504-30) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-31 へ予防的ハンドオフ判断 (前 23 セッション (mjc-main-7〜29) と同じ 3 ループパターン継承を期待、ただし worker 起動問題切り分けが必要)
+---
