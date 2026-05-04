@@ -1927,6 +1927,20 @@ mod tests {
     }
 
     #[test]
+    fn parse_requested_transcription_sources_error_message_contains_source_constants() {
+        let err = parse_requested_transcription_sources(Some("xyz"))
+            .expect_err("unknown source should be rejected");
+        assert!(
+            err.contains(TRANSCRIPTION_SOURCE_MICROPHONE),
+            "error message should contain TRANSCRIPTION_SOURCE_MICROPHONE ({TRANSCRIPTION_SOURCE_MICROPHONE:?}): {err:?}"
+        );
+        assert!(
+            err.contains(TRANSCRIPTION_SOURCE_SYSTEM_AUDIO),
+            "error message should contain TRANSCRIPTION_SOURCE_SYSTEM_AUDIO ({TRANSCRIPTION_SOURCE_SYSTEM_AUDIO:?}): {err:?}"
+        );
+    }
+
+    #[test]
     fn should_emit_realtime_stream_error_is_logical_negation_of_already_stopped() {
         for input in [
             "Realtime ストリームが既に停止しています",
