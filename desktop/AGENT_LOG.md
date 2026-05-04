@@ -22290,3 +22290,44 @@ test result: ok. 577 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## mjc-worker-stream-config-debug-clone-independence-tests-20260504-32-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-stream-config-debug-clone-independence-tests-20260504-32-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-32 Loop 3
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強パターン」7 連続 application + Clone deep clone 独立性軸 = StreamConfig (struct with u32 + 3 Option fields, Serialize 派生なしの内部設定型) への Debug + Clone-Debug 一致 + Clone deep 独立性 3 軸 application。
+- T1: stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none (Debug 出力に型名+全 4 snake_case field 名+値+Some/None+enum variant 名が含まれる契約)
+- T2: stream_config_debug_output_equals_after_clone_for_some_and_none_variants (clone 後の Debug 出力が元と完全一致、Some 全埋め+None 全部の 2 case)
+- T3: stream_config_clone_produces_independent_copy_for_option_string_fields (Clone の deep clone 性 = cloned mutation 後も original 不変)
+
+### 結果
+- cargo fmt --check: 差分なし (cargo fmt 自動整形後に確認、exit 0)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 577 → 580 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / pub enum / 既存 67 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 580 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
