@@ -4,13 +4,11 @@ use std::time::Duration;
 
 use parking_lot::Mutex;
 use ringbuf::traits::{Consumer, Observer};
-use rubato::{
-    Resampler, SincFixedIn, SincInterpolationParameters, SincInterpolationType, WindowFunction,
-};
+use rubato::{Resampler, SincFixedIn};
 use tauri::Emitter;
 use whisper_rs::WhisperContext;
 
-use crate::audio_utils::is_tail_silent;
+use crate::audio_utils::{is_tail_silent, sinc_params, RESAMPLE_CHUNK_SIZE};
 
 // ─────────────────────────────────────────────
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
@@ -601,97 +599,8 @@ pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> 
     Ok(())
 }
 
-// ─────────────────────────────────────────────
-// リサンプリング
-// ─────────────────────────────────────────────
-
 /// Whisper の入力サンプルレート（16kHz）
 const WHISPER_SAMPLE_RATE: u32 = 16_000;
-
-/// リサンプリング用の共通パラメータを返す
-fn sinc_params() -> SincInterpolationParameters {
-    SincInterpolationParameters {
-        sinc_len: 256,
-        f_cutoff: 0.95,
-        interpolation: SincInterpolationType::Linear,
-        oversampling_factor: 256,
-        window: WindowFunction::BlackmanHarris2,
-    }
-}
-
-/// リサンプラーのチャンクサイズ（入力フレーム数）
-const RESAMPLE_CHUNK_SIZE: usize = 1024;
-
-/// オーディオサンプルを source_rate から target_rate にリサンプルする。
-///
-/// rubato の SincFixedIn を使用した高品質なリサンプリングを行う。
-/// source_rate == target_rate の場合はコピーを返し、空入力には空出力を返す。
-#[allow(dead_code)]
-pub fn resample_audio(
-    samples: &[f32],
-    source_rate: u32,
-    target_rate: u32,
-) -> Result<Vec<f32>, String> {
-    if samples.is_empty() {
-        return Ok(Vec::new());
-    }
-
-    if source_rate == target_rate {
-        return Ok(samples.to_vec());
-    }
-
-    let mut resampler = SincFixedIn::<f32>::new(
-        target_rate as f64 / source_rate as f64,
-        2.0,
-        sinc_params(),
-        RESAMPLE_CHUNK_SIZE,
-        1, // モノラル
-    )
-    .map_err(|e| format!("リサンプラーの作成に失敗しました: {e}"))?;
-
-    let mut output = Vec::new();
-    let mut pos = 0;
-
-    loop {
-        let frames_needed = resampler.input_frames_next();
-        if pos >= samples.len() {
-            break;
-        }
-
-        let end = (pos + frames_needed).min(samples.len());
-        let mut input_chunk: Vec<f32> = samples[pos..end].to_vec();
-        let was_padded = input_chunk.len() < frames_needed;
-
-        // 最後のチャンクがフレーム数に満たない場合はゼロパディング
-        if was_padded {
-            input_chunk.resize(frames_needed, 0.0);
-        }
-
-        let input_refs: Vec<&[f32]> = vec![&input_chunk];
-        match resampler.process(&input_refs, None) {
-            Ok(result) => {
-                if let Some(channel) = result.first() {
-                    output.extend_from_slice(channel);
-                }
-            }
-            Err(e) => return Err(format!("リサンプリングエラー: {e}")),
-        }
-
-        pos = end;
-
-        // ゼロパディングした場合は最後のチャンクなのでループ終了
-        if was_padded {
-            break;
-        }
-    }
-
-    // 入力長に基づいた期待出力長でトリミング
-    let expected_len =
-        (samples.len() as f64 * target_rate as f64 / source_rate as f64).round() as usize;
-    output.truncate(expected_len);
-
-    Ok(output)
-}
 
 // ─────────────────────────────────────────────
 // 文字起こしループ
@@ -927,7 +836,7 @@ fn emit_segments(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio_utils::calculate_rms;
+    use crate::audio_utils::{calculate_rms, resample_audio};
 
     fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
         WhisperStream {
