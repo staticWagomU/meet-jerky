@@ -1,0 +1,172 @@
+あなたは meet-jerky の sonnet ワーカーです。Loop 32 (mjc-main-20260505-16) の Tidy First テスト移動タスクを担当します。
+
+# 必読 (作業前に必ず実行)
+
+1. **AGENT_LOG.md の末尾 350 行を読む**: `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**
+   - **新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+   - 具体手順: 作業完了後 `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾を確認し、末尾の `---` 直後に追記する
+2. **大型ファイルの読み方**: `src-tauri/src/transcription.rs` (1536 行) は **Read 全体禁止**。`grep -n` / Read tool の offset/limit で対象範囲のみ参照する。AGENT_LOG.md (2.1MB) も同様。
+3. **行末の空白文字 (trailing whitespace) 禁止**: 編集後に `grep -n ' $' 編集ファイル` で確認し、あれば除去する。
+
+# 担当範囲 (厳守)
+
+**変更ファイル (これら以外は触るな)**:
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/transcription.rs` (テスト 4 件 + コメントヘッダー削除)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/audio_utils.rs` (テスト 4 件 + コメントヘッダー追加 = 既存 mod tests { ... } 内に追加)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` (末尾追記のみ)
+
+**触ってはいけない**:
+- transcription_*.rs / app_detection*.rs / その他全ての Rust ファイル
+- frontend (src/) 全て
+- scripts/ / docs/ / Cargo.toml / lib.rs
+- tests コード本体の改変 (test 関数の名前変更や本体修正は禁止 = 完全コピー移動のみ)
+
+# タスク内容 (Tidy First, behavior-preserving)
+
+## 目的
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (テスト責務分離 = transcription.rs の更なる縮小)
+- SLAP 改善: `audio_utils::resample_audio` のテストは audio_utils.rs に置くのが自然 (テストは対象モジュールに置く原則)
+- variety pivot = 「テスト移動」軸 = Loop 31 (Whereby 関数抽出) と異なる軸
+
+## 実装手順
+
+### Step 1: transcription.rs から削除する範囲
+
+`src-tauri/src/transcription.rs` の **L236-278** (43 行):
+
+```
+    // ─────────────────────────────────────────
+    // resample_audio テスト
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn test_resample_same_rate() { ... }
+
+    #[test]
+    fn test_resample_downsample_length() { ... }
+
+    #[test]
+    fn test_resample_empty_input() { ... }
+
+    #[test]
+    fn test_resample_preserves_silence() { ... }
+```
+
+合計 4 テスト + 3 行コメントヘッダー。完全コピーで削除。
+
+注意: 行番号は本 prompt 作成時点。worker は最新の grep で位置を確認すること。`grep -n "test_resample_same_rate" src-tauri/src/transcription.rs` で開始位置を確認。
+
+### Step 2: audio_utils.rs に追加する範囲
+
+`src-tauri/src/audio_utils.rs` の **L205 の `}` 直前** (mod tests の末尾) に Step 1 で削除した 4 テスト + コメントヘッダーを完全コピーで追加。
+
+ただし、追加位置のインデントは `    ` (4 スペース、mod tests 内) を維持。
+
+挿入時の構造例:
+```
+    #[test]
+    fn sanitize_audio_sample_passes_through_subnormal_min_positive_without_flush_to_zero() { ... }
+
+    // ─────────────────────────────────────────
+    // resample_audio テスト
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn test_resample_same_rate() { ... }
+    ...
+}
+```
+
+audio_utils.rs L134 `mod tests { use super::*; }` のため、`resample_audio` は `super::resample_audio` で参照可能 = 既存 import 追加不要。
+
+### Step 3: transcription.rs use 文の整理
+
+L72 周辺:
+```rust
+use crate::audio_utils::{calculate_rms, is_tail_silent, resample_audio};
+```
+
+`resample_audio` import が不要になる可能性 (移動後の transcription.rs 側で他に使っていなければ)。`grep -n "resample_audio" src-tauri/src/transcription.rs` で残存使用箇所を確認し、ゼロなら use から削除:
+```rust
+use crate::audio_utils::{calculate_rms, is_tail_silent};
+```
+
+cargo build / cargo clippy で unused import 警告が出れば削除する判断材料。
+
+### Step 4: 検証
+
+`cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri` してから:
+
+- `cargo test --lib 2>&1 | tail -10` → **700 passed / 0 failed (件数不変が指標)**
+- `cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` → 警告ゼロ
+- `cargo fmt --check 2>&1 | tail -5` → 整形確認、必要なら `cargo fmt` で整形
+
+### Step 5: AGENT_LOG.md 末尾追記
+
+`tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾確認。末尾の `---` 直後に以下フォーマットで追記:
+
+```
+[mjc-main-20260505-16 Loop 32 / 2026-05-05 ~JST]
+
+## What
+- `test_resample_same_rate` / `test_resample_downsample_length` / `test_resample_empty_input` / `test_resample_preserves_silence` の 4 テスト + コメントヘッダーを `src-tauri/src/transcription.rs` から `src-tauri/src/audio_utils.rs` の `mod tests` 内に移動
+- transcription.rs の use 文から `resample_audio` import を削除 (残存使用ゼロが確認できた場合)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (テスト責務分離 = transcription.rs の更なる縮小)
+- SLAP 改善: `audio_utils::resample_audio` のテストは audio_utils.rs に置くのが自然
+- variety pivot = 「テスト移動」軸 = Loop 31 (Whereby 関数抽出) と異なる軸
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- テスト本体は完全コピー (関数名・assertion・コメント全て不変)
+- audio_utils.rs L134 `mod tests { use super::*; }` のため `resample_audio` は `super::resample_audio` で参照可能 = 既存 import 追加不要
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+## commit
+- (commit hash を後で記入)
+```
+
+### Step 6: コミット
+
+`cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop` してから:
+
+```
+git add src-tauri/src/transcription.rs src-tauri/src/audio_utils.rs AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+refactor(transcription): resample_audio テスト 4 件を audio_utils.rs に移動 (Tidy First, mjc-main-20260505-16 Loop 32)
+
+- transcription.rs L236-278 の test_resample_* 4 件 + コメントヘッダーを audio_utils.rs の mod tests 内に移動
+- transcription.rs の use 文から resample_audio import を削除 (残存使用ゼロ確認後)
+- 700 passed 件数不変, clippy 警告ゼロ, fmt OK
+- SLAP 改善: テストは対象モジュールに置く原則
+- variety pivot = 「テスト移動」軸 = Loop 31 (Whereby 関数抽出) と別軸
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 = transcription.rs テスト責務分離
+EOF
+)"
+```
+
+コミット後 `git log --oneline -3` で commit hash を確認し、AGENT_LOG.md の `## commit` セクションを実 hash に更新する commit を打つ (Loop 22 / Loop 31 precedent)。
+
+# 完了報告
+
+タスク完了後、以下の情報を報告:
+- 修正ファイル数 (期待: 3 = transcription.rs, audio_utils.rs, AGENT_LOG.md)
+- cargo test 件数 (期待: 700 passed)
+- clippy 警告数 (期待: 0)
+- fmt 状態 (期待: OK)
+- commit hash
+- 所要時間
+
+# 規模超過防止
+
+- 1 commit (+ 1 chore commit hash 反映) で完結 (タスクは ~43 行のテスト移動 + use 整理 = 1 ループ完結確実)
+- 担当範囲外の編集を見つけたら明示報告して停止
+- test 件数が 700 から増減した場合は明示報告して停止 (件数不変が指標)
+- 行末空白文字を一切残さない
+- テストの assertion / 関数名 / コメント本体は完全コピー (改変禁止)

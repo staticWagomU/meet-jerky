@@ -1,0 +1,150 @@
+あなたは meet-jerky の sonnet ワーカーです。Loop 31 (mjc-main-20260505-16) の Tidy First 抽出タスクを担当します。
+
+# 必読 (作業前に必ず実行)
+
+1. **AGENT_LOG.md の末尾 350 行を読む**: `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**
+   - **新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+   - 具体手順: 作業完了後 `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾を確認し、末尾の `---` 直後に追記する
+2. **大型ファイルの読み方**: `src-tauri/src/app_detection.rs` (3279 行) は **Read 全体禁止**。`grep -n` / `tail -N +開始行 | head -N` または Read tool の offset/limit で対象範囲のみ参照する。AGENT_LOG.md (2.1MB) も同様。
+3. **行末の空白文字 (trailing whitespace) 禁止**: 編集後に `grep -n ' $' 編集ファイル` で確認し、あれば除去する。
+
+# 担当範囲 (厳守)
+
+**変更ファイル (これら以外は触るな)**:
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/app_detection.rs` (関数 2 つ + const 1 つ削除 + classify_meeting_url 呼び出し path 更新)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/app_detection_whereby.rs` (新規作成 = Whereby 関数 2 つ + const 1 つ集約)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/lib.rs` (`mod app_detection_whereby;` 追加 = alphabetical 順)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` (末尾追記のみ)
+
+**触ってはいけない**:
+- transcription.rs / transcription_commands.rs / app_detection_webex.rs / その他全ての Rust ファイル
+- frontend (src/) 全て
+- scripts/ / docs/ / Cargo.toml / lib.rs の他箇所 (mod 宣言 1 行追加のみ許可)
+- tests コード本体の改変 (test 関数の名前変更や本体修正は禁止)
+- ヘルパー `is_valid_dns_label` (これは Loop 29 で既に `pub(crate)` 化済 = 追加変更不要)
+
+# タスク内容 (Tidy First, behavior-preserving)
+
+## 目的
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3279 行 app_detection.rs の理解性向上)
+- mjc-main-20260505-15 Loop 29 (Webex 抽出 = commit b4a0098) の precedent をそのまま Whereby に適用
+- 「app_detection.rs サービス別抽出 sweep 化しない約束」= Loop 30 で docs 軸 (plan.md 更新) を 1 ループ間に挟んでいるため variety 違反でない
+
+## 実装手順
+
+### Step 1: 新ファイル作成 `src-tauri/src/app_detection_whereby.rs`
+
+以下の内容で新規作成 (Webex precedent と同パターン):
+
+- ファイル冒頭に rustdoc コメント `//! Whereby ミーティング URL 検知ロジック (mjc-main-20260505-16 Loop 31 で抽出)。`
+- `use crate::app_detection::is_valid_dns_label;` (Loop 29 で pub(crate) 化済)
+- `const WHEREBY_NON_ROOM_PATHS: &[&str] = &[ ... ];` (private = pub なし、24 要素)
+- `pub(crate) fn is_whereby_host(host: &str) -> bool { ... }` (9 行本体)
+- `pub(crate) fn is_whereby_meeting_url(host: &str, path: &str) -> bool { ... }` (10 行本体)
+
+`is_whereby_host` と `is_whereby_meeting_url` の本体は `app_detection.rs` の現行 L830-838 / L840-849 を完全コピー。`WHEREBY_NON_ROOM_PATHS` 配列要素も L798-823 を完全コピー。
+
+### Step 2: `src-tauri/src/app_detection.rs` から削除
+
+- L798-823 の `const WHEREBY_NON_ROOM_PATHS` を削除 (26 行)
+- L830-849 の `fn is_whereby_host` と `fn is_whereby_meeting_url` を削除 (20 行)
+- L529 の `is_whereby_meeting_url(&host, &parsed.path)` を `crate::app_detection_whereby::is_whereby_meeting_url(&host, &parsed.path)` に変更
+
+注意: 行番号は本 prompt 作成時点のもの。worker は最新の grep で位置を確認すること。
+
+### Step 3: `src-tauri/src/lib.rs` に mod 宣言追加
+
+現行:
+```
+mod app_detection;
+mod app_detection_webex;
+```
+
+を以下に変更 (alphabetical 順維持):
+```
+mod app_detection;
+mod app_detection_webex;
+mod app_detection_whereby;
+```
+
+### Step 4: 検証
+
+`cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri` してから:
+
+- `cargo test --lib 2>&1 | tail -10` → **700 passed / 0 failed (件数不変が指標)**
+- `cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` → 警告ゼロ
+- `cargo fmt --check 2>&1 | tail -5` → 整形確認、必要なら `cargo fmt` で整形
+
+cargo fmt が use 文や呼び出しを自動整形 (複数行展開等) した場合は受け入れ判断 OK (Loop 28/29 precedent)。
+
+### Step 5: AGENT_LOG.md 末尾追記
+
+`tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾を確認し、末尾の `---` 直後に以下フォーマットで追記:
+
+```
+[mjc-main-20260505-16 Loop 31 / 2026-05-05 ~JST]
+
+## What
+- `is_whereby_host` / `is_whereby_meeting_url` の 2 関数 + `WHEREBY_NON_ROOM_PATHS` const を `src-tauri/src/app_detection_whereby.rs` に移動
+- `classify_meeting_url` L529 を `crate::app_detection_whereby::is_whereby_meeting_url` 経由参照に更新
+- `lib.rs` に `mod app_detection_whereby;` 追加 (alphabetical 順 = app_detection_webex の直後)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3279 行 app_detection.rs の理解性向上)
+- mjc-main-20260505-15 Loop 29 (Webex 抽出 = commit b4a0098) の precedent を Whereby に応用
+- variety 規則: Loop 30 で docs 軸 pivot 経由のため、Loop 31 で extraction 再開しても sweep 違反でない
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- pub(crate) で visibility 最小化 (関数 2 つ)
+- WHEREBY_NON_ROOM_PATHS は Whereby モジュール内 private で済む
+- ヘルパー `is_valid_dns_label` は Loop 29 で pub(crate) 化済 (追加変更不要)
+- tests は classify_meeting_url 経由のため app_detection.rs 残置 = Loop 23 / Loop 29 precedent 踏襲
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+## commit
+- (commit hash を後で記入)
+```
+
+### Step 6: コミット
+
+`cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop` してから:
+
+```
+git add src-tauri/src/app_detection.rs src-tauri/src/app_detection_whereby.rs src-tauri/src/lib.rs AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+refactor(app_detection): Whereby 検知 2 関数 + const を app_detection_whereby.rs に抽出 (Tidy First, mjc-main-20260505-16 Loop 31)
+
+- ~20 行関数 + 24 要素 const + lib.rs mod 宣言 (alphabetical 順)
+- classify_meeting_url 呼び出し path 更新
+- 700 passed 件数不変, clippy 警告ゼロ, fmt OK
+- Loop 29 (Webex 抽出 = b4a0098) precedent 踏襲
+- transcription-refactor-plan.md L150 「同パターン (サービス別関数の独立モジュール化) は Whereby / GoToMeeting / Zoom / Microsoft Teams にも適用可能」着手
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 = app_detection.rs 3279 行の理解性向上
+EOF
+)"
+```
+
+コミット後 `git log --oneline -3` で commit hash を確認し、AGENT_LOG.md の `## commit` セクションを実 hash に更新する commit を打つ (Loop 22 precedent)。あるいは agent-commit.sh を経由しても OK。
+
+# 完了報告
+
+タスク完了後、以下の情報を報告:
+- 修正ファイル数 (期待: 4 = app_detection.rs, app_detection_whereby.rs, lib.rs, AGENT_LOG.md)
+- cargo test 件数 (期待: 700 passed)
+- clippy 警告数 (期待: 0)
+- fmt 状態 (期待: OK)
+- commit hash
+- 所要時間
+
+# 規模超過防止
+
+- 1 commit で完結 (タスクは ~45 行の純粋抽出 + mod 宣言 1 行 = 1 ループ完結確実)
+- 担当範囲外の編集を見つけたら明示報告して停止
+- test 件数が 700 から増減した場合は明示報告して停止 (件数不変が指標)
+- 行末空白文字を一切残さない
