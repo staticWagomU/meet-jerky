@@ -1505,6 +1505,36 @@ mod tests {
     }
 
     #[test]
+    fn should_warn_polling_stall_now_equals_last_seen_returns_none() {
+        // now_secs <= last_seen_secs (同時刻) → None (時刻同期問題への保守的扱い)
+        assert_eq!(should_warn_polling_stall(1000, 1000, 0, 3, 60), None);
+    }
+
+    #[test]
+    fn should_warn_polling_stall_zero_expected_returns_some_when_elapsed_positive() {
+        // expected_interval_secs = 0, elapsed = 1: 1 <= 0 は偽なので警告発火 → Some(1)
+        // 検知装置: expected=0 を「無効化」と読み替えて None を返す誤改修
+        assert_eq!(should_warn_polling_stall(1001, 1000, 0, 0, 60), Some(1));
+    }
+
+    #[test]
+    fn should_warn_polling_stall_zero_throttle_returns_some_when_stalled() {
+        // throttle_secs = 0, elapsed = 30 > 9: saturating_sub(999) = 1 >= 0 → Some(30)
+        // 検知装置: throttle=0 を「無効化」と読み替えて None を返す誤改修
+        assert_eq!(should_warn_polling_stall(1000, 970, 999, 3, 0), Some(30));
+    }
+
+    #[test]
+    fn should_warn_polling_stall_now_secs_max_with_seen_returns_some_huge_elapsed() {
+        // now=u64::MAX, last_seen=1: elapsed = u64::MAX - 1 (overflow なし) → Some(u64::MAX - 1)
+        // 検知装置: u64 overflow への panic 化 / 不要なキャスト追加による精度損失
+        assert_eq!(
+            should_warn_polling_stall(u64::MAX, 1, 0, 3, 60),
+            Some(u64::MAX - 1)
+        );
+    }
+
+    #[test]
     fn should_notify_meeting_inactive_first_call_returns_none() {
         // last_seen_secs == 0 は一度も検知されていない: 通知しない
         assert_eq!(should_notify_meeting_inactive(1000, 0, 0, 300, 600), None);
