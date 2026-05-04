@@ -358,4 +358,68 @@ mod tests {
             panic!("403 and 409 should both classify as Other");
         }
     }
+
+    #[test]
+    fn classify_returns_other_for_3xx_redirect_status_range_without_falling_through_to_5xx() {
+        for (status, body) in [
+            (301, "moved permanently"),
+            (302, "found"),
+            (304, "not modified"),
+        ] {
+            assert_eq!(
+                classify_cloud_whisper_error(status, body),
+                CloudWhisperError::Other {
+                    status,
+                    message: body.to_string(),
+                },
+                "{status} (3xx redirect) は 500..=599 範囲外で Other に落ちる契約 (ServerError ではない)"
+            );
+        }
+    }
+
+    #[test]
+    fn classify_other_preserves_nul_byte_in_body_message_because_nul_is_not_whitespace() {
+        let body = "abc\0def";
+        let CloudWhisperError::Other { message, .. } = classify_cloud_whisper_error(400, body)
+        else {
+            panic!("400 should classify as Other");
+        };
+        assert_eq!(
+            message, "abc\0def",
+            "NUL byte は char::is_whitespace で false なので split_whitespace で除去されず passthrough する契約"
+        );
+        assert!(
+            message.contains('\0'),
+            "message に NUL byte が含まれる (sanitize で消されない)"
+        );
+    }
+
+    #[test]
+    fn classify_other_with_same_status_yields_distinct_messages_for_distinct_bodies_pure_function_inverse_axis(
+    ) {
+        let a = classify_cloud_whisper_error(404, "body alpha");
+        let b = classify_cloud_whisper_error(404, "body beta");
+        if let (
+            CloudWhisperError::Other {
+                status: status_a,
+                message: msg_a,
+            },
+            CloudWhisperError::Other {
+                status: status_b,
+                message: msg_b,
+            },
+        ) = (a, b)
+        {
+            assert_eq!(status_a, 404);
+            assert_eq!(status_b, 404);
+            assert_eq!(msg_a, "body alpha");
+            assert_eq!(msg_b, "body beta");
+            assert_ne!(
+                msg_a, msg_b,
+                "同 status (404) × 異 body で message は異なる契約 (pure function: body は message に passthrough、status の値だけで上書きしない)"
+            );
+        } else {
+            panic!("both 404 calls should classify as Other");
+        }
+    }
 }

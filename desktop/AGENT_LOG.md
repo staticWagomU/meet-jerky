@@ -21605,3 +21605,43 @@ test result: ok. 557 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-cloud-whisper-errors-meta-symmetric-tests-20260504-29-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-cloud-whisper-errors-meta-symmetric-tests-20260504-29-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-29 Loop 3
+
+### 作業範囲
+- `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替で `cloud_whisper_errors.rs` (361 行 / 既存 19 test は status/body/漏洩防止/pure function を網羅) を「メタ対称軸補強」パターンで補強 = status 軸 / body 軸 / pure function 軸の異なる対称軸を 1 ループで一通り application。
+- T1: classify_returns_other_for_3xx_redirect_status_range_without_falling_through_to_5xx (status 軸: 3xx redirect = 301/302/304)
+- T2: classify_other_preserves_nul_byte_in_body_message_because_nul_is_not_whitespace (body 軸: NUL byte passthrough)
+- T3: classify_other_with_same_status_yields_distinct_messages_for_distinct_bodies_pure_function_inverse_axis (pure function 軸: 同 status × 異 body の対称軸補強)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 560 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+
+### 変更ファイル
+- src-tauri/src/cloud_whisper_errors.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・定数・既存 test 19 件無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 560 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
