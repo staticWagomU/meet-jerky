@@ -173,6 +173,32 @@ fn should_warn_polling_stall(
     Some(elapsed)
 }
 
+/// 監視中の会議アプリが長時間検知されない場合に「会議終了」通知を発火すべきかを判定する純粋関数。
+/// `Some(elapsed)` は通知対象の経過秒数、`None` は通知不要。
+#[allow(dead_code)]
+fn should_notify_meeting_inactive(
+    now_secs: u64,
+    last_seen_secs: u64,
+    last_notified_secs: u64,
+    inactive_threshold_secs: u64,
+    throttle_secs: u64,
+) -> Option<u64> {
+    if last_seen_secs == 0 {
+        return None;
+    }
+    if now_secs <= last_seen_secs {
+        return None;
+    }
+    let elapsed = now_secs - last_seen_secs;
+    if elapsed < inactive_threshold_secs {
+        return None;
+    }
+    if now_secs.saturating_sub(last_notified_secs) < throttle_secs {
+        return None;
+    }
+    Some(elapsed)
+}
+
 /// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
 ///
 /// URL 全文はここで分類にのみ使い、payload / 通知 / log には出さない。
@@ -1457,6 +1483,45 @@ mod tests {
     fn should_warn_polling_stall_throttled_returns_none() {
         // elapsed = 30s > 9s だが 30s 前に警告済み (throttle=60s) → None
         assert_eq!(should_warn_polling_stall(1000, 970, 970, 3, 60), None);
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_first_call_returns_none() {
+        // last_seen_secs == 0 は一度も検知されていない: 通知しない
+        assert_eq!(should_notify_meeting_inactive(1000, 0, 0, 300, 600), None);
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_within_active_range_returns_none() {
+        // elapsed = 200s < threshold = 300s: まだアクティブ範囲内なので通知しない
+        assert_eq!(should_notify_meeting_inactive(1000, 800, 0, 300, 600), None);
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_inactive_returns_some_elapsed() {
+        // elapsed = 400s >= threshold = 300s, 未通知 (throttle check = 1000-0=1000 >= 600) → Some(400)
+        assert_eq!(
+            should_notify_meeting_inactive(1000, 600, 0, 300, 600),
+            Some(400)
+        );
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_throttled_returns_none() {
+        // elapsed = 400s >= threshold だが now - last_notified = 400s < throttle = 600s → None
+        assert_eq!(
+            should_notify_meeting_inactive(1000, 600, 600, 300, 600),
+            None
+        );
+    }
+
+    #[test]
+    fn should_notify_meeting_inactive_now_equals_last_seen_returns_none() {
+        // now_secs <= last_seen_secs (同時刻) → None (時刻同期問題への保守的扱い)
+        assert_eq!(
+            should_notify_meeting_inactive(1000, 1000, 0, 300, 600),
+            None
+        );
     }
 
     #[test]
