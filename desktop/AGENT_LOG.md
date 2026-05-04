@@ -19292,3 +19292,42 @@ Loop 3 (commit 457a545) で定数化済みの `TRANSCRIPTION_SOURCE_MICROPHONE` 
 
 ### 次アクション
 メインで commit + 次ループ判断
+
+---
+
+## Worker Log: mjc-worker-transcription-source-trim-symmetry
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-source-trim-symmetry
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/transcription.rs の既存 test に 2 assert 追加 (Loop 2)
+
+### 指示内容の要約
+`test_parse_requested_transcription_sources_accepts_known_values` の末尾に `" microphone "` / `" system_audio "` (前後空白付き) の assert ブロック 2 件を追加。既存 ` both ` ケースのみ確認されていた trim 対称性を 3 値全部で executable specification 化。文字列リテラル直書きスタイルを継承 (定数を使うと将来値変更で passthrough 検知装置として機能しなくなる = mjc-main-17 Loop 3 設計判断 3 継承)。関数本体 / const / 既存 4 ブロックは無変更。
+
+### 結果
+- test 数推移: 469 **維持** (既存 test 関数の assert 拡張のため件数変化なし)
+- clippy: **warning 0**
+- fmt: **差分なし**
+
+### 変更ファイル
+- `src-tauri/src/transcription.rs` (1 ファイルのみ)
+
+### 検証結果
+| コマンド | 結果 |
+|---|---|
+| `cargo test --lib --no-run` | **pass** (compile OK) |
+| `cargo test --lib test_parse_requested_transcription_sources_accepts_known_values` | **pass** (1 passed) |
+| `cargo test --lib` | **pass** (469 passed; 0 failed) |
+| `cargo clippy --all-targets -- -D warnings` | **pass** (warning 0) |
+| `cargo fmt --check` | **pass** (差分なし) |
+| `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` | **全段 OK** |
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインで commit + 次ループ判断

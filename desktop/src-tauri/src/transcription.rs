@@ -1391,6 +1391,20 @@ mod tests {
                 use_system: true,
             }
         );
+        assert_eq!(
+            parse_requested_transcription_sources(Some(" microphone ")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            }
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some(" system_audio ")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: false,
+                use_system: true,
+            }
+        );
     }
 
     #[test]
