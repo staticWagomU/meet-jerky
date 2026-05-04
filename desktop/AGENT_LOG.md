@@ -24405,3 +24405,20 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: 後継 mjc-main-20260505-4 が docs/handoff/mjc-main-20260505-3.txt を読み Loop 7 を始動。本セッションは終了。
 
 ---
+
+---
+## 2026-05-05 02:28 JST mjc-w-wbry
+- 担当セッション: mjc-w-wbry (作業担当, sonnet)
+- 役割: 作業担当 (Whereby URL 検知)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 結果: 成功
+- 変更ファイル: src-tauri/src/app_detection.rs (+ AGENT_LOG.md)
+  - WHEREBY_NON_ROOM_PATHS const (21 blacklist エントリ) 追加
+  - is_whereby_host / is_whereby_meeting_url 関数追加 (is_webex_webappng_meeting_url 直後)
+  - classify_meeting_url に Whereby 分岐追加 (Webex と Teams の間)
+  - テスト 7 件追加 (apex/subdomain accept, about/pricing blacklist reject, extra-segment reject, DNS 偽装 reject, 空 room reject)
+- 検証結果: cargo test --lib 674 passed (667 → +7) / cargo clippy 警告ゼロ / cargo fmt --check OK
+- 依存追加: なし
+- 残リスク: blacklist 漏れ候補 — `download`, `app`, `for-teams`, `developers` 等の marketing/product ページが将来追加された場合は別途対応が必要
+- 次アクション: メイン側 diff レビュー + commit
+- mjc-main-20260505-4 Loop 7
