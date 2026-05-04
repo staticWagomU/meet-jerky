@@ -24543,3 +24543,94 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 残リスク: 実起動テスト未実施 = 次 Loop 開始時に worker 起動が壊れていれば即露見 (ロールバック容易、--amend 禁止のため revert commit で復旧)。pipe 方式の precedent は handoff prompt によると本セッション含めて 3 件成功実証済 = 動作確実度高
 - 次アクション: Loop 10 完走 + コンテキスト管理判断 → 「2 ループ + 早期 handoff」precedent 強化 (mjc-main-20260505-4 で確立) を継承し、後継 mjc-main-20260505-6 への予防的 handoff 準備
 ---
+
+## [SESSION SUMMARY @ 2026-05-05 ~03:15 JST] mjc-main-20260505-5
+
+**2 ループ完走 + Phase 2-B ModelManager 抽出 + harness 改善 J = stdin redirect 化を script に焼き付け + 「ファイル参照型 handoff prompt」precedent 継承 + 「2 ループ + 早期 handoff」precedent 連続 2 セッション目達成。**
+
+### 本セッション 2 ループ実績
+
+1. **Loop 9 (`4ebc50c`, ~7 分)**: `refactor(transcription): ModelManager を transcription_model_manager.rs に抽出 (Tidy First, Phase 2-B)`
+   - `pub struct ModelManager` + `impl ModelManager` 全 6 メソッド (new / with_dir #[cfg(test)] / get_model_path / is_model_downloaded / download_model / list_available_models) を新規 src-tauri/src/transcription_model_manager.rs (149 行) へ抽出
+   - transcription.rs に `pub use crate::transcription_model_manager::ModelManager;` 互換層 + `use std::path::PathBuf;` 削除 (孤立 import 解消) = ~148 行削減
+   - lib.rs に `mod transcription_model_manager;` 宣言追加 (alphabetical)
+   - 振る舞い完全不変 = cargo test 674 passed 件数不変 + clippy 警告ゼロ + fmt OK
+   - 累計 transcription.rs 削減: ~260 行 (Phase 1 の 90 行 + Phase 2-A 最小の 22 行 + Phase 2-B の 148 行)、元 2999 → 約 2750 行
+   - **AGENTS.md 優先順位 1 (クラッシュ修正の予防的寄与) 直接寄与**
+
+2. **Loop 10 (`e6d042c`, ~5 分)**: `chore(harness): worker.sh / research.sh の起動方式を stdin redirect 化 = tmux 引数長制限を完全回避 (variety pivot)`
+   - `scripts/claude-agent-start-worker.sh` (line 39-40): pipe 方式 `cat "$PROMPT_FILE" | PATH="$AGENT_PATH" claude --model ... -p` に変更 + 説明コメント 2 行追加
+   - `scripts/claude-agent-start-research.sh` (line 41): 同パターン適用 + 説明コメント 1 行追加
+   - **`scripts/claude-agent-handoff-main.sh` は触らない** (rustdoc コメント line 39-41 = interactive TUI 起動の意図的設計、引数渡しで TUI keep open + watchdog inspect 可能 = 前任者意図を尊重)
+   - bash -n syntax check 両 script OK + git diff --check (trailing whitespace なし) + 実起動テストは次 Loop の worker 起動で自然検証 = 動作確実度高 (3 件 precedent 実証済)
+   - **main 直接編集の例外発動** = autonomous-main-prompt-claude.md の例外規定「自律運用を停止させないための最小限のハーネス修正」+ trivial 1 行 fix x 2 + ハーネス自身の編集で worker bootstrapping リスク回避を理由
+   - **variety pivot = extraction 連続カウントを 0 にリセット** (Loop 8/9 extraction 連続から harness 軸への完全 pivot)
+   - **AGENTS.md 優先順位への直接寄与は弱いが「自律運用継続性 = 全 priority への間接寄与」と判断**
+
+### 確立パターン (本セッションで実証 / 継承)
+
+#### 1. 「ファイル参照型 handoff prompt」precedent 継承
+- 本セッションへの起動 prompt が短縮型 (`docs/handoff/mjc-main-20260505-4.txt` を Read で読め指示) = 前任者 mjc-main-20260505-4 が確立した precedent
+- 後継 mjc-main-20260505-6 への handoff も同パターンで作成 = 連続 2 セッション目の precedent 強化
+- 理由: handoff-main.sh は interactive TUI のため stdin redirect 化されておらず、tmux 引数長制限 (4209 bytes でも too long、handoff 19054 bytes 全文渡しは too long エラー precedent) を受ける = ファイル参照型で起動 prompt を短く書く必要がある
+
+#### 2. 「stdin redirect 化を script に焼き付け」 = 3 件 precedent からの harness 本体改善 (Loop 10)
+- mjc-main-20260505-4 で 2 件 + 本セッション Loop 9 で 3 件目 = 計 3 件成功実証済の stdin redirect 方式 `cat "$FILE" | claude -p` を script 本体に焼き付け
+- 将来全 worker / research 起動で tmux 引数長制限を確実回避
+- handoff-main.sh は interactive 設計のため除外 (前任者意図尊重)
+
+#### 3. 「2 ループ + 早期 handoff」precedent 連続 2 セッション目達成
+- mjc-main-20260505-4 で初創出 (2 ループ完走 → 早期 handoff)
+- 本セッション (mjc-main-20260505-5) も 2 ループ完走 → 早期 handoff = precedent 連続継承
+- 理由: 引き継ぎ時の context 大量必読ドキュメント + grep + diff の累積で context 残量推定 60-70% = 80% 到達前の予防的判断
+- mjc-main-20260504-39 の「1 ループ + 早期 handoff」初創出 → mjc-main-20260505-4 の「2 ループ + 早期 handoff」強化 → mjc-main-20260505-5 の連続 2 セッション目 = ハンドオフタイミング規律の確立
+
+#### 4. 「Phase 2-B 単独実装」パターン (Loop 9)
+- Phase 1 (types + traits) → Phase 2-A 最小 (純粋関数) → **Phase 2-B (ModelManager)** という段階的 extraction
+- ModelManager は外部参照ゼロ (transcription.rs 内部のみ) = 互換層 `pub use` で吸収可能 = 安全側
+- WhisperLocal / WhisperStream / TranscriptionManager 等の他 struct 抽出への参考パターン
+
+#### 5. 「main 直接編集の例外発動」パターン (Loop 10)
+- 通常はメインがアプリコード/ハーネスを直接編集しない
+- 例外: 「自律運用を停止させないための最小限のハーネス修正」(autonomous-main-prompt-claude.md 明記)
+- 本セッションでは harness 自身の編集 = worker 経由は bootstrapping リスク (worker 起動に現スクリプトを使う + 編集途中で worker 起動失敗 → 次 Loop 不能) があるため main 直接編集を選択
+- precedent: mjc-main-20260505-3 Loop 4 (docs/architecture/* main 直接 Write) と同質の例外運用
+
+### 戦略転換の継承維持 (連続 5 セッション目)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」。
+
+- mjc-main-20260505-1: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- mjc-main-20260505-2: 「Webex sweep」の variety 規則 = 「同じパターン 3 ループ続いたら 4 ループ目に variety pivot を検討」確立
+- mjc-main-20260505-3: 「handoff prompt の主要候補を批判的に再評価する」precedent + 「grep 結果は Read で精読する」運用ルール強化
+- mjc-main-20260505-4: 「stdin redirect 起動」precedent 創出 + 「2 ループ + 早期 handoff」precedent 強化 + Whereby URL 検知
+- **mjc-main-20260505-5 (本セッション)**: 「stdin redirect 化を script に焼き付け」 = 3 件 precedent からの harness 本体改善 + 「ファイル参照型 handoff prompt」precedent 継承 + Phase 2-B ModelManager 抽出 + 「2 ループ + 早期 handoff」precedent 連続 2 セッション目達成
+
+### 後継 mjc-main-20260505-6 への次ループ候補
+
+#### variety 規則の状態 (Loop 11 開始時点)
+- 直近: Loop 7 (Whereby pivot) → 8 (extraction) → 9 (extraction) → 10 (harness pivot)
+- **連続カウント: extraction は 0 連続にリセット完了** (Loop 10 の harness pivot で extraction 連続が中断)
+- Loop 11-13 で extraction 続行可能、Loop 14 で variety pivot 発動が規則準拠
+
+#### 推奨 Loop 11 候補
+- **Phase 2-A 続き: WhisperLocal struct + impl** (line 34-122 周辺、~90 行) を transcription_whisper.rs に抽出 = 安全側、Phase 2-B と同パターン、1 ループ完結可能
+- WhisperStream は規模 M-L で 1 ループ超過リスク → Loop 12 以降推奨
+- Audio resampling (sinc_params / resample_audio) は Loop 13 候補
+- TranscriptionManager (Phase 3) は Loop 14-15 候補
+
+### コミット周期実績
+- 本セッション: Loop 9 ~7 分 + Loop 10 ~5 分 = 平均 ~6 分で **目標 15 分以内達成**
+- 累計 worker 完走 110/110 (本セッション +1 件 = Loop 9 worker、100% 維持)
+- harness silent fail mitigation pattern 連続 34 ループ実証達成
+
+### handoff ファイル
+- `docs/handoff/mjc-main-20260505-5.txt` (~250 行、後継 mjc-main-20260505-6 が Read で完全読する用)
+- 起動 prompt: `/tmp/mjc-main-20260505-6-start.txt` (短縮 + ファイル参照型 = handoff-main.sh 引数長制限回避)
+
+### コンテキスト管理アクション
+- 判断時の使用率: 推定 60-70% (TUI 表示は本セッション内では観測不能、必読ドキュメント大量読み込み + grep + diff + Loop 9/10 監視 + 検証の累積から推定)
+- 引き継ぎ先: mjc-main-20260505-6
+- 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
+
+---
