@@ -399,7 +399,7 @@ impl AudioCapture for CpalMicCapture {
                     eprintln!("[microphone] リングバッファ満杯で {dropped} sample を破棄しました");
                     let _ = app_handle.emit(
                         "audio-drop-count",
-                        build_audio_drop_event_payload("microphone", dropped),
+                        crate::audio_event::build_audio_drop_event_payload("microphone", dropped),
                     );
                 }
                 std::thread::sleep(Duration::from_millis(100));
@@ -581,13 +581,10 @@ pub fn stop_recording(state: tauri::State<'_, AudioStateHandle>) -> Result<(), S
     Ok(())
 }
 
-fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
-    json!({ "source": source, "dropped": dropped })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::audio_event::build_audio_drop_event_payload;
 
     fn assert_close(actual: f32, expected: f32, epsilon: f32) {
         assert!(

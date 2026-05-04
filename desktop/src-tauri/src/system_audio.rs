@@ -331,7 +331,7 @@ impl AudioCapture for ScreenCaptureKitCapture {
                     );
                     let _ = app_handle.emit(
                         "audio-drop-count",
-                        build_audio_drop_event_payload("system_audio", dropped),
+                        crate::audio_event::build_audio_drop_event_payload("system_audio", dropped),
                     );
                 }
                 std::thread::sleep(Duration::from_millis(100));
@@ -447,14 +447,10 @@ pub fn stop_system_audio(
     Err("相手側音声の取得は macOS でのみ利用可能です".to_string())
 }
 
-#[cfg(target_os = "macos")]
-fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
-    json!({ "source": source, "dropped": dropped })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::audio_event::build_audio_drop_event_payload;
 
     fn pcm_bytes(samples: &[f32]) -> Vec<u8> {
         samples

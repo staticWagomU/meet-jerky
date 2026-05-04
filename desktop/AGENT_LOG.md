@@ -1,3 +1,24 @@
+---
+
+## セッション: mjc-worker-audio-event-extract
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-event-extract
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src-tauri/src/audio_event.rs (新規) + src-tauri/src/lib.rs + src-tauri/src/audio.rs + src-tauri/src/system_audio.rs (Tidy First: 重複 private fn 共有モジュール抽出、test 追加なし)
+- **指示内容**: audio.rs (line 584-586) と system_audio.rs (line 450-453, cfg macos) に同実装で存在した private fn `build_audio_drop_event_payload` を `src/audio_event.rs` (pub(crate)) に抽出。call site を `crate::audio_event::` 経由に更新。tests mod に `use crate::audio_event::build_audio_drop_event_payload;` を追加。テストは移動せず 450 件維持。
+- **結果**: 成功
+- **変更ファイル**: 新規 1 (audio_event.rs) / 更新 3 (lib.rs, audio.rs, system_audio.rs)
+- **検証結果**:
+  - cargo fmt -p meet-jerky: 成功 (差分なし)
+  - cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings: 警告ゼロ
+  - cargo test -p meet-jerky --lib: **450 passed / 0 failed** (前ループから不変)
+  - cargo test "audio::tests::build_audio_drop": 10 passed (audio 5 + system_audio 5)
+  - cargo test system_audio: 32 passed
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main-20260504-14) によるレビュー → コミット
+
 # session_store: unescape_inline_markdown_text unit test 5 件追加
 
 - 開始日時: 2026-05-04 JST
