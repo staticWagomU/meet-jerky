@@ -25188,3 +25188,95 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - cargo fmt --check: OK
 
 ---
+[SESSION SUMMARY @ 2026-05-05 ~05:32 JST] mjc-main-20260505-12
+
+## ループ実績 (2 ループ完走 = 「2 ループ + 早期 handoff」precedent 連続 9 セッション目)
+
+### Loop 23 = Phase 3-B 続き = list_models + is_model_downloaded 抽出
+- commit: b9626ca
+- priority 1 予防的寄与 (Tauri commands 集約)
+- ~12 行関数 + use 2 行 (ModelInfo + ModelManager) + lib.rs invoke_handler パス更新
+- transcription_commands.rs に list_models() / is_model_downloaded() の 2 つの #[tauri::command] 関数を移動
+- lib.rs L354-355 の `transcription::list_models` / `transcription::is_model_downloaded` → `transcription_commands::*` に変更
+- 変更ファイル 3: src-tauri/src/transcription.rs (-12 行) / src-tauri/src/transcription_commands.rs (+15 行) / src-tauri/src/lib.rs (パス更新のみ)
+- 検証: 692 passed 件数不変, clippy 警告ゼロ, fmt OK
+- 所要時間: ~4 分 (worker 起動から commit まで)
+
+### Loop 24 = Phase 3-B 続き = download_model 全体抽出
+- commit: c47dac3
+- priority 1 予防的寄与 (Tauri commands 集約 + use 整理)
+- ~40 行 async 関数 (#[tauri::command] + tokio::task::spawn_blocking + 2 段 emit error path)
+- worker 自律 Tidy 4 件:
+  1. transcription.rs L4 `use tauri::Emitter;` → transcription_commands.rs に移動 (transcription.rs での `.emit(` 参照ゼロ確認後)
+  2. transcription.rs L36-38 `use crate::transcription_commands::{build_download_*_payload};` 削除 (download_model 移動で参照ゼロ)
+  3. **transcription.rs L28 `pub use crate::transcription_model_manager::ModelManager;` re-export 廃止** (外部参照ゼロ grep 確認後の自律判断 = Loop 17/19/20 precedent 学習)
+  4. **tests mod 内に `use crate::transcription_model_manager::ModelManager;` 直接 import 追加** (re-export 廃止で tests が壊れないよう visibility 最小化)
+- lib.rs invoke_handler `transcription::download_model` → `transcription_commands::download_model` に変更
+- 変更ファイル 3: src-tauri/src/transcription.rs (-52 行 + use 整理) / src-tauri/src/transcription_commands.rs (+45 行 + use tauri::Emitter;) / src-tauri/src/lib.rs (パス更新)
+- 検証: 692 passed 件数不変, clippy 警告ゼロ, fmt OK
+- 所要時間: ~6.5 分 (worker 起動から commit まで)
+
+## 累計 transcription.rs 削減 (Phase 1〜4 完了 + Phase 3-B 進行中)
+- 元 2999 行 → 現在 **2034 行** = **~32.2% 縮小** (~965 行削減) = **「32% 達成」**
+- 内訳: Phase 1 (types + traits) ~90 行 + Phase 2-A 最小 (calculate_rms / is_tail_silent) ~22 行 + Phase 2-A WhisperLocal ~76 行 + Phase 2-A Audio resampling ~90 行 + Phase 2-B ModelManager ~149 行 + Phase 2-A WhisperStream ~189 行 + Phase 3 TranscriptionManager ~120 行 + Phase 4-A emit_segments ~40 行 + Phase 4-B error_payload ~25 行 + Phase 4-C panic_guard ~18 行 + Phase 4-D run_transcription_loop ~81 行 + Phase 3-B 前段準備 (build_download_*_payload helper) ~19 行 + Phase 3-B Loop 23 (list_models + is_model_downloaded) ~12 行 + Phase 3-B Loop 24 (download_model + use 整理 + re-export 廃止) ~64 行
+- transcription_commands.rs 累計: 34 → 94 行 (本セッション +60 行)
+
+## variety 規則の状態
+- 直近 4 ループ: Loop 21 (extraction = build_download_*_payload helper) → 22 (service detection pivot = GoToMeeting legacy URL) → 23 (extraction = list_models + is_model_downloaded) → 24 (extraction = download_model)
+- 直近の extraction 連続 = 2 (Loop 23, 24)
+- Loop 25 で extraction 続行可、Loop 26 で variety pivot 検討の余地あり
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 6 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-12 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 前任 mjc-main-20260505-7/8/9/10/11 の観測継続結論 (前任 mjc-main-20260505-6 の `bfb9846` chore(harness) commit が永続的解決) を **連続 6 セッション目で追認** = 結論超強化
+- 「観測してから判断する」運用の効果実例
+
+## worker 統計
+- worker 完走 2/2 (累計 124/124 = 100% 維持)
+- stdin redirect 化 script の安定運用 16-17 件目 precedent 達成 (Loop 10 焼き付けが連続 8 セッション継承で実証)
+- 「sonnet worker の Tidy First 質的高さ」連続 7 セッション目で実証 (Loop 24 で re-export 廃止 + tests mod 直接 import の自律 4 件判断)
+
+## 本セッションの commit 周期
+- Loop 23: ~4 分 (起動 05:18 → commit ~05:22)
+- Loop 24: ~6.5 分 (起動 05:24 → commit ~05:31)
+- 平均 ~5.25 分/loop = **目標 15 分以内大幅達成**
+
+## 後継への引き継ぎ判断 (Loop 25 候補)
+
+### 候補 A (推奨 Loop 25): Phase 3-B 続き = validate_stream_count_for_engine + parse_requested_transcription_sources 抽出
+- transcription.rs に残る純粋関数的 helper:
+  - `fn validate_stream_count_for_engine(engine_type, stream_count) -> Result<(), String>` (L87 周辺、~25 行 = AppleSpeech multi-stream エラー文 + 入力検証)
+  - `fn parse_requested_transcription_sources(...)` (L307 周辺、~38 行 = JSON Value → TranscriptionSource Vec 変換)
+- 規模: M (~63 行 = 25 + 38)、両関数とも純粋 helper = リスク低
+- 1 ループで 2 関数同時抽出可、または分割
+- variety 規則: Loop 25 で extraction 3 連続到達 = Loop 26 で variety pivot 必須
+
+### 候補 B (Loop 25 別案): start_transcription / stop_transcription Tauri command 抽出
+- L113-258 (start_transcription = ~145 行) + L260-272 (stop_transcription = ~12 行)
+- 規模: 大 (~157 行)、特に start_transcription は thread spawn + ringbuf + tauri::State 連携多数
+- リスク中-高、1 ループ完結困難 = 2-3 段階分割推奨
+- 後ループに譲る判断が安全
+
+### 候補 C (Loop 26 variety pivot): app_detection.rs Webex モジュール抽出
+- transcription-refactor-plan.md L117-121 で「将来課題」記載済
+- Webex 関連 8 関数 (is_webex_host / is_webex_meeting_url / is_jphp_path / is_webex_jphp_meeting_url / is_wbxmjs_path / is_webex_wbxmjs_meeting_url / is_webappng_path / is_webex_webappng_meeting_url)
+- 規模 M (~200 行?)、transcription.rs で確立した抽出パターンを app_detection.rs に応用可
+
+### 候補 D (Loop 26 variety pivot): GoToMeeting アプリ launcher (`app.goto.com/meet/<id>`)
+- priority 2 直接寄与、mjc-main-20260505-11 Loop 22 (legacy URL) の延長
+- 「2 連続にしない約束」のため最低 Loop 26-28 まで間隔を空ける = Loop 26 OK
+
+### 候補 E (Loop 26 variety pivot): 新サービス検知 (Discord stage / Slack Huddle)
+- priority 2 直接寄与
+- URL pattern 調査が前段必要 = 1 ループ完結が不確実
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 692 件全 pass
+- cargo は `cd src-tauri` してから実行
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁)
+- `--no-verify` 禁止
+- メインは原則アプリコード/ハーネス直接編集しない (worker 経由)
+
+## ユーザー直伝指示 (本セッション)
+- watchdog nudge 1 件: 「自律改善ループへ進む」(Loop 24 完走前に受信、Loop 24 検証中だったため完走を待ってから対応 = 正しい運用)
+
+---
