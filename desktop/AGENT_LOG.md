@@ -19901,3 +19901,52 @@ handle_browser_url_detection 関数内で既存 Instant ベース throttle (last
 
 ---
 
+
+## Worker Log: mjc-worker-check-all-inactive-iteration-extension-20260504-21-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-check-all-inactive-iteration-extension-20260504-21-2
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs のみ (引数 rename + iteration 変更 + dead_code 削除)
+
+### 指示内容の要約
+F-Loop5 Loop 2 = 機能完結, 振る舞い変更, ユーザー観測可能として以下を実施:
+1. `check_meeting_inactive_for_bundle` の引数名 `bundle_id` → `throttle_key` に rename + doc コメント更新 (throttle_key の 3 形式混在を明示)
+2. `check_all_inactive_bundles` の iteration を `WATCHED_BUNDLE_IDS` 全件巡回から `last_seen_secs.lock().keys().cloned().collect()` 全件巡回に変更 + `parse_throttle_key_to_display_name` で display name 解決 + MutexGuard 即解放 (デッドロック回避) + doc コメント更新
+3. `parse_throttle_key_to_display_name` の dead_code 二重 attribute (`#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` + `#[allow(dead_code)]`) 両方削除 + doc コメント更新 (「誰も呼ばない」削除)
+
+### 結果
+- test 数推移: 484 maintained (件数変化なし、iteration 変更は振る舞い変更だが unit test 対象外 = `show_inactive_notification` 副作用持ち)
+- clippy: warning 0 維持 (dead_code 属性削除後も警告ゼロ = `parse_throttle_key_to_display_name` は macOS・非 macOS 両方で live)
+- fmt: 差分なし
+- agent-verify: Rust 変更は git diff ベースの判定でスキップ表示だが、手動検証 (cargo test / clippy / fmt) 全段 OK
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (1 ファイルのみ)
+
+### 検証結果
+1. `cargo build`: Finished (compile OK)
+2. `cargo test --lib --no-run`: Finished (compile OK)
+3. `cargo test --lib check_meeting_inactive_for_bundle`: 1 passed (引数 rename 後も既存 test pass)
+4. `cargo test --lib parse_throttle_key_to_display_name`: 6 passed (Loop 1 追加分全維持)
+5. `cargo test --lib`: 484 passed (件数変化なし)
+6. `cargo clippy --all-targets -- -D warnings`: warning 0 (dead_code 再発なし)
+7. `cargo fmt --check`: 差分なし
+8. `bash scripts/agent-verify.sh`: frontend build OK (Rust は git diff ベースでスキップ、手動検証済み)
+
+### 設計判断
+- `Vec<String>` collect で MutexGuard を即解放: `for key in guard.keys()` のまま iterate すると `show_inactive_notification` 呼び出し中 (= `check_meeting_inactive_for_bundle` 内で `last_notified_secs.lock()`) に別の lock を取得しようとしてデッドロックの恐れがあるため、先に Vec に collect して guard を drop してから iterate
+- dead_code attribute 全削除: clippy で警告ゼロを確認し、`#[cfg_attr(...)]` も不要と判定 (non-macOS でも `check_all_inactive_bundles` から呼ばれるため dead ではない)
+- `show_inactive_notification` の第2引数型変更: 旧 `&str` → 新 `&str` (= `&app_name` として渡す) = 関数シグネチャは不変、呼び出し側の引数が `app_name: String` から `&String` → `&str` に変わるのみ
+- test 追加なし: `check_all_inactive_bundles` は `AppHandle` / `show_inactive_notification` 副作用を持つため unit test 不能。既存 `parse_throttle_key_to_display_name` 6 件 + `check_meeting_inactive_for_bundle` 1 件で CI 保護十分
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メイン側で commit (F-Loop5 機能完結) + 残候補 (B / D / S / F-Loop6 timer shutdown / K)
+
+---

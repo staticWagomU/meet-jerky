@@ -234,16 +234,17 @@ fn should_notify_meeting_inactive(
     Some(elapsed)
 }
 
-/// 指定 bundle id が会議 inactive 通知の発火対象かを判定する wrapper。
+/// `last_seen_secs` HashMap の key (throttle_key) が会議 inactive 通知の発火対象かを判定する wrapper。
 ///
+/// throttle_key は bundle_id 単独 / `"browser:..."` / `"window-title:..."` の 3 形式が混在する。
 /// `DetectionState` から `last_seen_secs` / `last_notified_secs` を読み、
 /// 純粋関数 `should_notify_meeting_inactive` を呼ぶ。`Some(elapsed)` を返した
 /// ときは副作用として `last_notified_secs` も書き込む (スロットリング更新)。
 ///
-/// `STATE` 未初期化または対象 bundle が一度も検知されていない場合は `None`。
+/// `STATE` 未初期化または対象 throttle_key が一度も検知されていない場合は `None`。
 /// std::thread タイマーから定期的に呼ばれる。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
+fn check_meeting_inactive_for_bundle(throttle_key: &str) -> Option<u64> {
     let state = STATE.get()?;
     let now_secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -252,13 +253,13 @@ fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
     let last_seen_secs = state
         .last_seen_secs
         .lock()
-        .get(bundle_id)
+        .get(throttle_key)
         .copied()
         .unwrap_or(0);
     let last_notified_secs = state
         .last_notified_secs
         .lock()
-        .get(bundle_id)
+        .get(throttle_key)
         .copied()
         .unwrap_or(0);
     let result = should_notify_meeting_inactive(
@@ -272,12 +273,14 @@ fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
         state
             .last_notified_secs
             .lock()
-            .insert(bundle_id.to_string(), now_secs);
+            .insert(throttle_key.to_string(), now_secs);
     }
     result
 }
 
-/// `WATCHED_BUNDLE_IDS` 全件に対して `check_meeting_inactive_for_bundle` を呼び、
+/// `last_seen_secs` の key 全件を巡回し、`parse_throttle_key_to_display_name` で
+/// display name に変換した上で `check_meeting_inactive_for_bundle` を呼ぶ。
+/// アプリ経路 (Zoom/Teams/FaceTime) と browser 経路 (Safari 等) の両方が対象。
 /// `Some(elapsed)` が返ったら `show_inactive_notification` を発火する。
 /// タイマースレッドから定期的に呼ばれる。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
@@ -286,9 +289,15 @@ fn check_all_inactive_bundles() {
         Some(s) => s,
         None => return,
     };
-    for (bundle_id, app_name) in WATCHED_BUNDLE_IDS {
-        if let Some(elapsed) = check_meeting_inactive_for_bundle(bundle_id) {
-            show_inactive_notification(&state.app_handle, app_name, elapsed);
+    // last_seen_secs MutexGuard を即解放してから iterate (デッドロック回避)。
+    // throttle_key は 3 形式の混在 (bundle_id 単独 / "browser:..." / "window-title:...") =
+    // parse_throttle_key_to_display_name で表示名に解釈する。
+    let throttle_keys: Vec<String> = state.last_seen_secs.lock().keys().cloned().collect();
+    for throttle_key in throttle_keys {
+        if let Some(app_name) = parse_throttle_key_to_display_name(&throttle_key) {
+            if let Some(elapsed) = check_meeting_inactive_for_bundle(&throttle_key) {
+                show_inactive_notification(&state.app_handle, &app_name, elapsed);
+            }
         }
     }
 }
@@ -461,11 +470,8 @@ fn inactive_notification_body(app_name: &str, elapsed_secs: u64) -> String {
 /// - **window-title 経路**: `"window-title:<bundle_id>:<service>"` → 3 つ目のセグメント (service) を `Some` で返す
 /// - 上記いずれにも該当しない不正形式・未知 bundle_id は `None` を返す
 ///
-/// `check_all_inactive_bundles` の iteration extension (= F-Loop5 Loop 2) で、
-/// `last_seen_secs` の key 全件巡回時に display name を解決するために呼ばれる予定。
-/// 本 Loop ではまだ誰も呼ばないため `#[allow(dead_code)]` を付ける。
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-#[allow(dead_code)]
+/// `check_all_inactive_bundles` の iteration で `last_seen_secs` の key 全件巡回時に
+/// display name を解決するために呼ばれる。
 fn parse_throttle_key_to_display_name(key: &str) -> Option<String> {
     if let Some(rest) = key.strip_prefix("browser:") {
         // "browser:<bundle_id>:<service>:<host>" → splitn(3, ':') → [bundle_id, service, host]
