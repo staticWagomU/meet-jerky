@@ -26417,3 +26417,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - d6626ed
 
 ---
+[mjc-main-20260505-19 Loop 38 / 2026-05-05 ~JST]
+
+## What
+- transcription_types.rs 関連テスト 10 件 (TranscriptionSegment 4 / TranscriptionSource 3 / ModelInfo 3) を transcription.rs から transcription_types.rs に移動:
+  - ブロック A: test_transcription_segment_serialization / transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values / transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants / transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options
+  - ブロック B: transcription_source_debug_output_contains_each_variant_name_per_variant / transcription_source_copy_trait_keeps_original_usable_after_assignment / transcription_source_serde_serializes_each_variant_with_snake_case_value
+  - ブロック C: model_info_debug_output_contains_struct_name_and_all_four_field_names / model_info_clone_produces_independent_copy_for_string_fields_and_size_mb / model_info_serialize_uses_camel_case_for_all_four_fields
+- transcription_types.rs に `#[cfg(test)] mod tests` 新設 (use super::*)
+- transcription.rs から 10 件削除 + `use crate::transcription_types::ModelInfo;` 削除 (unused_imports 警告防止)
+- transcription.rs 行数: 1175 → 749 行 (-426 行 = 累計 ~75% 縮小達成)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (巨大ファイルの SLAP 改善 = 「型と型のテストを同じファイルに置く」locality 最大化)
+- Loop 35 (transcription_error_payload tests 15 件移動 290 行) precedent 完全踏襲、規模 1.4 倍
+- variety pivot = test 移動軸 = Loop 35 から 3 ループ間隔 (Loop 32→35→38 で間隔維持) = 許容範囲
+- バンドル判断 = 単独 3 ループ分割 (sweep 3 件) より 1 ループバンドル (sweep 1 件) が variety 規則的に有利
+
+## How (Tidy First, 振る舞い不変)
+- transcription_types.rs に `#[cfg(test)] mod tests` 新設 + `use super::*`
+- 10 件のテスト本文はアサーション含めそのままコピー (#[test] 属性込み)
+- transcription.rs からは順次削除、use 文整理 (unused_imports 警告防止)
+- 700 passed 件数不変、clippy 警告ゼロ、fmt OK
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: warnings 0
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+- transcription.rs 行数: 749 行 (目標 ~770 ±20 の範囲内)
+
+## commit
+- (commit hash は commit 後に確定)
