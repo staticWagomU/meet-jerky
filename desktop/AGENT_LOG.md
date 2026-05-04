@@ -26841,5 +26841,5 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - transcription.rs 749 行 wc -l 実数確認済
 
 ## commit
-- (commit hash 反映 chore commit で別途記入)
+- 322b38d
 
