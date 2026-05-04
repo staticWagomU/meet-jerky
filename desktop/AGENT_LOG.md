@@ -19718,3 +19718,46 @@ F-Loop3 Loop 3b として以下を実施:
 
 ### 次アクション
 メインで commit + 残り候補 (F-Loop4 = browser_url_callback 経路の last_seen_secs 更新 / B カテゴリ別 fn 補強 / D / S 等)
+
+---
+
+## Worker Log: mjc-worker-browser-last-seen-secs-update-20260504-20-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-browser-last-seen-secs-update-20260504-20-3
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs handle_browser_url_detection に last_seen_secs.insert(throttle_key, now_secs) 追加 (F-Loop4 = handle_detection 経路の対称コピー, Tidy First, 振る舞い不変)
+
+### 指示内容の要約
+handle_browser_url_detection 関数内で既存 Instant ベース throttle (last_seen) の閉じブロック直後に、epoch secs ベースの最終検知時刻を last_seen_secs へ書き込む新規ブロックを追加した。throttle_key は last_seen.insert() で move 消費されるため、そこを .clone() に変更して後続ブロックで throttle_key を再利用する形にした。
+
+### 結果
+- test 数推移: 478 維持 (件数変化なし)
+- clippy: warning 0 維持
+- fmt: 差分なし (初回 multi-line 形式が rustfmt で1行化されたため修正)
+- throttle_key 取り扱い: last_seen.insert(throttle_key.clone(), now) に変更し、後続ブロックで throttle_key を move (clone 不要)
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (1 ファイルのみ)
+
+### 検証結果
+1. `cargo test --lib --no-run`: Finished (compile OK)
+2. `cargo test --lib`: 478 passed (件数変化なし)
+3. `cargo clippy --all-targets -- -D warnings`: warning 0
+4. `cargo fmt --check`: 差分なし (multi-line insert を1行化して解消)
+5. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs`: 全段 OK
+
+### 設計判断
+- test 追加なし理由: 振る舞いがユーザー観測不可能 (内部状態更新のみ、check_all_inactive_bundles は WATCHED_BUNDLE_IDS のみ巡回のため throttle_key エントリは未使用) = 前 mjc-main-19 Loop 2 (commit 09d191c) と同じ判断
+- throttle_key clone 採用: last_seen.insert() の引数を throttle_key.clone() に変更し、後続 last_seen_secs ブロックで throttle_key を move = 計2箇所で clone を最小化
+- lock 順序維持: last_seen.lock() ブロック終了後に last_seen_secs.lock() を別スコープで取得 = デッドロック回避
+- iteration extension scope 外: check_all_inactive_bundles の key 全件巡回 + display name 抽出は本 Loop scope 外、将来の別 Loop で消化
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし (fmt 差分のみ: multi-line を1行化して即解消)
+
+### 次アクション
+メインで commit + 残候補 (B / D / S / iteration extension F-Loop5 / etc.)

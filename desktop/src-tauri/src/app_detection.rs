@@ -372,7 +372,17 @@ fn handle_browser_url_detection(
                 return;
             }
         }
-        last_seen.insert(throttle_key, now);
+        last_seen.insert(throttle_key.clone(), now);
+    }
+
+    // `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
+    // (案 A 二重管理: 既存 Instant ベース throttle と並走)。
+    {
+        let now_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        state.last_seen_secs.lock().insert(throttle_key, now_secs);
     }
 
     show_notification(&state.app_handle, &classification.service);
