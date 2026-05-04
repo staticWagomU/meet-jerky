@@ -619,4 +619,75 @@ mod tests {
         assert!(!original_dbg.contains("response_format: \"json\""));
         assert!(!original_dbg.contains("0.5"));
     }
+
+    #[test]
+    fn verbose_segment_debug_format_contains_struct_name_and_all_field_values() {
+        let segment = VerboseSegment {
+            start: 1.5,
+            end: 3.25,
+            text: String::from("こんにちは"),
+        };
+        let formatted = format!("{segment:?}");
+        assert!(
+            formatted.contains("VerboseSegment"),
+            "struct 名: {formatted}"
+        );
+        assert!(formatted.contains("start"), "start field 名: {formatted}");
+        assert!(formatted.contains("1.5"), "start 値: {formatted}");
+        assert!(formatted.contains("end"), "end field 名: {formatted}");
+        assert!(formatted.contains("3.25"), "end 値: {formatted}");
+        assert!(formatted.contains("text"), "text field 名: {formatted}");
+        assert!(formatted.contains("こんにちは"), "text 値: {formatted}");
+    }
+
+    #[test]
+    fn verbose_response_debug_format_contains_struct_name_and_nested_segment_values() {
+        let response = VerboseResponse {
+            segments: vec![
+                VerboseSegment {
+                    start: 0.0,
+                    end: 1.0,
+                    text: String::from("first"),
+                },
+                VerboseSegment {
+                    start: 1.0,
+                    end: 2.0,
+                    text: String::from("second"),
+                },
+            ],
+        };
+        let formatted = format!("{response:?}");
+        assert!(
+            formatted.contains("VerboseResponse"),
+            "outer struct 名: {formatted}"
+        );
+        assert!(
+            formatted.contains("segments"),
+            "segments field 名: {formatted}"
+        );
+        assert!(
+            formatted.contains("VerboseSegment"),
+            "inner struct 名: {formatted}"
+        );
+        assert!(formatted.contains("first"), "1 番目 text 値: {formatted}");
+        assert!(formatted.contains("second"), "2 番目 text 値: {formatted}");
+    }
+
+    #[test]
+    fn verbose_response_with_empty_segments_debug_format_contains_empty_vec_brackets() {
+        let response = VerboseResponse { segments: vec![] };
+        let formatted = format!("{response:?}");
+        assert!(
+            formatted.contains("VerboseResponse"),
+            "struct 名: {formatted}"
+        );
+        assert!(
+            formatted.contains("segments"),
+            "segments field 名: {formatted}"
+        );
+        assert!(
+            formatted.contains("[]"),
+            "空 Vec の Debug 表示: {formatted}"
+        );
+    }
 }

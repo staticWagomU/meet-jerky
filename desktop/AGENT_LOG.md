@@ -23790,3 +23790,16 @@ test result: ok. 625 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
 
 ---
+## 2026-05-04 23:28 JST mjc-worker-cloud-whisper-verbose-private-debug-tests-20260504-38-3
+- 担当セッション: mjc-worker-cloud-whisper-verbose-private-debug-tests-20260504-38-3 (作業担当, sonnet)
+- 役割: cloud_whisper.rs の private deserialization struct (VerboseResponse / VerboseSegment, `#[derive(Debug, Deserialize)]`) の Debug 出力契約 CI 保護
+- 作業範囲: src-tauri/src/cloud_whisper.rs の `mod tests` 末尾に 3 件の test 関数追加 (VerboseSegment 全 fields Debug / VerboseResponse 複数 segments nested Debug / VerboseResponse 空 Vec の `[]` Debug)
+- 指示内容: 「Debug 軸補強」25 連続 application + cloud_whisper.rs 内 2 形態目補強 (WhisperRequestParams = mjc-main-35 Loop 3 → VerboseResponse/Segment = 本 Loop 3) + 「private deserialization struct 形態」初対応 + Vec<T> nested Debug 出力 / 空 Vec `[]` 表示パターン継続 application + serde Deserialize でのみ構築される production path の Debug 契約保護
+- 結果: pass 32 passed (cloud_whisper, +3 件), 634 passed (全体, +3 件)
+- 変更ファイル: src-tauri/src/cloud_whisper.rs (+ 62 行 / - 0 行、3 件 test 追加 + cargo fmt 適用)
+- 検証結果: cargo test --lib cloud_whisper 32 passed、cargo test --lib 全体 634 passed、cargo clippy --lib -- -D warnings 警告ゼロ、cargo fmt --check OK (fmt 適用後)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
