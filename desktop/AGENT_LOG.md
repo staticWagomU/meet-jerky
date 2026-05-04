@@ -1,5 +1,21 @@
 ---
 
+## worker: mjc-worker-handle-detection-update-last-seen-secs
+
+- 開始日時: 2026-05-04 14:40 JST
+- 担当セッション: mjc-worker-handle-detection-update-last-seen-secs
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/app_detection.rs handle_detection 内に last_seen_secs.insert(now_secs) を追加 (F-Loop3 Loop 2, Tidy First, 振る舞い不変)
+- 指示内容の要約: 既存 Instant ベース throttle ブロック直後に SystemTime ベースの epoch secs を計算して last_seen_secs に insert。既存ロジック完全無変更、ロック順序維持、dead_code attribute 維持。
+- 結果: cargo test 475 件維持 (件数変化なし), clippy warning 0, fmt 差分なし
+- 変更ファイル: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- 検証結果: cargo test (475 pass) / clippy -D warnings (0) / fmt (clean) / agent-verify.sh (全段 OK)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインで commit + Loop 3 (wrapper 関数 + 実機タイマー組み込み, F-Loop3 Loop 3) は後続セッションへ送る判断 OR セッション内 Loop 3 として進める判断
+
+---
+
 ## セッション: mjc-worker-transcription-source-const
 
 - **開始日時 (JST)**: 2026-05-04

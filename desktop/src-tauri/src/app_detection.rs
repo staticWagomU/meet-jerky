@@ -134,6 +134,19 @@ fn handle_detection(bundle_id: &str, app_name: &str) {
         last_seen.insert(bundle_id.to_string(), now);
     }
 
+    // `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
+    // (案 A 二重管理: 既存 Instant ベース throttle と並走、Loop 3 で wrapper 関数が読み取る予定)。
+    {
+        let now_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        state
+            .last_seen_secs
+            .lock()
+            .insert(bundle_id.to_string(), now_secs);
+    }
+
     // 通知センターに通知を出す
     show_notification(&state.app_handle, app_name);
 
