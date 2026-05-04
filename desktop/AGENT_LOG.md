@@ -22720,3 +22720,44 @@ test result: ok. 589 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 
 旧 mjc-main (= mjc-main-20260504-33) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-34 へ予防的ハンドオフ判断 (前 26 セッション (mjc-main-7〜32) と同じ 3 ループパターン継承を期待、harness silent fail に対しては git status ベースの mitigation pattern が連続 9 ループ実証済)
 ---
+
+## mjc-worker-session-debug-clone-serde-key-tests-20260504-34-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-debug-clone-serde-key-tests-20260504-34-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-34 Loop 1
+
+### 作業範囲
+- `src-tauri/src/session.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 11 連続 application + 「format 不変条件 application」パターン拡張 (5 系統目 = serde default snake_case) = Session struct (#[derive(Debug, Clone, Serialize, Deserialize)] + 5 fields including Option<u64> / Vec<SessionSegment>) への Debug-Clone 一致 + SessionSegment serde JSON key 名 contract + Session serde JSON key 名 contract の 3 軸 application。
+- T1: session_debug_output_equals_after_clone_for_all_field_types_including_options_and_vec (mjc-main-31 Loop 2 SessionSegment と対称形)
+- T2: session_segment_serde_json_format_uses_snake_case_field_names_only (snake_case 3 key 厳密 + camelCase 不在 + 値正しさ)
+- T3: session_serde_json_format_uses_snake_case_field_names_only_with_nested_segments (snake_case 5 key 厳密 + nested SessionSegment 形態固定 + 値正しさ)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 589 → 592 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/session.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / 既存 21 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 592 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

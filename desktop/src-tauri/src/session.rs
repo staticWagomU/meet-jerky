@@ -617,4 +617,157 @@ mod tests {
             "#[derive(Debug, Clone)] の組み合わせで Debug 出力が clone 後も完全一致する契約"
         );
     }
+
+    #[test]
+    fn session_debug_output_equals_after_clone_for_all_field_types_including_options_and_vec() {
+        let mut original = Session::start("daily standup".to_string(), 1_234_567_890);
+        original.append_segment("Alice".to_string(), 5, "hello".to_string());
+        original.append_segment("Bob".to_string(), 10, "world".to_string());
+        original.finalize(1_234_568_000);
+        let cloned = original.clone();
+        assert_eq!(
+            format!("{:?}", original),
+            format!("{:?}", cloned),
+            "#[derive(Debug, Clone)] の組み合わせで Session 全体 (id/title/started_at/ended_at=Some/segments=2 件) の Debug 出力が clone 後も完全一致する契約 (mjc-main-31 Loop 2 の SessionSegment と対称形補強)"
+        );
+    }
+
+    #[test]
+    fn session_segment_serde_json_format_uses_snake_case_field_names_only() {
+        let segment = SessionSegment {
+            speaker: "Alice".to_string(),
+            timestamp_offset_secs: 42,
+            text: "hello world".to_string(),
+        };
+        let value = serde_json::to_value(&segment).unwrap();
+        let obj = value
+            .as_object()
+            .expect("SessionSegment should serialize as JSON object");
+        assert!(
+            obj.contains_key("speaker"),
+            "key 'speaker' (snake_case) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("timestamp_offset_secs"),
+            "key 'timestamp_offset_secs' (snake_case) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("text"),
+            "key 'text' (snake_case) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            obj.len(),
+            3,
+            "SessionSegment の JSON object は 3 key 厳密 (camelCase 等の追加 key を遮断): got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            !obj.contains_key("timestampOffsetSecs"),
+            "camelCase key 'timestampOffsetSecs' が JSON に含まれない契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            obj.get("speaker").and_then(|v| v.as_str()),
+            Some("Alice"),
+            "speaker 値が JSON に正しく載る契約"
+        );
+        assert_eq!(
+            obj.get("timestamp_offset_secs").and_then(|v| v.as_u64()),
+            Some(42),
+            "timestamp_offset_secs 値が JSON に正しく載る契約"
+        );
+        assert_eq!(
+            obj.get("text").and_then(|v| v.as_str()),
+            Some("hello world"),
+            "text 値が JSON に正しく載る契約"
+        );
+    }
+
+    #[test]
+    fn session_serde_json_format_uses_snake_case_field_names_only_with_nested_segments() {
+        let mut session = Session::start("title".to_string(), 1_000);
+        session.append_segment("Alice".to_string(), 5, "hello".to_string());
+        session.finalize(1_500);
+        let value = serde_json::to_value(&session).unwrap();
+        let obj = value
+            .as_object()
+            .expect("Session should serialize as JSON object");
+        assert!(obj.contains_key("id"), "key 'id' が JSON に含まれる契約");
+        assert!(
+            obj.contains_key("title"),
+            "key 'title' が JSON に含まれる契約"
+        );
+        assert!(
+            obj.contains_key("started_at"),
+            "key 'started_at' (snake_case) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("ended_at"),
+            "key 'ended_at' (snake_case) が JSON に含まれる契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            obj.contains_key("segments"),
+            "key 'segments' が JSON に含まれる契約"
+        );
+        assert_eq!(
+            obj.len(),
+            5,
+            "Session の JSON object は 5 key 厳密 (camelCase 等の追加 key を遮断): got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            !obj.contains_key("startedAt"),
+            "camelCase key 'startedAt' が JSON に含まれない契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(
+            !obj.contains_key("endedAt"),
+            "camelCase key 'endedAt' が JSON に含まれない契約: got {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            obj.get("title").and_then(|v| v.as_str()),
+            Some("title"),
+            "title 値が JSON に正しく載る契約"
+        );
+        assert_eq!(
+            obj.get("started_at").and_then(|v| v.as_u64()),
+            Some(1_000),
+            "started_at 値が JSON に正しく載る契約"
+        );
+        assert_eq!(
+            obj.get("ended_at").and_then(|v| v.as_u64()),
+            Some(1_500),
+            "ended_at=Some が JSON に u64 として載る契約"
+        );
+        let segments = obj
+            .get("segments")
+            .and_then(|v| v.as_array())
+            .expect("segments は JSON array");
+        assert_eq!(
+            segments.len(),
+            1,
+            "nested SessionSegment が 1 件 array に載る契約"
+        );
+        let seg0 = segments[0]
+            .as_object()
+            .expect("nested SessionSegment は JSON object");
+        assert!(
+            seg0.contains_key("speaker"),
+            "nested SessionSegment の key 'speaker' 契約"
+        );
+        assert!(
+            seg0.contains_key("timestamp_offset_secs"),
+            "nested SessionSegment の key 'timestamp_offset_secs' 契約"
+        );
+        assert!(
+            seg0.contains_key("text"),
+            "nested SessionSegment の key 'text' 契約"
+        );
+    }
 }
