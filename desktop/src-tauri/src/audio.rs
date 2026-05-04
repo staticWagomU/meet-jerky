@@ -918,4 +918,94 @@ mod tests {
         assert!(obj.contains_key("source"));
         assert!(obj.contains_key("dropped"));
     }
+
+    #[test]
+    fn audio_device_debug_contains_field_values_in_declaration_order() {
+        let device = AudioDevice {
+            name: "Built-in Microphone".to_string(),
+            id: "device-001".to_string(),
+        };
+        let debug_str = format!("{:?}", device);
+        assert!(debug_str.contains("AudioDevice"), "struct name in debug");
+        assert!(debug_str.contains("name"), "field name 'name' in debug");
+        assert!(debug_str.contains("id"), "field name 'id' in debug");
+        assert!(
+            debug_str.contains("Built-in Microphone"),
+            "name value in debug"
+        );
+        assert!(debug_str.contains("device-001"), "id value in debug");
+        assert!(
+            debug_str.find("name").unwrap() < debug_str.find("id").unwrap(),
+            "name field appears before id field: declaration order preserved"
+        );
+    }
+
+    #[test]
+    fn audio_device_clone_is_deep_and_does_not_mutate_original() {
+        let original = AudioDevice {
+            name: "Mic-A".to_string(),
+            id: "id-A".to_string(),
+        };
+        let mut cloned = original.clone();
+        cloned.name = "Mic-B".to_string();
+        cloned.id = "id-B".to_string();
+        let original_debug = format!("{:?}", original);
+        assert!(
+            original_debug.contains("AudioDevice"),
+            "original struct name preserved"
+        );
+        assert!(
+            !original_debug.contains("Mic-B"),
+            "original should not contain cloned name"
+        );
+        assert!(
+            !original_debug.contains("id-B"),
+            "original should not contain cloned id"
+        );
+        assert!(
+            original_debug.contains("Mic-A"),
+            "original should contain original name"
+        );
+        assert!(
+            original_debug.contains("id-A"),
+            "original should contain original id"
+        );
+    }
+
+    #[test]
+    fn audio_device_serde_serialize_uses_default_snake_case_for_both_fields() {
+        let device = AudioDevice {
+            name: "Built-in Microphone".to_string(),
+            id: "device-001".to_string(),
+        };
+        let value = serde_json::to_value(&device).expect("serialize should succeed");
+        let obj = value.as_object().expect("should be object");
+        assert_eq!(obj.len(), 2, "exactly 2 fields");
+        assert!(obj.contains_key("name"), "key 'name' exists");
+        assert_eq!(
+            obj["name"],
+            serde_json::json!("Built-in Microphone"),
+            "name value matches"
+        );
+        assert!(obj.contains_key("id"), "key 'id' exists");
+        assert_eq!(
+            obj["id"],
+            serde_json::json!("device-001"),
+            "id value matches"
+        );
+        assert!(!obj.contains_key("Name"), "PascalCase key 'Name' absent");
+        assert!(
+            !obj.contains_key("deviceId"),
+            "renamed key 'deviceId' absent"
+        );
+        assert!(
+            !obj.contains_key("device_id"),
+            "renamed key 'device_id' absent"
+        );
+        let json = serde_json::to_string(&device).expect("serialize to string should succeed");
+        assert!(
+            json.find("\"name\"").unwrap() < json.find("\"id\"").unwrap(),
+            "\"name\" appears before \"id\" in JSON output"
+        );
+    }
 }

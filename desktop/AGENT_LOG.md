@@ -23259,3 +23259,25 @@ mjc-main-20260504-36 Loop 1 = MeetingUrlClassification 構造体に Debug 出力
 メインへ報告、commit 待ち
 
 ---
+## [WORKER mjc-worker-audio-device-debug-clone-serde-tests-20260504-36-2] 開始: 2026-05-04T00:00:00+09:00
+
+### タスク
+mjc-main-20260504-36 Loop 2 = AudioDevice 構造体に Debug 出力 / Clone 独立性 (PartialEq 未派生 = Debug 文字列間接判定) / serde default snake_case JSON key 名固定 の 3 軸テストを追加 + 8 ファイル目展開 (audio.rs 初)
+
+### 結果
+- 追加テスト: audio_device_debug_contains_field_values_in_declaration_order / audio_device_clone_is_deep_and_does_not_mutate_original / audio_device_serde_serialize_uses_default_snake_case_for_both_fields (計 3 件)
+- cargo test --lib: 613 passed / 0 failed (前 610 → +3)
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- 「Debug 軸補強」18 連続 application 達成 (前 17 連続 → 18 連続)
+- 8 ファイル目展開 (audio.rs 初): transcription / settings / session / session_manager / session_store / app_detection / cloud_whisper に続く 8 ファイル目
+- 「Clone 独立性軸」PartialEq 未派生 + Debug 文字列間接判定パターン継続 application
+- 「format 不変条件 application」serde default snake_case struct 系統 2 連続 application 達成 (Session/SessionSegment に続く)
+- ファイル: src-tauri/src/audio.rs (mod tests 内テスト追加のみ)
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+
+---
