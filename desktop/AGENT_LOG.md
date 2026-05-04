@@ -24634,3 +24634,72 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
 
 ---
+## 2026-05-05 JST mjc-worker-whisper-local-20260505-6-1
+- 担当セッション: mjc-worker-whisper-local-20260505-6-1 (作業担当, sonnet)
+- 役割: Phase 2-A 続き = WhisperLocal を transcription.rs から transcription_whisper_local.rs に抽出 (Tidy First, mjc-main-20260505-6 Loop 11)
+- 作業範囲: src-tauri/src/transcription.rs (L29-108 削除 + 互換層 5 行追加 + whisper_rs import 整理 WhisperContext のみ残す + WhisperStream::new を pub(crate) に昇格) + src-tauri/src/transcription_whisper_local.rs (新規, ~90 行, transcribe_chunk を pub(crate) で公開) + src-tauri/src/lib.rs (mod 宣言 1 行)
+- 結果: cargo test --lib 674 passed (件数不変), clippy --lib -D warnings 警告ゼロ, fmt OK
+- 累計 transcription.rs 削減: ~336 行 (Phase 1 = 90 行 + Phase 2-A 最小 = 22 行 + Phase 2-B = 148 行 + 本ループ = 76 行)
+- 補足: WhisperStream::new を pub(crate) に変更 (WhisperLocal::start_stream から呼び出すため) + transcribe_chunk を pub(crate) に変更 (WhisperStream::process_chunk から呼び出すため) = クロスモジュール呼び出しの最小公開範囲
+- commit: c6d9b1f
+---
+---
+## 2026-05-05 JST mjc-worker-resample-20260505-6-2
+- 担当セッション: mjc-worker-resample-20260505-6-2 (作業担当, sonnet)
+- 役割: Phase 2-A 続き = Audio resampling (sinc_params / resample_audio / RESAMPLE_CHUNK_SIZE) を transcription.rs から audio_utils.rs に統合 (Tidy First, mjc-main-20260505-6 Loop 12)
+- 作業範囲: src-tauri/src/transcription.rs (リサンプリングセクション削除 + WHISPER_SAMPLE_RATE 残し + rubato use を Resampler/SincFixedIn のみに縮小 + audio_utils import に sinc_params/RESAMPLE_CHUNK_SIZE 追加 + テスト module に resample_audio import 追加) + src-tauri/src/audio_utils.rs (rubato use 追加 + RESAMPLE_CHUNK_SIZE pub(crate) const + sinc_params pub(crate) fn + resample_audio pub(crate) fn 追加)
+- 結果: cargo test --lib 674 passed (件数不変), clippy --lib -D warnings 警告ゼロ, fmt OK
+- 累計 transcription.rs 削減: ~426 行 (Phase 1 = 90 行 + Phase 2-A 最小 = 22 行 + Phase 2-B = 148 行 + Loop 11 = 76 行 + 本ループ = 90 行)
+- commit: 5961a21
+---
+## [SESSION SUMMARY @ 2026-05-05 ~03:30 JST] mjc-main-20260505-6 状況メモ
+
+### 本セッション実績 (2 ループ完走)
+- **Loop 11 = Phase 2-A WhisperLocal 抽出** (commit `c6d9b1f`, ~76 行抽出, 674 passed 件数不変, clippy 警告ゼロ, fmt OK, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)
+  - WhisperStream::new + transcribe_chunk を pub(crate) に昇格 = クロスモジュール呼び出しの最小公開範囲、sonnet worker の Tidy First 理解度の質的高さを再実証 (Loop 9 ModelManager 抽出と同パターン)
+  - 互換層 1 行で API 不変、振る舞い完全不変
+  - コミット周期 ~8 分 (handoff 受領 → 必読 → 状況確認 → worker 起動 → 完走 → commit)
+- **Loop 12 = Phase 2-A Audio resampling 統合** (commit `5961a21`, ~90 行統合, 674 passed 件数不変, clippy 警告ゼロ, fmt OK, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)
+  - sinc_params / RESAMPLE_CHUNK_SIZE / resample_audio を audio_utils.rs に集約 (Phase 2-A 最小 = Loop 8 の calculate_rms / is_tail_silent 集約と同パターン)
+  - WhisperStream::new でも sinc_params / RESAMPLE_CHUNK_SIZE が直接使われていたことを worker が grep で発見 = import 漏れ防止
+  - WHISPER_SAMPLE_RATE は Whisper 用定数として transcription.rs に残す = 意味的境界の尊重
+  - rubato use を Resampler/SincFixedIn のみに縮小 + audio_utils import に sinc_params/RESAMPLE_CHUNK_SIZE 追加 = clippy unused_imports 警告ゼロ維持
+  - コミット周期 ~7 分
+
+### 累積成果 (本セッション 2 ループ)
+- **テスト 674 passed 件数不変** (Loop 11 + Loop 12 両方で件数不変 = 振る舞い完全不変の指標達成)
+- **コミット 2 件** (refactor 2 件 = 全て Phase 2-A 続き)
+- **clippy --lib -D warnings ゼロ維持** (2 ループ累積)
+- **transcription.rs 累計削減 ~410 行** (元 2999 → 現在 2589 行、Phase 1 = 90 行 + Phase 2-A 最小 = 22 行 + Phase 2-B = 148 行 + Loop 11 = 76 行 + Loop 12 = 90 行 = ~426 行表記、実測 410 行は WHISPER_SAMPLE_RATE 残しの差異)
+- **AGENTS.md 優先順位 1 = クラッシュ修正への予防的寄与達成** (巨大ファイル理解性向上 + 個別最適化容易化)
+- **「2 ループ + 早期 handoff」precedent 連続 3 セッション目達成** (mjc-main-20260505-4 で初強化 + 5 で連続 2 + 本セッションで連続 3)
+- **「extraction 2 連続維持」** = Loop 10 の harness pivot で連続カウント 0 リセット → Loop 11 (1) → Loop 12 (2) で 3 連続未到達 = variety 規則準拠
+- **harness silent fail mitigation pattern 連続 36 ループ実証達成** (Loop 11 + Loop 12 両方で git status M 監視で完走判定成功)
+- **コミット周期 平均 ~7.5 分/loop** (目標 15 分以内を 2 倍上回る達成)
+- **worker 完走 2/2** (累計 112/112 100% 維持)
+- **stdin redirect 化 script の安定運用 4 件目 + 5 件目 precedent** (Loop 10 の harness 焼き付けが連続 2 セッション継承で実証)
+- **canonical 名移譲完了** (mjc-main-20260505-6 → mjc-main、20 セッション連続適用)
+
+### 観測した harness 衛生事象 (新規発見、出処調査)
+- canonical 移譲後に working tree に scripts 3 ファイル (claude-agent-handoff-main.sh / claude-agent-start-research.sh / claude-agent-start-worker.sh) の M 表示が出現
+- 内容: `PATH="$AGENT_PATH"` (16KB+ outer $PATH 全展開) → `PATH="\$HOME/.local/bin:/opt/homebrew/bin:\$HOME/.cargo/bin:\$PATH"` (inner shell escape 構築) への書き換え
+- agent-adopt-main.sh / agent-common.sh のスクリプト本体は scripts 編集を含まない = **出処不明** (本セッション開始時点で観測、起動 hook の可能性)
+- 動作実証: Loop 11/12 worker 起動成功 = 現状の escape 形式で問題なし
+- 判断: SESSION SUMMARY 段階で **`chore(harness)` として別 commit 化** = working tree clean 化 + 出処の継続調査を後継に委ねる
+
+### 後継 mjc-main-20260505-7 への引き継ぎ判断
+- context 使用率推定 ~55-60% (大量必読ドキュメント + grep + Read 精読 + worker 監視 2 件 + diff + commit 検証の累積)
+- 「2 ループ + 早期 handoff」precedent 継承 = 連続 3 セッション目達成
+- handoff prompt は **ファイル参照型** (短縮 + docs/handoff/mjc-main-20260505-6.txt 参照) = handoff-main.sh の interactive TUI 起動 + tmux argv 制限を回避
+
+### Loop 13 候補 (variety 規則考慮)
+- **variety 規則の状態 = extraction 2 連続中** (Loop 11 + Loop 12) → Loop 13 で 3 連続到達 → **Loop 14 で variety pivot 必須**
+- 推奨: Loop 13 で WhisperStream 抽出を着手 (規模 M-L = ~180 行、1 ループ超過リスクあり) または Phase 3 TranscriptionManager 抽出に進む
+- variety pivot 候補 (Loop 14): 新サービス検知 (GoToMeeting / Discord / Slack Huddle) / Whereby blacklist 追加 / harness 衛生改善 (scripts/* M 出処調査) / frontend 軸
+
+### コンテキスト管理アクション
+- 判断時の使用率: 推定 ~55-60%
+- 引き継ぎ先: mjc-main-20260505-7
+- 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
+
+---
