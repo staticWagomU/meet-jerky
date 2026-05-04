@@ -17141,3 +17141,151 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~10:50 JST] mjc-main-20260504-8 状況メモ (ループ 1-3 詳細)
+
+### 本セッション (mjc-main-20260504-8) の累積実績
+- **3 ループ完了** / **+15 テスト** / **3 コミット** / **平均 ~10-14 分/ループ** (目標達成)
+- すべてテスト追加のみ (実装変更ゼロ、visibility 変更ゼロ)
+- cargo test: 355 → 370 passed (+15)
+- cargo clippy default: 警告ゼロ維持
+- cargo clippy -W uninlined_format_args: 警告ゼロ維持
+- フロントエンド build: 通過 (codex 活動本セッション中ゼロ)
+
+### コミット履歴 (本セッション 3 件)
+1. `d431fff` test(transcript_bridge): build_append_args_for_emission_at の direct (observed=Some) 経路 5 件 (is_error 短絡が observed あっても有効 / session=None 早期リターンが observed あっても優先 / zero_start segment + observed=Some(1075) で offset=75 を Realtime 系 emission helper 経由で固定 / engine timestamp 優先 (observed=9999 極端値で 42 になる) / is_error+session=None 二重違反でも None の first-violation contract) で観測時刻注入経路を補強 (355→360 passed)
+2. `6ecc1f4` test(session): cross-fn invariant 5 件 (append_segment が started_at/id/title/ended_at を変えない 5 回 append loop / finalize が segments と started_at と id を変えない単一責務契約 / Session::start が空文字 title を validation せず passthrough する上位層責任境界 / append_segment が空 speaker/text を passthrough し speaker fallback は normalize_speaker の責務である境界 / timestamp_offset_secs の 0 と u64::MAX boundary passthrough) で薄いデータコンテナ契約を保護 (360→365 passed)
+3. `9be1bde` test(transcription): validate_stream_count_for_engine の boundary + 文言完全一致 5 件 (Apple Speech + 2 streams のエラー文言完全一致 / 3 streams で同一文言 (boundary > 1 挙動の固定) / usize::MAX overflow 無し reject / 0 streams は `> 1` 条件不成立で Ok の boundary 下限 / Whisper・OpenAIRealtime・ElevenLabsRealtime × 0 と usize::MAX で Ok の 6 assertion 網羅) でクラッシュ防止安全弁の文言と挙動を保護 (365→370 passed)
+
+### 確立したパターン (本セッション)
+- **観測時刻注入経路 (observed=Some) の direct test** (ループ 1): test-only wrapper (observed=None 固定) 経由テストでは確認できない `_at` バリアントの注入経路を 5 件で網羅。同一 fn の wrapper / non-wrapper 両方をテストする 2 軸網羅パターン。
+- **first-violation contract の二重違反確認** (ループ 1, T5): 2 段階早期リターンの順序は実装詳細だが「結果は None」が契約。前セッション ループ 5 で確立したパターンを「2 段早期リターン」へ応用。
+- **cross-fn invariant (単一責務契約) の 5 フィールド全確認** (ループ 2, T1+T2): `append_segment` / `finalize` が「自身の責務外フィールドを触らない」現契約を 5 フィールド全 assert で固定。リファクタ時の副作用追加を CI で検知する「変更検知装置」として機能。
+- **「薄いデータコンテナ」設計を test で文書化** (ループ 2, T3+T4+T5): `Session::start` / `append_segment` が validation/normalization を上位層に委ねる責務境界を 3 件 (空 title / 空 speaker・text / boundary u64) で固定。前セッション「上位層責任境界の契約強制」パターンの 3 軸応用。
+- **boundary 上限と下限の対称網羅** (ループ 3, T3+T4): `usize::MAX` (overflow 無し) と `0` (条件不成立) の両端を 1 fn 内で対称に固定。前セッション ループ 3 (unix_secs_i64 の 0/i64::MAX) パターンを `validate_stream_count_for_engine` へ応用。
+- **エラー文言完全一致 + boundary 同一性 (T1+T2)** (ループ 3): 2 streams と 3 streams で完全に同じ文言を返す現契約を 2 件で固定。boundary 上での「分岐リファクタを入れたら検知」する装置。
+
+### 既存累積パターン (前 mjc-main-20260504-7 から継承、本セッション再利用)
+- private fn 直接呼び出しテスト
+- エラー文言の contract enforcement
+- 境界値テストの「対称ペア」
+- 3 層テスト構造、OS 互換 ErrorKind 契約強制
+- state machine 混在遷移テスト
+- format prefix の層内独立確認
+- エスケープ漏れの網羅補完
+- UI 文言一致の契約強制
+- 上位層責任境界の契約強制 (本セッションでも 4 ループ分再利用、累積 6 ループ)
+- NaN/+Inf 非対称責務分離
+- sanitize 前段の bit-pattern 直接テストパターン
+- first-violation contract (本セッションで「2 段早期リターン」へ応用)
+- 3 軸テスト戦略 (boundary + invariant + format)
+- markdown encode/decode 双方向対称契約
+- JST 固定値の二重軸固定
+
+### 重要な技術的注意点 (踏みやすい罠、本セッション分含む)
+- **`build_append_args_for_emission` (test-only wrapper) と `build_append_args_for_emission_at` (実装本体)**: 前者は `#[cfg(test)] pub fn` でテストから直接呼べるが observed=None 固定。後者は live loop が実運用で呼ぶ本体。テスト追加は **`_at` を直接呼ぶこと** で観測時刻注入経路を網羅できる。
+- **`segment_to_append_args_at` の zero_start ロジック (line 36-42)**: `has_engine_timestamp = segment.start_ms > 0 || segment.end_ms > 0`。両方 0 だと `observed_at_secs.unwrap_or(stream_started_at_secs)` に倒れる。Realtime 系の重要 path。
+- **`SESSION_COUNTER` (session.rs line 4) は静的 AtomicU64**: 並列実行下で `session.id` の絶対値 ("1000-3" 等) を assert すると flaky。`assert_ne!` や `starts_with` のみ可。本セッション ループ 2 でも遵守。
+- **`Session` 構造体は薄いデータコンテナ**: validation/normalization は `transcript_bridge.rs::normalize_speaker` などの上位層責務。Session 自体は passthrough。本セッション ループ 2 でこれを 3 件の test で文書化。
+- **`validate_stream_count_for_engine` のクラッシュ防止文言** (line 750-752): 「Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。」(全角句点・全角カンマ・半角スラッシュ・半角スペース込み)。本セッション ループ 3 で完全一致固定済み。
+- **`validate_stream_count_for_engine` の `stream_count > 1` boundary**: 0/1 は Ok、2/3/usize::MAX は Apple Speech だけ Err。他 engine は無条件 Ok。本セッション ループ 3 で 0/usize::MAX 両 boundary 全網羅。
+- **既存パターン継承** (前 SESSION SUMMARY 参照、変更なし):
+  - `audio_utils.rs` 補強余地ほぼゼロ、`transcript.rs` Phase 4 placeholder 対象外、Teams ブラウザ版タイトル fallback 禁止、`validate_audio_format_properties` cfg なし、wrapper fn 削除しない、Keychain 実通信禁止、markdown.rs 6 文字 + whitespace 正規化、cloud_whisper_errors.rs `MAX_ERROR_BODY_CHARS = 200` char base、chrono `FixedOffset` leap second 非対応、両 Realtime engine の push_error 完全対称、persist_if_configured `?` リファクタ罠 など。
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### A. session_manager.rs `persist_if_configured` direct test (規模 XS、価値中、gap 薄め)
+- private fn (line 164-175)。既存 16 件は pub fn 経由で間接テスト。
+- direct test なら ActiveSession + ActiveOutput を tests mod 内で直接構築可能 (private struct だが同 mod 内なら field アクセス可)。
+- 5 件案: output=None で no-op / output=Some + 正常 path で .md 書き出し / output=Some + 不正 path (file already as dir) でエラーが eprintln されるが panic しない / phase ラベル "append"/"finalize" の eprintln 文字列に含まれる / persist 後でも in-memory consistency が保たれる
+- **注意**: eprintln 観測は test では難しい (stderr 捕捉が必要)、価値は中程度。既存 pub fn 経由テストと重複する範囲は避ける必要あり、worker prompt で gap 明示必須。
+
+#### B. transcript_bridge.rs `normalize_speaker` の boundary 補強 (規模 XS)
+- private fn (line 98-103)。既存 4 件 (None / 空文字 / whitespace-only / normal label / 前後 whitespace) でほぼ網羅。
+- 残り gap: control character / 多バイト文字混在 / U+3000 全角空白 (trim 対象になるか?) / NUL byte。
+- 規模小、価値低だが 1 ループで完結可能。
+
+#### C. cloud_whisper_errors.rs の追加補強 (規模 XS)
+- 既存テストで多数カバー済み (前セッション b29818a)。
+- 残り gap: `MAX_ERROR_BODY_CHARS = 200` の **境界 (199/200/201 文字)** の入力。`sanitize_error_body_truncates_multibyte_text_by_char_count_not_byte_count` は multibyte 全般をカバーするが、char 数の boundary 199/200/201 ピンポイントが gap 可能性。
+
+#### D. openai_realtime / elevenlabs_realtime の追加 ws_task fn (規模 XS〜S)
+- 既存 push_error は両 engine で対称構造 (前セッション 確認済)。
+- 残り gap: `extract_error_message` の 3 priority paths のうち未テストパス、`is_scribe_error_event` (elevenlabs 専用) の prefix/suffix 完全一致 boundary、`wait_for_pending_after_commit` の deadline boundary (already tested)。
+- 既存 elevenlabs::pending_timeout_tests に 5 件あるので gap 確認必須。
+
+#### E. transcription.rs の追加 error path (規模 S〜M)
+- 1896 行最大規模。本セッション ループ 3 で `validate_stream_count_for_engine` 5 件補強済。
+- 残り gap: `load_model` の path 変換失敗、`feed`/`finalize` の resampler state missing 周辺 (実環境依存高い fn が多い)。
+
+#### F (継承候補): drop メトリクスを Tauri イベント化 (規模 M)
+- 価値: 録音状態の透明性 (優先度 9)。
+- 提案: rust 側に payload struct + emit のみ追加 (frontend hookup なし) で 1 ループ。AppHandle 渡し方は研究担当に先に確認。
+- リスク: codex の UI 系作業と部分的に競合の可能性 (frontend hookup 段階で)。
+
+#### G' (継承候補): 会議終了検知の遅延監視 (規模 S〜M)
+
+#### S (継承候補): settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+
+#### K (継承候補): clippy::pedantic の選択的有効化 (規模 L、非優先)
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 370 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+### ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>`
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>`
+- watchdog: `mjc-watchdog` 既に走行中、interval=180s, nudge_cooldown=300s
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh <successor> mjc-main`
+
+### コミット周期目標
+- 1 ループ 15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~10-14 分/loop (3 ループ全テストのみで安定)。
+- worker prompt の **5 セクション構造** (背景/Why、test 案 assertion レベル、実装上の注意、検証手順、AGENT_LOG.md 記載項目) は本セッション 3/3 完走、累積 11/11 完走。
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション。
+- 本セッションは前セッション同様 3 ループでハンドオフ判断。
+  理由: ハンドオフ prompt 受領 (約 13K token) + Read 多め (transcript_bridge / session / transcription / session_manager partial × 複数) + worker tail × 3 + grep 多数 で context 65-70% 推定。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残すことで watchdog 自動 /clear 復活時も状況復元可能。
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は本セッション中 2 回受領、すべて改善ループ進行で消化済み。
+
+### 後続メイン候補名
+- `mjc-main-20260504-9`
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-8 → mjc-main-20260504-9)
+
+- **判断時刻 (JST)**: 2026-05-04 ~10:50 JST
+- **判断理由**: 3 ループ完了の良い区切り。context 推定 65-70% 近辺で予防的ハンドオフ。前セッション (mjc-main-20260504-7) と同じ 3 ループパターン。
+- **使用率 (推定)**: 約 65-70%
+- **引き継ぎ先**: `mjc-main-20260504-9`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-9.txt` (作成予定)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-9 docs/handoff/mjc-main-20260504-9.txt`
+- **canonical 名移譲コマンド**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-9 mjc-main`
+- **判断履歴の保存ポイント**:
+  - 観測時刻注入経路 (observed=Some) の direct test パターン (ループ 1)
+  - first-violation contract の「2 段早期リターン」応用 (ループ 1, T5)
+  - cross-fn invariant の 5 フィールド全確認 + 「薄いデータコンテナ」設計の test 文書化 (ループ 2)
+  - boundary 上限/下限の対称網羅 (ループ 3)
+  - クラッシュ防止 UI 文言完全一致 + boundary 同一性 (ループ 3, T1+T2)
+- **次ループ候補の現状**:
+  - A. session_manager.rs persist_if_configured direct test (規模 XS、価値中、gap 薄め)
+  - B. transcript_bridge.rs normalize_speaker boundary 補強 (規模 XS、価値低)
+  - C. cloud_whisper_errors.rs MAX_ERROR_BODY_CHARS 境界 (規模 XS、価値中)
+  - D. openai_realtime / elevenlabs_realtime の ws_task 追加 (規模 XS〜S)
+  - E. transcription.rs error path 残り (規模 S〜M)
+  - F (継承): drop メトリクス Tauri イベント化 (規模 M, 価値 9)
+  - G' (継承): 会議終了検知の遅延監視 (規模 S〜M)
+  - S (継承): settings.rs Tidy First (規模 M、2 ループ)
+- **未消化のユーザー直伝指示**: なし
