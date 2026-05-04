@@ -1083,9 +1083,15 @@ mod tests {
     fn engine_default_debug_format_contains_type_name_and_empty_model_id_field() {
         let engine = ElevenLabsRealtimeEngine::default();
         let formatted = format!("{engine:?}");
-        assert!(formatted.contains("ElevenLabsRealtimeEngine"), "型名: {formatted}");
+        assert!(
+            formatted.contains("ElevenLabsRealtimeEngine"),
+            "型名: {formatted}"
+        );
         assert!(formatted.contains("model_id"), "field 名: {formatted}");
-        assert!(formatted.contains("\"\""), "空 String を Debug 出力: {formatted}");
+        assert!(
+            formatted.contains("\"\""),
+            "空 String を Debug 出力: {formatted}"
+        );
     }
 
     #[test]
@@ -1104,5 +1110,39 @@ mod tests {
         assert!(formatted.contains("ElevenLabsRealtimeEngine"));
         assert!(formatted.contains("model_id"));
         assert!(formatted.contains("\"scribe_v2_legacy\""));
+    }
+
+    #[test]
+    fn audio_command_samples_variant_debug_format_contains_variant_name_and_payload_floats() {
+        let cmd = AudioCommand::Samples(vec![1.0_f32, -0.5, 0.0]);
+        let formatted = format!("{cmd:?}");
+        assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+        assert!(formatted.contains("1.0"), "first sample: {formatted}");
+        assert!(formatted.contains("-0.5"), "second sample: {formatted}");
+        assert!(formatted.contains("0.0"), "third sample: {formatted}");
+    }
+
+    #[test]
+    fn audio_command_finalize_variant_debug_format_is_exact_variant_name() {
+        let cmd = AudioCommand::Finalize;
+        let formatted = format!("{cmd:?}");
+        assert_eq!(formatted, "Finalize", "完全一致: {formatted}");
+        assert!(formatted.contains("Finalize"));
+    }
+
+    #[test]
+    fn audio_command_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets()
+    {
+        let cmd = AudioCommand::Samples(vec![]);
+        let formatted = format!("{cmd:?}");
+        assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+        assert!(
+            formatted.contains("[]"),
+            "空 Vec の Debug 表示: {formatted}"
+        );
+        assert!(
+            formatted.contains("Samples([])"),
+            "tuple variant 形式: {formatted}"
+        );
     }
 }

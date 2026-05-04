@@ -2472,7 +2472,10 @@ mod tests {
         assert!(debug_a.contains("meet.google.com"), "host 値を含む");
         assert!(debug_a.contains("/abc-defg-hij"), "path 値を含む");
         assert!(debug_a.contains("auth=xyz"), "query 内の値を含む");
-        assert!(debug_a.contains("Some"), "Option::Some の Debug format を含む");
+        assert!(
+            debug_a.contains("Some"),
+            "Option::Some の Debug format を含む"
+        );
         assert!(
             debug_a.find("host").unwrap() < debug_a.find("path").unwrap(),
             "host が path より先に出現する"
@@ -2488,7 +2491,10 @@ mod tests {
             query: None,
         };
         let debug_b = format!("{:?}", case_b);
-        assert!(debug_b.contains("None"), "Option::None の Debug format を含む");
+        assert!(
+            debug_b.contains("None"),
+            "Option::None の Debug format を含む"
+        );
         assert!(
             !debug_b.contains("auth=xyz"),
             "case A の query 値が混入しないこと"
@@ -2502,7 +2508,11 @@ mod tests {
             path: "/abc-defg-hij".to_string(),
             query: Some("auth=xyz".to_string()),
         };
-        assert_eq!(original, original.clone(), "reflexive: 同一インスタンスは等しい");
+        assert_eq!(
+            original,
+            original.clone(),
+            "reflexive: 同一インスタンスは等しい"
+        );
 
         let diff_host = ParsedUrlParts {
             host: "other.example.com".to_string(),
@@ -2537,7 +2547,10 @@ mod tests {
             path: "/abc-defg-hij".to_string(),
             query: Some("".to_string()),
         };
-        assert_ne!(with_empty, with_none, "query=Some(\"\") と query=None は不等");
+        assert_ne!(
+            with_empty, with_none,
+            "query=Some(\"\") と query=None は不等"
+        );
 
         let some_a = ParsedUrlParts {
             host: "x.com".to_string(),
@@ -2549,7 +2562,10 @@ mod tests {
             path: "/".to_string(),
             query: Some("b".to_string()),
         };
-        assert_ne!(some_a, some_b, "query=Some(\"a\") と query=Some(\"b\") は不等");
+        assert_ne!(
+            some_a, some_b,
+            "query=Some(\"a\") と query=Some(\"b\") は不等"
+        );
 
         let some_x1 = ParsedUrlParts {
             host: "x.com".to_string(),

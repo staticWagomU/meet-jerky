@@ -1039,9 +1039,15 @@ mod tests {
     fn engine_default_debug_format_contains_type_name_and_empty_model_field() {
         let engine = OpenAIRealtimeEngine::default();
         let formatted = format!("{engine:?}");
-        assert!(formatted.contains("OpenAIRealtimeEngine"), "型名: {formatted}");
+        assert!(
+            formatted.contains("OpenAIRealtimeEngine"),
+            "型名: {formatted}"
+        );
         assert!(formatted.contains("model"), "field 名: {formatted}");
-        assert!(formatted.contains("\"\""), "空 String を Debug 出力: {formatted}");
+        assert!(
+            formatted.contains("\"\""),
+            "空 String を Debug 出力: {formatted}"
+        );
     }
 
     #[test]
@@ -1081,11 +1087,18 @@ mod tests {
     }
 
     #[test]
-    fn audio_command_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets() {
+    fn audio_command_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets()
+    {
         let cmd = AudioCommand::Samples(vec![]);
         let formatted = format!("{cmd:?}");
         assert!(formatted.contains("Samples"), "variant 名: {formatted}");
-        assert!(formatted.contains("[]"), "空 Vec の Debug 表示: {formatted}");
-        assert!(formatted.contains("Samples([])"), "tuple variant 形式: {formatted}");
+        assert!(
+            formatted.contains("[]"),
+            "空 Vec の Debug 表示: {formatted}"
+        );
+        assert!(
+            formatted.contains("Samples([])"),
+            "tuple variant 形式: {formatted}"
+        );
     }
 }
