@@ -21124,3 +21124,138 @@ test result: ok. 542 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+
+## [SESSION SUMMARY @ 2026-05-04 ~18:50 JST] mjc-main-20260504-27 状況メモ
+
+### 概要
+- セッション期間: 18:08:42 開始 (handoff) → 18:42 周辺で Loop 3 commit (約 33 分で 3 ループ完了)
+- 平均 cadence: ~11 分/loop (mjc-main-25 ~12 分/loop と同等、目標 15 分/loop クリア)
+- 累積 worker 完走: 68/68 (100%)
+- テスト件数: 533 → 542 passed (+9 件、**7 連続セッション「+9 件/セッション」記録更新**: mjc-main-22/23/24/25/26/27)
+- clippy --lib -D warnings ゼロ維持 / cargo fmt 差分なし維持
+- AGENT_LOG.md trailing whitespace 警告ゼロ (mjc-main-26 で発見した worker prompt 必須要素 7 つ目「行末空白禁止」明示の効果)
+
+### 3 ループ実績
+| Loop | Commit | ファイル | 関数 | 3 軸 | passed |
+|---|---|---|---|---|---|
+| 1 | 974b787 | session_manager.rs | SessionManager::start_with_output | 空 path / traversal / 10_000 char | 533→536 |
+| 2 | c68882b | settings.rs | from_legacy_str | 空文字 / 大文字混在 / 空白パディング | 536→539 |
+| 3 | 6141941 | datetime_fmt.rs | format_*_timestamp_with_offset | header i64::MIN / segment i64::MIN / 2 関数間一致 | 539→542 |
+
+### 確立パターン
+1. **「対称的補強の 3 軸構造」パターン (継続 application、7 連続セッション目)** = mjc-main-22/23/24/25/26/27 で全 18 ループに application = 1 ループ = 3 軸 = 1 関数群の境界仕様の executable specification 化が標準形
+2. **「同一関数の完全網羅戦略」パターン (mjc-main-26 で確立、本セッション全 3 ループで application)** = 前回未保護軸を残らず埋め切る application = Loop 1 で `start_with_output` 完成、Loop 2 で `from_legacy_str` 完成、Loop 3 で `format_*` の i64::MIN 対称軸完成
+3. **「責務分離の executable specification 化」パターン (Loop 1 で application)** = mjc-main-24 Loop 2/3 / mjc-main-26 Loop 2 (`SessionManager::start`) と相補的に `SessionManager::start_with_output` の output_dir passthrough を保護 = SessionManager 主要 5 経路 (start / start_with_output / append / finalize / discard) 全てで責務分離テスト完成
+4. **「fail-safe semantic の executable specification 化」パターン (mjc-main-26 Loop 3 で確立、本 Loop 2 で application)** = settings.rs 内の fail-safe 関数 2 件 (`permission_status_to_string` + `from_legacy_str`) で完全網羅 = 同ファイル内の不明値処理を全て executable spec で固定
+5. **新規パターン (Loop 3 で確立): 「型対称軸補強」パターン** = i64::MAX を保護する既存 test に対し、i64::MIN を対称軸として補強 = chrono::timestamp_opt() の両端境界 (i64::MAX + i64::MIN) を 6 軸 (3 軸/方向) で完全網羅 = 過去パターン「対称的補強」の特殊形 (型最大/最小値の対称性軸) として独立確立
+6. **「worker prompt で末尾追記を明示するパターン」(継続 application、7 連続セッション目)** = mjc-main-21 → 22 → 23 → 24 → 25 → 26 → 27 で **7 連続セッション先頭追記事故ゼロ**
+7. **「worker prompt で trailing whitespace 禁止を明示するパターン」(本セッション全 3 ループで application、新規確立 → 標準化)** = mjc-main-26 Loop 3 worker で発生した警告 → mjc-main-27 全ループで明示 → 全 3 ループ警告ゼロ達成 = 後続継続適用必要
+
+### 重要発見
+
+#### 1. 3 ファイル横断補強の継続 (本セッション 3 ループで完成)
+- mjc-main-26 (app_detection.rs / session_manager.rs / settings.rs) と完全対称な「3 ファイル横断補強」セッション構造
+- 本セッション: session_manager.rs (Loop 1) → settings.rs (Loop 2) → datetime_fmt.rs (Loop 3)
+- 関数別の保護密度バランス改善 = 今後は markdown.rs / audio_event.rs / audio_utils.rs / cloud_whisper_errors.rs / commands.rs / session_commands.rs の保護密度を上げる時期
+
+#### 2. 「型対称軸補強」パターンの新規確立 (Loop 3 で達成)
+- 過去パターン「対称的補強」の特殊形として、型最大/最小値 (u64::MAX/0 / i64::MAX/i64::MIN / i32::MAX/i32::MIN) の対称軸を補強する application 型
+- mjc-main-24 (current_started_at_secs u64::MAX/0)、mjc-main-26 Loop 3 (permission_status_to_string i32::MAX/負値)、本 Loop 3 (datetime_fmt.rs i64::MAX/i64::MIN) の系譜
+- application 候補継続: 他の i64/u64/i32 引数を取る関数の境界網羅 (e.g. session.append_segment の offset_secs u64 境界、apple_speech の sample 境界)
+
+#### 3. cadence 安定 (mjc-main-25 と同等)
+- Loop 1 ~10 分 / Loop 2 ~10 分 / Loop 3 ~13 分、平均 ~11 分/loop
+- mjc-main-25 (~12 分/loop) と同等の cadence、mjc-main-26 (~9 分/loop) よりやや遅め
+- 短縮要因継承 = (a) sleep 待機 240s、(b) prompt 規模指定の functional 化、(c) メイン側でのカバレッジ重複事前確認
+
+#### 4. trailing whitespace 警告ゼロ達成 (mjc-main-26 Loop 3 で発生した警告の完全修復)
+- worker prompt 必須要素 7 つ目「行末空白禁止」明示を全 3 ループで適用 → 全 3 ループ警告ゼロ
+- worker (sonnet) は明示的指示があれば trailing whitespace を出さない = prompt engineering の効果実証
+- 後続セッションも継続適用必要
+
+#### 5. canonical 名移譲が初回必要だった (handoff 直後の運用注意)
+- handoff 起動直後の tmux session 名は `mjc-main-20260504-27` で `mjc-main` ではない
+- `tmux display-message -p '#S'` で確認 → `mjc-main` でなければ `bash scripts/agent-adopt-main.sh mjc-main-20260504-27 mjc-main` を実行
+- 旧 `mjc-main` は kill され、新セッションが canonical 名 `mjc-main` を継承 (冪等処理)
+- 後続セッション (mjc-main-28, ...) も同じ手順が必要
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### B 候補継続 (推奨、規模 S, 即効性あり)
+- `SessionManager::discard` の境界補強 (本 Loop 1 残リスク 3 として明記済)
+- 1 ループで 3 軸網羅可能、cadence ~10 分維持見込み
+
+#### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `default_output_directory` (l.139) の境界 (環境変数欠如、Home 検出失敗)
+- `update_settings` (l.171) の境界 (mutex 競合、partial update)
+- `check_microphone_permission` (l.214) / `check_screen_recording_permission` (l.228) の境界 (優先順位 #9 軸への application 拡大候補)
+- `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### datetime_fmt 継続候補 (規模 S, 限定的)
+- UTC+14 (Kiribati) / UTC-12 (Baker Island) 等の世界最大/最小 offset 境界
+- 閏日 (2024-02-29) / 閏年カレンダー仕様
+- i64::MAX-1 / i64::MIN+1 等の境界隣接値
+
+#### 別ファイル切替候補 (規模 S-M、複数ファイル)
+- markdown.rs (Markdown 出力エスケープ等の境界)
+- audio_event.rs (本セッション未着手、25 行と小型)
+- audio_utils.rs (54 行、RMS 計算等の境界)
+- cloud_whisper_errors.rs (361 行、error mapping 境界)
+- session_commands.rs (Tauri command 経路)
+
+#### F-Loop6 (継承、規模 M, 価値中)
+- タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+
+#### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+- 「実装系 × 共通エラー仕様」マトリクス充填型
+
+### 検証制約 (再掲)
+- cmake あり → cargo test 542 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+### worker prompt 必須要素 (7 連続セッションで実証済、継続適用)
+
+worker prompt には以下を **必ず** 含める:
+1. 冒頭で「AGENT_LOG.md の末尾 350 行を読め」 = 末尾追記の場所を視覚的に学習させる
+2. 「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」を明記
+3. 「先頭は絶対に触らない」を明記
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. 規模超過防止段落 = 担当範囲外の編集禁止 + test 件数の上限明示
+6. 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照を明記
+7. 「行末の空白文字 (trailing whitespace) 禁止」を明記 (mjc-main-26 で発見、mjc-main-27 全ループで application 標準化)
+
+### コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション実績 ~11 分/loop で目標クリア)
+- worker 1 件 ≒ 1 コミット
+- 累積 worker 完走 68/68 = 全完走率 100%
+
+### context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~75-85% で予防的ハンドオフ判断 (前 20 セッション (mjc-main-7〜26) と同じ 3 ループパターン継承で予測可能性優先)
+
+### ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge も本セッション中ゼロ (cadence 安定で idle 時間が短く済んだ)。
+
+### 累積成果 (本セッション)
+- **テスト 533 → 542 passed** (+9 件、**7 連続セッション「+9 件/セッション」記録更新**)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings)
+- **3 ファイル横断補強** (session_manager.rs / settings.rs / datetime_fmt.rs)
+- **「同一関数の完全網羅戦略」パターン全 3 ループで application 確認** (本セッションで application 標準形化)
+- **「責務分離の executable specification 化」パターン Loop 1 で application** (SessionManager 主要 5 経路で完成)
+- **「fail-safe semantic」パターン Loop 2 で application** (settings.rs 内 fail-safe 2 関数で完成)
+- **「型対称軸補強」パターン Loop 3 で新規確立** (datetime_fmt.rs i64::MAX/i64::MIN 6 軸完全網羅、過去パターン「対称的補強」の特殊形として独立)
+- **「worker prompt 末尾追記明示」パターン継続適用** (7 連続セッション先頭追記事故ゼロ)
+- **「worker prompt trailing whitespace 禁止明示」パターン全 3 ループで application 確認** (mjc-main-26 Loop 3 警告の完全修復、警告ゼロ達成)
+- **累積 worker 完走 68/68** (100%)
+- **コミット周期 ~11 分/loop** (mjc-main-25 と同等、目標 15 分以内クリア)
+
+- 旧 mjc-main (= mjc-main-20260504-27) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-28 へ予防的ハンドオフ判断 (前 20 セッション (mjc-main-7〜26) と同じ 3 ループパターン継承)
+---
