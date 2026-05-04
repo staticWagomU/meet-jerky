@@ -20249,3 +20249,31 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - 後継 mjc-main-20260504-23 へ予防的ハンドオフ実行 (前 15 セッション (mjc-main-7〜21) と同じ 3 ループパターン継承)
 - 推奨次ループ = D (transcription.rs error path) = 別ファイル切り替えで認知文脈リセット + 価値が出やすい未着手領域
 ---
+
+## mjc-worker-realtime-stream-error-boundary-tests-20260504-23-1 (Loop 1)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-23 Loop 1
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/transcription.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: 最終 test `validate_stream_count_for_engine_other_engines_allow_zero_and_usize_max_streams` の直後に test 3 件追加
+  - T1: `is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix` = "realtime" 小文字始まりが false を返す現契約を CI 固定。`to_lowercase()` 等で大小区別を潰す誤改修を検知する装置
+  - T2: `is_realtime_stream_already_stopped_error_matches_substring_at_any_position` = prefix + suffix 両側付き (中間 substring) でも contains() が true を返す現契約を CI 固定。`startsWith` 化への誤改修を検知
+  - T3: `is_realtime_stream_already_stopped_error_matches_across_newlines` = 改行を含む多行メッセージで substring が単一行内にあれば true を返す現契約を CI 固定。`lines().any()` 化への誤改修を検知
+- **結果**: 全 test PASS (497 → 500 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/transcription.rs` のみ (mod tests 末尾 3 test 追加、cargo fmt 差分なし = 1 往復不要)
+- **検証結果**:
+  - `cargo test --lib is_realtime_stream_already_stopped` = 3 passed (新規 3 件)
+  - `cargo test --lib should_emit_realtime_stream` = 1 passed (既存 1 件)
+  - `cargo test --lib` 全体 = **500 passed** (497 → +3, 0 failed)
+  - `cargo clippy --all-targets -- -D warnings` = 警告ゼロ
+  - `cargo fmt --check` = 差分なし (1 往復修正不要)
+  - `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` = 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: T1 の case-sensitive test は ASCII "Realtime" 部分が `to_lowercase()` で簡単に「改善」できる一方、日本語部分は変換しにくいため、ASCII 側の大小区別契約を明示的に固定する価値が高い
+- **設計判断 2**: T2 (中間 substring = startsWith 化防止) と T3 (改行越え = lines().any() 化防止) を選択。`contains()` の 2 大代替実装それぞれを破壊検知装置として対称的にカバー
+- **設計判断 3**: 3 件のみに絞る = 規模 XS で確実完走優先 + 既存 2 test で未保護の 3 つの境界 (大小区別 / 中間 substring / 改行) に集中。4 件以上は scope 超過
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---

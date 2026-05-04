@@ -2059,4 +2059,58 @@ mod tests {
                 .expect("Apple Speech 以外は usize::MAX streams でも Ok を返す現契約");
         }
     }
+
+    #[test]
+    fn is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix() {
+        // 既存 test は "Realtime" 大文字始まりのみ。"realtime" 小文字始まりは
+        // substring 一致 ("Realtime ストリームが既に停止しています") を満たさず
+        // false を返す現契約を CI 固定。
+        // 大小区別を to_lowercase 等で潰す誤改修を検知する装置。
+        assert!(
+            !is_realtime_stream_already_stopped_error("realtime ストリームが既に停止しています"),
+            "ASCII 部分は大小区別される現契約 (substring 一致は case-sensitive)"
+        );
+        assert!(
+            should_emit_realtime_stream_error("realtime ストリームが既に停止しています"),
+            "false 判定なら UI emit される (graceful stop 扱いされない)"
+        );
+    }
+
+    #[test]
+    fn is_realtime_stream_already_stopped_error_matches_substring_at_any_position() {
+        // 既存 test は prefix 付き ("OpenAI Realtime ..." 等) と prefix なし
+        // ("Realtime ストリーム..." property test 内) のみ。
+        // substring が文字列の中間に出現するケース (prefix + suffix 両方付き) は未保護。
+        // contains() 仕様上 true を返す現契約を CI 固定 (誤って startsWith 化する改修を検知)。
+        assert!(
+            is_realtime_stream_already_stopped_error(
+                "WARNING: OpenAI Realtime ストリームが既に停止しています (graceful)"
+            ),
+            "substring が中間 (prefix + suffix 両側) に出現しても true (contains 任意位置一致)"
+        );
+        assert!(
+            !should_emit_realtime_stream_error(
+                "WARNING: OpenAI Realtime ストリームが既に停止しています (graceful)"
+            ),
+            "true 判定なら UI emit を抑止 (graceful stop の noise を捨てる)"
+        );
+    }
+
+    #[test]
+    fn is_realtime_stream_already_stopped_error_matches_across_newlines() {
+        // 既存 test は単行メッセージのみ。多行メッセージで substring が
+        // 行をまたいで出現しないケースでも、contains() は \n を区切らないため
+        // true を返す現契約を CI 固定。
+        // 例: "ERROR\nOpenAI Realtime ストリームが既に停止しています\nstack trace..."
+        let multiline =
+            "ERROR\nOpenAI Realtime ストリームが既に停止しています\nstack trace at line 42";
+        assert!(
+            is_realtime_stream_already_stopped_error(multiline),
+            "改行を含む多行メッセージでも substring が単一行内にあれば true"
+        );
+        assert!(
+            !should_emit_realtime_stream_error(multiline),
+            "true なら UI emit 抑止 (多行 stack trace 含む graceful stop も noise として捨てる)"
+        );
+    }
 }
