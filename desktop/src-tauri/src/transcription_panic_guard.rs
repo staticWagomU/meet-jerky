@@ -3,8 +3,9 @@ use std::sync::Arc;
 
 use tauri::Emitter;
 
-use crate::transcription::{run_transcription_loop, TranscriptionLoopConfig};
+use crate::transcription::TranscriptionLoopConfig;
 use crate::transcription_error_payload::build_worker_panic_error_payload;
+use crate::transcription_worker_loop::run_transcription_loop;
 
 pub(crate) fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig) {
     let running = Arc::clone(&worker.running);
