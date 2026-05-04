@@ -519,6 +519,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
     } else if is_webex_meeting_url(&host, &parsed.path)
         || is_webex_jphp_meeting_url(&host, &parsed.path, parsed.query.as_deref())
         || is_webex_wbxmjs_meeting_url(&host, &parsed.path)
+        || is_webex_webappng_meeting_url(&host, &parsed.path)
     {
         "Webex"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
@@ -795,8 +796,9 @@ fn is_webex_host(host: &str) -> bool {
 
 fn is_webex_meeting_url(host: &str, path: &str) -> bool {
     // Personal Room (`/meet/<id>`) / j.php 招待 URL (`/<site>/j.php?MTID=<token>`) /
-    // wbxmjs Meeting Join Service URL (`/wbxmjs/joinservice/sites/<site>/meeting/...`) に対応。
-    // webappng 等の他形式は誤検知防止のため将来課題。
+    // wbxmjs Meeting Join Service URL (`/wbxmjs/joinservice/sites/<site>/meeting/...`) /
+    // webappng URL (`/webappng/sites/<site>/meeting/info/<token>`) に対応。
+    // 他の Webex URL 形式は誤検知防止のため将来課題。
     is_webex_host(host)
         && path
             .strip_prefix("/meet/")
@@ -837,6 +839,30 @@ fn is_wbxmjs_path(path: &str) -> bool {
 
 fn is_webex_wbxmjs_meeting_url(host: &str, path: &str) -> bool {
     is_webex_host(host) && is_wbxmjs_path(path)
+}
+
+fn is_webappng_path(path: &str) -> bool {
+    let path = path.strip_suffix('/').unwrap_or(path);
+    let Some(rest) = path.strip_prefix("/webappng/sites/") else {
+        return false;
+    };
+    let Some((site, after_site)) = rest.split_once('/') else {
+        return false;
+    };
+    if site.is_empty() {
+        return false;
+    }
+    let Some(after_meeting) = after_site.strip_prefix("meeting/") else {
+        return false;
+    };
+    let Some((action, token)) = after_meeting.split_once('/') else {
+        return false;
+    };
+    action == "info" && !token.is_empty()
+}
+
+fn is_webex_webappng_meeting_url(host: &str, path: &str) -> bool {
+    is_webex_host(host) && is_webappng_path(path)
 }
 
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
@@ -2917,6 +2943,74 @@ mod tests {
             classify_meeting_url(
                 "https://acme.webex.com/wbxmjs/joinservice/sites//meeting/m123abc"
             ),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_webappng_info_url() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_webex_for_webappng_with_trailing_slash() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc/"
+            ),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webappng_without_token() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/webappng/sites/acme/meeting/info"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webappng_with_non_info_action() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/webappng/sites/acme/meeting/download/m123abc"
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webappng_without_meeting_keyword() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/webappng/sites/acme/foo/info/m123abc"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_non_webex_host_with_webappng() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://fake-webex.example.com/webappng/sites/acme/meeting/info/m123abc"
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_returns_none_for_webappng_with_empty_site_segment() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/webappng/sites//meeting/info/m123abc"),
             None
         );
     }

@@ -24280,3 +24280,17 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
 
 ---
+## 2026-05-05 JST mjc-worker-app-detection-webex-webappng-20260505-2-3
+- 担当セッション: mjc-worker-app-detection-webex-webappng-20260505-2-3 (作業担当, sonnet)
+- 役割: classify_meeting_url の Webex 検知に `/webappng/sites/<site>/meeting/info/<token>` 形式 (Webex Web App Next Generation URL) を追加 (AGENTS.md 優先順位 2 = 会議検知の網羅性、TDD Red→Green)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: mjc-main-20260505-2 Loop 2 (wbxmjs 対応、2587b7a) の自然継続、4 形態目 Webex 対応 (Webex 招待 URL 主要 4 系統の最後)。TDD Red→Green: 1 件失敗テスト先追加 → cargo test 失敗確認 → ヘルパー 2 関数追加 (is_webappng_path / is_webex_webappng_meeting_url) + classify_meeting_url Webex 分岐に OR 条件追加 → 残 6 件テスト追加で計 7 件 (660+7=667)、rustdoc 分類ルール更新 (webappng を「将来課題」→「対応済み」に移動、「他の Webex URL 形式は将来課題」に更新)
+- 結果: 667 passed (全体, 前 660 + 7 件), 無破壊
+- 変更ファイル: src-tauri/src/app_detection.rs (関数 2 件追加 is_webappng_path / is_webex_webappng_meeting_url + classify_meeting_url Webex 分岐 OR 条件追加 + is_webex_meeting_url rustdoc コメント更新 + 7 件 test 追加)
+- 検証結果: cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 667 passed (前 660 + 7 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 実装詳細: is_webappng_path は strip_suffix('/') で trailing slash 吸収 + strip_prefix("/webappng/sites/") + split_once('/') で site segment 抽出 + site 非空チェック + strip_prefix("meeting/") で meeting キーワード必須 + split_once('/') で action / token 分割 + action == "info" && !token.is_empty() の厳格検証。wbxmjs が任意 action を許可するのに対し webappng は `info` のみ accept (download 等の非会議 action を弾く)。is_webex_host の DNS label 検証 + path prefix 厳格 + site 非空 + meeting キーワード + info action + token 非空の 6 重ガード。
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Webex 招待 URL 主要 4 系統網羅完了 = Personal Room / j.php / wbxmjs / webappng)
+
+---
