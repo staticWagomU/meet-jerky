@@ -2260,4 +2260,121 @@ mod tests {
             "is_valid_dns_label は RFC 1035 仕様で先頭ハイフン label を reject する必要がある (現契約: bytes.first().is_some_and(is_ascii_alphanumeric))"
         );
     }
+
+    #[test]
+    fn meeting_app_detected_payload_debug_output_contains_variant_names_and_all_field_names() {
+        let app_variant = MeetingAppDetectedPayload::App {
+            bundle_id: "us.zoom.xos".to_string(),
+            app_name: "zoom.us".to_string(),
+        };
+        let browser_variant = MeetingAppDetectedPayload::Browser {
+            bundle_id: "com.google.Chrome".to_string(),
+            app_name: "Google Chrome".to_string(),
+            service: "Google Meet".to_string(),
+            url_host: "meet.google.com".to_string(),
+            browser_name: "Chrome".to_string(),
+        };
+        let app_dbg = format!("{app_variant:?}");
+        let browser_dbg = format!("{browser_variant:?}");
+        assert!(app_dbg.contains("App"));
+        assert!(app_dbg.contains("bundle_id"));
+        assert!(app_dbg.contains("app_name"));
+        assert!(app_dbg.contains("us.zoom.xos"));
+        assert!(app_dbg.contains("zoom.us"));
+        assert!(browser_dbg.contains("Browser"));
+        assert!(browser_dbg.contains("bundle_id"));
+        assert!(browser_dbg.contains("app_name"));
+        assert!(browser_dbg.contains("service"));
+        assert!(browser_dbg.contains("url_host"));
+        assert!(browser_dbg.contains("browser_name"));
+        assert!(browser_dbg.contains("com.google.Chrome"));
+        assert!(browser_dbg.contains("Google Chrome"));
+        assert!(browser_dbg.contains("Google Meet"));
+        assert!(browser_dbg.contains("meet.google.com"));
+        assert!(browser_dbg.contains("Chrome"));
+    }
+
+    #[test]
+    fn meeting_app_detected_payload_clone_is_deep_and_does_not_mutate_original() {
+        let original = MeetingAppDetectedPayload::Browser {
+            bundle_id: "com.apple.Safari".to_string(),
+            app_name: "Safari".to_string(),
+            service: "Microsoft Teams".to_string(),
+            url_host: "teams.microsoft.com".to_string(),
+            browser_name: "Safari".to_string(),
+        };
+        let cloned = original.clone();
+        let cloned_dbg = format!("{cloned:?}");
+        assert!(cloned_dbg.contains("Browser"));
+        assert!(cloned_dbg.contains("com.apple.Safari"));
+        assert!(cloned_dbg.contains("Safari"));
+        assert!(cloned_dbg.contains("Microsoft Teams"));
+        assert!(cloned_dbg.contains("teams.microsoft.com"));
+        let original = MeetingAppDetectedPayload::App {
+            bundle_id: "DIFFERENT".to_string(),
+            app_name: "DIFFERENT_NAME".to_string(),
+        };
+        let _ = original;
+        let cloned_dbg_after = format!("{cloned:?}");
+        assert!(
+            cloned_dbg_after.contains("Browser"),
+            "cloned: 再束縛後も Browser variant 維持"
+        );
+        assert!(
+            cloned_dbg_after.contains("com.apple.Safari"),
+            "cloned: 元の bundle_id 維持"
+        );
+        assert!(
+            cloned_dbg_after.contains("Microsoft Teams"),
+            "cloned: 元の service 維持"
+        );
+        assert!(
+            !cloned_dbg_after.contains("DIFFERENT"),
+            "cloned: 再束縛後の値混入なし"
+        );
+    }
+
+    #[test]
+    fn meeting_app_detected_payload_serde_serialize_uses_tagged_enum_with_field_level_rename() {
+        let app = MeetingAppDetectedPayload::App {
+            bundle_id: "us.zoom.xos".to_string(),
+            app_name: "zoom.us".to_string(),
+        };
+        let json = serde_json::to_value(&app).expect("serialize ok");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.len(), 3);
+        assert!(obj.contains_key("source"));
+        assert!(obj.contains_key("bundleId"));
+        assert!(obj.contains_key("appName"));
+        assert!(!obj.contains_key("bundle_id"));
+        assert!(!obj.contains_key("app_name"));
+        assert_eq!(obj["source"], serde_json::json!("app"));
+        assert_eq!(obj["bundleId"], serde_json::json!("us.zoom.xos"));
+        assert_eq!(obj["appName"], serde_json::json!("zoom.us"));
+
+        let browser = MeetingAppDetectedPayload::Browser {
+            bundle_id: "com.google.Chrome".to_string(),
+            app_name: "Google Chrome".to_string(),
+            service: "Google Meet".to_string(),
+            url_host: "meet.google.com".to_string(),
+            browser_name: "Chrome".to_string(),
+        };
+        let json = serde_json::to_value(&browser).expect("serialize ok");
+        let obj = json.as_object().expect("object");
+        assert_eq!(obj.len(), 6);
+        assert!(obj.contains_key("source"));
+        assert!(obj.contains_key("bundleId"));
+        assert!(obj.contains_key("appName"));
+        assert!(obj.contains_key("service"));
+        assert!(obj.contains_key("urlHost"));
+        assert!(obj.contains_key("browserName"));
+        assert!(!obj.contains_key("url_host"));
+        assert!(!obj.contains_key("browser_name"));
+        assert_eq!(obj["source"], serde_json::json!("browser"));
+        assert_eq!(obj["bundleId"], serde_json::json!("com.google.Chrome"));
+        assert_eq!(obj["appName"], serde_json::json!("Google Chrome"));
+        assert_eq!(obj["service"], serde_json::json!("Google Meet"));
+        assert_eq!(obj["urlHost"], serde_json::json!("meet.google.com"));
+        assert_eq!(obj["browserName"], serde_json::json!("Chrome"));
+    }
 }

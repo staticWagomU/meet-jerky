@@ -23020,3 +23020,43 @@ test result: ok. 601 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-meeting-app-detected-payload-debug-clone-serde-tests-20260504-35-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-meeting-app-detected-payload-debug-clone-serde-tests-20260504-35-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-35 Loop 2
+
+### 作業範囲
+- `src-tauri/src/app_detection.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 15 連続 application + 「format 不変条件 application」7 系統目 = tagged enum + field-level rename + 「Clone 独立性軸」4 連続 application = MeetingAppDetectedPayload (#[derive(Debug, Clone, Serialize)] + #[serde(tag = "source")] + App { 2 fields with rename } + Browser { 5 fields with rename }) への Debug + Clone 独立性 + serde tagged + field-level rename 3 軸 application。
+- T1: meeting_app_detected_payload_debug_output_contains_variant_names_and_all_field_names
+- T2: meeting_app_detected_payload_clone_is_deep_and_does_not_mutate_original
+- T3: meeting_app_detected_payload_serde_serialize_uses_tagged_enum_with_field_level_rename
+
+### 結果
+- cargo fmt --check: 差分なし (cargo fmt 適用後)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 601 → 604 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (mod tests 末尾に T1/T2/T3 追加、enum / 既存 #[derive] / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 604 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし (cargo fmt 初回 --check で長行の assert! の改行スタイル差分が出たため cargo fmt を適用後に再確認、差分ゼロを確認)
+
+### 次アクション
+メインへ報告、commit 待ち
+---
