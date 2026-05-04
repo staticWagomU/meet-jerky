@@ -16,7 +16,6 @@ mod session_manager;
 mod session_store;
 mod settings;
 mod system_audio;
-mod transcript;
 mod transcript_bridge;
 mod transcription;
 

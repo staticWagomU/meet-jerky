@@ -24068,3 +24068,16 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 旧 mjc-main (= mjc-main-20260504-39) は本 SUMMARY を AGENT_LOG.md 末尾に残し、後継 mjc-main-20260504-40 へ予防的ハンドオフ判断 (Debug 軸補強系譜完成 = 後続は新軸開拓フェーズへ移行、最有力候補は「Copy 軸補強」初対応 / serde JSON round-trip 軸 / 関数境界 contract test / harness 改善 等、harness silent fail に対しては git status ベースの mitigation pattern が連続 25 ループ実証済)
 
 ---
+## 2026-05-05 JST mjc-worker-transcript-rs-deadcode-removal-20260505-1
+- 担当セッション: mjc-worker-transcript-rs-deadcode-removal-20260505-1 (作業担当, sonnet)
+- 役割: dead module `src-tauri/src/transcript.rs` (TODO コメント 1 行のみ) を Tidy First で除去
+- 作業範囲: src-tauri/src/transcript.rs 削除 + src-tauri/src/lib.rs の `mod transcript;` 行削除
+- 指示内容: 26 連続「Debug 軸補強」パターンからの戦略転換ループ 1 件目、振る舞い不変の純粋 Tidy First (構造改善のみ、test 追加なし)
+- 結果: 成功 (transcript.rs 削除 + lib.rs から mod transcript; 除去、637 passed 不変)
+- 変更ファイル: src-tauri/src/transcript.rs (削除), src-tauri/src/lib.rs (- 1 行)
+- 検証結果: cargo check OK / cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 637 passed (件数不変)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
