@@ -25,6 +25,28 @@
 | 8 | Worker loop (run_transcription_loop / panic_guard / emit_segments / 各種 helper) | L1110-2999+ | ~1900 | `transcription/worker.rs` (更にサブ分割推奨) | **高** |
 | 9 | Helper (validate_stream_count / parse_requested_sources / error payload builders 等) | L741-1109 | ~370 | 各責務の private モジュール | 中 |
 
+## 進捗サマリ (mjc-main-20260505-15 Loop 29 時点)
+
+- **Phase 1 (責務 1-2 = データ型 + トレイト)**: ✅ 完了 (mjc-main-20260505-3)
+- **Phase 2-A (責務 3 = Whisper エンジン)**: ✅ 完了 (mjc-main-20260505-4 ~ 7)
+- **Phase 2-B (責務 4 = Model 管理)**: ✅ 完了 (mjc-main-20260505-5)
+- **Phase 2 残り (責務 6 = Audio resampling)**: ✅ 完了 (mjc-main-20260505-6)
+- **Phase 3 (責務 5 = Transcription state)**: ✅ 完了 (mjc-main-20260505-8)
+- **Phase 3-B (責務 7 = Tauri commands)**: ✅ **完全完了** (mjc-main-20260505-11 ~ 14, Loop 21 ~ 28)
+  - build_download_*_payload helper / list_models / is_model_downloaded / download_model /
+    validate_stream_count_for_engine / parse_requested_transcription_sources /
+    RequestedTranscriptionSources struct / TRANSCRIPTION_SOURCE_* const / 17 tests /
+    stop_transcription / start_transcription / PendingTranscriptionStream
+    すべて transcription_commands.rs に集約
+- **Phase 4 (責務 8 = Worker loop)**: ✅ 完了 (mjc-main-20260505-8 ~ 10, Phase 4-A emission + 4-B error_payload + 4-C panic_guard + 4-D run_transcription_loop)
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **1536 行** = **約 48.8% 縮小** (~1463 行削減) = 「ほぼ 50% 達成」の里程標
+
+## 残存課題 (Phase 5 候補、未着手)
+
+- transcription.rs 残存 1536 行の更なる責務分離 (Worker loop 内部 helper / responses processing / Whisper 関連 helper)
+- 規模 M-L、複数ループ計画推奨
+- 各 Phase 着手時は最新の transcription.rs を read して、本プランの行範囲とずれていないか確認する
+
 ## 推奨段階分割 (Phase)
 
 ### Phase 1: 安全な低リスク抽出 (最初に着手)
@@ -114,14 +136,22 @@
 | 4. リアルタイム文字起こし低遅延化 | Worker loop (責務 8) の責務分離 → 最適化対象の特定容易化 |
 | 5. 文字起こし精度等 | Whisper エンジン (責務 3) / Model 管理 (責務 4) の独立化 → 個別最適化容易化 |
 
-## 関連: app_detection.rs の Webex モジュール抽出 (将来課題)
+## 関連: app_detection.rs の Webex モジュール抽出 ✅ 完了 (mjc-main-20260505-15 Loop 29 = commit b4a0098)
 
-本プランは transcription.rs 専用だが、同様の責務肥大は `app_detection.rs` (3017 行) の Webex 検知関数群 (`is_webex_host` / `is_webex_meeting_url` / `is_jphp_path` / `is_webex_jphp_meeting_url` / `is_wbxmjs_path` / `is_webex_wbxmjs_meeting_url` / `is_webappng_path` / `is_webex_webappng_meeting_url` の 8 関数) にも存在する。
+本プランは transcription.rs 専用だが、同様の責務肥大は `app_detection.rs` (3356 行) の Webex 検知関数群 (`is_webex_host` / `is_webex_meeting_url` / `is_jphp_path` / `is_webex_jphp_meeting_url` / `is_wbxmjs_path` / `is_webex_wbxmjs_meeting_url` / `is_webappng_path` / `is_webex_webappng_meeting_url` の 8 関数) にも存在していた。
 
-mjc-main-20260505-2 で Webex 招待 URL 主要 4 系統 (Personal Room / j.php / wbxmjs / webappng) の網羅が完了したため、Webex 関数群を `app_detection/webex.rs` に抽出する Tidy First 候補が将来発生する。本プランの Phase 1 完了後 (transcription.rs 側で抽出パターンを確立した後)、同パターンを app_detection.rs に応用する道筋を取る。
+mjc-main-20260505-2 で Webex 招待 URL 主要 4 系統 (Personal Room / j.php / wbxmjs / webappng) の網羅が完了したのち、mjc-main-20260505-15 Loop 29 (commit `b4a0098`) で 8 関数を `src-tauri/src/app_detection_webex.rs` に集約した。
+
+- 関数 8 つを pub(crate) で移動
+- ヘルパー (`is_valid_dns_label` / `has_single_non_empty_segment` / `query_has_non_empty_param`) は他サービス (Whereby / GoToMeeting / Google Meet / Zoom) でも使用のため app_detection.rs に残置 + pub(crate) 化
+- tests は classify_meeting_url 経由のため app_detection.rs 残置
+- 振る舞い不変 = 700 passed 件数不変
+
+同パターン (サービス別関数の独立モジュール化) は Whereby / GoToMeeting / Zoom / Microsoft Teams にも適用可能。今後の Tidy First 候補。
 
 ## 参考
 
 - 本プランは mjc-main-20260505-3 (Loop 4) で grep ベース構造分析により作成。
 - 実コードは生きており、Phase 着手時に再度行範囲・責務分類の妥当性を検証する必要がある。
 - 各 Phase 着手時は必ず最新の `transcription.rs` を read して、本プランの行範囲とずれていないか確認する。
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-15 Loop 29 時点で 1536 行 = 約 48.8% 縮小達成)
