@@ -608,4 +608,131 @@ mod tests {
         assert_eq!(unescape_inline_markdown_text(r"\X"), r"\X");
         assert_eq!(unescape_inline_markdown_text(r"\"), r"\");
     }
+
+    #[test]
+    fn path_for_session_joins_dir_and_session_id_with_md_extension() {
+        let dir = PathBuf::from("/tmp/meet-jerky-test");
+        let session = Session::start("title".into(), 1_700_000_000);
+        let path = path_for_session(&dir, &session);
+
+        assert_eq!(
+            path.parent(),
+            Some(dir.as_path()),
+            "親ディレクトリが dir と一致する契約"
+        );
+        assert_eq!(
+            path.extension().and_then(|s| s.to_str()),
+            Some("md"),
+            ".md 拡張子である契約"
+        );
+        assert_eq!(
+            path.file_stem().and_then(|s| s.to_str()),
+            Some(session.id.as_str()),
+            "file_stem が session.id と一致する契約"
+        );
+    }
+
+    #[test]
+    fn path_for_session_file_name_is_exactly_session_id_dot_md() {
+        let dir = PathBuf::from("/some/dir");
+        let session = Session::start("title".into(), 1_700_000_000);
+        let path = path_for_session(&dir, &session);
+        let expected_file_name = format!("{}.md", session.id);
+
+        assert_eq!(
+            path.file_name().and_then(|s| s.to_str()),
+            Some(expected_file_name.as_str()),
+            "file_name が '<id>.md' ちょうどである契約: 接尾辞・接頭辞が混入しない"
+        );
+    }
+
+    #[test]
+    fn path_for_session_preserves_relative_dir_passthrough() {
+        let dir = PathBuf::from("relative/sub/dir");
+        let session = Session::start("title".into(), 1_700_000_000);
+        let path = path_for_session(&dir, &session);
+        let expected_file_name = format!("{}.md", session.id);
+
+        assert!(
+            path.starts_with("relative/sub/dir"),
+            "relative dir がそのまま親に使われる契約"
+        );
+        assert_eq!(
+            path.file_name().and_then(|s| s.to_str()),
+            Some(expected_file_name.as_str()),
+            "file_name が '<id>.md' である契約"
+        );
+        assert!(
+            !path.is_absolute(),
+            "relative passthrough、absolute 化しない契約"
+        );
+    }
+
+    #[test]
+    fn path_for_session_returns_bare_file_name_when_dir_is_empty() {
+        let dir = PathBuf::new();
+        let session = Session::start("title".into(), 1_700_000_000);
+        let path = path_for_session(&dir, &session);
+        let expected = format!("{}.md", session.id);
+
+        assert_eq!(
+            path.file_name().and_then(|s| s.to_str()),
+            Some(expected.as_str()),
+            "空 dir でも '<id>.md' 単体の相対 path が返る契約"
+        );
+        assert!(
+            path.parent()
+                .map(|p| p.as_os_str().is_empty())
+                .unwrap_or(true),
+            "parent が空または None である契約"
+        );
+        assert!(
+            !path.is_absolute(),
+            "empty dir join は absolute 化しない契約"
+        );
+    }
+
+    #[test]
+    fn path_for_session_uses_session_id_passthrough_for_zero_and_max_started_at() {
+        let s_zero = Session::start("anything".into(), 0);
+        let p_zero = path_for_session(&PathBuf::from("/d"), &s_zero);
+        assert_eq!(
+            p_zero.file_stem().and_then(|s| s.to_str()),
+            Some(s_zero.id.as_str()),
+            "started_at=0 の session.id が file_stem に passthrough される契約"
+        );
+        assert!(
+            p_zero
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap()
+                .starts_with("0-"),
+            "id が '0-' prefix を持つ契約"
+        );
+
+        let s_max = Session::start("特殊文字 / \\ : *".into(), u64::MAX);
+        let p_max = path_for_session(&PathBuf::from("/d"), &s_max);
+        assert_eq!(
+            p_max.file_stem().and_then(|s| s.to_str()),
+            Some(s_max.id.as_str()),
+            "started_at=u64::MAX の session.id が file_stem に passthrough される契約"
+        );
+        let max_prefix = format!("{}-", u64::MAX);
+        assert!(
+            p_max
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap()
+                .starts_with(&max_prefix),
+            "id が u64::MAX のプレフィックスを持つ契約"
+        );
+        assert!(
+            !p_max.to_string_lossy().contains("特殊文字"),
+            "title が path に漏れない契約"
+        );
+        assert!(
+            !p_max.to_string_lossy().contains("*"),
+            "title 内 special char が path に漏れない契約"
+        );
+    }
 }

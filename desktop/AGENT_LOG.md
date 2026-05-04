@@ -1,3 +1,17 @@
+# session_store: path_for_session unit test 5 件追加
+
+- 開始日時: 2026-05-04 JST
+- 担当セッション: mjc-worker-session-store-path-for-session-1
+- 役割: 作業担当
+- 作業範囲: src-tauri/src/session_store.rs の mod tests 内に新規 unit test 5 件 (T1-T5) 追加
+- 指示内容: path_for_session の test ゼロ gap (5 軸 = 標準形式 / file_name 完全一致 / relative dir passthrough / empty dir / session.id boundary + title sanitize 上位層責任) の補強
+- 結果: 420 → 425 passed
+- 変更ファイル: src-tauri/src/session_store.rs のみ
+- 検証結果: cargo fmt 成功 / cargo clippy -D warnings ゼロ / cargo test --lib session_store::tests 35 passed / cargo test --lib 425 passed
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メインによるレビューとコミット待ち
+
 # Settings sidebar: reduce item weight to match Pencil
 
 - 開始日時: 2026-05-03 04:12:06 JST
