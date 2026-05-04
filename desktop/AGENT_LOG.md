@@ -24703,3 +24703,13 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 旧メイン (本セッション) は handoff 完了後終了予定 = watchdog による自然 idle 検知
 
 ---
+## 2026-05-05 JST mjc-main-20260505-7 Loop 13 (Phase 2-A WhisperStream 抽出 → transcription_whisper_stream.rs)
+- 担当セッション: mjc-main (canonical) = mjc-main-20260505-7 (メイン, opus) → sonnet worker 直接実行
+- 役割: Phase 2-A 最後の責務分離 = WhisperStream を新モジュールに分離 = Phase 2-A 完全完了
+- 作業範囲: src-tauri/src/transcription_whisper_stream.rs (新規, ~180 行) + src-tauri/src/transcription.rs (WhisperStream ~189 行削除 + 互換層 1 行追加 + 定数 6 つ pub(crate) 昇格 + is_tail_silent をテストモジュール内に移動) + src-tauri/src/lib.rs (mod 宣言 1 行追加)
+- 実行結果: cargo test --lib 674 passed (件数不変)、cargo clippy --lib -D warnings 警告ゼロ、cargo fmt --check OK、git diff --check trailing whitespace なし
+- 追加判断: is_tail_silent は非テストコードでは使用されないため module-level import を削除し tests mod 内で明示的に import (clippy unused_imports 警告ゼロ維持)。whisper_rs::WhisperContext も transcription.rs 内では不要となり削除。
+- transcription.rs 累計削減: ~599 行 (元 2999 → 現在 2400 行 = Phase 1 90 + Phase 2-A 最小 22 + Phase 2-B 148 + Loop 11 76 + Loop 12 90 + 本ループ ~189 行 (実測 199 行差異))
+- 戦略判断: extraction 3 連続到達 (Loop 11 + Loop 12 + Loop 13) = Loop 14 で必須 variety pivot 約束、Phase 2-A 完全完了で Phase 3 (TranscriptionManager) に進める段階
+- 次アクション: Loop 14 で variety pivot 必須発動 (新サービス検知 / harness 衛生 / frontend 軸)
+---
