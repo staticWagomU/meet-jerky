@@ -19331,3 +19331,46 @@ Loop 3 (commit 457a545) で定数化済みの `TRANSCRIPTION_SOURCE_MICROPHONE` 
 
 ### 次アクション
 メインで commit + 次ループ判断
+
+---
+
+## Worker Log: mjc-worker-should-warn-polling-stall-boundary
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-should-warn-polling-stall-boundary
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs に test 2 件追加 (Loop 3)
+
+### 指示内容の要約
+`should_warn_polling_stall` (line 153-174) の境界条件補強として test 2 件を追加。
+既存 `should_warn_polling_stall_throttled_returns_none` の直後、`should_notify_meeting_inactive_first_call_returns_none` の直前に挿入。
+- `should_warn_polling_stall_boundary_at_expected_times_three_returns_none`: `elapsed == expected * 3` ぴったり (=9s) は `<=` 境界で None、境界の 1 秒外 (elapsed=10) は Some(10) — `<=` を `<` に変える誤改修を CI で検知。
+- `should_warn_polling_stall_clock_skew_last_warned_after_now_returns_none`: `last_warned_secs(1500) > now_secs(1000)` の clock 巻き戻し相当で saturating_sub が 0 に飽和 → throttle(60) で None — `sub` に変える panic 化および throttle 無視誤改修を検知。
+関数本体 (line 153-174) と既存 test 4 件は無変更。
+
+### 結果
+- test 数推移: 469 → **471 passed** (+2 件)
+- clippy: **warning 0**
+- fmt: **差分なし**
+
+### 変更ファイル
+- `src-tauri/src/app_detection.rs` (1 ファイルのみ)
+
+### 検証結果
+| コマンド | 結果 |
+|---|---|
+| `cargo test --lib --no-run` | **pass** (compile OK) |
+| `cargo test --lib should_warn_polling_stall` | **pass** (6 passed = 既存 4 + 新規 2) |
+| `cargo test --lib` | **pass** (471 passed; 0 failed) |
+| `cargo clippy --all-targets -- -D warnings` | **pass** (warning 0) |
+| `cargo fmt --check` | **pass** (差分なし) |
+| `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` | **全段 OK** |
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインで commit + 次ループ判断 (3 ループ完了で予防的ハンドオフ判断)

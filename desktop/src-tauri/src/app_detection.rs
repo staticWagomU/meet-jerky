@@ -1486,6 +1486,25 @@ mod tests {
     }
 
     #[test]
+    fn should_warn_polling_stall_boundary_at_expected_times_three_returns_none() {
+        // 境界: elapsed == expected_interval_secs * 3 ぴったり (= 9s) は正常範囲扱いで None
+        // (実装は `elapsed <= expected_interval_secs * 3` で短絡)。
+        // この境界を保護する: `<=` を `<` に変える誤改修を CI で検知。
+        assert_eq!(should_warn_polling_stall(1009, 1000, 0, 3, 60), None);
+        // 境界の 1 秒外: elapsed = 10 > 9 で Some(10)
+        assert_eq!(should_warn_polling_stall(1010, 1000, 0, 3, 60), Some(10));
+    }
+
+    #[test]
+    fn should_warn_polling_stall_clock_skew_last_warned_after_now_returns_none() {
+        // clock 巻き戻し相当: last_warned_secs > now_secs。
+        // saturating_sub で 0 に飽和し、0 < throttle (60) で None を返す契約を固定。
+        // saturating_sub を sub に変える panic 化、または巻き戻し時に throttle を無視する誤改修を検知。
+        // 前提: elapsed = 30s > expected(3) * 3 = 9s なので throttle 経路まで到達する。
+        assert_eq!(should_warn_polling_stall(1000, 970, 1500, 3, 60), None);
+    }
+
+    #[test]
     fn should_notify_meeting_inactive_first_call_returns_none() {
         // last_seen_secs == 0 は一度も検知されていない: 通知しない
         assert_eq!(should_notify_meeting_inactive(1000, 0, 0, 300, 600), None);
