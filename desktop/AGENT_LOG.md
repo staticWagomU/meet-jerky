@@ -25160,3 +25160,31 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - cargo fmt --check: OK
 
 ---
+
+[mjc-main-20260505-12 Loop 24 / 2026-05-05 ~JST]
+
+## What
+- `download_model` async Tauri command を `src-tauri/src/transcription_commands.rs` に移動 (~40 行)
+- `src-tauri/src/transcription.rs` から該当 40 行 + 不要 use 文 2 種 (`use tauri::Emitter;` + `use crate::transcription_commands::{build_download_*_payload};`) 削除
+- `src-tauri/src/transcription.rs` の `pub use crate::transcription_model_manager::ModelManager;` re-export + セクションコメント削除 (外部参照ゼロ確認済) + tests mod に `use crate::transcription_model_manager::ModelManager;` 直接追加 (Loop 23 ModelInfo precedent 踏襲)
+- `src-tauri/src/lib.rs` invoke_handler `transcription::download_model` → `transcription_commands::download_model` に更新
+- `transcription_commands.rs` に `use tauri::Emitter;` 追加
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 続き
+- mjc-main-20260505-12 Loop 23 (list_models + is_model_downloaded) の延長 = 純粋委譲関数の安全側スライス先行から async 関数への自然拡張
+- variety 規則: extraction 2 連続 = Loop 25 まで extraction 続行可
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 692 passed 件数不変
+- async + tokio::task::spawn_blocking + tauri::Emitter trait method 呼び出しを完全に保持
+- 不要 use 文の自律削除 = clippy `unused_imports` warning 駆動の正しい Tidy
+- `pub use ModelManager` 除去 = download_model 移動で唯一の直接使用箇所が消失 → 外部参照ゼロ確認 → re-export を廃止し tests mod に直接 import 追加 (Loop 23 ModelInfo precedent と完全同パターン)
+
+## Verify
+- cargo test --lib: 692 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---

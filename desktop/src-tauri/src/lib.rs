@@ -353,7 +353,7 @@ pub fn run() {
             system_audio::stop_system_audio,
             transcription_commands::list_models,
             transcription_commands::is_model_downloaded,
-            transcription::download_model,
+            transcription_commands::download_model,
             transcription::start_transcription,
             transcription::stop_transcription,
             settings::get_settings,

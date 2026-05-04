@@ -1,8 +1,6 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use tauri::Emitter;
-
 // ─────────────────────────────────────────────
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
 // ─────────────────────────────────────────────
@@ -22,67 +20,16 @@ pub use crate::transcription_traits::{StreamConfig, TranscriptionEngine, Transcr
 pub use crate::transcription_whisper_stream::WhisperStream;
 
 // ─────────────────────────────────────────────
-// ModelManager (transcription_model_manager.rs に分離、ここから互換層として再エクスポート)
-// ─────────────────────────────────────────────
-
-pub use crate::transcription_model_manager::ModelManager;
-
-// ─────────────────────────────────────────────
 // TranscriptionManager / TranscriptionStateHandle (transcription_manager.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
 pub use crate::transcription_manager::TranscriptionStateHandle;
 
-use crate::transcription_commands::{
-    build_download_error_payload, build_download_progress_payload,
-};
 use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
 
 // ─────────────────────────────────────────────
 // Tauri コマンド
 // ─────────────────────────────────────────────
-
-/// モデルをダウンロードする（プログレスイベントを送信）
-///
-/// 失敗時は Result で Err を返すことに加え、`model-download-error` を emit する。
-/// 既存の `invoke` catch 経路に加えて listen 側でも統一的にハンドリングできるようにする。
-#[tauri::command]
-pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result<String, String> {
-    let model_name_for_progress = model_name.clone();
-    let app_for_progress = app.clone();
-
-    // ダウンロードはブロッキングI/Oなので専用スレッドで実行
-    let join_result = tokio::task::spawn_blocking(move || {
-        let manager = ModelManager::new();
-        let model_name_ref = model_name_for_progress.clone();
-        manager.download_model(&model_name_for_progress, move |progress| {
-            let _ = app_for_progress.emit(
-                "model-download-progress",
-                build_download_progress_payload(progress, &model_name_ref),
-            );
-        })
-    })
-    .await
-    .map_err(|e| format!("ダウンロードタスクの実行に失敗しました: {e}"));
-
-    match join_result {
-        Ok(Ok(path)) => Ok(path.to_string_lossy().to_string()),
-        Ok(Err(msg)) => {
-            let _ = app.emit(
-                "model-download-error",
-                build_download_error_payload(&model_name, &msg),
-            );
-            Err(msg)
-        }
-        Err(msg) => {
-            let _ = app.emit(
-                "model-download-error",
-                build_download_error_payload(&model_name, &msg),
-            );
-            Err(msg)
-        }
-    }
-}
 
 fn validate_stream_count_for_engine(
     engine_type: &crate::settings::TranscriptionEngineType,
@@ -352,6 +299,7 @@ mod tests {
         transcription_error_payload_to_value,
     };
     use crate::transcription_manager::TranscriptionManager;
+    use crate::transcription_model_manager::ModelManager;
     use crate::transcription_types::ModelInfo;
     use crate::transcription_types::TranscriptionErrorPayload;
 
