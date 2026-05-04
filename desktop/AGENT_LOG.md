@@ -20730,3 +20730,54 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 
 - 旧 mjc-main (= mjc-main-20260504-25) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
 ---
+
+## mjc-worker-dns-label-additional-boundary-tests-20260504-26-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-dns-label-additional-boundary-tests-20260504-26-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-26 Loop 1
+
+### 作業範囲
+- `src-tauri/src/app_detection.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+`is_valid_dns_label` の RFC 1035/1123 仕様 3 軸 (未保護) を executable specification 化:
+- **T1**: 1 バイト最短 label accept (`!bytes.is_empty()` の左境界内側)
+- **T2**: 末尾ハイフン label reject (`bytes.last().is_some_and(is_ascii_alphanumeric)` の右端ハイフン禁止)
+- **T3**: 先頭ハイフン label reject (`bytes.first().is_some_and(is_ascii_alphanumeric)` の左端ハイフン禁止)
+
+直前 commit a00d76d (mjc-main-25 Loop 3) が 63 バイト上限 / 64 バイト reject / 数字始まり accept の 3 軸を保護済。本 Loop でこれら 3 軸を追加することで `is_valid_dns_label` の RFC 仕様が完全網羅に到達する。
+
+### 結果
+- `cargo fmt --check`: 差分なし (出力なし = OK)
+- `cargo clippy -- -D warnings`: 警告ゼロ (`Finished dev profile ... in 0.87s`)
+- `cargo test --lib -- --test-threads=1`: **524 → 527 passed** (+3 件、0 failed)
+
+### 変更ファイル
+- `src-tauri/src/app_detection.rs` (mod tests 末尾に T1/T2/T3 追加、l.2234-2264 付近)
+- `AGENT_LOG.md` (本エントリ末尾追記)
+
+### 検証結果 (各コマンド末尾抜粋)
+
+```
+# cargo fmt --check
+(出力なし = フォーマット差分ゼロ)
+
+# cargo clippy -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.87s
+
+# cargo test --lib -- --test-threads=1
+test result: ok. 527 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---

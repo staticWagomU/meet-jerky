@@ -2230,4 +2230,34 @@ mod tests {
             "is_valid_dns_label は RFC 1123 仕様で数字始まり label を accept する必要がある (現契約: bytes.first().is_some_and(is_ascii_alphanumeric))"
         );
     }
+
+    #[test]
+    fn classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_minimum_length_1_byte() {
+        assert_eq!(
+            classify_meeting_url("https://a.zoom.us/j/123456789"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "a.zoom.us".to_string(),
+            }),
+            "is_valid_dns_label は最短 label (1 バイト alphanumeric) を accept する必要がある (現契約: !bytes.is_empty() の左境界内側)"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_zoom_subdomain_label_with_trailing_hyphen_per_rfc_1035() {
+        assert_eq!(
+            classify_meeting_url("https://my-.zoom.us/j/123456789"),
+            None,
+            "is_valid_dns_label は RFC 1035 仕様で末尾ハイフン label を reject する必要がある (現契約: bytes.last().is_some_and(is_ascii_alphanumeric))"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_zoom_subdomain_label_with_leading_hyphen_per_rfc_1035() {
+        assert_eq!(
+            classify_meeting_url("https://-my.zoom.us/j/123456789"),
+            None,
+            "is_valid_dns_label は RFC 1035 仕様で先頭ハイフン label を reject する必要がある (現契約: bytes.first().is_some_and(is_ascii_alphanumeric))"
+        );
+    }
 }
