@@ -20444,3 +20444,19 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **worker prompt 末尾追記明示の継続適用** (3 連続セッション先頭追記事故ゼロ)
 - **累積 worker 完走 56/56** (100%)
 - **コミット周期 ~9 分/loop** (mjc-main-22 と同等の高速 cadence を 2 セッション連続維持)
+
+---
+[WORKER LOG @ 2026-05-04 ~17:00 JST] mjc-main-20260504-24 worker (session_manager.rs current_started_at_secs test 3 件追加, 規模 XS, Tidy First, ユーザー観測不可)
+- 開始日時: 2026-05-04 ~17:00 JST (推定)
+- 担当セッション: mjc-main-20260504-24 用 worker (メイン委任)
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/session_manager.rs の mod tests 末尾に test 3 件追加 (関数本体無変更)
+- 指示内容: current_started_at_secs アクセサの境界 test 3 軸補強 (lifecycle None / 値域 0 / 値域 u64::MAX)
+  - T1: `current_started_at_secs_returns_none_when_idle_and_after_finalize_and_after_discard` = lifecycle 軸の None 契約を 3 状態 (never-started / after finalize / after discard) で対称的に CI 固定。stale started_at 値が finalize/discard 後に漏れない契約。
+  - T2: `current_started_at_secs_returns_zero_when_session_started_at_unix_epoch_zero` = 値域軸の左境界 (started_at=0、unix epoch) が原値のまま返る契約を CI 固定。「0 を unset として扱う」防衛的最適化誤改修を検知する装置。
+  - T3: `current_started_at_secs_returns_u64_max_when_session_started_at_far_future` = 値域軸の右境界 (started_at=u64::MAX、極端値) が truncation なく原値のまま返る契約を CI 固定。`as i64` cast 等の符号付き truncation 誤改修を検知する装置。
+- 結果: 全 3 件 pass。cargo fmt 1 往復修正あり (T1 の 1 行目 assert_eq! を短縮形に整形)。
+- 変更ファイル: src-tauri/src/session_manager.rs (test 追加のみ)
+- 検証結果: cargo test --lib session_manager = 29 passed (26 → +3), cargo test --lib 全体 = **509 passed** (506 → +3, 0 failed), clippy -D warnings ゼロ, fmt 差分なし (1 往復修正後)
+- 依存追加: なし
+- 次アクション: メインへ報告 → メインが verify + commit

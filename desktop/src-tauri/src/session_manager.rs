@@ -842,4 +842,52 @@ mod tests {
             "discard 後の再 start は新 session のため segments=0 のはず"
         );
     }
+
+    #[test]
+    fn current_started_at_secs_returns_none_when_idle_and_after_finalize_and_after_discard() {
+        let manager = SessionManager::new();
+        assert_eq!(manager.current_started_at_secs(), None, "未開始時は None");
+
+        manager.start("meeting".into(), 100).expect("start");
+        manager.finalize(200).expect("finalize");
+        assert_eq!(
+            manager.current_started_at_secs(),
+            None,
+            "finalize 後は None。stale started_at 値が finalize 後に漏れない契約を CI 固定する。"
+        );
+
+        manager.start("meeting2".into(), 300).expect("restart");
+        manager.discard().expect("discard");
+        assert_eq!(
+            manager.current_started_at_secs(),
+            None,
+            "discard 後は None。stale started_at 値が discard 後に漏れない契約を CI 固定する。"
+        );
+    }
+
+    #[test]
+    fn current_started_at_secs_returns_zero_when_session_started_at_unix_epoch_zero() {
+        let manager = SessionManager::new();
+        manager
+            .start("epoch_session".into(), 0)
+            .expect("start with started_at=0 should succeed");
+        assert_eq!(
+            manager.current_started_at_secs(),
+            Some(0),
+            "started_at=0 (unix epoch) は Some(0) として原値で返るはず。0 を unset として扱う防衛的最適化を CI で遮断する。"
+        );
+    }
+
+    #[test]
+    fn current_started_at_secs_returns_u64_max_when_session_started_at_far_future() {
+        let manager = SessionManager::new();
+        manager
+            .start("future_session".into(), u64::MAX)
+            .expect("start with u64::MAX should succeed");
+        assert_eq!(
+            manager.current_started_at_secs(),
+            Some(u64::MAX),
+            "started_at=u64::MAX は truncation なく返るはず。`as i64` cast 等の符号付き truncation を CI で遮断する。"
+        );
+    }
 }
