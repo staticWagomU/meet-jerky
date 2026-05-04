@@ -26194,3 +26194,32 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 ## commit
 - dde8175
 ---
+[mjc-main-20260505-18 Loop 36 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs から GoToMeeting URL 検知関連 4 関数 (is_goto_host / is_goto_meeting_url / is_goto_legacy_meeting_url / is_goto_app_meeting_url) と const GOTO_NON_ROOM_PATHS を src-tauri/src/app_detection_goto.rs に抽出
+- src-tauri/src/lib.rs に `mod app_detection_goto;` 追加
+- app_detection.rs L531-533 caller を crate::app_detection_goto::is_goto_* 経由に更新
+- 直接呼びテスト (is_goto_app_meeting_url_*) の参照 path 更新: tests mod に `use crate::app_detection_goto::is_goto_app_meeting_url;` 追加
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 3231 行縮小 = 理解性向上)
+- Webex (Loop 29) / Whereby (Loop 31) と同パターン継承
+- variety pivot 軸 = 「extraction」軸 = test 移動 (Loop 35) と別軸
+- transcription-refactor-plan.md L117-121 の将来課題 (app_detection.rs サービス別抽出) を継続実施
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 700 passed 件数不変
+- pub(crate) visibility で外部参照可能 (Webex precedent 同パターン)
+- is_valid_dns_label は app_detection.rs に残置 + pub(crate) のまま、app_detection_goto.rs から use 文で取り込み
+- tests は classify_meeting_url 経由のものは app_detection.rs 残置 (Loop 23 / 29 precedent 踏襲)、直接呼びテストは use 文経由参照
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- trailing whitespace: ゼロ
+
+## commit
+- <commit hash 後で別 chore で記入>
+---

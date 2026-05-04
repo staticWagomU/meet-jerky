@@ -528,9 +528,9 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         "Webex"
     } else if crate::app_detection_whereby::is_whereby_meeting_url(&host, &parsed.path) {
         "Whereby"
-    } else if is_goto_meeting_url(&host, &parsed.path)
-        || is_goto_legacy_meeting_url(&host, &parsed.path)
-        || is_goto_app_meeting_url(&host, &parsed.path)
+    } else if crate::app_detection_goto::is_goto_meeting_url(&host, &parsed.path)
+        || crate::app_detection_goto::is_goto_legacy_meeting_url(&host, &parsed.path)
+        || crate::app_detection_goto::is_goto_app_meeting_url(&host, &parsed.path)
     {
         "GoToMeeting"
     } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
@@ -795,54 +795,6 @@ fn is_zoom_web_client_meeting_url(path: &str) -> bool {
     action == "join" && is_zoom_meeting_id(meeting_id)
 }
 
-const GOTO_NON_ROOM_PATHS: &[&str] = &[
-    "about", "pricing", "blog", "login", "signup", "help", "terms", "privacy", "contact",
-    "products", "features", "download", "app", "api", "security", "status",
-];
-
-fn is_goto_host(host: &str) -> bool {
-    if host == "meet.goto.com" {
-        return true;
-    }
-    let Some(subdomain) = host.strip_suffix(".meet.goto.com") else {
-        return false;
-    };
-    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
-}
-
-fn is_goto_meeting_url(host: &str, path: &str) -> bool {
-    if !is_goto_host(host) {
-        return false;
-    }
-    let Some(room) = path.strip_prefix('/') else {
-        return false;
-    };
-    let room = room.strip_suffix('/').unwrap_or(room);
-    !room.is_empty() && !room.contains('/') && !GOTO_NON_ROOM_PATHS.contains(&room)
-}
-
-fn is_goto_legacy_meeting_url(host: &str, path: &str) -> bool {
-    if host != "global.gotomeeting.com" {
-        return false;
-    }
-    let Some(id) = path.strip_prefix("/join/") else {
-        return false;
-    };
-    let id = id.strip_suffix('/').unwrap_or(id);
-    id.len() == 9 && id.chars().all(|c| c.is_ascii_digit())
-}
-
-fn is_goto_app_meeting_url(host: &str, path: &str) -> bool {
-    if host != "app.goto.com" {
-        return false;
-    }
-    let Some(id) = path.strip_prefix("/meet/") else {
-        return false;
-    };
-    let id = id.strip_suffix('/').unwrap_or(id);
-    id.len() == 9 && id.chars().all(|c| c.is_ascii_digit())
-}
-
 fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
     (is_teams_work_or_school_host(host)
         && path
@@ -1017,6 +969,7 @@ mod macos {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::app_detection_goto::is_goto_app_meeting_url;
 
     #[test]
     fn watched_bundle_ids_includes_native_meeting_apps() {
