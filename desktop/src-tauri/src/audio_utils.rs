@@ -51,4 +51,40 @@ mod tests {
         assert_eq!(sanitize_audio_sample(1.0), 1.0);
         assert_eq!(sanitize_audio_sample(-1.0), -1.0);
     }
+
+    #[test]
+    fn sanitize_audio_sample_passes_through_negative_zero_preserving_bit_pattern() {
+        let result = sanitize_audio_sample(-0.0_f32);
+        assert_eq!(result, 0.0_f32);
+        assert_eq!(
+            result.to_bits(),
+            (-0.0_f32).to_bits(),
+            "negative zero must preserve bit pattern (sign bit) through sanitize"
+        );
+    }
+
+    #[test]
+    fn sanitize_audio_sample_clamps_f32_max_to_one_and_f32_min_finite_to_minus_one() {
+        assert_eq!(
+            sanitize_audio_sample(f32::MAX),
+            1.0,
+            "f32::MAX is finite (not Inf) so clamp must reduce to 1.0"
+        );
+        assert_eq!(
+            sanitize_audio_sample(f32::MIN),
+            -1.0,
+            "f32::MIN (= -f32::MAX) is finite (not -Inf) so clamp must reduce to -1.0"
+        );
+    }
+
+    #[test]
+    fn sanitize_audio_sample_passes_through_subnormal_min_positive_without_flush_to_zero() {
+        let subnormal = f32::MIN_POSITIVE;
+        let result = sanitize_audio_sample(subnormal);
+        assert_eq!(
+            result,
+            subnormal,
+            "f32::MIN_POSITIVE (smallest normal positive) is in [-1.0, 1.0] so must passthrough without flush-to-zero"
+        );
+    }
 }

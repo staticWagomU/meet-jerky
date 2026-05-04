@@ -21565,3 +21565,43 @@ test result: ok. 554 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-audio-utils-ieee754-tests-20260504-29-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-utils-ieee754-tests-20260504-29-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-29 Loop 2
+
+### 作業範囲
+- `src-tauri/src/audio_utils.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替で `audio_utils.rs` (54 行 / 既存 6 test は NaN/±Inf/clamp 軸のみ / IEEE 754 特殊値が未保護) を補強。型対称軸補強パターン (mjc-main-27 Loop 3 の i64::MAX/i64::MIN を f32 へ拡張) で 3 軸 application。
+- T1: sanitize_audio_sample_passes_through_negative_zero_preserving_bit_pattern (-0.0 軸 + bit pattern 保持)
+- T2: sanitize_audio_sample_clamps_f32_max_to_one_and_f32_min_finite_to_minus_one (型最大最小値 = 有限値の境界)
+- T3: sanitize_audio_sample_passes_through_subnormal_min_positive_without_flush_to_zero (subnormal 軸)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 557 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s`
+
+### 変更ファイル
+- src-tauri/src/audio_utils.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 557 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
