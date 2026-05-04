@@ -8,6 +8,11 @@ export interface AudioLevelPayload {
   level: number;
 }
 
+export interface AudioDropCountPayload {
+  source: "microphone" | "system_audio";
+  dropped: number;
+}
+
 export interface TranscriptSegment {
   text: string;
   startMs: number;

@@ -1,5 +1,23 @@
 ---
 
+## セッション: mjc-worker-audio-drop-frontend-listener
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-drop-frontend-listener
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src/types/index.ts (AudioDropCountPayload 追加) + src/utils/audioDropCountPayload.ts (新規) + src/routes/TranscriptView.tsx (listener + state 追加、UI 表示と reset は次ループ送り)
+- **指示内容**: frontend 側に `audio-drop-count` Tauri イベントの listener を最小スライスで追加。型ガード `isAudioDropCountPayload` を `audioLevelPayload.ts` と対称な構造で実装し、TranscriptView に `microphoneDropCountTotal` / `systemAudioDropCountTotal` 累積 state + useEffect listener を追加。UI 表示は次ループ送り。
+- **結果**: 成功
+- **変更ファイル**: 新規 1 (src/utils/audioDropCountPayload.ts) / 更新 2 (src/types/index.ts, src/routes/TranscriptView.tsx)
+- **検証結果**:
+  - npm run build (tsc + vite build): 成功 (型エラーなし、vite build 完走)
+  - cargo test -p meet-jerky --lib: **450 passed / 0 failed** (frontend 変更のみ、影響なし)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main-20260504-14) によるレビュー → コミット → 次ループで UI badge 表示と reset 戦略
+
+---
+
 ## セッション: mjc-worker-audio-event-extract
 
 - **開始日時 (JST)**: 2026-05-04

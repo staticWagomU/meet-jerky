@@ -39,6 +39,7 @@ import {
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 import { isAudioLevelPayload } from "../utils/audioLevelPayload";
+import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
 import {
   buildLiveCaptionStatusFromLabels,
   isExternalTransmissionLabel,
@@ -606,6 +607,10 @@ export function TranscriptView() {
   const [audioLevelListenerError, setAudioLevelListenerError] = useState<
     string | null
   >(null);
+  const [microphoneDropCountTotal, setMicrophoneDropCountTotal] = useState(0);
+  const [systemAudioDropCountTotal, setSystemAudioDropCountTotal] = useState(0);
+  const [audioDropCountListenerError, setAudioDropCountListenerError] =
+    useState<string | null>(null);
   const [systemAudioFormatWarning, setSystemAudioFormatWarning] = useState<
     string | null
   >(null);
@@ -797,6 +802,55 @@ export function TranscriptView() {
         });
     };
   }, []);
+
+  // Route audio-drop-count events by source (cumulative)
+  useEffect(() => {
+    let disposed = false;
+    const unlistenPromise = listen<unknown>("audio-drop-count", (event) => {
+      if (disposed) {
+        return;
+      }
+      const payload = event.payload;
+      if (!isAudioDropCountPayload(payload)) {
+        setAudioDropCountListenerError("音声 drop 通知の形式が不正です。");
+        return;
+      }
+      setAudioDropCountListenerError(null);
+      console.warn(
+        `[audio-drop-count] ${payload.source} で ${payload.dropped} sample 破棄 (mic_prev=${microphoneDropCountTotal}, sys_prev=${systemAudioDropCountTotal}, err_prev=${audioDropCountListenerError})`,
+      );
+      if (payload.source === "microphone") {
+        setMicrophoneDropCountTotal((prev) => prev + payload.dropped);
+      } else if (payload.source === "system_audio") {
+        setSystemAudioDropCountTotal((prev) => prev + payload.dropped);
+      }
+    })
+      .then((unlisten) => {
+        if (!disposed) {
+          setAudioDropCountListenerError(null);
+        }
+        return unlisten;
+      })
+      .catch((e) => {
+        if (!disposed) {
+          const msg = toErrorMessage(e);
+          console.error("音声 drop 監視の開始に失敗しました:", msg);
+          setAudioDropCountListenerError(
+            `音声 drop 監視の開始に失敗しました: ${msg}`,
+          );
+        }
+        return null;
+      });
+
+    return () => {
+      disposed = true;
+      unlistenPromise
+        .then((unlisten) => unlisten?.())
+        .catch((e) => {
+          console.error("音声 drop 監視の解除に失敗しました:", toErrorMessage(e));
+        });
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let disposed = false;
