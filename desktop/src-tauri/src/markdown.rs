@@ -273,4 +273,64 @@ mod tests {
         assert_eq!(super::inline_markdown_text("x \u{00A0}\u{3000}\ty"), "x y");
         assert_eq!(super::inline_markdown_text("\u{3000}\u{3000}\u{3000}"), "");
     }
+
+    #[test]
+    fn format_session_markdown_with_empty_title_in_meta_produces_header_with_double_space() {
+        let meta = SessionMeta {
+            title: String::new(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments: Vec<SessionSegment> = Vec::new();
+
+        let expected = "#  - 2026-04-17 14:30\n";
+        assert_eq!(
+            format_session_markdown(&meta, &segments),
+            expected,
+            "空 title でも `# ` + 空 + ` - ` + started_at の format を維持する passthrough 契約"
+        );
+    }
+
+    #[test]
+    fn format_session_markdown_with_empty_speaker_in_segment_preserves_segment_layout() {
+        let meta = SessionMeta {
+            title: "title".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments = vec![SessionSegment {
+            speaker: String::new(),
+            timestamp_display: "14:30:05".to_string(),
+            text: "hello".to_string(),
+        }];
+
+        let expected = "# title - 2026-04-17 14:30\n\n**[14:30:05] :** hello  ";
+        assert_eq!(
+            format_session_markdown(&meta, &segments),
+            expected,
+            "空 speaker でも `**[<ts>] :** <text>  ` の format を維持する passthrough 契約"
+        );
+    }
+
+    #[test]
+    fn format_session_markdown_with_empty_text_in_segment_preserves_trailing_two_spaces() {
+        let meta = SessionMeta {
+            title: "title".to_string(),
+            started_at_display: "2026-04-17 14:30".to_string(),
+        };
+        let segments = vec![SessionSegment {
+            speaker: "speaker".to_string(),
+            timestamp_display: "14:30:05".to_string(),
+            text: String::new(),
+        }];
+
+        let expected = "# title - 2026-04-17 14:30\n\n**[14:30:05] speaker:**   ";
+        assert_eq!(
+            format_session_markdown(&meta, &segments),
+            expected,
+            "空 text でも trailing 2 spaces (CommonMark hard break) を維持する passthrough 契約"
+        );
+        assert!(
+            format_session_markdown(&meta, &segments).ends_with("  "),
+            "空 text でも末尾 2 spaces を保持: hard break 規約の executable specification"
+        );
+    }
 }

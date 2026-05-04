@@ -21300,3 +21300,43 @@ test result: ok. 545 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-markdown-empty-string-passthrough-tests-20260504-28-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-markdown-empty-string-passthrough-tests-20260504-28-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-28 Loop 2
+
+### 作業範囲
+- `src-tauri/src/markdown.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替 (session_manager.rs → markdown.rs) で「test 密度の偏り是正」継続 + format_session_markdown の空文字 passthrough 契約 (3 つの主要 String フィールド: title / speaker / text) を 3 軸で CI 固定:
+- T1: format_session_markdown_with_empty_title_in_meta_produces_header_with_double_space
+- T2: format_session_markdown_with_empty_speaker_in_segment_preserves_segment_layout
+- T3: format_session_markdown_with_empty_text_in_segment_preserves_trailing_two_spaces
+
+### 結果
+- cargo fmt --check: 差分なし (出力なし = OK)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (Finished `dev` profile in 0.75s)
+- cargo test --lib -- --test-threads=1: `test result: ok. 548 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+
+### 変更ファイル
+- src-tauri/src/markdown.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 548 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
