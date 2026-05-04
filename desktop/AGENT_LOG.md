@@ -20491,3 +20491,110 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - 検証結果: cargo test --lib session_manager = 35 passed (32 → +3), cargo test --lib 全体 = **515 passed** (512 → +3, 0 failed), clippy -D warnings ゼロ, fmt 差分なし (1 往復修正後)
 - 依存追加: なし
 - 次アクション: メインへ報告 → メインが verify + commit
+
+---
+
+## [SESSION SUMMARY @ 2026-05-04 ~17:50 JST] mjc-main-20260504-24 状況メモ (3 ループ実績 + 後継ハンドオフ判断)
+
+### 本セッションの 3 ループ実績
+- Loop 1 (b1d4e95): test(session_manager): current_started_at_secs アクセサ境界 test 3 件 (lifecycle None / 値域 0 / 値域 u64::MAX) → 506 → 509 passed (+3)
+- Loop 2 (b11a73b): test(session_manager): SessionManager::finalize の ended_at 境界 test 3 件 (equality / ordering reversal / u64::MAX) → 509 → 512 passed (+3)
+- Loop 3 (18fab87): test(session_manager): SessionManager::append の境界 test 3 件 (offset_secs 左境界 0 / 右境界 u64::MAX / 文字列空) → 512 → 515 passed (+3)
+- 累積: cargo test 506 → 515 passed (+9 件、mjc-main-22 / mjc-main-23 と完全対称な「+9 件/セッション」を 3 セッション連続達成)
+
+### 確立パターンの application 継続 + 新規パターン
+
+#### 1. 「対称的補強の 3 軸構造」パターン (本セッション全 3 ループで application、4 連続セッション目)
+- Loop 1: lifecycle None / 値域左 0 / 値域右 u64::MAX (read accessor)
+- Loop 2: equality / ordering reversal / 値域右 u64::MAX (write finalize)
+- Loop 3: 値域左 0 / 値域右 u64::MAX / 文字列空 (write append + 文字列軸)
+- = mjc-main-22/23 で確立した「N 軸の独立変数を 3 件で全カバー」設計思想を session_manager.rs に拡張
+- Loop 1 → Loop 2 → Loop 3 で「read accessor → write finalize → write append」と production 経路 3 関数を順に補強する設計が完成
+
+#### 2. **新規パターン (本セッション確立)**: 「u64 フィールドの三角形状 truncation 防御」パターン
+- Loop 1 T3 (started_at u64::MAX) + Loop 2 T3 (ended_at u64::MAX) + Loop 3 T2 (offset_secs u64::MAX) で SessionManager 全 u64 フィールド (3 つ) の truncation 防御を 1 セッション内で完成
+- 同じ「u64::MAX の原値透過」契約を 3 つの異なるフィールドで反復することで「全ての u64 フィールドが原値透過」という型レベル契約を executable specification 化
+- application 候補: 他のモジュール (transcript_bridge.rs / transcription.rs) でも同様の u64 フィールド (clock_secs / observed_secs / session_started_at_secs) 群がある = 「型レベル truncation 防御の系統的補強」が application 可能
+
+#### 3. **新規パターン (本セッション確立)**: 「責務分離の executable specification 化」パターン
+- Loop 2 T2 (clock 逆転): SessionManager 層 (= 拒否しない) と Session 層 (= duration_secs 飽和) の責務分離を 1 test 内で同時 assert
+- Loop 3 T3 (空文字列): SessionManager 層 (= skip しない) と Session 層 (= passthrough) の責務分離を 2 層に渡って test で固定
+- 設計思想: 「層をまたぐリファクタ」で責務境界が崩れた瞬間に test が壊れて気づく装置を CI に埋め込む
+- application 候補: 他の wrapper パターン (tauri command → core impl, transcript_bridge → engine 等) にも application 可能
+
+#### 4. 「worker prompt で末尾追記を明示するパターン」(継続 application、4 連続セッション目)
+- 全 3 ループで「ファイル末尾追記必須 + 先頭は絶対に触らない + tail -10 で末尾確認」明示 → 事故ゼロ
+- mjc-main-21 (改善開始) → 22 (3 ループ事故ゼロ) → 23 (3 ループ事故ゼロ) → 24 (3 ループ事故ゼロ) で **4 連続セッション事故ゼロ**
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### session_manager.rs の test 件数密度向上完成
+- 既存 ~30 件 → 39 件 (+9 件)、SessionManager 層の主要 3 経路 (read accessor `current_started_at_secs` / write `finalize` / write `append`) 全ての契約を executable specification 化
+- 関数別の保護密度バランス改善 = 今後は別ファイルの保護密度を上げる時期 (M browser/meeting 検知系 / D transcription error path 残 / S settings)
+
+#### Session/SessionManager 2 層責務分離の test 化
+- Loop 2 T2 + Loop 3 T3 で 2 層責務分離を test で明示 = 将来「層を統合する」リファクタへの誤改修も検知可能
+- application 候補: tauri command (commands.rs) ↔ core impl (各種 service) の境界も同様の責務分離 test 化が可能
+
+#### コミット周期 ~12 分/loop の達成 (本セッション)
+- Loop 1 ~13 分 / Loop 2 ~12 分 / Loop 3 ~12 分、平均 ~12 分/loop
+- mjc-main-22/23 (~9 分/loop) よりやや遅め (worker 出力タイミングのばらつき) だが目標 15 分以内をクリア
+- 本セッションも AGENT_LOG.md 先頭追記事故ゼロ (worker prompt 改善継続 application)
+
+### 次ループ候補 (優先順位順、本セッションで未着手)
+
+#### 1. **M (推奨)**: browser/meeting 検知系 (browser_detection.rs / app_detection.rs / meeting_url_classifier.rs)
+- まずメイン側で `grep -n "fn " src-tauri/src/browser_detection.rs src-tauri/src/app_detection.rs src-tauri/src/meeting_url_classifier.rs | head -30` で関数 inventory 取得
+- 「対称的補強の 3 軸構造」パターンを「会議検知の信頼性」軸 (優先順位 #2) に application = 価値高
+- 本セッションで触れていない領域 = 累積 test 密度が偏っていない
+
+#### 2. D (継承). transcription.rs error path 残
+- `validate_stream_count_for_engine` の更なる境界補強 (既存 5 件、追加余地は限定的)
+- `transcription_error_payload_to_value` の境界補強 (cfg(test) ヘルパだが panic 経路含めて確認価値あり)
+
+#### 3. S (継承). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+- 統合候補: `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする (mjc-main-20 SUMMARY 既明示、未消化)
+
+#### 4. F-Loop6 (継承). タイマースレッド shutdown 対応 (規模 M, 価値中)
+
+#### 5. B 候補継続別 fn (推奨度低、価値小)
+- session_manager.rs の append/finalize/current_started_at_secs は本セッションで網羅 = 残るは start / start_with_output / discard / current_title / current_segment_count / is_active
+- ただし current_title/current_segment_count/is_active は cfg(test) で production 経路ではない = 価値が低い
+- start / start_with_output / discard は既存 test 密度高 = 拡充価値が低下傾向 = **別ファイル切り替え推奨**
+
+### 後継 mjc-main-20260504-25 への予防的ハンドオフ判断
+- 前 17 セッション (mjc-main-7〜23) と同じ 3 ループパターン継承で予測可能性最優先
+- context 推定 ~70-80% でハンドオフ余裕あり (3 ループ + worker 監視 + AGENT_LOG.md SUMMARY 編集を経過)
+- 推奨: **M (browser/meeting 検知系, 規模 S, 価値高)** = 別ファイル切り替え + 優先順位 #2 (会議検知の網羅性と信頼性) に直接寄与 + classify 系の境界 test は「対称的補強の 3 軸構造」パターン適用に最適
+- フォールバック候補: D (transcription.rs error path) / S (settings.rs リファクタ) / F-Loop6 (timer shutdown) / B 別 fn 拡張 (価値小)
+
+### コミット周期目標達成状況
+- 1 ループ目標 15 分以内
+- 本セッション実績: 平均 ~12 分/loop = 目標 15 分以内クリア
+- mjc-main-22/23 (各 ~9 分/loop) よりやや遅め = worker 出力タイミングのばらつきが原因
+
+### ユーザー直伝指示 (未消化): なし
+- watchdog 継続指示 2 回受領 (sleep 中の idle 判定) = 既に進行中の loop に支障なし
+
+### コンテキスト管理アクション: 予防的ハンドオフ実行 (mjc-main-20260504-24 → mjc-main-20260504-25)
+- **判断時刻 (JST)**: 2026-05-04 ~17:50 JST (推定)
+- **判断理由**: 3 ループ完了の良い区切り。前 17 セッション同型の 3 ループパターン。session_manager.rs の主要 3 経路全て補強完成 + 「u64 フィールド三角形状 truncation 防御」と「責務分離 executable specification 化」の 2 つの新規パターン確立。
+- **使用率 (推定)**: 約 70-80%
+- **引き継ぎ先**: `mjc-main-20260504-25`
+- **引き継ぎ prompt ファイル**: `docs/handoff/mjc-main-20260504-25.txt` (作成予定)
+- **後継起動コマンド**: `bash scripts/claude-agent-handoff-main.sh mjc-main-20260504-25 docs/handoff/mjc-main-20260504-25.txt`
+- **canonical 名移譲コマンド**: 後継から `bash scripts/agent-adopt-main.sh mjc-main-20260504-25 mjc-main`
+
+### 累積成果 (本セッション)
+- **テスト 506 → 515 passed** (+9 件、mjc-main-22 / mjc-main-23 と完全対称な「+9 件/セッション」を 3 セッション連続達成)
+- **コミット 3 件 (b1d4e95 / b11a73b / 18fab87) + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **session_manager.rs 主要 3 経路への補強完成** (`current_started_at_secs` / `finalize` / `append`)
+- **「対称的補強の 3 軸構造」パターン全 3 ループで application 確認** (4 連続セッション)
+- **「u64 フィールド三角形状 truncation 防御」パターン新規確立** (Loop 1 T3 + Loop 2 T3 + Loop 3 T2 で 1 セッション内完成)
+- **「責務分離の executable specification 化」パターン新規確立** (Loop 2 T2 + Loop 3 T3 で 2 層責務分離を test 化)
+- **worker prompt 末尾追記明示の継続適用** (4 連続セッション先頭追記事故ゼロ)
+- **累積 worker 完走 59/59** (100%)
+- **コミット周期 ~12 分/loop** (目標 15 分以内クリア)
+
+- 旧 mjc-main (= mjc-main-20260504-24) は本 SUMMARY を AGENT_LOG.md 末尾に残し終了 (作業を増やさない)
