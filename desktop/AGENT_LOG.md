@@ -20619,3 +20619,22 @@ B-Loop XS, Tidy First, 振る舞い不変 として以下を実施:
 - **残リスク**: なし (関数本体無変更、test 追加のみ)
 - **次アクション**: メイン側でレビュー → コミット
 ---
+
+## mjc-worker-teams-v2-meetingjoin-query-boundary-tests-20260504-25-2 (Loop 2)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-25 Loop 2
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/app_detection.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: Loop 1 の last test `classify_meeting_url_rejects_google_meet_code_path_with_long_third_segment` (l.2154-2161) の直後に、Teams `/v2?meetingjoin` query 経路の境界 test 3 件追加 (T1: 中間 param accept / T2: 重複 key accept / T3: value 部分なし reject)
+- **結果**: 全 test PASS (518 → 521 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/app_detection.rs` のみ
+- **検証結果**: cargo test 521 passed / clippy -D warnings 警告ゼロ / cargo fmt 差分なし / agent-verify 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: Loop 1 (Google Meet 桁契約 3 軸) と同じ「対称的補強の 3 軸構造」パターンを Teams `/v2` query 経路に application = 3 つの独立軸 (param 順序 / 重複 key / value 部分構造) を 1 軸ずつ別 test で保護
+- **設計判断 2**: 既存 test は meetingjoin 先頭 / 大小区別なし / value 違反 (false) のみカバー = 「中間位置」「重複 key」「value 部分なし」3 軸は完全未保護で相補的なカバー
+- **設計判断 3**: 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与継続 = Teams 公式 `/v2?meetingjoin=true` 経路の認識漏れ/偽認識を test で遮断する装置
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---

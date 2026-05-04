@@ -2159,4 +2159,37 @@ mod tests {
             "Google Meet path code は third segment 3 桁が必須 (現契約: has_ascii_lowercase_len(third, 3)) = 4 桁 (右境界外側) は reject される必要がある"
         );
     }
+
+    #[test]
+    fn classify_meeting_url_accepts_teams_v2_with_meetingjoin_true_in_middle_param_position() {
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/?context=secret&meetingjoin=true"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            }),
+            "Teams /v2 経路の query_has_param は & 区切りで全 param を走査する契約 (現契約: query.split('&').any(...)) = meetingjoin が 2 番目以降の位置にあっても accept される必要がある"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_accepts_teams_v2_with_duplicate_meetingjoin_keys_when_one_matches() {
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin=false&meetingjoin=true"),
+            Some(MeetingUrlClassification {
+                service: "Microsoft Teams".to_string(),
+                host: "teams.microsoft.com".to_string(),
+            }),
+            "Teams /v2 経路の query_has_param は重複 key の場合 1 つでもマッチで true を返す契約 (現契約: query.split('&').any(...)) = meetingjoin=false&meetingjoin=true で後者がマッチして accept される必要がある"
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_teams_v2_with_meetingjoin_key_only_no_equals() {
+        assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin"),
+            None,
+            "Teams /v2 経路の query_has_param は = が無い param を value=\"\" として扱う契約 (現契約: split_once('=').unwrap_or((param, \"\"))) = meetingjoin (= なし) は value=\"\" となり \"true\" と一致せず reject される必要がある"
+        );
+    }
 }
