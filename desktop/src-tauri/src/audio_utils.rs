@@ -14,6 +14,29 @@ pub fn sanitize_audio_sample(sample: f32) -> f32 {
     }
 }
 
+// ─────────────────────────────────────────────
+// 沈黙検知ユーティリティ (純粋関数)
+// ─────────────────────────────────────────────
+
+/// `samples` の RMS (Root Mean Square) を計算する。空 slice では 0.0 を返す。
+pub(crate) fn calculate_rms(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+    let sum_sq: f32 = samples.iter().map(|s| s * s).sum();
+    (sum_sq / samples.len() as f32).sqrt()
+}
+
+/// `buffer` の末尾 `lookback` サンプルの RMS が `threshold` 以下なら true を返す。
+/// `buffer.len() < lookback` の場合は判定不可とみなして false を返す (誤って早期 flush しない安全側)。
+pub(crate) fn is_tail_silent(buffer: &[f32], lookback: usize, threshold: f32) -> bool {
+    if buffer.len() < lookback {
+        return false;
+    }
+    let tail = &buffer[buffer.len() - lookback..];
+    calculate_rms(tail) <= threshold
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

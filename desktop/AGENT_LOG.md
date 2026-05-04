@@ -24422,3 +24422,19 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 残リスク: blacklist 漏れ候補 — `download`, `app`, `for-teams`, `developers` 等の marketing/product ページが将来追加された場合は別途対応が必要
 - 次アクション: メイン側 diff レビュー + commit
 - mjc-main-20260505-4 Loop 7
+
+---
+## 2026-05-05 02:37 JST mjc-w-rms-tail
+- 担当セッション: mjc-w-rms-tail (作業担当, sonnet)
+- 役割: Phase 2-A 最小スライス = calculate_rms / is_tail_silent 純粋関数を transcription.rs から audio_utils.rs に移動
+- 作業範囲: src-tauri/src/audio_utils.rs / src-tauri/src/transcription.rs / AGENT_LOG.md のみ
+- 結果: 成功 (振る舞い完全不変)
+- 変更ファイル:
+  - src-tauri/src/audio_utils.rs (+22 行): 沈黙検知セクションコメント + pub(crate) fn calculate_rms + pub(crate) fn is_tail_silent を sanitize_audio_sample 直後・mod tests 直前に追加
+  - src-tauri/src/transcription.rs (-22 行 + use +2 行 net): 旧 fn calculate_rms / fn is_tail_silent / section コメント削除、トップレベルに use crate::audio_utils::is_tail_silent; 追加、mod tests 内に use crate::audio_utils::calculate_rms; 追加 (calculate_rms はテスト専用のため配置分割)
+- 検証結果: cargo test --lib 674 passed (件数不変) / cargo clippy -- -D warnings 警告ゼロ / cargo fmt --check OK
+- 依存追加: なし
+- 補足: clippy が calculate_rms の unused import 警告を出したため、トップレベル use を is_tail_silent のみに絞り、calculate_rms は mod tests 内に移動した (calculate_rms は非テストコードから直接呼ばれず、is_tail_silent のみが line 184 で非テスト呼び出しを持つ)
+- 残リスク: なし (純粋関数移動のみ、外部 API 変更なし)
+- 次アクション: メイン側 diff レビュー + commit
+- mjc-main-20260505-4 Loop 8

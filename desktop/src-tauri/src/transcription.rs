@@ -11,6 +11,8 @@ use rubato::{
 use tauri::Emitter;
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
+use crate::audio_utils::is_tail_silent;
+
 // ─────────────────────────────────────────────
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
 // ─────────────────────────────────────────────
@@ -295,29 +297,6 @@ impl TranscriptionStream for WhisperStream {
 
         Ok(std::mem::take(&mut self.pending_segments))
     }
-}
-
-// ─────────────────────────────────────────────
-// 沈黙検知ユーティリティ (純粋関数)
-// ─────────────────────────────────────────────
-
-/// `samples` の RMS (Root Mean Square) を計算する。空 slice では 0.0 を返す。
-fn calculate_rms(samples: &[f32]) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
-    let sum_sq: f32 = samples.iter().map(|s| s * s).sum();
-    (sum_sq / samples.len() as f32).sqrt()
-}
-
-/// `buffer` の末尾 `lookback` サンプルの RMS が `threshold` 以下なら true を返す。
-/// `buffer.len() < lookback` の場合は判定不可とみなして false を返す (誤って早期 flush しない安全側)。
-fn is_tail_silent(buffer: &[f32], lookback: usize, threshold: f32) -> bool {
-    if buffer.len() < lookback {
-        return false;
-    }
-    let tail = &buffer[buffer.len() - lookback..];
-    calculate_rms(tail) <= threshold
 }
 
 // ─────────────────────────────────────────────
@@ -1167,6 +1146,7 @@ fn emit_segments(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::audio_utils::calculate_rms;
 
     fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
         WhisperStream {
