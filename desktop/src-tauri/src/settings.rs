@@ -617,4 +617,31 @@ mod tests {
             "i32::MAX (型上限) も fail-safe で 'denied' に倒す現契約。型境界で panic/overflow しない安全性を CI 固定。"
         );
     }
+
+    #[test]
+    fn from_legacy_str_returns_whisper_for_empty_string_as_fail_safe() {
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str(""),
+            TranscriptionEngineType::Whisper,
+            "空文字は catch-all で Whisper に倒される fail-safe 契約: 設定欠損時のデフォルトをローカル Whisper (課金なし) に固定"
+        );
+    }
+
+    #[test]
+    fn from_legacy_str_returns_whisper_for_uppercase_known_value_as_fail_safe() {
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str("WHISPER"),
+            TranscriptionEngineType::Whisper,
+            "known 値 \"whisper\" の大文字版 \"WHISPER\" は catch-all で Whisper に倒される: case sensitivity 設計 (lowercase のみ accept) を CI 固定 = 「将来 case-insensitive 化する誤改修」を遮断する装置"
+        );
+    }
+
+    #[test]
+    fn from_legacy_str_returns_whisper_for_known_value_with_whitespace_padding_as_fail_safe() {
+        assert_eq!(
+            TranscriptionEngineType::from_legacy_str(" whisper "),
+            TranscriptionEngineType::Whisper,
+            "known 値 \"whisper\" の前後に空白を含む形は catch-all で Whisper に倒される: trim しない設計を CI 固定 = 「将来 trim 処理を追加する誤改修」を遮断する装置"
+        );
+    }
 }

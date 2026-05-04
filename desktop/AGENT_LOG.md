@@ -21044,3 +21044,43 @@ test result: ok. 536 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fi
 ### 次アクション
 メインへ報告、commit 待ち
 ---
+## mjc-worker-from-legacy-str-fail-safe-tests-20260504-27-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-from-legacy-str-fail-safe-tests-20260504-27-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-27 Loop 2
+
+### 作業範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+S 候補 (settings.rs / fail-safe semantic の executable specification 化) として、`TranscriptionEngineType::from_legacy_str` の `_ => Self::Whisper` fail-safe 契約を未保護だった 3 軸で CI 固定する test を追加:
+- T1: 空文字 → Whisper fail-safe (入力空間最左境界)
+- T2: "WHISPER" 大文字混在 → Whisper fail-safe (case sensitivity 設計の固定)
+- T3: " whisper " 空白パディング → Whisper fail-safe (trim 不在の固定)
+
+### 結果
+- cargo fmt --check: 差分なし (出力なし = OK)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (Finished `dev` profile in 0.72s)
+- cargo test --lib -- --test-threads=1: `test result: ok. 539 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s`
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 539 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
