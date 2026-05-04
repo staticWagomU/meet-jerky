@@ -1886,6 +1886,38 @@ mod tests {
     }
 
     #[test]
+    fn parse_throttle_key_to_display_name_returns_service_for_browser_key_with_colon_in_host() {
+        // 契約: host に ":" (ポート番号等) が含まれても splitn(3, ':') で parts[1] = service が正しく取れる
+        assert_eq!(
+            parse_throttle_key_to_display_name(
+                "browser:com.apple.Safari:Google Meet:meet.google.com:8443"
+            ),
+            Some("Google Meet".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_none_for_browser_prefix_only() {
+        // 契約: "browser:" (prefix のみ、残り空) は splitn で 1 要素のみ → None
+        assert_eq!(parse_throttle_key_to_display_name("browser:"), None);
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_none_for_window_title_prefix_only() {
+        // 契約: "window-title:" (prefix のみ、残り空) は splitn で 1 要素のみ → None
+        assert_eq!(parse_throttle_key_to_display_name("window-title:"), None);
+    }
+
+    #[test]
+    fn parse_throttle_key_to_display_name_returns_none_for_browser_key_with_only_bundle_id() {
+        // 契約: "browser:<bundle_id>" (service 欠落) は splitn で 1 要素のみ → None
+        assert_eq!(
+            parse_throttle_key_to_display_name("browser:com.apple.Safari"),
+            None
+        );
+    }
+
+    #[test]
     fn classify_meeting_url_rejects_empty_and_whitespace_only() {
         assert_eq!(classify_meeting_url(""), None);
         assert_eq!(classify_meeting_url("   "), None);
