@@ -765,6 +765,83 @@ mod ws_task {
                 );
             }
         }
+
+        #[test]
+        fn is_scribe_error_event_returns_true_for_minimal_overlap_scribe_error() {
+            // prefix と suffix が共有 _ で接する最短形も true になる現契約を固定。
+            assert!(super::is_scribe_error_event("scribe_error"));
+            assert!(super::is_scribe_error_event("scribe_x_error"));
+        }
+
+        #[test]
+        fn is_scribe_error_event_returns_true_for_zero_length_middle_scribe_double_underscore_error(
+        ) {
+            // "scribe__error" は独立した _ 2 個で && 最小条件を真に満たす。中間 0 長も true の boundary を固定。
+            assert!(super::is_scribe_error_event("scribe__error"));
+            assert!(super::is_scribe_error_event("scribe_a_error"));
+            assert!(!super::is_scribe_error_event("scribe"));
+            assert!(!super::is_scribe_error_event("_error"));
+        }
+
+        #[test]
+        fn extract_error_message_falls_back_to_priority2_when_priority1_message_is_non_string() {
+            // priority1 (message) が非文字列なら or_else で priority2 (error string) へ fallback する現契約を固定。
+            let value = serde_json::json!({ "message": null, "error": "fallback string" });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("fallback string".to_string())
+            );
+
+            let value = serde_json::json!({ "message": 123, "error": "from-error" });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("from-error".to_string())
+            );
+
+            let value = serde_json::json!({ "message": [], "error": "array-message-skip" });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("array-message-skip".to_string())
+            );
+        }
+
+        #[test]
+        fn extract_error_message_falls_back_to_priority3_when_priority2_error_is_non_string() {
+            // priority2 (error) が object/null なら priority3 (error.message) へ fallback する現契約を固定。
+            let value = serde_json::json!({ "error": { "message": "deep nested" } });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("deep nested".to_string())
+            );
+
+            let value = serde_json::json!({
+                "message": null,
+                "error": { "message": "deep with priority1 null" }
+            });
+            assert_eq!(
+                super::extract_error_message(&value),
+                Some("deep with priority1 null".to_string())
+            );
+
+            let value = serde_json::json!({ "error": null });
+            assert_eq!(super::extract_error_message(&value), None);
+        }
+
+        #[test]
+        fn extract_error_message_returns_none_when_all_priorities_yield_non_string() {
+            // 全 priority が非文字列な 4 シナリオで終端 None 返却を固定。
+            let value = serde_json::json!({ "message": null, "error": null });
+            assert_eq!(super::extract_error_message(&value), None);
+
+            let value = serde_json::json!({ "message": [], "error": {} });
+            assert_eq!(super::extract_error_message(&value), None);
+
+            let value = serde_json::json!({ "error": { "message": null } });
+            assert_eq!(super::extract_error_message(&value), None);
+
+            let value = serde_json::json!({ "message": 1.5, "error": [1, 2], "extra": "noise" });
+            assert_eq!(super::extract_error_message(&value), None);
+        }
     }
 }
 

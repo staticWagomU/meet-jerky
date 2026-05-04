@@ -17378,3 +17378,47 @@ normalize_speaker の Unicode whitespace 境界を 5 件で固定 (U+3000 trim /
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+### elevenlabs_realtime.rs `is_scribe_error_event` の boundary jets + `extract_error_message` の non-string fallback chain 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-elevenlabs-realtime-boundary-tests-20260504-9-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task::pending_timeout_tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+is_scribe_error_event の boundary jets ("scribe_error" 最短 / "scribe__error" 独立 _ / 短い中間) と extract_error_message の non-string fallback chain を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | is_scribe_error_event_returns_true_for_minimal_overlap_scribe_error | "scribe_error" (中間 0 長) / "scribe_x_error" (中間 1 文字) で true |
+| T2 | is_scribe_error_event_returns_true_for_zero_length_middle_scribe_double_underscore_error | "scribe__error" / "scribe_a_error" で true、"scribe" / "_error" 単体で false |
+| T3 | extract_error_message_falls_back_to_priority2_when_priority1_message_is_non_string | priority1 が null/number/array で priority2 string fallback (3 シナリオ) |
+| T4 | extract_error_message_falls_back_to_priority3_when_priority2_error_is_non_string | priority2 が object で priority3 nested string fallback、null + nothing で None |
+| T5 | extract_error_message_returns_none_when_all_priorities_yield_non_string | 全 priority が non-string な 4 シナリオで終端 None |
+
+#### 不変条件 / 設計意図
+- T1+T2 は && 連接の最小条件 boundary を独立に網羅、starts_with + ends_with の overlap 検出なし契約を固定。
+- T3+T4+T5 は or_else fallback chain が 1 階層ずつ as_str() で判定する現契約を 3 priority × 各 non-string パターンで網羅。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 380 → 385 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 385
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 super::* パターン踏襲)
+
+#### 残リスク
+- T1/T2 の中間 0 長 / 1 文字許容契約は将来「中間に意味のある event 名要求」防御強化を入れたら test 修正が必要 (現契約を意図的に固定)。
+- T3/T4/T5 の non-string fallback 契約は将来 priority chain を変更したら test 修正が必要。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
