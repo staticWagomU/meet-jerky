@@ -17093,3 +17093,51 @@ read_f32_ne の bit-pattern 読み取り (zero / one point zero round-trip / NaN
 
 #### 次アクション
 なし (このワーカーの担当作業完了)
+
+---
+
+### transcription.rs `validate_stream_count_for_engine` の boundary + エラー文言完全一致 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~13:00 JST (実時刻)
+- **担当セッション**: `mjc-worker-validate-stream-count-boundary-tests-20260504-8-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcription.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+クラッシュ防止安全弁 `validate_stream_count_for_engine` のエラー文言完全一致 (T1/T2) と boundary (T3 usize::MAX / T4 stream=0 / T5 他 engine の 0 と usize::MAX) を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | validate_stream_count_for_engine_apple_speech_rejects_two_with_exact_error_message | Apple Speech + 2 streams のエラー文言完全一致 |
+| T2 | validate_stream_count_for_engine_apple_speech_rejects_three_streams_with_same_error_message | Apple Speech + 3 streams で T1 と同じエラー文言 (stream_count > 1 の boundary 挙動) |
+| T3 | validate_stream_count_for_engine_apple_speech_rejects_usize_max_streams | Apple Speech + usize::MAX で reject (overflow ガードなしの現契約) |
+| T4 | validate_stream_count_for_engine_apple_speech_allows_zero_streams | Apple Speech + 0 streams で Ok (`stream_count > 1` 条件不成立 boundary 下限) |
+| T5 | validate_stream_count_for_engine_other_engines_allow_zero_and_usize_max_streams | Whisper / OpenAIRealtime / ElevenLabsRealtime × 0 と usize::MAX で Ok (3 × 2 = 6 assertion) |
+
+#### 不変条件 / 設計意図
+- T1+T2 はクラッシュ防止 UI 文言の完全一致契約 + boundary 上 (2/3) で同じエラーを返す挙動を固定。
+- T3 は usize::MAX boundary で overflow なく reject される現契約を保護。
+- T4 は boundary 下限 (0 streams) が Ok を返す現契約を保護 (validation fn の責務は `> 1` のみ)。
+- T5 は「Apple Speech 以外は無条件 Ok」を 3 engine × 2 boundary 値で網羅。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 365 → 370 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 370
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし
+
+#### 残リスク
+- T1/T2 のエラー文言完全一致は将来 UI 文言を変更したら test 修正が必要 (UI 文言契約として意図的)。
+- T4/T5 の 0 streams Ok 契約は将来防御強化したら test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)

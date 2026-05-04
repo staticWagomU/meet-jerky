@@ -1952,4 +1952,74 @@ mod tests {
         let v = transcription_error_payload_to_value(&payload);
         assert_eq!(v.get("error").and_then(|x| x.as_str()), Some(""));
     }
+
+    // --- validate_stream_count_for_engine boundary + 文言完全一致 ---
+
+    #[test]
+    fn validate_stream_count_for_engine_apple_speech_rejects_two_with_exact_error_message() {
+        // 既存テストは contains 部分一致のみ。完全一致で UI 文言契約を固定する
+        let err = validate_stream_count_for_engine(
+            &crate::settings::TranscriptionEngineType::AppleSpeech,
+            2,
+        )
+        .unwrap_err();
+        assert_eq!(
+            err,
+            "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。",
+            "クラッシュ防止の UI 文言を完全一致で固定 (UI/log 文言契約)"
+        );
+    }
+
+    #[test]
+    fn validate_stream_count_for_engine_apple_speech_rejects_three_streams_with_same_error_message()
+    {
+        // stream_count=3 でも 2 と同じエラー文言で reject される (`stream_count > 1` の boundary 挙動)
+        let err = validate_stream_count_for_engine(
+            &crate::settings::TranscriptionEngineType::AppleSpeech,
+            3,
+        )
+        .unwrap_err();
+        assert_eq!(
+            err,
+            "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。",
+            "stream_count=3 でも 2 と同じエラー文言で reject される (`stream_count > 1` の boundary 挙動)"
+        );
+    }
+
+    #[test]
+    fn validate_stream_count_for_engine_apple_speech_rejects_usize_max_streams() {
+        // usize::MAX boundary でも overflow なく `stream_count > 1` 条件が成立し reject される現契約
+        let err = validate_stream_count_for_engine(
+            &crate::settings::TranscriptionEngineType::AppleSpeech,
+            usize::MAX,
+        )
+        .unwrap_err();
+        assert!(
+            err.contains("Apple SpeechAnalyzer"),
+            "usize::MAX boundary でも reject される (overflow ガードなしの現契約)"
+        );
+    }
+
+    #[test]
+    fn validate_stream_count_for_engine_apple_speech_allows_zero_streams() {
+        // boundary 下限 (0 streams) は `> 1` 条件不成立で Apple Speech でも Ok を返す現契約
+        // 既存テストは stream_count=1。0 は boundary の反対側
+        validate_stream_count_for_engine(&crate::settings::TranscriptionEngineType::AppleSpeech, 0)
+            .expect("stream_count=0 は `> 1` 条件不成立で Apple Speech でも Ok を返す現契約");
+    }
+
+    #[test]
+    fn validate_stream_count_for_engine_other_engines_allow_zero_and_usize_max_streams() {
+        // 既存テストは stream_count=2 のみ。0 と usize::MAX boundary を 3 engine × 2 値で固定
+        for engine in [
+            crate::settings::TranscriptionEngineType::Whisper,
+            crate::settings::TranscriptionEngineType::OpenAIRealtime,
+            crate::settings::TranscriptionEngineType::ElevenLabsRealtime,
+        ] {
+            validate_stream_count_for_engine(&engine, 0)
+                .expect("Apple Speech 以外は 0 streams でも Ok を返す現契約");
+            validate_stream_count_for_engine(&engine, usize::MAX)
+                .expect("Apple Speech 以外は usize::MAX streams でも Ok を返す現契約");
+        }
+    }
 }
