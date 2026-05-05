@@ -5,6 +5,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ModelInfo } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
+  getModelDisplayName,
+  sanitizeProgress,
+} from "../utils/modelSelectorHelpers";
+import {
   isDownloadErrorPayload,
   isDownloadProgressPayload,
 } from "../utils/modelDownloadPayload";
@@ -13,23 +17,6 @@ interface ModelSelectorProps {
   selectedModel: string;
   onSelectModel: (name: string) => void;
   disabled: boolean;
-}
-
-function sanitizeProgress(progress: number): number {
-  if (!Number.isFinite(progress)) {
-    return 0;
-  }
-  return Math.max(0, Math.min(1, progress));
-}
-
-function getModelDisplayName(
-  models: ModelInfo[] | undefined,
-  modelName: string | null,
-): string | null {
-  if (!modelName) {
-    return null;
-  }
-  return models?.find((model) => model.name === modelName)?.displayName ?? modelName;
 }
 
 export function ModelSelector({
