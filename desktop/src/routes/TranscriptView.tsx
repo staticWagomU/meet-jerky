@@ -38,6 +38,13 @@ import {
   hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  formatOperationError,
+  getFileName,
+  getCompactSessionTitle,
+  getRecentSessionMeta,
+  formatElapsedTime,
+} from "../utils/transcriptViewFormatters";
 import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
 import {
@@ -69,38 +76,6 @@ const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 type SavedFileAction = "open" | "reveal" | null;
-
-function formatOperationError(prefix: string, e: unknown): string {
-  return `${prefix} ${toErrorMessage(e)}`;
-}
-
-function getFileName(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function getCompactSessionTitle(title: string): string {
-  const displayTitle = title
-    .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
-    .trim();
-  return displayTitle || "無題の会議";
-}
-
-function getRecentSessionMeta(startedAtSecs: number): string {
-  const startedAtMs = startedAtSecs * 1000;
-  if (!Number.isFinite(startedAtMs)) {
-    return "日時不明";
-  }
-  const startedAtDate = new Date(startedAtMs);
-  if (Number.isNaN(startedAtDate.getTime())) {
-    return "日時不明";
-  }
-  return new Intl.DateTimeFormat("ja-JP", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(startedAtDate);
-}
 
 function getPermissionStatusLabel(
   status: string | undefined,
@@ -150,18 +125,6 @@ async function stopTranscriptionFromUiState(): Promise<
     }
     throw e;
   }
-}
-
-/** 経過時間をフォーマットする */
-function formatElapsedTime(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function getTranscriptionSourceStatus(
