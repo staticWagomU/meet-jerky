@@ -33246,3 +33246,15 @@ commit: 80f5a2a docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-65 Loop 129 / 2026-05-06]
+worker: mjc-worker-loop129-track-aria-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (-7 行 = 2 関数削除 + import 1 行追加 = 実質 -6 行) + src/utils/trackStatusAriaLabels.ts (新規 ~12 行 = import 3 行 + export 2 関数)
+内容: TranscriptView.tsx L398-404 の getMicTrackStatusAriaLabel + getSystemAudioTrackStatusAriaLabel を新 file utils/trackStatusAriaLabels.ts に抽出。frontend 軸 9 件目 = 純粋関数機能分離軸 frontend 版 6 件目 = scope 28 軸目開拓 = 大型 frontend file 責務分離 41 file 目 = R6 段階的分割 3 件目 (Loop 125 audio level helpers + Loop 127 permission status helpers の続編)。callsite 6 件 (L1589 + L1590 + L2064 + L2065 + L2083 + L2086) は import 追加のみで参照解決。alternation pattern 21 連続成功維持 (K(128) → frontend(129))。メイン批判判断 = 既存 utils/audioTrackLabels.ts (constants tier = pure export const) との責務階層精査で **異階層 = 新 file 作成軸採用** = Loop 119/121/123/125/127 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は audioTrackLabels.ts から SELF/OTHER_TRACK_DEVICE_LABEL を import = 2 件目の utils 内 cross-import paradigm。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/trackStatusAriaLabels.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: ba79c25 refactor(frontend): TranscriptView の track ARIA helpers を utils/trackStatusAriaLabels.ts に抽出
+依存関係追加: なし (audioTrackLabels.ts への内部 import のみ)
+失敗理由: なし
+次アクション: メイン側で SESSION SUMMARY 末尾追記 chore commit を予定
+
+---
