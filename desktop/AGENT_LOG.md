@@ -33130,3 +33130,15 @@ paradigm 多様化:
 - app_detection.rs (2579 行 Loop 121 後) 残: 純粋関数候補ほぼなし = handle_detection / macos module 等の core logic のみ (大型 rust file 責務分離 paradigm の本体機能領域到達)
 
 ---
+[mjc-main-20260505-63 Loop 123 / 2026-05-06]
+worker: mjc-worker-loop123-app-detection-macos-extract (作業)
+範囲: src-tauri/src/app_detection.rs (-121 行 = section comment + mod macos 全体削除 + visibility 修正 2 箇所 + caller 修正) + src-tauri/src/app_detection_macos.rs (新規 121 行 file レベル #![cfg(target_os = "macos")] + use + extern "C" block + 2 callback fn + pub(crate) fn start_detection) + src-tauri/src/lib.rs (+2 行 #[cfg(target_os = "macos")] + mod 登録 alphabetical 挿入)
+内容: app_detection.rs L410-L525 の `#[cfg(target_os = "macos")] mod macos { ... }` (~115 行) を新 file app_detection_macos.rs に inline module 全体抽出。Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目 = scope 25 軸目開拓 = 大型 rust file 責務分離 38 file 目。handle_detection (L163) と handle_browser_url_detection (L285) を pub(crate) 化 (新 file から crate::app_detection::{...} で参照するため)。WATCHED_BUNDLE_IDS は既に pub(crate)。caller (L147) は crate::app_detection_macos::start_detection() に置換。app_detection.rs は 2579 → 2458 行。alternation pattern 15 連続成功維持 (K(122) → rust(123))。メイン批判判断 = handoff 副推奨候補 R5 (inactive_decision / notification 統合) を責務階層精査で却下 (state/AppHandle 依存層 ≠ 純粋関数層 = 既に分離済) + 自律発見「mod macos 抽出」採用 = 連続 61 セッション目達成。Loop 119/121 教訓 (paradigm 反復 < 責務階層精査) を強く継承。
+変更ファイル: src-tauri/src/app_detection.rs, src-tauri/src/app_detection_macos.rs, src-tauri/src/lib.rs
+検証: cargo fmt --check OK, cargo clippy --lib --tests -- -D warnings 警告ゼロ, cargo test --lib 704 件 passed (件数完全不変), cargo build --lib OK
+commit: 5c9d9d1 refactor(rust): app_detection の macOS FFI bridge mod を app_detection_macos.rs に inline module 全体抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
