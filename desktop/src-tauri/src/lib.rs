@@ -9,6 +9,8 @@ mod app_detection_webex;
 mod app_detection_whereby;
 mod app_detection_zoom;
 mod apple_speech;
+#[cfg(target_os = "macos")]
+mod apple_speech_macos;
 mod audio;
 mod audio_event;
 mod audio_sample_helpers;
