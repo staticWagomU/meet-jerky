@@ -33440,3 +33440,15 @@ commit: 2108ac8 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-68 Loop 139 / 2026-05-06]
+worker: mjc-worker-loop139-external-api-key-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 3 件削除 + import 追加) + src/utils/externalApiKeyHelpers.ts (新規 ~45 行 = export 3 関数, import なし)
+内容: TranscriptView.tsx L291-L332 の getExternalApiKeyStatusLabel + getExternalApiKeyStatusPillClass + getExternalApiKeyStatusAriaLabel を新 file utils/externalApiKeyHelpers.ts に抽出。frontend 軸 14 件目 = 純粋関数機能分離軸 frontend 版 11 件目 = scope 33 軸目開拓 = 大型 frontend file 責務分離 46 file 目 = R6 段階的分割 8 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission + Loop 135 Audio Source + Loop 137 Engine Status の続編)。callsite 3 件 (L1381 + L1393 + L2016) は import 追加のみで参照解決。alternation pattern 31 連続維持 (K(138) → frontend(139))。メイン批判判断 = 既存 transcriptionEngineHelpers.ts (engine 機能特性 tier) + engineStatusHelpers.ts (engine status display tier) との責務階層精査で **異 entity 判定** (本新 file = engine の使用条件 = External API key 登録状態 display tier) → 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135/137 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は import なし (全て primitives 引数) = **utils 内 cross-import paradigm 4 件目 (audioSourceHelpers.ts) で打ち止め継続**。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/externalApiKeyHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: 9861ef2 refactor(frontend): TranscriptView の External API Key 系 helpers を utils/externalApiKeyHelpers.ts に抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
