@@ -32498,3 +32498,14 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+[mjc-main-20260505-55 Loop 107 / 2026-05-05]
+worker: mjc-worker-loop107-transcript-view-formatters-extract (作業)
+範囲: src/routes/TranscriptView.tsx (純粋関数 helpers 5 件削除 + import 1 行追加, ~44 行削減) + src/utils/transcriptViewFormatters.ts (新規 ~52 行)
+内容: TranscriptView.tsx L73-165 の純粋表示文字列フォーマット helpers (formatOperationError + getFileName + getCompactSessionTitle + getRecentSessionMeta + formatElapsedTime) を新 module utils/transcriptViewFormatters.ts に抽出。caller (同 file 内 5 関数 = 計 8 callers) は import 1 行追加 + 既存呼び出しは無変更。toErrorMessage の import は TranscriptView.tsx に残置 (他で使用)。大型 frontend file 責務分離 29 file 目 = frontend 軸 17 軸目開拓 (本セッション series 初の frontend 直接抽出 = 大きな paradigm pivot = K 軸 (Loop 106) からの完璧 pivot 達成) = 純粋関数機能分離軸 frontend 版 paradigm 確立。TranscriptView.tsx は 2494 → ~2450 行 (~1.8% 削減)。timeFormat.ts (既存 formatSegmentTimestamp) との関係は将来 loop で整理予定 (本 Loop では SKIP)。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)。npm run build 全項目 OK = tsc 型チェック OK + vite build OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 2689681 refactor(frontend): 純粋表示フォーマット helpers を utils/transcriptViewFormatters.ts に抽出
+AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 17 軸目開拓)
+
+---
