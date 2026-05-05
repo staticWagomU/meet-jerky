@@ -22,6 +22,18 @@ pub fn sanitize_audio_sample(sample: f32) -> f32 {
 // 沈黙検知ユーティリティ (純粋関数)
 // ─────────────────────────────────────────────
 
+use crate::transcription::WHISPER_SAMPLE_RATE;
+
+/// 早期 flush を許可する最小チャンク長 (1 秒 @ 16kHz)。これ未満では Whisper の精度が落ちるため flush しない。
+pub(crate) const MIN_FLUSH_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize; // 16000
+
+/// 末尾の沈黙判定に使うウィンドウ長 (0.5 秒 @ 16kHz)。
+pub(crate) const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 2; // 8000
+
+/// 沈黙とみなす RMS 閾値 (-40dBFS 相当 ≈ 0.01)。実機の背景ノイズで再調整が必要。
+/// 調査担当推奨の -60dBFS (= 0.001) は会議室背景ノイズより低く誤判定リスクが大きいため、より安全側を選択。
+pub(crate) const SILENCE_THRESHOLD_RMS: f32 = 0.01;
+
 /// `samples` の RMS (Root Mean Square) を計算する。空 slice では 0.0 を返す。
 pub(crate) fn calculate_rms(samples: &[f32]) -> f32 {
     if samples.is_empty() {
@@ -252,9 +264,7 @@ mod tests {
     // 沈黙検知ロジック テスト (transcription.rs から移動 = locality 回復、Loop 42)
     // ─────────────────────────────────────────
 
-    use crate::transcription::{
-        MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS,
-    };
+    use super::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS};
 
     #[test]
     fn test_calculate_rms_empty_slice_returns_zero() {

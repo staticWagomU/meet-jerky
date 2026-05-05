@@ -39,16 +39,6 @@ pub(crate) const CHUNK_DURATION_SECS: f64 = 5.0;
 /// 16kHz での5秒分のサンプル数
 pub(crate) const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
 
-/// 早期 flush を許可する最小チャンク長 (1 秒 @ 16kHz)。これ未満では Whisper の精度が落ちるため flush しない。
-pub(crate) const MIN_FLUSH_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize; // 16000
-
-/// 末尾の沈黙判定に使うウィンドウ長 (0.5 秒 @ 16kHz)。
-pub(crate) const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 2; // 8000
-
-/// 沈黙とみなす RMS 閾値 (-40dBFS 相当 ≈ 0.01)。実機の背景ノイズで再調整が必要。
-/// 調査担当推奨の -60dBFS (= 0.001) は会議室背景ノイズより低く誤判定リスクが大きいため、より安全側を選択。
-pub(crate) const SILENCE_THRESHOLD_RMS: f32 = 0.01;
-
 // ─────────────────────────────────────────────
 // TranscriptionLoopConfig (transcription_worker_loop.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
