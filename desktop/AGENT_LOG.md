@@ -28906,3 +28906,44 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - **handoff 候補 V/W 完了** = 「Phase 6 完全終了」記念の実装ループは終了 = 後続は通常の自律改善ループへ復帰
 
 ---
+[mjc-main-20260505-32 Loop 64 / 2026-05-05 ~JST]
+
+## What
+- app_detection.rs 本体から URL helper 関数 2 件を新規ファイル app_detection_url_helpers.rs に抽出
+  - `pub(crate) fn is_valid_dns_label` (L714-727, 14 行) = RFC 1035/1123 DNS label 妥当性
+  - `pub(crate) fn has_single_non_empty_segment` (L759-762, 4 行) = path segment 単一性
+- lib.rs に `mod app_detection_url_helpers;` 追加 (アルファベット順維持 = teams と webex の間)
+- 5 service module (goto/teams/webex/whereby/zoom) + app_detection.rs 本体の use 文書き換え (6 件)
+  - app_detection_goto.rs L1: `app_detection::` → `app_detection_url_helpers::`
+  - app_detection_teams.rs L5: `app_detection::` → `app_detection_url_helpers::`
+  - app_detection_webex.rs L1-3: 3 関数 combined import を `app_detection::query_has_non_empty_param` + `app_detection_url_helpers::{has_single_non_empty_segment, is_valid_dns_label}` に分割
+  - app_detection_whereby.rs L3: `app_detection::` → `app_detection_url_helpers::`
+  - app_detection_zoom.rs L1: `app_detection::` → `app_detection_url_helpers::`
+  - app_detection.rs top-level: `use crate::app_detection_url_helpers::has_single_non_empty_segment;` 追加 (is_google_meet_url L734 で使用)
+- tests は classify_meeting_url を主語にしているため app_detection.rs 残置 (純粋ロジック抽出 pattern)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (リポジトリ最大級ファイル app_detection.rs 3109 行 → 段階的責務分離で理解負荷低減)
+- locality 集約 = 5 service 別 module は本体ファイルから独立 = helper file への直接依存に純化
+- transcription_types.rs Phase 1 (mjc-main-20260505-3) precedent 展開 = 60 セッションで実証された refactor pattern を別ファイルに展開
+- variety pivot = 「struct/const + import refactor 軸 (transcription.rs scope = 完全消滅)」から「app_detection scope」への自然 pivot = 新 file scope = variety 規則準拠
+- メイン批判判断 連続 15 セッション目達成 = handoff prompt 候補 K Phase 1 案 (データ型抽出) を grep で実態確認 → 外部 caller ゼロで locality メリット小と発見 → 代替の URL helper 抽出 (5 service module 依存 = locality メリット大) を新候補発見
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- pub(crate) visibility 維持 = crate 内可視範囲不変
+- 5 service module の use 文書き換え = 機械的 path 置換のみ
+- cargo fmt: lib.rs の mod 宣言アルファベット順 (teams と webex の間 = url_helpers の正しい位置) を自動検出 → 修正対応
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `use crate::app_detection::` で is_valid_dns_label / has_single_non_empty_segment を含む grep: 完全に空 (新ファイル経由のみ)
+- trailing whitespace: なし
+
+## commit
+- 62d3e83
