@@ -27670,3 +27670,33 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - commit 3906d08
+
+---
+[mjc-main-20260505-25 Loop 51 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から TranscriptionManager 関連 tests 6 件 (test_ensure_engine_apple_speech_errors_off_macos / test_ensure_engine_openai_loads_engine_without_api_key_check / test_ensure_engine_elevenlabs_loads_engine_without_api_key_check / load_model_returns_error_when_model_not_downloaded / ensure_engine_returns_error_when_whisper_model_not_downloaded / ensure_engine_does_not_set_engine_on_whisper_failure) を src-tauri/src/transcription_manager.rs に移動
+- transcription.rs L49 の `use crate::transcription_manager::TranscriptionManager;` を削除 (移動後 unused、grep 確認済 = 5/5 件すべて移動対象内 = 完全な切り分け可能)
+- transcription.rs 削除範囲のコメントヘッダ「ensure_engine — エンジン種別ディスパッチ / 再ロード抑制」+ 「モデル未ダウンロード エラーパス テスト」も同時削除
+- transcription_manager.rs に新規 `#[cfg(test)] mod tests` 追加 (`use super::*;` のみ、`crate::settings::TranscriptionEngineType` はフルパスで使用)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (TranscriptionManager.ensure_engine + load_model の locality 完成 = 関数本体 + テスト同居で理解性向上)
+- variety pivot 軸 = test 軸 = Loop 50 から 1 ループ間隔 = 警告境界 (test 軸 8 件目連続だが間に 2 軸 pivot 済の散発パターン = 純粋な「sweep」ではない)
+- TranscriptionManager 関連 tests は本体 (transcription_manager.rs) と locality 一致が自然 = Loop 32 (resample_audio tests) / Loop 38 (transcription_types tests) / Loop 42 (沈黙検知 tests) / Loop 47 (ModelManager tests) / Loop 50 (Mock tests) precedent 継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs から L49 use 文 + L51-L155 の 6 tests + 2 コメントヘッダを削除
+- transcription_manager.rs に新規 tests mod 追加 (`use super::*;` で TranscriptionManager アクセス、TranscriptionEngineType はフルパス参照)
+- transcription.rs: 434 → 327 行 / transcription_manager.rs: 124 → 235 行
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- commit <ハッシュ>
