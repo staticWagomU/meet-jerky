@@ -32119,3 +32119,133 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = transcription_commands 軸の純粋関数機能境界分離 + state 依存無しの helpers 局所化)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-52
+
+## 本セッション実績 (1 ループ完走 + 通常 cadence handoff)
+
+### Loop 101 = transcription_commands_helpers.rs 抽出 (構造分離 25 file 目, transcription_commands 軸 2 件目 = scope depth 充実, ~10 分)
+- 新規 file: src-tauri/src/transcription_commands_helpers.rs (452 行)
+- 削除元: src-tauri/src/transcription_commands.rs (純粋関数 helpers production ~50 行 + test 20 件 + use 文 1 行追加)
+- lib.rs: mod transcription_commands_helpers; 1 行追加 (alphabetical = mod transcription_commands; と mod transcription_commands_model; の間)
+- production 5 件: struct RequestedTranscriptionSources + 2 const + validate_stream_count_for_engine + parse_requested_transcription_sources
+- caller 影響: transcription_commands.rs L8 直後 use 文 1 行追加のみ (production 呼び出し L124 / L141 は無変更)
+- test 20 件 = 既存全関連 test (parse_*/validate_*/transcription_source_constants/requested_transcription_sources_*) を新 file 内 #[cfg(test)] mod tests に移動
+- 可視性 pub(crate) は完全保持
+- commits: c59877f refactor + 36ef928 chore
+- 構造分離 25 file 目 = transcription_commands 軸 2 件目 (scope depth 充実 = settings 軸 (Loop 100) と並立 pattern 確立) = settings_commands 軸 (Loop 100) からの paradigm pivot 達成 = 機能分類軸 9 件目 → 純粋関数機能分離軸 (audio_silence Loop 94 / audio_resample Loop 98 と同形) paradigm 復帰
+- transcription_commands.rs: 630 → **182 行 (-71% = 本セッション最大削減 + 全セッション最大削減級)** = state 依存ゼロの純粋関数群を完全分離 = 構造美最大強化
+- handoff 推奨候補 Y (既存 scope 2 件目 = 純粋関数機能分離軸 paradigm pivot) を採用 = handoff 警告 (paradigm 多様性) を grep + caller 全件確認で批判的評価し選定 → メイン批判判断 連続 47 セッション目達成
+
+## 累積 (handoff 候補 X 始動以降)
+
+- 大型 rust file 責務分離: **25 file 目達成** (本セッション +1: transcription_commands_helpers)
+- scope 多様性: 15 軸維持 + transcription_commands 軸 2 件目達成 = scope depth 充実 (settings 軸 (Loop 100) に続き 2 連続 pattern)
+- worker 完走: **200/200 = 100%** 維持 (本セッション +1)
+- worker 自律 2-commit pattern: **連続 41 ループ目達成** (前任 40 → +1)
+- メイン批判判断: **連続 47 セッション目達成** (handoff 推奨候補 Y を grep + caller 全件確認で批判的評価)
+- harness 衛生: **連続 47 セッション目** (canonical 移譲後 `scripts/*` M 表示再出現せず)
+- ファイル参照型 handoff prompt: **連続 49 セッション目**
+
+## 直近 30 ループ多軸分散 (Loop 72-101)
+
+- 構造分離: 24 件 + 機能拡張/docs: 5 件 + harness 衛生: 4 件 = **24:5:4 多軸分散** (本セッション +1 構造分離, -1 古い ~Loop 71)
+- 構造分離 paradigm 内訳: 機能分類軸 9 件 (Loop 87/88/89/90/91/92/93/97/100) + 純粋関数機能分離軸 3 件 (Loop 94/98/101) + cfg(macos) inline module 分離 1 件 (Loop 95) + その他 11 件 (Loop 72-86)
+- Loop 99 K 軸 → Loop 100 機能分類軸 → Loop 101 純粋関数機能分離軸 = **paradigm pivot 連続達成** (3 連続防止 完璧)
+
+## 品質状態 (Loop 101 完了時点)
+
+- cargo test --lib: **704 passed / 0 failed** (件数完全不変、本セッション move only)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: 本セッション frontend 触れず変更なし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## git 状態 (handoff 直前)
+
+- branch: main, ahead 413 (origin/main から先行、本セッション +3 commit 予定: refactor + chore + SESSION SUMMARY)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-52) の commit:
+  1. `c59877f` refactor(transcription): 純粋関数 helpers を transcription_commands_helpers.rs に抽出 (Loop 101)
+  2. `36ef928` chore(agent-log): Loop 101 エントリ追記
+  3. `<HEAD>` chore(agent-log): mjc-main-20260505-52 SESSION SUMMARY (本エントリ)
+
+## 進行中セッション (handoff 直前)
+
+- mjc-main (canonical = 旧 mjc-main-20260505-52, handoff 直前)
+- mjc-main-20260505-52 (本セッション、間もなく handoff)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge: 本セッション中 0 回 (1 ループ完走 + handoff まで自律進行)
+
+## 後継 mjc-main-20260505-53 への期待 (Loop 102 候補)
+
+variety 規則: 直近 30 ループ 24:5:4 多軸分散、Loop 99 K 軸 → Loop 100 機能分類軸 → Loop 101 純粋関数機能分離軸 = paradigm pivot 連続達成 = Loop 102 で **更なる paradigm pivot 推奨 (新発掘 = realtime_ws_helpers / cfg(macos) 軸 2 件目 = apple_speech_macos 後継 / 既存 scope 3 件目 = settings 軸 3 件目 / transcription_commands 軸 3 件目)**。
+
+### 候補 X 新規発掘 (Loop 102 推奨, 構造分離 26 件目, 新 scope 16 軸目)
+
+**realtime_ws_helpers.rs 抽出 (新発掘 = 本セッション grep で識別)**:
+- elevenlabs_realtime.rs `mod ws_task` (L146-965 ~820 行) 内に純粋関数 helpers 4 つ:
+  - L358-363: is_scribe_error_event (~6 行)
+  - L364-377: async fn wait_for_pending_after_commit (~14 行)
+  - L378-398: extract_transcript (~21 行)
+  - L399-411: extract_error_message (~13 行)
+- 合計 ~54 行 production + 関連 test ~30-50 行 = 規模 SS-S
+- paradigm: 純粋関数機能分離軸 = audio_silence/audio_resample/transcription_commands_helpers と同形 (3 連続注意境界 = 直前 Loop 101 が同 paradigm のため 2 連続要警告)
+- ただし scope は **realtime engine 4 軸目** = 「3 軸完了 = 構造美の最終形」というハンドオフ判断を批判的に覆すチャンス = メイン批判判断 連続 48 セッション目達成見込み
+- 注意: `mod ws_task` 内 module から外側への移動 = use 文の整理 + 関連 test 移動が必要 = caller 影響中規模
+
+**他の新規 scope 候補**:
+- elevenlabs_realtime.rs `mod ws_task` 全体抽出 = inline module 全体分離 paradigm = apple_speech_macos (Loop 95) と同形だが規模 L (~820 行) + cfg なし = 1 worker 完走難しい可能性
+- openai_realtime.rs `mod ws_task` (L177-395 ~218 行) = 同 paradigm + 規模 S = 後段候補
+
+### 候補 Y 既存 scope 3 件目達成 (Loop 102 推奨度低 = 同 scope 3 連続境界)
+
+- transcription_commands_stop.rs: transcription_commands 軸 3 件目 (本セッション Loop 101 と 2 連続 = 警告 = skip 推奨)
+- session_commands_helpers.rs: session_commands 軸 2 件目 = ~16 行 production + 5 test 移動 = 規模 SS = helpers 軸 paradigm 弱め
+- settings 軸 3 件目: settings.rs 残 = 機能境界での更なる分離は意義薄判定済 = SKIP
+
+### 候補 X' resample_audio dead code 削除 (継承, ユーザー直伝指示要)
+
+audio_resample.rs L? `#[allow(dead_code)] pub(crate) fn resample_audio` (~67 行) + 関連 test 4 件 (~50 行) = 計 ~117 行削減
+- production caller ゼロ確認済 (Loop 98 で確認)
+- ユーザー直伝指示要 (`#[allow(dead_code)]` は将来用残置の意図可能性)
+
+### 候補 K3 後続 (Loop 102 弱推奨, K 軸 2 ループ間隔復帰)
+
+- agent-log-archive-plan.md Section 2.3 更新観測追記 = Loop 79/82/86/96/99 precedent 6 件目 = K 軸 2 ループ間隔 (Loop 99 から 2 ループ離れた) = 警告境界外 = OK だが弱推奨度
+
+### 候補 H1 (継承, ユーザー直伝指示要)
+
+agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header 追加 (規模 SS、~5-10 分)
+
+### 候補 J / H' (継承, 低優先): frontend 主観性高警告 / 大量 untracked 整理 ユーザー直伝指示要
+
+## 大型 rust file 責務分離実績 (本セッション追加分)
+
+- transcription_commands.rs: 630 → **182 行 (-71% = 本セッション最大削減 + 全セッション最大削減級)** + transcription_commands_helpers.rs (452 行 = 純粋関数 helpers + struct + 2 const + tests 20 件) = transcription_commands 軸 2 件目達成 (本セッション Loop 101)
+
+累計: 大型 rust file 責務分離 25 file 目達成、scope 多様性 15 軸 + scope depth 充実 (settings + transcription_commands)。
+
+## 検証制約 (継承、再掲)
+
+- cmake あり → cargo test 704 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build 主検証
+- 課金禁止 / `--no-verify` 禁止 / `--dangerously-skip-permissions` は harness 内のみ
+- Keychain / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり)
+
+## 引き継ぎ
+
+- 引き継ぎ先: mjc-main-20260505-53
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-53.txt (ファイル参照型 handoff prompt 連続 49 セッション目)
+- 旧メイン (mjc-main-20260505-52 = 本セッション = canonical mjc-main) は handoff 後終了
+
+worker 完走 1/1 = 累計 200/200 100%。
+
+---
