@@ -27504,4 +27504,4 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - plan.md 297 → 329 行 (32 行増加)
 
 ## commit
-- (worker 自走 commit 後に hash を記入)
+- 5fa2be2
