@@ -48,6 +48,7 @@ import {
 import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
 import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelpers";
+import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
 import {
   buildLiveCaptionStatusFromLabels,
   isExternalTransmissionLabel,
@@ -77,35 +78,6 @@ const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
   "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 type SavedFileAction = "open" | "reveal" | null;
-
-function getPermissionStatusLabel(
-  status: string | undefined,
-  error: unknown,
-  isChecking: boolean,
-): string {
-  if (isChecking) {
-    return "確認中";
-  }
-  if (error) {
-    return "確認不可";
-  }
-  if (status === "granted") {
-    return "許可済み";
-  }
-  if (status === "denied") {
-    return "未許可";
-  }
-  return "未確認";
-}
-
-function getPermissionRowClassName(
-  status: string | undefined,
-  error: unknown,
-): string {
-  return status === "granted" && !error
-    ? "menu-permission-row menu-permission-row-granted"
-    : "menu-permission-row";
-}
 
 function clearRelatedMeetingError(
   currentError: string | null,
