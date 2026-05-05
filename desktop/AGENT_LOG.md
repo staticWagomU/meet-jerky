@@ -33380,3 +33380,15 @@ commit: bc870a8 refactor(frontend): TranscriptView の Audio Source 系 helpers 
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-67 Loop 136 / 2026-05-06]
+worker: mjc-worker-loop136-archive-plan-stats-update-21 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 135 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134 precedent の 21 件目。Loop 133 → Loop 135 (~2 ループ間 + SESSION SUMMARY 0 件) で +24 行 (33,358 → 33,382)、平均 ~12 行/loop。Loop 133 観測値 (~24.5 行/loop) との **大幅減 (-50%)** = **SS 0 件パターン (Loop 121/127/135 = ~11-12 行/loop) の 3 連続観測達成** = **階層化 paradigm 最低段階の完全実証** (3 セッション跨ぎの再現)。frontend 軸 chore entry の軽量化 paradigm (~14 行/件) は Loop 125/127/129/131/133/135 の **6 件連続観測** = **frontend 軸軽量化 paradigm の 6 度目の観測 = paradigm 完全成熟期**。3 段階階層 (SS 0 件 = ~11-12 / SS 1 件軽量 = ~22-25 / SS 1 件大量 = ~42 行/loop) の **両端で複数連続観測達成 = paradigm 完全実証期**。alternation pattern 28 連続成功維持 (frontend(133) → K(134) → frontend(135) → K(136))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 3b457f3 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 135 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
