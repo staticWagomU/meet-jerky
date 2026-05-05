@@ -340,4 +340,21 @@ mod tests {
         };
         assert_ne!(a, none_source, "同 error / Some vs None の source 差は不等");
     }
+
+    #[test]
+    fn should_emit_realtime_stream_error_is_logical_negation_of_already_stopped() {
+        for input in [
+            "Realtime ストリームが既に停止しています",
+            "リサンプリングエラー: invalid",
+            "",
+            "Realtime ストリーム",
+            "OpenAI Realtime ストリームが既に停止しています extra suffix",
+        ] {
+            assert_eq!(
+                should_emit_realtime_stream_error(input),
+                !is_realtime_stream_already_stopped_error(input),
+                "symmetry violated for input: {input:?}"
+            );
+        }
+    }
 }

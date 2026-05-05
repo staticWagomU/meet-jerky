@@ -595,4 +595,123 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names() {
+        let both = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true,
+        };
+        let s_both = format!("{:?}", both);
+        assert!(
+            s_both.contains("RequestedTranscriptionSources"),
+            "Debug should contain type name: {}",
+            s_both
+        );
+        assert!(
+            s_both.contains("use_mic"),
+            "Debug should contain field 'use_mic': {}",
+            s_both
+        );
+        assert!(
+            s_both.contains("use_system"),
+            "Debug should contain field 'use_system': {}",
+            s_both
+        );
+        assert!(
+            s_both.contains("true"),
+            "both-true Debug should contain 'true': {}",
+            s_both
+        );
+
+        let neither = RequestedTranscriptionSources {
+            use_mic: false,
+            use_system: false,
+        };
+        let s_neither = format!("{:?}", neither);
+        assert!(
+            s_neither.contains("RequestedTranscriptionSources"),
+            "Debug should contain type name: {}",
+            s_neither
+        );
+        assert!(
+            s_neither.contains("use_mic"),
+            "Debug should contain field 'use_mic': {}",
+            s_neither
+        );
+        assert!(
+            s_neither.contains("use_system"),
+            "Debug should contain field 'use_system': {}",
+            s_neither
+        );
+        assert!(
+            s_neither.contains("false"),
+            "both-false Debug should contain 'false': {}",
+            s_neither
+        );
+
+        let mic_only = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let s_mic = format!("{:?}", mic_only);
+        assert!(
+            s_mic.contains("true"),
+            "mic-only Debug should contain 'true': {}",
+            s_mic
+        );
+        assert!(
+            s_mic.contains("false"),
+            "mic-only Debug should contain 'false': {}",
+            s_mic
+        );
+    }
+
+    #[test]
+    fn requested_transcription_sources_copy_semantics_allow_use_after_move() {
+        let original = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let copied = original;
+        assert!(
+            original.use_mic,
+            "original.use_mic should still be readable (Copy)"
+        );
+        assert!(
+            !original.use_system,
+            "original.use_system should still be readable (Copy)"
+        );
+        assert!(copied.use_mic, "copied.use_mic should match");
+        assert!(!copied.use_system, "copied.use_system should match");
+    }
+
+    #[test]
+    fn requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field() {
+        let a = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let same = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let mic_diff = RequestedTranscriptionSources {
+            use_mic: false,
+            use_system: false,
+        };
+        let system_diff = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true,
+        };
+        let both_diff = RequestedTranscriptionSources {
+            use_mic: false,
+            use_system: true,
+        };
+
+        assert_eq!(a, same, "same field values should be equal");
+        assert_ne!(a, mic_diff, "differs by use_mic");
+        assert_ne!(a, system_diff, "differs by use_system");
+        assert_ne!(a, both_diff, "differs by both");
+    }
 }
