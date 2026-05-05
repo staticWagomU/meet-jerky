@@ -25,7 +25,7 @@
 | 8 | Worker loop (run_transcription_loop / panic_guard / emit_segments / 各種 helper) | L1110-2999+ | ~1900 | `transcription/worker.rs` (更にサブ分割推奨) | **高** |
 | 9 | Helper (validate_stream_count / parse_requested_sources / error payload builders 等) | L741-1109 | ~370 | 各責務の private モジュール | 中 |
 
-## 進捗サマリ (mjc-main-20260505-26 Loop 53 時点)
+## 進捗サマリ (mjc-main-20260505-27 Loop 55 時点)
 
 - **Phase 1 (責務 1-2 = データ型 + トレイト)**: ✅ 完了 (mjc-main-20260505-3)
 - **Phase 2-A (責務 3 = Whisper エンジン)**: ✅ 完了 (mjc-main-20260505-4 ~ 7)
@@ -39,7 +39,7 @@
     stop_transcription / start_transcription / PendingTranscriptionStream
     すべて transcription_commands.rs に集約
 - **Phase 4 (責務 8 = Worker loop)**: ✅ 完了 (mjc-main-20260505-8 ~ 10, Phase 4-A emission + 4-B error_payload + 4-C panic_guard + 4-D run_transcription_loop)
-- **transcription.rs 累計削減**: 元 2999 行 → 現在 **193 行** = **約 93.6% 縮小** (~2806 行削減) = **「90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展」**
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **36 行** = **約 98.8% 縮小** (~2963 行削減) = **「95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)」**
 
 ## 残存課題 (Phase 5 候補)
 
@@ -55,10 +55,8 @@
 - **mjc-main-20260505-25 Loop 50 ✅ 完了**: MockEngine / MockStream impl + 3 tests (test_stream_lifecycle_feed_drain_finalize / test_stream_config_speaker_propagates_to_segments / test_feed_empty_samples_is_noop_in_mock) を transcription.rs から transcription_traits.rs に移動 = TranscriptionEngine / TranscriptionStream トレイト本体 + Mock 実装 + 3 tests 同居の locality 完成 (commit `3906d08`、-177 行)
 - **mjc-main-20260505-25 Loop 51 ✅ 完了**: TranscriptionManager 関連 tests 6 件 (test_ensure_engine_creates_whisper_local_when_supported / test_ensure_engine_returns_error_for_unsupported_engine / test_ensure_engine_persists_engine_for_session / test_ensure_engine_returns_error_when_model_not_downloaded / test_validate_stream_count_for_engine_accepts_max_per_engine 系) を transcription.rs から transcription_manager.rs に移動 = ensure_engine 関数本体 + 6 tests 同居の locality 完成 (commit `451e720`、-107 行)
 - **mjc-main-20260505-26 Loop 53 ✅ 完了**: StreamConfig Debug/Clone tests 3 件 (stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none / stream_config_debug_output_equals_after_clone_for_some_and_none_variants / stream_config_clone_produces_independent_copy_for_option_string_fields) を transcription.rs から transcription_traits.rs に移動 = StreamConfig 定義 + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 6 tests (Mock 3 + StreamConfig Debug/Clone 3) 同居の locality 完成 (commit `bbe9afc`、-134 行)
-- transcription.rs 残存 **193 行** の更なる責務分離
-- 候補: tests mod 内の StreamConfig Debug tests / その他 tests の関連ファイル locality 集約 / WHISPER_SAMPLE_RATE 移動の最終判断 / docs / frontend / 検知拡張
-- 規模 M-L、複数ループ計画推奨
-- 各 Phase 着手時は最新の transcription.rs を read して、本プランの行範囲とずれていないか確認する
+- **mjc-main-20260505-27 Loop 55 ✅ 完了**: tests mod 4 件 (should_emit_realtime_stream_error_is_logical_negation_of_already_stopped 1 件 → transcription_error_payload.rs / requested_transcription_sources Debug + Copy + PartialEq 3 件 → transcription_commands.rs) を一括移動 = transcription.rs tests mod 完全削除 + use 文 2 件完全削除 = 互換 re-export 5 件 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const のみの **36 行最終形達成** = Phase 5 完了相当 (commit `93dcd18`、-157 行)
+- transcription.rs 残存 **36 行** = Phase 5 完了相当の最終形 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)、残る Tidy First 機会は (1) WHISPER_SAMPLE_RATE 移動最終判断 (Phase 5 仕上げ) / (2) 互換層削除 Phase 6 / (3) docs / frontend / 検知拡張
 
 ## 推奨段階分割 (Phase)
 
@@ -370,9 +368,32 @@ mjc-main-20260505-26 Loop 53 で StreamConfig Debug/Clone tests 3 件 (~134 行)
 - 振る舞い不変 = 702 passed 件数不変
 - transcription.rs 327 → 193 行 (-134 行) = **90% 里程標突破達成**、transcription_traits.rs 229 → 366 行 (+137 行 = StreamConfig 関連 + コメント)
 
+## 関連: tests mod 完全削除 = 36 行最終形達成 ✅ 完了 (mjc-main-20260505-27 Loop 55 = commit `93dcd18`)
+
+mjc-main-20260505-27 Loop 55 で transcription.rs の tests mod 4 件 (~157 行) を 2 ファイルに一括分散移動した = **transcription.rs 36 行最終形達成 = Phase 5 完了相当**。
+
+- 移動対象 (transcription.rs L38-193 = 区切りコメント + tests mod 全体):
+  - `should_emit_realtime_stream_error_is_logical_negation_of_already_stopped` (~16 行) → `transcription_error_payload.rs` (should_emit / is_already_stopped 関数本体と同居)
+  - `requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names` (~73 行) → `transcription_commands.rs`
+  - `requested_transcription_sources_copy_semantics_allow_use_after_move` (~21 行) → `transcription_commands.rs`
+  - `requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field` (~31 行) → `transcription_commands.rs` (RequestedTranscriptionSources struct と同居 = locality 完璧)
+- transcription.rs の use 文 2 件完全削除 (`RequestedTranscriptionSources` / `should_emit + is_already_stopped`) = 移動後 unused
+- 移動先既存 / 新規 `#[cfg(test)] mod tests` (`use super::*;` で関連 struct / 関数アクセス)
+- メイン批判判断: handoff サマリの「候補 P (3 tests, Loop 55+) と候補 Q (1 件, Loop 55+) を別ループで実施」案を grep で実態確認 → 4 tests 全て transcription.rs tests mod の唯一の構成要素 + use 文 2 件もこれらの tests のみで使用と判明 → **1 ループでマージ移動すれば transcription.rs tests mod 完全削除 + use 文 2 件完全削除 + 36 行最終形に到達** と訂正採用 = メイン批判判断 連続 8 セッション目達成
+- variety pivot 軸 = test 軸 = Loop 53 から 1 ループ pivot (Loop 54 docs) 後 + 1 ループでまとめて最終形へ移行 = 後続 Loop 56+ で完全な軸 pivot へ移行可能
+- 振る舞い不変 = 702 passed 件数不変、clippy 警告ゼロ、fmt OK
+- transcription.rs 193 → **36 行** (-157 行) = **98.8% 縮小最終形** (元 2999 行から累計 -2963 行)、transcription_error_payload.rs 343 → 360 行 (+17 行)、transcription_commands.rs 598 → 717 行 (+119 行)
+
+### Phase 5 完了相当の意義
+
+- transcription.rs は元 2999 行 = リポジトリ最大級 → 36 行 = 互換 re-export 5 件 + 区切りコメント + `WHISPER_SAMPLE_RATE` 1 const のみ
+- 全ての具体実装 (データ型 / トレイト / Whisper エンジン / Model 管理 / TranscriptionManager / Tauri commands / Worker loop / Audio 処理 / 沈黙検知) は別モジュールに locality 集約済
+- 残る課題は (1) WHISPER_SAMPLE_RATE 移動最終判断 (audio_utils.rs と新規 transcription_constants.rs の選択 = Phase 5 仕上げ判断) / (2) Phase 6 = 互換 re-export 層削除 (全 caller の `use crate::transcription::...` を直接 import に書き換え、規模 M、複数ループ計画推奨) の 2 軸
+- AGENTS.md 優先順位 1 (クラッシュ修正) / 4 (リアルタイム文字起こし低遅延化) への予防的寄与 = 巨大ファイル理解難度を最大限まで低減達成
+
 ## 参考
 
 - 本プランは mjc-main-20260505-3 (Loop 4) で grep ベース構造分析により作成。
 - 実コードは生きており、Phase 着手時に再度行範囲・責務分類の妥当性を検証する必要がある。
 - 各 Phase 着手時は必ず最新の `transcription.rs` を read して、本プランの行範囲とずれていないか確認する。
-- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-26 Loop 53 時点で 193 行 = 約 93.6% 縮小達成 = 90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展)
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-27 Loop 55 時点で 36 行 = 約 98.8% 縮小達成 = 95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当)

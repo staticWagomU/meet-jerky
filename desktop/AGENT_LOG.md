@@ -28196,3 +28196,33 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中ゼロ (2 ループとも目標 15 分以内で worker 完走、平均 5 分)
 
+
+---
+[mjc-main-20260505-28 Loop 56 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリヘッダ: mjc-main-20260505-26 Loop 53 時点 → mjc-main-20260505-27 Loop 55 時点
+  - 累計削減行数: 193 行 (93.6%) → 36 行 (98.8%) = 95% / 98% 里程標突破達成 + Phase 5 完了相当
+  - 残存課題セクション: Loop 55 (tests mod 4 件 一括分散移動 -157 行 = 36 行最終形達成) 反映
+  - 残存行数: 193 行 → 36 行 + 残課題 (WHISPER_SAMPLE_RATE 移動最終判断 / 互換層削除 Phase 6 / docs / frontend / 検知拡張) を再整理
+  - 新サブセクション 1 件 (## 参考 直前): 「tests mod 完全削除 = 36 行最終形達成 ✅ 完了」+ Phase 5 完了相当の意義
+  - 末尾参考: 193 行 (93.6%) → 36 行 (98.8%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防 + Phase 5 完了相当という 95% / 98% 里程標突破の歴史的記録)
+- mjc-main-20260505-27 Loop 55 (tests mod 4 件 一括分散移動 = 36 行最終形達成) を 1 ループで反映
+- variety pivot = docs 軸 = Loop 54 から 2 ループ間隔 = 警告境界だが許容、test 軸 = transcription.rs 余地ゼロ = 続行不可能のため docs が最優先
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 1 件を末尾「## 参考」前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- (commit hash はメインが後追い chore commit で記入)
+
+---
