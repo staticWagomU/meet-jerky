@@ -5,6 +5,9 @@ import {
 } from "./audioTrackLabels";
 import { isTranscriptErrorSegment } from "./transcriptSegment";
 import { formatSegmentTimestamp } from "./timeFormat";
+import { getSpeakerLabel } from "./liveCaptionTrackHelpers";
+
+export { getSpeakerLabel };
 
 export function getSpeakerKind(
   segment: TranscriptSegment,
@@ -14,13 +17,6 @@ export function getSpeakerKind(
   if (segment.speaker === "自分") return "self";
   if (segment.speaker) return "other";
   return null;
-}
-
-export function getSpeakerLabel(segment: TranscriptSegment): string | null {
-  if (segment.source === "microphone") return "自分";
-  if (segment.source === "system_audio") return "相手側";
-  if (segment.speaker) return segment.speaker;
-  return "ソース不明";
 }
 
 export function getSpeakerAriaLabel(segment: TranscriptSegment): string {
