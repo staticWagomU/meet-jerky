@@ -9,6 +9,7 @@ mod app_detection_zoom;
 mod apple_speech;
 mod audio;
 mod audio_event;
+mod audio_sample_helpers;
 mod audio_traits;
 mod audio_utils;
 mod cloud_whisper;

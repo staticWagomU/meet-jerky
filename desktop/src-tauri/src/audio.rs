@@ -2,9 +2,10 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::audio_sample_helpers::{calculate_rms_from_sum, for_each_mono_sample};
 use crate::audio_traits::AudioCapture;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{FromSample, Sample, SampleFormat, SizedSample};
+use cpal::{FromSample, SampleFormat, SizedSample};
 use parking_lot::Mutex;
 use ringbuf::{
     traits::{Producer, Split},
@@ -232,50 +233,6 @@ where
             None, // タイムアウトなし
         )
         .map_err(|e| e.to_string())
-}
-
-fn for_each_mono_sample<T, F>(data: &[T], channels: usize, mut on_sample: F)
-where
-    T: Copy,
-    f32: FromSample<T>,
-    F: FnMut(f32),
-{
-    if channels == 0 {
-        return;
-    }
-
-    for frame in data.chunks_exact(channels) {
-        let mono = frame
-            .iter()
-            .copied()
-            .map(normalize_sample_to_f32)
-            .sum::<f32>()
-            / frame.len() as f32;
-        on_sample(mono);
-    }
-}
-
-fn normalize_sample_to_f32<T>(sample: T) -> f32
-where
-    f32: FromSample<T>,
-{
-    sanitize_sample(f32::from_sample(sample))
-}
-
-fn sanitize_sample(sample: f32) -> f32 {
-    crate::audio_utils::sanitize_audio_sample(sample)
-}
-
-fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32 {
-    if sample_count == 0 {
-        return 0.0;
-    }
-
-    let rms = (sum_squares / sample_count as f32).sqrt();
-    if rms.is_nan() {
-        return 0.0;
-    }
-    rms.clamp(0.0, 1.0)
 }
 
 impl AudioCapture for CpalMicCapture {
@@ -566,6 +523,9 @@ pub fn stop_recording(state: tauri::State<'_, AudioStateHandle>) -> Result<(), S
 mod tests {
     use super::*;
     use crate::audio_event::build_audio_drop_event_payload;
+    use crate::audio_sample_helpers::{
+        calculate_rms_from_sum, for_each_mono_sample, normalize_sample_to_f32, sanitize_sample,
+    };
 
     fn assert_close(actual: f32, expected: f32, epsilon: f32) {
         assert!(
