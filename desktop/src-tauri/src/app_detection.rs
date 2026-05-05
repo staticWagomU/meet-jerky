@@ -29,6 +29,7 @@ use crate::app_detection_inactive_decision::{
     should_notify_meeting_inactive, should_warn_polling_stall,
 };
 use crate::app_detection_notification::{show_inactive_notification, show_notification};
+use crate::app_detection_url_helpers::{normalize_url_host, parse_url_host_and_path};
 
 // 以下の定数・関数は macOS の Swift bridge から呼ばれる。
 // Linux 等のビルドで dead_code 警告にならないように cfg_attr で抑制する。
@@ -544,113 +545,6 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
     None
 }
 
-fn normalize_url_host(host: &str) -> Option<String> {
-    let normalized = host.to_ascii_lowercase();
-    let normalized = normalized.strip_suffix('.').unwrap_or(&normalized);
-    if normalized.is_empty() || normalized.ends_with('.') {
-        return None;
-    }
-    Some(normalized.to_string())
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct ParsedUrlParts {
-    host: String,
-    path: String,
-    query: Option<String>,
-}
-
-fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> {
-    let trimmed = url.trim();
-    if trimmed.chars().any(char::is_whitespace) {
-        return None;
-    }
-
-    let (scheme, after_scheme) = trimmed.split_once("://")?;
-    if !scheme.eq_ignore_ascii_case("http") && !scheme.eq_ignore_ascii_case("https") {
-        return None;
-    }
-
-    let authority_end = after_scheme
-        .find(['/', '?', '#'])
-        .unwrap_or(after_scheme.len());
-    let authority = &after_scheme[..authority_end];
-    if authority.contains('@') {
-        return None;
-    }
-    let host_port = authority;
-    let host = strip_port(host_port)?;
-    if host.is_empty() {
-        return None;
-    }
-
-    let path =
-        if authority_end < after_scheme.len() && after_scheme[authority_end..].starts_with('/') {
-            let rest = &after_scheme[authority_end..];
-            let path_end = rest.find(['?', '#']).unwrap_or(rest.len());
-            rest[..path_end].to_string()
-        } else {
-            "/".to_string()
-        };
-    let query = extract_query(&after_scheme[authority_end..]);
-
-    Some(ParsedUrlParts {
-        host: host.to_string(),
-        path,
-        query,
-    })
-}
-
-fn extract_query(rest: &str) -> Option<String> {
-    let query_start = rest.find('?')?;
-    if let Some(fragment_start) = rest.find('#') {
-        if fragment_start < query_start {
-            return None;
-        }
-    }
-    let query = &rest[query_start + 1..];
-    let query_end = query.find('#').unwrap_or(query.len());
-    Some(query[..query_end].to_string())
-}
-
-fn strip_port(host_port: &str) -> Option<&str> {
-    if let Some(without_opening_bracket) = host_port.strip_prefix('[') {
-        let (host, port) = without_opening_bracket.split_once(']')?;
-        if !host.contains(':') {
-            return None;
-        }
-        if let Some(port) = port.strip_prefix(':') {
-            validate_port(port)?;
-        } else if !port.is_empty() {
-            return None;
-        }
-        return Some(host);
-    }
-
-    if let Some((host, port)) = host_port.split_once(':') {
-        validate_port(port)?;
-        Some(host)
-    } else {
-        Some(host_port)
-    }
-}
-
-fn validate_port(port: &str) -> Option<()> {
-    if port.is_empty() || port.parse::<u16>().is_err() {
-        return None;
-    }
-    Some(())
-}
-
-pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {
-    query.is_some_and(|query| {
-        query.split('&').any(|param| {
-            let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
-            param_key.eq_ignore_ascii_case(key) && !param_value.is_empty()
-        })
-    })
-}
-
 // ─────────────────────────────────────────────
 // macOS 固有の実装 (Swift bridge 呼び出し)
 // ─────────────────────────────────────────────
@@ -776,6 +670,7 @@ mod macos {
 mod tests {
     use super::*;
     use crate::app_detection_goto::is_goto_app_meeting_url;
+    use crate::app_detection_url_helpers::ParsedUrlParts;
 
     #[test]
     fn watched_bundle_ids_includes_native_meeting_apps() {
