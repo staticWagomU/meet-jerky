@@ -30,16 +30,6 @@ pub use crate::transcription_manager::TranscriptionStateHandle;
 pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;
 
 // ─────────────────────────────────────────────
-// 文字起こしループ
-// ─────────────────────────────────────────────
-
-/// チャンクの蓄積目標（秒）
-pub(crate) const CHUNK_DURATION_SECS: f64 = 5.0;
-
-/// 16kHz での5秒分のサンプル数
-pub(crate) const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
-
-// ─────────────────────────────────────────────
 // TranscriptionLoopConfig (transcription_worker_loop.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
 

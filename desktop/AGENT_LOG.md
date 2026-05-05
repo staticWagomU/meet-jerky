@@ -27445,3 +27445,30 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 
 ---
+[mjc-main-20260505-24 Loop 48 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を src-tauri/src/transcription_whisper_stream.rs に移動 (rustdoc コメントごと)
+- transcription_whisper_stream.rs L10 の use 文を `use crate::transcription::WHISPER_SAMPLE_RATE;` に整理 (CHUNK_DURATION_SECS / CHUNK_SAMPLES は self-contained 化)
+- transcription.rs L32-40 のセクションヘッダ「文字起こしループ」コメントごと削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (チャンク設計定数の locality 集約 = WhisperStream + チャンク定数同居で理解性向上)
+- grep で実態確認: CHUNK_DURATION_SECS / CHUNK_SAMPLES の外部参照は transcription_whisper_stream.rs のみ (L70/L80/L81/L109) = 完全な切り分け可能
+- variety pivot 軸 = struct/const 移動軸 = Loop 44 から 4 ループ間隔 = sweep 警告完全クリア
+- Loop 33 (TranscriptionLoopConfig) / Loop 44 (沈黙検知 const) と同型 = 「const は使用箇所に locality 集約する」Tidy First 原則 3 件目
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- WHISPER_SAMPLE_RATE は transcription.rs に残置 (audio_utils.rs / transcription_whisper_stream.rs 両方から参照される広域定数)
+- 2 const 移動による型変更なし、振る舞い完全保持
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (worker 自走 commit 後に hash を記入)

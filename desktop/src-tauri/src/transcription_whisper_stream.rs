@@ -7,10 +7,20 @@ use crate::audio_utils::{
     is_tail_silent, sinc_params, MIN_FLUSH_SAMPLES, RESAMPLE_CHUNK_SIZE, SILENCE_LOOKBACK_SAMPLES,
     SILENCE_THRESHOLD_RMS,
 };
-use crate::transcription::{CHUNK_DURATION_SECS, CHUNK_SAMPLES, WHISPER_SAMPLE_RATE};
+use crate::transcription::WHISPER_SAMPLE_RATE;
 use crate::transcription_traits::{StreamConfig, TranscriptionStream};
 use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 use crate::transcription_whisper_local::WhisperLocal;
+
+// ─────────────────────────────────────────────
+// 文字起こしループ
+// ─────────────────────────────────────────────
+
+/// チャンクの蓄積目標（秒）
+pub(crate) const CHUNK_DURATION_SECS: f64 = 5.0;
+
+/// 16kHz での5秒分のサンプル数
+pub(crate) const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
 
 /// Whisper 用のストリーミング実装。
 ///
