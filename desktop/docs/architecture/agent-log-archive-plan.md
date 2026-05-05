@@ -45,6 +45,8 @@ AGENT_LOG.md は ~30,333 行 / 56 セッション / 82 Loop に達し、`tail -3
 
 > **更新観測 (mjc-main-20260505-55 Loop 105 完了時点)**: Loop 102 → Loop 105 (~3 ループ間 + SESSION SUMMARY 2 件) で +225 行 (32,264 → 32,489)、平均 ~75 行/loop。Loop 102 観測値 (~63 行/loop) と比較して ~19% 増 = paradigm pivot 多軸 (Loop 103 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 104 = inline module 全体抽出軸 cfg(macos) なし sub-paradigm = realtime engine 5 軸目 = openai_realtime_ws_task = refactor + chore + Loop 105 = 純粋関数 helpers 軸 = session_commands 軸 2 件目 = session_commands_helpers = refactor + chore) で SESSION SUMMARY 2 件 + chore entry 4 件 + docs entry 1 件 + refactor entry 2 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 103 K 軸 docs update + SUMMARY 2 件が増加要因。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~75 行 = ~300-750 行/時間 の範囲、アクティブセッション間の差異)。
 
+> **更新観測 (mjc-main-20260505-56 Loop 108 完了時点)**: Loop 105 → Loop 108 (~3 ループ間 + SESSION SUMMARY 1 件) で +95 行 (32,489 → 32,584)、平均 ~32 行/loop。Loop 105 観測値 (~75 行/loop) と比較して ~57% 減 = paradigm pivot 多軸 (Loop 106 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 107 = 純粋関数機能分離軸 frontend 版 = TranscriptView.tsx → utils/transcriptViewFormatters.ts = refactor + chore + Loop 108 = 純粋関数機能分離軸 frontend 版 continuity = LiveCaptionWindow.tsx → utils/liveCaptionTrackHelpers.ts = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 2 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 105 観測値 (~75 行/loop) と比較して大幅減の主因 = SESSION SUMMARY 1 件 (前 2 件) + frontend 軸 refactor 2 件は AGENT_LOG.md 0 行寄与 = 軽量増分パターン継続。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~32 行 = ~128-320 行/時間 の範囲、アクティブセッション間の差異)。
+
 ### 2.4 既存運用の維持コスト
 
 - worker prompt 必須要素: 「冒頭で末尾 350 行を読む」「Read 全体禁止 = tail/grep のみ」 = 末尾参照は維持できている
