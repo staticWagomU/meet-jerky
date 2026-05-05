@@ -28226,3 +28226,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 75d5f89
 
 ---
+[mjc-main-20260505-28 Loop 57 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` を audio_utils.rs に移動
+- 移動先: audio_utils.rs L25 の `use crate::transcription::WHISPER_SAMPLE_RATE;` を const 定義に置換 (= self-reference 解消)
+- transcription_whisper_stream.rs L6 の既存 use ブロックに WHISPER_SAMPLE_RATE を統合 (別 use 文ではなくブロック合流 = fmt 要求に対応)
+- transcription.rs の WHISPER_SAMPLE_RATE セクション (コメント 3 行 + 空行 2 行 + re-export 1 行 = 7 行) を完全削除
+  - 互換 re-export `pub(crate) use crate::audio_utils::WHISPER_SAMPLE_RATE;` は clippy が "unused import" として検出 (= 呼び出し元ゼロ) → 削除が正解
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs を完全ファサード化 = 互換 re-export のみに到達 = Phase 5 完全終了)
+- メイン批判判断 = handoff 候補 N' の「audio_utils.rs vs 新規 transcription_constants.rs」を grep で実態確認 → transcription_whisper_stream.rs L6 が既に audio_utils を import している = audio_utils.rs に置けば単方向依存 + 沈黙検知三位一体 locality (Loop 44) と一貫 + 新規ファイル不要 = audio_utils.rs に確定 = メイン批判判断 連続 9 セッション目
+- 追加批判判断 = 「互換 re-export を残置」という handoff 指示を clippy で実態確認 → pub(crate) re-export は呼び出し元ゼロ = unused import エラー → 削除が正解 = メイン批判判断の追加実例
+- 規模 SS = const 1 件移動 + use 文 2 ファイル変更のみ = 1 ループ完結確実
+- variety pivot = struct/const 軸 = Loop 48 から 9 ループ間隔 = sweep 警告完全クリア
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- 定数の値 (16_000) 不変、可視性 (pub(crate)) 不変
+- transcription.rs: 36 → 29 行 (-7 行、WHISPER_SAMPLE_RATE セクション完全削除 = 純粋ファサードへ)
+- audio_utils.rs: +1 行 (use 文 1 行 → const 2 行 = +1 行)
+- transcription_whisper_stream.rs: -1 行 (別 use 文 → 既存 use ブロック統合 = -1 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash はメインが後追い chore commit で記入)
+
+---

@@ -22,7 +22,8 @@ pub fn sanitize_audio_sample(sample: f32) -> f32 {
 // 沈黙検知ユーティリティ (純粋関数)
 // ─────────────────────────────────────────────
 
-use crate::transcription::WHISPER_SAMPLE_RATE;
+/// Whisper の入力サンプルレート (16kHz)。Whisper 仕様で固定。
+pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;
 
 /// 早期 flush を許可する最小チャンク長 (1 秒 @ 16kHz)。これ未満では Whisper の精度が落ちるため flush しない。
 pub(crate) const MIN_FLUSH_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize; // 16000
