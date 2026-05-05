@@ -27700,3 +27700,143 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - commit 451e720
+
+---
+[SESSION SUMMARY @ 2026-05-05 ~10:20 JST] mjc-main-20260505-25 状況メモ
+
+## 本セッション (mjc-main-20260505-25) の 2 ループ実績 = 「2 ループ + 早期 handoff」precedent 連続 21 セッション目達成
+
+### Loop 50 = MockEngine / MockStream + 3 tests を transcription_traits.rs に移動 (test 軸 = Loop 47 から 3 ループ間隔 = 警告境界)
+- commit `3906d08` + `ae56893` (chore hash 反映 = 標準 2-commit パターン)
+- **メインの批判的判断**: handoff 候補 F (Mock* tests) を採用判断時、grep で実態確認 → MockEngine/MockStream の参照は **transcription.rs の tests mod 内のみ** (他ファイルからゼロ) と判明 → transcription_traits.rs (現状 48 行) に移動しても 213 行 → トレイト本体 + Mock 実装 + 3 tests の同居で locality 完璧と確定 = メイン批判判断 連続 6 セッション目達成基盤確立
+- 移動対象:
+  - MockEngine struct + impl TranscriptionEngine for MockEngine
+  - MockStream struct + impl TranscriptionStream for MockStream
+  - test_stream_lifecycle_feed_drain_finalize
+  - test_stream_config_speaker_propagates_to_segments
+  - test_feed_empty_samples_is_noop_in_mock
+- 削除: transcription.rs L50 の `use std::sync::atomic::Ordering;` (Mock tests のみで使用、移動後 unused)
+- 検証: 702 passed 件数不変, clippy 警告ゼロ, fmt OK
+- transcription.rs: 611 → 434 行 (-177 行) / transcription_traits.rs: 48 → 229 行 (+181 行)
+- 所要時間: ~5.5 分 (worker 起動 ~10:05 → commit ~10:10)
+- variety pivot = test 軸 = Loop 47 から 3 ループ間隔 = 警告境界 (8 件目連続だが間に 2 ループ pivot 済の散発パターン)
+
+### Loop 51 = TranscriptionManager 関連 tests 6 件 を transcription_manager.rs に移動 (test 軸 = Loop 50 から 1 ループ間隔 = 警告境界)
+- commit `451e720` + `f0deb70` (chore hash 反映 = 標準 2-commit パターン)
+- **メインの批判的判断**: handoff サマリの「ensure_engine tests 3 件、規模 SS」予測を grep で実態確認 → 実際は **TranscriptionManager 関連 6 件 (ensure_engine 5 件 + load_model 1 件) すべてが TranscriptionManager::new() で始まる単一クラスのテスト** と判明 → 一括移動で use 文完全削除 + 1 ループ完結 + locality 完璧の 3 点優位達成 → 「3 件 → 6 件」訂正 = メイン批判判断 連続 6 セッション目達成
+- 移動対象:
+  - test_ensure_engine_apple_speech_errors_off_macos
+  - test_ensure_engine_openai_loads_engine_without_api_key_check
+  - test_ensure_engine_elevenlabs_loads_engine_without_api_key_check
+  - load_model_returns_error_when_model_not_downloaded
+  - ensure_engine_returns_error_when_whisper_model_not_downloaded
+  - ensure_engine_does_not_set_engine_on_whisper_failure
+- 削除: transcription.rs L49 の `use crate::transcription_manager::TranscriptionManager;` (移動対象 6 tests のみで使用、移動後 unused)
+- 削除: コメントヘッダ「ensure_engine — エンジン種別ディスパッチ / 再ロード抑制」+ 「モデル未ダウンロード エラーパス テスト」
+- 検証: 702 passed 件数不変, clippy 警告ゼロ, fmt OK
+- transcription.rs: 434 → 327 行 (-107 行) / transcription_manager.rs: 124 → 235 行 (+111 行)
+- 所要時間: ~5 分 (worker 起動 ~10:14 → commit ~10:19)
+- variety pivot = test 軸 = Loop 50 から 1 ループ間隔 = 警告境界 (9 件目連続超過警告 だが 6 軸 pivot 散発パターン = sweep ではない)
+
+## 累計 transcription.rs 削減 (本セッションで -284 行 = mjc-main-20260505-25 シリーズ最大削減量)
+- 元 2999 行 → 現在 **327 行** = **約 89.1% 縮小** (~2672 行削減) = **85% 里程標突破からさらに +3.6pt 進展** + **75% 里程標突破からさらに +9.5pt 進展** + **80% 里程標突破からさらに +9.1pt 進展** = 90% 里程標到達直前
+- 本セッションの Loop 50 (-177 行) + Loop 51 (-107 行) は 1 セッション削減量として最大 (前最大は mjc-main-20260505-23 セッションの -28 行)
+- transcription.rs 本体 L1-41 = 41 行 (5 つの pub use 再エクスポート + WHISPER_SAMPLE_RATE 1 const + コメントヘッダ) は変わらず、tests mod L43-327 (285 行) で構成
+
+## 累計各 locality 集約先拡大 (本セッションで +292 行)
+- transcription_traits.rs: 48 → 229 行 (+181 行) = TranscriptionEngine/TranscriptionStream トレイト本体 + Mock 実装 + 3 tests 同居完成
+- transcription_manager.rs: 124 → 235 行 (+111 行) = ensure_engine 関数本体 + 6 tests 同居完成
+
+## 現在の品質状態
+- cargo test (lib): **702 passed / 0 failed** (Loop 50/51 全て件数不変)
+- cargo clippy --lib --tests -- -D warnings: **警告ゼロ**
+- cargo fmt --check: OK
+- npm run build: 本セッション frontend 触れていないため変更なし
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 19 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-25 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = **連続 19 セッション目で追認** = 結論超強化、永続的解決確定
+
+## worker 統計
+- worker 完走 2/2 (累計 151/151 = 100% 維持)
+- stdin redirect 化 script の安定運用 43-44 件目 precedent 達成
+- 「sonnet worker の Tidy First 質的高さ」連続 22 セッション目で実証
+  - Loop 50: Mock 構造体 + 2 impl + 3 tests + use 文整理 ~175 行を ~5.5 分で完走 (規模 S)
+  - Loop 51: 6 tests + 2 コメントヘッダ + use 文整理 ~107 行を ~5 分で完走 (規模 SS-S)
+- harness silent fail mitigation pattern 連続 75 ループ実証達成
+
+## 本セッションの commit 周期
+- Loop 50: ~5.5 分 (起動 ~10:05 → commit ~10:10)
+- Loop 51: ~5 分 (起動 ~10:14 → commit ~10:19)
+- 平均 ~5.25 分/loop = **目標 15 分以内大幅達成**
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 6 セッション目達成)
+- Loop 50: handoff 候補 F の Mock 関連 grep 実態確認 → 移動先 transcription_traits.rs の locality 自然性確定
+- Loop 51: handoff サマリ「3 件・規模 SS」を grep で実態確認 → 「6 件・規模 SS-S」訂正 → 一括移動で use 文完全削除 + 1 ループ完結 + locality 完璧の 3 点優位達成
+- precedent: 「handoff prompt の主要候補を鵜呑みにせず grep で実態確認 → 必要なら新候補発見 / 規模再見積 / use 文完全削除」が **6 セッション連続で実証** (mjc-main-20260505-20 Loop 39 / -21 Loop 42 / -22 Loop 44+45 / -23 Loop 47 / -24 Loop 48 / -25 Loop 50+51)
+
+## 後継 (mjc-main-20260505-26) への引き継ぎ判断 (Loop 52 候補、優先順位順)
+
+### variety 規則の状態 (Loop 52 開始時点)
+
+直近 5 ループ: Loop 47 (test) → 48 (struct/const) → 49 (docs) → 50 (test) → 51 (test)。
+- 直近 docs 連続 = 0 (Loop 49 のみ、Loop 50-51 で別軸 pivot 済)。**Loop 52 で docs 続行は 8 件目連続だが 3 ループ間隔 + 2 ループ pivot 済 = 警告境界だが許容**
+- 直近 extraction 連続 = 0 (Loop 43 のみ、サービス別抽出シリーズ完了 = 続行不可能)
+- 直近 test 連続 = 2 (Loop 50/51)。**Loop 52 で test 続行は test 軸 9 件目連続超過 = 完全な sweep 警告 = 別軸必須**
+- 直近 struct/const 連続 = 0 (Loop 48 のみ、Loop 49-51 で別軸 pivot 済)。**Loop 52 で続行は 4 ループ間隔 = 許容、ただし transcription.rs に const は WHISPER_SAMPLE_RATE のみで広域参照のため移動不可**
+
+### 候補 D (推奨 Loop 52): plan.md 再更新 (docs 軸 = Loop 49 から 3 ループ間隔 = 許容範囲)
+- mjc-main-20260505-25 Loop 50 (Mock 関連 -177 行) + Loop 51 (TranscriptionManager 関連 -107 行) の 2 件を 1 ループで一括反映
+- 進捗サマリ更新 79.6% → **89.1%** (+9.5pt 大幅進展)、累計削減 611 → 327 行
+- 新サブセクション 2 件: Mock impl + tests 移動 ✅ (Loop 50) + TranscriptionManager tests 移動 ✅ (Loop 51)
+- 規模 SS-S = 1 ループ完結確実
+- variety pivot = docs 軸 = Loop 49 から 3 ループ間隔 = 許容、test 軸 9 件目連続超過警告から完全 pivot
+
+### 候補 M (Loop 52+): StreamConfig Debug tests 4 件を transcription_traits.rs に移動 (test 軸続編)
+- transcription.rs L155-... 程度の StreamConfig Debug 関連 tests
+- 移動先: transcription_traits.rs (StreamConfig 定義場所、L7-16)
+- 規模 SS-S
+- ただし test 軸 10 件目連続超過警告 = sweep 完全化 = **Loop 52 では別軸必須、Loop 53+ で 1 軸 pivot 後に採用**
+
+### 候補 J (Loop 52+): frontend 軸 pivot
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行) は規模あり
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注、主観的探索は避ける
+- 候補としては低優先 (具体スライス特定困難)
+
+### 候補 I (Loop 52+): Discord stage / Slack Huddle 検知 (window title 経路)
+- priority 2 直接寄与
+- service detection 軸 = 直近 5 ループ全てと別軸
+- ただし URL 検知不可 = Bundle ID + window title 経路必要 = 規模 M 1 ループ完結不確実
+- 別 issue として深掘り推奨
+
+### 候補 N (Loop 52+): WHISPER_SAMPLE_RATE 移動の最終判断
+- transcription.rs L32 の `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;`
+- 参照ファイル: audio_utils.rs / transcription_whisper_stream.rs (両方広域参照のため transcription.rs に残置されている)
+- 移動先候補: 新規 transcription_constants.rs か audio_utils.rs に再 locality 集約
+- ただし広域定数のため migration コスト評価必要、別 issue 推奨
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (`Webex ミーティング`) (継承 = Loop 53+ 以上の間隔推奨)
+
+### 低優先 (harness 衛生、未着手)
+#### H. 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 225+ untracked、ユーザー直伝指示があるまで保留)
+#### I. AGENT_LOG.md ~27,500+ 行の archive 戦略 (未着手)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 702 件全 pass (verify.sh OK) = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションでも Loop 50/51 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの「watchdog継続指示: docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」を受け、Loop 51 を即起動 (停止せず継続)
+- watchdog からの nudge は本セッション中 1 回 (Loop 51 起動時、自律ループ進行を継続)
+
+
+---
