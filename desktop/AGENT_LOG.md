@@ -31195,3 +31195,135 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = 機能分類軸の single source of truth 化、Loop 87 続編)
 
 ---
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-45 (2 ループ完走 + 構造分離 13/14 file 目達成)
+
+## セッション全体実績
+
+- **2 ループ完走 (Loop 87 + Loop 88) = handoff 文書 L227 「後継は 2-3 ループ完走推奨」達成**
+- worker 完走 2/2 累計 188/188 100% 維持
+- メイン批判判断 連続 39 セッション目達成 = handoff 警告「構造分離 13 件目試行は scope 払底気味」を Read 精査 + grep 発掘で覆し app_detection.rs 機能分類軸 (notification + inactive_decision) を新規発掘
+- harness 衛生連続 39 セッション目達成 = canonical 移譲 (`agent-adopt-main.sh mjc-main-20260505-45 mjc-main`) 後、`git status --short` で scripts/* に M 表示が再出現せず = `bfb9846` PATH inner shell escape の永続的解決を更に強化
+- worker 自律 2-commit pattern 連続 29 ループ目達成 = Loop 60-87 の 28 連続を Loop 88 で +1
+- worker 自律学習進化継続観測: Loop 87 + Loop 88 worker は refactor commit hash を実 hash で直接書き込み + chore commit hash は意図的に書かず = Loop 80/85/86 進化 pattern (placeholder 残留問題予防の本来意図) を完璧踏襲
+- ファイル参照型 handoff prompt 連続 42 セッション目 (旧 mjc-main-20260505-44 → 本 mjc-main-20260505-45 で 41 → 42)
+- 大型 rust file 責務分離 14 file 目達成 = 機能分類軸 (notification / inactive_decision) 2 件目達成 = サービス別軸 7 file (Loop 1-65 圏) 完了後の新 axis 開始
+
+## Loop 87 詳細 = app_detection_notification.rs 抽出 (構造分離 13 件目, 機能分類軸 1 件目)
+
+- 担当: app_detection.rs L443-484 の notification 4 fn (show_notification / show_inactive_notification / notification_body / inactive_notification_body) を新 module `src-tauri/src/app_detection_notification.rs` に抽出
+- axis test 3 件 (notification_body_does_not_claim_click_starts_recording / inactive_notification_body_includes_app_name_and_elapsed_minutes / inactive_notification_body_truncates_seconds_to_minutes) を新 file 内 #[cfg(test)] mod tests に移動
+- caller 修正: app_detection.rs 冒頭に `use crate::app_detection_notification::{show_inactive_notification, show_notification};` 1 行追加 + 既存呼び出し (L190 / L320 / L418) は無変更
+- lib.rs alphabetical 順に `mod app_detection_notification;` を app_detection_goto と app_detection_teams の間に挿入
+- 差分: app_detection.rs -84 行 + app_detection_notification.rs +94 行 + lib.rs +1 行 = 純増 +15 行 (新 file の doc + use 文 + #[cfg(test)] mod tests wrapper の不可避オーバーヘッド)
+- 規模 SS-S、worker prompt 174 行、~8 分完走
+- commit: `bd98a22` refactor(app-detection) + `ae7c52e` chore(agent-log) = 2-commit pattern
+- worker 自律 = `<refactor_hash>` placeholder を実 hash 直書き、chore commit hash は書かず (Loop 80/85/86 precedent 完全踏襲)
+- AGENTS.md priority 1 寄与 (構造美の補強)
+
+## Loop 88 詳細 = app_detection_inactive_decision.rs 抽出 (構造分離 14 件目, 機能分類軸 2 件目)
+
+- 担当: app_detection.rs L211-258 の inactive 判定純粋関数 2 件 (should_warn_polling_stall / should_notify_meeting_inactive) を新 module `src-tauri/src/app_detection_inactive_decision.rs` に抽出
+- 設計判断: state 依存 2 件 (check_meeting_inactive_for_bundle / check_all_inactive_bundles) は STATE / MEETING_INACTIVE_THRESHOLD / NOTIFICATION_THROTTLE / DetectionState の露出を回避するため app_detection.rs に残す = encapsulation 維持
+- axis test 20 件 (should_warn_polling_stall_* 10 件 + should_notify_meeting_inactive_* 10 件) を新 file 内 #[cfg(test)] mod tests に移動
+- caller 修正: app_detection.rs 冒頭に `use crate::app_detection_inactive_decision::{should_notify_meeting_inactive, should_warn_polling_stall};` 1 行追加 + 既存呼び出し (L288 / L348) は無変更
+- lib.rs alphabetical 順に `mod app_detection_inactive_decision;` を app_detection_goto と app_detection_notification の間に挿入
+- 差分: app_detection.rs -217 行 + app_detection_inactive_decision.rs +225 行 + lib.rs +1 行 = 純増 +15 行 (Loop 87 と同パターン)
+- 規模 S、worker prompt 171 行、~4 分完走 (test 20 件あっても純粋関数のみで機械的作業 = 速度向上)
+- commit: `d172b5b` refactor(app-detection) + `31c139f` chore(agent-log) = 2-commit pattern
+- worker 自律 = Loop 87 と同パターン (refactor hash 直書き + chore hash 書かず)
+- AGENTS.md priority 1 寄与 (構造美の補強, Loop 87 続編)
+
+## 戦略判断: handoff 警告「scope 払底気味」を発掘で覆す (メイン批判判断 連続 39 セッション目)
+
+- handoff 文書 L237「メインは grep で 1 候補に絞る (本ハンドオフでは X 新規発掘 = 構造分離 13 件目 試行が弱推奨だが scope 払底気味)」と明示警告
+- メインが grep + Read 精査で app_detection.rs 内の機能分類軸 helper を発掘 = notification 4 fn (UI 通知) + inactive_decision 2 純粋関数 (inactive 判定 logic)
+- 過去 app_detection 抽出履歴 (webex 4 件 + その他 7 file) は **サービス別 URL 経路軸**、本 Loop 87/88 は **機能分類軸** = 別 sweep として明確に区別 = sweep 警告継承の対象外と判断
+- session_manager.rs production ~150 行 / session_store.rs ~30 行コンパクト確認 = X5 skip 推奨 (handoff 警告通り)
+- audio.rs L60-L455 ジェネリック関数 = cpal 直結 = 抽出難 (handoff 警告通り)
+- realtime engine = Loop 80/81/85 で 3 軸完了 (handoff 警告通り) = 構造分離は完了状態
+
+## variety 規則の状態 (Loop 88 完了時点)
+
+直近 22 ループ: Loop 67-88
+- 軸 pattern: 構造分離 (67/68/69/70/73/75/76/77/80/81/83/85/87/88 = 14 件) + 機能拡張/docs (71/72/74/78/84 = 5 件) + harness 衛生 (79/82/86 = 3 件) = **14:5:3 多軸分散** (Loop 87/88 で 12:5:3 → 14:5:3 に構造分離軸へ重心)
+- scope 内訳: session_store (4) + audio (1) + realtime (5) + detection (5) + session_manager (2) + harness (3) + app_detection 機能分類 (2 = 新規) = 多 scope 分散 + app_detection 機能分類軸の新規開始
+- 機能分類軸 2 連続 (Loop 87 + Loop 88) = 警告境界 (3 連続) 未満で安全範囲内
+- **Loop 89 では機能分類軸 3 連続を避ける = 別軸 (機能拡張/docs 軸 1 連続復帰 / harness 衛生軸 4 件目警告境界) または別 scope 構造分離 推奨**
+
+## Loop 89 推奨候補 (handoff 判断材料)
+
+### 候補 X' app_detection 機能分類軸 3 件目 (skip 推奨, 警告境界)
+
+- 機能分類軸 2 連続 (Loop 87/88) = 3 連続は警告境界
+- 同 scope 内 helper 残: parse_throttle_key_to_display_name / classify_meeting_url / classify_meeting_window_title / URL parse helpers (normalize_url_host / parse_url_host_and_path / extract_query / strip_port / validate_port / query_has_non_empty_param) = 機能分類軸の延長
+- skip 推奨
+
+### 候補 K3 後続 (機能拡張/docs 軸 1 連続復帰、Loop 86 から 2 ループ後で復帰可能)
+
+- detection-extension-plan.md = 305 行、Loop 84 で Phase 状態 subsection 新設済、Phase 1-5 状態は不変 (Phase 1 完了 / Phase 2 = Q1/Q2 待ち / Phase 3-5 = 任意・後追い) = 単純時点更新は内容実質変化なし (Loop 86 K3' 却下 paradigm 適用)
+- agent-log-archive-plan.md Section 2.3 = Loop 86 で観測追記済、Loop 87/88 から +1 ループの観測値僅少 = 価値薄
+- autonomous-main-prompt-claude.md = 数値カウンタ無し確認済 (Loop 86)
+- 新規 plan 起こしは必要性曖昧 (主観性高警告)
+
+### 候補 H1 (harness 衛生軸 4 件目だが警告境界 = ユーザー直伝指示要)
+
+- agent-log-archive-plan.md Phase 1 着手 (Archive Index Header 追加) = 規模 SS、~5-10 分
+- plan L99 に「実施は別途ユーザー直伝指示要」明記 = 後継メインが grep 確認後に exception 判断要
+
+### 候補 X 新規発掘 = 別 scope 構造分離 15 件目 (現状困難)
+
+- app_detection.rs 機能分類軸 = 警告境界 (Loop 89 で 3 連続避ける)
+- session_manager.rs / session_store.rs = X5 skip 推奨済
+- audio.rs / realtime engine = scope 払底
+- frontend (LiveCaptionWindow.tsx 580 行 / MeetingDetectedBanner.tsx 526 行) = 主観性高警告
+- 新規 grep + Read 発掘要 = メイン批判判断 連続 40 セッション目達成のチャンス
+
+### 候補 J (frontend 主観性高警告継承)
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ = 主観性高警告
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注
+
+### 候補 H' (大量 untracked 整理 ユーザー直伝指示要 継承、低優先)
+
+- `docs/handoff/`, `docs/worker-prompts/` に 290+ untracked、ユーザー直伝指示があるまで保留
+
+### 低優先 (継承)
+
+- B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+- A1. Webex 日本語 window title (継承)
+
+## 検証制約 (継承、再掲)
+
+- cmake あり → cargo test 704 件全 pass (verify.sh OK) = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 0 回 (2 ループ完走 = nudge cooldown 範囲内)
+
+## context 管理アクション
+
+- 本セッションは 2 ループ完走 = handoff 文書 L227 「後継は 2-3 ループ完走推奨」達成
+- 引き継ぎ先: mjc-main-20260505-46
+- 引き継ぎファイル: `docs/handoff/mjc-main-20260505-46.txt` (ファイル参照型 handoff prompt 連続 42 セッション目)
+- 旧メイン (mjc-main-20260505-45 = 本セッション = canonical mjc-main) は handoff 後終了
+- 判断時の使用率: 観測手段なしのため Loop 89 候補発掘困難状況 (機能分類軸 3 連続警告 + K3 後続範囲明確化困難 + H1 ユーザー直伝指示要 + 新規 scope 構造分離 15 件目発掘要) で保守的に handoff へ進む方針
+
+## 後継 mjc-main-20260505-46 への期待
+
+- 2-3 ループ完走推奨 (本セッションは 2 ループ完走 = 後継も同水準目指す)
+- Loop 89 候補は上記 5 つ (X' skip / K3 後続 / H1 / X 新規発掘 15 件目 / J / H') から選定
+- 構造分離軸を続けるなら別 scope 発掘 grep 必要 (app_detection 機能分類軸 = 3 連続警告境界 = skip 推奨、新 scope 必要)
+- 機能拡張/docs 軸を選ぶなら範囲明確化要 (主観性回避、Loop 86 K3' 却下 paradigm 適用)
+- harness 衛生軸を選ぶなら 4 連続 sweep 警告境界に注意
+- メイン批判判断 連続 40 セッション目を維持 (handoff 予測の鵜呑み禁止、grep + Read で精査、本セッション Loop 87 で「scope 払底気味」警告を発掘で覆した precedent 継承)
+
+---
