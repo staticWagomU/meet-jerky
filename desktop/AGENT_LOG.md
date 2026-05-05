@@ -32902,3 +32902,58 @@ commits:
 AGENTS.md priority: 1 (大型 rust file 責務分離 + 既存 file 拡張軸 = file 数不増で責務集約 + 保守性向上)
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-60 (canonical mjc-main)
+
+本セッションは旧 mjc-main (= mjc-main-20260505-59 = canonical mjc-main) からの 2 ループ完走 + 通常 cadence handoff を受けて起動。前任者の handoff 推奨候補 X1 (SessionList.tsx 純粋関数抽出) を grep + Read で批判的精査して **重複 2 件発見 (getFileName + getSessionDisplayTitle = transcriptViewFormatters.ts に同実装で存在)** + cloud_whisper.rs `#[allow(dead_code)]` 罠回避 + app_detection.rs URL parser 6 関数 + 既存 `app_detection_url_helpers.rs` 統合可能性発見 = メイン批判判断 連続 56 セッション目達成 + 2 ループ完走 (Loop 116 + Loop 117) + 通常 cadence handoff (mjc-main-20260505-61 へ) を実施。
+
+worker 完走 2/2 = 累計 216/216 100%。
+
+実績:
+- Loop 116 = frontend 軸 6 件目 = SessionList.tsx (`src/routes/`, 700 行) → utils/sessionListHelpers.tsx (157 行) = 11 純粋関数抽出 + 重複 2 件 (getFileName + getSessionDisplayTitle) は既存 transcriptViewFormatters から import 統合 = DRY 軸混合 paradigm = 純粋関数機能分離軸 + DRY 軸混合 = 大型 frontend file 責務分離 34 file 目 + scope 22 軸目開拓 (`src/routes/` 配下 = 異 directory) + 衝突回避設計 6 件目 precedent (file 専用 namespace + .tsx 拡張子の worker 自律修正 = JSX 構文サポートのため文法的に必須) + メイン批判判断 連続 55 セッション目達成 (handoff 文書見落としの重複 2 件発見) + worker ~5 分完走 = 規模 S 想定より早い = 規模 SS-S 補正
+- Loop 117 = rust 軸復帰 = app_detection.rs (2826 行) URL parser 6 純粋関数 (normalize_url_host + parse_url_host_and_path + extract_query + strip_port + validate_port + query_has_non_empty_param) + ParsedUrlParts struct を **既存 `app_detection_url_helpers.rs` (24 行 = is_valid_dns_label + has_single_non_empty_segment) に統合追加** = 「既存 file 拡張軸 = 新 paradigm」確立 = 新 file 作成ではなく既存 file 統合追加 = file 数不増 + 責務集約 + 保守性向上 = 大型 rust file 責務分離 35 file 目 + scope 22 軸目変種 (app_detection scope 復帰 + URL parser 責務集約) + メイン批判判断 連続 56 セッション目達成 (cloud_whisper.rs `#[allow(dead_code)]` 罠回避 + 既存 app_detection_url_helpers.rs 統合可能性発見) + worker ~6 分完走 (cargo test 含む全検証通過)
+
+paradigm 進化:
+- Loop 116 = 純粋関数機能分離軸 + DRY 軸混合 (新 paradigm = 抽出 + 重複 import 統合)
+- Loop 117 = 既存 file 拡張軸 (新 paradigm = 新 file 作成なしで統合追加 = file 数不増)
+- variety 規則 alternation pattern: K(115) → frontend(116) → rust(117) = paradigm pivot 9 連続成功
+- 衝突回避設計 paradigm = 6 件目 precedent (sessionListHelpers.tsx)
+
+メイン批判判断 連続 56 セッション目達成の根拠:
+- Loop 116 採用前の精査 = 「SessionList.tsx 純粋関数 13 件発見 + うち getFileName (L38) は transcriptViewFormatters.ts:7 と完全同実装 + getSessionDisplayTitle (L74) は transcriptViewFormatters.ts:11 getCompactSessionTitle と完全同実装 = 技術負債 2 件発見」を grep + Read で確認 → 11 件抽出 + 2 件 import 統合の混合 paradigm 採用
+- Loop 117 採用前の精査 = 「app_detection.rs L406-L652 で URL parser 6 関数発掘 + 既存 `app_detection_url_helpers.rs` (lib.rs L7 既登録) と責務一致発見 + cloud_whisper.rs 5/6 関数 `#[allow(dead_code)]` で抽出妥当性低い罠回避」を grep + Read + caller 追跡で確認 → 既存 file 拡張軸 (新 paradigm) 採用
+
+worker 自律進化:
+- Loop 116 で worker は `.ts` → `.tsx` 拡張子に自律修正 (JSX `<mark>` 返却の文法的必要性) = 連続 56 ループ自律学習成果
+- Loop 117 で worker は cargo test (704 件不変確認) + cargo clippy + cargo fmt + cargo build 全検証通過 = 規模 SS-S で ~6 分完走 = rust 軸復帰の paradigm pivot 安定継続
+- 2-commit pattern (refactor/docs commit → hash 取得 → AGENT_LOG.md 更新 → chore commit) = 連続 57 ループ目で完全安定動作
+
+handoff 判断:
+- 2 ループ + 通常 cadence handoff = handoff 文書記載「2-3 ループ完走推奨」内
+- ファイル参照型 handoff prompt 連続 56 セッション目継承
+- canonical 名移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-60 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 55 セッション目「永続的解決」観測達成
+- harness 衛生連続 55 セッション目達成
+
+Loop 118 推奨候補 (variety 規則 alternation pattern 維持):
+- 候補 K = K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 12 件目 (Loop 79/81/86/95/98/102/106/109/111/113/115 precedent 12 件目) = paradigm pivot (rust → K) + alternation pattern (K(115) → frontend(116) → rust(117) → K(118)) = 9 連続 alternation 維持 = **最有力推奨**
+- 候補 R2 = 既存 file 拡張軸 2 件目 = app_detection_inactive_decision.rs / app_detection_notification.rs に統合できる関数発掘 = 新 paradigm 「既存 file 拡張軸」継続適用検討 (要 grep 精査 + 責務一致確認)
+- 候補 X1' = SessionList.tsx 残 純粋関数発掘 (Loop 116 で 11 件抽出済 = 残候補なし、handoff 候補対象外)
+- 候補 X3 = TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = scope depth 警告 6 件目 = 警告 (frontend 軸 7 件目 = K 軸挟まないと strict warning)
+- 候補 J' = SettingsView.tsx 内部 helper 精査 = scope 22 軸目変種 = handoff 持ち越し
+- 候補 X' / H1 = ユーザー直伝指示要
+
+最有力推奨 = 候補 K (Section 2.3 観測追記 12 件目 = paradigm pivot 維持 + alternation pattern 9 連続維持)。
+
+検証実績:
+- cargo test (lib): 704 passed / 0 失敗 (件数完全不変、Loop 117 で確認)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: ✓ built (vite v7.3.2 = ~1921 modules transformed = +1 module from Loop 114)
+- bash -n scripts/claude-agent-*.sh: OK
+
+引き継ぎ先: mjc-main-20260505-61
+引き継ぎファイル: docs/handoff/mjc-main-20260505-61.txt (ファイル参照型 handoff prompt 連続 56 セッション目)
+旧メイン (mjc-main-20260505-59 = canonical mjc-main の 1 つ前) は handoff 後終了。
+本セッション (mjc-main-20260505-60 = canonical mjc-main 現在) は handoff 後終了予定。
+
+---
