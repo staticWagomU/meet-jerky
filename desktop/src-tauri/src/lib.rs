@@ -26,6 +26,7 @@ mod cloud_whisper;
 mod cloud_whisper_errors;
 mod datetime_fmt;
 mod elevenlabs_realtime;
+mod elevenlabs_realtime_ws_task;
 mod markdown;
 mod openai_realtime;
 mod openai_realtime_ws_task;
