@@ -33234,3 +33234,15 @@ commit: 8f805ec refactor(frontend): TranscriptView の permission status helpers
 後継 mjc-main-20260505-65 への 2-3 ループ完走推奨。最有力候補 = K 軸 (Section 2.3 観測追記 17 件目) で alternation 20 連続維持 / 副推奨 = R6 続行 = TranscriptView.tsx 残 24 純粋関数 (8 グループ: Transcription Source / Meeting Start / Audio Source / Engine / AI Transmission / Track Aria / External API Key) のうち最も独立性高い 1 グループ抽出 = 規模 SS-S = scope 28 軸目候補。詳細は docs/handoff/mjc-main-20260505-65.txt 参照。
 
 ---
+[mjc-main-20260505-65 Loop 128 / 2026-05-06]
+worker: mjc-worker-loop128-archive-plan-stats-update-17 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 127 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126 precedent の 17 件目。Loop 125 → Loop 127 (~2 ループ間 + SESSION SUMMARY 0 件 = アクティブ進行内連続) で +24 行 (33,189 → 33,213)、平均 ~12 行/loop。Loop 125 観測値 (~22.5 行/loop) と比較して ~47% 減 = SESSION SUMMARY 0 件 (アクティブ進行内連続) + paradigm pivot 多軸 (frontend + K + frontend = 3 paradigm 混合) + Loop 127 frontend 軸 chore entry 軽量化 (~12 行) = **アクティブ進行軽量化 paradigm の 2 度目の観測 = Loop 121 (~11 行/loop) との paradigm 再現性確認**。alternation pattern 20 連続成功維持 (frontend(125) → K(126) → frontend(127) → K(128))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 80f5a2a docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 127 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
