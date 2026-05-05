@@ -29142,3 +29142,41 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 ## commit
 - 1ed49b3
 
+
+---
+
+[mjc-main-20260505-33 Loop 67 / 2026-05-05 ~JST]
+
+## What
+- session_store.rs から SessionSummary struct (~12 行) を新規ファイル session_store_types.rs に抽出
+- lib.rs に `mod session_store_types;` 追加 (session_store の直後)
+- session_store.rs 内部 caller 用 use 文追加
+- tests mod に `use crate::session_store_types::SessionSummary;` 追加
+- session_commands.rs L13 use 文を 2 行に分割
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (1175 行 file の段階的責務分離)
+- locality 集約 = SessionSummary が独立 file = データ型単独 module 化
+- transcription_types.rs (mjc-main-20260505-3) precedent 直接展開
+- variety pivot = audio scope (Loop 66) → session_store scope = 新 scope
+- メイン批判判断 連続 19 セッション目達成 = 候補 X session_manager.rs Phase 1 (SessionManagerError) を grep で外部 caller ゼロ発見 → SessionSummary 抽出 (session_commands.rs 直接依存 = locality メリット大) を新候補発見
+
+## How (Tidy First, behavior-preserving)
+- struct 本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- pub visibility 維持
+- derive / serde rename_all 維持
+- ドキュメントコメント維持
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `pub struct SessionSummary` を session_store.rs で grep: 完全に空
+- `pub struct SessionSummary` を session_store_types.rs で grep: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- fa0b967
