@@ -32106,3 +32106,16 @@ AGENTS.md priority: 1 (構造美の補強 = settings 軸の UI 公開 API 機能
 - 旧メイン (mjc-main-20260505-51 = 本セッション = canonical mjc-main) は handoff 後終了
 
 ---
+[mjc-main-20260505-52 Loop 101 / 2026-05-05]
+worker: mjc-worker-transcription-commands-helpers-loop101 (作業)
+範囲: src-tauri/src/transcription_commands.rs (純粋関数 helpers production ~50 行削除 + test 20 件削除 + use 文追加) + src-tauri/src/transcription_commands_helpers.rs (新規 ~456 行) + src-tauri/src/lib.rs (mod 1 行追加)
+内容: transcription_commands.rs L10-58 の純粋関数 helpers (struct RequestedTranscriptionSources + 2 const + validate_stream_count_for_engine + parse_requested_transcription_sources) を新 module transcription_commands_helpers.rs に抽出。tests 20 件を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod transcription_commands_helpers; 追加 (alphabetical = mod transcription_commands; と mod transcription_commands_model; の間)。caller transcription_commands.rs に use 文 1 行追加 (use crate::transcription_commands_helpers::{parse_requested_transcription_sources, validate_stream_count_for_engine};)。可視性 pub(crate) は完全保持。大型 rust file 責務分離 25 file 目 = transcription_commands 軸 2 件目 (scope depth 充実 = settings 軸 (Loop 100) と並立 pattern 確立) = settings_commands 軸 (Loop 100) からの paradigm pivot 達成 = 機能分類軸 9 件目 → 純粋関数機能分離軸 (audio_silence Loop 94 / audio_resample Loop 98 と同形) paradigm 復帰。transcription_commands.rs は 630 → 182 行 (-71%, 本セッション最大削減級)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- c59877f refactor(transcription): 純粋関数 helpers を transcription_commands_helpers.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = transcription_commands 軸の純粋関数機能境界分離 + state 依存無しの helpers 局所化)
+
+---
