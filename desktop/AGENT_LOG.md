@@ -32772,3 +32772,38 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-58 = 2 ループ完走 + 通常 cadence handoff 達成 (前任 mjc-main-20260505-57 から継承して Loop 112/113 完走 + 後継 mjc-main-20260505-59 へ handoff)
+
+## 達成事項
+- **Loop 112 (frontend 軸 4 件目)**: ModelSelector.tsx (498 行) → utils/modelSelectorHelpers.ts (18 行) = 2 純粋関数 (sanitizeProgress + getModelDisplayName) 抽出 = -13 行 / -2.6% 削減 + 大型 frontend file 責務分離 32 file 目 + scope 20 軸目開拓 = 純粋関数機能分離軸 frontend 版 continuity (Loop 107/108/110 と同 paradigm = K 軸 (Loop 111) を挟んだので軸 reset 解釈可能 = 警告境界回避). worker ~90 秒完走 = **規模 SS 最速ライン更新 (Loop 110 = 2.5 分 → Loop 112 = 1.5 分)**. **メイン批判判断 = handoff 推奨候補 X1 を ModelSelector.tsx 構造 grep + Read 精読で「外部 caller 1 件 (TranscriptionControls.tsx) + 純粋関数 2 件のみ + 内部 React component 2 件 (ModelOption + DownloadStatus 抽出対象外) + 規模 SS 補正 (handoff サマリ SS-S 予測 → 実際 SS)」4 条件確認手順で採用 = 連続 53 セッション目達成**.
+- **Loop 113 (K 軸復帰)**: agent-log-archive-plan.md Section 2.3 末尾に観測表 10 件目追記 = Loop 110 → Loop 112 で +94 行 (32,669 → 32,763) / 平均 ~47 行/loop / Loop 110 観測値 (~42 行/loop) と比較 ~12% 増 / paradigm pivot 多軸 (Loop 111 = K 軸 + Loop 112 = 純粋関数機能分離軸 frontend 版 4 件目 = ModelSelector.tsx) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 0 行寄与) の混合増加が寄与 / Loop 110 観測値とほぼ同水準維持の主因 = SESSION SUMMARY 1 件 + Loop 111 K 軸 chore + docs entry / paradigm pivot 多軸の軽量増分パターン継続が安定. **harness 衛生軸 = variety pivot 達成 (Loop 79/81/86/95/98/102/106/109/111 precedent 10 件目 達成)**. **メイン批判判断 = K 軸 1 ループ間隔は precedent 最短 (Loop 79→81, Loop 109→111 = 2 ループ間隔) 外を承知の上で alternation pattern (K(109)→frontend(110)→K(111)→frontend(112)→K(113) = 5 連続) 完璧継続価値優先判断**.
+- **scope 多様性 20 軸到達**: rust 18 軸 (audio + session_store + realtime engine + detection + session_manager + harness + app_detection 機能分類 + settings + transcription_commands + system_audio + secret_store + audio_silence + apple_speech + session_commands + audio_resample + 検知拡張 plan 含む) + frontend 4 軸 (TranscriptView + LiveCaptionWindow + TranscriptDisplay + ModelSelector) = 20 軸.
+- **衝突回避設計 paradigm 4 件目確立**: file 専用 namespace `modelSelectorHelpers.ts` = file 名で衝突回避 = LiveCaptionWindow `getSpeakerLabel` (Loop 108) + TranscriptDisplay `getSpeakerLabel` (Loop 110) + ModelSelector helpers (Loop 112) + TranscriptView formatters (Loop 107) = 4 件 precedent.
+
+## 連続実績更新
+- **メイン批判判断 連続 53 セッション目達成** (前任から +1)
+- **worker 自律 2-commit pattern 連続 53 ループ目** (前任から +2 = Loop 112 frontend + Loop 113 K)
+- **harness 衛生連続 53 セッション目** (canonical 移譲後 scripts/* に M 表示再出現せず確認継続)
+- **ファイル参照型 handoff prompt 連続 54 セッション目** (本 handoff 含む)
+- **大型 file 責務分離 32 file 目** (Loop 112 ModelSelector で +1)
+
+## 検証実績
+- cargo test (lib): 704 passed / 0 失敗 (件数完全不変、本セッション rust 触れていない)
+- npm run build: ✓ built in 824ms / 1920 modules transformed (Loop 112 完走時 = +1 module from Loop 110 1919 modules)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 112/113 両方)
+
+## 次セッション (mjc-main-20260505-59) への期待
+- handoff content file `docs/handoff/mjc-main-20260505-59.txt` に **Loop 114 推奨候補 X1 = MeetingDetectedBanner.tsx (~18KB) 純粋関数抽出 = frontend 軸 5 件目 = scope 21 軸目開拓 + warning 境界注意 (K 軸を Loop 113 で挟んだので軸 reset 解釈可能だが 5 連続)** を最有力候補として記載
+- 代替候補: X2 SessionList.tsx (~23KB 規模 S) / X3 TranscriptView 残 27 純粋関数段階的分割 (scope depth 警告 6 件目) / R rust 軸復帰 (新発掘 grep 必要) / K 軸 (1 ループ間隔 SKIP 推奨) / X'/H1 (ユーザー直伝指示要) / J' (SettingsView 内部 helper 精査)
+- frontend file 規模ランキング全把握済 (handoff サマリ記載): SettingsView 91KB > TranscriptView 86KB > SessionList 23KB > LiveCaptionWindow 18KB (抽出済) ≈ MeetingDetectedBanner 18KB (未発掘 = X1) > TranscriptDisplay 17KB (抽出済) > ModelSelector 16KB (Loop 112 抽出済)
+
+## 残課題 (継承)
+- TranscriptView.tsx 残 純粋関数 27 件 = 段階的分割抽出推奨 (scope depth 警告 6 件目)
+- SettingsView.tsx 内部 component helper 精査 = 抽出余地有無確認要
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+- resample_audio dead code 削除 = ユーザー直伝指示要 (`#[allow(dead_code)]` 残置の意図可能性)
+
+---
