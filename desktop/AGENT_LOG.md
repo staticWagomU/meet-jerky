@@ -32022,3 +32022,17 @@ AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離
 - 次アクション: chore commit (本 Loop 99 自身) 後、メイン (mjc-main-20260505-50) が handoff 判断
 
 ---
+
+[mjc-main-20260505-51 Loop 100 / 2026-05-05]
+worker: mjc-worker-settings-commands-loop100 (作業)
+範囲: src-tauri/src/settings.rs (tauri commands 4 件 production ~30 行削除 + section 区切りコメント整理) + src-tauri/src/settings_commands.rs (新規 ~40-60 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 4 件)
+内容: settings.rs L160-192 の tauri commands 4 件 (get_settings + update_settings + get_default_output_directory + select_output_directory) を新 module settings_commands.rs に抽出。tests は state mock 困難のため直接 test 無し → 移動不要 (件数完全不変)。lib.rs に mod settings_commands; 追加 (alphabetical = mod settings; と mod settings_permission; の間) + invoke_handler の settings::xxx を settings_commands::xxx に変更 (4 件)。settings.rs 内の AppSettings / TranscriptionEngineType / default_output_directory / SettingsStateHandle / 全 tests は完全に不変。大型 rust file 責務分離 24 file 目 = settings 軸 2 件目 (scope depth 充実) = audio_resample 軸 (Loop 98) からの pivot 達成 = 機能分類軸 paradigm 9 件目 (system_audio_pcm/format / app_detection_* / session_commands_list / secret_store_commands と同形)。settings_permission.rs (Loop 89) と並立する settings 軸 2 件目達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 41a9e7e7bbc46f5423ab04778937f917aab4b5c8 refactor(settings): tauri commands 4 件を settings_commands.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = settings 軸の UI 公開 API 機能境界分離)
+
+---
