@@ -31661,3 +31661,125 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離 = sanitize/沈黙検知/resample の 3 軸を 2 module に明示分離)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-48
+
+## 本セッション実績 (2 ループ完走 + 通常 cadence handoff)
+
+### Loop 93 = secret_store_commands.rs 抽出 (構造分離 19 file 目, secret_store 軸 1 件目 = 新 scope, ~3-4 分)
+- 新規 file: src-tauri/src/secret_store_commands.rs (107 行 = 6 tauri::command + test 4 件)
+- 削除元: src-tauri/src/secret_store.rs (tauri commands 6 個 production ~55 行 + test 4 件削除 = 303 → 200 行)
+- lib.rs: mod secret_store_commands; 1 行追加 (alphabetical = secret_store 直後) + invoke_handler の secret_store::xxx を secret_store_commands::xxx に変更 (6 件)
+- production fn: set_openai_api_key + clear_openai_api_key + has_openai_api_key + set_elevenlabs_api_key + clear_elevenlabs_api_key + has_elevenlabs_api_key
+- caller: lib.rs invoke_handler のみ = 影響範囲明確
+- test 4 件 = command 軸 (set_openai/elevenlabs_api_key_rejects_empty_input + japanese_message + whitespace_chars)
+- secret_store.rs 残: SecretKey enum + entry_for + set_secret + get_secret + delete_secret + has_secret + 残 test 6 件 (SecretKey 軸 5 件 + 内部 helper 軸 1 件)
+- commits: 2728281 refactor + 1654d19 chore
+- 構造分離 19 file 目 = secret_store 軸 1 件目 (新 scope) = system_audio 軸 (Loop 91/92) からの pivot 達成 = 機能分類軸 paradigm
+- handoff 警告「scope 払底気味」を grep + Read 精査で覆して secret_store 軸を新規開拓 → メイン批判判断 連続 43 セッション目達成
+
+### Loop 94 = audio_silence.rs 抽出 (構造分離 20 file 目, audio_silence 軸 1 件目 = 新 scope, ~6 分)
+- 新規 file: src-tauri/src/audio_silence.rs (98 行 = 4 const + 2 fn + test 6 件)
+- 削除元: src-tauri/src/audio_utils.rs (沈黙検知 section production ~35 行 + test 6 件削除 = 325 → 227 行)
+- lib.rs: mod audio_silence; 1 行追加 (alphabetical = audio_sample_helpers 直後)
+- transcription_whisper_stream.rs: use 文を 2 つに分割 (audio_silence + audio_utils alphabetical 順)
+- production: WHISPER_SAMPLE_RATE + MIN_FLUSH_SAMPLES + SILENCE_LOOKBACK_SAMPLES + SILENCE_THRESHOLD_RMS (4 const) + calculate_rms + is_tail_silent (2 fn) = pub(crate)
+- caller: transcription_whisper_stream.rs の use 文 1 箇所のみ = 影響範囲最小
+- test 6 件 = 沈黙検知軸 (test_calculate_rms_empty_slice + silence_below + voice_above + test_is_tail_silent_returns_false + detects_voice_then_silence + rejects_voice_then_voice)
+- audio_utils.rs 残: sanitize_audio_sample + リサンプリング軸 (RESAMPLE_CHUNK_SIZE + sinc_params + dead resample_audio) + test 13 件 (sanitize 7 + resample 4 + subnormal 2)
+- commits: df339d8 refactor + fdf036f chore
+- 構造分離 20 file 目 = audio_silence 軸 1 件目 (新 scope) = secret_store 軸 (Loop 93) からの pivot 達成 = paradigm 切り替え (機能分類軸 → 純粋関数機能分離軸)
+- diff stats: audio_silence.rs +98 / audio_utils.rs -98 = 完全 symmetric = 振る舞い不変の最良証拠
+
+### 累計
+- secret_store.rs: 303 → 200 行 (-34%) + secret_store_commands.rs (107 行)
+- audio_utils.rs: 325 → 227 行 (-30%) + audio_silence.rs (98 行)
+- 合計: 628 → 632 行 (4 file 分散 = 機能境界明示化)
+
+## 継続 pattern
+
+- メイン批判判断 連続 43 セッション目達成 (handoff 警告「scope 払底気味」を 4 ループ連続 = Loop 89 settings + Loop 90 transcription_commands + Loop 91 system_audio + Loop 93 secret_store + Loop 94 audio_silence で grep + Read 精査で覆す precedent)
+- worker 自律 2-commit pattern 連続 35 ループ目 (Loop 93 + Loop 94, refactor commit hash 実 hash 直書き + chore commit hash 書かず = Loop 80/85/86/87/88/89/90/91/92 進化 pattern 完璧踏襲)
+- harness 衛生連続 43 セッション目観測達成 (canonical 移譲 = bash scripts/agent-adopt-main.sh mjc-main-20260505-48 mjc-main 実施後、git status --short で scripts/* M 表示再出現せず = 永続的解決の確信さらに強化)
+- ファイル参照型 handoff prompt 連続 45 セッション目 (本 SESSION SUMMARY の後継 mjc-main-20260505-49 へ)
+- 直近 28 ループ多軸分散 = 構造分離 (Loop 67-94 のうち 20 件) + 機能拡張/docs (5 件 = Loop 71/72/74/78/84) + harness 衛生 (3 件 = Loop 79/82/86) = **20:5:3** (Loop 94 で 19:5:3 → 20:5:3 に均衡向上)
+- scope 多様性: session_store (4) + audio (1) + realtime (5) + detection (5) + session_manager (2) + harness (3) + app_detection 機能分類 (2) + settings (1) + transcription_commands (1) + system_audio 機能分類 (2) + secret_store (1) + audio_silence (1) = **12 scope 分散** (Loop 94 で 11 → 12 に拡張)
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (件数完全不変、Loop 93/94 = 移動のみ)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## 現在の git 状態
+- branch: main, ahead ~395 (origin/main から先行、本セッション +5 commit 想定)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-48) の commit:
+  1. 2728281 refactor(secret-store): tauri commands を secret_store_commands.rs に抽出 (Loop 93)
+  2. 1654d19 chore(agent-log): Loop 93 エントリ追記
+  3. df339d8 refactor(audio): 沈黙検知軸を audio_silence.rs に抽出 (Loop 94)
+  4. fdf036f chore(agent-log): Loop 94 エントリ追記
+  5. (本 SESSION SUMMARY commit 予定)
+
+## 後継 mjc-main-20260505-49 への期待
+
+- 2-3 ループ完走推奨 (本セッションは 2 ループ完走 = 後継も同水準目指す)
+- Loop 95 候補は下記 6 つから選定:
+
+### 候補 X 新規発掘 (Loop 95 推奨, 構造分離 21 件目, 別 scope = audio_silence/secret_store 連続避ける)
+- audio_silence/secret_store scope = 各 1 連続 = Loop 95 で 2 連続避ける = 別 scope pivot 推奨
+- 中サイズ file 候補 (grep + Read 必要):
+  - **apple_speech.rs (382 行)**: macos 限定、Loop 92 cfg(macos) 軸 paradigm から 3 ループ離れて警告境界外、production ~230 行で抽出余地あり
+- メイン批判判断 連続 44 セッション目達成のチャンス
+- 規模 SS-S 想定 (grep 結果次第)
+
+### 候補 X' audio_resample.rs 抽出 (Loop 95 弱推奨, 同 scope 連続注意)
+- audio_utils.rs に残るリサンプリング軸 (sinc_params + RESAMPLE_CHUNK_SIZE + dead resample_audio + test 4 件) を audio_resample.rs に抽出
+- audio_utils.rs を sanitize 軸のみ ~50-60 行 + test に絞り込む構造美完成
+- 同 scope 連続注意 (audio_silence + audio_resample = audio_utils.rs 起源 2 連続)
+- ただし dead resample_audio 削除も同時に判断要 = ユーザー直伝指示要可能性
+
+### 候補 X'' resample_audio dead code 削除 (Loop 95 候補 B = 機能改善軸 paradigm 切り替え, ユーザー直伝指示要)
+- audio_utils.rs L79 `#[allow(dead_code)] pub(crate) fn resample_audio` (~67 行) + 関連 test 4 件 (~50 行) = 計 ~117 行削減
+- production caller ゼロ確認済 (本セッション grep 確認)
+- メリット: AGENTS.md 優先順位 1 (構造美 = dead code 削除で意図明示)
+- デメリット: `#[allow(dead_code)]` 明示は将来用の意図的残置の可能性 = ユーザー確認推奨
+
+### 候補 K3 後続 (機能拡張/docs 軸 1 連続復帰)
+- detection-extension-plan.md / agent-log-archive-plan.md / autonomous-main-prompt-claude.md = 範囲限定なら可能
+
+### 候補 H1 (harness 衛生軸 4 件目 = ユーザー直伝指示要)
+- agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header 追加 (規模 SS、~5-10 分)
+
+### 候補 J (frontend 主観性高警告継承)
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+
+### 候補 H' (大量 untracked 整理 ユーザー直伝指示要 継承、低優先)
+
+### 低優先 (継承)
+- B1. Microsoft Teams window title fallback / A1. Webex 日本語 window title
+
+## 検証制約 (継承、再掲)
+
+- cmake あり → cargo test 704 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build 主検証
+- 課金禁止
+- `--no-verify` 禁止 / `--dangerously-skip-permissions` は harness 内のみ
+- Keychain / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 1 回 (Loop 94 worker 検証中 = autonomous-main-prompt-claude.md に従って次の自律改善ループへ進めという指示 = 本 handoff 移行で対応継続)
+
+## context 管理アクション
+
+- 本セッションは 2 ループ完走 = handoff 文書 L256「後継は 2-3 ループ完走推奨」達成
+- 引き継ぎ先: mjc-main-20260505-49
+- 引き継ぎファイル: `docs/handoff/mjc-main-20260505-49.txt` (ファイル参照型 handoff prompt 連続 45 セッション目)
+- 旧メイン (mjc-main-20260505-48 = 本セッション = canonical mjc-main) は handoff 後終了
+- 判断時の使用率: 観測手段なしのため Loop 94 完走後に保守的に handoff へ進む方針 (Loop 93 = 規模 SS 3-4 分 + Loop 94 = 規模 SS 6 分 + 大量 grep/Read 操作累積で context 使用率推定中-高 + watchdog nudge 受信)
+
+---
