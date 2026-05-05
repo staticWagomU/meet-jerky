@@ -29541,3 +29541,34 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 80ba63d
 
 ---
+
+[mjc-main-20260505-35 Loop 71 / 2026-05-05 JST]
+
+## What
+- docs/architecture/detection-extension-plan.md (新規 268 行) を作成 = Slack Huddle / Discord stage / 補助 service (MS Teams Channel Calls / Zoom Phone) の段階拡張 plan
+- 構成: Overview / Current State / Target Services / Detection Strategy / Phase Plan (Phase 1-5) / Open Questions / 参考
+- worker grep 調査 (WATCHED_BUNDLE_IDS / throttle_key 3 形式 / window title 経路 / Slack/Discord 言及) を反映
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張に向けた将来準備寄与
+- variety pivot 完全実行 = Loop 64-70 大型 rust file 責務分離 7 連続到達 = sweep 警告超過 → 機能拡張軸へ完全シフト
+- 実コード変更は規模 M (window title pattern matching インフラ要) で 1 ループ困難 → 設計 plan のみに縮退
+- transcription-refactor-plan.md precedent (Phase 1-6 完全完遂、Loop 1-63 で実装) と同一 pattern
+
+## How
+- worker grep 調査 4 件で現状把握 → Section 2 に正確反映
+- 重要発見: classify_meeting_window_title はフル実装済み (行 574) → Phase 2 縮小 (インフラ構築不要、pattern 追加のみ)
+- WATCHED_BUNDLE_IDS は &[(&str, &str)] 2-tuple = MatchStrategy 未実装 → Phase 1 で型拡張が必要
+- Slack/Discord 言及は src-tauri/src/ にゼロ = 完全新規実装
+- Phase 1-5 + 各規模見積を記述
+- Open Questions に要検証項目 8 件 (window title 実例取得 AppleScript 付き) を残し後続 Loop の調査タスクを明示
+
+## Verify
+- agent-verify.sh: OK (docs のみ skip)
+- trailing whitespace: なし
+- 行数: 268 (200-300 目安内)
+
+## commit
+- 5dbf825
+
+---
