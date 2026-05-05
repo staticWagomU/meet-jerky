@@ -41,6 +41,8 @@ AGENT_LOG.md は ~30,333 行 / 56 セッション / 82 Loop に達し、`tail -3
 
 > **更新観測 (mjc-main-20260505-50 Loop 98 時点)**: Loop 95 → Loop 98 (~3 ループ間 + SESSION SUMMARY 1 件) で +215 行 (31,799 → 32,014)、平均 ~72 行/loop。Loop 95 観測値 (~84 行/loop) と比較して ~14% 減 = paradigm pivot 連続 (Loop 96 = harness 衛生 K 軸 1 連続復帰 + Loop 97 = 機能分類軸 = session_commands 軸 + Loop 98 = 純粋関数機能分離軸 = audio_resample 軸) で SESSION SUMMARY 1 件 + chore entry 4 件 + docs entry 1 件 + refactor entry 0 行 (refactor は AGENT_LOG.md 触らず) の混合増加が寄与。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~72 行 = ~288-720 行/時間 の範囲、アクティブセッション間の差異)。
 
+> **更新観測 (mjc-main-20260505-53 Loop 102 時点)**: Loop 98 → Loop 102 (~4 ループ間 + SESSION SUMMARY 1 件) で +250 行 (32,014 → 32,264)、平均 ~63 行/loop。Loop 98 観測値 (~72 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (Loop 99 = harness 衛生 K 軸 + Loop 100 = 機能分類軸 = settings_commands 軸 + Loop 101 = 純粋関数機能分離軸 = transcription_commands_helpers 軸 + Loop 102 = 純粋関数機能分離軸 = realtime_ws_helpers 軸 = realtime engine 4 軸目開拓) で SESSION SUMMARY 1 件 + chore entry 4 件 + refactor entry 3 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~63 行 = ~252-630 行/時間 の範囲、アクティブセッション間の差異)。
+
 ### 2.4 既存運用の維持コスト
 
 - worker prompt 必須要素: 「冒頭で末尾 350 行を読む」「Read 全体禁止 = tail/grep のみ」 = 末尾参照は維持できている
