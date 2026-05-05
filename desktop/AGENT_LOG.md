@@ -30702,3 +30702,40 @@ worker prompt を ~250 行で書くと「~135-220 行目安」を超える + cal
 - `realtime_audio_helpers.rs` 大型 rust file 責務分離 10 file 目 (本セッション Loop 80 で新規作成)
 
 ---
+
+[mjc-main-20260505-41 Loop 81 / 2026-05-05 ~JST]
+
+## What
+- 新 file `src-tauri/src/realtime_error_helpers.rs` (~26 行) を作成 = `pub(crate) fn push_error(engine_label: &str, ...)` 配置
+- `src-tauri/src/lib.rs` L23 に `mod realtime_error_helpers;` を alphabetical 順で挿入
+- elevenlabs_realtime.rs: production 3 caller (L235/L355/L360) + test 8 caller (L594/L615/L637/L654/L666/L682/L699/L713) を `crate::realtime_error_helpers::push_error("ElevenLabs", ...)` に変更 + `fn push_error` 定義 (~12 行) 削除
+- openai_realtime.rs: production 2 caller (L305/L406) + test 8 caller (L557/L579/L601/L617/L628/L643/L659/L673) を `crate::realtime_error_helpers::push_error("OpenAI", ...)` に変更 + `pub(crate) fn push_error` 定義 (~15 行) 削除
+- test 内 expected text は format!() 同結果のため無変更
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file 重複 ~27 行を single source of truth 化)
+- 大型 rust file 責務分離 11 file 目達成 (Loop 80 = realtime_audio_helpers.rs の自然な続編)
+- visibility 非対称解消 = 両 file `crate::realtime_error_helpers::push_error` で対称化
+- mjc-main-20260505-41 Loop 81 メイン批判判断 (連続 33 セッション目): handoff の expected text 4 件予測を grep + Read で 3 件と修正 + 無変更 OK 判定 + L89/L110 を scope 外と判定 = batch サイズ管理を継続
+
+## How (Tidy First, behavior-preserving)
+- visibility: elevenlabs private fn + openai pub(crate) fn → 両方 `crate::realtime_error_helpers::pub(crate) fn` で統一
+- engine_label 引数化: format!("[{engine_label} Realtime エラー: {message}]") で両 file 同 format 共有
+- L89/L110 (init phase format 直書き) は scope 外 = push_error 関数経由ではない別経路
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `fn push_error` を grep: 0 件
+- openai_realtime.rs から `fn push_error` を grep: 0 件
+- realtime_error_helpers.rs から `pub(crate) fn push_error` を grep: 1 件
+- trailing whitespace: なし
+
+## Commits
+- dfc8aed1a9da8c09278ff9a27fd89b9b3dee1c75 refactor(realtime): push_error を realtime_error_helpers.rs に共通化
+- <hash2> chore(agent-log): Loop 81 commit hash dfc8aed1a9da8c09278ff9a27fd89b9b3dee1c75 を AGENT_LOG.md に記入
+
+---
