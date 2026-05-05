@@ -31327,3 +31327,16 @@ AGENTS.md priority: 1 (構造美の補強 = 機能分類軸の single source of 
 - メイン批判判断 連続 40 セッション目を維持 (handoff 予測の鵜呑み禁止、grep + Read で精査、本セッション Loop 87 で「scope 払底気味」警告を発掘で覆した precedent 継承)
 
 ---
+[mjc-main-20260505-46 Loop 89 / 2026-05-05]
+worker: mjc-worker-settings-permission-loop89 (作業)
+範囲: src-tauri/src/settings.rs (permission 関連 production ~66 行削除 + test 4 件削除) + src-tauri/src/settings_permission.rs (新規 ~121 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 2 件)
+内容: settings.rs L195-260 の permission section (3 const + permission_status_to_string + check_microphone_permission + check_screen_recording_permission + macos_permissions submod) を新 module settings_permission.rs に抽出。tests 4 件 (test_permission_status_to_string_maps_known_values + permission_status_to_string_returns_denied_for_negative_values_as_fail_safe + permission_status_to_string_returns_denied_for_value_adjacent_to_granted_as_fail_safe + permission_status_to_string_returns_denied_for_i32_max_as_fail_safe) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod settings_permission; 追加 + invoke_handler の settings::check_microphone_permission / settings::check_screen_recording_permission を settings_permission::* に変更。大型 rust file 責務分離 15 file 目 = settings 軸 1 件目 (新 scope) = handoff「scope 払底気味」警告をメイン側 grep + Read 精査で覆した発掘成果 = メイン批判判断 連続 40 セッション目寄与。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 7c10dc74991a3843dfa70b20d4c786407724e5d9 refactor(settings): permission チェック関連 section を settings_permission.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = settings 軸の機能境界分離)
+
+---
