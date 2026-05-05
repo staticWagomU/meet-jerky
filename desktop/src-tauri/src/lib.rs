@@ -36,6 +36,7 @@ mod session_store_parse;
 mod session_store_render;
 mod session_store_types;
 mod settings;
+mod settings_permission;
 mod system_audio;
 mod transcript_bridge;
 mod transcription_commands;
@@ -380,8 +381,8 @@ pub fn run() {
             settings::update_settings,
             settings::get_default_output_directory,
             settings::select_output_directory,
-            settings::check_microphone_permission,
-            settings::check_screen_recording_permission,
+            settings_permission::check_microphone_permission,
+            settings_permission::check_screen_recording_permission,
             secret_store::set_openai_api_key,
             secret_store::clear_openai_api_key,
             secret_store::has_openai_api_key,
