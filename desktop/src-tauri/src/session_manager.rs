@@ -148,18 +148,8 @@ impl Default for SessionManager {
 mod tests {
     use super::*;
     use crate::datetime_fmt::jst;
-    use crate::session_manager_persist::persist_if_configured;
+    use crate::session_manager_persist::{list_md_files, persist_if_configured};
     use tempfile::tempdir;
-
-    /// 指定ディレクトリ直下の `.md` ファイルを列挙する。
-    fn list_md_files(dir: &std::path::Path) -> Vec<PathBuf> {
-        std::fs::read_dir(dir)
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
-            .collect()
-    }
 
     #[test]
     fn append_writes_segment_to_disk_when_started_with_output() {

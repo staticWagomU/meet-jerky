@@ -21,3 +21,14 @@ pub(crate) fn persist_if_configured(active: &ActiveSession, phase: &str) {
         }
     }
 }
+
+/// 指定ディレクトリ直下の `.md` ファイルを列挙する (test helper)。
+#[cfg(test)]
+pub(crate) fn list_md_files(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    std::fs::read_dir(dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+        .collect()
+}

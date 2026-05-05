@@ -111,16 +111,8 @@ pub fn discard_session(state: tauri::State<'_, Arc<SessionManager>>) -> Result<(
 mod tests {
     use super::*;
     use crate::datetime_fmt::jst;
+    use crate::session_manager_persist::list_md_files;
     use tempfile::tempdir;
-
-    fn list_md_files(dir: &Path) -> Vec<PathBuf> {
-        std::fs::read_dir(dir)
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .map(|e| e.path())
-            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
-            .collect()
-    }
 
     // Cycle 1: finalize_and_save_session_inner が活性セッションを書き出せる
     #[test]
