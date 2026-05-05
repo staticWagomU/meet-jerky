@@ -40,6 +40,7 @@ mod settings_permission;
 mod system_audio;
 mod transcript_bridge;
 mod transcription_commands;
+mod transcription_commands_model;
 mod transcription_emission;
 mod transcription_error_payload;
 mod transcription_manager;
@@ -372,9 +373,9 @@ pub fn run() {
             audio::stop_recording,
             system_audio::start_system_audio,
             system_audio::stop_system_audio,
-            transcription_commands::list_models,
-            transcription_commands::is_model_downloaded,
-            transcription_commands::download_model,
+            transcription_commands_model::list_models,
+            transcription_commands_model::is_model_downloaded,
+            transcription_commands_model::download_model,
             transcription_commands::start_transcription,
             transcription_commands::stop_transcription,
             settings::get_settings,
