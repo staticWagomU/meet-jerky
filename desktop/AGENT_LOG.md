@@ -30768,3 +30768,58 @@ worker prompt を ~250 行で書くと「~135-220 行目安」を超える + cal
 - fe90b1384a19e38042d9820865d0b111124a9d24 docs(architecture): agent-log-archive-plan.md Section 2.1 数値更新 + Phase 状態明示
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-41
+
+## Overview
+
+Loop 81 + Loop 82 = 2 ループ完走 = 通常 cadence。多軸分散 = 構造分離軸 1 件 (Loop 81) + harness 衛生軸 1 件 (Loop 82)。直近 16 ループ累計で 構造分離 10 + 機能拡張/docs 4 + harness 衛生 2 = 10:4:2 多軸分散維持。
+
+### Loop 81 = X4-2 = push_error 共通化 (規模 S 上限、~7 分、構造分離軸 2 連続)
+
+- 新 file `src-tauri/src/realtime_error_helpers.rs` (24 行) を作成 = `pub(crate) fn push_error(engine_label: &str, pending, speaker, source, message)` 配置
+- elevenlabs_realtime.rs / openai_realtime.rs から `fn push_error` 定義削除 + caller 21 件 (production 5 + test 16) を `crate::realtime_error_helpers::push_error("ElevenLabs"/"OpenAI", ...)` に変更
+- engine_label 引数化で両 file 重複 ~27 行を single source of truth 化 + visibility 非対称 (elevenlabs private vs openai pub(crate)) 解消で対称化
+- 振る舞い不変 = cargo test --lib 704 件全 pass (件数完全不変、format!() が同 expected text を生成するので test 内 assert は無変更)
+- 大型 rust file 責務分離 11 file 目達成 (Loop 80 = realtime_audio_helpers.rs の自然な続編)
+- AGENTS.md priority 1 直接寄与 (クラッシュ予防の構造美)
+- メイン批判判断 連続 33 セッション目: handoff の expected text 4 件予測を grep + Read で 3 件 + 無変更 OK 判定 + L89/L110 (init phase format 直書き) を scope 外と判定 = batch サイズ管理を継続
+
+**Commits**:
+- dfc8aed refactor(realtime): push_error を realtime_error_helpers.rs に共通化
+- 9da691c chore(agent-log): Loop 81 commit hash dfc8aed を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-80 precedent 適用 22 連続)
+- a343bc3 chore(agent-log): Loop 81 の AGENT_LOG.md 内 hash placeholder を実 chore hash 9da691c に置換 (worker placeholder 残留補正、Loop 60-80 precedent 適用 22 連続)
+
+### Loop 82 = agent-log-archive-plan.md 数値更新 + Phase 状態明示 (規模 SS、~3 分、harness 衛生軸 = variety pivot)
+
+- Section 2.1 数値更新: 30,333 → 30,741 行 / 56 → 57 session / 82 → 84 Loop / 31 → 32 SUMMARY / 最新 entry L30305 → L30706
+- Section 2.3 末尾に Loop 79 → Loop 81 の delta 観測注記追加 (~3 行 blockquote)
+- Section 5 Phase 4 直後に Phase 状態 subsection 新設 (Phase 1-4 全て「未着手 + ユーザー直伝指示要」明示)
+- variety pivot: 構造分離軸 2 連続 (Loop 80/81) → harness 衛生軸 (Loop 82) = 警告境界 (3-4 連続) より遠い
+- 主観性 0 (数値更新) + 主観性低 (Phase 状態は plan 既存記述「実施は別途ユーザー直伝指示要」L99 の整理)
+- AGENTS.md L46-L52 自律改善方針寄与
+- メイン批判判断 連続 34 セッション目: 構造分離 3 連続到達警告を回避するため harness 衛生軸 pivot を選択 + plan 数値更新は機械的計算で主観性 0 に絞り込み
+
+**Commits**:
+- fe90b13 docs(architecture): agent-log-archive-plan.md Section 2.1 数値更新 + Phase 状態明示
+- c61019b chore(agent-log): Loop 82 commit hash fe90b13 を AGENT_LOG.md に記入 (Loop 60-81 precedent 適用 23 連続)
+
+## 多軸分散と variety 規則 (Loop 82 完走時点)
+
+直近 16 ループ (Loop 67-82): 構造分離軸 10 件 + 機能拡張/docs 軸 4 件 + harness 衛生軸 2 件 = 10:4:2 多軸分散。Loop 81 = 構造分離 2 連続到達 → Loop 82 = harness 衛生で pivot = 警告境界回避。Loop 83 で構造分離軸復帰 (X4-3 / L89-L110) または機能拡張/docs 軸 (K3) または harness 衛生 2 連続 (H1) いずれも自由度内。
+
+## worker 完走実績
+- Loop 81 + Loop 82 = 2/2 累計 182/182 (100% 維持)
+- worker 自律 2-commit pattern 連続 23 ループ目達成 (Loop 82 では worker が hash placeholder を実 hash fe90b13 で書き placeholder を残さなかった = Loop 80 precedent 完璧再現)
+- harness 衛生連続 35 セッション目 (canonical 移譲後 scripts/* M 表示再出現せず = `bfb9846` PATH inner shell escape の永続的解決を再強化)
+
+## 後継 mjc-main-20260505-42 への引き継ぎ予告 (Loop 83 推奨候補)
+
+- **X4-3** = reader_task entry 共通化 (規模 M、handle_event 固有 trait 抽出必要、構造分離軸 1 連続復帰)
+- **L89-L110-merge** = realtime engine init phase format 直書き共通化 = X4-2 続編 (規模 SS、両 file L89/L110 を `crate::realtime_error_helpers::push_error("ElevenLabs"/"OpenAI", ...)` で統一、構造分離軸 1 連続復帰)
+- **K3** = 検知拡張 Phase 2 着手判定 plan 追記 (主観性高警告、Q1/Q2 実機要件未解決のため範囲限定推奨)
+- **H1** = agent-log-archive-plan.md Phase 1 着手 (ユーザー直伝指示要、harness 衛生 2 連続到達)
+- **X5** = session_manager 内部抽出 = 抽出メリット 0 grep 確認済 = skip 推奨
+- **J** = frontend 主観性高警告継承
+
+---
