@@ -18,6 +18,7 @@ mod datetime_fmt;
 mod elevenlabs_realtime;
 mod markdown;
 mod openai_realtime;
+mod realtime_audio_command;
 mod secret_store;
 mod session;
 mod session_commands;

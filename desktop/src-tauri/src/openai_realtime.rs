@@ -25,6 +25,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
+use crate::realtime_audio_command::AudioCommand;
 use crate::secret_store::{get_secret, SecretKey};
 use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
 use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
@@ -74,13 +75,6 @@ pub struct OpenAIRealtimeStream {
     source: Option<TranscriptionSource>,
     /// `tauri::async_runtime::spawn` の戻り値。Drop 時にキャンセルする。
     task_handle: Option<tauri::async_runtime::JoinHandle<()>>,
-}
-
-#[derive(Debug)]
-enum AudioCommand {
-    Samples(Vec<f32>),
-    /// 入力終了を示す。WS タスクは flush してから WS をクローズする。
-    Finalize,
 }
 
 impl OpenAIRealtimeStream {
