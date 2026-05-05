@@ -33199,3 +33199,15 @@ commit: 8764f6c docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-64 Loop 127 / 2026-05-06]
+worker: mjc-worker-loop127-permission-status-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (-28 行 = 2 関数削除 + import 1 行追加 = 実質 -27 行) + src/utils/permissionStatusHelpers.ts (新規 ~27 行 = export 2 関数)
+内容: TranscriptView.tsx L81-108 の getPermissionStatusLabel + getPermissionRowClassName を新 file utils/permissionStatusHelpers.ts に抽出。frontend 軸 8 件目 = 純粋関数機能分離軸 frontend 版 5 件目 = scope 27 軸目開拓 = 大型 frontend file 責務分離 40 file 目 = R6 段階的分割 2 件目 (Loop 125 audio level helpers の続編)。callsite 4 件 (L1677 + L1682 + L1834 + L1863) は import 追加のみで参照解決。alternation pattern 19 連続成功維持 (K(126) → frontend(127))。メイン批判判断 = 既存 utils/macosPrivacySettings.ts (OS settings paths) との責務階層精査で **異階層 = 新 file 作成軸採用** = Loop 119/121/123/125 教訓継承 (paradigm 反復 < 責務階層精査)。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/permissionStatusHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: 8f805ec refactor(frontend): TranscriptView の permission status helpers を utils/permissionStatusHelpers.ts に抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: メイン側で SESSION SUMMARY 末尾追記 chore commit を予定
+
+---
