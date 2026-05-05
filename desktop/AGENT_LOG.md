@@ -32957,3 +32957,14 @@ Loop 118 推奨候補 (variety 規則 alternation pattern 維持):
 本セッション (mjc-main-20260505-60 = canonical mjc-main 現在) は handoff 後終了予定。
 
 ---
+[mjc-main-20260505-61 Loop 118 / 2026-05-06]
+worker: mjc-worker-loop118-archive-plan-stats-update-12 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 12 件目追記、~3 行)
+内容: Loop 117 完了時点 (32,959 行) の更新観測を Section 2.3 末尾に追記。Loop 114 → Loop 117 で +138 行 / 平均 ~46 行/loop。Loop 114 観測 (~29 行/loop) と比較して ~59% 増 = paradigm pivot 多軸 (K 軸 + frontend 軸 6 件目 = SessionList.tsx + rust 軸復帰 = 既存 file 拡張軸 = 新 paradigm 1 件目 = app_detection_url_helpers.rs 統合) で SESSION SUMMARY 2 件 + chore entry 4 件 + docs entry 1 件 + refactor entry 2 件 (refactor は AGENT_LOG.md 0 行寄与) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 117 rust 軸 → Loop 118 K 軸 = paradigm pivot 達成 + alternation pattern 完璧継続: K(109) → frontend(110) → K(111) → frontend(112) → K(113) → frontend(114) → K(115) → frontend(116) → rust(117) → K(118) = 10 連続成功)、Loop 79/81/86/95/98/102/106/109/111/113/115 precedent 12 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 117 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- b841fa6 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 117 完了時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
