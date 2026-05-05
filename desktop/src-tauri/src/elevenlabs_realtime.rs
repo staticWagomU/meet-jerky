@@ -151,11 +151,12 @@ mod ws_task {
     use base64::Engine;
     use futures_util::{SinkExt, StreamExt};
     use parking_lot::Mutex;
-    use rubato::{Resampler, SincFixedIn};
+    use rubato::SincFixedIn;
     use serde_json::{json, Value};
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
 
+    use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};
     use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
     use super::{AudioCommand, ELEVENLABS_REALTIME_SAMPLE_RATE};
@@ -432,43 +433,6 @@ mod ws_task {
             speaker: speaker.clone(),
             is_error: Some(true),
         });
-    }
-
-    fn resample_block(
-        resampler: &mut Option<SincFixedIn<f32>>,
-        buffer: &mut Vec<f32>,
-        input: &[f32],
-    ) -> Result<Vec<f32>, String> {
-        if let Some(resampler) = resampler {
-            buffer.extend_from_slice(input);
-            let mut out: Vec<f32> = Vec::new();
-            let chunk_size = resampler.input_frames_next();
-            while buffer.len() >= chunk_size {
-                let chunk: Vec<f32> = buffer.drain(..chunk_size).collect();
-                let refs: Vec<&[f32]> = vec![&chunk];
-                match resampler.process(&refs, None) {
-                    Ok(result) => {
-                        if let Some(channel) = result.first() {
-                            out.extend_from_slice(channel);
-                        }
-                    }
-                    Err(e) => return Err(format!("リサンプリングエラー: {e}")),
-                }
-            }
-            Ok(out)
-        } else {
-            Ok(input.to_vec())
-        }
-    }
-
-    pub(crate) fn float_to_pcm16(input: &[f32]) -> Vec<u8> {
-        let mut out = Vec::with_capacity(input.len() * 2);
-        for &s in input {
-            let clamped = s.clamp(-1.0, 1.0);
-            let i = (clamped * i16::MAX as f32).round() as i16;
-            out.extend_from_slice(&i.to_le_bytes());
-        }
-        out
     }
 
     #[cfg(test)]
@@ -1030,20 +994,6 @@ mod tests {
         assert!(url.contains("language_code=ja"));
         let auto_url = ws_task::build_realtime_url(SCRIBE_V2_REALTIME_MODEL_ID, Some("auto"));
         assert!(!auto_url.contains("language_code="));
-    }
-
-    #[test]
-    fn float_to_pcm16_handles_full_range_and_clamping() {
-        let samples = [0.0_f32, 1.0, -1.0, 1.5, -1.5];
-        let bytes = ws_task::float_to_pcm16(&samples);
-        assert_eq!(bytes.len(), samples.len() * 2);
-
-        let read = |i: usize| -> i16 { i16::from_le_bytes([bytes[i * 2], bytes[i * 2 + 1]]) };
-        assert_eq!(read(0), 0);
-        assert_eq!(read(1), i16::MAX);
-        assert_eq!(read(2), -i16::MAX);
-        assert_eq!(read(3), i16::MAX);
-        assert_eq!(read(4), -i16::MAX);
     }
 
     #[test]
