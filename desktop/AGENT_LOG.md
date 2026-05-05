@@ -33142,3 +33142,15 @@ commit: 5c9d9d1 refactor(rust): app_detection の macOS FFI bridge mod を app_d
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-63 Loop 124 / 2026-05-06]
+worker: mjc-worker-loop124-archive-plan-stats-update-15 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 123 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122 precedent の 15 件目。Loop 121 → Loop 123 (~2 ループ間 + SESSION SUMMARY 1 件) で +84 行 (33,060 → 33,144)、平均 ~42 行/loop。Loop 121 観測値 (~11 行/loop) と比較して ~282% 増 = paradigm pivot 多軸 (K + rust) + SESSION SUMMARY 1 件回帰 = SESSION SUMMARY 件数が支配変数を再観測。alternation pattern 16 連続成功維持 (K(122) → rust(123) → K(124))。harness 衛生軸 = variety pivot (rust → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 633e558 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 123 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
