@@ -49,6 +49,7 @@ pub fn save_session_markdown(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::datetime_fmt::jst;
     use std::io::ErrorKind;
 
     use crate::session::Session;
@@ -57,10 +58,6 @@ mod tests {
     };
     use crate::session_store_types::SessionSummary;
     use tempfile::tempdir;
-
-    fn jst() -> FixedOffset {
-        FixedOffset::east_opt(9 * 3600).unwrap()
-    }
 
     #[test]
     fn save_session_markdown_writes_file_with_expected_header() {

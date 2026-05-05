@@ -147,12 +147,9 @@ impl Default for SessionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::datetime_fmt::jst;
     use crate::session_manager_persist::persist_if_configured;
     use tempfile::tempdir;
-
-    fn jst() -> FixedOffset {
-        FixedOffset::east_opt(9 * 3600).unwrap()
-    }
 
     /// 指定ディレクトリ直下の `.md` ファイルを列挙する。
     fn list_md_files(dir: &std::path::Path) -> Vec<PathBuf> {

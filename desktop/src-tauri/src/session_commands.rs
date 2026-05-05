@@ -110,11 +110,8 @@ pub fn discard_session(state: tauri::State<'_, Arc<SessionManager>>) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::datetime_fmt::jst;
     use tempfile::tempdir;
-
-    fn jst() -> FixedOffset {
-        FixedOffset::east_opt(9 * 3600).unwrap()
-    }
 
     fn list_md_files(dir: &Path) -> Vec<PathBuf> {
         std::fs::read_dir(dir)

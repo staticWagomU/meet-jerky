@@ -60,18 +60,14 @@ fn io_invalid(message: impl Into<String>) -> Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::datetime_fmt::jst;
     use std::fs;
     use std::io::ErrorKind;
 
-    use chrono::FixedOffset;
     use tempfile::tempdir;
 
     use crate::session::Session;
     use crate::session_store::save_session_markdown;
-
-    fn jst() -> FixedOffset {
-        FixedOffset::east_opt(9 * 3600).unwrap()
-    }
 
     #[test]
     fn render_session_markdown_returns_same_content_as_save_session_markdown() {

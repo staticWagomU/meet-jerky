@@ -30,13 +30,14 @@ pub fn format_segment_timestamp_with_offset(
 }
 
 #[cfg(test)]
+pub(crate) fn jst() -> FixedOffset {
+    FixedOffset::east_opt(9 * 3600).unwrap()
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use chrono::FixedOffset;
-
-    fn jst() -> FixedOffset {
-        FixedOffset::east_opt(9 * 3600).unwrap()
-    }
 
     #[test]
     fn test_format_session_header_timestamp_with_offset_jst() {
