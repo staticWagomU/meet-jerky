@@ -33332,3 +33332,27 @@ commit: 05cd5dd refactor(frontend): TranscriptView の AI Transmission 系 helpe
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-66 (handoff 直前)
+
+本セッション = mjc-main-20260505-66 = **3 ループ完走 + 通常 cadence handoff** (handoff 文書「2-3 ループ完走推奨」上限到達、前任 mjc-main-20260505-65 と同パターン継承):
+
+- Loop 131: frontend 軸 = 純粋関数機能分離軸 frontend 版 7 件目 = scope 29 軸目開拓 (新 file `transcriptionEngineHelpers.ts` ~20 行 = engine 機能特性 helpers) = 大型 frontend file 責務分離 42 file 目 = TranscriptView.tsx L345-L358 の getRequiresLocalModel + getExternalApiProvider を抽出 = -15 行 + import 1 行追加 + callsite 2 件 (L637 + L640、各 1 callsite) は import 追加のみで参照解決 + R6 段階的分割 4 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA の続編) + メイン批判判断 連続 65 セッション目達成 = handoff prompt の主張「engine 関連 utils file が既存ゼロ」を grep で批判的検証 → **`liveCaptionStatus.ts` (display tier = engine → UI label / status payload) + `modelSelectorHelpers.ts` (model display tier = Whisper モデル名表示) を既存 file として発見** → 責務階層精査で **異階層判定 = predicate/categorization tier (engine 機能特性判定 = boolean / "OpenAI" | "ElevenLabs" | null)** = 新 file 作成軸採用が依然妥当という結論 = Loop 119/121/123/125/127/129 教訓継承 (paradigm 反復 < 責務階層精査) + worker ~2.5 分完走 = SSS 規模で予測通り最速完走 + npm run build ✓ + agent-verify.sh OK + TranscriptView.tsx 2408 → 2393 行 (-15 行)
+- Loop 132: K 軸復帰 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 19 件目 (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130 precedent 18 件目) = +49 行 / 平均 ~24.5 行/loop (Loop 129 → Loop 131 期間 = SUMMARY 1 件 mjc-main-20260505-65) = Loop 130 観測値 (~23.5 行/loop = SS 1 件 + 説明軽量化) とほぼ同水準維持 (~+4% 微増) = **SS 1 件 + 説明軽量化パターンの 3 連続観測 (Loop 125 ~22.5 / Loop 129 ~23.5 / Loop 131 ~24.5) = 階層化 paradigm 強化証拠** + frontend 軸 chore entry 軽量化 paradigm 4 度目観測 (Loop 125/127/129/131 連続) + paradigm pivot 達成 + alternation pattern 24 連続成功 + worker ~3 分完走
+- Loop 133: frontend 軸 = 純粋関数機能分離軸 frontend 版 8 件目 = scope 30 軸目開拓 (新 file `aiTransmissionHelpers.ts` ~40 行 = AI 送信状態の表示要素) = 大型 frontend file 責務分離 43 file 目 = TranscriptView.tsx L349-L397 の getAiTransmissionStatusLabel + getAiTransmissionStatusPillClass + getAiTransmissionStatusAriaLabel を抽出 = callsite 5 件 (L1482 + L1574 + L2145 + L2146 + L2149) は import 追加のみで参照解決 + R6 段階的分割 5 件目 + メイン批判判断 = 既存 utils/liveCaptionStatus.ts (status object tier = LiveCaptionStatusPayload 構造体ベース helper) + utils/transcriptionEngineHelpers.ts (predicate/categorization tier = engine 機能特性判定) との責務階層精査で **異階層判定 = 新 file 作成軸採用 = display tier (AI 送信状態の表示要素 = label/pillClass/ariaLabel) として独立** + 新 file は liveCaptionStatus.ts から isExternalTransmissionLabel を import = **utils 内 cross-import paradigm 3 件目** (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus) + worker ~3-4 分完走 + npm run build ✓ + agent-verify.sh OK + TranscriptView.tsx 2393 → 2361 行 (-32 行)
+
+達成記録:
+- メイン批判判断 連続 65 セッション目達成 (Loop 131 = handoff 主張「engine 関連 utils 既存ゼロ」を grep で批判的検証 → liveCaptionStatus.ts + modelSelectorHelpers.ts 発見 + 責務階層精査で異階層判定 = 結論不変 / Loop 133 = display tier vs status object tier vs predicate tier の 3 階層精査で異階層判定 + utils cross-import paradigm 3 件目確立)
+- worker 自律 2-commit pattern 連続 74 ループ目達成 (Loop 60-133 = 74 ループ連続)
+- harness 衛生連続 61 セッション目 (canonical 移譲後 `git status --short` で scripts/* に M 表示再出現せず = `bfb9846` PATH inner shell escape 永続的解決の連続証拠強化)
+- ファイル参照型 handoff prompt 連続 62 セッション目 (本 handoff prompt も同 paradigm 継承予定)
+- scope 多様性 30 軸到達 (transcriptionEngineHelpers.ts + aiTransmissionHelpers.ts で +2 軸 = 30 軸の節目達成)
+- alternation pattern 25 連続成功 (frontend(129) → K(130) → frontend(131) → K(132) → frontend(133) → K(134 推奨))
+- 大型 frontend file 責務分離 42 + 43 file 目 (Loop 131 + 133)
+- 累積 worker 完走 232/232 (本セッション +3 件、100% 維持)
+- TranscriptView.tsx 規模変動: 2408 行 → 2393 行 (Loop 131) → 2361 行 (Loop 133) = R6 段階的分割で 28 件中 11 件抽出 (audio level 2 + permission 2 + track ARIA 2 + engine 2 + AI Transmission 3) = 残 17 件 (5 グループ: Transcription Source 4 / Meeting Start 1 / Audio Source 4 / Engine Status 3 / External API Key 3)
+- API 互換維持戦略 (Loop 131/133 補強): frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 = 標準 paradigm + utils 内 cross-import paradigm 3 件目確立 (Loop 133 = aiTransmissionHelpers.ts → liveCaptionStatus の isExternalTransmissionLabel)
+- AGENT_LOG.md 増分パターン階層化観測 (Loop 132 entry に明記): **SS 0 件 = ~11-12 行/loop (Loop 121/127) / SS 1 件 + 説明軽量化 = ~22-25 行/loop (Loop 125/129/131) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の 3 段階階層が安定
+
+後継 mjc-main-20260505-67 への 2-3 ループ完走推奨。最有力候補 = K 軸 (Section 2.3 観測追記 20 件目) で alternation 26 連続維持 / 副推奨 = R6 続行 = TranscriptView.tsx 残 17 純粋関数 (5 グループ) のうち最も独立性高い 1 グループ抽出 = scope 31 軸目候補 = 規模 SS-S。詳細は docs/handoff/mjc-main-20260505-67.txt 参照。
+
+---
