@@ -28613,3 +28613,34 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - d7bdc61
 
 ---
+[mjc-main-20260505-30 Loop 61 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 3 歩 + 第 4 歩統合 = WhisperStream + TranscriptionStateHandle 直接 import 化
+- transcription_whisper_local.rs L5 の `use crate::transcription::WhisperStream;` を `crate::transcription_whisper_stream::WhisperStream;` に書き換え (fmt 対応で use 文順序も整列)
+- lib.rs L350 の `transcription::TranscriptionStateHandle::new()` インライン参照を `transcription_manager::TranscriptionStateHandle::new()` に書き換え
+- transcription.rs L19 (WhisperStream 互換 re-export) と L25 (TranscriptionStateHandle 互換 re-export) に `#[allow(unused_imports)]` 追加 (全 caller 直接 import 化のため unused lint 対応)
+- transcription.rs L31 の TranscriptionLoopConfig 互換層は残置 (panic_guard / commands 2 caller 残るため Loop 62 対象)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration = Phase 6 第 3-4 歩統合 = 互換層段階的解体 + 最終削除工程接近)
+- メイン批判判断: 候補 T (WhisperStream 1 件) + 候補 U (TranscriptionStateHandle 1 件) を grep 実態確認 → 両方とも XS 規模で 1 ループ統合可と確定
+- variety pivot = struct/const + import refactor 軸 = Loop 59 → 60 → 61 で 3 連続だが Phase 6 進行 + locality 価値大 + variety 規則「3 ループ続いたら 4 ループ目に入る前に variety pivot を検討」境界遵守 (Loop 62+ は variety pivot 検討)
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文 + インライン参照を機械的に書き換え (実体は transcription_whisper_stream.rs / transcription_manager.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- cargo fmt 要求で transcription_whisper_local.rs の use 文順序を `traits → types → whisper_stream` にアルファベット順整列
+- Loop 60 と同じく `#[allow(unused_imports)]` 追加で互換層維持 (Loop 63 = transcription.rs ファイル削除時に互換層全削除)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- f0a1a48
+
+---

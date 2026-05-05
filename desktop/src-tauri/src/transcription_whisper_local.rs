@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
-use crate::transcription::WhisperStream;
 use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
 use crate::transcription_types::TranscriptionSegment;
+use crate::transcription_whisper_stream::WhisperStream;
 
 // ─────────────────────────────────────────────
 // WhisperLocal 実装

@@ -347,7 +347,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .manage(audio::AudioStateHandle::new())
-        .manage(transcription::TranscriptionStateHandle::new())
+        .manage(transcription_manager::TranscriptionStateHandle::new())
         .manage(settings::SettingsStateHandle::new())
         .manage(std::sync::Arc::new(session_manager::SessionManager::new()))
         .invoke_handler(tauri::generate_handler![
