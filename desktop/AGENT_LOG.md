@@ -33572,3 +33572,17 @@ commit: ed1ef0f
 - 本セッション平均 ~3 分/ループ = 前任 mjc-main-20260505-69 の ~4 分/ループ より速め = Loop 143 が規模 SSS (1 関数のみ抽出 + 1 callsite + cross-import) で worker prompt ~165 行 (R6 完結マイルストーン詳細記載で長め)
 
 後継 mjc-main-20260505-71 への 2-3 ループ完走推奨。**R6 完結 = 純粋関数機能分離軸 frontend 版完結 = Loop 144+ は paradigm pivot 必要**。Loop 144 推奨候補 = K 軸 (alternation 35 連続維持) / Loop 145 候補 = 別 frontend file 探索 or rust 軸復帰 = 後継が grep 探索で確定。詳細は docs/handoff/mjc-main-20260505-71.txt 参照。
+
+---
+[mjc-main-20260505-71 Loop 144 / 2026-05-06]
+worker: mjc-worker-loop144-archive-plan-stats-update-25 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 143 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142 precedent の 24 件目。Loop 141 → Loop 143 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-70) で +47 行 (33,527 → 33,574)、平均 ~23.5 行/loop。Loop 141 観測値 (~24 行/loop) とほぼ同水準 (差 ~-2%) = **SS 1 件 + 説明軽量化パターンの 8 連続観測達成** (Loop 125 = ~22.5 / Loop 129 = ~23.5 / Loop 131 = ~24.5 / Loop 133 = ~24.5 / Loop 137 = ~24 / Loop 139 = ~24.5 / Loop 141 = ~24 / Loop 143 = ~23.5) = **階層化 paradigm 完全成熟期で 8 連続値域 ~22-25 行/loop に完全収束**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137/139/141/143 の **10 件連続観測 = 節目 10 件達成** = **frontend 軸軽量化 paradigm の 10 度目の観測 = paradigm 完全実証期 10 件節目突破**。alternation pattern 34 連続成功維持 (frontend(141) → K(142) → frontend(143) → K(144))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 650a7a9
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
