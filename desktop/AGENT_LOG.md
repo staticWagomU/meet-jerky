@@ -32891,3 +32891,14 @@ commits:
 AGENTS.md priority: 1 (大型 frontend file 責務分離 + DRY 重複解消 + 純粋関数機能分離 = Mac アプリ保守性向上)
 
 ---
+[mjc-main-20260505-60 Loop 117 / 2026-05-06]
+worker: mjc-worker-loop117-app-detection-url-parser-merge (作業)
+範囲: src-tauri/src/app_detection.rs (URL parser 6 関数 + ParsedUrlParts struct 削除 + use 文 1 ブロック追加, ~105 行削減) + src-tauri/src/app_detection_url_helpers.rs (既存 24 行 + 6 関数 + 1 struct = 132 行, 統合追加) + src-tauri/src/app_detection_webex.rs (use 文 1 行 path 変更)
+内容: app_detection.rs の URL parser 6 純粋関数 (normalize_url_host + parse_url_host_and_path + extract_query + strip_port + validate_port + query_has_non_empty_param) + ParsedUrlParts struct を **既存 app_detection_url_helpers.rs (24 行 = is_valid_dns_label + has_single_non_empty_segment) に統合追加** = 「既存 file 拡張軸 = 新 paradigm」確立。新 file 作成ではなく既存 file 拡張を選択した理由 = 両者とも「URL 検知用 helper」という責務が一致 (既存 file 冒頭コメント `//! URL 検知用の汎用 helper 関数群。` と合致) = file 数不増 + 保守性向上。rust 軸復帰 (frontend 軸 6 連続から paradigm 大幅 pivot 達成) + scope 22 軸目変種 (app_detection scope 復帰 + URL parser 責務集約) + 機能分類軸変種 + 大型 rust file 責務分離 35 file 目 + メイン批判判断 連続 56 セッション目達成 (handoff 文書に記載のない新規発掘 + 既存 file 統合可能性 grep で発見)。alternation pattern (K(115) → frontend(116) → rust(117)) = paradigm pivot 連鎖。補足: テストモジュール内で ParsedUrlParts を直接構築する test 群 (Debug/Clone/PartialEq/Eq 検証) が存在したため、test module に `use crate::app_detection_url_helpers::ParsedUrlParts;` を追加 = task 記述「direct test なし」は誤りだったが適切に対処。
+振る舞い: cargo test (lib) = 704 件 / 0 失敗 (件数完全不変)。cargo clippy --lib --tests -- -D warnings 警告ゼロ。cargo fmt --check OK。cargo build --lib エラーなし。
+verify: scripts/agent-verify.sh 全項目 OK。
+commits:
+- e436595 refactor(rust): app_detection の URL parser 6 関数 + ParsedUrlParts struct を既存 app_detection_url_helpers.rs に統合追加
+AGENTS.md priority: 1 (大型 rust file 責務分離 + 既存 file 拡張軸 = file 数不増で責務集約 + 保守性向上)
+
+---
