@@ -30299,3 +30299,35 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中 1 回 (handoff 直後の Loop 76 待機中、適切タイミングで自走中の確認 = 影響なし)
+
+---
+
+[mjc-main-20260505-39 Loop 78 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/detection-extension-plan.md Section 6 の Q6 を「解決済」化
+- Q6 解決結果 Resolved Block を Q5 Resolved Block の直後に追記 (~10 行)
+  - 結論: window title 日本語 localization 対応 = Phase 2 英語 pattern only + Phase 5 日本語追加の段階導入方針
+  - 根拠: Section 5.5 Phase 5 既記載 + Section 3.1/Q1 で日本語認識既載 + false negative/positive 非対称性
+  - Phase 2 着手判断への寄与: Q1/Q2 解決後即着手可、日本語追加は Phase 5 deferred で MVP コスト最小化
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張、plan の継続 = 価値の連鎖
+- mjc-main-20260505-39 Loop 78 メイン批判判断 (連続 30 セッション目): handoff K1 の「Phase 2 では英語 pattern のみ + Phase 5 で日本語追加候補」予測を grep で再評価 → Section 5.5 (L230) で既に「日本語 window title 対応: ハドル中 / ステージ 等の日本語 pattern 追加 (実機確認後)」記載済 = handoff 提案は plan 内既存方針と整合 = Resolved Block で明示化に範囲限定
+- variety 規則: Loop 75-76-77 構造分離 3 連続到達 → Loop 78 = 機能拡張/docs 軸へ pivot で警告境界 4 連続到達回避
+- 規模 SS = ~10 行 docs 追記、振る舞い不変、Phase 2 着手前準備
+
+## How (docs only)
+- Q6 行の重要度列を「低 → 解決済 (下記参照)」に変更
+- Q5 Resolved Block の直後 (AppleScript セクションの直前) に「### Q6 解決結果 (mjc-main-20260505-39 Loop 78 調査)」を挿入
+- Q1/Q2/Q3/Q4/Q7/Q8 は実機要件 / 別 phase 前提のため未変更 (Open のまま据え置き)
+
+## Verify
+- agent-verify.sh: OK (docs only)
+- grep -n "Q6 解決結果" docs/architecture/detection-extension-plan.md: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 079267f2444e6e9cdd357eaa9b69512e1e0a9384
+
+---
