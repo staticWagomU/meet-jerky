@@ -33320,3 +33320,15 @@ commit: fd2f9c0 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-66 Loop 133 / 2026-05-06]
+worker: mjc-worker-loop133-ai-transmission-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 3 件削除 + import 追加 + isExternalTransmissionLabel import 削除) + src/utils/aiTransmissionHelpers.ts (新規 ~42 行 = import 2 行 + export 3 関数)
+内容: TranscriptView.tsx L349-L385 の getAiTransmissionStatusLabel + getAiTransmissionStatusPillClass + getAiTransmissionStatusAriaLabel を新 file utils/aiTransmissionHelpers.ts に抽出。frontend 軸 11 件目 = 純粋関数機能分離軸 frontend 版 8 件目 = scope 30 軸目開拓 = 大型 frontend file 責務分離 43 file 目 = R6 段階的分割 5 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 の続編)。callsite 5 件 (L1447 + L1539 + L2110 + L2111 + L2114) は import 追加のみで参照解決。isExternalTransmissionLabel は抽出後 TranscriptView.tsx 内 callsite 0 件となったため import 行も削除。alternation pattern 25 連続成功維持 (K(132) → frontend(133))。メイン批判判断 = 既存 utils/liveCaptionStatus.ts (display tier = LiveCaptionStatusPayload 構造体ベース helper) + utils/transcriptionEngineHelpers.ts (predicate/categorization tier = engine 機能特性判定) との責務階層精査で **異階層 = 新 file 作成軸採用** = display tier (AI 送信状態の表示要素 = label/pillClass/ariaLabel) として独立 = Loop 119/121/123/125/127/129/131 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は liveCaptionStatus.ts から isExternalTransmissionLabel を import = **utils 内 cross-import paradigm 3 件目** (1 件目 = transcriptDisplayHelpers.ts、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels)。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/aiTransmissionHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: 05cd5dd refactor(frontend): TranscriptView の AI Transmission 系 helpers を utils/aiTransmissionHelpers.ts に抽出
+依存関係追加: なし (liveCaptionStatus.ts への内部 import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
