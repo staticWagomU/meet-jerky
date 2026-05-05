@@ -33368,3 +33368,15 @@ commit: 4665ec7 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-67 Loop 135 / 2026-05-06]
+worker: mjc-worker-loop135-audio-source-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 4 件削除 + import 追加) + src/utils/audioSourceHelpers.ts (新規 ~80 行 = import 1 行 + export 4 関数)
+内容: TranscriptView.tsx L280-L351 の getAudioSourceStatusLabel + getAudioSourceStatusAriaText + getAudioSourceNotice + getAudioSourceStatusPillClass を新 file utils/audioSourceHelpers.ts に抽出。frontend 軸 12 件目 = 純粋関数機能分離軸 frontend 版 9 件目 = scope 31 軸目開拓 = 大型 frontend file 責務分離 44 file 目 = R6 段階的分割 6 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission の続編)。callsite 4 件 (L1397 + L1401 + L1413 + L1433) は import 追加のみで参照解決。alternation pattern 27 連続成功維持 (K(134) → frontend(135))。メイン批判判断 = 既存 utils/audioLevelHelpers.ts (predicate tier = audio level 数値処理) + utils/audioTrackLabels.ts (constants tier) との責務階層精査で **異階層 = 新 file 作成軸採用** = display tier (audio source 状態の UI 表現 = label/aria text/notice/pill class) として独立 = Loop 119/121/123/125/127/129/131/133 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は audioTrackLabels.ts から OTHER_TRACK_DEVICE_LABEL + SELF_TRACK_DEVICE_LABEL を import = **utils 内 cross-import paradigm 4 件目** (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus、4 件目 = audioSourceHelpers.ts → audioTrackLabels)。audioTrackLabels import は TranscriptView.tsx 内で L148/L151/L154/L159/L162/L165/L167/L209/L1649/L1650 等の他 callsite が残存するため削除しない。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/audioSourceHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: bc870a8 refactor(frontend): TranscriptView の Audio Source 系 helpers を utils/audioSourceHelpers.ts に抽出
+依存関係追加: なし (audioTrackLabels.ts への内部 import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
