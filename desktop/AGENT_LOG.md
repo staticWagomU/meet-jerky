@@ -26874,3 +26874,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 5456409
+
+---
+
+[mjc-main-20260505-21 Loop 43 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs から Microsoft Teams URL 検知関連 4 関数 (is_teams_meeting_url / is_teams_work_or_school_host / has_non_empty_path_segments / query_has_param) を src-tauri/src/app_detection_teams.rs に抽出
+- src-tauri/src/lib.rs に `mod app_detection_teams;` 追加 (アルファベット順: goto < teams < webex)
+- app_detection.rs L536 caller を `crate::app_detection_teams::is_teams_meeting_url` 経由に更新 (cargo fmt で自動整形)
+- has_single_non_empty_segment / query_has_non_empty_param は app_detection.rs に残置 (pub(crate) のまま、他サービスで使用)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 縮小 = 理解性向上)
+- Webex (Loop 29) / Whereby (Loop 31) / GoToMeeting (Loop 36) / Zoom (Loop 40) precedent 完全踏襲 (5 件目、サービス別抽出シリーズの最終ピース)
+- variety pivot 軸 = extraction 軸 = Loop 40 から 3 ループ間隔、別軸 (docs L41 + test L42) を 2 件挟んだ後 = sweep 警告緩和、許容範囲
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 702 passed 件数不変
+- pub(crate) visibility = is_teams_meeting_url のみ (caller 経由)
+- Teams 専用ヘルパー (is_teams_work_or_school_host / has_non_empty_path_segments / query_has_param) は新ファイル内 private (fn) のまま
+- has_single_non_empty_segment は use crate::app_detection::has_single_non_empty_segment で取り込み (pub(crate) 既存)
+- query_has_non_empty_param は Whereby 等の他サービスで使用するため app_detection.rs に残置
+- app_detection.rs: 3141 → 3109 行 (-32 行) / app_detection_teams.rs: 0 → 48 行 (新規)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)

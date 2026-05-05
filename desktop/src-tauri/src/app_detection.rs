@@ -533,7 +533,11 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
         || crate::app_detection_goto::is_goto_app_meeting_url(&host, &parsed.path)
     {
         "GoToMeeting"
-    } else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
+    } else if crate::app_detection_teams::is_teams_meeting_url(
+        &host,
+        &parsed.path,
+        parsed.query.as_deref(),
+    ) {
         "Microsoft Teams"
     } else {
         return None;
@@ -752,45 +756,9 @@ fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
     value.len() == len && value.bytes().all(|byte: u8| byte.is_ascii_lowercase())
 }
 
-fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
-    (is_teams_work_or_school_host(host)
-        && path
-            .strip_prefix("/l/meetup-join/")
-            .is_some_and(has_non_empty_path_segments))
-        || (is_teams_work_or_school_host(host)
-            && (path == "/v2" || path == "/v2/")
-            && query_has_param(query, "meetingjoin", "true"))
-        || (is_teams_work_or_school_host(host)
-            && path
-                .strip_prefix("/meet/")
-                .is_some_and(has_single_non_empty_segment))
-        || (host == "teams.live.com"
-            && path
-                .strip_prefix("/meet/")
-                .is_some_and(has_single_non_empty_segment))
-}
-
-fn is_teams_work_or_school_host(host: &str) -> bool {
-    host == "teams.microsoft.com" || host == "teams.cloud.microsoft"
-}
-
-fn has_non_empty_path_segments(value: &str) -> bool {
-    let value = value.strip_suffix('/').unwrap_or(value);
-    !value.is_empty() && value.split('/').all(|segment| !segment.is_empty())
-}
-
 pub(crate) fn has_single_non_empty_segment(value: &str) -> bool {
     let value = value.strip_suffix('/').unwrap_or(value);
     !value.is_empty() && !value.contains('/')
-}
-
-fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
-    query.is_some_and(|query| {
-        query.split('&').any(|param| {
-            let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
-            param_key.eq_ignore_ascii_case(key) && param_value.eq_ignore_ascii_case(value)
-        })
-    })
 }
 
 pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {
