@@ -28805,3 +28805,39 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 48c6558
 
 ---
+
+[mjc-main-20260505-31 Loop 63 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 最終 = transcription.rs ファイル削除 + lib.rs `mod transcription;` 宣言削除 + plan.md 100% 達成記念更新
+- 元 2999 行 transcription.rs (mjc-main-20260505-3 時点) → 0 行 (ファイル削除) = **100% 達成 = リファクタプラン完全完遂**
+- transcription.rs ファイル削除 (`git rm`)、lib.rs L25 `mod transcription;` 削除 (mod 宣言ブロックのアルファベット順維持)
+- transcription-refactor-plan.md 4 箇所更新: 進捗サマリヘッダ / 累計削減行数 / Phase 6 完全終了 サブセクション (新規追加 + Loop 60-63 系列の歩み + `#[allow(unused_imports)]` 第 3 解パターン解説 + 完遂意義) / 末尾 ## 参考 行
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (リポジトリ最大級単一ファイルの完全解体 = 9 責務独立モジュール化完遂 = クラッシュバグ混入リスク予防最大化)
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的寄与 (各責務単独で最適化対象特定容易化)
+- メイン批判判断: Loop 62 完了後 grep で `use crate::transcription[^_]` および `transcription::` インライン参照が完全ゼロ確認 = ファイル削除の安全境界 100% 確定 = Loop 63 削除工程実施可と確定
+- variety pivot 軸 = 「struct/const + import refactor 軸 4 連続 (Loop 59-62) sweep 警告」は **Phase 6 完了 = 軸自体が消滅** で自己解消 + Loop 64+ で別軸 (frontend / 検知拡張 / docs) へ自然移行可能 = exception 判断完了
+
+## How (Tidy First, behavior-preserving)
+- transcription.rs ファイル削除 = 互換層 5 件全削除 = 全 caller 既に直接 import 化済 (Loop 59-62 で完了) = 振る舞い完全不変
+- lib.rs `mod transcription;` 宣言削除 = mod 宣言ブロックのアルファベット順維持 = 振る舞い完全不変
+- plan.md は markdown 編集 = 振る舞い完全不変
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- transcription.rs: ファイル存在しない (削除確認)
+- use crate::transcription[^_] grep: 完全に空
+- transcription:: インライン参照 grep: 完全に空
+- trailing whitespace: なし
+
+## commit
+- <COMMIT_HASH>
+
+---

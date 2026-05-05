@@ -22,7 +22,6 @@ mod session_store;
 mod settings;
 mod system_audio;
 mod transcript_bridge;
-mod transcription;
 mod transcription_commands;
 mod transcription_emission;
 mod transcription_error_payload;
