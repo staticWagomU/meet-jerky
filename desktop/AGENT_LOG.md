@@ -32249,3 +32249,16 @@ agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header
 worker 完走 1/1 = 累計 200/200 100%。
 
 ---
+[mjc-main-20260505-53 Loop 102 / 2026-05-05]
+worker: mjc-worker-realtime-ws-helpers-loop102 (作業)
+範囲: src-tauri/src/elevenlabs_realtime.rs (純粋関数 helpers production ~49 行削除 + test 19 件削除 + use 文 1 行追加) + src-tauri/src/realtime_ws_helpers.rs (新規 464 行) + src-tauri/src/lib.rs (mod 1 行追加)
+内容: elevenlabs_realtime.rs `mod ws_task` (L146-964) 内の純粋関数 4 つ (is_scribe_error_event + async wait_for_pending_after_commit + extract_transcript + extract_error_message) を新 module realtime_ws_helpers.rs に抽出。可視性は private → pub(crate) に昇格 (caller が module 越境のため)。tests 19 件を新 file 内 #[cfg(test)] mod tests に移動 (wait_for_*/is_scribe_*/extract_transcript_*/extract_error_message_*)。push_error_* tests 5 件は realtime_error_helpers のテストのため pending_timeout_tests 内に残置。lib.rs に mod realtime_ws_helpers; 追加 (alphabetical = mod realtime_reader_task; と mod secret_store; の間)。caller ws_task module 内に use 文 1 行追加 = production 呼び出し L275/L318/L333/L343/L344 は無変更。大型 rust file 責務分離 26 file 目 = realtime engine 4 軸目達成 (handoff 候補リスト「3 軸完了 = 構造美の最終形」批判判断 = メイン批判判断 連続 48 セッション目達成) = transcription_commands_helpers Loop 101 と同 paradigm = 純粋関数機能分離軸 2 連続 (3 連続境界注意 = Loop 103 で別 paradigm 必須)。elevenlabs_realtime.rs は 1079 → 636 行 (-41%, ws_task 内純粋関数 + tests 抽出効果)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- e396d2c refactor(realtime): 純粋関数 helpers を realtime_ws_helpers.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = realtime engine 4 軸目 = ws_task 内 mod 越境純粋関数の独立化 + state 依存無しの helpers 局所化)
+
+---
