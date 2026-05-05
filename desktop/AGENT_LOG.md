@@ -33154,3 +33154,24 @@ commit: 633e558 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-63 (handoff 直前)
+
+本セッション = mjc-main-20260505-63 = **2 ループ完走 + 通常 cadence handoff**:
+
+- Loop 123: rust 軸 = inline module 全体抽出軸 cfg(macos) 付き 2 件目 = app_detection.rs の `#[cfg(target_os = "macos")] mod macos { ... }` (~115 行) を新 file app_detection_macos.rs に抽出 = -126 行 + 新 file 121 行 + lib.rs +2 行 alphabetical 挿入 + handle_detection (L163) + handle_browser_url_detection (L285) を pub(crate) 化 + WATCHED_BUNDLE_IDS 既 pub(crate) + caller (L147) は crate::app_detection_macos::start_detection() に置換 + 大型 rust file 責務分離 38 file 目 + scope 25 軸目開拓 + Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目 + メイン批判判断 連続 61 セッション目達成 = handoff 副推奨候補 R5 (inactive_decision/notification 統合) を **責務階層精査で却下** = state/AppHandle 依存層 ≠ 純粋関数層 = 既に分離済 = 統合候補ゼロ = Loop 119/121 教訓継承 (paradigm 反復 < 責務階層精査) + **自律発見**「mod macos 抽出」採用 = 候補 R5 却下 → 新候補発掘 → 採用 のメイン側 fully 自律判断 + worker ~5-7 分完走 + cargo test 704 件件数完全不変
+- Loop 124: K 軸復帰 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 15 件目 (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122 precedent 14 件目) = +84 行 / 平均 ~42 行/loop = Loop 122 観測値 (~11 行/loop) からの ~282% 回帰 = SESSION SUMMARY 件数が支配変数を再観測 + paradigm pivot 達成 + alternation pattern 16 連続成功 + worker ~3 分完走
+
+達成記録:
+- メイン批判判断 連続 61 セッション目達成
+- worker 自律 2-commit pattern 連続 64 ループ目
+- harness 衛生連続 58 セッション目 (canonical 移譲後 scripts/* M 表示 再出現せず)
+- ファイル参照型 handoff prompt 連続 59 セッション目
+- scope 多様性 25 軸到達 (新 file `app_detection_macos.rs`)
+- alternation pattern 16 連続成功 (K(122) → rust(123) → K(124) → frontend(125 推奨))
+- 大型 rust file 責務分離 38 file 目
+- 累積 worker 完走 223/223 (100% 維持)
+- API 互換維持戦略 (Loop 123 補強): inline module 全体抽出時の visibility 修正 (`fn` → `pub(crate)` 化) + caller 1 件 fully qualified path 化で完結 = re-export 不要
+
+後継 mjc-main-20260505-64 への 2-3 ループ完走推奨。最有力候補 = R6 (TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = frontend 軸 7 件目 = scope 26 軸目候補 = scope depth 警告境界 reset 済 = alternation 17 連続維持) = 規模 SS-S。詳細は docs/handoff/mjc-main-20260505-64.txt 参照。
+
+---
