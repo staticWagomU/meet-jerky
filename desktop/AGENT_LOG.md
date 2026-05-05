@@ -28028,3 +28028,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 032ca94
+
+---
+[mjc-main-20260505-27 Loop 55 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から tests mod 4 件を 2 ファイルに一括移動 = transcription.rs tests mod 完全削除
+  - should_emit_realtime_stream_error_is_logical_negation_of_already_stopped (1 件、~16 行) → transcription_error_payload.rs
+  - requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names (1 件、~73 行) → transcription_commands.rs
+  - requested_transcription_sources_copy_semantics_allow_use_after_move (1 件、~21 行) → transcription_commands.rs
+  - requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field (1 件、~31 行) → transcription_commands.rs
+- transcription.rs L38-193 (区切りコメント + tests mod 全体) 削除
+- use 文 2 件 完全削除 (L44 RequestedTranscriptionSources / L45-47 should_emit + is_already_stopped)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs を最終形 = 互換 re-export + WHISPER_SAMPLE_RATE のみに到達 = 巨大ファイル責務分離プラン Phase 5 完了相当)
+- メイン批判判断 = handoff サマリの「候補 P / Q を別ループで実施」を grep 実態確認で 1 ループマージ最適と訂正 = メイン批判判断 連続 8 セッション目
+- 規模 S (~141 行) = Loop 50/51/53 と同等の 1 ループ完結確実
+- variety pivot = test 軸 = Loop 53 から 1 ループ pivot (Loop 54 docs) 後 + 1 ループでまとめて最終形へ移行 = 後続 Loop 56+ で完全な軸 pivot へ移行可能
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs: 193 → 36 行 (-157 行) = ~98.8% 縮小最終形 (= 元 2999 行から -2963 行)
+- transcription_error_payload.rs: 343 → 360 行 (+17 行)
+- transcription_commands.rs: 598 → 717 行 (+119 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- 93dcd18
