@@ -31648,3 +31648,16 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = secret_store 軸の機能境界分離 = 内部 keychain 実装と tauri 公開 API の責務分離)
 
 ---
+[mjc-main-20260505-48 Loop 94 / 2026-05-05]
+worker: mjc-worker-audio-silence-loop94 (作業)
+範囲: src-tauri/src/audio_utils.rs (沈黙検知 section production ~35 行削除 + test 6 件削除) + src-tauri/src/audio_silence.rs (新規 ~80-110 行) + src-tauri/src/transcription_whisper_stream.rs (use 文分割 = audio_silence + audio_utils 2 つに分離) + src-tauri/src/lib.rs (mod audio_silence; 1 行追加)
+内容: audio_utils.rs L21-55 の沈黙検知軸 (WHISPER_SAMPLE_RATE + MIN_FLUSH_SAMPLES + SILENCE_LOOKBACK_SAMPLES + SILENCE_THRESHOLD_RMS + calculate_rms + is_tail_silent) を新 module audio_silence.rs に抽出。tests 6 件 (test_calculate_rms_empty_slice_returns_zero + test_calculate_rms_silence_signal_below_threshold + test_calculate_rms_voice_signal_above_threshold + test_is_tail_silent_returns_false_when_buffer_too_short + test_is_tail_silent_detects_voice_then_silence_pattern + test_is_tail_silent_rejects_voice_then_voice) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod audio_silence; 追加 + transcription_whisper_stream.rs の use crate::audio_utils::{...} を audio_silence + audio_utils 2 つの use 文に分割 (sinc_params/RESAMPLE_CHUNK_SIZE のみ audio_utils 残留)。audio_utils.rs に残る sanitize_audio_sample + リサンプリング軸 + dead resample_audio + test 13 件は不変。大型 rust file 責務分離 20 file 目 = audio_silence 軸 1 件目 (新 scope) = secret_store 軸 (Loop 93) からの pivot 達成 = paradigm 切り替え (機能分類軸 → 純粋関数機能分離軸)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- df339d87d97c1a186bc890f26bca3cbaaf0d7eca refactor(audio): 沈黙検知軸を audio_silence.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離 = sanitize/沈黙検知/resample の 3 軸を 2 module に明示分離)
+
+---
