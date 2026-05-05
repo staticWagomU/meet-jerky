@@ -12,11 +12,11 @@ use crate::datetime_fmt::{
 };
 use crate::markdown::{self, SessionMeta};
 use crate::session::Session;
+use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};
 use crate::session_store_types::SessionSummary;
 use chrono::FixedOffset;
 
 const MAX_SESSION_SEARCH_TEXT_BYTES: u64 = 64 * 1024;
-const MAX_JS_DATE_UNIX_SECS: u64 = 8_640_000_000_000;
 
 /// セッションを保存するファイルパスを決定する。
 ///
@@ -80,26 +80,6 @@ fn io_invalid(message: impl Into<String>) -> Error {
     Error::new(ErrorKind::InvalidInput, message.into())
 }
 
-fn unescape_inline_markdown_text(value: &str) -> String {
-    let mut out = String::with_capacity(value.len());
-    let mut chars = value.chars().peekable();
-    while let Some(ch) = chars.next() {
-        if ch == '\\' {
-            match chars.peek().copied() {
-                Some('\\' | '`' | '*' | '_' | '[' | ']') => {
-                    if let Some(escaped) = chars.next() {
-                        out.push(escaped);
-                    }
-                }
-                _ => out.push(ch),
-            }
-        } else {
-            out.push(ch);
-        }
-    }
-    out
-}
-
 /// 完了済みセッションを `<session_id>.md` として `dir` に書き出す。
 ///
 /// 表示用タイムスタンプは `offset` を用いて内部で整形するため、呼び出し側はタイムゾーンだけ渡す。
@@ -154,15 +134,6 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
     Ok(out)
 }
 
-fn parse_session_started_at_secs(stem: &str) -> Option<u64> {
-    let prefix = stem.split('-').next().unwrap_or("");
-    let started_at_secs = prefix.parse::<u64>().ok()?;
-    if started_at_secs > MAX_JS_DATE_UNIX_SECS {
-        return None;
-    }
-    Some(started_at_secs)
-}
-
 /// `dir` 配下の `.md` 拡張子ファイルを一覧する。
 ///
 /// 返却順は安定化のため昇順ソート済み。
@@ -184,6 +155,9 @@ pub fn list_session_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
 mod tests {
     use super::*;
     use crate::session::Session;
+    use crate::session_store_parse::{
+        parse_session_started_at_secs, unescape_inline_markdown_text,
+    };
     use crate::session_store_types::SessionSummary;
     use tempfile::tempdir;
 

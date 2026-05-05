@@ -23,6 +23,7 @@ mod session;
 mod session_commands;
 mod session_manager;
 mod session_store;
+mod session_store_parse;
 mod session_store_types;
 mod settings;
 mod system_audio;
