@@ -33859,3 +33859,16 @@ commit: 316fbda + <chore commit hash>
 次アクション: なし (メイン側で次ループ判断)
 
 ---
+[Loop 154 @ 2026-05-06 ~JST] mjc-main-20260505-76 / mjc-worker-loop154-archive-plan-stats-update-30
+タスク: agent-log-archive-plan.md Section 2.3 に Loop 153 完了時点の更新観測追記 (観測 30 件目 = 節目突破)
+ファイル: docs/architecture/agent-log-archive-plan.md (Section 2.3 = L90 直後に entry 追記)
+理由: AGENT_LOG.md 増分の継続観測 = Loop 151 → Loop 153 で +41 行 / 平均 ~20.5 行/loop = Loop 151 観測値 (~36.5 行/loop) の -44% 減 = 第 4 階層 (中量化) からの離脱 + SUMMARY 軽量化期間入り
+影響: docs のみ = アプリ動作変更なし
+paradigm: harness 衛生軸 K = variety pivot (frontend(153) → K(154) = alternation 43 連続維持)
+検証: docs のみ = npm run build / cargo test 不要 = agent-verify.sh OK
+commit: 27c47d6 + <chore commit hash>
+依存関係追加: なし
+失敗理由: なし
+次アクション: なし (メイン側で次ループ判断)
+
+---
