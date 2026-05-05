@@ -302,7 +302,8 @@ mod ws_task {
                 let msg = match msg {
                     Ok(m) => m,
                     Err(e) => {
-                        push_error(
+                        crate::realtime_error_helpers::push_error(
+                            "OpenAI",
                             &pending_for_reader,
                             &speaker_for_reader,
                             source_for_reader,
@@ -403,25 +404,15 @@ mod ws_task {
                 .and_then(|e| e.get("message"))
                 .and_then(|m| m.as_str())
             {
-                push_error(pending, speaker, source, message.to_string());
+                crate::realtime_error_helpers::push_error(
+                    "OpenAI",
+                    pending,
+                    speaker,
+                    source,
+                    message.to_string(),
+                );
             }
         }
-    }
-
-    pub(crate) fn push_error(
-        pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
-        speaker: &Option<String>,
-        source: Option<TranscriptionSource>,
-        message: String,
-    ) {
-        pending.lock().push(TranscriptionSegment {
-            text: format!("[OpenAI Realtime エラー: {message}]"),
-            start_ms: 0,
-            end_ms: 0,
-            source,
-            speaker: speaker.clone(),
-            is_error: Some(true),
-        });
     }
 }
 
@@ -554,7 +545,8 @@ mod tests {
         let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
         let speaker = Some("自分".to_string());
 
-        ws_task::push_error(
+        crate::realtime_error_helpers::push_error(
+            "OpenAI",
             &pending,
             &speaker,
             Some(TranscriptionSource::Microphone),
@@ -576,7 +568,8 @@ mod tests {
         let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
         let speaker = Some("自分".to_string());
 
-        ws_task::push_error(
+        crate::realtime_error_helpers::push_error(
+            "OpenAI",
             &pending,
             &speaker,
             Some(TranscriptionSource::Microphone),
@@ -598,7 +591,8 @@ mod tests {
         {
             let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
             let speaker = Some("自分".to_string());
-            ws_task::push_error(
+            crate::realtime_error_helpers::push_error(
+                "OpenAI",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),
@@ -614,7 +608,13 @@ mod tests {
         {
             let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
             let speaker = Some("自分".to_string());
-            ws_task::push_error(&pending, &speaker, None, "err".to_string());
+            crate::realtime_error_helpers::push_error(
+                "OpenAI",
+                &pending,
+                &speaker,
+                None,
+                "err".to_string(),
+            );
             assert_eq!(pending.lock()[0].source, None);
         }
     }
@@ -625,7 +625,8 @@ mod tests {
         {
             let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
             let speaker = Some("自分".to_string());
-            ws_task::push_error(
+            crate::realtime_error_helpers::push_error(
+                "OpenAI",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),
@@ -640,7 +641,8 @@ mod tests {
         {
             let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
             let speaker: Option<String> = None;
-            ws_task::push_error(
+            crate::realtime_error_helpers::push_error(
+                "OpenAI",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),
@@ -656,7 +658,8 @@ mod tests {
         {
             let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
             let speaker = Some("自分".to_string());
-            ws_task::push_error(
+            crate::realtime_error_helpers::push_error(
+                "OpenAI",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),
@@ -670,7 +673,8 @@ mod tests {
         {
             let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
             let speaker = Some("自分".to_string());
-            ws_task::push_error(
+            crate::realtime_error_helpers::push_error(
+                "OpenAI",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),

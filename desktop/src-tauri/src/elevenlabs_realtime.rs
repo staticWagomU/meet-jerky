@@ -232,7 +232,8 @@ mod ws_task {
                 let msg = match msg {
                     Ok(m) => m,
                     Err(e) => {
-                        push_error(
+                        crate::realtime_error_helpers::push_error(
+                            "ElevenLabs",
                             &pending_for_reader,
                             &speaker_for_reader,
                             source_for_reader,
@@ -352,12 +353,24 @@ mod ws_task {
             }
             Some("error") | Some("transcription_error") => {
                 if let Some(message) = extract_error_message(&value) {
-                    push_error(pending, speaker, source, message);
+                    crate::realtime_error_helpers::push_error(
+                        "ElevenLabs",
+                        pending,
+                        speaker,
+                        source,
+                        message,
+                    );
                 }
             }
             Some(event_name) if is_scribe_error_event(event_name) => {
                 if let Some(message) = extract_error_message(&value) {
-                    push_error(pending, speaker, source, message);
+                    crate::realtime_error_helpers::push_error(
+                        "ElevenLabs",
+                        pending,
+                        speaker,
+                        source,
+                        message,
+                    );
                 }
             }
             _ => {}
@@ -417,22 +430,6 @@ mod ws_task {
                     .and_then(|v| v.as_str())
             })
             .map(str::to_string)
-    }
-
-    fn push_error(
-        pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
-        speaker: &Option<String>,
-        source: Option<TranscriptionSource>,
-        message: String,
-    ) {
-        pending.lock().push(TranscriptionSegment {
-            text: format!("[ElevenLabs Realtime エラー: {message}]"),
-            start_ms: 0,
-            end_ms: 0,
-            source,
-            speaker: speaker.clone(),
-            is_error: Some(true),
-        });
     }
 
     #[cfg(test)]
@@ -591,7 +588,8 @@ mod ws_task {
             let pending: Arc<Mutex<Vec<TranscriptionSegment>>> = Arc::new(Mutex::new(Vec::new()));
             let speaker = Some("自分".to_string());
 
-            super::push_error(
+            crate::realtime_error_helpers::push_error(
+                "ElevenLabs",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),
@@ -612,7 +610,8 @@ mod ws_task {
             let pending: Arc<Mutex<Vec<TranscriptionSegment>>> = Arc::new(Mutex::new(Vec::new()));
             let speaker = Some("自分".to_string());
 
-            super::push_error(
+            crate::realtime_error_helpers::push_error(
+                "ElevenLabs",
                 &pending,
                 &speaker,
                 Some(TranscriptionSource::Microphone),
@@ -634,7 +633,8 @@ mod ws_task {
                 let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
                     Arc::new(Mutex::new(Vec::new()));
                 let speaker = Some("自分".to_string());
-                super::push_error(
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
                     &pending,
                     &speaker,
                     Some(TranscriptionSource::Microphone),
@@ -651,7 +651,13 @@ mod ws_task {
                 let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
                     Arc::new(Mutex::new(Vec::new()));
                 let speaker = Some("自分".to_string());
-                super::push_error(&pending, &speaker, None, "err".to_string());
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
+                    &pending,
+                    &speaker,
+                    None,
+                    "err".to_string(),
+                );
                 assert_eq!(pending.lock()[0].source, None);
             }
         }
@@ -663,7 +669,8 @@ mod ws_task {
                 let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
                     Arc::new(Mutex::new(Vec::new()));
                 let speaker = Some("自分".to_string());
-                super::push_error(
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
                     &pending,
                     &speaker,
                     Some(TranscriptionSource::Microphone),
@@ -679,7 +686,8 @@ mod ws_task {
                 let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
                     Arc::new(Mutex::new(Vec::new()));
                 let speaker: Option<String> = None;
-                super::push_error(
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
                     &pending,
                     &speaker,
                     Some(TranscriptionSource::Microphone),
@@ -696,7 +704,8 @@ mod ws_task {
                 let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
                     Arc::new(Mutex::new(Vec::new()));
                 let speaker = Some("自分".to_string());
-                super::push_error(
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
                     &pending,
                     &speaker,
                     Some(TranscriptionSource::Microphone),
@@ -710,7 +719,8 @@ mod ws_task {
                 let pending: Arc<Mutex<Vec<TranscriptionSegment>>> =
                     Arc::new(Mutex::new(Vec::new()));
                 let speaker = Some("自分".to_string());
-                super::push_error(
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
                     &pending,
                     &speaker,
                     Some(TranscriptionSource::Microphone),
