@@ -31905,3 +31905,17 @@ agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header
 worker 完走 2/2 = 累計 196/196 100%。
 
 ---
+
+[mjc-main-20260505-50 Loop 97 / 2026-05-05]
+worker: mjc-worker-session-commands-list-loop97 (作業)
+範囲: src-tauri/src/session_commands.rs (list 関連 production ~22 行削除 + test 3 件削除 + 不要 import 整理 + resolve_output_directory pub(crate) 化) + src-tauri/src/session_commands_list.rs (新規 ~80-110 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 1 件)
+内容: session_commands.rs L133-154 の list 関連 (list_session_summaries_inner + list_session_summaries_cmd) を新 module session_commands_list.rs に抽出。tests 3 件 (list_session_summaries_inner_returns_saved_summary + list_session_summaries_inner_returns_empty_for_missing_dir + list_session_summaries_inner_returns_error_when_path_is_a_file) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod session_commands_list; 追加 (alphabetical = mod session_commands; 直後) + invoke_handler の session_commands::list_session_summaries_cmd を session_commands_list::list_session_summaries_cmd に変更。session_commands::resolve_output_directory を pub(crate) 化 (新 file から借用)。大型 rust file 責務分離 22 file 目 = session_commands 軸 1 件目 (新 scope) = apple_speech 軸 (Loop 95) からの pivot 達成 (機能分類軸 paradigm = system_audio_pcm/format / app_detection_* と同形)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 218a314a674b93dafbfeefb4edffde09bab5ce8f refactor(session): セッション列挙を session_commands_list.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = session_commands 軸の機能境界分離)
+
+---
