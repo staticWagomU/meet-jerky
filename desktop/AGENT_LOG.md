@@ -27472,3 +27472,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 57e1e13
+
+---
+[mjc-main-20260505-24 Loop 49 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-22 Loop 42-45 → mjc-main-20260505-24 Loop 48 時点
+  - 累計削減行数: 649 行 (78.4%) → 611 行 (79.6%) = 75% 里程標突破からさらに +4.6pt 進展
+  - 残存課題セクション: Loop 47 (ModelManager tests -28 行) + Loop 48 (CHUNK 定数 -10 行) 反映
+  - 新サブセクション 2 件: ModelManager tests 移動 ✅ + CHUNK 定数移動 ✅
+  - 末尾参考: 649 行 (78.4%) → 611 行 (79.6%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-23 Loop 47 + mjc-main-20260505-24 Loop 48 の 2 件を 1 ループで一括反映
+- variety pivot = docs 軸 = Loop 46 から 3 ループ間隔 = 許容範囲
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 既存サブセクション (Webex / Whereby / GoToMeeting / Zoom / Teams / TranscriptionLoopConfig / transcription_error_payload tests / transcription_types tests / 沈黙検知三位一体 / WhisperStream tests) はすべて保全
+- 最新情報は新サブセクション 2 件として追記する方式 (Loop 30/34/37/41/46 = commit precedent と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+- transcription.rs 611 行 wc -l 実数確認済
+- plan.md 297 → 329 行 (32 行増加)
+
+## commit
+- (worker 自走 commit 後に hash を記入)

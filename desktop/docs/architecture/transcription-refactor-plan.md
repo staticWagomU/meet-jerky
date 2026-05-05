@@ -25,7 +25,7 @@
 | 8 | Worker loop (run_transcription_loop / panic_guard / emit_segments / 各種 helper) | L1110-2999+ | ~1900 | `transcription/worker.rs` (更にサブ分割推奨) | **高** |
 | 9 | Helper (validate_stream_count / parse_requested_sources / error payload builders 等) | L741-1109 | ~370 | 各責務の private モジュール | 中 |
 
-## 進捗サマリ (mjc-main-20260505-22 Loop 42-45 時点)
+## 進捗サマリ (mjc-main-20260505-24 Loop 48 時点)
 
 - **Phase 1 (責務 1-2 = データ型 + トレイト)**: ✅ 完了 (mjc-main-20260505-3)
 - **Phase 2-A (責務 3 = Whisper エンジン)**: ✅ 完了 (mjc-main-20260505-4 ~ 7)
@@ -39,7 +39,7 @@
     stop_transcription / start_transcription / PendingTranscriptionStream
     すべて transcription_commands.rs に集約
 - **Phase 4 (責務 8 = Worker loop)**: ✅ 完了 (mjc-main-20260505-8 ~ 10, Phase 4-A emission + 4-B error_payload + 4-C panic_guard + 4-D run_transcription_loop)
-- **transcription.rs 累計削減**: 元 2999 行 → 現在 **649 行** = **約 78.4% 縮小** (~2350 行削減) = **「75% 里程標突破からさらに +3.4pt 進展」**
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **611 行** = **約 79.6% 縮小** (~2388 行削減) = **「75% 里程標突破からさらに +4.6pt 進展」**
 
 ## 残存課題 (Phase 5 候補)
 
@@ -50,8 +50,10 @@
 - **mjc-main-20260505-21 Loop 42 ✅ 完了**: 沈黙検知テスト 6 件 (calculate_rms 3 + is_tail_silent 3) を audio_utils.rs に移動 (commit `5456409`、-61 行)
 - **mjc-main-20260505-22 Loop 44 ✅ 完了**: 沈黙検知定数 3 件 (MIN_FLUSH_SAMPLES / SILENCE_LOOKBACK_SAMPLES / SILENCE_THRESHOLD_RMS) を audio_utils.rs に移動 = 関数 (Loop 32) + テスト (Loop 42) + 定数 (Loop 44) の三位一体 locality 完成 (commit `52098b6`、-10 行)
 - **mjc-main-20260505-22 Loop 45 ✅ 完了**: WhisperStream テスト 2 件 (test_whisper_stream_feed_errors_when_resampler_state_missing / test_whisper_stream_finalize_errors_when_resampler_state_missing) + helper (stream_with_missing_resampler) を transcription_whisper_stream.rs に移動 (commit `2a7190b`、-29 行)
-- transcription.rs 残存 **649 行** の更なる責務分離 (Worker loop 内部 helper / responses processing / Whisper 関連 helper)
-- 候補: Mock* trait tests 3 件 + MockEngine/MockStream impl 移動 / ModelManager tests 4 件移動 / ensure_engine tests 3 件移動
+- **mjc-main-20260505-23 Loop 47 ✅ 完了**: ModelManager 関連テスト 4 件 (test_list_available_models_not_empty / test_list_available_models_includes_small / test_model_manager_get_path / test_model_not_downloaded_initially) を transcription_model_manager.rs に移動 = ModelManager の locality 完成 (関数本体 + テスト同居) (commit `9e0a66b`、-28 行)
+- **mjc-main-20260505-24 Loop 48 ✅ 完了**: CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を transcription_whisper_stream.rs に移動 = チャンク設計定数の locality 集約 (使用元の WhisperStream と同居) (commit `57e1e13`、-10 行)
+- transcription.rs 残存 **611 行** の更なる責務分離 (Worker loop 内部 helper / responses processing / Whisper 関連 helper)
+- 候補: Mock* trait tests 3 件 + MockEngine/MockStream impl 移動 / ensure_engine tests 3 件移動
 - 規模 M-L、複数ループ計画推奨
 - 各 Phase 着手時は最新の transcription.rs を read して、本プランの行範囲とずれていないか確認する
 
@@ -288,9 +290,40 @@ mjc-main-20260505-22 Loop 45 で WhisperStream 直接テスト 2 件 + 専用 he
 - 振る舞い不変 = 702 passed 件数不変
 - transcription.rs 678 → 649 行 (-29 行)、transcription_whisper_stream.rs 200 → 235 行 (+35 行)
 
+## 関連: ModelManager tests 移動 ✅ 完了 (mjc-main-20260505-23 Loop 47 = commit `9e0a66b`)
+
+mjc-main-20260505-23 Loop 47 で ModelManager 関連テスト 4 件 (~25 行) を transcription.rs から `src-tauri/src/transcription_model_manager.rs` に移動した = ModelManager の locality 完成。
+
+- 移動対象 (transcription.rs L63-89):
+  - `test_list_available_models_not_empty`
+  - `test_list_available_models_includes_small`
+  - `test_model_manager_get_path`
+  - `test_model_not_downloaded_initially`
+- 移動先: transcription_model_manager.rs の新規 `#[cfg(test)] mod tests` (`use super::*;` で ModelManager + with_dir(#[cfg(test)]) アクセス)
+- transcription.rs L60 の `use crate::transcription_model_manager::ModelManager;` を削除 (移動後 unused、grep で 5/5 件すべて移動対象内 = 完全な切り分け可能と確定)
+- メイン批判判断: handoff 候補 G を採用判断時、grep で transcription.rs の ModelManager 参照範囲を実態確認 → 5/5 件すべて移動対象内 = use 文同時削除可と確定 = メイン批判判断 連続 4 セッション目
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 649 → 621 行 (-28 行)、transcription_model_manager.rs 149 → 181 行 (+32 行)
+
+## 関連: CHUNK 定数移動 ✅ 完了 (mjc-main-20260505-24 Loop 48 = commit `57e1e13`)
+
+mjc-main-20260505-24 Loop 48 で CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を transcription.rs から `src-tauri/src/transcription_whisper_stream.rs` に移動した = チャンク設計定数の locality 集約。
+
+- 移動対象 (transcription.rs L33-40):
+  - `CHUNK_DURATION_SECS` (チャンクの蓄積目標 5 秒)
+  - `CHUNK_SAMPLES` (16kHz × 5 秒 = 80,000 サンプル)
+- 残置: `WHISPER_SAMPLE_RATE` (Whisper 仕様 = transcription.rs の最上位定数として継続、transcription_whisper_stream.rs / audio_utils.rs の両方から参照される広域定数のため)
+- 移動先: transcription_whisper_stream.rs の `use` 文直後 (rustdoc コメント + セクションヘッダごと移植)
+- import 整理: transcription_whisper_stream.rs L10 の `use crate::transcription::{CHUNK_DURATION_SECS, CHUNK_SAMPLES, WHISPER_SAMPLE_RATE};` を `use crate::transcription::WHISPER_SAMPLE_RATE;` に変更 (CHUNK_DURATION_SECS / CHUNK_SAMPLES は同ファイル内 self-contained 化)
+- メイン批判判断: handoff 候補 H/F/J/K すべて却下し、grep で実態確認 → CHUNK_DURATION_SECS / CHUNK_SAMPLES の外部参照は transcription_whisper_stream.rs のみ (L70/L80/L81/L109) と判明 → locality 集約先を transcription_whisper_stream.rs に確定 = メイン批判判断 連続 5 セッション目
+- variety pivot 軸 = struct/const 移動軸 = Loop 44 から 4 ループ間隔 = sweep 警告完全クリア
+- Loop 33 (TranscriptionLoopConfig) / Loop 44 (沈黙検知 const) と同型 = 「const は使用箇所に locality 集約する」Tidy First 原則 3 件目
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 621 → 611 行 (-10 行)、transcription_whisper_stream.rs 235 → 245 行 (+10 行)
+
 ## 参考
 
 - 本プランは mjc-main-20260505-3 (Loop 4) で grep ベース構造分析により作成。
 - 実コードは生きており、Phase 着手時に再度行範囲・責務分類の妥当性を検証する必要がある。
 - 各 Phase 着手時は必ず最新の `transcription.rs` を read して、本プランの行範囲とずれていないか確認する。
-- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-22 Loop 42-45 時点で 649 行 = 約 78.4% 縮小達成 = 75% 里程標突破からさらに +3.4pt 進展)
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-24 Loop 48 時点で 611 行 = 約 79.6% 縮小達成 = 75% 里程標突破からさらに +4.6pt 進展)
