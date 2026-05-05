@@ -35,6 +35,8 @@ AGENT_LOG.md は ~30,333 行 / 56 セッション / 82 Loop に達し、`tail -3
 
 > **更新観測 (mjc-main-20260505-41 Loop 81 時点)**: Loop 79 → Loop 81 (~3 ループ間) で +408 行、平均 ~135 行/loop。1 ループ ~6-15 分換算で ~540-1300 行/日 (アクティブセッション中)。長期平均は ~830 行/時間 と乖離あり (本観測は handoff prompt 起こし等の一時的増分含む)。
 
+> **更新観測 (mjc-main-20260505-44 Loop 86 時点)**: Loop 81 → Loop 86 (~5 ループ間) で +304 行 (30,741 → 31,045)、平均 ~61 行/loop。Loop 81 観測値 (~135 行/loop) と比較して ~半減 = SESSION SUMMARY 軽量化 + SS-S 規模 loop 連続 (Loop 82 = 数値更新, Loop 83 = format merge, Loop 84 = Phase 状態 subsection, Loop 85 = reader_task entry 共通化) が寄与。長期平均 ~830 行/時間 とは依然乖離あり (アクティブセッション間の差異)。
+
 ### 2.4 既存運用の維持コスト
 
 - worker prompt 必須要素: 「冒頭で末尾 350 行を読む」「Read 全体禁止 = tail/grep のみ」 = 末尾参照は維持できている
