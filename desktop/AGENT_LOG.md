@@ -33270,3 +33270,27 @@ commit: 5642ba9 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-65 (handoff 直前)
+
+本セッション = mjc-main-20260505-65 = **3 ループ完走 + 通常 cadence handoff** (handoff 文書「2-3 ループ完走推奨」上限到達、前任 mjc-main-20260505-64 と同パターン継承):
+
+- Loop 128: K 軸復帰 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 17 件目 (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126 precedent 16 件目) = +24 行 / 平均 ~12 行/loop (Loop 125 → Loop 127 期間 = SUMMARY 0 件 = アクティブ進行内連続観測) = Loop 126 観測値 (~22.5 行/loop) からの ~47% 減 = **アクティブ進行軽量化 paradigm の 2 度目の観測 = Loop 121 (~11 行/loop) との paradigm 再現性確認** + paradigm pivot 達成 + alternation pattern 20 連続成功 + worker ~7 分完走
+- Loop 129: frontend 軸 = 純粋関数機能分離軸 frontend 版 6 件目 = scope 28 軸目開拓 (新 file `trackStatusAriaLabels.ts` 12 行 = import + export 2 関数) = 大型 frontend file 責務分離 41 file 目 = TranscriptView.tsx L398-404 の getMicTrackStatusAriaLabel + getSystemAudioTrackStatusAriaLabel を抽出 = -7 行 + import 1 行追加 + callsite 6 件 (L1589 + L1590 + L2064 + L2065 + L2083 + L2086) は import 追加のみで参照解決 + R6 段階的分割 3 件目 + メイン批判判断 連続 64 セッション目達成 = 既存 utils/audioTrackLabels.ts (constants tier = pure export const) との責務階層精査で **異階層 = 新 file 作成軸採用** + 新 file は audioTrackLabels.ts から SELF/OTHER_TRACK_DEVICE_LABEL を import = **utils 内 cross-import paradigm 2 件目** (transcriptDisplayHelpers.ts precedent に続き) + worker ~2.5 分完走 = **SSS 規模で予測通り最速完走** + npm run build ✓ + agent-verify.sh OK + TranscriptView.tsx 2414 → 2408 行 (-6 行)
+- Loop 130: K 軸復帰 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 18 件目 (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128 precedent 17 件目) = +47 行 / 平均 ~23.5 行/loop (Loop 127 → Loop 129 期間 = SUMMARY 1 件 mjc-main-20260505-64) = Loop 128 観測値 (~12 行/loop = SS 0 件) からの ~97% 回帰 = **SUMMARY 件数が支配変数を再々観測** = Loop 125 観測値 (~22.5 行/loop = SS 1 件 + 説明軽量化) と類似値再現 = **SS 1 件パターンの安定性確認** + frontend 軸 chore entry 軽量化 paradigm の 3 度目の観測 (Loop 125/127/129) = paradigm 安定性追加証拠 + alternation pattern 22 連続成功 + worker ~3 分完走
+
+達成記録:
+- メイン批判判断 連続 64 セッション目達成 (Loop 129 = 責務階層精査で新 file 作成軸採用 + utils cross-import paradigm 2 件目確立)
+- worker 自律 2-commit pattern 連続 70 ループ目の節目達成 (Loop 60-130 = 71 ループ連続)
+- harness 衛生連続 60 セッション目 (canonical 移譲後 `git status --short` で scripts/* に M 表示再出現せず = `bfb9846` PATH inner shell escape 永続的解決の連続証拠強化)
+- ファイル参照型 handoff prompt 連続 61 セッション目 (本 handoff prompt も同 paradigm 継承予定)
+- scope 多様性 28 軸到達 (trackStatusAriaLabels.ts で +1 軸)
+- alternation pattern 22 連続成功 (frontend(127) → K(128) → frontend(129) → K(130) → frontend(131 推奨))
+- 大型 frontend file 責務分離 41 file 目
+- 累積 worker 完走 229/229 (本セッション +3 件、100% 維持)
+- TranscriptView.tsx 規模変動: 2414 行 → 2408 行 (Loop 129) = R6 段階的分割で 28 件中 6 件抽出 = 残 21 件 (7 グループ)
+- API 互換維持戦略 (Loop 129 補強): 純粋関数 export 化 + import 1 行追加で完結 + 新 file は別 utils file から内部 import = **utils 内 cross-import paradigm の 2 件目** (1 件目 = transcriptDisplayHelpers.ts) = frontend 軸の発展 paradigm 確立
+- AGENT_LOG.md 増分パターン階層化観測: **SS 0 件 = ~11-12 行/loop (Loop 121/127) / SS 1 件 + 説明軽量化 = ~22-23 行/loop (Loop 125/129) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の 3 段階に明確化 (Loop 130 観測 entry に明記)
+
+後継 mjc-main-20260505-66 への 2-3 ループ完走推奨。最有力候補 = R6 続行 = TranscriptView.tsx 残 21 純粋関数 (7 グループ) のうち最も独立性高い 1 グループ抽出 = scope 29 軸目候補 = 規模 SS-SSS。alternation pattern: K(130) → frontend(131) = pivot 維持。詳細は docs/handoff/mjc-main-20260505-66.txt 参照。
+
+---
