@@ -21,6 +21,7 @@ mod openai_realtime;
 mod realtime_audio_command;
 mod realtime_audio_helpers;
 mod realtime_error_helpers;
+mod realtime_reader_task;
 mod secret_store;
 mod session;
 mod session_commands;

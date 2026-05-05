@@ -238,7 +238,7 @@ mod ws_task {
         let (ws_stream, _resp) = tokio_tungstenite::connect_async(request)
             .await
             .map_err(|e| format!("WebSocket 接続に失敗しました: {e}"))?;
-        let (mut ws_tx, mut ws_rx) = ws_stream.split();
+        let (mut ws_tx, ws_rx) = ws_stream.split();
 
         // ─── 2. session.update でフォーマット指定 ───
         let lang = language.as_deref().unwrap_or("auto");
@@ -295,35 +295,14 @@ mod ws_task {
         let pending_for_reader = Arc::clone(&pending);
         let speaker_for_reader = speaker.clone();
         let source_for_reader = source;
-        let reader_task = tokio::spawn(async move {
-            while let Some(msg) = ws_rx.next().await {
-                let msg = match msg {
-                    Ok(m) => m,
-                    Err(e) => {
-                        crate::realtime_error_helpers::push_error(
-                            "OpenAI",
-                            &pending_for_reader,
-                            &speaker_for_reader,
-                            source_for_reader,
-                            e.to_string(),
-                        );
-                        break;
-                    }
-                };
-                match msg {
-                    Message::Text(text) => {
-                        handle_event(
-                            &text,
-                            &pending_for_reader,
-                            &speaker_for_reader,
-                            source_for_reader,
-                        );
-                    }
-                    Message::Close(_) => break,
-                    _ => {}
-                }
-            }
-        });
+        let reader_task = tokio::spawn(crate::realtime_reader_task::run_reader_task(
+            ws_rx,
+            pending_for_reader,
+            speaker_for_reader,
+            source_for_reader,
+            "OpenAI",
+            handle_event,
+        ));
 
         // ─── 5. 送信ループ: feed されたサンプルを resample/PCM16/base64/送信 ───
         let mut finalized = false;
