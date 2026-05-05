@@ -10,7 +10,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use chrono::FixedOffset;
 
 use crate::session_manager::SessionManager;
-use crate::session_store::{self, SessionSummary};
+use crate::session_store;
+use crate::session_store_types::SessionSummary;
 use crate::settings::{default_output_directory, SettingsStateHandle};
 
 /// 現在時刻 (unix 秒) を取得。`SystemTime::now` の逆行時は 0 を返すが、
