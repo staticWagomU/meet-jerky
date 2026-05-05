@@ -29907,3 +29907,34 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中ゼロ (Loop 72-73 とも適切タイミングで自走)
 
+---
+
+[mjc-main-20260505-37 Loop 74 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/detection-extension-plan.md Section 6 の Q5 を「解決済」化
+- Q5 解決結果 Resolved Block を Section 6 表の直後に追記 (~10 行)
+  - 結論: MatchStrategy::WindowTitleContains 拡張による外部 API 影響なし
+  - 根拠: WATCHED_BUNDLE_IDS は const flat、serde 対象は Vec<&str>、MatchStrategy enum は Serialize 未 derive
+  - Phase 2 着手判断への寄与: frontend / IPC payload schema 変更不要
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張、plan の継続 = 価値の連鎖
+- mjc-main-20260505-37 Loop 74 メイン批判判断 (連続 26 セッション目): handoff の Y1 説明 (Q5/Q7/Q8 コード完結) を実態 grep で再評価 → Q5 のみコード完結可能 / Q7/Q8 は plan 自身が「mdls 確認」記載 = 実機要件と判定 → Q5 のみ Resolved 化に範囲限定
+- 規模 SS = ~10 行 docs 追記、振る舞い不変、Phase 2 着手前準備
+
+## How (docs only)
+- Q5 行の重要度列を「中 (Phase 1 前提) → 解決済 (下記参照)」に変更
+- Section 6 表の直後 (AppleScript セクションの直前) に「### Q5 解決結果 (mjc-main-20260505-37 Loop 74 調査)」を挿入
+- Q7/Q8 は実機要件のため未変更 (Q1-Q2 と同様に Open のまま据え置き)
+
+## Verify
+- agent-verify.sh: OK (docs only)
+- grep -n "Q5 解決結果" docs/architecture/detection-extension-plan.md: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 685f346
+
+---
+
