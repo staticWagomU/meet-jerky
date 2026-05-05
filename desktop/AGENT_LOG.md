@@ -31498,3 +31498,16 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = system_audio 軸の機能境界分離 + cfg(target_os) なしで unit test 可能な PCM 変換軸の独立)
 
 ---
+[mjc-main-20260505-47 Loop 92 / 2026-05-05]
+worker: mjc-worker-system-audio-format-loop92 (作業)
+範囲: src-tauri/src/system_audio.rs (audio format 検証 production 2 fn ~40 行削除 + test 9 件削除 + use CMFormatDescription 削除 + use 追加 cfg(target_os="macos") 付き + use super::* 削除 (不要 import 最小修正)) + src-tauri/src/system_audio_format.rs (新規 ~160 行) + src-tauri/src/lib.rs (mod system_audio_format; 追加)
+内容: system_audio.rs 内の validate_audio_format_properties (純粋関数 cfg なし) + validate_audio_format_description (cfg(macos) CMFormatDescription 依存) を新 module system_audio_format.rs に抽出。tests 9 件 (validate_audio_format_properties 関連 = is_err 系 5 件 + unknown 系 2 件 + error message 1 件 + first violation 1 件) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod system_audio_format; 追加。validate_audio_format_description のみ pub(crate) で公開、validate_audio_format_properties は private 維持 (caller が同 file 内のため)。caller (system_audio.rs L219 = ScreenCaptureKitCapture impl 内 cfg(macos)) は cfg(target_os="macos") 付きで use 文 1 行追加するのみ = 振る舞い不変。screencapturekit::CMFormatDescription への依存を当軸に閉じ込めて構造美向上。大型 rust file 責務分離 18 file 目 = system_audio 軸 2 件目 = 機能分類軸 2 連続 (Loop 87/88 app_detection 機能分類軸 precedent と同 paradigm) = Loop 91 PCM 軸からの機能カテゴリ pivot 達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 0c86f4461935867c7aa12a5e7fefe0b10321de52 refactor(system-audio): audio format 検証関数を system_audio_format.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = system_audio 軸の機能境界分離 + screencapturekit crate 依存の局所化)
+
+---
