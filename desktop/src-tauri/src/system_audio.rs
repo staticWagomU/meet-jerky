@@ -28,7 +28,8 @@ use screencapturekit::prelude::*;
 use screencapturekit::CMFormatDescription;
 
 #[cfg(target_os = "macos")]
-use crate::audio::{calculate_rms, AudioCapture};
+use crate::audio::calculate_rms;
+use crate::audio_traits::AudioCapture;
 
 const F32_SAMPLE_BYTES: usize = std::mem::size_of::<f32>();
 
