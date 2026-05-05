@@ -33818,3 +33818,15 @@ commits:
 AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 36 軸目開拓)
 
 ---
+[mjc-main-20260505-75 Loop 152 / 2026-05-06]
+worker: mjc-worker-loop152-archive-plan-stats-update-29 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 151 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150 precedent の 28 件目。Loop 149 → Loop 151 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-74) で +73 行 (33,747 → 33,820)、平均 ~36.5 行/loop。Loop 149 観測値 (~36.5 行/loop) と **完全一致 (差 0%)** = **SS 1 件 + 説明中量化 (~30-37 行/loop) の 2 連続観測達成 = 階層化 paradigm 4 段階目完全実証 = 第 4 階層が初観測 (Loop 149) から 2 連続再現 (Loop 151) で paradigm 確立**。主因 = mjc-main-20260505-74 SUMMARY 大量化継続 (~50 行) + paradigm pivot (K + rust)。Loop 151 = rust 軸 = scope 36 軸目開拓 (speaker normalization tier) = 大型 rust file 責務分離 32 file 目達成。alternation pattern 41 連続成功維持 (rust(151) → K(152))。harness 衛生軸 = variety pivot (rust → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 2aba407
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
