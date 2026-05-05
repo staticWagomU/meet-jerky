@@ -4,6 +4,8 @@
 //! Whisper 仕様 const + RMS 計算 + 末尾沈黙判定の責務を集約する。
 //! caller は `transcription_whisper_stream.rs` のみ。
 
+use crate::audio::calculate_rms;
+
 /// Whisper の入力サンプルレート (16kHz)。Whisper 仕様で固定。
 pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;
 
@@ -16,15 +18,6 @@ pub(crate) const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize 
 /// 沈黙とみなす RMS 閾値 (-40dBFS 相当 ≈ 0.01)。実機の背景ノイズで再調整が必要。
 /// 調査担当推奨の -60dBFS (= 0.001) は会議室背景ノイズより低く誤判定リスクが大きいため、より安全側を選択。
 pub(crate) const SILENCE_THRESHOLD_RMS: f32 = 0.01;
-
-/// `samples` の RMS (Root Mean Square) を計算する。空 slice では 0.0 を返す。
-pub(crate) fn calculate_rms(samples: &[f32]) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
-    let sum_sq: f32 = samples.iter().map(|s| s * s).sum();
-    (sum_sq / samples.len() as f32).sqrt()
-}
 
 /// `buffer` の末尾 `lookback` サンプルの RMS が `threshold` 以下なら true を返す。
 /// `buffer.len() < lookback` の場合は判定不可とみなして false を返す (誤って早期 flush しない安全側)。
