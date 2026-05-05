@@ -31485,3 +31485,16 @@ handoff 文書 (mjc-main-20260505-46.txt) は app_detection 機能分類軸 + se
 - メイン批判判断 連続 42 セッション目を維持 (handoff 予測の鵜呑み禁止、grep + Read で精査、本セッション Loop 89/90 で「scope 払底気味」警告を 2 連続発掘で覆した precedent 継承)
 
 ---
+[mjc-main-20260505-47 Loop 91 / 2026-05-05]
+worker: mjc-worker-system-audio-pcm-loop91 (作業)
+範囲: src-tauri/src/system_audio.rs (PCM helpers production ~45 行削除 + test 18 件削除 + import 追加 cfg(target_os="macos") 付き) + src-tauri/src/system_audio_pcm.rs (新規 ~120-150 行) + src-tauri/src/lib.rs (mod system_audio_pcm; 追加)
+内容: system_audio.rs L34-77 の PCM 変換 helpers (const F32_SAMPLE_BYTES + read_f32_ne + sanitize_pcm_sample + f32_pcm_bytes_to_mono) を新 module system_audio_pcm.rs に抽出。tests 18 件 (f32_pcm_bytes_to_mono 8 件 + sanitize_pcm_sample 6 件 + read_f32_ne 4 件) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod system_audio_pcm; 追加。f32_pcm_bytes_to_mono のみ pub(crate) で公開、他は private 維持。caller は cfg(target_os="macos") 付きで use 文 1 行追加するのみ = 振る舞い不変。大型 rust file 責務分離 17 file 目 = system_audio 軸 1 件目 (新 scope) = transcription_commands 軸 (Loop 90) からの pivot 達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 8afd286d51b5be2d76c18819d61351c2462f7010 refactor(system-audio): PCM bytes → mono f32 変換 helpers を system_audio_pcm.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = system_audio 軸の機能境界分離 + cfg(target_os) なしで unit test 可能な PCM 変換軸の独立)
+
+---
