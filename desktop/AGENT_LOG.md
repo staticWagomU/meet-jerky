@@ -33294,3 +33294,16 @@ commit: 5642ba9 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 後継 mjc-main-20260505-66 への 2-3 ループ完走推奨。最有力候補 = R6 続行 = TranscriptView.tsx 残 21 純粋関数 (7 グループ) のうち最も独立性高い 1 グループ抽出 = scope 29 軸目候補 = 規模 SS-SSS。alternation pattern: K(130) → frontend(131) = pivot 維持。詳細は docs/handoff/mjc-main-20260505-66.txt 参照。
 
 ---
+
+[mjc-main-20260505-66 Loop 131 / 2026-05-06]
+worker: mjc-worker-loop131-engine-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 2 件削除 + import 1 行追加) + src/utils/transcriptionEngineHelpers.ts (新規 ~20 行 = import 1 行 + export 2 関数)
+内容: TranscriptView.tsx L345-L358 の getRequiresLocalModel + getExternalApiProvider を新 file utils/transcriptionEngineHelpers.ts に抽出。frontend 軸 10 件目 = 純粋関数機能分離軸 frontend 版 7 件目 = scope 29 軸目開拓 = 大型 frontend file 責務分離 42 file 目 = R6 段階的分割 4 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA の続編)。callsite 2 件 (L637 + L640、各 1 callsite) は import 追加のみで参照解決。alternation pattern 23 連続成功維持 (K(130) → frontend(131))。メイン批判判断 = 既存 utils/liveCaptionStatus.ts (display tier = engine → UI label) + utils/modelSelectorHelpers.ts (model display tier) との責務階層精査で **異階層 = 新 file 作成軸採用** = predicate/categorization tier の独立性確保 = Loop 119/121/123/125/127/129 教訓継承 (paradigm 反復 < 責務階層精査)。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/transcriptionEngineHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: 1b2a65e refactor(frontend): TranscriptView の engine 機能特性 helpers を utils/transcriptionEngineHelpers.ts に抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
