@@ -54,6 +54,11 @@ import {
   getAudioSourceStatusLabel,
   getAudioSourceStatusPillClass,
 } from "../utils/audioSourceHelpers";
+import {
+  getEngineStatusDisplayLabel,
+  getEngineStatusLabel,
+  getEngineStatusPillClass,
+} from "../utils/engineStatusHelpers";
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
@@ -281,50 +286,6 @@ function getMeetingStartBlockedReason(
     return "記録を開始するには、Whisper モデルのダウンロードが必要です。";
   }
   return null;
-}
-
-function getEngineStatusLabel(
-  engine: TranscriptionEngineType | undefined,
-): string {
-  if (!engine) {
-    return "確認中";
-  }
-  if (engine === "appleSpeech") {
-    return "Apple Speech（端末内）";
-  }
-  if (engine === "openAIRealtime") {
-    return "OpenAI Realtime";
-  }
-  if (engine === "elevenLabsRealtime") {
-    return "ElevenLabs Realtime";
-  }
-  return "Whisper（端末内）";
-}
-
-function getEngineStatusDisplayLabel(statusLabel: string): string {
-  if (statusLabel === "Apple Speech（端末内）") {
-    return "Apple Speech";
-  }
-  if (statusLabel === "OpenAI Realtime") {
-    return "OpenAI";
-  }
-  if (statusLabel === "ElevenLabs Realtime") {
-    return "ElevenLabs";
-  }
-  if (statusLabel === "Whisper（端末内）") {
-    return "Whisper";
-  }
-  return statusLabel;
-}
-
-function getEngineStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "確認できません") {
-    return "meeting-status-pill-error";
-  }
-  if (statusLabel === "確認中") {
-    return "meeting-status-pill-neutral";
-  }
-  return "meeting-status-pill-active";
 }
 
 function getExternalApiKeyStatusLabel(
