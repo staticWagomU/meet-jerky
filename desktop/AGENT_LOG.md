@@ -32262,3 +32262,14 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = realtime engine 4 軸目 = ws_task 内 mod 越境純粋関数の独立化 + state 依存無しの helpers 局所化)
 
 ---
+[mjc-main-20260505-53 Loop 103 / 2026-05-05]
+worker: mjc-worker-archive-plan-stats-update-5-loop103 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 6 件目追記、~5 行)
+内容: Loop 102 完了時点 (32,264 行) の更新観測を Section 2.3 末尾に追記。Loop 98 → Loop 102 で +250 行 / 平均 ~63 行/loop。Loop 98 観測 (~72 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (K 軸 + 機能分類軸 + 純粋関数機能分離軸 2 連続) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 102 純粋関数機能分離軸 → Loop 103 K 軸 = 3 連続防止)、Loop 79/81/86/95/98 precedent 6 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 102 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- ee7c1f0 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 102 時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
