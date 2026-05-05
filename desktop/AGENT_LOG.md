@@ -27287,3 +27287,32 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - commit `6fd5f42`
 
 ---
+[mjc-main-20260505-23 Loop 47 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から ModelManager 関連テスト 4 件 (test_list_available_models_not_empty / test_list_available_models_includes_small / test_model_manager_get_path / test_model_not_downloaded_initially) を src-tauri/src/transcription_model_manager.rs に移動
+- transcription.rs L60 の `use crate::transcription_model_manager::ModelManager;` を削除 (移動後 unused)
+- transcription_model_manager.rs に新規 `#[cfg(test)] mod tests` 追加 (`use super::*;`)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (ModelManager の locality 完成 = 関数本体 + テスト同居で理解性向上)
+- variety pivot 軸 = test 軸 = Loop 45 から 2 ループ間隔 (Loop 46 で docs 軸 pivot を挟んだ後) = 許容範囲
+- ModelManager 関連テストは ModelManager 本体 (transcription_model_manager.rs) と locality 一致が自然 = Loop 32 (resample_audio tests) / Loop 38 (transcription_types tests) / Loop 42 (沈黙検知 tests) precedent 継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs から L60 use 文 + L63-89 4 tests を削除
+- transcription_model_manager.rs に新規 tests mod 追加 (`use super::*;` で ModelManager + with_dir(#[cfg(test)]) アクセス)
+- transcription.rs: 649 → 621 行 (-28 行) / transcription_model_manager.rs: 149 → 181 行 (+32 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+
+---

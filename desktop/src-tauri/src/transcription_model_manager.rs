@@ -147,3 +147,35 @@ impl ModelManager {
         ]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_list_available_models_not_empty() {
+        let models = ModelManager::list_available_models();
+        assert!(!models.is_empty());
+    }
+
+    #[test]
+    fn test_list_available_models_includes_small() {
+        let models = ModelManager::list_available_models();
+        assert!(models.iter().any(|m| m.name == "small"));
+    }
+
+    #[test]
+    fn test_model_manager_get_path() {
+        let manager = ModelManager::new();
+        let path = manager.get_model_path("small");
+        assert!(path.to_str().unwrap().contains("ggml-small.bin"));
+    }
+
+    #[test]
+    fn test_model_not_downloaded_initially() {
+        // ダウンロードしていないモデルは false を返すべき
+        // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
+        let manager = ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
+        assert!(!manager.is_model_downloaded("small"));
+    }
+}
