@@ -105,15 +105,13 @@ impl OpenAIRealtimeStream {
             {
                 // タスク内で発生した致命的エラーをユーザーにも分かるように
                 // pending キューに 1 件だけ詰める (segment text に流す簡易方式)。
-                let mut q = pending_for_task.lock();
-                q.push(TranscriptionSegment {
-                    text: format!("[OpenAI Realtime エラー: {e}]"),
-                    start_ms: 0,
-                    end_ms: 0,
+                crate::realtime_error_helpers::push_error(
+                    "OpenAI",
+                    &pending_for_task,
+                    &speaker,
                     source,
-                    speaker: speaker.clone(),
-                    is_error: Some(true),
-                });
+                    e,
+                );
             }
         });
 

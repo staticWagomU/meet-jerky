@@ -85,14 +85,13 @@ impl ElevenLabsRealtimeStream {
             })
             .await
             {
-                pending_for_task.lock().push(TranscriptionSegment {
-                    text: format!("[ElevenLabs Realtime エラー: {e}]"),
-                    start_ms: 0,
-                    end_ms: 0,
+                crate::realtime_error_helpers::push_error(
+                    "ElevenLabs",
+                    &pending_for_task,
+                    &speaker,
                     source,
-                    speaker: speaker.clone(),
-                    is_error: Some(true),
-                });
+                    e,
+                );
             }
         });
 
