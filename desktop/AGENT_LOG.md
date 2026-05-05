@@ -29102,3 +29102,43 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中 2 回 (Loop 64 起動後直後 / Loop 65 完走直後 = 完璧タイミング、improver による継続指示)
 
+---
+
+[mjc-main-20260505-33 Loop 66 / 2026-05-05 ~JST]
+
+## What
+- audio.rs 本体から AudioCapture trait (L22-43, 22 行) を新規ファイル audio_traits.rs に抽出
+- lib.rs に `mod audio_traits;` 追加 (audio_event と audio_utils の間)
+- audio.rs 先頭 use 文に `use crate::audio_traits::AudioCapture;` 追加 (内部 impl 用)
+- system_audio.rs L31 use 文を 2 行に分割 (audio::calculate_rms + audio_traits::AudioCapture)
+- tests は audio.rs 残置 (AudioCapture trait に直接 test なし)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (1011 行 file の段階的責務分離)
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的寄与 (audio capture の責務独立 = 将来最適化容易化)
+- locality 集約 = system_audio.rs が本体 audio.rs から独立 = trait 経由のみ依存
+- transcription_traits.rs (mjc-main-20260505-3) precedent 直接展開
+- variety pivot = app_detection scope 2 連続 (Loop 64-65) → audio scope 新 scope = 3 連続 sweep 警告回避
+- メイン批判判断 連続 18 セッション目達成 = handoff 候補 X Phase 1 (データ型抽出 = AudioDevice 想定) を grep で外部 caller ゼロ発見 → AudioCapture trait 抽出 (system_audio.rs 直接依存 = locality メリット大) を新候補発見
+
+## How (Tidy First, behavior-preserving)
+- trait 本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- pub visibility 維持 = crate 外可視範囲不変
+- #[allow(dead_code)] 維持
+- ドキュメントコメント維持
+- cargo fmt 適用: use crate:: import は rustfmt により cpal:: の前に自動配置 (alphabetical by rustfmt rules)
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `pub trait AudioCapture` を audio.rs で grep: 完全に空 (新ファイル経由のみ)
+- `pub trait AudioCapture` を audio_traits.rs で grep: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 1ed49b3
+
