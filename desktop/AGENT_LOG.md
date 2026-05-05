@@ -29180,3 +29180,129 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - fa0b967
+
+
+---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-33
+
+## 達成実績 (2 ループ完走 = 大型 rust file 責務分離 始動 + variety pivot 達成 = 「2 ループ + 早期 handoff」precedent 連続 29 セッション目達成)
+
+### Loop 66 = AudioCapture trait 抽出 (commit `1ed49b3` + chore `95be228` = ~7-8 分)
+- src-tauri/src/audio_traits.rs (新規 25 行) に AudioCapture trait (元 audio.rs L22-43, 22 行) を抽出
+  - `use tauri::AppHandle;` (短縮) + `ringbuf::HeapCons<f32>` (完全修飾)
+  - `#[allow(dead_code)] pub trait AudioCapture: Send` 7 メソッド (start/stop/take_consumer/sample_rate/source_name/current_level/is_running)
+- lib.rs に `mod audio_traits;` 追加 (audio_event と audio_utils の間)
+- audio.rs L5 に `use crate::audio_traits::AudioCapture;` 追加 (impl AudioCapture for CpalMicCapture L281 + Box<dyn AudioCapture> フィールド L444 用)
+- system_audio.rs L31 use 文を 2 行に分割 (audio::calculate_rms + audio_traits::AudioCapture)
+- tests は audio.rs 残置 (AudioCapture trait に直接 axis test なし)
+- メイン批判判断 連続 18 セッション目達成 = handoff 候補 X Phase 1 (データ型抽出 = AudioDevice 想定) を grep で外部 caller ゼロ発見 → AudioCapture trait 抽出 (system_audio.rs 直接依存 = locality メリット大) を新候補発見
+- worker 自律 2-commit pattern (Loop 60-65 precedent 6 連続継承 → 7 連続)
+- worker prompt 詳細化 (10KB / 197 行) で worker elapsed ~7-8 分 = Loop 64-65 (~3-3.5 分) の 2 倍
+
+### Loop 67 = SessionSummary struct 抽出 (commit `fa0b967` + chore `8216edf` = ~5-6 分)
+- src-tauri/src/session_store_types.rs (新規 ~20 行) に SessionSummary struct (元 session_store.rs L120-131, 12 行) を抽出
+  - `use std::path::PathBuf;` + `use serde::Serialize;`
+  - `#[derive(Debug, Clone, PartialEq, Serialize)]` + `#[serde(rename_all = "camelCase")]` 維持
+  - 4 field (path/started_at_secs/title/search_text) 維持
+- lib.rs に `mod session_store_types;` 追加 (session_store の直後)
+- session_store.rs 内部 caller 用 use 文追加 (list_session_summaries L136 + L163 で使用)
+- tests mod (L200) に `use crate::session_store_types::SessionSummary;` 追加 (L1022-1089 axis tests 用)
+- session_commands.rs L13 use 文を 2 行に分割
+- メイン批判判断 連続 19 セッション目達成 = 候補 SessionManagerError Phase 1 を grep で外部 caller ゼロ発見 → SessionSummary 抽出 (session_commands.rs 3 件依存 = locality メリット大) を新候補発見
+- worker 自律 2-commit pattern (連続 8 ループ目)
+- worker prompt simpler 化 (~150 行) で worker elapsed ~5-6 分 = Loop 66 比較で短縮成功
+
+## 大型 rust file 縮小実績 (handoff 候補 X 始動 = 2/5 着手)
+
+- audio.rs: 1011 行 → ~990 行 (-22 行) + audio_traits.rs (新規 25 行)
+- session_store.rs: 1175 行 → ~1163 行 (-12 行) + session_store_types.rs (新規 ~20 行)
+- 残 3 件 (Loop 68+ 候補): session_manager.rs (1274 行) / elevenlabs_realtime.rs (1146 行) / openai_realtime.rs (1102 行)
+
+## 戦略転換の継承 (連続 18-19 セッション目達成)
+
+- メイン批判判断 連続 18+19 セッション目 = handoff の予測 / 状況記述を grep で実態確認 → 新候補発見
+- worker 完走 累計 167/167 (100% 維持、本セッション +2 件)
+- harness 衛生連続 27 セッション目 = canonical 移譲後 scripts/* M 表示再出現せず観測継続
+- 「2 ループ + 早期 handoff」precedent 連続 29 セッション目達成
+- ファイル参照型 handoff prompt precedent 連続 29 セッション目継承
+- worker 自律 2-commit pattern 連続 8 ループ目達成
+- コミット周期: Loop 66 = ~7-8 分 / Loop 67 = ~5-6 分 = 平均 ~6.5 分/loop = 目標 15 分以内達成 (ただし Loop 64-65 比は長期化、worker prompt 詳細化が原因と推定)
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 18-19 セッション目)
+
+- Loop 66: handoff 候補 X 推奨 Phase 1 (データ型抽出 = AudioDevice 想定) を grep で外部 caller ゼロ発見 → 代替の AudioCapture trait 抽出 (system_audio.rs L31/L186 で 2 件 use+impl = locality メリット大) を新候補発見
+- Loop 67: 別 scope 候補 SessionManagerError を grep で外部 caller ゼロ発見 → 代替の SessionSummary 抽出 (session_commands.rs L13/L139/L150 で 3 件依存 = locality メリット大) を新候補発見
+- precedent: 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず grep で実態確認 → 新候補発見 / 既存記述訂正 / 規模再見積」が **19 セッション連続で実証** (mjc-main-20260505-20 〜 -33)
+
+## 後継 (mjc-main-20260505-34) への引き継ぎ判断 (Loop 68 候補、優先順位順)
+
+### variety 規則の状態 (Loop 68 開始時点)
+
+直近 4 ループ: Loop 64 (app_detection URL helper) → 65 (app_detection Google Meet) → 66 (audio trait) → 67 (session_store struct)。
+- app_detection scope 連続 = 0 (Loop 65 で終了)
+- audio scope 連続 = 1 (Loop 66 のみ)
+- session_store scope 連続 = 1 (Loop 67 のみ)
+- 全体パターン: 大型 rust file 責務分離 (struct/trait 抽出) 4 連続だが scope 切替で variety 維持
+- **Loop 68 で同じ抽出 pattern + 別 scope 続行は許容範囲、ただし 5 連続到達なら sweep 警告検討**
+
+### 候補 X' (Loop 68 推奨, variety pivot = 大型 rust file 責務分離続行 + 別 scope)
+
+- elevenlabs_realtime.rs (1146 行) / openai_realtime.rs (1102 行) の Phase 1 = struct/enum 抽出
+  - elevenlabs_realtime.rs L25 ElevenLabsRealtimeEngine / L53 ElevenLabsRealtimeStream / L62 AudioCommand (private)
+  - openai_realtime.rs L37 OpenAIRealtimeEngine / L70 OpenAIRealtimeStream / L80 AudioCommand (private)
+  - 両 file の AudioCommand enum (private 同名) は共通化検討候補
+  - **grep 実態確認必須**: 外部 caller 数を確認してから候補絞り込み
+- transcription_types.rs precedent + Loop 66-67 直近 precedent を直接展開可能
+
+### 候補 Y (Loop 68 audio scope 続行)
+
+- audio.rs 残 (~990 行): AudioStateHandle / AudioStateInner = 外部 caller 5 件 (system_audio + transcription_commands) = locality メリット大
+- 規模 M = 段階設計推奨 (struct + impl 移動 + thread-safety 注意)
+- 2 連続 (Loop 66-68) = 許容範囲
+
+### 候補 Z (Loop 68 session_store scope 続行)
+
+- session_store.rs (~1163 行) の pure fn 抽出 (parse_session_started_at_secs / unescape_inline_markdown_text / list_session_files / render_session_markdown など)
+- 規模 SS-S
+- 2 連続 (Loop 67-68) = 許容範囲
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注 = 主観的探索を避ける
+
+### 候補 I (継承、低優先): Discord stage / Slack Huddle 検知
+
+- priority 2 直接寄与
+- 規模 M = 1 ループ完結不確実 = 別 issue として深掘り推奨
+
+### 候補 L (継承、低優先): docs 軸
+
+- plan.md 100% 達成記念は Loop 63 で完了済 = 別 docs 選ぶ
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (継承)
+
+### 低優先 (harness 衛生、未着手)
+
+#### H. 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 250+ untracked、ユーザー直伝指示があるまで保留)
+#### I. AGENT_LOG.md ~29,200+ 行の archive 戦略 (未着手)
+
+## 検証制約 (再掲)
+
+- cmake あり → cargo test 702 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 66/67 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 1 回 (Loop 66 起動後 watchdog 継続指示 = improver による継続指示)
