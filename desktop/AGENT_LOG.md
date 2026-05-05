@@ -31182,3 +31182,16 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = 機能分類軸の single source of truth 化)
 
 ---
+[mjc-main-20260505-45 Loop 88 / 2026-05-05]
+worker: mjc-worker-app-detection-inactive-decision-loop88 (作業)
+範囲: src-tauri/src/app_detection.rs (純粋関数 2 件削除 + axis test 20 件削除 + 冒頭 use 文 1 行追加) + src-tauri/src/app_detection_inactive_decision.rs (新規 225 行) + src-tauri/src/lib.rs (mod 追加)
+内容: app_detection.rs L211-258 の should_warn_polling_stall / should_notify_meeting_inactive 純粋関数 2 件を新 module app_detection_inactive_decision.rs に抽出。state 依存 2 件 (check_meeting_inactive_for_bundle / check_all_inactive_bundles) は STATE 露出回避のため app_detection.rs に残す = encapsulation 維持の設計判断。axis test 20 件 (should_warn_polling_stall_* 10 件 + should_notify_meeting_inactive_* 10 件) を新 file 内 #[cfg(test)] mod tests に移動。caller 修正は冒頭 `use crate::app_detection_inactive_decision::{should_notify_meeting_inactive, should_warn_polling_stall};` を追加して既存呼び出し (L288 / L348) を無変更で残す方式。lib.rs alphabetical 順に `mod app_detection_inactive_decision;` を app_detection_goto と app_detection_notification の間に挿入。大型 rust file 責務分離 14 file 目 = 機能分類軸 2 件目 = Loop 87 notification 抽出の続編。
+振る舞い: cargo test --lib 704 passed (件数完全不変、純粋関数の expected 値同一のため test assert 無変更)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- d172b5b refactor(app-detection): inactive 判定の純粋関数 2 件を app_detection_inactive_decision.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = 機能分類軸の single source of truth 化、Loop 87 続編)
+
+---
