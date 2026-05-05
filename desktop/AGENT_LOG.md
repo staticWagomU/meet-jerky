@@ -33416,3 +33416,15 @@ commit: 3b457f3 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 後継 mjc-main-20260505-68 への 2-3 ループ完走推奨。最有力候補 = R6 続行 = TranscriptView.tsx 残 13 純粋関数 (4 グループ) のうち最も独立性高い 1 グループ抽出 = scope 32 軸目候補 = 規模 SS-S。alternation pattern: K(136) → frontend(137) = pivot 維持。Loop 137 推奨候補 = R6g Engine Status 3 件抽出 (規模 SS = ~3-5 分完走) / 副推奨 = R6h External API Key 3 件抽出 (規模 SS = ~3-5 分完走)。詳細は docs/handoff/mjc-main-20260505-68.txt 参照。
 
 ---
+[mjc-main-20260505-68 Loop 137 / 2026-05-06]
+worker: mjc-worker-loop137-engine-status-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 3 件削除 + import 追加) + src/utils/engineStatusHelpers.ts (新規 ~50 行 = type import 1 行 + export 3 関数)
+内容: TranscriptView.tsx L286-L328 の getEngineStatusLabel + getEngineStatusDisplayLabel + getEngineStatusPillClass を新 file utils/engineStatusHelpers.ts に抽出。frontend 軸 13 件目 = 純粋関数機能分離軸 frontend 版 10 件目 = scope 32 軸目開拓 = 大型 frontend file 責務分離 45 file 目 = R6 段階的分割 7 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission + Loop 135 Audio Source の続編)。callsite 3 件 (L1383 + L1385 + L2036) は import 追加のみで参照解決。alternation pattern 29 連続維持 (K(136) → frontend(137))。メイン批判判断 = handoff 主張「engineStatusHelpers.ts 既存ゼロ」を grep で批判的検証 → 既存 transcriptionEngineHelpers.ts (Loop 131 = engine 機能特性 tier = predicate / model display tier) 発見 + 責務階層精査で **異階層判定** (本新 file = engine status の display tier (status label + display label + pill class)) → 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は `../types` から TranscriptionEngineType を import するのみ = **utils 内 cross-import なし** = paradigm 4 件目 (audioSourceHelpers.ts) で打ち止め継続。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/engineStatusHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: 4aab536 refactor(frontend): TranscriptView の Engine Status 系 helpers を utils/engineStatusHelpers.ts に抽出
+依存関係追加: なし (types/ への type import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
