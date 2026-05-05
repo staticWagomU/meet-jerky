@@ -33036,3 +33036,14 @@ paradigm 多様化:
 - app_detection.rs 残: ~30 行の throttle_key parser のみ (URL/window-title 分類は Loop 119 で抽出済)
 
 ---
+[mjc-main-20260505-62 Loop 120 / 2026-05-06]
+worker: mjc-worker-loop120-archive-plan-stats-update-13 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 13 件目追記、~3 行)
+内容: Loop 119 完了時点 (33,038 行) の更新観測を Section 2.3 末尾に追記。Loop 117 → Loop 119 で +79 行 / 平均 ~40 行/loop。Loop 117 観測 (~46 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (Loop 118 K 軸 + Loop 119 rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = app_detection_meeting_classifier.rs (新規) 抽出) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 0 行寄与) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 119 rust 軸 → Loop 120 K 軸 = paradigm pivot 達成 + alternation pattern 完璧継続: K(111) → frontend(112) → K(113) → frontend(114) → K(115) → frontend(116) → rust(117) → K(118) → rust(119) → K(120) = 12 連続成功)、Loop 79/81/86/95/98/102/106/109/111/113/115/118 precedent 13 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 119 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 637c2ea docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 119 完了時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
