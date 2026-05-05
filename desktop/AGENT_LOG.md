@@ -27897,4 +27897,4 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - trailing whitespace: なし
 
 ## commit
-- (worker が agent-commit.sh で自走 commit、commit hash は後でメインが反映)
+- bbe9afc
