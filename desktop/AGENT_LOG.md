@@ -29306,3 +29306,45 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中 1 回 (Loop 66 起動後 watchdog 継続指示 = improver による継続指示)
+
+---
+
+[mjc-main-20260505-34 Loop 68 / 2026-05-05 ~JST]
+
+## What
+- audio.rs から private pure helpers 4 件を新規ファイル audio_sample_helpers.rs に抽出 (~40 行)
+  - `pub(crate) fn for_each_mono_sample<T, F>` (~20 行) = ステレオ→モノラル平均化 + on_sample callback
+  - `pub(crate) fn normalize_sample_to_f32<T>` (~6 行) = T → f32 正規化 + sanitize 適用
+  - `pub(crate) fn sanitize_sample` (~3 行) = audio_utils::sanitize_audio_sample wrapper (tests が直接呼ぶため pub(crate) 化)
+  - `pub(crate) fn calculate_rms_from_sum` (~11 行) = sum_squares + count → RMS
+- lib.rs に `mod audio_sample_helpers;` 追加 (audio_event と audio_traits の間、アルファベット順)
+- audio.rs 先頭に `use crate::audio_sample_helpers::{calculate_rms_from_sum, for_each_mono_sample};` 追加
+- audio.rs の `use cpal::{FromSample, Sample, SampleFormat, SizedSample};` から未使用の `Sample` を削除
+- audio_sample_helpers.rs に `use cpal::{FromSample, Sample};` を配置 (f32::from_sample 用)
+- tests は audio.rs 残置 + tests mod に `use crate::audio_sample_helpers::{calculate_rms_from_sum, for_each_mono_sample, normalize_sample_to_f32, sanitize_sample};` 追加 (assert_close helper も残置)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (audio.rs ~990 行の段階的責務分離継続)
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的寄与 (audio sample 処理の独立 file = 将来最適化容易化)
+- locality 集約 = pure 純粋ロジックの単独 file 化
+- audio_utils.rs precedent (sanitize_audio_sample / calculate_rms / resample_audio) 直接展開
+- variety pivot = struct/trait 抽出 (Loop 66/67) → pure fn 抽出 (Loop 68) = pattern 切替
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- visibility: sanitize_sample は tests からも直接呼ばれるため pub(crate) に昇格 (grep 確認で判断)
+- use super::* は private use 文を子モジュールに再エクスポートしないため tests mod に明示 import が必要 (session_store.rs precedent 踏襲)
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- audio.rs から `^fn for_each_mono_sample` / `^fn normalize_sample_to_f32` / `^fn calculate_rms_from_sum` を grep: 完全に空
+- audio_sample_helpers.rs から同 fn を grep: 各 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 86ffc7a
