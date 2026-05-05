@@ -30098,3 +30098,47 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中ゼロ (Loop 74-75 とも適切タイミングで自走)
+
+---
+
+[mjc-main-20260505-38 Loop 76 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_store_render.rs (新規) を作成し、session_store.rs から以下を移動:
+  - render_session_markdown fn (~31 行、本体 + doc) を `pub(crate) fn` として配置
+  - unix_secs_i64 fn (4 行) を private fn として配置
+  - io_invalid fn (3 行) を private fn として配置
+  - mod tests 内に 9 件の test を移動 (render 5 + unix_secs_i64 3 + io_invalid 1)
+- src-tauri/src/lib.rs に `mod session_store_render;` を session_store_parse と session_store_types の間に追加 (alphabetical)
+- src-tauri/src/session_store.rs:
+  - L7 use std::io::{...} から Error / ErrorKind を削除 (ErrorKind は mod tests に移動して使用継続)
+  - mod tests 冒頭に `use std::io::ErrorKind;` を明示追加
+  - L10-13 datetime_fmt + markdown 関連 use 文を削除 (render 専用)
+  - top-level に `use crate::session_store_render::render_session_markdown;` を追加
+  - 該当 fn 3 件 + tests 9 件を削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_store.rs ~1133 行 → ~1095 行への段階的責務分離)
+- session_manager_persist.rs (Loop 75) precedent 直接展開 + session_store_parse.rs (Loop 69) precedent 構造踏襲
+- 大型 rust file 責務分離 6 file 目達成 (audio / session_store / realtime / session_manager_types / session_manager_persist / session_store_render)
+- handoff X3 の Plan A (依存 fn を pub(crate) 化で残す) を批判的に修正 = render 専用ヘルパー 2 件は session_store_render.rs に同梱して private 維持 → visibility 昇格を 2→1 fn に削減 + locality 完全集約
+
+## How (Tidy First, behavior-preserving)
+- visibility: render_session_markdown のみ private → pub(crate) (caller 1 件 session_store.rs から名前解決)、unix_secs_i64 / io_invalid は private 維持
+- 振る舞い不変 = 705 件 pass 件数不変
+- mod tests 内 jst() 再定義 (1 行 fn) で session_store.rs の jst() と独立
+- use 文: render 専用は新 file へ移動、共有は session_store.rs に残置
+- ErrorKind: top-level から mod tests 内に移動 (cargo build --lib での unused import 警告を解消)
+
+## Verify
+- cargo build --lib: エラーなし、警告ゼロ
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_store.rs から `fn render_session_markdown` を grep: 0 件
+- session_store_render.rs から `pub(crate) fn render_session_markdown` を grep: 1 件
+- trailing whitespace: なし
+
+## commit
+- f964acb
