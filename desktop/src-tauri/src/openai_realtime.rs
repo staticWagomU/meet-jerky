@@ -26,10 +26,8 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 
 use crate::secret_store::{get_secret, SecretKey};
-use crate::transcription::{
-    StreamConfig, TranscriptionEngine, TranscriptionSegment, TranscriptionSource,
-    TranscriptionStream,
-};
+use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
 /// OpenAI Realtime API のエンジン。
 ///

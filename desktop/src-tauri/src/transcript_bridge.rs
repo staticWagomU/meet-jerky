@@ -457,24 +457,29 @@ mod tests {
     fn segment_to_append_args_ignores_source_field_completely() {
         // T1: source field は normalize_speaker / offset 計算 / text trim のどれでも参照されない契約を固定。
         // 将来 source を判定に組み込む誤改修 (例: Microphone と SystemAudio で speaker 自動上書き) への検知装置。
-        let make_seg =
-            |source: Option<crate::transcription::TranscriptionSource>| TranscriptionSegment {
+        let make_seg = |source: Option<crate::transcription_types::TranscriptionSource>| {
+            TranscriptionSegment {
                 text: "  hello  ".to_string(),
                 start_ms: 2_000,
                 end_ms: 3_500,
                 source,
                 speaker: Some("自分".to_string()),
                 is_error: None,
-            };
+            }
+        };
 
         let baseline = segment_to_append_args(&make_seg(None), 1_000, 1_040);
         let with_mic = segment_to_append_args(
-            &make_seg(Some(crate::transcription::TranscriptionSource::Microphone)),
+            &make_seg(Some(
+                crate::transcription_types::TranscriptionSource::Microphone,
+            )),
             1_000,
             1_040,
         );
         let with_sys = segment_to_append_args(
-            &make_seg(Some(crate::transcription::TranscriptionSource::SystemAudio)),
+            &make_seg(Some(
+                crate::transcription_types::TranscriptionSource::SystemAudio,
+            )),
             1_000,
             1_040,
         );

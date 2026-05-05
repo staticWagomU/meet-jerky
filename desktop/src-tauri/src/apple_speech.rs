@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use crate::transcription::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
 
 /// Apple SpeechAnalyzer エンジン (macOS 26+ 専用)。
 ///
@@ -75,9 +75,8 @@ mod macos {
     use serde::Deserialize;
 
     use super::{language_to_locale, normalize_segment_text};
-    use crate::transcription::{
-        StreamConfig, TranscriptionSegment, TranscriptionSource, TranscriptionStream,
-    };
+    use crate::transcription_traits::{StreamConfig, TranscriptionStream};
+    use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
     #[repr(C)]
     pub struct SpeechBridge {

@@ -28579,3 +28579,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中 1 回 (Loop 59 完走後、handoff 準備への移行を継続)
 
+[mjc-main-20260505-30 Loop 60 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 2 歩 + 第 1 歩補足統合 = StreamConfig/TranscriptionEngine/TranscriptionStream 直接 import 化 + transcript_bridge.rs インライン参照 3 箇所修正
+- elevenlabs_realtime.rs L19-22 / openai_realtime.rs L29-32 の file-level use ブロック (5 種 combined import) を 2 行に分割:
+  - `use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};`
+  - `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};`
+- apple_speech.rs L10 の `use crate::transcription::{StreamConfig, TranscriptionEngine, TranscriptionStream};` を `crate::transcription_traits::` に書き換え
+- apple_speech.rs L78-80 の nested mod 内 use (4 種) を 2 行に分割 (traits + types)
+- transcript_bridge.rs L461/L472/L477 のインライン参照 (`crate::transcription::TranscriptionSource`) を `crate::transcription_types::TranscriptionSource` に書き換え
+- transcription.rs L5/L11 の互換 re-export に `#[allow(unused_imports)]` 追加 (全 caller が直接 import 化されたため unused lint 対応、Loop 64 で行ごと削除予定)
+- transcription.rs のその他互換 re-export 3 件 (WhisperStream/TranscriptionStateHandle/TranscriptionLoopConfig) は全て残置 (Loop 64 で一括削除予定)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration = Phase 6 第 2 歩 + 第 1 歩補足 = 互換層段階的解体)
+- variety pivot = struct/const + import refactor 軸 = Loop 57 (struct/const) → Loop 58 (docs) → Loop 59 (struct/const + import refactor) → Loop 60 (struct/const + import refactor) で 2 ループ間隔 sweep 警告クリア + Phase 6 進行中で軸統一意義大
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文を機械的に書き換え (実体は transcription_traits.rs / transcription_types.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- elevenlabs/openai の use ブロックは TranscriptionSegment/TranscriptionSource (Loop 59 で 4 ファイル / 7 箇所書き換え済の補足) も同時に直接 import 化 = file-level scope の Phase 6 第 1 歩補完
+- 全 caller 直接 import 化後に transcription.rs 互換 re-export が unused lint エラーになるため #[allow(unused_imports)] を追加 (Loop 64 削除時に除去)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- af8c6f5
+
+---

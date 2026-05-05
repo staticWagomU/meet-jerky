@@ -2,12 +2,14 @@
 // データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
+#[allow(unused_imports)]
 pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
 // ─────────────────────────────────────────────
 // TranscriptionEngine / TranscriptionStream トレイト (transcription_traits.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
+#[allow(unused_imports)]
 pub use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
 
 // ─────────────────────────────────────────────
