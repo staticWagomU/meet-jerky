@@ -49,6 +49,7 @@ import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
 import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
+import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
   buildLiveCaptionStatusFromLabels,
   isExternalTransmissionLabel,
@@ -395,13 +396,6 @@ function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
   return `外部送信: ${statusLabel}`;
 }
 
-function getMicTrackStatusAriaLabel(statusLabel: string): string {
-  return `${SELF_TRACK_DEVICE_LABEL}: ${statusLabel}`;
-}
-
-function getSystemAudioTrackStatusAriaLabel(statusLabel: string): string {
-  return `${OTHER_TRACK_DEVICE_LABEL}: ${statusLabel}`;
-}
 
 function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
