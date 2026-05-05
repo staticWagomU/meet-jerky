@@ -239,10 +239,21 @@ Discord の stage channel URL は通常チャンネルと同形式 (`discord.com
 | Q2 | Discord stage channel 中の window title 実例 | 高 (Phase 2 前提) | macOS + Discord デスクトップアプリで stage 参加後に AppleScript で取得 |
 | Q3 | Slack web 版の huddle 中 URL 形式 | 中 (Phase 3 前提) | ブラウザで huddle 参加後に URL バーを確認 |
 | Q4 | Discord web 版の stage channel URL 形式 | 中 (Phase 4 前提) | ブラウザで stage 参加後に URL バーを確認 |
-| Q5 | `MatchStrategy::WindowTitleContains` の serde 影響範囲 | 中 (Phase 1 前提) | `WATCHED_BUNDLE_IDS` が serde Serialize/Deserialize の対象かを `grep -n serde` で確認 |
+| Q5 | `MatchStrategy::WindowTitleContains` の serde 影響範囲 | 解決済 (下記参照) | `WATCHED_BUNDLE_IDS` が serde Serialize/Deserialize の対象かを `grep -n serde` で確認 |
 | Q6 | window title の日本語 localization 対応方針 | 低 | `"Huddle"` → `"ハドル中"` 等の prefix/含有 pattern を追加するか英語のみとするか |
 | Q7 | Discord `com.hnc.Discord` bundle ID の正確な値 | 低 | `mdls -name kMDItemCFBundleIdentifier /Applications/Discord.app` で確認 |
 | Q8 | Slack bundle ID の正確な値 | 低 | `mdls -name kMDItemCFBundleIdentifier /Applications/Slack.app` で確認 |
+
+### Q5 解決結果 (mjc-main-20260505-37 Loop 74 調査)
+
+**結論**: `MatchStrategy::WindowTitleContains` 拡張による外部 API への影響は **なし**。
+
+**根拠**:
+- `WATCHED_BUNDLE_IDS` は `app_detection.rs` 内の `const &[(&str, &str, MatchStrategy)]` で定義されており、外部 module / 外部 crate に直接 serialize されない。
+- `app_detection.rs` の serde 利用箇所は `MeetingAppDetectedPayload` enum (L74-103, struct field 単位の `#[serde(rename = ...)]`) と test 内の `serde_json::to_string(&bundle_ids)` (L841) のみ。後者は `Vec<&str>` 型 = bundle_id 文字列のみを抽出した flat 配列を serialize しており、`MatchStrategy` enum 自体は serialize 対象に含まれない。
+- `MatchStrategy` enum は `Debug + Clone + PartialEq + Eq` のみ derive され、`Serialize` / `Deserialize` 未実装。WindowTitleContains variant 追加で外部 IPC payload 形状は変化しない。
+
+**Phase 2 着手判断への寄与**: Phase 2 で WATCHED_BUNDLE_IDS に Slack/Discord エントリを追加する際、frontend / Tauri IPC 側の payload schema 変更は不要 = 後方互換性確保。
 
 ### AppleScript による window title 取得コマンド (参考)
 
