@@ -29728,3 +29728,40 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - e1c0560
+
+---
+
+[mjc-main-20260505-36 Loop 73 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_manager_types.rs (新規 ~18 行) に session_manager.rs の internal struct 2 件を抽出
+  - `pub(crate) struct ActiveSession { pub(crate) session: Session, pub(crate) output: Option<ActiveOutput> }`
+  - `pub(crate) struct ActiveOutput { pub(crate) path: PathBuf, pub(crate) offset: FixedOffset }`
+- lib.rs に `mod session_manager_types;` 追加 (session_manager と session_store の間)
+- session_manager.rs caller use 文追加 (`use crate::session_manager_types::{ActiveOutput, ActiveSession};`)
+- session_manager.rs から L17-27 の struct 定義 11 行を削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_manager.rs ~1263 行への段階的責務分離)
+- session_store_types.rs Loop 67 precedent 直接展開 = internal struct を types module に集約する pattern
+- 大型 rust file 責務分離 scope 拡大 = session_manager.rs 着手 (5 件中 4 件目)
+- visibility: private → pub(crate) は crate 外に漏れず API surface 増加最小
+
+## How (Tidy First, behavior-preserving)
+- struct field 名 / 型 / doc comment 不変 = 振る舞い完全不変
+- visibility: 元 private → `pub(crate)` 昇格 (struct 本体 + 全 field、session_manager.rs から `active.session` 等でアクセス必要)
+- Session / FixedOffset / PathBuf は session_manager.rs 内 method シグネチャで使用中 → 削除せず残置
+- 振る舞い不変 = 705 passed 件数不変 (新規 test 追加なし)
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK (EXIT: 0)
+- session_manager.rs から `^struct ActiveSession` / `^struct ActiveOutput` を grep: 完全に空
+- session_manager_types.rs から同 struct を grep: 各 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 7f589a7
