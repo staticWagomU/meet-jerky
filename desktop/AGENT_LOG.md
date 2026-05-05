@@ -28644,3 +28644,130 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 64aa904
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-30 状況メモ
+
+## 本セッション (mjc-main-20260505-30) の 2 ループ実績 = 「2 ループ + 早期 handoff」precedent 連続 26 セッション目達成
+
+### Loop 60 = Phase 6 第 2 歩 + 第 1 歩補足統合 (struct/const + import refactor 軸 = Loop 59 から 1 ループ間隔)
+- commit `d7bdc61` (refactor) + `ee88c7e` (chore hash 反映) = 2-commit パターン (worker amend 時の hash 更新漏れ補正)
+- **メインの批判的判断 (連続 11 セッション目)**: handoff 候補 S 予測「4-6 ファイル」を grep で実態確認 → elevenlabs_realtime.rs L19-22 / openai_realtime.rs L29-32 の file-level use ブロックが 5 種 (Segment/Source/StreamConfig/Engine/Stream) を combined import している事実発見 → Loop 59 が完了したのは nested mod のみで file-level scope は未着手と判明 → Loop 60 で S + S' + 補足 (Segment/Source file-level) を統合 = 5 ファイル / 4 use ブロック分割 + 1 単一 use + 3 インライン = 規模 SS-S
+- **worker の三重批判判断 (= Loop 59 二重批判判断超え)**: (1) prompt 通り 5 ファイル / 8 箇所書き換え、(2) 全 caller 直接 import 化後に transcription.rs L5/L11 の re-export が unused lint エラーになると clippy で実態確認 → `#[allow(unused_imports)]` 追加で互換層維持 + 警告抑制という第 3 解を発見、(3) WhisperStream/StateHandle/LoopConfig は consumer 残るため触らず判断 = 完全な実態把握
+- 修正詳細: 4 ファイル (elevenlabs/openai/apple_speech/transcript_bridge) + transcription.rs L5/L11 allow 追加
+- 検証: 702 passed 件数不変, clippy 警告ゼロ, fmt OK
+- 所要時間: ~6 分 (worker 起動 → commit `d7bdc61`、cargo test --lib + clippy + fmt 込み)
+- variety pivot = struct/const + import refactor 軸 = Loop 57 → 59 → 60 で 1-2 ループ間隔 = sweep 警告クリア + Phase 6 進行中
+
+### Loop 61 = Phase 6 第 3 歩 + 第 4 歩統合 (struct/const + import refactor 軸 = Loop 60 から 1 ループ間隔 = 3 連続 threshold)
+- commit `64aa904` (refactor) + `1cbe44a` (chore hash 反映) = 2-commit パターン (Loop 60 precedent 自律学習)
+- **メインの批判的判断 (連続 12 セッション目)**: handoff 候補 T (WhisperStream) + 候補 U (TranscriptionStateHandle) を grep で実態確認 → 両方とも XS 規模 (各 1 ファイル / 1 箇所) と判明 → handoff の「Loop 61 = T のみ / Loop 62 = U のみ」分割案を **過剰分割** と判断 → 1 ループ統合 (mjc-main-20260505-27 Loop 55 「2 候補マージ」precedent 継承) = Phase 6 timeline を 4 ループ → 3 ループに圧縮 (~25% 効率化)
+- 修正詳細: transcription_whisper_local.rs L5 (WhisperStream caller) + lib.rs L350 (StateHandle インライン) + transcription.rs L19/L25 allow 追加
+- 検証: 702 passed 件数不変, clippy 警告ゼロ, fmt OK (worker fmt 対応で use 文順序を traits → types → whisper_stream にアルファベット順整列)
+- 所要時間: ~5 分 (worker 起動 → commit `64aa904`)
+- variety pivot = struct/const + import refactor 軸 = Loop 59 → 60 → 61 で 3 連続 = threshold 境界。Loop 62 (4 連続) は variety pivot 検討必須 = handoff 判断の根拠
+
+## 累計 transcription.rs 削減 + Phase 6 進捗
+
+- 元 2999 行 → 現在 **29 行** = 約 99.0% 縮小 = Phase 5 完全終了 = 完全ファサード化 (互換 re-export 5 件のみ)
+- transcription.rs 現状: 5 互換 re-export のうち 4 つに `#[allow(unused_imports)]` 注記済 (Segment/Source, StreamConfig/Engine/Stream, WhisperStream, StateHandle)、TranscriptionLoopConfig のみ consumer 残 (Loop 62 対象)
+- Phase 6 進捗 = **第 1-4 歩完了 = 80%**:
+  - 第 1 歩 ✅ (Loop 59) = TranscriptionSegment/Source caller (4 ファイル / 7 箇所 use 文)
+  - 第 2 歩 ✅ (Loop 60) = StreamConfig/TranscriptionEngine/TranscriptionStream caller + 第 1 歩補足 (file-level + transcript_bridge インライン 3 箇所)
+  - 第 3 歩 ✅ (Loop 61) = WhisperStream caller (1 ファイル / 1 use)
+  - 第 4 歩 ✅ (Loop 61) = TranscriptionStateHandle caller (lib.rs インライン 1 箇所)
+  - 第 5 歩 (Loop 62 推奨) = TranscriptionLoopConfig caller (panic_guard L6 + commands L5、規模 XS-SS)
+  - 最終 (Loop 63 想定) = transcription.rs ファイル削除 + lib.rs `mod transcription;` 削除 + plan.md 100% 達成記念更新
+
+## 残存 `use crate::transcription::` (Phase 6 完了状況)
+
+- `transcription_panic_guard.rs:6` = `use crate::transcription::TranscriptionLoopConfig;` (Loop 62 対象)
+- `transcription_commands.rs:5` = `use crate::transcription::TranscriptionLoopConfig;` (Loop 62 対象)
+- これら 2 件のみ = Phase 6 全体の残作業
+
+## 現在の品質状態
+- cargo test (lib): **702 passed / 0 failed** (本セッション 2 ループ全て件数不変)
+- cargo clippy --lib --tests -- -D warnings: **警告ゼロ**
+- cargo fmt --check: OK
+- npm run build: 本セッション frontend 触れていないため変更なし
+- bash -n scripts/claude-agent-*.sh: OK (escape 済み形式、本セッションでは触れていない)
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 24 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-30 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 24 セッション目観測結論 = `bfb9846` PATH inner shell escape が永続的解決
+- worker amend 時の hash 更新漏れパターン: Loop 60 で初めて観測 → メイン chore commit で修正、Loop 61 で worker が precedent を自律学習 → 自身で 2-commit パターン適用 = 「session 跨ぎの暗黙的 precedent 継承」が機能している
+
+## worker 統計
+- worker 完走 2/2 (累計 161/161 = 100% 維持)
+- stdin redirect 化 script の安定運用 53-54 件目 precedent 達成
+- 「sonnet worker の Tidy First 質的高さ」連続 27 セッション目で実証
+  - Loop 60: 5 rust ファイル + AGENT_LOG.md エントリ + 自律的 #[allow(unused_imports)] 追加判断 を ~6 分で完走 (規模 SS-S)
+  - Loop 61: 3 rust ファイル + AGENT_LOG.md エントリ + Loop 60 chore precedent 自律学習で 2-commit パターン適用 を ~5 分で完走 (規模 XS-SS)
+- harness silent fail mitigation pattern 連続 85 ループ実証達成
+
+## 本セッションの commit 周期
+- Loop 60: ~6 分 (worker 起動 → commit `d7bdc61`、cargo test --lib + clippy + fmt 込み)
+- Loop 61: ~5 分 (worker 起動 → commit `64aa904`、Loop 60 と同等の検証)
+- 平均 ~5.5 分/loop = **目標 15 分以内大幅達成**
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 12 セッション目達成)
+- Loop 60: handoff 候補 S 予測を grep で実態確認 → file-level use ブロックが 5 種 combined import (= Loop 59 が file-level 未着手) と判明 → Loop 60 で S + S' + 補足 (Segment/Source file-level) を統合 = 規模 SS-S, メイン批判判断 連続 11 セッション目
+- Loop 60 (worker 三重批判判断): clippy で transcription.rs L5/L11 の re-export が unused lint エラーと検出 → `#[allow(unused_imports)]` 追加という第 3 解を発見 (Loop 57 = 削除 / Loop 60 prompt = 残置 の中間)
+- Loop 61: handoff 候補 T + U を grep で実態確認 → 両方 XS 規模 → 1 ループ統合判断 (mjc-main-20260505-27 Loop 55 precedent 継承) = メイン批判判断 連続 12 セッション目
+- precedent: 「handoff prompt の主要候補を鵜呑みにせず grep で実態確認 → 必要なら新候補発見 / 規模再見積 / 候補統合 / 候補分割判断」が **12 セッション連続で実証** (mjc-main-20260505-20 〜 -30)
+
+## 後継 (mjc-main-20260505-31) への引き継ぎ判断 (Loop 62 候補、優先順位順)
+
+### variety 規則の状態 (Loop 62 開始時点)
+
+直近 5 ループ: Loop 57 (struct/const) → 58 (docs) → 59 (struct/const + import refactor) → 60 (struct/const + import refactor) → 61 (struct/const + import refactor)。
+- 直近 docs 連続 = 0 (Loop 58 のみ)。**Loop 62 で docs 続行は 11 件目連続超過警告 = 不可** = 別軸を選択 (Phase 6 完了時 Loop 63 で 1 度だけリザーブ)
+- 直近 test 連続 = 0 (transcription.rs 余地ゼロ続行不可)
+- 直近 struct/const + import refactor 連続 = 3 (Loop 59 → 60 → 61)。**Loop 62 続行は 4 連続 = sweep 警告 = 強い variety pivot 検討必須**
+- ただし: Phase 6 残工程は Loop 62 (TranscriptionLoopConfig caller) + Loop 63 (file 削除 + plan.md) のみ = 2 ループで Phase 6 完了 = 局所最適化を優先する判断もあり得る
+
+### 候補 V (推奨 Loop 62, exception 判断): Phase 6 第 5 歩 = TranscriptionLoopConfig 直接 import 化
+
+- transcription.rs L31 `pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;` の caller (panic_guard L6 + commands L5) を `use crate::transcription_worker_loop::TranscriptionLoopConfig;` に書き換え + transcription.rs L31 に `#[allow(unused_imports)]` 追加
+- 規模 XS = 2 ファイル / 2 use 文 + transcription.rs allow 追加 = ~3-5 分想定
+- variety 上 4 連続超過 sweep 警告 = exception 判断必要
+- メリット: Phase 6 残作業を完了 = Loop 63 で file 削除工程に直接進める
+- メイン批判判断ポイント: Loop 62 を struct/const + import refactor 軸続行で実施するか、別軸 (frontend / 検知拡張) で variety pivot するか文脈判断
+
+### 候補 W (Loop 63 推奨): Phase 6 最終 = transcription.rs ファイル削除 + lib.rs `mod transcription;` 削除 + plan.md 100% 達成記念更新
+
+- Loop 62 で全 caller 直接 import 化 → transcription.rs (29 行 = `#[allow(unused_imports)]` 4 件 + 互換 re-export 5 件) を完全削除 → lib.rs から `mod transcription;` 削除 → plan.md 100% 達成記念更新
+- 規模 S = 1 ループ完結確実 (transcription.rs 削除 + lib.rs 1 行削除 + plan.md 更新 = 3 ファイル変更)
+- variety pivot = docs 軸 1 件としてリザーブ (Phase 6 全完了時に 1 度だけ plan.md 更新する設計)
+
+### 候補 J (Loop 62+ 探索系、低優先): frontend 軸 pivot
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行) は規模あり、浅 grep で具体的不足を 1 つ特定してから worker 発注、主観的探索は避ける
+- variety pivot 候補としては最有力 (struct/const + import refactor 4 連続回避)
+
+### 候補 I (Loop 62+ 探索系、低優先): Discord stage / Slack Huddle 検知 (window title 経路)
+- priority 2 直接寄与
+- service detection 軸 = 直近 5 ループ全てと別軸 = variety pivot 候補
+- ただし URL 検知不可 = Bundle ID + window title 経路必要 = 規模 M 1 ループ完結不確実
+- 別 issue として深掘り推奨
+
+### 低優先 (継承)
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (`Webex ミーティング`) (継承 = Loop 60+ 以上の間隔推奨)
+
+### 低優先 (harness 衛生、未着手)
+#### H. 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 240+ untracked、ユーザー直伝指示があるまで保留)
+#### I. AGENT_LOG.md ~28,650+ 行の archive 戦略 (未着手)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 702 件全 pass (verify.sh OK) = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 60/61 完了後の SESSION SUMMARY commit のみメイン直接編集 + Loop 60 の chore hash 修正もメイン直接編集 = worker amend 時 hash 更新漏れパターン補正)
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中ゼロ (2 ループ ~12 分でハンドオフ準備完了)
+
+
