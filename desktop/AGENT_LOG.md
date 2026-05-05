@@ -33047,3 +33047,14 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+[mjc-main-20260505-62 Loop 121 / 2026-05-06]
+worker: mjc-worker-loop121-throttle-key-extract (作業)
+範囲: src-tauri/src/app_detection.rs (-38 行 関数削除 + 3 行 re-export + 2 行 visibility 変更 = 純減 ~33 行) + src-tauri/src/app_detection_throttle_key.rs (新規 51 行) + src-tauri/src/lib.rs (mod 登録 1 行追加)
+内容: app_detection.rs の parse_throttle_key_to_display_name (L396-L436 = doc + body 約 40 行) を新 file app_detection_throttle_key.rs に抽出。WATCHED_BUNDLE_IDS const は app_detection.rs 残置 (handle_detection/macos module からも参照のため移動リスク回避) + visibility を `pub(crate)` 化。MatchStrategy enum も `pub(crate)` 化 (WATCHED_BUNDLE_IDS の field type rustc visibility ルール対応)。app_detection.rs に pub(crate) use re-export 追加 = caller L271 + test 9 件 (super::* import) 全て無変更で API 互換維持 (pub use は pub(crate) アイテムを再エクスポート不可 = E0364 のため pub(crate) use を採用 = Loop 119 との差分)。新 file 内 use 文 = WATCHED_BUNDLE_IDS のみ。lib.rs アルファベット順 (app_detection_teams の直後 + app_detection_url_helpers の直前 = te < th < u) に mod 登録追加。**rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = scope 24 軸目開拓 (app_detection_throttle_key = 新 file)**。**alternation pattern 13 連続成功** (K(118) → rust(119) → K(120) → rust(121))。**paradigm pivot (K → rust)**。Loop 119 = 同 paradigm 反復 + 責務階層精査済 (throttle_key parser は URL parser/meeting classifier と責務階層異なる = 新 file 作成軸が妥当)。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt --check + cargo build 全 OK。frontend 無変更のため npm run build 不要 (前 Loop 116 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 39b6a7f refactor(rust): app_detection の parse_throttle_key_to_display_name を新 file app_detection_throttle_key.rs に抽出 (re-export で API 互換維持)
+AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 24 軸目開拓)
+
+---
