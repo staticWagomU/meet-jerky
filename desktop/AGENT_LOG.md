@@ -32273,3 +32273,142 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-53
+
+## 本セッション実績 (2 ループ完走 + 通常 cadence handoff)
+
+### Loop 102 = realtime_ws_helpers.rs 抽出 (構造分離 26 file 目, realtime engine 4 軸目, ~12 分)
+- 新規 file: src-tauri/src/realtime_ws_helpers.rs (464 行)
+- 削除元: src-tauri/src/elevenlabs_realtime.rs (純粋関数 helpers production ~49 行 + test 19 件 + use 文 1 行追加)
+- lib.rs: mod realtime_ws_helpers; 1 行追加 (alphabetical = mod realtime_reader_task; と mod secret_store; の間)
+- production 4 件: is_scribe_error_event + async wait_for_pending_after_commit + extract_transcript + extract_error_message
+- 可視性: private → pub(crate) に昇格 (caller が module 越境のため)
+- caller 影響: ws_task module 内 use 文 1 行追加のみ (production 呼び出し L275/L318/L333/L343/L344 は無変更)
+- test 19 件 = pending_timeout_tests 内から (wait_for_*/is_scribe_*/extract_transcript_*/extract_error_message_*) を新 file 内 #[cfg(test)] mod tests に移動
+- push_error_* tests 5 件は realtime_error_helpers のテストのため pending_timeout_tests 内に残置
+- commits: e396d2c refactor + 491b7f6 chore
+- 構造分離 26 file 目 = realtime engine 4 軸目達成 = handoff 候補リスト「3 軸完了 = 構造美の最終形」批判判断達成 = メイン批判判断 連続 48 セッション目達成
+- elevenlabs_realtime.rs: 1079 → **636 行 (-41% = 本セッション最大削減)** = ws_task 内純粋関数 + tests 抽出効果
+- handoff 推奨候補 X (新規発掘 26 件目) を採用 = grep + Read 精読で関数本体 4 つ + tests 19 件 + caller 5 箇所を批判的評価して選定
+
+### Loop 103 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 K 軸 = variety pivot, ~3 分)
+- 編集: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 6 件目追記、~5 行)
+- Loop 102 完了時点 (32,264 行) の更新観測を追記
+- Loop 98 → Loop 102 で +250 行 / 平均 ~63 行/loop (Loop 98 観測 ~72 行/loop と比較して ~13% 減 = paradigm pivot 多軸の混合増加)
+- commits: ee7c1f0 docs + b6610e0 chore
+- harness 衛生軸 = variety pivot 達成 (Loop 102 純粋関数機能分離軸 → Loop 103 K 軸 = 3 連続防止) = Loop 79/81/86/95/98 precedent 6 件目達成
+- handoff 推奨候補 K3 を採用 = K 軸 4 ループ間隔復帰 (Loop 99 から 4 ループ離れた = 警告境界外)
+
+## 累積 (handoff 候補 X 始動以降)
+
+- 大型 rust file 責務分離: **26 file 目達成** (本セッション +1: realtime_ws_helpers)
+- scope 多様性: **16 軸**到達 (15 + realtime engine 4 軸目 = realtime depth 充実)
+- worker 完走: **202/202 = 100%** 維持 (本セッション +2)
+- worker 自律 2-commit pattern: **連続 43 ループ目達成** (前任 41 → +2)
+- メイン批判判断: **連続 48 セッション目達成** (Loop 102 で「3 軸完了 = 構造美の最終形」批判判断 = realtime engine 4 軸目開拓)
+- harness 衛生: **連続 48 セッション目** (canonical 移譲後 `scripts/*` M 表示再出現せず)
+- ファイル参照型 handoff prompt: **連続 50 セッション目** (本 handoff で達成)
+
+## 直近 30 ループ多軸分散 (Loop 74-103)
+
+- 構造分離: 20 件 + 機能拡張/docs: 3 件 + harness 衛生: 7 件 = **20:3:7 多軸分散** (Loop 102 構造分離 + Loop 103 harness 衛生 で本セッション 1+1 寄与)
+- 構造分離 paradigm 内訳: 機能分類軸 9 件 + 純粋関数機能分離軸 4 件 (Loop 94/98/101/102 = 直近 2 連続) + cfg(macos) inline module 分離 1 件 (Loop 95) + その他 6 件
+- Loop 99 K 軸 → Loop 100 機能分類軸 → Loop 101 純粋関数機能分離軸 → Loop 102 純粋関数機能分離軸 (2 連続) → Loop 103 K 軸 = **paradigm pivot 多軸** (3 連続防止 完璧)
+
+## 品質状態 (Loop 103 完了時点)
+
+- cargo test --lib: **704 passed / 0 failed** (件数完全不変、Loop 102 で確認済)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: 本セッション frontend 触れず変更なし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## git 状態 (handoff 直前)
+
+- branch: main, ahead 417 (origin/main から先行、本セッション +5 commit 予定: refactor + chore + docs + chore + SESSION SUMMARY)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-53) の commit:
+  1. `e396d2c` refactor(realtime): 純粋関数 helpers を realtime_ws_helpers.rs に抽出 (Loop 102)
+  2. `491b7f6` chore(agent-log): Loop 102 エントリ追記
+  3. `ee7c1f0` docs(architecture): Section 2.3 更新観測追記 (Loop 103)
+  4. `b6610e0` chore(agent-log): Loop 103 エントリ追記
+  5. `<HEAD>` chore(agent-log): mjc-main-20260505-53 SESSION SUMMARY (本エントリ)
+
+## 進行中セッション (handoff 直前)
+
+- mjc-main (canonical = 旧 mjc-main-20260505-53, handoff 直前)
+- mjc-main-20260505-53 (本セッション、間もなく handoff)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge 1 件: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」 (Loop 102 完走後、Loop 103 着手前 = 方向性合致のため継続)
+
+## 後継 mjc-main-20260505-54 への期待 (Loop 104 候補)
+
+variety 規則: 直近 30 ループ 20:3:7 多軸分散、Loop 102 純粋関数機能分離軸 (2 連続) → Loop 103 K 軸 = paradigm pivot 達成 = Loop 104 で **更なる paradigm pivot 推奨 (純粋関数機能分離軸 3 連続防止 + K 軸 2 連続防止 = 別 paradigm 必須)**。
+
+### 候補 X 新規発掘 (Loop 104 推奨, 構造分離 27 件目, realtime engine 5 軸目 / scope depth 充実)
+
+**openai_realtime mod ws_task 全体抽出 (新発掘 = handoff 候補リスト由来)**:
+- openai_realtime.rs `mod ws_task` (L177-395 ~218 行 production + tests) = 同 paradigm = inline module 全体抽出軸 (apple_speech_macos Loop 95 と同形, cfg(macos) なし版 = 新 sub-paradigm) = paradigm pivot 達成
+- 規模 S = ~10-15 分完走見込み = worker prompt は ~150-200 行
+- scope = realtime engine 5 軸目 = elevenlabs_realtime ws_task 抽出は規模 L (~820 行) で skip 推奨だが openai 側は規模 S = 適切
+- 注意: caller (openai_realtime.rs 同 file 内) と関連 tests の境界精査要 = grep で `mod ws_task` 開始/終了行 + 内部 fn / tests 列挙が必要
+
+**他の新規 scope 候補 (Loop 104+ 候補)**:
+- elevenlabs_realtime.rs `mod ws_task` 全体抽出 = 規模 L (~820 行) = 1 worker 完走難しい可能性 = SKIP 推奨 (Loop 102 で純粋関数 helpers のみ抽出済 = 残部分は規模 M 以上)
+- transcript_bridge.rs (826 行) = production ~95 行密結合 = 抽出余地ない (確認済)
+- session.rs (773 行) = production ~57 行 + struct 単独抽出は規模極小 = 警告
+- cloud_whisper.rs (778 行) = 全 fn `#[allow(dead_code)]` = 触るリスク高 (将来用残置)
+- cloud_whisper_errors.rs (511 行) = production ~38 行 = 抽出メリット薄
+
+### 候補 Y 既存 scope 3 件目達成 (Loop 104 推奨度低)
+
+- session_commands_helpers.rs: session_commands 軸 2 件目 = ~16 行 production + 5 test 移動 = 規模 SS = helpers 軸 paradigm 弱め
+- transcription_commands_stop.rs: transcription_commands 軸 3 件目 (Loop 101 と 3 ループ離れた = 境界 OK だが scope depth 軸 3 件目は警告)
+- settings 軸 3 件目: settings.rs 残 = 機能境界での更なる分離は意義薄判定済 = SKIP
+
+### 候補 X' resample_audio dead code 削除 (継承, ユーザー直伝指示要)
+
+audio_resample.rs L? `#[allow(dead_code)] pub(crate) fn resample_audio` (~67 行) + 関連 test 4 件 (~50 行) = 計 ~117 行削減
+- production caller ゼロ確認済 (Loop 98 で確認)
+- ユーザー直伝指示要 (`#[allow(dead_code)]` は将来用残置の意図可能性)
+
+### 候補 K3 後続 (Loop 104 弱推奨度ゼロ = K 軸 2 連続警告)
+
+直近 Loop 103 = K 軸 1 件 = Loop 104 で K 軸復帰は 2 連続 = paradigm 警告境界 = SKIP 推奨
+
+### 候補 H1 (継承, ユーザー直伝指示要)
+
+agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header 追加 (規模 SS、~5-10 分)
+
+### 候補 J / H' (継承, 低優先): frontend 主観性高警告 / 大量 untracked 整理 ユーザー直伝指示要
+
+## 大型 rust file 責務分離実績 (本セッション追加分)
+
+- elevenlabs_realtime.rs: 1079 → **636 行 (-41% = 本セッション最大削減)** + realtime_ws_helpers.rs (464 行 = 純粋関数 helpers 4 つ + tests 19 件) = realtime engine 4 軸目達成 (本セッション Loop 102)
+
+累計: 大型 rust file 責務分離 26 file 目達成、scope 多様性 16 軸 + scope depth 充実 (settings + transcription_commands + realtime engine 4 軸目)。
+
+## 検証制約 (継承、再掲)
+
+- cmake あり → cargo test 704 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build 主検証
+- 課金禁止 / `--no-verify` 禁止 / `--dangerously-skip-permissions` は harness 内のみ
+- Keychain / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり)
+
+## 引き継ぎ
+
+- 引き継ぎ先: mjc-main-20260505-54
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-54.txt (ファイル参照型 handoff prompt 連続 50 セッション目)
+- 旧メイン (mjc-main-20260505-53 = 本セッション = canonical mjc-main) は handoff 後終了
+
+worker 完走 2/2 = 累計 202/202 100%。
+
+---
