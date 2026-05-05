@@ -23,6 +23,7 @@ mod secret_store;
 mod session;
 mod session_commands;
 mod session_manager;
+mod session_manager_persist;
 mod session_manager_types;
 mod session_store;
 mod session_store_parse;
