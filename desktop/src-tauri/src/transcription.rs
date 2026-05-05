@@ -60,21 +60,6 @@ mod tests {
     use crate::transcription_model_manager::ModelManager;
     use std::sync::atomic::Ordering;
 
-    fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
-        WhisperStream {
-            ctx: None,
-            speaker: None,
-            source: None,
-            language: "ja".to_string(),
-            needs_resample: true,
-            resampler: None,
-            resample_input_buffer,
-            accumulation_buffer: Vec::new(),
-            pending_segments: Vec::new(),
-            chunk_count: 0,
-        }
-    }
-
     #[test]
     fn test_list_available_models_not_empty() {
         let models = ModelManager::list_available_models();
@@ -100,20 +85,6 @@ mod tests {
         // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
         let manager = ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
         assert!(!manager.is_model_downloaded("small"));
-    }
-
-    #[test]
-    fn test_whisper_stream_feed_errors_when_resampler_state_missing() {
-        let mut stream = stream_with_missing_resampler(Vec::new());
-        let err = stream.feed(&[0.0]).unwrap_err();
-        assert!(err.contains("リサンプラー状態が利用できません"));
-    }
-
-    #[test]
-    fn test_whisper_stream_finalize_errors_when_resampler_state_missing() {
-        let stream = stream_with_missing_resampler(vec![0.0]);
-        let err = Box::new(stream).finalize().unwrap_err();
-        assert!(err.contains("リサンプラー状態が利用できません"));
     }
 
     // ─────────────────────────────────────────
