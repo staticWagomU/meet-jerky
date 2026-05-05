@@ -24,6 +24,7 @@ mod datetime_fmt;
 mod elevenlabs_realtime;
 mod markdown;
 mod openai_realtime;
+mod openai_realtime_ws_task;
 mod realtime_audio_command;
 mod realtime_audio_helpers;
 mod realtime_error_helpers;
