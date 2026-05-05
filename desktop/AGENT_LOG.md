@@ -33428,3 +33428,15 @@ commit: 4aab536 refactor(frontend): TranscriptView の Engine Status 系 helpers
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-68 Loop 138 / 2026-05-06]
+worker: mjc-worker-loop138-archive-plan-stats-update-22 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 137 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136 precedent の 21 件目。Loop 135 → Loop 137 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-67) で +48 行 (33,382 → 33,430)、平均 ~24 行/loop。Loop 133 観測値 (~24.5 行/loop) とほぼ同水準 (差 ~-2%) = **SS 1 件 + 説明軽量化パターンの 5 連続観測達成** (Loop 125 = ~22.5 / Loop 129 = ~23.5 / Loop 131 = ~24.5 / Loop 133 = ~24.5 / Loop 137 = ~24) = **階層化 paradigm 完全成熟期で 5 連続値域 ~22-25 行/loop に完全収束**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137 の **7 件連続観測** = **frontend 軸軽量化 paradigm の 7 度目の観測 = paradigm 完全成熟期継続**。alternation pattern 30 連続成功維持 (frontend(135) → K(136) → frontend(137) → K(138))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 2108ac8 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 137 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
