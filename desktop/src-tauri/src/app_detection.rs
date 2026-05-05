@@ -25,8 +25,6 @@ use parking_lot::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-use crate::app_detection_url_helpers::has_single_non_empty_segment;
-
 // 以下の定数・関数は macOS の Swift bridge から呼ばれる。
 // Linux 等のビルドで dead_code 警告にならないように cfg_attr で抑制する。
 
@@ -514,7 +512,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
     let parsed = parse_url_host_and_path(url)?;
     let host = normalize_url_host(&parsed.host)?;
 
-    let service = if is_google_meet_url(&host, &parsed.path) {
+    let service = if crate::app_detection_google_meet::is_google_meet_url(&host, &parsed.path) {
         "Google Meet"
     } else if crate::app_detection_zoom::is_zoom_meeting_url(&host, &parsed.path) {
         "Zoom"
@@ -711,36 +709,6 @@ fn validate_port(port: &str) -> Option<()> {
         return None;
     }
     Some(())
-}
-
-fn is_google_meet_url(host: &str, path: &str) -> bool {
-    host == "meet.google.com"
-        && (is_google_meet_code_path(path)
-            || path
-                .strip_prefix("/lookup/")
-                .is_some_and(has_single_non_empty_segment))
-}
-
-fn is_google_meet_code_path(path: &str) -> bool {
-    let Some(code) = path.strip_prefix('/') else {
-        return false;
-    };
-    let code = code.strip_suffix('/').unwrap_or(code);
-
-    let mut parts = code.split('-');
-    let (Some(first), Some(second), Some(third), None) =
-        (parts.next(), parts.next(), parts.next(), parts.next())
-    else {
-        return false;
-    };
-
-    has_ascii_lowercase_len(first, 3)
-        && has_ascii_lowercase_len(second, 4)
-        && has_ascii_lowercase_len(third, 3)
-}
-
-fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
-    value.len() == len && value.bytes().all(|byte: u8| byte.is_ascii_lowercase())
 }
 
 pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {
