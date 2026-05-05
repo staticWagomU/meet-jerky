@@ -51,12 +51,16 @@ import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelp
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
+  getAiTransmissionStatusAriaLabel,
+  getAiTransmissionStatusLabel,
+  getAiTransmissionStatusPillClass,
+} from "../utils/aiTransmissionHelpers";
+import {
   getExternalApiProvider,
   getRequiresLocalModel,
 } from "../utils/transcriptionEngineHelpers";
 import {
   buildLiveCaptionStatusFromLabels,
-  isExternalTransmissionLabel,
   LIVE_CAPTION_STATUS_EVENT,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
@@ -345,45 +349,6 @@ function getAudioSourceStatusPillClass(
   }
   return "meeting-status-pill-neutral";
 }
-
-function getAiTransmissionStatusLabel(
-  engine: TranscriptionEngineType | undefined,
-): string {
-  if (!engine) {
-    return "確認中";
-  }
-  if (engine === "openAIRealtime") {
-    return "送信先 OpenAI";
-  }
-  if (engine === "elevenLabsRealtime") {
-    return "送信先 ElevenLabs";
-  }
-  return "なし";
-}
-
-function getAiTransmissionStatusPillClass(statusLabel: string): string {
-  if (isExternalTransmissionLabel(statusLabel)) {
-    return "meeting-status-pill-warning";
-  }
-  if (statusLabel === "確認できません") {
-    return "meeting-status-pill-error";
-  }
-  if (statusLabel === "なし") {
-    return "meeting-status-pill-idle";
-  }
-  return "meeting-status-pill-neutral";
-}
-
-function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
-  if (statusLabel === "確認できません") {
-    return "外部送信状態を確認できません";
-  }
-  if (statusLabel === "なし") {
-    return "外部送信なし、端末内で処理";
-  }
-  return `外部送信: ${statusLabel}`;
-}
-
 
 function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
