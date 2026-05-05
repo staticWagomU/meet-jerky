@@ -33058,3 +33058,14 @@ commits:
 AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 24 軸目開拓)
 
 ---
+[mjc-main-20260505-62 Loop 122 / 2026-05-06]
+worker: mjc-worker-loop122-archive-plan-stats-update-14 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 14 件目追記、~3 行)
+内容: Loop 121 完了時点 (33,060 行) の更新観測を Section 2.3 末尾に追記。Loop 119 → Loop 121 で +22 行 / 平均 ~11 行/loop。Loop 119 観測 (~40 行/loop) と比較して ~73% 減 = paradigm pivot 多軸軽量化 (Loop 120 K 軸 + Loop 121 rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = app_detection_throttle_key.rs (新規) 抽出) で SESSION SUMMARY 0 件 (アクティブ進行) + chore entry 2 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 0 行寄与) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 121 rust 軸 → Loop 122 K 軸 = paradigm pivot 達成 + alternation pattern 完璧継続: K(113) → frontend(114) → K(115) → frontend(116) → rust(117) → K(118) → rust(119) → K(120) → rust(121) → K(122) = 14 連続成功)、Loop 79/81/86/95/98/102/106/109/111/113/115/118/120 precedent 14 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 121 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- a0cda1c docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 121 完了時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
