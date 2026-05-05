@@ -30142,3 +30142,42 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - f964acb
+---
+
+[mjc-main-20260505-38 Loop 77 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_store_list.rs (新規) を作成し、session_store.rs から以下を移動:
+  - list_session_summaries fn (~40 行) を `pub fn` として配置
+  - list_session_files fn (~15 行) を `pub fn` として配置
+  - MAX_SESSION_SEARCH_TEXT_BYTES 定数を移動
+  - mod tests 内に 11 件の test を移動 (list_session_files 4 件 + list_session_summaries 7 件)
+- src-tauri/src/lib.rs に `mod session_store_list;` を session_store と session_store_parse の間に追加 (alphabetical)
+- src-tauri/src/session_store.rs:
+  - 該当 fn 2 件 + tests 11 件 + 定数を削除
+  - use std::io::{BufRead, BufReader, Read} / use crate::session_store_parse / use crate::session_store_types::SessionSummary を削除
+  - pub use crate::session_store_list::list_session_summaries を追加 (session_commands.rs:144 caller の互換維持)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_store.rs 976 → ~770 行への段階的責務分離)
+- session_store_render.rs (Loop 76) precedent 直接展開 = list 系 (read I/O) を独立 module に分離
+- 大型 rust file 責務分離 7 file 目達成 (audio / session_store_render / session_store_list / session_store_types / realtime / session_manager_types / session_manager_persist)
+
+## How (Tidy First, behavior-preserving)
+- visibility: pub fn 2 件とも維持 (最小変更、降格は後続 Loop で別 Tidy として実施)
+- 振る舞い不変 = 705 件 pass 件数不変
+- re-export pattern: pub use crate::session_store_list::list_session_summaries で session_commands.rs の caller を壊さず
+- tests 11 件 (prompt 想定 8 件 + Loop 76 後追加 3 件) を全移動
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_store.rs から `fn list_session_summaries\|fn list_session_files` を grep: 0 件
+- session_store_list.rs から `pub fn list_session_summaries\|pub fn list_session_files` を grep: 各 1 件
+- trailing whitespace: なし
+
+## commit
+- a5168c9
