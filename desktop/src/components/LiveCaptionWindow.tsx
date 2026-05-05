@@ -14,12 +14,14 @@ import {
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
 import {
+  TRACKS,
   createEmptyLatestBySource,
   getSpeakerClassName,
   getSpeakerLabel,
   getTrackCaptureState,
   getTrackStateLabel,
   getVisibleTrackSummary,
+  type AudioSource,
   type LatestBySource,
 } from "../utils/liveCaptionTrackHelpers";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
@@ -48,21 +50,6 @@ async function hideLiveCaptionOverlayWindow(): Promise<void> {
   await invoke("set_live_caption_window_visible", { visible: false });
 }
 
-type AudioSource = NonNullable<TranscriptSegment["source"]>;
-type TrackMeta = {
-  source: AudioSource;
-  label: string;
-  ariaPrefix: string;
-};
-
-const TRACKS: Array<TrackMeta> = [
-  { source: "microphone", label: "自分", ariaPrefix: SELF_TRACK_DEVICE_LABEL },
-  {
-    source: "system_audio",
-    label: "相手側",
-    ariaPrefix: OTHER_TRACK_DEVICE_LABEL,
-  },
-];
 
 export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(

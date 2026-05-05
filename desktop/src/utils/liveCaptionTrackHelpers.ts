@@ -2,8 +2,12 @@ import type { TranscriptSegment } from "../types";
 import { isTranscriptErrorSegment } from "./transcriptSegment";
 import { formatSegmentTimestamp } from "./timeFormat";
 import type { LiveCaptionStatusPayload } from "./liveCaptionStatus";
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "./audioTrackLabels";
 
-type AudioSource = NonNullable<TranscriptSegment["source"]>;
+export type AudioSource = NonNullable<TranscriptSegment["source"]>;
 
 export type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
 
@@ -77,3 +81,18 @@ export function getVisibleTrackSummary(status: LiveCaptionStatusPayload): string
   }
   return "未取得";
 }
+
+export type TrackMeta = {
+  source: AudioSource;
+  label: string;
+  ariaPrefix: string;
+};
+
+export const TRACKS: Array<TrackMeta> = [
+  { source: "microphone", label: "自分", ariaPrefix: SELF_TRACK_DEVICE_LABEL },
+  {
+    source: "system_audio",
+    label: "相手側",
+    ariaPrefix: OTHER_TRACK_DEVICE_LABEL,
+  },
+];
