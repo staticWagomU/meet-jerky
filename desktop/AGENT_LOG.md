@@ -28062,3 +28062,137 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 93dcd18
+
+
+---
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-27 状況メモ
+
+## 本セッション (mjc-main-20260505-27) の 2 ループ実績 = 「2 ループ + 早期 handoff」precedent 連続 23 セッション目達成
+
+### Loop 54 = plan.md 再更新 (Loop 53 反映 89.1% → 93.6%) (docs 軸 = Loop 52 から 2 ループ間隔 = 警告境界だが許容)
+- commit `032ca94` + `66ce44d` (chore hash 反映 = 標準 2-commit パターン)
+- 更新内容: 進捗サマリ (Loop 51 → Loop 53 時点) + 累計削減 (327 行 89.1% → 193 行 93.6%) + 残存課題に Loop 53 追加 + 新サブセクション 1 件「StreamConfig Debug/Clone tests 移動」+ 末尾参考更新
+- 規模 SS (~150 行 markdown 更新)
+- 所要時間: ~5 分 (worker 起動 → commit `032ca94`)
+- variety pivot = docs 軸 = 9 件目連続だが Loop 52 から 2 ループ間隔 = 警告境界だが許容、test 軸 9 件目超過警告から完全 pivot
+
+### Loop 55 = tests mod 4 件一括移動 = transcription.rs tests mod 完全削除 = 98.8% 縮小最終形達成 (test 軸 = Loop 53 から 1 ループ pivot 後)
+- commit `93dcd18` + `5ec01ee` (chore hash 反映 = 標準 2-commit パターン)
+- **メインの批判的判断**: handoff サマリの「候補 P (3 tests, Loop 55+) と候補 Q (1 件, Loop 55+) を別ループで実施」案を grep で実態確認 → 4 tests 全て transcription.rs tests mod の唯一の構成要素 + use 文 2 件もこれらの tests のみで使用と判明 → **1 ループでマージ移動すれば transcription.rs tests mod 完全削除 + use 文 2 件完全削除 + 互換 re-export + 1 const のみの 36 行最終形に到達** = メイン批判判断 連続 8 セッション目達成
+- 移動対象 (4 tests):
+  - should_emit_realtime_stream_error_is_logical_negation_of_already_stopped (~16 行) → transcription_error_payload.rs
+  - requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names (~73 行) → transcription_commands.rs
+  - requested_transcription_sources_copy_semantics_allow_use_after_move (~21 行) → transcription_commands.rs
+  - requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field (~31 行) → transcription_commands.rs
+- 削除: transcription.rs L38-193 (区切りコメント + tests mod 全体) + L44 use 文 + L45-47 use 文
+- 検証: 702 passed 件数不変, clippy 警告ゼロ, fmt OK
+- transcription.rs: 193 → **36 行** (-157 行) = **98.8% 縮小最終形** (= 元 2999 行から累計 -2963 行)
+- transcription_error_payload.rs: 343 → 360 行 (+17 行)
+- transcription_commands.rs: 598 → 717 行 (+119 行)
+- 所要時間: ~5 分 (worker 起動 → commit `93dcd18`)
+- variety pivot = test 軸 = Loop 53 から 1 ループ pivot (Loop 54 docs) 後 + 1 ループでまとめて最終形へ移行 = 後続 Loop 56+ で完全な軸 pivot へ移行可能
+
+## 累計 transcription.rs 削減 (本セッションで -157 行 = transcription.rs 最終形達成)
+- 元 2999 行 → 現在 **36 行** = **約 98.8% 縮小** (~2963 行削減) = **93.6% 里程標突破からさらに +5.2pt 進展 = 95% / 98% 里程標突破達成**
+- transcription.rs 最終形 = 互換 re-export 5 行 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const のみ = 36 行
+- tests mod 完全削除済 (Loop 55 で should_emit + RequestedTranscriptionSources 4 tests を 2 ファイルに分散 locality 集約)
+
+## 累計各 locality 集約先拡大 (本セッションで +136 行)
+- transcription_error_payload.rs: 343 → 360 行 (+17 行) = should_emit/is_already_stopped 関数 + 関連 tests 同居 locality 完成
+- transcription_commands.rs: 598 → 717 行 (+119 行) = RequestedTranscriptionSources struct + 3 tests 同居 locality 完成
+
+## 現在の品質状態
+- cargo test (lib): **702 passed / 0 failed** (本セッション 2 ループ全て件数不変)
+- cargo clippy --lib --tests -- -D warnings: **警告ゼロ**
+- cargo fmt --check: OK
+- npm run build: 本セッション frontend 触れていないため変更なし
+- bash -n scripts/claude-agent-*.sh: OK (escape 済み形式、本セッションでは触れていない)
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 21 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-27 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 21 セッション目観測結論 = `bfb9846` PATH inner shell escape が永続的解決
+- 後継観測ポイント: 新たな harness 動作変化があれば観測継続
+
+## worker 統計
+- worker 完走 2/2 (累計 155/155 = 100% 維持)
+- stdin redirect 化 script の安定運用 47-48 件目 precedent 達成
+- 「sonnet worker の Tidy First 質的高さ」連続 24 セッション目で実証
+  - Loop 54: plan.md 5 箇所更新 + 新サブセクション 1 件 ~150 行を ~5 分で完走 (規模 SS)
+  - Loop 55: 4 tests + 区切りコメント + use 文 2 件削除 ~157 行 + 2 ファイル追加 ~136 行を ~5 分で完走 (規模 S = 過去 Loop 50/51/53 同等)
+- harness silent fail mitigation pattern 連続 79 ループ実証達成
+
+## 本セッションの commit 周期
+- Loop 54: ~5 分 (worker 起動 → commit `032ca94`)
+- Loop 55: ~5 分 (worker 起動 → commit `93dcd18`)
+- 平均 ~5 分/loop = **目標 15 分以内大幅達成**
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 8 セッション目達成)
+- Loop 54: handoff 候補 D' を採用判断時、plan.md の 5 箇所更新 + 新サブセクション 1 件追加を grep で確認 → markdown のみ = 振る舞い完全不変 = 1 ループ完結確実と確定
+- Loop 55: handoff サマリ「候補 P / Q を別ループで実施」案を grep で実態確認 → 4 tests 全て transcription.rs tests mod の唯一の構成要素 + use 文 2 件も同 tests のみで使用と判明 → 「1 ループでマージ移動 → transcription.rs tests mod 完全削除 + 36 行最終形到達」と訂正 → メイン批判判断 連続 8 セッション目達成
+- precedent: 「handoff prompt の主要候補を鵜呑みにせず grep で実態確認 → 必要なら新候補発見 / 規模再見積 / use 文完全削除 / 統合判断」が **8 セッション連続で実証** (mjc-main-20260505-20 Loop 39 / -21 Loop 42 / -22 Loop 44+45 / -23 Loop 47 / -24 Loop 48 / -25 Loop 50+51 / -26 Loop 53 / -27 Loop 55)
+
+## 後継 (mjc-main-20260505-28) への引き継ぎ判断 (Loop 56 候補、優先順位順)
+
+### variety 規則の状態 (Loop 56 開始時点)
+
+直近 5 ループ: Loop 51 (test) → 52 (docs) → 53 (test) → 54 (docs) → 55 (test)。
+- 直近 docs 連続 = 0 (Loop 54 のみ)。**Loop 56 で docs 続行は docs 軸 10 件目連続超過警告だが 1 ループ pivot 後 = 警告境界手前 = 慎重判断**
+- 直近 test 連続 = 1 (Loop 55)。**Loop 56 で test 続行は transcription.rs に test 移動余地ゼロ (tests mod 完全削除済) = 続行不可能**
+- 直近 struct/const 連続 = 0 (Loop 48 のみ = **8 ループ間隔**)。**Loop 56 で続行は完全 OK**
+- 直近 extraction = 0 (Loop 43 のみ、シリーズ完了)
+
+### 候補 D'' (推奨 Loop 56): plan.md 再更新 (docs 軸 = Loop 54 から 2 ループ間隔 = 警告境界だが許容)
+- mjc-main-20260505-27 Loop 55 (tests mod 4 件一括移動 = 36 行 98.8% 縮小最終形) を 1 ループで反映
+- 進捗サマリ更新 93.6% → **98.8%** (+5.2pt 進展、95% / 98% 里程標突破達成)、累計削減 193 → 36 行
+- 新サブセクション 1 件: tests mod 完全削除 ✅ (Loop 55) + 「Phase 5 完了相当」記載
+- 規模 SS = 1 ループ完結確実
+- variety pivot = docs 軸 = Loop 54 から 2 ループ間隔 = 警告境界だが許容、test 軸 = transcription.rs 余地なし = 続行不可能のため docs が最優先
+
+### 候補 N' (推奨 Loop 56+): WHISPER_SAMPLE_RATE 移動の最終判断 (struct/const 軸、8 ループ間隔)
+- transcription.rs L30 の `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;`
+- 参照ファイル: audio_utils.rs / transcription_whisper_stream.rs (両方広域参照のため transcription.rs に残置されている)
+- 移動先候補: 新規 transcription_constants.rs か audio_utils.rs に再 locality 集約
+- 規模 SS = 1 ループ完結 (use 文 2 ファイル変更のみ)
+- 移動後 transcription.rs は **互換 re-export + 区切りコメント = ~25 行** = transcription.rs 真の最終形
+- struct/const 軸 = Loop 48 から 8 ループ間隔 = sweep 警告完全クリア
+- メイン批判判断ポイント: 移動先を audio_utils.rs (既存) と新規 transcription_constants.rs のどちらにするか = audio_utils.rs に既に SILENCE_LOOKBACK_SAMPLES 等の定数があるため統合先候補、ただし「whisper-specific」観点では新規 file がより明示的 = grep で他参照確認の上判断
+
+### 候補 R (Loop 57+): transcription.rs 互換層削除の検討 (struct/const 軸 + import refactor)
+- transcription.rs の互換 re-export 5 件 (`pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource}` 等) を呼び出し側で直接 import に変更し、transcription.rs を完全削除する判断
+- 規模 M = 全 caller の `use crate::transcription::...` を `use crate::transcription_types::...` 等に書き換え
+- 影響範囲広域 = 1 ループ不確実、複数ループ計画推奨
+- メリット: transcription.rs 完全削除 = ファイル数削減 + 互換層メンテ不要
+- デメリット: 全 caller 更新の migration cost 大、Phase 6 として別計画推奨
+
+### 候補 J (Loop 56+): frontend 軸 pivot (LiveCaptionWindow.tsx / MeetingDetectedBanner.tsx)
+- 規模 580 行 / 526 行 で具体スライス特定困難
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注、主観的探索は避ける
+- 候補としては低優先
+
+### 候補 I (Loop 56+): Discord stage / Slack Huddle 検知 (window title 経路)
+- priority 2 直接寄与
+- service detection 軸 = 直近 5 ループ全てと別軸
+- ただし URL 検知不可 = Bundle ID + window title 経路必要 = 規模 M 1 ループ完結不確実
+- 別 issue として深掘り推奨
+
+### 低優先 (継承)
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (`Webex ミーティング`) (継承 = Loop 58+ 以上の間隔推奨)
+
+### 低優先 (harness 衛生、未着手)
+#### H. 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 235+ untracked、ユーザー直伝指示があるまで保留)
+#### I. AGENT_LOG.md ~28,000+ 行の archive 戦略 (未着手)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 702 件全 pass (verify.sh OK) = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 54/55 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中ゼロ (2 ループとも目標 15 分以内で worker 完走、平均 5 分)
+
