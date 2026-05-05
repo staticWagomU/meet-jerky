@@ -32036,3 +32036,73 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = settings 軸の UI 公開 API 機能境界分離)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-51
+
+## 本セッション実績 (1 ループ完走 + 通常 cadence handoff)
+
+### Loop 100 = settings_commands.rs 抽出 (構造分離 24 file 目, settings 軸 2 件目 = scope depth 充実, ~3 分)
+- 新規 file: src-tauri/src/settings_commands.rs (37 行)
+- 削除元: src-tauri/src/settings.rs (tauri commands 4 件 production ~30 行削除)
+- lib.rs: mod settings_commands; 1 行追加 (alphabetical = mod settings; と mod settings_permission; の間) + invoke_handler path 修正 4 件
+- production 4 件: get_settings + update_settings + get_default_output_directory + select_output_directory
+- caller 影響: lib.rs invoke_handler のみ (frontend `invoke('get_settings')` 等の名前は不変)
+- test 移動なし (tauri commands は state mock 困難で直接 test 0 件、件数完全不変 704 件)
+- commits: 41a9e7e refactor + 583ae72 chore
+- 構造分離 24 file 目 = settings 軸 2 件目 (scope depth 充実) = audio_resample 軸 (Loop 98) からの pivot 達成 = 機能分類軸 paradigm 9 件目 (system_audio_pcm/format / app_detection_* / session_commands_list / secret_store_commands / settings_permission と同形)
+- settings.rs: 836 → 801 行 (-35 行 = -4.2%)
+- settings_permission.rs (Loop 89) と並立する settings 軸 2 件目達成 = scope depth 充実
+
+## 累積 (handoff 候補 X 始動以降)
+
+- 大型 rust file 責務分離: **24 file 目達成** (本セッション +1: settings_commands)
+- scope 多様性: 15 軸維持 + settings 軸 2 件目達成 = scope depth 充実 (新たな pattern 確立)
+- worker 完走: **199/199 = 100%** 維持 (本セッション +1)
+- worker 自律 2-commit pattern: **連続 40 ループ目達成** (前任 39 → +1)
+- メイン批判判断: **連続 46 セッション目達成** (handoff 候補リスト外の settings 軸 2 件目を発掘で開拓)
+- harness 衛生: **連続 46 セッション目** (canonical 移譲後 `scripts/*` M 表示再出現せず)
+- ファイル参照型 handoff prompt: **連続 48 セッション目**
+
+## 直近 30 ループ多軸分散 (Loop 71-100)
+
+- 構造分離: 23 件 + 機能拡張/docs: 5 件 + harness 衛生: 4 件 = **23:5:4 多軸分散** (本セッション +1 構造分離)
+- 構造分離 paradigm 内訳: 機能分類軸 9 件 (Loop 87/88/89/90/91/92/93/97/100) + 純粋関数機能分離軸 2 件 (Loop 94/98) + cfg(macos) inline module 分離 1 件 (Loop 95) + その他 11 件 (Loop 71-86)
+- Loop 99 K 軸 → Loop 100 機能分類軸 = paradigm pivot 達成 (3 連続防止 OK)
+
+## 品質状態 (Loop 100 完了時点)
+
+- cargo test --lib: **704 passed / 0 failed** (件数完全不変、本セッション move only)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: 本セッション frontend 触れず変更なし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## git 状態 (handoff 直前)
+
+- branch: main, ahead 410 (origin/main から先行、本セッション +3 commit 予定: refactor + chore + SESSION SUMMARY)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-51) の commit:
+  1. `41a9e7e` refactor(settings): tauri commands 4 件を settings_commands.rs に抽出 (Loop 100)
+  2. `583ae72` chore(agent-log): Loop 100 エントリ追記
+  3. `<HEAD>` chore(agent-log): mjc-main-20260505-51 SESSION SUMMARY (本エントリ)
+
+## 進行中セッション (handoff 直前)
+
+- mjc-main (canonical = 旧 mjc-main-20260505-51, handoff 直前)
+- mjc-main-20260505-51 (本セッション、間もなく handoff)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge: 本セッション中 0 回 (1 ループ完走 + handoff まで自律進行)
+
+## 引き継ぎ
+
+- 引き継ぎ先: mjc-main-20260505-52
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-52.txt (ファイル参照型 handoff prompt 連続 48 セッション目)
+- 旧メイン (mjc-main-20260505-51 = 本セッション = canonical mjc-main) は handoff 後終了
+
+---
