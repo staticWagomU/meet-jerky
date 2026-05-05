@@ -30736,6 +30736,6 @@ worker prompt を ~250 行で書くと「~135-220 行目安」を超える + cal
 
 ## Commits
 - dfc8aed1a9da8c09278ff9a27fd89b9b3dee1c75 refactor(realtime): push_error を realtime_error_helpers.rs に共通化
-- <hash2> chore(agent-log): Loop 81 commit hash dfc8aed1a9da8c09278ff9a27fd89b9b3dee1c75 を AGENT_LOG.md に記入
+- 9da691c chore(agent-log): Loop 81 commit hash dfc8aed1a9da8c09278ff9a27fd89b9b3dee1c75 を AGENT_LOG.md に記入
 
 ---
