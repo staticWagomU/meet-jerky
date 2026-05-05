@@ -27840,3 +27840,30 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 
 ---
+[mjc-main-20260505-26 Loop 52 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-24 Loop 48 → mjc-main-20260505-25 Loop 51 時点
+  - 累計削減行数: 611 行 (79.6%) → 327 行 (89.1%) = 85% 里程標突破からさらに +4.1pt 進展 = 90% 里程標到達直前
+  - 残存課題セクション: Loop 50 (Mock impl + 3 tests -177 行) + Loop 51 (TranscriptionManager tests 6 件 -107 行) 反映
+  - 新サブセクション 2 件: Mock impl + tests 移動 ✅ + TranscriptionManager tests 移動 ✅
+  - 末尾参考: 611 行 (79.6%) → 327 行 (89.1%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-25 Loop 50 + Loop 51 の 2 件を 1 ループで一括反映 (variety pivot = docs 軸 = Loop 49 から 3 ループ間隔 = 警告境界だが許容)
+- test 軸 9 件目連続超過警告から完全 pivot
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 2 件を末尾「## 参考」前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- (worker が agent-commit.sh で自走 commit、commit hash は後でメインが反映)
+
+---
