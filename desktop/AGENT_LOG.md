@@ -31340,3 +31340,16 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = settings 軸の機能境界分離)
 
 ---
+[mjc-main-20260505-46 Loop 90 / 2026-05-05]
+worker: mjc-worker-transcription-commands-model-loop90 (作業)
+範囲: src-tauri/src/transcription_commands.rs (model 関連 production ~66 行削除 + test 2 件削除 + 不要 import 整理) + src-tauri/src/transcription_commands_model.rs (新規 ~110-130 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 3 件)
+内容: transcription_commands.rs L12-77 の model 関連 (list_models + is_model_downloaded + build_download_progress_payload + build_download_error_payload + download_model) を新 module transcription_commands_model.rs に抽出。tests 2 件 (test_download_progress_payload_serialization + test_download_error_payload_serialization) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod transcription_commands_model; 追加 + invoke_handler の transcription_commands::list_models / is_model_downloaded / download_model を transcription_commands_model::* に変更。大型 rust file 責務分離 16 file 目 = transcription_commands 軸 1 件目 (新 scope) = settings 軸 (Loop 89) からの pivot 達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- d91027aa0677591b233ceb85b227a3431f725018 refactor(transcription): モデル管理軸の tauri commands と payload helpers を transcription_commands_model.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = transcription_commands 軸の機能境界分離)
+
+---
