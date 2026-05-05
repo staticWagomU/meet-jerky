@@ -33942,3 +33942,10 @@ worker: mjc-worker-loop160-archive-plan-stats-update-33 (作業)
 検証: agent-verify.sh = OK (docs 単独 skip 判定)。
 意義: K 軸 precedent 33 件目達成 = 節目 30 件突破後継続 = K 軸自体の paradigm 完全成熟期維持 + ultra-light サブ階層の安定確立 (Loop 157/159 = 2 ループ連続 ~9-10 行) + SUMMARY ultra-light 階層 ~5 行/件 2 連続観測 + 4 段階階層化 paradigm 完全成熟期維持 + worker 自律 2-commit pattern 連続 16 ループ目達成 = 節目 16 件突破継続。
 ---
+[mjc-main-20260505-79 Loop 161 / 2026-05-06]
+worker: mjc-worker-loop161-archive-plan-stats-update-34 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 159 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 160 完了時点の更新観測 34 件目を追記。Loop 159 → Loop 160 で +7 行 (33,937 → 33,944), 平均 ~7 行/loop = Loop 159 観測 (~10 行/loop) -30% 減 = ultra-light 階層下端の更なる拡大 + SS 0 件 ultra-light 単独 chore サブ階層 ~7 行/loop の新発見 = 5 段階階層化 paradigm への進化観測 + alternation reset 受容 (K(160) → K'(161) = 同 K 軸 2 連続 = alternation 47 → 1)。
+検証: agent-verify.sh = OK (docs 単独 skip 判定)。
+意義: K 軸 precedent 34 件目達成 = 節目突破後継続 + ultra-light 単独 chore サブ階層 ~7 行/loop の新発見 = 4 段階 → 5 段階階層化への進化観測 + alternation reset 受容で K' 軸 paradigm の意義実証 + worker 自律 2-commit pattern 連続 17 ループ目達成 = 節目 17 件突破継続。
+---
