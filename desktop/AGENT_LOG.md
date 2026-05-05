@@ -33830,3 +33830,19 @@ commit: 2aba407
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-75
+状態: 2 ループ完走 (Loop 151 + Loop 152) で後継 mjc-main-20260505-76 へ handoff
+本セッション実績:
+- Loop 151 = rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 + tests 移動軸 = transcript_bridge.rs の normalize_speaker (L92-L103 = doc + body 12 行) + tests module 内 normalize_speaker_* 10 件 (assertion 完全コピー = 件数完全不変) を新 file speaker_normalize.rs に移動 (use 経由で API 互換維持 + lib.rs アルファベット順 mod 登録 + scope 36 軸目開拓 = speaker normalization tier + 大型 rust file 責務分離 32 file 目達成 + cargo test 704 件件数完全不変 + transcript_bridge.rs: 826 → 736 行 -90 行 / speaker_normalize.rs: 103 行 新規) = refactor commit 6a8e357 + chore commit 18f740a
+- Loop 152 = K 軸 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 29 件目 = +73 行 / 平均 ~36.5 行/loop = Loop 149 観測値 (~36.5 行/loop = SS 1 件 + 説明中量化) との完全一致 (差 0%) = SS 1 件 + 説明中量化 ~30-37 行/loop の 2 連続観測達成 = 階層化 paradigm 4 段階目完全実証 = 第 4 階層が初観測 (Loop 149) から 2 連続再現 (Loop 151) で paradigm 確立 + 4 段階階層化が paradigm 完全成熟期入り = docs commit 2aba407 + chore commit 70b3fcf
+- 2-commit pattern 連続 8 ループ目達成 (Loop 145-152 = Loop 144 fault からの完全復活継続中)
+- メイン批判判断連続 74 セッション目達成 (handoff prompt 主張の「rust top-level 純粋関数候補は枯渇」を批判的再評価で normalize_speaker 1 件 + tests 10 件移動可能と発見)
+- harness 衛生連続 70 セッション目 (canonical 移譲後 scripts/* に M 表示再出現せず = bfb9846 PATH inner shell escape の永続効果再確認)
+- ファイル参照型 handoff prompt 連続 71 セッション目
+- scope 多様性 36 軸開拓 (Loop 151 で speaker normalization tier 追加)
+- alternation pattern 41 連続成功 (rust(151) → K(152) → ?(153 推奨 = R7''' = 重複候補 grep 探索))
+- 累積 worker 完走 250/251 (本セッション +2 件完走、99.6%)
+
+後継 mjc-main-20260505-76 への 2-3 ループ完走推奨。最有力候補 = R7''' = 重複候補 grep 探索 = paradigm 4 件目を狙う = 規模 SS = ~5-7 分完走見込み = alternation 42 連続維持 (K(152) → frontend or rust(153))。副推奨 = R8'' = inline module 抽出軸 rust 版 = 規模 SS-S = scope 37 軸目開拓候補 / K' = K 軸再度 = alternation reset リスクで Loop 154 推奨。詳細は docs/handoff/mjc-main-20260505-76.txt 参照。
+
+---
