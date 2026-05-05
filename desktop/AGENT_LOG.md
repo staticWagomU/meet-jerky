@@ -33489,3 +33489,15 @@ commit: 578b482
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-69 Loop 141 / 2026-05-06]
+worker: mjc-worker-loop141-transcription-source-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 4 件 + const 1 件削除 + import 追加) + src/utils/transcriptionSourceHelpers.ts (新規 ~120 行 = import 5 行 + export const 1 + export 4 関数)
+内容: TranscriptView.tsx L103-L104 + L128-L255 の APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON const + getTranscriptionSourceStatus + getTranscriptionSourceStatusAriaText + getTranscriptionSourceArg + getTranscriptionStartBlockedReason を新 file utils/transcriptionSourceHelpers.ts に抽出。frontend 軸 15 件目 = 純粋関数機能分離軸 frontend 版 12 件目 = scope 34 軸目開拓 = 大型 frontend file 責務分離 47 file 目 = R6 段階的分割 9 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission + Loop 135 Audio Source + Loop 137 Engine Status + Loop 139 External API Key の続編)。callsite 13 件 (const 7 + 関数 6) は import 追加のみで参照解決 (関数名 / const 名は不変)。alternation pattern 32 連続維持 (K(140) → frontend(141))。メイン批判判断 = handoff 主張「R6i Transcription Source 系 4 件抽出」を grep で批判的検証 → 関数行番号 (L128/L157/L186/L196) は handoff 推測値 (L128/L162/L191/L201) とほぼ一致を確認 + APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON が 7 callsite で使用される依存関係を確認 (L1505/L1506 が SELF_TRACK_DEVICE_LABEL + OTHER_TRACK_DEVICE_LABEL を直接使用するため audioTrackLabels import は TranscriptView.tsx に維持) + 既存 meetingStartRequest.ts (localStorage 永続化 tier) との責務階層精査で **異 tier 判定** (本新 file = transcription source entity の display + predicate tier) → 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135/137/139 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は audioTrackLabels.ts から SELF_TRACK_DEVICE_LABEL + OTHER_TRACK_DEVICE_LABEL を import = **utils 内 cross-import paradigm 5 件目に拡張** (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus、4 件目 = audioSourceHelpers.ts → audioTrackLabels、5 件目 = transcriptionSourceHelpers.ts → audioTrackLabels) = **paradigm 4 件目で打ち止め継続主張の覆し**。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/transcriptionSourceHelpers.ts
+検証: npm run build OK (tsc + vite build, 1931 modules), bash scripts/agent-verify.sh OK
+commit: 511d846
+依存関係追加: なし (audioTrackLabels.ts + types/ への import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
