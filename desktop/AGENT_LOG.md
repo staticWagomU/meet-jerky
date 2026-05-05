@@ -27051,3 +27051,36 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中ゼロ (3 ループとも目標 15 分以内で worker 完走)
 
+
+---
+
+[mjc-main-20260505-22 Loop 44 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から沈黙検知定数 3 件 (`MIN_FLUSH_SAMPLES` / `SILENCE_LOOKBACK_SAMPLES` / `SILENCE_THRESHOLD_RMS`) を src-tauri/src/audio_utils.rs に移動 (rustdoc コメントごと)
+- src-tauri/src/audio_utils.rs の沈黙検知セクション内に `use crate::transcription::WHISPER_SAMPLE_RATE;` import 追加 (定数依存維持、locality 重視で セクション内配置)
+- src-tauri/src/audio_utils.rs L255-257 の tests mod 内 `use crate::transcription::{...}` を `use super::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS};` に整理
+- src-tauri/src/transcription_whisper_stream.rs L7-10 の use 文整理 (3 const を audio_utils 経由に変更)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (関数 + テスト + 定数の locality 三位一体完成 = 理解性向上)
+- Loop 42 で関数 calculate_rms / is_tail_silent + テスト 6 件を audio_utils.rs に集約済 = 関連定数を同じ locality に置くのが Tidy First 的に自然
+- variety pivot 軸 = struct/const 移動軸 = Loop 33 から 11 ループ間隔 = sweep 警告完全クリア
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- WHISPER_SAMPLE_RATE は transcription.rs に残置 (Whisper 仕様、audio_utils domain でない)
+- CHUNK_DURATION_SECS / CHUNK_SAMPLES も transcription.rs 残置 (Whisper チャンク設計)
+- 3 const 移動による型変更なし、振る舞い完全保持
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- 52098b6
+
+---
