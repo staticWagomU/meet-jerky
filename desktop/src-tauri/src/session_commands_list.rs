@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use crate::session_commands::resolve_output_directory;
+use crate::session_commands_helpers::resolve_output_directory;
 use crate::session_store;
 use crate::session_store_types::SessionSummary;
 use crate::settings::SettingsStateHandle;

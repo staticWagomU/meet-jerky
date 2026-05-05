@@ -34,6 +34,7 @@ mod secret_store;
 mod secret_store_commands;
 mod session;
 mod session_commands;
+mod session_commands_helpers;
 mod session_commands_list;
 mod session_manager;
 mod session_manager_persist;
