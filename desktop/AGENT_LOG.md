@@ -33069,3 +33069,64 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-62 (canonical mjc-main)
+
+本セッションは旧 mjc-main (= mjc-main-20260505-61 = canonical mjc-main) からの handoff を受けて起動。前任者の handoff 推奨候補 K (Section 2.3 観測追記 13 件目) を最有力推奨として採用 + Loop 121 では handoff 副推奨候補 R4 (parse_throttle_key_to_display_name 抽出) を **責務階層精査済 (= Loop 119 教訓継承で url_helpers/meeting_classifier との階層差確認)** で採用 + Loop 122 では K 軸復帰で alternation pattern 14 連続維持 = メイン批判判断 連続 60 セッション目達成 + 3 ループ完走 (Loop 120 + Loop 121 + Loop 122) + 通常 cadence handoff (mjc-main-20260505-63 へ) を実施。
+
+worker 完走 3/3 = 累計 221/221 100%。
+
+実績:
+- Loop 120 = K 軸復帰 = harness 衛生軸 = docs/architecture/agent-log-archive-plan.md Section 2.3 観測追記 13 件目 = +79 行 / 平均 ~40 行/loop (Loop 117 観測 ~46 行/loop と比較して ~13% 減 = paradigm pivot 多軸 K + rust + SESSION SUMMARY 1 件 mjc-main-20260505-61 のみ + paradigm pivot 2 軸縮小寄与) = paradigm pivot 達成 (rust → K) + variety 規則 alternation pattern 完璧継続 (K(118) → rust(119) → K(120) = 12 連続) + worker ~2.5 分完走 (worker prompt 95 行)
+  - メイン批判判断: handoff 推奨候補 K を採用 + 観測対象期間 = Loop 117 → Loop 119 + SESSION SUMMARY 1 件 (mjc-main-20260505-61) を確認
+- Loop 121 = rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = app_detection.rs の parse_throttle_key_to_display_name (L406-L436 = doc + body 約 40 行) を新 file app_detection_throttle_key.rs に抽出 = app_detection.rs 2617 → 2579 行 (-38 行 / -1.5%) + 新 file 51 行 + lib.rs mod 登録追加 + WATCHED_BUNDLE_IDS const + MatchStrategy enum を `pub(crate)` 化 + pub(crate) use re-export (= **worker 自律発見**: pub use は pub(crate) アイテムを再エクスポート不可 = E0364 → pub(crate) use で対応 = visibility error 自律 diagnose + fix = sonnet model 進化的判断成功) で **API 互換維持 = caller L271 + test 9 件 (super::* import) 全て無変更** + 大型 rust file 責務分離 37 file 目 + scope 24 軸目開拓 + worker ~5 分完走 (worker prompt 166 行 = cargo test 704 passed 件数完全不変)
+  - メイン批判判断: handoff 副推奨候補 R4 を **責務階層精査済 (Loop 119 教訓継承)** で採用 = throttle_key parser は URL parser/meeting classifier と責務階層が異なる文字列パターンマッチング処理 = 統合不適切 = 新 file 作成軸が妥当 → R4 採用 + 同 paradigm 反復 (Loop 119 と同 純粋関数機能分離軸 rust 版 + 新 file 作成軸) = メイン批判判断連続 59 セッション目達成
+- Loop 122 = K 軸復帰 = harness 衛生軸 = docs/architecture/agent-log-archive-plan.md Section 2.3 観測追記 14 件目 = +22 行 / 平均 ~11 行/loop (Loop 119 観測 ~40 行/loop と比較して ~73% 減 = SESSION SUMMARY 0 件 + paradigm 反復で entry 説明テンプレート再利用 = アクティブ進行軽量化 paradigm 確立) = paradigm pivot 達成 (rust → K) + variety 規則 alternation pattern 完璧継続 (K(120) → rust(121) → K(122) = 14 連続) + worker ~3 分完走 (worker prompt 88 行)
+  - メイン批判判断: 3 ループ目で alternation pattern 14 連続維持を優先 + Section 2.3 観測追記 14 件目で **アクティブ進行軽量化 paradigm の現実値観測 = 貴重な precedent 確立** (前 13 件は全て SESSION SUMMARY 1-2 件含み = Loop 122 が初の 0 件観測)
+
+達成:
+- 累計 rust 軸 = 31 件 (Loop 121 で +1 = app_detection_throttle_key 抽出)
+- scope 24 軸目開拓 (`app_detection_throttle_key.rs` = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = Loop 119 と同 paradigm 反復)
+- 衝突回避設計 paradigm = 該当なし (関数名衝突なし、新 file は独自 namespace)
+- メイン批判判断 連続 60 セッション目達成 (handoff 推奨候補の批判的精査で paradigm 採用 + R4 責務階層精査 + Loop 122 K 軸 alternation 維持判断)
+- worker 自律 2-commit pattern 連続 62 ループ目達成
+- worker 自律進化: **pub(crate) use re-export** = E0364 visibility error 自律 fix = Loop 119 (`pub use`) からの差分発見と対応 (Loop 121 で確立)
+- harness 衛生連続 57 セッション目達成 (canonical 移譲後 scripts/* M 表示再出現せず観測継続)
+- ファイル参照型 handoff prompt 連続 58 セッション目達成 (本 SUMMARY 後 mjc-main-20260505-63 へ handoff 起動 = 連続 59 セッション目)
+- AGENT_LOG.md = 33,071 行 (本 SUMMARY 追記前)
+- AGENT_LOG.md archive plan Section 2.3 観測追記 14 件累積 (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122)
+- 大型 rust file 責務分離 37 file 目達成
+
+variety 規則の状態 (本セッション完了時点):
+- 直近 30 ループ (Loop 93-122): 構造分離 28 件 (Loop 107/108/110/112/114/116/117/119/121 frontend + rust 含む) + 機能拡張/docs 3 件 + harness 衛生 13 件 (Loop 113/115/118/120/122 含む) = 28:3:13 多軸分散
+- scope 内訳: 24 scope 分散 (rust 20 + frontend 6 - Loop 121 で +1 = app_detection_throttle_key)
+- paradigm pivot: alternation pattern 完璧 14 連続 (K(113) → frontend(114) → K(115) → frontend(116) → rust(117) → K(118) → rust(119) → K(120) → rust(121) → K(122))
+
+paradigm 多様化:
+- 純粋関数機能分離軸 rust 版 (Loop 121) = 既存 paradigm + 新 file 作成軸 (Loop 119 と同 paradigm 反復 = 安定 precedent 化)
+- 既存 file 拡張軸 (Loop 117) = 新 paradigm 1 件目 (新 file 作成ではなく既存 file 統合追加 = Loop 121 と paradigm 対比成立)
+- API 互換維持戦略の進化: Loop 117 = `pub(crate)` 関数で pub use 不要 / Loop 119 = `pub fn` で `pub use` 採用 / Loop 121 = `pub(crate) fn` で **`pub(crate) use`** 採用 (E0364 visibility 自律対応) = 段階進化
+
+検証実績:
+- cargo test (lib): 704 passed / 0 failed (件数完全不変、Loop 121 で確認)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: ✓ built (vite, frontend 無変更のため再検証不要)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 120/121/122 全て)
+
+次セッション (mjc-main-20260505-63) への期待:
+- handoff content file `docs/handoff/mjc-main-20260505-63.txt` に **Loop 123 推奨候補 R5 (既存 file 拡張軸 2 件目 = app_detection_inactive_decision.rs/notification.rs に統合できる関数発掘 = 要 grep 精査) を最有力候補** として記載 + alternation pattern 維持 (rust 軸続行 = K(122) → rust(123) = 15 連続維持)
+- 代替候補: K Section 2.3 観測追記 15 件目 (paradigm pivot K → K = alternation pattern reset = 警告) / X3 TranscriptView.tsx 残 27 純粋関数段階的分割 (frontend 軸 7 件目 = scope depth 警告 6 件目) / J' SettingsView 内部 helper 精査 (scope 22 軸目変種) / X' resample_audio dead code 削除 (ユーザー直伝指示要) / H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要)
+- **app_detection.rs 残候補は Loop 121 で枯渇** (parse_throttle_key_to_display_name 抽出済) = rust 軸続行は **既存 file 拡張軸** (R5) または別 rust file 探索が必要 = paradigm 多様化の次フロンティア
+
+残課題 (継承):
+- TranscriptView.tsx 残 純粋関数 27 件 = 段階的分割抽出推奨 (scope depth 警告 6 件目)
+- SettingsView.tsx 内部 component helper 精査 = 抽出余地有無確認要
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+- resample_audio dead code 削除 = ユーザー直伝指示要 (`#[allow(dead_code)]` 残置の意図可能性)
+- app_detection_inactive_decision.rs (225 行) / app_detection_notification.rs (94 行) に統合できる関数発掘 = R5 候補 (要 grep 精査)
+- app_detection.rs (2579 行 Loop 121 後) 残: 純粋関数候補ほぼなし = handle_detection / macos module 等の core logic のみ (大型 rust file 責務分離 paradigm の本体機能領域到達)
+
+---
