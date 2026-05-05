@@ -28419,4 +28419,35 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - trailing whitespace: なし
 
 ## commit
-- <commit hash>
+- 5fb2e0f
+
+---
+[mjc-main-20260505-29 Loop 59 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 1 歩 = `TranscriptionSegment` / `TranscriptionSource` の caller 直接 import 化
+- 4 ファイル / 7 箇所の `use crate::transcription::{TranscriptionSegment, TranscriptionSource}` を `use crate::transcription_types::{...}` に書き換え:
+  - transcript_bridge.rs L4 / cloud_whisper.rs L3 + L125 / elevenlabs_realtime.rs L166 + L488 + L489 / openai_realtime.rs L199
+- transcription.rs L1-5 の互換 re-export `pub use crate::transcription_types::{...}` セクション: 残置 (transcript_bridge.rs L461/L472/L477 のインライン参照が `crate::transcription::TranscriptionSource` を使用中 = clippy 警告なし)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration 開始 = Phase 6 第 1 歩)
+- mjc-main-20260505-28 Loop 57 で transcription.rs を 29 行 = 完全ファサード化達成 → 各 caller を直接 import 化することで互換層を段階的に解体し、最終的に transcription.rs ファイル削除を目指す
+- variety pivot = struct/const + import refactor 軸 = Loop 57 (struct/const) → Loop 58 (docs) → Loop 59 (struct/const + import refactor) で 1 ループ間隔 = 健全
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文を機械的に書き換え (実体は transcription_types.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- transcription.rs 互換層 (L5 `pub use crate::transcription_types::{...}`) の判断は clippy 結果ベース (worker 二重批判判断 precedent 継承)
+  - clippy 警告なし = transcript_bridge.rs L461/L472/L477 のインライン参照が re-export を使用中 = 残置が正解
+- **追加発見**: grep で 7 箇所 use 文 + transcript_bridge.rs L461/L472/L477 インライン参照 3 箇所 (計 10 件) を確認。インライン参照は `use` 文ではなく担当範囲外 = 変更せず残置。次 Loop で transcript_bridge.rs の caller 全体移行時に対応推奨。
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- 47264dc

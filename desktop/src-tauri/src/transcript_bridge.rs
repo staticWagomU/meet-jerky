@@ -1,7 +1,7 @@
 //! ライブ文字起こしの `TranscriptionSegment` を
 //! `Session::append_segment` に渡すための純粋な変換ブリッジ。
 
-use crate::transcription::TranscriptionSegment;
+use crate::transcription_types::TranscriptionSegment;
 
 /// ライブセグメントから `Session::append_segment` の引数 3 つ組に変換する。
 ///

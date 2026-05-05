@@ -196,7 +196,7 @@ mod ws_task {
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
 
-    use crate::transcription::{TranscriptionSegment, TranscriptionSource};
+    use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
     use super::{AudioCommand, REALTIME_SAMPLE_RATE};
 

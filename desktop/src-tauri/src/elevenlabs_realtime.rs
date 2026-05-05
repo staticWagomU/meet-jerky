@@ -163,7 +163,7 @@ mod ws_task {
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
 
-    use crate::transcription::{TranscriptionSegment, TranscriptionSource};
+    use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 
     use super::{AudioCommand, ELEVENLABS_REALTIME_SAMPLE_RATE};
 
@@ -485,8 +485,8 @@ mod ws_task {
 
         use parking_lot::Mutex;
 
-        use crate::transcription::TranscriptionSegment;
-        use crate::transcription::TranscriptionSource;
+        use crate::transcription_types::TranscriptionSegment;
+        use crate::transcription_types::TranscriptionSource;
 
         use super::wait_for_pending_after_commit;
 

@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::transcription::TranscriptionSegment;
+use crate::transcription_types::TranscriptionSegment;
 
 #[derive(Debug, Deserialize)]
 struct VerboseResponse {
@@ -122,7 +122,7 @@ pub fn parse_whisper_verbose_response(body: &str) -> Result<Vec<TranscriptionSeg
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transcription::TranscriptionSegment;
+    use crate::transcription_types::TranscriptionSegment;
 
     #[test]
     fn parses_verbose_response_with_two_segments() {
