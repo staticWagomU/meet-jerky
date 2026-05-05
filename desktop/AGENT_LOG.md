@@ -33935,3 +33935,10 @@ verify: scripts/agent-verify.sh 全項目 OK
 実績: Loop 158 = K 軸 = Section 2.3 観測 32 件目 = +19 行 / 平均 ~9.5 行/loop = Loop 155 観測 (~18.5 行/loop) -49% 大幅減少 = 軽量化階層下端の劇的拡大 (~18 → ~9 行) + SUMMARY ultra-light 階層 ~5 行/件の新発見 + rust 軸軽量化 paradigm 2 連続観測 = 完全実証期入り, Loop 159 = rust 軸 = **既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約)** = jst() 重複定義 5 件 (datetime_fmt + session_manager + session_commands + session_store_render + session_store の test module 内) を datetime_fmt.rs に #[cfg(test)] pub(crate) fn として集約 + 4 file の test module 内 fn jst 削除 + use crate::datetime_fmt::jst で参照 = DRY 違反解消 + Loop 157 calculate_rms 集約 (2 file) の規模拡大版 = 重複候補 grep 探索 paradigm 6 件目達成 (struct/const/trait レベル枯渇確認後、内部 fn 探索の新軸で発見)。
 連続記録: メイン批判判断 連続 78 セッション目達成 (handoff prompt R7''''' を struct/const/trait レベルで枯渇確認後、**内部 fn 探索の新軸**で jst() x5 完全同一実装を発見 = 探索手法のメタ進化) + worker 自律 2-commit pattern 連続 15 ループ目達成 = **節目 15 件突破** (Loop 145-159 = 15 連続安定) + harness 衛生連続 73 セッション目 + ファイル参照型 handoff prompt 連続 74 セッション目 + scope 多様性 37 軸維持 + alternation pattern 47 連続成功 (K(158) → rust(159) → ?(160 推奨 = K = Section 2.3 観測 33 件目)) + 既存 file 拡張軸 paradigm 6 件目達成 + cargo test 704 件件数完全不変。
 ---
+[mjc-main-20260505-79 Loop 160 / 2026-05-06]
+worker: mjc-worker-loop160-archive-plan-stats-update-33 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 157 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 159 完了時点の更新観測 33 件目を追記。Loop 157 → Loop 159 で +20 行 (33,917 → 33,937), 平均 ~10 行/loop = Loop 157 観測 (~9.5 行/loop) +5% 微増 = ultra-light 階層維持 + rust 軸軽量化 paradigm 3 連続観測 (Loop 155/157/159) = 完全成熟期入り + SUMMARY ultra-light 階層 ~5 行/件 2 連続観測 + chore entry 動的軽量化 paradigm の発見 + alternation pattern 47 連続維持 (rust(159) → K(160))。
+検証: agent-verify.sh = OK (docs 単独 skip 判定)。
+意義: K 軸 precedent 33 件目達成 = 節目 30 件突破後継続 = K 軸自体の paradigm 完全成熟期維持 + ultra-light サブ階層の安定確立 (Loop 157/159 = 2 ループ連続 ~9-10 行) + SUMMARY ultra-light 階層 ~5 行/件 2 連続観測 + 4 段階階層化 paradigm 完全成熟期維持 + worker 自律 2-commit pattern 連続 16 ループ目達成 = 節目 16 件突破継続。
+---
