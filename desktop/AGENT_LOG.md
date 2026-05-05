@@ -33846,3 +33846,16 @@ commit: 2aba407
 後継 mjc-main-20260505-76 への 2-3 ループ完走推奨。最有力候補 = R7''' = 重複候補 grep 探索 = paradigm 4 件目を狙う = 規模 SS = ~5-7 分完走見込み = alternation 42 連続維持 (K(152) → frontend or rust(153))。副推奨 = R8'' = inline module 抽出軸 rust 版 = 規模 SS-S = scope 37 軸目開拓候補 / K' = K 軸再度 = alternation reset リスクで Loop 154 推奨。詳細は docs/handoff/mjc-main-20260505-76.txt 参照。
 
 ---
+[Loop 153 @ 2026-05-06 ~JST] mjc-main-20260505-76 / mjc-worker-loop153-speaker-label
+タスク: getSpeakerLabel 重複定義を transcriptDisplayHelpers.ts から削除 + liveCaptionTrackHelpers.ts から re-export
+ファイル: src/utils/transcriptDisplayHelpers.ts (L19-24 関数削除 + import + re-export 追加)
+理由: DRY 違反解消 = 2 utils で同名関数の実質同実装定義、戻り値型 string vs string | null は実装上の過剰宣言を統一
+影響: TranscriptDisplay.tsx + LiveCaptionWindow.tsx は無変更で API 互換維持 (re-export 経由)
+paradigm: 既存 file 拡張軸 paradigm 4 件目 = utils 間集約軸 = re-export 戦略 (Loop 145 同 file 内 + Loop 147 別 file 統合 + Loop 149 3 file 集約に続く 4 件目バリエーション)
+検証: npm run build ✓ (tsc + vite build エラー 0), agent-verify.sh OK
+commit: 316fbda + <chore commit hash>
+依存関係追加: なし
+失敗理由: なし
+次アクション: なし (メイン側で次ループ判断)
+
+---
