@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
-  type ReactNode,
 } from "react";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
@@ -14,172 +13,26 @@ import {
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
 import { toErrorMessage } from "../utils/errorMessage";
+import {
+  formatSearchQueryForLabel,
+  getSearchMatchExcerpt,
+  getSessionStartedAtDisplay,
+  getTranscriptTrackCounts,
+  hasTranscriptBody,
+  renderHighlightedSearchExcerpt,
+  sessionMatchesQuery,
+} from "../utils/sessionListHelpers";
+import {
+  getCompactSessionTitle,
+  getFileName,
+} from "../utils/transcriptViewFormatters";
 
 type SessionAction =
   | { kind: "open"; path: string }
   | { kind: "reveal"; path: string }
   | null;
 
-const SEARCH_QUERY_LABEL_MAX_LENGTH = 40;
-const SEARCH_EXCERPT_CONTEXT_LENGTH = 42;
 const EMPTY_SESSIONS: SessionSummary[] = [];
-
-interface TranscriptTrackCounts {
-  self: number;
-  other: number;
-  unknown: number;
-}
-
-interface SessionStartedAtDisplay {
-  label: string;
-  iso: string | null;
-}
-
-function getFileName(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function getSessionStartedAtDisplay(
-  startedAtSecs: number,
-): SessionStartedAtDisplay {
-  const startedAtMs = startedAtSecs * 1000;
-  if (!Number.isFinite(startedAtMs)) {
-    return { label: "日時不明", iso: null };
-  }
-  const startedAtDate = new Date(startedAtMs);
-  if (Number.isNaN(startedAtDate.getTime())) {
-    return { label: "日時不明", iso: null };
-  }
-  return {
-    label: startedAtDate.toLocaleString(),
-    iso: startedAtDate.toISOString(),
-  };
-}
-
-function formatSearchQueryForLabel(query: string): string {
-  const normalized = query.split(/\s+/).filter(Boolean).join(" ");
-  return normalized.length > SEARCH_QUERY_LABEL_MAX_LENGTH
-    ? `${normalized.slice(0, SEARCH_QUERY_LABEL_MAX_LENGTH)}...`
-    : normalized;
-}
-
-function getSearchTerms(query: string): string[] {
-  return query
-    .trim()
-    .toLocaleLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-function getSessionDisplayTitle(title: string): string {
-  const displayTitle = title
-    .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
-    .trim();
-  return displayTitle || "無題の会議";
-}
-
-function unescapeInlineMarkdownText(text: string): string {
-  return text.replace(/\\([\\`*_[\]])/g, "$1");
-}
-
-function formatSearchExcerptText(text: string): string {
-  return unescapeInlineMarkdownText(text)
-    .replace(/\*\*\[([^\]]+)\]\s*([^:*]+):\*\*/g, "[$1] $2:")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getSearchMatchExcerpt(text: string, query: string): string | null {
-  const searchTerms = getSearchTerms(query);
-  if (searchTerms.length === 0 || !text) {
-    return null;
-  }
-  const searchText = unescapeInlineMarkdownText(text);
-  const normalizedText = searchText.toLocaleLowerCase();
-  const matchedTerm = searchTerms.find((term) => normalizedText.includes(term));
-  if (!matchedTerm) {
-    return null;
-  }
-  const matchIndex = normalizedText.indexOf(matchedTerm);
-  if (matchIndex < 0) {
-    return null;
-  }
-  const start = Math.max(0, matchIndex - SEARCH_EXCERPT_CONTEXT_LENGTH);
-  const end = Math.min(
-    searchText.length,
-    matchIndex + matchedTerm.length + SEARCH_EXCERPT_CONTEXT_LENGTH,
-  );
-  const excerpt = formatSearchExcerptText(searchText.slice(start, end));
-  if (!excerpt) {
-    return null;
-  }
-  return `${start > 0 ? "..." : ""}${excerpt}${end < searchText.length ? "..." : ""}`;
-}
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function renderHighlightedSearchExcerpt(
-  text: string,
-  query: string,
-): ReactNode {
-  const searchTerms = Array.from(new Set(getSearchTerms(query)))
-    .sort((a, b) => b.length - a.length)
-    .map(escapeRegExp);
-  if (searchTerms.length === 0) {
-    return text;
-  }
-
-  const matcher = new RegExp(`(${searchTerms.join("|")})`, "gi");
-  const exactMatcher = new RegExp(`^(${searchTerms.join("|")})$`, "i");
-  return text.split(matcher).map((part, index) =>
-    exactMatcher.test(part) ? (
-      <mark key={`${part}-${index}`}>{part}</mark>
-    ) : (
-      part
-    ),
-  );
-}
-
-function hasTranscriptBody(searchText: string): boolean {
-  return searchText.trim().length > 0;
-}
-
-function getTranscriptTrackCounts(searchText: string): TranscriptTrackCounts {
-  const counts = { self: 0, other: 0, unknown: 0 };
-  for (const match of searchText.matchAll(/\*\*\[[^\]]+\]\s*([^:*]+):\*\*/g)) {
-    const speaker = match[1]?.trim();
-    if (speaker === "自分") {
-      counts.self += 1;
-    } else if (speaker === "相手側") {
-      counts.other += 1;
-    } else if (speaker) {
-      counts.unknown += 1;
-    }
-  }
-  return counts;
-}
-
-function sessionMatchesQuery(
-  session: SessionSummary,
-  startedAtLabel: string,
-  query: string,
-): boolean {
-  const searchTerms = getSearchTerms(query);
-  if (searchTerms.length === 0) {
-    return true;
-  }
-  const searchableText = [
-    getSessionDisplayTitle(session.title),
-    getFileName(session.path),
-    startedAtLabel,
-    unescapeInlineMarkdownText(session.searchText),
-  ]
-    .join(" ")
-    .toLocaleLowerCase();
-  return searchTerms.every((term) => searchableText.includes(term));
-}
 
 /**
  * 保存済み文字起こし履歴の一覧画面。
@@ -519,7 +372,7 @@ function SessionRow({
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
   const startedAtDisplay = getSessionStartedAtDisplay(session.startedAtSecs);
   const startedAtLabel = startedAtDisplay.label;
-  const displayTitle = getSessionDisplayTitle(session.title);
+  const displayTitle = getCompactSessionTitle(session.title);
   const fileName = getFileName(session.path);
   const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
   const hasBody = hasTranscriptBody(session.searchText);
