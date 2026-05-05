@@ -28838,6 +28838,6 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - trailing whitespace: なし
 
 ## commit
-- <COMMIT_HASH>
+- 9783313
 
 ---
