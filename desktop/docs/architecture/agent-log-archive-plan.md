@@ -51,6 +51,8 @@ AGENT_LOG.md は ~30,333 行 / 56 セッション / 82 Loop に達し、`tail -3
 
 > **更新観測 (mjc-main-20260505-58 Loop 112 完了時点)**: Loop 110 → Loop 112 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-57) で +94 行 (32,669 → 32,763)、平均 ~47 行/loop。Loop 110 観測値 (~42 行/loop) と比較して ~12% 増 = paradigm pivot 多軸 (Loop 111 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 112 = 純粋関数機能分離軸 frontend 版 4 件目 = ModelSelector.tsx → utils/modelSelectorHelpers.ts = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 110 観測値 (~42 行/loop) とほぼ同水準維持の主因 = mjc-main-20260505-57 SESSION SUMMARY 1 件 (~60-80 行) + Loop 111 K 軸自体の chore + docs entry (~14-18 行) = paradigm pivot 多軸の軽量増分パターン継続が安定。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~47 行 = ~188-470 行/時間 の範囲、アクティブセッション間の差異)。
 
+> **更新観測 (mjc-main-20260505-59 Loop 114 完了時点)**: Loop 112 → Loop 114 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-58) で +58 行 (32,763 → 32,821)、平均 ~29 行/loop。Loop 112 観測値 (~47 行/loop) と比較して ~38% 減 = paradigm pivot 多軸 (Loop 113 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 114 = 純粋関数機能分離軸 frontend 版 5 件目 = MeetingDetectedBanner.tsx → utils/meetingDetectedBannerHelpers.ts = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 112 観測値 (~47 行/loop) と比較して大幅減の主因 = mjc-main-20260505-58 SESSION SUMMARY 1 件 (~30-40 行) の軽量化 + Loop 113 K 軸自体の chore + docs entry (~14-18 行) = paradigm pivot 多軸の軽量増分パターン継続が安定 = SUMMARY 寄与の縮小が支配的。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~29 行 = ~116-290 行/時間 の範囲、アクティブセッション間の差異)。
+
 ### 2.4 既存運用の維持コスト
 
 - worker prompt 必須要素: 「冒頭で末尾 350 行を読む」「Read 全体禁止 = tail/grep のみ」 = 末尾参照は維持できている
