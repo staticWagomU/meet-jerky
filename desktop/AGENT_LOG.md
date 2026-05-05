@@ -28003,3 +28003,28 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 
 ---
+[mjc-main-20260505-27 Loop 54 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-25 Loop 51 → mjc-main-20260505-26 Loop 53 時点
+  - 累計削減行数: 327 行 (89.1%) → 193 行 (93.6%) = 90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展
+  - 残存課題セクション: Loop 53 (StreamConfig Debug/Clone tests 3 件 -134 行) 反映
+  - 新サブセクション 1 件: StreamConfig Debug/Clone tests 移動 ✅
+  - 末尾参考: 327 行 (89.1%) → 193 行 (93.6%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-26 Loop 53 (StreamConfig Debug/Clone tests 移動 -134 行) を 1 ループで反映
+- variety pivot = docs 軸 = Loop 52 から 2 ループ間隔 = 警告境界だが許容、test 軸 9 件目連続超過警告からの完全 pivot 維持
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 1 件を末尾「## 参考」前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- 032ca94
