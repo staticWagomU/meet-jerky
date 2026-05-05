@@ -33745,3 +33745,16 @@ git 状態:
 後継メイン (mjc-main-20260505-74) は本 SUMMARY を起点に 2-3 ループ完走 + 通常 cadence handoff を継続することを推奨。
 
 ---
+
+[mjc-main-20260505-74 Loop 150 / 2026-05-06]
+worker: mjc-worker-loop150-archive-plan-stats-update-28 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~2 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 149 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148 precedent の 27 件目。Loop 147 → Loop 149 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-73) で +73 行 (33,674 → 33,747)、平均 ~36.5 行/loop。Loop 147 観測値 (~24.5 行/loop) と比較して **+49% 増 (+12 行/loop の逸脱)** = **新階層 = SS 1 件 + 説明中量化 (~30-37 行/loop) の初観測 = 階層化 paradigm 4 段階目の発見** = 直近 10 連続観測値域 ~22-26 行/loop からの逸脱で第 4 階層が初認識。主因 = mjc-main-20260505-73 SUMMARY 大量化 (~50 行 = paradigm 3 件目記載 + worker 自律学習進化 paradigm 3 件目記載 + 連続記録大量更新記載)。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137/139/141/143/145/147/149 の **13 件連続観測** = **frontend 軸軽量化 paradigm の 13 度目の観測**。alternation pattern 38 連続成功維持 (frontend(147) → K(148) → frontend(149) → K(150))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 61bf758
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
