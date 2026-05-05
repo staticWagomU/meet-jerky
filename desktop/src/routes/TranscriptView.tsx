@@ -51,6 +51,10 @@ import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelp
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
+  getExternalApiProvider,
+  getRequiresLocalModel,
+} from "../utils/transcriptionEngineHelpers";
+import {
   buildLiveCaptionStatusFromLabels,
   isExternalTransmissionLabel,
   LIVE_CAPTION_STATUS_EVENT,
@@ -340,22 +344,6 @@ function getAudioSourceStatusPillClass(
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
-}
-
-function getRequiresLocalModel(engine: TranscriptionEngineType | undefined): boolean {
-  return !engine || engine === "whisper";
-}
-
-function getExternalApiProvider(
-  engine: TranscriptionEngineType | undefined,
-): "OpenAI" | "ElevenLabs" | null {
-  if (engine === "openAIRealtime") {
-    return "OpenAI";
-  }
-  if (engine === "elevenLabsRealtime") {
-    return "ElevenLabs";
-  }
-  return null;
 }
 
 function getAiTransmissionStatusLabel(
