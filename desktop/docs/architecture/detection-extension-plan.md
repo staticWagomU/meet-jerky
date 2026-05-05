@@ -231,6 +231,21 @@ Discord の stage channel URL は通常チャンネルと同形式 (`discord.com
 
 **想定 elapsed**: 複数ループ (優先度が上がった時点で実施)
 
+### Phase 状態 (mjc-main-20260505-42 Loop 84 時点)
+
+| Phase | 状態 | 待ち / 前提 | 想定再開 trigger |
+|-------|------|-------------|------------------|
+| Phase 1 | **完了** (mjc-main-20260505-36 Loop 72) | - | - (再開不要) |
+| Phase 2 | **未着手** | Q1/Q2 = 実機 (Slack デスクトップで huddle / Discord デスクトップで stage 参加) で window title を AppleScript 取得 | Q1/Q2 が解決 (実機実例の plan 取り込み) |
+| Phase 3 | **未着手 (任意)** | Phase 2 完了 + Q3 (Slack web 版 huddle 中 URL 形式の実機確認) | Phase 2 完了後、ユーザーから web 版 Slack 利用要望 |
+| Phase 4 | **未着手 (任意、識別困難見込み)** | Phase 2 完了 + Q4 (Discord web 版 stage URL 形式) = URL のみで識別困難の見込み | Phase 2 完了後、URL 識別可能性が確認できた場合 |
+| Phase 5 | **未着手 (後追い)** | 補助サービス (MS Teams Channel Calls / Zoom Phone) + 日本語 window title pattern + frontend アイコン (`MeetingDetectedBanner.tsx`) | Phase 2 完了 + 優先度上昇 (ユーザーフィードバック蓄積後) |
+
+**着手判断方針**:
+
+- 単独 main agent はメイン批判的判断の範囲で `docs/architecture/detection-extension-plan.md` の追記 / Q5/Q6 のような Resolved Block 起こしは可能だが、**Phase 2 以降の rust 実装着手は Q1/Q2 実機確認が前提**。実機確認なしの推測 pattern (例: 推測値 `"Huddle"` のみで着手) は実装の false positive リスクが残るため backlog 化が安全側。
+- Q1/Q2 解決時点で Phase 2 着手 (Phase 2 内手順は Section 5 Phase 2 = `**実装内容**` の段に既記載)。
+
 ## 6. Open Questions (要検証項目)
 
 | # | 質問 | 重要度 | 確認方法 |
