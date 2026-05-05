@@ -27643,3 +27643,30 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 
 ---
+[mjc-main-20260505-25 Loop 50 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から MockEngine / MockStream 構造体 + impl + 3 tests (test_stream_lifecycle_feed_drain_finalize / test_stream_config_speaker_propagates_to_segments / test_feed_empty_samples_is_noop_in_mock) を src-tauri/src/transcription_traits.rs に移動
+- transcription.rs L50 の `use std::sync::atomic::Ordering;` を削除 (移動後 unused、grep 確認済)
+- transcription_traits.rs に新規 `#[cfg(test)] mod tests` 追加 (`use super::*;` + transcription_types + atomic + Arc)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (TranscriptionEngine / TranscriptionStream トレイトの mock 実装と挙動テストの locality 完成 = トレイト契約と mock 検証の同居で理解性向上)
+- variety pivot 軸 = test 軸 = Loop 47 から 3 ループ間隔 (Loop 48-49 で別軸 pivot 済) = 警告境界
+- Mock 構造体 + impl は TranscriptionEngine / TranscriptionStream トレイト本体と locality 一致が自然 = Loop 32 / 38 / 42 / 47 precedent 継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs から L50 use 文 (Ordering) + L52-226 の 175 行を削除
+- transcription_traits.rs に新規 tests mod 追加 (`use super::*;` で TranscriptionEngine / TranscriptionStream / StreamConfig アクセス、`use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` で型 import、`use std::sync::atomic::{AtomicUsize, Ordering};` + `use std::sync::Arc;`)
+- transcription.rs: 611 → 434 行 / transcription_traits.rs: 48 → 229 行
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK (exit 0)
+- trailing whitespace: なし
+
+## commit
+- commit <ハッシュ> (commit 後にハッシュを記入)
