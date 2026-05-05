@@ -29502,3 +29502,42 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中 2 回 (Loop 68 worker 起動後 + Loop 69 worker 起動後 = improver による継続指示、適切タイミング)
+
+---
+
+[mjc-main-20260505-35 Loop 70 / 2026-05-05 ~JST]
+
+## What
+- elevenlabs_realtime.rs L60-65 と openai_realtime.rs L78-83 で重複していた private enum AudioCommand を新 file realtime_audio_command.rs に共通化抽出
+  - `pub(crate) enum AudioCommand { Samples(Vec<f32>), Finalize }` (12 行、Finalize doc comment を openai 側から保持)
+- lib.rs に `mod realtime_audio_command;` 追加 (openai_realtime と secret_store の間、L21)
+- elevenlabs_realtime.rs / openai_realtime.rs に `use crate::realtime_audio_command::AudioCommand;` 追加
+- elevenlabs_realtime.rs / openai_realtime.rs から enum AudioCommand 定義を削除 (重複削除)
+
+## Why
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的 code quality 改善
+- DRY 原則違反解消 = 100% 同一構造の private enum を 2 file で重複定義 → 1 か所に集約
+- audio_traits.rs / session_store_types.rs precedent 直接展開
+- visibility: private → pub(crate) は crate-internal のみで API surface 増加最小
+- variety: 6 連続 + Loop 70 = 7 連続到達は exception 判断 (規模 SS + precedent 直接展開可能 + pattern が「両 file 共通抽出」で新 pattern + 重複削除という質的価値)
+
+## How (Tidy First, behavior-preserving)
+- enum 定義の文字列内容は変更せず (Finalize doc comment 保持) = 振る舞い完全不変
+- visibility: private → pub(crate) (crate 外には漏れない、内部 caller 互換)
+- match arm / Send 経由のチャネル使用は両 file とも変更不要 (型名 AudioCommand のみ参照変更なし、use 文経由解決)
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK (EXIT: 0)
+- elevenlabs_realtime.rs / openai_realtime.rs から `^(pub )?enum AudioCommand` を grep: 完全に空
+- realtime_audio_command.rs から `^(pub\(crate\) )?enum AudioCommand` を grep: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 80ba63d
+
+---
