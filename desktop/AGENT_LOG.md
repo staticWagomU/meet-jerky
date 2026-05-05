@@ -31933,3 +31933,82 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離 + rubato 依存の局所化)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-50
+
+## 本セッション実績 (2 ループ完走 + 通常 cadence handoff)
+
+### Loop 97 = session_commands_list.rs 抽出 (構造分離 22 file 目, session_commands 軸 1 件目 = 新 scope, ~5.2 分)
+- 新規 file: src-tauri/src/session_commands_list.rs (84 行)
+- 削除元: src-tauri/src/session_commands.rs (list 関連 production ~22 行 + test 3 件 + 不要 import 整理 + resolve_output_directory pub(crate) 化)
+- lib.rs: mod session_commands_list; 1 行追加 + invoke_handler L402 path 修正 1 件
+- production 2 件: list_session_summaries_inner (pub) + list_session_summaries_cmd (#[tauri::command])
+- caller 影響: lib.rs invoke_handler のみ (frontend invoke 名は不変)
+- test 3 件 = list_session_summaries_inner_returns_saved_summary + list_session_summaries_inner_returns_empty_for_missing_dir + list_session_summaries_inner_returns_error_when_path_is_a_file
+- commits: 218a314 refactor + 7897ccb chore
+- 構造分離 22 file 目 = session_commands 軸 1 件目 (新 scope, 14 軸目) = apple_speech 軸 (Loop 95) からの pivot 達成 = 機能分類軸 paradigm 復帰
+- session_commands.rs: 523 → 452 行 (-14%)
+- handoff 警告「scope 払底気味」を grep + Read 精査で覆して session_commands 軸を新規開拓 → メイン批判判断 連続 45 セッション目達成
+
+### Loop 98 = audio_resample.rs 抽出 (構造分離 23 file 目, audio_resample 軸 1 件目, ~3.7 分)
+- 新規 file: src-tauri/src/audio_resample.rs (141 行)
+- 削除元: src-tauri/src/audio_utils.rs (リサンプリング軸 production ~88 行 + test 4 件 + rubato use 削除)
+- lib.rs: mod audio_resample; 1 行追加 (alphabetical = mod audio_event; 直後)
+- caller transcription_whisper_stream.rs L10 use 文 1 行修正 (audio_utils → audio_resample)
+- production 3 件: RESAMPLE_CHUNK_SIZE + sinc_params + #[allow(dead_code)] resample_audio
+- test 4 件 = test_resample_same_rate + test_resample_downsample_length + test_resample_empty_input + test_resample_preserves_silence
+- 可視性 pub(crate) + #[allow(dead_code)] 完全保持 (将来用残置の意図尊重)
+- commits: 2a465b8 refactor + b617aaf chore
+- 構造分離 23 file 目 = audio_resample 軸 1 件目 (同 scope = audio_silence Loop 94 と同 scope だが 3 ループ離れたため警告境界外, 15 軸目) = session_commands 軸 (Loop 97) からの paradigm pivot 達成 = 機能分類軸 → 純粋関数機能分離軸 paradigm
+- audio_utils.rs: 227 → 90 行 (**-60% 削減 = 本セッション最大**) = sanitize 軸のみのコンパクト file 化
+- rubato crate 依存も新 file へ局所化 = 構造美強化
+
+## 累積 (handoff 候補 X 始動以降)
+
+- 大型 rust file 責務分離: **23 file 目達成** (本セッション +2: session_commands_list + audio_resample)
+- scope 多様性: **15 軸到達** (本セッション +2: session_commands 軸 + audio_resample 軸)
+- worker 完走: **198/198 = 100%** 維持 (本セッション +2)
+- worker 自律 2-commit pattern: **連続 38 ループ目達成**
+- メイン批判判断: **連続 45 セッション目達成** (handoff 警告「scope 払底気味」を Loop 97 で覆した発掘力)
+- harness 衛生: **連続 45 セッション目** (canonical 移譲後 `scripts/*` M 表示再出現せず)
+- ファイル参照型 handoff prompt: **連続 47 セッション目**
+
+## 直近 30 ループ多軸分散 (Loop 69-98)
+
+- 構造分離: 22 件 + 機能拡張/docs: 5 件 + harness 衛生: 3 件 = **22:5:3 多軸分散**
+- 構造分離 paradigm 内訳: 機能分類軸 8 件 (Loop 87/88/89/90/91/92/93/97) + 純粋関数機能分離軸 2 件 (Loop 94/98) + cfg(macos) inline module 分離 1 件 (Loop 95) + その他 11 件 (Loop 69-86)
+- Loop 96 で K 軸 1 連続復帰 → Loop 97 機能分類軸復帰 → Loop 98 純粋関数機能分離軸 = paradigm pivot 達成 (3 連続防止 OK)
+
+## 品質状態 (Loop 98 完了時点)
+
+- cargo test --lib: **704 passed / 0 failed** (件数完全不変、本セッション 2 ループ共に move only)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: 本セッション frontend 触れず変更なし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## git 状態 (handoff 直前)
+
+- branch: main, ahead 405 (origin/main から先行、本セッション +5 commit 予定: refactor + chore + refactor + chore + SESSION SUMMARY)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-50) の commit:
+  1. `218a314` refactor(session): セッション列挙を session_commands_list.rs に抽出 (Loop 97)
+  2. `7897ccb` chore(agent-log): Loop 97 エントリ追記
+  3. `2a465b8` refactor(audio): リサンプリング軸を audio_resample.rs に抽出 (Loop 98)
+  4. `b617aaf` chore(agent-log): Loop 98 エントリ追記
+  5. `<HEAD>` chore(agent-log): mjc-main-20260505-50 SESSION SUMMARY (本エントリ)
+
+## 進行中セッション (handoff 直前)
+
+- mjc-main (canonical = 旧 mjc-main-20260505-50, handoff 直前)
+- mjc-main-20260505-50 (本セッション、間もなく handoff)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge: 本セッション中は確認できず (2 ループ完走 + handoff まで自律進行)
+
+---
