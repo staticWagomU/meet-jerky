@@ -28771,3 +28771,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - watchdog からの nudge は本セッション中ゼロ (2 ループ ~12 分でハンドオフ準備完了)
 
 
+
+---
+
+[mjc-main-20260505-31 Loop 62 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 5 歩 = TranscriptionLoopConfig caller 直接 import 化
+- transcription_panic_guard.rs L6 の `use crate::transcription::TranscriptionLoopConfig;` を `use crate::transcription_worker_loop::TranscriptionLoopConfig;` に書き換え
+- transcription_commands.rs L5 の `use crate::transcription::TranscriptionLoopConfig;` を `use crate::transcription_worker_loop::TranscriptionLoopConfig;` に書き換え
+- transcription.rs L29-33 (TranscriptionLoopConfig 互換 re-export) に `#[allow(unused_imports)]` 追加 (全 caller 直接 import 化のため unused lint 対応)
+- これにより transcription.rs 全 5 件の互換 re-export が allow 化 = Loop 63 で transcription.rs ファイル削除 + lib.rs `mod transcription;` 削除 + plan.md 100% 達成記念更新の準備完了
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration = Phase 6 第 5 歩 = 互換層段階的解体最終手前 + Loop 63 で削除工程に直接進める)
+- メイン批判判断: 候補 V を grep 実態確認 → panic_guard:6 + commands:5 の 2 ファイル / 2 use 文と確定 = handoff 予測通り XS 規模
+- variety pivot 軸 = struct/const + import refactor 軸 = Loop 59 → 60 → 61 → 62 で 4 連続 = sweep 警告 = ただし **Phase 6 timeline 完了優先 + Loop 63 で軸自体が消滅する exception 判断** = handoff 推奨パターン継承
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文を機械的に書き換え (実体は transcription_worker_loop.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- Loop 60-61 と同じく `#[allow(unused_imports)]` 追加で互換層維持 (Loop 63 = transcription.rs ファイル削除時に互換層全削除)
+- cargo fmt 適用: transcription_panic_guard.rs と transcription_commands.rs の use 文アルファベット順整列 (rustfmt 準拠)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- <COMMIT_HASH>
+
+---

@@ -30,4 +30,5 @@ pub use crate::transcription_manager::TranscriptionStateHandle;
 // TranscriptionLoopConfig (transcription_worker_loop.rs に分離、互換層として再エクスポート)
 // ─────────────────────────────────────────────
 
+#[allow(unused_imports)]
 pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;

@@ -2,12 +2,12 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tauri::Emitter;
 
-use crate::transcription::TranscriptionLoopConfig;
 use crate::transcription_manager::TranscriptionStateHandle;
 use crate::transcription_model_manager::ModelManager;
 use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
 use crate::transcription_traits::{StreamConfig, TranscriptionStream};
 use crate::transcription_types::{ModelInfo, TranscriptionSource};
+use crate::transcription_worker_loop::TranscriptionLoopConfig;
 
 /// 利用可能なモデル一覧を返す
 #[tauri::command]
