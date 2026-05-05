@@ -29972,3 +29972,129 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ---
 
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-37
+
+## 達成実績 (2 ループ完走 = 検知拡張 Q5 Resolved + session_manager_persist 抽出 = 「2 ループ + 早期 handoff」precedent 連続 33 セッション目達成)
+
+### Loop 74 = 検知拡張 Q5 Resolved 化 (commit `685f346` + chore `801d397` = ~3.5 分)
+- docs/architecture/detection-extension-plan.md Section 6 の Q5 行を「中 (Phase 1 前提) → 解決済 (下記参照)」に変更
+- Section 6 表の直後に「### Q5 解決結果 (mjc-main-20260505-37 Loop 74 調査)」を Resolved Block (~10 行) で挿入
+- 結論: MatchStrategy::WindowTitleContains 拡張による外部 API 影響なし
+- 根拠: WATCHED_BUNDLE_IDS は const flat、serde 対象は test 内の Vec<&str>、MatchStrategy enum は Serialize 未 derive
+- メイン批判判断 連続 26 セッション目達成: handoff Y1 の「Q5/Q7/Q8 コード完結」予測を grep で実態確認 → Q7/Q8 は plan 自身が「mdls 確認」記載 = 実機要件と判定 → Q5 のみ Resolved 化に範囲限定
+- AGENTS.md priority 2 直接寄与 + plan 継続 = 価値の連鎖
+- worker 自律 2-commit pattern 連続 15 ループ目
+
+### Loop 75 = session_manager.rs persist_if_configured 抽出 (commit `70c3582` + chore `8e51b0c` = ~3.5 分)
+- src-tauri/src/session_manager_persist.rs (新規 23 行) に persist_if_configured fn (本体 14 行 + doc 3 行) を抽出
+- src-tauri/src/lib.rs に `mod session_manager_persist;` を追加
+- src-tauri/src/session_manager.rs から ~17 行を削除 + use 文 2 箇所 (top-level + tests mod) 追加
+- session_manager.rs ~1263 行 → 1245 行 (-18 行) + standalone fn 0 件 = impl SessionManager method のみの構造美達成
+- メイン批判判断 連続 27 セッション目達成: handoff X1 の「caller 3 箇所」を grep で「実装 2 + tests 6 = 8 箇所」に修正、「分離価値薄い」警告を構造美価値 (persist 専門 module 化で意図表明) で反論
+- session_manager_types.rs (Loop 73) precedent 直接展開 + session_store_parse.rs (Loop 69) precedent 構造踏襲
+- 振る舞い不変 = 705 件 pass 件数不変 (件数増減ゼロ)
+- worker 自律 2-commit pattern 連続 16 ループ目
+
+## 大型 rust file 縮小実績 (handoff 候補 X 始動以降の累計 + 本セッション)
+
+- audio.rs: 1011 行 → 949 行 (-62 行) + audio_traits.rs (24 行) + audio_sample_helpers.rs (47 行)
+- session_store.rs: 1175 行 → 1133 行 (-42 行) + session_store_types.rs (19 行) + session_store_parse.rs (32 行)
+- elevenlabs_realtime.rs / openai_realtime.rs: 各 ~5 行ずつ削減 + realtime_audio_command.rs (新規 12 行) で AudioCommand 共通化 = DRY 達成
+- session_manager.rs: 1274 行 → 1263 行 (Loop 73) → **1245 行 (Loop 75) = -29 行** + session_manager_types.rs (17 行) + session_manager_persist.rs (23 行) = **本セッションで 5 file 目達成 + 構造美 (impl method のみ)**
+- 残 (Loop 76+ 候補):
+  - **X3 = session_store.rs render_session_markdown 抽出** (規模 SS、本体 30 行 + 依存 fn 2 件 `unix_secs_i64` / `io_invalid` は pub(crate) 化で残す方針推奨)
+  - elevenlabs+openai WS タスク本体共通化 (規模 M、shared module 設計判断要)
+  - audio.rs 残 helper: 抽出候補ほぼ無し (大型 stream builder + Tauri command surface のみ)
+
+## 検知拡張 plan 実装実績
+
+- Phase 1 = WATCHED_BUNDLE_IDS + MatchStrategy enum 拡張 = **完了** (mjc-main-20260505-36 Loop 72)
+- Q5 (serde 影響範囲) = **解決済** (本セッション Loop 74)
+- Q7/Q8 (Discord/Slack bundle ID) = 実機要件のため Open のまま据え置き
+- Phase 2 = window title pattern matching 拡張 = **未着手** (Open Questions Q1-Q2 の実機要件未解決)
+
+## 戦略転換の継承 (連続 26-27 セッション目達成)
+
+- メイン批判判断 連続 26+27 セッション目 = handoff の予測 / 状況記述を grep で実態確認 → 規模・件数誤りの修正 + 範囲限定判断
+- worker 完走 累計 173/173 → **175/175** (100% 維持、本セッション +2 件)
+- harness 衛生連続 30 → **31 セッション目** = canonical 移譲後 scripts/* M 表示再出現せず観測継続 = 「永続的解決」の根拠さらに強化
+- 「2 ループ + 早期 handoff」precedent 連続 32 → **33 セッション目達成**
+- ファイル参照型 handoff prompt precedent 連続 33 → **34 セッション目継承**
+- worker 自律 2-commit pattern 連続 14 → **16 ループ目達成** = 完全に安定 pattern 化
+- 大型 rust file 責務分離 = **5 file 目達成** (audio / session_store / realtime / session_manager_types / session_manager_persist)
+- 構造美達成 (本セッション初): session_manager.rs が impl SessionManager method のみの整理状態に
+- variety: 機能拡張軸 (Loop 72,74) と構造分離軸 (Loop 73,75) を交互配置 = 多 scope 多軸分散の理想的 pattern
+- コミット周期: Loop 74 = ~3.5 分 / Loop 75 = ~3.5 分 = 平均 ~3.5 分/loop = 目標 15 分以内大幅達成
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 26-27 セッション目)
+
+- Loop 74: handoff Y1 の「Q5/Q7/Q8 コード完結」予測 → grep で plan.md 自身が「mdls 確認」記載 = Q7/Q8 は実機要件と判定 → Q5 のみ Resolved 化に範囲限定
+- Loop 75: handoff X1 の「caller 3 箇所」「規模 ~10 行」予測 → grep で「実装 2 + tests 6 = 8 箇所、本体 14 行 + doc 3 行」と修正、「分離価値薄い」警告を構造美価値で反論
+- precedent: 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず grep で実態確認 → exception 判断 / 新候補発見 / scope 切替 / 範囲限定 / 件数修正」が **27 セッション連続で実証** (mjc-main-20260505-20 〜 -37)
+
+## 後継 (mjc-main-20260505-38) への引き継ぎ判断 (Loop 76 候補、優先順位順)
+
+### variety 規則の状態 (Loop 76 開始時点)
+
+直近 9 ループ: Loop 67 (session_store struct) → 68 (audio pure helper) → 69 (session_store pure fn) → 70 (realtime AudioCommand 共通化) → 71 (検知拡張 plan docs 新規) → 72 (検知拡張 Phase 1 rust impl) → 73 (session_manager struct extract) → 74 (検知拡張 Q5 docs Resolved) → 75 (session_manager fn extract)。
+- 軸 pattern: 構造分離 (67/68/69/70/73/75) + 機能拡張/docs (71/72/74) = 6:3 分散 (大型 file 責務分離が多めだが scope 多分散)
+- scope 内訳: session_store (2) + audio (1) + realtime (1) + detection (3) + session_manager (2) = 多 scope 分散
+- **Loop 76 = 機能拡張/docs 軸が 1 連続のみ → 構造分離軸続行も pivot も自由度高い、ただし「同じパターン 3 ループ続いたら 4 ループ目で variety pivot」規則は維持**
+
+### 候補 X (Loop 76 推奨, 大型 rust file 責務分離続行)
+
+#### X3. session_store.rs render_session_markdown 抽出 (規模 SS、推奨度高)
+- session_store.rs L42-72 の ~30 行 pure fn を session_store_render.rs (新規) に抽出
+- 依存: Session struct + markdown crate + FixedOffset + 同 file 内 `unix_secs_i64` (L74) / `io_invalid` (L79)
+- 推奨方針: render_session_markdown のみ抽出 + 依存 fn 2 件は pub(crate) 化で session_store.rs に残す = 最小変更
+- caller: write_session_markdown_to (L37) 1 箇所のみ + tests 5 件 (L410-470)
+- 新 file: session_store_render.rs (~35 行)
+- 規模 SS = 1 ループ完結期待 (~5-8 分)
+- AGENTS.md priority 1 寄与 = session_store.rs ~1133 行 → ~1100 行への段階的責務分離
+
+#### X4. elevenlabs+openai WS タスク本体共通化 Phase 1 (規模 M、shared module 設計判断要)
+- WS タスク (`async move { ... while let Some(cmd) = audio_rx.recv().await { ... } }`) の共通 module 化
+- 規模 M = 1 ループ困難 = Phase 1 = task entry skeleton 抽出のみに絞れば可能
+- 後 phase に分割推奨
+
+### 候補 Y (Loop 76 alternative, 検知拡張 Phase 2)
+
+#### Y2. 検知拡張 Phase 2 = window title pattern matching 実装 (規模 S-M、リスクあり)
+- WATCHED_BUNDLE_IDS に Slack/Discord 追加 + handle_detection 内で MatchStrategy::WindowTitleContains 経路を分岐実装
+- window title pattern (例: "Huddle"/"Stage") は plan.md の推測で書く = false negative/positive リスク
+- mitigation: false negative (検知漏れ) なら無害、false positive (誤検知) なら通知 spam
+- **Open Questions Q1/Q2 (実機 window title 取得) が未解決のまま実装 = 推奨度低**
+- 推奨: 実機確認結果を docs に追記してから Phase 2 着手 (現時点では着手不可と判定)
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ確認 = 主観性高警告
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注
+
+### 候補 H (継承、低優先): harness 衛生
+
+- 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 250+ untracked、ユーザー直伝指示があるまで保留)
+- AGENT_LOG.md ~30,000+ 行の archive 戦略 (未着手)
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+
+- cmake あり → cargo test 705 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 74/75 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中ゼロ (Loop 74-75 とも適切タイミングで自走)
