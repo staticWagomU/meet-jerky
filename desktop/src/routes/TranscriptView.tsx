@@ -47,6 +47,7 @@ import {
 } from "../utils/transcriptViewFormatters";
 import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
+import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import {
   buildLiveCaptionStatusFromLabels,
   isExternalTransmissionLabel,
@@ -515,22 +516,6 @@ function getExternalApiKeyStatusAriaLabel(
     return `${externalApiProvider} API キー: 登録済み。キー値は画面に再表示されません`;
   }
   return `${externalApiProvider} API キー: ${statusLabel}`;
-}
-
-function sanitizeAudioLevel(level: number): number {
-  if (!Number.isFinite(level)) {
-    return 0;
-  }
-  return Math.max(0, Math.min(1, level));
-}
-
-function getPopoverLevelBars(level: number): [number, number, number] {
-  const normalized = sanitizeAudioLevel(level);
-  return [
-    Math.max(0.45, normalized * 0.9),
-    Math.max(0.32, normalized * 0.65),
-    Math.max(0.5, normalized * 0.78),
-  ];
 }
 
 export function TranscriptView() {
