@@ -32412,3 +32412,17 @@ agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header
 worker 完走 2/2 = 累計 202/202 100%。
 
 ---
+
+[mjc-main-20260505-54 Loop 104 / 2026-05-05]
+worker: mjc-worker-openai-realtime-ws-task-loop104 (作業)
+範囲: src-tauri/src/openai_realtime.rs (mod ws_task block ~218 行削除 + REALTIME_SAMPLE_RATE const 1 行削除 + use alias 1 行追加) + src-tauri/src/openai_realtime_ws_task.rs (新規 ~220 行) + src-tauri/src/lib.rs (mod openai_realtime_ws_task; 1 行追加)
+内容: openai_realtime.rs L177-394 の mod ws_task block (RunParams struct + pub async fn run ~140 行 + pub(crate) fn handle_event ~47 行 + READER_FINALIZE_TIMEOUT const) を新 module openai_realtime_ws_task.rs に inline module 全体抽出。L69 REALTIME_SAMPLE_RATE const も新 file に移動 (ws_task 内のみで使用、外部参照ゼロ)。元 file 冒頭に use crate::openai_realtime_ws_task as ws_task; 追加で production L94 caller + tests 33 件 (handle_event 参照 22 箇所) 全て無変更。lib.rs に mod openai_realtime_ws_task; 追加 (alphabetical 順 = openai_realtime と realtime_audio_command の間)。元 file struct + impl 共通部 (L1-176) と mod tests (L396-1018) は完全不変。大型 rust file 責務分離 27 file 目 = realtime engine 5 軸目 (realtime_audio_command + realtime_audio_helpers + realtime_error_helpers + realtime_reader_task + realtime_ws_helpers Loop 102 + openai_realtime_ws_task Loop 104) = scope depth 軸 4 件確立 (settings + transcription_commands + realtime engine) = harness 衛生軸 (Loop 103) からの pivot 達成 = inline module 全体抽出 paradigm 2 件目 (apple_speech_macos Loop 95 cfg(macos) 版に対し本 Loop は cfg なし sub-paradigm)。openai_realtime.rs 1018 → ~794 行 (-22%)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 830611ce6eb71f6338197d9cbb703f7712072683 refactor(realtime): mod ws_task を openai_realtime_ws_task.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = realtime engine scope の 5 軸目分離 = WebSocket I/O 詳細の専用 file 化 = openai_realtime.rs を struct/impl + tests のみに簡素化)
+
+---
