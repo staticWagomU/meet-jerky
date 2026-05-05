@@ -33684,3 +33684,15 @@ commit: 7541e36
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-73 Loop 149 / 2026-05-06]
+worker: mjc-worker-loop149-meeting-start-event-consolidate (作業)
+範囲: src/utils/meetingStartRequest.ts (+1 行 = export 追加) + src/App.tsx (-1 行 + import 追加) + src/components/MeetingDetectedBanner.tsx (-1 行 + import 追加) + src/routes/TranscriptView.tsx (-1 行 + import 追加) + AGENT_LOG.md (末尾追記)
+内容: MEETING_START_REQUEST_EVENT 3 file 重複定義 (App.tsx L8 + MeetingDetectedBanner.tsx L27 + TranscriptView.tsx L109) を meetingStartRequest.ts に集約 + DRY 違反解消。frontend 軸 19 件目 = **重複削除 + 既存 file 拡張軸 paradigm 3 件目** (Loop 145 = AudioLevelMeter sanitize / Loop 147 = LiveCaptionWindow TRACKS+AudioSource に続く 3 件目)。同 entity (meeting start request) を理由に既存 file 拡張軸採用 = liveCaptionStatus.ts precedent (event + localStorage 共存) と同形。scope 35 軸維持 (新 file なし)。AGENTS.md priority 1 寄与 (ハーネスを自律的に整える + DRY 違反解消)。alternation pattern 38 連続成功維持 (K(148) → frontend(149))。
+変更ファイル: src/utils/meetingStartRequest.ts, src/App.tsx, src/components/MeetingDetectedBanner.tsx, src/routes/TranscriptView.tsx
+検証: npm run build ✓ (tsc + vite build), agent-verify.sh OK (frontend-only 変更で cargo 系 skip)
+commit: a5e220b
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
