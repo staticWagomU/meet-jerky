@@ -5,6 +5,7 @@ mod app_detection_inactive_decision;
 mod app_detection_meeting_classifier;
 mod app_detection_notification;
 mod app_detection_teams;
+mod app_detection_throttle_key;
 mod app_detection_url_helpers;
 mod app_detection_webex;
 mod app_detection_whereby;
