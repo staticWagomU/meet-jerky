@@ -33623,3 +33623,16 @@ commit: fb1bfc1
 - 本セッション平均 ~3.5 分/ループ (Loop 144 = ~4 分含む救済時間 + Loop 145 = ~3 分) = 前任 mjc-main-20260505-70 の ~3 分/ループ より僅か遅め = Loop 144 worker fault 救済時間が含まれるため
 
 後継 mjc-main-20260505-72 への 2-3 ループ完走推奨。**重複削除 + 既存 file 拡張軸 paradigm = 新 paradigm Loop 145 で 1 件目確立 = 後継 Loop 146+ も同 paradigm 採用可能 (= 重複候補が他 file にあれば DRY 統合)**。Loop 146 推奨候補 = K 軸 (alternation 36 連続維持) / Loop 147 候補 = R7 別 frontend file 純粋関数 grep 探索 (= ModelSelector / TranscriptDisplay / SessionList の内部 helper 候補) or R7' 重複候補 grep 探索 (本 paradigm 拡張) or R8 rust 軸復帰。詳細は docs/handoff/mjc-main-20260505-72.txt 参照。
+
+[mjc-main-20260505-72 Loop 146 / 2026-05-06]
+worker: mjc-worker-loop146-archive-plan-stats-update-26 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 145 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144 precedent の 25 件目。Loop 143 → Loop 145 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-71) で +51 行 (33,574 → 33,625)、平均 ~25.5 行/loop。Loop 143 観測値 (~23.5 行/loop) と比較して微増 (~+8%) = **SS 1 件 + 説明軽量化パターンの 9 連続観測達成** (Loop 125 = ~22.5 / Loop 129 = ~23.5 / Loop 131 = ~24.5 / Loop 133 = ~24.5 / Loop 137 = ~24 / Loop 139 = ~24.5 / Loop 141 = ~24 / Loop 143 = ~23.5 / Loop 145 = ~25.5) = **階層化 paradigm 完全成熟期で 9 連続値域 ~22-26 行/loop に完全収束**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137/139/141/143/145 の **11 件連続観測** = **frontend 軸軽量化 paradigm の 11 度目の観測**。alternation pattern 35 連続成功維持 (frontend(143) → K(144) → frontend(145) → K(146))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 3f27f1d
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
