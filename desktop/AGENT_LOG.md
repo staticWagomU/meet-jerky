@@ -33537,3 +33537,15 @@ commit: c45f53c
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-70 Loop 143 / 2026-05-06]
+worker: mjc-worker-loop143-meeting-start-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 1 件削除 + import 追加 + TranscriptionEngineType 不要 import 削除) + src/utils/meetingStartHelpers.ts (新規 ~48 行 = type import 1 行 + value import 1 行 + export 1 関数)
+内容: TranscriptView.tsx L133-L175 の getMeetingStartBlockedReason を新 file utils/meetingStartHelpers.ts に抽出。frontend 軸 16 件目 = 純粋関数機能分離軸 frontend 版 13 件目 = scope 35 軸目開拓 = 大型 frontend file 責務分離 48 file 目 = R6 段階的分割 10 件目 = **R6 完結マイルストーン** (TranscriptView.tsx 純粋関数 26 件 + const 1 すべて抽出完了 = audio level 2 + permission 2 + track ARIA 2 + engine 2 + AI Transmission 3 + Audio Source 4 + Engine Status 3 + External API Key 3 + Transcription Source 4 + const 1 + Meeting Start 1)。callsite 1 件 (L1079) は import 追加のみで参照解決。alternation pattern 33 連続維持 (K(142) → frontend(143))。メイン批判判断 = handoff 主張「getMeetingStartBlockedReason L249」を grep で批判的検証 → 実際は **L133** (-116 行ずれ = Loop 141 -119 行縮小により上方移動) + 既存 meetingDetection.ts / meetingDetectedBannerHelpers.ts / meetingStartRequest.ts / transcriptionSourceHelpers.ts との責務階層精査で **異 entity / 異 component / 異 tier 判定** = 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135/137/139/141 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は transcriptionSourceHelpers.ts から APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON を import = **utils 内 cross-import paradigm 6 件目に拡張** (Loop 141 paradigm 進化継続)。TranscriptView.tsx L97 の APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON import は 5 callsite (L606/749/829/897/956) が依然使用のため維持。TranscriptionEngineType は抽出後 TranscriptView.tsx 内で不使用となったため import からも削除 (tsc error TS6196 を修正)。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/meetingStartHelpers.ts
+検証: npm run build OK (tsc + vite build, 1932 modules), bash scripts/agent-verify.sh OK
+commit: ed1ef0f
+依存関係追加: なし (transcriptionSourceHelpers.ts + types/ への import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
