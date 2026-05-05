@@ -29938,3 +29938,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ---
 
+[mjc-main-20260505-37 Loop 75 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_manager_persist.rs (新規 23 行) に persist_if_configured fn (本体 14 行 + doc 3 行) を抽出
+- src-tauri/src/lib.rs に `mod session_manager_persist;` 追加 (session_manager と session_manager_types の間 = alphabetical order)
+- src-tauri/src/session_manager.rs から L146-L162 (~17 行) を削除 + `use crate::session_manager_persist::persist_if_configured;` を追加 (top-level use + tests mod 内)
+- session_manager.rs の tests mod 内に `use crate::session_manager_persist::persist_if_configured;` を追加 (caller 6 件のテストが見えるよう)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_manager.rs 大型ファイル責務分離、5 file 目)
+- session_manager_types.rs (Loop 73) precedent 直接展開 + session_store_parse.rs (Loop 69) precedent 構造踏襲 = persist 専門 module 化で意図表明
+- session_manager.rs 整理: standalone fn が persist_if_configured 1 件のみだったのが 0 件になり、impl SessionManager method のみの構造美達成
+- 振る舞い不変 = 705 件 pass 件数不変
+
+## How (Tidy First, behavior-preserving)
+- visibility: private → `pub(crate)` 昇格 (session_manager.rs / tests から call 可能化)
+- 依存: ActiveSession (session_manager_types 既抽出) + session_store::write_session_markdown_to (既 pub) = 新 pub 化不要
+- caller (実装 2 + tests 6 = 8 箇所): use 文経由で名前解決 = 呼び出し側 fn 不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_manager.rs から `^fn ` を grep: 0 件 (すべて impl method 内に)
+- session_manager_persist.rs から `pub(crate) fn persist_if_configured` を grep: 1 件
+- trailing whitespace: なし
+
+## commit
+- 70c3582
+
+---
+
