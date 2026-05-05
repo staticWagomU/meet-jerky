@@ -25,6 +25,7 @@ mod realtime_audio_helpers;
 mod realtime_error_helpers;
 mod realtime_reader_task;
 mod secret_store;
+mod secret_store_commands;
 mod session;
 mod session_commands;
 mod session_manager;
@@ -386,12 +387,12 @@ pub fn run() {
             settings::select_output_directory,
             settings_permission::check_microphone_permission,
             settings_permission::check_screen_recording_permission,
-            secret_store::set_openai_api_key,
-            secret_store::clear_openai_api_key,
-            secret_store::has_openai_api_key,
-            secret_store::set_elevenlabs_api_key,
-            secret_store::clear_elevenlabs_api_key,
-            secret_store::has_elevenlabs_api_key,
+            secret_store_commands::set_openai_api_key,
+            secret_store_commands::clear_openai_api_key,
+            secret_store_commands::has_openai_api_key,
+            secret_store_commands::set_elevenlabs_api_key,
+            secret_store_commands::clear_elevenlabs_api_key,
+            secret_store_commands::has_elevenlabs_api_key,
             session_commands::start_session,
             session_commands::finalize_and_save_session,
             session_commands::discard_session,
