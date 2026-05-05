@@ -32582,3 +32582,14 @@ commits:
 AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 18 軸目開拓)
 
 ---
+[mjc-main-20260505-56 Loop 109 / 2026-05-05]
+worker: mjc-worker-loop109-archive-plan-stats-update-7 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 8 件目追記、~3 行)
+内容: Loop 108 完了時点 (32,584 行) の更新観測を Section 2.3 末尾に追記。Loop 105 → Loop 108 で +95 行 / 平均 ~32 行/loop。Loop 105 観測 (~75 行/loop) と比較して ~57% 減 = paradigm pivot 多軸 (K 軸 + frontend 軸 純粋関数機能分離軸 frontend 版 2 連続 = TranscriptView.tsx + LiveCaptionWindow.tsx) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 2 件 (refactor は AGENT_LOG.md 0 行寄与) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 108 frontend 軸 → Loop 109 K 軸 = frontend 軸 3 連続警告境界回避 + paradigm pivot 達成)、Loop 79/81/86/95/98/102/106 precedent 8 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- d6de5a2 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 108 完了時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
