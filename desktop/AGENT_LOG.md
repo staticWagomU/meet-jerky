@@ -27253,3 +27253,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ---
 
+[mjc-main-20260505-23 Loop 46 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-20 Loop 38 + 40 → mjc-main-20260505-22 Loop 42-45
+  - 累計削減行数: 749 行 (75.0%) → 649 行 (78.4%) = 75% 里程標突破からさらに +3.4pt 進展
+  - 残存課題セクション: Loop 42 (沈黙検知 tests -61 行) + Loop 44 (沈黙検知 const -10 行) + Loop 45 (WhisperStream tests -29 行) 反映
+  - app_detection.rs 関連: Microsoft Teams 抽出 ✅ 完了 (Loop 43 = 6bf1438) サブセクション新設 + L155 文章更新 (サービス別抽出シリーズ 5 件全完了里程標)
+  - 沈黙検知三位一体 locality ✅ 完了 サブセクション新設 (Loop 42 + 44 統合)
+  - WhisperStream tests 移動 ✅ 完了 (Loop 45 = 2a7190b) サブセクション新設
+  - 末尾参考: 749 行 (75.0%) → 649 行 (78.4%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-21 Loop 42 + 43 + mjc-main-20260505-22 Loop 44 + 45 の 4 件を 1 ループで一括反映
+- variety pivot = docs 軸 = Loop 41 から 5 ループ間隔 = 許容範囲 (Loop 30/34/37/39/41/46 = 4-3-2-2-5 ループ間隔の precedent)
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 既存サブセクション (Webex / Whereby / GoToMeeting / Zoom / TranscriptionLoopConfig / transcription_error_payload tests / transcription_types tests) はすべて保全
+- 最新情報は別セクションで追記する方式 (Loop 30 / 34 / 37 / 41 = commit 32885b5 / ecbf1af / d6626ed / 322b38d と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+- transcription.rs 649 行 wc -l 実数確認済
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+
+---
