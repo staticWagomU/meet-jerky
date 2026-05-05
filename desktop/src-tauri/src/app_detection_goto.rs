@@ -1,4 +1,4 @@
-use crate::app_detection::is_valid_dns_label;
+use crate::app_detection_url_helpers::is_valid_dns_label;
 
 const GOTO_NON_ROOM_PATHS: &[&str] = &[
     "about", "pricing", "blog", "login", "signup", "help", "terms", "privacy", "contact",

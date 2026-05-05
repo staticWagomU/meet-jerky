@@ -1,4 +1,4 @@
-use crate::app_detection::{has_single_non_empty_segment, is_valid_dns_label};
+use crate::app_detection_url_helpers::{has_single_non_empty_segment, is_valid_dns_label};
 
 pub(crate) fn is_zoom_host(host: &str) -> bool {
     if host == "zoom.us" || host == "zoomgov.com" {

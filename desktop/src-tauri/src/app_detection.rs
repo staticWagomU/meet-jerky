@@ -25,6 +25,8 @@ use parking_lot::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
+use crate::app_detection_url_helpers::has_single_non_empty_segment;
+
 // 以下の定数・関数は macOS の Swift bridge から呼ばれる。
 // Linux 等のビルドで dead_code 警告にならないように cfg_attr で抑制する。
 
@@ -711,21 +713,6 @@ fn validate_port(port: &str) -> Option<()> {
     Some(())
 }
 
-pub(crate) fn is_valid_dns_label(label: &str) -> bool {
-    let bytes = label.as_bytes();
-    !bytes.is_empty()
-        && bytes.len() <= 63
-        && bytes
-            .iter()
-            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
-        && bytes
-            .first()
-            .is_some_and(|byte| byte.is_ascii_alphanumeric())
-        && bytes
-            .last()
-            .is_some_and(|byte| byte.is_ascii_alphanumeric())
-}
-
 fn is_google_meet_url(host: &str, path: &str) -> bool {
     host == "meet.google.com"
         && (is_google_meet_code_path(path)
@@ -754,11 +741,6 @@ fn is_google_meet_code_path(path: &str) -> bool {
 
 fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
     value.len() == len && value.bytes().all(|byte: u8| byte.is_ascii_lowercase())
-}
-
-pub(crate) fn has_single_non_empty_segment(value: &str) -> bool {
-    let value = value.strip_suffix('/').unwrap_or(value);
-    !value.is_empty() && !value.contains('/')
 }
 
 pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool {

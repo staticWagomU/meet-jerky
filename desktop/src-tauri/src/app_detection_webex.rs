@@ -1,6 +1,5 @@
-use crate::app_detection::{
-    has_single_non_empty_segment, is_valid_dns_label, query_has_non_empty_param,
-};
+use crate::app_detection::query_has_non_empty_param;
+use crate::app_detection_url_helpers::{has_single_non_empty_segment, is_valid_dns_label};
 
 pub(crate) fn is_webex_host(host: &str) -> bool {
     if host == "webex.com" {

@@ -2,7 +2,7 @@
 //!
 //! `app_detection.rs` から Loop 43 で抽出 (Webex/Whereby/GoToMeeting/Zoom precedent 同パターン)。
 
-use crate::app_detection::has_single_non_empty_segment;
+use crate::app_detection_url_helpers::has_single_non_empty_segment;
 
 /// Microsoft Teams 会議 URL を判定する。
 ///

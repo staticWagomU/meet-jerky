@@ -1,6 +1,6 @@
 //! Whereby ミーティング URL 検知ロジック (mjc-main-20260505-16 Loop 31 で抽出)。
 
-use crate::app_detection::is_valid_dns_label;
+use crate::app_detection_url_helpers::is_valid_dns_label;
 
 const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
     "about",
