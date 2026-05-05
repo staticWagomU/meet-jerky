@@ -1,6 +1,7 @@
 mod app_detection;
 mod app_detection_google_meet;
 mod app_detection_goto;
+mod app_detection_notification;
 mod app_detection_teams;
 mod app_detection_url_helpers;
 mod app_detection_webex;
