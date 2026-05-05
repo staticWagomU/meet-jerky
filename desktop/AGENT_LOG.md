@@ -33986,3 +33986,10 @@ worker: mjc-worker-loop164-audio-command-test-consolidate (作業)
 verify: scripts/agent-verify.sh 全項目 OK
 意義: 既存 file 拡張軸 paradigm 8 件目達成 (Loop 145/147/149/153/157/159/162 の続編 = 7 件目から 8 件目へ拡張) + 重複候補 grep 探索 paradigm 8 件目達成 = test logic 重複 (test fn 中身完全一致) を helper 化する paradigm 系統樹拡張 + Loop 159/162 paradigm の安定性更なる実証 (3 件目達成) + DRY 違反解消 + worker 自律 2-commit pattern 連続 20 ループ目達成 = 節目 20 件突破 + alternation pivot 3 → 4 加速。
 ---
+[mjc-main-20260505-81 Loop 165 / 2026-05-06]
+worker: mjc-worker-loop165-archive-plan-stats-update-36 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 162 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 164 完了時点の更新観測 36 件目を追記。Loop 162 → Loop 164 で +22 行 (33,966 → 33,988), 平均 ~11 行/loop = Loop 163 観測値 (~11 行/loop) 完全一致 = 軽量化階層中央値水準 ~11 行/loop の 2 連続観測達成 = paradigm 完全実証期入り + rust 軸軽量化 paradigm 5 連続観測 (Loop 155/157/159/162/164) + paradigm 系統樹拡張観測 (Loop 159 jst() fn 集約 → Loop 162 list_md_files() fn 集約 → Loop 164 audio_command_* test logic 集約 = fn 重複 → test 内容重複) + alternation pivot 加速 (K'(161) → rust(162) → K(163) → rust(164) → K(165) = 1 → 2 → 3 → 4 → 5).
+検証: agent-verify.sh = OK (docs 単独 skip 判定).
+意義: K 軸 precedent 36 件目達成 = 節目 30 件突破後 6 件目継続 + 軽量化階層中央値水準 ~11 行/loop の 2 連続観測達成 = paradigm 完全実証期入り + paradigm 系統樹拡張観測 (fn 重複 → test 内容重複) + worker 自律 2-commit pattern 連続 21 ループ目達成 = 節目 21 件突破継続.
+---
