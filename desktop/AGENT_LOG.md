@@ -33175,3 +33175,15 @@ commit: 633e558 docs(architecture): agent-log-archive-plan.md Section 2.3 に Lo
 後継 mjc-main-20260505-64 への 2-3 ループ完走推奨。最有力候補 = R6 (TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = frontend 軸 7 件目 = scope 26 軸目候補 = scope depth 警告境界 reset 済 = alternation 17 連続維持) = 規模 SS-S。詳細は docs/handoff/mjc-main-20260505-64.txt 参照。
 
 ---
+[mjc-main-20260505-64 Loop 125 / 2026-05-06]
+worker: mjc-worker-loop125-transcript-view-audio-level-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (-15 行 = 2 関数削除 + import 1 行追加 = 実質 -14 行) + src/utils/audioLevelHelpers.ts (新規 ~17 行 = export 2 関数)
+内容: TranscriptView.tsx L520-534 の sanitizeAudioLevel + getPopoverLevelBars を新 file utils/audioLevelHelpers.ts に抽出。frontend 軸 7 件目 = 純粋関数機能分離軸 frontend 版 4 件目 = scope 26 軸目開拓 = 大型 frontend file 責務分離 39 file 目。callsite 5 件 (L735 + L1511 + L1514 + L1693 + L1694) は import 追加のみで参照解決。alternation pattern 17 連続成功維持 (K(124) → frontend(125))。メイン批判判断 = 既存 utils/transcriptViewFormatters.ts (string/time formatter) と utils/audioLevelPayload.ts (Tauri event payload) との責務階層精査で **異階層 = 新 file 作成軸採用** = Loop 119/121/123 教訓継承 (paradigm 反復 < 責務階層精査)。AudioLevelMeter.tsx の sanitizeAudioLevelForDisplay (clamp のみ) と TranscriptView 版 sanitizeAudioLevel (Number.isFinite チェック付き) は仕様微妙に異なるため統合せず別関数として残す。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/audioLevelHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: ec6fc56 refactor(frontend): TranscriptView の audio level helpers を utils/audioLevelHelpers.ts に抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: メイン側で SESSION SUMMARY 末尾追記 chore commit を予定
+
+---
