@@ -30509,3 +30509,56 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - watchdog からの nudge は本セッション中 1 回 (handoff 直後の Loop 78 待機中、適切タイミングで自走中の確認 = 影響なし)
 
 ---
+
+[mjc-main-20260505-40 Loop 80 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/realtime_audio_helpers.rs (新規) を作成し、以下 2 fn を pub(crate) として配置:
+  - resample_block fn (26 行、両 file の `mod ws_task` 内重複定義から統合)
+  - float_to_pcm16 fn (9 行、両 file の `mod ws_task` 内重複定義から統合)
+- `#[cfg(test)] mod tests` 内に統合 test 2 件配置:
+  - float_to_pcm16_handles_full_range_and_clamping (両 file 同名 test を 1 件に統合)
+  - float_to_pcm16_empty_input_yields_empty_output (openai_realtime.rs から移植)
+- src-tauri/src/lib.rs に `mod realtime_audio_helpers;` を `mod realtime_audio_command;` の直後 (alphabetical) に追加
+- src-tauri/src/elevenlabs_realtime.rs:
+  - `mod ws_task` 内 use 文に `use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};` 追加
+  - `use rubato::{Resampler, SincFixedIn};` → `use rubato::SincFixedIn;` (Resampler トレイトは resample_block 内でのみ使用、新 file へ移動)
+  - L437-462 fn resample_block 削除
+  - L464-472 pub(crate) fn float_to_pcm16 削除
+  - mod tests 内 float_to_pcm16_handles_full_range_and_clamping test 削除
+- src-tauri/src/openai_realtime.rs:
+  - `mod ws_task` 内 use 文に同 use 追加
+  - `use rubato::{Resampler, SincFixedIn};` → `use rubato::SincFixedIn;` (同上)
+  - L426-451 fn resample_block 削除
+  - L453-461 pub(crate) fn float_to_pcm16 削除
+  - mod tests 内 float_to_pcm16_handles_full_range_and_clamping test 削除
+  - mod tests 内 float_to_pcm16_empty_input_yields_empty_output test 削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (重複コード削減 = single source of truth 化)
+- Loop 70 の `realtime_audio_command.rs` (12 行 AudioCommand 共通化) の自然な続編 = 同 helper module 群の段階的拡張
+- 大型 rust file 責務分離 10 file 目達成
+- 両 file の WS protocol 差異が大きい中、resample + PCM16 変換は protocol 非依存 = 共通化スコープとして適切
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は両 file の `mod ws_task` 内の同一実装を grep + Read 精読で確認済 (mjc-main-20260505-40 が事前検証)
+- visibility: 両 file 内で `fn` (private) / `pub(crate) fn` → 新 file で `pub(crate) fn` 昇格 (cross-mod use 可能化)
+- 振る舞い不変 = test 件数 705 → 704 は重複 test 1 件統合のためで動作は完全に同一
+- caller 側の use 文位置: 既存の use ブロック内に挿入 (alphabetical 順整合、`r < t` = crate::realtime < crate::transcription)
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (705 から重複 test 1 件統合により -1)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK (openai_realtime.rs の mod ws_task 末尾空行を fmt 指摘で修正済)
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `fn resample_block` を grep: 0 件
+- openai_realtime.rs から `fn resample_block` を grep: 0 件
+- realtime_audio_helpers.rs から `pub(crate) fn resample_block` を grep: 1 件 (L3)
+- realtime_audio_helpers.rs から `pub(crate) fn float_to_pcm16` を grep: 1 件 (L30)
+- trailing whitespace: なし
+
+## commit
+- 4e2a49d125c6fb47e0a5d001ba0c2178ed9279f8
+
+---
