@@ -32568,3 +32568,17 @@ AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 17 軸目
 
 worker 完走 2/2 = 累計 206/206 100%。
 
+
+---
+
+[mjc-main-20260505-56 Loop 108 / 2026-05-05]
+worker: mjc-worker-loop108-live-caption-track-helpers-extract (作業)
+範囲: src/components/LiveCaptionWindow.tsx (純粋関数 5 件 + 関連 type 2 件削除 + import 1 行追加, ~63 行削減) + src/utils/liveCaptionTrackHelpers.ts (新規 ~85 行)
+内容: LiveCaptionWindow.tsx L42-127 の純粋関数 helpers 5 件 (createEmptyLatestBySource + getSpeakerLabel + getSpeakerClassName + getTrackStateLabel + getTrackCaptureState + getVisibleTrackSummary) + 関連 type 2 件 (LatestBySource + TrackCaptureState) を新 module utils/liveCaptionTrackHelpers.ts に抽出。caller (同 file 内 12 箇所) は import 1 行追加 + 既存呼び出しは無変更。TrackMeta type + TRACKS const + hideLiveCaptionOverlayWindow + message constants は LiveCaptionWindow.tsx 内に残置 (component 密結合)。frontend 軸 2 件目 = 大型 frontend file 責務分離 30 file 目 = scope 18 軸目開拓 (LiveCaptionWindow component = 異 file = scope 多様性継続) = 純粋関数機能分離軸 frontend 版 paradigm 継続 (Loop 107 utils/transcriptViewFormatters.ts と同 paradigm = continuity)。LiveCaptionWindow.tsx は 580 → ~517 行 (~10.9% 削減)。TranscriptDisplay.tsx に同名 getSpeakerLabel が別 signature で存在するため、新 file 名は LiveCaption 専用 namespace 明示の liveCaptionTrackHelpers.ts を採用 (共通化リスク回避設計)。メイン批判判断 = handoff 「最有力推奨 X2 = SettingsView.tsx」をトップレベル純粋関数なし判定で SKIP し、J' = LiveCaptionWindow.tsx を grep + Read 精査で 5 純粋関数発掘して採用 = 連続 51 セッション目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)。npm run build 全項目 OK = tsc 型チェック OK + vite build OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 9d898fc refactor(frontend): LiveCaptionWindow 純粋関数 helpers + type を utils/liveCaptionTrackHelpers.ts に抽出
+AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 18 軸目開拓)
+
+---
