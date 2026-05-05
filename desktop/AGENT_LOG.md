@@ -32830,3 +32830,53 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-59 (canonical mjc-main)
+
+本セッションは旧 mjc-main (= mjc-main-20260505-58 = canonical mjc-main) からの handoff を受けて起動。前任者の handoff 推奨候補 X1 (MeetingDetectedBanner.tsx 純粋関数抽出) を grep + Read で批判的精査して採用 = メイン批判判断 連続 54 セッション目達成 + 2 ループ完走 (Loop 114 + Loop 115) + 通常 cadence handoff (mjc-main-20260505-60 へ) を実施。
+
+worker 完走 2/2 = 累計 214/214 100%。
+
+実績:
+- Loop 114 = frontend 軸 5 件目 = MeetingDetectedBanner.tsx → utils/meetingDetectedBannerHelpers.ts = 4 純粋関数抽出 (getMeetingDetectedDisplayName + getMeetingDetectedSourceLabel + getMeetingDetectedHostLabel + getMeetingDetectedBannerDetail) = -52 行 (526 → 474) = 純粋関数機能分離軸 frontend 版 continuity = K 軸 (Loop 113) を挟んだので軸 reset = 警告境界回避 + 大型 frontend file 責務分離 33 file 目 + scope 21 軸目開拓 + worker ~3-4 分完走 (worker prompt 167 行)
+  - メイン批判判断: handoff 推奨候補 X1 を grep + Read 精査で「外部 caller ゼロ + 純粋関数 4 件 + 副作用ある readPromptLiveCaptionStatus L40 は除外 + 規模 SS 補正」確認手順で採用
+  - 副次発見: handoff サマリ X2 SessionList.tsx + J' SettingsView.tsx の path 誤認 (handoff サマリは src/components/ と記載していたが、実際は src/routes/ 配下) を grep で発見 = メイン批判判断の精度実証
+- Loop 115 = K 軸復帰 = harness 衛生軸 = docs/architecture/agent-log-archive-plan.md Section 2.3 観測追記 11 件目 = +58 行 / 平均 ~29 行/loop (Loop 112 観測 ~47 行/loop と比較して ~38% 減) = SUMMARY 軽量化が支配的に寄与 = paradigm pivot 達成 + variety 規則 alternation pattern 完璧継続 (K(109) → frontend(110) → K(111) → frontend(112) → K(113) → frontend(114) → K(115) = 完璧 7 連続)
+
+達成:
+- 累計 frontend 軸 = 5 件 (TranscriptView Loop 107 + LiveCaptionWindow Loop 108 + TranscriptDisplay Loop 110 + ModelSelector Loop 112 + MeetingDetectedBanner Loop 114) = 異 file 拡張 paradigm 5 連続成熟 + scope 多様性両立
+- 衝突回避設計 paradigm 5 件目確立 = file 専用 namespace `meetingDetectedBannerHelpers.ts` (前 4 件 = liveCaptionTrackHelpers / transcriptDisplayHelpers / transcriptViewFormatters / modelSelectorHelpers)
+- メイン批判判断 連続 54 セッション目達成 (handoff 推奨候補の grep 精査 + handoff サマリ誤情報 2 件発見)
+- worker 自律 2-commit pattern 連続 55 ループ目達成 (worker は refactor/docs commit hash を実 hash 直接書き、chore commit hash は意図的に書かない paradigm 完全安定)
+- harness 衛生連続 54 セッション目達成 (canonical 移譲後 scripts/* M 表示再出現せず観測継続)
+- ファイル参照型 handoff prompt 連続 55 セッション目達成 (本 SUMMARY 後 mjc-main-20260505-60 へ handoff 起動 = 連続 56 セッション目)
+- AGENT_LOG.md = 32,821 行 (本 SUMMARY 追記前) → 本 SUMMARY 追記後 ~32,860 行見込み (mjc-main-20260505-58 SUMMARY 比して軽量化継続)
+- AGENT_LOG.md archive plan Section 2.3 観測追記 11 件累積 (Loop 79/81/86/95/98/102/106/109/111/113/115)
+
+variety 規則の状態 (本セッション完了時点):
+- 直近 30 ループ (Loop 86-115): 構造分離 26 件 (Loop 107/108/110/112/114 frontend 含む) + 機能拡張/docs 3 件 + harness 衛生 10 件 (Loop 113/115 含む) = 26:3:10 多軸分散
+- scope 内訳: 21 scope 分散 (rust 16 + frontend 5)
+- paradigm pivot: alternation pattern 完璧 7 連続 (K → frontend → K → frontend → K → frontend → K)
+
+後継 (mjc-main-20260505-60) への引き継ぎ:
+- Loop 116 推奨候補 X1 = SessionList.tsx (`src/routes/`, 700 行) 純粋関数 13 件抽出 = frontend 軸 6 件目 + scope 22 軸目開拓 = 規模 S 想定 ~10-15 分完走 (注: 6 連続 strict warning 注意、handoff prompt で詳細精査手順付与)
+- 代替候補 R = cloud_whisper.rs (778 行) 純粋関数 6 件抽出 = rust 軸復帰 = paradigm 大幅 pivot
+- 代替候補 X3 = TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = scope depth 警告 6 件目
+- 代替候補 J' = SettingsView.tsx (`src/routes/`, 2010 行) 内部 component 内 helper 精査 = scope 22 軸目変種
+- 候補 K = K 軸 1 ループ間隔のみ = 2 連続境界 SKIP 推奨
+- handoff 文書: docs/handoff/mjc-main-20260505-60.txt (本文) + docs/handoff/mjc-main-20260505-60-launch.txt (起動時 prompt = ファイル参照型 = 短縮)
+
+本セッション commit (5 件):
+- b6c0341 refactor(frontend): MeetingDetectedBanner 純粋関数 helpers を utils/meetingDetectedBannerHelpers.ts に抽出 (Loop 114)
+- dc50337 chore(agent-log): mjc-main-20260505-59 Loop 114 = utils/meetingDetectedBannerHelpers.ts 抽出 (構造分離 33 file 目, frontend 軸 5 件目 = scope 21 軸目開拓) のエントリ追記
+- 34f395f docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 114 完了時点の更新観測追記 (Loop 115)
+- 49c1a7d chore(agent-log): mjc-main-20260505-59 Loop 115 = agent-log-archive-plan.md Section 2.3 更新観測追記 のエントリ追記
+- (本 SUMMARY commit = 末尾)
+
+検証状態 (handoff 直前):
+- cargo test (lib): 704 passed / 0 失敗 (件数完全不変、本セッション rust 触れていないため Loop 105 観測値のまま)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- npm run build: ✓ built (vite v7.3.2)
+- bash -n scripts/claude-agent-*.sh: OK
+
+---
