@@ -31919,3 +31919,17 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = session_commands 軸の機能境界分離)
 
 ---
+
+[mjc-main-20260505-50 Loop 98 / 2026-05-05]
+worker: mjc-worker-audio-resample-loop98 (作業)
+範囲: src-tauri/src/audio_utils.rs (リサンプリング軸 production ~88 行削除 + test 4 件削除 + rubato use 削除) + src-tauri/src/audio_resample.rs (新規 141 行) + src-tauri/src/transcription_whisper_stream.rs (use 文 1 行修正) + src-tauri/src/lib.rs (mod 1 行追加)
+内容: audio_utils.rs L21-108 のリサンプリング軸 (RESAMPLE_CHUNK_SIZE + sinc_params + #[allow(dead_code)] resample_audio) を新 module audio_resample.rs に抽出。tests 4 件 (test_resample_same_rate + test_resample_downsample_length + test_resample_empty_input + test_resample_preserves_silence) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod audio_resample; 追加 (alphabetical = mod audio_event; 直後)。caller transcription_whisper_stream.rs L10 use 文を audio_utils → audio_resample に変更。可視性 pub(crate) + #[allow(dead_code)] は完全保持。大型 rust file 責務分離 23 file 目 = audio_resample 軸 1 件目 (同 scope = audio_silence Loop 94 と同 scope だが 3 ループ離れたため警告境界外) = session_commands 軸 (Loop 97) からの pivot 達成 (機能分類軸 → 純粋関数機能分離軸 paradigm)。audio_utils.rs は 227 → 90 行 (-60% 削減)。rubato crate 依存も新 file へ局所化。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 2a465b89db88d016d88e560c15852755b07739ab refactor(audio): リサンプリング軸を audio_resample.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離 + rubato 依存の局所化)
+
+---
