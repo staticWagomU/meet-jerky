@@ -27867,3 +27867,34 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 4db1711
 
 ---
+[mjc-main-20260505-26 Loop 53 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から StreamConfig Debug/Clone tests 3 件を src-tauri/src/transcription_traits.rs に移動
+  - stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none
+  - stream_config_debug_output_equals_after_clone_for_some_and_none_variants
+  - stream_config_clone_produces_independent_copy_for_option_string_fields
+- transcription_traits.rs 既存 tests mod (Mock 関連 3 tests と同居) に追加 = StreamConfig 定義 + Mock 実装 + 6 tests 同居の locality 完成
+- transcription.rs の `use super::*;` を削除 (移動後に残置 tests で完全 unused となるため)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (StreamConfig の Debug/Clone セマンティクスは型定義場所の transcription_traits.rs に locality 集約することで理解性向上)
+- メイン批判判断 = handoff 候補 M の予測「StreamConfig Debug tests 4 件」を grep で実態確認 → 3 件 (StreamConfig 関連) と判明 → 訂正後採用 = メイン批判判断 連続 7 セッション目
+- variety pivot = test 軸 = Loop 51 から 2 ループ pivot (Loop 52 docs) 後 = sweep 警告から復帰許容
+- transcription_traits.rs の locality = StreamConfig 定義 (L7-16) + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 関連 tests 完全同居
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription_traits.rs L52-55 の既存 use 文 (`use super::*` + `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource}`) で新規 3 tests の依存全 import 済 = use 文追加変更なし
+- transcription.rs の `use super::*;` は残置 tests (should_emit + RequestedTranscriptionSources 3 件) で一切未使用 = 削除
+- transcription.rs: 327 → 194 行 (-133 行) / transcription_traits.rs: 229 → 362 行 (+133 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (worker が agent-commit.sh で自走 commit、commit hash は後でメインが反映)
