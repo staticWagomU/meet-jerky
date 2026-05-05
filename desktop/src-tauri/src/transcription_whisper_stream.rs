@@ -3,11 +3,11 @@ use std::sync::Arc;
 use rubato::{Resampler, SincFixedIn};
 use whisper_rs::WhisperContext;
 
+use crate::audio_resample::{sinc_params, RESAMPLE_CHUNK_SIZE};
 use crate::audio_silence::{
     is_tail_silent, MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS,
     WHISPER_SAMPLE_RATE,
 };
-use crate::audio_utils::{sinc_params, RESAMPLE_CHUNK_SIZE};
 use crate::transcription_traits::{StreamConfig, TranscriptionStream};
 use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
 use crate::transcription_whisper_local::WhisperLocal;

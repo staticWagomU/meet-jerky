@@ -13,6 +13,7 @@ mod apple_speech;
 mod apple_speech_macos;
 mod audio;
 mod audio_event;
+mod audio_resample;
 mod audio_sample_helpers;
 mod audio_silence;
 mod audio_traits;
