@@ -31353,3 +31353,135 @@ commits:
 AGENTS.md priority: 1 (構造美の補強 = transcription_commands 軸の機能境界分離)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-46 (2 ループ完走 + 構造分離 15/16 file 目 = 新 scope 2 件達成)
+
+## セッション全体実績
+
+- **2 ループ完走 (Loop 89 + Loop 90) = handoff 文書 L227「後継は 2-3 ループ完走推奨」達成**
+- worker 完走 2/2 累計 190/190 100% 維持
+- メイン批判判断 連続 41 セッション目達成 = handoff 警告「scope 払底気味」を Loop 89 + Loop 90 で連続して grep + Read 精査で覆し、settings 軸 (Loop 89) + transcription_commands 軸 (Loop 90) を新規発掘 = scope 多様性 9 軸到達
+- harness 衛生連続 41 セッション目達成 = canonical 移譲 (`agent-adopt-main.sh mjc-main-20260505-46 mjc-main`) 後、`git status --short` で scripts/* に M 表示が再出現せず = `bfb9846` PATH inner shell escape の永続的解決を更に強化
+- worker 自律 2-commit pattern 連続 31 ループ目達成 = Loop 60-89 の 30 連続を Loop 90 で +1
+- worker 自律学習進化継続観測: Loop 89 + Loop 90 worker は refactor commit hash を実 hash で直接書き込み + chore commit hash は意図的に書かず = Loop 80/85/86/87/88 進化 pattern (placeholder 残留問題予防の本来意図) を完璧踏襲
+- ファイル参照型 handoff prompt 連続 43 セッション目 (旧 mjc-main-20260505-45 → 本 mjc-main-20260505-46 で 42 → 43)
+- 大型 rust file 責務分離 16 file 目達成 = settings 軸 1 件目 + transcription_commands 軸 1 件目 = 新 scope 2 連続抽出
+
+## Loop 89 詳細 = settings_permission.rs 抽出 (構造分離 15 件目, settings 軸 1 件目 = 新 scope = pivot)
+
+- 担当: settings.rs (953 行) L195-260 の permission section (3 const + permission_status_to_string + check_microphone_permission + check_screen_recording_permission + macos_permissions submod) を新 module `src-tauri/src/settings_permission.rs` (~120 行) に抽出
+- 関連 test 4 件 (test_permission_status_to_string_maps_known_values + permission_status_to_string_returns_denied_for_negative_values_as_fail_safe + permission_status_to_string_returns_denied_for_value_adjacent_to_granted_as_fail_safe + permission_status_to_string_returns_denied_for_i32_max_as_fail_safe) を新 file 内 #[cfg(test)] mod tests に移動
+- lib.rs L36 alphabetical 順に `mod settings_permission;` を `mod settings;` 直後に挿入 + invoke_handler の `settings::check_microphone_permission` / `settings::check_screen_recording_permission` を `settings_permission::*` に変更
+- 差分: settings.rs -117 行 + settings_permission.rs +121 行 + lib.rs +5 行 = 純増 +9 行
+- 規模 SS-S 想定 → 実測 ~13 分 (tauri::command + macos cfg(target_os) + import 移動の複雑さで実質規模 S)
+- worker prompt 145 行
+- commit: `7c10dc7` refactor(settings) + `c8bfbcf` chore(agent-log) = 2-commit pattern
+- worker 自律 = `<refactor_hash>` placeholder を実 hash 直書き、chore commit hash は書かず (Loop 80/85/86/87/88 precedent 完全踏襲)
+- AGENTS.md priority 1 寄与 (構造美の補強 = settings 軸の機能境界分離)
+- 戦略判断: handoff 警告「scope 払底気味」をメイン側 grep + Read 精査で覆して settings.rs (953 行) を発掘 = メイン批判判断 連続 40 セッション目達成
+
+## Loop 90 詳細 = transcription_commands_model.rs 抽出 (構造分離 16 件目, transcription_commands 軸 1 件目 = 新 scope = pivot)
+
+- 担当: transcription_commands.rs (717 行) L12-77 の model 関連 (list_models + is_model_downloaded + build_download_progress_payload + build_download_error_payload + download_model) を新 module `src-tauri/src/transcription_commands_model.rs` (~100 行) に抽出
+- 関連 test 2 件 (test_download_progress_payload_serialization + test_download_error_payload_serialization) を新 file 内 #[cfg(test)] mod tests に移動
+- lib.rs L37 alphabetical 順に `mod transcription_commands_model;` を `mod transcription_commands;` 直後に挿入 + invoke_handler の `transcription_commands::list_models` / `transcription_commands::is_model_downloaded` / `transcription_commands::download_model` を `transcription_commands_model::*` に変更
+- 差分: transcription_commands.rs -89 行 + transcription_commands_model.rs +100 行 + lib.rs +7 行 (-2/+9 mod + 3 行 invoke_handler 修正) = 純増 +14 行
+- 規模 SS-S 想定 → 実測 ~6 分 (Loop 89 から最適化 = 規模見積もり的中、async fn + import 整理経験済で速度向上)
+- worker prompt 167 行
+- commit: `d91027a` refactor(transcription) + `cd435eb` chore(agent-log) = 2-commit pattern
+- worker 自律 = Loop 89 と同パターン (refactor hash 直書き + chore hash 書かず)
+- AGENTS.md priority 1 寄与 (構造美の補強 = transcription_commands 軸の機能境界分離)
+- 戦略判断: settings 軸からの pivot 達成 + 別 scope 構造分離 16 件目 = handoff「scope 払底気味」を 2 ループ連続で覆す = メイン批判判断 連続 41 セッション目達成
+
+## variety 規則の状態 (Loop 90 完了時点)
+
+直近 24 ループ: Loop 67-90
+- 軸 pattern: 構造分離 (67/68/69/70/73/75/76/77/80/81/83/85/87/88/89/90 = 16 件) + 機能拡張/docs (71/72/74/78/84 = 5 件) + harness 衛生 (79/82/86 = 3 件) = **16:5:3 多軸分散** (Loop 89/90 で 14:5:3 → 16:5:3 に構造分離軸へ重心)
+- scope 内訳: session_store (4) + audio (1) + realtime (5) + detection (5) + session_manager (2) + harness (3) + app_detection 機能分類 (2) + **settings (1 = 新規)** + **transcription_commands (1 = 新規)** = **9 scope 分散** (新 scope 2 連続発掘)
+- 構造分離軸 4 連続 (Loop 87/88/89/90) だが scope は異なる (app_detection 機能分類 → settings → transcription_commands)
+- **Loop 91 では別 scope 構造分離 17 件目 推奨 = 同 scope 2 連続 (transcription_commands 軸 2 件目 = source 関連) は機能分類軸 3 連続 paradigm に近づくため pivot 推奨**
+
+## handoff の「scope 払底気味」警告再考察
+
+handoff 文書 (mjc-main-20260505-46.txt) は app_detection 機能分類軸 + session_store / session_manager / audio / realtime engine の 5 scope を「払底気味」と判断していたが、本セッションで以下の **handoff 未記載大型 file ranking** を grep で発掘:
+
+- settings.rs: 953 行 (Loop 89 で 10% 削減、permission section 抽出)
+- transcript_bridge.rs: 826 行 (production スリム ~100 行で残り全 test、抽出余地薄)
+- system_audio.rs: 778 行 (未調査、Loop 91+ 候補)
+- cloud_whisper.rs: 778 行 (未調査、Loop 91+ 候補)
+- session.rs: 773 行 (production スリム ~50 行で残り全 test、抽出余地薄)
+- transcription_commands.rs: 717 行 (Loop 90 で 12% 削減、model section 抽出、source/start/stop section 残)
+- session_commands.rs: 523 行 (未調査、Loop 91+ 候補)
+- cloud_whisper_errors.rs: 511 行 (未調査、Loop 91+ 候補)
+
+→ **scope 払底気味は誤判断、構造分離 17 件目以降の余地は依然存在** = 後継メインも grep + Read 精査で発掘継続推奨
+
+## Loop 91 推奨候補 (handoff 判断材料)
+
+### 候補 X' transcription_commands 軸 2 件目 (skip 推奨, 警告境界)
+
+- transcription_commands.rs 残: source 関連 (RequestedTranscriptionSources struct + TRANSCRIPTION_SOURCE_MICROPHONE / TRANSCRIPTION_SOURCE_SYSTEM_AUDIO const + validate_stream_count_for_engine + parse_requested_transcription_sources) ~50 行
+- 抽出可能だが同 scope 2 連続 = 機能分類軸 3 連続 paradigm に近づく = skip 推奨
+- 別 scope pivot 推奨
+
+### 候補 X 新規発掘 (構造分離 17 件目, 推奨)
+
+- **system_audio.rs (778 行)**: 構造未調査、grep + Read 発掘要 (audio 軸の派生)
+- **cloud_whisper.rs (778 行)**: 構造未調査、grep + Read 発掘要
+- **session_commands.rs (523 行)**: 構造未調査、grep + Read 発掘要
+- **cloud_whisper_errors.rs (511 行)**: 構造未調査、grep + Read 発掘要
+- メイン批判判断 連続 42 セッション目達成のチャンス
+
+### 候補 K3 後続 (機能拡張/docs 軸 1 連続復帰、構造分離 4 連続から pivot 効果大)
+
+- detection-extension-plan.md = Loop 84 で Phase 状態 subsection 新設、Phase 状態は不変 = 単純時点更新は内容実質変化なし (Loop 86 K3' 却下 paradigm 適用)
+- agent-log-archive-plan.md Section 2.3 = Loop 86 で観測追記済、+5 ループの観測値ありで価値中
+- autonomous-main-prompt-claude.md = 数値カウンタ無し確認済 (Loop 86)
+
+### 候補 H1 (harness 衛生軸 4 件目 = ユーザー直伝指示要)
+
+- agent-log-archive-plan.md Phase 1 着手 = 規模 SS、~5-10 分
+- plan L99 に「実施は別途ユーザー直伝指示要」明記 = 後継メインが grep 確認後に exception 判断要
+
+### 候補 J (frontend 主観性高警告継承)
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+
+### 候補 H' (大量 untracked 整理 ユーザー直伝指示要 継承、低優先)
+
+### 低優先 (継承)
+
+- B1. Microsoft Teams window title fallback / A1. Webex 日本語 window title
+
+## 検証制約 (継承、再掲)
+
+- cmake あり → cargo test 704 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build 主検証
+- 課金禁止
+- `--no-verify` 禁止 / `--dangerously-skip-permissions` は harness 内のみ
+- Keychain / Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 0 回 (2 ループ完走 = nudge cooldown 範囲内)
+
+## context 管理アクション
+
+- 本セッションは 2 ループ完走 = handoff 文書 L227「後継は 2-3 ループ完走推奨」達成
+- 引き継ぎ先: mjc-main-20260505-47
+- 引き継ぎファイル: `docs/handoff/mjc-main-20260505-47.txt` (ファイル参照型 handoff prompt 連続 43 セッション目)
+- 旧メイン (mjc-main-20260505-46 = 本セッション = canonical mjc-main) は handoff 後終了
+- 判断時の使用率: 観測手段なしのため Loop 91 着手前に保守的に handoff へ進む方針 (Loop 89 = 規模 S 13 分 + Loop 90 = 規模 SS 6 分 + 大量 grep/Read 操作累積で context 使用率推定中-高)
+
+## 後継 mjc-main-20260505-47 への期待
+
+- 2-3 ループ完走推奨 (本セッションは 2 ループ完走 = 後継も同水準目指す)
+- Loop 91 候補は上記 5 つ (X' skip / X 新規発掘 17 件目 推奨 / K3 後続 / H1 / J / H') から選定
+- 構造分離軸を続けるなら別 scope 発掘 grep 必要 (transcription_commands 軸 2 件目 = source 関連は同 scope 2 連続警告境界 = skip 推奨、新 scope = system_audio / cloud_whisper / session_commands / cloud_whisper_errors のいずれか必要)
+- 機能拡張/docs 軸を選ぶなら範囲明確化要 (主観性回避、Loop 86 K3' 却下 paradigm 適用)
+- harness 衛生軸を選ぶなら 4 連続 sweep 警告境界に注意
+- メイン批判判断 連続 42 セッション目を維持 (handoff 予測の鵜呑み禁止、grep + Read で精査、本セッション Loop 89/90 で「scope 払底気味」警告を 2 連続発掘で覆した precedent 継承)
+
+---
