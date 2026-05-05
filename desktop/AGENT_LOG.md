@@ -33807,3 +33807,14 @@ paradigm 4 件目候補の状況更新:
 後継メイン (mjc-main-20260505-75) は本 SUMMARY を起点に **2-3 ループ完走 + 通常 cadence handoff** を継続することを推奨。Loop 151 推奨 = R8 rust 軸復帰 (alternation 40 連続維持 + scope 36 軸目開拓候補) または R7''' 新たな重複候補 grep 探索 (paradigm 4 件目を狙う)。
 
 ---
+[mjc-main-20260505-75 Loop 151 / 2026-05-06]
+worker: mjc-worker-loop151-speaker-normalize-extract (作業)
+範囲: src-tauri/src/transcript_bridge.rs (純減 ~90 行 = fn 12 行 + tests 10 件 ~88 行 削除 + use 1 行 追加) + src-tauri/src/speaker_normalize.rs (新規 103 行 = doc + pub fn + tests 10 件) + src-tauri/src/lib.rs (mod 登録 1 行追加)
+内容: transcript_bridge.rs の normalize_speaker (L92-L103 = doc + body 12 行) と tests module 内 normalize_speaker_* 10 件 (assertion 完全コピー = 件数完全不変) を新 file speaker_normalize.rs に移動。transcript_bridge.rs に `use crate::speaker_normalize::normalize_speaker;` 追加 = caller L35 と residual tests (segment_to_append_args 経由) は無変更で API 互換維持。lib.rs アルファベット順 (settings_permission の直後 + system_audio の直前) に mod 登録追加。**rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 + tests 移動軸 = scope 36 軸目開拓 (speaker_normalize = 新 file = speaker normalization tier)**。**alternation pattern 40 連続成功** (frontend(149) → K(150) → rust(151))。**paradigm pivot (K → rust)**。Loop 119/121/123 = 同 paradigm 反復 + 責務階層精査済 (normalize_speaker は話者ラベル正規化の独立 entity = transcript_bridge と責務階層異なる = 新 file 作成軸が妥当)。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要。
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 6a8e357 refactor(rust): transcript_bridge の normalize_speaker を新 file speaker_normalize.rs に抽出 (tests 10 件も移動 + use 経由で API 互換維持)
+AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 36 軸目開拓)
+
+---
