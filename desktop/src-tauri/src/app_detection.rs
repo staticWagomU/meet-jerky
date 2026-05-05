@@ -28,14 +28,35 @@ use tauri::{AppHandle, Emitter};
 // 以下の定数・関数は macOS の Swift bridge から呼ばれる。
 // Linux 等のビルドで dead_code 警告にならないように cfg_attr で抑制する。
 
+/// 会議アプリの検知方式を表現する enum。
+///
+/// - `AppLaunch`: bundle ID が前面に出た瞬間に会議開始と判定する (Zoom/Teams/FaceTime 等の会議専用アプリ向け)。
+/// - `WindowTitleContains(pattern)`: bundle ID が前面 + window title に pattern を含む場合のみ会議と判定する
+///   (Slack/Discord 等の常時起動アプリ向け、Phase 2 で利用)。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum MatchStrategy {
+    AppLaunch,
+    WindowTitleContains(&'static str),
+}
+
 /// 検知対象の Bundle ID 一覧。新しい会議アプリが増えたらここに追加する。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-const WATCHED_BUNDLE_IDS: &[(&str, &str)] = &[
-    ("us.zoom.xos", "Zoom"),
-    ("com.microsoft.teams2", "Microsoft Teams"),
+const WATCHED_BUNDLE_IDS: &[(&str, &str, MatchStrategy)] = &[
+    ("us.zoom.xos", "Zoom", MatchStrategy::AppLaunch),
+    (
+        "com.microsoft.teams2",
+        "Microsoft Teams",
+        MatchStrategy::AppLaunch,
+    ),
     // 旧 Teams (legacy, Electron 版)。新版に切り替わっても誤検知にはならないため両方監視。
-    ("com.microsoft.teams", "Microsoft Teams"),
-    ("com.apple.FaceTime", "FaceTime"),
+    (
+        "com.microsoft.teams",
+        "Microsoft Teams",
+        MatchStrategy::AppLaunch,
+    ),
+    ("com.apple.FaceTime", "FaceTime", MatchStrategy::AppLaunch),
 ];
 
 /// 同一アプリの再通知を抑制する間隔。
@@ -500,8 +521,8 @@ fn parse_throttle_key_to_display_name(key: &str) -> Option<String> {
     // アプリ経路: bundle_id 単独 → WATCHED_BUNDLE_IDS lookup
     WATCHED_BUNDLE_IDS
         .iter()
-        .find(|(bundle_id, _)| *bundle_id == key)
-        .map(|(_, app_name)| app_name.to_string())
+        .find(|(bundle_id, _, _)| *bundle_id == key)
+        .map(|(_, app_name, _)| app_name.to_string())
 }
 
 /// ブラウザ URL の実機取得が入った後に使う、会議 URL 分類用の純粋関数。
@@ -816,7 +837,7 @@ mod macos {
 
     pub fn start_detection() {
         // 監視対象を JSON 配列にして Swift に渡す
-        let bundle_ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _)| *id).collect();
+        let bundle_ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _, _)| *id).collect();
         let json = serde_json::to_string(&bundle_ids).expect("static ID array should serialize");
         let c_json = match CString::new(json) {
             Ok(s) => s,
@@ -849,7 +870,7 @@ mod tests {
     #[test]
     fn watched_bundle_ids_includes_native_meeting_apps() {
         // 監視対象が抜け落ちないように回帰防止する
-        let ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _)| *id).collect();
+        let ids: Vec<&str> = WATCHED_BUNDLE_IDS.iter().map(|(id, _, _)| *id).collect();
         assert!(
             ids.contains(&"us.zoom.xos"),
             "Zoom Bundle ID が抜けています"
@@ -3055,5 +3076,42 @@ mod tests {
                 host: "app.goto.com".to_string(),
             })
         );
+    }
+
+    #[test]
+    fn match_strategy_app_launch_equality_contract() {
+        // AppLaunch 同士は等価
+        assert_eq!(MatchStrategy::AppLaunch, MatchStrategy::AppLaunch);
+    }
+
+    #[test]
+    fn match_strategy_window_title_contains_equality_contract() {
+        // 同一 pattern は等価
+        assert_eq!(
+            MatchStrategy::WindowTitleContains("Huddle"),
+            MatchStrategy::WindowTitleContains("Huddle")
+        );
+        // 異なる pattern は非等価
+        assert_ne!(
+            MatchStrategy::WindowTitleContains("Huddle"),
+            MatchStrategy::WindowTitleContains("Stage")
+        );
+        // AppLaunch と WindowTitleContains は非等価
+        assert_ne!(
+            MatchStrategy::AppLaunch,
+            MatchStrategy::WindowTitleContains("Huddle")
+        );
+    }
+
+    #[test]
+    fn watched_bundle_ids_all_use_app_launch_strategy() {
+        // Phase 1 では既存 4 アプリ全てが AppLaunch。Phase 2 で WindowTitleContains 追加時にこの test を更新する。
+        for (_, _, strategy) in WATCHED_BUNDLE_IDS {
+            assert_eq!(
+                *strategy,
+                MatchStrategy::AppLaunch,
+                "Phase 1 は全て AppLaunch のはず"
+            );
+        }
     }
 }
