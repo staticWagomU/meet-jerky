@@ -240,7 +240,7 @@ Discord の stage channel URL は通常チャンネルと同形式 (`discord.com
 | Q3 | Slack web 版の huddle 中 URL 形式 | 中 (Phase 3 前提) | ブラウザで huddle 参加後に URL バーを確認 |
 | Q4 | Discord web 版の stage channel URL 形式 | 中 (Phase 4 前提) | ブラウザで stage 参加後に URL バーを確認 |
 | Q5 | `MatchStrategy::WindowTitleContains` の serde 影響範囲 | 解決済 (下記参照) | `WATCHED_BUNDLE_IDS` が serde Serialize/Deserialize の対象かを `grep -n serde` で確認 |
-| Q6 | window title の日本語 localization 対応方針 | 低 | `"Huddle"` → `"ハドル中"` 等の prefix/含有 pattern を追加するか英語のみとするか |
+| Q6 | window title の日本語 localization 対応方針 | 解決済 (下記参照) | `"Huddle"` → `"ハドル中"` 等の prefix/含有 pattern を追加するか英語のみとするか |
 | Q7 | Discord `com.hnc.Discord` bundle ID の正確な値 | 低 | `mdls -name kMDItemCFBundleIdentifier /Applications/Discord.app` で確認 |
 | Q8 | Slack bundle ID の正確な値 | 低 | `mdls -name kMDItemCFBundleIdentifier /Applications/Slack.app` で確認 |
 
@@ -254,6 +254,17 @@ Discord の stage channel URL は通常チャンネルと同形式 (`discord.com
 - `MatchStrategy` enum は `Debug + Clone + PartialEq + Eq` のみ derive され、`Serialize` / `Deserialize` 未実装。WindowTitleContains variant 追加で外部 IPC payload 形状は変化しない。
 
 **Phase 2 着手判断への寄与**: Phase 2 で WATCHED_BUNDLE_IDS に Slack/Discord エントリを追加する際、frontend / Tauri IPC 側の payload schema 変更は不要 = 後方互換性確保。
+
+### Q6 解決結果 (mjc-main-20260505-39 Loop 78 調査)
+
+**結論**: window title 日本語 localization 対応は **段階導入方針**。Phase 2 では英語 pattern only で着手し、Phase 5 で日本語 pattern (`"ハドル中"` / `"ステージ"` 等) を追加する。
+
+**根拠**:
+- Section 5.5 Phase 5 (L230) で「日本語 window title 対応: `"ハドル中"` / `"ステージ"` 等の日本語 pattern 追加 (実機確認後)」が既に Phase 5 タスクとして記載されており、段階導入方針は plan 内既存。
+- Section 3.1 Slack Huddle (L95) で「日本語表示では `"ハドル中 #general"` 等になる可能性」、Q1 (L238) で「英語 / 日本語」両方の実機確認指示が既に明記されており、日本語追加は Phase 5 着手前提として保持されている。
+- false negative (日本語環境ユーザーで huddle 中の検知漏れ) は無害な失敗 = 「会議検知 banner が出ない」だけで誤録音・誤通知は発生しない。一方 false positive (日本語 window title が会議外と誤マッチ) のリスクは英語 only ならゼロ = 段階導入は安全側に倒す方針として妥当。
+
+**Phase 2 着手判断への寄与**: Phase 2 は英語 pattern (`"Huddle"` / `"Stage Channel"`) のみで実装着手 OK = Q1/Q2 (英語 window title 実機確認) が解決すれば即進められる。日本語 pattern 追加は Phase 5 でユーザーフィードバック蓄積後に対応 = MVP リリース時点の対応コスト最小化。
 
 ### AppleScript による window title 取得コマンド (参考)
 
