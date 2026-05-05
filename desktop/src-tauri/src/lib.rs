@@ -28,6 +28,7 @@ mod realtime_audio_command;
 mod realtime_audio_helpers;
 mod realtime_error_helpers;
 mod realtime_reader_task;
+mod realtime_ws_helpers;
 mod secret_store;
 mod secret_store_commands;
 mod session;
