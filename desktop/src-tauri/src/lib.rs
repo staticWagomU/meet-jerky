@@ -38,6 +38,7 @@ mod session_store_types;
 mod settings;
 mod settings_permission;
 mod system_audio;
+mod system_audio_format;
 mod system_audio_pcm;
 mod transcript_bridge;
 mod transcription_commands;
