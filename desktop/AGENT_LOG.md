@@ -28392,3 +28392,31 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
 - watchdog からの nudge は本セッション中 1 回 (Loop 56 起動直後、自律ループ進行を継続)
 
+
+---
+[mjc-main-20260505-29 Loop 58 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリヘッダ: mjc-main-20260505-27 Loop 55 時点 → mjc-main-20260505-28 Loop 57 時点
+  - 累計削減行数: 36 行 (98.8%) → 29 行 (99.0%) = 95% / 98% / 99% 里程標突破達成 + Phase 5 完全終了 + 完全ファサード化
+  - 残存課題セクション: Loop 57 (WHISPER_SAMPLE_RATE 移動 + 互換層削除 -7 行 = 29 行最終形達成) 反映
+  - 残存行数総括: 36 行 → 29 行 + 残課題 (Phase 6 互換層削除 / docs / frontend / 検知拡張) を再整理
+  - 新サブセクション 1 件 (## 参考 直前): 「WHISPER_SAMPLE_RATE 移動 + 互換層削除 = 29 行最終形達成 ✅ 完了」+ Phase 5 完全終了 + 完全ファサード化の意義
+  - 末尾参考: 36 行 (98.8%) → 29 行 (99.0%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防 + 99.0% / Phase 5 完全終了 / 完全ファサード化という歴史的記録)
+- mjc-main-20260505-28 Loop 57 (WHISPER_SAMPLE_RATE 移動 + 互換層削除 = 36 → 29 行 = 99.0% 達成 = Phase 5 完全終了) を 1 ループで反映
+- variety pivot = docs 軸 = Loop 56 から 1 ループ pivot 後 = 警告境界手前だが 99.0% + Phase 5 完全終了の歴史的記録優先 = 許容、test 軸 = transcription.rs 余地ゼロ続行不可
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 1 件を末尾「## 参考」直前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- <commit hash>

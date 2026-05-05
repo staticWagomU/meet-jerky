@@ -25,7 +25,7 @@
 | 8 | Worker loop (run_transcription_loop / panic_guard / emit_segments / 各種 helper) | L1110-2999+ | ~1900 | `transcription/worker.rs` (更にサブ分割推奨) | **高** |
 | 9 | Helper (validate_stream_count / parse_requested_sources / error payload builders 等) | L741-1109 | ~370 | 各責務の private モジュール | 中 |
 
-## 進捗サマリ (mjc-main-20260505-27 Loop 55 時点)
+## 進捗サマリ (mjc-main-20260505-28 Loop 57 時点)
 
 - **Phase 1 (責務 1-2 = データ型 + トレイト)**: ✅ 完了 (mjc-main-20260505-3)
 - **Phase 2-A (責務 3 = Whisper エンジン)**: ✅ 完了 (mjc-main-20260505-4 ~ 7)
@@ -39,7 +39,7 @@
     stop_transcription / start_transcription / PendingTranscriptionStream
     すべて transcription_commands.rs に集約
 - **Phase 4 (責務 8 = Worker loop)**: ✅ 完了 (mjc-main-20260505-8 ~ 10, Phase 4-A emission + 4-B error_payload + 4-C panic_guard + 4-D run_transcription_loop)
-- **transcription.rs 累計削減**: 元 2999 行 → 現在 **36 行** = **約 98.8% 縮小** (~2963 行削減) = **「95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)」**
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **29 行** = **約 99.0% 縮小** (~2970 行削減) = **「95% / 98% / 99% 里程標突破達成 + 98.8% からさらに +0.2pt 進展 = Phase 5 完全終了 = transcription.rs 完全ファサード化 (互換 re-export 5 件のみ、本体実装ゼロ・const ゼロ)」**
 
 ## 残存課題 (Phase 5 候補)
 
@@ -56,7 +56,8 @@
 - **mjc-main-20260505-25 Loop 51 ✅ 完了**: TranscriptionManager 関連 tests 6 件 (test_ensure_engine_creates_whisper_local_when_supported / test_ensure_engine_returns_error_for_unsupported_engine / test_ensure_engine_persists_engine_for_session / test_ensure_engine_returns_error_when_model_not_downloaded / test_validate_stream_count_for_engine_accepts_max_per_engine 系) を transcription.rs から transcription_manager.rs に移動 = ensure_engine 関数本体 + 6 tests 同居の locality 完成 (commit `451e720`、-107 行)
 - **mjc-main-20260505-26 Loop 53 ✅ 完了**: StreamConfig Debug/Clone tests 3 件 (stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none / stream_config_debug_output_equals_after_clone_for_some_and_none_variants / stream_config_clone_produces_independent_copy_for_option_string_fields) を transcription.rs から transcription_traits.rs に移動 = StreamConfig 定義 + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 6 tests (Mock 3 + StreamConfig Debug/Clone 3) 同居の locality 完成 (commit `bbe9afc`、-134 行)
 - **mjc-main-20260505-27 Loop 55 ✅ 完了**: tests mod 4 件 (should_emit_realtime_stream_error_is_logical_negation_of_already_stopped 1 件 → transcription_error_payload.rs / requested_transcription_sources Debug + Copy + PartialEq 3 件 → transcription_commands.rs) を一括移動 = transcription.rs tests mod 完全削除 + use 文 2 件完全削除 = 互換 re-export 5 件 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const のみの **36 行最終形達成** = Phase 5 完了相当 (commit `93dcd18`、-157 行)
-- transcription.rs 残存 **36 行** = Phase 5 完了相当の最終形 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)、残る Tidy First 機会は (1) WHISPER_SAMPLE_RATE 移動最終判断 (Phase 5 仕上げ) / (2) 互換層削除 Phase 6 / (3) docs / frontend / 検知拡張
+- **mjc-main-20260505-28 Loop 57 ✅ 完了**: WHISPER_SAMPLE_RATE 定数を audio_utils.rs に移動 + 互換 re-export 残置を clippy 検証で削除 = transcription.rs 36 → 29 行 = **99.0% 縮小達成 = Phase 5 完全終了 = 完全ファサード化** (commit `68c67d1`、-7 行)
+- transcription.rs 残存 **29 行** = Phase 5 完全終了 = 完全ファサード化 (互換 re-export 5 件のみ、本体実装ゼロ・const ゼロ)、残る Tidy First 機会は (1) Phase 6 = 互換層削除 (transcription.rs 完全削除への migration、6 caller refactor、複数ループ計画推奨) / (2) docs / frontend / 検知拡張
 
 ## 推奨段階分割 (Phase)
 
@@ -391,9 +392,35 @@ mjc-main-20260505-27 Loop 55 で transcription.rs の tests mod 4 件 (~157 行)
 - 残る課題は (1) WHISPER_SAMPLE_RATE 移動最終判断 (audio_utils.rs と新規 transcription_constants.rs の選択 = Phase 5 仕上げ判断) / (2) Phase 6 = 互換 re-export 層削除 (全 caller の `use crate::transcription::...` を直接 import に書き換え、規模 M、複数ループ計画推奨) の 2 軸
 - AGENTS.md 優先順位 1 (クラッシュ修正) / 4 (リアルタイム文字起こし低遅延化) への予防的寄与 = 巨大ファイル理解難度を最大限まで低減達成
 
+## 関連: WHISPER_SAMPLE_RATE 移動 + 互換層削除 = 29 行最終形達成 ✅ 完了 (mjc-main-20260505-28 Loop 57 = commit `68c67d1`)
+
+mjc-main-20260505-28 Loop 57 で transcription.rs から `WHISPER_SAMPLE_RATE` 定数を audio_utils.rs に移動し、さらに互換 re-export 残置を clippy 検証で削除した = **transcription.rs 29 行最終形達成 = Phase 5 完全終了 = 完全ファサード化**。
+
+- 移動対象: `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` (transcription.rs 唯一の本体実装)
+- 移動先: audio_utils.rs L25 = 既存の `use crate::transcription::WHISPER_SAMPLE_RATE;` を const 定義に置換 (self-reference 解消)
+- 連動変更: transcription_whisper_stream.rs L6 既存 use ブロックに WHISPER_SAMPLE_RATE 統合 (別 use 文 → ブロック合流 = -1 行)
+- 互換層判断: 当初 `pub(crate) use crate::audio_utils::WHISPER_SAMPLE_RATE;` を transcription.rs に残置する設計だったが、`cargo clippy --lib --tests -- -D warnings` で「unused import」エラーを検出 (= 既に呼び出し元ゼロ、各 caller は audio_utils 経由で参照済) → 残置せず削除が正解と判断
+- メイン批判判断: handoff サマリの「audio_utils.rs vs 新規 transcription_constants.rs」案を grep で実態確認 → transcription_whisper_stream.rs L6 が既に audio_utils を import している = audio_utils.rs 配置で単方向依存 + 沈黙検知三位一体 locality (Loop 44) と一貫 + 新規ファイル不要 = audio_utils.rs に確定 = メイン批判判断 連続 9 セッション目達成
+- 振る舞い不変 = 702 passed 件数不変、clippy 警告ゼロ、fmt OK
+- transcription.rs 36 → **29 行** (-7 行) = **99.0% 縮小最終形** (元 2999 行から累計 -2970 行)
+- audio_utils.rs 324 → 325 行 (+1 行) = 沈黙検知 3 const + WHISPER_SAMPLE_RATE 1 件 + 関数 + tests = sample_rate 系 4 件統合 locality 完璧
+- transcription_whisper_stream.rs 245 → 244 行 (-1 行) = use ブロック統合
+
+### Phase 5 完全終了 = transcription.rs 完全ファサード化の意義
+
+- transcription.rs 29 行最終形 = 互換 re-export 5 件のみ (本体実装ゼロ・const ゼロ):
+  - L1-5: TranscriptionSegment / TranscriptionSource (transcription_types.rs)
+  - L7-11: StreamConfig / TranscriptionEngine / TranscriptionStream (transcription_traits.rs)
+  - L13-17: WhisperStream (transcription_whisper_stream.rs)
+  - L19-23: TranscriptionStateHandle (transcription_manager.rs)
+  - L25-29: TranscriptionLoopConfig (transcription_worker_loop.rs)
+- WHISPER_SAMPLE_RATE は audio_utils.rs に集約 = sample_rate 系 4 件 + 沈黙検知関数 + tests の locality 完璧
+- 残る課題は **Phase 6 のみ** = 互換 re-export 5 件を全 caller (cloud_whisper.rs / elevenlabs_realtime.rs / transcript_bridge.rs / transcription_commands.rs / transcription_panic_guard.rs / transcription_whisper_local.rs の 6 ファイル) で直接 import に書き換え、最終的に transcription.rs ファイル自体を削除する migration (規模 M、6 ループ計画推奨)
+- AGENTS.md 優先順位 1 (クラッシュ修正) / 4 (リアルタイム文字起こし低遅延化) への予防的寄与 = 巨大ファイル理解難度低減を最大限まで達成 (元 2999 行 = 9 責務混在 → 9 責務全て独立モジュールに locality 集約 + transcription.rs 自体は ファサード)
+
 ## 参考
 
 - 本プランは mjc-main-20260505-3 (Loop 4) で grep ベース構造分析により作成。
 - 実コードは生きており、Phase 着手時に再度行範囲・責務分類の妥当性を検証する必要がある。
 - 各 Phase 着手時は必ず最新の `transcription.rs` を read して、本プランの行範囲とずれていないか確認する。
-- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-27 Loop 55 時点で 36 行 = 約 98.8% 縮小達成 = 95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当)
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-28 Loop 57 時点で 29 行 = 約 99.0% 縮小達成 = 95% / 98% / 99% 里程標突破達成 + 98.8% からさらに +0.2pt 進展 = Phase 5 完全終了 = transcription.rs 完全ファサード化)
