@@ -1,7 +1,5 @@
-import {
-  AudioLevelMeter,
-  sanitizeAudioLevelForDisplay,
-} from "./AudioLevelMeter";
+import { AudioLevelMeter } from "./AudioLevelMeter";
+import { sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import { OTHER_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";
 
 interface SystemAudioSectionProps {
@@ -24,7 +22,7 @@ export function SystemAudioSection({
   onToggleSystemAudio,
 }: SystemAudioSectionProps) {
   const systemAudioLevelPercent = Math.round(
-    sanitizeAudioLevelForDisplay(systemAudioLevel) * 100,
+    sanitizeAudioLevel(systemAudioLevel) * 100,
   );
   const isSystemAudioInputWaiting =
     isSystemAudioRecording && systemAudioLevelPercent === 0;

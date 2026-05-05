@@ -1,8 +1,6 @@
 import type { AudioDevice } from "../types";
-import {
-  AudioLevelMeter,
-  sanitizeAudioLevelForDisplay,
-} from "./AudioLevelMeter";
+import { AudioLevelMeter } from "./AudioLevelMeter";
+import { sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import { SELF_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";
 import { toErrorMessage } from "../utils/errorMessage";
 
@@ -38,7 +36,7 @@ export function MicrophoneSection({
   onToggleRecording,
 }: MicrophoneSectionProps) {
   const micLevelPercent = Math.round(
-    sanitizeAudioLevelForDisplay(micLevel) * 100,
+    sanitizeAudioLevel(micLevel) * 100,
   );
   const isMicInputWaiting = isMicRecording && micLevelPercent === 0;
   const micStateText = isOperationPending
