@@ -30739,3 +30739,32 @@ worker prompt を ~250 行で書くと「~135-220 行目安」を超える + cal
 - 9da691c chore(agent-log): Loop 81 commit hash dfc8aed1a9da8c09278ff9a27fd89b9b3dee1c75 を AGENT_LOG.md に記入
 
 ---
+
+[mjc-main-20260505-41 Loop 82 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/agent-log-archive-plan.md Section 2.1 数値表更新 (5 行 diff: 30,333 → 30,741 行 / 56 → 57 session / 82 → 84 Loop / 31 → 32 SUMMARY / 最新 entry L30305 → L30706)
+- Section 2.3 末尾に Loop 79 → Loop 81 の delta 観測注記追加 (~3 行 blockquote)
+- Section 5 Phase 4 直後に Phase 状態 subsection 新設 (Phase 1-4 全て「未着手 + ユーザー直伝指示要」の明示)
+
+## Why
+- AGENTS.md L46-L52 自律改善方針: plan の現状把握を最新化 = 後継メインが正確な情報で archive 着手判断できる
+- variety pivot: Loop 80/81 = 構造分離軸 2 連続 → Loop 82 = harness 衛生軸 = 警告境界 (3-4 連続) より遠い
+- mjc-main-20260505-41 Loop 82 メイン批判判断: 数値更新は主観性 0、Phase 状態 subsection は plan 既存記述「実施は別途ユーザー直伝指示要」(L99) の整理 = 主観性低 = 自律 OK
+- 規模 SS docs only = 振る舞い不変
+
+## How (Tidy First, behavior-preserving docs)
+- 数値は grep 機械的計算 (`wc -l` / `grep -c "^\[mjc-main-"` / unique session count)
+- Phase 状態の「未着手」表示は plan 既存記述から整理
+- L99 「ユーザー直伝指示で実施承認後に着手」を継続条件として再確認
+
+## Verify
+- agent-verify.sh: OK
+- grep -n "30,741 行" docs/architecture/agent-log-archive-plan.md: 1 件
+- grep -n "Phase 状態" docs/architecture/agent-log-archive-plan.md: 1 件
+- trailing whitespace: なし
+
+## Commits
+- fe90b1384a19e38042d9820865d0b111124a9d24 docs(architecture): agent-log-archive-plan.md Section 2.1 数値更新 + Phase 状態明示
+
+---
