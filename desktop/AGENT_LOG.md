@@ -29348,3 +29348,41 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 86ffc7a
+
+---
+
+[mjc-main-20260505-34 Loop 69 / 2026-05-05 ~JST]
+
+## What
+- session_store.rs から pure fn 2 件 + 定数 1 件を新規ファイル session_store_parse.rs に抽出 (~30 行)
+  - `const MAX_JS_DATE_UNIX_SECS: u64 = 8_640_000_000_000;` (private 維持)
+  - `pub(crate) fn unescape_inline_markdown_text(value: &str) -> String` (~21 行)
+  - `pub(crate) fn parse_session_started_at_secs(stem: &str) -> Option<u64>` (~8 行)
+- lib.rs に `mod session_store_parse;` 追加 (session_store と session_store_types の間)
+- session_store.rs caller use 文追加 (`use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};`)
+- tests は session_store.rs 残置 + tests mod に明示 import 追加
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_store.rs ~1159 行の段階的責務分離継続)
+- locality 集約 = pure parse / unescape ロジックの単独 file 化
+- audio_sample_helpers.rs (Loop 68) / session_store_types.rs (Loop 67) precedent 直接展開
+- variety: scope 切替 (audio Loop 68 → session_store Loop 69) + pattern 維持 (pure fn 抽出)
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- visibility: 2 fn を pub(crate) に昇格、定数は private 維持 (新 file 内部のみ使用)
+- doc comment 維持
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK (EXIT: 0)
+- session_store.rs から `^fn unescape_inline_markdown_text` / `^fn parse_session_started_at_secs` / `^const MAX_JS_DATE_UNIX_SECS` を grep: 完全に空
+- session_store_parse.rs から同 fn を grep: 各 1 件確認
+- trailing whitespace: なし
+
+## commit
+- 7aeb72f
