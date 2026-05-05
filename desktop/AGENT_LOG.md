@@ -29572,3 +29572,125 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 5dbf825
 
 ---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-35
+
+## 達成実績 (2 ループ完走 = exception 判断 + 完全 variety pivot 達成 = 「2 ループ + 早期 handoff」precedent 連続 31 セッション目達成)
+
+### Loop 70 = realtime AudioCommand enum 共通化 (commit `80ba63d` + chore `1077298` = ~3 分)
+- src-tauri/src/realtime_audio_command.rs (新規 12 行) に elevenlabs_realtime.rs / openai_realtime.rs で重複していた private enum AudioCommand を共通化抽出
+  - `pub(crate) enum AudioCommand { Samples(Vec<f32>), Finalize }` (12 行、Finalize doc comment を openai 側から保持)
+- lib.rs に `mod realtime_audio_command;` 追加 (openai_realtime と secret_store の間、L21)
+- elevenlabs_realtime.rs L60-65 + openai_realtime.rs L78-83 の重複 enum 削除 + use 文追加
+- メイン批判判断 連続 22 セッション目達成 = handoff 候補 X'' (強い variety pivot = 検知拡張 / frontend / docs) を grep で frontend = TODO/FIXME/any ゼロ + docs = stale grep ゼロ → 候補 X''' exception 判断 = elevenlabs+openai AudioCommand enum 100% 同一構造の重複削除 (規模 SS + precedent 直接展開 + DRY 質的価値) で exception 妥当と判断
+- worker 自律 2-commit pattern (Loop 60-69 precedent 10 連続継承 → 11 連続)
+- worker prompt 212 行 simpler 化で worker elapsed ~3 分 = 規模 XS の最速圏
+
+### Loop 71 = 検知拡張 plan ドキュメント作成 (commit `5dbf825` + chore `d9e905f` = ~4 分)
+- docs/architecture/detection-extension-plan.md (新規 268 行) を作成 = Slack Huddle / Discord stage / 補助 service (MS Teams Channel Calls / Zoom Phone) の段階拡張 plan
+- 構成: Overview / Current State / Target Services / Detection Strategy / Phase Plan (Phase 1-5) / Open Questions / 参考
+- worker grep 調査 4 件 (WATCHED_BUNDLE_IDS / throttle_key 3 形式 / window title 経路 / Slack/Discord 言及) で現状把握を Section 2 に正確反映
+- メイン批判判断 連続 23 セッション目達成 = Loop 70 の 7 連続到達 + Loop 71 = 完全 variety pivot 必須 → 機能拡張軸 (priority 2) への完全シフト = docs 作成で価値出すアプローチに転換
+- worker 自律 2-commit pattern (連続 12 ループ目)
+- worker prompt 258 行 (調査 + 執筆込みで規模 SS) で worker elapsed ~4 分
+
+## 大型 rust file 縮小実績 (handoff 候補 X 始動以降の累計)
+
+- audio.rs: 1011 行 (mjc-main-20260505-32 終了時) → 949 行 (-62 行) + audio_traits.rs (24 行) + audio_sample_helpers.rs (47 行)
+- session_store.rs: 1175 行 → 1133 行 (-42 行) + session_store_types.rs (19 行) + session_store_parse.rs (32 行)
+- elevenlabs_realtime.rs / openai_realtime.rs: 各 ~5 行ずつ削減 (重複 enum 削除) + realtime_audio_command.rs (新規 12 行) で AudioCommand 共通化 = DRY 達成
+- 残 (Loop 72+ 候補): session_manager.rs (1274 行) / elevenlabs+openai WS タスク本体共通化 (規模 M) / session_store 残 pure fn
+
+## 検知拡張 plan 作成実績 (本セッション Loop 71)
+
+- docs/architecture/detection-extension-plan.md (新規 268 行) = Phase 1-5 段階設計 + Open Questions 残し
+- Phase 1 = WATCHED_BUNDLE_IDS + MatchStrategy enum 拡張 (規模 SS-S = 1 ループ完結期待)
+- Phase 2 = window title pattern matching 拡張 (規模 SS-M = 1-2 ループ)
+- Phase 3 = Slack Huddle 検知実装 (規模 S = 1 ループ)
+- Phase 4 = Discord stage 検知実装 (規模 S = 1 ループ)
+- Phase 5 = 補助 + axis test 拡充 (低優先)
+- 後続 Loop での実装着手の道筋確保
+
+## 戦略転換の継承 (連続 22-23 セッション目達成)
+
+- メイン批判判断 連続 22+23 セッション目 = handoff の予測 / 状況記述を grep で実態確認 → exception 判断 + 完全 variety pivot 採用
+- worker 完走 累計 171/171 (100% 維持、本セッション +2 件)
+- harness 衛生連続 29 セッション目 = canonical 移譲後 scripts/* M 表示再出現せず観測継続
+- 「2 ループ + 早期 handoff」precedent 連続 31 セッション目達成
+- ファイル参照型 handoff prompt precedent 連続 32 セッション目継承
+- worker 自律 2-commit pattern 連続 12 ループ目達成
+- 大型 rust file 責務分離 7 連続到達 + Loop 71 完全 variety pivot 達成 = カウンタリセット
+- コミット周期: Loop 70 = ~3 分 / Loop 71 = ~4 分 = 平均 ~3.5 分/loop = 目標 15 分以内大幅達成
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 22-23 セッション目)
+
+- Loop 70: handoff 候補 X'' (強い variety pivot = 検知拡張 / frontend / docs) を grep で実態確認 → frontend (LiveCaptionWindow.tsx + MeetingDetectedBanner.tsx) で TODO/FIXME/any ゼロ + docs (AGENTS.md / agent-harness-claude.md / autonomous-main-prompt-claude.md / product-concept.md) で transcription / app_detection / Phase / plan.md 言及全てゼロ = stale 記述ゼロ = 主観性高警告該当 → 代替の候補 X''' exception 判断 = elevenlabs+openai AudioCommand enum 100% 同一構造の重複削除 (規模 SS + precedent 直接展開 + DRY 質的価値) で exception 妥当と判断 → 採用
+- Loop 71: Loop 70 で 7 連続到達 = sweep 警告超過 = 強い variety pivot 必須 → 機能拡張軸 (priority 2) への完全シフトを判断 → 実コード変更は規模 M (window title pattern matching インフラ要) で 1 ループ困難 → 設計 plan ドキュメント作成に縮退 → 完全 variety pivot 達成 + 後続実装の道筋確保
+- precedent: 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず grep で実態確認 → exception 判断 / 新候補発見 / 完全 variety pivot 採用」が **23 セッション連続で実証** (mjc-main-20260505-20 〜 -35)
+
+## 後継 (mjc-main-20260505-36) への引き継ぎ判断 (Loop 72 候補、優先順位順)
+
+### variety 規則の状態 (Loop 72 開始時点)
+
+直近 8 ループ: Loop 64 (app_detection URL helper) → 65 (app_detection Google Meet) → 66 (audio trait) → 67 (session_store struct) → 68 (audio pure helper) → 69 (session_store pure fn) → 70 (realtime AudioCommand 共通化, exception 判断) → 71 (検知拡張 plan docs, 完全 variety pivot)。
+- 大型 rust file 責務分離 = Loop 70 で 7 連続到達 + Loop 71 で完全 variety pivot 達成 = カウンタリセット
+- pattern 内訳: pure fn (4) + trait (1) + struct (1) + enum 共通化 (1) + plan docs (1) = 多様な pattern 達成
+- scope 内訳: app_detection (2) + audio (2) + session_store (2) + realtime (1) + docs (1) = 多 scope 分散
+- **Loop 72 = カウンタリセット = 候補選択自由度高い、ただし「同じパターン 3 ループ続いたら 4 ループ目で variety pivot」規則は維持**
+
+### 候補 Y (Loop 72 推奨, Loop 71 plan の Phase 1 実装)
+
+#### Y. 検知拡張 Phase 1 = WATCHED_BUNDLE_IDS + MatchStrategy enum 拡張
+- 詳細は docs/architecture/detection-extension-plan.md の Phase 1 セクション参照
+- 規模 SS-S = 1 ループ完結期待
+- AGENTS.md priority 2 直接寄与 + Loop 71 plan の継続 = 価値の連鎖
+- メイン批判判断: worker 発注前に `grep -nE 'WATCHED_BUNDLE_IDS' src-tauri/src/app_detection.rs` で実態 (~5-7 件 caller) を確認 → 規模再見積
+
+### 候補 X (Loop 72 alternative, 大型 rust file 責務分離再開)
+
+- session_manager.rs (1274 行) Phase 1
+- elevenlabs+openai WS タスク本体共通化 Phase 1 (AudioCommand 共通化の続編)
+- session_store.rs 残 pure fn 抽出
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ確認 = 主観性高警告
+
+### 候補 I (継承、低優先): Discord stage / Slack Huddle 検知 (実装)
+
+- detection-extension-plan.md Phase 3 / Phase 4 = Phase 1-2 完了後の続編
+
+### 候補 L (継承、低優先): docs 軸
+
+- detection-extension-plan.md 新規作成済 = sweep 化禁止
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (継承)
+
+### 低優先 (harness 衛生、未着手)
+
+#### H. 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 250+ untracked、ユーザー直伝指示があるまで保留)
+#### I. AGENT_LOG.md ~29,500+ 行の archive 戦略 (未着手)
+
+## 検証制約 (再掲)
+
+- cmake あり → cargo test 702 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 70/71 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 1 回 (Loop 71 worker 起動前 = improver による継続指示、適切タイミング)
+
+
+---
+
