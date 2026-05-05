@@ -2,10 +2,8 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Outlet, useNavigate } from "@tanstack/react-router";
-import { markPendingMeetingStartRequest } from "./utils/meetingStartRequest";
+import { markPendingMeetingStartRequest, MEETING_START_REQUEST_EVENT } from "./utils/meetingStartRequest";
 import "./App.css";
-
-const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
 
 function App() {

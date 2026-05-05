@@ -6,6 +6,7 @@ import type { MeetingAppDetectedPayload } from "../types";
 import {
   clearPendingMeetingStartRequest,
   markPendingMeetingStartRequest,
+  MEETING_START_REQUEST_EVENT,
 } from "../utils/meetingStartRequest";
 import {
   getMeetingDetectedBannerDetail,
@@ -24,7 +25,6 @@ import {
 } from "../utils/liveCaptionStatus";
 import { BOTH_TRACKS_DEVICE_LABEL } from "../utils/audioTrackLabels";
 
-const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 const PROMPT_EMPTY_BOOT_HIDE_MS = 2000;

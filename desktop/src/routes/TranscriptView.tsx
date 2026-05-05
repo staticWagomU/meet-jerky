@@ -35,6 +35,7 @@ import { useSessionList } from "../hooks/useSessionList";
 import {
   clearPendingMeetingStartRequest,
   hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
+  MEETING_START_REQUEST_EVENT,
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
@@ -106,7 +107,6 @@ const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しま
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
-const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
 type SavedFileAction = "open" | "reveal" | null;
 
 function clearRelatedMeetingError(

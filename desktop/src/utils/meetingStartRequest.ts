@@ -1,3 +1,5 @@
+export const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+
 const PENDING_MEETING_START_STORAGE_KEY = "meetJerky.pendingMeetingStart";
 const PENDING_MEETING_START_TTL_MS = 60_000;
 
