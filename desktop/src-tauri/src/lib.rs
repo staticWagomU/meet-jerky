@@ -31,6 +31,7 @@ mod secret_store;
 mod secret_store_commands;
 mod session;
 mod session_commands;
+mod session_commands_list;
 mod session_manager;
 mod session_manager_persist;
 mod session_manager_types;
@@ -399,7 +400,7 @@ pub fn run() {
             session_commands::start_session,
             session_commands::finalize_and_save_session,
             session_commands::discard_session,
-            session_commands::list_session_summaries_cmd,
+            session_commands_list::list_session_summaries_cmd,
             app_detection::take_latest_meeting_detection,
             show_main_window,
             set_meeting_prompt_window_visible,

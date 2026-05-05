@@ -11,7 +11,6 @@ use chrono::FixedOffset;
 
 use crate::session_manager::SessionManager;
 use crate::session_store;
-use crate::session_store_types::SessionSummary;
 use crate::settings::{default_output_directory, SettingsStateHandle};
 
 /// 現在時刻 (unix 秒) を取得。`SystemTime::now` の逆行時は 0 を返すが、
@@ -32,7 +31,7 @@ fn default_offset() -> FixedOffset {
 
 /// 設定から出力ディレクトリを解決する。未設定 or 空文字の場合は
 /// アプリ既定ディレクトリを使う。
-fn resolve_output_directory(settings_state: &SettingsStateHandle) -> PathBuf {
+pub(crate) fn resolve_output_directory(settings_state: &SettingsStateHandle) -> PathBuf {
     let settings = settings_state.0.lock();
     match settings.output_directory.as_deref() {
         Some(dir) if !dir.is_empty() => PathBuf::from(dir),
@@ -128,29 +127,6 @@ pub fn discard_session_inner(manager: &SessionManager) -> Result<(), String> {
 #[tauri::command]
 pub fn discard_session(state: tauri::State<'_, Arc<SessionManager>>) -> Result<(), String> {
     discard_session_inner(state.inner().as_ref())
-}
-
-// ─────────────────────────────────────────────
-// list_session_summaries
-// ─────────────────────────────────────────────
-
-/// テスト可能な list_session_summaries 実装本体。
-///
-/// 初回起動時などでディレクトリが存在しないケースはエラーにせず空配列を返す。
-pub fn list_session_summaries_inner(output_dir: &Path) -> Result<Vec<SessionSummary>, String> {
-    if !output_dir.exists() {
-        return Ok(Vec::new());
-    }
-    session_store::list_session_summaries(output_dir)
-        .map_err(|e| format!("セッション一覧の取得に失敗しました: {e}"))
-}
-
-#[tauri::command]
-pub fn list_session_summaries_cmd(
-    settings_state: tauri::State<'_, SettingsStateHandle>,
-) -> Result<Vec<SessionSummary>, String> {
-    let output_dir = resolve_output_directory(settings_state.inner());
-    list_session_summaries_inner(&output_dir)
 }
 
 // ─────────────────────────────────────────────
@@ -279,35 +255,6 @@ mod tests {
         assert!(nested.exists(), "start should create the output directory");
     }
 
-    // Cycle 4: list_session_summaries_inner が保存済みファイルを返す (スモーク)
-    #[test]
-    fn list_session_summaries_inner_returns_saved_summary() {
-        let dir = tempdir().unwrap();
-        std::fs::write(
-            dir.path().join("100-0.md"),
-            "# 会議メモ - 2024-04-17 14:50\n",
-        )
-        .unwrap();
-
-        let summaries = list_session_summaries_inner(dir.path()).expect("listing should succeed");
-
-        assert_eq!(summaries.len(), 1);
-        assert_eq!(summaries[0].started_at_secs, 100);
-        assert_eq!(summaries[0].title, "会議メモ - 2024-04-17 14:50");
-    }
-
-    // 存在しないディレクトリは空配列を返す (初回起動時の UX)
-    #[test]
-    fn list_session_summaries_inner_returns_empty_for_missing_dir() {
-        let dir = tempdir().unwrap();
-        let missing = dir.path().join("does_not_exist");
-
-        let summaries =
-            list_session_summaries_inner(&missing).expect("missing dir should not error");
-
-        assert!(summaries.is_empty());
-    }
-
     // Cycle 5a: output_dir がファイルの場合 create_dir_all が失敗し日本語エラーを返す
     // finalize は create_dir_all より先に呼ばれるため manager はアイドルに戻っている
     #[test]
@@ -332,24 +279,6 @@ mod tests {
         );
         // finalize() は create_dir_all より先に呼ばれるため manager はアイドルに戻っている
         assert!(!manager.is_active());
-    }
-
-    // Cycle 5b: output_dir がファイルの場合 list_session_summaries_inner が日本語エラーを返す
-    #[test]
-    fn list_session_summaries_inner_returns_error_when_path_is_a_file() {
-        let dir = tempdir().unwrap();
-        let blocking_file = dir.path().join("not_a_dir.txt");
-        std::fs::write(&blocking_file, b"hello").unwrap();
-        assert!(blocking_file.exists());
-        assert!(blocking_file.is_file());
-
-        let err = list_session_summaries_inner(&blocking_file)
-            .expect_err("should error when path is a file not a directory");
-
-        assert!(
-            err.starts_with("セッション一覧の取得に失敗しました"),
-            "unexpected error message: {err}"
-        );
     }
 
     // Cycle 6a: start_session_inner が output_dir がファイルの場合に日本語エラーを返す
