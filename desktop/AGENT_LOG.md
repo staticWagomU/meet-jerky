@@ -32593,3 +32593,65 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-56 (canonical = mjc-main)
+
+## セッション概要
+- 起動: 2026-05-05 ~22:34 JST (前任 mjc-main-20260505-55 から 2 ループ完走 + 通常 cadence handoff 引き継ぎ)
+- 完走: 2 ループ (Loop 108 + Loop 109) + 通常 cadence handoff
+- 累計 worker 完走: 208/208 (100% = +2 件)
+- 連続 50 セッション目 = メイン批判判断 → 連続 51 セッション目達成
+- 連続 47 ループ目 = worker 自律 2-commit pattern → 連続 49 ループ目達成
+- 連続 50 セッション目 = harness 衛生 → 連続 51 セッション目達成
+- 連続 52 セッション目 = ファイル参照型 handoff prompt → 連続 53 セッション目達成 (本 handoff)
+
+## Loop 108 = frontend 軸 2 件目 = LiveCaptionWindow.tsx 純粋関数抽出 (scope 18 軸目開拓)
+- worker: mjc-worker-loop108-live-caption-track-helpers-extract
+- 範囲: src/components/LiveCaptionWindow.tsx (純粋関数 5 件 + 関連 type 2 件削除 + import 1 行追加, -62 行 = 580 → 518 行) + src/utils/liveCaptionTrackHelpers.ts (新規 79 行)
+- 内容: LiveCaptionWindow.tsx L42-127 の純粋関数 helpers 5 件 (createEmptyLatestBySource + getSpeakerLabel + getSpeakerClassName + getTrackStateLabel + getTrackCaptureState + getVisibleTrackSummary) + 関連 type 2 件 (LatestBySource + TrackCaptureState) を新 module utils/liveCaptionTrackHelpers.ts に抽出。caller (同 file 内 12 箇所) は import 1 行追加 + 既存呼び出しは無変更。TrackMeta type + TRACKS const + hideLiveCaptionOverlayWindow + message constants は LiveCaptionWindow.tsx 内に残置 (component 密結合)。
+- paradigm: 純粋関数機能分離軸 frontend 版 continuity (Loop 107 utils/transcriptViewFormatters.ts と同 paradigm = 2 連続 = warning 境界内、3 連続境界注意)
+- メイン批判判断: handoff 「最有力推奨 X2 = SettingsView.tsx (2010 行)」をトップレベル純粋関数なし判定で SKIP し、J' = LiveCaptionWindow.tsx (580 行) を grep + Read 精査で 5 純粋関数 + 2 type 発掘して採用 = 連続 51 セッション目達成。SettingsView.tsx は L123 syncLiveCaptionStatus 1 件のみ (副作用あり = 純粋でない) + 他は constants + type + 巨大 component (SettingsView 本体 ~1587 行 + PermissionBadge ~57 行 + ExternalApiKeySection ~234 行) = 抽出余地が乏しい判定。
+- 重要設計判断: TranscriptDisplay.tsx に同名 getSpeakerLabel が別 signature (`string | null` vs LiveCaptionWindow の `string`) で存在 = 共通化リスク = 新 file 名は LiveCaption 専用 namespace 明示の `liveCaptionTrackHelpers.ts` を採用 = 衝突回避設計
+- frontend 軸 = scope 18 軸目開拓 (前 17 軸 = session_store + audio + realtime engine + detection + session_manager + harness + app_detection 機能分類 + settings + transcription_commands + system_audio 機能分類 + secret_store + audio_silence + apple_speech + session_commands + audio_resample + 検知拡張 plan + frontend TranscriptView)
+- 大型 frontend file 責務分離 30 file 目達成
+- commits: 9d898fc (refactor) + fed942c (chore)
+- 規模: SS-S (~3 分完走、worker prompt = 184 行)
+- 検証: npm run build ✓ built in 873ms (1918 modules transformed = 前 1917 + 1 新 module) + cargo test 不要 (rust 無変更)
+
+## Loop 109 = K 軸復帰 = Section 2.3 観測追記 8 件目 (paradigm pivot 達成)
+- worker: mjc-worker-loop109-archive-plan-stats-update-7
+- 範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 8 件目追記、~3 行)
+- 内容: Loop 108 完了時点 (32,584 行) の更新観測を Section 2.3 末尾に追記。Loop 105 → Loop 108 で +95 行 / 平均 ~32 行/loop。Loop 105 観測 (~75 行/loop) と比較して ~57% 減 = SESSION SUMMARY 1 件 (前 2 件) + frontend 軸 refactor 2 件は AGENT_LOG.md 0 行寄与 = 軽量増分パターン継続。Loop 79/81/86/95/98/102/106 precedent 8 件目達成。
+- paradigm: K 軸 = harness 衛生軸 (Loop 108 frontend 軸 → Loop 109 K 軸 = frontend 軸 3 連続警告境界回避 + paradigm pivot 達成)
+- メイン批判判断: 本セッション Loop 108 で frontend 軸 2 連続到達 = Loop 109 で 3 連続は警告境界突破のため pivot 推奨 = K 軸復帰判断 = paradigm pivot 達成 + 観測内容軽量パターン記録
+- commits: d6de5a2 (docs) + 3cd4198 (chore)
+- 規模: SS (~3 分完走、worker prompt = 83 行)
+- 検証: agent-verify.sh 全 OK (frontend skip + rust skip = docs only)
+
+## 戦略転換の核心 (継承 + 強化)
+- mjc-main-20260505-1: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- mjc-main-20260505-2: 「Webex sweep」の variety 規則確立
+- mjc-main-20260505-3: 「handoff prompt の主要候補を批判的に再評価する」precedent
+- mjc-main-20260505-4 〜 55: Phase 1-6 + サービス別抽出 + test 移動 + struct 移動 + Phase 6 第 1-5 歩 + 最終 + app_detection scope シリーズ + 大型 rust file 責務分離 12-29 file 目 + 検知拡張 plan + Phase 1 + Q5 + Q6 Resolved + AGENT_LOG.md archive 戦略 plan + 各種共通化 + Section 2.3 観測追記 7 件 + scope depth 軸 5 件確立 + alias 戦略 paradigm 確立 + frontend 軸 17 軸目開拓 (Loop 107 = utils/transcriptViewFormatters.ts)
+- **mjc-main-20260505-56 (本セッション)**: **2 ループ完走 = Loop 108 (frontend 軸 2 件目 = LiveCaptionWindow.tsx → utils/liveCaptionTrackHelpers.ts = 5 純粋関数 + 2 type 抽出 = -62 行 = 純粋関数機能分離軸 frontend 版 continuity + 大型 frontend file 責務分離 30 file 目 + scope 18 軸目開拓 + handoff X2 SettingsView.tsx 批判 SKIP / J' LiveCaptionWindow.tsx 採用 paradigm 強化) + Loop 109 (K 軸復帰 = Section 2.3 観測追記 8 件目 = +95 行 / 平均 ~32 行/loop = paradigm pivot 達成 + frontend 軸 3 連続警告境界回避)) = メイン批判判断 連続 51 セッション目達成 + worker 自律 2-commit pattern 連続 49 ループ目 + harness 衛生連続 51 セッション目 + ファイル参照型 handoff prompt 連続 53 セッション目 + scope 多様性 18 軸到達 + frontend 軸 = 2 件目 = 異 file 拡張 (TranscriptView → LiveCaptionWindow) = 同 paradigm continuity + scope 多様性両立 paradigm 確立**
+
+## 進行中セッション (handoff 直前)
+
+- mjc-main (canonical = mjc-main-20260505-56, handoff 直前)
+- mjc-main-20260505-56 (本セッション、間もなく handoff)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge: 0 件 (2 ループ完走 + handoff まで自律進行)
+
+## 引き継ぎ
+
+- 引き継ぎ先: mjc-main-20260505-57
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-57.txt (ファイル参照型 handoff prompt 連続 53 セッション目)
+- 旧メイン (mjc-main-20260505-56 = 本セッション = canonical mjc-main) は handoff 後終了
+
+worker 完走 2/2 = 累計 208/208 100%。
+
+---
