@@ -32880,3 +32880,14 @@ variety 規則の状態 (本セッション完了時点):
 - bash -n scripts/claude-agent-*.sh: OK
 
 ---
+[mjc-main-20260505-60 Loop 116 / 2026-05-06]
+worker: mjc-worker-loop116-session-list-helpers-extract (作業)
+範囲: src/routes/SessionList.tsx (純粋関数 13 件削除 + import 2 ブロック追加, ~147 行削減 700→553 行) + src/utils/sessionListHelpers.tsx (新規 157 行) = 純粋関数 11 件抽出 + 重複 2 件 (getFileName/getSessionDisplayTitle) は既存 transcriptViewFormatters から import 統合 (DRY 軸混合)
+内容: SessionList.tsx の純粋関数 13 件 (getSessionStartedAtDisplay + formatSearchQueryForLabel + getSearchTerms + unescapeInlineMarkdownText + formatSearchExcerptText + getSearchMatchExcerpt + escapeRegExp + renderHighlightedSearchExcerpt + hasTranscriptBody + getTranscriptTrackCounts + sessionMatchesQuery + getFileName + getSessionDisplayTitle) のうち、11 件を新 file `src/utils/sessionListHelpers.tsx` (file 専用 namespace = 衝突回避設計 6 件目 precedent、JSX 使用のため .tsx 拡張子採用) に抽出、重複 2 件 (getFileName + getSessionDisplayTitle = transcriptViewFormatters.ts:7 + :11 と完全同実装の技術負債) は既存 transcriptViewFormatters から import 統合 = DRY 重複解消達成 = メイン批判判断発掘成果反映。frontend 軸 6 件目 (Loop 107/108/110/112/114 precedent) = scope 22 軸目開拓 (`src/routes/` 配下 = 異 directory = 多様性継続) + 大型 frontend file 責務分離 34 file 目 + 純粋関数機能分離軸 frontend 版 continuity。alternation pattern (K(115) → frontend(116)) = 軸 reset 解釈で 6 連続境界突破。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)。
+verify: npm run build OK (vite v7.3.2 = 1922 modules transformed = +1 module 新 file 追加分)。scripts/agent-verify.sh 全項目 OK。
+commits:
+- f536a5a refactor(frontend): SessionList 純粋関数 helpers を utils/sessionListHelpers.tsx に抽出 + 重複 2 件は transcriptViewFormatters 統合
+AGENTS.md priority: 1 (大型 frontend file 責務分離 + DRY 重複解消 + 純粋関数機能分離 = Mac アプリ保守性向上)
+
+---
