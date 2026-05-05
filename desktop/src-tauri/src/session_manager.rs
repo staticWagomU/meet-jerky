@@ -1,4 +1,5 @@
 use crate::session::Session;
+use crate::session_manager_types::{ActiveOutput, ActiveSession};
 use crate::session_store;
 use chrono::FixedOffset;
 use std::path::PathBuf;
@@ -10,20 +11,6 @@ pub enum SessionManagerError {
     AlreadyActive,
     #[error("no active session")]
     NotActive,
-}
-
-/// 活性セッションの状態。
-///
-/// `output` が `Some` の場合、`append`/`finalize` ごとに対応ファイルへ全文書き出しを行う
-/// （インクリメンタル書き出し）。`None` の場合は in-memory のみで動作する。
-struct ActiveSession {
-    session: Session,
-    output: Option<ActiveOutput>,
-}
-
-struct ActiveOutput {
-    path: PathBuf,
-    offset: FixedOffset,
 }
 
 pub struct SessionManager {
