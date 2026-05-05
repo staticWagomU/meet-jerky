@@ -33922,3 +33922,11 @@ worker: mjc-worker-loop158-archive-plan-stats-update-32 (作業)
 検証: agent-verify.sh = OK (docs 単独 skip 判定)。
 意義: K 軸 precedent 32 件目達成 = 節目 30 件突破後継続 = K 軸自体の paradigm 完全成熟期維持 + 軽量化階層の範囲下端 3 ループ連続拡大 (Loop 153 = ~20 行 → Loop 155 = ~18 行 → Loop 157 = ~9.5 行) = 軽量化トレンド完全実証 + 4 段階階層化 paradigm 完全成熟期維持 + ultra-light サブ階層の発見候補 + worker 自律 2-commit pattern 連続 14 ループ目達成 = 節目 14 件突破継続。
 ---
+[mjc-main-20260505-78 Loop 159 / 2026-05-06]
+worker: mjc-worker-loop159-jst-test-helper-consolidate (作業)
+範囲: src-tauri/src/datetime_fmt.rs (test module 内 fn jst 削除 + module level に #[cfg(test)] pub(crate) fn jst 新設 = ±0 行) + src-tauri/src/{session_manager,session_commands,session_store_render,session_store}.rs (各々 test module 内 fn jst 3 行削除 + use crate::datetime_fmt::jst 1 行追加 = 各 -2 行 = 合計 -8 行)
+内容: 5 file の test module 内 `fn jst() -> FixedOffset { FixedOffset::east_opt(9 * 3600).unwrap() }` 完全同一重複定義を削除 + datetime_fmt.rs::jst (module level に #[cfg(test)] pub(crate) fn として新設) から use 経由参照。**rust 軸 = 既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約)** = Loop 157 calculate_rms 集約 (2 file) の規模拡大版 paradigm。callsite (jst()) は use により名前空間に取り込まれるため全件無変更で API 互換維持。**責務階層精査**: datetime_fmt.rs = datetime 整形 tier = JST FixedOffset の正規定義場所として最適 (既に `use chrono::{DateTime, FixedOffset, TimeZone};` import 済) + 他 4 file (session_manager / session_commands / session_store_render / session_store) は session 関連 tier で test 用 timezone helper のみ重複 = test helper 集約軸として責務分離合理的。**#[cfg(test)] gate**: production binary に影響なし (test build のみ jst が出現)。alternation pattern 47 連続維持 (K(158) → rust(159))。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要。
+verify: scripts/agent-verify.sh 全項目 OK
+意義: 既存 file 拡張軸 paradigm 6 件目達成 (Loop 145/147/149/153/157 の続編 = 5 件目から 6 件目へ拡張) + 重複候補 grep 探索 paradigm 6 件目達成 = test helper 同名 fn 探索の新軸開拓 + 多 file 同時集約 paradigm の rust 版確立 (frontend 版 Loop 149 = 3 file MEETING_START_REQUEST_EVENT 集約 の規模拡大版 = 5 file 集約) + DRY 違反解消 + worker 自律 2-commit pattern 連続 15 ループ目達成 = 節目 15 件突破 + scope 38 軸目開拓候補 (test helper tier) の可能性。
+---
