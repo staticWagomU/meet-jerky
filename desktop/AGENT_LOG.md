@@ -31783,3 +31783,17 @@ AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離
 - 判断時の使用率: 観測手段なしのため Loop 94 完走後に保守的に handoff へ進む方針 (Loop 93 = 規模 SS 3-4 分 + Loop 94 = 規模 SS 6 分 + 大量 grep/Read 操作累積で context 使用率推定中-高 + watchdog nudge 受信)
 
 ---
+
+[mjc-main-20260505-49 Loop 95 / 2026-05-05]
+worker: mjc-worker-apple-speech-macos-loop95 (作業)
+範囲: src-tauri/src/apple_speech.rs (mod macos { ... } block ~159 行削除 + L37 caller 1 行修正 + normalize_segment_text pub(crate) 化) + src-tauri/src/apple_speech_macos.rs (新規 ~154 行) + src-tauri/src/lib.rs (#[cfg(target_os = "macos")] mod apple_speech_macos; 1 行追加)
+内容: apple_speech.rs L71-229 の #[cfg(target_os = "macos")] mod macos { ... } block (FFI extern "C" 5 関数 + SpeechBridge zero-sized type + RawSegment Deserialize + AppleSpeechStream struct + unsafe impl Send + impl AppleSpeechStream new/drain_inner + impl TranscriptionStream feed/drain_segments/finalize + impl Drop) を新 module apple_speech_macos.rs に抽出。L37 caller 1 行を crate::apple_speech_macos::AppleSpeechStream::new に書き換え。lib.rs に #[cfg(target_os = "macos")] mod apple_speech_macos; 追加 (alphabetical 順)。normalize_segment_text を pub(crate) に昇格 (外部 module からの参照に必要な最小修正)。元 file 共通部 (L1-69 = AppleSpeechEngine + impl TranscriptionEngine cfg switch + language_to_locale + normalize_segment_text) と tests (L231-382, 11 件) は不変。大型 rust file 責務分離 21 file 目 = apple_speech 軸 1 件目 (新 scope) = audio_silence 軸 (Loop 94) からの pivot 達成 = paradigm 切り替え (純粋関数機能分離軸 → cfg(macos) inline module 分離軸)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 8d6f890afc03d972107597a97f07541738f107e9 refactor(apple-speech): cfg(macos) FFI ブリッジを apple_speech_macos.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = apple_speech 軸の cfg(macos) 局所化 = クロスプラットフォーム共通部と macOS 専用 ABI を 2 file に明示分離)
+
+---
