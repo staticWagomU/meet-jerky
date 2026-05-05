@@ -30331,3 +30331,34 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 079267f2444e6e9cdd357eaa9b69512e1e0a9384
 
 ---
+
+[mjc-main-20260505-39 Loop 79 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/agent-log-archive-plan.md (新規 140 行) を作成 = AGENT_LOG.md 段階的 archive 戦略 plan
+- Section 1-7: Overview / Current State (30,333 行 / 56 session / 82 loop / 31 SESSION SUMMARY) / Target State / Strategy (3 option 比較 = session ベース推奨) / Phase 1-4 / Open Questions Q1-Q4 / 参考
+- precedent: detection-extension-plan.md (Loop 71) の structure 直接踏襲
+
+## Why
+- AGENTS.md L46-L52 自律改善方針: 長期安定運用への寄与 = AGENT_LOG.md 巨大化対策
+- mjc-main-20260505-39 Loop 79 メイン批判判断 (連続 31 セッション目): handoff K2 の「ユーザー直伝指示要 + 主観性高警告」を grep で再評価 → 切り出し基準 3 option 比較 + Phase 段階導入で技術的判断中心化 → plan 起こしのみは自律 OK と判定 → 実施は Phase 1-2 で別途承認待ち
+- variety 規則: Loop 78 = 機能拡張/docs 軸 → Loop 79 = harness 衛生軸 = 多軸分散維持 + 構造分離 4 連続到達回避継続
+- 規模 SS = ~150 行 docs 新規、振る舞い不変 (rust 触らず)、後続 Loop での実施準備
+
+## How (docs only)
+- docs/architecture/agent-log-archive-plan.md を新規作成
+- detection-extension-plan.md (Loop 71) Section 1-7 structure 直接踏襲
+- 切り出し基準 3 option 比較 (行数 / session / 日付ベース) → session ベース推奨
+- Phase 1 (Index Header) → Phase 2 (batch-001 = 25K 行切り出し) → Phase 3 (随時) → Phase 4 (自動化検討)
+- AGENT_LOG.md の実 archive 移動は本 loop で実施しない (plan 起こしのみ)
+
+## Verify
+- agent-verify.sh: OK (docs only)
+- grep -nE ' +$' docs/architecture/agent-log-archive-plan.md: 空 (trailing whitespace なし)
+- ls docs/architecture/agent-log-archive-plan.md: 新規 file 確認
+- wc -l docs/architecture/agent-log-archive-plan.md: 140 行
+
+## commit
+- ab85457379148b68e5a9c73d8138707d7a53bc99
+
+---
