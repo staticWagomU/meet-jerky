@@ -42,6 +42,7 @@ mod session_store_parse;
 mod session_store_render;
 mod session_store_types;
 mod settings;
+mod settings_commands;
 mod settings_permission;
 mod system_audio;
 mod system_audio_format;
@@ -386,10 +387,10 @@ pub fn run() {
             transcription_commands_model::download_model,
             transcription_commands::start_transcription,
             transcription_commands::stop_transcription,
-            settings::get_settings,
-            settings::update_settings,
-            settings::get_default_output_directory,
-            settings::select_output_directory,
+            settings_commands::get_settings,
+            settings_commands::update_settings,
+            settings_commands::get_default_output_directory,
+            settings_commands::select_output_directory,
             settings_permission::check_microphone_permission,
             settings_permission::check_screen_recording_permission,
             secret_store_commands::set_openai_api_key,
