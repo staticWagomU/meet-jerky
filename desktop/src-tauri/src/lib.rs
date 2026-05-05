@@ -27,6 +27,7 @@ mod session_manager_persist;
 mod session_manager_types;
 mod session_store;
 mod session_store_parse;
+mod session_store_render;
 mod session_store_types;
 mod settings;
 mod system_audio;
