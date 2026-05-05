@@ -33187,3 +33187,15 @@ commit: ec6fc56 refactor(frontend): TranscriptView の audio level helpers を u
 次アクション: メイン側で SESSION SUMMARY 末尾追記 chore commit を予定
 
 ---
+[mjc-main-20260505-64 Loop 126 / 2026-05-06]
+worker: mjc-worker-loop126-archive-plan-stats-update-16 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 125 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124 precedent の 16 件目。Loop 123 → Loop 125 (~2 ループ間 + SESSION SUMMARY 1 件) で +45 行 (33,144 → 33,189)、平均 ~22.5 行/loop。Loop 123 観測値 (~42 行/loop) と比較して ~46% 減 = paradigm pivot 多軸 (K + frontend) + SESSION SUMMARY 1 件継続 + Loop 125 frontend 軸 chore entry 軽量化 (~12 行) = **frontend 軸 = chore entry 軽量化 paradigm 観測**。alternation pattern 18 連続成功維持 (K(124) → frontend(125) → K(126))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: 8764f6c docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 125 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
