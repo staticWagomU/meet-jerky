@@ -13,6 +13,15 @@ import {
   readStoredLiveCaptionStatus,
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
+import {
+  createEmptyLatestBySource,
+  getSpeakerClassName,
+  getSpeakerLabel,
+  getTrackCaptureState,
+  getTrackStateLabel,
+  getVisibleTrackSummary,
+  type LatestBySource,
+} from "../utils/liveCaptionTrackHelpers";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
 import {
   isTranscriptErrorSegment,
@@ -40,13 +49,11 @@ async function hideLiveCaptionOverlayWindow(): Promise<void> {
 }
 
 type AudioSource = NonNullable<TranscriptSegment["source"]>;
-type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
 type TrackMeta = {
   source: AudioSource;
   label: string;
   ariaPrefix: string;
 };
-type TrackCaptureState = "active" | "switching" | "inactive";
 
 const TRACKS: Array<TrackMeta> = [
   { source: "microphone", label: "自分", ariaPrefix: SELF_TRACK_DEVICE_LABEL },
@@ -56,75 +63,6 @@ const TRACKS: Array<TrackMeta> = [
     ariaPrefix: OTHER_TRACK_DEVICE_LABEL,
   },
 ];
-
-function createEmptyLatestBySource(): LatestBySource {
-  return {
-    microphone: null,
-    system_audio: null,
-  };
-}
-
-function getSpeakerLabel(segment: TranscriptSegment): string {
-  if (segment.source === "microphone") return "自分";
-  if (segment.source === "system_audio") return "相手側";
-  return segment.speaker || "ソース不明";
-}
-
-function getSpeakerClassName(segment: TranscriptSegment): string {
-  if (segment.source === "microphone") {
-    return "live-transcript-speaker live-transcript-speaker-self";
-  }
-  if (segment.source === "system_audio") {
-    return "live-transcript-speaker live-transcript-speaker-other";
-  }
-  return "live-transcript-speaker live-transcript-speaker-unknown";
-}
-
-function getTrackStateLabel(
-  segment: TranscriptSegment | null,
-  captureLabel: string,
-): string {
-  if (!segment) {
-    return captureLabel;
-  }
-  if (isTranscriptErrorSegment(segment)) {
-    return `${captureLabel}・エラー`;
-  }
-  return `${captureLabel}・${formatSegmentTimestamp(segment.startMs)}`;
-}
-
-function getTrackCaptureState(label: string): TrackCaptureState {
-  const normalizedLabel = label.trim();
-  if (normalizedLabel.includes("切替中")) {
-    return "switching";
-  }
-  if (
-    normalizedLabel.includes("録音中") ||
-    normalizedLabel.includes("取得中")
-  ) {
-    return "active";
-  }
-  return "inactive";
-}
-
-function getVisibleTrackSummary(status: LiveCaptionStatusPayload): string {
-  const microphoneState = getTrackCaptureState(status.microphoneTrackLabel);
-  const systemAudioState = getTrackCaptureState(status.systemAudioTrackLabel);
-
-  if (microphoneState === "switching" || systemAudioState === "switching") {
-    return "切替中";
-  }
-  if (microphoneState === "active" && systemAudioState === "active") {
-    return "Mic + System";
-  }
-  if (microphoneState === "active") {
-    return "Mic only";
-  }
-  if (systemAudioState === "active") {
-    return "System only";
-  }
-  return "未取得";
-}
 
 export function LiveCaptionWindow() {
   const [latestSegment, setLatestSegment] = useState<TranscriptSegment | null>(
