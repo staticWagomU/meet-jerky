@@ -33636,3 +33636,15 @@ commit: 3f27f1d
 次アクション: chore commit (本 entry 追記の commit) を続けて作成
 
 ---
+[mjc-main-20260505-72 Loop 147 / 2026-05-06]
+worker: mjc-worker-loop147-live-caption-tracks-consolidate (作業)
+範囲: src/utils/liveCaptionTrackHelpers.ts (+TrackMeta + TRACKS export 追加 + AudioSource export 化 + audioTrackLabels import 追加, ~+15 行) + src/components/LiveCaptionWindow.tsx (-AudioSource 型 -TrackMeta 型 -TRACKS 配列 削除 + import 拡張, ~-15 行)
+内容: LiveCaptionWindow.tsx の TRACKS 配列 + TrackMeta 型 + AudioSource 型 (重複) を liveCaptionTrackHelpers.ts に統合。**重複削除 + 既存 file 拡張軸 paradigm 2 件目** (Loop 145 = AudioLevelMeter sanitize 重複削除 paradigm 1 件目の 2 件目目)。発見された重複 / 抽出候補: (1) AudioSource 型が LiveCaptionWindow.tsx L51 と liveCaptionTrackHelpers.ts L6 で完全重複 (DRY 違反) → LiveCaptionWindow 側削除 + helpers 側を export 化、(2) TrackMeta 型 (LiveCaptionWindow L52-56) = audio source 表示用 metadata 型 = track display tier、(3) TRACKS 配列 (LiveCaptionWindow L58-65) = audio source の display metadata static data = track display tier。統合先 = liveCaptionTrackHelpers.ts (Loop 108 で抽出済 = audio source / track display tier helper 集約 file)、判定理由 = 同 entity (audio source / track) + 同 tier (display metadata / static data) = 既存 file 拡張軸 paradigm 該当。scope 35 軸維持 (新 file なし)。alternation pattern 36 連続成功維持 (K(146) → frontend(147))。
+変更ファイル: src/utils/liveCaptionTrackHelpers.ts (~+15 行), src/components/LiveCaptionWindow.tsx (~-15 行)
+検証: npm run build (tsc + vite build) 成功
+commit: 4637071
+依存関係追加: なし (utils 内 cross-import paradigm 7 件目に拡張 = audioTrackLabels.ts → liveCaptionTrackHelpers.ts)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
