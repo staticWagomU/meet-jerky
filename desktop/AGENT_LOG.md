@@ -32968,3 +32968,14 @@ commits:
 AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
 
 ---
+[mjc-main-20260505-61 Loop 119 / 2026-05-06]
+worker: mjc-worker-loop119-meeting-classifier-extract (作業)
+範囲: src-tauri/src/app_detection.rs (-109 行削除 + 5 行追加 re-export/comment = 純減 -104 行) + src-tauri/src/app_detection_meeting_classifier.rs (新規 118 行) + src-tauri/src/lib.rs (mod 登録 1 行追加)
+内容: app_detection.rs の classify_meeting_url (doc + 関数本体) + classify_meeting_window_title (doc + 関数本体) 2 関数を新 file app_detection_meeting_classifier.rs に抽出。MeetingUrlClassification 構造体は app_detection.rs 残置 (多数 caller + test 多数のため移動リスク回避)。app_detection.rs に pub use re-export 追加 = caller L335/L338 + test (super::* import) 全て無変更で API 互換維持。新 file 内 use 文 = MeetingUrlClassification + url_helpers の低レベル parser 2 件 (parse_url_host_and_path + normalize_url_host)、service module はフルパス参照維持。lib.rs アルファベット順 (app_detection_inactive_decision と app_detection_notification の間) に mod 登録追加。unused import (normalize_url_host + parse_url_host_and_path) を app_detection.rs から削除 = clippy -D warnings 対応。**rust 軸 = 純粋関数機能分離軸 rust 版 + scope 23 軸目開拓 (app_detection_meeting_classifier = 新 file)**。**alternation pattern 11 連続成功** (K(115) → frontend(116) → rust(117) → K(118) → rust(119))。**paradigm pivot (K → rust)**。Loop 117 = 既存 file 拡張軸 (新 paradigm) との対比 = Loop 119 = 新 file 作成軸 (既存 paradigm) = 同 rust 軸内でも paradigm differentiation 成立 = scope 多様性両立。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要 (前 Loop 116 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 8cfd1e6 refactor(rust): app_detection の classify_meeting_url + classify_meeting_window_title 2 関数を新 file app_detection_meeting_classifier.rs に抽出 (re-export で API 互換維持)
+AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 23 軸目開拓)
+
+---
