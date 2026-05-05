@@ -49,6 +49,7 @@ mod system_audio_format;
 mod system_audio_pcm;
 mod transcript_bridge;
 mod transcription_commands;
+mod transcription_commands_helpers;
 mod transcription_commands_model;
 mod transcription_emission;
 mod transcription_error_payload;
