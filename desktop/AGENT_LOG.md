@@ -29694,3 +29694,37 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ---
 
+
+[mjc-main-20260505-36 Loop 72 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs に MatchStrategy enum (2 variants: AppLaunch / WindowTitleContains(&'static str)) を新規定義 (~13 行 doc 込み)
+- WATCHED_BUNDLE_IDS の型を `&[(&str, &str)]` → `&[(&str, &str, MatchStrategy)]` に拡張、既存 4 アプリ全てに `MatchStrategy::AppLaunch` を付与 (振る舞い不変)
+- handle_detection 内 lookup destructure pattern 修正 (L515-516: `(bundle_id, _, _)` / `(_, app_name, _)`)
+- tests destructure pattern 修正 (L831/L864: `.map(|(id, _, _)| *id)`)
+- axis test 3 件追加: `match_strategy_app_launch_equality_contract` / `match_strategy_window_title_contains_equality_contract` / `watched_bundle_ids_all_use_app_launch_strategy`
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張に向けた将来準備寄与
+- Loop 71 plan (detection-extension-plan.md) Phase 1 の継続実装 = 価値の連鎖
+- Tidy First 純構造変更 = 振る舞い不変、既存 702 件 + 新規 3 件 = 705 件全 pass
+- WindowTitleContains variant は Phase 2 (Slack Huddle / Discord stage 検知) で使用、Phase 1 で型基盤を準備
+
+## How (Tidy First, behavior-preserving)
+- enum visibility: private (crate-internal use のみ、pub 不要)
+- Derive: Debug / Clone / PartialEq / Eq (axis test 比較用)
+- dead_code 警告対策: `#[allow(dead_code)]` + `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 二重付与 (WindowTitleContains が全 platform 未使用のため)
+- 4 アプリ全て AppLaunch = handle_detection 内の振る舞い不変、既存 throttle 動作維持
+- cargo fmt 適用: "Microsoft Teams" tuple が行長超過のため複数行展開
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (新規 3 件追加で +3)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- WATCHED_BUNDLE_IDS の caller (10 件) 全て 3-tuple 対応済を grep で確認
+- trailing whitespace: なし
+
+## commit
+- e1c0560
