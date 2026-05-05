@@ -32509,3 +32509,62 @@ commits:
 AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 17 軸目開拓)
 
 ---
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-55 (canonical = mjc-main)
+
+## セッション概要
+- 起動: 2026-05-05 ~22:14 JST (前任 mjc-main-20260505-54 から 2 ループ完走 + 通常 cadence handoff 引き継ぎ)
+- 完走: 2 ループ (Loop 106 + Loop 107) + 通常 cadence handoff
+- 累計 worker 完走: 206/206 (100% = +2 件)
+- 連続 49 セッション目 = メイン批判判断 → 連続 50 セッション目達成
+- 連続 45 ループ目 = worker 自律 2-commit pattern → 連続 47 ループ目達成
+- 連続 49 セッション目 = harness 衛生 → 連続 50 セッション目達成
+- 連続 51 セッション目 = ファイル参照型 handoff prompt → 連続 52 セッション目達成
+
+## Loop 106 = K 軸復帰 (harness 衛生軸 docs update)
+- worker: mjc-worker-archive-plan-stats-update-6-loop106
+- 範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 7 件目追記)
+- 内容: Loop 102 → Loop 105 で +225 行 / 平均 ~75 行/loop (Loop 102 観測 ~63 行/loop と比較して ~19% 増 = K 軸 docs update + SUMMARY 2 件が増加要因)。Loop 79/81/86/95/98/102 precedent 7 件目達成。
+- paradigm: K 軸 = harness 衛生軸 (Loop 105 純粋関数 helpers 軸 → Loop 106 K 軸 = scope depth 3 件目警告回避 + paradigm pivot 完璧)
+- メイン批判判断: handoff 候補 X (session_commands_state 機能境界分離) を「元 file 空 production 化リスク」で批判的 SKIP した上での K 採用 = 連続 50 セッション目達成。session_commands.rs L1-110 を Read 精読し、全 6 fn (start_session_inner / start_session / finalize_and_save_session_inner / finalize_and_save_session / discard_session_inner / discard_session) を抽出すると元 file が doc + use + tests のみの空 production 化する悪 refactor になることを判定。
+- commits: 3d8d6d8 (docs) + b709a87 (chore)
+- 規模: SS (~3 分完走目安、worker prompt = 95 行)
+
+## Loop 107 = frontend 軸 17 軸目開拓 (本セッション series 初の frontend 直接抽出)
+- worker: mjc-worker-loop107-transcript-view-formatters-extract
+- 範囲: src/routes/TranscriptView.tsx (純粋関数 5 件削除 + import 1 行追加, -37 行 = 2494 → 2457 行) + src/utils/transcriptViewFormatters.ts (新規 45 行)
+- 内容: TranscriptView.tsx L73-165 の純粋表示文字列フォーマット helpers (formatOperationError + getFileName + getCompactSessionTitle + getRecentSessionMeta + formatElapsedTime) を新 module utils/transcriptViewFormatters.ts に抽出。caller (同 file 内 5 関数 = 計 8 callers) は import 1 行追加 + 既存呼び出しは無変更。toErrorMessage の import は TranscriptView.tsx に残置 (他で使用)。
+- paradigm: 純粋関数機能分離軸 frontend 版 paradigm 確立 = K 軸 (Loop 106) からの完璧 pivot 達成
+- 大きな発掘成果: **handoff 文書未列挙の TranscriptView.tsx 2494 行 + SettingsView.tsx 2010 行 を批判的判断で発見** (handoff 候補 J = LiveCaptionWindow.tsx 580 行 / MeetingDetectedBanner.tsx 526 行 のみ言及だったが、ls + find による浅 grep で更に巨大な未列挙 frontend file を発掘)
+- frontend 軸 = scope 17 軸目開拓 (前 16 軸 = session_store + audio + realtime engine + detection + session_manager + harness + app_detection 機能分類 + settings + transcription_commands + system_audio 機能分類 + secret_store + audio_silence + apple_speech + session_commands + audio_resample + 検知拡張 plan)
+- 大型 frontend file 責務分離 29 file 目達成
+- commits: 2689681 (refactor) + 03a3364 (chore)
+- 規模: SS-S (~10 分完走、worker prompt = 130 行)
+- 検証: npm run build ✓ built in 857ms (1917 modules transformed) + cargo test 不要 (rust 無変更)
+
+## 戦略転換の核心 (継承 + 強化)
+- mjc-main-20260505-1: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- mjc-main-20260505-2: 「Webex sweep」の variety 規則確立
+- mjc-main-20260505-3: 「handoff prompt の主要候補を批判的に再評価する」precedent
+- mjc-main-20260505-4 〜 54: Phase 1-6 + サービス別抽出 + test 移動 + struct 移動 + Phase 6 第 1-5 歩 + 最終 + app_detection scope シリーズ + 大型 rust file 責務分離 12-28 file 目 + 検知拡張 plan + Phase 1 + Q5 + Q6 Resolved + AGENT_LOG.md archive 戦略 plan + 各種共通化 + Section 2.3 観測追記 6 件 + 機能分類軸 paradigm 9 件目 + scope depth 軸 5 件確立 (settings + transcription_commands + realtime engine + system_audio + session_commands) + alias 戦略 paradigm 確立 (Loop 104 初)
+- **mjc-main-20260505-55 (本セッション)**: **2 ループ完走 = Loop 106 (K 軸復帰 = Section 2.3 観測追記 7 件目 = +225 行 / 平均 ~75 行/loop = paradigm pivot 完璧 + メイン批判判断 連続 50 セッション目達成 = handoff 候補 X 批判 SKIP) + Loop 107 (frontend 軸 17 軸目開拓 = utils/transcriptViewFormatters.ts 抽出 = TranscriptView.tsx 純粋関数 5 件 = ~37 行削減 = 純粋関数機能分離軸 frontend 版 paradigm 確立 + 大型 frontend file 責務分離 29 file 目 + handoff 文書未列挙の巨大 frontend file (TranscriptView.tsx 2494 行 + SettingsView.tsx 2010 行) 発掘) = メイン批判判断 連続 50 セッション目達成 + worker 自律 2-commit pattern 連続 47 ループ目 + ファイル参照型 handoff prompt 連続 52 セッション目 + scope 多様性 17 軸到達 (前 16 + frontend) + frontend 軸 = scope 17 軸目開拓 = rust 偏重からの完璧脱却**
+
+## 進行中セッション (handoff 直前)
+
+- mjc-main (canonical = mjc-main-20260505-55, handoff 直前)
+- mjc-main-20260505-55 (本セッション、間もなく handoff)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge: 1 件 (Loop 107 着手前 = 方向性合致のため継続実施し、2 ループ完走後 handoff 判断)
+
+## 引き継ぎ
+
+- 引き継ぎ先: mjc-main-20260505-56
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-56.txt (ファイル参照型 handoff prompt 連続 52 セッション目)
+- 旧メイン (mjc-main-20260505-55 = 本セッション = canonical mjc-main) は handoff 後終了
+
+worker 完走 2/2 = 累計 206/206 100%。
+
