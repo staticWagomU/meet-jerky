@@ -32979,3 +32979,60 @@ commits:
 AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 23 軸目開拓)
 
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-61 (canonical mjc-main)
+
+本セッションは旧 mjc-main (= mjc-main-20260505-60 = canonical mjc-main) からの handoff を受けて起動。前任者の handoff 推奨候補 K (Section 2.3 観測追記 12 件目) を最有力推奨として採用 + Loop 119 では handoff 候補 R3 を批判的精査して「責務階層が異なる」判断で改修 (R3 改修版 = 新 file `app_detection_meeting_classifier.rs` 作成軸) を採用 = メイン批判判断 連続 58 セッション目達成 + 2 ループ完走 (Loop 118 + Loop 119) + 通常 cadence handoff (mjc-main-20260505-62 へ) を実施。
+
+worker 完走 2/2 = 累計 218/218 100%。
+
+実績:
+- Loop 118 = K 軸復帰 = harness 衛生軸 = docs/architecture/agent-log-archive-plan.md Section 2.3 観測追記 12 件目 = +138 行 / 平均 ~46 行/loop (Loop 114 観測 ~29 行/loop と比較して ~59% 増 = paradigm pivot 多軸 K + frontend + rust + 既存 file 拡張軸 = 新 paradigm 1 件目確立寄与) = paradigm pivot 達成 + variety 規則 alternation pattern 完璧継続 (K(115) → frontend(116) → rust(117) → K(118) = 10 連続) + worker ~3 分完走 (worker prompt 85 行)
+  - メイン批判判断: handoff 推奨候補 K を採用 + 観測対象期間 = Loop 114 → Loop 117 + SESSION SUMMARY 2 件 (mjc-main-20260505-59 + 60) を確認
+- Loop 119 = rust 軸 = 純粋関数機能分離軸 rust 版 = app_detection.rs の classify_meeting_url + classify_meeting_window_title 2 関数を新 file app_detection_meeting_classifier.rs に抽出 = app_detection.rs 2721 → 2617 行 (-104 行 / -3.8%) + 新 file 118 行 + lib.rs mod 登録追加 + MeetingUrlClassification 構造体は app_detection.rs 残置 + pub use re-export で **API 互換維持 = caller L335/L338 + test (super::* import) 全て無変更** + 大型 rust file 責務分離 36 file 目 + scope 23 軸目開拓 + worker ~6 分完走 (worker prompt 142 行 = cargo test 704 passed 件数完全不変)
+  - メイン批判判断: handoff 候補 R3 を **「app_detection_url_helpers.rs に統合する案」を批判的精査で却下** = 「app_detection_url_helpers は低レベル URL parser、classify_meeting_* は高レベル meeting service 分類 = 責務階層が異なる + 統合すると url_helpers が google_meet/zoom/webex/teams/whereby/goto への dependency を持つ責務肥大化リスク」 → 改修版「新 file 作成軸」採用 = Loop 117 paradigm の誤った汎用化を回避 = メイン批判判断連続 58 セッション目達成
+
+達成:
+- 累計 rust 軸 = 30 件 (Loop 119 で +1 = app_detection_meeting_classifier 抽出)
+- scope 23 軸目開拓 (`app_detection_meeting_classifier.rs` = 純粋関数機能分離軸 rust 版 + 新 file 作成軸)
+- 衝突回避設計 paradigm = 該当なし (関数名衝突なし、新 file は独自 namespace)
+- メイン批判判断 連続 58 セッション目達成 (handoff 推奨候補の批判的精査で paradigm pivot 採用)
+- worker 自律 2-commit pattern 連続 59 ループ目達成
+- harness 衛生連続 56 セッション目達成 (canonical 移譲後 scripts/* M 表示再出現せず観測継続)
+- ファイル参照型 handoff prompt 連続 57 セッション目達成 (本 SUMMARY 後 mjc-main-20260505-62 へ handoff 起動 = 連続 58 セッション目)
+- AGENT_LOG.md = 32,981 行 (本 SUMMARY 追記前)
+- AGENT_LOG.md archive plan Section 2.3 観測追記 12 件累積 (Loop 79/81/86/95/98/102/106/109/111/113/115/118)
+- 大型 rust file 責務分離 36 file 目達成
+
+variety 規則の状態 (本セッション完了時点):
+- 直近 30 ループ (Loop 90-119): 構造分離 27 件 (Loop 107/108/110/112/114/116/117 frontend + rust + Loop 119 含む) + 機能拡張/docs 3 件 + harness 衛生 12 件 (Loop 113/115/118 含む) = 27:3:12 多軸分散
+- scope 内訳: 23 scope 分散 (rust 19 + frontend 6 - Loop 119 で +1 = app_detection_meeting_classifier)
+- paradigm pivot: alternation pattern 完璧 11 連続 (K(109) → frontend(110) → K(111) → frontend(112) → K(113) → frontend(114) → K(115) → frontend(116) → rust(117) → K(118) → rust(119))
+
+paradigm 多様化:
+- 純粋関数機能分離軸 rust 版 (Loop 119) = 既存 paradigm (Loop 87/88/91/92/93/94 等の precedent あり) + 新 file 作成 (異 file 拡張)
+- 既存 file 拡張軸 (Loop 117) = 新 paradigm 1 件目 (新 file 作成ではなく既存 file 統合追加 = file 数不増 + 責務集約 + 保守性向上)
+- → 同 rust 軸内でも paradigm differentiation 成立 (Loop 117 vs Loop 119) = scope 多様性両立 + 後継への paradigm 選択示唆 (新 file 作成軸 vs 既存 file 拡張軸 = 責務階層精査で判断)
+
+検証実績:
+- cargo test (lib): 704 passed / 0 failed (件数完全不変、Loop 119 で確認)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: ✓ built (vite, frontend 無変更のため再検証不要)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 118/119 両方)
+
+次セッション (mjc-main-20260505-62) への期待:
+- handoff content file `docs/handoff/mjc-main-20260505-62.txt` に **Loop 120 推奨候補 K (Section 2.3 観測追記 13 件目 = paradigm pivot rust → K + alternation pattern 12 連続維持) を最有力候補** として記載
+- 代替候補: R4 parse_throttle_key_to_display_name (L407 ~30 行 = 規模 SS = 新 file `app_detection_throttle_key.rs` か既存 app_detection_url_helpers.rs に統合 = 要 grep 精査) / X3 TranscriptView.tsx 残 27 純粋関数段階的分割 (frontend 軸 7 件目 = K 軸を Loop 120 で挟まないと strict warning) / R5 既存 file 拡張軸 2 件目 = app_detection_inactive_decision.rs/notification.rs に統合できる関数発掘 (要 grep 精査) / J' SettingsView 内部 helper 精査 / X' resample_audio dead code 削除 (ユーザー直伝指示要) / H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要)
+
+残課題 (継承):
+- TranscriptView.tsx 残 純粋関数 27 件 = 段階的分割抽出推奨 (scope depth 警告 6 件目)
+- SettingsView.tsx 内部 component helper 精査 = 抽出余地有無確認要
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+- resample_audio dead code 削除 = ユーザー直伝指示要 (`#[allow(dead_code)]` 残置の意図可能性)
+- parse_throttle_key_to_display_name (app_detection.rs L407, ~30 行) = 抽出可能 (新 file または既存 file 統合)
+- app_detection.rs 残: ~30 行の throttle_key parser のみ (URL/window-title 分類は Loop 119 で抽出済)
+
+---
