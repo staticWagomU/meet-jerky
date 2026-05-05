@@ -28947,3 +28947,42 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 
 ## commit
 - 62d3e83
+
+---
+[mjc-main-20260505-32 Loop 65 / 2026-05-05 ~JST]
+
+## What
+- app_detection.rs 本体から Google Meet 検知関数 3 件を新規ファイル app_detection_google_meet.rs に抽出
+  - `pub(crate) fn is_google_meet_url(host: &str, path: &str) -> bool` (~7 行)
+  - `pub(crate) fn is_google_meet_code_path(path: &str) -> bool` (~17 行)
+  - `fn has_ascii_lowercase_len(value: &str, len: usize) -> bool` (~3 行 = Google Meet 専用 helper、private 維持)
+- lib.rs に `mod app_detection_google_meet;` 追加 (アルファベット順、app_detection_goto の前)
+- app_detection.rs L517 の caller = 完全修飾 path `crate::app_detection_google_meet::is_google_meet_url` に書き換え (Webex/Zoom precedent 踏襲)
+- app_detection.rs L28 の `use crate::app_detection_url_helpers::has_single_non_empty_segment;` を削除 (移動後に unused となるため)
+- tests = app_detection.rs 残置 (Webex precedent: webex ファイルに tests なし、classify_meeting_url tests は app_detection.rs 側にある = 同じ判断)
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービスの検知 直接寄与 (Google Meet 検知ロジック単独 file = locality 集約 + 将来拡張容易化)
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (リポジトリ最大級ファイル app_detection.rs の段階的責務分離)
+- Webex/Whereby/GoToMeeting/Zoom/Teams 5 service precedent 完全踏襲 = handoff prompt が「サービス別抽出シリーズ完了」と記述したが Google Meet が未抽出と grep で発見 = メイン批判判断 連続 17 セッション目達成
+- variety pivot = app_detection scope 2 連続 (Loop 64 = URL helper / Loop 65 = Google Meet) = sweep 警告 (3 連続超過) 未到達 = 許容
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- visibility: is_google_meet_url + is_google_meet_code_path を pub(crate) に昇格 (Webex precedent 踏襲)、has_ascii_lowercase_len は Google Meet 専用 helper で外部公開不要 = private 維持
+- caller (L517) は完全修飾 path `crate::app_detection_google_meet::is_google_meet_url` で対応 = Webex/Zoom と同パターン
+- has_single_non_empty_segment の use 文を app_detection.rs から削除 (unused lint 回避、新ファイル側で直接 import)
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `fn is_google_meet` を app_detection.rs で grep: 完全に空 (新ファイル経由のみ)
+- `fn has_ascii_lowercase_len` を app_detection.rs で grep: 完全に空
+- trailing whitespace: なし
+
+## commit
+- af00d1c
