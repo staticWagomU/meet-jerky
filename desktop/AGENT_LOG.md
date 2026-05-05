@@ -32425,4 +32425,16 @@ commits:
 - 830611ce6eb71f6338197d9cbb703f7712072683 refactor(realtime): mod ws_task を openai_realtime_ws_task.rs に抽出
 AGENTS.md priority: 1 (構造美の補強 = realtime engine scope の 5 軸目分離 = WebSocket I/O 詳細の専用 file 化 = openai_realtime.rs を struct/impl + tests のみに簡素化)
 
+---[mjc-main-20260505-54 Loop 105 / 2026-05-05]
+worker: mjc-worker-session-commands-helpers-loop105 (作業)
+範囲: src-tauri/src/session_commands.rs (helpers 3 件 ~16 行 + tests 5 件 + helper fn ~45 行削除 + 冒頭 use 1 行追加) + src-tauri/src/session_commands_helpers.rs (新規 ~89 行) + src-tauri/src/session_commands_list.rs (use 文 1 行修正) + src-tauri/src/lib.rs (mod session_commands_helpers; 1 行追加)
+内容: session_commands.rs L18-40 の helpers 3 件 (now_unix_secs ~6 行 + default_offset ~3 行 + resolve_output_directory ~7 行) と L329-373 の tests 5 件 (resolve_output_directory_* x 4 + default_offset_returns_jst_offset_constant) + build_settings_handle_with_dir test helper fn を新 module session_commands_helpers.rs に抽出。元 file 冒頭に use crate::session_commands_helpers::{default_offset, now_unix_secs, resolve_output_directory}; 追加で production caller 6 件 + 元 file tests 内の caller 全て無変更。session_commands_list.rs の use 文を crate::session_commands_helpers::resolve_output_directory に書き換え。lib.rs に mod session_commands_helpers; 追加 (alphabetical 順 = session_commands と session_commands_list の間)。元 file 共通部 (docstring + use + start/finalize/discard 系 + 他 tests) は完全不変。大型 rust file 責務分離 28 file 目 = session_commands 軸 2 件目 (Loop 97 session_commands_list 軸 1 件目との並立) = scope depth 軸 5 件確立 (settings + transcription_commands + realtime engine + system_audio + session_commands) = inline module 全体抽出軸 (Loop 104) からの pivot 達成 = 純粋関数 helpers 軸 (Loop 102/101 paradigm = 2 ループ間隔離れて警告境界外で復帰)。session_commands.rs 452 → ~387 行 (-14%)。
+振る舞い: cargo test --lib 704 passed (件数完全不変, 5 件移動のみ)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- 969b86f2a2646f9f458853e409db07fdb2a3494f refactor(session): 純粋関数 helpers を session_commands_helpers.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = session_commands 軸の 2 件目分離 = tauri commands 薄いアダプタ層化と純粋関数 helpers の明示分離)
+
 ---
