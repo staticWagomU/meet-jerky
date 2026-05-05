@@ -27084,3 +27084,31 @@ SecretKey enum (mjc-main-30 L1) → AppleSpeechEngine (m-31 L1) → SessionSegme
 - 52098b6
 
 ---
+
+[mjc-main-20260505-22 Loop 45 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から WhisperStream 直接テスト 2 件 (test_whisper_stream_feed_errors_when_resampler_state_missing / test_whisper_stream_finalize_errors_when_resampler_state_missing) と専用 helper (stream_with_missing_resampler) を src-tauri/src/transcription_whisper_stream.rs に移動
+- transcription_whisper_stream.rs に新規 tests mod 追加 (`use super::*;` + `use crate::transcription_traits::TranscriptionStream;`)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (WhisperStream の locality 完成 = 関数 + テスト同居で理解性向上)
+- Loop 42 (沈黙検知 tests 移動) + Loop 44 (沈黙検知 const 移動) と同型の locality 集約パターン継承
+- variety pivot 軸 = test 軸 = Loop 42 から 3 ループ間隔 = sweep 警告クリア (test 軸 Loop 32/35/38/42/45 = 5 件目連続境界、注意必要)
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- helper stream_with_missing_resampler は移動先で WhisperStream を構築 = `super::*` 経由で field アクセス、`#[cfg(test)]` 配下で `ctx: None` (Option) 型有効
+- Mock* trait テスト 3 件 (MockEngine / MockStream + impl + 3 tests) は本 Loop 範囲外 = 別 Loop で transcription_traits.rs に移動予定
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- 2a7190b
+
+---
