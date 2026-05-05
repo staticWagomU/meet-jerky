@@ -32012,3 +32012,13 @@ AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離
 - watchdog からの nudge: 本セッション中は確認できず (2 ループ完走 + handoff まで自律進行)
 
 ---
+[mjc-main-20260505-50 Loop 99 / 2026-05-05]
+- 担当: agent-log-archive-plan.md Section 2.3 に Loop 98 時点の更新観測 block を追記 (harness 衛生軸 = variety pivot, Loop 79/82/86/96 precedent 5 件目)
+- 変更: docs/architecture/agent-log-archive-plan.md (+2 行)
+- 検証: wc -l (+2 行), grep -nE "Loop 98 時点" (1 件), trailing whitespace 0 件, bash scripts/agent-verify.sh OK (docs only = fmt/test/build skip)
+- commit: f6263c3 (docs commit hash は実 hash 直書き、chore commit hash は記入しない = Loop 80/85/86/87/88/89/90/91/92/93/94/95 precedent 踏襲)
+- 結果: 振る舞い不変 (docs only) / 704 件 0 失敗 (test 不実行 = docs only のため cargo skip)
+- AGENTS.md priority 寄与: L46-L52 自律改善方針 (ハーネスを自律的に整える)
+- 次アクション: chore commit (本 Loop 99 自身) 後、メイン (mjc-main-20260505-50) が handoff 判断
+
+---
