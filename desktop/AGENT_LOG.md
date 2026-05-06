@@ -34867,3 +34867,11 @@ alternation pattern pivot 加速継続: K(199) → rust(200) → rust(201) → K
 4. **`Result<(), &'static str>` 型の利点**: const 化後の callsite が `Err(CONST_NAME)` で完結 = `.to_string()` 不要 = callsite 簡潔化 (Loop 201 system_audio_format.rs) vs `Result<(), String>` (Loop 200 secret_store.rs) では `.to_string()` 必要 = callsite 形態の対比
 
 ---
+[mjc-main Loop 203 / 2026-05-06]
+worker: mjc-worker-loop203-system-audio-format-error-const (作業)
+範囲: src-tauri/src/system_audio_format.rs (const 5 件追加 + 本番 5 callsite + test 5 callsite を const 参照に統一)
+変更: ERROR_BIG_ENDIAN_FORMAT / ERROR_BITS_PER_CHANNEL_NOT_32 / ERROR_BITS_PER_CHANNEL_UNKNOWN / ERROR_CHANNEL_COUNT_MISMATCH / ERROR_CHANNEL_COUNT_UNKNOWN を system_audio_format.rs に追加 (既存 ERROR_NON_F32_PCM_FORMAT の並列拡張) + 本番側 validate_audio_format_properties 内 5 callsite + test 側 5 callsite = 計 10 callsite を const 参照に統一 + DRY 違反解消 + 関数戻り型 `&'static str` のため `.to_string()` 不要 = callsite 簡潔化
+意義: rust 軸 = const 集約 paradigm 反復 13 件目達成 = paradigm 系統樹拡張 11 件目反復 6 連続 (Loop 194 cloud_whisper.rs / Loop 196 transcription_commands_helpers.rs / Loop 198 transcription_error_payload.rs / Loop 200 secret_store.rs / Loop 201 system_audio_format.rs / Loop 203 system_audio_format.rs) = 既存 file 拡張軸 paradigm rust 版反復 1 件目達成 + 5 種類のエラーメッセージの単一 source of truth 化 + typo 防止 + UI/log 文言契約 cohesion 向上 + AGENTS.md priority 1 寄与中-高 + alternation pivot K(202) → rust(203) = 41 → 42 = 加速期維持 + paradigm 完全成熟期 cross-language 拡張更なる持続達成 = const 集約軸 frontend 10 + rust 6 = 計 16 連続
+検証: cargo test (704 件件数完全不変) + cargo clippy --lib --tests -- -D warnings (警告ゼロ) + cargo fmt --check OK + cargo build --lib OK / agent-verify.sh は rust skip 判定 OK / grep `BigEndian|bits_per_channel|channel 数` の残存リテラルは const 定義行のみ確認
+備考: paradigm 反復 13 件目達成 = rust 軸 const 集約軸の paradigm 完全成熟期 = paradigm 系統樹拡張 11 件目反復 6 連続 = 既存 file 拡張軸 paradigm rust 版反復 1 件目達成. 後継候補 = R34' (K 軸 = Section 2.3 観測 55 件目) / R37 (大型 file 責務分離 52 件目候補) / R38 (別 paradigm 開拓) のいずれか採用検討.
+---
