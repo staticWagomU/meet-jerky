@@ -34607,3 +34607,40 @@ worker: mjc-worker-loop197-archive-plan-stats-update-52 (作業)
 検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
 備考: Loop 196 で rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補確立 = 既存 file 拡張軸 paradigm rust 版開拓 (transcription_commands_helpers.rs は既存 const 確立 file への並列拡張). 後継候補 = R36 (cloud_whisper.rs OpenAI API URL test fixture 集約 = test 内のみ + 規模 S) / R37 (大型 file 責務分離 52 件目候補 = 規模 M-L) / R34 (K 軸 2 連続 = ローカル最適化リスク批判要) のいずれか採用検討.
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-95
+本セッションは **2 ループ完走 + 後継 mjc-main-20260505-96 への handoff 判断** = handoff prompt 推奨「2-3 ループ完走推奨」中央値達成。
+実績: Loop 196 = rust 軸 = const 集約 paradigm **反復 9 件目達成** = paradigm 系統樹拡張 12 件目候補確立 = 既存 file 拡張軸 paradigm rust 版開拓 = src/transcription_commands_helpers.rs に `pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE: &str = "..."; pub(crate) const ERROR_APPLE_SPEECH_MULTIPLE_STREAMS: &str = "...";` 追加 + 文言 1 (4 callsite = 本番 1 + test 3) + 文言 2 (3 callsite = 本番 1 + test 2) = 計 7 callsite を const 参照に統一 + DRY 違反解消 + ネット行数 ~+1 行のみ + 既存 const TRANSCRIPTION_SOURCE_MICROPHONE/SYSTEM_AUDIO 2 件確立 file への並列拡張 = frontend statusLabels.ts pattern の rust 版開拓 + 重複候補 grep 探索 paradigm **24 件目達成** + 規模 SS-S → 実測 ~3 分 = rust 軸軽量化 paradigm 2 連続観測達成, Loop 197 = K 軸 = Section 2.3 観測 **52 件目達成** = 節目 50 件突破後 2 件目 = AGENT_LOG.md +30 行 (34571 → 34601) / 平均 ~15 行/loop / SUMMARY commit `411db2d` 中量化階層下端 +14 行 / chore のみ Loop 195 +8 + Loop 196 +8 = +16 行 / 2 loop = +8 行/loop = **軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 13 件目** + frontend 軸軽量化 paradigm 27 連続観測達成 + rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補 = paradigm 完全成熟期 cross-language 拡張更なる持続 + 規模 SS → 実測 ~3 分。
+連続記録: メイン批判判断 連続 **97 セッション目達成** (本セッションで **handoff prompt R30 拡張事前探索 「主要候補なし」 を私が独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成** = handoff prompt 真偽確認 paradigm の質的進化観測継続) + worker 自律 2-commit pattern 連続 **52 ループ目達成** (Loop 145-197 = 53 連続安定 = **節目 50 件突破後 2 件目**) + harness 衛生連続 **90 セッション目達成 = 節目 90 件突破** + ファイル参照型 handoff prompt 連続 **91 セッション目** + scope 多様性 39 軸維持 + alternation pattern pivot 加速継続 (rust(194) → K(195) → rust(196) → K(197) = 34 → 35 → 36 → 37 = **加速期維持 = 節目 30 件突破後 7 件目**) + 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補確立 + 重複候補 grep 探索 paradigm **24 件目達成** + worker prompt 必須要素 9 (冒頭 `---` 含めない) **29 連続実証成功** (Loop 168-197 = 節目 25 連続突破後 4 件目) + **paradigm 完全成熟期 cross-language 拡張更なる持続達成** = const 集約軸 frontend 10 + rust 2 = 計 **12 連続** = paradigm 系統樹拡張 12 件目候補確立 = 反復による定型化期 cross-language 拡張更なる持続 (Loop 174-192 frontend 10 + Loop 194 rust 1 件目 = 新規 const 追加軸 paradigm + Loop 196 rust 2 件目 = 既存 file 拡張軸 paradigm rust 版 = 系統樹拡張 12 件目候補)。
+
+# 後継 mjc-main-20260505-96 への引き継ぎ
+
+## Loop 198 候補 (事前探索 = 後継への重要 input)
+
+rust 軸 const 集約 paradigm 反復 9 件目達成 = transcription_commands_helpers.rs に既存 const 拡張済. 後継候補は alternation 規則を考慮し別軸推奨:
+
+- **R36 (Loop 198 第一推奨) = OpenAI API URL test fixture 集約 = 規模 S = ~10-15 分**:
+  - cloud_whisper.rs 内 `"https://api.openai.com/v1/audio/transcriptions"` 7 件 + `"https://api.openai.com/v1"` 6 件 = 計 13 callsite (全て test 内 #[cfg(test)] mod tests 内)
+  - **本番品質寄与なし + test maintainability 向上のみ** = AGENTS.md priority 1-3 への直接寄与は弱
+  - paradigm 系統樹拡張 13 件目候補 (test fixture URL 集約 = 新 paradigm)
+  - alternation: K(197) → rust(198) = 37 → 38 = pivot 加速期維持
+
+- **R30' (Loop 198 第二推奨) = 別 rust file 探索 = paradigm 反復 10 件目開拓**:
+  - 本セッション未探索 file: openai_realtime.rs (23705 bytes) / elevenlabs_realtime.rs (8299 bytes) / apple_speech.rs (8740 bytes) / settings.rs (大型) / session_manager.rs (大型) 等
+  - ただし handoff prompt 主張通り「主要候補なし」 = 後継独自 grep で批判的に再探索要
+  - rust 軸 3 連続 = pivot 規則 (3 連続超 = 4 連続目で pivot) 抵触リスク
+
+- **R34 (Loop 199 第三推奨) = K 軸 = Section 2.3 観測 53 件目 = 規模 SS = ~3-7 分**:
+  - alternation: rust(198) → K(199) = pivot 加速期維持
+  - precedent: Loop 79/81/.../195/197 = 52 件目までの updates
+  - **ただし機械的反復で Mac アプリ品質に直接寄与せずローカル最適化リスク** = 「派生型 CI 保護パターンに戻らない」継承方針との緊張感
+  - K 軸 2 連続 (Loop 197 + 199) は alternation 規則上は OK
+
+- **R37 (第四推奨) = 大型 file 責務分離 52 件目候補 = 規模 M-L = 探索コスト高**:
+  - 残存大型 file: app_detection.rs 2458 行 (検知拡張 plan = Phase 2 着手不可) / session_manager.rs 1232 行 / audio.rs 915 行 / settings.rs 801 行 / cloud_whisper.rs 778 行 / session.rs 773 行 / transcript_bridge.rs 736 行 / session_store.rs 722 行
+  - frontend: TranscriptView.tsx 2056 行 / SettingsView.tsx 2011 行
+  - 規模 M-L = 探索コスト高 + 過去 51 件目までの precedent では既に責務分離困難と判定された file 多数の可能性
+
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+---
