@@ -17,6 +17,7 @@ export function isAudioDropCountPayload(
     isAudioDropCountSource(candidate.source) &&
     typeof candidate.dropped === "number" &&
     Number.isFinite(candidate.dropped) &&
+    Number.isInteger(candidate.dropped) &&
     candidate.dropped >= 0
   );
 }
