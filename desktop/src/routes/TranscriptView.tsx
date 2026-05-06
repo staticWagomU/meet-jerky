@@ -249,12 +249,12 @@ export function TranscriptView() {
       if (disposed) {
         return;
       }
+      setIsTranscribing(false);
       const payload = event.payload;
       if (!isTranscriptionErrorPayload(payload)) {
         setMeetingError("文字起こしエラー通知の形式が不正です。");
         return;
       }
-      setIsTranscribing(false);
       setMeetingError(`文字起こしが停止しました: ${payload.error}`);
     })
       .then((unlisten) => unlisten)
