@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Outlet, useNavigate } from "@tanstack/react-router";
+import { toErrorMessage } from "./utils/errorMessage";
 import { markPendingMeetingStartRequest, MEETING_START_REQUEST_EVENT } from "./utils/meetingStartRequest";
 import "./App.css";
 const SHOW_MAIN_WINDOW_REQUEST_EVENT = "meet-jerky-show-main-requested";
@@ -13,7 +14,7 @@ function App() {
     let disposed = false;
     const showMainTranscriptWindow = () => {
       void invoke("show_main_window").catch((e) => {
-        console.error("メインウィンドウの表示に失敗しました:", e);
+        console.error("メインウィンドウの表示に失敗しました:", toErrorMessage(e));
       });
       void navigate({ to: "/" });
     };
@@ -22,7 +23,7 @@ function App() {
         showMainTranscriptWindow();
       }
     }).catch((e) => {
-      console.error("メイン表示要求の受信開始に失敗しました:", e);
+      console.error("メイン表示要求の受信開始に失敗しました:", toErrorMessage(e));
       return null;
     });
     const unlistenStartPromise = listen(MEETING_START_REQUEST_EVENT, () => {
@@ -32,7 +33,7 @@ function App() {
       markPendingMeetingStartRequest();
       showMainTranscriptWindow();
     }).catch((e) => {
-      console.error("録音開始要求の受信開始に失敗しました:", e);
+      console.error("録音開始要求の受信開始に失敗しました:", toErrorMessage(e));
       return null;
     });
 
@@ -45,7 +46,7 @@ function App() {
           }
         })
         .catch((e) => {
-          console.error("メイン表示要求の受信解除に失敗しました:", e);
+          console.error("メイン表示要求の受信解除に失敗しました:", toErrorMessage(e));
         });
       unlistenStartPromise
         .then((unlisten) => {
@@ -54,7 +55,7 @@ function App() {
           }
         })
         .catch((e) => {
-          console.error("録音開始要求の受信解除に失敗しました:", e);
+          console.error("録音開始要求の受信解除に失敗しました:", toErrorMessage(e));
         });
     };
   }, [navigate]);

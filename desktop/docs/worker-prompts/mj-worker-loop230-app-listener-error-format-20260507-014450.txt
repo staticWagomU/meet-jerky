@@ -1,0 +1,27 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/App.tsx
+- AGENT_LOG.md
+
+目的:
+`App.tsx` のメインウィンドウ表示要求 / 録音開始要求 listener と `show_main_window` invoke のエラーログが raw error をそのまま出している。`toErrorMessage` を使い、Tauri error が object 等でも診断しやすい文字列で console に残るようにする。
+
+実装条件:
+- `toErrorMessage` を既存 util から import してください。
+- `console.error(..., e)` を対象に、既存日本語 prefix は維持しつつ `toErrorMessage(e)` を渡してください。
+- listener 開始失敗、解除失敗、`show_main_window` 失敗の挙動は変更しない。UI、route、event 名、localStorage、pending request 記録、navigate、invoke 対象は変更しない。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/App.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
