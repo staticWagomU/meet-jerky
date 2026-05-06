@@ -1,0 +1,29 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md は巨大で NUL を含むため、全文読みを避け、`tail -n 80 AGENT_LOG.md` だけで直近文脈を確認してください。
+
+担当範囲:
+- src/routes/SessionList.tsx
+- AGENT_LOG.md
+
+目的:
+Loop 253 として、文字起こし履歴検索の UI 説明を、実際の検索対象と一致させてください。Loop 244 で保存 transcript の自分/相手側/音声ソース不明のトラックラベルも検索対象になりましたが、検索欄の説明と placeholder はまだ「タイトル、本文、日時、ファイル名」だけです。
+
+実装条件:
+1. `src/routes/SessionList.tsx`
+   - `sessionSearchLabel` と search input `placeholder` を、タイトル、本文、日時、ファイル名に加えて「自分/相手側などのトラック種別」も検索できることが分かる短い文言に更新してください。
+   - `sessionMatchesQuery`、`sessionListHelpers.tsx`、検索ロジック、保存済み Markdown 形式、CSS、Rust 側、依存関係は変更しないでください。
+   - 画面内の説明文が長くなりすぎないよう、既存 UI の密度に合わせて簡潔にしてください。
+2. `AGENT_LOG.md`
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/SessionList.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop253-session-search-track-copy-20260507-053844.txt docs/worker-prompts/mj-research-loop253-next-value-slice-20260507-053844.txt`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。コミットは禁止です。

@@ -1,0 +1,34 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。コミットは禁止です。課金、認証情報変更、破壊的操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md は巨大で NUL を含むため、全文検索や全読みを避け、`tail -n 80 AGENT_LOG.md` だけで直近文脈を確認してください。
+
+目的:
+Loop 253 の候補として、直近 Loop 252 の「エラー停止」表示と重複しない小さな改善または新機能スライスを1つ提案してください。
+
+優先して見る観点:
+- 履歴検索/閲覧の小さな UX 整合
+- 録音状態の透明性
+- 会議検知の実機未確認リスクを下げる純粋関数テスト
+- 権限、課金、認証、実機外部サービスに依存せず検証できること
+
+避けること:
+- `TranscriptView.tsx` の `hasTranscriptionErrorStopped` と同じ作業
+- 直近の payload guard / window title control char guard の焼き直し
+- 大きな UI 改修や Tauri AppHandle 依存の大規模抽象化
+- AGENT_LOG.md の長時間読み込み
+
+報告内容:
+- 推奨候補を1つ
+- 根拠となるファイル/関数
+- 最小変更範囲
+- 検証方法
+- リスクと非目標
+
+推測は推測と明示してください。

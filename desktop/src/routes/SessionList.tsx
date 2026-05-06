@@ -200,7 +200,7 @@ export function SessionList() {
       ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
       : `保存済み ${sessions.length} 件`;
   const sessionSearchLabel =
-    "文字起こし履歴を検索。スペース区切りで複数語を指定できます";
+    "文字起こし履歴を検索。タイトル、本文、日時、ファイル名、トラック種別を複数語で検索できます";
   const sessionSearchInputLabel = trimmedSearchQuery
     ? `${sessionSearchLabel}。現在の検索語 ${searchQueryLabel}。Escape キーでクリアできます`
     : sessionSearchLabel;
@@ -263,7 +263,7 @@ export function SessionList() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={handleSearchKeyDown}
-              placeholder="タイトル、本文、日時、ファイル名を複数語で検索"
+              placeholder="タイトル、本文、日時、ファイル名、自分/相手側で検索"
               aria-label={sessionSearchInputLabel}
               title={sessionSearchInputLabel}
             />
