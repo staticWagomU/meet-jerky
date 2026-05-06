@@ -1,0 +1,32 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/components/LiveCaptionWindow.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+ライブ字幕ウィンドウの閉じる / Escape 操作で `set_live_caption_window_visible(false)` が失敗した場合、console error だけで終わらせず、既存の `listenerError` / alert UI で隠せなかったことを明示してください。閉じても記録操作は変更されない設計なので、録音停止や文字起こし停止の失敗とは誤解されない文言にしてください。
+
+実装条件:
+- `hideLiveCaptionWindow` の `hideLiveCaptionOverlayWindow().catch(...)` だけを狭く変更してください。
+- `toErrorMessage(e)` を `msg` に取り、console error と `setListenerError` の両方に使ってください。
+- 表示文言は `ライブ字幕ウィンドウを隠せませんでした: ${msg}` の形にしてください。
+- listener setup / unlisten cleanup / status payload / transcription result handling / CSS / Rust / 依存関係 / テスト基盤は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop260-live-caption-hide-error-20260507-075845.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

@@ -320,7 +320,9 @@ export function LiveCaptionWindow() {
   const hideLiveCaptionWindow = () => {
     void hideLiveCaptionOverlayWindow()
       .catch((e) => {
-        console.error("ライブ字幕ウィンドウを隠せませんでした:", toErrorMessage(e));
+        const msg = toErrorMessage(e);
+        console.error("ライブ字幕ウィンドウを隠せませんでした:", msg);
+        setListenerError(`ライブ字幕ウィンドウを隠せませんでした: ${msg}`);
       });
   };
 
