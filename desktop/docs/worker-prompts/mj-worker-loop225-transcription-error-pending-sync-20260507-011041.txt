@@ -1,0 +1,27 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+`transcription-error` event 受信時に `isTranscribing` は停止側へ同期されるが、文字起こし操作中 state (`isTranscriptionOperationPending`) が残る race を防ぐ。worker panic / transcription stream error 後に UI が「開始中/停止中」のまま固着しないようにする。
+
+実装条件:
+- `TRANSCRIPTION_ERROR_EVENT` の event 名、payload 型ガード、エラー文言、TranscriptDisplay / LiveCaptionWindow、Rust 側、録音 state、音声取得 state、start/stop/restart フローは変更しない。
+- `TranscriptView.tsx` の `TRANSCRIPTION_ERROR_EVENT` listener 内で、disposed でない error event を受けたときに `setIsTranscriptionOperationPending(false)` を追加してください。
+- payload が不正な場合も、error event 受信として pending は停止側へ倒してください。既存の `setIsTranscribing(false)` と同じ粒度でよいです。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
