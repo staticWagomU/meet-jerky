@@ -12,7 +12,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
 
 export function PermissionBanner() {
   const [settingsOpenError, setSettingsOpenError] = useState<string | null>(
@@ -68,14 +68,14 @@ export function PermissionBanner() {
       ? STATUS_UNCHECKABLE_LABEL
       : micPermission === "denied"
         ? "未許可"
-        : "未確認";
+        : STATUS_UNDETERMINED_LABEL;
   const screenStatusLabel = isCheckingPermissions
     ? STATUS_CHECKING_LABEL
     : screenPermissionError
       ? STATUS_UNCHECKABLE_LABEL
       : screenPermission === "denied"
         ? "未許可"
-        : "未確認";
+        : STATUS_UNDETERMINED_LABEL;
   const micPermissionDetail = [
     SELF_TRACK_DEVICE_LABEL,
     "macOS マイク権限",

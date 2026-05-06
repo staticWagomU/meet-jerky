@@ -1,4 +1,4 @@
-import { STATUS_CHECKING_LABEL } from "./statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNDETERMINED_LABEL } from "./statusLabels";
 
 export function getPermissionStatusLabel(
   status: string | undefined,
@@ -17,7 +17,7 @@ export function getPermissionStatusLabel(
   if (status === "denied") {
     return "未許可";
   }
-  return "未確認";
+  return STATUS_UNDETERMINED_LABEL;
 }
 
 export function getPermissionRowClassName(
