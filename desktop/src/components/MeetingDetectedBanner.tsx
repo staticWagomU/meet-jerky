@@ -354,7 +354,9 @@ export function MeetingDetectedBanner() {
       setListenerError(null);
       setPendingAction(null);
     } catch (e) {
-      console.error("会議検知バナーを隠せませんでした:", toErrorMessage(e));
+      const msg = toErrorMessage(e);
+      console.error("会議検知バナーを閉じられませんでした:", msg);
+      setListenerError(`会議検知バナーを閉じられませんでした: ${msg}`);
     }
   };
 
