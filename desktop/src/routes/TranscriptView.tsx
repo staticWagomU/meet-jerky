@@ -287,7 +287,17 @@ export function TranscriptView() {
           );
           return;
         }
-        setMeetingError(`文字起こしが停止しました: ${payload.error}`);
+        const trackLabel =
+          payload.source === "microphone"
+            ? SELF_TRACK_DEVICE_LABEL
+            : payload.source === "system_audio"
+              ? OTHER_TRACK_DEVICE_LABEL
+              : null;
+        setMeetingError(
+          trackLabel
+            ? `文字起こしが停止しました（${trackLabel}）: ${payload.error}`
+            : `文字起こしが停止しました: ${payload.error}`,
+        );
       },
     )
       .then((unlisten) => unlisten)

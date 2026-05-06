@@ -1,0 +1,29 @@
+あなたは修正担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+背景:
+直前の Loop 231 差分で `TRANSCRIPTION_ERROR_EVENT` の valid payload 分岐に source 別トラック名を追加しました。ただし `TranscriptView.tsx` には既に `SELF_TRACK_DEVICE_LABEL` / `OTHER_TRACK_DEVICE_LABEL` が import されているため、同じ日本語ラベルを直書きすると将来の文言変更時にズレます。
+
+修正内容:
+- `payload.source === "microphone"` の表示名は既存 `SELF_TRACK_DEVICE_LABEL` を使ってください。
+- `payload.source === "system_audio"` の表示名は既存 `OTHER_TRACK_DEVICE_LABEL` を使ってください。
+- 表示文言の構造、source undefined の fallback、invalid payload、停止 state 同期、event 名、Rust 側、録音 start/stop/restart フロー、UI レイアウトは変更しないでください。
+- 担当範囲外ファイルを編集しないでください。
+- 依存関係追加は禁止です。
+- コミットは禁止です。
+
+AGENT_LOG.md:
+- 直前の Loop 231 作業ログのセッション名が実セッション名とずれていれば、`mj-worker-loop231-transcription-error-source-label-20260507` に直してください。
+- 追記または修正ログには、既存トラックラベル定数を使うように直したこと、検証結果、残リスクを記録してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

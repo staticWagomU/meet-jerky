@@ -1,0 +1,28 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+Rust 側の `transcription-error` payload には失敗 source が含まれる場合があります。メイン画面の `meetingError` では現在 source が見えないため、worker panic / stream error 後に自分トラックか相手側トラックか判断しづらいです。valid payload 分岐だけを変更し、source がある場合は日本語のトラック名をエラー文言に含めてください。
+
+実装条件:
+- `TRANSCRIPTION_ERROR_EVENT` listener の valid payload 分岐のみ変更してください。
+- `payload.source === "microphone"` の場合は `自分トラック マイク`、`payload.source === "system_audio"` の場合は `相手側トラック システム音声` が `meetingError` に含まれるようにしてください。
+- source が undefined の場合は既存と同等の文言を維持してください。
+- invalid payload 文言、型ガード、`setIsTranscribing(false)`、`setIsTranscriptionOperationPending(false)`、event 名、Rust 側、TranscriptDisplay / LiveCaptionWindow、録音 start/stop/restart フロー、UI レイアウトは変更しないでください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
