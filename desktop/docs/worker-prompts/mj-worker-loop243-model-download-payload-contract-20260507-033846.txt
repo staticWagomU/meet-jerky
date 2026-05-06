@@ -1,0 +1,45 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/transcription_commands_model.rs
+- AGENT_LOG.md
+
+目的:
+Whisper モデルの `model-download-progress` / `model-download-error` event payload builder 契約を、挙動変更なしの Rust テスト追加で固定してください。モデル選択 UI の進捗/エラー表示が payload drift で壊れるリスクを下げることが狙いです。
+
+実装条件:
+1. `src-tauri/src/transcription_commands_model.rs`
+   - 既存 tests に 1 件または 2 件のテストを追加してください。
+   - `build_download_progress_payload(0.5, "small")` について以下を assertion:
+     - JSON object
+     - top-level field exactly 2
+     - `progress` が `as_f64() == Some(0.5)`
+     - `model` が `as_str() == Some("small")`
+   - `build_download_error_payload("small", "HTTP 404")` についても同様に以下を assertion:
+     - JSON object
+     - top-level field exactly 2
+     - `model == "small"`
+     - `message == "HTTP 404"`
+   - production code、event 名、既存関数名、既存テストは変更しないでください。
+2. AGENT_LOG.md
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+   - 変更ファイルには、この worker prompt と research prompt も含めてください。
+
+禁止:
+- コミットは禁止です。
+- 依存追加は禁止です。
+- フロントエンド、ダウンロード処理本体、UI 文言、ネットワーク確認は変更・実行しないでください。
+- 既存テストの削除・緩和は禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_commands_model`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_commands_model.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop243-next-value-slice-20260507-033846.txt docs/worker-prompts/mj-worker-loop243-model-download-payload-contract-20260507-033846.txt`
+
+残リスクには、TypeScript 側 `isDownloadProgressPayload` / `isDownloadErrorPayload` の runtime guard までは直接検証しないことを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

@@ -98,6 +98,24 @@ mod tests {
     }
 
     #[test]
+    fn test_download_progress_payload_contract() {
+        let payload = build_download_progress_payload(0.5, "small");
+        let object = payload
+            .as_object()
+            .expect("payload should be a JSON object");
+
+        assert_eq!(object.len(), 2);
+        assert_eq!(
+            object.get("progress").and_then(|value| value.as_f64()),
+            Some(0.5)
+        );
+        assert_eq!(
+            object.get("model").and_then(|value| value.as_str()),
+            Some("small")
+        );
+    }
+
+    #[test]
     fn test_download_error_payload_serialization() {
         // model-download-error の payload は { model, message } のフラットキー。
         // TypeScript 側 DownloadErrorPayload と噛み合う形を保証する。
@@ -105,5 +123,23 @@ mod tests {
         let s = payload.to_string();
         assert!(s.contains("\"model\":\"small\""), "got: {s}");
         assert!(s.contains("\"message\":\"HTTP 404\""), "got: {s}");
+    }
+
+    #[test]
+    fn test_download_error_payload_contract() {
+        let payload = build_download_error_payload("small", "HTTP 404");
+        let object = payload
+            .as_object()
+            .expect("payload should be a JSON object");
+
+        assert_eq!(object.len(), 2);
+        assert_eq!(
+            object.get("model").and_then(|value| value.as_str()),
+            Some("small")
+        );
+        assert_eq!(
+            object.get("message").and_then(|value| value.as_str()),
+            Some("HTTP 404")
+        );
     }
 }

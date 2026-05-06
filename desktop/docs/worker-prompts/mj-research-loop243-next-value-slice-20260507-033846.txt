@@ -1,0 +1,44 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 243 で実装する、1コミットに収まる小さく価値の高い改善候補を1件だけ調査してください。
+
+直近の重複禁止:
+- Loop 239: live caption transcription status UI sync
+- Loop 240: Teams `/meet/<id>` numeric-only fallback
+- Loop 241: GoTo app launcher extra path segment negative test
+- Loop 242: `audio-drop-count` frontend guard integer check
+
+優先して見る観点:
+1. クラッシュ修正に近い listener / payload validation / error boundary の薄い箇所
+2. マイク音声とデスクトップ音声の別トラック取得に関する純粋関数・payload 契約テスト
+3. 文字起こしエラー payload / worker panic / state 同期の小さな安全性改善
+4. 録音状態の透明性 UI で、Loop 239/242 と重複せず build で検証できるもの
+5. 履歴、検索、AI議事録に関する小さな純粋関数・UI文言改善で、課金や外部 API を伴わないもの
+
+調査条件:
+- 挙動変更なしのテスト追加を優先してください。挙動変更を推す場合は product value と誤認リスクを明記してください。
+- 大きな抽象化、依存追加、Rust AppHandle/Tauri 実機権限、外部 API は避けてください。
+- 会議検知を選ぶ場合は、直近 Loop 240/241 と重複せず、product value が明確な場合に限ってください。
+- 既存テストや直近ループと重複しないことを grep / 読解で確認してください。
+- 推測は推測と明示してください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補1件
+- 根拠ファイル/関数
+- 追加すべき具体的 assertion または最小実装内容
+- ユーザー価値
+- 非目標
+- 影響範囲
+- リスク/残リスク
+- worker へ渡す担当範囲と実装条件
+- 検証方法
