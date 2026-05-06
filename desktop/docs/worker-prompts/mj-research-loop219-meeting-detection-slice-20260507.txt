@@ -1,0 +1,24 @@
+あなたは meet-jerky desktop の調査担当エージェントです。
+
+対象:
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ
+
+制約:
+- コード変更は禁止です。ファイル編集、コミット、破壊的操作、認証情報変更、課金が発生する操作は禁止です。
+- AGENTS.md、docs/product-concept.md、docs/agent-harness.md を読んでください。
+- AGENT_LOG.md は末尾 120 行だけ確認してください。全体読解で停滞しないでください。
+- 他の agent も同じ codebase にいる可能性があります。他者の変更を戻さないでください。
+
+調査目的:
+- Loop 219 として、会議検知の網羅性または信頼性を上げる 1 ループサイズの小さな改善候補を調査してください。
+- 直近 Loop 217-218 は listener 開始失敗ログ改善だったため、今回はできれば `src-tauri/src/app_detection*` 周辺の URL / window title / bundle ID 判定に絞ってください。
+
+調査観点:
+- 既存の検知対象: Google Meet / Zoom / Microsoft Teams / Webex / Whereby / GoToMeeting など
+- false positive を増やしにくい最小追加またはテスト補強
+- 既存コード上の根拠
+- 影響範囲
+- 検証方法 (`cargo test --manifest-path src-tauri/Cargo.toml --lib ...` など)
+- 権限・課金・プライバシー上の制約
+
+候補は 2-3 個で十分です。最後に最も推奨する 1 件を明示してください。

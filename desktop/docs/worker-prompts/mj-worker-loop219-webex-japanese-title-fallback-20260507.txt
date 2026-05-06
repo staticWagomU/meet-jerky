@@ -1,0 +1,53 @@
+あなたは meet-jerky desktop の作業担当エージェントです。
+
+対象:
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ
+
+制約:
+- AGENTS.md、docs/product-concept.md、docs/agent-harness.md を読んでください。
+- AGENT_LOG.md は末尾 100 行だけ確認してください。全体読解で停滞しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他の agent も同じ codebase にいる可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。main agent が review/verify/commit します。
+
+Loop 219 目的:
+- Webex の window title fallback で日本語タイトル `"Webex ミーティング"` 始まりを検知できるようにする。
+- 既存は Zoom では `"Zoom Meeting"` / `"Zoom ミーティング"` を prefix 検知している一方、Webex は `"Webex Meeting"` のみ。URL が取れない `about:blank` / AppleScript 権限不足時の fallback として、日本語環境の Webex 会議検知漏れを減らす。
+
+担当範囲:
+- `src-tauri/src/app_detection_meeting_classifier.rs`
+- `src-tauri/src/app_detection.rs`
+- `AGENT_LOG.md`
+
+実装要件:
+1. `src-tauri/src/app_detection_meeting_classifier.rs`
+   - `classify_meeting_window_title` の Webex 判定に `"Webex ミーティング"` prefix を追加する。
+   - `"Webex"` 単体や `"Cisco Webex"`、文中に出る `"Microsoft Webex Meeting Tools"` のような既存 reject 挙動は維持する。
+   - Google Meet / Zoom / Teams の判定は変更しない。
+   - コメントも実装に合わせて最小更新する。
+2. `src-tauri/src/app_detection.rs`
+   - 既存 tests mod に Webex 日本語タイトルの positive test を追加する。
+   - 既存 Webex reject tests は維持し、必要なら `"Webex ミーティングについて"` のような過剰な reject は追加しないでください。prefix 方針と矛盾するためです。
+3. `AGENT_LOG.md`
+   - 末尾に Loop 219 の記録を追加する。
+   - 調査 session `mj-research-loop219-meeting-detection-slice-20260507` は最終報告前に停滞したため main が読解結果から最小スライスを選んだことを簡潔に記録する。
+   - 検証結果、依存関係追加なし、実機 window title 取得は未確認であることを記録する。
+
+非目標:
+- Webex URL 判定の拡張
+- Teams / Zoom / Google Meet 判定変更
+- 部分一致や曖昧な Webex タイトル検知
+- UI 変更
+- Rust 側 AppHandle / macOS bridge 変更
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_window_title`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+完了報告:
+- 変更ファイル一覧
+- 実装概要
+- 実行した検証コマンドと結果
+- 未解決リスクや意図的に触らなかった点

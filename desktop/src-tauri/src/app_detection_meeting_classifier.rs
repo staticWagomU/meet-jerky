@@ -69,8 +69,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 /// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` で始まるもの (prefix 一致)。
 ///   デスクトップアプリのウィンドウタイトルを想定。`starts_with` のみ使い
 ///   `"Zoom について - Wikipedia"` のような単語含みによる誤検知を防ぐ。
-/// - **Webex**: `"Webex Meeting"` で始まるもの (prefix 一致、Zoom と同型)。
-///   ブラウザタブタイトルを想定。実機で形式未確認のため、検知漏れ時は実環境観察後に拡張。
+/// - **Webex**: `"Webex Meeting"` または `"Webex ミーティング"` で始まるもの
+///   (prefix 一致、Zoom と同型)。ブラウザタブタイトルを想定。
 /// - **Microsoft Teams**: ブラウザ版のタイトルパターン (`"Microsoft Teams"` suffix 等) は
 ///   外部チュートリアルや解説ページと区別できないため今回は fallback 対象外とする。
 ///   Teams はデスクトップアプリ (Bundle ID: `com.microsoft.teams2`) 経由で検知される。
@@ -104,10 +104,10 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
         });
     }
 
-    // Webex のブラウザタブタイトルは "Webex Meeting | <site>" または "Webex Meeting" 始まり
-    // と仮定 (実機未確認、Zoom と同じ保守性レベル)。日本語タイトル ("Webex ミーティング" 等) は
-    // 仕様未確認のため将来課題。
-    if window_title.starts_with("Webex Meeting") {
+    // Webex のブラウザタブタイトルは "Webex Meeting" / "Webex ミーティング"
+    // で始まるものだけを拾う (prefix 一致)。
+    if window_title.starts_with("Webex Meeting") || window_title.starts_with("Webex ミーティング")
+    {
         return Some(MeetingUrlClassification {
             service: "Webex".to_string(),
             host: String::new(),

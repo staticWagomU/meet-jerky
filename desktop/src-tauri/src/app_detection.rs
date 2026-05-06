@@ -1425,6 +1425,17 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_window_title_returns_webex_for_webex_meeting_japanese_prefix() {
+        assert_eq!(
+            classify_meeting_window_title("Webex ミーティング | Acme Inc"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
     fn classify_meeting_window_title_returns_none_for_webex_meeting_not_at_start() {
         assert_eq!(
             classify_meeting_window_title("Microsoft Webex Meeting Tools"),
