@@ -1,0 +1,46 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection_teams.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+Microsoft Teams `/v2` 会議 URL の `meetingjoin=true` query 判定で、query parameter の key/value が ASCII percent-encoding されている場合も検知できるようにしてください。会議検知の網羅性を上げる最小スライスです。
+
+実装条件:
+- `query_has_param(query, "meetingjoin", "true")` の比較部分だけを強化してください。
+- `&` と `=` の区切り方は既存通り維持してください。`meetingjoin%3Dtrue` のように `=` 自体が encode された形式は非目標として受理しないでください。
+- `+` を空白扱いしないでください。
+- 依存関係は追加しないでください。
+- 既存の duplicate key 契約、key/value の case-insensitive 比較、`meetingjoin` key-only reject は維持してください。
+- 追加テストは `src-tauri/src/app_detection.rs` の Teams `/v2` 既存 test 付近に置いてください。
+- 受理する例:
+  - `https://teams.microsoft.com/v2?meeting%6Aoin=true`
+  - `https://teams.microsoft.com/v2?meetingjoin=tr%75e`
+  - `https://teams.cloud.microsoft/v2?MEETING%4AOIN=TR%55E`
+- 拒否する例:
+  - `https://teams.microsoft.com/v2?meetingjoin%3Dtrue`
+  - `https://teams.microsoft.com/v2?meetingjoin=tr%2Be`
+  - 不完全 percent escape を含む key/value
+- Google Meet / Zoom / Webex / Whereby / GoToMeeting、URL parser、UI、TypeScript、CSS、依存関係は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_teams.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop261-teams-meetingjoin-percent-encoding-20260507-081838.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

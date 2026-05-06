@@ -1594,6 +1594,49 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_accepts_teams_v2_with_percent_encoded_meetingjoin_key_or_value() {
+        for (url, host) in [
+            (
+                "https://teams.microsoft.com/v2?meeting%6Aoin=true",
+                "teams.microsoft.com",
+            ),
+            (
+                "https://teams.microsoft.com/v2?meetingjoin=tr%75e",
+                "teams.microsoft.com",
+            ),
+            (
+                "https://teams.cloud.microsoft/v2?MEETING%4AOIN=TR%55E",
+                "teams.cloud.microsoft",
+            ),
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "Microsoft Teams".to_string(),
+                    host: host.to_string(),
+                }),
+                "Teams /v2 の meetingjoin=true 判定は key/value の ASCII percent-encoding を復号してから case-insensitive 比較する必要がある: {url}"
+            );
+        }
+    }
+
+    #[test]
+    fn classify_meeting_url_rejects_teams_v2_with_encoded_separator_or_invalid_percent_encoding() {
+        for url in [
+            "https://teams.microsoft.com/v2?meetingjoin%3Dtrue",
+            "https://teams.microsoft.com/v2?meetingjoin=tr%2Be",
+            "https://teams.microsoft.com/v2?meeting%6join=true",
+            "https://teams.microsoft.com/v2?meetingjoin=tr%7",
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                None,
+                "Teams /v2 の query 分割は既存通り & と = のまま維持し、不完全 percent escape または true 以外の復号結果は reject する必要がある: {url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_rejects_teams_v2_with_meetingjoin_key_only_no_equals() {
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin"),

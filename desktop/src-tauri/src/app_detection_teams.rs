@@ -2,6 +2,8 @@
 //!
 //! `app_detection.rs` から Loop 43 で抽出 (Webex/Whereby/GoToMeeting/Zoom precedent 同パターン)。
 
+use std::borrow::Cow;
+
 /// Microsoft Teams 会議 URL を判定する。
 ///
 /// 受理パターン (4 系統):
@@ -45,7 +47,51 @@ fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
     query.is_some_and(|query| {
         query.split('&').any(|param| {
             let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
-            param_key.eq_ignore_ascii_case(key) && param_value.eq_ignore_ascii_case(value)
+            decoded_ascii_component_eq_ignore_case(param_key, key)
+                && decoded_ascii_component_eq_ignore_case(param_value, value)
         })
     })
+}
+
+fn decoded_ascii_component_eq_ignore_case(component: &str, expected: &str) -> bool {
+    percent_decode_ascii_component(component)
+        .is_some_and(|decoded| decoded.eq_ignore_ascii_case(expected))
+}
+
+fn percent_decode_ascii_component(component: &str) -> Option<Cow<'_, str>> {
+    if !component.as_bytes().contains(&b'%') {
+        return Some(Cow::Borrowed(component));
+    }
+
+    let bytes = component.as_bytes();
+    let mut decoded = String::with_capacity(component.len());
+    let mut index = 0;
+
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            let high = *bytes.get(index + 1)?;
+            let low = *bytes.get(index + 2)?;
+            let byte = hex_value(high)? * 16 + hex_value(low)?;
+            if !byte.is_ascii() {
+                return None;
+            }
+            decoded.push(char::from(byte));
+            index += 3;
+        } else {
+            let ch = component[index..].chars().next()?;
+            decoded.push(ch);
+            index += ch.len_utf8();
+        }
+    }
+
+    Some(Cow::Owned(decoded))
+}
+
+fn hex_value(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
 }
