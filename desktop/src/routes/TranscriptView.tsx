@@ -773,12 +773,14 @@ export function TranscriptView() {
       await stopTranscriptionFromUiState();
       setIsTranscribing(false);
 
+      // Rust start_transcription takes each audio consumer, so restart capture to recreate consumers.
       if (nextMicRecording) {
         try {
           await startMicCapture();
           setIsMicRecording(true);
           setMicLevel(0);
         } catch (e) {
+          // start_recording is stop-first; do not assume failed sources still have live capture.
           setIsMicRecording(false);
           setMicLevel(0);
           setIsTranscribing(false);
@@ -791,6 +793,7 @@ export function TranscriptView() {
           setIsSystemAudioRecording(true);
           setSystemAudioLevel(0);
         } catch (e) {
+          // start_system_audio is stop-first; do not assume failed sources still have live capture.
           setIsSystemAudioRecording(false);
           setSystemAudioLevel(0);
           setIsTranscribing(false);

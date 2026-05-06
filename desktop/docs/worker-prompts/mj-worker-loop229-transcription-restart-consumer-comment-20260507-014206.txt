@@ -1,0 +1,28 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+`restartTranscriptionForAudioSources` が既存録音中の mic / system audio も再 start する理由を、将来の誤修正で壊さないようコード上に明記する。Rust 側 `start_transcription` は audio consumer を `take` して worker に渡すため、文字起こし再起動時には capture を再 start して consumer を作り直す必要がある。
+
+実装条件:
+- 振る舞い変更は禁止です。ロジック、条件分岐、state 更新、文言、依存配列、import は変更しないでください。
+- `restartTranscriptionForAudioSources` 内の `stopTranscriptionFromUiState()` 後、または mic/system audio restart の直前に、短いコメントを追加してください。
+- catch 付近にも必要なら「start_* は stop-first なので失敗した source は実 capture が残っていると仮定しない」趣旨の短いコメントを追加してよいです。
+- コメントは長くしすぎず、読み手が consumer 再生成の理由を理解できる程度にしてください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

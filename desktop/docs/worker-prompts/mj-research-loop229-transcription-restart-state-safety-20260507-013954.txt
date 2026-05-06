@@ -1,0 +1,19 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。コミットも禁止です。課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+目的:
+`src/routes/TranscriptView.tsx` の `restartTranscriptionForAudioSources` 周辺について、音声ソース切替中の state 不一致リスクを調査し、1コミットで安全に実装できる最小スライスがあるか判断してください。
+
+特に確認してほしいこと:
+- `start_recording` / `start_system_audio` を既存録音中ソースにも再実行している理由。Rust 側で transcription worker が consumer を take するため再起動が必要か。
+- `restartTranscriptionForAudioSources` 内で start/restart に失敗した時、UI state と実際の capture state がずれる可能性。
+- 既存録音ソースを維持する rollback と、新規追加ソースだけ停止/false にする rollback のどちらが安全か。
+- 実装を避けるべき箇所と、実装するなら最小差分。
+
+報告形式:
+- 安全に実装できる候補があれば、根拠、最小変更範囲、非目標、リスク、検証方法を示してください。
+- 安全に実装できない場合は、理由と代替の小改善候補を示してください。
+- 推測は推測と明示してください。
