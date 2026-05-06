@@ -1,0 +1,25 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+
+最初に必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md の末尾付近
+
+目的:
+Loop 222 候補として、`classify_meeting_window_title` の Zoom window title fallback が `"Zoom Meeting"` / `"Zoom ミーティング"` prefix で広く拾っている点を調査してください。誤検知を減らす価値があるか、実機表記を壊さない最小スライスにできるかを批判的に判断してください。
+
+確認対象:
+- src-tauri/src/app_detection_meeting_classifier.rs
+- src-tauri/src/app_detection.rs の関連 tests
+- AGENT_LOG.md の最近の会議検知関連ログ
+
+報告内容:
+- 現状の Zoom window title 判定と既存 test
+- 誤検知候補と、逆に厳格化で検知漏れになりうる候補
+- 実装するなら最小スライスを1つ
+- 非目標、検証方法、残リスク
+
+推測は推測と明示してください。編集・コミットは禁止です。

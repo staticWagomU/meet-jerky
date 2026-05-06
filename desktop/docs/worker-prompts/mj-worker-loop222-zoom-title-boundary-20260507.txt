@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md の末尾付近
+
+担当範囲:
+- src-tauri/src/app_detection_meeting_classifier.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+`classify_meeting_window_title` の Zoom window title fallback で、`"Zoom Meetings Help"` や `"Zoom MeetingTools"` のような `"Zoom Meeting"` に文字が連結した非会議タイトルの誤検知を減らしてください。
+
+実装方針:
+- `"Zoom Meeting"` / `"Zoom ミーティング"` exact match は従来通り accept。
+- 既存 positive test の `"Zoom Meeting (山田太郎)"`、`"Zoom ミーティング (田中一郎)"`、`"Zoom Meeting - paused"`、`"Zoom ミーティング (録画停止中)"`、`"Zoom Meeting\n参加者: 山田"` は従来通り accept。
+- `"Zoom Meetings Help"` と `"Zoom MeetingTools"` は reject する test を追加してください。
+- 境界 helper を追加する場合は `src-tauri/src/app_detection_meeting_classifier.rs` 内に閉じてください。
+- Google Meet / Webex / URL 判定 / bundle ID / throttle / UI / Swift bridge は変更しないでください。
+- 実機表記不明な大幅厳格化は禁止です。既存 positive を壊さない最小境界にしてください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_window_title`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

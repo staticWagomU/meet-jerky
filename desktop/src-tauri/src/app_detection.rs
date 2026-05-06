@@ -1072,6 +1072,12 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_window_title_rejects_zoom_meeting_word_concatenation() {
+        assert_eq!(classify_meeting_window_title("Zoom Meetings Help"), None);
+        assert_eq!(classify_meeting_window_title("Zoom MeetingTools"), None);
+    }
+
+    #[test]
     fn classify_meeting_window_title_rejects_meet_alone() {
         // "Meet" 単独・空のコードは会議タブではない
         assert_eq!(classify_meeting_window_title("Meet"), None);

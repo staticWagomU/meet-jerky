@@ -66,8 +66,9 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 ///
 /// - **Google Meet**: `"Meet - "` / `"Meet – "` (U+2013) / `"Meet — "` (U+2014) で始まり、
 ///   続く会議コードまたは名前が trim 後に非空のもの。Chrome/Safari/Edge のタブタイトルを想定。
-/// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` で始まるもの (prefix 一致)。
-///   デスクトップアプリのウィンドウタイトルを想定。`starts_with` のみ使い
+/// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` と一致するか、その直後が
+///   空白・括弧・改行等の区切り文字で始まるもの。
+///   デスクトップアプリのウィンドウタイトルを想定。prefix の最小境界を見て
 ///   `"Zoom について - Wikipedia"` のような単語含みによる誤検知を防ぐ。
 /// - **Webex**: `"Webex Meeting"` または `"Webex ミーティング"` で始まるもの
 ///   (prefix 一致、Zoom と同型)。ブラウザタブタイトルを想定。
@@ -95,8 +96,10 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
     }
 
     // Zoom デスクトップアプリのウィンドウタイトルは "Zoom Meeting" / "Zoom ミーティング"
-    // で始まる。続く文字列 (参加者名等) があってもよい (prefix 一致)。
-    if window_title.starts_with("Zoom Meeting") || window_title.starts_with("Zoom ミーティング")
+    // で始まる。参加者名や状態は区切り文字つき suffix として許可するが、
+    // "Zoom Meetings Help" や "Zoom MeetingTools" のような単語連結は誤検知として除外する。
+    if has_zoom_meeting_title_prefix(window_title, "Zoom Meeting")
+        || has_zoom_meeting_title_prefix(window_title, "Zoom ミーティング")
     {
         return Some(MeetingUrlClassification {
             service: "Zoom".to_string(),
@@ -115,4 +118,12 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
     }
 
     None
+}
+
+fn has_zoom_meeting_title_prefix(window_title: &str, prefix: &str) -> bool {
+    let Some(rest) = window_title.strip_prefix(prefix) else {
+        return false;
+    };
+
+    rest.chars().next().is_none_or(|c| !c.is_alphanumeric())
 }
