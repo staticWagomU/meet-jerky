@@ -47,6 +47,10 @@ import {
 } from "../utils/transcriptViewFormatters";
 import { isAudioLevelPayload } from "../utils/audioLevelPayload";
 import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
+import {
+  AUDIO_DROP_COUNT_EVENT,
+  AUDIO_LEVEL_EVENT,
+} from "../utils/audioEvents";
 import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import {
   getAudioSourceNotice,
@@ -325,7 +329,7 @@ export function TranscriptView() {
   // Route audio-level events by source
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<unknown>("audio-level", (event) => {
+    const unlistenPromise = listen<unknown>(AUDIO_LEVEL_EVENT, (event) => {
       if (disposed) {
         return;
       }
@@ -372,7 +376,7 @@ export function TranscriptView() {
   // Route audio-drop-count events by source (cumulative)
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<unknown>("audio-drop-count", (event) => {
+    const unlistenPromise = listen<unknown>(AUDIO_DROP_COUNT_EVENT, (event) => {
       if (disposed) {
         return;
       }

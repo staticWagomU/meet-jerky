@@ -1,5 +1,6 @@
 use serde_json::json;
 
+pub(crate) const AUDIO_LEVEL_EVENT_NAME: &str = "audio-level";
 pub(crate) const AUDIO_DROP_EVENT_NAME: &str = "audio-drop-count";
 pub(crate) const AUDIO_SOURCE_MICROPHONE: &str = "microphone";
 pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
@@ -11,6 +12,11 @@ pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> se
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audio_level_event_name_is_audio_level_kebab_case() {
+        assert_eq!(AUDIO_LEVEL_EVENT_NAME, "audio-level");
+    }
 
     #[test]
     fn audio_drop_event_name_is_audio_drop_count_kebab_case() {

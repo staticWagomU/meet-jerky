@@ -1,0 +1,67 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした作業担当エージェントです。
+
+目的:
+- 録音・文字起こし状態の透明性を支える `audio-level` / `audio-drop-count` Tauri event 名を Rust と frontend で定数化し、emit/listen の typo や drift で音声状態表示が沈黙するリスクを下げる。
+- 挙動変更はしない。文字列値は既存と完全に同じにする。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+- src-tauri/src/audio_event.rs
+- src-tauri/src/audio.rs の audio-level / audio-drop-count emit 周辺
+- src-tauri/src/system_audio.rs の audio-level / audio-drop-count emit 周辺
+- src/routes/TranscriptView.tsx の audio-level / audio-drop-count listen 周辺
+- src/utils/audioLevelPayload.ts
+- src/utils/audioDropCountPayload.ts
+
+担当範囲:
+- 変更可:
+  - src-tauri/src/audio_event.rs
+  - src-tauri/src/audio.rs
+  - src-tauri/src/system_audio.rs
+  - src/routes/TranscriptView.tsx
+  - src/utils/audioEvents.ts (新規作成可)
+  - AGENT_LOG.md
+- 変更禁止:
+  - package.json / lockfile / 依存関係
+  - docs/handoff/**
+  - この prompt 以外の docs/worker-prompts/**
+  - 担当範囲外のファイル
+
+実装要件:
+- Rust:
+  - `src-tauri/src/audio_event.rs` に `AUDIO_LEVEL_EVENT_NAME: &str = "audio-level"` を追加する。
+  - 既存 `AUDIO_DROP_EVENT_NAME` と並べる。
+  - 既存テストに `AUDIO_LEVEL_EVENT_NAME` の値固定を追加するか、新規 unit test を追加する。
+  - `audio.rs` と `system_audio.rs` の `"audio-level"` emit を `crate::audio_event::AUDIO_LEVEL_EVENT_NAME` 参照へ置換する。
+- Frontend:
+  - `src/utils/audioEvents.ts` に以下を追加する。
+    - `AUDIO_LEVEL_EVENT = "audio-level"`
+    - `AUDIO_DROP_COUNT_EVENT = "audio-drop-count"`
+  - `TranscriptView.tsx` の `listen<unknown>("audio-level", ...)` と `listen<unknown>("audio-drop-count", ...)` を定数参照へ置換する。
+- payload shape、UI 文言、console.warn のログ文字列、分岐、集計方式、挙動は変えない。
+- Rust と frontend の自動共有や build script 追加はしない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/audio_event.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs src/routes/TranscriptView.tsx src/utils/audioEvents.ts AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 末尾に作業ログを追記する。
+- 開始日時、担当セッション名 `mj-worker-loop212-audio-event-name-contract-20260506`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加なし、残リスク、次アクションを簡潔に記録する。
+
+禁止:
+- コミットしない。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他エージェントやユーザーの変更を戻さない。
+
+完了報告:
+- 変更ファイル
+- 変更内容
+- 検証結果
+- 残リスク

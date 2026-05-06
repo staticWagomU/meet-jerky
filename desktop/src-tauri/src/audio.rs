@@ -326,7 +326,7 @@ impl AudioCapture for CpalMicCapture {
                 let bits = level_for_emitter.load(Ordering::Relaxed);
                 let level_value = f32::from_bits(bits);
                 let _ = app_handle.emit(
-                    "audio-level",
+                    crate::audio_event::AUDIO_LEVEL_EVENT_NAME,
                     json!({ "level": level_value, "source": crate::audio_event::AUDIO_SOURCE_MICROPHONE }),
                 );
                 let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);

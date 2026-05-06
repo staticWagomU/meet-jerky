@@ -1,0 +1,32 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+調査目的:
+- 録音・文字起こし状態の透明性に関わる `audio-level` / `audio-drop-count` Tauri event 名の契約を、1コミットで安全に強化できるか確認してください。
+
+重点確認:
+- Rust 側:
+  - src-tauri/src/audio_event.rs
+  - src-tauri/src/audio.rs の audio-level / audio-drop-count emit
+  - src-tauri/src/system_audio.rs の audio-level / audio-drop-count emit
+- Frontend 側:
+  - src/routes/TranscriptView.tsx の audio-level / audio-drop-count listen
+  - src/utils/audioLevelPayload.ts
+  - src/utils/audioDropCountPayload.ts
+
+出力要件:
+- 推奨実装スライスを1件。
+- 変更可能ファイル、変更内容、検証方法、ユーザー価値、非目標、リスクを簡潔に書く。
+- もし定数化より価値の高い小改善が同じ範囲にあるなら、代替候補として1件だけ挙げる。
+- 推測は推測と明示する。
+
+禁止:
+- 編集・コミット禁止。
+- 認証情報変更、課金操作、破壊的操作は禁止。
