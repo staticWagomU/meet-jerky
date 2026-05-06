@@ -114,6 +114,8 @@ const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しま
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
+const SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX =
+  "音声形式警告通知の受信開始に失敗しました:";
 type SavedFileAction = "open" | "reveal" | null;
 
 function clearRelatedMeetingError(
@@ -472,11 +474,23 @@ export function TranscriptView() {
         );
       },
     )
-      .then((unlisten) => unlisten)
+      .then((unlisten) => {
+        if (!disposed) {
+          setSystemAudioFormatWarning((current) =>
+            current?.startsWith(SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX)
+              ? null
+              : current,
+          );
+        }
+        return unlisten;
+      })
       .catch((e) => {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("音声形式警告通知の受信開始に失敗しました:", msg);
+          setSystemAudioFormatWarning(
+            `${SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX} ${msg}`,
+          );
         }
         return null;
       });

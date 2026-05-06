@@ -1,0 +1,29 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+`system-audio-format-warning` listener の受信開始失敗が現在 console.error のみで UI 診断に出ないため、相手側音声の状態透明性を高める。既存の `systemAudioFormatWarning` notice に開始失敗を反映し、ユーザーが相手側音声の形式警告を監視できていない状態に気づけるようにする。
+
+実装条件:
+- `SYSTEM_AUDIO_FORMAT_WARNING_EVENT` の event 名、payload、Rust 側、音声取得処理、警告条件、UI レイアウト、文言の大幅変更はしない。
+- listener が正常開始した時点で、開始失敗由来の `systemAudioFormatWarning` だけを clear してください。受信済みの実際の形式警告は勝手に消さないでください。
+- 既存の warning payload 受信時の挙動は維持してください。
+- catch では console.error を維持しつつ、`setSystemAudioFormatWarning` に「音声形式警告通知の受信開始に失敗しました: ...」のような日本語メッセージを入れてください。
+- cleanup は未開始 listener を解除しない既存方針を維持してください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
