@@ -1,5 +1,7 @@
 use crate::transcription_types::{TranscriptionErrorPayload, TranscriptionSource};
 
+pub(crate) const ERROR_TRANSCRIPTION_WORKER_ABEND: &str = "文字起こしワーカーが異常終了しました";
+
 pub(crate) fn build_transcription_error_payload(
     error: String,
     source: Option<TranscriptionSource>,
@@ -10,7 +12,7 @@ pub(crate) fn build_transcription_error_payload(
 pub(crate) fn build_worker_panic_error_payload(
     source: Option<TranscriptionSource>,
 ) -> TranscriptionErrorPayload {
-    build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
+    build_transcription_error_payload(ERROR_TRANSCRIPTION_WORKER_ABEND.to_string(), source)
 }
 
 #[cfg(test)]
@@ -39,7 +41,7 @@ mod tests {
         let payload = transcription_error_payload_to_value(&payload);
         assert_eq!(
             payload.get("error").and_then(|value| value.as_str()),
-            Some("文字起こしワーカーが異常終了しました")
+            Some(ERROR_TRANSCRIPTION_WORKER_ABEND)
         );
         assert_eq!(
             payload.get("source").and_then(|value| value.as_str()),
@@ -101,7 +103,7 @@ mod tests {
         assert!(v.get("source").is_none());
         assert_eq!(
             v.get("error").and_then(|x| x.as_str()),
-            Some("文字起こしワーカーが異常終了しました")
+            Some(ERROR_TRANSCRIPTION_WORKER_ABEND)
         );
     }
 
@@ -195,7 +197,7 @@ mod tests {
         let v = transcription_error_payload_to_value(&payload);
         assert_eq!(
             v.get("error").and_then(|x| x.as_str()),
-            Some("文字起こしワーカーが異常終了しました"),
+            Some(ERROR_TRANSCRIPTION_WORKER_ABEND),
             "panic 文言は固定 (panic details 漏洩防止)"
         );
         assert_eq!(
