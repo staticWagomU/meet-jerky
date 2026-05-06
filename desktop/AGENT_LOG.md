@@ -34149,3 +34149,63 @@ commit: 20a63ca + <chore commit hash>
 次アクション: なし (メイン側で次ループ判断)
 
 ---
+
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-87
+状態: 2 ループ完走 (Loop 176 + Loop 177) で後継 mjc-main-20260505-88 へ handoff
+本セッション実績:
+- Loop 176 = frontend 軸 = const 集約 paradigm 反復 2 件目 = paradigm 系統樹拡張 8 件目反復実証 = 既存 file 拡張軸 paradigm 14 件目 = src/utils/transcriptViewFormatters.ts L21/L25 + src/utils/sessionListHelpers.tsx L24/L28 の `"日時不明"` 重複 string literal を transcriptViewFormatters.ts で `export const SESSION_DATETIME_UNKNOWN_LABEL` 昇格 + sessionListHelpers.tsx から import 経由参照に変更 (DRY 違反解消, callsite 4 件無変更で API 互換維持, ネット行数 ±0, 責務階層精査による既存 file 拡張軸採用 = transcriptViewFormatters は session datetime formatting の正規 file = sessionListHelpers から既に import 済 = 整合最大) + paradigm 系統樹拡張 8 件目反復実証 = const 集約軸の安定性確立 = paradigm 反復による定型化期入り) = refactor commit 0d23249 + chore commit cbda720
+- Loop 177 = K 軸 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 42 件目 = +29 行 / 平均 ~14.5 行/loop = Loop 174 観測値 (~11 行/loop = 軽量化階層中央値水準下端) より +3.5 行 = 軽量化階層中央値水準上端への移動 = 軽量化階層中央値水準 ~11-12 行/loop の **8 連続観測達成** = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 3 件目 + frontend 軸軽量化 paradigm 17 連続観測達成 + paradigm 系統樹拡張 8 件目反復実証 = const 集約 paradigm 反復 2 件目) = docs commit 20a63ca + chore commit fbad7c6
+- 2-commit pattern 連続 33 ループ目達成 (Loop 145-177 = Loop 144 fault からの完全復活継続中 = 節目 30 件突破後 3 件目)
+- メイン批判判断連続 87 セッション目達成 (handoff prompt R22 最有力推奨候補 = INVALID_STATUS_PAYLOAD_ERROR を grep で値が両 file で異なる = 集約不可と発見 + 過去 Loop 150 で同じ判定済の precedent 確認 = handoff prompt 真偽確認の質的進化観測継続 + 真の重複候補 `"日時不明"` を独自 grep で発見 + 責務階層精査で transcriptViewFormatters.ts を抽出先確定 → R22' 採用 = paradigm 系統樹拡張 8 件目反復実証達成)
+- harness 衛生連続 82 セッション目 (canonical 移譲後 scripts/* に M 表示再出現せず = bfb9846 PATH inner shell escape の永続効果再確認 = 節目 80 件突破後 2 件目)
+- ファイル参照型 handoff prompt 連続 83 セッション目 (起動 prompt 短縮 + フル handoff 内容は別ファイル `docs/handoff/mjc-main-YYYYMMDD-N.txt` 参照型)
+- scope 多様性 39 軸維持 (本セッションは既存軸の paradigm 反復のみ)
+- alternation pattern pivot 加速継続 (K(175) → frontend(176) → K(177) = 15 → 16 → 17 = 加速期維持 = 節目 10 件突破後 5 件目)
+- 既存 file 拡張軸 paradigm 14 件目達成 (Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176)
+- 重複候補 grep 探索 paradigm 14 件目達成 (Loop 153/157/159/162/164/166/168/170/172/174/176 + 本ループ 4 callsite/2 file の `"日時不明"` 集約)
+- worker prompt 必須要素 9 (冒頭 `---` 含めない) **10 連続実証成功** (Loop 168/169/170/171/172/173/174/175/176/177 = 節目 5 連続超え後 5 件目)
+- 累積 worker 完走 275/276 (本セッション +2 件完走、99.6%)
+- 本セッション handoff prompt 真偽確認 paradigm の質的進化観測継続 = handoff R22 候補が間違いだったケースを 87 セッション目で再確認 + 過去 Loop 150 で同じ判定済の precedent 発見 = handoff prompt 信頼性は依然として批判的検証必須
+
+git 状態:
+- branch: main, ahead 599 (origin/main から先行、本セッション +4 commit + 本 SUMMARY commit = 計 +5 commit)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ)
+- 本セッションの commit (古い順):
+  1. `0d23249` refactor(frontend): SESSION_DATETIME_UNKNOWN_LABEL 集約 (Loop 176)
+  2. `cbda720` chore(agent-log): Loop 176 entry
+  3. `20a63ca` docs(architecture): Section 2.3 観測 42 件目 (Loop 177)
+  4. `fbad7c6` chore(agent-log): Loop 177 entry
+  5. (本 SUMMARY commit)
+
+品質:
+- cargo test (lib): 704 passed / 0 失敗 (本セッションは frontend + docs のみ = rust 不変 = Loop 172 で再検証済)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ (Loop 172 で再検証)
+- cargo fmt --check: OK (Loop 172 で再検証)
+- cargo build --lib: エラーなし (Loop 172 で再検証)
+- npm run build (tsc + vite build): OK (Loop 176 で完走確認)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 176 + 177 = frontend + docs のみ skip 判定)
+
+paradigm 系統樹拡張 8 件目反復実証の状況更新:
+- Loop 174 = CONTROL_CHARACTER_PATTERN const 集約 = paradigm 1 件目 = 新軸開拓
+- Loop 176 = SESSION_DATETIME_UNKNOWN_LABEL const 集約 = paradigm 反復 2 件目 = 安定性確立
+- 後継 Loop 178+ で paradigm 反復 3 件目を狙うなら更なる重複 const literal grep 探索が必要
+- frontend 重複候補は handoff prompt に挙げられた INVALID_STATUS_PAYLOAD_ERROR と CONTROL_CHARACTER_PATTERN は誤同定 / 既処理済 = 真の候補は本セッション独自 grep で発見した `"日時不明"` (4 箇所/2 file = 本ループで処理済) + `"確認できません"` (11 箇所/7 file = 規模 M-L = 候補としては重め)
+- `"確認できません"` (utils/externalApiKeyHelpers.ts L10/L24 + utils/engineStatusHelpers.ts L38 + utils/aiTransmissionHelpers.ts L23/L33 + components/PermissionBanner.tsx L67/L74 + routes/TranscriptView.tsx L1140/L1143 + routes/SettingsView.tsx L1759/L1898) = 11 callsite/7 file = 規模 M-L = 抽出先選定が責務階層精査要 = 候補としては有力だが規模大
+
+次のループ候補 (Loop 178+):
+- **K 軸再度 = K(177) → K(178) = alternation reset (17 → 1) = 推奨せず**
+- **R23 = frontend 軸 = const 集約 paradigm 反復 3 件目 = `"確認できません"` (11 箇所/7 file) を集約 = 規模 M-L = ~15-30 分完走見込み**:
+  - 抽出先候補: 新 utils file 作成 (`src/utils/statusLabels.ts` 等) = 新 file 作成軸 = paradigm 系統樹拡張 9 件目候補
+  - または `src/utils/engineStatusHelpers.ts` (既存 = engine status label 担当) 拡張 = 既存 file 拡張軸 paradigm 15 件目
+  - **責務階層精査要**: `"確認できません"` は permission / engine / transmission / API key 確認失敗時の汎用 fallback 文言 = 担当 entity が広範 = 新 utils file 作成軸が責務整合性高
+  - alternation pattern: K(177) → frontend(178) = pivot 成功 (17 → 18)
+- **R21 = rust 軸 = paradigm 反復 8 件目 = parameterized helper 化拡張 = 対称対象事実上枯渇 (前任者検証済) = 第二推奨 = 規模 S-M = ~15-30 分**:
+  - 探索コスト高 = 真に対称な test を発見するなら超低レイヤー探索要
+- **R17 = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複等の超低レイヤー探索 = 第三推奨 = 規模 S = ~10-30 分**:
+  - 探索コスト高
+- 低優先: J' SettingsView.tsx 内部 helper (component helper 可能性高 = 抽出困難確認済 = 却下推奨) / X' resample_audio dead code 削除 (ユーザー直伝指示要) / H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要) / B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済) / A1. Webex 日本語 window title (継承)
+
+後継 mjc-main-20260505-88 への 2-3 ループ完走推奨。最有力候補 = R23 = frontend 軸 = const 集約 paradigm 反復 3 件目 = `"確認できません"` 集約 = 規模 M-L = paradigm 系統樹拡張 8 件目反復 3 件目達成可能 (paradigm 反復による定型化期更なる延長) + 抽出先選定 (新 file 作成軸 vs 既存 file 拡張軸) を責務階層精査で判断する習慣を継承。詳細は docs/handoff/mjc-main-20260505-88.txt 参照。
+
+---
