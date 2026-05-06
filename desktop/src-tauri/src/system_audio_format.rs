@@ -9,6 +9,8 @@
 #[cfg(target_os = "macos")]
 use screencapturekit::CMFormatDescription;
 
+const ERROR_NON_F32_PCM_FORMAT: &str = "非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)";
+
 /// フォーマット検証の内部ロジック。純粋関数としてテスト可能。
 /// ScreenCaptureKit が配信する Float32 / NativeEndian / 設定チャンネル数を確認する。
 fn validate_audio_format_properties(
@@ -19,7 +21,7 @@ fn validate_audio_format_properties(
     expected_channels: u32,
 ) -> Result<(), &'static str> {
     if !is_float {
-        return Err("非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)");
+        return Err(ERROR_NON_F32_PCM_FORMAT);
     }
     if is_big_endian {
         return Err("BigEndian フォーマット (NativeEndian が必要)");
@@ -123,10 +125,7 @@ mod tests {
     #[test]
     fn validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths() {
         let non_float = validate_audio_format_properties(false, false, Some(32), Some(1), 1);
-        assert_eq!(
-            non_float.unwrap_err(),
-            "非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)"
-        );
+        assert_eq!(non_float.unwrap_err(), ERROR_NON_F32_PCM_FORMAT);
 
         let big_endian = validate_audio_format_properties(true, true, Some(32), Some(1), 1);
         assert_eq!(
@@ -157,9 +156,6 @@ mod tests {
         );
 
         // 第 1 関門が最優先で発火することを文言完全一致で固定。
-        assert_eq!(
-            result,
-            Err("非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)")
-        );
+        assert_eq!(result, Err(ERROR_NON_F32_PCM_FORMAT));
     }
 }
