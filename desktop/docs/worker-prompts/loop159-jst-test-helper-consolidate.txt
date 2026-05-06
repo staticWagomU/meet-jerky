@@ -1,0 +1,153 @@
+# mjc-worker-loop159-jst-test-helper-consolidate / 2026-05-06 / mjc-main-20260505-78 Loop 159
+
+あなたは meet-jerky の作業エージェントです。Loop 159 = rust 軸 = **既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約)** を実施します。
+
+## 背景 (重要)
+
+`fn jst() -> FixedOffset { FixedOffset::east_opt(9 * 3600).unwrap() }` が **5 file の `#[cfg(test)] mod tests` 内に完全同一実装** で重複しています:
+
+- `src/datetime_fmt.rs:37` (datetime 整形 tier = 正規実装の置き場として最適)
+- `src/session_manager.rs:153`
+- `src/session_commands.rs:115`
+- `src/session_store_render.rs:72`
+- `src/session_store.rs:61`
+
+Loop 157 の calculate_rms 集約 (2 file 重複削除) の発展版 = **5 file test helper 集約 paradigm 6 件目**。
+
+## 必読 (順序遵守)
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. `sed -n '30,50p' src-tauri/src/datetime_fmt.rs` で datetime_fmt.rs の test module 構造を確認 (L37 `fn jst()` 周辺)
+3. `grep -n "fn jst\|use super\|use crate" src-tauri/src/{session_manager,session_commands,session_store_render,session_store}.rs` で 4 file の jst 使用状況を確認
+
+## 作業内容 (3 step)
+
+### Step 1: datetime_fmt.rs を編集 = jst() を module level に移動して `pub(crate)` 化
+
+`#[cfg(test)] mod tests { ... fn jst() -> FixedOffset { ... } ... }` の中の `fn jst()` を **削除** し、その代わり `mod tests` の **直前** (= module level) に `#[cfg(test)] pub(crate) fn jst() -> FixedOffset` を追加する。
+
+具体的には L33-L41 範囲を以下のように変更:
+
+old (L33-L41):
+```
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::FixedOffset;
+
+    fn jst() -> FixedOffset {
+        FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+```
+
+new:
+```
+}
+
+#[cfg(test)]
+pub(crate) fn jst() -> FixedOffset {
+    FixedOffset::east_opt(9 * 3600).unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::FixedOffset;
+```
+
+**注意点**: test module 内の `use super::*;` で jst が import される (super = parent module = jst が定義された module level)。よって test module 内の jst() 使用は無変更で動作する。
+
+### Step 2: 4 file の test module 内 jst() を削除 + use 追加
+
+各 file (`session_manager.rs`, `session_commands.rs`, `session_store_render.rs`, `session_store.rs`) で:
+
+- test module 内 (`#[cfg(test)] mod tests { ... }` の中) の `fn jst() -> FixedOffset { ... }` (3 行) を削除
+- 同 test module 冒頭 (use super::*; の直後) に `use crate::datetime_fmt::jst;` を追加 (1 行)
+
+各 callsite (`jst()`) は無変更で動作する (use により名前空間に取り込まれる)。
+
+例: `session_manager.rs:153-155`:
+
+old:
+```
+    fn jst() -> FixedOffset {
+        FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+```
+
+new: (削除のみ、use 追加は test module 冒頭)
+
+各 file の test module 冒頭で `use super::*;` または `use crate::xxx::*;` の直後あたりに `use crate::datetime_fmt::jst;` を追加。
+
+### Step 3: 検証
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri してから:
+
+```bash
+cargo test --lib 2>&1 | tail -10  # 704 passed / 0 failed (件数完全不変)
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -5  # 警告ゼロ
+cargo fmt --check 2>&1 | tail -3  # OK
+cargo build --lib 2>&1 | tail -3  # エラーなし
+```
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop してから:
+
+```bash
+bash scripts/agent-verify.sh src-tauri/src/datetime_fmt.rs src-tauri/src/session_manager.rs src-tauri/src/session_commands.rs src-tauri/src/session_store_render.rs src-tauri/src/session_store.rs
+```
+
+= OK
+
+## 2-commit pattern (worker 自律実行)
+
+### Commit 1: refactor
+
+```bash
+git add src-tauri/src/datetime_fmt.rs src-tauri/src/session_manager.rs src-tauri/src/session_commands.rs src-tauri/src/session_store_render.rs src-tauri/src/session_store.rs
+git commit -m "refactor(rust): jst() test helper を datetime_fmt.rs に集約 (5 file 重複削除 + use crate::datetime_fmt::jst で参照, mjc-main-20260505-78 Loop 159, rust 軸 = 既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約) = Loop 157 calculate_rms 集約 paradigm の規模拡大版, FixedOffset::east_opt(9 * 3600).unwrap() の完全同一実装が test module 内 5 件存在 = DRY 違反解消, datetime_fmt.rs に #[cfg(test)] pub(crate) fn jst() を module level に新設 + 4 file の test module 内 fn jst() 削除 + use crate::datetime_fmt::jst で参照, #[cfg(test)] gate により production binary に影響なし, callsite (jst()) 全件無変更で API 互換維持, cargo test 704 件件数完全不変, alternation 47 連続維持 (K(158) → rust(159)), AGENTS.md priority 1 寄与)"
+```
+
+### Commit 2: chore (AGENT_LOG.md 末尾追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → `---` 直後に Loop 159 entry を append (1 回のみ Edit/Write、複数回繰り返さない、append が成功したら直ちに次へ進む):
+
+```
+[mjc-main-20260505-78 Loop 159 / 2026-05-06]
+worker: mjc-worker-loop159-jst-test-helper-consolidate (作業)
+範囲: src-tauri/src/datetime_fmt.rs (test module 内 fn jst 削除 + module level に #[cfg(test)] pub(crate) fn jst 新設 = ±0 行) + src-tauri/src/{session_manager,session_commands,session_store_render,session_store}.rs (各々 test module 内 fn jst 3 行削除 + use crate::datetime_fmt::jst 1 行追加 = 各 -2 行 = 合計 -8 行)
+内容: 5 file の test module 内 `fn jst() -> FixedOffset { FixedOffset::east_opt(9 * 3600).unwrap() }` 完全同一重複定義を削除 + datetime_fmt.rs::jst (module level に #[cfg(test)] pub(crate) fn として新設) から use 経由参照。**rust 軸 = 既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約)** = Loop 157 calculate_rms 集約 (2 file) の規模拡大版 paradigm。callsite (jst()) は use により名前空間に取り込まれるため全件無変更で API 互換維持。**責務階層精査**: datetime_fmt.rs = datetime 整形 tier = JST FixedOffset の正規定義場所として最適 (既に `use chrono::{DateTime, FixedOffset, TimeZone};` import 済) + 他 4 file (session_manager / session_commands / session_store_render / session_store) は session 関連 tier で test 用 timezone helper のみ重複 = test helper 集約軸として責務分離合理的。**#[cfg(test)] gate**: production binary に影響なし (test build のみ jst が出現)。alternation pattern 47 連続維持 (K(158) → rust(159))。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要。
+verify: scripts/agent-verify.sh 全項目 OK
+意義: 既存 file 拡張軸 paradigm 6 件目達成 (Loop 145/147/149/153/157 の続編 = 5 件目から 6 件目へ拡張) + 重複候補 grep 探索 paradigm 6 件目達成 = test helper 同名 fn 探索の新軸開拓 + 多 file 同時集約 paradigm の rust 版確立 (frontend 版 Loop 149 = 3 file MEETING_START_REQUEST_EVENT 集約 の規模拡大版 = 5 file 集約) + DRY 違反解消 + worker 自律 2-commit pattern 連続 15 ループ目達成 = 節目 15 件突破 + scope 38 軸目開拓候補 (test helper tier) の可能性。
+---
+```
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-78 Loop 159 = jst() test helper を datetime_fmt.rs に集約 (rust 軸, 既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約), DRY 違反解消, alternation 47 連続維持, Loop 157 calculate_rms 集約 paradigm の規模拡大版, 重複候補 grep 探索 paradigm 6 件目達成) のエントリ追記"
+```
+
+### 完了確認
+
+`git log --oneline -3` で 2 commit が作成されていることを確認。`git status --short` で working tree clean を確認 (handoff/worker-prompts ファイルは untracked 継続)。
+
+## 制約 (重要)
+
+- **担当範囲外の編集禁止**: 上記 5 file (datetime_fmt.rs / session_manager.rs / session_commands.rs / session_store_render.rs / session_store.rs / AGENT_LOG.md) のみ編集
+- **行末空白文字 (trailing whitespace) 禁止** = 各行末尾に空白文字を残さない
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から、Loop 146-158 で 13 連続実証成功)
+- 大型 file は Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **2-commit pattern を厳守** = refactor commit + chore commit の 2 つを順番に作成
+- `--no-verify` 禁止、Keychain 実通信禁止、課金禁止
+- **件数完全不変保証** = cargo test --lib で 704 件全 pass を必ず確認
+- 課題発生時は中断して報告。状況不明なら勝手に file を作らない。
+
+## 想定完走時間
+
+規模 SS-S = ~5-10 分完走見込み (5 file 編集 + cargo test 検証 = Loop 151 normalize_speaker 抽出 + tests 移動と同等規模)
+
+precedent: Loop 119/121/123/125/127/129/131/133/135/137/139/141/143/145/147/149/151/153/155/157 = 20 件 rust/frontend 軸完走実績。
+
+以上、よろしくお願いします。

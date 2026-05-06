@@ -1,0 +1,96 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md (末尾 350 行で十分) を読んでください。
+
+担当範囲: src-tauri/src/session.rs の `mod tests` への新規 unit test 追加 5 件のみ。
+本体実装 (line 1-56) は変更禁止。他ファイルへの編集は禁止。コミットは禁止。
+
+# 背景 / Why
+
+session.rs は薄いデータコンテナ (Session / SessionSegment) と 4 関数 (start / append_segment / finalize + cfg(test) の is_finalized / duration_secs) のみで、現在 13 件の test がある。基本 invariant は埋まっているが以下 5 つの gap が未固定。これらは誤改修の検知装置として価値があるため追加したい。
+
+## 累積技術注意点 (踏みやすい罠、必ず守る)
+- **SESSION_COUNTER は静的 AtomicU64**。**絶対値 assert 禁止** (test の実行順により値が変わる)。**相対比較のみ可** (3 件連続生成での seq strictly increasing)。
+- **Session 構造体は薄いデータコンテナ**。validation/normalization は上位層責任。
+- 既存 13 件の test は line 60-298 (`mod tests` 内) にある。重複しないよう注意。
+
+# 具体的 test 案 (assertion レベル)
+
+すべて `mod tests` 内に追加。既存 test の後 (line 297 の閉じ } の直前) に append。
+
+## T1. id seq の monotonic 増加契約 (相対比較のみ、絶対値は不問)
+- 名前: `start_assigns_strictly_increasing_seq_in_id_suffix`
+- 同一 started_at で 3 件連続生成 (`Session::start("title".into(), 1_700_000_000)` を 3 回)
+- 各 id は `"1700000000-{seq}"` 形式。`-` で split し 2 番目の要素を `parse::<u64>()` する
+- assert: `seq1 < seq2 < seq3` (strictly increasing、絶対値は assert しない)
+- コメント: SESSION_COUNTER の AtomicU64 fetch_add(1, Relaxed) による monotonic 契約。session_store の id 順序前提。絶対値は test 順依存で不問。
+
+## T2. Session::clone() の deep copy 性 (segments Vec の独立性)
+- 名前: `clone_creates_independent_segments_vec_for_deep_copy_contract`
+- session A を作って segments に 2 件 append
+- `let mut b = a.clone();`
+- A 側にさらに 1 件 append、B 側にもさらに 1 件 (内容違いで) append
+- assert: `a.segments.len() == 3`, `b.segments.len() == 3` (独立)
+- assert: `a.segments[2].text != b.segments[2].text` (各々の追加が他方に影響しない)
+- assert: `a.segments[0..2]` と `b.segments[0..2]` は同じ内容 (clone 時点までは共有された値)
+- コメント: `#[derive(Clone)]` が Vec の deep copy であることを文書化。`Rc<Vec<_>>` 等への変更検知装置。
+
+## T3. SessionSegment::clone() の独立性 (3 field passthrough、struct 構造文書化)
+- 名前: `session_segment_clone_preserves_all_three_fields_independently`
+- `let s = SessionSegment { speaker: "Alice".into(), timestamp_offset_secs: 42, text: "hi".into() };`
+- `let c = s.clone();`
+- assert: `s.speaker == c.speaker == "Alice"`, `s.timestamp_offset_secs == c.timestamp_offset_secs == 42`, `s.text == c.text == "hi"`
+- 別ケース: 空文字 + 0 offset で clone しても同等になる
+- 別ケース: u64::MAX offset + multibyte (`"あ"`) で clone しても同等
+- コメント: SessionSegment は 3 field 持つ薄いデータコンテナで、clone は全 field を independently に copy する契約。
+
+## T4. Session の serde round-trip (segments 0/N 件 × ended_at None/Some の 4 ケース対称)
+- 名前: `serde_json_round_trip_preserves_all_fields_for_4_state_combinations`
+- 4 ケース:
+  1. segments=0 件 + ended_at=None (start 直後)
+  2. segments=2 件 + ended_at=None (append 後 finalize 前)
+  3. segments=0 件 + ended_at=Some(1_500) (空のまま finalize)
+  4. segments=2 件 + ended_at=Some(1_500) (append + finalize)
+- 各ケース: `let json = serde_json::to_string(&original).unwrap();` → `let restored: Session = serde_json::from_str(&json).unwrap();`
+- assert: 全 field (id / title / started_at / ended_at / segments.len() / 各 segment の 3 field) が一致
+- コメント: `#[derive(Serialize, Deserialize)]` の正常動作を 4 状態組合せで固定。session_store に書き出される persistent 形式の構造契約。
+
+## T5. started_at boundary (0 と u64::MAX) で id format prefix 文書化 + 各 fields passthrough
+- 名前: `start_with_zero_and_max_u64_started_at_passes_through_to_id_prefix_and_field`
+- ケース 1: `Session::start("t".into(), 0)` → `id.starts_with("0-")` が true、`started_at == 0`
+- ケース 2: `Session::start("t".into(), u64::MAX)` → `id.starts_with(&format!("{}-", u64::MAX))` が true、`started_at == u64::MAX`
+- 各ケース: `ended_at == None`, `segments.is_empty()`, `!id.is_empty()`
+- コメント: `format!("{started_at}-{seq}")` の boundary を u64 両端で固定。`as` キャストや try_into を入れる誤改修の検知装置。session_store の parse_session_started_at_secs (前 mjc-main-8 で 7 件網羅) の入力側 boundary と対をなす。
+
+# 実装上の注意
+
+- すべて既存 `#[test]` パターンを踏襲、`#[tokio::test]` は不要 (同期 test)。
+- `serde_json` は src-tauri/Cargo.toml line 25 で normal dep として入っているので `use serde_json;` は不要、`serde_json::to_string` 等で直接使える。
+- 各 test 先頭に短い 1-2 行コメントで「何を文書化するか」を残す (既存 test と同様のスタイル)。
+- assert の失敗メッセージは日本語の契約説明を簡潔に書く (既存 test と同じスタイル)。
+- 既存 test を 1 行も変更しないこと (id seq の test 5 / 6、started_at boundary 系の test 13 等が近接するが、追加 test とは独立)。
+- clippy で warning ゼロを維持 (`uninlined_format_args` 含む)。`format!("{started_at}-{seq}")` 形式で OK。
+
+# 検証手順
+
+1. `cargo fmt -p meet-jerky` で format
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` で warning ゼロ確認
+3. `cargo test -p meet-jerky --lib session::tests` で session.rs の test だけ実行 (素早い feedback)
+4. `cargo test -p meet-jerky --lib` で全体 415 → 420 passed を確認
+5. すべて緑なら報告して終了
+
+# AGENT_LOG.md 記載項目
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-session-rs-gaps-1
+- 役割: 作業担当
+- 作業範囲: src-tauri/src/session.rs の mod tests 内に新規 unit test 5 件 (T1-T5) 追加
+- 指示内容: id seq monotonic 相対比較 / Session clone deep copy / SessionSegment clone 独立 / Session serde round-trip 4 ケース / started_at boundary の 5 軸 gap 補強
+- 結果: 415 → 420 passed (or 失敗内容)
+- 変更ファイル: src-tauri/src/session.rs のみ
+- 検証結果: cargo fmt / clippy -D warnings / cargo test --lib のサマリ
+- 依存関係追加: なし (serde_json は既存)
+- 失敗理由: (該当時のみ)
+- 次アクション: メインによるレビューとコミット待ち
+
+最後に「変更内容、変更ファイル、検証結果、残リスク」を 1 ターンで簡潔に報告して終了してください。

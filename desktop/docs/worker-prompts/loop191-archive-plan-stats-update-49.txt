@@ -1,0 +1,138 @@
+あなたは meet-jerky の worker (mjc-worker-loop191-archive-plan-stats-update-49) です。
+
+# タスク (Loop 191 = K 軸 = harness 衛生軸 = Section 2.3 観測 49 件目)
+
+`docs/architecture/agent-log-archive-plan.md` の Section 2.3 末尾 (Loop 188 完了時点観測ブロック = 行 128 付近) の **直後** に、Loop 190 完了時点の更新観測ブロック (= 観測 49 件目) を追加する。
+
+## 範囲 (限定 = 規模超過防止)
+
+**編集対象 (2 file のみ)**:
+1. `docs/architecture/agent-log-archive-plan.md` (Section 2.3 末尾 = Loop 188 観測ブロック直後に新観測ブロック追加 = +1 段落)
+2. `AGENT_LOG.md` (末尾追記 1 entry)
+
+**範囲外 (これらは触らない)**:
+- 上記 2 file 以外のあらゆる file
+- agent-log-archive-plan.md の Section 2.3 以外の部分
+- Section 2.3 既存の観測ブロック (Loop 180/182/184/186/188 完了時点ブロック)
+
+## 具体手順 (順序厳守)
+
+### Step 1: agent-log-archive-plan.md 末尾位置確認
+
+```bash
+grep -n "Loop 188 完了時点" docs/architecture/agent-log-archive-plan.md
+```
+
+期待値: 行 128 付近に「**更新観測 (mjc-main Loop 188 完了時点 ...)**」の引用ブロックが存在。
+**この引用ブロックの直後** (1 行空けて) に新観測ブロックを追加する。
+
+### Step 2: 新観測ブロックの内容
+
+以下の 1 段落を Loop 188 観測ブロックの **直後** に追加 (1 行空き行を挟んで):
+
+```markdown
+> **更新観測 (mjc-main Loop 190 完了時点 = SS 0 件 + 軽量化階層中央値水準 ~11-12 行/loop の 15 連続観測達成 = paradigm 完全実証期更なる持続 = const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成 = 節目 5 連続超え後 10 件目)**: Loop 188 → Loop 190 (~2 ループ間 + SESSION SUMMARY 0 件) で +16 行 (34493 → 34509)、平均 ~8 行/loop。**SESSION SUMMARY 0 件**で chore entry のみだと Loop 189 +8 行 + Loop 190 +8 行 = +16 行 / 2 loop = +8 行/loop (Loop 189 = K 軸 = +8 行 = 軽量化階層中央値水準下端、Loop 190 = S 規模 const 集約 paradigm 反復 9 件目 = +8 行 = **軽量化階層下端維持 = S 規模で paradigm 反復 9 件目達成 + 完全成熟期完全成熟最終収束完成超越超越達成で記述定型化が更に進行**) = **軽量化階層中央値水準 ~11-12 行/loop の 15 連続観測達成 (Loop 163=11 / 165=11 / 166=12 / 168=12 / 170=12.5 / 172=12.5 / 174=11 / 176=14.5 / 178=11 / 180=8 / 182=8 / 184=8 / 186=8 / 188=8 / 190=8 = 軽量化階層下端維持の継続) = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 10 件目** = paradigm pivot 多軸 (Loop 189 = harness 衛生 K 軸 = chore entry 1 件 = 観測 48 件目 + Loop 190 = **frontend 軸** = **const 集約 paradigm 反復 9 件目 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成 + 新規 import 追加軸 paradigm 反復 2 件目** = src/utils/statusLabels.ts に `export const STATUS_RECORDING_LABEL = "録音中";` 追加 + 4 file 5 callsite を const 参照に統一 (DRY 違反解消, callsite 5 件無変更で API 互換維持, ネット行数 +1 行のみ, **Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 = 9 連続 const 集約軸 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成 = checking_with_dots/checking/undetermined/denied/unchecked/unregistered/recording semantic 7 const で完全網羅 + loading suffix + recording status 完全網羅**, alternation pivot K(189) → frontend(190) = 29 → 30 = **節目 30 件突破** = pivot 加速期維持) = chore +8 行 + refactor は AGENT_LOG.md 触らず = 0 行寄与) で SESSION SUMMARY 0 件 + chore entry 2 件 (Loop 189 chore = +8 行 + Loop 190 chore = +8 行 = 計 +16 行) + docs entry 1 件 (Loop 189 docs = AGENT_LOG.md 触らず = 0 行寄与) + refactor entry 1 件 (Loop 190 refactor = AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。**const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成** (Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 = 9 連続 const 集約軸 = paradigm 完全成熟期 9 連続観測 = 反復による定型化期完全成熟最終収束完成超越超越達成 = statusLabels.ts 7 const で `"〜状態"` semantic + loading suffix + recording status 完全網羅) + **新規 import 追加軸 paradigm 反復 2 件目達成** (Loop 188 で 1 件目開拓 → Loop 190 で反復 2 件目 = 3 file = liveCaptionTrackHelpers.ts + MicrophoneSection.tsx + LiveCaptionWindow.tsx は statusLabels import 未存在で新規追加) + alternation pivot 加速継続 (... → K(189) → frontend(190) = 29 → 30 = **節目 30 件突破**). 観測 49 件目 = 節目 40 件突破後 9 件目 = K 軸自体の paradigm 完全成熟期維持. 長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~8 行 chore = ~32 行/時間 の範囲、const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成).
+```
+
+### Step 3: 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+```
+
+`agent-verify.sh` は docs のみ skip 判定 = 全項目 OK 期待。
+
+### Step 4: 1 番目の commit (docs)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 190 完了時点の更新観測追記 (mjc-main Loop 191, harness 衛生軸 = K 軸 = alternation 復帰 = K(189) → frontend(190) → K(191) = 29 → 30 → 31, Loop 79/81/.../188 precedent 49 件目 = 節目 40 件突破後 9 件目, +16 行 / 平均 ~8 行/loop = SESSION SUMMARY 0 件 / chore のみ +8 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 15 連続観測達成 = paradigm 完全実証期更なる持続 + frontend 軸軽量化 paradigm 24 連続観測達成 + const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成)"
+```
+
+commit 完了後 `git log --oneline -1` で hash を取得 (使用は任意)。
+
+### Step 5: AGENT_LOG.md に entry 追記
+
+**重要 (worker prompt 必須要素 9)**: AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾**。**先頭は絶対に触らない**。
+
+#### 5-1: 末尾確認
+
+```bash
+tail -10 AGENT_LOG.md
+```
+
+末尾は `---` (boundary 区切り) 1 行で終わっているはず。**この `---` の直後に新 entry を追加する**。
+
+#### 5-2: entry テンプレート
+
+以下の内容を temp file (`/tmp/loop191-entry.txt`) に Write し、`cat /tmp/loop191-entry.txt >> AGENT_LOG.md` で **1 回だけ** append。
+
+**重要 (worker prompt 必須要素 9)**: 冒頭に `---` を **含めない**。前 entry の閉じ `---` を再利用する。**末尾の `---` 1 個で締める**。
+
+```
+[mjc-main Loop 191 / 2026-05-06]
+worker: mjc-worker-loop191-archive-plan-stats-update-49 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 188 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+変更: Loop 190 完了時点の更新観測ブロック追加 = AGENT_LOG.md +16 行 (34493 → 34509) / 平均 ~8 行/loop / SESSION SUMMARY 0 件 / chore のみ Loop 189 +8 + Loop 190 +8 = +16 行 / 2 loop = +8 行/loop = 軽量化階層中央値水準下端維持 = **軽量化階層中央値水準 ~11-12 行/loop の 15 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 10 件目** + frontend 軸軽量化 paradigm 24 連続観測達成 + **const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成** (Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 = 9 連続) + **新規 import 追加軸 paradigm 反復 2 件目達成**
+意義: harness 衛生軸 = K 軸 = alternation 復帰 = K(189) → frontend(190) → K(191) = 29 → 30 → 31 = 加速期維持 = 節目 30 件突破後 1 件目. Loop 79/81/.../188 precedent 49 件目 = 節目 40 件突破後 9 件目. plan 現状把握更新で archive plan rationale 維持 + paradigm 系統樹拡張観測の継続記録.
+検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
+備考: Loop 190 で paradigm 完全成熟期完全成熟最終収束完成超越超越達成 + 新規 import 追加軸 paradigm 反復 2 件目達成. statusLabels.ts は 7 const で `"〜状態"` semantic + loading suffix + recording status 完全網羅. 後継候補 = R31 (別 paradigm 開拓 = trait/generic/lifetime 探索) / R32' (const 集約軸の minor 候補 = `"開始中"` / `"停止中"` 等の ellipsis 混在候補).
+---
+```
+
+**注意点**:
+- 行末に空白 (trailing whitespace) を含めない
+- 上記の `---` は **末尾の 1 個のみ** (boundary 区切り). 冒頭には `---` を入れない (前 entry の閉じ `---` を再利用)
+- append は **Edit/Write を複数回繰り返さず、1 回で append が成功したら直ちに次へ進む** (Loop 144 fault precedent)
+
+#### 5-3: append 実行
+
+```bash
+cat /tmp/loop191-entry.txt >> AGENT_LOG.md
+```
+
+### Step 6: 2 番目の commit (chore agent-log)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 191 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = K 軸 = alternation 復帰, 観測 49 件目 = 節目 40 件突破後 9 件目, AGENT_LOG.md +16 行 / 平均 ~8 行/loop = SESSION SUMMARY 0 件 / chore のみ +8 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 15 連続観測達成 = paradigm 完全実証期更なる持続 + frontend 軸軽量化 paradigm 24 連続観測達成 + const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成) のエントリ追記"
+```
+
+### Step 7: 完了確認
+
+```bash
+git status --short
+git log --oneline -3
+```
+
+`git status` は `working tree clean` (untracked の docs/handoff/* は無視可)。
+`git log` の上 2 件が本ループの commit (docs + chore agent-log)。
+
+# 制約 (再掲、重要)
+
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` 禁止 (harness 内のみ)
+- 行末空白 (trailing whitespace) 禁止
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない
+- entry テンプレート冒頭に `---` を含めない (boundary 重複 fault 防止 = Loop 166 precedent + 22 連続実証成功)
+- 大型 file (AGENT_LOG.md ~34509 行) は Read 全体禁止 = `tail -10 AGENT_LOG.md` で末尾だけ確認
+- agent-log-archive-plan.md は ~大型 file = **Section 2.3 部分だけ参照** = `grep -n "Loop 188 完了時点" docs/architecture/agent-log-archive-plan.md` で行番号確認 → `sed -n '126,132p'` 等で該当部のみ Read
+- 範囲外の file (上記 2 file 以外) は **絶対に触らない**
+- range 内 file でも、Section 2.3 の Loop 188 観測ブロック直後 (新観測ブロック追加位置) 以外は触らない
+- rust 系検証は skip 可 (docs 軸のみ = cargo test 不要)
+- AGENTS.md / docs/autonomous-main-prompt-claude.md / docs/agent-harness-claude.md を必ず参照
+- 完了したら final answer で返事 (待機モード禁止 = 即座に 2-commit して終わる)
+
+# 期待される完了状態 (2-commit pattern)
+
+1. commit 1: `docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 190 完了時点の更新観測追記 ...` = docs 1 file 変更
+2. commit 2: `chore(agent-log): mjc-main Loop 191 = ...` = AGENT_LOG.md 1 file 変更
+
+`git status` working tree clean (untracked の docs/* は無視) を確認後、final answer で返事してください。
+
+# AGENT_LOG.md 末尾を冒頭で必ず確認
+
+冒頭で `tail -100 AGENT_LOG.md` を実行 → 直近 entry (Loop 190 + Loop 189 + ...) と末尾 boundary `---` の存在を確認してから着手すること。

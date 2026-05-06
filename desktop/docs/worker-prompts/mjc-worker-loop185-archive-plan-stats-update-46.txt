@@ -1,0 +1,104 @@
+あなたは meet-jerky desktop アプリの worker (mjc-worker-loop185-archive-plan-stats-update-46) です。
+mjc-main (Loop 185) からの依頼を受けて、以下の作業を 1 回完走で実施してください。
+
+# 重要な前提
+
+- working directory = /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+- branch = main、本セッションは harness 衛生軸 = K 軸 = alternation 復帰 (frontend(184) → K(185) = 24 → 25 = 加速期維持 = 節目 20 件突破後 5 件目)
+- 観測 46 件目 = 節目 40 件突破後 6 件目
+- precedent: Loop 79/81/...181/183 (45 件目までの updates) = K 軸 = AGENT_LOG.md 増分行数の更新観測追記
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない
+- AGENT_LOG.md は ~34,412 行 / 3.2MB+ あるので **大型 file Read 全体禁止 = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+- 行末空白 (trailing whitespace) 禁止
+
+# 作業内容: docs/architecture/agent-log-archive-plan.md Section 2.3 に Loop 184 完了時点の更新観測ブロックを追記
+
+## Step 1: 現状確認
+
+1. `tail -350 AGENT_LOG.md` で末尾を確認 (戦略文脈把握 + 末尾 `---` 位置確認)
+2. `wc -l AGENT_LOG.md` で現在行数確認 (= ~34412)
+3. `tail -100 docs/architecture/agent-log-archive-plan.md` で末尾の precedent 観測ブロック (Loop 182 完了時点 = 観測 45 件目) を確認
+
+## Step 2: 増分計算
+
+- Loop 182 完了時点 (45 件目観測) = AGENT_LOG.md 34341 行 (Loop 183 観測時記録)
+- Loop 184 完了時点 (本観測) = ~34412 行 (現在 = SUMMARY append 後)
+- **+71 行 / 2 ループ + SESSION SUMMARY 1 件 (mjc-main-20260505-90)**
+- chore のみだと: Loop 183 (+? 行) + Loop 184 (+? 行) = +? 行 / 2 loop = +? 行/loop
+- SUMMARY commit `062dfd0` = +55 行 (前回 mjc-main-20260505-90 SUMMARY = 大型化階層)
+- 注: 実増分は worker が `git diff` 等で計測検証してから記述
+
+## Step 3: agent-log-archive-plan.md の Section 2.3 末尾に新観測ブロック追加
+
+`docs/architecture/agent-log-archive-plan.md` の Section 2.3 末尾 (`### 2.4` 直前) = Loop 182 観測ブロック直後に、以下の新観測ブロックを追加:
+
+```markdown
+> **更新観測 (mjc-main Loop 184 完了時点 = SS 1 件 + 軽量化階層中央値水準 ~11-12 行/loop の 12 連続観測達成 = paradigm 完全実証期更なる持続 = const 集約 paradigm 反復 6 件目達成 = paradigm 完全成熟期完全成熟確立 = 節目 5 連続超え後 7 件目)**: Loop 182 → Loop 184 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-90 = 3 ループ完走 SUMMARY commit `062dfd0`) で +XX 行 (34341 → XXXXX)、平均 ~XX 行/loop。**ただし SUMMARY commit `062dfd0` が大型化 (+55 行 = 大量化階層)** が支配変数で、chore entry のみだと Loop 183 +XX 行 + Loop 184 +XX 行 = +XX 行 / 2 loop = +XX 行/loop (Loop 183 = K 軸 = +XX 行 = 軽量化階層中央値水準下端、Loop 184 = S-M 規模 const 集約 paradigm 反復 6 件目 = +XX 行 = **軽量化階層下端維持 = S-M 規模で paradigm 反復 6 件目達成 + 完全成熟期完全成熟確立で記述定型化が更に進行**) = **軽量化階層中央値水準 ~11-12 行/loop の 12 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 7 件目** = paradigm pivot 多軸 (Loop 183 = harness 衛生 K 軸 = chore entry 1 件 = 観測 45 件目 + Loop 184 = **frontend 軸** = **const 集約 paradigm 反復 6 件目 = paradigm 完全成熟期完全成熟確立** = src/utils/statusLabels.ts に `export const STATUS_DENIED_LABEL = "未許可";` 追加 + 3 file 6 callsite を const 参照に統一 (DRY 違反解消, callsite 6 件無変更で API 互換維持, ネット行数 +1 行のみ, **Loop 174 → 176 → 178 → 180 → 182 → 184 = 6 連続 const 集約軸 = paradigm 完全成熟期完全成熟確立**, alternation pivot K(183) → frontend(184) = 23 → 24 = 加速期維持) = chore +XX 行 + refactor は AGENT_LOG.md 触らず = 0 行寄与) で SESSION SUMMARY 1 件 (commit `062dfd0` = +55 行 = SUMMARY 説明大量化 = paradigm 完全成熟期完全成熟確立 + メイン批判判断 連続 91 セッション目達成 + worker 自律 2-commit pattern 連続 40 ループ目達成 = 節目 40 件突破 + denied/undetermined/unchecked/checking semantic 並列 4 const 完成 等の累積マイルストーン記述による説明量増加が主因) + chore entry 2 件 + docs entry 1 件 (Loop 183 docs = AGENT_LOG.md 触らず = 0 行寄与) + refactor entry 1 件 (Loop 184 refactor = AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。**const 集約 paradigm 反復 6 件目達成 = paradigm 完全成熟期完全成熟確立** (Loop 174 → 176 → 178 → 180 → 182 → 184 = 6 連続 const 集約軸 = paradigm 完全成熟期 6 連続観測 = 反復による定型化期完全成熟確立) + alternation pivot 加速継続 (... → K(183) → frontend(184) = 23 → 24 = 加速期維持). 観測 46 件目 = 節目 40 件突破後 6 件目 = K 軸自体の paradigm 完全成熟期維持. 長期平均 ~830 行/時間 とは依然乖離あり.
+
+```
+
+**重要**:
+- `+XX` 等の placeholder は worker が実増分を計測して **正確な数値で置換** すること
+- 実増分計測手順: `git log --oneline -10` で本セッション直近 commit を特定 → `git show --stat <commit>` で各 commit の AGENT_LOG.md +X 行を確認、または `git diff a8ea3c9 HEAD -- AGENT_LOG.md | grep -c '^+'` 等で算出
+- Section 2.4 の見出し (`### 2.4 既存運用の維持コスト`) 直前に挿入する位置を厳守
+
+## Step 4: 検証
+
+`bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md` で docs 単独 skip 判定 OK を確認 (rust/frontend 触らず).
+
+`grep -c '更新観測 (mjc-main Loop' docs/architecture/agent-log-archive-plan.md` で観測ブロック数を確認 (前回より +1).
+
+## Step 5: commit (1 個目 = docs)
+
+```
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 184 完了時点の更新観測追記 (mjc-main Loop 185, harness 衛生軸 = K 軸 = alternation 復帰 = K(183) → frontend(184) → K(185) = 23 → 24 → 25, Loop 79/81/.../182 precedent 46 件目 = 節目 40 件突破後 6 件目, +XX 行 / 平均 ~XX 行/loop = SUMMARY 大型化が支配変数 / chore のみ +XX 行/loop = 軽量化階層中央値水準 ~11-12 行/loop の 12 連続観測達成 = paradigm 完全実証期更なる持続 + frontend 軸軽量化 paradigm 21 連続観測達成 + const 集約 paradigm 反復 6 件目達成 = paradigm 完全成熟期完全成熟確立)"
+```
+
+`+XX` placeholder は実数値で置換すること。
+
+## Step 6: AGENT_LOG.md 末尾追記 + commit (2 個目 = chore)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` 位置を確認 (前 entry の閉じ `---` を再利用する設計).
+
+以下の entry テンプレートを **冒頭 `---` を含めず** 末尾に append (前 entry の閉じ `---` の直後から開始、末尾 `---` 1 個で締める):
+
+```
+[mjc-main Loop 185 / 2026-05-06]
+worker: mjc-worker-loop185-archive-plan-stats-update-46 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 182 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+変更: Loop 184 完了時点の更新観測ブロック追加 = AGENT_LOG.md +XX 行 / 平均 ~XX 行/loop / SUMMARY commit `062dfd0` 大型化 +55 行 / chore のみ Loop 183 +XX + Loop 184 +XX = +XX 行 / 2 loop = +XX 行/loop = 軽量化階層中央値水準下端維持 = **軽量化階層中央値水準 ~11-12 行/loop の 12 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 7 件目** + frontend 軸軽量化 paradigm 21 連続観測達成 + **const 集約 paradigm 反復 6 件目達成 = paradigm 完全成熟期完全成熟確立** (Loop 174 → 176 → 178 → 180 → 182 → 184 = 6 連続)
+意義: harness 衛生軸 = K 軸 = alternation 復帰 = K(183) → frontend(184) → K(185) = 23 → 24 → 25 = 加速期維持 = 節目 20 件突破後 5 件目. Loop 79/81/.../182 precedent 46 件目 = 節目 40 件突破後 6 件目. plan 現状把握更新で archive plan rationale 維持 + paradigm 系統樹拡張観測の継続記録.
+検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
+備考: Loop 184 で paradigm 完全成熟期完全成熟確立. 残候補 R27 (`"未登録"` 3 callsite/2 file = 規模 S-M = 最軽量 = 最後の重複候補) のみ未統合 = const 集約軸 paradigm 完全成熟構造最終収束目前.
+---
+```
+
+`+XX` placeholder は実数値で置換すること。
+
+**重要 (worker prompt 必須要素 9 = boundary `---` 重複 fault 防止)**:
+- entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用)
+- 末尾 `---` 1 個で締める
+- AGENT_LOG.md への append は **1 回のみ**。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む
+
+その後:
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 185 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = K 軸 = alternation 復帰, 観測 46 件目 = 節目 40 件突破後 6 件目, AGENT_LOG.md +XX 行 / 平均 ~XX 行/loop = SUMMARY 大型化が支配変数 / chore のみ +XX 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 12 連続観測達成 = paradigm 完全実証期更なる持続 + frontend 軸軽量化 paradigm 21 連続観測達成 + const 集約 paradigm 反復 6 件目達成 = paradigm 完全成熟期完全成熟確立) のエントリ追記"
+```
+
+`+XX` placeholder は実数値で置換すること。
+
+## Step 7: 完了確認
+
+`git status --short` で working tree clean (untracked docs/handoff + docs/worker-prompts のみ) を確認.
+`git log --oneline -3` で 2 commit (docs + chore) が反映されたことを確認.
+
+# 制約 (再掲)
+
+- 担当範囲外の編集禁止 (上記 1 file + AGENT_LOG.md のみ)
+- worker prompt 必須要素 9 つ全て適用
+- 行末空白禁止 / 大型 file Read 全体禁止 / 規模超過防止 / 先頭は触らない / 時系列順末尾追記 / AGENT_LOG.md 末尾 350 行を読め / append は 1 回のみ / 冒頭 `---` 含めない
+- 2-commit pattern (docs + chore) を厳守
+- `--no-verify` 禁止

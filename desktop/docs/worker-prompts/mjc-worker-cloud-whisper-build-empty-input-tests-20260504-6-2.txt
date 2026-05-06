@@ -1,0 +1,214 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -200 AGENT_LOG.md` で末尾だけ参照すれば十分)
+
+担当範囲: src-tauri/src/cloud_whisper.rs のみ
+- 既存 `mod tests` (L122-) への #[test] 関数 5 件追加のみ
+- 実装変更は禁止 (visibility 変更も無し)
+- 他ファイルは編集しない
+- コミットは禁止 (メインが行う)
+
+# 背景 / Why
+
+`build_whisper_api_url(base_url: &str) -> String` (L18-L21) と
+`build_whisper_authorization_header(api_key: &str) -> String` (L24-L26) は
+現状 21 件の test を持つ核心 fn ですが、**空入力 / 異常入力 / 多重 trailing slash
+の現挙動が未カバー**です。
+
+これらの fn は内部で validation/trim を一切しない単純な文字列構築のみ:
+```rust
+pub fn build_whisper_api_url(base_url: &str) -> String {
+    let trimmed = base_url.trim_end_matches('/');
+    format!("{trimmed}/audio/transcriptions")
+}
+
+pub fn build_whisper_authorization_header(api_key: &str) -> String {
+    format!("Bearer {api_key}")
+}
+```
+
+これは「URL/api_key バリデーションは上位層 (呼び出し側) の責任」という設計を意味します。
+
+直接テストを追加する価値:
+1. **責任境界の明示**: `""` / `"/"` / 前後 whitespace 込み入力の現挙動を test で固定することで、
+   「ここでは validation しない」契約を明示。リファクタで「ここでも空チェックする」変更が
+   入った瞬間に test が落ちて気付ける。
+2. **trim_end_matches の連続 char 挙動**: `"https://x/v1///"` のように連続スラッシュの
+   全削除挙動 (`trim_end_matches('/')` は連続 char をすべて剥がす Rust 標準) を契約として固定。
+3. **multibyte 安全性**: `"日本語キー"` のような multibyte api_key が UTF-8 panic を
+   起こさず Bearer の後ろに埋め込まれる現挙動の保護。
+
+# 具体的な実装変更
+
+実装は変更しません。**`mod tests` 末尾**に以下の 5 件を追加してください。
+
+各テストは独立した `#[test] fn` とすること。`use super::*;` は既存 (L124) で対応済み。
+
+### T1. build_whisper_api_url_with_empty_base_url_returns_absolute_path
+
+**目的**: 空 base_url で URL validation 無しの現挙動を契約強制。
+
+```rust
+#[test]
+fn build_whisper_api_url_with_empty_base_url_returns_absolute_path() {
+    // base_url = "" でも fn は何も検証せず "/audio/transcriptions" を返す。
+    // 上位層で URL バリデーションする責任境界を明示。
+    let url = build_whisper_api_url("");
+
+    assert_eq!(url, "/audio/transcriptions");
+}
+```
+
+### T2. build_whisper_api_url_with_only_slash_returns_absolute_path
+
+**目的**: `"/"` のみの base_url が trim_end_matches で完全に剥がされる現挙動の固定。
+
+```rust
+#[test]
+fn build_whisper_api_url_with_only_slash_returns_absolute_path() {
+    // "/" は trim_end_matches('/') で完全に剥がされ、
+    // 結果は "/audio/transcriptions" になる。root slash 1 文字も最後の slash として
+    // 消費される現挙動を契約として固定。
+    let url = build_whisper_api_url("/");
+
+    assert_eq!(url, "/audio/transcriptions");
+}
+```
+
+### T3. build_whisper_api_url_strips_multiple_trailing_slashes
+
+**目的**: `trim_end_matches('/')` の連続 char 削除挙動を契約強制。
+
+```rust
+#[test]
+fn build_whisper_api_url_strips_multiple_trailing_slashes() {
+    // trim_end_matches('/') は連続する '/' をすべて削除する Rust 標準ライブラリ挙動。
+    // 1 個だけ削除する .strip_suffix("/") への誤リファクタを CI で即座検知。
+    let url = build_whisper_api_url("https://api.openai.com/v1///");
+
+    assert_eq!(url, "https://api.openai.com/v1/audio/transcriptions");
+}
+```
+
+### T4. build_whisper_authorization_header_with_empty_api_key_yields_bearer_with_trailing_space
+
+**目的**: 空 api_key で `"Bearer "` (末尾スペース有) の現挙動を契約強制。
+
+```rust
+#[test]
+fn build_whisper_authorization_header_with_empty_api_key_yields_bearer_with_trailing_space() {
+    // 空 api_key でも fn は validation 無しで `"Bearer "` を返す現挙動。
+    // api_key 空チェックは上位層 (呼び出し側) の責任という境界を明示。
+    let header = build_whisper_authorization_header("");
+
+    assert_eq!(header, "Bearer ");
+}
+```
+
+### T5. build_whisper_authorization_header_does_not_trim_or_validate_input
+
+**目的**: 前後 whitespace / multibyte api_key で trim/validation 一切しない現挙動の固定。
+
+```rust
+#[test]
+fn build_whisper_authorization_header_does_not_trim_or_validate_input() {
+    // ケース 1: 前後 whitespace は trim されず、Bearer の後ろにそのまま埋め込まれる
+    {
+        let header = build_whisper_authorization_header(" sk-xxx ");
+        // " " (前) も " " (後) もそのまま保持される現挙動を固定。
+        assert_eq!(header, "Bearer  sk-xxx ");
+    }
+
+    // ケース 2: multibyte api_key は UTF-8 panic を起こさず Bearer の後ろに埋め込まれる
+    {
+        let header = build_whisper_authorization_header("日本語キー");
+        // multibyte char base 切り詰め回避と byte base パニック防止の両方を確認。
+        assert_eq!(header, "Bearer 日本語キー");
+    }
+}
+```
+
+# 実装上の注意
+
+- **配置場所**: 既存 `mod tests` (L122-) の最後の `}` の直前に挿入。
+  ファイル末尾 `}` を 1 つ閉じる前。
+- **`use super::*;` は既存 (L124) で対応済み**。新規 use 追加不要。
+- 実装 (`fn build_whisper_api_url`, `fn build_whisper_authorization_header`) は変更しない。
+- 他のテスト関数を変更しない。
+- コメント: 必要最小限。各 fn の `// xxx` で意図を 1 行明記する程度に留める。
+- **T4 の "Bearer "** (末尾スペース有り) は意図的な現挙動の固定。`assert_eq!` で完全一致。
+- **T5 の "Bearer  sk-xxx "** はダブルスペース (Bearer 直後 1 + " sk-xxx " 前後合わせて
+  Bearer + 1 space + " " + "sk-xxx" + " " = "Bearer  sk-xxx ") を確認している点に注意。
+
+# 検証手順
+
+すべて /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop で実行:
+
+1. `cd src-tauri && cargo fmt -- --check` (format 確認)
+2. `cd src-tauri && cargo test --lib cloud_whisper` (既存 21 件 + 新規 5 件 = 26 件 pass)
+3. `cd src-tauri && cargo test` (全体 320 → 325 passed を確認)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings` (警告ゼロ)
+5. `cd src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings`
+   (uninlined_format_args 警告も含めゼロ)
+
+# AGENT_LOG.md 記載項目
+
+末尾に以下のセクションを追記してください:
+
+```
+### cloud_whisper.rs build_whisper_api_url / build_whisper_authorization_header の空入力 + 多重 slash + multibyte の現挙動を 5 件で固定
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-cloud-whisper-build-empty-input-tests-20260504-6-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/cloud_whisper.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+build_whisper_api_url の空 base_url / `"/"` のみ / 多重 trailing slash の現挙動と
+build_whisper_authorization_header の空 api_key / 前後 whitespace / multibyte api_key の
+validation/trim 一切しない現挙動を 5 件で直接テストし、上位層の責任境界を契約として明示する。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | build_whisper_api_url_with_empty_base_url_returns_absolute_path | "" → "/audio/transcriptions" |
+| T2 | build_whisper_api_url_with_only_slash_returns_absolute_path | "/" → "/audio/transcriptions" |
+| T3 | build_whisper_api_url_strips_multiple_trailing_slashes | "https://x/v1///" → trim_end_matches の連続 char 削除挙動を固定 |
+| T4 | build_whisper_authorization_header_with_empty_api_key_yields_bearer_with_trailing_space | "" → "Bearer " |
+| T5 | build_whisper_authorization_header_does_not_trim_or_validate_input | " sk-xxx " / 日本語 multibyte の no-trim/no-validation 現挙動 |
+
+#### 不変条件 / 設計意図
+- 上位層で URL/api_key バリデーションする責任境界を明示。
+- trim_end_matches の連続 char 削除挙動を strip_suffix への誤リファクタから保護。
+- multibyte api_key の byte base 切り詰めパニック防止 (前回 cloud_whisper_errors.rs と同種の検知装置)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 320 → 325 passed (新規 5 件、既存 0 件破壊)
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 7 件)
+- 追加後 total passed: 325
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T5 の "Bearer  sk-xxx " はダブルスペース込み完全一致のため、将来 fn が trim を始めたら
+  test 修正が必要。ただし「validation/trim は上位層の責任」という現契約を保つ意図なら
+  現挙動が望ましい (誤リファクタ検知装置として機能)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

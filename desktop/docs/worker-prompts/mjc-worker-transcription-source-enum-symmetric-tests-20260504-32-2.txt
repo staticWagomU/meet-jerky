@@ -1,0 +1,149 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (注意: 22000+ 行 / 1.86MB+ の大型ファイル。**`tail -350 AGENT_LOG.md` で末尾だけ参照** = 末尾追記の場所を視覚的に学習する)
+
+## AGENT_LOG.md 追記の絶対ルール (最重要)
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭は絶対に触らない。** 既存の先頭エントリを誤って書き換えると、過去の判断履歴が破壊される。
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記 (Edit ツールで `old_string` に末尾の `---\n` 周辺を取り、`new_string` に `---\n\n## <セッション名>\n...本文...\n---\n` を置く)
+- 過去の SESSION SUMMARY や旧 worker entry を改変しない。
+
+## 担当範囲 (これ以外への編集禁止)
+1. `src-tauri/src/transcription.rs` の `mod tests` 末尾 (現在の最終 `}` の直前) への test 関数 **3 件追加**。
+2. `AGENT_LOG.md` への末尾追記 1 件。
+
+これ以外のファイル編集は厳禁。`pub enum TranscriptionSource`, `pub struct TranscriptionSegment`, `pub struct TranscriptionErrorPayload`, `pub struct ModelInfo`, `pub struct StreamConfig`, 既存 64 test (= mod tests 内の既存 test 関数全て、Loop 1 の 3 件含む), 関数本体, impl ブロック, mod tests の冒頭・中間, etc. には一切触れないこと。
+
+## 規模超過防止
+- 追加する test は **必ず 3 件のみ**。4 件以上書かない。
+- 既存 test 関数 (64 件) を **1 行たりとも変更しない**。reorder, rename, refactor 含めて全て禁止。
+- 大型ファイル (transcription.rs = 2515 行前後 = Loop 1 で +154 行追加済) を Read 全体禁止。`sed -n '19,25p'` などで対象範囲のみ参照。
+- `mod tests` の中身は `tail -100 src-tauri/src/transcription.rs` で末尾だけ見れば足りる (Loop 1 で追加した 3 test の末尾 + ファイル末尾 `}` が見えれば追記位置が確定する)。
+
+## 行末空白禁止
+- 追加するコードの全ての行で trailing whitespace (行末の半角スペース・タブ) 禁止。**1 文字でも残すと clippy が CI で fail する**。
+
+## 指示内容: 「対称的補強の 3 軸構造」+「Debug 軸補強」6 連続 application = TranscriptionSource enum
+
+`TranscriptionSource` は `src-tauri/src/transcription.rs` l.19-23 で以下の通り定義された enum:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionSource {
+    Microphone,
+    SystemAudio,
+}
+```
+
+これは mjc-main-30 Loop 1 で application した `SecretKey` enum (Debug + Copy + kebab-case format の 3 軸) と完全に対称な enum 形態。SecretKey で確立した 3 軸構造を TranscriptionSource enum (snake_case format) で再 application する **enum 派生対称軸補強** パターン。
+
+以下 3 つの test を `mod tests` 末尾 (= 既存最終 test = Loop 1 で追加した `transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options` 直後の `}` の **直前**) に追加せよ。
+
+### T1: `transcription_source_debug_output_contains_each_variant_name_per_variant`
+**契約**: `format!("{:?}", X)` で各 variant の Debug 出力が variant 名 (`Microphone` / `SystemAudio`) を含み、両 variant の Debug 出力が異なることを CI 固定する。
+**注意**: Rust の enum variant の `#[derive(Debug)]` 派生は variant 名のみ出力する (enum 名は出ない)。例: `format!("{:?}", TranscriptionSource::Microphone)` → `"Microphone"` のみ。
+**test 設計**:
+- `let mic = TranscriptionSource::Microphone;`
+- `let sys = TranscriptionSource::SystemAudio;`
+- `let dbg_mic = format!("{:?}", mic);`
+- `let dbg_sys = format!("{:?}", sys);`
+- `assert!(dbg_mic.contains("Microphone"), "Microphone variant の Debug 出力に variant 名 Microphone が含まれる: {dbg_mic}")`
+- `assert!(dbg_sys.contains("SystemAudio"), "SystemAudio variant の Debug 出力に variant 名 SystemAudio が含まれる: {dbg_sys}")`
+- `assert_ne!(dbg_mic, dbg_sys, "Microphone と SystemAudio の Debug 出力は異なる")`
+- これにより Debug 派生が消されたり、`#[derive(Debug)]` を手動実装に置き換えて variant 名を隠蔽する誤改修を遮断する。
+
+### T2: `transcription_source_copy_trait_keeps_original_usable_after_assignment`
+**契約**: `#[derive(Copy)]` 派生で `let copied = original;` の後も `original` が引き続き使える契約 (Copy semantics) を CI 固定する。Copy が外されれば move semantics になり、`original` を後続で使うとコンパイルエラーになるため、test 自体がコンパイルできなくなることで誤改修を遮断する。
+**test 設計**:
+- `let original = TranscriptionSource::Microphone;`
+- `let copied = original;` (Copy が無いと move される)
+- `assert_eq!(original, copied, "Copy 派生で copied が original の値と等しい");`
+- `assert_eq!(original, TranscriptionSource::Microphone, "Copy 後も original は Microphone のまま使える");` (original が move されていれば**コンパイルエラーになる**ため、CI で誤改修を検出)
+- SystemAudio variant でも同様:
+  - `let s_original = TranscriptionSource::SystemAudio;`
+  - `let s_copied = s_original;`
+  - `assert_eq!(s_original, s_copied, "Copy 派生で SystemAudio も copy される");`
+  - `assert_eq!(s_original, TranscriptionSource::SystemAudio, "Copy 後も SystemAudio の original は使える");`
+- これにより `#[derive(Copy)]` が外されて move semantics に変わる誤改修を遮断する。
+
+### T3: `transcription_source_serde_serializes_each_variant_with_snake_case_value`
+**契約**: `#[serde(rename_all = "snake_case")]` 規則で各 variant の Serialize value が snake_case 文字列になる契約を **for ループで全 variant 走査** で CI 固定する (拡張追従型 test 設計)。Microphone → `"microphone"`, SystemAudio → `"system_audio"`。
+**test 設計**:
+- 期待値の配列を作る: `let cases: &[(TranscriptionSource, &str)] = &[(TranscriptionSource::Microphone, "microphone"), (TranscriptionSource::SystemAudio, "system_audio")];`
+- for ループで走査:
+  - `for (variant, expected) in cases {`
+  - `    let value = serde_json::to_value(variant).unwrap();`
+  - `    assert_eq!(value, serde_json::Value::String((*expected).to_string()), "{:?} は serde で {} に serialize される", variant, expected);`
+  - `    let s = serde_json::to_string(variant).unwrap();`
+  - `    assert_eq!(s, format!("\"{}\"", expected), "{:?} は serde で \"{}\" に文字列化される", variant, expected);`
+  - `}`
+- これにより `#[serde(rename_all = "snake_case")]` が外される / 個別 rename される / 別 case (camelCase / kebab-case) に変更される誤改修を遮断する = 拡張追従型 (将来 variant 追加時に配列に追加するだけで自動カバー) = mjc-main-30 Loop 1 (SecretKey の kebab-case format 軸) と対称。
+
+## 実装条件
+- `mod tests` 内に既に `use super::*;` がある (既存 test が動いているため)。新たな `use serde_json` import が必要なら **追加 test 関数の中で `use serde_json;` のような local use** か `serde_json::to_value(...)` のフルパス呼び出しで済ませる (既存 import 無編集のため)。
+- 全 test は同期 (`#[tokio::test]` ではなく `#[test]`)。
+- `assert!`, `assert_eq!`, `assert_ne!` のメッセージは日本語可。「<契約>: <理由>」の形が読みやすい。
+- 既存 Loop 1 (TranscriptionSegment 系) test と整合する命名 = `transcription_source_<軸>_<対象>` 形式。
+- format string で `{dbg_mic}` `{:?}` のような uninlined args の警告対策に注意 (`{:?}` で variant を表示する場合は inline 不可なので `{:?}` を使う、文字列変数は `{var}` の inline 形式を使う)。
+
+## 検証 (実装後に必ず実行)
+1. `cd src-tauri && cargo fmt --check` (差分なしを確認)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings` (警告ゼロを確認)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1` (前回 574 → +3 = **577 passed** を期待)
+
+各検証コマンドの末尾出力 (test 結果行) を AGENT_LOG.md 追記内に **そのまま quote** すること。
+
+## AGENT_LOG.md 追記内容 (必須)
+末尾の `---` 直後に以下のフォーマットで追記:
+
+```markdown
+## mjc-worker-transcription-source-enum-symmetric-tests-20260504-32-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-source-enum-symmetric-tests-20260504-32-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-32 Loop 2
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「対称的補強の 3 軸構造」+「Debug 軸補強」6 連続 application = TranscriptionSource enum (Microphone/SystemAudio) への Debug + Copy + serde snake_case format 3 軸 application = mjc-main-30 Loop 1 で確立した SecretKey enum (Debug + Copy + kebab-case format) と対称な enum 派生対称軸補強パターンの 2 連続 application。
+- T1: transcription_source_debug_output_contains_each_variant_name_per_variant (Debug 出力に各 variant 名が含まれる + 両 variant の Debug 出力が異なる契約)
+- T2: transcription_source_copy_trait_keeps_original_usable_after_assignment (Copy 派生で original が assign 後も使える契約 = move されない)
+- T3: transcription_source_serde_serializes_each_variant_with_snake_case_value (serde Serialize で全 variant が snake_case 文字列になる契約 = for ループ走査)
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <test 結果末尾の "test result: ok. ..." 行をそのまま quote>
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub enum / pub struct / 既存 64 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+\```
+test result: ok. NNN passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; ...
+\```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 最終報告
+変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめる。コミットは禁止 (メインが行う)。

@@ -1,0 +1,122 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景 (Why)
+- 直前 ループ (commit 6b86d11) で frontend に audio-drop-count listener と累積 state (`microphoneDropCountTotal` / `systemAudioDropCountTotal` / `audioDropCountListenerError`) を追加した。tsconfig.json の `noUnusedLocals: true` を満たすため state 値を console.warn template literal に tactical に参照した結果、(1) **stale closure 読み** が発生し (常に 0 表示)、(2) `// eslint-disable-line react-hooks/exhaustive-deps` を line 853 に追加する必要が生じた。
+- 本ループは: (a) state を UI に display して product 価値を user に届ける + (b) Loop 2 の tactical 妥協 (stale 読み + eslint-disable コメント) を除去する **Tidy After + Behavioral Change の統合スライス** (Kent Beck `tidying` skill 準拠)。
+- product-concept.md 優先度 9 (録音状態の透明性): drop count > 0 は録音 health の重要シグナル。user に見えなければ無価値。本ループで初めて user-visible な指標になる。
+- 単一ファイル (TranscriptView.tsx) の変更のみ。MicrophoneSection / SystemAudioSection / AudioLevelMeter / css は変更しない (prop 配線拡大は別ループ送り)。
+
+# 担当範囲 (1 ファイル更新のみ)
+
+## `src/routes/TranscriptView.tsx` の 3 箇所変更
+
+### 変更 1. console.warn の stale 読みを除去 (line 819-821)
+
+現状:
+```ts
+console.warn(
+  `[audio-drop-count] ${payload.source} で ${payload.dropped} sample 破棄 (mic_prev=${microphoneDropCountTotal}, sys_prev=${systemAudioDropCountTotal}, err_prev=${audioDropCountListenerError})`,
+);
+```
+
+これを以下のシンプルな form に書き換える:
+```ts
+console.warn(
+  `[audio-drop-count] ${payload.source} で ${payload.dropped} sample 破棄`,
+);
+```
+
+state 参照 3 つ (`microphoneDropCountTotal` / `systemAudioDropCountTotal` / `audioDropCountListenerError`) を取り除く。これらは **後続の変更 3 で JSX 内に参照** されるので `noUnusedLocals` は引き続き満たされる。
+
+### 変更 2. eslint-disable コメントを除去 (line 853)
+
+現状:
+```ts
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+```
+
+これを以下に書き換える:
+```ts
+  }, []);
+```
+
+eslint-disable コメントを削除する。理由: 変更 1 で state 参照が handler 内から消えるので、`react-hooks/exhaustive-deps` は何も警告しなくなる。これにより既存の audio-level useEffect (line 804) と完全対称な閉じ方に揃う。
+
+### 変更 3. JSX に drop count 表示を追加 (line 2348-2357 付近)
+
+既存の `audioLevelListenerError` 表示ブロック (line 2348-2357) の **直後** に対称な構造で 2 つのブロックを追加する:
+
+```tsx
+{audioDropCountListenerError && (
+  <p
+    className="meeting-error meeting-alert"
+    role="alert"
+    aria-label={`音声 drop 監視エラー: ${audioDropCountListenerError}`}
+    title={`音声 drop 監視エラー: ${audioDropCountListenerError}`}
+  >
+    {audioDropCountListenerError}
+  </p>
+)}
+{(microphoneDropCountTotal > 0 || systemAudioDropCountTotal > 0) && (
+  <p
+    className="meeting-error meeting-alert"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+    aria-label={`音声サンプル破棄: マイク ${microphoneDropCountTotal} サンプル, システム音声 ${systemAudioDropCountTotal} サンプル`}
+    title={`音声サンプル破棄: マイク ${microphoneDropCountTotal} サンプル, システム音声 ${systemAudioDropCountTotal} サンプル`}
+  >
+    音声サンプル破棄: マイク {microphoneDropCountTotal} サンプル / システム音声 {systemAudioDropCountTotal} サンプル
+  </p>
+)}
+```
+
+- 1 つ目は `audioDropCountListenerError` (listener エラー) 表示。`role="alert"` で `audioLevelListenerError` ブロックと完全対称。
+- 2 つ目は累積 drop count 表示。**両方が 0 なら何も表示しない**条件 `microphoneDropCountTotal > 0 || systemAudioDropCountTotal > 0` で UI ノイズを最小化。`role="status"` + `aria-live="polite"` で screen reader への過度な割り込みを避ける (alert は本質的に urgent な error 用)。
+- className `meeting-error meeting-alert` は既存 audio-level error 表示と同じ視覚 style 流用。新しい css class は追加しない。
+
+# 実装上の注意 (踏みやすい罠)
+
+- **3 つの state 値の参照が UI へ移ったことを必ず確認する**。tsc `noUnusedLocals` は state 変数自体が read されないと error を出す。useState の **2 個目要素 (setter) は handler 内で read 済み** だが、**1 個目要素 (state value) は本ループで必ず JSX 内で 1 回以上 read** する必要がある。変更 3 で 3 つすべて (microphoneDropCountTotal / systemAudioDropCountTotal / audioDropCountListenerError) を JSX 内で参照するので OK。
+- **eslint-disable 削除は変更 1 と必ずペアで行う**。変更 1 を適用せず変更 2 だけ行うと exhaustive-deps lint が再発する。**両方同時にコミット可能な状態でファイルを保存する**こと。
+- **既存 audio-level error 表示ブロック (line 2348-2357) は変更しない**。直後に追加するだけ。
+- **drop count 表示の文言**: 「音声サンプル破棄: マイク N サンプル / システム音声 M サンプル」に統一。会話的な日本語で短く、aria-label と本文で同じ表現。
+- **両方 0 の場合は表示しない**: 通常の録音時は drop=0 なので、UI ノイズを避けるためゼロ条件で hide する。これは UX 設計判断 = 「異常時のみ可視化」原則に沿う。
+- **className `meeting-error meeting-alert` を流用**: 新しい css class は追加しない (本ループは pure logic 追加、style 設計は別ループ)。視覚的に既存の error と同じ見た目になる = drop は録音の異常状態であるという情報設計。
+- **conditional render 順番**: console.warn → audioDropCountListenerError 表示 → drop count 表示 の順で読みやすさ優先。listener error が出ているときは drop count も出る可能性があるが、両者独立で表示できる構造。
+
+# 検証手順
+リポジトリルートは `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`。
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`
+2. `npm run build` (期待: tsc が `noUnusedLocals` で warn せず通る + vite build 完走)
+3. `cargo test -p meet-jerky --lib` (期待: 450 passed = frontend 変更のみ、念のため確認)
+4. 変更 1, 2, 3 の差分が想定通りに反映されていることを目視確認 (eslint-disable が完全に削除されていること、stale 参照が除去されていること、JSX 2 ブロックが追加されていること)。
+
+検証が失敗した場合は **ファイルを元に戻して報告のみ** を行うこと。
+
+# AGENT_LOG.md 記載項目
+ファイル先頭に新規 entry を追加。以下のテンプレートに沿うこと:
+
+```
+## セッション: mjc-worker-audio-drop-ui-display
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-drop-ui-display
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src/routes/TranscriptView.tsx (1 ファイル / 3 箇所変更 = console.warn の stale 参照除去 + eslint-disable コメント除去 + JSX に drop count 表示 2 ブロック追加 / Tidy After + Behavioral Change 統合スライス)
+- **指示内容**: (本プロンプトの「担当範囲」を要約)
+- **結果**: 成功 / 失敗
+- **変更ファイル**: 更新 1 (TranscriptView.tsx)
+- **検証結果**:
+  - npm run build (tsc + vite build): ...
+  - cargo test -p meet-jerky --lib: 450 passed (frontend 変更のみ、影響なし)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main-20260504-14) によるレビュー → コミット
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

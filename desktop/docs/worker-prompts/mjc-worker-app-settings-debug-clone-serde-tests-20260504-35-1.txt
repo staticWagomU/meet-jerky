@@ -1,0 +1,162 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読み、文脈を理解してから作業を開始してください。
+- AGENTS.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md の **末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で読む (ファイル全体は 22980+ 行で巨大なので Read 全体は禁止)
+
+## AGENT_LOG.md の構造ルール (極めて重要、絶対遵守)
+- AGENT_LOG.md は **時系列順** = 最古ログがファイル先頭、最新ログがファイル末尾。
+- 新規追記は **必ずファイル末尾に行う**。
+- **ファイル先頭は絶対に触らない**。先頭への挿入は時系列を壊す重大事故。
+- 追記前に必ず `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 区切りの直後に新エントリを追記。
+- 末尾の SESSION SUMMARY (`## [SESSION SUMMARY @ ...]`) は壊さない。本エントリは SUMMARY の後ろに追記される。
+
+## 担当セッション情報
+- 担当セッション: `mjc-worker-app-settings-debug-clone-serde-tests-20260504-35-1`
+- 役割: 作業担当 (worker, print mode)
+- 親セッション: `mjc-main-20260504-35` Loop 1
+
+## 作業範囲 (担当範囲外は絶対に触らない)
+- `src-tauri/src/settings.rs` の `mod tests` の **末尾** に test 関数 3 件を追加するのみ。
+- `AGENT_LOG.md` への末尾追記 (本ループ実績エントリ)。
+- これら 2 ファイル以外は触らない。設定の構造体定義 / impl ブロック / 既存 test / 他ファイルは絶対に編集しない。
+
+## 大型ファイル参照ルール (重要)
+- `src-tauri/src/settings.rs` は 806 行、`AGENT_LOG.md` は 22980+ 行で巨大。
+- **Read 全体禁止**。`sed -n 'A,Bp'` / `tail -N` / `head -N` / `grep -n` で対象範囲のみ参照すること。
+- settings.rs では l.40-100 で AppSettings 定義、l.262-806 で mod tests を確認すれば十分。
+
+## 実装タスク (Tidy First、振る舞い不変、Debug 軸補強パターン 14 連続 application、5 ファイル目内 2 形態目)
+
+### 背景
+- 直前の mjc-main-34 セッションで「Debug 軸補強」13 連続 application 系譜を達成 (5 ファイルへ展開、TranscriptionEngineType / SessionSummary など)。
+- 本ループは 14 連続 application として **AppSettings struct (settings.rs l.56-79)** を選定。
+- AppSettings は: `#[derive(Debug, Clone, Serialize, Deserialize)]` + `#[serde(rename_all = "camelCase", default)]` + 6 fields。
+  - `transcription_engine: TranscriptionEngineType` (with `#[serde(deserialize_with = "...")]`)
+  - `whisper_model: String`
+  - `microphone_device_id: Option<String>`
+  - `language: String`
+  - `output_directory: Option<String>`
+  - `api_key: Option<String>` (with `#[serde(default)]`)
+- **PartialEq は派生していない** ので、T2 は PartialEq ではなく **Clone deep 独立性軸** を採用 (StreamConfig / ModelInfo に続く 3 連続 application)。
+- 既存 `impl Default for AppSettings` は触らないこと (本 worker は test 追加のみ)。
+
+### 追加する test 関数 3 件 (mod tests の末尾に追加)
+
+**T1**: `app_settings_debug_output_contains_struct_name_and_all_six_field_names`
+- 目的: AppSettings の Debug 出力が型名 + 全 6 snake_case field 名 + 値を含むことを CI 固定 (Frontend 側のログ可読性 / 内部 logger 経由でのデバッグ性を保護)。
+- 手順:
+  - `let settings = AppSettings { transcription_engine: TranscriptionEngineType::AppleSpeech, whisper_model: "base".to_string(), microphone_device_id: Some("dev-mic-001".to_string()), language: "ja".to_string(), output_directory: Some("/tmp/out".to_string()), api_key: Some("sk-test-001".to_string()) };`
+  - `let debug = format!("{settings:?}");`
+  - assert: `"AppSettings"` を含む (型名)
+  - assert: `"transcription_engine"`, `"whisper_model"`, `"microphone_device_id"`, `"language"`, `"output_directory"`, `"api_key"` を全て含む (6 つの snake_case field 名)
+  - assert: `"AppleSpeech"`, `"base"`, `"dev-mic-001"`, `"ja"`, `"/tmp/out"`, `"sk-test-001"` を全て含む (6 つの値)
+  - 計 13 段の `assert!(debug.contains(...))` 単位 assert。
+
+**T2**: `app_settings_clone_is_deep_and_does_not_mutate_original`
+- 目的: AppSettings の `Clone` derive が deep clone である契約を CI 固定 (Rc<T> shallow 化 / Cow 化 誤改修を遮断)。
+- 手順:
+  - `let original = AppSettings { transcription_engine: TranscriptionEngineType::Whisper, whisper_model: "small".to_string(), microphone_device_id: Some("mic-A".to_string()), language: "auto".to_string(), output_directory: None, api_key: Some("k1".to_string()) };`
+  - `let mut cloned = original.clone();`
+  - cloned のすべての field を別の値に変更:
+    - `cloned.transcription_engine = TranscriptionEngineType::OpenAIRealtime;`
+    - `cloned.whisper_model = "large-v3".to_string();`
+    - `cloned.microphone_device_id = Some("mic-B".to_string());`
+    - `cloned.language = "en".to_string();`
+    - `cloned.output_directory = Some("/var/log".to_string());`
+    - `cloned.api_key = None;`
+  - assert (Debug 出力で original が変わっていないことを確認、PartialEq がないため Debug 文字列で間接的に判定):
+    - `let original_debug = format!("{original:?}");`
+    - `assert!(original_debug.contains("Whisper"));`
+    - `assert!(!original_debug.contains("OpenAIRealtime"));`
+    - `assert!(original_debug.contains("\"small\""));`
+    - `assert!(!original_debug.contains("\"large-v3\""));`
+    - `assert!(original_debug.contains("\"mic-A\""));`
+    - `assert!(!original_debug.contains("\"mic-B\""));`
+    - `assert!(original_debug.contains("\"auto\""));`
+    - `assert!(!original_debug.contains("\"en\""));`
+    - `assert!(original_debug.contains("None"));` (output_directory が None のまま)
+    - `assert!(!original_debug.contains("\"/var/log\""));`
+    - `assert!(original_debug.contains("\"k1\""));` (api_key)
+  - 計 11 段の assert で Clone 独立性を field 単位独立に確認。
+
+**T3**: `app_settings_serde_serialize_uses_camel_case_for_all_six_fields`
+- 目的: AppSettings の serde camelCase JSON key 名固定 (TypeScript Frontend / settings.json への書き出し contract を CI 保護、`#[serde(rename_all = "camelCase", default)]` 誤削除を遮断)。
+- 手順:
+  - `let settings = AppSettings { transcription_engine: TranscriptionEngineType::ElevenLabsRealtime, whisper_model: "tiny".to_string(), microphone_device_id: Some("device-X".to_string()), language: "ja".to_string(), output_directory: Some("/home/u/out".to_string()), api_key: Some("eleven-key".to_string()) };`
+  - `let json = serde_json::to_value(&settings).expect("serialize ok");`
+  - `let obj = json.as_object().expect("object");`
+  - assert: `obj.len() == 6` (field 数厳密)
+  - assert: 6 つの camelCase key が存在 (`transcriptionEngine`, `whisperModel`, `microphoneDeviceId`, `language`, `outputDirectory`, `apiKey`)
+  - assert: 6 つの snake_case key が **存在しない** (`transcription_engine`, `whisper_model`, `microphone_device_id`, `output_directory`, `api_key` … `language` は元から snake_case 形態と区別なしなので除外)
+  - assert: 値の正しさ (`obj["transcriptionEngine"] == "elevenLabsRealtime"` (TranscriptionEngineType も serde camelCase なので nested で `elevenLabsRealtime` に serialize される、これは mjc-main-34 Loop 2 で固定済み), `obj["whisperModel"] == "tiny"`, `obj["microphoneDeviceId"] == "device-X"`, `obj["language"] == "ja"`, `obj["outputDirectory"] == "/home/u/out"`, `obj["apiKey"] == "eleven-key"`)
+  - 計 17 段程度の assert (1 len + 6 contains_key + 5 !contains_key + 6 値正しさ)。
+
+### 振る舞い不変の保証
+- 構造体定義 / `impl Default` / 既存 27 test 程度 / 他関数は **完全に触らない**。
+- 追加するのは `mod tests` の末尾に 3 関数のみ。
+- Tidy First (構造的改善) として位置付け、振る舞い変更ゼロ。
+
+### 規模制約 (絶対遵守)
+- 追加する test は **3 件のみ**。1 件たりとも超過しないこと。
+- Debug 出力 / Clone 独立性 / serde camelCase format の **3 軸構造**を破ってはいけない。
+- 既存 test、構造体定義、impl ブロック、他関数は変更禁止。
+
+### 行末空白禁止
+- 編集する全ての行で行末に空白文字 (trailing whitespace) を残さないこと。`cargo fmt` で警告にならないよう注意する。
+
+## 検証手順
+作業完了後、以下を順に実行し、結果を AGENT_LOG.md に記録:
+1. `cd src-tauri && cargo fmt --check` (差分なしを確認)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -30` (警告ゼロ exit 0 を確認)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1 2>&1 | tail -10` (598 → 601 passed +3 件、0 failed を確認)
+
+## AGENT_LOG.md 追記内容 (末尾の `---` 直後に追記)
+
+```markdown
+## mjc-worker-app-settings-debug-clone-serde-tests-20260504-35-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-app-settings-debug-clone-serde-tests-20260504-35-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-35 Loop 1
+
+### 作業範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 14 連続 application + 「Clone 独立性軸」3 連続 application + 「format 不変条件 application」serde camelCase struct 系統 4 連続 application = AppSettings (#[derive(Debug, Clone, Serialize, Deserialize)] + #[serde(rename_all = "camelCase", default)] + 6 fields including nested TranscriptionEngineType + 3 Option<String>) への Debug + Clone 独立性 + serde camelCase 3 軸 application。
+- T1: app_settings_debug_output_contains_struct_name_and_all_six_field_names
+- T2: app_settings_clone_is_deep_and_does_not_mutate_original
+- T3: app_settings_serde_serialize_uses_camel_case_for_all_six_fields
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <595 → 601 passed の数値、0 failed>
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / impl Default / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+<test result の末尾行を quote>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+<なし or 内容>
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 報告 (1 ターンで完結)
+最後に変更内容、変更ファイル、検証結果、残リスク、AGENT_LOG.md 追記の確認を 1 ターンでまとめて報告してください。

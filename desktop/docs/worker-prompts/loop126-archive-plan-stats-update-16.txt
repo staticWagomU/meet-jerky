@@ -1,0 +1,116 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+他エージェントも同時に作業中の可能性があるので、担当範囲外の編集は禁止。
+本タスクは **2-commit pattern** を自律実行してください (詳細後述)。
+
+## 必読 (冒頭)
+
+1. **AGENT_LOG.md の末尾 350 行** を `tail -350 AGENT_LOG.md` で読む。**先頭は絶対に触らない**。AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。具体手順 = `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → その直後に追記。
+2. AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (短いので全文読む)
+3. `docs/architecture/agent-log-archive-plan.md` を Read (Section 2.3 の precedent observation entry 構造を理解する)
+
+## 担当範囲 (Loop 126)
+
+**K 軸 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 16 件目** (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124 precedent 15 件目):
+
+- alternation pattern 18 連続維持 (Loop 124 K → Loop 125 frontend → Loop 126 K = pivot 維持)
+- 規模 SS = ~3-5 分完走見込み
+
+## 観測値 (メイン側で計算済)
+
+- AGENT_LOG.md 行数 (Loop 123 完了時点 = 前 K 軸観測値): 33,144 行
+- AGENT_LOG.md 行数 (Loop 125 完了時点 = 本 Loop 126 観測時): 33,189 行
+- 差分: **+45 行 / 2 ループ間 (Loop 124 + Loop 125) = 平均 ~22.5 行/loop**
+- 前 Loop 124 観測値 (~42 行/loop) と比較して **~46% 減**
+
+### 主因分析 (entry に明記)
+
+- mjc-main-20260505-63 SESSION SUMMARY 1 件 (~33 行 = handoff 直前 SUMMARY commit `7b76094`)
+- Loop 124 K 軸自体の docs entry (1 件 ~14 行) + chore entry (1 件 ~5 行)
+- Loop 125 frontend 軸の chore entry (1 件 ~12 行 = 構造分離 39 file 目 = scope 26 軸目開拓説明)
+- paradigm pivot 多軸 (K + frontend) 混合増加
+- Loop 124 観測値 (~42 行/loop) と比較して大幅減の主因 = **Loop 125 chore entry の軽量化** (~12 行のみ = sanitizeAudioLevel + getPopoverLevelBars 抽出 = 規模 SS 純粋関数 2 件のみのため説明短縮可能) = **Loop 125 = frontend 軸の chore entry 軽量化 paradigm 観測**
+
+長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~22.5 行 = ~90-225 行/時間 の範囲、アクティブセッション間の差異)。
+
+## 実装手順
+
+### Step 1: agent-log-archive-plan.md Section 2.3 への追記
+
+`docs/architecture/agent-log-archive-plan.md` の Section 2.3 末尾 (最新の更新観測 entry の直後、`### 2.4 既存運用の維持コスト` の直前) に新エントリを追記する。
+
+precedent (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124) と同 format で:
+
+```markdown
+> **更新観測 (mjc-main-20260505-64 Loop 125 完了時点)**: Loop 123 → Loop 125 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-63) で +45 行 (33,144 → 33,189)、平均 ~22.5 行/loop。Loop 123 観測値 (~42 行/loop) と比較して ~46% 減 = paradigm pivot 多軸 (Loop 124 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 125 = frontend 軸 = 純粋関数機能分離軸 frontend 版 4 件目 = TranscriptView.tsx の sanitizeAudioLevel + getPopoverLevelBars → audioLevelHelpers.ts (新規) = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 123 観測値 (~42 行/loop) と比較して大幅減の主因 = Loop 125 frontend 軸 chore entry の軽量化 (~12 行のみ = 規模 SS 純粋関数 2 件のみのため説明短縮可能) = **frontend 軸 = chore entry 軽量化 paradigm 観測**。SESSION SUMMARY 1 件は依然含むが Loop 125 chore entry が ~12 行に圧縮されたため、SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量の 3 軸が支配変数 (Loop 121 観測時は SESSION SUMMARY 0 件 = アクティブ進行軽量化 paradigm 確立、Loop 123 観測時は SESSION SUMMARY 1 件 + 説明大量化 = 回帰大、Loop 125 観測時は SESSION SUMMARY 1 件 + 説明軽量化 = 中間値)。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~22.5 行 = ~90-225 行/時間 の範囲、アクティブセッション間の差異)。
+```
+
+注意: 上記文中の「Loop 123 観測値 (~42 行/loop)」は前回観測 entry の数値を踏襲 (precedent entry header 命名規則は「Loop 121 完了時点」「Loop 123 完了時点」のように偶数 + 完了時点 = 1 つ前の観測 Loop 番号を採用)。
+
+### Step 2: docs commit を作成
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "$(cat <<'EOF'
+docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 125 完了時点の更新観測追記 (mjc-main-20260505-64 Loop 126, harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124 precedent 16 件目, +45 行 / 平均 ~22.5 行/loop)
+EOF
+)"
+```
+
+commit 後、`git log --oneline -1` で実 hash を取得。
+
+### Step 3: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、その直後にエントリを追記:
+
+```markdown
+[mjc-main-20260505-64 Loop 126 / 2026-05-06]
+worker: mjc-worker-loop126-archive-plan-stats-update-16 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 125 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124 precedent の 16 件目。Loop 123 → Loop 125 (~2 ループ間 + SESSION SUMMARY 1 件) で +45 行 (33,144 → 33,189)、平均 ~22.5 行/loop。Loop 123 観測値 (~42 行/loop) と比較して ~46% 減 = paradigm pivot 多軸 (K + frontend) + SESSION SUMMARY 1 件継続 + Loop 125 frontend 軸 chore entry 軽量化 (~12 行) = **frontend 軸 = chore entry 軽量化 paradigm 観測**。alternation pattern 18 連続成功維持 (K(124) → frontend(125) → K(126))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: <REPLACE_WITH_DOCS_COMMIT_HASH> docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 125 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+`<REPLACE_WITH_DOCS_COMMIT_HASH>` は Step 2 で取得した実 hash の先頭 7 文字に置換すること。chore commit hash は意図的に書かない (現時点では未知のため)。
+
+### Step 4: chore commit を作成
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-64 Loop 126 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124 precedent 16 件目, +45 行 / 平均 ~22.5 行/loop) のエントリ追記
+EOF
+)"
+```
+
+## 必須要素 (再掲、必ず守る)
+
+1. **AGENT_LOG.md は末尾にのみ追記**。先頭は絶対に触らない。
+2. **大型ファイル (AGENT_LOG.md 33189 行) は Read 全体禁止 = tail で末尾 350 行のみ参照**。
+3. **行末の空白文字 (trailing whitespace) 禁止**。
+4. **担当範囲外の編集禁止** = 上記 Step 1-4 で指定された file (agent-log-archive-plan.md / AGENT_LOG.md) のみ編集。
+5. **2-commit pattern**: docs commit → hash 取得 → AGENT_LOG.md 末尾追記 (実 hash 反映) → chore commit。
+
+## 完走判定基準
+
+- Commit 1 = docs(architecture) 1 件 (agent-log-archive-plan.md)
+- Commit 2 = chore(agent-log) 1 件 (AGENT_LOG.md)
+- AGENT_LOG.md 末尾に Loop 126 entry 追加済
+- agent-verify.sh は docs-only 変更のため skip 判定 OK
+- git status clean (handoff/* と worker-prompts/* untracked のみ残留)
+
+## その他
+
+- claude-agent-handoff-main.sh は触らない (interactive TUI 起動用)。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+- 完走後は端末で本 worker を終了 (claude -p print mode は最終出力一括方式 = stdout は完了まで空)。
+
+頑張ってください。Loop 126 完走 = 累計 worker 完走 225/225 (100% 維持) を期待します。

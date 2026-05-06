@@ -1,0 +1,108 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。
+
+## 必読 (順序厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみ** = `tail -350 AGENT_LOG.md` で参照する。AGENT_LOG.md 全体は 23700 行超 / 1.9MB+ あるため Read 全体禁止。
+
+## AGENT_LOG.md 追記ルール (絶対遵守)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- 追記前に必ず `tail -10` で末尾位置を把握すること。
+
+## 担当範囲 (これ以外を編集禁止)
+
+ファイル: `src-tauri/src/elevenlabs_realtime.rs`
+
+範囲: 末尾の `mod tests { ... }` ブロック (l.1021-1108) の **末尾 (l.1107 の最後の test の `}` 直後、l.1108 の閉じ `}` の直前)** に、AudioCommand enum (l.63-64, `#[derive(Debug)]` + private + `Samples(Vec<f32>)` + `Finalize`) の Debug 出力契約を CI 保護する **3 件の test 関数** を追加する。
+
+## 実装内容 (3 軸)
+
+OpenAI 側 (`src-tauri/src/openai_realtime.rs` の l.1065-1090) で既に application 済の 3 軸を、ElevenLabs 側に **field 名/型に差分なし** で対称形 application する。**twin 達成 = OpenAI/ElevenLabs Engine + AudioCommand の 4 型対称形完成** が目的。
+
+### test 1: Samples variant の Debug 出力 (値 contains)
+```
+#[test]
+fn audio_command_samples_variant_debug_format_contains_variant_name_and_payload_floats() {
+    let cmd = AudioCommand::Samples(vec![1.0_f32, -0.5, 0.0]);
+    let formatted = format!("{cmd:?}");
+    assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+    assert!(formatted.contains("1.0"), "first sample: {formatted}");
+    assert!(formatted.contains("-0.5"), "second sample: {formatted}");
+    assert!(formatted.contains("0.0"), "third sample: {formatted}");
+}
+```
+
+### test 2: Finalize variant の Debug 出力 (完全一致)
+```
+#[test]
+fn audio_command_finalize_variant_debug_format_is_exact_variant_name() {
+    let cmd = AudioCommand::Finalize;
+    let formatted = format!("{cmd:?}");
+    assert_eq!(formatted, "Finalize", "完全一致: {formatted}");
+    assert!(formatted.contains("Finalize"));
+}
+```
+
+### test 3: Samples 空 Vec の Debug 出力 (`Samples([])` 形式)
+```
+#[test]
+fn audio_command_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets() {
+    let cmd = AudioCommand::Samples(vec![]);
+    let formatted = format!("{cmd:?}");
+    assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+    assert!(formatted.contains("[]"), "空 Vec の Debug 表示: {formatted}");
+    assert!(formatted.contains("Samples([])"), "tuple variant 形式: {formatted}");
+}
+```
+
+## use 文の追加
+
+l.168 で既に `use super::{AudioCommand, ELEVENLABS_REALTIME_SAMPLE_RATE};` と AudioCommand を import している (`mod ws_task` の use 文)。しかしこの 3 つのテストはトップレベルの `mod tests` (l.1022-) に追加する。トップレベルの `mod tests` の use 文を確認して、AudioCommand が import されていなければ追加すること。
+
+確認手順:
+- `sed -n '1020,1030p' src-tauri/src/elevenlabs_realtime.rs` でトップレベル `mod tests` の冒頭を確認
+- AudioCommand が import されていなければ `use super::AudioCommand;` を追加 (既存の use 文の直後)
+
+## 規模超過防止 (絶対遵守)
+
+- 担当範囲は **上記 3 件の test 関数 + 必要な use 文の追加のみ**。それ以外のファイル / 関数 / モジュールを編集しない。
+- アプリコード (構造体定義、derive、メソッド本体等) は **一切変更しない** = Tidy First の振る舞い不変原則。
+- 新規 test は **正確に 3 件** とする (4 件以上 / 2 件以下は不可)。
+- 既存テストの順序や内容を変更しない。
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep`/`sed -n 'NN,MMp'` で対象範囲のみ参照。
+- **行末の空白文字 (trailing whitespace) 禁止**。Edit 時に空行に空白を入れない。
+
+## 検証手順
+
+1. `cd src-tauri && cargo test --lib elevenlabs_realtime 2>&1 | tail -20` で 32 → 35 件への増加を確認 (現状 32 passed → 35 passed が期待値)。
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -5` で全体テスト件数 625 → 628 件 (3 件増) を確認。
+3. `cd src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10` で警告ゼロを確認。
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で format 準拠を確認 (差分があれば `cargo fmt` 実行)。
+
+## AGENT_LOG.md 追記内容 (テンプレート)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した上で、末尾に以下の形式で追記:
+
+```
+## YYYY-MM-DD HH:MM JST mjc-worker-elevenlabs-realtime-audio-command-enum-debug-tests-20260504-38-1
+- 担当セッション: mjc-worker-elevenlabs-realtime-audio-command-enum-debug-tests-20260504-38-1 (作業担当, sonnet)
+- 役割: ElevenLabsRealtimeEngine の private enum AudioCommand (`#[derive(Debug)]` + `Samples(Vec<f32>)` + `Finalize`) の Debug 出力契約 CI 保護
+- 作業範囲: src-tauri/src/elevenlabs_realtime.rs の `mod tests` 末尾に 3 件の test 関数追加 (Samples 値 contains / Finalize 完全一致 / Samples 空 Vec の `Samples([])` 形式)
+- 指示内容: OpenAI 側 (openai_realtime.rs l.1065-1090) と field 名/型に差分なしの対称形 application = 双子達成 (OpenAI/ElevenLabs Engine + AudioCommand の 4 型対称形完成) + enum 形態 6 連続 application + Debug 軸補強 23 連続 application
+- 結果: <pass/fail と件数>
+- 変更ファイル: src-tauri/src/elevenlabs_realtime.rs (+ N 行 / - 0 行、3 件 test 追加)
+- 検証結果: cargo test --lib elevenlabs_realtime <件数 passed>、cargo test --lib 全体 <件数 passed>、cargo clippy --lib -- -D warnings 警告ゼロ、cargo fmt --check OK
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
+```
+
+## 報告形式 (1 ターン完結)
+
+最後に、変更内容、変更ファイル、検証結果 (test 件数 / clippy / fmt)、残リスクを 5-10 行で簡潔に報告してください。

@@ -1,0 +1,88 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+最初に AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md / AGENT_LOG.md の **末尾** 350 行 (= mjc-main-20260504-20 SESSION SUMMARY + mjc-main-21 Loop 1 / Loop 2 worker log を含む) を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+
+src-tauri/src/app_detection.rs の **mod tests のみ** に、`parse_throttle_key_to_display_name` 純粋関数の境界 test を 4 件追加 (B-Loop XS, Tidy First, 振る舞い不変, ユーザー観測不可)。
+
+**関数本体は一切変更しない**。test 追加のみ。
+
+# 背景
+
+前 mjc-main-21 Loop 1 (commit cceffa3) で `parse_throttle_key_to_display_name` 純粋関数を追加し、最小 6 件の test (3 経路成功 + 3 形式不正) を追加した。
+前 mjc-main-21 Loop 2 (commit 4ca7e34) で F-Loop5 機能完結 = `check_all_inactive_bundles` の iteration が parse 関数を呼ぶように変更され、parse 関数が runtime で **実際に呼ばれるようになった**。
+
+これにより、前回 commit メッセージで「未対応境界 = 4 セグメント超え, `"browser:"` 直後の空 bundle_id 等は最小ケースのみ対応 = 将来 throttle_key 形式が変わった時に parse 関数の境界 test を追加するメンテナンスが必要」と残リスクとして明示された箇所を、機能完結直後のいま消化する。
+
+# Why (価値)
+
+- parse 関数が runtime で実際に呼ばれるようになった = 未対応境界が実機で踏まれるリスクが上昇 = 直後の境界補強は割安
+- 「同じ HashMap に異なる形式の key が混在する」設計の境界 (= parse 関数) のロバストネスを CI で固定 = 将来の throttle_key 形式変更時に parse 関数を変更すると test が壊れて気づける
+
+# 追加する test (4 件、最小ケース)
+
+mod tests 末尾 (= 既存 `parse_throttle_key_to_display_name_returns_none_for_browser_key_with_empty_service` の **直後**) に以下 4 件追加:
+
+1. `parse_throttle_key_to_display_name_returns_service_for_browser_key_with_colon_in_host`
+   - 契約: `"browser:com.apple.Safari:Google Meet:meet.google.com:8443"` (host に `:` ポート番号付き) → `Some("Google Meet")` を返す
+   - 設計意図: `splitn(3, ':')` で host 内に `:` が含まれても 3 セグメント目以降は `parts[2]` にまとめられるため、service は `parts[1]` で正しく取れる
+   - assertion: `assert_eq!(parse_throttle_key_to_display_name("browser:com.apple.Safari:Google Meet:meet.google.com:8443"), Some("Google Meet".to_string()));`
+
+2. `parse_throttle_key_to_display_name_returns_none_for_browser_prefix_only`
+   - 契約: `"browser:"` (prefix のみで残り空) → `None`
+   - 設計意図: `strip_prefix("browser:")` 後に空文字 `""` が残り `splitn(3, ':')` で 1 要素 (`[""]`) のみ → `parts.len() < 2` で None
+   - assertion: `assert_eq!(parse_throttle_key_to_display_name("browser:"), None);`
+
+3. `parse_throttle_key_to_display_name_returns_none_for_window_title_prefix_only`
+   - 契約: `"window-title:"` (prefix のみで残り空) → `None`
+   - 設計意図: `strip_prefix("window-title:")` 後に空文字が残り splitn(2, ':') で 1 要素 → parts.len() < 2 で None
+   - assertion: `assert_eq!(parse_throttle_key_to_display_name("window-title:"), None);`
+
+4. `parse_throttle_key_to_display_name_returns_none_for_browser_key_with_only_bundle_id`
+   - 契約: `"browser:com.apple.Safari"` (bundle_id のみで service 欠落) → `None`
+   - 設計意図: `strip_prefix("browser:")` 後に `"com.apple.Safari"` が残り `splitn(3, ':')` で 1 要素 (`["com.apple.Safari"]`) のみ → `parts.len() < 2` で None
+   - assertion: `assert_eq!(parse_throttle_key_to_display_name("browser:com.apple.Safari"), None);`
+
+各 test は 2-3 行で完結。doc コメント (`//`) で「契約: <何が固定されるか>」を 1 行書く。
+
+# 実装ルール (Loop を XS スコープに保つために遵守)
+
+1. **関数本体は変更しない** = `parse_throttle_key_to_display_name` の実装は前 commit cceffa3 のまま無変更。test 追加のみで境界処理が正しく動作することを CI で固定する設計
+2. **既存 6 件の test を変更しない** = `parse_throttle_key_to_display_name_returns_*` で始まる既存 6 件は完全保持
+3. **他関数・他ファイル一切触らない** = src-tauri/src/app_detection.rs の mod tests **末尾のみ追加**
+4. **配置場所**: 既存 `parse_throttle_key_to_display_name_returns_none_for_browser_key_with_empty_service` 直後 (= line 1879 付近、既存 T6 の直下)
+5. **新規 import 不要** (既存 mod tests 内の import で動作)
+
+# 検証手順
+
+1. `cargo build --manifest-path src-tauri/Cargo.toml` (compile OK 確認)
+2. `cargo test --manifest-path src-tauri/Cargo.toml --lib --no-run` (test compile OK)
+3. `cargo test --manifest-path src-tauri/Cargo.toml --lib parse_throttle_key_to_display_name` (10 件 = 既存 6 + 新規 4 全 pass 確認)
+4. `cargo test --manifest-path src-tauri/Cargo.toml --lib` (484 → 488 passed = +4 件確認、既存 test の regression なし確認)
+5. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (warning ゼロ維持)
+6. `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check` (差分なし確認)
+7. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK 確認)
+
+# AGENT_LOG.md 記載項目 (worker log 形式、**ファイル末尾追記必須**)
+
+**重要**: AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾** の構造を保つこと。新規追記は **必ずファイル末尾** (= 最終行の `---` 区切り線の後ろ) に行う。前 mjc-main-21 Loop 1 で先頭追記事故が発生して修正したため、本 Loop は厳守。
+
+具体手順:
+- `tail -10 AGENT_LOG.md` で末尾を確認
+- 末尾の最終行 (`---` 等) の直後に新規 worker log セクションを追加
+- 先頭は **絶対に触らない**
+
+記載項目: 開始日時 (JST) / 担当セッション (mjc-worker-parse-throttle-key-boundary-tests-20260504-21-3) / 役割 (worker, sonnet) / 作業範囲 / 指示内容の要約 / 結果 / 変更ファイル / 検証結果 / 設計判断 / 依存関係追加 / 失敗理由 / 次アクション
+
+# 報告形式
+
+最後に変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめてください。
+
+# 規模超過防止 (再掲)
+
+- test 追加は **4 件のみ**。それ以上は別 Loop で追加可
+- 関数本体には触らない (= 振る舞い不変, Tidy First)
+- 他ファイル・他関数は一切触らない
+- 既存 6 件の test も触らない

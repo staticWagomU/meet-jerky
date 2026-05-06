@@ -1,0 +1,144 @@
+あなたは meet-jerky の worker (mjc-worker-loop69-session-store-parse) です。
+
+# 最重要 (AGENT_LOG.md 編集ルール、必読)
+
+1. **最初に `tail -350 AGENT_LOG.md` を読む** = 直近の precedent と SESSION SUMMARY を理解する。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+
+# タスク = session_store.rs から pure fn 2 件 + 定数 1 件を抽出 → session_store_parse.rs (新規)
+
+## 抽出対象
+
+- `const MAX_JS_DATE_UNIX_SECS: u64 = 8_640_000_000_000;` (L19, 1 行)
+- `fn unescape_inline_markdown_text(value: &str) -> String` (L83-103, ~21 行)
+- `fn parse_session_started_at_secs(stem: &str) -> Option<u64>` (L157-164, ~8 行)
+- 計 ~30 行
+
+## visibility 化
+
+- 全 3 アイテム を `pub(crate)` に昇格 (session_store.rs から file 跨ぎ参照のため)
+- 定数 MAX_JS_DATE_UNIX_SECS は session_store_parse.rs 内部の parse_session_started_at_secs だけが使うなら **private 維持** 可
+- ただし tests の comment (L593, L602) で MAX_JS_DATE_UNIX_SECS を参照している = comment のみで実コード参照なし = 定数は private 維持で OK
+
+## 移動方針
+
+- **関数本体は変更しない** (振る舞い完全不変)
+- doc comment 維持
+- session_store_parse.rs の頭にモジュールコメント (例 `//! セッション ID パース・markdown unescape の純粋ヘルパー。`)
+- import 文不要 (std::primitive のみ使用)
+
+## session_store.rs 修正
+
+- 抽出した 2 fn + 1 定数を session_store.rs から削除
+- session_store.rs の caller (L125, L138) に必要な use 文を session_store.rs 冒頭 use セクションに追加
+  - `use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};`
+
+## tests 方針 (重要)
+
+- session_store.rs 内 #[cfg(test)] mod の test (parse_session_started_at_secs_* 等 = ~6 test) は **session_store.rs に残置**
+- session_store.rs の tests mod 冒頭に `use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};` を追加
+  - `use super::*;` がある場合、抽出先の fn は super:: 経由ではなくなるため明示 import が必要
+
+## lib.rs 修正
+
+- `mod session_store_parse;` を追加 (アルファベット順 = `mod session_store;` と `mod session_store_types;` の間)
+  - 順序: `session_store` → `session_store_parse` → `session_store_types`
+
+## precedent (cat 全体読み込み推奨)
+
+- `cd src-tauri && cat src/session_store_types.rs` = Loop 67 で抽出された session_store scope precedent
+- `cd src-tauri && cat src/audio_sample_helpers.rs` = Loop 68 で抽出された pure fn precedent
+- `cd src-tauri && cat src/app_detection_url_helpers.rs` = Loop 64 で抽出された pure fn precedent
+
+## 規模制限 (超過厳禁)
+
+- session_store_parse.rs (新規) = ~40 行 (定数 + 2 fn + module コメント) を上限
+- session_store.rs 修正 = -30 行 + use 文追加 ~1-2 行
+- lib.rs 修正 = +1 行 (mod 宣言のみ)
+- **担当範囲外編集禁止** (frontend / docs / scripts / audio 関連は触らない)
+- test 件数: **702 passed / 0 failed = 件数不変** (新規 test 追加禁止、削除禁止)
+
+## 検証 (必ず通す)
+
+- `cd src-tauri && cargo build --lib`: エラーなし
+- `cd src-tauri && cargo test --lib`: 702 passed / 0 failed (件数不変)
+- `cd src-tauri && cargo clippy --lib --tests -- -D warnings`: 警告ゼロ
+- `cd src-tauri && cargo fmt --check`: OK
+- `cd .. && bash scripts/agent-verify.sh src-tauri/src/session_store.rs src-tauri/src/session_store_parse.rs src-tauri/src/lib.rs`: OK
+- grep 振る舞い不変確認:
+  - `cd src-tauri && grep -n 'fn unescape_inline_markdown_text\|fn parse_session_started_at_secs\|const MAX_JS_DATE_UNIX_SECS' src/session_store.rs` → **完全に空**
+  - `cd src-tauri && grep -n 'fn unescape_inline_markdown_text\|fn parse_session_started_at_secs' src/session_store_parse.rs` → 各 1 件
+- **trailing whitespace**: なし (`grep -nE ' +$' src/session_store_parse.rs src/session_store.rs src/lib.rs` で確認、見つかれば削除)
+
+## 2-commit pattern (Loop 60-68 連続 9 ループで実証、必ず実施)
+
+### commit 1 (refactor commit)
+```
+git add src-tauri/src/session_store_parse.rs src-tauri/src/session_store.rs src-tauri/src/lib.rs
+git commit -m "refactor(session_store): pure fn 2 件 (unescape_inline_markdown_text + parse_session_started_at_secs) + 定数 1 件 (MAX_JS_DATE_UNIX_SECS) を session_store_parse.rs に抽出 (mjc-main-20260505-34 Loop 69, ~30 行抽出 + lib.rs mod 追加 + session_store.rs use 文追加, audio_sample_helpers.rs / session_store_types.rs precedent 直接展開, AGENTS.md priority 1 寄与)"
+```
+
+### commit 2 (chore: AGENT_LOG.md 反映)
+```
+HASH=$(git rev-parse HEAD)
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 69 commit hash $HASH を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-68 precedent 適用 10 連続)"
+```
+
+## AGENT_LOG.md エントリのテンプレ (末尾の --- 直後に追記)
+
+```markdown
+
+[mjc-main-20260505-34 Loop 69 / 2026-05-05 ~JST]
+
+## What
+- session_store.rs から pure fn 2 件 + 定数 1 件を新規ファイル session_store_parse.rs に抽出 (~30 行)
+  - `const MAX_JS_DATE_UNIX_SECS: u64 = 8_640_000_000_000;` (private 維持)
+  - `pub(crate) fn unescape_inline_markdown_text(value: &str) -> String` (~21 行)
+  - `pub(crate) fn parse_session_started_at_secs(stem: &str) -> Option<u64>` (~8 行)
+- lib.rs に `mod session_store_parse;` 追加 (session_store と session_store_types の間)
+- session_store.rs caller use 文追加 (`use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};`)
+- tests は session_store.rs 残置 + tests mod に明示 import 追加
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_store.rs ~1159 行の段階的責務分離継続)
+- locality 集約 = pure parse / unescape ロジックの単独 file 化
+- audio_sample_helpers.rs (Loop 68) / session_store_types.rs (Loop 67) precedent 直接展開
+- variety: scope 切替 (audio Loop 68 → session_store Loop 69) + pattern 維持 (pure fn 抽出)
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- visibility: 2 fn を pub(crate) に昇格、定数は private 維持 (新 file 内部のみ使用)
+- doc comment 維持
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_store.rs から `fn unescape_inline_markdown_text` / `fn parse_session_started_at_secs` / `const MAX_JS_DATE_UNIX_SECS` を grep: 完全に空
+- session_store_parse.rs から同 fn を grep: 各 1 件確認
+- trailing whitespace: なし
+
+## commit
+- (commit 1 hash placeholder = refactor commit)
+```
+
+(↑ commit 1 完了後に hash を上記 placeholder と置換、commit 2 で AGENT_LOG.md を再 add してから commit)
+
+## トラブル時 (失敗フォールバック)
+
+- cargo test 件数が変動した場合 → fn を全て元に戻して中断、メインに状況報告
+- clippy 警告が出た場合 → fmt + warning 内容に従って修正、それでも消えなければメインに報告
+- mod 順序で fmt が落ちる場合 → lib.rs の mod 宣言順を再確認 (alphabetical)
+
+## 完走基準
+1. 検証 (build + test + clippy + fmt + agent-verify.sh) 全 pass
+2. 2-commit pattern で 2 commit 作成 (refactor + chore hash 反映)
+3. AGENT_LOG.md 末尾に Loop 69 エントリ追記 (commit hash 含む)
+4. trailing whitespace ゼロ
+5. 規模上限 (session_store_parse.rs ≤ 40 行) 遵守

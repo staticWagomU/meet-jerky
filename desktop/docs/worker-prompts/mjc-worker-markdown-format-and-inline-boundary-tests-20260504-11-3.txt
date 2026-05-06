@@ -1,0 +1,249 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。1 ターンで完結する形でまとめてください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+# 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (末尾 200 行程度のみで OK)
+
+# 担当ファイル / 担当範囲
+- 編集対象: src-tauri/src/markdown.rs の `mod tests` (line 67-186) 内の **末尾** に #[test] 関数を 5 件追加するのみ。
+- 実装変更は禁止。visibility 変更も禁止。新規 import も避け (既存の `use super::*;` で完結する想定)。
+- 既存テスト名と完全一致しない名前にする。
+
+----------------------------------------------------------------------
+## 1. 背景 / Why
+----------------------------------------------------------------------
+
+`markdown.rs` (本体 61 行 / test 9 件) は `format_session_markdown` (line 24-49) と private `inline_markdown_text` (line 51-61) の 2 fn のみ。
+
+既存テスト 9 件のマッピング:
+- format_session_markdown 系 5 件: happy_path (2 segment) / empty_segments / normalizes_inline_newlines / escapes_inline_markdown_marks / single_segment (1 segment)
+- inline_markdown_text 系 4 件: empty / whitespace_only / underscore_explicit / each_special_char_individually
+
+5 つの未網羅 gap:
+
+1. **3 segment 以上の join 順序と区切り**: 既存は 0/1/2 segment のみ。3+ segment で間が `\n` で join、各行末 `  ` 維持、最後の segment は trailing newline なし、という出力契約の直接固定が無い。
+2. **meta.started_at_display と segment.timestamp_display にも escape が適用される対称性**: 既存 escape test (line 125-140) は title / speaker / text のみ escape を確認、started_at_display と timestamp_display は escape 対象文字を含まない値しか試されていない。`format_session_markdown` (line 27-28, 41) は両方にも `inline_markdown_text` を通しているが、その対称性は test で固定されていない。
+3. **連続 special chars の独立 escape**: 既存 line 158 が `__bold__` で 2 個連続を確認、line 162-168 が単一文字を確認。3 個以上連続 (`***` / `[[[]]]` / `\\\`) や mixed (`*_*`) は未網羅。`for ch in ...` の独立 escape ロジック (line 54-58) が連続文字でも各文字に作用することの固定。
+4. **Unicode passthrough (絵文字 / 結合文字 / ZWJ)**: escape 対象 6 文字 (`\\` `` ` `` `*` `_` `[` `]`) 以外の Unicode は passthrough されることの固定。emoji (🎉)、ZWJ family (👨‍👩‍👧‍👦)、結合文字 (é = 基底+結合) などは escape も whitespace 正規化もされず passthrough される。
+5. **split_whitespace の Unicode White_Space 準拠 (U+3000 全角空白 / U+00A0 NBSP)**: 前 mjc-main-9 (`7cc7f94`) が transcript_bridge.rs で `str::trim` の Unicode White_Space 準拠を固定したのと対称的に、本ファイルでは `str::split_whitespace` (line 52) 経路で同じ Unicode 仕様依存を固定。Rust の split_whitespace は `char::is_whitespace` で分割するため、全角空白も NBSP も区切りとして扱われる現契約を 3 ケースで test 文書化。
+
+これは前 mjc-main-1 (`mjc-worker-markdown-inline-text-tests-20260504-1.txt`) で markdown.rs の基本固定を行った作業の隣接拡張。escape ロジック (line 51-61) と format 構造 (line 24-49) の両側を体系的に補強する。
+
+参考: AGENT_LOG.md 末尾 SESSION SUMMARY「次ループ候補」のうち、本セッション (mjc-main-20260504-11) Loop 1 (session_manager discard) と Loop 2 (cloud_whisper_errors classify) に続く Loop 3 として **markdown.rs を選定**。価値は中だが、splitwhitespace の Unicode 準拠は str::trim 版の transcript_bridge と対をなす横断的契約として価値が高い。
+
+----------------------------------------------------------------------
+## 2. 具体的 test 案 (assertion レベル)
+----------------------------------------------------------------------
+
+すべて `mod tests` (line 67-186) 内の **末尾** に追加する。既存最後のテストは `format_session_markdown_handles_single_segment_correctly` (line 172-185)。
+
+### T1: format_session_markdown_joins_three_or_more_segments_with_single_newline_between
+
+**目的**: 3 segment 以上の join 順序と区切り (`\n` 1 個) と各行末 `  ` (trailing 2 spaces) と最終行 trailing newline 無しを完全一致 expected で固定。
+
+```rust
+#[test]
+fn format_session_markdown_joins_three_or_more_segments_with_single_newline_between() {
+    let meta = SessionMeta {
+        title: "会議".to_string(),
+        started_at_display: "2026-04-17 14:30".to_string(),
+    };
+    let segments = vec![
+        SessionSegment {
+            speaker: "A".to_string(),
+            timestamp_display: "14:30:01".to_string(),
+            text: "first".to_string(),
+        },
+        SessionSegment {
+            speaker: "B".to_string(),
+            timestamp_display: "14:30:02".to_string(),
+            text: "second".to_string(),
+        },
+        SessionSegment {
+            speaker: "C".to_string(),
+            timestamp_display: "14:30:03".to_string(),
+            text: "third".to_string(),
+        },
+    ];
+
+    // 各 segment 行末は "  " (trailing 2 spaces = markdown line break)、間は単一 \n、最終行 \n なし
+    let expected = "# 会議 - 2026-04-17 14:30\n\n**[14:30:01] A:** first  \n**[14:30:02] B:** second  \n**[14:30:03] C:** third  ";
+    assert_eq!(format_session_markdown(&meta, &segments), expected);
+
+    // 順序保証: A → B → C の入力順がそのまま出力に反映される
+    let result = format_session_markdown(&meta, &segments);
+    let pos_a = result.find("first").unwrap();
+    let pos_b = result.find("second").unwrap();
+    let pos_c = result.find("third").unwrap();
+    assert!(pos_a < pos_b && pos_b < pos_c, "segment 順序が出力に保たれる契約");
+}
+```
+
+### T2: format_session_markdown_escapes_special_chars_in_started_at_display_and_timestamp_display
+
+**目的**: meta.started_at_display と segment.timestamp_display にも `inline_markdown_text` が適用される対称性を、escape 対象文字を含む display 文字列で固定。誤改修で「display 系は raw のまま挿入する」変更を入れた際の検知装置。
+
+```rust
+#[test]
+fn format_session_markdown_escapes_special_chars_in_started_at_display_and_timestamp_display() {
+    let meta = SessionMeta {
+        title: "title".to_string(),
+        started_at_display: "*2026*_04_[17]".to_string(),
+        // ↑ started_at_display も `inline_markdown_text` を通る契約 (line 28)
+    };
+    let segments = vec![SessionSegment {
+        speaker: "speaker".to_string(),
+        timestamp_display: "[14:30:05]".to_string(),
+        // ↑ timestamp_display も `inline_markdown_text` を通る契約 (line 41)
+        text: "text".to_string(),
+    }];
+
+    let result = format_session_markdown(&meta, &segments);
+
+    // started_at_display 内の `*` `_` `[` `]` が escape されている
+    assert!(
+        result.contains("\\*2026\\*\\_04\\_\\[17\\]"),
+        "started_at_display も escape される契約: result=\n{result}"
+    );
+    // timestamp_display 内の `[` `]` が escape されている
+    assert!(
+        result.contains("\\[14:30:05\\]"),
+        "timestamp_display も escape される契約: result=\n{result}"
+    );
+}
+```
+
+### T3: inline_markdown_text_escapes_each_char_in_consecutive_or_mixed_special_runs
+
+**目的**: 連続する special chars (`***`, `[[[]]]`, `\\\`) と mixed (`*_*`) でも各文字が独立に escape されることを 4 ケースで固定。`for ch in ...` の独立適用 (line 54-58) の境界。
+
+```rust
+#[test]
+fn inline_markdown_text_escapes_each_char_in_consecutive_or_mixed_special_runs() {
+    // 3 個連続 (asterisk)
+    assert_eq!(super::inline_markdown_text("***"), "\\*\\*\\*");
+    // 4 個連続 (square bracket open + close)
+    assert_eq!(super::inline_markdown_text("[[]]"), "\\[\\[\\]\\]");
+    // 3 個連続 (backslash)
+    assert_eq!(super::inline_markdown_text("\\\\\\"), "\\\\\\\\\\\\");
+    // mixed: `*_*` → `\*\_\*`
+    assert_eq!(super::inline_markdown_text("*_*"), "\\*\\_\\*");
+    // mixed: `[`code`]` → `\[\`code\`\]`
+    assert_eq!(super::inline_markdown_text("[`code`]"), "\\[\\`code\\`\\]");
+}
+```
+
+### T4: inline_markdown_text_passes_through_emoji_combining_and_zwj_chars_without_escape
+
+**目的**: escape 対象 6 文字 (`\\` `` ` `` `*` `_` `[` `]`) 以外の Unicode は passthrough されることを 4 ケースで固定。emoji / 結合文字 / ZWJ family / 全角記号 (`！`「」※ など) はそのまま。誤改修で「すべての非 ASCII を escape する」変更を入れた際の検知装置。
+
+```rust
+#[test]
+fn inline_markdown_text_passes_through_emoji_combining_and_zwj_chars_without_escape() {
+    // emoji (single code point)
+    assert_eq!(super::inline_markdown_text("🎉"), "🎉");
+    // emoji + text
+    assert_eq!(super::inline_markdown_text("hello🎉world"), "hello🎉world");
+    // 結合文字 (基底 'e' + U+0301 結合アキュート)
+    let combining = "e\u{0301}"; // = "é"
+    assert_eq!(super::inline_markdown_text(combining), combining);
+    // ZWJ family emoji (U+1F468 + ZWJ + U+1F469 + ZWJ + U+1F467 + ZWJ + U+1F466)
+    let zwj_family = "\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466}";
+    assert_eq!(super::inline_markdown_text(zwj_family), zwj_family);
+    // 全角記号 (escape 対象 6 文字に含まれない)
+    assert_eq!(super::inline_markdown_text("「重要」※"), "「重要」※");
+}
+```
+
+### T5: inline_markdown_text_treats_full_width_space_and_nbsp_as_split_whitespace
+
+**目的**: `str::split_whitespace` (line 52) は `char::is_whitespace` で分割するため、全角空白 (U+3000) や NBSP (U+00A0) も区切りとして扱われる現契約を 4 ケースで固定。前 mjc-main-9 の `7cc7f94` が transcript_bridge.rs で固定した str::trim 版と対称な、split_whitespace 版の文書化。誤改修で「ASCII space のみで分割する」変更を入れた際の検知装置。
+
+注意: `inline_markdown_text` は `split_whitespace().collect::<Vec<_>>().join(" ")` で正規化する (line 52)。区切られた token 間は ASCII space 1 個に統一される。
+
+```rust
+#[test]
+fn inline_markdown_text_treats_full_width_space_and_nbsp_as_split_whitespace() {
+    // U+3000 全角空白で分割される (token 間は ASCII space 1 個に正規化)
+    assert_eq!(super::inline_markdown_text("a　b"), "a b");
+    // U+00A0 NBSP も分割される
+    assert_eq!(super::inline_markdown_text("a\u{00A0}b"), "a b");
+    // U+2028 LINE SEPARATOR も分割される
+    assert_eq!(super::inline_markdown_text("a\u{2028}b"), "a b");
+    // 混在: ASCII + NBSP + 全角空白 + tab → 全て区切られて単一 ASCII space で join
+    assert_eq!(super::inline_markdown_text("x \u{00A0}\u{3000}\ty"), "x y");
+    // 全角空白のみ (whitespace_only と同じく empty に正規化)
+    assert_eq!(super::inline_markdown_text("　　　"), "");
+}
+```
+
+----------------------------------------------------------------------
+## 3. 実装上の注意
+----------------------------------------------------------------------
+
+- すべての test は **既存 `mod tests` (line 67-186) の末尾** に追加する。`mod tests` の中括弧の閉じ位置 (line 186) に注意。
+- 既存の `use super::*;` をそのまま流用。`super::inline_markdown_text` の呼び方も既存パターン (line 144 等)。
+- T1 の expected 文字列は **改行と trailing 2-spaces** の正確な再現が必要。`"first  \n**[..."` (2 spaces + \n) で書く。raw string (`r#"..."#`) は trailing space を視覚化しにくいので普通の `"..."` で OK、ただし `\n` は escape 必要。
+- T2 の `inline_markdown_text` は order 保存型 escape なので `"\\*2026\\*\\_04\\_\\[17\\]"` のように **入力 char 順** に escape を挟む。
+- T3 の backslash 3 個 `"\\\\\\"` は Rust 文字列 literal で `\\` × 3 = 3 個の backslash。escape 後は 6 個の backslash = `"\\\\\\\\\\\\"`。
+- T4 の `\u{0301}` 等は Rust 文字列 literal で 16 進 Unicode escape。
+- T5 の U+3000 全角空白は Rust 文字列 literal で直接 `'　'` も書ける。`\u{3000}` の方が visible。
+- format string は uninlined_format_args 警告ゼロ維持のため `{result}` 形式で書く。
+- `super::inline_markdown_text` は private fn だが既存 test (line 144 等) と同じく同モジュール内 `tests` から呼べる。
+- 不要な `#[allow(...)]` は付けない。
+
+----------------------------------------------------------------------
+## 4. 検証手順
+----------------------------------------------------------------------
+
+実装後、以下を順に実行して、すべてが pass することを確認:
+
+```bash
+# (1) 該当ファイルのみのテスト (高速)
+cd src-tauri && cargo test --lib markdown -- --nocapture 2>&1 | tail -50
+
+# (2) clippy 警告ゼロ維持
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -30
+
+# (3) format check
+cd src-tauri && cargo fmt --check 2>&1 | tail -10
+
+# (4) ライブラリ全体テスト (410 件 → 415 件のはず)
+cd src-tauri && cargo test --lib 2>&1 | tail -20
+```
+
+期待:
+- (1): markdown 関連 14 件 (既存 9 + 新規 5) すべて pass
+- (2): warning ゼロ
+- (3): diff なし
+- (4): 415 passed / 0 failed (前回 410 件 + 5 件)
+
+----------------------------------------------------------------------
+## 5. AGENT_LOG.md 記載項目
+----------------------------------------------------------------------
+
+最後に AGENT_LOG.md の末尾に以下の形式で 1 ブロック追記してください:
+
+```
+## [YYYY-MM-DDTHH:MM:SS+09:00] mjc-worker-markdown-format-and-inline-boundary-tests - markdown.rs の format_session_markdown と inline_markdown_text 補強 5 件追加
+
+- 担当セッション: mjc-worker-markdown-format-and-inline-boundary-tests-20260504-11-3
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/markdown.rs の `mod tests` 末尾に #[test] 5 件追加
+- 指示内容: 5 件 (T1: 3+ segment join 順序と \n 区切りと最終行 trailing newline なし / T2: meta.started_at_display と segment.timestamp_display にも escape 適用される対称性 / T3: 連続 special chars と mixed 連続の独立 escape / T4: emoji/結合文字/ZWJ/全角記号は 6 escape 対象外で passthrough / T5: split_whitespace の Unicode White_Space 準拠 = U+3000/U+00A0/U+2028 が分割対象、token 間は ASCII space 1 個に正規化)
+- 結果: <成功 or 失敗>
+- 変更ファイル: src-tauri/src/markdown.rs (+N 行)
+- 検証結果: cargo test --lib (410 → 415 passed) / clippy 警告ゼロ / fmt check pass
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main-20260504-11) によるレビュー → コミット
+```
+
+報告には、追加した 5 件の test 名、変更行数、cargo test の最終 line (`test result: ok. N passed; 0 failed`)、clippy・fmt 結果を含めてください。
+
+以上です。1 ターンで完結する形でまとめてください。

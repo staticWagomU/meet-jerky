@@ -1,0 +1,144 @@
+あなたは meet-jerky の worker (mjc-worker-loop164-audio-command-test-consolidate) です。
+mjc-main-20260505-81 (Loop 164) からの作業発注を受けました。
+
+# 最初に必ず実施
+
+## ドキュメント参照
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`
+2. `tail -350 AGENT_LOG.md` で末尾 350 行のみ参照 (大型 file 全体読込禁止)
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+   - `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+3. AGENTS.md, docs/autonomous-main-prompt-claude.md, docs/agent-harness-claude.md は必要に応じて参照
+
+## 範囲 (これ以外を編集しない)
+- `src-tauri/src/realtime_audio_command.rs` (既存 12 行) に `#[cfg(test)] pub(crate) mod test_helpers` を末尾に追加
+- `src-tauri/src/elevenlabs_realtime.rs` の test module 内 `audio_command_*` 3 件を helper 1 行委譲に置換
+- `src-tauri/src/openai_realtime.rs` の test module 内 `audio_command_*` 3 件を helper 1 行委譲に置換
+
+# やること (Loop 164 = R12 = test helper 集約 paradigm 反復 3 件目 = 件数完全不変)
+
+## 背景
+- elevenlabs_realtime.rs L226-L257 と openai_realtime.rs L762-L793 に `audio_command_*` 3 件 (Samples variant Debug + Finalize variant Debug + Samples empty vec Debug) が **文字単位で完全一致** で重複している。
+- 両 file は `use crate::realtime_audio_command::AudioCommand;` で同一 enum を参照 = **真の重複**.
+- realtime_audio_command.rs は AudioCommand enum の正規定義場所 = test logic 集約先として責務階層整合.
+- precedent: Loop 159 jst() x5 集約 (paradigm 1 件目 = fn 集約) / Loop 162 list_md_files() x2 集約 (paradigm 2 件目 = fn 集約) = 本 Loop は **paradigm 反復 3 件目 = test logic helper 集約 (件数完全不変)**.
+
+## 作業手順
+
+### Step 1: realtime_audio_command.rs に test_helpers module を追加
+末尾 (L13 以降) に以下を追加 (3 helper fn を pub(crate) で公開):
+
+```rust
+
+#[cfg(test)]
+pub(crate) mod test_helpers {
+    use super::AudioCommand;
+
+    pub fn assert_samples_variant_debug_format_contains_variant_name_and_payload_floats() {
+        let cmd = AudioCommand::Samples(vec![1.0_f32, -0.5, 0.0]);
+        let formatted = format!("{cmd:?}");
+        assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+        assert!(formatted.contains("1.0"), "first sample: {formatted}");
+        assert!(formatted.contains("-0.5"), "second sample: {formatted}");
+        assert!(formatted.contains("0.0"), "third sample: {formatted}");
+    }
+
+    pub fn assert_finalize_variant_debug_format_is_exact_variant_name() {
+        let cmd = AudioCommand::Finalize;
+        let formatted = format!("{cmd:?}");
+        assert_eq!(formatted, "Finalize", "完全一致: {formatted}");
+        assert!(formatted.contains("Finalize"));
+    }
+
+    pub fn assert_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets() {
+        let cmd = AudioCommand::Samples(vec![]);
+        let formatted = format!("{cmd:?}");
+        assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+        assert!(
+            formatted.contains("[]"),
+            "空 Vec の Debug 表示: {formatted}"
+        );
+        assert!(
+            formatted.contains("Samples([])"),
+            "tuple variant 形式: {formatted}"
+        );
+    }
+}
+```
+
+### Step 2: elevenlabs_realtime.rs の 3 件を helper 委譲に置換
+- L225-L257 の test 3 件の **中身を helper 呼び出し 1 行に置換**.
+- test fn 名 (`#[test] fn audio_command_*`) は **完全保持** = test 件数 (704) 完全不変.
+- 例:
+```rust
+#[test]
+fn audio_command_samples_variant_debug_format_contains_variant_name_and_payload_floats() {
+    crate::realtime_audio_command::test_helpers::assert_samples_variant_debug_format_contains_variant_name_and_payload_floats();
+}
+```
+他 2 件も同様に書き換え.
+
+### Step 3: openai_realtime.rs の 3 件を helper 委譲に置換
+- L761-L793 の test 3 件を Step 2 と同様に helper 委譲 1 行に置換.
+
+### Step 4: 検証
+```bash
+cd src-tauri
+cargo test --lib 2>&1 | tail -10
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10
+cargo fmt --check 2>&1
+cargo build --lib 2>&1 | tail -5
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/realtime_audio_command.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+```
+- **cargo test = 704 passed / 0 failed** = 件数完全不変保証 (仕様)
+- clippy / fmt / build 全て OK
+- agent-verify.sh も OK
+
+### Step 5: 2-commit pattern
+コミット 1 (refactor):
+```bash
+git add src-tauri/src/realtime_audio_command.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+git commit -m "refactor(rust): audio_command_* test 3 件を realtime_audio_command::test_helpers に集約 (mjc-main-20260505-81 Loop 164, rust 軸 = 既存 file 拡張軸 paradigm 8 件目 = test helper 集約軸 paradigm 反復 3 件目 = test logic 集約軸 = 2 file 同時集約軸, elevenlabs_realtime.rs L226-L257 と openai_realtime.rs L762-L793 が文字単位完全一致 + 両 file が use crate::realtime_audio_command::AudioCommand で同 enum を参照 = 真の重複, realtime_audio_command.rs (12 行 enum 定義のみ) に #[cfg(test)] pub(crate) mod test_helpers を新設し 3 つの helper fn (assert_samples_variant_debug_format_contains_variant_name_and_payload_floats / assert_finalize_variant_debug_format_is_exact_variant_name / assert_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets) を集約 + 両 file の test 3 件は test fn 名保持で中身を helper 呼び出し 1 行に置換 = test 件数 (704) 完全不変保証 + DRY 違反解消, callsite (test fn) 6 件は名前変更なし API 互換維持, paradigm 系統樹拡張 (Loop 159 jst() fn 集約 → Loop 162 list_md_files() fn 集約 → Loop 164 test logic helper 集約 = fn 重複 → test 内容重複への paradigm 拡張), AGENTS.md priority 1 寄与)"
+```
+
+コミット 2 (chore agent-log):
+- AGENT_LOG.md の **末尾** に `tail -10 AGENT_LOG.md` で `---` を確認後、その直後に新エントリを追記。
+- **append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。**
+- エントリ例:
+
+```
+[mjc-main-20260505-81 Loop 164 / 2026-05-06]
+worker: mjc-worker-loop164-audio-command-test-consolidate (作業)
+範囲: src-tauri/src/realtime_audio_command.rs (#[cfg(test)] pub(crate) mod test_helpers 新設 + 3 helper fn 追加 = +30 行) + src-tauri/src/elevenlabs_realtime.rs (test 3 件の中身を helper 委譲 1 行に置換 = -28 行) + src-tauri/src/openai_realtime.rs (test 3 件の中身を helper 委譲 1 行に置換 = -28 行)
+内容: elevenlabs_realtime.rs L226-L257 と openai_realtime.rs L762-L793 の audio_command_* test 3 件 (Samples variant Debug + Finalize variant Debug + Samples empty vec Debug) が文字単位完全一致 + 両 file が use crate::realtime_audio_command::AudioCommand で同 enum を参照 = 真の重複を realtime_audio_command::test_helpers (#[cfg(test)] pub(crate) mod) に集約 + 両 file の test 3 件は test fn 名保持で中身を helper 呼び出し 1 行に置換。**rust 軸 = 既存 file 拡張軸 paradigm 8 件目 = test helper 集約軸 paradigm 反復 3 件目 = test logic 集約軸 = 2 file 同時集約軸** = Loop 159 jst() fn 集約 (5 file) / Loop 162 list_md_files() fn 集約 (2 file) の paradigm 系統樹拡張 (fn 重複 → test 内容重複への paradigm 拡張)。**件数完全不変保証**: test fn 名 (audio_command_samples_variant_debug_format_contains_variant_name_and_payload_floats 等 6 件 = 各 file 3 件) は無変更で中身を 1 行委譲化 = cargo test 704 件不変。**責務階層精査**: realtime_audio_command.rs = AudioCommand enum の正規定義場所 = enum Debug format の test logic 集約先として責務階層整合 + 両 file は transcription engine tier (elevenlabs / openai 別 service) で AudioCommand を caller として使うのみ = test logic を realtime_audio_command tier に移動するのが自然。alternation pattern pivot 加速 (K(163) → rust(164) = 3 → 4)。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要。
+verify: scripts/agent-verify.sh 全項目 OK
+意義: 既存 file 拡張軸 paradigm 8 件目達成 (Loop 145/147/149/153/157/159/162 の続編 = 7 件目から 8 件目へ拡張) + 重複候補 grep 探索 paradigm 8 件目達成 = test logic 重複 (test fn 中身完全一致) を helper 化する paradigm 系統樹拡張 + Loop 159/162 paradigm の安定性更なる実証 (3 件目達成) + DRY 違反解消 + worker 自律 2-commit pattern 連続 20 ループ目達成 = 節目 20 件突破 + alternation pivot 3 → 4 加速。
+---
+```
+
+```bash
+# AGENT_LOG.md エントリを別 file に書いて append
+# (例) /tmp/loop164-entry.txt にエントリを書く → cat /tmp/loop164-entry.txt >> AGENT_LOG.md
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-81 Loop 164 = audio_command_* test 3 件を realtime_audio_command::test_helpers に集約 (rust 軸, 既存 file 拡張軸 paradigm 8 件目 = test helper 集約軸 paradigm 反復 3 件目 = test logic 集約軸 = 2 file 同時集約軸, DRY 違反解消, alternation pivot K(163) → rust(164) = 3 → 4, Loop 159 jst() fn 集約 / Loop 162 list_md_files() fn 集約 の paradigm 系統樹拡張 = fn 重複 → test 内容重複, 重複候補 grep 探索 paradigm 8 件目達成) のエントリ追記"
+```
+
+# 重要な制約 (worker prompt 必須要素)
+
+1. AGENT_LOG.md の末尾 350 行を読め (`tail -350 AGENT_LOG.md`).
+2. AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾. 新規追記は必ずファイル末尾に行う.
+3. **先頭は絶対に触らない**.
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記.
+5. **規模超過防止**: 担当範囲外の編集禁止. cargo test 件数は **704 完全不変** が仕様 (3 件削減でなく helper 委譲).
+6. 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照. realtime_audio_command.rs は 12 行のため全体 Read OK.
+7. **行末の空白文字 (trailing whitespace) 禁止**.
+8. **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から必須要素 8 つ目 = Loop 146-163 で 18 連続成功実証).
+9. 2-commit pattern (refactor + chore agent-log) を Loop 145-163 = 19 連続安定で継続.
+10. cargo は `cd src-tauri` してから実行する (desktop 直下に Cargo.toml なし).
+11. 課金禁止、`--no-verify` 禁止、Keychain 実通信禁止.
+12. 完走したら `git status --short` が working tree clean (docs/handoff/* と docs/worker-prompts/* untracked 除く) を確認.
+
+# 期待 commit 数: 2 件 (refactor + chore agent-log)
+# 期待規模: SS-S (~10-15 分完走見込み, +30 / -56 = 純減 ~26 行)

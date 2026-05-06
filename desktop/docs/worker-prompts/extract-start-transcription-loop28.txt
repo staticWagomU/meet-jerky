@@ -1,0 +1,176 @@
+あなたは meet-jerky の sonnet worker です。Loop 28 = Phase 3-B 完了 = start_transcription Tauri command を transcription_commands.rs に **一括移動** で抽出します (Tidy First, behavior-preserving、~150 行関数 + 関連 private struct PendingTranscriptionStream、1 ループ完結を狙う)。
+
+# 最初に必ず読むべきこと
+
+1. **AGENT_LOG.md の末尾 350 行を読め** (`tail -350 AGENT_LOG.md`)。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する。Edit ツールでは末尾 `---` が unique にならないので Write で別ファイルへ書き、`cat <file> >> AGENT_LOG.md` で append する。
+5. **行末の空白文字 (trailing whitespace) 禁止**。
+
+# 担当範囲 (これ以外を編集しない)
+
+編集対象は以下 3 ファイルのみ:
+- `src-tauri/src/transcription.rs` (-start_transcription 関数 = 削除のみ、L42-191 の rustdoc + #[tauri::command] + pub fn 全体 + L216-220 の `struct PendingTranscriptionStream` 削除)
+- `src-tauri/src/transcription_commands.rs` (+start_transcription 関数 + PendingTranscriptionStream struct + 必要 use 群 追加)
+- `src-tauri/src/lib.rs` (invoke_handler の `transcription::start_transcription` → `transcription_commands::start_transcription` に更新、L357 の 1 行のみ)
+
+それ以外のファイル (frontend / docs / README / scripts / 他の Tauri command / transcription_manager.rs / transcription_panic_guard.rs) は **絶対に編集しない**。
+
+# 規模上限
+
+- 行追加: 合計 ~165 行以内 (transcription_commands.rs +160 行 = 関数本体 ~150 + struct ~5 + 新規 use 群 ~10)
+- 行削除: 合計 ~155 行以内 (transcription.rs -150 行関数 + -5 行 struct)
+- lib.rs: 1 行変更
+- テスト追加: **0 件** (既存 700 passed の件数不変が成功条件、新規テスト追加禁止)
+- 範囲超過したら即停止して報告
+
+# 一括移動アプローチの根拠 (Loop 25 precedent 継承)
+
+- mjc-main-20260505-13 Loop 25 で 322 行 (関数 + struct + const + 17 tests) を **一括 cut-paste** した precedent あり = 関数本体は変えない。
+- `PendingTranscriptionStream` は start_transcription 専用 (grep で確認: 参照は L134, L152, L216 のみ = 全て関数本体 + 定義) = 関数と一緒に **private のまま** transcription_commands.rs に移動。
+- 内部 helper 分割 (3 段階分割) は採用しない = 行数上の一括移動が単純 cut-paste で behavior 不変保証が容易。
+
+# 具体手順
+
+## Step 1: 既存実装を Read で精読する
+
+- `src-tauri/src/transcription.rs` を `Read offset=40 limit=160` で L42-200 を読む (関数本体 + struct 周辺)。
+- `src-tauri/src/transcription.rs` を `Read offset=210 limit=20` で L216-225 を読み、`struct PendingTranscriptionStream` 定義を確認する。
+- `src-tauri/src/transcription_commands.rs` を `Read offset=1 limit=20` で先頭 use 群を確認する。
+
+## Step 2: transcription_commands.rs に start_transcription + PendingTranscriptionStream + 必要 use を追加
+
+### 必要な追加 use (transcription_commands.rs 先頭)
+
+以下のうち、まだ import されていないものを追加する (grep で確認):
+```rust
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use crate::audio::AudioStateHandle;
+use crate::settings::SettingsStateHandle;
+use crate::session_manager::SessionManager;
+use crate::transcription_manager::TranscriptionStateHandle;
+use crate::transcription_engine::StreamConfig;  // または transcription_types::StreamConfig 等、grep で正確な path を確認
+use crate::transcription_types::TranscriptionSource;  // grep で確認
+use crate::transcription::TranscriptionLoopConfig;  // pub(crate)
+use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
+```
+
+**正確な module path は grep で確認**:
+```bash
+grep -n "^pub(crate) struct StreamConfig\|^pub struct StreamConfig" src-tauri/src/*.rs
+grep -n "^pub enum TranscriptionSource\|^pub(crate) enum TranscriptionSource" src-tauri/src/*.rs
+grep -n "^pub(crate) struct TranscriptionLoopConfig" src-tauri/src/*.rs
+grep -n "^pub(crate) fn run_transcription_worker_with_panic_guard" src-tauri/src/*.rs
+```
+
+### 関数 + struct の追加先
+
+transcription_commands.rs の **tests mod の直前** (= 関数群の最後) に以下を追加:
+
+1. `struct PendingTranscriptionStream { ... }` (transcription.rs L216-220 の定義をそのままコピー、private で OK)
+2. `pub fn start_transcription(...)` (transcription.rs L42-191 の rustdoc + `#[tauri::command]` + 関数本体全体をコピー)
+
+関数本体の中身は **完全コピー** (改行・インデント保持、trailing whitespace 禁止)。`crate::transcription_commands::parse_requested_transcription_sources` の呼び出し部 (L88) は、移動後 transcription_commands.rs 内部からの呼び出しとなるため、**`crate::transcription_commands::` prefix を削除して**:
+```rust
+let requested_sources = parse_requested_transcription_sources(source.as_deref())?;
+```
+に書き換える (Loop 25 で同関数を transcription_commands.rs に移動済のため)。
+
+同様に L105 の `crate::transcription_commands::validate_stream_count_for_engine(...)` も:
+```rust
+validate_stream_count_for_engine(&engine_type, available_stream_count)?;
+```
+に書き換える。
+
+## Step 3: transcription.rs から start_transcription + PendingTranscriptionStream を削除
+
+- `transcription.rs` L42-191 (rustdoc 含む `start_transcription` 関数全体) を Edit ツールで削除する。
+- `transcription.rs` L216-220 (struct `PendingTranscriptionStream` 定義) も Edit ツールで削除する。
+- 削除後の前後行が綺麗に繋がることを確認 (空行が残ってもよいが、3 連続空行は避ける)。
+
+## Step 4: transcription.rs から不要になった use 文を削除
+
+start_transcription 削除により transcription.rs 内で **未使用** になる import を整理する:
+- `use std::sync::Arc;` (transcription.rs 内の他の場所で使われていれば残す、grep で確認)
+- `use std::sync::atomic::Ordering;` (同上)
+- `use crate::audio::AudioStateHandle;` (transcription.rs 内の他の場所で使われていれば残す)
+- `use crate::settings::SettingsStateHandle;` (同上)
+- 他
+
+**`cargo build --lib` で「unused import」warning が出たら、その use を削除**する。clippy ではなく cargo build の warning が一次指標。
+
+## Step 5: lib.rs L357 の Tauri 登録を更新
+
+- `src-tauri/src/lib.rs` L357 の `transcription::start_transcription,` を `transcription_commands::start_transcription,` に変更する (Edit ツール 1 箇所)。
+- Loop 27 で stop_transcription を更新したばかりなので、L357-358 の並びが揃う。
+
+# 大型ファイル取り扱い
+
+- transcription.rs (1712 行) と transcription_commands.rs (430 行+) と lib.rs (~700 行?) は **全体 Read 禁止**。
+- 必要範囲のみ `Read offset=N limit=M` で部分参照する。
+- grep で行番号を特定してから Read する。
+
+# 検証 (順番に実行)
+
+1. `cd src-tauri && cargo build --lib 2>&1 | tail -40` (コンパイル確認、未使用 import 警告チェック)
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -10` (件数 = **700 passed 件数不変** が成功条件、増えても減ってもダメ)
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` (**警告ゼロ**)
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -10` (**OK**、差分があれば `cargo fmt` で自動修正)
+5. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs src-tauri/src/lib.rs 2>&1 | tail -20`
+
+# 自律判断の余地 (Loop 25 / 27 sonnet worker precedent 継承)
+
+- transcription_commands.rs 内の関数並びは「pub fn 群 → struct/private 群 → tests mod」の順を保つ (Loop 23-27 の precedent 継承)。
+- もし `PendingTranscriptionStream` が tests mod から参照される必要があれば、`pub(crate)` に引き上げる (現状は不要の見込み、grep で確認)。
+- `cargo build` 後の未使用 import warning は **transcription.rs 側のみ** で発生する見込み = 一括削除して clippy 再実行。
+- Loop 24 で `tauri::Emitter;` use を整理した自律判断 precedent あり = 同様の発想で transcription.rs の use 整理を判断する。
+
+# Commit
+
+成功したら `bash scripts/agent-commit.sh "refactor(transcription): start_transcription Tauri command + PendingTranscriptionStream を transcription_commands.rs に抽出 = Phase 3-B 完了 (Tidy First, mjc-main-20260505-14 Loop 28, ~150 行関数 + private struct + use 整理 + lib.rs invoke_handler パス更新, 700 passed 件数不変, clippy 警告ゼロ, fmt OK, transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 完了 = mjc-main-20260505-13 Loop 25 (validate + parse) + Loop 27 (stop_transcription) の延長, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続, transcription_commands.rs に Tauri commands 全て集約完了)" src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs src-tauri/src/lib.rs` で commit する。
+
+# AGENT_LOG.md 末尾追記
+
+commit 後、AGENT_LOG.md 末尾に以下を **append** する (Write で `/tmp/loop28-log.md` に書き、`cat /tmp/loop28-log.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-14 Loop 28 / 2026-05-05 ~JST]
+
+## What
+- `start_transcription` Tauri command + private `PendingTranscriptionStream` struct を `src-tauri/src/transcription.rs` から `src-tauri/src/transcription_commands.rs` に一括移動
+- `lib.rs` invoke_handler の `transcription::start_transcription` を `transcription_commands::start_transcription` に更新
+- transcription.rs 側の不要 use 文を整理
+- Phase 3-B (Tauri commands 抽出) **完了** = transcription_commands.rs に Tauri commands 全集約
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 完了の里程標
+- mjc-main-20260505-13 Loop 25 (validate + parse) + Loop 27 (stop_transcription) の延長 = transcription_commands.rs に Tauri commands を集約
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- 関数本体 + struct は完全コピー (lib.rs invoke_handler パス更新のみ)
+- `crate::transcription_commands::` prefix を内部呼び出し化 (parse_requested_transcription_sources / validate_stream_count_for_engine)
+- 一括移動アプローチ = Loop 25 (322 行) precedent 継承
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+```
+
+最後の `---` を忘れないこと。
+
+# 失敗時の振る舞い
+
+- コンパイルエラーが出たら、原因を Read + grep で特定して修正する (規模上限内なら自律修正可)。
+- テスト件数が 700 から変動したら **即停止して報告**。
+- clippy 警告が新規発生したら、原因を見極めて自律修正可。
+- 範囲外のファイル編集が必要だと感じたら **即停止して報告**。
+- 一括移動が困難 (依存関係の予期せぬ複雑さ) と判明したら **即停止して報告** = 段階分割への切替判断はメインに委ねる。
+
+以上。実行開始。

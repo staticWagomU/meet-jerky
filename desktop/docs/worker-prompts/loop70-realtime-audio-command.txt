@@ -1,0 +1,212 @@
+あなたは meet-jerky プロジェクトの worker です。Loop 70 = elevenlabs_realtime.rs / openai_realtime.rs の **重複した private enum AudioCommand を新 file `realtime_audio_command.rs` に共通化抽出** = AGENTS.md priority 4 (リアルタイム文字起こし低遅延化) の予防的 code quality 改善 + DRY 原則違反の解消。
+
+# 必読: AGENT_LOG.md の規律 (絶対遵守)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を実行し末尾を読め**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (本タスクは rust 3 file + lib.rs + AGENT_LOG.md のみ)
+6. **AGENT_LOG.md 大型ファイルは Read 全体禁止 = `tail -400` のみ参照**
+7. **行末の空白文字 (trailing whitespace) 禁止** = 追記前に確認
+8. **test 件数の上限**: cargo test --lib は **702 passed / 0 failed** (件数完全不変)
+9. **2-commit pattern (連続 10 ループ目で安定) を厳守**: refactor commit → 出来た hash 取得 → AGENT_LOG.md 追記 (commit セクションに hash 記入) → chore commit。amend 禁止 (Loop 60-69 で 10 連続成功)。
+
+# 作業ディレクトリ
+
+`/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`
+
+# 現状把握 (メインが確認済、grep 結果)
+
+## 重複している enum AudioCommand
+
+両 file とも `private enum AudioCommand { Samples(Vec<f32>), Finalize }` で 100% 同一構造。差は openai 側の Finalize に doc comment が付くのみ。
+
+### elevenlabs_realtime.rs L60-65
+```rust
+#[derive(Debug)]
+enum AudioCommand {
+    Samples(Vec<f32>),
+    Finalize,
+}
+```
+
+### openai_realtime.rs L78-83
+```rust
+#[derive(Debug)]
+enum AudioCommand {
+    Samples(Vec<f32>),
+    /// 入力終了を示す。WS タスクは flush してから WS をクローズする。
+    Finalize,
+}
+```
+
+## lib.rs での mod 配置場所
+
+L18 = `mod elevenlabs_realtime;`、L20 = `mod openai_realtime;`、L21 = `mod secret_store;`。
+**新 mod `realtime_audio_command` はアルファベット順で `mod openai_realtime;` の直後 + `mod secret_store;` の前 (= L21 として挿入)** に追加する。
+
+## precedent (直接展開可能)
+
+- `src-tauri/src/audio_traits.rs` (Loop 66 で AudioCapture trait を抽出した小さい file = 24 行) → `cat src-tauri/src/audio_traits.rs` で全体読み込み
+- `src-tauri/src/session_store_types.rs` (Loop 67 で SessionSummary struct を抽出した小さい file = 19 行) → `cat src-tauri/src/session_store_types.rs` で全体読み込み
+
+両 precedent と同じ pattern で新 file を作成する。
+
+# 実装手順 (Tidy First, behavior-preserving)
+
+## Step 1. 新 file 作成
+
+`src-tauri/src/realtime_audio_command.rs` を新規作成:
+
+```rust
+//! ElevenLabs / OpenAI realtime stream の WS タスクへ送る音声コマンド。
+//!
+//! `elevenlabs_realtime.rs` と `openai_realtime.rs` で重複していた private enum を
+//! 共通化したもの。両 file とも `Samples(Vec<f32>)` でサンプルを送り、`Finalize` で
+//! 入力終了を伝えて WS をクローズする pattern を持つ。
+
+#[derive(Debug)]
+pub(crate) enum AudioCommand {
+    Samples(Vec<f32>),
+    /// 入力終了を示す。WS タスクは flush してから WS をクローズする。
+    Finalize,
+}
+```
+
+注: `pub(crate)` 化は visibility 拡大だが crate 外には漏れない (private → crate-internal のみ)。openai 側の Finalize doc comment を保持。
+
+## Step 2. lib.rs に mod 追加
+
+`src-tauri/src/lib.rs` L20 (`mod openai_realtime;`) の **直後**、L21 (`mod secret_store;`) の **前** に挿入:
+
+```rust
+mod realtime_audio_command;
+```
+
+## Step 3. elevenlabs_realtime.rs から enum 削除 + use 文追加
+
+L60-65 の `#[derive(Debug)] enum AudioCommand { ... }` ブロックを **完全削除**。
+file 先頭の use 文ブロックに以下を追加 (アルファベット順 = `crate::` グループ内に):
+
+```rust
+use crate::realtime_audio_command::AudioCommand;
+```
+
+既存の `use crate::...` 文の位置を grep で確認し、アルファベット順に挿入。
+
+## Step 4. openai_realtime.rs から enum 削除 + use 文追加
+
+L78-83 の `#[derive(Debug)] enum AudioCommand { ... }` ブロックを **完全削除**。
+file 先頭の use 文に同様に追加:
+
+```rust
+use crate::realtime_audio_command::AudioCommand;
+```
+
+## Step 5. 検証
+
+```bash
+cd src-tauri
+cargo build --lib
+cargo test --lib 2>&1 | tail -5  # 702 passed / 0 failed (件数完全不変)
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -5  # 警告ゼロ
+cargo fmt --check
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/realtime_audio_command.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/lib.rs 2>&1 | tail -5  # EXIT: 0
+```
+
+grep で重複削除確認:
+```bash
+grep -nE '^(pub )?enum AudioCommand' src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs  # 完全に空
+grep -nE '^(pub\(crate\) )?enum AudioCommand' src-tauri/src/realtime_audio_command.rs  # 1 件
+```
+
+trailing whitespace 確認:
+```bash
+grep -nE ' +$' src-tauri/src/realtime_audio_command.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs  # 完全に空
+```
+
+## Step 6. 1 つ目の commit (refactor)
+
+```bash
+git add src-tauri/src/realtime_audio_command.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/lib.rs
+git commit -m "refactor(realtime): elevenlabs+openai 重複した private enum AudioCommand を realtime_audio_command.rs に共通化抽出 (mjc-main-20260505-35 Loop 70, ~10 行削除 + 新 file 12 行 + lib.rs mod 追加, audio_traits.rs / session_store_types.rs precedent 直接展開, AGENTS.md priority 4 寄与, DRY 原則違反解消)"
+```
+
+commit hash を取得 (`git rev-parse HEAD`)。
+
+## Step 7. AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` 直後に以下を追記:
+
+```
+[mjc-main-20260505-35 Loop 70 / 2026-05-05 ~JST]
+
+## What
+- elevenlabs_realtime.rs L60-65 と openai_realtime.rs L78-83 で重複していた private enum AudioCommand を新 file realtime_audio_command.rs に共通化抽出
+  - `pub(crate) enum AudioCommand { Samples(Vec<f32>), Finalize }` (12 行、Finalize doc comment を openai 側から保持)
+- lib.rs に `mod realtime_audio_command;` 追加 (openai_realtime と secret_store の間、L21)
+- elevenlabs_realtime.rs / openai_realtime.rs に `use crate::realtime_audio_command::AudioCommand;` 追加
+- elevenlabs_realtime.rs / openai_realtime.rs から enum AudioCommand 定義を削除 (重複削除)
+
+## Why
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的 code quality 改善
+- DRY 原則違反解消 = 100% 同一構造の private enum を 2 file で重複定義 → 1 か所に集約
+- audio_traits.rs / session_store_types.rs precedent 直接展開
+- visibility: private → pub(crate) は crate-internal のみで API surface 増加最小
+- variety: 6 連続 + Loop 70 = 7 連続到達は exception 判断 (規模 SS + precedent 直接展開可能 + pattern が「両 file 共通抽出」で新 pattern + 重複削除という質的価値)
+
+## How (Tidy First, behavior-preserving)
+- enum 定義の文字列内容は変更せず (Finalize doc comment 保持) = 振る舞い完全不変
+- visibility: private → pub(crate) (crate 外には漏れない、内部 caller 互換)
+- match arm / Send 経由のチャネル使用は両 file とも変更不要 (型名 AudioCommand のみ参照変更なし、use 文経由解決)
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK (EXIT: 0)
+- elevenlabs_realtime.rs / openai_realtime.rs から `^(pub )?enum AudioCommand` を grep: 完全に空
+- realtime_audio_command.rs から `^(pub\(crate\) )?enum AudioCommand` を grep: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- <ここに Step 6 で取得した hash を記入>
+
+---
+```
+
+**重要**:
+- `tail -10 AGENT_LOG.md` で末尾の最後の `---` 行 + `<empty line>` 構造を確認してから追記
+- 追記時は冒頭に空行 1 行 + 内容 + 末尾に `---` + 空行 1 行
+- 既存の前 SESSION SUMMARY の `---` を **絶対に消さない**
+- commit hash の `<ここに...記入>` プレースホルダは Step 6 の実 hash で置換
+
+## Step 8. 2 つ目の commit (chore = AGENT_LOG.md hash 記入)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 70 commit hash <hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-69 precedent 適用 11 連続)"
+```
+
+## Step 9. 完了報告
+
+stdout に以下を出力:
+```
+Loop 70 完了: refactor=<hash1> / chore=<hash2> / test 702 / clippy 警告ゼロ / verify OK
+```
+
+# 厳守事項 (簡潔版)
+
+- `--no-verify` / `--dangerously-skip-permissions` 禁止
+- 実 API 通信 / Keychain / SpeechAnalyzer 禁止
+- AGENT_LOG.md = 末尾追記のみ + trailing whitespace 禁止
+- 担当範囲外編集禁止 (rust 3 file + lib.rs + AGENT_LOG.md のみ)
+- amend 禁止 = 2-commit pattern (refactor + chore) 厳守
+
+規模: 新 file 1 + 既存 3 修正、削除 ~10 行 / 追加 ~12 行、想定 3-5 分。
+
+以上。

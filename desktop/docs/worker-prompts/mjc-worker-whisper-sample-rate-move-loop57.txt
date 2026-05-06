@@ -1,0 +1,174 @@
+あなたは meet-jerky プロジェクトの worker (sonnet) です。Tidy First で **const 1 件移動** + 互換層維持を 1 ループ完結で実施してください。
+
+# 必須前提 (worker prompt 必須要素)
+
+1. 冒頭で `tail -350 AGENT_LOG.md` を読み、現在の状況 (Loop 56 完了 = plan.md 98.8% 反映済) を把握する (絶対先頭は触らない)
+2. AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。**新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+3. 末尾追記具体手順: `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → その直後に新規エントリを追記
+4. 担当範囲外の編集禁止 (rust 3 ファイル + AGENT_LOG.md のみ)、cargo test 件数の追加禁止 (件数不変が必須 = 702 passed)
+5. 大型ファイル (AGENT_LOG.md ~28230 行) は Read 全体禁止 = `tail -350` でのみ参照
+6. **行末の空白文字 (trailing whitespace) 禁止** = 末尾の余分なスペース・タブを残さない
+7. 終了時 `bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/audio_utils.rs AGENT_LOG.md` 成功確認 → `bash scripts/agent-commit.sh "<commit message>" <files>` で commit
+
+# タスク = Loop 57 候補 N' (WHISPER_SAMPLE_RATE 移動 = Phase 5 仕上げ)
+
+## 背景
+
+- mjc-main-20260505-27 Loop 55 で transcription.rs は 36 行最終形に到達 = Phase 5 完了相当
+- 残る本体 const は L30 の `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` 1 件のみ
+- これを audio_utils.rs に移動 + transcription.rs に互換 re-export として残せば transcription.rs は **互換 re-export のみの完全ファサード化** = Phase 5 完全終了
+
+## メイン批判判断 (grep で実態確認済、循環依存リスクの完全回避)
+
+handoff の候補 N' = 「audio_utils.rs (既存) と新規 transcription_constants.rs」だが、grep で以下を確認した:
+
+- WHISPER_SAMPLE_RATE 参照箇所 = transcription_whisper_stream.rs L10/23/51/55 + audio_utils.rs L25/28/31 のみ
+- transcription_whisper_stream.rs L6 は **既に audio_utils を import**: `use crate::audio_utils::{ ... }`
+- audio_utils.rs は他モジュールを import なし (transcription だけ)
+
+**結論**: WHISPER_SAMPLE_RATE を audio_utils.rs に置けば:
+- transcription_whisper_stream.rs → audio_utils.rs の **単方向依存** (既存依存方向と完全一致、循環依存なし)
+- 沈黙検知三位一体 locality (Loop 44) と一貫: sample_rate 系 const は audio_utils.rs 集約原則
+- 新規ファイル増えない = ファイル数最小化
+
+逆に WHISPER_SAMPLE_RATE を transcription_whisper_stream.rs に置くと audio_utils.rs → transcription_whisper_stream.rs の逆方向 import が必要 = transcription_whisper_stream.rs が audio_utils を import している (L6) ため **循環依存** で不可。
+
+## 編集対象ファイル (3 ファイル + AGENT_LOG.md)
+
+- `src-tauri/src/transcription.rs`
+- `src-tauri/src/transcription_whisper_stream.rs`
+- `src-tauri/src/audio_utils.rs`
+- `AGENT_LOG.md`
+
+## 編集箇所
+
+### 1. `src-tauri/src/audio_utils.rs` L25 (use 文を const 定義に置き換え)
+
+**変更前** (L25):
+```rust
+use crate::transcription::WHISPER_SAMPLE_RATE;
+```
+
+**変更後** (L25 を以下の 2 行に置換):
+```rust
+/// Whisper の入力サンプルレート (16kHz)。Whisper 仕様で固定。
+pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;
+```
+
+(L28-35 の MIN_FLUSH_SAMPLES / SILENCE_LOOKBACK_SAMPLES / SILENCE_THRESHOLD_RMS 定義は無変更 = WHISPER_SAMPLE_RATE が同 file 内で参照可能になる)
+
+### 2. `src-tauri/src/transcription_whisper_stream.rs` L10 (use 文を変更)
+
+**変更前** (L10):
+```rust
+use crate::transcription::WHISPER_SAMPLE_RATE;
+```
+
+**変更後** (L10):
+```rust
+use crate::audio_utils::WHISPER_SAMPLE_RATE;
+```
+
+(他は無変更 = L23/51/55 の WHISPER_SAMPLE_RATE 使用は use 文経由で同じく動作)
+
+### 3. `src-tauri/src/transcription.rs` L24-30 (互換層に置き換え)
+
+**変更前** (L24-30):
+```rust
+pub use crate::transcription_manager::TranscriptionStateHandle;
+
+// ─────────────────────────────────────────────
+// Tauri コマンド
+// ─────────────────────────────────────────────
+
+/// Whisper の入力サンプルレート（16kHz）
+pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;
+```
+
+**変更後** (L24-30):
+```rust
+pub use crate::transcription_manager::TranscriptionStateHandle;
+
+// ─────────────────────────────────────────────
+// WHISPER_SAMPLE_RATE (audio_utils.rs に移動、互換層として再エクスポート)
+// ─────────────────────────────────────────────
+
+pub(crate) use crate::audio_utils::WHISPER_SAMPLE_RATE;
+```
+
+(L32 以降の TranscriptionLoopConfig 互換 re-export は無変更)
+
+**注意**: 「Tauri コマンド」というコメントは現状のファイル内容と乖離している (実態 = 互換層しかない) ため、「WHISPER_SAMPLE_RATE (audio_utils.rs に移動、互換層として再エクスポート)」に書き換えて整合性を取る。
+
+## 期待結果
+
+- transcription.rs: 36 → 36 行 (1 const → 1 use 文 = 行数不変、互換層化が本質)
+- audio_utils.rs: 1 行追加 (use 文 → const 2 行 = +1 行)
+- transcription_whisper_stream.rs: 行数不変 (use 文の path のみ変更)
+- cargo test --lib: 702 passed 件数不変
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- 振る舞い完全不変 (定数の値 16_000 不変、可視性 pub(crate) 不変、参照経路は互換層 + 直接両方サポート)
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、その**直後**に以下のエントリを追記してください (絶対に先頭は触らない):
+
+```
+[mjc-main-20260505-28 Loop 57 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` を audio_utils.rs に移動
+- transcription.rs に互換 re-export `pub(crate) use crate::audio_utils::WHISPER_SAMPLE_RATE;` を残置
+- 移動先: audio_utils.rs L25 の `use crate::transcription::WHISPER_SAMPLE_RATE;` を const 定義に置換 (= self-reference 解消)
+- transcription_whisper_stream.rs L10 の use 文を `use crate::audio_utils::WHISPER_SAMPLE_RATE;` に変更
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs を完全ファサード化 = 互換 re-export のみに到達 = Phase 5 完全終了)
+- メイン批判判断 = handoff 候補 N' の「audio_utils.rs vs 新規 transcription_constants.rs」を grep で実態確認 → transcription_whisper_stream.rs L6 が既に audio_utils を import している = audio_utils.rs に置けば単方向依存 + 沈黙検知三位一体 locality (Loop 44) と一貫 + 新規ファイル不要 = audio_utils.rs に確定 = メイン批判判断 連続 9 セッション目
+- 規模 SS = const 1 件移動 + use 文 2 ファイル変更のみ = 1 ループ完結確実
+- variety pivot = struct/const 軸 = Loop 48 から 9 ループ間隔 = sweep 警告完全クリア (test 軸 = 余地ゼロ続行不可、docs 軸 = Loop 56 直後で 2 連続回避)
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- 定数の値 (16_000) 不変、可視性 (pub(crate)) 不変、参照経路は互換層 + 直接両方サポート
+- transcription.rs: 36 → 36 行 (1 const → 1 use 文 = 行数不変、互換層化が本質)
+- audio_utils.rs: 324 → 325 行 (use 1 → const 2 = +1 行)
+- transcription_whisper_stream.rs: 行数不変 (use 文の path のみ変更)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash はメインが後追い chore commit で記入)
+
+---
+```
+
+**注意**: 末尾の `---` まで含めてください。次セッションが追記する起点になります。
+
+## commit メッセージ
+
+```
+refactor(transcription): WHISPER_SAMPLE_RATE を audio_utils.rs に移動 + transcription.rs に互換 re-export 残置 (Tidy First, mjc-main-20260505-28 Loop 57, Phase 5 完全終了 = transcription.rs 完全ファサード化、循環依存回避のため audio_utils.rs を選択)
+```
+
+## 作業フロー
+
+1. `tail -350 AGENT_LOG.md` で現在の状況を把握 (絶対先頭は触らない)
+2. `Read src-tauri/src/transcription.rs` (36 行全体) で現状確認
+3. `Read src-tauri/src/transcription_whisper_stream.rs` の L1-30 (use 文セクション) で現状確認
+4. `Read src-tauri/src/audio_utils.rs` の L20-40 (移動先セクション) で現状確認
+5. `Edit` で 3 ファイルを順次更新 (audio_utils.rs L25 → transcription_whisper_stream.rs L10 → transcription.rs L24-30)
+6. `cd src-tauri && cargo test --lib 2>&1 | tail -20` で件数不変 (702 passed) 確認
+7. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10` で警告ゼロ確認
+8. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で fmt OK 確認
+9. `tail -10 AGENT_LOG.md` で末尾 `---` を確認、その直後に Loop 57 エントリを追記
+10. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/audio_utils.rs AGENT_LOG.md` で検証
+11. `bash scripts/agent-commit.sh "refactor(transcription): WHISPER_SAMPLE_RATE を audio_utils.rs に移動 + transcription.rs に互換 re-export 残置 (Tidy First, mjc-main-20260505-28 Loop 57, Phase 5 完全終了 = transcription.rs 完全ファサード化、循環依存回避のため audio_utils.rs を選択)" src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/audio_utils.rs AGENT_LOG.md` で commit
+
+完了したら commit hash を最終応答で報告してください。

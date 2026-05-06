@@ -1,0 +1,30 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+- `TranscriptView.tsx` の `transcription-error` listener で、payload 形式が不正な場合でも UI の `isTranscribing` が false に戻るようにしてください。
+- 現状は valid payload 分岐では `setIsTranscribing(false)` する一方、不正 payload では `setMeetingError("文字起こしエラー通知の形式が不正です。")` だけで return しており、worker 異常後に UI が「文字起こし中」のまま残るリスクがあります。
+- 変更は最小にしてください。イベントを受信した時点で disposed でなければ文字起こし状態を止める、または invalid 分岐にも `setIsTranscribing(false)` を追加する、のどちらか既存の React hook 構造に自然な形を選んでください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+- 課金が発生する操作は禁止です。
+- TypeScript/React の既存パターンを尊重してください。新しい state 管理ライブラリや大きな抽象化は不要です。
+- ユーザーに見える文言は、必要がなければ変えないでください。
+
+検証:
+- `npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 開始日時、担当セッション `mj-worker-loop206-transcription-error-invalid-payload-stops-ui-20260506-220340`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+- 「不正 payload でも UI の文字起こし状態を停止側に倒す」「録音/文字起こし状態の透明性に寄与」を明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

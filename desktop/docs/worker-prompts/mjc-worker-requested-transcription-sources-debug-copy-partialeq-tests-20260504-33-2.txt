@@ -1,0 +1,231 @@
+# worker: RequestedTranscriptionSources の Debug 出力 / Copy semantics / PartialEq 個別 field 違い 3 軸 application (Loop 2, Tidy First, 振る舞い不変)
+
+あなたは meet-jerky の作業用 worker (mjc-worker-requested-transcription-sources-debug-copy-partialeq-tests-20260504-33-2) です。
+本 worker は **「Debug 軸補強」パターン 9 連続 application + 「対称的補強の 3 軸構造」継続** を担います。
+
+## 0. 最初に読むもの (順序厳守)
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+   - **先頭は絶対に触らない。**
+   - 末尾には mjc-main-20260504-32 の SESSION SUMMARY と本 33 セッションの Loop 1 worker entry が記載されています。
+2. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+
+## 1. 担当範囲 (これ以外を一切編集しないこと)
+
+- **編集対象**:
+  - `src-tauri/src/transcription.rs` の `mod tests` 末尾 (= ファイル末尾近く) に test 関数 3 件追加。
+  - `AGENT_LOG.md` への末尾追記 (本 worker の作業記録、後述テンプレ)。
+- **編集禁止**:
+  - 上記 2 ファイル以外。
+  - `transcription.rs` の `struct RequestedTranscriptionSources` 定義 (l.1041-1045) と既存 関数 / 既存 test。
+  - 既存 #[derive] 属性。
+  - すでに存在する 73 件の test 関数 (Loop 1 で +3 件追加済)。
+
+## 2. 前提コード (transcription.rs l.1041-1045 = 既存実装、変更しないこと)
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct RequestedTranscriptionSources {
+    use_mic: bool,
+    use_system: bool,
+}
+```
+
+- 2 field 全 bool (primitive Copy)
+- `#[derive(Debug, Clone, Copy, PartialEq, Eq)]` (Serialize なし、private struct)
+- module 内 (mod tests からアクセス可能)
+- 既存 test (l.1365 付近) で `parse_requested_transcription_sources` の return 値として利用済 = test 内で struct literal 構築可能
+
+## 3. 大型ファイル参照ルール (重要)
+
+- `transcription.rs` は **2871 行** あるので、`Read` で全体を読まないこと。
+- 必要に応じて以下で範囲参照:
+  - `sed -n '1041,1045p' src-tauri/src/transcription.rs` で struct 定義確認
+  - `sed -n '1365,1410p' src-tauri/src/transcription.rs` で既存 parse test 確認
+  - `tail -50 src-tauri/src/transcription.rs` で `mod tests` 末尾確認
+- 編集は `Edit` で具体的な context 指定で行う (Write で全体上書きは禁止)。
+
+## 4. 追加する test (3 件、いずれも mod tests 末尾、`#[cfg(test)] mod tests` の `}` の直前に追加、`#[test]` 必須)
+
+### T1: `requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names`
+- 目的: `Debug` 出力に「型名 `RequestedTranscriptionSources`」+「両 snake_case field 名」+「bool 値 `true` / `false`」が含まれる契約を CI 固定。
+- 期待: 4 種類の case (両 true / 両 false / mic-only / system-only) で以下を assert:
+  - 型名 `"RequestedTranscriptionSources"`
+  - field 名 `"use_mic"` / `"use_system"`
+  - bool 値 `"true"` / `"false"` が両方の Debug 出力に含まれる (`true / false` の文字列形 - Rust の Debug 実装の標準)
+- 実装ヒント:
+  ```rust
+  #[test]
+  fn requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names() {
+      // 両 true case
+      let both = RequestedTranscriptionSources {
+          use_mic: true,
+          use_system: true,
+      };
+      let s_both = format!("{:?}", both);
+      assert!(s_both.contains("RequestedTranscriptionSources"), "Debug should contain type name: {}", s_both);
+      assert!(s_both.contains("use_mic"), "Debug should contain field 'use_mic': {}", s_both);
+      assert!(s_both.contains("use_system"), "Debug should contain field 'use_system': {}", s_both);
+      assert!(s_both.contains("true"), "both-true Debug should contain 'true': {}", s_both);
+
+      // 両 false case
+      let neither = RequestedTranscriptionSources {
+          use_mic: false,
+          use_system: false,
+      };
+      let s_neither = format!("{:?}", neither);
+      assert!(s_neither.contains("RequestedTranscriptionSources"), "Debug should contain type name: {}", s_neither);
+      assert!(s_neither.contains("use_mic"), "Debug should contain field 'use_mic': {}", s_neither);
+      assert!(s_neither.contains("use_system"), "Debug should contain field 'use_system': {}", s_neither);
+      assert!(s_neither.contains("false"), "both-false Debug should contain 'false': {}", s_neither);
+
+      // 混合 case (mic-only) で true と false が両方とも出ることを確認
+      let mic_only = RequestedTranscriptionSources {
+          use_mic: true,
+          use_system: false,
+      };
+      let s_mic = format!("{:?}", mic_only);
+      assert!(s_mic.contains("true"), "mic-only Debug should contain 'true': {}", s_mic);
+      assert!(s_mic.contains("false"), "mic-only Debug should contain 'false': {}", s_mic);
+  }
+  ```
+
+### T2: `requested_transcription_sources_copy_semantics_allow_use_after_move`
+- 目的: `#[derive(Copy)]` の **Copy semantics** 契約 = let copied = original 後も original が使える契約 = move されない = mjc-main-32 Loop 2 で TranscriptionSource enum で確立した Copy semantics test を struct 形態へ application。
+- 期待: original を copy 経由で別変数に bind 後、original の field を `use_mic` / `use_system` で参照しても compile pass + 値が正しい。
+- 実装ヒント:
+  ```rust
+  #[test]
+  fn requested_transcription_sources_copy_semantics_allow_use_after_move() {
+      let original = RequestedTranscriptionSources {
+          use_mic: true,
+          use_system: false,
+      };
+      // Copy 派生があれば、let copied = original で move されず、original も使える
+      let copied = original;
+      // original を copied と独立に使えることを確認
+      assert_eq!(original.use_mic, true, "original.use_mic should still be readable (Copy)");
+      assert_eq!(original.use_system, false, "original.use_system should still be readable (Copy)");
+      // copied 側も値が独立して使える
+      assert_eq!(copied.use_mic, true, "copied.use_mic should match");
+      assert_eq!(copied.use_system, false, "copied.use_system should match");
+  }
+  ```
+
+### T3: `requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field`
+- 目的: `#[derive(PartialEq, Eq)]` で field 単位の独立等値判定が機能する契約を CI 固定。
+- 期待: 同 field 値 → 等値、片方の field のみ違う → 不等値、両 field 違う → 不等値、を確認。
+- 実装ヒント:
+  ```rust
+  #[test]
+  fn requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field() {
+      let a = RequestedTranscriptionSources {
+          use_mic: true,
+          use_system: false,
+      };
+      let same = RequestedTranscriptionSources {
+          use_mic: true,
+          use_system: false,
+      };
+      let mic_diff = RequestedTranscriptionSources {
+          use_mic: false,  // 違う
+          use_system: false,
+      };
+      let system_diff = RequestedTranscriptionSources {
+          use_mic: true,
+          use_system: true,  // 違う
+      };
+      let both_diff = RequestedTranscriptionSources {
+          use_mic: false,
+          use_system: true,
+      };
+
+      // reflexive 等値
+      assert_eq!(a, same, "same field values should be equal");
+      // 片方の field 違いで不等値
+      assert_ne!(a, mic_diff, "differs by use_mic");
+      assert_ne!(a, system_diff, "differs by use_system");
+      // 両 field 違いで不等値
+      assert_ne!(a, both_diff, "differs by both");
+  }
+  ```
+
+## 5. 追加位置の決め方
+
+1. `grep -n "^mod tests\|#\[cfg(test)\]" src-tauri/src/transcription.rs` で test mod の開始行を特定。
+2. `tail -80 src-tauri/src/transcription.rs` で末尾を確認。Loop 1 で追加した model_info_* の 3 関数の後ろが追加位置。
+3. `mod tests { ... }` の末尾の `}` の直前に T1 → T2 → T3 の順で追加 (関数間に空行 1)。
+
+## 6. 検証 (worker 内で実施、不合格なら修正)
+
+1. `cd src-tauri && cargo fmt -- --check` (差分があれば `cargo fmt` 実行後に再 check)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings` (警告ゼロ)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1` (583 → 586 passed +3 件、0 failed)
+4. もし fail/警告が出た場合は **試験用文字列の数値や URL を実装側に合わせて修正する** (実装変更は禁止)。
+5. 注意: `assert_eq!(original.use_mic, true)` は clippy::bool_assert_comparison で警告が出る可能性 = その場合は `assert!(original.use_mic)` / `assert!(!original.use_system)` に書き換える。同様に `assert_eq!(..., true|false)` は全て `assert!(...)` / `assert!(!...)` に変換すること。
+
+## 7. AGENT_LOG.md への末尾追記 (必須、worker 完走の証拠)
+
+- まず `tail -10 AGENT_LOG.md` で末尾を視認。
+- 末尾の `---` 直後に以下のテンプレで追記。
+
+```markdown
+## mjc-worker-requested-transcription-sources-debug-copy-partialeq-tests-20260504-33-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-requested-transcription-sources-debug-copy-partialeq-tests-20260504-33-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-33 Loop 2
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 9 連続 application + 「対称的補強の 3 軸構造」継続 application = RequestedTranscriptionSources (private struct with 2 bool fields, #[derive(Debug, Clone, Copy, PartialEq, Eq)], Serialize なし) への Debug + Copy + PartialEq 3 軸 application。
+- T1: requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names (Debug 出力に型名+両 snake_case field 名+bool 値が含まれる契約、4 case)
+- T2: requested_transcription_sources_copy_semantics_allow_use_after_move (Copy semantics: let copied = original 後も original が使える契約)
+- T3: requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field (PartialEq の field 単位独立等値判定)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 583 → 586 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / 既存 73 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 586 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.??s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 8. 制約 (再掲)
+
+- 行末空白文字 (trailing whitespace) は **絶対に書かない**。
+- `--no-verify` 禁止 / `--dangerously-skip-permissions` は harness 経由のみ。
+- 既存 derive 属性 / 既存 struct 定義 / 既存 test の改変は禁止。
+- 既存 73 test は完全無変更。本 worker は **追加 3 件のみ**。
+- 課金しないこと (実 API 叩き禁止)。
+- メインや他 worker のセッションには立ち入らないこと。
+- bool 比較で clippy::bool_assert_comparison が出たら `assert!(..)` / `assert!(!..)` に変換。
+
+## 9. 完了基準
+
+- 上記 T1/T2/T3 が追加され、cargo test 586 passed (0 failed)、clippy 警告ゼロ、cargo fmt --check 差分なし。
+- AGENT_LOG.md 末尾に上記テンプレに沿ったエントリが追記されている (時系列順、先頭は触らない)。
+
+完了したらメインに報告するだけで OK (commit はメイン側で実施)。

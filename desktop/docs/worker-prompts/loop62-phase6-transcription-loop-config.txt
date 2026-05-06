@@ -1,0 +1,150 @@
+# Loop 62 = Phase 6 第 5 歩 = TranscriptionLoopConfig 直接 import 化
+
+## 必読 (冒頭で必ず実行)
+
+1. **`tail -350 AGENT_LOG.md` で末尾だけ参照** (ファイル全体は ~28,800 行 / ~2.6MB のため Read 全体禁止)。AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾の `---` 直後に** 行う。**先頭は絶対に触らない**。
+2. AGENTS.md / docs/architecture/transcription-refactor-plan.md の存在は把握すれば良い (本タスクは plan.md 更新は **しない** = Phase 6 全完了時 (Loop 63 想定) にまとめて反映する設計)。
+
+## ゴール
+
+Phase 6 第 5 歩 = TranscriptionLoopConfig 互換層を allow 化 + 全 caller を直接 import 化:
+
+### A. TranscriptionLoopConfig caller 直接 import 化 (2 ファイル / 2 use 行)
+
+**1. `src-tauri/src/transcription_panic_guard.rs` L6**:
+
+事前 grep 確認: `grep -n "use crate::transcription::TranscriptionLoopConfig" src-tauri/src/transcription_panic_guard.rs`
+
+現状:
+```rust
+use crate::transcription::TranscriptionLoopConfig;
+```
+
+変更後:
+```rust
+use crate::transcription_worker_loop::TranscriptionLoopConfig;
+```
+
+**2. `src-tauri/src/transcription_commands.rs` L5**:
+
+事前 grep 確認: `grep -n "use crate::transcription::TranscriptionLoopConfig" src-tauri/src/transcription_commands.rs`
+
+現状:
+```rust
+use crate::transcription::TranscriptionLoopConfig;
+```
+
+変更後:
+```rust
+use crate::transcription_worker_loop::TranscriptionLoopConfig;
+```
+
+注: `transcription_commands.rs` 内の `TranscriptionLoopConfig` 利用箇所 (L266 の構造体生成) は use 文経由で型解決されるので **本体は触らない** (use 文書き換えで自動解決)。事前 grep `grep -n "TranscriptionLoopConfig" src-tauri/src/transcription_commands.rs` で確認可能。
+
+### B. transcription.rs の互換 re-export 警告対応 (1 ファイル / 1 箇所)
+
+Loop 60-61 と同じパターン: caller が直接 import 化されたため、transcription.rs L33 の `pub(crate) use` が unused lint エラーになる。
+
+**3. `src-tauri/src/transcription.rs` L29-33**:
+
+該当箇所 (L29-33) に `#[allow(unused_imports)]` を追加:
+
+現状:
+```rust
+// ─────────────────────────────────────────────
+// TranscriptionLoopConfig (transcription_worker_loop.rs に分離、互換層として再エクスポート)
+// ─────────────────────────────────────────────
+
+pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;
+```
+
+変更後:
+```rust
+// ─────────────────────────────────────────────
+// TranscriptionLoopConfig (transcription_worker_loop.rs に分離、互換層として再エクスポート)
+// ─────────────────────────────────────────────
+
+#[allow(unused_imports)]
+pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;
+```
+
+注: 既存の Loop 60-61 で追加された `#[allow(unused_imports)]` 4 箇所 (L5-6, L12-13, L19-20, L26-27) はそのまま維持。
+
+## 担当範囲外 = 触らない
+
+- `src-tauri/src/transcription.rs` ファイル削除工程 = **Loop 63 対象 = 触らない**
+- `src-tauri/src/lib.rs` の `mod transcription;` 宣言削除 = **Loop 63 対象 = 触らない**
+- `docs/architecture/transcription-refactor-plan.md` 更新 = **Loop 63 対象 = 触らない** (Phase 6 全完了時に 100% 達成記念更新で 1 度だけ反映する設計)
+- それ以外のファイル (audio*.rs / session*.rs / app_detection*.rs / elevenlabs / openai / apple_speech / transcript_bridge / cloud_whisper / etc.) = **触らない**
+
+## 検証 (必須、全件 OK 確認後 commit)
+
+1. `cd src-tauri && cargo test --lib` = **702 passed / 0 failed** (件数不変、上限超えたら Stop)
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings` = **警告ゼロ**
+3. `cd src-tauri && cargo fmt --check` = OK
+4. `bash scripts/agent-verify.sh src-tauri/src/transcription_panic_guard.rs src-tauri/src/transcription_commands.rs src-tauri/src/transcription.rs` = OK
+5. **trailing whitespace 禁止** (行末空白なし)
+
+検証で 1 件でも失敗したら **commit せず** にエラー内容を報告すること。
+
+## AGENT_LOG.md 追記 (commit 前)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → ファイル末尾の `---` 直後に以下の形式で **append**:
+
+```
+[mjc-main-20260505-31 Loop 62 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 5 歩 = TranscriptionLoopConfig caller 直接 import 化
+- transcription_panic_guard.rs L6 の `use crate::transcription::TranscriptionLoopConfig;` を `use crate::transcription_worker_loop::TranscriptionLoopConfig;` に書き換え
+- transcription_commands.rs L5 の `use crate::transcription::TranscriptionLoopConfig;` を `use crate::transcription_worker_loop::TranscriptionLoopConfig;` に書き換え
+- transcription.rs L29-33 (TranscriptionLoopConfig 互換 re-export) に `#[allow(unused_imports)]` 追加 (全 caller 直接 import 化のため unused lint 対応)
+- これにより transcription.rs 全 5 件の互換 re-export が allow 化 = Loop 63 で transcription.rs ファイル削除 + lib.rs `mod transcription;` 削除 + plan.md 100% 達成記念更新の準備完了
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration = Phase 6 第 5 歩 = 互換層段階的解体最終手前 + Loop 63 で削除工程に直接進める)
+- メイン批判判断: 候補 V を grep 実態確認 → panic_guard:6 + commands:5 の 2 ファイル / 2 use 文と確定 = handoff 予測通り XS 規模
+- variety pivot 軸 = struct/const + import refactor 軸 = Loop 59 → 60 → 61 → 62 で 4 連続 = sweep 警告 = ただし **Phase 6 timeline 完了優先 + Loop 63 で軸自体が消滅する exception 判断** = handoff 推奨パターン継承
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文を機械的に書き換え (実体は transcription_worker_loop.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- Loop 60-61 と同じく `#[allow(unused_imports)]` 追加で互換層維持 (Loop 63 = transcription.rs ファイル削除時に互換層全削除)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- <COMMIT_HASH>
+
+---
+```
+
+注: `<COMMIT_HASH>` は **実コミット後の hash** で確実に置換すること。**2-commit pattern (refactor commit + chore hash 反映)** で行う:
+
+1. すべての変更を `git add src-tauri/src/transcription_panic_guard.rs src-tauri/src/transcription_commands.rs src-tauri/src/transcription.rs`
+2. AGENT_LOG.md を ## commit セクション空欄 (`<COMMIT_HASH>` placeholder のまま) で `git add AGENT_LOG.md`
+3. `git commit -m "refactor(transcription): TranscriptionLoopConfig の caller を直接 import 化 (Phase 6 第 5 歩, mjc-main-20260505-31 Loop 62, 2 ファイル / 2 use 文 + transcription.rs allow 注記 1 件追加)"`
+4. `hash=$(git rev-parse --short HEAD)` で hash を取得
+5. AGENT_LOG.md の `<COMMIT_HASH>` を `$hash` に置換 (`sed -i.bak "s/<COMMIT_HASH>/$hash/" AGENT_LOG.md && rm AGENT_LOG.md.bak`)
+6. `git add AGENT_LOG.md`
+7. `git commit -m "chore(agent-log): Loop 62 commit hash $hash を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、自律 precedent 適用)"`
+
+## commit メッセージ
+
+```
+refactor(transcription): TranscriptionLoopConfig の caller を直接 import 化 (Phase 6 第 5 歩, mjc-main-20260505-31 Loop 62, 2 ファイル / 2 use 文 + transcription.rs allow 注記 1 件追加)
+```
+
+## ハーネス制約
+
+- `--no-verify` 禁止
+- メイン (発注元) は src-tauri/src/* / scripts/* を直接編集しない方針 = worker (あなた) が全ファイル編集を実施
+- AGENT_LOG.md への記入は worker (あなた) が直接実施
+- claude-agent-* のような harness ファイルは触らない
+
+以上。

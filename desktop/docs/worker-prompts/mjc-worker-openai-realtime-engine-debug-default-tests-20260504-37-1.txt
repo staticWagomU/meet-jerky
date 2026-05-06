@@ -1,0 +1,206 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 最初に必ず実行すること (順序厳守)
+
+1. `tail -350 AGENT_LOG.md` で末尾を読み、SESSION SUMMARY (mjc-main-36) と直前ループの追記場所を視覚的に学習せよ。
+2. `head -50 AGENT_LOG.md` で先頭フォーマットを確認するのは OK だが、**先頭は絶対に触らない**。
+3. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾の `---` 直後** に行うこと。先頭追記は事故になるので厳禁。
+4. 必読: AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (それぞれ短い)。
+
+# 担当範囲 (厳守)
+
+以下 2 ファイル **のみ** 編集可。他ファイルは絶対に触らない。
+
+- `src-tauri/src/openai_realtime.rs` の **`mod tests` (l.472-) の末尾に新規 3 件のテストを追加するのみ**
+  - 既存の test 関数、`pub struct OpenAIRealtimeEngine`、`impl` ブロック、`use` 宣言、derive 属性、ws_task module、その他の関数は **完全無変更**。
+  - struct field の追加削除、derive の追加削除、可視性変更は **絶対禁止** (Tidy First 原則 = 振る舞い不変)。
+- `AGENT_LOG.md` の **末尾の `---` 直後に追記**
+  - 末尾以外への追記禁止。先頭追記事故の precedent あり。
+
+# 大型ファイル参照ルール (重要)
+
+- `src-tauri/src/openai_realtime.rs` (1037 行) と `AGENT_LOG.md` (23485+ 行) は **`Read` 全体禁止**。
+- 必要箇所のみ `tail` / `head` / `grep` / `sed -n 'A,Bp'` で参照すること。
+- 既存テストの命名規則確認は `grep -n "fn " src-tauri/src/openai_realtime.rs | tail -40` で十分。
+
+# 実装内容 (Tidy First, 振る舞い不変、追加するテストは厳密に 3 件のみ、上限超過禁止)
+
+`src-tauri/src/openai_realtime.rs` の `mod tests` (l.472- 既存) の **末尾 (= mod tests の閉じ括弧の直前)** に、以下 3 件の `#[test]` 関数を追加せよ。
+
+## 対象型
+
+```rust
+#[derive(Debug, Default)]
+pub struct OpenAIRealtimeEngine {
+    pub model: String,
+}
+```
+
+= `Debug` と `Default` のみ derive。`Clone` / `PartialEq` / `Serialize` / `Deserialize` は **派生なし**。
+
+## 追加する 3 件のテスト
+
+### T1: `engine_default_debug_format_contains_type_name_and_empty_model_field`
+
+`OpenAIRealtimeEngine::default()` の Debug 出力に以下が含まれることを **3 段の assert** で確認する。
+
+- 型名 `"OpenAIRealtimeEngine"` を含む
+- field 名 `"model"` を含む (snake_case)
+- 空文字列を表す `"\"\""` を含む (`Default` derive で String が `""` になる確認、Debug 出力では二重引用符付きで `""` と表示される)
+
+例:
+```rust
+#[test]
+fn engine_default_debug_format_contains_type_name_and_empty_model_field() {
+    let engine = OpenAIRealtimeEngine::default();
+    let formatted = format!("{engine:?}");
+    assert!(formatted.contains("OpenAIRealtimeEngine"), "型名: {formatted}");
+    assert!(formatted.contains("model"), "field 名: {formatted}");
+    assert!(formatted.contains("\"\""), "空 String を Debug 出力: {formatted}");
+}
+```
+
+### T2: `engine_new_with_str_slice_debug_format_contains_provided_model_value`
+
+`OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe")` (= **&str slice** から `Into<String>` 経由でコンストラクト) の Debug 出力に以下が含まれることを **3 段の assert** で確認する。
+
+- 型名 `"OpenAIRealtimeEngine"` を含む
+- field 名 `"model"` を含む
+- 渡したモデル名 `"gpt-4o-mini-transcribe"` を含む (Debug 出力では二重引用符付きで `"gpt-4o-mini-transcribe"` と表示される)
+
+例:
+```rust
+#[test]
+fn engine_new_with_str_slice_debug_format_contains_provided_model_value() {
+    let engine = OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
+    let formatted = format!("{engine:?}");
+    assert!(formatted.contains("OpenAIRealtimeEngine"));
+    assert!(formatted.contains("model"));
+    assert!(formatted.contains("\"gpt-4o-mini-transcribe\""));
+}
+```
+
+### T3: `engine_new_with_owned_string_debug_format_contains_provided_model_value`
+
+`OpenAIRealtimeEngine::new(String::from("gpt-4o-transcribe"))` (= **owned String** から `Into<String>` 経由でコンストラクト) の Debug 出力に以下が含まれることを **3 段の assert** で確認する。
+
+- 型名 `"OpenAIRealtimeEngine"` を含む
+- field 名 `"model"` を含む
+- 渡したモデル名 `"gpt-4o-transcribe"` を含む
+
+= `Into<String>` の **&str path と owned String path 双方を CI でカバー**することで、コンストラクタの API 契約を 2 入力タイプで CI 保護する。
+
+例:
+```rust
+#[test]
+fn engine_new_with_owned_string_debug_format_contains_provided_model_value() {
+    let engine = OpenAIRealtimeEngine::new(String::from("gpt-4o-transcribe"));
+    let formatted = format!("{engine:?}");
+    assert!(formatted.contains("OpenAIRealtimeEngine"));
+    assert!(formatted.contains("model"));
+    assert!(formatted.contains("\"gpt-4o-transcribe\""));
+}
+```
+
+## 追加位置
+
+`mod tests` の **最後のテスト関数の後ろ**、`mod tests` の閉じ括弧 `}` の直前に追加。
+
+## 既存テストとの命名衝突を避ける
+
+既存の `engine_construction_records_model` は **field 値を直接 assert_eq しているテスト**。本 Loop の新 3 件は **Debug 出力経由** の補強なので軸が異なる。命名上も `engine_default_*` / `engine_new_with_*` で衝突しない。
+
+## 厳禁事項
+
+- テスト件数 **3 件超** の追加禁止 (上限厳格)。
+- 既存テストの編集 / 削除 / 並べ替え禁止。
+- `pub struct OpenAIRealtimeEngine` の field 追加削除、derive 変更、可視性変更禁止。
+- `impl OpenAIRealtimeEngine` の関数追加削除禁止。
+- `use` 宣言の追加削除禁止 (`super::*` で OpenAIRealtimeEngine は既に import 済)。
+- `mod tests` の `#[cfg(test)]` 属性変更禁止。
+- 行末空白 (trailing whitespace) **禁止**。エディタの自動保存等で混入しないよう、最終確認時に `grep -n " $" <file>` 等で確認する習慣を持つこと。
+- 派生型の動作を変える変更禁止 (Tidy First = 振る舞い不変)。
+
+# AGENT_LOG.md 末尾追記内容
+
+`AGENT_LOG.md` の **末尾の `---` の直後** に、以下フォーマットで追記する (先頭は絶対に触らない)。
+
+```
+## [YYYY-MM-DD HH:MM JST] mjc-worker-openai-realtime-engine-debug-default-tests-20260504-37-1 (mjc-main-37 Loop 1)
+
+### 役割
+作業担当 / openai_realtime.rs OpenAIRealtimeEngine の Debug + Default + Into<String> 軸補強
+
+### 作業範囲
+- src-tauri/src/openai_realtime.rs (mod tests 末尾に T1/T2/T3 追加、struct / impl / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 指示内容
+mjc-main-37 から発注。「Debug 軸補強」20 連続 application + 9 ファイル目展開 (openai_realtime.rs 初) + Default 軸新規パターン + Into<String> 入力タイプ別軸 (str slice / owned String) 新規パターン + 「Clone 派生欠如形態」初対応の 5 軸戦略価値で T1 (default Debug 出力) / T2 (new &str Debug 出力) / T3 (new owned String Debug 出力) を 3 件追加。Tidy First = 振る舞い不変、struct/impl 完全無変更、テスト件数厳密に 3 件のみ。
+
+### 結果
+3 件追加 (T1/T2/T3)、cargo test --lib (lib 全体) 619 件 passed (旧 616 → +3 件、これは検証コマンドで確認した実測値を入れる)。
+
+### 変更ファイル
+- src-tauri/src/openai_realtime.rs (mod tests 末尾 T1/T2/T3 追加)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+[cargo test --lib の末尾 1-2 行を実コピー]
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+(`YYYY-MM-DD HH:MM JST` は実時刻を入れること。`619 件 passed` は実測値で置換すること。)
+
+# 検証手順 (順守)
+
+実装後、以下を順に実行せよ。
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo test --lib openai_realtime 2>&1 | tail -20
+cargo test --lib 2>&1 | tail -10
+cargo clippy --lib -- -D warnings 2>&1 | tail -10
+```
+
+- `cargo test --lib openai_realtime`: 既存 + 新規 3 件全て pass を確認。
+- `cargo test --lib`: lib 全体で 619 件 passed (616 + 3) を確認。
+- `cargo clippy --lib -- -D warnings`: 警告ゼロを確認。
+
+# 報告フォーマット (1 ターン完結、簡潔に)
+
+## 変更内容
+- T1/T2/T3 を openai_realtime.rs `mod tests` 末尾に追加 (struct / impl / 既存 test 完全無変更)
+- AGENT_LOG.md 末尾追記
+
+## 変更ファイル
+- src-tauri/src/openai_realtime.rs
+- AGENT_LOG.md
+
+## 検証結果
+- cargo test --lib openai_realtime: X passed
+- cargo test --lib: 619 passed (616 → +3)
+- cargo clippy --lib -- -D warnings: 0 warnings
+
+## 残リスク
+- なし (Tidy First, 振る舞い不変)
+
+# 重要な注意事項 (再掲)
+
+- **AGENT_LOG.md は時系列順、新規追記は必ず末尾の `---` 直後**
+- **先頭は絶対に触らない**
+- **テスト件数 3 件のみ、上限超過禁止**
+- **struct / impl / 既存 test 完全無変更**
+- **行末空白禁止**
+- **大型ファイル Read 全体禁止 (tail/head/grep/sed で対象範囲のみ)**
+- **担当範囲外編集禁止**

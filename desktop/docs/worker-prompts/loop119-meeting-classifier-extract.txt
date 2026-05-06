@@ -1,0 +1,163 @@
+あなたは meet-jerky プロジェクトの worker (mjc-worker-loop119-meeting-classifier-extract) です。
+Loop 119 = rust 軸 = 純粋関数機能分離軸 rust 版 = `src-tauri/src/app_detection.rs` の **classify_meeting_url + classify_meeting_window_title** 2 関数を新 file `src-tauri/src/app_detection_meeting_classifier.rs` に抽出する作業を担当します。
+
+# 戦略 (重要)
+
+- **MeetingUrlClassification 構造体は app_detection.rs に残置** (`pub struct` L110, 多数 caller + test 多数 = 移動リスク回避)
+- 新 file で `use crate::app_detection::MeetingUrlClassification;` で参照
+- app_detection.rs に `pub use crate::app_detection_meeting_classifier::{classify_meeting_url, classify_meeting_window_title};` を追加 = **caller L335/L338 と test (super::* import) 全て無変更で動く API 互換維持**
+- alternation pattern: K(118) → rust(119) = 11 連続維持
+- paradigm: 純粋関数機能分離軸 rust 版 (Loop 87/88/91/92/93/94 等の precedent あり)
+- scope 23 軸目開拓 (新 file `app_detection_meeting_classifier.rs` = scope 多様性継続)
+
+# 最初に必ず実施
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ読む (~32,972 行 / ~4MB あるので Read 全体禁止)。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+2. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認
+3. `wc -l src-tauri/src/app_detection.rs` で現在行数確認 (期待値: 2721 行)
+4. `sed -n '436,548p' src-tauri/src/app_detection.rs` で classify_meeting_url + classify_meeting_window_title の全体 (doc + body) を確認
+5. `sed -n '105,115p' src-tauri/src/app_detection.rs` で MeetingUrlClassification 構造体定義確認
+6. `cat src-tauri/src/app_detection_url_helpers.rs` で precedent 既存 file 構造を参考
+7. `head -15 src-tauri/src/lib.rs` で mod 登録順 (アルファベット) を確認
+
+# 作業範囲 (担当範囲外の編集禁止)
+
+## 1. 新 file 作成: `src-tauri/src/app_detection_meeting_classifier.rs`
+
+内容 (~115 行 = doc comment + use 文 + 関数 2 件):
+
+```rust
+//! 会議サービス分類用の純粋関数群。
+//!
+//! ブラウザの URL またはウィンドウタイトルを受け取り、Google Meet / Zoom / Webex /
+//! Whereby / GoToMeeting / Microsoft Teams のいずれかに分類する。
+//! `app_detection_url_helpers` の低レベル URL parser と各 service module
+//! (`app_detection_google_meet` / `app_detection_zoom` 等) を上位レイヤーで組み合わせる。
+
+use crate::app_detection::MeetingUrlClassification;
+use crate::app_detection_url_helpers::{normalize_url_host, parse_url_host_and_path};
+
+/// ブラウザ URL の実機取得が入った後に使う、会議 URL 分類用の純粋関数。
+///
+/// 標準文字列処理だけで host/path/query を見て分類し、URL 全文は返さない。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
+    // (元 app_detection.rs L443-485 の本体をそのままコピー、内部参照は変更不要)
+    // crate::app_detection_google_meet::is_google_meet_url 等のフルパス参照は維持
+    ...
+}
+
+/// ブラウザのウィンドウタイトルから会議サービスを分類する純粋関数。
+/// (元 app_detection.rs L506-548 の doc + body をそのままコピー)
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlClassification> {
+    ...
+}
+```
+
+**重要**:
+- 元の doc comment を全て保持 (省略禁止)
+- `crate::app_detection_*` のフルパス参照はそのまま (`use` 文追加不要、既存パスで解決)
+- `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 属性も保持
+
+## 2. `src-tauri/src/lib.rs` に mod 登録追加
+
+現在の L4 (`mod app_detection_inactive_decision;`) と L5 (`mod app_detection_notification;`) の **間** に `mod app_detection_meeting_classifier;` を追加 (アルファベット順)。
+
+```
+mod app_detection_inactive_decision;
+mod app_detection_meeting_classifier;  // ← 新規追加
+mod app_detection_notification;
+```
+
+## 3. `src-tauri/src/app_detection.rs` の修正
+
+### 3a. 関数 2 件削除 + re-export 追加
+
+L443-485 の `classify_meeting_url` 全体 (doc 含む = ~46 行) と L506-548 の `classify_meeting_window_title` 全体 (doc 含む = ~43 行) を削除。**MeetingUrlClassification 構造体 (L110) は残置**。
+
+削除位置に **re-export** を追加 (例えば L442 の元 doc 開始位置 = L436「`/// ブラウザ URL の実機取得が入った後に使う...`」の直前に挿入):
+
+```rust
+// classify_meeting_url + classify_meeting_window_title は app_detection_meeting_classifier に移動。
+// MeetingUrlClassification 互換性維持のため re-export。
+pub use crate::app_detection_meeting_classifier::{classify_meeting_url, classify_meeting_window_title};
+```
+
+### 3b. caller (L335 / L338) は **変更不要**
+
+`pub use` re-export により、`super::*` import + 直接呼び出しの test も全て無変更で動く。
+
+# 検証
+
+```bash
+cd src-tauri && cargo fmt --check && cargo clippy --lib --tests -- -D warnings && cargo build --lib && cargo test --lib 2>&1 | tail -5 && cd ..
+bash scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/lib.rs
+```
+
+期待結果:
+- cargo fmt --check: OK
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo build --lib: エラーなし
+- cargo test --lib: **704 passed / 0 failed (件数完全不変)**
+- agent-verify.sh: 全項目 OK
+
+# AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のエントリを追記:
+
+```
+[mjc-main-20260505-61 Loop 119 / 2026-05-06]
+worker: mjc-worker-loop119-meeting-classifier-extract (作業)
+範囲: src-tauri/src/app_detection.rs (-89 行 ~/+ 3 行 re-export = 純減 -86 行 想定) + src-tauri/src/app_detection_meeting_classifier.rs (新規 ~115 行) + src-tauri/src/lib.rs (mod 登録 1 行追加)
+内容: app_detection.rs の classify_meeting_url (L443-485) + classify_meeting_window_title (L506-548) 2 関数を新 file app_detection_meeting_classifier.rs に抽出。MeetingUrlClassification 構造体は app_detection.rs 残置 (多数 caller + test 多数のため移動リスク回避)。app_detection.rs に pub use re-export 追加 = caller L335/L338 + test (super::* import) 全て無変更で API 互換維持。新 file 内 use 文 = MeetingUrlClassification + url_helpers の低レベル parser 2 件 (parse_url_host_and_path + normalize_url_host)、service module はフルパス参照維持。lib.rs アルファベット順 (app_detection_inactive_decision と app_detection_notification の間) に mod 登録追加。**rust 軸 = 純粋関数機能分離軸 rust 版 + scope 23 軸目開拓 (app_detection_meeting_classifier = 新 file)**。**alternation pattern 11 連続成功** (K(115) → frontend(116) → rust(117) → K(118) → rust(119))。**paradigm pivot (K → rust)**。Loop 117 = 既存 file 拡張軸 (新 paradigm) との対比 = Loop 119 = 新 file 作成軸 (既存 paradigm) = 同 rust 軸内でも paradigm differentiation 成立 = scope 多様性両立。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要 (前 Loop 116 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH> refactor(rust): app_detection の classify_meeting_url + classify_meeting_window_title 2 関数を新 file app_detection_meeting_classifier.rs に抽出 (re-export で API 互換維持)
+AGENTS.md priority: 1 (大型 rust file 責務分離継続 + scope 23 軸目開拓)
+
+---
+```
+
+(`<REFACTOR_HASH>` は refactor commit の実 hash で置換。chore commit hash は意図的に書かない = Loop 60-118 で 58 連続成功した 2-commit pattern)
+
+# 2-commit pattern (worker 自律 連続 58 ループ成功 = 完全安定 pattern 化)
+
+1. **refactor commit (1 件目)**: 全 rust 変更をまとめて add + commit
+   ```
+   git add src-tauri/src/app_detection.rs src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/lib.rs
+   git commit -m "refactor(rust): app_detection の classify_meeting_url + classify_meeting_window_title 2 関数を新 file app_detection_meeting_classifier.rs に抽出 (mjc-main-20260505-61 Loop 119, rust 軸 = 純粋関数機能分離軸 rust 版, scope 23 軸目開拓, 大型 rust file 責務分離 36 file 目, MeetingUrlClassification は app_detection.rs 残置 + pub use re-export で API 互換維持, AGENTS.md priority 1 寄与)"
+   ```
+2. **refactor commit hash 取得**: `git log -1 --format=%H | head -c 7`
+3. **AGENT_LOG.md 末尾追記**: 上記エントリの `<REFACTOR_HASH>` を実 hash に置換し、`tail -10 AGENT_LOG.md` で末尾確認後、Write ツールで一時 file に書いた後 `cat <tmp_file> >> AGENT_LOG.md` で末尾に append (Edit ツールでは末尾 `---` が unique にならない場合あり = Write 後 cat append 推奨)
+4. **chore commit (2 件目)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-61 Loop 119 = app_detection の classify_meeting_url + classify_meeting_window_title を新 file app_detection_meeting_classifier.rs に抽出 (構造分離 36 file 目, rust 軸, scope 23 軸目開拓, 純粋関数機能分離軸 rust 版, alternation 11 連続成功, MeetingUrlClassification 残置 + pub use re-export で API 互換維持)"` (chore commit 自身の hash は AGENT_LOG.md に書かない = 58 連続 precedent)
+
+# 規模超過防止
+
+- 編集対象 file: 3 つ (app_detection.rs + app_detection_meeting_classifier.rs (新規) + lib.rs) + AGENT_LOG.md
+- app_detection.rs 削減: ~89 行削減 + ~3 行追加 (pub use + comment) = 純減 ~86 行
+- 新 file: ~115 行 (use 4 行 + doc 6 行 + 関数 2 件 doc + body)
+- lib.rs: 1 行追加
+- test 件数の上限: 704 件 (件数完全不変)
+- cargo test 失敗 0 件
+
+# 注意点
+
+- **行末の空白文字 (trailing whitespace) 禁止**
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep`/`sed -n 'X,Yp'` で対象範囲のみ参照
+- MeetingUrlClassification 構造体は **触らない** (app_detection.rs L110 のまま)
+- parse_throttle_key_to_display_name (L407) は **触らない** (今回対象外、別 paradigm)
+- service module (`app_detection_google_meet` 等) のフルパス参照 (`crate::app_detection_*`) は **新 file 内でも維持** (use 文追加で短縮しない)
+- `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 属性は新 file 内でも **保持** (test/macos 以外で dead code 扱いを継承)
+- **重要 doc 全保持**: classify_meeting_window_title の長い doc comment (Google Meet/Zoom/Webex/Microsoft Teams 各 service の分類ルール記述) も省略禁止
+
+# 完走後のメイン報告
+
+完走時に以下を main agent に報告:
+- refactor commit hash + chore commit hash
+- `wc -l src-tauri/src/app_detection.rs src-tauri/src/app_detection_meeting_classifier.rs` (期待: app_detection.rs ~2635 行 / meeting_classifier ~115 行)
+- cargo test 結果 (704 passed)
+- agent-verify.sh 結果
+
+以上。

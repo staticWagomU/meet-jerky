@@ -1,0 +1,187 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (tail 300 で十分) を読んでください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。コミット禁止。
+
+# 担当範囲
+- `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task` 内 `mod pending_timeout_tests` (line 482〜) 末尾に #[test] 関数を **5 件追加するのみ**。
+- 実装本体 (`is_scribe_error_event` line 373-375、`extract_error_message` line 414-426、`push_error` 等) は **一切変更しない** (visibility / ロジック含めて完全に non-touch)。
+- 既存テスト関数も削除/変更しない。
+- 他ファイル編集禁止。
+
+# 1. 背景 / Why
+
+## 対象 1: `is_scribe_error_event` (line 373-375)
+```rust
+fn is_scribe_error_event(event_name: &str) -> bool {
+    event_name.starts_with("scribe_") && event_name.ends_with("_error")
+}
+```
+
+既存 2 件 (line 549-565):
+- `_returns_true_for_scribe_prefix_and_error_suffix`: "scribe_validation_error", "scribe_audio_error", "scribe_some_long_underscore_error"
+- `_returns_false_when_either_prefix_or_suffix_missing`: "scribe_audio", "audio_error", "", "non_scribe_error", "SCRIBE_ERROR"
+
+**確認した gap**:
+1. **"scribe_error" boundary jets** (中間 0 長): `_` が 1 個で prefix の最後と suffix の最初を兼ねる最短形。`starts_with("scribe_")` true、`ends_with("_error")` true → 結果 true。これは「最短ジャスト」boundary。
+2. **"scribe__error" 中間 1 長 (`__`)**: `_` が 2 個で prefix と suffix が独立の `_` を持つ最短形。これも true。
+3. **"scribe_x_error" 中間 1 文字**: 既存「scribe_audio_error」より短い 1 文字中間。未確認境界。
+
+## 対象 2: `extract_error_message` (line 414-426)
+```rust
+fn extract_error_message(value: &Value) -> Option<String> {
+    value
+        .get("message")
+        .and_then(|v| v.as_str())
+        .or_else(|| value.get("error").and_then(|v| v.as_str()))
+        .or_else(|| {
+            value
+                .get("error")
+                .and_then(|v| v.get("message"))
+                .and_then(|v| v.as_str())
+        })
+        .map(str::to_string)
+}
+```
+
+既存 1 件 (line 608-630): `_traverses_three_priority_paths`
+- priority1: `{ "message": "top-level message", "error": "ignored" }` → "top-level message"
+- priority2: `{ "error": "string-error" }` → "string-error"
+- priority3: `{ "error": { "message": "nested" } }` → "nested"
+- empty: `{}` → None
+
+**確認した gap**:
+1. **priority1 が non-string (null/number/array)**: `and_then(|v| v.as_str())` で None になるが `.or_else` で priority2 に fallback する現契約。既存 test では「priority1 が文字列として存在」のみ。
+2. **priority2 が non-string (null/number/array) で priority3 が string**: priority2 失敗 → priority3 nested fallback の現契約。既存 test では priority2 と priority3 の単独確認のみ。
+3. **priority3 nested message が non-string**: `error: { "message": null }` のような nested 内 non-string → None。既存 test では priority3 が string の場合のみ。
+4. **すべての priority が non-string**: 一貫して None 返却の総合契約。
+
+これら 5 件で string 判定 (`as_str()`) の or_else fallback chain と is_scribe_error_event の boundary jets を完全に固定する。
+
+# 2. 追加する 5 件のテスト案 (assertion レベル)
+
+すべて `mod pending_timeout_tests` (line 482〜) 末尾に追加。既存テストと同じく `super::is_scribe_error_event` / `super::extract_error_message` で参照。
+
+## T1. `is_scribe_error_event_returns_true_for_minimal_overlap_scribe_error`
+- 入力 1: `"scribe_error"` (12 chars: prefix と suffix が中央の `_` を共有、最短形のように見えるが実際は `scribe_` (7 chars) + `_error` (6 chars) で個別マッチ)
+- assert: `assert!(super::is_scribe_error_event("scribe_error"))`
+- 補助 assert: `assert!(super::is_scribe_error_event("scribe_x_error"))` (中間 1 文字、既存最短「scribe_audio」より短い境界)
+- 意図: prefix と suffix が **個別独立に** マッチする現契約 (overlap 検出ロジックなし) を固定。将来「中間ゼロ長を排除する」防御強化への誤リファクタを検知。
+
+## T2. `is_scribe_error_event_returns_true_for_zero_length_middle_scribe_double_underscore_error`
+- 入力: `"scribe__error"` (中間 0 長で `_` が独立、`scribe_` + `_error` を真に独立に満たす最短形)
+- assert: `assert!(super::is_scribe_error_event("scribe__error"))`
+- 補助 assert (短い中間 + 末尾近接): `assert!(super::is_scribe_error_event("scribe_a_error"))` (中間「a」1 文字 + 独立 `_`)
+- 補助 assert (negative side): `assert!(!super::is_scribe_error_event("scribe"))` (suffix なし、6 chars 単体) と `assert!(!super::is_scribe_error_event("_error"))` (prefix なし、6 chars suffix only)
+- 意図: 中間 0 長 (`__`) も true を返す `&&` の最小条件を固定。短い独立形 negative も並べて両端確認。
+
+## T3. `extract_error_message_falls_back_to_priority2_when_priority1_message_is_non_string`
+- 入力 1: `{ "message": null, "error": "fallback string" }` → priority1 の null は as_str() で None、or_else で priority2 が "fallback string"
+- assert: `assert_eq!(super::extract_error_message(&value), Some("fallback string".to_string()))`
+- 入力 2: `{ "message": 123, "error": "from-error" }` → priority1 の number は as_str() で None、priority2 fallback
+- assert: `assert_eq!(super::extract_error_message(&value), Some("from-error".to_string()))`
+- 入力 3: `{ "message": [], "error": "array-message-skip" }` → priority1 の array は as_str() で None、priority2 fallback
+- assert: `assert_eq!(super::extract_error_message(&value), Some("array-message-skip".to_string()))`
+- 意図: priority1 が non-string でも sigh fallback で priority2 へ進む現契約を固定。「priority1 が存在すれば priority2 をスキップする」誤実装への誤リファクタを検知。
+
+## T4. `extract_error_message_falls_back_to_priority3_when_priority2_error_is_non_string`
+- 入力 1: `{ "error": { "message": "deep nested" } }` → priority2 (error が object なので as_str() で None) → priority3 nested message が string で勝つ
+- assert: `assert_eq!(super::extract_error_message(&value), Some("deep nested".to_string()))`
+- 入力 2: `{ "message": null, "error": { "message": "deep with priority1 null" } }` → priority1 null + priority2 None (object) + priority3 nested string
+- assert: `assert_eq!(super::extract_error_message(&value), Some("deep with priority1 null".to_string()))`
+- 補助 assert (priority2 null で priority3 もない場合 None): `{ "error": null }` → priority2 と priority3 両方 None
+- assert: `assert_eq!(super::extract_error_message(&value), None)`
+- 意図: priority chain 全体が 1 階層ずつ as_str() で判定する現契約を固定。priority2 が object/null でも priority3 へ正しく fallback する fallback chain の総合性を保護。
+
+## T5. `extract_error_message_returns_none_when_all_priorities_yield_non_string`
+- 入力 1: `{ "message": null, "error": null }` → priority1 null + priority2 null + priority3 (error.message) None → None
+- assert: `assert_eq!(super::extract_error_message(&value), None)`
+- 入力 2: `{ "message": [], "error": {} }` → priority1 array + priority2 object + priority3 (error.message) None (empty object に message なし) → None
+- assert: `assert_eq!(super::extract_error_message(&value), None)`
+- 入力 3: `{ "error": { "message": null } }` → priority1 None (no key) + priority2 (object) + priority3 nested null → None
+- assert: `assert_eq!(super::extract_error_message(&value), None)`
+- 入力 4: `{ "message": 1.5, "error": [1, 2], "extra": "noise" }` → priority1 number + priority2 array + priority3 None → None
+- assert: `assert_eq!(super::extract_error_message(&value), None)`
+- 意図: 全 priority が non-string な場合の終端 None 返却を 4 シナリオで網羅。fallback chain が「最終的に None になる」総合契約を保護。
+
+# 3. 実装上の注意
+
+- 既存テストパターン (line 549, 608 周辺) は `super::is_scribe_error_event(...)` / `super::extract_error_message(&value)` の形で呼んでいる。同じパターンを踏襲する。
+- 関数本体は **絶対に変更しない**。テスト追加のみ。
+- `serde_json::json!` macro で値を構築する (既存 line 569, 581, 610 等のパターン踏襲)。
+- 補助 assert を 1 件の `#[test]` 関数内に複数並べてよい (既存 `_returns_true_for_scribe_prefix_and_error_suffix` の 3 assert / `_traverses_three_priority_paths` の 4 assert パターン踏襲)。
+- assert マクロは `assert_eq!` / `assert!` のみ使う。
+- inline コメントは「現契約を意図的に固定」が読み取れる 1-2 行で十分。長文不要。
+- T3/T4/T5 の入力 JSON は `let value = serde_json::json!({...});` で local 変数に分けて書くと読みやすい。
+
+# 4. 検証手順
+
+担当範囲は src-tauri/src/elevenlabs_realtime.rs のみ。
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+cargo fmt
+cargo test --lib --quiet 2>&1 | tail -50
+cargo clippy --lib --all-targets --quiet 2>&1 | tail -30
+cargo clippy --lib --all-targets --quiet -- -W clippy::uninlined_format_args 2>&1 | tail -30
+```
+
+期待結果:
+- cargo fmt: 差分なし
+- cargo test: **380 → 385 passed** (5 件追加で 0 failed)
+- cargo clippy default: 警告ゼロ
+- cargo clippy uninlined_format_args: 警告ゼロ
+
+すべて pass で初めて完了。
+
+# 5. AGENT_LOG.md 記載項目 (担当範囲完了後に必ず追記)
+
+`AGENT_LOG.md` 末尾に以下フォーマットで追記する:
+
+```markdown
+### elevenlabs_realtime.rs `is_scribe_error_event` の boundary jets + `extract_error_message` の non-string fallback chain 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-elevenlabs-realtime-boundary-tests-20260504-9-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task::pending_timeout_tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+is_scribe_error_event の boundary jets ("scribe_error" 最短 / "scribe__error" 独立 _ / 短い中間) と extract_error_message の non-string fallback chain を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | is_scribe_error_event_returns_true_for_minimal_overlap_scribe_error | "scribe_error" (中間 0 長) / "scribe_x_error" (中間 1 文字) で true |
+| T2 | is_scribe_error_event_returns_true_for_zero_length_middle_scribe_double_underscore_error | "scribe__error" / "scribe_a_error" で true、"scribe" / "_error" 単体で false |
+| T3 | extract_error_message_falls_back_to_priority2_when_priority1_message_is_non_string | priority1 が null/number/array で priority2 string fallback (3 シナリオ) |
+| T4 | extract_error_message_falls_back_to_priority3_when_priority2_error_is_non_string | priority2 が object で priority3 nested string fallback、null + nothing で None |
+| T5 | extract_error_message_returns_none_when_all_priorities_yield_non_string | 全 priority が non-string な 4 シナリオで終端 None |
+
+#### 不変条件 / 設計意図
+- T1+T2 は && 連接の最小条件 boundary を独立に網羅、starts_with + ends_with の overlap 検出なし契約を固定。
+- T3+T4+T5 は or_else fallback chain が 1 階層ずつ as_str() で判定する現契約を 3 priority × 各 non-string パターンで網羅。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 380 → 385 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 385
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 super::* パターン踏襲)
+
+#### 残リスク
+- T1/T2 の中間 0 長 / 1 文字許容契約は将来「中間に意味のある event 名要求」防御強化を入れたら test 修正が必要 (現契約を意図的に固定)。
+- T3/T4/T5 の non-string fallback 契約は将来 priority chain を変更したら test 修正が必要。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に「変更内容、変更ファイル、検証結果、残リスク」を 1 ターンで簡潔に報告してください。

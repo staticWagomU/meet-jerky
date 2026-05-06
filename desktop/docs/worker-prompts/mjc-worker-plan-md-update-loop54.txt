@@ -1,0 +1,140 @@
+あなたは meet-jerky のワーカーエージェント (mjc-worker-plan-md-update-loop54) です。
+mjc-main-20260505-27 Loop 54 として、`docs/architecture/transcription-refactor-plan.md` を最新状態に 1 ファイル更新するタスクを担当します。
+
+# 必須要素 (絶対遵守)
+
+1. **冒頭で AGENT_LOG.md の末尾 350 行を読む** (`tail -350 AGENT_LOG.md` で末尾のみ参照)。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾の `---` 直後を確認 → そこに追記。
+5. **担当範囲外の編集禁止**。本タスクは `docs/architecture/transcription-refactor-plan.md` 1 ファイルのみ更新 + AGENT_LOG.md 末尾追記のみ。Rust コードは絶対に触らない。
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**。AGENT_LOG.md は ~28000 行のため `tail -350` のみ。
+7. **行末の空白文字 (trailing whitespace) 禁止**。
+
+# タスク内容 = plan.md 5 箇所更新 + 新サブセクション 1 件追加
+
+## 背景
+
+mjc-main-20260505-26 Loop 53 で StreamConfig Debug/Clone tests 3 件を transcription.rs から transcription_traits.rs に移動 (commit `bbe9afc`、-134 行)。
+これを `docs/architecture/transcription-refactor-plan.md` に反映する (1 ループ完結、規模 SS)。
+
+## 更新箇所 (5 箇所、すべて Edit ツールで)
+
+### 1. L28 セクションヘッダ
+旧: `## 進捗サマリ (mjc-main-20260505-25 Loop 51 時点)`
+新: `## 進捗サマリ (mjc-main-20260505-26 Loop 53 時点)`
+
+### 2. L42 累計削減行
+旧:
+```
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **327 行** = **約 89.1% 縮小** (~2672 行削減) = **「85% 里程標突破からさらに +4.1pt 進展 = 90% 里程標到達直前」**
+```
+新:
+```
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **193 行** = **約 93.6% 縮小** (~2806 行削減) = **「90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展」**
+```
+
+### 3. L57 残存課題行
+旧:
+```
+- transcription.rs 残存 **327 行** の更なる責務分離
+```
+新:
+```
+- transcription.rs 残存 **193 行** の更なる責務分離
+```
+
+### 4. L57 直後 (現状の Loop 51 行の後ろに追加) = 新サブセクション 1 件追加
+
+L56 の Loop 51 完了行 (`- **mjc-main-20260505-25 Loop 51 ✅ 完了**: ...`) の直後 (= L57 の上) に、以下の新行を追加:
+
+```
+- **mjc-main-20260505-26 Loop 53 ✅ 完了**: StreamConfig Debug/Clone tests 3 件 (stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none / stream_config_debug_output_equals_after_clone_for_some_and_none_variants / stream_config_clone_produces_independent_copy_for_option_string_fields) を transcription.rs から transcription_traits.rs に移動 = StreamConfig 定義 + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 6 tests (Mock 3 + StreamConfig Debug/Clone 3) 同居の locality 完成 (commit `bbe9afc`、-134 行)
+```
+
+### 5. 末尾 L361 の参考行
+旧:
+```
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-25 Loop 51 時点で 327 行 = 約 89.1% 縮小達成 = 85% 里程標突破からさらに +4.1pt 進展 = 90% 里程標到達直前)
+```
+新:
+```
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-26 Loop 53 時点で 193 行 = 約 93.6% 縮小達成 = 90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展)
+```
+
+### 6. 末尾「## 関連: TranscriptionManager tests 移動 ✅ 完了」セクションの後に、新セクションを追加
+
+L355 の末尾 ("transcription_manager.rs 124 → 235 行 (+111 行)") の直後、L356 (`## 参考`) の直前に、以下の新セクションを挿入:
+
+```
+
+## 関連: StreamConfig Debug/Clone tests 移動 ✅ 完了 (mjc-main-20260505-26 Loop 53 = commit `bbe9afc`)
+
+mjc-main-20260505-26 Loop 53 で StreamConfig Debug/Clone tests 3 件 (~134 行) を transcription.rs から `src-tauri/src/transcription_traits.rs` に移動した = StreamConfig 定義 + TranscriptionEngine / TranscriptionStream トレイト + Mock 実装 + 関連 tests 6 件 同居の完全 locality 完成。
+
+- 移動対象 (StreamConfig Debug/Clone セマンティクス検証 tests 3 件):
+  - `stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none`
+  - `stream_config_debug_output_equals_after_clone_for_some_and_none_variants`
+  - `stream_config_clone_produces_independent_copy_for_option_string_fields`
+- 移動先: transcription_traits.rs 既存 `#[cfg(test)] mod tests` (Loop 50 で追加した Mock 関連 3 tests と同居) = 6 tests 同居の locality 完成
+- transcription_traits.rs L52-55 既存 use 文 (`use super::*` + `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource}`) で新規 3 tests の依存全 import 済 = use 文追加変更なし
+- transcription.rs の `use super::*;` 削除 (移動後に残置 tests = should_emit + RequestedTranscriptionSources 3 件 で完全 unused)
+- メイン批判判断: handoff 候補 M の予測「StreamConfig Debug tests 4 件」を grep で実態確認 → 3 件 (StreamConfig 関連) と判明 → 訂正後採用 = メイン批判判断 連続 7 セッション目
+- variety pivot 軸 = test 軸 = Loop 51 から 2 ループ pivot (Loop 52 docs) 後 = sweep 警告から復帰許容
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 327 → 193 行 (-134 行) = **90% 里程標突破達成**、transcription_traits.rs 229 → 366 行 (+137 行 = StreamConfig 関連 + コメント)
+```
+
+## 検証
+
+1. plan.md の更新後、`tail -10 docs/architecture/transcription-refactor-plan.md` で末尾構造確認
+2. `grep -c "Loop 53" docs/architecture/transcription-refactor-plan.md` で Loop 53 言及が 4-5 件あることを確認
+3. `bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md` で markdown skip 確認 (rust/frontend skip 判定)
+4. trailing whitespace なし確認: `grep -nP " +$" docs/architecture/transcription-refactor-plan.md` で 0 件
+
+## commit
+
+`bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 53 StreamConfig Debug/Clone tests 移動を反映 (mjc-main-20260505-26 Loop 53, 93.6% 縮小 193 行 +4.5pt 進展, 90% 里程標突破, 計画駆動継続性確保)" docs/architecture/transcription-refactor-plan.md`
+
+または直接 `git add docs/architecture/transcription-refactor-plan.md && git commit -m "..."` でも OK。
+
+## AGENT_LOG.md 末尾追記
+
+commit 完了後、以下を AGENT_LOG.md 末尾の `---` 直後に追記:
+
+```
+[mjc-main-20260505-27 Loop 54 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-25 Loop 51 → mjc-main-20260505-26 Loop 53 時点
+  - 累計削減行数: 327 行 (89.1%) → 193 行 (93.6%) = 90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展
+  - 残存課題セクション: Loop 53 (StreamConfig Debug/Clone tests 3 件 -134 行) 反映
+  - 新サブセクション 1 件: StreamConfig Debug/Clone tests 移動 ✅
+  - 末尾参考: 327 行 (89.1%) → 193 行 (93.6%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-26 Loop 53 (StreamConfig Debug/Clone tests 移動 -134 行) を 1 ループで反映
+- variety pivot = docs 軸 = Loop 52 から 2 ループ間隔 = 警告境界だが許容、test 軸 9 件目連続超過警告からの完全 pivot 維持
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 1 件を末尾「## 参考」前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- (commit hash は agent-commit.sh の出力をここに記入)
+```
+
+# 完了基準
+
+- plan.md が上記 6 箇所更新済 (5 行更新 + 1 セクション追加)
+- commit 1 件 (markdown 更新)
+- AGENT_LOG.md 末尾に Loop 54 What/Why/How/Verify/commit ブロック追記済
+- trailing whitespace なし
+
+開始してください。

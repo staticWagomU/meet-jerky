@@ -1,0 +1,148 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md (末尾 350 行で十分) を読んでください。
+
+担当範囲: src-tauri/src/session_store.rs の `mod tests` への新規 unit test 追加 5 件のみ。
+本体実装 (line 1-202) は変更禁止。他ファイルへの編集は禁止。コミットは禁止。
+
+# 背景 / Why
+
+`unescape_inline_markdown_text` (session_store.rs line 84-102) には既存 test が **1 件のみ** (line 591-610: `unescape_inline_markdown_text_unescapes_six_target_chars_and_passes_others`)。これは 6 文字単独 escape + 3 件 passthrough のみ網羅。以下の boundary が未固定で誤改修の検知が弱い。これは markdown.rs の `inline_markdown_text` (line 51-61) と対をなす逆操作で、保存→読み出しの round-trip 整合性に直結する重要 fn。
+
+実装本体 (line 84-102):
+```rust
+fn unescape_inline_markdown_text(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut chars = value.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.peek().copied() {
+                Some('\\' | '`' | '*' | '_' | '[' | ']') => {
+                    if let Some(escaped) = chars.next() {
+                        out.push(escaped);
+                    }
+                }
+                _ => out.push(ch),
+            }
+        } else {
+            out.push(ch);
+        }
+    }
+    out
+}
+```
+
+対称関数 (markdown.rs line 51-61) — escape 側:
+```rust
+fn inline_markdown_text(value: &str) -> String {
+    let normalized = value.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut escaped = String::with_capacity(normalized.len());
+    for ch in normalized.chars() {
+        if matches!(ch, '\\' | '`' | '*' | '_' | '[' | ']') {
+            escaped.push('\\');
+        }
+        escaped.push(ch);
+    }
+    escaped
+}
+```
+
+**重要な観察**: inline_markdown_text には `split_whitespace + join " "` の正規化が含まれるため、空白を含む原文の round-trip は完全には復元しない。**空白を含まない or ASCII space 1 個に正規化済みの input** に限り、`unescape_inline_markdown_text(inline_markdown_text(x)) == x` が成立する。これは限定的だが重要な round-trip 契約。
+
+## 累積技術注意点 (踏みやすい罠、必ず守る)
+- 既存 test (line 591-610) は変更禁止。重複しないこと。
+- 6 文字 (`\\` `` ` `` `*` `_` `[` `]`) は escape 対象。それ以外は backslash 含めて passthrough (現契約: `\\X` → `\\X` ではなく `\X` ← lone backslash 保持)。
+- **lone trailing backslash の保持** (line 95 の `_ => out.push(ch)` 経路): `\` 単独 (peek が None) でも backslash を out に push する。既存 line 609 でカバー済 (`\\` → `\\`)。
+- raw string literal (`r"..."`) と通常 string literal (`"..."`) の使い分けを既存と統一する (既存 test は `r"\\"` 等を使用)。
+- markdown.rs (`inline_markdown_text`) は本 fn の test 内で **直接 import 不可** (private 関数 + 別モジュール)。round-trip test は本 fn 単体で表現できる input を選ぶ。
+
+# 具体的 test 案 (assertion レベル)
+
+すべて `mod tests` 内に追加。既存 test の後 (line 610 の閉じ } の直前) に append。
+
+## T1. 連続 escape sequence の独立処理 (`\\\\` → `\\`、`\\\\\\` → `\\\`、`\\\\\\\\` → `\\\\`)
+- 名前: `unescape_inline_markdown_text_handles_consecutive_backslash_escapes_independently`
+- 入力 raw `r"\\"` (2 chars: \, \) → expected `r"\"` (1 char: \) — **既に line 594 でカバー済なので除外**
+- 入力 raw `r"\\\\"` (4 chars: \, \, \, \) → expected `r"\\"` (2 chars: \, \) — 連続 2 ペア
+- 入力 raw `r"\\\\\\"` (6 chars) → expected `r"\\\"` (3 chars) — 連続 3 ペア
+- 入力 raw `r"\\\\\\\\"` (8 chars) → expected `r"\\\\"` (4 chars) — 連続 4 ペア
+- 各ケース assertion (3 ケース)
+- コメント: 連続 backslash の peek-based unescape の独立性。greedy match との誤改修 (`\\\\\\` を `\\` ではなく `\\\\` と解釈) の検知装置。
+
+## T2. 隣接 escape 組合せ (`\\*\\_` → `*_`、`\\[\\]\\\`` → `[]\``、`\\*\\_\\\`\\[\\]\\\\` → `*_\`[]\\`)
+- 名前: `unescape_inline_markdown_text_handles_adjacent_six_target_escapes_independently`
+- 入力 `r"\*\_"` → expected `"*_"` — 2 個隣接
+- 入力 raw `r"\[\]\`" ` (5 chars: \, [, \, ], \, `) → expected `"[]`"` (3 chars) — 3 個隣接
+- 入力 raw `r"\*\_\` \[\]\\"` (12 chars) → expected `"*_`[]\\"` (6 chars) — 6 文字全種隣接 (空白なし)
+  - **注意**: raw 文字列内に backtick (`` ` ``) を含めるため、Rust の raw string では `r#"\*\_\`\[\]\\"#` のように `r#"..."#` 形式を使う
+- 各ケース assertion
+- コメント: 6 文字単独 escape の隣接処理が「各文字独立」である現契約を文書化。markdown.rs の inline_markdown_text の `escaped.push('\\'); escaped.push(ch);` 二段 push パターンと対称。
+
+## T3. 非対象 char + 6 文字 escape の混在 (`\\X\\*` → `\\X*`、`abc\\*def\\_ghi` → `abc*def_ghi`、`\\!\\*\\$` → `\\!*\\$`)
+- 名前: `unescape_inline_markdown_text_passes_non_target_backslash_through_while_unescaping_target`
+- 入力 `r"\X\*"` → expected `r"\X*"` — 非対象 (\X) は保持、対象 (\*) は unescape
+- 入力 `r"abc\*def\_ghi"` → expected `"abc*def_ghi"` — 通常 char 間の対象 escape
+- 入力 `r"\!\*\$"` → expected `r"\!*\$"` — 非対象 (\!, \$) は保持、対象 (\*) のみ unescape
+- 入力 `r"\1\*\2"` → expected `r"\1*\2"` — 数字も非対象
+- 各ケース assertion (4 ケース)
+- コメント: 非対象 char (\!, \X, \1, \$ など) は backslash + char を 2 chars としてそのまま passthrough、対象 6 文字のみ unescape する現契約。
+
+## T4. multibyte char との隣接 (`あ\\*` → `あ*`、`\\*あ` → `*あ`、`\\*あ\\_い` → `*あ_い`、`emoji 🎉\\* tail` ※emoji は escape 対象外なので `🎉*` 化)
+- 名前: `unescape_inline_markdown_text_handles_multibyte_chars_adjacent_to_escapes`
+- 入力 `r"あ\*"` → expected `"あ*"` — multibyte 後 escape
+- 入力 `r"\*あ"` → expected `"*あ"` — escape 後 multibyte
+- 入力 `r"\*あ\_い"` → expected `"*あ_い"` — 混在 4 chars
+- 入力 raw `r"\*🎉\_"` (Rust 文字列 literal で OK) → expected `"*🎉_"` — emoji 隣接
+- 入力 `r"\🎉"` → expected `r"\🎉"` — backslash + emoji は 6 文字外で passthrough
+- 各ケース assertion (5 ケース)
+- コメント: `chars()` iterator が UTF-8 codepoint 単位で動作するため、multibyte char は backslash escape の対象判定 (matches!) で false に落ちて passthrough される。byte-level 誤改修 (`bytes()` 化) の検知装置。
+
+## T5. inline_markdown_text との 6 文字 round-trip 対称性 (空白を含まない input で限定的に成立)
+- 名前: `unescape_after_explicit_six_char_escape_recovers_original_text_for_no_whitespace_inputs`
+- markdown.rs の inline_markdown_text を直接 import できないので、**手書きで escape を加えた input** で代用。
+- ヘルパー: `fn explicit_escape(s: &str) -> String { let mut out = String::new(); for ch in s.chars() { if matches!(ch, '\\' | '`' | '*' | '_' | '[' | ']') { out.push('\\'); } out.push(ch); } out }`
+  - これを `mod tests` 内のクロージャまたはローカル fn として置く。
+- 5 ケース (空白を含まない、または含まない正規化済み):
+  1. `let original = r"hello"; let escaped = explicit_escape(original); assert_eq!(unescape_inline_markdown_text(&escaped), original);` — 通常 char only
+  2. `let original = r"a*b_c"; ...` — escape 対象 2 個含む
+  3. `let original = r"\\backslash"; ...` — backslash 文字含む (raw `r"\\backslash"` は literal で `\backslash` の 10 chars)
+  4. `let original = r"[`*_\\]"; ...` — 6 文字全種含む (空白なし)
+  5. `let original = "あいう★"; ...` — multibyte で escape 対象外のみ
+- コメント: explicit な escape を加えた string に対する unescape の round-trip 対称性 = inline_markdown_text の `split_whitespace + join " "` 正規化を除いた純粋 escape 部分の双方向対称性 (markdown 保存→読み出しの semantic 整合性)。前 mjc-main-1 の markdown 双方向対称 test と対をなす session_store 側の対称性。
+
+# 実装上の注意
+
+- すべて `#[test]` で同期 test (tokio 不要)。
+- T2 で backtick (` ` ` `) を含む raw string は `r#"..."#` (sharp 1 個版) を使う。`\\\\\\\\` のような sharp 含む内容では `r##"..."##` 等。
+- T5 の `explicit_escape` ヘルパーは `mod tests` 内のクロージャ (`let explicit_escape = |s: &str| -> String { ... };`) で置く方が簡潔。同じ test 関数内に閉じる。
+- assertion メッセージは日本語で簡潔に。`assert_eq!(actual, expected, "input={input:?} で {what}")` の形式 (既存 line 604 と統一)。
+- 既存 test (line 591-610) を 1 行も変更しないこと。
+- clippy で warning ゼロを維持 (`-D warnings`、`uninlined_format_args` 含む)。
+- raw string literal でエスケープ表現に注意:
+  - Rust raw `r"\\"` は **literal で 2 chars (\, \)** = unescape 入力として `\\`
+  - Rust 通常 `"\\"` は literal で 1 char (\) = unescape 入力として `\`
+  - 既存 line 594 (`(r"\\", "\\")`) は input=2 chars `\\`, expected=1 char `\` で OK な現状
+
+# 検証手順
+
+1. `cargo fmt -p meet-jerky` で format
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` で warning ゼロ確認
+3. `cargo test -p meet-jerky --lib session_store::tests::unescape_inline_markdown_text` で部分実行 (新規 5 件 + 既存 1 件 = 6 passed)
+4. `cargo test -p meet-jerky --lib` で全体 425 → 430 passed を確認
+5. すべて緑なら報告して終了
+
+# AGENT_LOG.md 記載項目
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-session-store-unescape-1
+- 役割: 作業担当
+- 作業範囲: src-tauri/src/session_store.rs の mod tests 内に新規 unit test 5 件 (T1-T5) 追加
+- 指示内容: unescape_inline_markdown_text の boundary 補強 5 軸 (連続 escape 独立処理 / 隣接 6 文字組合せ / 非対象 + 対象混在 / multibyte 隣接 / 6 文字 round-trip 対称性 by explicit_escape)
+- 結果: 425 → 430 passed (or 失敗内容)
+- 変更ファイル: src-tauri/src/session_store.rs のみ
+- 検証結果: cargo fmt / clippy -D warnings / cargo test --lib のサマリ
+- 依存関係追加: なし
+- 失敗理由: (該当時のみ)
+- 次アクション: メインによるレビューとコミット待ち
+
+最後に「変更内容、変更ファイル、検証結果、残リスク」を 1 ターンで簡潔に報告して終了してください。

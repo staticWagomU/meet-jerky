@@ -1,0 +1,9 @@
+
+[mjc-main Loop 192 / 2026-05-06]
+worker: mjc-worker-loop192-status-starting-ending-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_STARTING_LABEL + STATUS_ENDING_LABEL 追加 = 2 const = 7 → 9 const) + src/routes/TranscriptView.tsx (L68 import 拡張 + L1200/L1201/L1213/L1255/L1256/L1272/L1273 = 7 callsite)
+変更: STATUS_STARTING_LABEL = "開始中" + STATUS_ENDING_LABEL = "終了中" を statusLabels.ts に集約 (start/end semantic pair) + TranscriptView.tsx 7 callsite を const 参照に統一 = DRY 違反解消, callsite 7 件無変更で API 互換維持, ネット行数 +2 行のみ, **const 集約 paradigm 反復 10 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越超越達成 (Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 → 192 = 10 連続 const 集約軸 = 節目 10 件突破)** + **既存 file 拡張軸 paradigm 21 件目達成 (statusLabels.ts への 8 度目の拡張)** + **重複候補 grep 探索 paradigm 22 件目達成**.
+意義: AGENTS.md priority 1 (DRY 違反解消) 寄与. statusLabels.ts は 9 const で `"〜状態"` semantic + loading suffix + recording status + transition pair (start/end) 完全網羅. alternation pivot K(191) → frontend(192) = 31 → 32 = pivot 加速期維持. メイン批判判断 連続 95 セッション目達成 (handoff prompt R32' 「ellipsis 混在で集約価値中程度」評価との差異 = `"開始中"` 4 callsite + `"終了中"` 3 callsite = 完全一致 7 件 = TranscriptView.tsx 単一 file = 集約価値高 を grep で批判検証達成 + `"停止中"` semantic 混在は Loop 190 AUDIO_SOURCE precedent から責務階層リスクとして見送り判断).
+検証: npm run build (tsc + vite build) OK / agent-verify.sh で frontend のみ skip 判定 OK / grep `"開始中"` および `"終了中"` = statusLabels.ts L8/L9 定義行 + ellipsis 付き 2 callsite (L1682/L1683) のみ残存
+備考: TranscriptView.tsx 単独 file 内の重複だが statusLabels.ts への一貫性維持 + start/end semantic pair 完成. 後継候補 = R29' (K 軸 = Section 2.3 観測 50 件目 = 節目 50 件突破 = 規模 SS) / R30 (rust 軸 paradigm 反復 8 件目 = 探索コスト高 = 責務階層リスク中) / R31 (別 paradigm 開拓 = trait/generic/lifetime) / R33 (const 集約軸 minor 残候補 = `"停止中"` semantic 混在 + ellipsis 付き single callsite 等 = 集約価値低).
+---

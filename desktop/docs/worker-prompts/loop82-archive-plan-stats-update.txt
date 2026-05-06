@@ -1,0 +1,171 @@
+あなたは meet-jerky の作業 worker (mjc-worker-loop82-archive-plan-stats) です。
+担当: mjc-main-20260505-41 Loop 82 = agent-log-archive-plan.md Section 2.1 数値更新 + Section 5 末尾に Phase 状態明示。
+harness 衛生軸 + 機能拡張/docs 軸 = variety pivot = 規模 SS、振る舞い不変 (docs only)。
+
+# 必読 (作業前に絶対読む)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む**
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**。
+   - **新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+   - 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+2. AGENTS.md (とくに L46-L52 自律改善方針)
+3. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+
+# What (作業内容、scope を厳守)
+
+## A. agent-log-archive-plan.md Section 2.1 の数値表更新
+
+`docs/architecture/agent-log-archive-plan.md` の **L15-L25 (Section 2.1)** を以下の現状値に更新。
+
+現状値 (mjc-main-20260505-41 Loop 81 完走時点):
+- 総行数: **30,741 行** (旧 30,333 行)
+- 総 mjc-main セッション数: **57** (旧 56) ※ mjc-main-20260505-40 + -41 を加算
+- 総 Loop 数: **84** (旧 82) ※ Loop 80 + Loop 81 を加算
+- 総 SESSION SUMMARY 数: **32** (旧 31) ※ mjc-main-20260505-40 SUMMARY を加算
+- 最新 entry: **L30706 (mjc-main-20260505-41 Loop 81)** (旧 L30305 Loop 78)
+- 最古 entry / 最古 mjc-main session ヘッダ: 不変 (L1 / L25136)
+
+具体的な diff:
+
+旧 L19: `| 総行数 | 30,333 行 |` → 新: `| 総行数 | 30,741 行 |`
+旧 L20: `| 総 mjc-main セッション数 | 56 |` → 新: `| 総 mjc-main セッション数 | 57 |`
+旧 L21: `| 総 Loop 数 | 82 |` → 新: `| 総 Loop 数 | 84 |`
+旧 L22: `| 総 SESSION SUMMARY 数 | 31 |` → 新: `| 総 SESSION SUMMARY 数 | 32 |`
+旧 L25: `| 最新 entry | L30305 (`[mjc-main-20260505-39 Loop 78 / 2026-05-05]`) |` → 新: `| 最新 entry | L30706 (`[mjc-main-20260505-41 Loop 81 / 2026-05-05]`) |`
+
+L24 (最古 mjc-main session ヘッダ L25136) は不変。
+
+## B. Section 2.3 増加率推定の数値更新
+
+L34 の現行: `過去 ~36 時間で ~30,000 行追加 = 平均 ~830 行/時間 = ~20K 行/日のペース。1 週間継続で ~140K 行、月 ~600K 行に到達する見込み。`
+
+→ **L34 は `mjc-main-20260505-41 Loop 81 完走時点で ~30,741 行 = +408 行 / Loop 79 〜 Loop 81 の ~3 ループ間` という追補注記を追加** (新たな delta 観測の記録):
+
+```markdown
+過去 ~36 時間で ~30,000 行追加 = 平均 ~830 行/時間 = ~20K 行/日のペース。1 週間継続で ~140K 行、月 ~600K 行に到達する見込み。
+
+> **更新観測 (mjc-main-20260505-41 Loop 81 時点)**: Loop 79 → Loop 81 (~3 ループ間) で +408 行、平均 ~135 行/loop。1 ループ ~6-15 分換算で ~540-1300 行/日 (アクティブセッション中)。長期平均は ~830 行/時間 と乖離あり (本観測は handoff prompt 起こし等の一時的増分含む)。
+```
+
+## C. Section 5 末尾 (L120-L124 直後) に「Phase 状態 (Loop 81 時点)」 subsection を追加
+
+`### Phase 4: 自動化検討 (低優先)` (L122-L124) の **直後** に新規 subsection を追加:
+
+```markdown
+### Phase 状態 (mjc-main-20260505-41 Loop 81 時点)
+
+| Phase | 状態 | 備考 |
+|-------|------|------|
+| Phase 1 | 未着手 | 実施は別途ユーザー直伝指示要 (本 plan L99 の前提条件) |
+| Phase 2 | 未着手 | Phase 1 完了後 |
+| Phase 3 | 未着手 | Phase 2 完了後、運用開始後の段階切り出し |
+| Phase 4 | 未着手 | 月数十 archive batch 規模に達した場合 |
+
+実施判断は plan L99「ユーザー直伝指示で実施承認後に着手」を継続。本 plan の現状把握更新 (Section 2.1 / 2.3) は自律 OK な harness 衛生作業として位置づけ。
+```
+
+# scope 外 (絶対に触らない)
+
+- Section 1 / Section 3 / Section 4 / Section 6 / Section 7 = 触らない
+- Phase 1-4 の本文 (L97-L124) = 触らない (新 subsection のみ追加)
+- AGENT_LOG.md の本体 = 触らない (tail で参照のみ)
+- src-tauri/ 配下 = 触らない
+- frontend = 触らない
+
+# Why
+
+- AGENTS.md L46-L52 自律改善方針 = ハーネスを自律的に整える、作業ごとに検証
+- mjc-main-20260505-41 Loop 79 で plan を起こした時点 (mjc-main-20260505-39 Loop 79) から ~3 ループ経過 = 数値が古くなっている = 後継メインが正確な情報で archive 着手判断できない
+- variety pivot: 構造分離軸 2 連続 (Loop 80/81) → harness 衛生軸 (Loop 82) = 警告境界回避
+- 主観性 0 (数値は grep 機械的計算) + 主観性低 (Phase 状態は plan 既存記述の整理)
+
+# How (規模超過防止 = 厳守)
+
+- **scope 厳守**: A / B / C 以外触らない
+- 振る舞い不変 = docs only、cargo build/test 不要
+- trailing whitespace 禁止
+- AGENT_LOG.md の **先頭は絶対に触らない**
+
+# 検証 (作業後に必ず実行)
+
+```
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+grep -n "30,741 行" docs/architecture/agent-log-archive-plan.md    # → 1 件
+grep -n "Phase 状態" docs/architecture/agent-log-archive-plan.md   # → 1 件
+grep -rn $'  *$' docs/architecture/agent-log-archive-plan.md       # → 0 件 (trailing whitespace なし)
+```
+
+# Commit (2-commit pattern = Loop 60-81 で 22 連続実証済)
+
+## Commit 1: docs commit
+
+```
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.1 数値更新 + Phase 状態明示 (mjc-main-20260505-41 Loop 82, harness 衛生軸 = variety pivot, 30,333 → 30,741 行 / 56 → 57 session / 82 → 84 Loop / 31 → 32 SUMMARY, AGENTS.md L46-L52 自律改善方針寄与)"
+```
+
+hash を `git log -1 --format=%H` で取得し記録。
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 (最後の `---` の位置)。末尾の `---` の **直後** に以下を append (Read してから Edit、または `cat >> AGENT_LOG.md`):
+
+```
+
+[mjc-main-20260505-41 Loop 82 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/agent-log-archive-plan.md Section 2.1 数値表更新 (5 行 diff: 30,333 → 30,741 行 / 56 → 57 session / 82 → 84 Loop / 31 → 32 SUMMARY / 最新 entry L30305 → L30706)
+- Section 2.3 末尾に Loop 79 → Loop 81 の delta 観測注記追加 (~3 行 blockquote)
+- Section 5 Phase 4 直後に Phase 状態 subsection 新設 (Phase 1-4 全て「未着手 + ユーザー直伝指示要」の明示)
+
+## Why
+- AGENTS.md L46-L52 自律改善方針: plan の現状把握を最新化 = 後継メインが正確な情報で archive 着手判断できる
+- variety pivot: Loop 80/81 = 構造分離軸 2 連続 → Loop 82 = harness 衛生軸 = 警告境界 (3-4 連続) より遠い
+- mjc-main-20260505-41 Loop 82 メイン批判判断: 数値更新は主観性 0、Phase 状態 subsection は plan 既存記述「実施は別途ユーザー直伝指示要」(L99) の整理 = 主観性低 = 自律 OK
+- 規模 SS docs only = 振る舞い不変
+
+## How (Tidy First, behavior-preserving docs)
+- 数値は grep 機械的計算 (`wc -l` / `grep -c "^\[mjc-main-"` / unique session count)
+- Phase 状態の「未着手」表示は plan 既存記述から整理
+- L99 「ユーザー直伝指示で実施承認後に着手」を継続条件として再確認
+
+## Verify
+- agent-verify.sh: OK
+- grep -n "30,741 行" docs/architecture/agent-log-archive-plan.md: 1 件
+- grep -n "Phase 状態" docs/architecture/agent-log-archive-plan.md: 1 件
+- trailing whitespace: なし
+
+## Commits
+- <hash1> docs(architecture): agent-log-archive-plan.md Section 2.1 数値更新 + Phase 状態明示
+
+---
+```
+
+`<hash1>` は実際の commit 1 hash に置換 (worker は AGENT_LOG.md 末尾追記時に hash 既知)。
+
+## Commit 2: chore commit
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 82 commit hash <hash1> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-81 precedent 適用 23 連続)"
+```
+
+# 完走報告
+
+完走したら最終 stdout に以下を出力:
+
+```
+[mjc-main-20260505-41 Loop 82] 完走
+- docs commit: <hash1>
+- chore commit: <hash2>
+- agent-log-archive-plan.md Section 2.1 / 2.3 / 5 更新済
+- 振る舞い不変 (docs only)
+```
+
+# 注意事項
+
+- `--no-verify` 禁止
+- AGENT_LOG.md の **先頭は絶対に触らない**
+- scope 外 (Section 1 / 3 / 4 / 6 / 7、src-tauri/、frontend) は触らない
+- 行末の空白文字 (trailing whitespace) 禁止

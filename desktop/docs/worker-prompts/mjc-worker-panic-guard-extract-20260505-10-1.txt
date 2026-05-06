@@ -1,0 +1,104 @@
+あなたは meet-jerky 自律ループの worker (sonnet) です。Phase 4-C panic_guard 抽出 (Tidy First) を実行してください。
+
+# 重要: AGENT_LOG.md 取り扱いルール (絶対遵守)
+- AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**
+- 新規追記は **必ずファイル末尾に行う**
+- **先頭は絶対に触らない** (24,900+ 行 / 2.0MB の巨大ファイル、Read 全体禁止)
+- 具体手順: まず `tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` 直後に追記
+- **行末の空白文字 (trailing whitespace) 禁止** (`git diff --check` で警告される)
+- 大型ファイル (transcription.rs 2231 行 / app_detection.rs 3174 行) は Read 全体禁止 = `tail/head/grep + offset/limit Read` で対象範囲のみ参照
+
+# 冒頭で必ずやること
+1. `tail -350 AGENT_LOG.md` で直近セッション動向把握 (mjc-main-20260505-9 の SESSION SUMMARY が末尾、Phase 4-B error_payload + GoToMeeting URL 検知が直前 2 ループ)
+2. 必読ファイル:
+   - `docs/architecture/transcription-refactor-plan.md` (L86 worker サブ分割計画 = `transcription/worker/{loop, error_payload, panic_guard, emission}.rs` のうち error_payload + emission は完了、本タスクは panic_guard)
+   - `src-tauri/src/transcription.rs` の **L356-385 のみ** (offset 350, limit 50 程度で精読、struct + panic_guard + run_transcription_loop 開始部)
+   - `src-tauri/src/transcription_error_payload.rs` (Loop 17 の同型 precedent、29 行)
+   - `src-tauri/src/transcription_emission.rs` (Loop 16 の同型 precedent、38 行)
+3. `wc -l src-tauri/src/transcription.rs` (現在 2231 行) を起点として記録
+4. `cd src-tauri && cargo test --lib 2>&1 | tail -3` で **685 passed** をベースライン確認
+
+# タスク内容 (Phase 4-C panic_guard 抽出)
+
+## 抽出対象
+`src-tauri/src/transcription.rs` の L366-383 にある `fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoopConfig)` (18 行) を **新規ファイル** `src-tauri/src/transcription_panic_guard.rs` に移動する。
+
+## 依存関係 (要 pub(crate) 化)
+- `TranscriptionLoopConfig` struct (L356-364): フィールド全 7 個 (consumer / source / stream / running / app / session_manager / stream_started_at_secs) を `pub(crate)` 化 + struct 自体も `pub(crate)` 化
+- `fn run_transcription_loop(cfg: TranscriptionLoopConfig)` (L385): `pub(crate)` 化 (panic_guard から呼ぶため)
+- 呼び出し元は L277 の 1 箇所のみ (`run_transcription_worker_with_panic_guard(worker)`) = transcription.rs 内
+- `TranscriptionLoopConfig` / `run_transcription_loop` / `run_transcription_worker_with_panic_guard` は **transcription.rs 外で参照ゼロ** = grep で確認済 (lib.rs / audio.rs / transcription_manager.rs / transcription_emission.rs / transcription_error_payload.rs に出現せず) → re-export 不要、`pub(crate)` 化のみで OK
+
+## 期待される最終構成
+1. **新規**: `src-tauri/src/transcription_panic_guard.rs`
+   - `pub(crate) fn run_transcription_worker_with_panic_guard(worker: super::TranscriptionLoopConfig)` を含む
+   - 必要な use: `super::TranscriptionLoopConfig`, `super::run_transcription_loop`, `crate::transcription_error_payload::build_worker_panic_error_payload`, `tauri::Emitter`, `std::panic::{catch_unwind, AssertUnwindSafe}`, `std::sync::Arc`, `std::sync::atomic::Ordering`
+   - **注意**: `super::` プレフィックスではなく `crate::transcription::TranscriptionLoopConfig` のような完全修飾でも OK (Loop 16/17 の precedent では `crate::` 形式が使われている = `transcription_error_payload.rs` を参照して同型に揃える)
+2. **修正**: `src-tauri/src/transcription.rs`
+   - L366-383 の 18 行を削除
+   - L356 の `struct TranscriptionLoopConfig` → `pub(crate) struct TranscriptionLoopConfig` (フィールドも全 `pub(crate)`)
+   - L385 の `fn run_transcription_loop` → `pub(crate) fn run_transcription_loop`
+   - L277 の `run_transcription_worker_with_panic_guard(worker);` 呼び出し変更:
+     - **方針 A** (推奨, Loop 13/15/17 と同型 pattern): ファイル冒頭 (use 群) に `use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;` を追加 → L277 はそのまま
+     - **方針 B**: L277 を `crate::transcription_panic_guard::run_transcription_worker_with_panic_guard(worker);` に書き換え (use 文追加なし)
+3. **修正**: `src-tauri/src/lib.rs`
+   - line 24 (`mod transcription_model_manager;`) と line 25 (`mod transcription_traits;`) の **間** に `mod transcription_panic_guard;` を挿入
+   - alphabetical 順: transcription_model_manager < transcription_panic_guard < transcription_traits
+
+## TDD/Tidy First の境界
+- 本タスクは Tidy First (構造改善のみ、振る舞い不変)
+- **新規テスト追加不要** = 既存 685 passed が migration の一貫性を保証
+- 件数不変が指標 = `cargo test --lib` で **685 passed** 維持
+
+# 検証 (必ず全て pass)
+1. `cd src-tauri && cargo test --lib 2>&1 | tail -3` → **685 passed / 0 failed** (件数不変必須)
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10` → 警告ゼロ
+3. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` → 差分なし (もし差分あれば `cargo fmt` で自動吸収して再 commit)
+4. `git diff --check` → trailing whitespace 警告なし
+5. `wc -l src-tauri/src/transcription.rs src-tauri/src/transcription_panic_guard.rs` → transcription.rs が ~2213 行 (2231-18) / panic_guard.rs が ~22-25 行になる見込み
+
+# 規模超過防止 (絶対遵守)
+- **担当範囲外の編集禁止**: transcription.rs / transcription_panic_guard.rs (新規) / lib.rs の **3 ファイル限定**
+- audio.rs / transcription_manager.rs / transcription_emission.rs / transcription_error_payload.rs / その他は **触らない**
+- 新規テスト追加禁止 = 件数 **685 passed のまま** が指標
+- ロジック変更禁止 = 関数本体の中身は **literal copy** (catch_unwind ブロック / Arc cloning / Ordering::SeqCst / eprintln! / app.emit すべて原文のまま)
+
+# コミット
+全検証 pass 後:
+```
+bash scripts/agent-commit.sh "refactor(transcription): panic_guard を transcription_panic_guard.rs に抽出 (Tidy First, Phase 4-C 着手, mjc-main-20260505-10 Loop 19, ~18 行抽出 + use 1 行互換 + lib.rs mod 宣言, run_transcription_worker_with_panic_guard を pub(crate) で移動 + TranscriptionLoopConfig/run_transcription_loop を pub(crate) 昇格 (transcription.rs 外参照ゼロ確認済), transcription-refactor-plan.md L86 worker サブ分割計画 (panic_guard) 完了, 685 passed 件数不変, clippy 警告ゼロ, fmt OK, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)" src-tauri/src/transcription.rs src-tauri/src/transcription_panic_guard.rs src-tauri/src/lib.rs
+```
+
+# AGENT_LOG.md への末尾追記
+コミット成功後、`tail -10 AGENT_LOG.md` で末尾形式確認後、末尾 `---` の直後に以下フォーマットで追記:
+
+```
+[WORKER COMPLETED @ 2026-05-05 ~LoopXX JST] mjc-worker-panic-guard-extract-20260505-10-1
+- Phase 4-C panic_guard 抽出完了 (Tidy First)
+- 移動: run_transcription_worker_with_panic_guard (~18 行) → src-tauri/src/transcription_panic_guard.rs (pub(crate))
+- pub(crate) 昇格: TranscriptionLoopConfig (struct + 7 fields) + run_transcription_loop
+- 互換層: transcription.rs 冒頭に use 1 行追加 (or 完全修飾) で L277 呼び出し維持
+- lib.rs: mod transcription_panic_guard; を transcription_model_manager と transcription_traits の間に挿入
+- 検証: cargo test --lib **685 passed** (件数不変) / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK / git diff --check trailing whitespace なし
+- transcription.rs: 2231 → 2213 行 (~18 行削減、累計 ~786 行 / ~26.2% 縮小)
+- transcription-refactor-plan.md L86 worker サブ分割計画 (panic_guard) 完了
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+
+---
+```
+
+(`---` 区切り線で次セクションと分離する慣例を守ること、行末空白なし)
+
+# 完了条件
+1. 3 ファイル (transcription.rs / transcription_panic_guard.rs / lib.rs) の編集
+2. 検証 4 項目すべて pass (cargo test 685 passed / clippy 警告ゼロ / fmt OK / git diff --check OK)
+3. agent-commit.sh で 1 commit 作成
+4. AGENT_LOG.md 末尾に WORKER COMPLETED ブロック追記
+5. 最終 stdout に「Phase 4-C panic_guard 抽出完了 / 685 passed / commit <hash>」を 1 行で報告
+
+# 重要な背景 (継承事項)
+- mjc-main-20260505-9 Loop 17 で error_payload (5 関数) を `transcription_error_payload.rs` に抽出済 = panic 経路の `build_worker_panic_error_payload` import 元になる
+- Loop 16 で emission (`emit_segments`) を `transcription_emission.rs` に抽出済 = 同型 pattern (use 文 + lib.rs mod) が直接転用可能
+- Loop 13/15/17 の Tidy First 質的高さ precedent: 必要最小限の visibility 昇格 (struct field の `pub(crate)` 化は必要だが pub にしない、import 不要なら use 追加しない)
+- variety 規則: Loop 18 service detection pivot で extraction 連続カウント 0 リセット = Loop 19-21 で extraction 続行可、Loop 22 で variety pivot 必須
+- 「sweep 化しない約束」継承: Whereby / GoToMeeting に戻って 2 連続にしない (Loop 22-24 程度の間隔必須)

@@ -1,0 +1,60 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md を読んでください。
+AGENT_LOG.md は ~14900 行 / 1.5MB あるので末尾だけ参照する場合は `tail -300 AGENT_LOG.md` で十分です。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+- `src-tauri/src/app_detection.rs` のみ
+- 加えて AGENT_LOG.md への作業ログ追記 (末尾追記のみ。既存セクションを書き換えない)
+
+# 背景
+Swift 側 (`src-tauri/swift/AppDetectionBridge.swift:245`) が `Timer(timeInterval: 3.0, repeats: true)` で `browser_url_callback` を 3 秒間隔で発火している。本来 watched ブラウザがフォーカス中なら 3 秒ごとに `handle_browser_url_detection` が呼ばれるはずだが、Swift Timer や AppleScript 呼び出しが詰まると数十秒〜数分発火しない症状が起きうる。これに気づけるよう、コールバック周期が想定を大きく超えた場合に診断ログを出す。
+
+# 仕様
+1. `handle_browser_url_detection` の最初 (現状の「両方空ならログを返す」分岐の手前) で、前回呼び出し時刻からの経過秒数を計算する。
+2. 前回呼び出し時刻が記録されておらず初回起動の場合は警告しない (経過秒は記録のみ)。
+3. 経過秒数 > 10 秒の場合、診断ログを `eprintln!` で出力する。文言例: `"[app_detection] browser_url_callback の前回発火から {elapsed_secs}s 経過 (期待 ~3s)。Swift Timer または AppleScript が停滞している可能性。"`
+4. このログ自体に 60 秒スロットリングを掛ける (既存 `NOTIFICATION_THROTTLE = Duration::from_secs(60)` を再利用)。
+5. 状態保存は既存パターン (commit 5b11672 の `static AtomicU64` + `Ordering::Relaxed` + `SystemTime::now().duration_since(UNIX_EPOCH).as_secs()`) を踏襲する。
+6. **テストしやすさ確保**: 純粋関数 `fn should_warn_polling_stall(now_secs: u64, last_seen_secs: u64, last_warned_secs: u64, expected_interval_secs: u64, throttle_secs: u64) -> Option<u64>` を `app_detection.rs` 内に切り出す。返り値 `Some(elapsed_secs)` は警告対象、`None` は無視。
+7. 純粋関数のロジック:
+   - `last_seen_secs == 0` (初回): None
+   - `now_secs <= last_seen_secs` (時刻巻き戻り): None
+   - `elapsed = now_secs - last_seen_secs` で `elapsed <= expected_interval_secs * 3` (= 9 秒): None  ※ 余裕を見て expected_interval × 3
+   - `now_secs - last_warned_secs < throttle_secs`: None
+   - 上記すべて該当しない場合: `Some(elapsed)`
+8. 上記実装後、tests モジュール末尾に `should_warn_polling_stall` の test を最低 4 ケース追加: 初回 None / 正常範囲 None / 閾値超 Some(elapsed) / throttle 中 None。
+9. 警告ログ後、`LAST_BROWSER_CALLBACK_WARN_SECS` に `now_secs` を store する。
+10. 通常時 (None ケース) でも `LAST_BROWSER_CALLBACK_SEEN_SECS` には毎回 `now_secs` を store する (前回時刻更新)。
+11. 既存の uninlined_format_args 慣用形 (`{var_name}` 直接埋め込み) を厳守。
+12. 既存の関数シグネチャ・他のロジック・他テストは一切変更しない。
+
+# 検証
+1. `git diff --check`
+2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets --all-features -- -D warnings`
+4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast`
+5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+3, 4 はビルド時間が掛かるため必ずバックグラウンドではなくフォアグラウンドで完了まで待ち、Finished/test result を最後まで確認する。clippy で警告 1 件でも出たら原因を解消してから報告する (現在は警告ゼロ達成済み、回帰させない)。
+
+# AGENT_LOG.md 追記
+AGENT_LOG.md 末尾に新しいセクションを追加: `### 検知ループ周期可視化: browser_url_callback の発火間隔監視と純粋関数化`。
+記載項目: 開始日時 (JST)、担当セッション (`mjc-worker-detection-cadence-20260504-1`)、役割、作業範囲、指示内容 (このプロンプトの要約)、結果、変更ファイル、検証結果 (cargo fmt / clippy / test の合否と件数)、依存関係追加の有無、失敗理由、次アクション。
+
+# 報告形式 (1 ターンで完結)
+最後に以下を簡潔にまとめて出力:
+- 変更内容 (純粋関数の名前と署名、警告条件)
+- 変更ファイル
+- 追加 test の件数と合格状況
+- cargo fmt / clippy / test の最終結果
+- 残リスク (未実機確認の点、Swift 側との同期の懸念など)
+
+# 禁止事項
+- AGENT_LOG.md の末尾セクション以外の場所への変更
+- `src-tauri/src/app_detection.rs` 以外のソース変更
+- `git commit` の実行
+- `--no-verify`
+- 既存テストの削除・改変
+- Teams ブラウザ版タイトル fallback 等の検知ロジック追加 (既存方針に反する)

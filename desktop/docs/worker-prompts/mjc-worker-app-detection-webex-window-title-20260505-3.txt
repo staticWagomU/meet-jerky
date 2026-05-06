@@ -1,0 +1,136 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (順序厳守、AGENT_LOG.md は末尾のみ)
+
+1. AGENTS.md (全体)
+2. docs/product-concept.md (全体)
+3. docs/agent-harness-claude.md (全体)
+4. AGENT_LOG.md の **末尾 350 行のみ** (`tail -n 350 AGENT_LOG.md`)
+   - 時系列順 = 末尾が最新。新規追記は必ずファイル末尾に。
+   - **先頭は絶対に触らない**。
+   - 全体読み込み禁止 (24,000+ 行)。
+
+## 担当範囲 (これ以外のファイル編集禁止)
+
+- `src-tauri/src/app_detection.rs` のみ
+
+## タスク (TDD: Red → Green、Loop 2 (Webex URL classify) の論理的続編)
+
+`classify_meeting_window_title` に **Webex** のブラウザ版タブタイトルからの fallback 検知を追加する。既存の Zoom 検知 (`starts_with("Zoom Meeting")`) と完全に同じ「prefix 一致」パターンを踏襲する。
+
+### 仮定リスク (重要、worker は AGENT_LOG.md と最終報告に必ず明記すること)
+
+実機 macOS で Webex web 版 (https://*.webex.com) のブラウザタブタイトル形式は **未確認**。一般的な仕様として `"Webex Meeting | <site>"` または `"Webex Meeting"` 始まりが想定されるが、実環境で異なる可能性あり。本ループは Zoom 検知と同じ保守性レベル (prefix 一致による誤検知許容範囲) を採用し、検知漏れがあれば後続ループで実機確認後に拡張する。
+
+### 既存パターンの踏襲 (重要)
+
+`classify_meeting_window_title` (550 行付近) の Zoom 判定 (572-578 行) を完全踏襲:
+
+```rust
+if window_title.starts_with("Zoom Meeting") || window_title.starts_with("Zoom ミーティング")
+{
+    return Some(MeetingUrlClassification {
+        service: "Zoom".to_string(),
+        host: String::new(),
+    });
+}
+```
+
+### 実装 (TDD)
+
+#### Step 1: Red
+
+下記 4 件の test を `mod tests` の **末尾** に追加し、まず failing を確認。
+
+- T1: `classify_meeting_window_title("Webex Meeting | Acme Inc")` → `Some(MeetingUrlClassification { service: "Webex", host: "" })`
+- T2: `classify_meeting_window_title("Webex Meeting")` → `Some(...Webex...)` (prefix 単独でもマッチ、Zoom と対称)
+- T3: `classify_meeting_window_title("Microsoft Webex Meeting Tools")` → `None` (`starts_with` でないので弾く)
+- T4: `classify_meeting_window_title("Cisco Webex")` → `None` (`"Webex Meeting"` で始まらない、保守的)
+
+テスト名は既存 (`classify_meeting_window_title_*` 接頭辞) に合わせる。例:
+- `classify_meeting_window_title_returns_webex_for_webex_meeting_with_pipe_suffix`
+- `classify_meeting_window_title_returns_webex_for_webex_meeting_prefix_only`
+- `classify_meeting_window_title_returns_none_for_webex_meeting_not_at_start`
+- `classify_meeting_window_title_returns_none_for_cisco_webex_without_meeting_keyword`
+
+#### Step 2: Green
+
+`classify_meeting_window_title` の Zoom 判定の **直後** (Microsoft Teams コメントの直前) に Webex 判定を追加:
+
+```rust
+// Webex のブラウザタブタイトルは "Webex Meeting | <site>" または "Webex Meeting" 始まり
+// と仮定 (実機未確認、Zoom と同じ保守性レベル)。日本語タイトル ("Webex ミーティング" 等) は
+// 仕様未確認のため将来課題。
+if window_title.starts_with("Webex Meeting") {
+    return Some(MeetingUrlClassification {
+        service: "Webex".to_string(),
+        host: String::new(),
+    });
+}
+```
+
+#### Step 3: Refactor
+
+新規追加コードに対してのみ。既存の Google Meet / Zoom 判定は **絶対に編集しない**。構造変更不要 (Zoom と同型なので追加のみ)。
+
+### ドキュメント更新
+
+`classify_meeting_window_title` の **rustdoc コメント** (540-549 行付近) の `# 分類ルール` セクションに Webex のルール 1 行を Microsoft Teams の前に追加:
+
+```
+/// - **Webex**: `"Webex Meeting"` で始まるもの (prefix 一致、Zoom と同型)。
+///   ブラウザタブタイトルを想定。実機で形式未確認のため、検知漏れ時は実環境観察後に拡張。
+```
+
+## 禁止事項
+
+- 担当範囲外の編集禁止
+- テスト追加は **4 件のみ**、追加禁止
+- 既存テスト・既存関数の編集 / 削除 禁止
+- Google Meet / Zoom の既存判定コード絶対に触らない
+- 行末の空白文字 (trailing whitespace) 禁止
+- `--no-verify` 禁止
+- 課金が発生する操作禁止
+
+## 検証
+
+1. `cd src-tauri && cargo check --lib` でエラー / 警告なし
+2. `cargo fmt --check` で diff なし
+3. `cargo clippy --lib -- -D warnings` で警告ゼロ
+4. `cargo test --lib 2>&1 | tail -10` で **646 passed** (前 642 + 4 件) を確認
+
+既存 642 件は無破壊で全 pass、新規 4 件すべて pass。
+
+## AGENT_LOG.md 追記
+
+末尾に以下フォーマットで追記:
+
+```
+## 2026-05-05 JST mjc-worker-app-detection-webex-window-title-20260505-3
+- 担当セッション: mjc-worker-app-detection-webex-window-title-20260505-3 (作業担当, sonnet)
+- 役割: classify_meeting_window_title に Webex のブラウザタブ fallback 検知を追加 (Loop 2 の続編、AGENTS.md 優先順位 2 = 会議検知の網羅性)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: 26 連続「Debug 軸補強」からの戦略転換ループ 3 件目、Webex window title fallback、Zoom 検知の prefix 一致パターン踏襲、4 件 test 追加、rustdoc コメント更新
+- 結果: <記入>
+- 変更ファイル: src-tauri/src/app_detection.rs (+ <記入> 行 / - 0 行)
+- 検証結果: cargo check OK / cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 646 passed (前 642 + 4 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 仮定リスク: 実機で Webex web 版タブタイトルの形式未確認。"Webex Meeting" prefix で始まる仮定実装。検知漏れ発生時は実環境観察後に日本語版 ("Webex ミーティング" 等) または別形式追加で拡張。
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
+```
+
+unique でない場合は `/tmp/log-entry-3.md` に書いてから `cat /tmp/log-entry-3.md >> AGENT_LOG.md` で append。
+
+## 報告
+
+最後に **1 ターンで完結する形で**:
+- 変更内容
+- 変更ファイル一覧
+- 検証結果 (cargo check / fmt / clippy / test 件数)
+- 残リスク (実機未確認の仮定実装である旨を必ず明記)
+
+を簡潔に報告してください。

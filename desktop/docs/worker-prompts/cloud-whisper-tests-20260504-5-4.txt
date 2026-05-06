@@ -1,0 +1,107 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読むこと:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16200 行 / 1.5MB 超なので `tail -200 AGENT_LOG.md` で末尾だけ参照
+
+担当範囲:
+- src-tauri/src/cloud_whisper.rs の `mod tests` 末尾への `#[test]` 関数追加のみ
+- 実装 (L1-L120)、既存テスト 16 件 (`mod tests` L123-L390) は変更禁止
+- 他のファイルは AGENT_LOG.md への追記以外触らない
+
+背景 / Why this matters:
+- meet-jerky は OpenAI Whisper API (cloud) を含む 4 つの transcription engine を持つ。`parse_whisper_verbose_response` (pub fn, L104-L120) は cloud Whisper API のレスポンスを `TranscriptionSegment` 配列に変換する根幹で、UI 表示・履歴保存に直結する。
+- 既存 16 件のテストで build_* 系 (URL/auth/params/multipart/descriptor) はかなりカバー済み。だが `parse_whisper_verbose_response` 自体は 3 件のみ:
+  - `parses_verbose_response_with_two_segments` (典型 2 件 case、speaker のみ確認、source/is_error 未確認)
+  - `returns_err_on_malformed_json` (parse error prefix 確認)
+  - `returns_ok_with_empty_vec_when_segments_array_is_empty` (空 array)
+- 未カバーの致命的境界:
+  1. **1 segment case**: 0 件 / 2 件 のみで「1 件 case」未確認。境界 OFF-BY-ONE 検知装置がない。
+  2. **fractional seconds rounding**: `(seg.start * 1000.0).round() as i64` の浮動小数点四捨五入仕様が test で固定されていない。`round()` を `floor()`/`ceil()` に変える誤リファクタを検知できない。
+  3. **text 内部 whitespace 保持**: `seg.text.trim()` は前後 trim のみで内部空白保持の仕様が test で固定されていない (apple_speech と同じパターンだが、ここは独立した実装)。
+  4. **`segments` field 不在**: `VerboseResponse { segments }` が必須 field である serde 契約が test で固定されていない。
+  5. **default fields (`source`/`speaker`/`is_error`)**: `None` がデフォルトで埋められる契約が test で完全確認されていない (既存は speaker のみ)。
+
+追加してほしいテスト (5 件、~10-15 分で完了):
+
+1. `parse_whisper_verbose_response_handles_single_segment_with_all_default_fields_none`:
+   - body: `r#"{"segments": [{"id": 0, "seek": 0, "start": 1.5, "end": 3.0, "text": "single"}]}"#`
+   - assertions:
+     - `segments.len() == 1`
+     - `segments[0].text == "single"`
+     - `segments[0].start_ms == 1500`
+     - `segments[0].end_ms == 3000`
+     - `segments[0].source.is_none()`
+     - `segments[0].speaker.is_none()`
+     - `segments[0].is_error.is_none()`
+   - Why: 1 segment case (boundary OFF-BY-ONE 検知) と source/speaker/is_error の 3 つの default field が None である契約を一括固定。
+
+2. `parse_whisper_verbose_response_rounds_fractional_milliseconds_to_nearest`:
+   - body: 4 segment で異なる fractional seconds パターンを並べる
+     - segment 0: start=0.0001, end=0.0005 → start_ms=0 (round 0.1 → 0), end_ms=1 (round 0.5 → 1, banker's rounding に注意: round to even の場合 0 になる可能性も。f64::round() は ties away from zero なので 1 になる)
+     - segment 1: start=0.0009, end=0.001 → start_ms=1 (round 0.9 → 1), end_ms=1
+     - segment 2: start=0.9994, end=0.9995 → start_ms=999, end_ms=1000 (Rust の f64::round() は ties away from zero)
+     - segment 3: start=1.4995, end=1.5005 → start_ms=1500 (round 1499.5 → 1500), end_ms=1501 (round 1500.5 → 1501; ties away from zero)
+   - 注意: f64 浮動小数点の正確な値が assert と一致しない場合 (0.0005 を 1000 倍しても 0.5 にならない可能性) は、worker 側で actual 値を確認してから assert を調整する。assert の数値を、worker が実際に Rust の round の結果として観測した値に合わせて記述すること。
+   - Why: `(seg.start * 1000.0).round() as i64` を `floor()` / `ceil()` / `as i64` のみ (truncation) に変える誤リファクタを 4 ケースで検知。
+   - 簡略化版: 上記が複雑すぎる場合は、3 segment で start=0.0001/0.5/0.9999 → start_ms=0/500/1000 のような典型的なパターンに留めてよい。実装は本当に round しているかを worker 側で確認し、必要に応じて assert 値を調整する。
+
+3. `parse_whisper_verbose_response_trims_text_edges_only_preserves_internal_whitespace`:
+   - body: 2 segment で text に前後 whitespace + 内部空白
+     - segment 0: text = `"  hello world  "` → 期待 `"hello world"` (前後 trim、内部空白 1 個保持)
+     - segment 1: text = `"  日本語  テキスト  "` → 期待 `"日本語  テキスト"` (前後 trim、内部空白 2 個保持)
+   - Why: `seg.text.trim()` の仕様 (内部空白 collapse しない) を 2 ケースで固定。`split_whitespace().join(" ")` への誤リファクタを検知。
+
+4. `parse_whisper_verbose_response_returns_err_when_segments_field_missing`:
+   - body: `r#"{"task": "transcribe", "language": "ja"}"#` (segments field 不在)
+   - assertions:
+     - `result.is_err()`
+     - `result.unwrap_err().starts_with("cloud whisper parse error:")`
+   - Why: `VerboseResponse { segments }` が必須 field であること (serde で missing field エラーが返る) を契約として固定。`segments` を `Option<Vec<...>>` に変える誤リファクタを検知。
+
+5. `parse_whisper_verbose_response_preserves_reverse_ordered_timestamps_without_validation`:
+   - body: 1 segment で start=5.0, end=2.0 (順序逆転)
+     - 注意: API レスポンスとしては異常データだが、現実装は parse 段階でバリデーションしないため、そのまま `start_ms=5000`, `end_ms=2000` で通る現挙動。
+   - assertions:
+     - `result.is_ok()` (parse はエラーにならない)
+     - `segments.len() == 1`
+     - `segments[0].start_ms == 5000`
+     - `segments[0].end_ms == 2000`
+   - Why: 現実装の「parse 段階ではタイムスタンプ順序をバリデーションしない」挙動を test で明示固定。将来 validation を追加するリファクタが入った場合、この test を意図的に更新する形で議論できる (回帰検知器 + 仕様文書化)。
+
+実装上の注意:
+- 実装 (L1-L120) は変更禁止。
+- 既存テスト 16 件は変更禁止。
+- f64 浮動小数点の round() 結果は実装言語仕様に依存するため、test 2 (rounding) は特に worker 側で **実際の Rust の `(value * 1000.0).round() as i64` の結果を `cargo test` で確認しながら assert 値を調整すること**。assert が落ちる場合は assert 値を実装の actual 値に合わせるが、**実装のロジックを変えてはいけない**。本当に round していない (truncation 等) ならそれが現挙動として固定される。
+- VerboseSegment の serde Deserialize は `#[derive(Debug, Deserialize)]` で `start: f64`, `end: f64`, `text: String` の 3 つ。test 4 で `segments` を omit すれば、その serde 契約だけで missing field エラーになる。
+
+検証 (順番):
+1. `cargo fmt --check` (失敗したら `cargo fmt` で修正後再チェック)
+2. `cargo clippy --no-deps --all-targets --all-features -- -D warnings` (警告ゼロ必須)
+3. `cargo test --no-fail-fast` (現在 305 passed → 追加 5 件で 310 passed になる想定)
+4. `bash scripts/agent-verify.sh src-tauri/src/cloud_whisper.rs AGENT_LOG.md`
+
+AGENT_LOG.md (末尾に追記) に以下を記載:
+- 開始日時 (JST)
+- 担当セッション名 (`mjc-worker-cloud-whisper-tests-20260504-5-4`)
+- 役割: テスト追加ワーカー (実装変更なし)
+- 作業範囲: src-tauri/src/cloud_whisper.rs の mod tests 末尾への #[test] 関数追加のみ
+- 指示内容 (要約)
+- 追加したテスト一覧 (テーブル形式: #, 関数名, assertion 数, 検証内容)
+- 不変条件 / 設計意図 (1 segment 境界, f64 round 仕様 (実際の値で assert), text 内部空白保持, segments 必須 field, タイムスタンプ順序バリデーションなし)
+- 変更ファイル
+- 検証結果 (チェック / 結果テーブル)
+- 追加 test 件数 / 追加後 total passed
+- 依存関係追加の有無 (なしの想定)
+- 失敗理由 (test 2 で assert 値調整があれば、その経緯と最終的に固定した値の根拠も明記)
+- 残リスク (浮動小数点の機械精度依存、将来のタイムスタンプ validation 追加時の test 2/5 の意図的更新方針)
+- 次アクション
+
+コミットは禁止 (メインがレビュー後に commit する)。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

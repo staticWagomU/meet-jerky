@@ -1,0 +1,90 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20451 行 / 1.7MB+ あります。Read で全体を読まず、`tail -350 AGENT_LOG.md` 相当で末尾 350 行のみ参照してください。** 末尾には [SESSION SUMMARY @ 2026-05-04 ~16:50 JST] mjc-main-20260504-23 状況メモ + 直前のループログがあります。
+
+# AGENT_LOG.md 追記の絶対ルール (事故防止)
+- AGENT_LOG.md は **時系列順** = **最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない。** 先頭追記は重大事故扱い。
+- 追記前に必ず `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認する。
+- 末尾の `---` 直後に追記する。Edit ツール使用時は old_string に末尾数行を含めて一意性を確保する。
+
+# 担当範囲 (規模 XS、scope 厳守)
+src-tauri/src/session_manager.rs の **mod tests 末尾** (= 既存最終 test `discard_allows_restart_with_same_title_and_started_at` の直後、l.844 周辺、`}` で mod tests を閉じる直前) に **test 3 件のみ追加**。
+
+**関数本体は完全無変更** (`src-tauri/src/session_manager.rs` の test 以外の場所、`src-tauri/src/transcription.rs`、その他全ファイルは触らない)。test 追加のみ。
+
+# 大型ファイル参照ルール
+- src-tauri/src/session_manager.rs は 845 行。**Read 全体は OK** (この程度のサイズなら問題なし)。ただし test 追加は末尾の `}` 直前のみ。先頭 (struct/impl 定義部) は絶対に触らない。
+- AGENT_LOG.md (20451 行) は **必ず tail/grep で参照**。Read 全体は禁止。
+
+# 追加する test 3 件 (Tidy First、ユーザー観測不可、振る舞い不変)
+
+## test 1: `current_started_at_secs_returns_none_when_idle_and_after_finalize_and_after_discard`
+- **目的**: lifecycle 軸の None 契約を 3 状態 (never-started / after finalize / after discard) で対称的に CI 固定
+- **手順**:
+  1. `let manager = SessionManager::new();` → `assert_eq!(manager.current_started_at_secs(), None, "未開始時は None")`
+  2. `manager.start("meeting".into(), 100).expect("start");` → `manager.finalize(200).expect("finalize");` → `assert_eq!(manager.current_started_at_secs(), None, "finalize 後は None")`
+  3. `manager.start("meeting2".into(), 300).expect("restart");` → `manager.discard().expect("discard");` → `assert_eq!(manager.current_started_at_secs(), None, "discard 後は None")`
+- **意図**: stale started_at 値が finalize/discard 後に漏れない契約を CI 固定。既存 test 群は `is_active() == false` のみ確認で `current_started_at_secs() == None` の直接 assert は皆無。
+
+## test 2: `current_started_at_secs_returns_zero_when_session_started_at_unix_epoch_zero`
+- **目的**: 値域軸の左境界 (started_at=0、unix epoch) が原値のまま返る契約を CI 固定
+- **手順**:
+  1. `let manager = SessionManager::new();`
+  2. `manager.start("epoch_session".into(), 0).expect("start with started_at=0 should succeed");`
+  3. `assert_eq!(manager.current_started_at_secs(), Some(0), "started_at=0 (unix epoch) は Some(0) として原値で返るはず");`
+- **意図**: 「if started_at == 0 { None }」のような『0 を unset として扱う』防衛的最適化への誤改修を検知する装置。
+- **assert メッセージ**: 「started_at=0 (unix epoch) は Some(0) として原値で返るはず。0 を unset として扱う防衛的最適化を CI で遮断する。」
+
+## test 3: `current_started_at_secs_returns_u64_max_when_session_started_at_far_future`
+- **目的**: 値域軸の右境界 (started_at=u64::MAX、極端値) が truncation なく原値のまま返る契約を CI 固定
+- **手順**:
+  1. `let manager = SessionManager::new();`
+  2. `manager.start("future_session".into(), u64::MAX).expect("start with u64::MAX should succeed");`
+  3. `assert_eq!(manager.current_started_at_secs(), Some(u64::MAX), "started_at=u64::MAX は Some(u64::MAX) として truncation なく返るはず");`
+- **意図**: 内部で `started_at as i64` cast 等を入れた場合に signed overflow で負値化するような誤改修を検知する装置。
+- **assert メッセージ**: 「started_at=u64::MAX は truncation なく返るはず。`as i64` cast 等の符号付き truncation を CI で遮断する。」
+
+# 既存パターン踏襲 (厳守)
+- 命名規則: `<機能/関数名>_<期待動作>_<入力種別>` を厳格に踏襲 (既存 test 命名と整合)
+- 構造: 既存 test (例: l.297 `new_has_no_active_session_and_start_activates_it`、l.378 `start_twice_returns_already_active_and_retains_first_session`) と完全対称な書き方
+- assert メッセージは現契約の固定理由を日本語で明記
+- `mod tests` 内の最末尾 test の直後 (= `}` で `mod tests` を閉じる前) に追加
+
+# 検証
+1. `cargo test -p meet-jerky-lib --lib session_manager 2>&1 | tail -40` で 3 件追加 + 全 pass を確認
+2. `cargo test -p meet-jerky-lib --lib 2>&1 | tail -10` で 506 → 509 passed (+3 件) を確認
+3. `cd src-tauri && cargo clippy --all-targets -- -D warnings 2>&1 | tail -20` で警告ゼロ維持を確認
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -10` で差分なしを確認
+
+# AGENT_LOG.md 追記
+末尾に以下のフォーマットで `[WORKER LOG @ ...]` ブロック追加 (時系列順厳守、先頭追記禁止):
+
+```
+---
+[WORKER LOG @ 2026-05-04 ~17:00 JST] mjc-main-20260504-24 worker (session_manager.rs current_started_at_secs test 3 件追加, 規模 XS, Tidy First, ユーザー観測不可)
+- 開始日時: 2026-05-04 ~17:00 JST (推定)
+- 担当セッション: mjc-main-20260504-24 用 worker (メイン委任)
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/session_manager.rs の mod tests 末尾に test 3 件追加 (関数本体無変更)
+- 指示内容: current_started_at_secs アクセサの境界 test 3 軸補強 (lifecycle None / 値域 0 / 値域 u64::MAX)
+- 結果: ...
+- 変更ファイル: src-tauri/src/session_manager.rs (test 追加のみ)
+- 検証結果: cargo test 506 → 509 passed (+3 件), clippy -D warnings ゼロ, fmt 差分なし
+- 依存追加: なし
+- 次アクション: メインへ報告 → メインが verify + commit
+```
+
+# 完了条件
+- src-tauri/src/session_manager.rs に test 3 件追加 (関数本体無変更)
+- cargo test 全 pass (+3 件)
+- clippy -D warnings ゼロ
+- cargo fmt 差分なし
+- AGENT_LOG.md 末尾に WORKER LOG 追記
+- コミットしないこと (メインがやる)
+- 最後に 1 ターンで「変更内容、変更ファイル、検証結果、残リスク」を簡潔報告

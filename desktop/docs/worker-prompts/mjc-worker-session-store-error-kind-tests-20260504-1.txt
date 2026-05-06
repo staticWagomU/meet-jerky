@@ -1,0 +1,65 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (要点だけ)
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~15800 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。直近の Tidy First リファクタ (audio_utils.rs) と SESSION SUMMARY が状況復元の起点です。
+
+## 担当範囲 (この範囲のみ編集)
+- `src-tauri/src/session_store.rs` の `mod tests` 内、以下 3 関数のみ:
+  - `list_session_files_returns_err_when_dir_does_not_exist` (現在 458 行付近)
+  - `list_session_summaries_returns_err_when_dir_does_not_exist` (現在 468 行付近)
+  - `save_session_markdown_returns_err_when_dir_does_not_exist` (現在 480 行付近)
+- 上記 3 関数内の `assert!(result.is_err(), "...")` を、`std::io::ErrorKind::NotFound` を契約強制する形に補強する。
+- それ以外のファイル・関数・実装コードを編集しないでください。担当外の他テスト追加も禁止。
+
+## 前提情報 (調査済みなので追加調査は不要)
+- session_store.rs は冒頭 (L7) で `use std::io::{BufRead, BufReader, Error, ErrorKind, Read};` 済み。`ErrorKind` は import 済みなので追加 use 不要。
+- 既存テスト `save_session_markdown_returns_err_when_started_at_overflow_secs` (L444 付近) で `assert_eq!(err.kind(), ErrorKind::InvalidInput);` パターンが確立済み。これに完全に揃える形で 3 件を補強する。
+- 対象 3 関数の現在の実装 (例):
+  ```rust
+  let result = list_session_files(&missing);
+  assert!(result.is_err(), "should fail when dir does not exist");
+  ```
+  これを以下の形に置き換える:
+  ```rust
+  let err = list_session_files(&missing).unwrap_err();
+  assert_eq!(
+      err.kind(),
+      std::io::ErrorKind::NotFound,
+      "存在しないディレクトリは NotFound を返す契約: {err}"
+  );
+  ```
+  (`std::io::ErrorKind::NotFound` は `use` 済みなので `ErrorKind::NotFound` でも可)
+
+## 作業指示
+1. 上記 3 関数を順に書き換える。各テストで `unwrap_err()` で `std::io::Error` を取り出し、`err.kind() == ErrorKind::NotFound` を `assert_eq!` で契約強制する。assert メッセージは日本語で「存在しないディレクトリは NotFound を返す契約」のような契約強制の意図が伝わる文言にする。
+2. 書き換えた後、以下を **必ず** 実行する:
+   - `cd src-tauri && cargo fmt --check` (失敗したら `cargo fmt` で修正してから再確認)
+   - `cd src-tauri && cargo clippy --no-deps --all-targets --all-features -- -D warnings`
+   - `cd src-tauri && cargo test --no-fail-fast` (現状 269 passed → 補強後も 269 passed のままのはず。テスト件数は変わらないが、補強テストの assertion がすべて通ることを確認)
+   - `bash scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md`
+3. AGENT_LOG.md 末尾に、本作業のセクションを追記する (開始日時、担当セッション、役割、作業範囲、指示内容要約、追加した assertion、変更ファイル、検証結果、追加 test 件数 (今回は 0、補強のみ)、依存関係追加なし、失敗理由、残リスク、次アクション)。
+
+## 禁止事項
+- 課金が発生する操作。
+- 他エージェントの変更を戻すこと。
+- 担当範囲外の編集 (実装コード、他テスト関数、他ファイル)。
+- `git commit` (コミットはメインが行う)。
+- `--no-verify`、`--dangerously-skip-permissions` (このプロンプトファイル経由の harness 内では既に skip-permissions 適用済み)。
+- 外部 API 呼び出し (elevenlabs / openai / hugging face など)。
+
+## 設計意図 (なぜこれをやるか)
+- 既存 3 件の `is_err()` だけでは「Result が Err である」しか保証していない。実装が `ErrorKind::PermissionDenied` を返すように壊れても test は通る。
+- `ErrorKind::NotFound` を契約強制すれば、エラー種別の不変条件を type-level で守れる。OS 互換性 (Windows/macOS/Linux で文言は違うが ErrorKind は同じ) を維持しつつ、回帰検知器を強化できる。
+- 既存の `assert_eq!(err.kind(), ErrorKind::InvalidInput);` パターンと対称化することで、ファイル内の test 規約を統一する (Tidy First の精神)。
+
+## 完了報告
+1 ターンで以下を簡潔にまとめてください:
+- 変更内容 (どの assert が補強されたか)
+- 変更ファイル (期待: `src-tauri/src/session_store.rs` と `AGENT_LOG.md` の 2 件)
+- 検証結果 (各コマンドの結果)
+- 残リスク
+- 次アクション (このワーカー範囲では「なし」が期待値)

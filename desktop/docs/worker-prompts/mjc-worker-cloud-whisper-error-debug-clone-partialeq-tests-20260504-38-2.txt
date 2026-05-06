@@ -1,0 +1,157 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。
+
+## 必読 (順序厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみ** = `tail -350 AGENT_LOG.md` で参照する。AGENT_LOG.md 全体は 23700 行超 / 1.9MB+ あるため Read 全体禁止。
+
+## AGENT_LOG.md 追記ルール (絶対遵守)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- 追記前に必ず `tail -10` で末尾位置を把握すること。
+
+## 担当範囲 (これ以外を編集禁止)
+
+ファイル: `src-tauri/src/cloud_whisper_errors.rs`
+
+範囲: 末尾の `mod tests { ... }` ブロック (l.41-) の **末尾 (最後の test 関数の `}` 直後、l.425 の閉じ `}` の直前)** に、`CloudWhisperError` enum (l.2-8, `#[derive(Debug, Clone, PartialEq, Eq)]` + 4 variants `InvalidApiKey` / `RateLimited` / `ServerError` / `Other { status: u16, message: String }`) の Debug 出力 / Clone 独立性 / PartialEq 軸を直接的に CI 保護する **3 件の test 関数** を追加する。
+
+確認手順:
+- `tail -20 src-tauri/src/cloud_whisper_errors.rs` で末尾位置と既存 test 末尾を確認
+- 既存テスト名 (classify_*, sanitize_error_body_*) と被らないように命名
+
+## 実装内容 (3 軸)
+
+`#[allow(dead_code)]` 付きで CloudWhisperError 自体は使われている前提で、以下 3 軸を追加。既存の classify テストは戻り値で間接的に PartialEq を検証しているが、本ループでは enum 自体の Debug/Clone/PartialEq 契約を **直接的** に CI 保護する。
+
+### test 1: Debug 軸 = 全 4 variants の Debug 出力 (variant 名 contains + Other の field 値 contains)
+```
+#[test]
+fn cloud_whisper_error_debug_format_contains_variant_names_and_other_field_values() {
+    let invalid = CloudWhisperError::InvalidApiKey;
+    let rate = CloudWhisperError::RateLimited;
+    let server = CloudWhisperError::ServerError;
+    let other = CloudWhisperError::Other {
+        status: 418,
+        message: String::from("teapot"),
+    };
+
+    let invalid_dbg = format!("{invalid:?}");
+    let rate_dbg = format!("{rate:?}");
+    let server_dbg = format!("{server:?}");
+    let other_dbg = format!("{other:?}");
+
+    assert!(
+        invalid_dbg.contains("InvalidApiKey"),
+        "InvalidApiKey variant: {invalid_dbg}"
+    );
+    assert!(
+        rate_dbg.contains("RateLimited"),
+        "RateLimited variant: {rate_dbg}"
+    );
+    assert!(
+        server_dbg.contains("ServerError"),
+        "ServerError variant: {server_dbg}"
+    );
+    assert!(other_dbg.contains("Other"), "Other variant: {other_dbg}");
+    assert!(other_dbg.contains("status"), "Other status field: {other_dbg}");
+    assert!(other_dbg.contains("418"), "Other status value: {other_dbg}");
+    assert!(
+        other_dbg.contains("message"),
+        "Other message field: {other_dbg}"
+    );
+    assert!(other_dbg.contains("teapot"), "Other message value: {other_dbg}");
+}
+```
+
+### test 2: Clone 軸 = Other variant の Clone 独立性 (PartialEq 派生済 = 直接判定)
+```
+#[test]
+fn cloud_whisper_error_other_clone_is_independent_and_equal_to_original() {
+    let original = CloudWhisperError::Other {
+        status: 503,
+        message: String::from("upstream"),
+    };
+    let cloned = original.clone();
+    assert_eq!(original, cloned, "Clone は原本と等しい");
+
+    let original_dbg = format!("{original:?}");
+    let cloned_dbg = format!("{cloned:?}");
+    assert_eq!(original_dbg, cloned_dbg, "Clone の Debug 表示も一致");
+}
+```
+
+### test 3: PartialEq 軸 = struct variant `Other` の field 単位独立判定 (status 違い / message 違い / 両方違い + variant 間不等)
+```
+#[test]
+fn cloud_whisper_error_partial_eq_distinguishes_other_fields_and_variant_kinds() {
+    let base = CloudWhisperError::Other {
+        status: 500,
+        message: String::from("a"),
+    };
+    let diff_status = CloudWhisperError::Other {
+        status: 502,
+        message: String::from("a"),
+    };
+    let diff_message = CloudWhisperError::Other {
+        status: 500,
+        message: String::from("b"),
+    };
+
+    assert_ne!(base, diff_status, "status 違い: 不等");
+    assert_ne!(base, diff_message, "message 違い: 不等");
+    assert_ne!(
+        CloudWhisperError::InvalidApiKey,
+        CloudWhisperError::RateLimited,
+        "variant 間不等"
+    );
+    assert_ne!(
+        CloudWhisperError::ServerError,
+        base,
+        "ServerError と Other は不等"
+    );
+}
+```
+
+## 規模超過防止 (絶対遵守)
+
+- 担当範囲は **上記 3 件の test 関数のみ**。それ以外のファイル / 関数 / モジュールを編集しない。
+- アプリコード (構造体定義、derive、メソッド本体等) は **一切変更しない** = Tidy First の振る舞い不変原則。
+- 新規 test は **正確に 3 件** とする (4 件以上 / 2 件以下は不可)。
+- 既存テストの順序や内容を変更しない。
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep`/`sed -n 'NN,MMp'` で対象範囲のみ参照。
+- **行末の空白文字 (trailing whitespace) 禁止**。Edit 時に空行に空白を入れない。
+
+## 検証手順
+
+1. `cd src-tauri && cargo test --lib cloud_whisper_errors 2>&1 | tail -10` で 3 件増加 (現状 19 件想定 → 22 件) を確認。
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -5` で全体テスト件数 628 → 631 件 (3 件増) を確認。
+3. `cd src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10` で警告ゼロを確認。
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で format 準拠を確認 (差分があれば `cargo fmt` 実行)。
+
+## AGENT_LOG.md 追記内容 (テンプレート)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した上で、末尾に以下の形式で追記:
+
+```
+## YYYY-MM-DD HH:MM JST mjc-worker-cloud-whisper-error-debug-clone-partialeq-tests-20260504-38-2
+- 担当セッション: mjc-worker-cloud-whisper-error-debug-clone-partialeq-tests-20260504-38-2 (作業担当, sonnet)
+- 役割: CloudWhisperError enum (`#[derive(Debug, Clone, PartialEq, Eq)]` + 4 variants 含む struct variant `Other { status: u16, message: String }`) の Debug 出力契約 / Clone 独立性 / PartialEq 軸を直接的に CI 保護
+- 作業範囲: src-tauri/src/cloud_whisper_errors.rs の `mod tests` 末尾に 3 件の test 関数追加 (Debug 軸全 variants 網羅 / Clone 独立性 (PartialEq 直接判定) / PartialEq struct variant field 単位独立判定 + variant 間不等)
+- 指示内容: enum 形態 7 連続 application + Debug 軸補強 24 連続 application + 11 ファイル目展開 (cloud_whisper_errors.rs 初) + 「struct variant 形態 (Other { ... })」初対応 + 既存 classify_* 戻り値テストとは別の「enum 自体の契約」直接保護
+- 結果: <pass/fail と件数>
+- 変更ファイル: src-tauri/src/cloud_whisper_errors.rs (+ N 行 / - 0 行、3 件 test 追加)
+- 検証結果: cargo test --lib cloud_whisper_errors <件数 passed>、cargo test --lib 全体 <件数 passed>、cargo clippy --lib -- -D warnings 警告ゼロ、cargo fmt --check OK
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
+```
+
+## 報告形式 (1 ターン完結)
+
+最後に、変更内容、変更ファイル、検証結果 (test 件数 / clippy / fmt)、残リスクを 5-10 行で簡潔に報告してください。

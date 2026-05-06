@@ -1,0 +1,220 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -200 AGENT_LOG.md` で末尾の SESSION SUMMARY のみ)
+
+# 担当範囲 (touch するファイル 2 つ)
+- src-tauri/src/audio.rs (line 397-400 周辺の修正 + mod tests に新規 test 追加)
+- src-tauri/src/system_audio.rs (line 327-332 周辺の修正 + mod tests に新規 test 追加 / mod tests がある場合)
+
+**他のファイルは編集しない**。
+
+# 背景
+product-concept.md の優先度 9「録音状態の透明性」関連の gap を埋める。
+
+現状、audio.rs (マイク) と system_audio.rs (システム音声) は drop count (リングバッファ満杯で破棄したサンプル数) を `eprintln!` のみで報告し、Tauri イベントとして emit していない。
+
+audio.rs (line 397-400):
+```rust
+let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
+if dropped > 0 {
+    eprintln!("[microphone] リングバッファ満杯で {dropped} sample を破棄しました");
+}
+```
+
+system_audio.rs (line 327-332):
+```rust
+let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
+if dropped > 0 {
+    eprintln!(
+        "[system_audio] リングバッファ満杯で {dropped} sample を破棄しました"
+    );
+}
+```
+
+これを Tauri イベントとして emit することで、UI が drop 発生を可視化できる基盤が整う (frontend hookup は本タスクのスコープ外)。
+
+# Why (この改修が必要な理由)
+- 「録音状態の透明性」は優先度 9 の品質要件 (AGENTS.md に明記)
+- drop count は録音品質低下の重要指標。UI が見れば「マイクが暴走している」「buffer 容量不足」等を可視化できる
+- 既存の `audio-level` イベント (~100ms ごと) と同じスレッドで emit すれば追加コストなし
+- 純粋関数 `build_audio_drop_event_payload` を抽出すれば、AppHandle モック不要で unit test 可能
+
+# 具体的な変更
+
+## (1) audio.rs に純粋ヘルパーを追加 + emit 呼び出し
+**追加場所**: `mod tests` の直前あたり (例えば line 565-578 周辺の `pub fn calculate_rms` と `stop_recording` の間、または `#[cfg(test)] mod tests` の直前)。
+
+```rust
+/// drop イベントの payload を生成する純粋関数。
+///
+/// AppHandle を直接 mock するのは難しいため、payload 構築ロジックだけを
+/// 切り出して unit test 可能にする。
+fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    json!({ "source": source, "dropped": dropped })
+}
+```
+
+**修正場所**: line 397-400 の if ブロック内
+```rust
+let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
+if dropped > 0 {
+    eprintln!("[microphone] リングバッファ満杯で {dropped} sample を破棄しました");
+    let _ = app_handle.emit(
+        "audio-drop-count",
+        build_audio_drop_event_payload("microphone", dropped),
+    );
+}
+```
+
+**注意**: app_handle は line 389 の `std::thread::spawn(move || { ... })` の中で move キャプチャされているため、emit 呼び出しはそのまま使える (既存の `audio-level` emit と同じスレッド内)。`eprintln!` は **残す** (デバッグログとして並存)。
+
+## (2) system_audio.rs に純粋ヘルパーを追加 + emit 呼び出し
+audio.rs と対称な変更を施す。
+
+**追加場所**: 同様にトップレベルの private fn として (mod tests の直前または近く)。
+
+```rust
+/// drop イベントの payload を生成する純粋関数 (audio.rs と対称)。
+fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    json!({ "source": source, "dropped": dropped })
+}
+```
+
+**修正場所**: line 327-332 の if ブロック内
+```rust
+let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
+if dropped > 0 {
+    eprintln!(
+        "[system_audio] リングバッファ満杯で {dropped} sample を破棄しました"
+    );
+    let _ = app_handle.emit(
+        "audio-drop-count",
+        build_audio_drop_event_payload("system_audio", dropped),
+    );
+}
+```
+
+`json!` macro と `serde_json::Value` は audio.rs では既に line 12 で `use serde_json::json;` 済。system_audio.rs でも既に同様に import されているか確認 (`grep -n "use serde_json" src-tauri/src/system_audio.rs`)。**もし未 import なら追加する**。
+
+## (3) audio.rs の mod tests 末尾に新規 test 5 件 (T1-T5) 追加
+既存 test の編集禁止。
+
+```rust
+#[test]
+fn build_audio_drop_event_payload_includes_source_and_dropped_fields_with_microphone() {
+    // T1: source="microphone" + dropped=N で payload 構造を固定
+    let payload = build_audio_drop_event_payload("microphone", 42);
+    assert_eq!(
+        payload.get("source").and_then(|v| v.as_str()),
+        Some("microphone"),
+        "source field が文字列で含まれる契約"
+    );
+    assert_eq!(
+        payload.get("dropped").and_then(|v| v.as_u64()),
+        Some(42),
+        "dropped field が u64 として含まれる契約"
+    );
+}
+
+#[test]
+fn build_audio_drop_event_payload_serializes_zero_dropped_count_explicitly() {
+    // T2: dropped=0 でも payload 生成可能 (呼び出し側 if dropped > 0 で実際は呼ばれないが、関数自体は 0 を扱える純粋契約)
+    let payload = build_audio_drop_event_payload("microphone", 0);
+    assert_eq!(payload.get("dropped").and_then(|v| v.as_u64()), Some(0));
+}
+
+#[test]
+fn build_audio_drop_event_payload_handles_usize_max_boundary() {
+    // T3: dropped=usize::MAX で u64 オーバーフローや panic しない契約
+    let payload = build_audio_drop_event_payload("microphone", usize::MAX);
+    assert_eq!(
+        payload.get("dropped").and_then(|v| v.as_u64()),
+        Some(usize::MAX as u64),
+        "usize::MAX が u64 として serde_json に渡せる契約"
+    );
+}
+
+#[test]
+fn build_audio_drop_event_payload_passes_through_arbitrary_source_label() {
+    // T4: source 文字列は arbitrary な値が passthrough される契約 (呼び出し側で "microphone"/"system_audio" を渡しているが、関数自体は source を判定しない)
+    let payload = build_audio_drop_event_payload("system_audio", 1);
+    assert_eq!(
+        payload.get("source").and_then(|v| v.as_str()),
+        Some("system_audio")
+    );
+    let payload2 = build_audio_drop_event_payload("any_other_label", 1);
+    assert_eq!(
+        payload2.get("source").and_then(|v| v.as_str()),
+        Some("any_other_label"),
+        "source は arbitrary passthrough = source を判定する誤改修への検知装置"
+    );
+}
+
+#[test]
+fn build_audio_drop_event_payload_has_exactly_two_top_level_fields() {
+    // T5: payload は source と dropped の 2 field のみ (将来 timestamp 等を追加する誤改修を field 数で検知)
+    let payload = build_audio_drop_event_payload("microphone", 5);
+    let obj = payload.as_object().expect("payload は JSON object");
+    assert_eq!(
+        obj.len(),
+        2,
+        "top-level field は exactly 2 つ (source + dropped) の契約: 実際 = {:?}",
+        obj.keys().collect::<Vec<_>>()
+    );
+    assert!(obj.contains_key("source"));
+    assert!(obj.contains_key("dropped"));
+}
+```
+
+## (4) system_audio.rs の mod tests に新規 test 5 件 (T1-T5) 追加
+**system_audio.rs に既存 mod tests があるか確認**: `grep -n "mod tests" src-tauri/src/system_audio.rs`。
+
+- **既存 mod tests がある場合**: その末尾に audio.rs と対称な 5 件を追加 (関数名は同じでも OK、別モジュールなので衝突しない)
+- **既存 mod tests がない場合**: ファイル末尾に新規 `#[cfg(test)] mod tests { ... }` を追加し、必要な import (`use super::*;` 等) を含める
+
+audio.rs の T1-T5 と同形式の 5 件:
+- T1: `build_audio_drop_event_payload_includes_source_and_dropped_fields_with_system_audio` (source="system_audio")
+- T2: dropped=0 explicit
+- T3: usize::MAX boundary
+- T4: arbitrary source passthrough
+- T5: exactly 2 fields
+
+# 実装上の注意
+- **既存 test の編集禁止**。
+- 既存の `eprintln!` は **残す** (debug log として並存、削除しない)。
+- audio.rs の `let _ = app_handle.emit(...)` の **`let _ =`** は emit エラーを意図的に無視する既存パターン (line 393 の audio-level emit と同じ)。Result 握り潰しが嫌でも本タスクではそのまま (既存パターン踏襲、別の改善ループのスコープ)。
+- system_audio.rs に `mod tests` がない場合、新規追加で `use super::*;` のみ import すれば充分 (json! macro は use serde_json::json; 経由で見える)。
+- `usize::MAX as u64` キャストは 64bit プラットフォームでは値保存、32bit では拡大変換。本リポジトリは macOS 64bit のみが対象 (product-concept.md) なので、`as u64` で問題なし。
+- イベント名 `audio-drop-count` は本タスクで導入。frontend 側で listen する hookup は本タスクスコープ外。
+- system_audio.rs に純粋ヘルパー `build_audio_drop_event_payload` を **重複定義** することに抵抗があるかもしれないが、共有モジュールへの抽出は規模が大きくなる。本ループは「対称な修正の最小スライス」として両ファイルに同名 private fn を置くアプローチで進める。共有モジュール抽出は別ループで Tidy First として扱う候補。
+- 既存 import: audio.rs line 12 `use serde_json::json;`、line 13 `use tauri::Emitter;` は既に揃っている。system_audio.rs も同様に揃っているはず (既存 emit 呼び出しがあるため) が念のため確認。
+
+# 検証手順
+1. `cargo fmt -p meet-jerky` (適用)
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (warnings ゼロ確認)
+3. `cargo test -p meet-jerky --lib audio::tests` (新規 5 件含む audio test pass 確認)
+4. `cargo test -p meet-jerky --lib system_audio` (新規 5 件含む system_audio test pass 確認)
+5. `cargo test -p meet-jerky --lib` (全 lib test = 440 → 450 passed 確認、failed 0 維持)
+
+# AGENT_LOG.md 記載項目
+末尾に新セクションとして以下を追記:
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-audio-drop-event-emit
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/audio.rs + src-tauri/src/system_audio.rs に Tauri イベント emit 追加 + 純粋ヘルパー抽出 + 各 mod tests に test 5 件追加
+- 指示内容: T1-T5 (本 prompt の各 test の主旨を 1 行で)
+- 結果: 成功/失敗
+- 変更ファイル: src-tauri/src/audio.rs, src-tauri/src/system_audio.rs
+- 追加テスト名: 計 10 件の関数名一覧 (audio.rs 5 件 + system_audio.rs 5 件)
+- 検証結果: cargo fmt / clippy / test (440 → 450 passed)
+- 依存関係追加: なし (serde_json と tauri::Emitter は既存)
+- 失敗理由: なし or 詳細
+- 次アクション: メイン (mjc-main-20260504-13) によるレビュー → コミット
+
+# 1 ターンで完結する形でまとめてください。

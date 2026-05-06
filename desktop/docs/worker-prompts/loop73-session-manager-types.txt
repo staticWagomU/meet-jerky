@@ -1,0 +1,153 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+担当範囲外のファイル編集禁止。
+
+# 最初に必ず読むもの
+
+1. AGENTS.md (~50 行) と docs/product-concept.md (~60 行) と docs/agent-harness-claude.md (~150 行)
+2. **AGENT_LOG.md は ~29,500 行 / ~2.7MB ある。Read 全体禁止。`tail -350 AGENT_LOG.md` 相当で末尾だけ参照する。**
+3. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` の直後に追記。
+5. precedent file (cat 全体読み込み): `src-tauri/src/session_store_types.rs` (~19 行) = 「internal struct を crate 内 module に切り出す pattern」の参考、Loop 67 で SessionSummary 抽出 precedent
+
+# 担当タスク (Loop 73 = session_manager.rs ActiveSession + ActiveOutput 抽出)
+
+**目的**: AGENTS.md 優先順位 1 (クラッシュ修正の予防的寄与) + session_manager.rs (1274 行) の段階的責務分離 = 大型 rust file scope 拡大。Loop 67 (session_store.rs から SessionSummary を session_store_types.rs に抽出) precedent を直接展開し、internal struct の locality 集約を進める。
+
+## 想定変更
+
+### 1. 新規ファイル `src-tauri/src/session_manager_types.rs` (~18 行)
+
+```rust
+use crate::session::Session;
+use chrono::FixedOffset;
+use std::path::PathBuf;
+
+/// 活性セッションの状態。
+///
+/// `output` が `Some` の場合、`append`/`finalize` ごとに対応ファイルへ全文書き出しを行う
+/// （インクリメンタル書き出し）。`None` の場合は in-memory のみで動作する。
+pub(crate) struct ActiveSession {
+    pub(crate) session: Session,
+    pub(crate) output: Option<ActiveOutput>,
+}
+
+pub(crate) struct ActiveOutput {
+    pub(crate) path: PathBuf,
+    pub(crate) offset: FixedOffset,
+}
+```
+
+**重要**:
+- visibility は `pub(crate)` (crate 外には漏れない、session_manager.rs から参照可能)
+- field も `pub(crate)` (session_manager.rs から `active.session`, `active.output`, `output.path`, `output.offset` 形式でアクセスされる、L97/109/111/136/141/149/165/167/171 で確認済)
+- doc comment は session_manager.rs の現定義 (L17-19) からそのまま移動
+- use 文は新 file 内に明示 (Session / FixedOffset / PathBuf)
+
+### 2. `src-tauri/src/lib.rs` mod 追加
+
+`mod session_manager_types;` を **session_manager と session_store の間** (アルファベット順) に追加。
+
+具体的には `mod session_manager;` の直後、`mod session_store;` の直前。
+
+### 3. `src-tauri/src/session_manager.rs` の編集
+
+- L17-27 の `struct ActiveSession { ... }` および `struct ActiveOutput { ... }` を削除 (doc comment 込み 11 行)
+- 先頭 use 文に追加: `use crate::session_manager_types::{ActiveOutput, ActiveSession};`
+- 既存 use 文 `use crate::session::Session;` / `use chrono::FixedOffset;` / `use std::path::PathBuf;` は session_manager.rs 内でも他用途で使用中なら残す。**未使用になる場合のみ削除** (rustc 警告で確認)。
+  - **要確認**: `Session` は `start_with_output` 等で使用、`FixedOffset` は `persist_if_configured` で使用、`PathBuf` は struct 削除後 session_manager.rs で使用するか rustc が判定 = 未使用警告が出たら削除
+
+## 規模超過防止 (重要)
+
+- **session_manager.rs の他の struct/enum (`SessionManagerError` / `SessionManager`) は本 Loop の対象外、絶対に触らない**
+- **session_manager.rs 内の impl block / method は本 Loop の対象外、絶対に触らない** (struct field アクセスを `active.session` 等の形式のまま維持)
+- **persist_if_configured (L164) の中身も本 Loop の対象外**
+- 本 Loop は ActiveSession + ActiveOutput struct **2 件のみ** の抽出 + lib.rs mod 追加 + use 文追加のみ
+- test 件数: 既存 705 件全 pass + **新規 test 追加なし** (struct 移動のみ、振る舞い完全不変)
+
+## 検証手順 (cd src-tauri 必須)
+
+```bash
+cd src-tauri
+cargo build --lib
+cargo test --lib  # 705 passed / 0 failed (件数不変)
+cargo clippy --lib --tests -- -D warnings  # 警告ゼロ
+cargo fmt --check
+```
+
+`bash scripts/agent-verify.sh src-tauri/src/session_manager.rs src-tauri/src/session_manager_types.rs src-tauri/src/lib.rs` も実行。
+
+### 確認 grep
+- session_manager.rs から `^struct ActiveSession` / `^struct ActiveOutput` を grep: 完全に空のはず
+- session_manager_types.rs から同 struct を grep: 各 1 件
+- session_manager.rs L97/109/111/136/141/149/165/167/171 周辺の `active.session` / `active.output` / `output.path` / `output.offset` アクセスは未変更で動作するはず
+
+## trailing whitespace 禁止
+
+- `grep -nE ' +$' src-tauri/src/session_manager.rs src-tauri/src/session_manager_types.rs src-tauri/src/lib.rs` で空のはず
+
+## 2-commit pattern (Loop 60-72 で 13 連続安定動作 = 必ず実行)
+
+### Step 1: refactor commit
+```bash
+git add src-tauri/src/session_manager.rs src-tauri/src/session_manager_types.rs src-tauri/src/lib.rs
+git commit -m "refactor(session_manager): ActiveSession + ActiveOutput struct を session_manager_types.rs に抽出 (mjc-main-20260505-36 Loop 73, ~13 行抽出 + lib.rs mod 追加 + session_manager.rs use 文追加, session_store_types.rs precedent 直接展開, AGENTS.md priority 1 寄与)"
+```
+
+### Step 2: hash を取得して AGENT_LOG.md に追記
+```bash
+LOOP73_HASH=$(git log -1 --format=%h)
+# AGENT_LOG.md の末尾 (---の直後) に Loop 73 エントリを追記 (What/Why/How/Verify/commit セクション、~40 行)
+```
+
+### Step 3: chore commit
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 73 commit hash $LOOP73_HASH を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-72 precedent 適用 14 連続)"
+```
+
+## AGENT_LOG.md 追記内容 (末尾追記、~40 行)
+
+```markdown
+[mjc-main-20260505-36 Loop 73 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_manager_types.rs (新規 ~18 行) に session_manager.rs の internal struct 2 件を抽出
+  - `pub(crate) struct ActiveSession { pub(crate) session: Session, pub(crate) output: Option<ActiveOutput> }`
+  - `pub(crate) struct ActiveOutput { pub(crate) path: PathBuf, pub(crate) offset: FixedOffset }`
+- lib.rs に `mod session_manager_types;` 追加 (session_manager と session_store の間)
+- session_manager.rs caller use 文追加 (`use crate::session_manager_types::{ActiveOutput, ActiveSession};`)
+- session_manager.rs から L17-27 の struct 定義 11 行を削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_manager.rs ~1263 行への段階的責務分離)
+- session_store_types.rs Loop 67 precedent 直接展開 = internal struct を types module に集約する pattern
+- 大型 rust file 責務分離 scope 拡大 = session_manager.rs 着手 (5 件中 4 件目)
+- visibility: private → pub(crate) は crate 外に漏れず API surface 増加最小
+
+## How (Tidy First, behavior-preserving)
+- struct field 名 / 型 / doc comment 不変 = 振る舞い完全不変
+- visibility: 元 private → `pub(crate)` 昇格 (struct 本体 + 全 field、session_manager.rs から `active.session` 等でアクセス必要)
+- 振る舞い不変 = 705 passed 件数不変 (新規 test 追加なし)
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_manager.rs から `^struct ActiveSession` / `^struct ActiveOutput` を grep: 完全に空
+- session_manager_types.rs から同 struct を grep: 各 1 件確認
+- trailing whitespace: なし
+
+## commit
+- {LOOP73_HASH}
+```
+
+## 報告フォーマット
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。
+
+---
+
+このタスクは規模 XS = ~3-5 分完了目安。session_store_types.rs (Loop 67) precedent と完全同 pattern。

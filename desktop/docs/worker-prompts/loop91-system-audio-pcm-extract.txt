@@ -1,0 +1,182 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/audio_sample_helpers.rs` (~50 行、PCM 系 pure fn 抽出 precedent)
+6. precedent (cat 全体): `cat src-tauri/src/transcription_commands_model.rs` (Loop 90 直前抽出、~110 行)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/system_audio_pcm.rs` (~120-150 行)
+- 編集: `src-tauri/src/system_audio.rs` (PCM helpers production ~45 行削除 + 関連 test 13 件削除 + import 整理)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 1 行のみ)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 91 タスク内容 (構造分離 17 件目, 別 scope = system_audio 軸 1 件目 = pivot)
+
+## 背景
+
+- Loop 87/88 = app_detection 機能分類軸 2 件目達成。Loop 89 = settings 軸 1 件目 (settings_permission.rs)。Loop 90 = transcription_commands 軸 1 件目 (transcription_commands_model.rs)。
+- Loop 91 = system_audio.rs (778 行) の **PCM bytes → mono f32 変換 helpers** を別 module へ抽出 = 構造分離 17 件目 = 新 scope = system_audio 軸 1 件目 = pivot 達成。
+- ScreenCaptureKitCapture (macos cfg) 入力処理から純粋関数の PCM 変換を切り出し、cfg(target_os) なしで unit test しやすくなる構造に整理。AGENTS.md priority 1 寄与。
+
+## 抽出対象 (system_audio.rs から system_audio_pcm.rs へ移動)
+
+**Production (system_audio.rs L34-77, ~45 行)**:
+- L34: `const F32_SAMPLE_BYTES: usize = std::mem::size_of::<f32>();`
+- L36-43: `fn read_f32_ne(sample_bytes: &[u8]) -> f32` (8 行 純粋関数, cfg なし)
+- L45-47: `fn sanitize_pcm_sample(sample: f32) -> f32` (3 行, `crate::audio_utils::sanitize_audio_sample` ラッパー, cfg なし)
+- L49-77: `fn f32_pcm_bytes_to_mono(data: &[u8], channels: usize) -> Vec<f32>` (~29 行 純粋関数, cfg なし, read_f32_ne + sanitize_pcm_sample 内部利用)
+
+**Test (system_audio.rs `mod tests` 内, 18 件)**:
+- L467-526: `f32_pcm_bytes_to_mono` 関連 8 件
+  - test_f32_pcm_bytes_to_mono_keeps_mono_samples (L467)
+  - test_f32_pcm_bytes_to_mono_downmixes_stereo_frames (L474)
+  - test_f32_pcm_bytes_to_mono_downmixes_multichannel_frames (L481)
+  - test_f32_pcm_bytes_to_mono_ignores_zero_channels (L488)
+  - test_f32_pcm_bytes_to_mono_ignores_short_and_trailing_bytes (L495)
+  - test_f32_pcm_bytes_to_mono_ignores_partial_multichannel_frame (L505)
+  - test_f32_pcm_bytes_to_mono_sanitizes_invalid_samples (L513)
+  - test_f32_pcm_bytes_to_mono_sanitizes_before_downmix (L523)
+- L578-610: `sanitize_pcm_sample` 直接 6 件 (L579, L583, L588, L594, L599, L604)
+- L650-685: `read_f32_ne` bit-pattern 4 件 (L651, L659, L669, L678)
+
+合計移動 test = 8 + 6 + 4 = **18 件**
+
+**移動しない test (絶対に触らない)**:
+- L529-572 + L612-707: `validate_audio_format_properties` 関連 9 件 (Loop 92 以降の別軸候補)
+- L709-777: `build_audio_drop_event_payload` 関連 5 件 (cfg(target_os = "macos"))
+
+## 抽出方式 (Loop 89/90 precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/system_audio_pcm.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! ScreenCaptureKit から渡される interleaved f32 PCM bytes を mono f32 サンプル列へ変換する純粋関数群。
+//!
+//! `system_audio.rs` の ScreenCaptureKitCapture 入力処理から PCM 変換軸を切り出して
+//! cfg(target_os) なしで unit test 可能な機能境界に分離する。
+//!
+//! `read_f32_ne` / `sanitize_pcm_sample` は内部 helper、
+//! `f32_pcm_bytes_to_mono` のみ system_audio.rs から呼ばれるため `pub(crate)` で公開する。
+```
+
+必要 import:
+
+```rust
+use crate::audio_utils::sanitize_audio_sample;
+```
+
+production 移動:
+- `const F32_SAMPLE_BYTES` を file 直下 (private) に定義
+- `read_f32_ne` を private fn として定義
+- `sanitize_pcm_sample` を private fn として定義 (中身は `sanitize_audio_sample(sample)` を直接呼ぶ形に整える)
+- `f32_pcm_bytes_to_mono` を **`pub(crate) fn`** で公開
+
+`mod tests` を新 file 末尾に追加し、test 18 件を移動。`use super::*;` で内部参照可能。
+
+### 2. system_audio.rs 編集
+
+- L34: `const F32_SAMPLE_BYTES` 削除
+- L36-77: 3 fn (`read_f32_ne` / `sanitize_pcm_sample` / `f32_pcm_bytes_to_mono`) 削除
+- ファイル冒頭 use セクションに `use crate::system_audio_pcm::f32_pcm_bytes_to_mono;` を **cfg なしで追加** (`crate::audio::calculate_rms` の use の近くに配置)
+  - L282 の caller (cfg(target_os="macos") 内 ScreenCaptureKitCapture impl) は呼び出し側で path 修正不要 (use で持ち込んだ名前で呼べる)
+  - **重要**: 既存の `use crate::audio::calculate_rms;` は `#[cfg(target_os = "macos")]` 属性付き (L30-31)。同様に `use crate::system_audio_pcm::f32_pcm_bytes_to_mono;` も **`#[cfg(target_os = "macos")]` 属性を付ける** (caller が macos cfg 内のみ = 非 macos build で unused warning を避けるため)
+- mod tests 内の関連 test 18 件 (上記列挙、行番号は移動順で変動するため tail/head/grep で確認しつつ削除) を削除
+- それ以外の test (`validate_audio_format_properties` 系 + `build_audio_drop_event_payload` 系) は **触らない**
+
+### 3. lib.rs 編集 (alphabetical mod)
+
+- L40 `mod system_audio;` の **直後** (alphabetical) に `mod system_audio_pcm;` を 1 行挿入
+- invoke_handler 修正は **不要** (PCM helpers は tauri::command でないため)
+
+それ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production 3 fn + 1 const / test 18 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller は use 経由で見える名前のまま、cfg 属性も保持
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import warning が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/system_audio.rs src-tauri/src/system_audio_pcm.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85/86/87/88/89/90 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/system_audio.rs src-tauri/src/system_audio_pcm.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(system-audio): PCM bytes → mono f32 変換 helpers を system_audio_pcm.rs に抽出 (mjc-main-20260505-47 Loop 91, 機能分離軸 = system_audio 軸 1 件目, 大型 rust file 責務分離 17 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-47 Loop 91 / 2026-05-05]
+worker: mjc-worker-system-audio-pcm-loop91 (作業)
+範囲: src-tauri/src/system_audio.rs (PCM helpers production ~45 行削除 + test 18 件削除 + import 追加 cfg(target_os="macos") 付き) + src-tauri/src/system_audio_pcm.rs (新規 ~120-150 行) + src-tauri/src/lib.rs (mod system_audio_pcm; 追加)
+内容: system_audio.rs L34-77 の PCM 変換 helpers (const F32_SAMPLE_BYTES + read_f32_ne + sanitize_pcm_sample + f32_pcm_bytes_to_mono) を新 module system_audio_pcm.rs に抽出。tests 18 件 (f32_pcm_bytes_to_mono 8 件 + sanitize_pcm_sample 6 件 + read_f32_ne 4 件) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod system_audio_pcm; 追加。f32_pcm_bytes_to_mono のみ pub(crate) で公開、他は private 維持。caller は cfg(target_os="macos") 付きで use 文 1 行追加するのみ = 振る舞い不変。大型 rust file 責務分離 17 file 目 = system_audio 軸 1 件目 (新 scope) = transcription_commands 軸 (Loop 90) からの pivot 達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(system-audio): PCM bytes → mono f32 変換 helpers を system_audio_pcm.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = system_audio 軸の機能境界分離 + cfg(target_os) なしで unit test 可能な PCM 変換軸の独立)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-47 Loop 91 = system_audio_pcm.rs 抽出 (構造分離 17 file 目, system_audio 軸 1 件目 = 新 scope, transcription_commands 軸からの pivot 達成) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

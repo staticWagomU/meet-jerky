@@ -1,0 +1,138 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読
+
+1. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+2. **先頭は絶対に触らない**
+3. AGENT_LOG.md 全体は 21500+ 行 / 1.85MB+ あるので **Read 全体禁止**。`tail -350 AGENT_LOG.md` で末尾だけ確認
+4. AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md は冒頭で読む
+
+## セッション
+
+- セッション名: mjc-worker-audio-utils-ieee754-tests-20260504-29-2
+- メイン: mjc-main-20260504-29 (Loop 2)
+
+## 担当範囲 (担当範囲外の編集厳禁)
+
+- `src-tauri/src/audio_utils.rs` の `mod tests` 末尾に **test 関数 3 件のみ追加** (関数本体・既存 test 6 件は完全無変更)
+- `AGENT_LOG.md` への末尾追記 (本エントリのみ、先頭は触らない)
+
+それ以外の編集は **絶対禁止**。
+
+## 規模制約
+
+- 追加 test は **3 件ちょうど**。
+- 関数 `sanitize_audio_sample` の本体は **絶対に変更しない**。
+- AGENT_LOG.md は本エントリ 1 件のみ末尾追記。
+
+## 背景・目的
+
+`audio_utils.rs` (54 行) の既存 6 test は NaN / ±Inf / [-1.5, +1.5] の clamp を網羅しているが、IEEE 754 の **特殊値 (negative zero / subnormal / 型最大最小)** が未保護。
+
+handoff サマリの「型対称軸補強パターン」(mjc-main-27 Loop 3 の i64::MAX/i64::MIN と同型) を f32 へ拡張 application し、3 軸で executable specification 化する。
+
+## 追加する test 3 件 (命名と意図を厳守)
+
+### T1: `sanitize_audio_sample_passes_through_negative_zero_preserving_bit_pattern`
+
+- 目的: `-0.0` (IEEE 754 で `+0.0` と value-equal だが bit pattern が違う) も passthrough する現契約を CI 固定。`is_finite()` は `-0.0` で true、`clamp(-1.0, 1.0)` は `-0.0` を `-0.0` のまま返す性質を test 化。
+- 実装:
+  ```rust
+  let result = sanitize_audio_sample(-0.0_f32);
+  assert_eq!(result, 0.0_f32);
+  // bit pattern まで保護: -0.0 と +0.0 は == では区別されないため、to_bits で確認
+  assert_eq!(result.to_bits(), (-0.0_f32).to_bits(),
+      "negative zero must preserve bit pattern (sign bit) through sanitize");
+  ```
+
+### T2: `sanitize_audio_sample_clamps_f32_max_to_one_and_f32_min_finite_to_minus_one`
+
+- 目的: `f32::MAX` (≈ 3.4e38、有限値の最大) は 1.0 にクランプ、`f32::MIN` (≈ -3.4e38、有限値の最小、`f32::MIN` は `-f32::MAX` と等価) は -1.0 にクランプする現契約を CI 固定。`is_finite()` は両方 true (Inf ではない)、`clamp` で範囲外を畳み込む。
+- 実装:
+  ```rust
+  assert_eq!(sanitize_audio_sample(f32::MAX), 1.0,
+      "f32::MAX is finite (not Inf) so clamp must reduce to 1.0");
+  assert_eq!(sanitize_audio_sample(f32::MIN), -1.0,
+      "f32::MIN (= -f32::MAX) is finite (not -Inf) so clamp must reduce to -1.0");
+  ```
+
+### T3: `sanitize_audio_sample_passes_through_subnormal_min_positive_without_flush_to_zero`
+
+- 目的: `f32::MIN_POSITIVE` (≈ 1.18e-38、subnormal の最小正値の境界 = normal の最小正値) は範囲 `[-1.0, 1.0]` 内なので passthrough する現契約を CI 固定。subnormal が flush-to-zero されない (= clamp が subnormal を保持する) 性質を test 化。
+- 実装:
+  ```rust
+  let subnormal = f32::MIN_POSITIVE;
+  let result = sanitize_audio_sample(subnormal);
+  assert_eq!(result, subnormal,
+      "f32::MIN_POSITIVE (smallest normal positive) is in [-1.0, 1.0] so must passthrough without flush-to-zero");
+  ```
+
+## Tidy First 厳守
+
+- 関数本体 (`sanitize_audio_sample`) は **変更禁止**。
+- 既存 test 6 件は **変更禁止**。
+- `mod tests` の末尾 (= `sanitize_audio_sample_passes_through_finite_values_in_range` の `}` の直後、`mod tests` の `}` の前、l.53 周辺) に test 3 件を追加。
+
+## 検証手順 (順番厳守)
+
+1. `cargo fmt --check`
+2. `cargo clippy --lib -- -D warnings` で警告ゼロを確認
+3. `cargo test --lib -- --test-threads=1` で 557 passed (= 554 + 3) を確認
+
+`cargo fmt --check` で差分が出たら 1 度だけ `cargo fmt` で整形して再 check (1 往復のみ許可)。
+
+## AGENT_LOG.md 追記の手順 (先頭追記事故防止)
+
+1. `tail -10 AGENT_LOG.md` で末尾の `---` を確認
+2. 末尾の `---` の **直後** に本エントリを追記。先頭は **絶対に触らない**。
+3. **行末の空白文字 (trailing whitespace) は絶対に書かない**。worker 完走後に `grep -n " $" AGENT_LOG.md | tail -20` で末尾の trailing whitespace 警告ゼロを確認。
+4. AGENT_LOG.md エントリのテンプレート:
+
+```markdown
+## mjc-worker-audio-utils-ieee754-tests-20260504-29-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-utils-ieee754-tests-20260504-29-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-29 Loop 2
+
+### 作業範囲
+- `src-tauri/src/audio_utils.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替で `audio_utils.rs` (54 行 / 既存 6 test は NaN/±Inf/clamp 軸のみ / IEEE 754 特殊値が未保護) を補強。型対称軸補強パターン (mjc-main-27 Loop 3 の i64::MAX/i64::MIN を f32 へ拡張) で 3 軸 application。
+- T1: sanitize_audio_sample_passes_through_negative_zero_preserving_bit_pattern (-0.0 軸 + bit pattern 保持)
+- T2: sanitize_audio_sample_clamps_f32_max_to_one_and_f32_min_finite_to_minus_one (型最大最小値 = 有限値の境界)
+- T3: sanitize_audio_sample_passes_through_subnormal_min_positive_without_flush_to_zero (subnormal 軸)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 557 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <X>s`
+
+### 変更ファイル
+- src-tauri/src/audio_utils.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 557 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <X>s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 完了後の報告
+
+1 ターンで完結する形で、変更内容、変更ファイル、検証結果 (末尾 quote)、残リスクを報告してください。

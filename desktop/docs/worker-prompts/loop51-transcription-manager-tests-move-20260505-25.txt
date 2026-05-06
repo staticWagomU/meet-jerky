@@ -1,0 +1,149 @@
+あなたは meet-jerky の Tidy First 担当 worker (sonnet) です。
+Loop 51 の作業を完走してください。
+
+# 最初に必ず読むこと
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** (~27,500+ 行 / ~2.5MB あるので Read 全体禁止、tail/head/grep のみ)。**先頭は絶対に触らない**。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾に行う**。具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新規エントリを追記する。
+3. docs/autonomous-main-prompt-claude.md / AGENTS.md は必要に応じ参照 (Read 全体可)。
+
+# タスク (規模 SS-S, ~100 行移動)
+
+`src-tauri/src/transcription.rs` の tests mod から **TranscriptionManager 関連 6 tests** を `src-tauri/src/transcription_manager.rs` に移動する Tidy First (振る舞い不変)。
+
+## 移動対象 (transcription.rs の tests mod 内)
+
+以下 **6 tests + 関連コメントヘッダ + use 文** を完全に切り分け移植する:
+
+1. **L51-53**: コメントヘッダ「ensure_engine — エンジン種別ディスパッチ / 再ロード抑制」
+2. **L55-71**: `#[test] fn test_ensure_engine_apple_speech_errors_off_macos`
+3. **L73-85**: `#[test] fn test_ensure_engine_openai_loads_engine_without_api_key_check`
+4. **L87-99**: `#[test] fn test_ensure_engine_elevenlabs_loads_engine_without_api_key_check`
+5. **L101-103**: コメントヘッダ「モデル未ダウンロード エラーパス テスト」
+6. **L105-116**: `#[test] fn load_model_returns_error_when_model_not_downloaded`
+7. **L118-138**: `#[test] fn ensure_engine_returns_error_when_whisper_model_not_downloaded`
+8. **L140-155 程度**: `#[test] fn ensure_engine_does_not_set_engine_on_whisper_failure` (末尾 `}` まで含む、現行 sed/grep で末尾位置を正確に確認すること)
+
+## 同時整理
+
+- **transcription.rs L49**: `use crate::transcription_manager::TranscriptionManager;` を **削除**。grep 確認済 (TranscriptionManager の参照は移動対象 6 tests のみ、移動後 unused になる)
+- **transcription.rs L43-49 の他の use 文 (RequestedTranscriptionSources / transcription_error_payload) は残置** (後続 tests で使用中)
+- **transcription.rs**: L51-(L155 程度) のコメントヘッダ 2 つ + 6 tests を完全削除
+- **L155 以降は触らない** (StreamConfig Debug tests / その他 tests = 別ループの locality 集約対象)
+
+## 移動先 (transcription_manager.rs、現状 124 行)
+
+ファイル末尾 (L124 の `}` の後) に新規 `#[cfg(test)] mod tests` を追加する形で挿入:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ─────────────────────────────────────────
+    // ensure_engine — エンジン種別ディスパッチ / 再ロード抑制
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn test_ensure_engine_apple_speech_errors_off_macos() { ... }
+
+    #[test]
+    fn test_ensure_engine_openai_loads_engine_without_api_key_check() { ... }
+
+    #[test]
+    fn test_ensure_engine_elevenlabs_loads_engine_without_api_key_check() { ... }
+
+    // ─────────────────────────────────────────
+    // モデル未ダウンロード エラーパス テスト
+    // ─────────────────────────────────────────
+
+    #[test]
+    fn load_model_returns_error_when_model_not_downloaded() { ... }
+
+    #[test]
+    fn ensure_engine_returns_error_when_whisper_model_not_downloaded() { ... }
+
+    #[test]
+    fn ensure_engine_does_not_set_engine_on_whisper_failure() { ... }
+}
+```
+
+注意:
+- `use super::*;` で `TranscriptionManager` (現行 transcription_manager.rs 本体で `pub struct TranscriptionManager` 宣言) にアクセス可能
+- 各 test 内で参照する `crate::settings::TranscriptionEngineType` はフルパスで使用中 (use 文不要)
+- 移植時は **テスト本文を一字一句そのまま** 移す。リファクタしない、コメント変更しない。
+
+# 規模超過防止 (厳守)
+
+- **担当範囲外の編集禁止**: app_detection.rs / frontend / scripts / docs/ など、本タスク以外のファイルに触らない
+- **test 件数の上限**: 新規テスト追加禁止。**既存 6 tests のみを移動**
+- **transcription.rs から削除する範囲**: L49 use 文 + L51-(L155 程度) の 6 tests + 2 コメントヘッダ のみ
+- **L155 以降の StreamConfig Debug tests / その他 tests は触らない** (別ループの locality 集約対象)
+- 既存の挙動・型・ロジック変更禁止 (Tidy First = 振る舞い不変)
+
+# 検証 (順番厳守)
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | tail -20` → **702 passed / 0 failed** を確認 (件数不変)
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` → 警告ゼロ
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check` → OK
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_manager.rs` → OK
+5. **行末の空白文字 (trailing whitespace) 禁止**: `grep -nP " +$" src-tauri/src/transcription.rs src-tauri/src/transcription_manager.rs` → 出力なし
+
+検証で 1 件でも失敗したら **commit 前に必ず修正**。失敗を放置しない。
+
+# AGENT_LOG.md 追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のエントリを追記 (Edit ツールでは末尾 `---` が unique にならないので、別ファイル `/tmp/loop51-log.md` に書いて `cat /tmp/loop51-log.md >> AGENT_LOG.md` で append する):
+
+```
+[mjc-main-20260505-25 Loop 51 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から TranscriptionManager 関連 tests 6 件 (test_ensure_engine_apple_speech_errors_off_macos / test_ensure_engine_openai_loads_engine_without_api_key_check / test_ensure_engine_elevenlabs_loads_engine_without_api_key_check / load_model_returns_error_when_model_not_downloaded / ensure_engine_returns_error_when_whisper_model_not_downloaded / ensure_engine_does_not_set_engine_on_whisper_failure) を src-tauri/src/transcription_manager.rs に移動
+- transcription.rs L49 の `use crate::transcription_manager::TranscriptionManager;` を削除 (移動後 unused、grep 確認済 = 5/5 件すべて移動対象内 = 完全な切り分け可能)
+- transcription.rs 削除範囲のコメントヘッダ「ensure_engine — エンジン種別ディスパッチ / 再ロード抑制」+ 「モデル未ダウンロード エラーパス テスト」も同時削除
+- transcription_manager.rs に新規 `#[cfg(test)] mod tests` 追加 (`use super::*;` のみ、`crate::settings::TranscriptionEngineType` はフルパスで使用)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (TranscriptionManager.ensure_engine + load_model の locality 完成 = 関数本体 + テスト同居で理解性向上)
+- variety pivot 軸 = test 軸 = Loop 50 から 1 ループ間隔 = 警告境界 (test 軸 8 件目連続だが間に 2 軸 pivot 済の散発パターン = 純粋な「sweep」ではない)
+- TranscriptionManager 関連 tests は本体 (transcription_manager.rs) と locality 一致が自然 = Loop 32 (resample_audio tests) / Loop 38 (transcription_types tests) / Loop 42 (沈黙検知 tests) / Loop 47 (ModelManager tests) / Loop 50 (Mock tests) precedent 継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs から L49 use 文 + L51-L155 程度の 6 tests + 2 コメントヘッダを削除
+- transcription_manager.rs に新規 tests mod 追加 (`use super::*;` で TranscriptionManager アクセス、TranscriptionEngineType はフルパス参照)
+- transcription.rs: 434 → <移動後の実数> 行 / transcription_manager.rs: 124 → <移動後の実数> 行
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- commit `<ハッシュ>` (commit 後にハッシュを記入)
+```
+
+# Commit
+
+検証 OK 後:
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-commit.sh "refactor(transcription): TranscriptionManager 関連 tests 6 件を transcription_manager.rs に移動 (Tidy First, mjc-main-20260505-25 Loop 51)" src-tauri/src/transcription.rs src-tauri/src/transcription_manager.rs AGENT_LOG.md
+```
+
+commit 成功後、commit hash を **AGENT_LOG.md の `commit ` 行に記入する別 commit (chore)** を作成:
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-commit.sh "chore(agent-log): Loop 51 commit hash <ハッシュ> を AGENT_LOG.md に記入" AGENT_LOG.md
+```
+
+# 完了条件
+
+- 上記検証 5 つすべて OK
+- 2 つの commit が main に乗っている (1: 実装 + AGENT_LOG.md、2: hash 反映 chore)
+- 規模超過なし (transcription.rs / transcription_manager.rs / AGENT_LOG.md のみ変更)
+
+完走したら短く完了報告 (~3 行)。

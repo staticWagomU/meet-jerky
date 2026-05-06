@@ -1,0 +1,220 @@
+あなたは meet-jerky の worker です。Loop 143 = frontend 軸 (純粋関数機能分離軸 frontend 版 13 件目 = scope 35 軸目開拓 = R6 段階的分割完了マイルストーン) を担当します。
+
+# 必読 (順番)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** (先頭は絶対に触らない、ファイル全体 Read 禁止 = ~33,539 行ある)。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1 寄与)。
+3. **precedent worker** (重要: 同 paradigm = utils 内 cross-import paradigm 拡張): `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptionSourceHelpers.ts` (Loop 141 = paradigm 5 件目) と `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioSourceHelpers.ts` (Loop 135 = paradigm 4 件目) で構造把握。
+
+# 重要な制約 (絶対)
+
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭 (L1 〜) は絶対に触らない。**
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照。**
+- **行末の空白文字 (trailing whitespace) 禁止。**
+- 担当範囲外の編集禁止。本 Loop 143 は **src/utils/meetingStartHelpers.ts** (新規) + **src/routes/TranscriptView.tsx** (関数 1 件削除 + import 追加) + **AGENT_LOG.md** (末尾に Loop 143 entry 追記) のみ。
+
+# 本 Loop の目的
+
+TranscriptView.tsx 内の純粋関数 `getMeetingStartBlockedReason` を新 file `src/utils/meetingStartHelpers.ts` に抽出する。
+
+## R6 段階的分割完結マイルストーン
+
+本 Loop 143 で TranscriptView.tsx の **純粋関数 26 件 (+ const 1) すべて抽出完了** = R6 段階的分割完了 = 純粋関数機能分離軸 frontend 版完結。
+- audio level 2 (Loop 125) / permission 2 (Loop 127) / track ARIA 2 (Loop 129) / engine 機能特性 2 (Loop 131) / AI Transmission 3 (Loop 133) / Audio Source 4 (Loop 135) / Engine Status 3 (Loop 137) / External API Key 3 (Loop 139) / Transcription Source 4 + const 1 (Loop 141) / **Meeting Start 1 (Loop 143)** = 計 26 + const 1
+
+## 抽出対象 (確定済 = メインで grep 検証済)
+
+- **対象関数**: `getMeetingStartBlockedReason` (TranscriptView.tsx **L133-L175** = 43 行)
+- **callsite**: 1 件のみ = **L1079** (TranscriptView.tsx 内、外部 callsite ゼロ)
+- **依存**:
+  - `APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON` (L159 内部使用) ← `transcriptionSourceHelpers.ts` から import 必要 = **utils 内 cross-import paradigm 6 件目に拡張**
+  - `TranscriptionEngineType` (引数型) ← `../types` から type import 必要
+
+## 重要な責務階層判定 (メインで実施済)
+
+- 既存 `meetingDetection.ts` (Tauri detection invoke logic) = 異 entity
+- 既存 `meetingDetectedBannerHelpers.ts` (MeetingDetectedBanner component の display tier) = 異 component
+- 既存 `meetingStartRequest.ts` (localStorage 永続化 tier、Loop 141 で確認済) = 異 tier
+- 既存 `transcriptionSourceHelpers.ts` (transcription source entity の display + predicate tier) = 異 entity (Meeting Start ≠ Transcription Source)
+- **新 file `meetingStartHelpers.ts` = Meeting Start failure reason の display tier (UI message 生成) として独立判定**
+
+## utils 内 cross-import paradigm 6 件目への拡張 (重要)
+
+- 1 件目 (Loop 110): transcriptDisplayHelpers.ts → audioTrackLabels
+- 2 件目 (Loop 129): trackStatusAriaLabels.ts → audioTrackLabels
+- 3 件目 (Loop 133): aiTransmissionHelpers.ts → liveCaptionStatus
+- 4 件目 (Loop 135): audioSourceHelpers.ts → audioTrackLabels
+- 5 件目 (Loop 141): transcriptionSourceHelpers.ts → audioTrackLabels (打ち止め継続主張覆し)
+- **6 件目 (本 Loop 143): meetingStartHelpers.ts → transcriptionSourceHelpers.ts (APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON 用) = paradigm 進化継続**
+
+## TranscriptView.tsx の APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON import は維持
+
+L97 の `APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON` import は **削除しない**。理由 = TranscriptView.tsx 内で 5 callsite (L606/749/829/897/956) が依然として使用するため (Loop 141 で抽出時に削除しなかった precedent と同じ判断)。
+
+# 具体手順 (厳守、2-commit pattern)
+
+## Step 1: 新 file 作成 = src/utils/meetingStartHelpers.ts
+
+新規 file を Write ツールで作成 (~50 行):
+
+```typescript
+import type { TranscriptionEngineType } from "../types";
+import { APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON } from "./transcriptionSourceHelpers";
+
+export function getMeetingStartBlockedReason(
+  isMeetingActive: boolean,
+  isSettingsLoading: boolean,
+  settingsError: unknown,
+  transcriptionEngine: TranscriptionEngineType | undefined,
+  requiresLocalModel: boolean,
+  isModelDownloaded: boolean | undefined,
+  modelDownloadedError: unknown,
+  externalApiProvider: string | null,
+  hasExternalApiKey: boolean | undefined,
+  externalApiKeyError: unknown,
+): string | null {
+  if (isMeetingActive) return null;
+  if (settingsError) {
+    return "文字起こし設定を取得できません。設定画面または再読み込みで状態を確認してください。";
+  }
+  if (isSettingsLoading) {
+    return "文字起こし設定を確認中です。";
+  }
+  if (modelDownloadedError) {
+    return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
+  }
+  if (externalApiKeyError && externalApiProvider) {
+    return `${externalApiProvider} API キーの状態を確認できません。設定画面で API キー状態を再確認してください。`;
+  }
+  if (transcriptionEngine === "appleSpeech") {
+    return APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON;
+  }
+  if (externalApiProvider && hasExternalApiKey === undefined) {
+    return `${externalApiProvider} API キーの状態を確認中です。`;
+  }
+  if (externalApiProvider && !hasExternalApiKey) {
+    return `記録を開始するには、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
+  }
+  if (!requiresLocalModel) return null;
+  if (isModelDownloaded === undefined) {
+    return "記録開始に必要な Whisper モデルの状態を確認中です。";
+  }
+  if (!isModelDownloaded) {
+    return "記録を開始するには、Whisper モデルのダウンロードが必要です。";
+  }
+  return null;
+}
+```
+
+注意:
+- trailing whitespace なし
+- precedent (transcriptionSourceHelpers.ts L1-L20) と同じスタイル (alphabetical import 順序、type import 先 → value import 後)
+
+## Step 2: TranscriptView.tsx 修正
+
+### Step 2-1: 関数定義削除 (L133-L175)
+
+L133-L175 の `function getMeetingStartBlockedReason(...) { ... }` 全体を Edit ツールで削除。L132 (空行) と L176 (空行) は維持。
+
+精確な削除範囲は L133 の `function getMeetingStartBlockedReason(` から L175 の `}` まで。`grep -n "function getMeetingStartBlockedReason\|^}" src/routes/TranscriptView.tsx | head -10` で正確な行番号を再確認した上で Edit。
+
+### Step 2-2: import 追加
+
+L102 の `} from "../utils/transcriptionSourceHelpers";` 直後 (L103 = 空行の前) に新 import 追加:
+
+```typescript
+import { getMeetingStartBlockedReason } from "../utils/meetingStartHelpers";
+```
+
+注意:
+- alphabetical 順序維持 (m... は s... より前) のため適切な位置に挿入。実際は `transcriptionSourceHelpers` import の直前または直後でも build OK。安全のため transcriptionSourceHelpers import 直後 + 空行の手前に挿入が precedent。
+- L102 の直後の空行 (L103) は維持。
+
+## Step 3: 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/meetingStartHelpers.ts
+```
+
+期待結果:
+- `npm run build`: ✓ tsc + vite build (1931+ modules)
+- `agent-verify.sh`: 全項目 OK
+
+## Step 4: refactor commit (1 件目)
+
+```bash
+git add src/routes/TranscriptView.tsx src/utils/meetingStartHelpers.ts
+git commit -m "$(cat <<'EOF'
+refactor(frontend): TranscriptView の getMeetingStartBlockedReason を utils/meetingStartHelpers.ts に抽出 (mjc-main-20260505-70 Loop 143, frontend 軸 16 件目 = 純粋関数機能分離軸 frontend 版 13 件目, scope 35 軸目開拓, 大型 frontend file 責務分離 48 file 目, R6 段階的分割 10 件目 = R6 完結マイルストーン = TranscriptView.tsx 純粋関数 26 件 + const 1 すべて抽出完了, transcriptionSourceHelpers.ts cross-import = utils 内 cross-import paradigm 6 件目に拡張 = Loop 141 paradigm 進化継続, AGENTS.md priority 1 寄与)
+EOF
+)"
+```
+
+## Step 5: AGENT_LOG.md 末尾 (`---` の直後) に Loop 143 entry を追記
+
+**手順**:
+1. `tail -10 AGENT_LOG.md` で末尾を確認
+2. 末尾の `---` 直後に以下のテンプレートで append:
+
+```
+[mjc-main-20260505-70 Loop 143 / 2026-05-06]
+worker: mjc-worker-loop143-meeting-start-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 1 件削除 + import 追加) + src/utils/meetingStartHelpers.ts (新規 ~50 行 = type import 1 行 + value import 1 行 + export 1 関数)
+内容: TranscriptView.tsx L133-L175 の getMeetingStartBlockedReason を新 file utils/meetingStartHelpers.ts に抽出。frontend 軸 16 件目 = 純粋関数機能分離軸 frontend 版 13 件目 = scope 35 軸目開拓 = 大型 frontend file 責務分離 48 file 目 = R6 段階的分割 10 件目 = **R6 完結マイルストーン** (TranscriptView.tsx 純粋関数 26 件 + const 1 すべて抽出完了 = audio level 2 + permission 2 + track ARIA 2 + engine 2 + AI Transmission 3 + Audio Source 4 + Engine Status 3 + External API Key 3 + Transcription Source 4 + const 1 + Meeting Start 1)。callsite 1 件 (L1079) は import 追加のみで参照解決。alternation pattern 33 連続維持 (K(142) → frontend(143))。メイン批判判断 = handoff 主張「getMeetingStartBlockedReason L249」を grep で批判的検証 → 実際は **L133** (-116 行ずれ = Loop 141 -119 行縮小により上方移動) + 既存 meetingDetection.ts / meetingDetectedBannerHelpers.ts / meetingStartRequest.ts / transcriptionSourceHelpers.ts との責務階層精査で **異 entity / 異 component / 異 tier 判定** = 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135/137/139/141 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は transcriptionSourceHelpers.ts から APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON を import = **utils 内 cross-import paradigm 6 件目に拡張** (Loop 141 paradigm 進化継続)。TranscriptView.tsx L97 の APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON import は 5 callsite (L606/749/829/897/956) が依然使用のため維持。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/meetingStartHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <Step 4 の sha を埋める>
+依存関係追加: なし (transcriptionSourceHelpers.ts + types/ への import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+注意:
+- 末尾に `---` を必ず付ける (次の entry 用境界)
+- 行末 trailing whitespace なし
+- commit hash placeholder `<Step 4 の sha を埋める>` は Step 4 完了後の `git rev-parse --short HEAD` 結果で置換
+
+## Step 6: chore commit (2 件目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-70 Loop 143 = TranscriptView の getMeetingStartBlockedReason を utils/meetingStartHelpers.ts に抽出 (構造分離 48 file 目, frontend 軸 16 件目, scope 35 軸目開拓, 純粋関数機能分離軸 frontend 版 13 件目, alternation 33 連続維持, R6 段階的分割 10 件目 = R6 完結マイルストーン, utils 内 cross-import paradigm 6 件目に拡張 = Loop 141 進化継続, transcriptionSourceHelpers.ts への cross-import)
+EOF
+)"
+```
+
+# 規模と所要時間
+
+- 規模: SSS = ~2-3 分完走見込み
+- worker prompt 行数: 本 prompt は ~150 行
+
+# 上限明示
+
+- ファイルは src/routes/TranscriptView.tsx + src/utils/meetingStartHelpers.ts (新規) + AGENT_LOG.md のみ編集
+- AGENT_LOG.md は **末尾に追記のみ** (先頭は絶対に触らない)
+- 純粋関数 1 件のみ抽出 + import 1 行追加 + import 1 行追加 (新 file 内) のみ
+- それ以外のファイル変更禁止
+- 関数本体内のロジックは **完全に変更しない** (Behavior preserved)
+- trailing whitespace 禁止
+
+# 完了確認
+
+```bash
+git log --oneline -3
+git status --short
+wc -l src/routes/TranscriptView.tsx src/utils/meetingStartHelpers.ts AGENT_LOG.md
+```
+
+期待結果:
+- 直近 2 commit が本 Loop 143 のもの
+- working tree clean (untracked のみ残存 OK)
+- TranscriptView.tsx ~2056 行前後 (2098 - 42)
+- meetingStartHelpers.ts ~48 行前後
+- AGENT_LOG.md ~33,556 行前後 (33,539 + ~17)

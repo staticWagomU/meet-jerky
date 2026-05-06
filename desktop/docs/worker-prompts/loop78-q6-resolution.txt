@@ -1,0 +1,159 @@
+あなたは meet-jerky の worker (mjc-worker-loop78-q6-resolution) です。
+
+# 作業概要 (規模 SS、~10-15 行 docs 追記)
+
+`docs/architecture/detection-extension-plan.md` の Section 6 (Open Questions) のうち **Q6 のみ** を「Resolved」化し、window title 日本語 localization 対応方針 = Phase 2 = 英語 pattern only + Phase 5 = 日本語追加の段階導入方針を docs に追記します。Q1/Q2/Q3/Q4/Q7/Q8 は Open のまま据え置き (実機要件 / 別 phase 前提)。Loop 74 (Q5 Resolved 化) precedent をそのまま展開します (mjc-main-20260505-39 の Loop 78 メイン批判判断結果)。
+
+# 必読 (冒頭で必ず実施)
+
+1. `tail -350 AGENT_LOG.md` で末尾を読む。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. 末尾の SESSION SUMMARY (mjc-main-20260505-38) と Loop 76/77 のエントリを読み、session_store.rs 1133→725 行 -36% 縮小と構造分離 7 file 目達成を確認。
+3. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 → 末尾の `---` 直後に追記。
+4. 大型ファイル (`AGENT_LOG.md` ~30,500+ 行) は Read 全体禁止 = tail/head/grep のみ。
+
+# 担当範囲 (厳守、超過禁止)
+
+## 編集対象 (この 2 ファイルのみ)
+
+1. **`docs/architecture/detection-extension-plan.md`**: Section 6 の Q6 行を更新 + Q5 Resolved Block の **直後** に Q6 Resolved Block を追記
+2. **`AGENT_LOG.md`**: 末尾に Loop 78 エントリを追記
+
+## 編集禁止
+
+- src-tauri/src/* (rust コード) には一切触らない (docs only、振る舞い不変維持)
+- frontend (src/) には一切触らない
+- Q1/Q2/Q3/Q4/Q7/Q8 は触らない (実機要件 / 別 phase 前提)
+- AGENT_LOG.md 先頭は絶対に触らない
+
+# 具体的手順
+
+## Step 1: 現状確認
+
+```bash
+grep -n "Q6\|Q5 解決結果\|AppleScript" docs/architecture/detection-extension-plan.md | head -10
+sed -n '243,260p' docs/architecture/detection-extension-plan.md
+grep -n "日本語\|ハドル中\|ステージ\|Phase 5" docs/architecture/detection-extension-plan.md | head -10
+```
+
+期待出力:
+- Q6 行 (L243): `| Q6 | window title の日本語 localization 対応方針 | 低 | \`"Huddle"\` → \`"ハドル中"\` 等の prefix/含有 pattern を追加するか英語のみとするか |`
+- Q5 解決結果 ヘッダ (L247): `### Q5 解決結果 (mjc-main-20260505-37 Loop 74 調査)`
+- Section 5.5 Phase 5 (L226-230) で「日本語 window title 対応: \`"ハドル中"\` / \`"ステージ"\` 等の日本語 pattern 追加 (実機確認後)」既記載
+- Section 3.1 (L95) で「日本語表示では \`"ハドル中 #general"\` 等になる可能性」既記載
+- Q1 (L238) で「英語 / 日本語」両方の実機確認指示既記載
+
+## Step 2: Q6 行を「Resolved」に更新 + Q5 Resolved Block の直後に Q6 Resolved Block を追記
+
+`docs/architecture/detection-extension-plan.md` で:
+
+(a) Q6 行 (L243) の「重要度」列を「**低 → 解決済 (下記参照)**」に変更。例 (Edit ツール、old_string は L243 全行を unique に):
+
+```
+| Q6 | window title の日本語 localization 対応方針 | 解決済 (下記参照) | `"Huddle"` → `"ハドル中"` 等の prefix/含有 pattern を追加するか英語のみとするか |
+```
+
+(b) Q5 Resolved Block の **直後** (L256 末尾の段落の後、`### AppleScript による window title 取得コマンド (参考)` の **直前**、空行を 1 行挟む) に、以下の Q6 Resolved Block を挿入:
+
+```markdown
+### Q6 解決結果 (mjc-main-20260505-39 Loop 78 調査)
+
+**結論**: window title 日本語 localization 対応は **段階導入方針**。Phase 2 では英語 pattern only で着手し、Phase 5 で日本語 pattern (`"ハドル中"` / `"ステージ"` 等) を追加する。
+
+**根拠**:
+- Section 5.5 Phase 5 (L230) で「日本語 window title 対応: `"ハドル中"` / `"ステージ"` 等の日本語 pattern 追加 (実機確認後)」が既に Phase 5 タスクとして記載されており、段階導入方針は plan 内既存。
+- Section 3.1 Slack Huddle (L95) で「日本語表示では `"ハドル中 #general"` 等になる可能性」、Q1 (L238) で「英語 / 日本語」両方の実機確認指示が既に明記されており、日本語追加は Phase 5 着手前提として保持されている。
+- false negative (日本語環境ユーザーで huddle 中の検知漏れ) は無害な失敗 = 「会議検知 banner が出ない」だけで誤録音・誤通知は発生しない。一方 false positive (日本語 window title が会議外と誤マッチ) のリスクは英語 only ならゼロ = 段階導入は安全側に倒す方針として妥当。
+
+**Phase 2 着手判断への寄与**: Phase 2 は英語 pattern (`"Huddle"` / `"Stage Channel"`) のみで実装着手 OK = Q1/Q2 (英語 window title 実機確認) が解決すれば即進められる。日本語 pattern 追加は Phase 5 でユーザーフィードバック蓄積後に対応 = MVP リリース時点の対応コスト最小化。
+```
+
+**重要**: Edit ツールで挿入する際、old_string は Q5 Resolved Block の最終段落 (`**Phase 2 着手判断への寄与**: Phase 2 で WATCHED_BUNDLE_IDS に Slack/Discord エントリを追加する際、frontend / Tauri IPC 側の payload schema 変更は不要 = 後方互換性確保。`) と直後の空行 + `### AppleScript による window title 取得コマンド (参考)` を含めて unique 化する。
+
+## Step 3: agent-verify.sh で検証
+
+```bash
+bash scripts/agent-verify.sh docs/architecture/detection-extension-plan.md
+```
+
+EXIT 0 を確認 (docs 単体変更のため rust/frontend skip 判定)。
+
+## Step 4: docs commit (1 つ目)
+
+```bash
+git add docs/architecture/detection-extension-plan.md
+git commit -m "docs(architecture): Q6 を Resolved 化 (window title 日本語 localization 対応 = Phase 2 英語 only + Phase 5 日本語追加の段階導入方針、mjc-main-20260505-39 Loop 78)"
+```
+
+`git log -1 --format=%H` で **commit hash を必ず取得**。
+
+## Step 5: AGENT_LOG.md に Loop 78 エントリ追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、ファイル末尾の `---` 直後に下記 entry を追記 (Step 4 で取得した実 hash を埋める):
+
+```
+[mjc-main-20260505-39 Loop 78 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/detection-extension-plan.md Section 6 の Q6 を「解決済」化
+- Q6 解決結果 Resolved Block を Q5 Resolved Block の直後に追記 (~10 行)
+  - 結論: window title 日本語 localization 対応 = Phase 2 英語 pattern only + Phase 5 日本語追加の段階導入方針
+  - 根拠: Section 5.5 Phase 5 既記載 + Section 3.1/Q1 で日本語認識既載 + false negative/positive 非対称性
+  - Phase 2 着手判断への寄与: Q1/Q2 解決後即着手可、日本語追加は Phase 5 deferred で MVP コスト最小化
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張、plan の継続 = 価値の連鎖
+- mjc-main-20260505-39 Loop 78 メイン批判判断 (連続 30 セッション目): handoff K1 の「Phase 2 では英語 pattern のみ + Phase 5 で日本語追加候補」予測を grep で再評価 → Section 5.5 (L230) で既に「日本語 window title 対応: ハドル中 / ステージ 等の日本語 pattern 追加 (実機確認後)」記載済 = handoff 提案は plan 内既存方針と整合 = Resolved Block で明示化に範囲限定
+- variety 規則: Loop 75-76-77 構造分離 3 連続到達 → Loop 78 = 機能拡張/docs 軸へ pivot で警告境界 4 連続到達回避
+- 規模 SS = ~10 行 docs 追記、振る舞い不変、Phase 2 着手前準備
+
+## How (docs only)
+- Q6 行の重要度列を「低 → 解決済 (下記参照)」に変更
+- Q5 Resolved Block の直後 (AppleScript セクションの直前) に「### Q6 解決結果 (mjc-main-20260505-39 Loop 78 調査)」を挿入
+- Q1/Q2/Q3/Q4/Q7/Q8 は実機要件 / 別 phase 前提のため未変更 (Open のまま据え置き)
+
+## Verify
+- agent-verify.sh: OK (docs only)
+- grep -n "Q6 解決結果" docs/architecture/detection-extension-plan.md: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- <docs commit hash here>
+
+---
+```
+
+`tail` 直後に Edit ツールで末尾 `---` の直後に entry を挿入。**先頭追記事故防止のため Edit の old_string は末尾近傍 ~30 行を含めて unique 化する**。
+
+## Step 6: chore commit (2 つ目、hash 反映)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 78 commit hash <docs commit hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-77 precedent 適用 19 連続)"
+```
+
+# 検証制約
+
+- cargo は触らない (docs only、rust コード変更なし)
+- npm run build も不要
+- agent-verify.sh: OK のみ確認
+- trailing whitespace: 行末の空白文字 (` \n` パターン) 禁止 = `grep -nE ' +$' docs/architecture/detection-extension-plan.md` で空確認
+
+# 規模上限
+
+- detection-extension-plan.md: ~10-15 行追記 + Q6 行修正 1 行 (合計 ~12-16 行 net 増加)
+- AGENT_LOG.md: ~30-40 行 entry
+- 上限超過時は途中で停止して報告
+
+# precedent (継承事項)
+
+- 2-commit pattern: docs commit → hash 取得 → AGENT_LOG.md 更新 → chore commit (Loop 60-77 で 18 連続実証)
+- worker 自律実行: 完走後 final answer 不要、git status --short で完走確認可能
+- worker prompt ~150 行 simpler 化 (Loop 67-77 で実証 ~3-8 分完走)
+- Loop 74 (Q5 Resolved 化) と完全に同じ docs only パターン
+
+# 完走確認方法
+
+- `git status --short`: docs/architecture/detection-extension-plan.md と AGENT_LOG.md の M 表示が一旦出て、commit 後に消えること
+- `git log --oneline -3`: Loop 78 docs commit + chore commit が並ぶこと
+
+以上です。**先頭追記事故 + trailing whitespace + 規模超過 + Q1/Q2/Q3/Q4/Q7/Q8 改変 を必ず防止してください**。

@@ -1,0 +1,128 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop33-config-move) です。
+
+# 必読 + AGENT_LOG.md ルール (絶対遵守)
+1. **AGENT_LOG.md は ~25,800 行 / ~2.15MB ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾構造を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (transcription.rs / transcription_worker_loop.rs / AGENT_LOG.md 以外は触らない)
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 作業目的 (Tidy First, behavior-preserving)
+- `TranscriptionLoopConfig` struct (`src-tauri/src/transcription.rs` L55-63) を `src-tauri/src/transcription_worker_loop.rs` に移動
+- 責務的妥当性の判断: struct は `run_transcription_loop` 関数の入力 config = 同一ファイルに置くのが locality 最大
+- transcription.rs に互換 re-export を追加 = 3 caller (transcription_panic_guard.rs / transcription_commands.rs) の use 文変更ゼロを実現
+- Phase 2-A〜4 で確立した互換 re-export pattern (transcription.rs L8 `pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` 等) の継承
+- variety pivot 軸 = 「struct 移動」軸 = 新軸 (Loop 31 extraction / Loop 32 test 移動 と異なる)
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 更なる縮小 + 責務分離)
+
+# 規模制約 (重要)
+- 規模 SS = ~10 行 struct + use 整理 + 互換 re-export 1 行
+- 1 ループ完結
+- 担当範囲: src-tauri/src/transcription.rs / src-tauri/src/transcription_worker_loop.rs / AGENT_LOG.md (3 ファイルのみ)
+- テストの追加・削除・件数変更禁止 = 700 passed 件数不変であること
+
+# 具体作業手順
+
+## A. transcription.rs から削除
+- L55-63 の `pub(crate) struct TranscriptionLoopConfig { ... }` (9 行 = struct 全体)
+- struct 削除後、`use std::sync::atomic::AtomicBool;` (L1) と `use std::sync::Arc;` (L2) が unused になるか **cargo build で確認した上で**、unused なら削除する
+  - 確認方法: cargo build 実行 → `unused_imports` 警告が出るかチェック
+  - 削除する場合は警告ゼロを確認
+
+## B. transcription.rs に互換 re-export 追加
+- 既存 re-export パターン (L8 `pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` / L14 `pub use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};` / L20 `pub use crate::transcription_whisper_stream::WhisperStream;` / L26 `pub use crate::transcription_manager::TranscriptionStateHandle;`) と同形式で、適切な箇所 (例: L26 直後 もしくは L36 「文字起こしループ」セクション直前) に以下 1 行を追加:
+
+```rust
+pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;
+```
+
+- visibility は元 struct と同じ `pub(crate)` を維持
+- セクションコメント (`// ─────────────────────────────────────────────`) を新設してもよい (既存パターン踏襲)
+
+## C. transcription_worker_loop.rs に struct 定義追加
+- L7 の `use crate::transcription::TranscriptionLoopConfig;` を **削除** (同ファイルで定義になるため self-reference 不要)
+- ファイル末尾もしくは適切な箇所 (例: use 文ブロック直後 = L11/12 の周辺) に struct 定義を追加:
+
+```rust
+pub(crate) struct TranscriptionLoopConfig {
+    pub(crate) consumer: ringbuf::HeapCons<f32>,
+    pub(crate) source: TranscriptionSource,
+    pub(crate) stream: Box<dyn TranscriptionStream>,
+    pub(crate) running: Arc<AtomicBool>,
+    pub(crate) app: tauri::AppHandle,
+    pub(crate) session_manager: Arc<crate::session_manager::SessionManager>,
+    pub(crate) stream_started_at_secs: u64,
+}
+```
+
+- 必要 use 文を transcription_worker_loop.rs の冒頭 use 文ブロックに追加:
+  - `use std::sync::atomic::AtomicBool;` (struct field 用、既存 `use std::sync::atomic::Ordering;` の同行 wrap または隣行)
+  - `use std::sync::Arc;` (struct field 用)
+  - `use crate::transcription_types::TranscriptionSource;` (struct field 用)
+  - `use crate::transcription_traits::TranscriptionStream;` (struct field 用)
+  - 注: `ringbuf::HeapCons<f32>` / `tauri::AppHandle` / `crate::session_manager::SessionManager` は full path 表記でそのまま使える (use 追加任意、既存スタイル準拠)
+
+- cargo fmt が use 文を整形する場合は受け入れる (Loop 28 / 29 precedent)
+
+## D. caller への影響確認 (変更不要を grep で証明)
+- `transcription_panic_guard.rs` の `use crate::transcription::TranscriptionLoopConfig;` (L6) はそのまま動作 = 互換 re-export 経由
+- `transcription_commands.rs` の `use crate::transcription::TranscriptionLoopConfig;` (L5) はそのまま動作 = 互換 re-export 経由
+- これら 2 ファイルは変更しない
+
+## E. tests への影響確認
+- transcription.rs L69 の `mod tests` で `TranscriptionLoopConfig` を直接構築しているか grep 確認
+- 構築している場合は use 経由で参照可能 (super::* 経由 = 互換 re-export 経由 OK)
+
+# 検証 (必須)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo build` で unused_imports 警告チェック
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib` で **700 passed / 0 failed** 確認 (件数不変)
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib --tests -- -D warnings` で **警告ゼロ** 確認
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check` で OK 確認
+5. trailing whitespace 確認 = `grep -nE ' +$' src-tauri/src/transcription.rs src-tauri/src/transcription_worker_loop.rs` で結果ゼロ確認
+
+# AGENT_LOG.md 末尾追記 (本ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記
+- format:
+```
+[mjc-main-20260505-17 Loop 33 / 2026-05-05 ~JST]
+
+## What
+- `TranscriptionLoopConfig` struct を `src-tauri/src/transcription.rs` から `src-tauri/src/transcription_worker_loop.rs` に移動
+- transcription.rs に `pub(crate) use crate::transcription_worker_loop::TranscriptionLoopConfig;` 互換 re-export 追加
+- transcription_worker_loop.rs L7 の `use crate::transcription::TranscriptionLoopConfig;` 削除 (self 定義になるため)
+- 必要に応じて transcription.rs の `use std::sync::atomic::AtomicBool;` / `use std::sync::Arc;` を unused なら削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 縮小 + 責務分離)
+- struct は `run_transcription_loop` の入力 = 同一ファイル locality 最大
+- 互換 re-export pattern 継承 = caller (panic_guard / commands) 変更ゼロ
+- variety pivot 軸 = 「struct 移動」軸 = Loop 31 (extraction) / Loop 32 (test 移動) と異なる新軸
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- pub(crate) visibility 維持 = 元 struct と同じ
+- 互換 re-export で外部参照変更ゼロ
+- (worker 自走 Tidy あれば記述)
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+```
+
+# コミット (worker 自走判断)
+- worker 自走で `bash scripts/agent-commit.sh "refactor(transcription): TranscriptionLoopConfig struct を transcription_worker_loop.rs に移動 = 互換 re-export pattern 継承 (Tidy First, mjc-main-20260505-17 Loop 33)" src-tauri/src/transcription.rs src-tauri/src/transcription_worker_loop.rs AGENT_LOG.md` を実行してよい
+- もしくは `git add ... && git commit -m "..."` で直接 commit
+- commit 後、commit hash を確認して `chore(agent-log): Loop 33 commit hash <HASH> を AGENT_LOG.md に記入` chore commit を別途自走判断で実施 (Loop 22 / 31 / 32 precedent)
+
+# 完了の合図
+- AGENT_LOG.md に [mjc-main-20260505-17 Loop 33] エントリが追記されている
+- commit が成功している (git log --oneline -1 で確認可能)
+- cargo test/clippy/fmt 全 OK
+
+以上。

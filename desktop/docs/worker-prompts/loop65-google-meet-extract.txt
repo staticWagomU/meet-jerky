@@ -1,0 +1,136 @@
+あなたは meet-jerky の sonnet worker (Loop 65 = mjc-main-20260505-32) です。
+
+# タスク: app_detection_google_meet.rs 新規作成 + Google Meet 検知関数 3 件抽出
+
+`src-tauri/src/app_detection.rs` 本体 (現在 ~3091 行 = Loop 64 で URL helper 抽出後) から Google Meet 検知ロジックを新規ファイルに抽出する。これは Webex (mjc-main-20260505-15) / Whereby (mjc-main-20260505-7 base) / GoToMeeting / Zoom / Teams 抽出 precedent の継承 = AGENTS.md priority 2 (会議サービスの検知) 直接寄与 + locality 集約。**handoff prompt が「サービス別抽出シリーズ完了」と書いていたが grep で Google Meet が未抽出と判明** = 後継のメイン批判判断 連続 17 セッション目の核。
+
+## 必須事前作業 (絶対に省略しない)
+
+1. `tail -350 AGENT_LOG.md` で AGENT_LOG.md 末尾を読む。**先頭は絶対に触らない**。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+2. `tail -10 AGENT_LOG.md` で末尾行を確認 → 末尾の `---` 直後に新エントリを追記する。
+3. **大型ファイル禁止**: src-tauri/src/app_detection.rs (~3091 行) は **Read 全体禁止**。 head/tail/sed/grep で対象範囲のみ参照すること。
+4. **Webex precedent 必読**: `cat src-tauri/src/app_detection_webex.rs` で全体構造 (83 行) 確認 → 同型で app_detection_google_meet.rs を構築。
+5. **行末の空白文字 (trailing whitespace) 禁止**
+
+## 抽出対象 (規模 SS = ~26 行関数 + tests 判断)
+
+### 関数 (3 件) を src-tauri/src/app_detection_google_meet.rs (新規) に移動
+
+抽出元: `src-tauri/src/app_detection.rs`
+
+- `fn is_google_meet_url(host: &str, path: &str) -> bool` (L716-722, ~7 行)
+- `fn is_google_meet_code_path(path: &str) -> bool` (L724-740, ~17 行)
+- `fn has_ascii_lowercase_len(value: &str, len: usize) -> bool` (L742-744, ~3 行) = Google Meet 専用 helper (is_google_meet_code_path 内部のみで使用)
+
+→ 3 関数とも visibility を `pub(crate)` に昇格 (Webex precedent と同じ)
+→ `has_ascii_lowercase_len` は内部 helper として private のまま新ファイル内に置いても良い (Webex precedent を確認して判断)
+
+### tests 判断 (Webex precedent 確認後)
+
+`cat src-tauri/src/app_detection_webex.rs | tail -50` で Webex の tests block 構造を確認。
+- Webex file 内に Webex 専用 tests があるなら → Google Meet tests も同様に新 file へ移動
+- Webex file が tests 持たず classify_meeting_url tests が app_detection.rs にあるなら → Google Meet tests も app_detection.rs 残置 (Loop 64 と同じ判断)
+
+判断したらどちらの選択をしたかを AGENT_LOG.md エントリの `## How` で明記。
+
+## 必要な編集
+
+### 新規ファイル作成: src-tauri/src/app_detection_google_meet.rs
+
+Webex precedent (83 行 file 構造) を踏襲。
+
+### 既存ファイル修正
+
+1. **src-tauri/src/lib.rs**: `mod app_detection_google_meet;` を追加 (アルファベット順を維持、app_detection_goto の前 = アルファベット順 g-o-o < g-o-t)
+2. **src-tauri/src/app_detection.rs**:
+   - L716-722 (is_google_meet_url) を削除
+   - L724-740 (is_google_meet_code_path) を削除
+   - L742-744 (has_ascii_lowercase_len) を削除
+   - L517 の `if is_google_meet_url(&host, &parsed.path)` を `if app_detection_google_meet::is_google_meet_url(&host, &parsed.path)` に変更 (完全修飾 path) または top-level に `use crate::app_detection_google_meet::is_google_meet_url;` 追加して呼び出しは現状のまま (Webex precedent を確認して判断)
+
+## 検証 (cd src-tauri 必須)
+
+```bash
+cd src-tauri
+cargo build --lib                                    # エラーなし
+cargo test --lib                                     # 702 passed / 0 failed (件数不変)
+cargo clippy --lib --tests -- -D warnings            # 警告ゼロ
+cargo fmt --check                                    # OK
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/app_detection_google_meet.rs src-tauri/src/app_detection.rs src-tauri/src/lib.rs
+```
+
+加えて grep で削除安全境界確認:
+- `grep -n "fn is_google_meet" src-tauri/src/app_detection.rs` = 完全に空 (新ファイルへ移動済確認)
+- `grep -n "fn has_ascii_lowercase_len" src-tauri/src/app_detection.rs` = 完全に空
+
+## コミット (2-commit pattern = Loop 60-64 precedent 5 連続実証)
+
+### Commit 1: refactor commit
+
+```
+git add src-tauri/src/app_detection_google_meet.rs src-tauri/src/lib.rs src-tauri/src/app_detection.rs
+git commit -m "refactor(app_detection): Google Meet 検知関数 3 件 (is_google_meet_url + is_google_meet_code_path + has_ascii_lowercase_len) を app_detection_google_meet.rs に抽出 (mjc-main-20260505-32 Loop 65, ~26 行抽出 + lib.rs mod 追加, Webex/Whereby/GoToMeeting/Zoom/Teams precedent 完全踏襲, AGENTS.md priority 2 直接寄与)"
+```
+
+→ commit hash を取得
+
+### Commit 2: AGENT_LOG.md エントリ追記 + chore commit
+
+AGENT_LOG.md 末尾の `---` 直後に以下を追記:
+
+```
+[mjc-main-20260505-32 Loop 65 / 2026-05-05 ~JST]
+
+## What
+- app_detection.rs 本体から Google Meet 検知関数 3 件を新規ファイル app_detection_google_meet.rs に抽出
+  - `pub(crate) fn is_google_meet_url(host: &str, path: &str) -> bool` (~7 行)
+  - `pub(crate) fn is_google_meet_code_path(path: &str) -> bool` (~17 行)
+  - `fn has_ascii_lowercase_len(value: &str, len: usize) -> bool` (~3 行 = Google Meet 専用 helper、private 維持 or pub(crate) 昇格は Webex precedent 準拠)
+- lib.rs に `mod app_detection_google_meet;` 追加 (アルファベット順、app_detection_goto の前)
+- app_detection.rs L517 の caller = (完全修飾 path or top-level use のどちらを採用したか明記)
+- tests = (Webex precedent 確認後、移動 or 残置のどちらを採用したか明記)
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービスの検知 直接寄与 (Google Meet 検知ロジック単独 file = locality 集約 + 将来拡張容易化)
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (リポジトリ最大級ファイル app_detection.rs の段階的責務分離)
+- Webex/Whereby/GoToMeeting/Zoom/Teams 5 service precedent 完全踏襲 = handoff prompt が「サービス別抽出シリーズ完了」と記述したが Google Meet が未抽出と grep で発見 = メイン批判判断 連続 17 セッション目達成
+- variety pivot = app_detection scope 2 連続 (Loop 64 = URL helper / Loop 65 = Google Meet) = sweep 警告 (3 連続超過) 未到達 = 許容
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- visibility は Webex precedent 準拠 (pub(crate) 昇格 / has_ascii_lowercase_len 判断)
+- caller (L517) は (完全修飾 path / top-level use) で対応 = 振る舞い不変
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `fn is_google_meet` を app_detection.rs で grep: 完全に空 (新ファイル経由のみ)
+- `fn has_ascii_lowercase_len` を app_detection.rs で grep: 完全に空
+- trailing whitespace: なし
+
+## commit
+- (1 つ目の commit hash をここに記入)
+```
+
+→ 1 つ目の commit hash を上記 `## commit` 行に書き込んでから:
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 65 commit hash <hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-64 precedent 適用 6 連続)"
+```
+
+## 重要な制約
+
+- **担当範囲外の編集禁止**: 上記列挙した 3 ファイルのみ編集 (新規作成 1 + 既存 2)。他の rust ファイルや frontend は触らない
+- **test 件数の上限明示**: 702 passed / 0 failed のみ許容。件数増減や失敗があれば停止して原因分析
+- **--no-verify 禁止**
+- **trailing whitespace 禁止**
+- **AGENT_LOG.md 先頭は絶対に触らない**
+- **Webex precedent 必読** (cat 全体)。Google Meet 抽出は Webex の構造 (use 文 + pub(crate) 関数 + tests 配置) を完全踏襲
+
+開始してください。

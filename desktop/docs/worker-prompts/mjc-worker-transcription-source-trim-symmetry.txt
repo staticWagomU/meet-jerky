@@ -1,0 +1,79 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (末尾 350 行) を読んでください。
+
+# 背景
+src-tauri/src/transcription.rs の `parse_requested_transcription_sources` (line 1050-1072) は入力を `trim()` してから match します (line 1053)。
+
+既存 test `test_parse_requested_transcription_sources_accepts_known_values` (line 1364-1394) は trim 動作を ` both ` のケース (line 1374) でのみ確認しており、`microphone` / `system_audio` の対称ケースは固定されていません。
+
+つまり「定数 TRANSCRIPTION_SOURCE_MICROPHONE / TRANSCRIPTION_SOURCE_SYSTEM_AUDIO は前後空白付き入力を受け付ける」契約が executable specification 化されていない状態です。
+
+# Why (この test 補強の目的)
+- trim 動作の **対称性** を 3 値全部で固定 (現状 both のみ確認)
+- 設定読み込み時の「タイポではなく前後空白だけ」のケースで期待通り動くことを保証 = 安全網
+- 振る舞い不変の Tidy First = 既存実装は既に trim() を呼んでいるため、test 追加は仕様の固定であって挙動変更ではない
+- Loop 1 (G5) で touch した `parse_requested_transcription_sources` 周辺の自然な隣接補強
+
+# 担当範囲
+- ファイル: src-tauri/src/transcription.rs のみ
+- 既存 test `test_parse_requested_transcription_sources_accepts_known_values` (line 1364-1394) の **末尾** に 2 つの assert ブロックを追加
+- それ以外のファイルは触らない
+- 関数本体 (line 1050-1072) と const (line 1047-1048) は無変更
+
+# 実装内容 (この通りに書いてください)
+追加位置: line 1393 の `assert_eq!(...)` 閉じ `;` の **直後**、line 1394 の `}` (test 関数閉じ) の **直前**。
+
+```rust
+        assert_eq!(
+            parse_requested_transcription_sources(Some(" microphone ")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            }
+        );
+        assert_eq!(
+            parse_requested_transcription_sources(Some(" system_audio ")).unwrap(),
+            RequestedTranscriptionSources {
+                use_mic: false,
+                use_system: true,
+            }
+        );
+```
+
+# 実装上の注意
+- 8 文字 indent (test 内 assert の既存 indent と一致, tab なし)
+- 既存 4 ブロック (None / ` both ` / `microphone` / `system_audio`) と完全対称な構造
+- 前後空白付き文字列リテラル `" microphone "` `" system_audio "` を採用 = 既存 ` both ` ケースと同じパターン
+- expected の RequestedTranscriptionSources 構造体は既存 line 1380-1393 の non-trim ケースと完全同一値 (= trim 後同じ振る舞いを期待)
+- 定数 TRANSCRIPTION_SOURCE_MICROPHONE / TRANSCRIPTION_SOURCE_SYSTEM_AUDIO は **使わない** = 既存 既存 4 ブロックが文字列リテラル直書きスタイルなので一貫性維持 (定数化すると将来定数値変更で test が parse 入力 / 期待値の passthrough 検知装置として機能しなくなる = 前 mjc-main-17 Loop 3 で確立した設計判断 3 を継承)
+- 関数本体 / 既存 test 4 ブロック (line 1366-1393) / const は無変更 = 振る舞い不変
+
+# 検証手順
+作業後、以下を順に実行して全てゼロ failure を確認してください:
+
+1. `cd src-tauri && cargo test --lib --no-run` (compile 確認)
+2. `cd src-tauri && cargo test --lib test_parse_requested_transcription_sources_accepts_known_values` (該当 test 単独実行 = 既存 4 + 新規 2 assert で全て pass)
+3. `cd src-tauri && cargo test --lib` (全 test 実行、469 passed 維持 = 既存 test 拡張なので件数増えず)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings` (warning 0)
+5. `cd src-tauri && cargo fmt --check` (差分なし)
+6. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` (全段 OK)
+
+# AGENT_LOG.md 記載項目
+AGENT_LOG.md **末尾** に以下を追記してください (前 SUMMARY 後の領域、AGENT_LOG.md の **先頭ではなく末尾** = 過去 worker での誤追記事故を再発しないよう注意):
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-transcription-source-trim-symmetry
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/transcription.rs の既存 test に 2 assert 追加 (Loop 2)
+- 指示内容の要約
+- 結果 (test 数 469 維持、既存 test 拡張、clippy 0、fmt 差分なし)
+- 変更ファイル: src-tauri/src/transcription.rs (1 ファイルのみ)
+- 検証結果 (各コマンドの pass/fail)
+- 依存関係追加: なし
+- 失敗理由: なし (該当時のみ)
+- 次アクション: メインで commit + 次ループ判断
+
+# 完了報告
+最後に、変更内容、変更ファイル、検証結果 (test 件数は同じだが assert は +2)、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。コミットは禁止です。

@@ -1,0 +1,146 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (順序厳守、AGENT_LOG.md は末尾のみ)
+
+1. AGENTS.md (全体)
+2. docs/product-concept.md (全体)
+3. docs/agent-harness-claude.md (全体)
+4. AGENT_LOG.md の **末尾 350 行のみ** (`tail -n 350 AGENT_LOG.md`)
+   - AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+   - 新規追記は必ずファイル末尾に行う。
+   - **先頭は絶対に触らない**。
+   - 全体読み込み禁止 (約 24,090 行)。
+
+## 担当範囲 (これ以外のファイルは編集禁止)
+
+- `src-tauri/src/app_detection.rs` のみ
+
+## タスク (TDD: Red → Green → Refactor、AGENTS.md 優先順位 2 = 会議検知の網羅性)
+
+Cisco Webex (`*.webex.com`) を `classify_meeting_url` で検知できるようにする。Personal Room (`/meet/<id>`) 形式のみを最小スコープで対応する。他の Webex URL 形式 (j.php / wbxmjs / webappng) は今回スコープ外とし、コメントで future work 旨を 1 行残す。
+
+### 既存パターンの踏襲 (重要)
+
+新規実装は以下の既存関数のスタイルを **完全踏襲** すること:
+
+- `is_zoom_host` (681 行付近) — `*.zoom.us` の DNS label 検証パターン
+- `is_google_meet_url` (711 行付近) — `host == "meet.google.com" && path.strip_prefix(...)` パターン
+- `has_single_non_empty_segment` (796 行付近) — Personal Room ID の単一 segment 判定に再利用
+
+### 実装手順 (TDD)
+
+1. **Red**: 以下 5 件の test を `mod tests` の末尾 (既存テスト群と同じ階層) に追加し、まず failing を確認する。
+2. **Green**: 以下 2 関数を追加し、`classify_meeting_url` に分岐を追加する。
+3. **Refactor**: 既存パターンとの整合性のみ確認 (構造変更はしない)。
+
+### 追加する関数 (production code)
+
+```rust
+fn is_webex_host(host: &str) -> bool {
+    if host == "webex.com" {
+        return true;
+    }
+    let Some(subdomain) = host.strip_suffix(".webex.com") else {
+        return false;
+    };
+    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
+}
+
+fn is_webex_meeting_url(host: &str, path: &str) -> bool {
+    // Personal Room (`/meet/<id>`) のみ対応。
+    // j.php / wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
+    is_webex_host(host)
+        && path
+            .strip_prefix("/meet/")
+            .is_some_and(has_single_non_empty_segment)
+}
+```
+
+### `classify_meeting_url` への分岐追加 (515 行付近)
+
+既存の Teams 判定の **直前** に Webex 分岐を 1 つ追加 (Webex の host が `*.webex.com` で十分狭く、誤検知リスクが低い):
+
+```rust
+let service = if is_google_meet_url(&host, &parsed.path) {
+    "Google Meet"
+} else if is_zoom_meeting_url(&host, &parsed.path) {
+    "Zoom"
+} else if is_webex_meeting_url(&host, &parsed.path) {
+    "Webex"
+} else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
+    "Microsoft Teams"
+} else {
+    return None;
+};
+```
+
+### 追加するテスト (5 件のみ、既存テスト群と同じ `mod tests` 内、末尾に追加)
+
+T1: `classify_meeting_url("https://webex.com/meet/john")` → `Some(MeetingUrlClassification { service: "Webex", host: "webex.com" })`
+
+T2: `classify_meeting_url("https://acme.webex.com/meet/jane")` → `Some(MeetingUrlClassification { service: "Webex", host: "acme.webex.com" })`
+
+T3: `classify_meeting_url("https://webex.com/about")` → `None` (path mismatch)
+
+T4: `classify_meeting_url("https://fake-webex.example.com/meet/x")` → `None` (host が `*.webex.com` ではない)
+
+T5: `classify_meeting_url("https://webex.com/meet/")` → `None` (`/meet/` 直後が空、`has_single_non_empty_segment` で弾く)
+
+テスト名は既存スタイル (`classify_meeting_url_*` 接頭辞) に合わせる。例:
+- `classify_meeting_url_returns_webex_for_personal_room_on_root_host`
+- `classify_meeting_url_returns_webex_for_personal_room_on_subdomain_host`
+- `classify_meeting_url_returns_none_for_webex_host_without_meet_path`
+- `classify_meeting_url_returns_none_for_non_webex_host_with_meet_path`
+- `classify_meeting_url_returns_none_for_webex_with_empty_meet_segment`
+
+## 禁止事項
+
+- 担当範囲外の編集禁止
+- テスト追加は **5 件のみ**、追加は禁止
+- 既存テスト・関数の編集 / 削除 禁止 (Refactor は新規追加コードに対してのみ)
+- 行末の空白文字 (trailing whitespace) 禁止
+- `--no-verify` 禁止
+- 課金が発生する操作禁止
+- `is_webex_host` / `is_webex_meeting_url` 単体の private fn テストは追加禁止 (`classify_meeting_url` 経由のテストのみ = end-to-end 軸)
+
+## 検証 (順序厳守、すべて成功することを確認)
+
+1. `cd src-tauri && cargo check --lib` でエラーなし
+2. `cargo fmt --check` で diff なし
+3. `cargo clippy --lib -- -D warnings` で警告ゼロ
+4. `cargo test --lib 2>&1 | tail -10` で **642 passed** (637 + 5 件) を確認
+
+既存 637 件は無破壊で全 pass、新規 5 件すべて pass であることを確認。
+
+## AGENT_LOG.md 追記
+
+末尾追記 (前任ログのフォーマット踏襲):
+
+```
+## 2026-05-05 JST mjc-worker-app-detection-webex-classify-20260505-2
+- 担当セッション: mjc-worker-app-detection-webex-classify-20260505-2 (作業担当, sonnet)
+- 役割: Cisco Webex (`*.webex.com/meet/<id>`) を classify_meeting_url で検知できるようにする (AGENTS.md 優先順位 2 = 会議検知の網羅性、TDD: Red → Green)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: 26 連続「Debug 軸補強」からの戦略転換ループ 2 件目、新会議サービス追加 (Webex Personal Room 検知)、既存 is_zoom_host / is_google_meet_url パターン踏襲、5 件 test 追加
+- 結果: <記入>
+- 変更ファイル: src-tauri/src/app_detection.rs (+ <記入> 行 / - 0 行、5 件 test 追加 + 2 関数追加 + classify_meeting_url 分岐 1 つ追加)
+- 検証結果: cargo check OK / cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 642 passed (前 637 + 5 件、無破壊)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
+```
+
+末尾の `---` を unique にできない場合は `/tmp/log-entry-2.md` に書いてから `cat /tmp/log-entry-2.md >> AGENT_LOG.md` で append。
+
+## 報告
+
+最後に **1 ターンで完結する形で**:
+- 変更内容
+- 変更ファイル一覧
+- 検証結果 (cargo check / fmt / clippy / test 件数)
+- 残リスク (Webex の他 URL 形式 = j.php / wbxmjs / webappng は未対応であり、将来課題、を必ず明記)
+
+を簡潔に報告してください。

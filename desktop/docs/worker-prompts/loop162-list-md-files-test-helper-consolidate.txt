@@ -1,0 +1,167 @@
+# mjc-worker-loop162-list-md-files-test-helper-consolidate / 2026-05-06 / mjc-main-20260505-80 Loop 162
+
+あなたは meet-jerky の作業エージェントです。Loop 162 = rust 軸 = **既存 file 拡張軸 paradigm 7 件目 = test helper 集約軸 paradigm 反復 (2 件目) = 2 file 同時集約軸** を実施します。
+
+## 背景 (重要)
+
+`fn list_md_files(dir: &Path) -> Vec<PathBuf>` (ディレクトリ直下の `.md` ファイル列挙) が **2 file の `#[cfg(test)] mod tests` 内に実装完全同一** で重複しています:
+
+- `src/session_commands.rs:116` (`fn list_md_files(dir: &Path) -> Vec<PathBuf>`)
+- `src/session_manager.rs:155` (`fn list_md_files(dir: &std::path::Path) -> Vec<PathBuf>`、doc comment 1 行つき)
+
+差分は Path の修飾 (`Path` vs `std::path::Path`) と doc comment のみ = 実装本体は完全同一 = **真の重複**。
+
+集約先 = **`src/session_manager_persist.rs`** (23 行 = 軽量 + 既存 `persist_if_configured` がディスク I/O = 同 tier + session_manager.rs は既に `use crate::session_manager_persist::persist_if_configured;` 経由で依存済 = 自然な集約場所)。
+
+Loop 159 = jst() x5 集約 (5 file → datetime_fmt.rs) の **paradigm 反復 = 2 件目** = test helper 集約軸 paradigm 2 件目 (規模は小さいが完全同形 paradigm)。
+
+## 必読 (順序遵守)
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. `cat src-tauri/src/session_manager_persist.rs` で session_manager_persist.rs 全体を確認 (23 行)
+3. `sed -n '110,128p' src-tauri/src/session_commands.rs` で session_commands.rs::test module 冒頭 + list_md_files 周辺確認
+4. `sed -n '148,165p' src-tauri/src/session_manager.rs` で session_manager.rs::test module 冒頭 + list_md_files 周辺確認
+
+## 作業内容 (3 step)
+
+### Step 1: session_manager_persist.rs に list_md_files を test helper として追加
+
+session_manager_persist.rs の末尾 (L23 = 既存 `persist_if_configured` 関数の閉じ `}` の直後) に以下を追加:
+
+```rust
+
+/// 指定ディレクトリ直下の `.md` ファイルを列挙する (test helper)。
+#[cfg(test)]
+pub(crate) fn list_md_files(dir: &std::path::Path) -> Vec<std::path::PathBuf> {
+    std::fs::read_dir(dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("md"))
+        .collect()
+}
+```
+
+**注意点**: `#[cfg(test)] pub(crate) fn` により test build 限定で公開 = production binary に影響なし (Loop 159 jst() precedent と完全同形)。
+
+### Step 2: session_commands.rs から fn list_md_files 削除 + use 追加
+
+`src-tauri/src/session_commands.rs::test module` (L111-L124) から、`fn list_md_files(dir: &Path) -> Vec<PathBuf> { ... }` (L116-L123 = 8 行) を **削除**。
+
+同 test module 冒頭の `use tempfile::tempdir;` の **直前** (= `use crate::datetime_fmt::jst;` の直後) に `use crate::session_manager_persist::list_md_files;` を **追加**:
+
+old (L111-L115):
+```
+mod tests {
+    use super::*;
+    use crate::datetime_fmt::jst;
+    use tempfile::tempdir;
+```
+
+new:
+```
+mod tests {
+    use super::*;
+    use crate::datetime_fmt::jst;
+    use crate::session_manager_persist::list_md_files;
+    use tempfile::tempdir;
+```
+
+callsite (`L173: list_md_files(dir.path())` 1 件) は use により名前空間に取り込まれるため **無変更**。
+
+### Step 3: session_manager.rs から fn list_md_files 削除 + 既存 use 統合
+
+`src-tauri/src/session_manager.rs::test module` (L149-L162) から、doc comment 行 (L154 `/// 指定ディレクトリ直下の \`.md\` ファイルを列挙する。`) と `fn list_md_files(...) { ... }` (L155-L162 = 8 行) を合計 9 行 **削除**。
+
+同 test module 冒頭の既存 `use crate::session_manager_persist::persist_if_configured;` を `use crate::session_manager_persist::{list_md_files, persist_if_configured};` に **統合** (1 行 = 字数増のみ、行数不変):
+
+old (L149-L153):
+```
+mod tests {
+    use super::*;
+    use crate::datetime_fmt::jst;
+    use crate::session_manager_persist::persist_if_configured;
+    use tempfile::tempdir;
+```
+
+new:
+```
+mod tests {
+    use super::*;
+    use crate::datetime_fmt::jst;
+    use crate::session_manager_persist::{list_md_files, persist_if_configured};
+    use tempfile::tempdir;
+```
+
+callsite (8 件 = L181 / L209 / L242 / L514 / L529 / L619 / L758 / L770) は use により名前空間に取り込まれるため **全件無変更**。
+
+### Step 4: 検証
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri してから:
+
+```bash
+cargo test --lib 2>&1 | tail -10  # 704 passed / 0 failed (件数完全不変)
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -5  # 警告ゼロ
+cargo fmt --check 2>&1 | tail -3  # OK
+cargo build --lib 2>&1 | tail -3  # エラーなし
+```
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop してから:
+
+```bash
+bash scripts/agent-verify.sh src-tauri/src/session_manager_persist.rs src-tauri/src/session_commands.rs src-tauri/src/session_manager.rs
+```
+
+= OK
+
+## 2-commit pattern (worker 自律実行)
+
+### Commit 1: refactor
+
+```bash
+git add src-tauri/src/session_manager_persist.rs src-tauri/src/session_commands.rs src-tauri/src/session_manager.rs
+git commit -m "refactor(rust): list_md_files() test helper を session_manager_persist.rs に集約 (2 file 重複削除 + use crate::session_manager_persist::list_md_files で参照, mjc-main-20260505-80 Loop 162, rust 軸 = 既存 file 拡張軸 paradigm 7 件目 = test helper 集約軸 paradigm 反復 2 件目 = 2 file 同時集約軸, std::fs::read_dir + .md filter の完全同一実装が test module 内 2 件存在 = DRY 違反解消, session_manager_persist.rs に #[cfg(test)] pub(crate) fn list_md_files() を module level に新設 + 2 file の test module 内 fn list_md_files 削除 + use crate::session_manager_persist::list_md_files で参照, #[cfg(test)] gate により production binary に影響なし, callsite (list_md_files() 9 件) 全件無変更で API 互換維持, cargo test 704 件件数完全不変, alternation pivot K'(161) → rust(162), Loop 159 jst() x5 集約 paradigm の反復 2 件目 = paradigm 安定性実証, AGENTS.md priority 1 寄与)"
+```
+
+### Commit 2: chore (AGENT_LOG.md 末尾追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → `---` 直後に Loop 162 entry を append (**1 回のみ Edit/Write、複数回繰り返さない、append が成功したら直ちに次へ進む**):
+
+```
+[mjc-main-20260505-80 Loop 162 / 2026-05-06]
+worker: mjc-worker-loop162-list-md-files-test-helper-consolidate (作業)
+範囲: src-tauri/src/session_manager_persist.rs (module level に #[cfg(test)] pub(crate) fn list_md_files 新設 = +9 行) + src-tauri/src/session_commands.rs (test module 内 fn list_md_files 削除 8 行 + use 追加 1 行 = -7 行) + src-tauri/src/session_manager.rs (test module 内 doc + fn list_md_files 削除 9 行 + 既存 use 統合 0 行 = -9 行)
+内容: 2 file の test module 内 `fn list_md_files(dir: &Path) -> Vec<PathBuf>` 完全同一重複定義 (Path 修飾 / doc comment 違いのみ) を削除 + session_manager_persist.rs::list_md_files (module level に #[cfg(test)] pub(crate) fn として新設) から use 経由参照。**rust 軸 = 既存 file 拡張軸 paradigm 7 件目 = test helper 集約軸 paradigm 反復 2 件目 = 2 file 同時集約軸** = Loop 159 jst() x5 集約 paradigm の反復 2 件目 (規模小だが paradigm 安定性実証)。callsite (list_md_files() 9 件 = session_commands 1 件 + session_manager 8 件) は use により名前空間に取り込まれるため全件無変更で API 互換維持。**責務階層精査**: session_manager_persist.rs = session 永続化 tier (`persist_if_configured` 等のディスク I/O 関連) = list_md_files (ディスク列挙) の責務階層と意味的に整合 + session_manager.rs は既に session_manager_persist::persist_if_configured を import 済 = 自然な依存関係 + session_commands.rs も同 tier の依存関係追加 = 責務階層上自然。**#[cfg(test)] gate**: production binary に影響なし (test build のみ list_md_files が出現)。alternation pattern pivot 受容 (K'(161) → rust(162) = 1 → 2 へ加速)。
+振る舞い: cargo test (lib) 704 件件数完全不変、cargo clippy + cargo fmt + cargo build 全 OK。frontend 無変更のため npm run build 不要。
+verify: scripts/agent-verify.sh 全項目 OK
+意義: 既存 file 拡張軸 paradigm 7 件目達成 (Loop 145/147/149/153/157/159 の続編 = 6 件目から 7 件目へ拡張) + 重複候補 grep 探索 paradigm 7 件目達成 = test helper 同名 fn 探索の **paradigm 反復実証** (Loop 159 jst() x5 → list_md_files() x2 = 規模違いだが paradigm 完全同形) + Loop 159 paradigm の安定性実証 (1 件目達成 → 2 件目反復成功) + DRY 違反解消 + worker 自律 2-commit pattern 連続 18 ループ目達成 = 節目 18 件突破継続 + alternation pivot 1 → 2 加速 + scope 38 軸目開拓候補 (test helper tier 拡張 = persist tier 経由).
+---
+```
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-80 Loop 162 = list_md_files() test helper を session_manager_persist.rs に集約 (rust 軸, 既存 file 拡張軸 paradigm 7 件目 = test helper 集約軸 paradigm 反復 2 件目 = 2 file 同時集約軸, DRY 違反解消, alternation pivot K'(161) → rust(162), Loop 159 jst() x5 集約 paradigm の反復 2 件目, 重複候補 grep 探索 paradigm 7 件目達成) のエントリ追記"
+```
+
+### 完了確認
+
+`git log --oneline -3` で 2 commit が作成されていることを確認。`git status --short` で working tree clean を確認 (handoff/worker-prompts ファイルは untracked 継続)。
+
+## 制約 (重要)
+
+- **担当範囲外の編集禁止**: 上記 3 file (session_manager_persist.rs / session_commands.rs / session_manager.rs / AGENT_LOG.md) のみ編集
+- **行末空白文字 (trailing whitespace) 禁止** = 各行末尾に空白文字を残さない
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から、Loop 146-161 で 16 連続実証成功)
+- 大型 file は Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **2-commit pattern を厳守** = refactor commit + chore commit の 2 つを順番に作成
+- `--no-verify` 禁止、Keychain 実通信禁止、課金禁止
+- **件数完全不変保証** = cargo test --lib で 704 件全 pass を必ず確認
+- 課題発生時は中断して報告。状況不明なら勝手に file を作らない。
+
+## 想定完走時間
+
+規模 SS = ~3-7 分完走見込み (3 file 編集 + cargo test 検証 = Loop 159 (5 file) より小規模 + Loop 157 (2 file) と同水準)
+
+precedent: Loop 119/121/123/125/127/129/131/133/135/137/139/141/143/145/147/149/151/153/155/157/159 = 21 件 rust/frontend 軸完走実績 + Loop 159 jst() 集約 paradigm 1 件目達成 → 本ループで paradigm 反復 2 件目を狙う。
+
+以上、よろしくお願いします。

@@ -1,0 +1,229 @@
+あなたは meet-jerky リポジトリの sonnet ワーカーです。GoToMeeting URL 検知の **新規追加** (priority 2 = 会議検知の網羅性、TDD Red→Green サイクル) を実装してください。
+
+# 必読ドキュメント (順番厳守)
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (運用ルール本体)
+2. **AGENT_LOG.md の末尾 350 行のみ** = `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で読む。**全体を Read してはならない (~25,000 行 / ~2MB)**
+3. **既存 Whereby 実装の精読** = `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/app_detection.rs` の **L865-L916** (WHEREBY_NON_ROOM_PATHS / is_whereby_host / is_whereby_meeting_url) と **L515-L537** (classify_meeting_url) と **L3068-L3137** (Whereby tests) を Read で精読 (offset/limit 使用、全体 Read 禁止 = 3137 行)
+
+# AGENT_LOG.md 取り扱い必須ルール (絶対に守る)
+- AGENT_LOG.md は **時系列順**。最古ログが先頭、**最新ログがファイル末尾**。
+- **新規追記は必ずファイル末尾に行う**。**先頭は絶対に触らない**。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` 直後に Write で新規ファイル作成 → `cat <new_log_file> >> AGENT_LOG.md` で append。
+
+# タスク内容: app_detection.rs に GoToMeeting URL 検知を追加 (Whereby パターン直接転用)
+
+## 実装範囲 (initial scope = `meet.goto.com` のみ、`global.gotomeeting.com` legacy URL は別ループ)
+
+### 1. `GOTO_NON_ROOM_PATHS` const (Whereby と同パターン、blacklist)
+
+L895 (WHEREBY_NON_ROOM_PATHS の `];` の直後) に以下を追加:
+
+```rust
+const GOTO_NON_ROOM_PATHS: &[&str] = &[
+    "about",
+    "pricing",
+    "blog",
+    "login",
+    "signup",
+    "help",
+    "terms",
+    "privacy",
+    "contact",
+    "products",
+    "features",
+    "download",
+    "app",
+    "api",
+    "security",
+    "status",
+];
+```
+
+### 2. `is_goto_host(host: &str) -> bool` (Whereby host 関数と同質、subdomain 対応)
+
+`is_whereby_host` の **直後** (L905 の後) に追加。`meet.goto.com` apex + `<sub>.meet.goto.com` subdomain (将来の enterprise tenant 対応) の両方を検出:
+
+```rust
+fn is_goto_host(host: &str) -> bool {
+    if host == "meet.goto.com" {
+        return true;
+    }
+    let Some(subdomain) = host.strip_suffix(".meet.goto.com") else {
+        return false;
+    };
+    !subdomain.is_empty() && subdomain.split('.').all(is_valid_dns_label)
+}
+```
+
+### 3. `is_goto_meeting_url(host: &str, path: &str) -> bool` (Whereby meeting_url 関数と同質)
+
+`is_whereby_meeting_url` の **直後** (L916 の後) に追加:
+
+```rust
+fn is_goto_meeting_url(host: &str, path: &str) -> bool {
+    if !is_goto_host(host) {
+        return false;
+    }
+    let Some(room) = path.strip_prefix('/') else {
+        return false;
+    };
+    let room = room.strip_suffix('/').unwrap_or(room);
+    !room.is_empty() && !room.contains('/') && !GOTO_NON_ROOM_PATHS.contains(&room)
+}
+```
+
+### 4. `classify_meeting_url` に GoToMeeting 統合 (L525-L527 領域)
+
+L525-L526:
+```rust
+} else if is_whereby_meeting_url(&host, &parsed.path) {
+    "Whereby"
+```
+の **直後** (L527 の前) に以下を挿入:
+
+```rust
+} else if is_goto_meeting_url(&host, &parsed.path) {
+    "GoToMeeting"
+```
+
+最終形:
+```rust
+} else if is_whereby_meeting_url(&host, &parsed.path) {
+    "Whereby"
+} else if is_goto_meeting_url(&host, &parsed.path) {
+    "GoToMeeting"
+} else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {
+    "Microsoft Teams"
+```
+
+### 5. テスト追加 (~7 件、Whereby tests と同パターン、L3137 の `}` の直前)
+
+L3134-L3136 (`classify_meeting_url_whereby_rejects_empty_room_name` テスト) の直後、ファイル末尾 `}` の直前に以下を追加:
+
+```rust
+    #[test]
+    fn classify_meeting_url_goto_apex_room() {
+        assert_eq!(
+            classify_meeting_url("https://meet.goto.com/team-standup"),
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "meet.goto.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_subdomain_room() {
+        assert_eq!(
+            classify_meeting_url("https://acme.meet.goto.com/quick-call"),
+            Some(MeetingUrlClassification {
+                service: "GoToMeeting".to_string(),
+                host: "acme.meet.goto.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_blacklist_about() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/about"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_blacklist_pricing() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_extra_segment() {
+        assert_eq!(
+            classify_meeting_url("https://meet.goto.com/team-room/extra"),
+            None
+        );
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_dns_label_spoofing() {
+        assert_eq!(classify_meeting_url("https://fake-meet.goto.com/room"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_empty_room_name() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/"), None);
+    }
+```
+
+# 規模超過防止 (絶対遵守)
+
+- **担当範囲外の編集禁止**:
+  - 編集対象は `src-tauri/src/app_detection.rs` **のみ**
+  - 他ファイル (lib.rs, transcription.rs, audio.rs, frontend 等) は **絶対に編集しない**
+- **GoToMeeting 以外の検知追加禁止**: `global.gotomeeting.com/join/<id>` legacy URL や `app.goto.com/meet/<id>` (アプリ launcher) は **本ループでは絶対に追加しない** (sweep 化防止)
+- **既存実装の編集禁止**: Whereby / Webex / Zoom / Google Meet / Teams 関連のコード・テストは **絶対に変更しない** (削除も追加もしない)
+- **新規 const / 関数 / テストは厳密に上記 5 項目のみ**: `is_goto_*` 系関数を増やさない、`GOTO_*` const を増やさない (`GOTO_NON_ROOM_PATHS` のみ)
+- **大型ファイルは Read 全体禁止**: app_detection.rs (3137 行) は `Read` の offset/limit (例: offset=865, limit=55) または `sed -n 'NUM,NUMp'` で対象範囲のみ参照
+- **行末の空白文字 (trailing whitespace) 禁止**: 編集後 `git diff --check` で確認
+
+# TDD Red → Green サイクル
+
+1. **Red**: テスト 7 件を追加 (上記 5 セクション目) → `cargo test --lib classify_meeting_url_goto 2>&1 | tail -10` で **失敗を確認** (compile error or no result でも OK = まだ実装なし)
+2. **Green**: const + is_goto_host + is_goto_meeting_url + classify_meeting_url 統合 (上記 1-4 セクション) を追加 → `cargo test --lib 2>&1 | tail -10` で **685 passed** を確認
+
+順序逆 (Green → Red) でも構いませんが、Red→Green サイクルを取った方が「振る舞い追加」確認として明示的。
+
+# 検証
+
+実装後、以下を順に実行:
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | tail -5`
+   - **期待**: `test result: ok. 685 passed; 0 failed; ...` (678 + 7 = 685)
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10`
+   - **期待**: 警告ゼロ
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check 2>&1 | tail -5`
+   - **期待**: 出力なし
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && git diff --check 2>&1 | head -10`
+   - **期待**: trailing whitespace なし
+
+**テスト件数が 685 と異なる場合は失敗**: rollback (`git checkout -- src-tauri/src/app_detection.rs`) して再考。
+
+# AGENT_LOG.md 末尾追記
+
+検証完了後、AGENT_LOG.md **末尾** (`---` 直後) に以下スタイルで追記:
+
+```
+[WORKER COMPLETED @ 2026-05-05 ~MM:SS JST] mjc-worker-goto-url-detection-20260505-9-2
+- GoToMeeting URL 検知 (initial scope = `meet.goto.com` apex + subdomain) 追加完了
+- 新規: GOTO_NON_ROOM_PATHS const (16 entries) + is_goto_host + is_goto_meeting_url + classify_meeting_url 統合
+- テスト 7 件追加 (apex_room / subdomain_room / blacklist about / blacklist pricing / extra_segment / dns_label_spoofing / empty_room_name)
+- 検証: cargo test --lib 685 passed (678 + 7) / clippy --lib -D warnings 警告ゼロ / fmt --check OK / git diff --check trailing whitespace なし
+- AGENTS.md 優先順位 2 = 会議検知の網羅性 への直接寄与
+- variety pivot 成立 (Loop 15 + 16 + 17 = extraction 3 連続 → Loop 18 service detection 軸への完全 pivot で連続カウントリセット)
+- 「sweep 化しない約束」継承 = `global.gotomeeting.com/join/<id>` legacy URL や `app.goto.com/meet/<id>` は本ループで追加せず、後続ループに譲る (Whereby Loop 7 base → Loop 14 marketing 拡張 と同じ段階的精緻化パターン)
+
+---
+```
+
+# Commit (worker 自走 commit)
+
+検証 + AGENT_LOG.md 追記が成功したら、以下で commit:
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && git add src-tauri/src/app_detection.rs AGENT_LOG.md && git commit -m "$(cat <<'EOF'
+feat(app_detection): GoToMeeting URL 検知 (meet.goto.com apex + subdomain) を classify_meeting_url に追加 (mjc-main-20260505-9 Loop 18, AGENTS.md 優先順位 2 = 会議検知の網羅性, variety pivot = Loop 15+16+17 extraction 3 連続から service detection 軸への完全 pivot, Whereby Loop 7 base パターン直接転用 = is_goto_host (apex + subdomain + valid_dns_label による DNS spoofing 防御) + is_goto_meeting_url (path room name 抽出 + GOTO_NON_ROOM_PATHS blacklist) + classify_meeting_url 統合, GOTO_NON_ROOM_PATHS 16 entries (about/pricing/blog/login/signup/help/terms/privacy/contact/products/features/download/app/api/security/status), TDD Red→Green, テスト 7 件追加で 685 passed = 678 + 7, clippy 警告ゼロ, fmt OK, sweep 化しない約束 = global.gotomeeting.com legacy URL や app.goto.com アプリ launcher は本ループで追加せず後続ループに譲る = Whereby Loop 7 base → Loop 14 marketing 拡張 の段階的精緻化パターン継承)
+EOF
+)"
+```
+
+`--no-verify` 禁止。pre-commit hook が失敗したら原因を fix してから新規 commit (--amend 禁止)。
+
+# 残リスク
+
+- **`is_valid_dns_label` の参照可能性**: Whereby 実装が L904 で使用しているため、同一ファイル内で参照可能のはず。grep で `fn is_valid_dns_label` の定義位置を確認してから使用。
+- **classify_meeting_url 統合位置**: Whereby と Teams の間 (Whereby の直後) に挿入。Teams は after Whereby が現状なので、ordering は Webex → Whereby → GoToMeeting → Teams の順になる。
+
+# 失敗時の挙動
+
+- 検証で 685 件 pass しなかった場合: `git checkout -- src-tauri/src/app_detection.rs` で rollback、AGENT_LOG.md に失敗報告 (FAILED スタイル) を append、commit しない。
+
+# 開始
+
+上記タスクを実行してください。質問があれば AGENT_LOG.md に追記後 commit せず終了してください。

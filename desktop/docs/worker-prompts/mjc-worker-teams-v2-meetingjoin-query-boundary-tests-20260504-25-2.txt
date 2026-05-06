@@ -1,0 +1,113 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順番厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20800+ 行 / 1.7MB+ あるので絶対に Read 全体しないこと。`tail -350 AGENT_LOG.md` で末尾だけ参照すること。** 末尾には mjc-main-20260504-25 Loop 1 (Google Meet path 桁契約 +3 件) のセクションがあり、本タスクの直前の状況復元に必須。
+
+# 重要: AGENT_LOG.md の追記ルール (絶対遵守)
+- AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は必ずファイル末尾に行う。
+- **先頭は絶対に触らない**。先頭追記すると時系列が壊れる過去事故あり (mjc-main-21 で発生 → mjc-main-22 以降は worker prompt で末尾追記明示の継続適用で 5 連続セッション事故ゼロ達成中、本タスクで 6 連続セッション目)。
+- 追記前に **必ず `tail -10 AGENT_LOG.md` で末尾を確認**してから、末尾の `---` 直後に追記する。
+- 大型ファイル (AGENT_LOG.md / app_detection.rs 等) は Read 全体禁止 = `tail` / `head` / `grep -n` で対象範囲のみ参照すること。
+
+# 担当範囲 (絶対遵守)
+- **`src-tauri/src/app_detection.rs` の `mod tests` 末尾に test 3 件追加のみ**。
+- **関数本体 (`classify_meeting_url` / `is_teams_meeting_url` / `query_has_param` / 他全ての関数) は完全無変更**。
+- 他ファイルへの変更は禁止 (AGENT_LOG.md 末尾追記を除く)。
+- 担当範囲外の編集禁止。
+- 規模超過防止: **3 件のみ追加**、4 件以上は scope 超過扱い。
+- コミット禁止 (メインがコミットする)。
+
+# 挿入位置
+- `src-tauri/src/app_detection.rs` の現末尾は **l.2162 の `}` (mod tests 末尾)**。
+- 既存最終 test (Loop 1 で追加) は **`classify_meeting_url_rejects_google_meet_code_path_with_long_third_segment`** (l.2154-2161)。
+- 挿入位置は **l.2161 の `}` (上記 test 関数末尾) の直後**、つまり l.2162 の `}` (mod tests 末尾) の直前。
+- 形式は既存 test と完全対称: `#[test]` + `fn xxx() { ... }` の Rust test 関数 3 つを上記位置に挿入。
+
+# 追加する test 3 件 (具体仕様)
+
+## 背景
+- `classify_meeting_url` は Microsoft Teams `/v2` 経路で `is_teams_meeting_url` (l.769) → `query_has_param(query, "meetingjoin", "true")` (l.776) を呼ぶ。
+- `query_has_param` (l.801) は `query.split('&').any(|param| { let (k, v) = param.split_once('=').unwrap_or((param, "")); k.eq_ignore_ascii_case(key) && v.eq_ignore_ascii_case(value) })` で実装。
+- 既存 test:
+  - l.1208 = `?meetingjoin=true&context=secret` (meetingjoin **先頭**) accept ✅
+  - l.1215 = `?MEETINGJOIN=TRUE#meeting` (大小区別なし) accept ✅
+  - l.1222/1252 = `?meetingjoin=true` (単独) accept ✅
+  - l.1396/1429 = `?meetingjoin=false` reject (value 違反) ✅
+- 未保護の境界:
+  - meetingjoin が **中間** (`?context=x&meetingjoin=true`) accept = `query.split('&').any(...)` の 2 番目以降イテレーションマッチ動作の executable spec
+  - **重複 key** (`?meetingjoin=false&meetingjoin=true`) accept = `any()` の one of マッチで true 動作
+  - **value 部分なし** (`?meetingjoin`) reject = `split_once('=').unwrap_or((param, ""))` で param_value="" となり "true" と一致しない動作
+- これら 3 つは「対称的補強の 3 軸構造」に綺麗に適用可能 = 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与。
+
+## 追加 test 仕様 (mod tests 末尾、Loop 1 の last test の直後に追加)
+
+### T1: `classify_meeting_url_accepts_teams_v2_with_meetingjoin_true_in_middle_param_position`
+- 目的: `query.split('&').any(...)` の中間 param マッチ動作を CI 固定。「first param のみ check」のような最適化誤改修を遮断。
+- 仕様: `classify_meeting_url("https://teams.microsoft.com/v2/?context=secret&meetingjoin=true")` が `Some(MeetingUrlClassification { service: "Microsoft Teams".to_string(), host: "teams.microsoft.com".to_string() })` を返すことを assert。
+- 既存 l.1208 (`?meetingjoin=true&context=secret`) は meetingjoin が先頭 = 1 番目のイテレーションでマッチ = 中間 param マッチは未保護。
+- assert メッセージ: "Teams /v2 経路の query_has_param は & 区切りで全 param を走査する契約 (現契約: query.split('&').any(...)) = meetingjoin が 2 番目以降の位置にあっても accept される必要がある"
+
+### T2: `classify_meeting_url_accepts_teams_v2_with_duplicate_meetingjoin_keys_when_one_matches`
+- 目的: `any()` の one-of マッチ動作 (重複 key の 1 つだけ true でも全体 true) を CI 固定。「重複 key を reject する厳格化」誤改修を遮断。
+- 仕様: `classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin=false&meetingjoin=true")` が `Some(MeetingUrlClassification { service: "Microsoft Teams".to_string(), host: "teams.microsoft.com".to_string() })` を返すことを assert。
+- assert メッセージ: "Teams /v2 経路の query_has_param は重複 key の場合 1 つでもマッチで true を返す契約 (現契約: query.split('&').any(...)) = meetingjoin=false&meetingjoin=true で後者がマッチして accept される必要がある"
+
+### T3: `classify_meeting_url_rejects_teams_v2_with_meetingjoin_key_only_no_equals`
+- 目的: `split_once('=').unwrap_or((param, ""))` の value 部分なし時の挙動 (param_value="") を CI 固定。「value 部分なしを true 扱いする寛容化」誤改修を遮断。
+- 仕様: `classify_meeting_url("https://teams.microsoft.com/v2/?meetingjoin")` が `None` を返すことを assert。
+- 詳細: `split_once('=')` が None → unwrap_or = ("meetingjoin", "") → param_key match だが param_value="" != "true" → false → any() = false → query_has_param = false → is_teams_meeting_url = false → classify = None。
+- assert メッセージ: "Teams /v2 経路の query_has_param は = が無い param を value=\"\" として扱う契約 (現契約: split_once('=').unwrap_or((param, \"\"))) = meetingjoin (= なし) は value=\"\" となり \"true\" と一致せず reject される必要がある"
+
+# 設計思想
+- 「対称的補強の 3 軸構造」パターン (前 mjc-main-22/23/24 で確立、Loop 1 で application 継続) を Teams `/v2` query 経路に application: 3 つの独立軸 (param 順序 / 重複 key / value 部分構造) を 1 軸ずつ別 test で保護。
+- 1 commit で「`query_has_param` の 3 つの未保護仕様の executable specification 化」を完成。
+- 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与 = Teams `/v2?meetingjoin=true` 偽認識 / 認識漏れを遮断する装置。
+- Tidy First 厳守 = ユーザー観測可能な振る舞い不変 = 関数本体無変更 + test 追加のみ。
+
+# 実装手順
+1. `tail -10 src-tauri/src/app_detection.rs` で末尾構造を確認。
+2. `Edit` ツールで l.2161 の `}` (Loop 1 last test 末尾) と l.2162 の `}` (mod tests 末尾) の関係を確認しつつ、l.2161 直後 + l.2162 の `}` 直前に test 3 件挿入。
+3. 既存 test の Rust スタイル (`#[test]` + `fn ...() { assert_eq!(..., expected, "msg"); }` の単発 assert + 5 引数版) を踏襲。
+
+# 検証 (順番厳守、全段 OK 必須)
+1. `cargo test --lib classify_meeting_url_accepts_teams_v2_with_meetingjoin` で T1/T2 が PASS することを確認。
+2. `cargo test --lib classify_meeting_url_rejects_teams_v2_with_meetingjoin` で T3 が PASS することを確認。
+3. `cargo test --lib` 全体で **521 passed** (518 → +3 件) になることを確認。
+4. `cargo clippy --all-targets -- -D warnings` で警告ゼロ確認。
+5. `cargo fmt --check` で差分なし確認 (差分があれば `cargo fmt` を 1 回適用)。
+6. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` で全段 OK 確認。
+
+# AGENT_LOG.md 追記 (検証成功後)
+1. `tail -10 AGENT_LOG.md` で末尾確認。
+2. 末尾の `---` 直後 (= ファイル一番下) に新規セクションを追記:
+
+```markdown
+## mjc-worker-teams-v2-meetingjoin-query-boundary-tests-20260504-25-2 (Loop 2)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-25 Loop 2
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/app_detection.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: Loop 1 の last test `classify_meeting_url_rejects_google_meet_code_path_with_long_third_segment` (l.2154-2161) の直後に、Teams `/v2?meetingjoin` query 経路の境界 test 3 件追加 (T1: 中間 param accept / T2: 重複 key accept / T3: value 部分なし reject)
+- **結果**: 全 test PASS (518 → 521 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/app_detection.rs` のみ
+- **検証結果**: cargo test 521 passed / clippy -D warnings 警告ゼロ / cargo fmt 差分なし / agent-verify 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: Loop 1 (Google Meet 桁契約 3 軸) と同じ「対称的補強の 3 軸構造」パターンを Teams `/v2` query 経路に application = 3 つの独立軸 (param 順序 / 重複 key / value 部分構造) を 1 軸ずつ別 test で保護
+- **設計判断 2**: 既存 test は meetingjoin 先頭 / 大小区別なし / value 違反 (false) のみカバー = 「中間位置」「重複 key」「value 部分なし」3 軸は完全未保護で相補的なカバー
+- **設計判断 3**: 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与継続 = Teams 公式 `/v2?meetingjoin=true` 経路の認識漏れ/偽認識を test で遮断する装置
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---
+```
+
+# 報告 (1 ターンで完結)
+- 変更ファイル: `src-tauri/src/app_detection.rs` のみ
+- 検証結果: cargo test 件数、clippy 警告数、fmt 差分、agent-verify 結果
+- 残リスク
+- 1 ターンで完結する形でまとめてください。

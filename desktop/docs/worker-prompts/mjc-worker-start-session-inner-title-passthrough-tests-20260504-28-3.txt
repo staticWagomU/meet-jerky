@@ -1,0 +1,205 @@
+あなたは meet-jerky プロジェクトの作業 worker (claude sonnet, print mode) です。
+
+# 必読ドキュメント (順序厳守)
+1. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md` (プロジェクトルール)
+2. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md` (worker 運用)
+3. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** を `tail -350 AGENT_LOG.md` で読む
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+   - **具体手順**: `tail -10 AGENT_LOG.md` で末尾の `---` 位置を確認 → 末尾の `---` 直後に追記する
+   - **大型ファイル (AGENT_LOG.md は 21000+ 行 / 1.8MB+) は Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+
+# 作業範囲 (これ以外触るな = 規模超過防止)
+- `src-tauri/src/session_commands.rs` の `mod tests` 末尾への test 関数 **3 件** 追加 (Tidy First, 振る舞い不変, ユーザー観測不可)
+- `AGENT_LOG.md` への末尾追記 (本作業エントリ)
+
+**禁止事項**:
+- 関数本体 (start_session_inner / start_session / 他全関数) を変更すること
+- 既存 test を変更・削除すること
+- 別ファイル (session_manager.rs / markdown.rs / 他全 .rs) を変更すること
+- frontend ファイル (.tsx, .ts, .css, .html) を変更すること
+- 4 件以上の test を追加すること
+- 行末の空白文字 (trailing whitespace) を含めること = AGENT_LOG.md / session_commands.rs ともに **必ず行末の空白を除去する**
+
+# 背景 = mjc-main-20260504-28 Loop 3 = 別ファイル切替 = 「層対称軸補強」パターン新規 application = commands 層 (start_session_inner) の title passthrough 完全網羅
+
+`session_commands.rs` の `start_session_inner` (l.51-63) は内部で:
+1. `create_dir_all(output_dir)` を呼ぶ
+2. `manager.start_with_output(title, started_at, output_dir.to_path_buf(), offset)` を呼ぶ
+
+title は変換無しで `SessionManager::start_with_output` へ passthrough する。本 Loop 3 は **commands 層 = 上位層 / SessionManager 層 = 下位層** の責務分離テストを 2 層 (上位 + 下位) で完成させる:
+
+- 下位層 (SessionManager): mjc-main-26 Loop 2 (`SessionManager::start` title passthrough) + mjc-main-27 Loop 1 (`SessionManager::start_with_output` output_dir passthrough) で完成
+- 上位層 (commands.rs): 既存 18 件 test の中で `start_session_inner` の title passthrough 軸が未保護
+
+3 軸選定 (Loop 1 = SessionManager::discard と完全対称な「層対称軸補強」):
+- T1: 空 title でも commands 層が `manager.start_with_output` へ passthrough する契約
+- T2: NUL byte 含む title でも passthrough する契約
+- T3: 10_000 chars 巨大 title でも passthrough する契約
+
+これらは「commands 層 → SessionManager 層」の責務分離 + 上位層 normalization 不在の executable specification 化。
+
+# やること
+
+`src-tauri/src/session_commands.rs` の `mod tests` の **末尾** (= 直前 test `default_offset_returns_jst_offset_constant` の直後、l.443 周辺、ファイル末尾の `}` 直前) に test 関数 3 件追加。**関数本体は完全無変更**。
+
+## T1: start_session_inner_passes_empty_title_through_to_session_without_normalization
+
+**目的**: 空 title (`String::new()`) でも commands 層が title を加工せず `SessionManager::start_with_output` へ passthrough する現契約を CI 固定。`manager.is_active() == true` + `manager.current_title() == Some(String::new())` の二重 assert で「commands 層は空 title を reject しない / 加工しない」passthrough 契約を保護。
+
+**構造**:
+```rust
+#[test]
+fn start_session_inner_passes_empty_title_through_to_session_without_normalization() {
+    let manager = SessionManager::new();
+    let dir = tempdir().unwrap();
+
+    start_session_inner(&manager, String::new(), 1_700_000_000, dir.path(), jst())
+        .expect("start_session_inner should succeed even with empty title");
+
+    assert!(
+        manager.is_active(),
+        "空 title でも session が activate される: commands 層は title を加工しない passthrough 契約"
+    );
+    assert_eq!(
+        manager.current_title(),
+        Some(String::new()),
+        "空 title が SessionManager::start_with_output へそのまま forwarded される passthrough 契約 (commands 層は空 title reject しない)"
+    );
+}
+```
+
+## T2: start_session_inner_passes_title_with_nul_bytes_through_without_sanitization
+
+**目的**: NUL byte 含む title (`"\0\0\0"`) でも commands 層が control char sanitization を行わず `SessionManager::start_with_output` へ passthrough する現契約を CI 固定。control char filtering を上位層に追加する誤改修を遮断する装置。
+
+**構造**:
+```rust
+#[test]
+fn start_session_inner_passes_title_with_nul_bytes_through_without_sanitization() {
+    let manager = SessionManager::new();
+    let dir = tempdir().unwrap();
+    let nul_title = "\0\0\0".to_string();
+
+    start_session_inner(&manager, nul_title.clone(), 1_700_000_000, dir.path(), jst())
+        .expect("start_session_inner should succeed even with NUL byte title");
+
+    assert!(
+        manager.is_active(),
+        "NUL byte 含む title でも session が activate される: commands 層は control char filtering しない passthrough 契約"
+    );
+    assert_eq!(
+        manager.current_title(),
+        Some(nul_title),
+        "NUL byte 含む title が SessionManager::start_with_output へそのまま forwarded される passthrough 契約"
+    );
+}
+```
+
+## T3: start_session_inner_passes_huge_title_through_without_size_limit
+
+**目的**: 10_000 chars 巨大 title (`"a".repeat(10_000)`) でも commands 層が size limit による truncation を行わず `SessionManager::start_with_output` へ passthrough する現契約を CI 固定。size 制約を上位層に追加する誤改修 (e.g. `if title.len() > 1024 { title.truncate(1024) }`) を遮断する装置。
+
+**構造**:
+```rust
+#[test]
+fn start_session_inner_passes_huge_title_through_without_size_limit() {
+    let manager = SessionManager::new();
+    let dir = tempdir().unwrap();
+    let huge_title = "a".repeat(10_000);
+
+    start_session_inner(&manager, huge_title.clone(), 1_700_000_000, dir.path(), jst())
+        .expect("start_session_inner should succeed even with 10_000 char title");
+
+    assert!(
+        manager.is_active(),
+        "10_000 chars title でも session が activate される: commands 層は size limit を持たない passthrough 契約"
+    );
+    let current = manager
+        .current_title()
+        .expect("current_title should be Some");
+    assert_eq!(
+        current.len(),
+        10_000,
+        "10_000 chars title が truncate されず forwarded される passthrough 契約 (size assert)"
+    );
+    assert_eq!(
+        current, huge_title,
+        "10_000 chars title が内容変換 (replace_all 等) されず forwarded される passthrough 契約 (内容 assert)"
+    );
+}
+```
+
+# 配置場所
+`src-tauri/src/session_commands.rs` の `mod tests` の **末尾** (= 既存 test `default_offset_returns_jst_offset_constant` の直後、l.443 周辺、ファイル末尾の `}` 直前)。
+配置順は T1 → T2 → T3。
+
+# 検証手順 (worker 完走前に必ず実行)
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo fmt -- --check
+cargo clippy --lib -- -D warnings
+cargo test --lib -- --test-threads=1 2>&1 | tail -20
+```
+
+期待結果:
+- `cargo fmt --check`: 差分なし
+- `cargo clippy --lib -- -D warnings`: 警告ゼロ
+- `cargo test --lib -- --test-threads=1`: `test result: ok. 551 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out`
+
+万一 `cargo fmt --check` で差分が出た場合は `cargo fmt` を実行して fix。clippy 警告が出たら最小修正のみ実施。
+
+# AGENT_LOG.md 末尾追記内容
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、末尾に以下を追記:
+
+```markdown
+
+## mjc-worker-start-session-inner-title-passthrough-tests-20260504-28-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-start-session-inner-title-passthrough-tests-20260504-28-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-28 Loop 3
+
+### 作業範囲
+- `src-tauri/src/session_commands.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替 (markdown.rs → session_commands.rs) で「test 密度の偏り是正」継続 + 「層対称軸補強」パターン新規 application で commands 層 (start_session_inner) の title passthrough を 3 軸で CI 固定:
+- T1: start_session_inner_passes_empty_title_through_to_session_without_normalization (空 title)
+- T2: start_session_inner_passes_title_with_nul_bytes_through_without_sanitization (NUL byte)
+- T3: start_session_inner_passes_huge_title_through_without_size_limit (10_000 chars)
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <結果>
+
+### 変更ファイル
+- src-tauri/src/session_commands.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+<cargo test 末尾 quote>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+**最重要 (再掲)**:
+- AGENT_LOG.md は **末尾追記のみ**。先頭・中間は絶対に触らない。
+- 行末の空白文字 (trailing whitespace) を含めない。
+- 関数本体・既存 test は無変更。
+- 4 件以上の test 追加禁止。
+
+完了したらメインへ「Loop 3 worker 完走」と報告すること。

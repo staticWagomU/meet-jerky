@@ -1,0 +1,167 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/settings_permission.rs` (Loop 89 直前抽出、~120 行)
+6. precedent (cat 全体): `cat src-tauri/src/app_detection_notification.rs` (Loop 87 抽出、94 行)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/transcription_commands_model.rs` (~110-130 行)
+- 編集: `src-tauri/src/transcription_commands.rs` (model 関連 production ~65 行削除 + 関連 test 2 件削除 + 不要 import 整理)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 + invoke_handler の path 修正 3 件)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 90 タスク内容 (構造分離 16 件目, 別 scope = transcription_commands 軸 1 件目 = pivot)
+
+## 背景
+
+- Loop 87/88 = app_detection 機能分類軸 2 件目達成。Loop 89 = settings 軸 1 件目達成 (settings_permission.rs)。
+- Loop 90 では transcription_commands.rs (717 行) の **model 関連 section** (list_models / is_model_downloaded / download_model + 2 純粋関数 helper) を別 module へ抽出 = 構造分離 16 件目 = 新 scope = pivot 達成。
+- transcription_commands.rs 本来責務 (start/stop transcription) と model ダウンロード/管理は機能的に独立 = 分離で構造美向上。AGENTS.md priority 1 寄与。
+
+## 抽出対象 (transcription_commands.rs から transcription_commands_model.rs へ移動)
+
+**Production (transcription_commands.rs L12-77, ~66 行)**:
+- L12-16: `#[tauri::command] pub fn list_models() -> Vec<ModelInfo>` (4 行 fn)
+- L18-22: `#[tauri::command] pub fn is_model_downloaded(model_name: String) -> bool` (5 行 fn)
+- L24-28: `pub(crate) fn build_download_progress_payload(progress: f64, model: &str) -> serde_json::Value` (5 行 純粋関数)
+- L30-33: `pub(crate) fn build_download_error_payload(model: &str, message: &str) -> serde_json::Value` (5 行 純粋関数)
+- L35-77: `#[tauri::command] pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result<String, String>` (~43 行 async fn、tokio::task::spawn_blocking + tauri::Emitter::emit 使用)
+- 合わせて doc コメント / 空行を含む
+
+**Test (transcription_commands.rs `mod tests` 内、2 件)**:
+- L303-311: `test_download_progress_payload_serialization` (8 行)
+- L313-321: `test_download_error_payload_serialization` (9 行)
+
+これ以外の test は **絶対に触らない** (transcription_source_* / parse_requested_transcription_sources_* は別軸)。
+
+## 抽出方式 (Loop 89 settings_permission.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/transcription_commands_model.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! Whisper モデルの一覧取得 / ダウンロード判定 / ダウンロード実行に関する tauri コマンド群と
+//! `model-download-progress` / `model-download-error` イベントの payload 純粋関数。
+//!
+//! `transcription_commands.rs` 本来責務 (start/stop transcription) からモデル管理軸を切り出して
+//! 機能境界で分離する。
+```
+
+必要 import (移動):
+```rust
+use tauri::Emitter;
+
+use crate::transcription_model_manager::ModelManager;
+use crate::transcription_types::ModelInfo;
+```
+
+production 5 fn (list_models / is_model_downloaded / build_download_progress_payload / build_download_error_payload / download_model) をそのまま移動。`mod tests` を新 file 内に追加し、test 2 件を移動。
+
+### 2. transcription_commands.rs 編集
+
+- 該当 production section (L12-77) を削除
+- 不要になった import を整理 = `use crate::transcription_model_manager::ModelManager;` と `use tauri::Emitter;` と `ModelInfo` の use を削除
+  - **慎重に**: ModelInfo / ModelManager / Emitter / tokio::task::spawn_blocking は他 fn でも使われているか cargo build で確認すること
+  - 残るべき import (start/stop transcription で使用中) は削除しない
+- mod tests 内の関連 test 2 件 (L303, L313) を削除
+- それ以外の test (transcription_source / parse_requested_transcription_sources / RequestedTranscriptionSources) は触らない
+
+### 3. lib.rs 編集 (alphabetical mod + invoke_handler path)
+
+- `mod transcription_commands;` 直後 (alphabetical 順) に `mod transcription_commands_model;` 追加
+- L375-377 を以下に変更:
+  - `transcription_commands::list_models` → `transcription_commands_model::list_models`
+  - `transcription_commands::is_model_downloaded` → `transcription_commands_model::is_model_downloaded`
+  - `transcription_commands::download_model` → `transcription_commands_model::download_model`
+
+それ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production 5 fn / test 2 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller path 変更は lib.rs invoke_handler のみ、frontend `invoke('list_models')` 等の名前は不変
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import の clippy warning や build error が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/transcription_commands.rs src-tauri/src/transcription_commands_model.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85/86/87/88/89 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/transcription_commands.rs src-tauri/src/transcription_commands_model.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(transcription): モデル管理軸の tauri commands と payload helpers を transcription_commands_model.rs に抽出 (mjc-main-20260505-46 Loop 90, 機能分離軸 = transcription_commands 軸 1 件目, 大型 rust file 責務分離 16 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-46 Loop 90 / 2026-05-05]
+worker: mjc-worker-transcription-commands-model-loop90 (作業)
+範囲: src-tauri/src/transcription_commands.rs (model 関連 production ~66 行削除 + test 2 件削除 + 不要 import 整理) + src-tauri/src/transcription_commands_model.rs (新規 ~110-130 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 3 件)
+内容: transcription_commands.rs L12-77 の model 関連 (list_models + is_model_downloaded + build_download_progress_payload + build_download_error_payload + download_model) を新 module transcription_commands_model.rs に抽出。tests 2 件 (test_download_progress_payload_serialization + test_download_error_payload_serialization) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod transcription_commands_model; 追加 + invoke_handler の transcription_commands::list_models / is_model_downloaded / download_model を transcription_commands_model::* に変更。大型 rust file 責務分離 16 file 目 = transcription_commands 軸 1 件目 (新 scope) = settings 軸 (Loop 89) からの pivot 達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(transcription): モデル管理軸の tauri commands と payload helpers を transcription_commands_model.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = transcription_commands 軸の機能境界分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-46 Loop 90 = transcription_commands_model.rs 抽出 (構造分離 16 file 目, transcription_commands 軸 1 件目 = 新 scope, settings 軸からの pivot 達成) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

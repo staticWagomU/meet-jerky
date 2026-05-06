@@ -1,0 +1,204 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md を必要範囲で読んでください (AGENT_LOG は 17000+ 行なので tail -300 で末尾だけ参照)。
+
+## 担当範囲
+`src-tauri/src/session.rs` の `mod tests` 末尾への #[test] 関数 5 件追加のみ。
+**実装変更ゼロ、既存テスト変更ゼロ、visibility 変更ゼロ。import 追加は不要。**
+
+他エージェントが他ファイルで作業している可能性があります。担当範囲外のファイルには触らないでください。コミットは禁止です (メインが行う)。
+
+## 1. 背景 / Why
+`Session` 構造体 (line 13-20) には `id`, `title`, `started_at`, `ended_at`, `segments` の 5 フィールドがあり、3 つの mutating method (`start` 関連は constructor、`append_segment`, `finalize`) が動く。
+
+既存 8 件のテストは個別 method の単発挙動はカバーしているが、**cross-fn invariant** (= ある method を呼んでも他フィールドが変わらない) の保護が薄い。
+
+例えば:
+- `append_segment` は `segments` のみを変更し、`started_at` / `id` / `title` を変えない
+- `finalize` は `ended_at` のみを変更し、`segments` / `started_at` を変えない
+- `start` の title はバリデーションせず passthrough する (空文字許容)
+- `append_segment` の speaker / text もバリデーションせず passthrough (空文字許容)
+- `append_segment` の `timestamp_offset_secs` は u64 全範囲を許容 (boundary 0 / u64::MAX)
+
+これらの不変条件・上位層責任境界を 5 件の direct test で固定する。
+
+**SESSION_COUNTER 並列実行注意点 (重要)**: `static SESSION_COUNTER: AtomicU64 = AtomicU64::new(0)` (line 4) はテスト間で共有されるグローバルカウンタ。
+- **`session.id` の絶対値 (例: "1000-3") を assert してはいけない** (並列実行で seq が不定)。
+- 「`id != id2`」「`id` が `started_at-` で始まる」のような **相対 / prefix assert は OK**。
+- 既存 line 110-118 (`start_assigns_unique_ids_across_consecutive_calls`) と line 121-134 (`start_id_starts_with_started_at_prefix_and_hyphen`) と同じ流儀を踏襲する。
+
+## 2. 具体的 test 案 (assertion レベル)
+
+`super::*` は既に use 済み。
+
+### T1. `append_segment_preserves_started_at_id_and_title_invariants`
+```rust
+let mut session = Session::start("会議メモ".into(), 1_000);
+let original_id = session.id.clone();
+let original_started_at = session.started_at;
+let original_title = session.title.clone();
+
+for i in 0..5 {
+    session.append_segment(format!("speaker{}", i), i, format!("text{}", i));
+}
+
+assert_eq!(session.id, original_id, "append_segment は id を変えない");
+assert_eq!(session.started_at, original_started_at, "append_segment は started_at を変えない");
+assert_eq!(session.title, original_title, "append_segment は title を変えない");
+assert_eq!(session.ended_at, None, "append_segment は ended_at に触らない");
+assert_eq!(session.segments.len(), 5, "append された segment 数は維持");
+```
+**意図**: `append_segment` の単一責務 (segments のみ変更) を 5 フィールド全て確認する cross-fn invariant 契約。将来 `append_segment` が「最初の segment 時に title を auto-update」のような副作用を持ち込もうとしたらこの test で検知。
+
+### T2. `finalize_preserves_started_at_and_segments_invariants`
+```rust
+let mut session = Session::start("title".into(), 1_000);
+session.append_segment("Alice".into(), 5, "hello".into());
+session.append_segment("Bob".into(), 12, "world".into());
+
+let original_id = session.id.clone();
+let original_started_at = session.started_at;
+let original_segments_len = session.segments.len();
+let original_first_text = session.segments[0].text.clone();
+
+session.finalize(2_000);
+
+assert_eq!(session.id, original_id, "finalize は id を変えない");
+assert_eq!(session.started_at, original_started_at, "finalize は started_at を変えない");
+assert_eq!(session.segments.len(), original_segments_len, "finalize は segments の長さを変えない");
+assert_eq!(session.segments[0].text, original_first_text, "finalize は既存 segment 内容を変えない");
+assert_eq!(session.ended_at, Some(2_000), "finalize は ended_at だけを設定する");
+```
+**意図**: `finalize` の単一責務 (ended_at のみ変更) を確認する cross-fn invariant 契約。将来 `finalize` が「segments を sort」「title を normalize」のような副作用を持ち込もうとしたらこの test で検知。
+
+### T3. `start_accepts_empty_title_as_passthrough`
+```rust
+let session = Session::start(String::new(), 1_000);
+assert_eq!(session.title, "", "Session::start は title バリデーションせず空文字を passthrough");
+assert_eq!(session.started_at, 1_000);
+assert!(!session.id.is_empty(), "title が空でも id は生成される");
+assert!(session.segments.is_empty());
+assert_eq!(session.ended_at, None);
+```
+**意図**: title の validation/normalization は上位層責任である現契約を固定 (前セッション「上位層責任境界の契約強制」パターン再利用)。将来 `Session::start` が「空 title なら "Untitled" にフォールバック」のような責務を持ち込もうとしたらこの test で検知。
+
+### T4. `append_segment_accepts_empty_speaker_and_text_as_passthrough`
+```rust
+let mut session = Session::start("title".into(), 1_000);
+session.append_segment(String::new(), 5, String::new());
+
+assert_eq!(session.segments.len(), 1, "空文字 speaker/text でも segment は push される");
+assert_eq!(session.segments[0].speaker, "", "speaker の空文字は passthrough");
+assert_eq!(session.segments[0].text, "", "text の空文字は passthrough");
+assert_eq!(session.segments[0].timestamp_offset_secs, 5);
+```
+**意図**: `append_segment` の speaker/text 引数は validation せず passthrough する現契約を固定。speaker fallback ("不明" など) は `transcript_bridge.rs::normalize_speaker` の責務 (上位層) であり、`Session::append_segment` 自身は責務を持たない境界を明示。
+
+### T5. `append_segment_accepts_zero_and_max_u64_offset_as_passthrough`
+```rust
+let mut session = Session::start("title".into(), 1_000);
+session.append_segment("a".into(), 0, "zero".into());
+session.append_segment("b".into(), u64::MAX, "max".into());
+
+assert_eq!(session.segments.len(), 2);
+assert_eq!(session.segments[0].timestamp_offset_secs, 0, "offset=0 boundary を passthrough");
+assert_eq!(session.segments[1].timestamp_offset_secs, u64::MAX, "offset=u64::MAX boundary を passthrough");
+```
+**意図**: `timestamp_offset_secs` の値域は u64 全範囲という現契約を boundary 値 (0 と u64::MAX) で固定。将来「offset > N 秒は reject」のような validation を入れたらこの test で検知。
+
+## 3. 実装上の注意
+
+- `super::*` は line 60 で既に use 済み。追加 import は不要。
+- `for i in 0..5` の `i` は `u64` 型を要求 (`session.append_segment(format!("..."), i, ...)`)。Rust の型推論で `0..5` は `Range<i32>` がデフォルトなので、`for i in 0u64..5u64` または `i as u64` への明示変換が必要。最も読みやすいのは `for i in 0u64..5` (右辺は型推論で u64)。
+- T1 の `format!("speaker{}", i)` は clippy::uninlined_format_args が走る環境でも問題なし (引数 1 個の inline format でも prefix が変数なら OK)。安全のため `format!("speaker{i}")` の inline 形式を使うこと。
+- **コメントは日本語、簡潔に** (AGENTS.md 準拠)。1 関数あたり 1-3 行のコメントで十分。
+- **SESSION_COUNTER 絶対値を assert しない** (上記注意点参照)。`session.id` の絶対値比較は禁止。`assert_ne!` や `starts_with` は OK。
+- **既存テストとの重複回避**:
+  - T2 の「finalize 後 segments 維持」は line 137-153 の `append_segment_after_finalize_records_post_finalize_segment` と似ているが、後者は「finalize 後に append が動く」を確認。T2 は「finalize が既存 segments を変えない」を確認 (観点が逆)。
+  - T3 と既存 line 63-70 の `start_creates_session_with_initial_state` は重なるが、後者は title="title" で空文字 boundary を確認していない。T3 は空文字 boundary 専用。
+
+## 4. 検証手順
+
+1. 編集後、まず差分が session.rs のみであることを確認:
+   ```bash
+   git status --short
+   git diff --stat
+   ```
+2. cargo fmt:
+   ```bash
+   cd src-tauri && cargo fmt
+   ```
+3. cargo test (lib のみ、360 → 365 になることを確認):
+   ```bash
+   cd src-tauri && cargo test --lib
+   ```
+4. cargo clippy default:
+   ```bash
+   cd src-tauri && cargo clippy --lib --tests -- -D warnings
+   ```
+5. cargo clippy uninlined_format_args:
+   ```bash
+   cd src-tauri && cargo clippy --lib --tests -- -D warnings -W clippy::uninlined_format_args
+   ```
+
+すべて通ることを確認。fail したらエラーメッセージを最終報告に含めること。
+
+## 5. AGENT_LOG.md 記載項目 (末尾に追記、`---` セパレータで既存項目と区切る)
+
+```
+### session.rs cross-fn invariant + 上位層責任境界 を 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST (実時刻)
+- **担当セッション**: `mjc-worker-session-cross-fn-invariant-tests-20260504-8-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`append_segment` / `finalize` の cross-fn invariant 2 件 + `Session::start` / `append_segment` の上位層責任境界 (空文字 + boundary u64) 3 件を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | append_segment_preserves_started_at_id_and_title_invariants | 5 回 append しても started_at / id / title / ended_at が変わらない invariant |
+| T2 | finalize_preserves_started_at_and_segments_invariants | append 2 件 → finalize で segments と started_at と id が変わらない invariant |
+| T3 | start_accepts_empty_title_as_passthrough | Session::start("", 1000) で title="" を validation せず passthrough する上位層責任境界 |
+| T4 | append_segment_accepts_empty_speaker_and_text_as_passthrough | append("", offset, "") を passthrough し speaker fallback は normalize_speaker の責務である境界を明示 |
+| T5 | append_segment_accepts_zero_and_max_u64_offset_as_passthrough | timestamp_offset_secs の 0 と u64::MAX boundary 入力を passthrough |
+
+#### 不変条件 / 設計意図
+- T1+T2 は「単一 method の単一責務」cross-fn invariant 契約。将来副作用追加リファクタを即検知。
+- T3 は title validation の上位層責任境界を固定 (前セッション「上位層責任境界の契約強制」パターン再利用)。
+- T4 は speaker/text の上位層責任境界を固定 (normalize_speaker は transcript_bridge.rs の責務)。
+- T5 は u64 全範囲 boundary 契約。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 360 → 365 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 365
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし
+
+#### 残リスク
+- T3/T4/T5 の passthrough 契約は将来 validation を導入したら test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+## 最終報告
+
+1 ターンで完結する形で以下を報告してください:
+- 追加 test 関数名 5 件
+- cargo test 結果 (360 → 365 になったか)
+- cargo clippy default / uninlined_format_args の警告数
+- 残リスク (あれば)
+- AGENT_LOG.md への追記が完了しているか
+
+実装後、上記検証コマンドを必ず実行してから報告してください。

@@ -1,0 +1,119 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景
+
+meet-jerky は会議アプリ (Zoom/Teams/Google Meet 等) の起動 → 検知 → 通知 → イベント emit を `src-tauri/src/app_detection.rs` で行っている。`DetectionState.last_seen: HashMap<String, Instant>` で「bundle_id → 最後に検知された時刻」を保持しているが、現状「会議が終了した (= watched bundle が長時間検知されない)」という状態を取り扱う仕組みは存在しない。
+
+これに対し、product-concept 優先度 8 (会議サービス別の最適化) と優先度 9 (録音状態の透明性) の chain として「会議終了の検知 → 録音/文字起こし停止のナッジ通知」を実装するのが本タスク全体の最終目標。
+
+ただし本ループはその全体目標の **Tidy First の最小スライス**: アプリ統合せず、純粋関数 + test だけを追加する。アプリ統合 (handle_detection 側からの呼び出し / 状態追加 / 実機タイマー側への組み込み) は次ループに分離する。
+
+# Why (なぜこれが価値か)
+
+1. **既存 precedent との完全対称**: `should_warn_polling_stall` (app_detection.rs:153-174) は browser_url_callback の停滞検知装置として「純粋関数 + test 5 件 (line 1439-1460) → handle_browser_url_detection 側 (line 196-208) で AtomicU64 と組み合わせて呼び出し」という 2 段構成で実装済み。本タスクはこの構成を完全コピーして "meeting inactive 検知" 版を作る。
+2. **1 ループ完結確実**: 純粋関数 + test だけなので AppHandle / Mutex / target_os cfg などの複雑要素ゼロ。worker が 1 ターンで完走できる scope。
+3. **TDD 親和性**: 純粋関数なので test → 実装 の順で書ける。意図的な妥協 (= アプリ統合は次ループ送り) を明示分離。
+
+# 担当範囲
+
+src-tauri/src/app_detection.rs **のみ** (1 ファイル)。
+
+## 追加するもの
+
+### (1) 純粋関数 `should_notify_meeting_inactive`
+
+`should_warn_polling_stall` (line 153-174) の直下、`fn handle_browser_url_detection` (line 182) の前に挿入する。doc comment + cfg attr + 関数本体のスタイルを `should_warn_polling_stall` と完全対称に揃える。
+
+シグネチャ案:
+```rust
+/// 監視中の会議アプリが長時間検知されない場合に「会議終了」通知を発火すべきかを判定する純粋関数。
+/// `Some(elapsed)` は通知対象の経過秒数、`None` は通知不要。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn should_notify_meeting_inactive(
+    now_secs: u64,
+    last_seen_secs: u64,
+    last_notified_secs: u64,
+    inactive_threshold_secs: u64,
+    throttle_secs: u64,
+) -> Option<u64> {
+    if last_seen_secs == 0 {
+        return None;
+    }
+    if now_secs <= last_seen_secs {
+        return None;
+    }
+    let elapsed = now_secs - last_seen_secs;
+    if elapsed < inactive_threshold_secs {
+        return None;
+    }
+    if now_secs.saturating_sub(last_notified_secs) < throttle_secs {
+        return None;
+    }
+    Some(elapsed)
+}
+```
+
+判定ロジック:
+- `last_seen_secs == 0` → None (一度も検知されていない = 通知対象外)
+- `now_secs <= last_seen_secs` → None (時刻同期問題に対する保守的扱い)
+- `elapsed = now_secs - last_seen_secs`
+- `elapsed < inactive_threshold_secs` → None (まだアクティブ範囲内)
+- `now_secs.saturating_sub(last_notified_secs) < throttle_secs` → None (連続通知抑止)
+- それ以外 → Some(elapsed)
+
+**注意**: `should_warn_polling_stall` は `elapsed <= expected_interval_secs * 3` で「正常範囲」を判定 (倍率 3) しているが、本関数は閾値を直接引数で受け取るので倍率不要。**あえて** "<" と "<=" の境界条件を `should_warn_polling_stall` と揃える必要はなく、上記のロジック (`< threshold`) を採用する。これは inactive 用途では「閾値ちょうどでも通知発火させたい」設計のため。
+
+### (2) test 5 件
+
+既存 mod tests (line 612 から始まる) の中、`should_warn_polling_stall_*` test 4 件 (line 1438-1460) の **直下** に追加する。test 名の prefix は `should_notify_meeting_inactive_` で揃える。
+
+| # | テスト名 | 引数 (now, last_seen, last_notified, threshold, throttle) | 期待値 | 検知装置として捕まえる誤改修 |
+|---|---|---|---|---|
+| T1 | `_first_call_returns_none` | (1000, 0, 0, 300, 600) | None | last_seen_secs == 0 短絡を消す改修 |
+| T2 | `_within_active_range_returns_none` | (1000, 800, 0, 300, 600) → elapsed = 200 < 300 | None | `< threshold` を `<= threshold` に変える改修 |
+| T3 | `_inactive_returns_some_elapsed` | (1000, 600, 0, 300, 600) → elapsed = 400 ≥ 300, last_notified = 0 → throttle check は now-0=1000 ≥ 600 で通る | Some(400) | 通知発火経路全体への誤改修 |
+| T4 | `_throttled_returns_none` | (1000, 600, 600, 300, 600) → elapsed = 400 ≥ 300 だが now - last_notified = 400 < 600 | None | throttle 抑止を消す改修 |
+| T5 | `_now_equals_last_seen_returns_none` | (1000, 1000, 0, 300, 600) → now <= last_seen で None | None | `now_secs <= last_seen_secs` 短絡を `<` だけに変える改修 (= 同時刻時の挙動が逆転) |
+
+各 test に短い 1 行コメントで「何を検知しているか」を残す (既存の should_warn_polling_stall_* と同スタイル)。
+
+# 実装上の注意
+
+1. **コメントスタイルは既存に揃える**: doc comment は `///` で日本語、test 内コメントは `//` で 1 行のみ。多段コメント禁止。
+2. **既存 test 4 件を変更しない**: should_warn_polling_stall_* は触らない。直下に純粋追加のみ。
+3. **import 追加禁止**: 純粋関数なので追加 import 不要。tests mod 内も既存の use 群に何も追加しない。
+4. **module 分割禁止**: app_detection.rs 1 ファイル内で完結。新規ファイル作成禁止。
+5. **handle_detection / DetectionState / 実機統合は touch しない**: 本ループのスコープ外。次ループで実施する。
+6. **cfg attr は `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]`** を関数定義に付ける (should_warn_polling_stall と完全対称)。test には cfg attr 不要。
+7. **`elapsed < inactive_threshold_secs`** の境界選択: 「閾値ちょうど = 通知発火」という設計に揃える。`<=` ではない。T2 の elapsed=200 < threshold=300 = None と T3 の elapsed=400 ≥ threshold=300 = 通知の境界が明確になる。
+
+# 検証手順
+
+1. `cargo fmt -p meet-jerky --check` (差分なし期待)
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (警告ゼロ期待)
+3. `cargo test -p meet-jerky --lib` (現在 457 passed → +5 で **462 passed** 期待)
+4. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (rust 検証通過、frontend 自動 skip 期待)
+
+検証コマンドの結果 (`passed` の数値) を必ず最終報告に含める。
+
+# AGENT_LOG.md 記載項目
+
+末尾に追記する形で以下を記録:
+- 開始日時 (JST)
+- 担当セッション = mjc-worker-meeting-inactive-pure-fn
+- 役割 = 作業担当 (sonnet)
+- 担当範囲 = src-tauri/src/app_detection.rs のみ (1 ファイル、+ 純粋関数 1 個 + test 5 件)
+- 指示内容の要約 (このファイルへの参照可)
+- 結果 (成功/失敗)
+- 変更ファイル
+- 検証結果 (cargo fmt / clippy / test passed 数値 / agent-verify)
+- 依存関係追加の有無
+- 失敗理由 (あれば)
+- 次アクション (メイン mjc-main によるレビュー → コミット)
+
+# 最終報告
+
+変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

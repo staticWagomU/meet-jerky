@@ -1,0 +1,68 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (1.5MB+。`tail -300 AGENT_LOG.md` 相当で末尾だけでよい。直近 SESSION SUMMARY と直近 3 commit が状況復元の起点)
+
+# 担当範囲
+
+`src-tauri/src/session_commands.rs` の `mod tests` 末尾への #[test] 関数追加のみ。実装ロジック・docstring・既存テストは一切変更しないでください。
+
+# 目的
+
+`session_commands` の以下 2 つのエラー経路を裏付けるテストを追加し、ユーザー向け日本語エラーメッセージの prefix が壊れた時に検知できるようにする。
+
+1. `start_session_inner` が `output_dir` がファイルの場合に「出力ディレクトリの作成に失敗しました:」prefix を返すこと。前ループ (commit b7a9b76) で追加済みの `finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file` と対称な test。
+2. `finalize_and_save_session_inner` が内部の `save_session_markdown` 失敗時に「セッションファイルの書き込みに失敗しました:」prefix を返すこと。session_store 側で `save_session_markdown_returns_error_for_out_of_range_started_at` (started_at_secs > 8_640_000_000_000) があるので、これを起点に session_commands wrapper の prefix を確認する。
+
+# 追加すべき #[test] 関数 (2 件)
+
+## A. `start_session_inner_returns_error_when_output_dir_path_is_a_file`
+
+- 期待挙動:
+  - `tempdir()` で作ったディレクトリ配下に `output_dir` という名前の **ファイル** を作る (内容は空文字列でよい)。
+  - `start_session_inner(&manager, "title".into(), 1_713_333_000, &output_dir, jst())` を呼ぶ。
+  - 戻り値が `Err` で、エラー文言が `"出力ディレクトリの作成に失敗しました:"` prefix を含むこと。
+  - 副作用検証: 失敗後も `manager.is_active() == false` であること (start に失敗してもセッションが活性化していない不変条件)。
+- 補足: `b7a9b76` の `finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file` と同じパターン。manager の状態確認だけ「アイドルのまま」と「アイドルに戻る」の差異がある (start は最初からアイドルなので「アイドルのまま」)。
+
+## B. `finalize_and_save_session_inner_returns_error_with_jp_prefix_when_save_fails`
+
+- 期待挙動:
+  - `manager.start("会議".into(), 8_640_000_000_001)` (= MAX_JS_DATE_UNIX_SECS + 1) で session を活性化。
+  - `manager.append("Alice".into(), 5, "hello".into())` を 1 件 append。
+  - `tempdir()` で作った dir を渡して `finalize_and_save_session_inner(&manager, dir.path(), 8_640_000_000_100, jst())` を呼ぶ。
+  - 戻り値が `Err` で、エラー文言が `"セッションファイルの書き込みに失敗しました:"` prefix を含むこと。
+- 経路: `manager.finalize` は成功 → `create_dir_all` も成功 (tempdir は実在 dir) → `save_session_markdown` が `started_at_secs > MAX_JS_DATE_UNIX_SECS` で失敗 → "セッションファイルの書き込みに失敗しました: ..." prefix で wrapping。
+- 副作用検証: 失敗後も `manager.is_active() == false` であること (finalize は最初に呼ばれるため、`save_session_markdown` 失敗でも manager はアイドルに戻っている)。
+
+# 設計上の注意点
+
+- 既存テスト `finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file` (現在の最後の test の少し前) を読んで、ファイル作成イディオム (`std::fs::write(&path, b"")` 等) を踏襲。
+- `MAX_JS_DATE_UNIX_SECS` は session_store 内の private const。マジックナンバー `8_640_000_000_000` を直接書いてよい (test B の `+ 1` は仕様コメントで明示)。
+- `tempdir()` は既存テストで使用されている crate パターンと同じ。新規 import 不要。
+- `manager.is_active()` は既存テストで使われているメソッド。
+- `start_session_inner` の signature は (manager, title, started_at, output_dir, offset)。`title` は `String`、`started_at` は `u64`、`output_dir` は `&Path`、`offset` は `FixedOffset`。
+- `finalize_and_save_session_inner` の signature は (manager, output_dir, now_secs, offset)。
+
+# 完了条件
+
+- 2 つの #[test] 関数を `mod tests` 末尾 (既存の最後の test の後ろ) に追加。
+- 実装ファイル本体は一切変更しない。
+- `cargo fmt --check` 合格。
+- `cargo clippy --no-deps --all-targets --all-features -- -D warnings` 合格 (警告ゼロ維持)。
+- `cargo test --no-fail-fast` 合格 (243 → 245 passed が期待値、追加 2 件すべて pass)。
+- `git diff --check` 合格。
+- `bash scripts/agent-verify.sh src-tauri/src/session_commands.rs AGENT_LOG.md` 合格。
+- AGENT_LOG.md 末尾に作業セクションを追記 (開始日時、担当セッション、役割、作業範囲、指示内容要約、結果、追加 test 件数 / total passed、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクション)。
+- コミットは禁止 (メインがレビュー後にコミットする)。
+
+# 制約 (再掲)
+
+- 課金禁止。
+- `--no-verify` 禁止。
+- 担当範囲外の編集禁止。他エージェントの差分を巻き戻さない。
+- 1 ターンで完結する報告を返してください。

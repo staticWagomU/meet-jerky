@@ -1,0 +1,217 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -200 AGENT_LOG.md` で末尾の SESSION SUMMARY のみ)
+
+# 担当範囲 (touch するファイルは 1 つのみ)
+src-tauri/src/transcript_bridge.rs の `mod tests` 末尾に新規 #[test] を 5 件 (T1-T5) 追加。**既存 test の編集禁止**。
+
+# 背景
+transcript_bridge.rs (456 行、本体 100 行) は既存 26 件の test で密度高く網羅済み。前 mjc-main-9 の 7cc7f94 で normalize_speaker の str::trim 系を補強、本セッション (mjc-main-13 = あなた) の Loop 1 で session_store.rs を補強。
+
+残る 5 つの gap:
+1. **`source` field 無視契約**: TranscriptionSegment の `source` は normalize_speaker / offset 計算 / text の trim のどれにも参照されないが、その「無視される」契約が test で固定されていない (= 将来 source を判定に組み込む誤改修への検知装置がない)
+2. **`is_error` Option<bool> の Some(false) 中間状態**: 既存 test は None or Some(true) のみで、Some(false) 経路 (= unwrap_or(false) で false → early return せず Some 返す) が空白
+3. **`session_started_at_secs=Some(0)` boundary**: `started = session_started_at_secs?;` の `?` 演算子で Some(0) は Some(0) として通る (None で早期 return との対比) が、0 値での Some 通過が固定されていない
+4. **`has_engine_timestamp` の `||` OR 境界 5 状態完全分解**: line 36 `segment.start_ms > 0 || segment.end_ms > 0` の 5 ケース ((0,0), (正,0), (0,正), (負,0), (負,正)) で OR 短絡評価の boundary 完全網羅なし
+5. **`start_ms` 極大値での `as u64` + saturating_add overflow 飽和**: line 38-39 の `(segment.start_ms.max(0) / 1000) as u64` と stream への saturating_add で、start_ms = i64::MAX 等の極大値で saturating_add が飽和する契約
+
+# Why (この test 群が捕捉する誤改修)
+- T1: `source` 引数による分岐を入れる誤改修 (例えば mic と desktop で speaker 自動上書き等) を検知
+- T2: `is_error` の `unwrap_or(true)` 等への変更を検知 (Option 3 状態の semantics 反転)
+- T3: `?` を `unwrap_or(0)` 等の絶対値 default に変更する誤改修 + Some(0) を None として扱う誤改修を検知
+- T4: `||` を `&&` に変更する、片側だけチェックする誤改修を OR 短絡評価の 4 つの true 経路 + 1 つの false 経路で完全分解
+- T5: i64::MAX / 1000 のような極大値で as u64 → saturating_add の overflow 飽和挙動を固定 (panic ではなく u64::MAX に張り付く契約)
+
+これらは accumulated pattern (`||` 短絡境界 / Option 3 状態 / unused field 契約 / `?` Some(0) 契約 / saturating_add 飽和) の新規 application。
+
+# 具体的 test 案 (assertion レベル)
+
+```rust
+#[test]
+fn segment_to_append_args_ignores_source_field_completely() {
+    // T1: source field は normalize_speaker / offset 計算 / text trim のどれでも参照されない契約を固定。
+    // 将来 source を判定に組み込む誤改修 (例: mic と desktop で speaker 自動上書き) への検知装置。
+    let make_seg = |source: Option<crate::transcription::TranscriptionSource>| {
+        TranscriptionSegment {
+            text: "  hello  ".to_string(),
+            start_ms: 2_000,
+            end_ms: 3_500,
+            source,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        }
+    };
+
+    let baseline = segment_to_append_args(&make_seg(None), 1_000, 1_040);
+    let with_mic = segment_to_append_args(
+        &make_seg(Some(crate::transcription::TranscriptionSource::Microphone)),
+        1_000,
+        1_040,
+    );
+    let with_desktop = segment_to_append_args(
+        &make_seg(Some(crate::transcription::TranscriptionSource::Desktop)),
+        1_000,
+        1_040,
+    );
+
+    assert_eq!(baseline, with_mic, "source=None と Mic で結果差分なし契約");
+    assert_eq!(
+        baseline, with_desktop,
+        "source=None と Desktop で結果差分なし契約 = source field は無視される"
+    );
+    assert_eq!(
+        with_mic, with_desktop,
+        "Mic と Desktop でも差分なし = source 全 variant 無視契約"
+    );
+    // 具体値も確認 (happy path = speaker=自分, offset=42, text=hello)
+    assert_eq!(baseline.0, "自分");
+    assert_eq!(baseline.1, 42);
+    assert_eq!(baseline.2, "hello");
+}
+
+#[test]
+fn build_append_args_for_emission_returns_some_when_is_error_is_some_false() {
+    // T2: is_error の Option<bool> 3 状態のうち Some(false) 経路 = unwrap_or(false) で false → early return せず Some を返す現契約を固定。
+    // None と Some(true) は既存 test 済、Some(false) のみ空白だった。
+    // unwrap_or(true) や unwrap_or_else の誤改修への検知装置 = Option 3 状態の semantics 反転検知。
+    let mut segment = sample_segment();
+    segment.is_error = Some(false);
+
+    let result = build_append_args_for_emission(&segment, Some(1_000), 1_040);
+
+    assert!(
+        result.is_some(),
+        "is_error=Some(false) は早期 return せず Some を返す契約 = unwrap_or(false) の false 分岐"
+    );
+    let expected = segment_to_append_args(&segment, 1_000, 1_040);
+    assert_eq!(
+        result.unwrap(),
+        expected,
+        "is_error=Some(false) なら is_error=None と同じ結果 (None と Some(false) は等価)"
+    );
+}
+
+#[test]
+fn build_append_args_for_emission_returns_some_when_session_started_at_is_some_zero() {
+    // T3: session_started_at_secs=Some(0) boundary で ? 演算子は Some(0) を通す現契約を固定。
+    // ? を unwrap_or(default) や 0 == None 扱いへの誤改修 (Some(0) を None として扱う) への検知装置。
+    // session_started_at_secs=0 自体は session 開始時刻 = epoch を意味し、有効な session 状態。
+    let segment = sample_segment(); // start_ms=2000
+
+    let result = build_append_args_for_emission(&segment, Some(0), 0);
+
+    assert!(
+        result.is_some(),
+        "Some(0) は ? を通る契約 = 0 値を None と混同しない"
+    );
+    let (speaker, offset, text) = result.unwrap();
+    assert_eq!(speaker, "自分");
+    // session_started_at=0, stream_started_at=0, start_ms=2000 → segment_abs=2s, offset = 2 - 0 = 2
+    assert_eq!(
+        offset, 2,
+        "Some(0) base で offset 計算が正常動作する契約 (saturating_sub 0 base)"
+    );
+    assert_eq!(text, "こんにちは");
+}
+
+#[test]
+fn segment_to_append_args_at_has_engine_timestamp_or_boundary_complete_decomposition() {
+    // T4: line 36 `segment.start_ms > 0 || segment.end_ms > 0` の OR 短絡評価の 5 状態完全分解。
+    // (0, 0): false → observed fallback 経路
+    // (1, 0): true → engine timestamp 経路 (start_ms 単独 true)
+    // (0, 1): true → engine timestamp 経路 (end_ms 単独 true)
+    // (-1, 0): false → observed fallback 経路 (start_ms 負値は > 0 でない)
+    // (-1, 1): true → engine timestamp 経路 (end_ms 単独 true、start_ms 負値は > 0 でない)
+    // 各経路で (start_ms.max(0) / 1000) の保護も合わせて確認。
+    // || を && に変更する、片側だけチェックする誤改修を完全分解で検知。
+    let cases: Vec<(i64, i64, u64, &str)> = vec![
+        (0, 0, 75, "(0,0) → has_engine_timestamp=false → observed fallback"),
+        (1_000, 0, 0, "(1000ms,0) → has_engine_timestamp=true → engine: stream(=session)+1s = 1s offset"),
+        (0, 1_000, 0, "(0,1000ms) → has_engine_timestamp=true → start_ms.max(0)=0 → stream+0 = 0 offset"),
+        (-1_000, 0, 75, "(-1000ms,0) → has_engine_timestamp=false → observed fallback (start_ms 負値は > 0 で false)"),
+        (-1_000, 1_000, 0, "(-1000ms,1000ms) → has_engine_timestamp=true → start_ms.max(0)=0 → stream+0 = 0 offset"),
+    ];
+    for (start_ms, end_ms, expected_offset, label) in cases {
+        let segment = TranscriptionSegment {
+            text: "test".to_string(),
+            start_ms,
+            end_ms,
+            source: None,
+            speaker: Some("自分".to_string()),
+            is_error: None,
+        };
+        // session_started_at=1000, stream_started_at=1000 (同値 → engine 経路で stream + offset_secs)
+        // observed_at_secs=Some(1075) → fallback 経路で 75 offset
+        let (_, offset, _) =
+            segment_to_append_args_at(&segment, 1_000, 1_000, Some(1_075));
+        assert_eq!(
+            offset, expected_offset,
+            "OR 境界完全分解: {label} で offset={expected_offset}"
+        );
+    }
+}
+
+#[test]
+fn segment_to_append_args_saturates_to_u64_max_for_extreme_start_ms() {
+    // T5: start_ms = i64::MAX 経由の (i64::MAX / 1000) as u64 + saturating_add で u64 域 overflow 飽和契約。
+    // i64::MAX / 1000 = 9_223_372_036_854_775 (秒)
+    // stream_started_at_secs = u64::MAX なら saturating_add は u64::MAX に張り付く (panic ではなく飽和)。
+    // session_started_at_secs = 0 なら final offset = u64::MAX - 0 = u64::MAX。
+    // i64::MAX as u64 への as キャスト + saturating_add の現契約を固定 (panic 化や別キャスト方式への誤改修検知)。
+    let segment = TranscriptionSegment {
+        text: "extreme".to_string(),
+        start_ms: i64::MAX,
+        end_ms: 0,
+        source: None,
+        speaker: Some("自分".to_string()),
+        is_error: None,
+    };
+
+    let (_, offset, _) = segment_to_append_args(&segment, 0, u64::MAX);
+
+    assert_eq!(
+        offset,
+        u64::MAX,
+        "i64::MAX / 1000 を u64::MAX に saturating_add した結果は u64::MAX に飽和 + offset = u64::MAX - 0 = u64::MAX"
+    );
+}
+```
+
+# 実装上の注意
+- **既存 test の編集禁止**。新規 5 件は `mod tests` の末尾 (line 454 直前、`}` の前) に追記する。
+- 既存 import (line 107) は `use super::*;` のみ。`TranscriptionSegment` は親モジュール `super` 経由で見える (line 4 で transcript_bridge 自身が use しているため)。
+- T1 の `crate::transcription::TranscriptionSource` の variant 名 (`Microphone`, `Desktop` 等) は src-tauri/src/transcription.rs を必ず先に読んで実際の variant を確認すること。**もし variant 名が異なる場合 (例: `Mic` / `System` 等) は実際の名前に合わせて T1 を書く**。
+- T1 で `crate::transcription::TranscriptionSource` を直接参照するために `use crate::transcription::TranscriptionSource;` を mod tests 内 (use super::*; の下) に追加してもよい。あるいは fully qualified で書く。
+- T4 の `cases` Vec はラベルが日本語 + 英語混在で長め。必要に応じて `label` を絞ってもよいが、assertion メッセージには `expected_offset` を必ず含める。
+- T4 の cases で `(0, 1_000, 0, ...)` の expected_offset が 0 であることが正しい契約。stream_started_at=1000、start_ms.max(0) = 0 (start_ms=0 なので 0 のまま)、segment_abs = 1000 + 0 = 1000s、offset = 1000 - 1000 = 0。同様に `(-1_000, 1_000, ...)` も start_ms.max(0) = 0、offset = 0。
+- T5 の `as u64` キャスト後の値は `i64::MAX as u64 = i64::MAX as u64` (= 9_223_372_036_854_775_807)。saturating_add で `u64::MAX + 9_223_372_036_854_775_807 / 1000` だが、すでに u64::MAX なので飽和。ここでの計算順序は `(i64::MAX / 1000) as u64` ではなく `i64::MAX.max(0) / 1000` (= i64::MAX / 1000) → as u64 cast → saturating_add(u64::MAX) → u64::MAX。
+- 命名規則: 既存 `segment_to_append_args_*` および `build_append_args_for_emission*` のプレフィックスを踏襲。長くなっても assertion 内容を表す snake_case。
+
+# 検証手順
+1. `cargo fmt -p meet-jerky` (適用)
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (warnings ゼロ確認)
+3. `cargo test -p meet-jerky --lib transcript_bridge::tests` (新規 5 件含む全 transcript_bridge test pass 確認)
+4. `cargo test -p meet-jerky --lib` (全 lib test = 435 → 440 passed 確認、failed 0 維持)
+
+# AGENT_LOG.md 記載項目
+末尾に新セクションとして以下を追記:
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-transcript-bridge-c-prime-2
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/transcript_bridge.rs の mod tests 内に新規 unit test 5 件追加
+- 指示内容: T1-T5 (本 prompt の各 test の主旨を 1 行で)
+- 結果: 成功/失敗
+- 変更ファイル: src-tauri/src/transcript_bridge.rs のみ
+- 追加テスト名: 5 件の関数名一覧
+- 検証結果: cargo fmt / clippy / test (435 → 440 passed)
+- 依存関係追加: なし
+- 失敗理由: なし or 詳細
+- 次アクション: メイン (mjc-main-20260504-13) によるレビュー → コミット
+
+# 1 ターンで完結する形でまとめてください。

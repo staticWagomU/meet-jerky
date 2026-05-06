@@ -1,0 +1,191 @@
+あなたは meet-jerky の worker です。Loop 147 = frontend 軸 18 件目 = **重複削除 + 既存 file 拡張軸 paradigm 2 件目** = LiveCaptionWindow.tsx の TRACKS 配列 + TrackMeta 型 + AudioSource 型 (重複) を liveCaptionTrackHelpers.ts に統合 を担当します。
+
+# 必読 (順番)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** (先頭は絶対に触らない、ファイル全体 Read 禁止 = ~33,638 行ある)。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1 = 「ハーネスを自律的に整える」)。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/liveCaptionTrackHelpers.ts (現状全体、80 行)
+4. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/components/LiveCaptionWindow.tsx の L1-65 (`tail -n +1 src/components/LiveCaptionWindow.tsx | head -65` で対象範囲のみ)
+5. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioTrackLabels.ts (既存定数 SELF_TRACK_DEVICE_LABEL / OTHER_TRACK_DEVICE_LABEL を持つ)
+
+# 重要な制約 (絶対)
+
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭 (L1 〜) は絶対に触らない。**
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。** (Loop 144 fault precedent)
+- **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照。**
+- **行末の空白文字 (trailing whitespace) 禁止。**
+- 担当範囲外の編集禁止。本 Loop 147 は **src/utils/liveCaptionTrackHelpers.ts** (拡張) + **src/components/LiveCaptionWindow.tsx** (削除 + import 修正) + **AGENT_LOG.md** (末尾に Loop 147 entry 追記) のみ。
+- **scope 35 軸維持 (新 file なし) = 既存 file 拡張軸 paradigm 2 件目 = Loop 145 paradigm 拡張**
+
+# 本 Loop の目的 (paradigm 詳細)
+
+Loop 145 で確立した「重複削除 + 既存 file 拡張軸 paradigm」の **2 件目目** を実施。
+
+**発見された重複 / 抽出候補**:
+1. `AudioSource` 型 = LiveCaptionWindow.tsx L51 (`type AudioSource = NonNullable<TranscriptSegment["source"]>;`) と liveCaptionTrackHelpers.ts L6 (同一定義) で **重複** = **DRY 違反**
+2. `TrackMeta` 型 (LiveCaptionWindow.tsx L52-56) = audio source 表示用 metadata 型 = track display tier
+3. `TRACKS` 配列 (LiveCaptionWindow.tsx L58-65) = audio source の display metadata 配列 = track display tier static data
+
+**統合先**: `src/utils/liveCaptionTrackHelpers.ts` (Loop 108 で抽出済 = audio source / track の display tier helper 集約 file)
+**判定理由**: 同 entity (audio source / track) + 同 tier (display metadata / static data) = 既存 file 拡張軸 paradigm に該当
+
+# 具体手順 (厳守、2-commit pattern)
+
+## Step 1: liveCaptionTrackHelpers.ts を拡張
+
+`src/utils/liveCaptionTrackHelpers.ts` に以下を追加:
+
+1. ファイル頭の import に audioTrackLabels.ts から SELF_TRACK_DEVICE_LABEL / OTHER_TRACK_DEVICE_LABEL を追加:
+
+```typescript
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "./audioTrackLabels";
+```
+
+2. 既存の `type AudioSource = NonNullable<TranscriptSegment["source"]>;` (L6) を `export type AudioSource = ...` に変更 (export 化、型自体の定義は不変)
+
+3. ファイル末尾に以下を追加:
+
+```typescript
+
+export type TrackMeta = {
+  source: AudioSource;
+  label: string;
+  ariaPrefix: string;
+};
+
+export const TRACKS: Array<TrackMeta> = [
+  { source: "microphone", label: "自分", ariaPrefix: SELF_TRACK_DEVICE_LABEL },
+  {
+    source: "system_audio",
+    label: "相手側",
+    ariaPrefix: OTHER_TRACK_DEVICE_LABEL,
+  },
+];
+```
+
+注意:
+- trailing whitespace なし
+- 既存 export 群の順序維持
+- AudioSource 型は **既に内部で定義済 (L6)** のため、新 type 追加ではなく既存を export 化する
+
+## Step 2: LiveCaptionWindow.tsx を修正
+
+`src/components/LiveCaptionWindow.tsx` の以下を変更:
+
+1. L51-65 の以下の 3 ブロックを削除:
+   - `type AudioSource = NonNullable<TranscriptSegment["source"]>;`
+   - `type TrackMeta = { ... };`
+   - `const TRACKS: Array<TrackMeta> = [ ... ];`
+
+2. liveCaptionTrackHelpers.ts からの既存 import block (L16-24) に `TRACKS`, `TrackMeta`, `AudioSource` を追加 (但し AudioSource / TrackMeta は型のため `type` キーワードで:
+
+```typescript
+import {
+  TRACKS,
+  createEmptyLatestBySource,
+  getSpeakerClassName,
+  getSpeakerLabel,
+  getTrackCaptureState,
+  getTrackStateLabel,
+  getVisibleTrackSummary,
+  type AudioSource,
+  type LatestBySource,
+  type TrackMeta,
+} from "../utils/liveCaptionTrackHelpers";
+```
+
+注意:
+- import の並び (alphabetical) を維持
+- LiveCaptionWindow 本体で `AudioSource` / `TrackMeta` 型が直接使われていない場合は、これらを import から省く判断も可能 (grep で確認)
+- **`AudioSource` の使用箇所**: `grep -n "AudioSource" src/components/LiveCaptionWindow.tsx` で確認 → 使われていなければ import 不要
+- **`TrackMeta` の使用箇所**: `grep -n "TrackMeta" src/components/LiveCaptionWindow.tsx` で確認 → L58 の `Array<TrackMeta>` のみ (これも削除されるなら不要)
+- **使われていない型を import すると tsc warning** = 必要最小限の import のみ採用
+
+## Step 3: 検証
+
+```bash
+bash scripts/agent-verify.sh src/utils/liveCaptionTrackHelpers.ts src/components/LiveCaptionWindow.tsx
+```
+
+期待結果:
+- `npm run build` (tsc + vite build) 成功
+- `cargo test` / `cargo clippy` / `cargo fmt` は frontend 変更のため skip 判定 = OK
+
+## Step 4: refactor commit (1 件目)
+
+```bash
+git add src/utils/liveCaptionTrackHelpers.ts src/components/LiveCaptionWindow.tsx
+git commit -m "$(cat <<'EOF'
+refactor(frontend): LiveCaptionWindow の TRACKS + TrackMeta + AudioSource を liveCaptionTrackHelpers.ts に統合 + DRY 違反解消 (mjc-main-20260505-72 Loop 147, frontend 軸 18 件目 = 重複削除 + 既存 file 拡張軸 paradigm 2 件目, AudioSource 型が LiveCaptionWindow.tsx L51 と liveCaptionTrackHelpers.ts L6 で完全重複 (DRY 違反) のため LiveCaptionWindow 側削除 + helpers 側を export 化, TrackMeta 型 + TRACKS 配列は track display tier helper として liveCaptionTrackHelpers.ts に集約, scope 35 軸維持 = 新 file なし, AGENTS.md priority 1 寄与, alternation 36 連続維持 (K(146) → frontend(147)))
+EOF
+)"
+```
+
+## Step 5: AGENT_LOG.md 末尾 (`---` の直後) に Loop 147 entry を **1 回のみ** 追記
+
+**手順**:
+1. `tail -10 AGENT_LOG.md` で末尾を確認
+2. 末尾の `---` 直後に以下のテンプレートで append (Loop 145 entry と同形式)
+3. **append は 1 回のみ。Edit/Write を複数回繰り返さない。** (Loop 144 fault precedent)
+
+```
+[mjc-main-20260505-72 Loop 147 / 2026-05-06]
+worker: mjc-worker-loop147-live-caption-tracks-consolidate (作業)
+範囲: src/utils/liveCaptionTrackHelpers.ts (+TrackMeta + TRACKS export 追加 + AudioSource export 化 + audioTrackLabels import 追加, ~+15 行) + src/components/LiveCaptionWindow.tsx (-AudioSource 型 -TrackMeta 型 -TRACKS 配列 削除 + import 拡張, ~-15 行)
+内容: LiveCaptionWindow.tsx の TRACKS 配列 + TrackMeta 型 + AudioSource 型 (重複) を liveCaptionTrackHelpers.ts に統合。**重複削除 + 既存 file 拡張軸 paradigm 2 件目** (Loop 145 = AudioLevelMeter sanitize 重複削除 paradigm 1 件目の 2 件目目)。発見された重複 / 抽出候補: (1) AudioSource 型が LiveCaptionWindow.tsx L51 と liveCaptionTrackHelpers.ts L6 で完全重複 (DRY 違反) → LiveCaptionWindow 側削除 + helpers 側を export 化、(2) TrackMeta 型 (LiveCaptionWindow L52-56) = audio source 表示用 metadata 型 = track display tier、(3) TRACKS 配列 (LiveCaptionWindow L58-65) = audio source の display metadata static data = track display tier。統合先 = liveCaptionTrackHelpers.ts (Loop 108 で抽出済 = audio source / track display tier helper 集約 file)、判定理由 = 同 entity (audio source / track) + 同 tier (display metadata / static data) = 既存 file 拡張軸 paradigm 該当。scope 35 軸維持 (新 file なし)。alternation pattern 36 連続成功維持 (K(146) → frontend(147))。
+変更ファイル: src/utils/liveCaptionTrackHelpers.ts (~+15 行), src/components/LiveCaptionWindow.tsx (~-15 行)
+検証: npm run build (tsc + vite build) 成功
+commit: <Step 4 の sha を埋める>
+依存関係追加: なし (utils 内 cross-import paradigm 7 件目に拡張 = audioTrackLabels.ts → liveCaptionTrackHelpers.ts)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+注意:
+- 末尾に `---` を必ず付ける (次の entry 用境界)
+- 行末 trailing whitespace なし
+- commit hash placeholder `<Step 4 の sha を埋める>` は Step 4 完了後の `git rev-parse --short HEAD` 結果で置換
+- **append が成功したら直ちに Step 6 へ進む。同じ entry を再度書こうとしない。**
+
+## Step 6: chore commit (2 件目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-72 Loop 147 = LiveCaptionWindow の TRACKS + TrackMeta + AudioSource を liveCaptionTrackHelpers.ts に統合 + DRY 違反解消 (frontend 軸 18 件目 = 重複削除 + 既存 file 拡張軸 paradigm 2 件目, AudioSource 型重複解消, AGENTS.md priority 1 寄与, alternation 36 連続維持) のエントリ追記
+EOF
+)"
+```
+
+# 規模と所要時間
+
+- 規模: SS = ~3-5 分完走見込み
+- worker prompt 行数: 本 prompt は ~150 行 (precedent Loop 145 と同水準)
+
+# 上限明示
+
+- ファイルは liveCaptionTrackHelpers.ts と LiveCaptionWindow.tsx と AGENT_LOG.md のみ編集
+- AGENT_LOG.md は **末尾に追記のみ** (先頭は絶対に触らない、append 1 回のみ)
+- 新 file 作成禁止 (= scope 維持)
+- test 件数の変動なし (frontend のみ)
+- trailing whitespace 禁止
+
+# 完了確認
+
+```bash
+git log --oneline -3
+git status --short | grep -v '^??'
+wc -l src/utils/liveCaptionTrackHelpers.ts src/components/LiveCaptionWindow.tsx
+```
+
+期待結果:
+- 直近 2 commit が本 Loop 147 のもの
+- working tree clean (untracked のみ残存 OK)
+- liveCaptionTrackHelpers.ts ~95 行 (80 + ~15)
+- LiveCaptionWindow.tsx ~503 行 (518 - ~15)

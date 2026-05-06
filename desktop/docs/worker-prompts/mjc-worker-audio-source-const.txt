@@ -1,0 +1,78 @@
+あなたは meet-jerky の作業担当エージェント (Claude Code, print mode, sonnet) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+他者の変更を戻さず担当範囲外を編集しない。コミット禁止。
+最初に必ず AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md / AGENT_LOG.md (`tail -200 AGENT_LOG.md`) を読む。
+
+# 背景
+audio source 識別子 "microphone" / "system_audio" は rust 側 audio.rs と system_audio.rs の以下 4 箇所で文字列リテラルとして直接埋め込まれている:
+- audio.rs line 395: `json!({ "level": level_value, "source": "microphone" })` (audio-level event)
+- audio.rs line 402: `build_audio_drop_event_payload("microphone", dropped)` (audio-drop-count event)
+- system_audio.rs line 325: `json!({ "level": level_value, "source": "system_audio" })` (audio-level event)
+- system_audio.rs line 334: `build_audio_drop_event_payload("system_audio", dropped)` (audio-drop-count event)
+
+前 mjc-main-15 Loop 2 (be5f12a) で AUDIO_DROP_EVENT_NAME (event 名) を audio_event.rs に集約した方針の延長として、source 識別子も同モジュールに集約する (Tidy First, 構造変化のみ・振る舞い不変)。
+
+# Why (Tidy First の価値 3 つ)
+1. **単一書き換え地点化** = 将来 source 識別子変更時に 1 か所修正で全 emitter に反映 (前回 AUDIO_DROP_EVENT_NAME と同じ価値)
+2. **所有権境界明確化** = source 識別子は audio_event モジュールが所有 (前 mjc-main-15 Loop 2 と同じ方針継承)
+3. **frontend 同期点の文書化** = test 1 件で「rust 側 source 文字列が意図せず変わると test 落ち」化 = TranscriptView.tsx の payload.source === "microphone" / "system_audio" 判定 (line 822-825) との手動同期責任を文書化
+
+# 担当範囲
+
+## 1. src-tauri/src/audio_event.rs (現 17 行)
+- AUDIO_DROP_EVENT_NAME 定数の **直下** に以下 2 行を追加:
+  ```rust
+  pub(crate) const AUDIO_SOURCE_MICROPHONE: &str = "microphone";
+  pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
+  ```
+- mod tests に以下 1 件を追加 (既存 audio_drop_event_name_is_audio_drop_count_kebab_case と対称構造):
+  ```rust
+  #[test]
+  fn audio_source_constants_are_snake_case_lowercase() {
+      assert_eq!(AUDIO_SOURCE_MICROPHONE, "microphone");
+      assert_eq!(AUDIO_SOURCE_SYSTEM_AUDIO, "system_audio");
+  }
+  ```
+
+## 2. src-tauri/src/audio.rs
+- line 395 の `"source": "microphone"` リテラル部分のみ `"source": crate::audio_event::AUDIO_SOURCE_MICROPHONE` に書き換え (json! macro 内で定数参照可能)
+- line 402 の `build_audio_drop_event_payload("microphone", dropped)` を `build_audio_drop_event_payload(crate::audio_event::AUDIO_SOURCE_MICROPHONE, dropped)` に書き換え
+- **触らない箇所**:
+  - line 37 doc comment 内の `"microphone"` 文字列 (コメント = ドキュメント、定数化不要)
+  - line 442 の `"microphone"` (source_name() public method return value、本変更スコープ外)
+  - line 856-907 の test 内 `"microphone"` / `"system_audio"` 文字列リテラル (passthrough 契約の検知装置として残す = 定数を渡すと将来定数値変更で test が追従し検知装置にならなくなる)
+
+## 3. src-tauri/src/system_audio.rs
+- line 325 の `"source": "system_audio"` リテラル部分のみ `"source": crate::audio_event::AUDIO_SOURCE_SYSTEM_AUDIO` に書き換え
+- line 334 の `build_audio_drop_event_payload("system_audio", dropped)` を `build_audio_drop_event_payload(crate::audio_event::AUDIO_SOURCE_SYSTEM_AUDIO, dropped)` に書き換え
+- **触らない箇所**:
+  - line 377 (source_name() return value)
+  - line 708-763 の test 内文字列リテラル (audio.rs と同じ理由)
+
+# 実装上の注意
+- **transcription.rs (line 1052, 1056, 1320, etc) の `"microphone"` / `"system_audio"` 文字列リテラルは触らない** = transcription source 識別子は parse 処理 (CLI/設定入力) 用で event payload 出力とは責務が異なる。同じ文字列値だが意味的責務が違うので、安易に同じ定数で集約すると後で困る。別ループ送り。
+- **fully-qualified path 採用** = `use crate::audio_event::AUDIO_SOURCE_MICROPHONE` を追加せず `crate::audio_event::AUDIO_SOURCE_MICROPHONE` を直接書く。理由: tests mod 側で unused_imports 警告経路を増やさない (前 mjc-main-15 Loop 2 と同じ判断)。同モジュール内の `build_audio_drop_event_payload` 呼び出しと一貫したスタイル維持。
+- json! macro 内で `"source": MY_CONST` の構文は標準サポート (serde_json 仕様)。
+- cfg(target_os = "macos") gate は system_audio.rs の既存構造そのまま維持。
+- AUDIO_SOURCE_MICROPHONE / AUDIO_SOURCE_SYSTEM_AUDIO は `pub(crate)` (crate 内のみ公開) で十分。
+
+# 検証手順
+1. `cargo fmt -p meet-jerky`
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` = 警告ゼロ期待
+3. `cargo test -p meet-jerky --lib` = 456 → 457 passed (+1 件) 期待
+4. `bash scripts/agent-verify.sh src-tauri/src/audio_event.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs`
+
+# AGENT_LOG.md 記載項目 (末尾に追記、先頭追記禁止)
+- セッション名: mjc-worker-audio-source-const
+- 開始日時 (JST)
+- 役割: 作業担当 (sonnet)
+- 担当範囲: 上記 3 ファイル
+- 指示内容: audio source 識別子 "microphone" / "system_audio" を audio_event.rs に集約 (Tidy First, 製品コード 4 箇所のみ書き換え, test 内文字列は passthrough 検知装置として残す, transcription.rs は別責務で touch せず)
+- 結果 (成功/失敗)
+- 変更ファイル
+- 検証結果 (cargo fmt / clippy / test count / agent-verify.sh)
+- 依存関係追加: なし
+- 失敗理由 (なければ「なし」)
+- 次アクション: メイン (mjc-main) によるレビュー → コミット
+
+最後に変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめる。

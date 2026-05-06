@@ -1,0 +1,107 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (1.5MB+。`tail -300 AGENT_LOG.md` 相当で末尾だけでよい。直近 SESSION SUMMARY と直近 4 commit が状況復元の起点)
+
+# 担当範囲
+
+`src-tauri/src/audio.rs` の `mod tests` 末尾への #[test] 関数追加のみ。実装ロジック・docstring・既存テストは一切変更しないでください。
+
+# 目的
+
+`audio::sanitize_sample` (private fn, L287-293) と `audio::calculate_rms_from_sum` (private fn, L295-305) の**直接呼び出しテスト**を追加し、回帰防止カバレッジを拡張する。
+
+既存テストは間接的にこれらを叩くものが多い (例: `test_normalize_sample_to_f32_sanitizes_invalid_f32` が `normalize_sample_to_f32` 経由で `sanitize_sample` を呼ぶ等)。直接呼び出しテストはまだ無いため、関数単体の境界仕様を裏付ける余地がある。
+
+# 関数仕様 (再掲)
+
+```rust
+fn sanitize_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
+fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32 {
+    if sample_count == 0 {
+        return 0.0;
+    }
+    let rms = (sum_squares / sample_count as f32).sqrt();
+    if rms.is_nan() {
+        return 0.0;
+    }
+    rms.clamp(0.0, 1.0)
+}
+```
+
+# 追加すべき #[test] 関数 (8 件)
+
+各 test は単体で意味を持つ。関数名は WHAT を示す。
+
+## sanitize_sample 系 (5 件)
+
+### A. `sanitize_sample_returns_zero_for_nan`
+- 入力 `f32::NAN` → 0.0。
+- 期待: `assert_eq!(sanitize_sample(f32::NAN), 0.0);`
+
+### B. `sanitize_sample_returns_zero_for_positive_infinity`
+- 入力 `f32::INFINITY` → 0.0。
+
+### C. `sanitize_sample_returns_zero_for_negative_infinity`
+- 入力 `f32::NEG_INFINITY` → 0.0。
+
+### D. `sanitize_sample_clamps_above_one_to_one`
+- 入力 `1.5` → 1.0。
+
+### E. `sanitize_sample_clamps_below_minus_one_to_minus_one`
+- 入力 `-1.5` → -1.0。
+
+(中央値・境界 ±1.0 は既存テストで間接的に網羅されているが、追加するなら別 test として `sanitize_sample_passes_through_finite_values_in_range` 等で `0.0`, `0.5`, `-0.5`, `1.0`, `-1.0` をまとめてもよい。1 件追加してもよいし、しなくてもよい。worker の判断に任せる。判断したら `assert_close` か `assert_eq!` を使う。)
+
+## calculate_rms_from_sum 系 (3 件)
+
+### F. `calculate_rms_from_sum_returns_zero_for_zero_sample_count`
+- 入力 `(sum_squares=10.0, sample_count=0)` → 0.0 (ゼロ除算防御)。
+- 期待: `assert_eq!(calculate_rms_from_sum(10.0, 0), 0.0);`
+
+### G. `calculate_rms_from_sum_returns_zero_for_negative_sum_squares`
+- 入力 `(sum_squares=-1.0, sample_count=4)` → `(sqrt(-0.25))` は NaN → 0.0 (NaN 防御)。
+- 理論上 sum_squares は非負だが、float 計算誤差で稀に負になり得るため防御コードあり。
+- 期待: `assert_eq!(calculate_rms_from_sum(-1.0, 4), 0.0);`
+
+### H. `calculate_rms_from_sum_clamps_above_one_to_one`
+- 入力 `(sum_squares=100.0, sample_count=4)` → `sqrt(25.0) = 5.0` → clamp → 1.0。
+- 期待: `assert_eq!(calculate_rms_from_sum(100.0, 4), 1.0);`
+
+(中央値の正常ケース `sqrt(0.25/4) = 0.25` などは既存 `test_rms_*` 系で間接的に網羅されているはず。直接テストの追加は重複なので不要。)
+
+# 設計上の注意点
+
+- どちらの関数も `pub` ではない private fn。`mod tests` 内から `super::sanitize_sample` / `super::calculate_rms_from_sum` で呼ぶ。既存テスト (`test_normalize_sample_to_f32_*` 等) の import 様式を踏襲。
+- `assert_close` は既存 helper として L4 にある。浮動小数点比較に使う。F/G/H の期待値は厳密 0.0 / 1.0 なので `assert_eq!` で十分。D/E も `1.0` / `-1.0` 厳密値なので `assert_eq!`。A/B/C も `0.0` 厳密値なので `assert_eq!` でよい。
+- `f32::NAN`, `f32::INFINITY`, `f32::NEG_INFINITY` は std 定数。
+
+# 完了条件
+
+- 8 つの (もしくは 9 つの) #[test] 関数を `mod tests` 末尾に追加。
+- 実装ファイル本体は一切変更しない。
+- `cargo fmt --check` 合格。
+- `cargo clippy --no-deps --all-targets --all-features -- -D warnings` 合格 (警告ゼロ維持)。
+- `cargo test --no-fail-fast` 合格 (245 → 253 (or 254) passed が期待値、追加分すべて pass)。
+- `git diff --check` 合格。
+- `bash scripts/agent-verify.sh src-tauri/src/audio.rs AGENT_LOG.md` 合格。
+- AGENT_LOG.md 末尾に作業セクションを追記 (開始日時、担当セッション、役割、作業範囲、指示内容要約、結果、追加 test 件数 / total passed、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクション)。
+- コミットは禁止 (メインがレビュー後にコミットする)。
+
+# 制約 (再掲)
+
+- 課金禁止。
+- `--no-verify` 禁止。
+- 担当範囲外の編集禁止。他エージェントの差分を巻き戻さない。
+- 1 ターンで完結する報告を返してください。

@@ -1,0 +1,105 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+他エージェントも同時に作業中の可能性があるので、担当範囲外の編集は禁止。
+本タスクは **2-commit pattern** を自律実行してください (詳細後述)。
+
+## 必読 (冒頭)
+
+1. **AGENT_LOG.md の末尾 350 行** を `tail -350 AGENT_LOG.md` で読む。**先頭は絶対に触らない**。AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。具体手順 = `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → その直後に追記。
+2. AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (短いので全文読む)
+3. `docs/architecture/agent-log-archive-plan.md` を Read (Section 2.3 の precedent observation entry 構造を理解する。L32-L72 が観測 entry 群、L72 が直近 = Loop 133 完了時点 entry)
+
+## 担当範囲 (Loop 136)
+
+**K 軸 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 21 件目** (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134 precedent 20 件目):
+
+- alternation pattern 28 連続維持 (Loop 133 frontend → Loop 134 K → Loop 135 frontend → Loop 136 K = pivot 維持)
+- 規模 SS = ~3-5 分完走見込み
+
+## 観測値 (メイン側で `wc -l AGENT_LOG.md` で実値確認済)
+
+- AGENT_LOG.md 行数 (Loop 133 完了時点 + SUMMARY 後 = 前 K 軸観測値): **33,358 行** (commit `397431f` 後 = Loop 134 K 軸 docs entry 追記前)
+- AGENT_LOG.md 行数 (Loop 135 完了時点 = 本 Loop 136 観測時): **33,382 行** (commit `ff87ef2` 後)
+- 差分: **+24 行 / 2 ループ間 (Loop 134 K + Loop 135 frontend) + SESSION SUMMARY 0 件 = 平均 ~12 行/loop**
+- 前 Loop 134 観測値 (~24.5 行/loop = SS 1 件 + 説明軽量化) と比較して **大幅減 (-50%)** = SUMMARY 件数支配変数の再々々確認
+- **新観測**: SS 0 件パターン (~11-12 行/loop) = Loop 121 (~11 行/loop) / Loop 127 (~12 行/loop) precedent との **3 連続観測達成** = 階層化 paradigm 最低段階の完全実証
+
+### 主因分析 (entry に明記)
+
+- **SESSION SUMMARY 0 件 = 支配変数の最低水準** (handoff SUMMARY commit 0 件 = ~0 行寄与) = Loop 134 観測 (~24.5 行/loop = SS 1 件) との -50% 差の主因
+- Loop 134 K 軸の chore entry (~10 行 = AGENT_LOG.md 末尾追記、agent-log-archive-plan.md の docs entry +14 行は AGENT_LOG.md には寄与しない)
+- Loop 135 frontend 軸の chore entry (~14 行 = scope 31 軸目開拓 = audioSourceHelpers.ts = Audio Source 4 件)
+- paradigm pivot 多軸 (K + frontend = 2 paradigm 混合)
+- **3 連続観測の意味**: SS 0 件 = ~11-12 行/loop の paradigm が **3 セッションを跨いで再現** (Loop 121 = mjc-main-20260505-62 / Loop 127 = mjc-main-20260505-65 / Loop 136 = mjc-main-20260505-67) = 階層化 paradigm 最低段階の完全実証
+- frontend 軸 chore entry の軽量化 paradigm (~14 行/件) は Loop 125/127/129/131/133/135 の **6 件連続観測** = **frontend 軸軽量化 paradigm の 6 度目の観測 = paradigm 完全成熟期**
+
+長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~12 行 = ~48-120 行/時間 の範囲、SUMMARY 1 件 で押し上げ後の安定アクティブ期)。
+
+## 実装手順
+
+### Step 1: agent-log-archive-plan.md Section 2.3 への追記
+
+`docs/architecture/agent-log-archive-plan.md` の Section 2.3 末尾 (最新の更新観測 entry の直後 = L72 直後、`### 2.4 既存運用の維持コスト` の直前 = L74 直前) に新エントリを追記する。
+
+precedent (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134) と同 format で:
+
+```markdown
+> **更新観測 (mjc-main-20260505-67 Loop 135 完了時点)**: Loop 133 → Loop 135 (~2 ループ間 + SESSION SUMMARY 0 件) で +24 行 (33,358 → 33,382)、平均 ~12 行/loop。Loop 133 観測値 (~24.5 行/loop = SS 1 件 + 説明軽量化) と比較して **大幅減 (-50%)** = paradigm pivot 多軸 (Loop 134 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 135 = frontend 軸 = 純粋関数機能分離軸 frontend 版 9 件目 = TranscriptView.tsx の getAudioSourceStatusLabel + getAudioSourceStatusAriaText + getAudioSourceNotice + getAudioSourceStatusPillClass → audioSourceHelpers.ts (新規 = Audio Source display tier helpers) = refactor + chore) で SESSION SUMMARY 0 件 + chore entry 2 件 + docs entry 1 件 (agent-log-archive-plan.md, AGENT_LOG.md には寄与せず) + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 133 観測値 (~24.5 行/loop) との -50% 差の主因 = **SESSION SUMMARY 件数 0 件継続** + paradigm pivot 同形 (K + frontend) = **SS 0 件パターン (Loop 121 = ~11 行/loop / Loop 127 = ~12 行/loop / Loop 135 = ~12 行/loop) の 3 連続観測達成** = **階層化 paradigm 最低段階の完全実証** (3 セッション跨ぎの再現 = mjc-main-20260505-62 / mjc-main-20260505-65 / mjc-main-20260505-67)。frontend 軸 chore entry の軽量化 paradigm (~14 行/件) は Loop 125/127/129/131/133/135 の **6 件連続観測** = **frontend 軸軽量化 paradigm の 6 度目の観測 = paradigm 完全成熟期**。SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量の 3 軸が支配変数 = **SS 0 件 = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測) / SS 1 件 + 説明軽量化 = ~22-25 行/loop (Loop 125/129/131/133 = 4 連続観測) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の 3 段階階層化が **両端 (SS 0 件 + SS 1 件軽量化) で複数連続観測達成 = paradigm 完全実証期**。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~12 行 = ~48-120 行/時間 の範囲、SUMMARY 1 件 で押し上げ後の安定アクティブ期)。
+```
+
+注意: 上記文中の数値・paradigm 説明は precedent entry 命名規則に従う。entry header は「mjc-main-20260505-67 Loop 135 完了時点」 = 観測する Loop 番号 (135)、本 entry を書いている session = mjc-main-20260505-67 (Loop 136 内で書く)。
+
+### Step 2: 検証 + commit (refactor/docs 1 つ目)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 135 完了時点の更新観測追記 (mjc-main-20260505-67 Loop 136, harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134 precedent 21 件目, +24 行 / 平均 ~12 行/loop = SS 0 件パターン 3 連続観測達成 + frontend 軸軽量化 paradigm 6 度目観測)"
+```
+
+commit hash を取得 (`git log --oneline -1` の左端 7 文字) して `<COMMIT1_HASH>` として記録。
+
+### Step 3: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に **append のみ** で追記。**先頭は絶対に触らない**。
+
+追記内容 (テンポラリファイル `/tmp/loop136-entry.md` を Write してから `cat /tmp/loop136-entry.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-67 Loop 136 / 2026-05-06]
+worker: mjc-worker-loop136-archive-plan-stats-update-21 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 135 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134 precedent の 21 件目。Loop 133 → Loop 135 (~2 ループ間 + SESSION SUMMARY 0 件) で +24 行 (33,358 → 33,382)、平均 ~12 行/loop。Loop 133 観測値 (~24.5 行/loop) との **大幅減 (-50%)** = **SS 0 件パターン (Loop 121/127/135 = ~11-12 行/loop) の 3 連続観測達成** = **階層化 paradigm 最低段階の完全実証** (3 セッション跨ぎの再現)。frontend 軸 chore entry の軽量化 paradigm (~14 行/件) は Loop 125/127/129/131/133/135 の **6 件連続観測** = **frontend 軸軽量化 paradigm の 6 度目の観測 = paradigm 完全成熟期**。3 段階階層 (SS 0 件 = ~11-12 / SS 1 件軽量 = ~22-25 / SS 1 件大量 = ~42 行/loop) の **両端で複数連続観測達成 = paradigm 完全実証期**。alternation pattern 28 連続成功維持 (frontend(133) → K(134) → frontend(135) → K(136))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: <COMMIT1_HASH> docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 135 完了時点の更新観測追記
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+### Step 4: chore commit (2 つ目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-67 Loop 136 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134 precedent 21 件目, +24 行 / 平均 ~12 行/loop = SS 0 件パターン 3 連続観測達成 = 階層化 paradigm 最低段階の完全実証 + frontend 軸軽量化 paradigm 6 度目観測 = paradigm 完全成熟期) のエントリ追記"
+```
+
+## 完了確認
+
+`git log --oneline -3` で 2 commit 反映を確認:
+- 最新 = chore(agent-log): ... Loop 136 ...
+- その 1 つ前 = docs(architecture): ... Section 2.3 ... Loop 135 完了時点 ...
+
+両方表示されたら作業完了。final answer 不要、停止せずメインエージェントに引き継がれる。
+
+## 範囲制限 (厳守)
+
+- 編集対象は `docs/architecture/agent-log-archive-plan.md` (Section 2.3 への追記のみ) と `AGENT_LOG.md` (末尾追記のみ)。
+- それ以外のファイルは触らない。
+- 行末空白文字 (trailing whitespace) は **禁止**。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+- AGENT_LOG.md は **絶対に Read 全体しない** (~33,382 行) = `tail -350` のみ参照。**先頭は絶対に触らない**。

@@ -1,0 +1,150 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md を読んでください。
+AGENT_LOG.md は ~14900 行 / 1.5MB あるので末尾だけ参照する場合は `tail -300 AGENT_LOG.md` で十分です。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+- `src-tauri/src/session_store.rs` の **tests モジュール末尾のみ** に test を追加
+- `src-tauri/src/session_manager.rs` の **tests モジュール末尾のみ** に test を追加
+- AGENT_LOG.md 末尾追記のみ
+
+# 背景
+session_store / session_manager のエラーパスは、優先度 1 (クラッシュ修正) と直結する重要な層だが、ディスク IO の失敗系テストが薄い。具体的には:
+
+- `session_store::save_session_markdown` / `list_session_files` / `list_session_summaries` は `dir` が存在しない場合に `std::io::Error` を返す設計だが、それを保証するテストがない。
+- `session_manager::persist_if_configured` (private) はディスク書き出しに失敗してもログに留めて in-memory 状態は壊さない設計だが、その不変条件を検証するテストがない (将来 `?` 演算子を使うリファクタで in-memory 状態を巻き戻すバグを混入させると気付けない)。
+
+本タスクではこれら **既存仕様を裏付けるテスト** を追加するのみで、実装ロジックは一切変更しない。
+
+# 仕様: 追加するテスト
+
+## src-tauri/src/session_store.rs (3 件)
+
+すべて `mod tests` 内に新しい `#[test]` 関数として追加。tempdir を使い、その dir 配下で「存在しないサブパス」を指定してエラーを発生させる。
+
+### A. `list_session_files_returns_err_when_dir_does_not_exist`
+```
+let tmp = tempdir().unwrap();
+let missing = tmp.path().join("not-exists");
+let result = list_session_files(&missing);
+assert!(result.is_err());
+// kind() が NotFound または PermissionDenied など環境依存で揺れるため、
+// is_err() 確認だけで十分とする (狭く検証しすぎないこと)。
+```
+
+### B. `list_session_summaries_returns_err_when_dir_does_not_exist`
+```
+let tmp = tempdir().unwrap();
+let missing = tmp.path().join("not-exists");
+let result = list_session_summaries(&missing);
+assert!(result.is_err());
+```
+これは `list_session_files` のエラー伝播を介する経路。
+
+### C. `save_session_markdown_returns_err_when_dir_does_not_exist`
+セッションを 1 件作って (`Session::start` + `finalize` などすでに他テストが使うパターンを再利用) 、`save_session_markdown` を **存在しないディレクトリ** で呼んでエラーになることを確認:
+```
+let tmp = tempdir().unwrap();
+let missing_dir = tmp.path().join("not-exists");
+let mut session = Session::start("test".to_string(), 1700000000);
+session.finalize(1700000060);
+let result = save_session_markdown(&missing_dir, &session, jst());
+assert!(result.is_err());
+```
+既存テストでは `tempdir` 直下に書き出しているのでこのパスは未カバー。`jst()` ヘルパーは既存。
+
+## src-tauri/src/session_manager.rs (2 件)
+
+### D. `append_keeps_segment_in_memory_when_output_dir_does_not_exist`
+session_manager の **クラッシュ耐性の不変条件** を裏付けるテスト。`persist_if_configured` がディスク書き出しに失敗しても in-memory 状態は維持される設計。
+
+```
+let manager = SessionManager::new();
+let tmp = tempdir().unwrap();
+let missing_dir = tmp.path().join("not-exists"); // 存在しない
+manager
+    .start_with_output(
+        "test".to_string(),
+        1700000000,
+        missing_dir.clone(),
+        FixedOffset::east_opt(9 * 3600).unwrap(),
+    )
+    .expect("start should succeed even when output_dir does not exist");
+
+// append は persist_if_configured 経由で書き出しを試みるが失敗する
+// (dir が無いので write_session_markdown_to が Err)
+manager
+    .append("user".to_string(), 5, "hello".to_string())
+    .expect("append should not propagate disk error");
+
+// in-memory 状態は壊れていない: segment が 1 件入っている
+assert_eq!(manager.current_segment_count(), Some(1));
+assert!(manager.is_active());
+```
+
+注意: `FixedOffset::east_opt` は `chrono::FixedOffset` から。既存テストで `jst()` ヘルパーを使っているなら同じパターンで OK (既存 `mod tests` の冒頭の use 宣言を確認して同じ方式に揃える)。
+
+### E. `finalize_returns_session_when_output_dir_does_not_exist`
+finalize 経路でも同様の不変条件:
+
+```
+let manager = SessionManager::new();
+let tmp = tempdir().unwrap();
+let missing_dir = tmp.path().join("not-exists");
+manager
+    .start_with_output(
+        "test".to_string(),
+        1700000000,
+        missing_dir,
+        FixedOffset::east_opt(9 * 3600).unwrap(),
+    )
+    .expect("start should succeed");
+manager
+    .append("user".to_string(), 5, "hello".to_string())
+    .expect("append should not propagate disk error");
+
+// finalize: persist 失敗してもセッションは返される
+let session = manager
+    .finalize(1700000060)
+    .expect("finalize should succeed even with persist error");
+assert_eq!(session.title, "test");
+assert_eq!(session.segments.len(), 1);
+assert!(!manager.is_active());
+```
+
+# テスト実装上の注意
+- 各 `#[test]` 関数は最大 ~25 行程度に収めること。
+- 既存テストの import / ヘルパー (`jst()`, `tempdir()`, `Session::start` 等) を踏襲する。新規 import が必要なら `mod tests` の use 宣言にだけ追加し、それ以外のコードを変更しない。
+- 実装コード (`pub fn` / private fn / 構造体定義) は **一切変更しない**。
+- もし「書き出し失敗時に in-memory が壊れた」「dir 無しでも `save_session_markdown` が Ok を返した」など実装が仕様と異なることを発見した場合は、test を skip して報告に明記し、コードは変更せずに終了する (バグ報告のみ)。
+- アサーションスタイルは既存テスト (例: `session_manager.rs` の L301 `new_has_no_active_session_and_start_activates_it`) を踏襲。
+- assert_eq! のスタイル、`expect` メッセージは既存と一貫させる。
+
+# 検証
+1. `git diff --check`
+2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets --all-features -- -D warnings`
+4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast`
+5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_store.rs src-tauri/src/session_manager.rs AGENT_LOG.md`
+
+3, 4 はビルド・実行時間が掛かるため必ずフォアグラウンドで完了まで待つ。clippy 警告ゼロ維持必須、現状 218 passed から **追加分だけ増えた値で全合格** を確認 (5 件追加 → 223 passed 期待)。
+
+# AGENT_LOG.md 追記
+末尾に新セクション: `### session_store / session_manager のディスクIOエラーパステストを 5 件追加しクラッシュ耐性の不変条件を裏付け`。
+記載項目: 開始日時 (JST)、担当セッション (`mjc-worker-session-error-path-tests-20260504-1`)、役割、作業範囲、指示内容 (このプロンプトの要約)、結果、変更ファイル、検証結果 (cargo fmt / clippy / test の合否、追加 test 件数、追加後の total passed)、依存関係追加の有無 (なし)、失敗理由 (なし)、次アクション。
+
+# 報告形式 (1 ターンで完結)
+最後に以下を簡潔にまとめて出力:
+- 追加した test 関数名一覧 (A〜E)
+- cargo fmt / clippy / test の最終結果 (test 数の変化 218 → N)
+- もし「実装が仕様と異なる」ケースを発見したらここで報告 (skip して残リスクとする)
+- 残リスク (ディスク full / permission denied 等の他のエラーパスは未テスト 等)
+
+# 禁止事項
+- `pub fn save_session_markdown`, `list_session_files`, `list_session_summaries`, `SessionManager::*`, `persist_if_configured` 等の実装変更
+- 他のソースファイル変更 (上記 2 ファイル以外)
+- `git commit` の実行
+- `--no-verify`
+- 既存テストの削除・改変
+- 新しい依存関係 (Cargo.toml) の追加

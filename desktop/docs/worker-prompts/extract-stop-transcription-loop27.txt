@@ -1,0 +1,145 @@
+あなたは meet-jerky の sonnet worker です。Loop 27 = Phase 3-B 続き = stop_transcription Tauri command を transcription_commands.rs に抽出します (Tidy First, behavior-preserving、~10 行関数、SS 規模、1 ループ完結確実)。
+
+# 最初に必ず読むべきこと
+
+1. **AGENT_LOG.md の末尾 350 行を読め** (`tail -350 AGENT_LOG.md`)。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する。Edit ツールでは末尾 `---` が unique にならないので Write で別ファイルへ書き、`cat <file> >> AGENT_LOG.md` で append する。
+5. **行末の空白文字 (trailing whitespace) 禁止**。
+
+# 担当範囲 (これ以外を編集しない)
+
+編集対象は以下 3 ファイルのみ:
+- `src-tauri/src/transcription.rs` (-stop_transcription 関数 = 削除のみ、L193-202 の rustdoc + #[tauri::command] + pub fn 全体)
+- `src-tauri/src/transcription_commands.rs` (+stop_transcription 関数 + 必要なら use 追加)
+- `src-tauri/src/lib.rs` (invoke_handler の `transcription::stop_transcription` → `transcription_commands::stop_transcription` に更新、L358 の 1 行のみ)
+
+それ以外のファイル (frontend / docs / README / scripts / 他の Tauri command) は **絶対に編集しない**。
+
+# 規模上限
+
+- 行追加: 合計 ~12 行以内 (transcription_commands.rs +12 行 = rustdoc 1 行 + #[tauri::command] 1 行 + pub fn 8 行 + 必要な use 1-2 行)
+- 行削除: 合計 ~10 行以内 (transcription.rs -10 行)
+- lib.rs: 1 行変更
+- テスト追加: **0 件** (既存 700 passed の件数不変が成功条件、新規テスト追加禁止)
+- 範囲超過したら即停止して報告
+
+# 具体手順
+
+## Step 1: 既存実装を Read で精読する
+
+- `src-tauri/src/transcription.rs` を `Read offset=190 limit=15` で L193-202 を読む。
+  - 期待形:
+    ```
+    /// 文字起こしを停止する
+    #[tauri::command]
+    pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> Result<(), String> {
+        let mut manager = state.0.lock();
+        if !manager.is_running() {
+            return Err("文字起こしは実行されていません".to_string());
+        }
+        manager.stop();
+        Ok(())
+    }
+    ```
+- `src-tauri/src/transcription_commands.rs` を `Read offset=1 limit=15` で先頭の use 群を確認。
+  - `use crate::transcription_manager::TranscriptionStateHandle;` が **既に import されているか** を grep で確認:
+    `grep -n "TranscriptionStateHandle" src-tauri/src/transcription_commands.rs`
+  - import されていなければ Step 2 で追加する。
+- `src-tauri/src/transcription_manager.rs` の L118 で `pub struct TranscriptionStateHandle(pub Mutex<TranscriptionManager>);` を確認 (field 0 が pub なので state.0.lock() アクセス可能)。
+
+## Step 2: transcription_commands.rs に stop_transcription を追加
+
+- ファイル末尾 (tests mod の **直前**、impl/関数群の最後) に以下を追加する:
+  ```rust
+  /// 文字起こしを停止する
+  #[tauri::command]
+  pub fn stop_transcription(state: tauri::State<'_, TranscriptionStateHandle>) -> Result<(), String> {
+      let mut manager = state.0.lock();
+      if !manager.is_running() {
+          return Err("文字起こしは実行されていません".to_string());
+      }
+      manager.stop();
+      Ok(())
+  }
+  ```
+- ファイル先頭の use 群に必要なら追加 (既に import されていればスキップ):
+  ```rust
+  use crate::transcription_manager::TranscriptionStateHandle;
+  ```
+- 関数本体は transcription.rs から完全コピー (改行・インデント保持、trailing whitespace 禁止)。
+
+## Step 3: transcription.rs から stop_transcription を削除
+
+- `transcription.rs` L193-202 (rustdoc コメント `/// 文字起こしを停止する` + `#[tauri::command]` + `pub fn stop_transcription(...)` 関数本体全体) を Edit ツールで削除する。
+- 削除後の前後行が綺麗に繋がることを確認 (空行が残ってもよいが、3 連続空行は避ける)。
+
+## Step 4: lib.rs L358 の Tauri 登録を更新
+
+- `src-tauri/src/lib.rs` L358 の `transcription::stop_transcription,` を `transcription_commands::stop_transcription,` に変更する (Edit ツール 1 箇所)。
+- 既に L354-356 の list_models / is_model_downloaded / download_model が `transcription_commands::` 経由になっているので並びが揃う。
+
+# 大型ファイル取り扱い
+
+- transcription.rs (1712 行) と transcription_commands.rs (421 行) と lib.rs (~700 行?) は **全体 Read 禁止**。
+- 必要範囲のみ `Read offset=N limit=M` で部分参照する。
+- grep で行番号を特定してから Read する。
+
+# 検証 (順番に実行)
+
+1. `cd src-tauri && cargo build --lib 2>&1 | tail -30` (コンパイル確認、未使用 import 警告チェック)
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -10` (件数 = **700 passed 件数不変** が成功条件、増えても減ってもダメ)
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10` (**警告ゼロ**)
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -10` (**OK**、差分があれば `cargo fmt` で自動修正)
+5. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs src-tauri/src/lib.rs 2>&1 | tail -20`
+
+# 自律判断の余地 (Loop 25 sonnet worker precedent 継承)
+
+- `transcription_commands.rs` 内の関数並びは「pub fn 群 → tests mod」の順を保つ (Loop 23-25 の precedent 継承)。
+- もし transcription.rs 内に `stop_transcription` への内部呼び出しが残っていたら (grep で確認) `crate::transcription_commands::stop_transcription` 経由に書き換えて良い (ただし Step 1 の grep で検出されない予定 = 現状 lib.rs L358 のみが呼び出し元)。
+- Loop 24 で `tauri::Emitter;` use を transcription.rs から transcription_commands.rs に移動した precedent を念頭に置く (本ループでは該当なし、stop_transcription は単純委譲のため新規 use は TranscriptionStateHandle のみで十分)。
+
+# Commit
+
+成功したら `bash scripts/agent-commit.sh "refactor(transcription): stop_transcription Tauri command を transcription_commands.rs に抽出 (Tidy First, Phase 3-B 続き, mjc-main-20260505-14 Loop 27, ~10 行関数 + lib.rs invoke_handler パス更新, 700 passed 件数不変, clippy 警告ゼロ, fmt OK, transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 続き = mjc-main-20260505-13 Loop 25 (validate + parse + struct + const + 17 tests) の延長, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)" src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs src-tauri/src/lib.rs` で commit する。
+
+# AGENT_LOG.md 末尾追記
+
+commit 後、AGENT_LOG.md 末尾に以下を **append** する (Write で `/tmp/loop27-log.md` に書き、`cat /tmp/loop27-log.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-14 Loop 27 / 2026-05-05 ~JST]
+
+## What
+- `stop_transcription` Tauri command を `src-tauri/src/transcription.rs` から `src-tauri/src/transcription_commands.rs` に移動
+- `lib.rs` invoke_handler の `transcription::stop_transcription` を `transcription_commands::stop_transcription` に更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 続き
+- mjc-main-20260505-13 Loop 25 (validate + parse) の延長 = transcription_commands.rs に Tauri commands を集約
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- 関数本体は完全コピー (lib.rs invoke_handler パス更新のみ)
+- TranscriptionStateHandle は transcription_commands.rs で再 use (既存 import が無ければ追加)
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+```
+
+最後の `---` を忘れないこと。
+
+# 失敗時の振る舞い
+
+- コンパイルエラーが出たら、原因を Read + grep で特定して修正する (規模上限内なら自律修正可)。
+- テスト件数が 700 から変動したら **即停止して報告**。
+- clippy 警告が新規発生したら、原因を見極めて (新規 import の未使用警告など) 自律修正可。
+- 範囲外のファイル編集が必要だと感じたら **即停止して報告**。
+
+以上。実行開始。

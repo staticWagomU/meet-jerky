@@ -1,0 +1,233 @@
+# worker: ModelInfo の Debug 出力 / Clone deep 独立性 / serde camelCase format 3 軸 application (Loop 1, Tidy First, 振る舞い不変)
+
+あなたは meet-jerky の作業用 worker (mjc-worker-model-info-debug-clone-independence-tests-20260504-33-1) です。
+本 worker は **「Debug 軸補強」パターン 8 連続 application + 「Clone 独立性軸」2 連続 application + 「format 不変条件 application」継続** を担います。
+
+## 0. 最初に読むもの (順序厳守)
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+   - **先頭は絶対に触らない。**
+   - 末尾には mjc-main-20260504-32 の SESSION SUMMARY があり、確立パターンと残候補が記載されています。
+2. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+
+## 1. 担当範囲 (これ以外を一切編集しないこと)
+
+- **編集対象**:
+  - `src-tauri/src/transcription.rs` の `mod tests` 末尾 (= ファイル末尾近く) に test 関数 3 件追加。
+  - `AGENT_LOG.md` への末尾追記 (本 worker の作業記録、後述テンプレ)。
+- **編集禁止**:
+  - 上記 2 ファイル以外。
+  - `transcription.rs` の `pub struct ModelInfo` 定義 (l.49-57) と既存 関数 / 既存 test。
+  - 既存 #[derive] / #[serde(rename_all)] 属性。
+  - すでに存在する 70 件の test 関数。
+
+## 2. 前提コード (transcription.rs l.49-57 = 既存実装、変更しないこと)
+
+```rust
+/// 利用可能なモデルの情報
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelInfo {
+    pub name: String,
+    pub display_name: String,
+    pub size_mb: u64,
+    pub url: String,
+}
+```
+
+- 4 field 全 required (Option なし)
+- `#[derive(Debug, Clone, Serialize)]` + `#[serde(rename_all = "camelCase")]`
+- 利用箇所: `list_available_models()` (l.511-) / `list_models()` (l.688-) で `ModelInfo { name: "...".to_string(), display_name: "...".to_string(), size_mb: ..., url: "...".to_string() }` 形式
+
+## 3. 大型ファイル参照ルール (重要)
+
+- `transcription.rs` は **2720 行** あるので、`Read` で全体を読まないこと。
+- 必要に応じて以下で範囲参照:
+  - `sed -n '49,57p' src-tauri/src/transcription.rs` で ModelInfo 定義確認
+  - `tail -50 src-tauri/src/transcription.rs` で `mod tests` 末尾確認
+  - `grep -n "fn ` で test 関数末尾位置を特定
+- 編集は `Edit` で具体的な context 指定で行う (Write で全体上書きは禁止)。
+
+## 4. 追加する test (3 件、いずれも mod tests 末尾、`#[cfg(test)] mod tests` の `}` の直前に追加、`#[test]` 必須)
+
+### T1: `model_info_debug_output_contains_struct_name_and_all_four_field_names`
+- 目的: `Debug` 出力に「型名 `ModelInfo`」+「全 4 個の snake_case field 名」+「対応する値リテラル」が含まれる契約を CI 固定。
+- 期待: 以下の文字列が **すべて** Debug 出力に含まれる (`assert!(s.contains(...))` 形式 9 段):
+  - 型名: `"ModelInfo"`
+  - field 名 (snake_case = struct 定義通り): `"name"` / `"display_name"` / `"size_mb"` / `"url"`
+  - 値: `"\"tiny-q5_1\""` (name) / `"\"Tiny (Q5_1)\""` (display_name) / `"31"` (size_mb) / `"\"https://example.com/tiny.bin\""` (url)
+- 実装ヒント:
+  ```rust
+  #[test]
+  fn model_info_debug_output_contains_struct_name_and_all_four_field_names() {
+      let info = ModelInfo {
+          name: "tiny-q5_1".to_string(),
+          display_name: "Tiny (Q5_1)".to_string(),
+          size_mb: 31,
+          url: "https://example.com/tiny.bin".to_string(),
+      };
+      let s = format!("{:?}", info);
+
+      // 型名
+      assert!(s.contains("ModelInfo"), "Debug should contain type name 'ModelInfo': {}", s);
+      // snake_case field 名 (4 個)
+      assert!(s.contains("name"), "Debug should contain field 'name': {}", s);
+      assert!(s.contains("display_name"), "Debug should contain field 'display_name': {}", s);
+      assert!(s.contains("size_mb"), "Debug should contain field 'size_mb': {}", s);
+      assert!(s.contains("url"), "Debug should contain field 'url': {}", s);
+      // 値
+      assert!(s.contains("\"tiny-q5_1\""), "Debug should contain name value: {}", s);
+      assert!(s.contains("\"Tiny (Q5_1)\""), "Debug should contain display_name value: {}", s);
+      assert!(s.contains("31"), "Debug should contain size_mb value: {}", s);
+      assert!(s.contains("\"https://example.com/tiny.bin\""), "Debug should contain url value: {}", s);
+  }
+  ```
+
+### T2: `model_info_clone_produces_independent_copy_for_string_fields_and_size_mb`
+- 目的: `#[derive(Clone)]` の **deep clone** 契約 = clone 後 cloned mutation 後も original 不変 = String × 3 + u64 の 4 field 全てで独立コピーされる契約を CI 固定。
+- 期待: clone 後に cloned の各 field を mutate (String は push_str / replace、u64 は新値代入)、original の各 field 値が変化しない。
+- 実装ヒント:
+  ```rust
+  #[test]
+  fn model_info_clone_produces_independent_copy_for_string_fields_and_size_mb() {
+      let original = ModelInfo {
+          name: "tiny".to_string(),
+          display_name: "Tiny".to_string(),
+          size_mb: 31,
+          url: "https://example.com/tiny.bin".to_string(),
+      };
+      let mut cloned = original.clone();
+
+      // cloned を変更
+      cloned.name.push_str("-q5_1");
+      cloned.display_name = "Tiny (Q5_1)".to_string();
+      cloned.size_mb = 99;
+      cloned.url = "https://example.com/other.bin".to_string();
+
+      // original が変化していない (deep clone 契約)
+      assert_eq!(original.name, "tiny", "original.name should be unchanged after cloned mutation");
+      assert_eq!(original.display_name, "Tiny", "original.display_name should be unchanged");
+      assert_eq!(original.size_mb, 31, "original.size_mb should be unchanged");
+      assert_eq!(original.url, "https://example.com/tiny.bin", "original.url should be unchanged");
+
+      // cloned が確かに変更されている (mutation 自体が起きた裏付け)
+      assert_eq!(cloned.name, "tiny-q5_1");
+      assert_eq!(cloned.display_name, "Tiny (Q5_1)");
+      assert_eq!(cloned.size_mb, 99);
+      assert_eq!(cloned.url, "https://example.com/other.bin");
+  }
+  ```
+
+### T3: `model_info_serialize_uses_camel_case_for_all_four_fields`
+- 目的: `#[serde(rename_all = "camelCase")]` で JSON serialize 時に `name` / `displayName` / `sizeMb` / `url` の camelCase 4 key + snake_case key 不在 + 値正しさを CI 固定。
+- 期待: `serde_json::to_string(&info)` の結果 JSON に対して以下を assert:
+  - camelCase key 存在: `"\"name\":"` / `"\"displayName\":"` / `"\"sizeMb\":"` / `"\"url\":"`
+  - snake_case key 不在: `!s.contains("\"display_name\":")` / `!s.contains("\"size_mb\":")`
+  - 値正しさ: `"\"tiny-q5_1\""` / `"\"Tiny (Q5_1)\""` / `":31"` / `"\"https://example.com/tiny.bin\""`
+- 実装ヒント:
+  ```rust
+  #[test]
+  fn model_info_serialize_uses_camel_case_for_all_four_fields() {
+      let info = ModelInfo {
+          name: "tiny-q5_1".to_string(),
+          display_name: "Tiny (Q5_1)".to_string(),
+          size_mb: 31,
+          url: "https://example.com/tiny.bin".to_string(),
+      };
+      let s = serde_json::to_string(&info).expect("ModelInfo should serialize");
+
+      // camelCase 4 key 存在
+      assert!(s.contains("\"name\":"), "should contain 'name' key: {}", s);
+      assert!(s.contains("\"displayName\":"), "should contain 'displayName' key: {}", s);
+      assert!(s.contains("\"sizeMb\":"), "should contain 'sizeMb' key: {}", s);
+      assert!(s.contains("\"url\":"), "should contain 'url' key: {}", s);
+      // snake_case 不在 (rename_all 適用の証明)
+      assert!(!s.contains("\"display_name\":"), "should NOT contain snake_case 'display_name': {}", s);
+      assert!(!s.contains("\"size_mb\":"), "should NOT contain snake_case 'size_mb': {}", s);
+      // 値正しさ
+      assert!(s.contains("\"tiny-q5_1\""), "should contain name value: {}", s);
+      assert!(s.contains("\"Tiny (Q5_1)\""), "should contain display_name value: {}", s);
+      assert!(s.contains(":31"), "should contain size_mb numeric value 31: {}", s);
+      assert!(s.contains("\"https://example.com/tiny.bin\""), "should contain url value: {}", s);
+  }
+  ```
+
+## 5. 追加位置の決め方
+
+1. `grep -n "^mod tests\|#\[cfg(test)\]" src-tauri/src/transcription.rs` で test mod の開始行を特定。
+2. `tail -80 src-tauri/src/transcription.rs` で末尾を確認。
+3. `mod tests { ... }` の末尾の `}` の直前に T1 → T2 → T3 の順で追加 (関数間に空行 1)。
+4. `serde_json` は本ファイルで既に使用されているはず。万一 import 不足なら `use serde_json;` ではなく既存 test の serde_json 利用パターンに合わせる (例: `serde_json::to_string` をフルパスで呼ぶ)。
+5. 既存 test と式形が違う場合は、既存 test の use 宣言と命名規約に合わせる。
+
+## 6. 検証 (worker 内で実施、不合格なら修正)
+
+1. `cd src-tauri && cargo fmt -- --check` (差分があれば `cargo fmt` 実行後に再 check)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings` (警告ゼロ)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1` (580 → 583 passed +3 件、0 failed)
+4. もし fail/警告が出た場合は **試験用文字列の数値や URL を実装側に合わせて修正する** (実装変更は禁止)。
+
+## 7. AGENT_LOG.md への末尾追記 (必須、worker 完走の証拠)
+
+- まず `tail -10 AGENT_LOG.md` で末尾を視認。
+- 末尾の `---` 直後に以下のテンプレで追記 (Edit ツールで `---\n` の context を使う、あるいは末尾に直接追記)。
+
+```markdown
+## mjc-worker-model-info-debug-clone-independence-tests-20260504-33-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-model-info-debug-clone-independence-tests-20260504-33-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-33 Loop 1
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 8 連続 application + 「Clone 独立性軸」2 連続 application + 「format 不変条件 application」継続 = ModelInfo (struct with String×3 + u64, #[derive(Debug, Clone, Serialize)] + #[serde(rename_all = "camelCase")]) への Debug + Clone deep 独立性 + serde camelCase format 3 軸 application。
+- T1: model_info_debug_output_contains_struct_name_and_all_four_field_names (Debug 出力に型名+全 4 snake_case field 名+値が含まれる契約)
+- T2: model_info_clone_produces_independent_copy_for_string_fields_and_size_mb (Clone の deep clone 性 = String×3 + u64 の 4 field 全てで cloned mutation 後 original 不変)
+- T3: model_info_serialize_uses_camel_case_for_all_four_fields (serde camelCase format 不変条件 = name/displayName/sizeMb/url 4 key + snake_case 不在)
+
+### 結果
+- cargo fmt --check: 差分なし (差分があれば cargo fmt 実行後に確認)
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 580 → 583 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / 既存 #[derive] / 既存 70 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 583 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.??s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 8. 制約 (再掲)
+
+- 行末空白文字 (trailing whitespace) は **絶対に書かない**。
+- `--no-verify` 禁止 / `--dangerously-skip-permissions` は harness 経由のみ。
+- 既存 derive 属性 / 既存 struct 定義 / 既存 test の改変は禁止。
+- 既存 70 test は完全無変更。本 worker は **追加 3 件のみ**。
+- 課金しないこと (実 API 叩き禁止)。
+- メインや他 worker のセッションには立ち入らないこと。
+
+## 9. 完了基準
+
+- 上記 T1/T2/T3 が追加され、cargo test 583 passed (0 failed)、clippy 警告ゼロ、cargo fmt --check 差分なし。
+- AGENT_LOG.md 末尾に上記テンプレに沿ったエントリが追記されている (時系列順、先頭は触らない)。
+
+完了したらメインに報告するだけで OK (commit はメイン側で実施)。

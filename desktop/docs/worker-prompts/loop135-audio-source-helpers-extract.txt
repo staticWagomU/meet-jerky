@@ -1,0 +1,269 @@
+あなたは meet-jerky の worker エージェントです。Loop 135 = TranscriptView.tsx Audio Source 系 4 純粋関数 (getAudioSourceStatusLabel + getAudioSourceStatusAriaText + getAudioSourceNotice + getAudioSourceStatusPillClass) を新 file `src/utils/audioSourceHelpers.ts` に抽出します。
+
+# 必読 (順序重要)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+3. AGENT_LOG.md は時系列順 (最古ログ = 先頭、最新ログ = 末尾) = ~33,358+ 行 = **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` で末尾だけ参照。**先頭には絶対に触らない**。新規追記は必ずファイル末尾の `---` 直後に行う。
+4. 既存 precedent (cat で全体確認すること、各 ~12-42 行で軽量):
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioLevelHelpers.ts` (Loop 125)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/permissionStatusHelpers.ts` (Loop 127)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/trackStatusAriaLabels.ts` (Loop 129 = utils 内 cross-import paradigm 2 件目)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptionEngineHelpers.ts` (Loop 131)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/aiTransmissionHelpers.ts` (Loop 133 = utils 内 cross-import paradigm 3 件目)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioTrackLabels.ts` (cross-import 元 = `SELF_TRACK_DEVICE_LABEL` + `OTHER_TRACK_DEVICE_LABEL` 定数定義)
+
+# 範囲制限 (厳守)
+
+- 編集対象は `src/routes/TranscriptView.tsx` (関数定義 4 件削除 + import 追加) と新規 `src/utils/audioSourceHelpers.ts` のみ。
+- それ以外のファイルは触らない。
+- TranscriptView.tsx 全体 (~2361 行) は **絶対に Read 全体しない** = 必要な範囲だけ `Read offset=... limit=...` で参照。
+- 行末空白文字 (trailing whitespace) は **禁止**。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+
+# タスク詳細
+
+## 抽出対象 (TranscriptView.tsx L280-L351 の 4 関数)
+
+```ts
+function getAudioSourceStatusLabel(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string {
+  if (isMicRecording && isSystemAudioRecording) {
+    return "自分と相手側を取得中";
+  }
+  if (isMicRecording) {
+    return "自分のみ録音中";
+  }
+  if (isSystemAudioRecording) {
+    return "相手側のみ取得中";
+  }
+  return "未取得";
+}
+
+function getAudioSourceStatusAriaText(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string {
+  if (isMicRecording && isSystemAudioRecording) {
+    return "自分と相手側を取得中";
+  }
+  if (isMicRecording) {
+    return "自分のみ録音中、相手側は未取得";
+  }
+  if (isSystemAudioRecording) {
+    return "相手側のみ取得中、自分は未録音";
+  }
+  return "自分と相手側とも未取得";
+}
+
+function getAudioSourceNotice(
+  isVisible: boolean,
+  isAudioCaptureOperationPending: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+  systemAudioFormatWarning: string | null,
+): string | null {
+  if (!isVisible) {
+    return null;
+  }
+  if (systemAudioFormatWarning) {
+    return `相手側音声入力の形式に問題があります: ${systemAudioFormatWarning}`;
+  }
+  if (
+    isAudioCaptureOperationPending ||
+    (isMicRecording && isSystemAudioRecording)
+  ) {
+    return null;
+  }
+  if (isMicRecording) {
+    return `${OTHER_TRACK_DEVICE_LABEL}は未取得です。相手側の発話は文字起こしされません。`;
+  }
+  if (isSystemAudioRecording) {
+    return `${SELF_TRACK_DEVICE_LABEL}は未録音です。自分の発話は文字起こしされません。`;
+  }
+  return `${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}は未取得です。発話は文字起こしされません。`;
+}
+
+function getAudioSourceStatusPillClass(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string {
+  if (isMicRecording && isSystemAudioRecording) {
+    return "meeting-status-pill-active";
+  }
+  if (!isMicRecording && !isSystemAudioRecording) {
+    return "meeting-status-pill-idle";
+  }
+  return "meeting-status-pill-neutral";
+}
+```
+
+注意: `OTHER_TRACK_DEVICE_LABEL` + `SELF_TRACK_DEVICE_LABEL` は `../utils/audioTrackLabels` から TranscriptView.tsx に既に import されている。新 file `audioSourceHelpers.ts` では **同 utils file から内部 import する** = utils 内 cross-import paradigm 4 件目 (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus、4 件目 = audioSourceHelpers.ts → audioTrackLabels)。
+
+## callsite (TranscriptView.tsx で 4 件 = 各 1 callsite)
+
+- L1397: `getAudioSourceStatusLabel(isMicRecording, isSystemAudioRecording)`
+- L1401: `getAudioSourceStatusAriaText(isMicRecording, isSystemAudioRecording)`
+- L1413: `getAudioSourceStatusPillClass(isMicRecording, isSystemAudioRecording)`
+- L1433: `getAudioSourceNotice(...)` (5 引数)
+
+→ import 1 行追加だけで参照解決される (関数名は同じ)。
+
+## 手順
+
+1. **新 file 作成**: `src/utils/audioSourceHelpers.ts` を新規作成。内容:
+   ```ts
+   import {
+     OTHER_TRACK_DEVICE_LABEL,
+     SELF_TRACK_DEVICE_LABEL,
+   } from "./audioTrackLabels";
+
+   export function getAudioSourceStatusLabel(
+     isMicRecording: boolean,
+     isSystemAudioRecording: boolean,
+   ): string {
+     if (isMicRecording && isSystemAudioRecording) {
+       return "自分と相手側を取得中";
+     }
+     if (isMicRecording) {
+       return "自分のみ録音中";
+     }
+     if (isSystemAudioRecording) {
+       return "相手側のみ取得中";
+     }
+     return "未取得";
+   }
+
+   export function getAudioSourceStatusAriaText(
+     isMicRecording: boolean,
+     isSystemAudioRecording: boolean,
+   ): string {
+     if (isMicRecording && isSystemAudioRecording) {
+       return "自分と相手側を取得中";
+     }
+     if (isMicRecording) {
+       return "自分のみ録音中、相手側は未取得";
+     }
+     if (isSystemAudioRecording) {
+       return "相手側のみ取得中、自分は未録音";
+     }
+     return "自分と相手側とも未取得";
+   }
+
+   export function getAudioSourceNotice(
+     isVisible: boolean,
+     isAudioCaptureOperationPending: boolean,
+     isMicRecording: boolean,
+     isSystemAudioRecording: boolean,
+     systemAudioFormatWarning: string | null,
+   ): string | null {
+     if (!isVisible) {
+       return null;
+     }
+     if (systemAudioFormatWarning) {
+       return `相手側音声入力の形式に問題があります: ${systemAudioFormatWarning}`;
+     }
+     if (
+       isAudioCaptureOperationPending ||
+       (isMicRecording && isSystemAudioRecording)
+     ) {
+       return null;
+     }
+     if (isMicRecording) {
+       return `${OTHER_TRACK_DEVICE_LABEL}は未取得です。相手側の発話は文字起こしされません。`;
+     }
+     if (isSystemAudioRecording) {
+       return `${SELF_TRACK_DEVICE_LABEL}は未録音です。自分の発話は文字起こしされません。`;
+     }
+     return `${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}は未取得です。発話は文字起こしされません。`;
+   }
+
+   export function getAudioSourceStatusPillClass(
+     isMicRecording: boolean,
+     isSystemAudioRecording: boolean,
+   ): string {
+     if (isMicRecording && isSystemAudioRecording) {
+       return "meeting-status-pill-active";
+     }
+     if (!isMicRecording && !isSystemAudioRecording) {
+       return "meeting-status-pill-idle";
+     }
+     return "meeting-status-pill-neutral";
+   }
+   ```
+
+2. **TranscriptView.tsx 修正**:
+   - L280-L351 の `function getAudioSourceStatusLabel(...)` + `function getAudioSourceStatusAriaText(...)` + `function getAudioSourceNotice(...)` + `function getAudioSourceStatusPillClass(...)` 定義 4 件を **削除** (前後の空行も整理)
+   - 既存の utils import 群の中に次の import を **追加** (alphabetical 的に `audioLevelHelpers` の隣 = `audioSourceHelpers` で a 順):
+     ```ts
+     import {
+       getAudioSourceNotice,
+       getAudioSourceStatusAriaText,
+       getAudioSourceStatusLabel,
+       getAudioSourceStatusPillClass,
+     } from "../utils/audioSourceHelpers";
+     ```
+   - **挿入位置は `grep -n "from \"../utils/" src/routes/TranscriptView.tsx | head -20` で確認** してから決める。`audioLevelHelpers` import の直後に置くと alphabetical 的に妥当。
+   - **重要**: `OTHER_TRACK_DEVICE_LABEL` + `SELF_TRACK_DEVICE_LABEL` は依然 TranscriptView.tsx 内で他の用途に使われている可能性があるので、**他箇所の callsite を grep で確認**。もし他で使われていなければ `import { ... } from "../utils/audioTrackLabels"` の関連 named import を削除する。**ただし削除は他 callsite 0 件確認後のみ**。
+     - 確認: `grep -n "OTHER_TRACK_DEVICE_LABEL\|SELF_TRACK_DEVICE_LABEL\|BOTH_TRACKS_DEVICE_LABEL" src/routes/TranscriptView.tsx` で残 callsite 確認。新 file 内のみで使われ TranscriptView.tsx 内では関数定義削除後 0 件なら、import 削除可。**ただし他の named import (例: BOTH_TRACKS_DEVICE_LABEL) が残っている場合は当該 import 行は維持して該当 named だけ削除する**。
+   - callsite (L1397/L1401/L1413/L1433 = 関数名は同じ) は import 追加だけで参照解決される = 修正不要。
+
+# 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build = ✓ 通ること
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/audioSourceHelpers.ts
+```
+
+両方 OK のときのみ commit に進む。
+
+# 2-commit pattern (Loop 60-134 の 75 連続 precedent と完全同形)
+
+## commit 1 (refactor)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/routes/TranscriptView.tsx src/utils/audioSourceHelpers.ts
+git commit -m "refactor(frontend): TranscriptView の Audio Source 系 helpers を utils/audioSourceHelpers.ts に抽出 (mjc-main-20260505-67 Loop 135, frontend 軸 12 件目 = 純粋関数機能分離軸 frontend 版 9 件目, scope 31 軸目開拓, 大型 frontend file 責務分離 44 file 目, getAudioSourceStatusLabel + getAudioSourceStatusAriaText + getAudioSourceNotice + getAudioSourceStatusPillClass 抽出, R6 段階的分割 6 件目, utils 内 cross-import paradigm 4 件目, AGENTS.md priority 1 寄与)"
+```
+
+commit hash を取得 (`git log --oneline -1` の左端 7 文字) して `<COMMIT1_HASH>` として記録。
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に **append のみ** で追記。**先頭は絶対に触らない**。
+
+追記内容 (テンポラリファイル `/tmp/loop135-entry.md` を Write してから `cat /tmp/loop135-entry.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-67 Loop 135 / 2026-05-06]
+worker: mjc-worker-loop135-audio-source-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 4 件削除 + import 追加 + 場合により audioTrackLabels named import 削除) + src/utils/audioSourceHelpers.ts (新規 ~80 行 = import 1 行 + export 4 関数)
+内容: TranscriptView.tsx L280-L351 の getAudioSourceStatusLabel + getAudioSourceStatusAriaText + getAudioSourceNotice + getAudioSourceStatusPillClass を新 file utils/audioSourceHelpers.ts に抽出。frontend 軸 12 件目 = 純粋関数機能分離軸 frontend 版 9 件目 = scope 31 軸目開拓 = 大型 frontend file 責務分離 44 file 目 = R6 段階的分割 6 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission の続編)。callsite 4 件 (L1397 + L1401 + L1413 + L1433) は import 追加のみで参照解決。alternation pattern 27 連続成功維持 (K(134) → frontend(135))。メイン批判判断 = 既存 utils/audioLevelHelpers.ts (predicate tier = audio level 数値処理) + utils/audioTrackLabels.ts (constants tier) との責務階層精査で **異階層 = 新 file 作成軸採用** = display tier (audio source 状態の UI 表現 = label/aria text/notice/pill class) として独立 = Loop 119/121/123/125/127/129/131/133 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は audioTrackLabels.ts から OTHER_TRACK_DEVICE_LABEL + SELF_TRACK_DEVICE_LABEL を import = **utils 内 cross-import paradigm 4 件目** (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus、4 件目 = audioSourceHelpers.ts → audioTrackLabels)。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/audioSourceHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <COMMIT1_HASH> refactor(frontend): TranscriptView の Audio Source 系 helpers を utils/audioSourceHelpers.ts に抽出
+依存関係追加: なし (audioTrackLabels.ts への内部 import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+## commit 2 (chore)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-67 Loop 135 = TranscriptView の Audio Source 系 helpers を utils/audioSourceHelpers.ts に抽出 (構造分離 44 file 目, frontend 軸 12 件目, scope 31 軸目開拓, 純粋関数機能分離軸 frontend 版 9 件目, alternation 27 連続成功, R6 段階的分割 6 件目, utils 内 cross-import paradigm 4 件目)"
+```
+
+# 完了確認
+
+`git log --oneline -3` で 2 commit 反映を確認:
+- 最新 = chore(agent-log): ... Loop 135 ...
+- その 1 つ前 = refactor(frontend): ... audioSourceHelpers.ts ...
+
+両方表示されたら作業完了。final answer 不要、停止せずメインエージェントに引き継がれる。

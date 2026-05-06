@@ -1,0 +1,199 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First (Kent Beck) で振る舞い不変の構造改善を 1 ループ完結で行います。
+
+# 最初に必ずやること
+1. **AGENT_LOG.md の末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で読んで状況把握する。AGENT_LOG.md は ~26,900 行 / 2.4MB あるので、Read ツールで全体を読まないこと (context 爆発)。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾に行う**。**先頭は絶対に触らない**。
+3. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 区切り行の直後に新エントリを Write 追記する。
+
+# タスク (Loop 45 = WhisperStream テスト 2 件 + helper を transcription_whisper_stream.rs に移動 / mjc-main-20260505-22)
+
+## 背景
+- 前 Loop 42 (commit `5456409`) で **calculate_rms / is_tail_silent テスト 6 件** を audio_utils.rs に集約済。
+- 前 Loop 44 (commit `52098b6`) で **沈黙検知定数 3 件** を audio_utils.rs に集約済 = 沈黙検知 locality 三位一体完成。
+- 同パターン (関数 + テスト + 定数の locality 集約) を WhisperStream 軸でも適用する。
+- 本ループは **規模 SS-S** に絞り、`WhisperStream` 直接テスト 2 件 + 専用 helper のみを移動する (Mock* trait テスト 3 件は別 Loop に持ち越し = リスク最小化)。
+
+## 移動対象 (transcription.rs L63-117 のうち WhisperStream 直接関連のみ)
+
+### 1. helper (L63-76)
+```rust
+fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
+    WhisperStream {
+        ctx: None,
+        speaker: None,
+        source: None,
+        language: "ja".to_string(),
+        needs_resample: true,
+        resampler: None,
+        resample_input_buffer,
+        accumulation_buffer: Vec::new(),
+        pending_segments: Vec::new(),
+        chunk_count: 0,
+    }
+}
+```
+
+### 2. test_whisper_stream_feed_errors_when_resampler_state_missing (L105-110)
+```rust
+#[test]
+fn test_whisper_stream_feed_errors_when_resampler_state_missing() {
+    let mut stream = stream_with_missing_resampler(Vec::new());
+    let err = stream.feed(&[0.0]).unwrap_err();
+    assert!(err.contains("リサンプラー状態が利用できません"));
+}
+```
+
+### 3. test_whisper_stream_finalize_errors_when_resampler_state_missing (L112-117)
+```rust
+#[test]
+fn test_whisper_stream_finalize_errors_when_resampler_state_missing() {
+    let stream = stream_with_missing_resampler(vec![0.0]);
+    let err = Box::new(stream).finalize().unwrap_err();
+    assert!(err.contains("リサンプラー状態が利用できません"));
+}
+```
+
+## 残置すべき要素 (transcription.rs に残す = 別ループで処理)
+- L78-103 = ModelManager 4 件 (test_list_available_models_* / test_model_manager_get_path / test_model_not_downloaded_initially) = 別軸 (Loop 46+)
+- L119-293 = Mock* trait テスト群 (MockEngine / MockStream + impl + 3 tests) = 別軸 (Loop 46+ で transcription_traits.rs に移動)
+- L295-343 = ensure_engine 3 件 = 別軸
+- L345 以降 = TranscriptionManager 関連 = 別軸
+
+## 実装手順 (3 ファイル変更)
+
+### Step 1: src-tauri/src/transcription_whisper_stream.rs に tests mod 新設
+- 既存ファイル末尾 (L200 周辺) に以下を追加:
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::transcription_traits::TranscriptionStream;
+
+    fn stream_with_missing_resampler(resample_input_buffer: Vec<f32>) -> WhisperStream {
+        WhisperStream {
+            ctx: None,
+            speaker: None,
+            source: None,
+            language: "ja".to_string(),
+            needs_resample: true,
+            resampler: None,
+            resample_input_buffer,
+            accumulation_buffer: Vec::new(),
+            pending_segments: Vec::new(),
+            chunk_count: 0,
+        }
+    }
+
+    #[test]
+    fn test_whisper_stream_feed_errors_when_resampler_state_missing() {
+        let mut stream = stream_with_missing_resampler(Vec::new());
+        let err = stream.feed(&[0.0]).unwrap_err();
+        assert!(err.contains("リサンプラー状態が利用できません"));
+    }
+
+    #[test]
+    fn test_whisper_stream_finalize_errors_when_resampler_state_missing() {
+        let stream = stream_with_missing_resampler(vec![0.0]);
+        let err = Box::new(stream).finalize().unwrap_err();
+        assert!(err.contains("リサンプラー状態が利用できません"));
+    }
+}
+```
+
+- **重要**: WhisperStream の field (ctx / speaker / source / language / needs_resample / resampler / resample_input_buffer / accumulation_buffer / pending_segments / chunk_count) はすべて `pub(crate)` で定義済 = `super::*` 経由で構造体リテラル構築可能。
+- **重要**: `feed` / `finalize` メソッドは `TranscriptionStream` trait 経由で呼ばれるため `use crate::transcription_traits::TranscriptionStream;` が必要 (`TranscriptionStream` を scope に入れる)。
+- **重要**: `WhisperStream` 自身は `super::*` で取り込み可。`ctx` field は `#[cfg(test)]` 時に `Option<Arc<WhisperContext>>` 型のため、test 内で `ctx: None` 構築可能 (本実装では `#[cfg(not(test))]` で `Arc<WhisperContext>` だが、tests mod は `#[cfg(test)]` なので test 用 type が有効)。
+
+### Step 2: src-tauri/src/transcription.rs から 3 要素削除
+- L63-76 の helper `stream_with_missing_resampler` 削除
+- L105-110 の `test_whisper_stream_feed_errors_when_resampler_state_missing` 削除 (前後 #[test] 含む)
+- L112-117 の `test_whisper_stream_finalize_errors_when_resampler_state_missing` 削除 (前後 #[test] 含む)
+- 削除後の transcription.rs L60-77 周辺 (use 文セクション含む) は「Mock 軸テスト群」が残る = それは別 Loop で処理
+
+### Step 3: 移動後の use 文整理 (transcription.rs)
+- transcription.rs tests mod の `use super::*;` (L64) は他 test で必須 = 残置
+- 他 use 文 (`use crate::transcription_commands::RequestedTranscriptionSources;` 等) は他 test で使う = 残置
+- WhisperStream 削除後 unused になる import がないか cargo clippy で検証
+
+## 規模超過防止 (重要)
+
+- **本タスクは規模 SS-S (1 ループ完結確実)**。担当範囲は **2 ファイル (transcription_whisper_stream.rs / transcription.rs) のみ + AGENT_LOG.md**。
+- 他のテスト追加 / 他の関数移動 / Mock 軸テスト移動 は **絶対にしない**。範囲外の変更を見つけても今回は触らない。
+- **テスト件数の上限 = 0 件追加** (移動のみ、新規テスト追加なし)。702 passed 件数不変が振る舞い不変保証。
+- transcription.rs (678 行) / transcription_whisper_stream.rs (200 行) は **Read で全体を読まず、行範囲指定 (offset + limit) または `sed -n 'A,Bp'` で対象範囲のみ参照** すること。
+
+## 検証手順 (必須)
+
+```bash
+cd src-tauri
+cargo test --lib 2>&1 | tail -5    # 702 passed / 0 failed が件数不変確認
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10   # 警告ゼロ確認
+cargo fmt --check 2>&1 | tail -5   # 整形 OK 確認
+```
+
+`cargo fmt --check` が失敗した場合は `cargo fmt` を実行して整形を反映してから再 check。
+
+加えて agent-verify.sh も走らせる:
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh src-tauri/src/transcription_whisper_stream.rs src-tauri/src/transcription.rs
+```
+
+## trailing whitespace 禁止 (必須)
+
+```bash
+grep -n ' $' src-tauri/src/transcription_whisper_stream.rs src-tauri/src/transcription.rs | head -5
+```
+何もヒットしないこと。
+
+## commit 手順 (worker 自走、scripts/agent-commit.sh 使用)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-commit.sh "refactor(transcription): WhisperStream テスト 2 件 + helper を transcription_whisper_stream.rs に移動 (Tidy First, mjc-main-20260505-22 Loop 45)" src-tauri/src/transcription_whisper_stream.rs src-tauri/src/transcription.rs
+```
+
+## AGENT_LOG.md 末尾追記フォーマット
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認し、その直後に **以下のテンプレートで Write 形式で追記** (Edit ツールでは末尾 `---` が unique にならないため、tmpfile に書いて `cat tmp.md >> AGENT_LOG.md` で append):
+
+```
+[mjc-main-20260505-22 Loop 45 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から WhisperStream 直接テスト 2 件 (test_whisper_stream_feed_errors_when_resampler_state_missing / test_whisper_stream_finalize_errors_when_resampler_state_missing) と専用 helper (stream_with_missing_resampler) を src-tauri/src/transcription_whisper_stream.rs に移動
+- transcription_whisper_stream.rs に新規 tests mod 追加 (`use super::*;` + `use crate::transcription_traits::TranscriptionStream;`)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (WhisperStream の locality 完成 = 関数 + テスト同居で理解性向上)
+- Loop 42 (沈黙検知 tests 移動) + Loop 44 (沈黙検知 const 移動) と同型の locality 集約パターン継承
+- variety pivot 軸 = test 軸 = Loop 42 から 3 ループ間隔 = sweep 警告クリア (test 軸 Loop 32/35/38/42/45 = 5 件目連続境界、注意必要)
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- helper stream_with_missing_resampler は移動先で WhisperStream を構築 = `super::*` 経由で field アクセス、`#[cfg(test)]` 配下で `ctx: None` (Option) 型有効
+- Mock* trait テスト 3 件 (MockEngine / MockStream + impl + 3 tests) は本 Loop 範囲外 = 別 Loop で transcription_traits.rs に移動予定
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (worker 自走で agent-commit.sh で生成された commit hash をここに記入)
+
+---
+```
+
+## 完走判定基準
+1. 2 ファイル変更が反映されている (`git diff --stat` で 3 ファイル: transcription_whisper_stream.rs / transcription.rs / AGENT_LOG.md)
+2. cargo test --lib: 702 passed / 0 failed (件数不変)
+3. cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+4. cargo fmt --check: OK
+5. trailing whitespace なし
+6. AGENT_LOG.md 末尾に Loop 45 エントリ追記、`---` で締める
+7. agent-commit.sh で commit 完了
+
+以上を満たしたら Final Answer で「Loop 45 完走、commit hash = XXXXXXX」と報告して終了する。

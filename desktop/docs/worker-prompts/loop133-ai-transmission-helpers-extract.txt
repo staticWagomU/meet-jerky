@@ -1,0 +1,194 @@
+あなたは meet-jerky の worker エージェントです。Loop 133 = TranscriptView.tsx AI Transmission 系 3 純粋関数 (getAiTransmissionStatusLabel + getAiTransmissionStatusPillClass + getAiTransmissionStatusAriaLabel) を新 file `src/utils/aiTransmissionHelpers.ts` に抽出します。
+
+# 必読 (順序重要)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+3. AGENT_LOG.md は時系列順 (最古ログ = 先頭、最新ログ = 末尾) = ~33,300+ 行 = **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` で末尾だけ参照。**先頭には絶対に触らない**。新規追記は必ずファイル末尾の `---` 直後に行う。
+4. 既存 precedent (cat で全体確認すること、各 ~12-30 行で軽量):
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioLevelHelpers.ts` (Loop 125)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/permissionStatusHelpers.ts` (Loop 127)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/trackStatusAriaLabels.ts` (Loop 129 = utils 内 cross-import paradigm 2 件目)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptionEngineHelpers.ts` (Loop 131)
+
+# 範囲制限 (厳守)
+
+- 編集対象は `src/routes/TranscriptView.tsx` (関数定義削除 + import 追加) と新規 `src/utils/aiTransmissionHelpers.ts` のみ。
+- それ以外のファイルは触らない。
+- TranscriptView.tsx 全体 (~2400+ 行) は **絶対に Read 全体しない** = 必要な範囲だけ `Read offset=... limit=...` で参照。
+- 行末空白文字 (trailing whitespace) は **禁止**。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+
+# タスク詳細
+
+## 抽出対象 (TranscriptView.tsx L349-L397 の 3 関数)
+
+```ts
+function getAiTransmissionStatusLabel(
+  engine: TranscriptionEngineType | undefined,
+): string {
+  if (!engine) {
+    return "確認中";
+  }
+  if (engine === "openAIRealtime") {
+    return "送信先 OpenAI";
+  }
+  if (engine === "elevenLabsRealtime") {
+    return "送信先 ElevenLabs";
+  }
+  return "なし";
+}
+
+function getAiTransmissionStatusPillClass(statusLabel: string): string {
+  if (isExternalTransmissionLabel(statusLabel)) {
+    return "meeting-status-pill-warning";
+  }
+  if (statusLabel === "確認できません") {
+    return "meeting-status-pill-error";
+  }
+  if (statusLabel === "なし") {
+    return "meeting-status-pill-idle";
+  }
+  return "meeting-status-pill-neutral";
+}
+
+function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
+  if (statusLabel === "確認できません") {
+    return "外部送信状態を確認できません";
+  }
+  if (statusLabel === "なし") {
+    return "外部送信なし、端末内で処理";
+  }
+  return `外部送信: ${statusLabel}`;
+}
+```
+
+注意: `isExternalTransmissionLabel` は `../utils/liveCaptionStatus` から既に TranscriptView.tsx に L59 で import されている。新 file `aiTransmissionHelpers.ts` では **同 utils file から内部 import する** = utils 内 cross-import paradigm 3 件目。
+
+## callsite (TranscriptView.tsx で 5 件)
+
+- L1482: `getAiTransmissionStatusLabel(settings?.transcriptionEngine)`
+- L1574: `getAiTransmissionStatusAriaLabel(aiTransmissionStatusLabel)`
+- L2145: `getAiTransmissionStatusPillClass(aiTransmissionStatusLabel)`
+- L2146-L2149: `getAiTransmissionStatusAriaLabel(aiTransmissionStatusLabel)` 2 件
+
+→ import 1 行追加だけで参照解決される (関数名は同じ)。
+
+## 手順
+
+1. **新 file 作成**: `src/utils/aiTransmissionHelpers.ts` を新規作成。内容:
+   ```ts
+   import type { TranscriptionEngineType } from "../types";
+   import { isExternalTransmissionLabel } from "./liveCaptionStatus";
+
+   export function getAiTransmissionStatusLabel(
+     engine: TranscriptionEngineType | undefined,
+   ): string {
+     if (!engine) {
+       return "確認中";
+     }
+     if (engine === "openAIRealtime") {
+       return "送信先 OpenAI";
+     }
+     if (engine === "elevenLabsRealtime") {
+       return "送信先 ElevenLabs";
+     }
+     return "なし";
+   }
+
+   export function getAiTransmissionStatusPillClass(statusLabel: string): string {
+     if (isExternalTransmissionLabel(statusLabel)) {
+       return "meeting-status-pill-warning";
+     }
+     if (statusLabel === "確認できません") {
+       return "meeting-status-pill-error";
+     }
+     if (statusLabel === "なし") {
+       return "meeting-status-pill-idle";
+     }
+     return "meeting-status-pill-neutral";
+   }
+
+   export function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
+     if (statusLabel === "確認できません") {
+       return "外部送信状態を確認できません";
+     }
+     if (statusLabel === "なし") {
+       return "外部送信なし、端末内で処理";
+     }
+     return `外部送信: ${statusLabel}`;
+   }
+   ```
+
+2. **TranscriptView.tsx 修正**:
+   - L349-L397 の `function getAiTransmissionStatusLabel(...)` + `function getAiTransmissionStatusPillClass(...)` + `function getAiTransmissionStatusAriaLabel(...)` 定義 3 件を **削除**
+   - 既存の utils import の近くに次の import を **追加** (transcriptionEngineHelpers.ts の隣に置くと自然):
+     ```ts
+     import {
+       getAiTransmissionStatusAriaLabel,
+       getAiTransmissionStatusLabel,
+       getAiTransmissionStatusPillClass,
+     } from "../utils/aiTransmissionHelpers";
+     ```
+   - **挿入位置は `grep -n "from \"../utils/" src/routes/TranscriptView.tsx | head -15` で確認** してから決める。`transcriptionEngineHelpers` import の直前/直後に配置すると alphabetical 的に妥当 (a → t)。
+   - **重要**: `isExternalTransmissionLabel` は依然 TranscriptView.tsx 内で他の用途に使われている可能性があるので、**他箇所の callsite を grep で確認**。もし他で使われていなければ `import { isExternalTransmissionLabel } from "../utils/liveCaptionStatus"` の 1 行を削除する。**ただし削除は他 callsite 0 件確認後のみ**。
+     - 確認: `grep -n "isExternalTransmissionLabel" src/routes/TranscriptView.tsx` で残 callsite 確認。新 file 内のみで使われ TranscriptView.tsx 内では関数定義削除後 0 件なら、import 削除可。
+   - callsite (L1482/L1574/L2145/L2146/L2149 = 関数名は同じ) は import 追加だけで参照解決される = 修正不要。
+
+# 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build = ✓ 通ること
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/aiTransmissionHelpers.ts
+```
+
+両方 OK のときのみ commit に進む。
+
+# 2-commit pattern (Loop 60-132 の 73 連続 precedent と完全同形)
+
+## commit 1 (refactor)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/routes/TranscriptView.tsx src/utils/aiTransmissionHelpers.ts
+git commit -m "refactor(frontend): TranscriptView の AI Transmission 系 helpers を utils/aiTransmissionHelpers.ts に抽出 (mjc-main-20260505-66 Loop 133, frontend 軸 11 件目 = 純粋関数機能分離軸 frontend 版 8 件目, scope 30 軸目開拓, 大型 frontend file 責務分離 43 file 目, getAiTransmissionStatusLabel + getAiTransmissionStatusPillClass + getAiTransmissionStatusAriaLabel 抽出, R6 段階的分割 5 件目, utils 内 cross-import paradigm 3 件目, AGENTS.md priority 1 寄与)"
+```
+
+commit hash を取得 (`git log --oneline -1` の左端 7 文字) して `<COMMIT1_HASH>` として記録。
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に **append のみ** で追記。**先頭は絶対に触らない**。
+
+追記内容 (テンポラリファイル `/tmp/loop133-entry.md` を Write してから `cat /tmp/loop133-entry.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-66 Loop 133 / 2026-05-06]
+worker: mjc-worker-loop133-ai-transmission-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 3 件削除 + import 追加 + 場合により isExternalTransmissionLabel import 削除) + src/utils/aiTransmissionHelpers.ts (新規 ~40 行 = import 2 行 + export 3 関数)
+内容: TranscriptView.tsx L349-L397 の getAiTransmissionStatusLabel + getAiTransmissionStatusPillClass + getAiTransmissionStatusAriaLabel を新 file utils/aiTransmissionHelpers.ts に抽出。frontend 軸 11 件目 = 純粋関数機能分離軸 frontend 版 8 件目 = scope 30 軸目開拓 = 大型 frontend file 責務分離 43 file 目 = R6 段階的分割 5 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 の続編)。callsite 5 件 (L1482 + L1574 + L2145 + L2146 + L2149) は import 追加のみで参照解決。alternation pattern 25 連続成功維持 (K(132) → frontend(133))。メイン批判判断 = 既存 utils/liveCaptionStatus.ts (display tier = LiveCaptionStatusPayload 構造体ベース helper) + utils/transcriptionEngineHelpers.ts (predicate/categorization tier = engine 機能特性判定) との責務階層精査で **異階層 = 新 file 作成軸採用** = display tier (AI 送信状態の表示要素 = label/pillClass/ariaLabel) として独立 = Loop 119/121/123/125/127/129/131 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は liveCaptionStatus.ts から isExternalTransmissionLabel を import = **utils 内 cross-import paradigm 3 件目** (1 件目 = transcriptDisplayHelpers.ts、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels)。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/aiTransmissionHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <COMMIT1_HASH> refactor(frontend): TranscriptView の AI Transmission 系 helpers を utils/aiTransmissionHelpers.ts に抽出
+依存関係追加: なし (liveCaptionStatus.ts への内部 import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+## commit 2 (chore)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-66 Loop 133 = TranscriptView の AI Transmission 系 helpers を utils/aiTransmissionHelpers.ts に抽出 (構造分離 43 file 目, frontend 軸 11 件目, scope 30 軸目開拓, 純粋関数機能分離軸 frontend 版 8 件目, alternation 25 連続成功, R6 段階的分割 5 件目, utils 内 cross-import paradigm 3 件目)"
+```
+
+# 完了確認
+
+`git log --oneline -3` で 2 commit 反映を確認:
+- 最新 = chore(agent-log): ... Loop 133 ...
+- その 1 つ前 = refactor(frontend): ... aiTransmissionHelpers.ts ...
+
+両方表示されたら作業完了。final answer 不要、停止せずメインエージェントに引き継がれる。

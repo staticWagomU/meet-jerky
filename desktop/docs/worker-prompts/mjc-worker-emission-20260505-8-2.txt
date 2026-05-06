@@ -1,0 +1,107 @@
+あなたは meet-jerky の作業担当ワーカー (mjc-worker-emission-20260505-8-2, sonnet) です。
+Phase 4-A 着手 (= docs/architecture/transcription-refactor-plan.md L86 の `transcription/worker/emission.rs` サブ分割) として、`emit_segments` 関数を `src-tauri/src/transcription.rs` から新規ファイル `src-tauri/src/transcription_emission.rs` に抽出する Tidy First refactor を担当します。
+
+# 作業ディレクトリ
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+# 必読ドキュメント (作業前)
+1. **`AGENT_LOG.md` は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. **冒頭で `tail -350 AGENT_LOG.md` で末尾だけ読め** (~24,800 行 / ~1.97MB あるため Read 全体禁止)
+3. `docs/architecture/transcription-refactor-plan.md` (Phase 4 サブ分割計画 L86)
+4. `AGENTS.md` (優先順位 1 = クラッシュ修正への予防的寄与)
+5. **大型ファイルは Read 全体禁止**: `transcription.rs` (~2280 行) は `head`, `sed -n '範囲'`, `grep -n` 等で対象範囲のみ参照。
+
+# 抽出対象 (実コード grep 済)
+- `src-tauri/src/transcription.rs` 内:
+  - **L491-531**: `fn emit_segments(segments: Vec<TranscriptionSegment>, app: &tauri::AppHandle, session_manager: &Arc<crate::session_manager::SessionManager>, stream_started_at_secs: u64)` の関数定義 + ドキュメントコメント (~40 行)
+
+# 抽出先 (新規ファイル)
+- `src-tauri/src/transcription_emission.rs` (新規作成)
+
+# 担当範囲外の編集禁止 (規模超過防止)
+- **編集してよいファイル**: `src-tauri/src/transcription.rs`, `src-tauri/src/transcription_emission.rs` (新規), `src-tauri/src/lib.rs` (`mod` 宣言 1 行追加のみ), `AGENT_LOG.md` (末尾追記のみ)
+- **編集してはいけないファイル**: 上記以外のすべて (audio.rs / session_manager.rs / app_detection.rs / transcript_bridge.rs / commands 関連 / frontend 等は触らない)
+- import 経路を変更する必要が見えたら、それは抽出設計が誤り = `pub(crate) use` 互換層を `transcription.rs` 側に残すことで他ファイルの import を変更不要にする (Loop 11 / 12 / 13 / 15 で確立した precedent)
+
+# 具体手順 (TDD 不要、構造改善のみ = Tidy First)
+
+## Step 1: 現状把握
+- `head -50 src-tauri/src/transcription.rs` で先頭の `pub use` 群と互換層の現状確認
+- `sed -n '485,535p' src-tauri/src/transcription.rs` で抽出対象の `emit_segments` の現中身を確認
+- `grep -n "emit_segments" src-tauri/src/transcription.rs` で内部呼び出し箇所を確認 (期待: run_transcription_loop 内で 1-2 箇所)
+- `head -30 src-tauri/src/lib.rs` で `mod` 宣言の alphabetical 順を確認 (期待される挿入位置: `mod transcription;` → **`mod transcription_emission;` (新規)** → `mod transcription_manager;` → `mod transcription_model_manager;` → ...)
+- 既存の抽出 precedent (`src-tauri/src/transcription_manager.rs` Loop 15 で作成) を `head -50` で参照、互換層パターンを学ぶ
+
+## Step 2: 新規ファイル作成 (`src-tauri/src/transcription_emission.rs`)
+- ファイル先頭に必要な `use` を集約:
+  - `use crate::transcription_types::TranscriptionSegment;` (引数型)
+  - `use crate::session_manager::SessionManager;` (引数型)
+  - `use std::sync::Arc;` (引数型)
+  - `use tauri::Emitter;` (`app.emit("transcription-result", ...)` で必要、抽出元の transcription.rs の use を確認して同じものを移植)
+  - その他、`crate::transcript_bridge::build_append_args_for_emission_at` を呼び出すための use (実コードを見て確認)
+- `pub(crate) fn emit_segments(...) { ... }` (元ファイルから関数定義をコピー、シグネチャ完全不変、`pub(crate)` 公開)
+
+## Step 3: `transcription.rs` 修正
+- **L491-531 の `emit_segments` 関数定義 + ドキュメントコメントを削除**
+- 既存の `pub use` 群と同列に互換層を 1 行追加 (`pub use` または `use` でも可、内部呼び出し用):
+  ```rust
+  use crate::transcription_emission::emit_segments;
+  ```
+  もしくは:
+  ```rust
+  pub(crate) use crate::transcription_emission::emit_segments;
+  ```
+  既存 precedent (transcription_manager の `pub use crate::transcription_manager::{TranscriptionManager, TranscriptionStateHandle};`) と同じスタイルで内部参照を継続可能にする
+- 抽出後、`tauri::Emitter` の use や transcript_bridge への use が transcription.rs 側で不要になっていれば削除 (clippy unused_imports 警告ゼロ維持)
+- `grep -n "emit_segments" src-tauri/src/transcription.rs` で呼び出し箇所が互換層経由で解決していることを確認
+
+## Step 4: `src-tauri/src/lib.rs` 修正
+- alphabetical 順に `mod transcription_emission;` を追加
+- 既存順序: `mod transcription;` → **`mod transcription_emission;` (新規追加)** → `mod transcription_manager;` → `mod transcription_model_manager;` → `mod transcription_traits;` → ...
+- (alphabetical = transcription < transcription_emission < transcription_manager < ...)
+
+## Step 5: 検証 (必須、件数不変が振る舞い不変の指標)
+- `cargo test --lib` (carry-on で実行、必ず **678 passed / 0 failed** 件数不変)
+  - もし 677 以下や 679 以上なら、抽出設計が誤り = 即座に修正、件数を 678 に戻す
+- `cargo clippy --lib -- -D warnings` (警告ゼロ必須)
+- `cargo fmt --check` (整形維持必須)
+- `git diff --check` (trailing whitespace なし必須)
+
+## Step 6: commit
+- 既存 precedent と同じスタイルで commit message を WHY 中心に書く:
+  - `refactor(transcription): emit_segments を transcription_emission.rs に抽出 (Tidy First, Phase 4-A 着手, mjc-main-20260505-8 Loop 16, ~40 行抽出 + use 互換層 + lib.rs mod 宣言, docs/architecture/transcription-refactor-plan.md L86 の emission サブ分割計画準拠, 678 passed 件数不変, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)`
+- `bash scripts/agent-commit.sh "..." src-tauri/src/transcription.rs src-tauri/src/transcription_emission.rs src-tauri/src/lib.rs` または直接 `git add ... && git commit -m "..."`
+
+## Step 7: AGENT_LOG.md 末尾追記
+- `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認
+- 末尾に以下フォーマットで追記:
+  ```
+  ## 2026-05-05 JST mjc-worker-emission-20260505-8-2
+  - 担当セッション: mjc-worker-emission-20260505-8-2 (作業担当, sonnet)
+  - 役割: Phase 4-A 着手 = emit_segments を transcription_emission.rs に抽出 (Tidy First, mjc-main-20260505-8 Loop 16)
+  - 作業範囲: src-tauri/src/transcription.rs (emit_segments 削除 + use 互換層 1 行追加 + 不要 use 整理) + src-tauri/src/transcription_emission.rs (新規, ~40 行) + src-tauri/src/lib.rs (mod 宣言 1 行追加)
+  - 結果: cargo test --lib 678 passed (件数不変), clippy --lib -D warnings 警告ゼロ, fmt OK
+  - 累計 transcription.rs 削減: 約 X 行 (元 2999 → 現在 Y 行)
+  - commit: <commit_hash>
+  ---
+  ```
+
+# 規模超過防止 (再掲)
+- **テスト件数は 678 件のまま不変** (Tidy First = 構造改善のみ、振る舞い完全不変)
+- **担当範囲外のファイル (audio.rs / session_manager.rs / app_detection.rs / transcript_bridge.rs / frontend 等) を編集してはいけない**
+- **新規テスト追加禁止**
+- もし作業中に「他ファイルの import を変更する必要がある」と感じたら **手を止めて再考**: `pub(crate) use` 互換層パターンで吸収できるはず
+
+# 行末空白文字禁止
+- **行末の空白文字 (trailing whitespace) を絶対に残さない**
+- `git diff --check` で trailing whitespace ゼロを最終確認
+
+# 完了条件
+1. `src-tauri/src/transcription_emission.rs` 新規作成 (~40 行)
+2. `src-tauri/src/transcription.rs` から emit_segments 削除 + use 互換層 1 行追加
+3. `src-tauri/src/lib.rs` に `mod transcription_emission;` 追加 (alphabetical 順)
+4. `cargo test --lib` 678 passed (件数不変)、`cargo clippy --lib -- -D warnings` 警告ゼロ、`cargo fmt --check` OK、`git diff --check` OK
+5. commit 実行 (refactor(transcription): ... のスタイル)
+6. AGENT_LOG.md 末尾追記
+
+完了したら本セッションを終了してください (claude -p の最終出力で結果を返す)。

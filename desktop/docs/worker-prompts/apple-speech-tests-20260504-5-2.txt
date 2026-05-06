@@ -1,0 +1,87 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読むこと:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16000 行 / 1.5MB 超なので `tail -200 AGENT_LOG.md` で末尾だけ参照
+
+担当範囲:
+- src-tauri/src/apple_speech.rs の `mod tests` 末尾への `#[test]` 関数追加のみ
+- 実装 (L1-L233 まで)、既存テスト (L237-L268)、`#[cfg(target_os = "macos")] mod macos` 内のコードは変更禁止
+- 他のファイルは AGENT_LOG.md への追記以外触らない
+
+背景 / Why this matters:
+- meet-jerky は Apple Speech (macOS native) を含む 4 つの transcription engine を持つ。`normalize_segment_text` (private fn, L67-L69) は Apple Speech engine が ffi 経由で受け取った文字列を最終的な `TranscriptionSegment.text` として返す前の最後の正規化処理。
+- 既存テスト 4 件: `language_to_locale_maps_supported_languages` / `language_to_locale_falls_back_to_japanese_for_auto_or_unknown` / `normalize_segment_text_trims_edges_only` / `engine_errors_on_non_macos`
+- 未カバーの境界仕様:
+  1. `normalize_segment_text` は private fn で「`text.trim().to_string()`」だけ。空入力/whitespace-only/内部空白保持の境界が test で固定されていない → 関数を簡素化/別実装に置換するリファクタへの検知装置がない。
+  2. `language_to_locale` の case-sensitive 仕様 (`"JA"` や `"En"` は fallback) が test で固定されていない → 将来 case-insensitive 化される誤リファクタを検知できない。
+  3. `language_to_locale` の空文字列・whitespace 入力時の fallback 挙動が未確認。
+  4. `normalize_segment_text` の Unicode whitespace (tab/newline/全角スペースなど) が trim される仕様が未確認。
+
+追加してほしいテスト (5 件、~10-15 分で完了):
+
+1. `normalize_segment_text_returns_empty_for_empty_input`:
+   - `assert_eq!(super::normalize_segment_text(""), "")`
+   - Why: 空入力時の挙動を test で固定。`text.trim().to_string()` の `""` 経路を private fn 直接呼び出しで保証。
+
+2. `normalize_segment_text_returns_empty_for_whitespace_only_inputs`:
+   - `assert_eq!(super::normalize_segment_text("   "), "")` (半角スペースのみ)
+   - `assert_eq!(super::normalize_segment_text("\t\n  "), "")` (tab/newline 混在)
+   - `assert_eq!(super::normalize_segment_text(" \t \n "), "")` (混在パターン 2)
+   - Why: ASCII whitespace 全種類が `str::trim` で除去される仕様を直接固定。Apple Speech ffi が空白だけの segment を返した場合の最終出力が確実に空文字列になる契約。
+
+3. `normalize_segment_text_preserves_internal_whitespace_only_trims_edges`:
+   - `assert_eq!(super::normalize_segment_text("  hello world  "), "hello world")` (前後 trim, 内部空白保持)
+   - `assert_eq!(super::normalize_segment_text("  hello   world  "), "hello   world")` (内部の連続空白も保持)
+   - `assert_eq!(super::normalize_segment_text("  日本語  テキスト  "), "日本語  テキスト")` (日本語 + 内部空白保持)
+   - Why: 既存テスト `normalize_segment_text_trims_edges_only` は単一ケースの assert のみで「内部空白を collapse しない」契約を多角的に確認していない。連続空白を `split_whitespace().join(" ")` のように collapse する誤リファクタを 3 ケースで網羅検知。
+
+4. `language_to_locale_is_case_sensitive_and_falls_back_for_uppercase`:
+   - `assert_eq!(super::language_to_locale("JA"), "ja-JP")`
+   - `assert_eq!(super::language_to_locale("EN"), "ja-JP")` (大文字 EN は en-US ではなく fallback ja-JP)
+   - `assert_eq!(super::language_to_locale("Ja"), "ja-JP")` (mixed case)
+   - `assert_eq!(super::language_to_locale("jA"), "ja-JP")` (mixed case 逆)
+   - Why: `match language { "ja" => "ja-JP", "en" => "en-US", _ => "ja-JP" }` の case-sensitive 仕様を 4 ケースで明示固定。case-insensitive 化を検討するリファクタが入った場合に、現挙動の意図 (上位層で正規化済み文字列を渡す前提) を test で表現する。
+
+5. `language_to_locale_falls_back_for_empty_and_whitespace_inputs`:
+   - `assert_eq!(super::language_to_locale(""), "ja-JP")`
+   - `assert_eq!(super::language_to_locale(" "), "ja-JP")` (whitespace は trim せず fallback)
+   - `assert_eq!(super::language_to_locale("ja "), "ja-JP")` (trailing space で fallback、trim しない仕様)
+   - Why: 既存テストは `"auto"`/`"fr"`/`"unknown"` の fallback のみカバー。空文字列・whitespace 入りの場合も fallback `"ja-JP"` になる契約を固定し、上位層が trim/lowercase を保証すべきという責任境界を明示。
+
+実装上の注意:
+- `normalize_segment_text` と `language_to_locale` は `super::normalize_segment_text` / `super::language_to_locale` でアクセス可能 (既存テスト L237-L268 で `language_to_locale` は同様のパターンで呼んでいる)。
+- 既存テスト 4 件 (`language_to_locale_maps_supported_languages` / `language_to_locale_falls_back_to_japanese_for_auto_or_unknown` / `normalize_segment_text_trims_edges_only` / `engine_errors_on_non_macos`) は変更しない。
+- `#[cfg(target_os = "macos")] mod macos` 内は完全に触らない。
+- 既存 test の名前と type 衝突しないよう、新規 fn 名は上記指定と完全一致させる。
+
+検証 (順番):
+1. `cargo fmt --check` (失敗したら `cargo fmt` で修正後再チェック)
+2. `cargo clippy --no-deps --all-targets --all-features -- -D warnings` (警告ゼロ必須)
+3. `cargo test --no-fail-fast` (現在 294 passed → 追加 5 件で 299 passed になる想定)
+4. `bash scripts/agent-verify.sh src-tauri/src/apple_speech.rs AGENT_LOG.md`
+
+AGENT_LOG.md (末尾に追記) に以下を記載:
+- 開始日時 (JST)
+- 担当セッション名 (`mjc-worker-apple-speech-tests-20260504-5-2`)
+- 役割: テスト追加ワーカー (実装変更なし)
+- 作業範囲: src-tauri/src/apple_speech.rs の mod tests 末尾への #[test] 関数追加のみ
+- 指示内容 (要約)
+- 追加したテスト一覧 (テーブル形式: #, 関数名, assertion 数, 検証内容)
+- 不変条件 / 設計意図 (case-sensitive language mapping, 内部空白保持, 空入力 fallback, ASCII whitespace 多様性)
+- 変更ファイル
+- 検証結果 (チェック / 結果テーブル)
+- 追加 test 件数 / 追加後 total passed
+- 依存関係追加の有無 (なしの想定)
+- 失敗理由
+- 残リスク (Unicode 全角スペース U+3000 や non-ASCII whitespace は別課題)
+- 次アクション
+
+コミットは禁止 (メインがレビュー後に commit する)。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

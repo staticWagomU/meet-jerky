@@ -1,0 +1,95 @@
+あなたは meet-jerky の worker (sonnet) です。Loop 39 として **GoToMeeting URL pattern 拡張余地の調査 + 実装 (or rationale docs)** を担当します。
+
+# 必読 (まず実行)
+1. `tail -400 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**。
+2. 必読: `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md` (worker 共通ルール) と `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md`。
+3. 大型ファイル (`AGENT_LOG.md` 26000+ 行 / `app_detection.rs` 3184 行) は **Read 全体禁止 = tail/head/grep で対象範囲のみ参照**。
+4. 行末の空白文字 (trailing whitespace) 禁止。
+
+# 背景
+- mjc-main-20260505-20 = canonical mjc-main = mjc-main-20260505-19 の後継。
+- 直近 5 ループ: Loop 34 (docs) → 35 (test 移動) → 36 (extraction) → 37 (docs) → 38 (test 移動) = 75% 縮小達成 (transcription.rs 749 行)。
+- Loop 39 候補 A (handoff 推奨) = GoToMeeting URL pattern 拡張。
+- ただしメインの批判的調査により、**Webex / Whereby / Google Meet / Teams (consumer 含む) は全て単一 host 方針** であり、Zoom のみ 2 host (`zoom.us` + `zoomgov.com`) という例外的構造であることが判明。
+- 現在の app_detection_goto.rs (49 行) は 3 host pattern (meet.goto.com / app.goto.com / global.gotomeeting.com) を検知。
+- GoToMeeting (旧 LogMeIn 系) が独自 EU/UK 専用 TLD or その他リージョン専用 host を持つかは要検証。
+
+# タスク (1 ループ完結 = 規模 SS-S 想定)
+
+## Step 1: 既存実装把握 (Read 5 分以内)
+- `src-tauri/src/app_detection_goto.rs` (49 行) を Read で完全読 = 4 関数 (is_goto_host / is_goto_meeting_url / is_goto_legacy_meeting_url / is_goto_app_meeting_url) と const GOTO_NON_ROOM_PATHS の構造把握。
+- `src-tauri/src/app_detection_webex.rs` および `src-tauri/src/app_detection_whereby.rs` の **host 検知ロジック先頭 20 行のみ** head で参照 (単一 TLD pattern 確認)。
+- `src-tauri/src/app_detection.rs` L600-820 を `sed -n '600,820p'` で参照 = is_zoom_host / is_google_meet_url / is_teams_meeting_url の host 多様性を確認。
+
+## Step 2: WebSearch (最大 2 query)
+- query 1: "GoToMeeting URL host domain regional EU UK"
+- query 2 (必要時): "goto.com meeting URL pattern app.goto regional"
+- **目的**: GoToMeeting が `app.goto.eu` / `app.goto.co.uk` 等の独自 TLD を持つか? あるいは `goto.com/meet/<id>` (no `app.` subdomain) のような追加 path pattern を持つか?
+- WebSearch 結果は鵜呑みにせず、**公式 helper page / docs を 1 件以上 cite できるかを判断基準にする**。広告 blog や stale tutorial は信頼度低。
+
+## Step 3: 結果に応じた分岐実装
+
+### Case A: 別 TLD or 別 path pattern が **公式情報** で確認できた場合
+- `app_detection_goto.rs` の該当関数 (is_goto_host / is_goto_app_meeting_url 等) に host pattern または path 分岐を **最小限** 追加。
+- pattern 追加に対応する acceptance test を 2-4 件追加。
+- pattern が **公式情報で確認できない** 周辺 host (例: `app.goto.de`) は追加しない (推測禁止)。
+
+### Case B: 別 TLD / 別 path pattern が **見つからない** 場合
+- `app_detection_goto.rs` の `is_goto_host` 上部に rustdoc コメント `///` を 4-8 行追加: 「GoToMeeting (GoTo Connect) は単一グローバルドメイン (`goto.com` 系) で運用されており、Webex / Whereby / Google Meet と同じ単一 TLD 方針。EU/UK 等のリージョン専用 TLD は 2026-05-05 時点で存在を確認できなかったため、現状の 3 host pattern (meet.goto.com / app.goto.com / global.gotomeeting.com) で網羅完了とする」。
+- 加えて、negative test を 2 件追加 (例: `app.goto.eu` host が None を返す / `goto.com` (no subdomain) host が None を返す = explicit rejection 確認)。test は app_detection.rs の `tests` mod 末尾 or app_detection_goto.rs に新規 tests mod を作って配置。
+
+## Step 4: 検証 (必須)
+- `cd src-tauri && cargo test --lib`: 全件 pass を維持 (現 700 件、件数不変 or +2-4 件)
+- `cd src-tauri && cargo clippy --lib --tests -- -D warnings`: 警告ゼロ
+- `cd src-tauri && cargo fmt --check`: OK
+- `bash scripts/agent-verify.sh src-tauri/src/app_detection_goto.rs <他変更ファイル>`: 自走で実行
+- 行末 trailing whitespace ゼロ確認
+
+## Step 5: AGENT_LOG.md 末尾追記 (必須)
+- 必ず末尾の `---` の **後に** new entry を追記。`tail -10 AGENT_LOG.md` で末尾を確認してから書く。
+- entry 形式 (Loop 38 entry を参考):
+```
+[mjc-main-20260505-20 Loop 39 / 2026-05-05 ~JST]
+
+## What
+- (Case A or B の具体内容)
+
+## Why
+- AGENTS.md 優先順位 2 = 会議検知の網羅性向上 (Case A) / 単一 TLD 方針の rationale 明文化 (Case B)
+- service detection 軸 = 直近 5 ループ (docs/test/extraction/docs/test) と別軸 = 純粋 variety pivot
+- mjc-main-20260505-20 メインの批判的判断 = handoff 候補 A の前提 (多 TLD) を Webex/Whereby precedent と比較し verify ありで採用
+
+## How (振る舞い不変 or 機能追加)
+- (具体実装手順)
+
+## Verify
+- cargo test --lib: 700 (or 702-704) passed / 0 failed
+- cargo clippy --lib --tests -- -D warnings: warnings 0
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash、後で記入)
+```
+
+## Step 6: commit (必須)
+- staged: `src-tauri/src/app_detection_goto.rs` + (Case B なら `src-tauri/src/app_detection.rs` tests mod 追記分があれば) + `AGENT_LOG.md`
+- メッセージ:
+  - Case A: `feat(app_detection): GoToMeeting <pattern> URL 検知追加 (mjc-main-20260505-20 Loop 39)`
+  - Case B: `docs(app_detection): GoToMeeting 単一 TLD 方針の rationale 明文化 + negative tests (mjc-main-20260505-20 Loop 39)`
+- `bash scripts/agent-commit.sh "<message>" src-tauri/src/app_detection_goto.rs AGENT_LOG.md` を使用 (verify 自走 + commit + push なし)。
+- `--no-verify` 禁止。
+
+# 必ず守ること (再掲、worker prompt 必須要素 7 つ)
+1. **AGENT_LOG.md の末尾 350 行を読め (tail -350)、先頭は絶対触らない**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾、新規追記は必ずファイル末尾**
+3. 担当範囲外の編集禁止 (transcription.rs / lib.rs 等は触らない)
+4. test 追加は最大 4 件まで (Case A) / 2 件まで (Case B)
+5. 大型ファイル Read 全体禁止 = tail/head/grep
+6. 行末 trailing whitespace 禁止
+7. WebSearch は最大 2 query、信頼できる公式 source を引用基準にする
+
+# 完了判定
+- commit 1 件作成済 (Case A or B いずれか) + AGENT_LOG.md tail に Loop 39 entry 追記済 + 検証 OK = 完了
+- worker は完走後にメイン (`mjc-main`) へ silently 戻る (claude-agent-start-worker.sh stdin redirect 形式)

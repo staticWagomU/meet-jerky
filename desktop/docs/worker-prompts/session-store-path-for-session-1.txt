@@ -1,0 +1,116 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md (末尾 350 行で十分) を読んでください。
+
+担当範囲: src-tauri/src/session_store.rs の `mod tests` への新規 unit test 追加 5 件のみ。
+本体実装 (line 1-202) は変更禁止。他ファイルへの編集は禁止。コミットは禁止。
+
+# 背景 / Why
+
+session_store.rs には 30 件の test があるが、`path_for_session` (line 25, pub fn) には direct test が一切ない。save_session_markdown 経由でも、最終的なファイル名そのものを直接 assert する test は存在しない。本 fn は `<dir>/<session_id>.md` を組み立てる単純な実装 (`dir.join(format!("{}.md", session.id))`) だが、ファイル命名規則の核心であり、誤改修 (拡張子変更・接尾辞追加・dir 無視等) を検知できる test 装置を入れる価値が高い。
+
+実装本体 (line 25-27):
+```rust
+pub fn path_for_session(dir: &Path, session: &Session) -> PathBuf {
+    dir.join(format!("{}.md", session.id))
+}
+```
+
+## 累積技術注意点 (踏みやすい罠、必ず守る)
+- `Session::start(title, started_at)` は `id = format!("{started_at}-{seq}")` を生成。**SESSION_COUNTER は AtomicU64 で絶対値 assert 禁止** (相対比較・部分文字列比較は OK)。
+- `Session` 構造体は薄いデータコンテナ。本 test では Session を構築する際 validation/normalization は不要。
+- 既存 test は line 200-602 の `mod tests` 内にある (path_for_session を扱う test は存在しない)。重複しないよう注意。
+- 既存 test は `tempfile::TempDir` や `std::path::PathBuf::from("/tmp/...")` を使うパターンがある。tempfile は dev-dep に入っている (既存 test で使われている)。
+- 本 fn は I/O を起こさない (path 構築のみ)。`assert!(path.exists())` 系は不要、純粋に `PathBuf` の構造を assert する。
+
+# 具体的 test 案 (assertion レベル)
+
+すべて `mod tests` 内に追加。既存 test の後 (line 600 付近の閉じ } の直前) に append。
+
+## T1. 基本: 与えられた dir + session で `<dir>/<id>.md` を組み立てる契約
+- 名前: `path_for_session_joins_dir_and_session_id_with_md_extension`
+- `let dir = PathBuf::from("/tmp/meet-jerky-test");`
+- `let session = Session::start("title".into(), 1_700_000_000);` (id = "1700000000-{seq}" 形式)
+- `let path = path_for_session(&dir, &session);`
+- assert: `path.parent() == Some(dir.as_path())` (親 dir が一致)
+- assert: `path.extension().and_then(|s| s.to_str()) == Some("md")` (.md 拡張子)
+- assert: `path.file_stem().and_then(|s| s.to_str()) == Some(session.id.as_str())` (file_stem が session.id と一致)
+- コメント: 標準形式 `<dir>/<session.id>.md` を 3 軸 (parent / extension / file_stem) で固定。
+
+## T2. file_name の完全一致: `<id>.md` 文字列ジャストである契約
+- 名前: `path_for_session_file_name_is_exactly_session_id_dot_md`
+- `let dir = PathBuf::from("/some/dir");`
+- `let session = Session::start("title".into(), 1_700_000_000);`
+- `let path = path_for_session(&dir, &session);`
+- `let expected_file_name = format!("{}.md", session.id);`
+- assert: `path.file_name().and_then(|s| s.to_str()) == Some(expected_file_name.as_str())`
+- コメント: file_name 全体が `<id>.md` ちょうどである契約。接尾辞・接頭辞が混入しない検知装置。
+
+## T3. dir が relative path でも passthrough される契約
+- 名前: `path_for_session_preserves_relative_dir_passthrough`
+- `let dir = PathBuf::from("relative/sub/dir");`
+- `let session = Session::start("title".into(), 1_700_000_000);`
+- `let path = path_for_session(&dir, &session);`
+- assert: `path.starts_with("relative/sub/dir")` (relative path がそのまま親に使われる)
+- assert: `path.file_name().and_then(|s| s.to_str()) == Some(format!("{}.md", session.id).as_str())`
+- assert: `!path.is_absolute()` (relative passthrough、absolute 化しない)
+- コメント: dir が absolute / relative どちらでも path_for_session は変換しない passthrough 契約。
+
+## T4. dir が空 PathBuf のとき file_name のみの相対 path になる契約
+- 名前: `path_for_session_returns_bare_file_name_when_dir_is_empty`
+- `let dir = PathBuf::new();` (空)
+- `let session = Session::start("title".into(), 1_700_000_000);`
+- `let path = path_for_session(&dir, &session);`
+- assert: `path.file_name().and_then(|s| s.to_str()) == Some(format!("{}.md", session.id).as_str())`
+- assert: `path.parent().map(|p| p.as_os_str().is_empty()).unwrap_or(true)` (parent が空または None)
+- assert: `!path.is_absolute()` (empty dir join は absolute 化しない)
+- コメント: dir が空でも crash せず、`<id>.md` 単体の相対 path が返る契約 (`PathBuf::new().join(...)` の標準挙動を文書化)。
+
+## T5. session.id boundary: started_at=0 / u64::MAX + 異なる title でも file_stem に session.id がそのまま使われる契約 (sanitize しない passthrough)
+- 名前: `path_for_session_uses_session_id_passthrough_for_zero_and_max_started_at`
+- ケース 1: `let s_zero = Session::start("anything".into(), 0);` → id = "0-{seq}"
+  - `let p = path_for_session(&PathBuf::from("/d"), &s_zero);`
+  - assert: `p.file_stem().and_then(|s| s.to_str()) == Some(s_zero.id.as_str())`
+  - assert: `p.file_stem().and_then(|s| s.to_str()).unwrap().starts_with("0-")`
+- ケース 2: `let s_max = Session::start("特殊文字 / \\ : *".into(), u64::MAX);` → id = "{u64::MAX}-{seq}"
+  - `let p = path_for_session(&PathBuf::from("/d"), &s_max);`
+  - assert: `p.file_stem().and_then(|s| s.to_str()) == Some(s_max.id.as_str())`
+  - assert: `p.file_stem().and_then(|s| s.to_str()).unwrap().starts_with(&format!("{}-", u64::MAX))`
+- 重要: title に sanitize 対象になりそうな文字 (`/`, `\`, `:`, `*`) を入れても、**path_for_session は title を見ず session.id だけ使う**ので path 文字列に title は出ない。
+  - assert: `!p.to_string_lossy().contains("特殊文字")` (title が path に漏れない)
+  - assert: `!p.to_string_lossy().contains("*")` (title 内 special char が path に漏れない)
+- コメント: title sanitize 責任は path_for_session の対象外 (上位層責任)。session.id は started_at boundary でも passthrough される契約。前 mjc-main-8 の parse_session_started_at_secs と対をなす出力側 boundary。
+
+# 実装上の注意
+
+- すべて `#[test]` で同期 test (tokio 不要)。
+- `use std::path::PathBuf;` が `mod tests` 内で必要なら追加 (既存で `use super::*;` または `use std::path::PathBuf;` のいずれかが既にある可能性あり、確認して必要なら追加)。
+- assert メッセージは日本語の契約説明を簡潔に書く (既存 test と同じスタイル)。
+- 既存 test を 1 行も変更しないこと。
+- clippy で warning ゼロを維持 (`-D warnings`、`uninlined_format_args` 含む)。`format!("{}.md", session.id)` の形式で OK (`{value}` 形式で書ける場合は inline)。
+- `path.to_string_lossy()` は `Cow<str>` を返す。`.contains(...)` は `&str` 引数なので `to_string_lossy().contains("...")` で OK。
+- T5 の title sanitize 文字列に `\\` を入れる際は Rust 文字列リテラルで `"特殊文字 / \\ : *"` のようにエスケープ (`\` 1 個は `\\` で表現)。
+
+# 検証手順
+
+1. `cargo fmt -p meet-jerky` で format
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` で warning ゼロ確認
+3. `cargo test -p meet-jerky --lib session_store::tests` で session_store の test だけ実行 (35 passed = 30 既存 + 5 新規)
+4. `cargo test -p meet-jerky --lib` で全体 420 → 425 passed を確認
+5. すべて緑なら報告して終了
+
+# AGENT_LOG.md 記載項目
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-session-store-path-for-session-1
+- 役割: 作業担当
+- 作業範囲: src-tauri/src/session_store.rs の mod tests 内に新規 unit test 5 件 (T1-T5) 追加
+- 指示内容: path_for_session の test ゼロ gap (5 軸 = 標準形式 / file_name 完全一致 / relative dir passthrough / empty dir / session.id boundary + title sanitize 上位層責任) の補強
+- 結果: 420 → 425 passed (or 失敗内容)
+- 変更ファイル: src-tauri/src/session_store.rs のみ
+- 検証結果: cargo fmt / clippy -D warnings / cargo test --lib のサマリ
+- 依存関係追加: なし
+- 失敗理由: (該当時のみ)
+- 次アクション: メインによるレビューとコミット待ち
+
+最後に「変更内容、変更ファイル、検証結果、残リスク」を 1 ターンで簡潔に報告して終了してください。

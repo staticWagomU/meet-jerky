@@ -1,0 +1,171 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景 (Why)
+- 直前 2 ループ (commit 52a5439, 97635dc) で rust 側に Tauri イベント `audio-drop-count` を導入し、purely structural な Tidy First で `audio_event::build_audio_drop_event_payload` を共有モジュール化した。
+- 本ループは frontend 側に対応 listener を最小スライスで設置する behavior change。**UI 表示は別ループに分離する**ことで本ループのスコープを 1 ターンで完走できる範囲に絞る。
+- 製品優先度 9 「録音状態の透明性」(product-concept.md) 直結。frontend 側で drop 累積を観測できる土台ができれば、次ループ以降で UI badge / toast / status indicator として可視化できる。
+- 既存の "audio-level" event (TranscriptView.tsx line 754-799) と同パターンの listener を 1 つ追加するだけの最小変更。新しいパターンを発明しない。
+
+# 担当範囲 (3 ファイル更新、新規 1 ファイル)
+**UI 表示の prop 配線、MicrophoneSection / SystemAudioSection / AudioLevelMeter への変更、css 変更は本ループのスコープ外。次ループに送る。**
+
+## 1. `src/types/index.ts` に型定義を追加
+既存の `AudioLevelPayload` 定義 (line 6-9) の直下に、対称な型として `AudioDropCountPayload` を追加する。
+
+```ts
+export interface AudioDropCountPayload {
+  source: "microphone" | "system_audio";
+  dropped: number;
+}
+```
+
+- `dropped` は number 型 (rust 側 usize → JSON では number として serialize される)。
+- `source` は `AudioLevelPayload` と完全に同じ union (`"microphone" | "system_audio"`)。新しい source variant を勝手に追加しないこと。
+
+## 2. `src/utils/audioDropCountPayload.ts` を新規作成
+既存の `src/utils/audioLevelPayload.ts` (内容は本プロンプトのコメントで再掲する) と完全対称な構造で書く。
+
+```ts
+import type { AudioDropCountPayload } from "../types";
+
+function isAudioDropCountSource(
+  value: unknown,
+): value is AudioDropCountPayload["source"] {
+  return value === "microphone" || value === "system_audio";
+}
+
+export function isAudioDropCountPayload(
+  value: unknown,
+): value is AudioDropCountPayload {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as Partial<AudioDropCountPayload>;
+  return (
+    isAudioDropCountSource(candidate.source) &&
+    typeof candidate.dropped === "number" &&
+    Number.isFinite(candidate.dropped) &&
+    candidate.dropped >= 0
+  );
+}
+```
+
+- `dropped >= 0` チェックを追加: rust 側 usize は非負だが JS では負数や Number.NaN が来る防御的検査。`Number.isFinite` で NaN/Infinity も弾く (audio-level の `Number.isFinite(candidate.level)` と対称)。
+- `>= 0` 比較は `Number.isFinite` 通過後なので NaN による比較演算の罠は無い。
+
+## 3. `src/routes/TranscriptView.tsx` に listener を追加
+既存の `audio-level` 用 useEffect (line 754-799) の **直後** に、対称な構造の useEffect を追加する。**既存の useEffect は触らないこと**。
+
+state を追加 (既存 `setMicLevel` などの useState 群の **近く、対称的な位置**):
+```ts
+const [microphoneDropCountTotal, setMicrophoneDropCountTotal] = useState(0);
+const [systemAudioDropCountTotal, setSystemAudioDropCountTotal] = useState(0);
+const [audioDropCountListenerError, setAudioDropCountListenerError] = useState<
+  string | null
+>(null);
+```
+
+- 適切な配置箇所: line 585-606 付近の audio level 関連 state 群 (micLevel/systemAudioLevel/audioLevelListenerError) のすぐ後。
+
+import 追加 (既存 import 群と同じ場所):
+- `import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";` を line 41 の `audioLevelPayload` の隣に追加。
+
+useEffect 追加 (line 799 の閉じカッコの直後、line 801 の system-audio-format-warning useEffect の前):
+
+```ts
+// Route audio-drop-count events by source (cumulative)
+useEffect(() => {
+  let disposed = false;
+  const unlistenPromise = listen<unknown>("audio-drop-count", (event) => {
+    if (disposed) {
+      return;
+    }
+    const payload = event.payload;
+    if (!isAudioDropCountPayload(payload)) {
+      setAudioDropCountListenerError("音声 drop 通知の形式が不正です。");
+      return;
+    }
+    setAudioDropCountListenerError(null);
+    console.warn(
+      `[audio-drop-count] ${payload.source} で ${payload.dropped} sample 破棄`,
+    );
+    if (payload.source === "microphone") {
+      setMicrophoneDropCountTotal((prev) => prev + payload.dropped);
+    } else if (payload.source === "system_audio") {
+      setSystemAudioDropCountTotal((prev) => prev + payload.dropped);
+    }
+  })
+    .then((unlisten) => {
+      if (!disposed) {
+        setAudioDropCountListenerError(null);
+      }
+      return unlisten;
+    })
+    .catch((e) => {
+      if (!disposed) {
+        const msg = toErrorMessage(e);
+        console.error("音声 drop 監視の開始に失敗しました:", msg);
+        setAudioDropCountListenerError(
+          `音声 drop 監視の開始に失敗しました: ${msg}`,
+        );
+      }
+      return null;
+    });
+
+  return () => {
+    disposed = true;
+    unlistenPromise
+      .then((unlisten) => unlisten?.())
+      .catch((e) => {
+        console.error("音声 drop 監視の解除に失敗しました:", toErrorMessage(e));
+      });
+  };
+}, []);
+```
+
+# 実装上の注意 (踏みやすい罠)
+- **既存の "audio-level" useEffect (line 754-799) と完全対称な構造**にすること。ハンドラ命名 / unlistenPromise / catch / cleanup の 4 ブロック構造をそのまま踏襲。新しいパターンを発明しない。
+- **state は累積 (cumulative)**。`prev + payload.dropped` で増分加算。本ループでは reset しない (UI 表示と reset 戦略は次ループ送り)。
+- **TypeScript strict mode** + `noUnusedLocals: true` (tsconfig.json line 19) のため、宣言した state や setter は **必ず参照すること**。state は useEffect の setter で参照され、setter は handler 内で呼ばれるので OK。`microphoneDropCountTotal` / `systemAudioDropCountTotal` 自体は本ループで read しないが、state declaration として最低限必要。**`noUnusedLocals` で warning が出る場合は、useEffect 内で referenced されている setter のみで十分なはず**。もし unused warning が出るなら、 `// eslint-disable-next-line` ではなく **state 自体を読み出す箇所を 1 つでも追加** すること (例: console.log の中で `${microphoneDropCountTotal}` を出す、など。最小コードで warning を回避)。
+- **`setAudioDropCountListenerError` も同様**。本ループでは error UI 表示しないが、setter は handler 内で呼ばれている。state 自体は read しなくて OK だが、TS strict が unused としてエラーにする場合は console.warn の引数等で 1 か所参照する。
+- **state 名は明示的に `Total` 接尾辞**: 累積であることを名前で示す。次ループで `microphoneDropCount` (per-event) と `microphoneDropCountTotal` (cumulative) を区別する余地を残す。
+- **既存 `console.warn` パターンに沿う**: `console.warn` で onset 通知、`console.error` で listener 失敗通知。既存 audio-level の `console.error("音声レベル監視の開始に失敗しました:")` と対称。
+- **Tauri event 名 "audio-drop-count"** は rust 側 `app_handle.emit("audio-drop-count", ...)` (audio.rs line 401, system_audio.rs line 333) と完全一致する文字列リテラル。タイポしない。
+- **isAudioDropCountPayload の `>= 0` 厳格化**: rust 側 usize は非負保証だが、frontend 側で防御的に弾くことで "rust 側のバグで負数が来た場合に UI が壊れない" 契約を確立する。Number.isFinite 後なので NaN と +/-Infinity は通らない。
+- **css / className の追加禁止**。本ループは pure logic 追加。スタイル変更は次ループ送り。
+
+# 検証手順
+リポジトリルートは `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`。
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`
+2. `npm run build` を実行する。これは内部で `tsc && vite build` を実行する。期待: tsc が型エラーなく通り、vite build も完走する。
+3. `cargo test -p meet-jerky --lib` (期待: 450 passed / 0 failed = 前ループから不変、frontend 変更なので影響なし、念のため確認)
+4. 本ループでは frontend test framework が無いため unit test は追加しない。listener パターンが既存 audio-level と対称になっていることを目視で確認する (差分提示時に強調すること)。
+
+検証が失敗した場合は **ファイルを元に戻して報告のみ** を行うこと。
+
+# AGENT_LOG.md 記載項目
+末尾 (ファイル先頭の `---` 区切り直下、新規 entry を追加) に以下のテンプレートに沿うこと:
+
+```
+## セッション: mjc-worker-audio-drop-frontend-listener
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-drop-frontend-listener
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src/types/index.ts (AudioDropCountPayload 追加) + src/utils/audioDropCountPayload.ts (新規) + src/routes/TranscriptView.tsx (listener + state 追加、UI 表示と reset は次ループ送り)
+- **指示内容**: (本プロンプトの「担当範囲」を要約)
+- **結果**: 成功 / 失敗
+- **変更ファイル**: 新規 1 / 更新 2 (types/index.ts, TranscriptView.tsx)
+- **検証結果**:
+  - npm run build (tsc + vite build): ...
+  - cargo test -p meet-jerky --lib: 450 passed (frontend 変更のみ、影響なし)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main-20260504-14) によるレビュー → コミット → 次ループで UI badge 表示と reset 戦略
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

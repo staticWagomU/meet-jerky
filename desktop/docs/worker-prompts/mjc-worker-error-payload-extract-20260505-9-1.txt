@@ -1,0 +1,154 @@
+あなたは meet-jerky リポジトリの sonnet ワーカーです。Phase 4-B error_payload 5 関数の抽出を **Tidy First (構造改善のみ・振る舞い完全不変)** で実装してください。
+
+# 必読ドキュメント (順番厳守)
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (運用ルール本体)
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 4 サブ分割計画 = L86 で `transcription/worker/{loop, error_payload, panic_guard, emission}.rs` を明示)
+3. **AGENT_LOG.md の末尾 350 行のみ** = `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で読む。**全体を Read してはならない (~25,000 行 / ~2MB)**
+
+# AGENT_LOG.md 取り扱い必須ルール (絶対に守る)
+- AGENT_LOG.md は **時系列順**。最古ログが先頭、**最新ログがファイル末尾**。
+- **新規追記は必ずファイル末尾に行う**。
+- **先頭は絶対に触らない**。先頭追記は過去事故の再発になる。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に Write で新規ファイル作成 → `cat <new_log_file> >> AGENT_LOG.md` で append。Edit ツールでは末尾 `---` が unique にならない可能性が高いため append 経由が安全。
+
+# タスク内容: Phase 4-B error_payload 5 関数を transcription_error_payload.rs に抽出
+
+## 抽出対象 (transcription.rs L363-L387 = 25 行範囲)
+
+以下 5 関数を **そのまま** `src-tauri/src/transcription_error_payload.rs` (新規ファイル) に移動:
+
+1. `fn build_transcription_error_payload(error: String, source: Option<TranscriptionSource>) -> TranscriptionErrorPayload` (L363-L368, 6 行)
+2. `fn build_worker_panic_error_payload(source: Option<TranscriptionSource>) -> TranscriptionErrorPayload` (L370-L374, 5 行)
+3. `#[cfg(test)] fn transcription_error_payload_to_value(payload: &TranscriptionErrorPayload) -> serde_json::Value` (L376-L379, 4 行) — **`#[cfg(test)]` attribute を必ず保持**
+4. `fn is_realtime_stream_already_stopped_error(error: &str) -> bool` (L381-L383, 3 行)
+5. `fn should_emit_realtime_stream_error(error: &str) -> bool` (L385-L387, 3 行)
+
+## 新ファイル `src-tauri/src/transcription_error_payload.rs` の構造
+
+```rust
+use crate::transcription_types::{TranscriptionErrorPayload, TranscriptionSource};
+
+pub(crate) fn build_transcription_error_payload(
+    error: String,
+    source: Option<TranscriptionSource>,
+) -> TranscriptionErrorPayload {
+    TranscriptionErrorPayload { error, source }
+}
+
+pub(crate) fn build_worker_panic_error_payload(
+    source: Option<TranscriptionSource>,
+) -> TranscriptionErrorPayload {
+    build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
+}
+
+#[cfg(test)]
+pub(crate) fn transcription_error_payload_to_value(payload: &TranscriptionErrorPayload) -> serde_json::Value {
+    serde_json::to_value(payload).expect("transcription error payload should serialize to JSON")
+}
+
+pub(crate) fn is_realtime_stream_already_stopped_error(error: &str) -> bool {
+    error.contains("Realtime ストリームが既に停止しています")
+}
+
+pub(crate) fn should_emit_realtime_stream_error(error: &str) -> bool {
+    !is_realtime_stream_already_stopped_error(error)
+}
+```
+
+**重要**:
+- visibility は `pub(crate)` (crate 内部 API、外部 crate boundary 排除)
+- `transcription_error_payload_to_value` の **`#[cfg(test)]` attribute を必ず保持** (production binary 含めない、dead_code 警告を防ぐ)
+- 関数本体・文字列リテラル・assert メッセージは **絶対に変更しない** (振る舞い完全不変)
+
+## transcription.rs 側の編集
+
+1. L363-L387 の 5 関数定義を **削除**
+2. ファイル冒頭の use 文に **1 行追加**: `use crate::transcription_error_payload::{build_transcription_error_payload, build_worker_panic_error_payload, is_realtime_stream_already_stopped_error, should_emit_realtime_stream_error};` (これら 4 関数は production caller がある = L403, L440, L444, L479, L483)
+3. **`transcription_error_payload_to_value` は `#[cfg(test)]` のため tests mod 内 (L394 以降) に追加 import**: `mod tests { ... use crate::transcription_error_payload::transcription_error_payload_to_value; ... }` のように tests mod 内の use 文群に追加 (既存 use 文の alphabetical 順序を保つ)
+4. **互換層 (`pub use`) は不要**: 他モジュールから `transcription::build_transcription_error_payload` 等の参照は **存在しない** (production caller は transcription.rs 内のみ)。grep で確認してから削除判断 (`grep -rn "build_transcription_error_payload\|build_worker_panic_error_payload\|is_realtime_stream_already_stopped_error\|should_emit_realtime_stream_error\|transcription_error_payload_to_value" src-tauri/src/ --include="*.rs"` で他モジュール参照ゼロを確認)
+
+## lib.rs 側の編集
+
+`src-tauri/src/lib.rs` L1-L27 の mod 宣言群に **1 行追加**:
+
+```
+mod transcription;
+mod transcription_emission;
+mod transcription_error_payload;  // <- この行を追加
+mod transcription_manager;
+mod transcription_model_manager;
+```
+
+**alphabetical 順序を厳守**: `transcription_emission` の次、`transcription_manager` の前。
+
+# 規模超過防止 (絶対遵守)
+
+- **担当範囲外の編集禁止**:
+  - 編集対象は `src-tauri/src/transcription.rs` (削除のみ + use 追加) + `src-tauri/src/transcription_error_payload.rs` (新規) + `src-tauri/src/lib.rs` (mod 追加 1 行) **のみ**
+  - 他ファイル (audio.rs, session_manager.rs, transcription_manager.rs, lib.rs invoke_handler 等) は **絶対に編集しない**
+- **5 関数以外を抽出しない**: TranscriptionErrorPayload (型) は Phase 1 で抽出済、PendingTranscriptionStream や run_transcription_worker_with_panic_guard は Phase 4-C/4-D の対象 = **本ループでは触らない**
+- **既存テストの編集禁止**: tests mod 内のテストは use 文 (1 行追加) 以外は **絶対に変更しない**
+- **新規テスト追加禁止**: 振る舞い不変なので件数不変が指標
+- **大型ファイルは Read 全体禁止**: transcription.rs (2250 行) は `tail`/`head`/`sed -n 'NUM,NUMp'` または `Read` の offset/limit で対象範囲のみ参照
+- **行末の空白文字 (trailing whitespace) 禁止**: 編集後 `git diff --check` で確認
+
+# 検証 (TDD = Tidy First の振る舞い不変確認)
+
+実装後、以下を順に実行:
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && cargo test --lib 2>&1 | tail -20`
+   - **期待**: `test result: ok. 678 passed; 0 failed; ...` (件数不変が振る舞い不変の指標)
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && cargo clippy --lib -- -D warnings 2>&1 | tail -20`
+   - **期待**: 警告ゼロ
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && cargo fmt --check 2>&1 | tail -5`
+   - **期待**: 出力なし (整形済み)
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && git diff --check 2>&1 | head -10`
+   - **期待**: trailing whitespace なし
+
+**テスト件数が 678 と異なる場合は失敗**: rollback (git checkout) して再考すること。
+
+# AGENT_LOG.md 末尾追記 (mjc-main-20260505-9 Loop 17 SUMMARY ではなく WORKER 完了報告)
+
+検証完了後、AGENT_LOG.md **末尾** に以下スタイルで追記:
+
+```
+[WORKER COMPLETED @ 2026-05-05 ~MM:SS JST] mjc-worker-error-payload-extract-20260505-9-1
+- Phase 4-B = error_payload 5 関数抽出完了
+- 新規: src-tauri/src/transcription_error_payload.rs (~30 行)
+- 削減: src-tauri/src/transcription.rs L363-L387 範囲 25 行 → 削除
+- transcription.rs use 文 1 行追加 (4 関数 import) + tests mod 内 use 文 1 行追加 (transcription_error_payload_to_value)
+- src-tauri/src/lib.rs に mod transcription_error_payload; 宣言追加 (alphabetical)
+- 検証: cargo test --lib 678 passed 件数不変 / clippy --lib -D warnings 警告ゼロ / fmt --check OK / git diff --check trailing whitespace なし
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription.rs 累計削減 ~774 行 (元 2999 → 現在 ~2225 行)
+- transcription-refactor-plan.md L86 worker サブ分割計画 (error_payload) 完了
+
+---
+```
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、新規ファイルに上記内容を Write → `cat <file> >> AGENT_LOG.md` で append。
+
+# Commit (worker 自走 commit)
+
+検証 + AGENT_LOG.md 追記が成功したら、以下で commit:
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && git add src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs src-tauri/src/lib.rs AGENT_LOG.md && git commit -m "$(cat <<'EOF'
+refactor(transcription): error_payload 5 関数を transcription_error_payload.rs に抽出 (Tidy First, Phase 4-B 着手, mjc-main-20260505-9 Loop 17, ~25 行抽出 + use 1 行互換 + lib.rs mod 宣言, build_transcription_error_payload / build_worker_panic_error_payload / transcription_error_payload_to_value (cfg test) / is_realtime_stream_already_stopped_error / should_emit_realtime_stream_error の 5 関数を pub(crate) で集約, transcription-refactor-plan.md L86 worker サブ分割計画 (error_payload) 完了, 678 passed 件数不変, clippy 警告ゼロ, fmt OK, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)
+EOF
+)"
+```
+
+`--no-verify` 禁止。pre-commit hook が失敗したら原因を fix してから再 commit (新規 commit、--amend 禁止)。
+
+# 残リスク
+
+- なし: pub(crate) 公開で外部 boundary なし、振る舞い完全不変、純粋関数 5 つの crate 内部移動のみ。
+
+# 失敗時の挙動
+
+- 検証で 678 件 pass しなかった場合: `git checkout -- src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs src-tauri/src/lib.rs` で rollback、AGENT_LOG.md に失敗報告 (FAILED スタイル) を append、commit しない。
+
+# 開始
+
+上記タスクを実行してください。質問があれば AGENT_LOG.md に追記後 commit せず終了してください。

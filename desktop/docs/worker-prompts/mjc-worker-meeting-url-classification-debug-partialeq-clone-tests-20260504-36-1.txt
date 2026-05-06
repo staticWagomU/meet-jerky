@@ -1,0 +1,106 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First で既存の振る舞いは絶対に変えず、テストのみ追加します。
+
+# 必読 (作業前に必ず参照)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** を `tail -350 AGENT_LOG.md` で読め (ファイル全体は 23000+ 行 / 1.9MB+ のため Read 全体禁止)。
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+- 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md`
+
+# 担当範囲 (規模超過防止 = 厳守)
+- 編集可: `src-tauri/src/app_detection.rs` の `mod tests` 内のみ (テスト追加 3 件、その他の関数は触らない)
+- 編集可: `AGENT_LOG.md` の **末尾追記のみ** (先頭・中間は触らない)
+- それ以外のファイル変更禁止 (Cargo.toml / 他 .rs / frontend / docs 全て触らない)
+- テスト追加は **3 件まで** (それ以上は超過、削減して提出)
+- 大型ファイル (app_detection.rs 2380 行 / AGENT_LOG.md 23238 行) は **Read 全体禁止 = tail/head/grep/sed で対象範囲のみ参照**
+- 行末に空白文字 (trailing whitespace) を残さない
+
+# タスク
+mjc-main-20260504-36 Loop 1 = MeetingUrlClassification 構造体に対する「Debug 軸補強」17 連続 application + 「struct + camelCase + PartialEq 派生」形態 5 連続 application + 「Clone 独立性軸」直接判定 (assert_ne) 連続 application + 「format 不変条件 application」serde camelCase struct 系統 5 連続 application
+
+## 対象 struct (app_detection.rs l.81-86)
+```rust
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MeetingUrlClassification {
+    pub service: String,
+    pub host: String,
+}
+```
+
+## 3 軸の追加テスト (3 件)
+
+### T1 = Debug 出力の不変条件 (1 件)
+- テスト名 `meeting_url_classification_debug_contains_field_values`
+- 対象: 任意の MeetingUrlClassification インスタンス (例: service="Google Meet", host="meet.google.com") の `format!("{:?}", value)` 出力
+- assert (3 段以上):
+  1. struct 名 `"MeetingUrlClassification"` を contains
+  2. field 名 `"service"` と `"host"` を両方 contains
+  3. field 値 `"Google Meet"` と `"meet.google.com"` を両方 contains
+  4. service の出現位置 < host の出現位置 で **構造体宣言順を反映** することを確認 (`debug_str.find("service").unwrap() < debug_str.find("host").unwrap()`)
+
+### T2 = PartialEq field 単位独立判定 + Clone 独立性 (assert_ne 直接判定) (1 件)
+- テスト名 `meeting_url_classification_partial_eq_field_independent_and_clone_distinct`
+- 内容:
+  - reflexive: 同一インスタンス同士 == (1 段)
+  - field 単位独立: 2 fields それぞれを 1 つだけ別値に変えた 2 個のインスタンスを作り、それぞれ original と != (2 段)
+  - Clone 独立性: original.clone() == original (Clone 後の値同一性、1 段)
+  - Clone 独立性 (mutation 後): 2 fields それぞれ別値の 2 個 (a, b) を作り、a.clone() を c とし、c の field を mutate して a と != になることを assert_ne で直接判定 (PartialEq 派生があるので mjc-main-35 Loop 3 WhisperRequestParams と同じ手法、2 段)
+- 合計 6 段 assert 以上
+
+### T3 = serde camelCase JSON key 名固定 + 1 単語 field 名の snake_case 互換 (1 件)
+- テスト名 `meeting_url_classification_serde_camel_case_json_keys_fixed`
+- 内容:
+  - serde_json::to_string で JSON 直列化 → 文字列を取得
+  - assert (5 段以上):
+    1. JSON が `"service":` を contains (camelCase 適用後でも 1 単語 field 名は snake_case と同形 = 互換性保護)
+    2. JSON が `"host":` を contains
+    3. JSON が `"Service"` (PascalCase) を contains しない
+    4. JSON が field 値 `"Google Meet"` と `"meet.google.com"` を両方 contains
+    5. JSON Object 内の field 順序は service が先 host が後 (`json.find("\"service\"").unwrap() < json.find("\"host\"").unwrap()`)
+  - **「format 不変条件 application」serde camelCase struct 系統 5 連続** = TranscriptionSegment (mjc-main-32 Loop 1) → ModelInfo (mjc-main-33 Loop 1) → SessionSummary (mjc-main-34 Loop 3) → AppSettings (mjc-main-35 Loop 1) に続く 5 形態目
+
+## 振る舞い不変の検証
+- アプリコード (struct 定義 / classify_meeting_url / classify_meeting_window_title 等) は **絶対に変更禁止**
+- mod tests 内のみ追加
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib -p mjc -- meeting_url_classification` で 3 件全 pass (新規 3 件)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib -p mjc 2>&1 | tail -20` で **610 passed / 0 failed** (前 607 → +3 件、本セッション開始時 607)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10` で警告ゼロ
+
+## AGENT_LOG.md への追記 (末尾追記、先頭は絶対触らない)
+末尾の `---` 直後に以下のフォーマットで 1 件追記:
+
+```markdown
+## [WORKER mjc-worker-meeting-url-classification-debug-partialeq-clone-tests-20260504-36-1] 開始: <ISO8601 JST>
+
+### タスク
+mjc-main-20260504-36 Loop 1 = MeetingUrlClassification 構造体に Debug 出力 / PartialEq field 単位独立判定 + Clone 独立性 (assert_ne 直接判定) / serde camelCase JSON key 名固定 + 1 単語 field 名 snake_case 互換 の 3 軸テストを追加
+
+### 結果
+- 追加テスト: meeting_url_classification_debug_contains_field_values / meeting_url_classification_partial_eq_field_independent_and_clone_distinct / meeting_url_classification_serde_camel_case_json_keys_fixed (計 3 件)
+- cargo test --lib: 610 passed / 0 failed (前 607 → +3)
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- 「Debug 軸補強」17 連続 application 達成 (前 16 連続 → 17 連続)
+- 「struct + camelCase + PartialEq 派生」形態 5 連続 application 達成
+- 「Clone 独立性軸」直接判定 (assert_ne) 連続 application
+- 「format 不変条件 application」serde camelCase struct 系統 5 連続 application 達成
+- 8 ファイル目 = なし (app_detection.rs 内の 2 形態目補強、6 ファイル目深化)
+- ファイル: src-tauri/src/app_detection.rs (mod tests 内テスト追加のみ)
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+
+---
+```
+
+# 完了基準
+1. `git status --short` で `M src-tauri/src/app_detection.rs` と `M AGENT_LOG.md` の 2 件が表示されること (それ以外のファイル変更があれば超過)
+2. cargo test --lib で 610 passed / 0 failed
+3. cargo clippy --lib -- -D warnings 警告ゼロ
+4. AGENT_LOG.md 末尾に WORKER エントリ追記 (先頭は触らない)
+5. 行末に trailing whitespace を残さない
+
+タスク完了したら必ずメインに 1 行で報告: 「Loop 1 完了: 610 passed, MeetingUrlClassification 3 軸補強完了」

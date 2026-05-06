@@ -1,0 +1,163 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (tail 300 で十分) を読んでください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。コミット禁止。
+
+# 担当範囲
+- `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾に #[test] 関数を **5 件追加するのみ**。
+- 実装本体 (`sanitize_error_body` / `classify_cloud_whisper_error` / `MAX_ERROR_BODY_CHARS`) は **一切変更しない** (visibility / 値 / ロジック含めて完全に non-touch)。
+- 既存テスト関数も削除/変更しない。
+- 他ファイル編集禁止。
+
+# 1. 背景 / Why
+
+`sanitize_error_body` (line 25-37) は `cloud_whisper_errors.rs` の core helper で、HTTP error body を一定長に切り詰めるサニタイズロジックを担う。`MAX_ERROR_BODY_CHARS = 200` (line 23) を境に truncation するが、現契約は以下の非自明な振る舞いを持つ:
+
+1. **truncation 条件は `>` であり `>=` ではない (line 27)**: 200 chars ジャストでは truncation されない。
+2. **whitespace 正規化が char count 判定より前に走る (line 26 → 27)**: 入力に余分 whitespace を含めても normalized 後の char count で判定する。
+3. **multibyte (CJK 等) は char count であり byte count ではない**。
+4. **truncate された場合は `{sanitized}...` の形式 = output 長 = MAX + 3 chars (= 203)**。
+
+既存テスト (8 件) は以下を確認済:
+- `classify_other_error_sanitizes_body`: `MAX + 20` (220 chars) で truncation 確認、output が `MAX + 3` chars であること、"..." で終わることを assert。
+- `sanitize_error_body_truncates_multibyte_text_by_char_count_not_byte_count`: "あ" × `MAX + 5` (= 205 chars) で multibyte truncation。
+- `sanitize_error_body_falls_back_to_empty_marker_for_whitespace_only_inputs`: 空 / spaces / tab+newline+spaces。
+- `classify_other_error_sanitizes_body` 後段: whitespace 正規化 ("first line\n\tsecond line  " → "first line second line")。
+
+**確認した gap**:
+- **199 / 200 / 201 chars のピンポイント boundary** が直接テストされていない。特に「200 chars ジャストでは truncate されない」という非対称契約 (`>` vs `>=`) は将来のリファクタで誤って `>=` に変更されると静かに振る舞いが変わる。
+- **whitespace 正規化が char count 判定より先に走る順序契約** が直接テストされていない (raw byte/char で MAX + α だが正規化後に MAX 以下になるケース)。
+- **multibyte の boundary 上ジャスト (201 chars)** が `+ 5` で間接確認のみ。
+
+これら 5 件で boundary を `>=` 誤改修・順序入れ替え誤改修・multibyte 誤改修すべて検知できる装置を作る。
+
+# 2. 追加する 5 件のテスト案 (assertion レベル)
+
+すべて `cloud_whisper_errors.rs` の `mod tests` 末尾に追加。private fn `sanitize_error_body` と private const `MAX_ERROR_BODY_CHARS` は同じファイル内の `tests` mod から `super::` で直接呼べる (既存 `super::sanitize_error_body` / `super::MAX_ERROR_BODY_CHARS` のパターン踏襲)。
+
+## T1. `sanitize_error_body_does_not_truncate_at_199_chars`
+- 入力: `"x".repeat(MAX_ERROR_BODY_CHARS - 1)` (= 199 chars)
+- assert:
+  - `result.chars().count() == 199`
+  - `result == "x".repeat(199)` (内容そのまま、`...` 含まれない)
+  - `!result.ends_with("...")` (truncation マーカーなし)
+- 意図: 境界一歩下 (199) で truncation が起きない現契約を固定。
+
+## T2. `sanitize_error_body_does_not_truncate_at_exactly_200_chars`
+- 入力: `"x".repeat(MAX_ERROR_BODY_CHARS)` (= 200 chars ジャスト)
+- assert:
+  - `result.chars().count() == 200`
+  - `result == "x".repeat(200)` (内容そのまま)
+  - `!result.ends_with("...")` (truncation されない、これが `>` vs `>=` の決定的差)
+- 意図: 200 chars ジャストの境界上で truncation 「されない」現契約 (`>` 比較) を固定。これが `>=` 誤改修検知装置の本体。
+
+## T3. `sanitize_error_body_truncates_at_201_chars`
+- 入力: `"x".repeat(MAX_ERROR_BODY_CHARS + 1)` (= 201 chars)
+- assert:
+  - `result.chars().count() == MAX_ERROR_BODY_CHARS + 3` (= 203 chars: 200 + "...")
+  - `result.ends_with("...")`
+  - `result.starts_with(&"x".repeat(MAX_ERROR_BODY_CHARS))` (最初の 200 chars が x で、その後に "...")
+- 意図: 境界一歩上 (201) で truncation が「初めて」発生する現契約を固定。T2 とペアで `>` 境界の上下を完全網羅。
+
+## T4. `sanitize_error_body_normalizes_whitespace_before_counting_chars`
+- 入力: 例えば `"x ".repeat(150)` (= 300 chars: x と space の交互。raw char count = 300、whitespace 正規化後は `split_whitespace` により 150 個の "x" が " " で join されて 150 + 149 = 299 chars... ではダメ。`split_whitespace` は連続/末尾 whitespace を除去して token を作るので、`"x ".repeat(150)` = `"x x x ... x "` (末尾 space 込みで 300 chars) → tokens = 150 個の "x" → join " " → 150 + 149 = 299 chars。これは MAX = 200 を超えて truncate される)。
+  - 正規化後 199 chars にしたいので、`"x".to_string()` を 100 回 + `" ".to_string()` を 99 回挟む構成だと → tokens 100 個で join 後 100 + 99 = 199 chars。これだと truncate されない。
+  - **採用**: 入力 = `"x x x ... x"` (100 個の "x" を 1 space 区切りで並べる) を `let body = (0..100).map(|_| "x").collect::<Vec<_>>().join("    ");` (4 spaces で区切る) → raw char count = 100 + 99*4 = 496 chars (確かに MAX = 200 を超える)、しかし `split_whitespace().join(" ")` 後は 100 個の "x" を 1 space で繋いだ 199 chars (`= 100 + 99`) → truncate されない。
+- assert:
+  - 入力 raw `body.chars().count() == 496` (raw は MAX 超え)
+  - `result.chars().count() == 199` (正規化後は MAX 未満)
+  - `!result.ends_with("...")` (truncation されない、これが「正規化が char count 判定より先に走る」順序契約の決定的差)
+  - `result == (0..100).map(|_| "x").collect::<Vec<_>>().join(" ")` (内容も期待通り)
+- 意図: line 26 (whitespace 正規化) → line 27 (char count 判定) の順序契約を固定。順序入れ替え (raw chars で先に判定 → 後で正規化) 誤改修を検知。
+
+## T5. `sanitize_error_body_truncates_multibyte_at_exactly_201_chars`
+- 入力: `"あ".repeat(MAX_ERROR_BODY_CHARS + 1)` (= 201 chars)
+- assert:
+  - `result.chars().count() == MAX_ERROR_BODY_CHARS + 3` (= 203 chars: 200 個の "あ" + "...")
+  - `result.ends_with("...")`
+  - `result.starts_with("あ")` (multibyte の先頭は維持)
+  - `result.chars().take(MAX_ERROR_BODY_CHARS).all(|c| c == 'あ')` (200 個目までは すべて "あ")
+- 意図: 既存 multibyte test は `+ 5` で truncation 動作のみ確認しているが、boundary ジャスト上 (`+ 1`) で truncation が初めて発生する現契約を multibyte 専用で固定。byte count 誤改修 (e.g. UTF-8 の 1 文字 = 3 bytes として扱う) を検知。
+
+# 3. 実装上の注意
+
+- `super::sanitize_error_body` と `super::MAX_ERROR_BODY_CHARS` の参照パターンは既存テスト (`sanitize_error_body_falls_back_to_empty_marker_for_whitespace_only_inputs` 等) を踏襲する。新規 import 不要。
+- 関数本体や const は **絶対に変更しない**。テスト追加のみ。
+- T4 の入力構成は 1 行で書きにくいので、`let body = (0..100).map(|_| "x").collect::<Vec<_>>().join("    ");` のように local 変数に分けて書く。マジックナンバー 100/4/199/496 は inline コメントで意図を残してよい (但し 1-2 行に抑える)。
+- assert マクロは `assert_eq!` / `assert!` のみ使い、`#[should_panic]` は不要。
+- `MAX_ERROR_BODY_CHARS` は private const だが `super::MAX_ERROR_BODY_CHARS` で参照可能。
+- format prefix (`...`) や empty marker (`HTTP error body was empty`) の文言は変えない。既存契約と完全一致を保つ。
+- 既存 8 件テストとの重複を避けるため、200 chars 未満入力 / 200 chars ジャスト / 201 chars という「分岐の境目」だけに絞る。
+
+# 4. 検証手順
+
+担当範囲は src-tauri/src/cloud_whisper_errors.rs のみ。
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+cargo fmt
+cargo test --lib --quiet 2>&1 | tail -50
+cargo clippy --lib --all-targets --quiet 2>&1 | tail -30
+cargo clippy --lib --all-targets --quiet -- -W clippy::uninlined_format_args 2>&1 | tail -30
+```
+
+期待結果:
+- cargo fmt: 差分なし (行末 LF 維持)
+- cargo test: **370 → 375 passed** (5 件追加で 0 failed)
+- cargo clippy default: 警告ゼロ
+- cargo clippy uninlined_format_args: 警告ゼロ
+
+すべて pass で初めて完了。clippy 警告 1 件でも出たら format!/inline の書き方を修正する (例: `format!("{}", x)` → `format!("{x}")`)。
+
+# 5. AGENT_LOG.md 記載項目 (担当範囲完了後に必ず追記)
+
+`AGENT_LOG.md` 末尾に以下フォーマットで追記する (前回 worker `mjc-worker-validate-stream-count-boundary-tests-20260504-8-3` のエントリ構成を踏襲):
+
+```markdown
+### cloud_whisper_errors.rs `sanitize_error_body` の boundary (199/200/201) + 正規化順序契約 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-cloud-whisper-errors-boundary-tests-20260504-9-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+sanitize_error_body の境界 199/200/201 + whitespace 正規化順序 + multibyte 境界ジャストを 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | sanitize_error_body_does_not_truncate_at_199_chars | 199 chars 入力 → そのまま、"..." 含まない |
+| T2 | sanitize_error_body_does_not_truncate_at_exactly_200_chars | 200 chars ジャスト → そのまま (`>` 比較固定) |
+| T3 | sanitize_error_body_truncates_at_201_chars | 201 chars → 200 chars + "..." (MAX + 3 = 203 chars) |
+| T4 | sanitize_error_body_normalizes_whitespace_before_counting_chars | raw 496 chars / 正規化後 199 chars → そのまま (順序契約) |
+| T5 | sanitize_error_body_truncates_multibyte_at_exactly_201_chars | "あ" × 201 → 200 個の "あ" + "..." (byte count 誤改修検知) |
+
+#### 不変条件 / 設計意図
+- T1+T2+T3 は `>` boundary の上下 + 境界ジャストを対称網羅、`>=` 誤改修検知装置。
+- T4 は line 26 (正規化) → line 27 (char count 判定) の順序契約を raw / 正規化後の chars 数差で固定。
+- T5 は既存 `+ 5` test を `+ 1` ジャストに置き換える形で multibyte 境界の決定的差を固定、byte count 誤改修検知。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 370 → 375 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 375
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存の super::sanitize_error_body / super::MAX_ERROR_BODY_CHARS を使用)
+
+#### 残リスク
+- T4 の "    " (4 spaces) 区切りと 100/199/496 のマジックナンバーは「正規化前後の chars 数差を作る」ための構成であり、将来正規化アルゴリズムを変えたら再計算が必要 (現契約を意図的に固定)。
+- T2 の `>` 境界契約は将来防御強化で `>=` (199 で truncate) に変更したい場合は test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に「変更内容、変更ファイル、検証結果、残リスク」を 1 ターンで簡潔に報告してください。

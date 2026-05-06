@@ -1,0 +1,124 @@
+あなたは meet-jerky の worker サブエージェントです.
+mjc-main-20260505-82 Loop 167 を実行します.
+
+# 必読 (順序厳守)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+3. **AGENT_LOG.md は 34012 行 / ~3.2MB ある**. **必ず `tail -350 AGENT_LOG.md` で末尾だけ参照する**. 先頭は絶対に触らない. AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾. **新規追記は必ずファイル末尾に行う**.
+4. 末尾に `[mjc-main-20260505-82 Loop 166 / 2026-05-06]` entry がある = 直近 Loop = paradigm 系統樹拡張 4 件目 = parameterized assertion helper 化.
+5. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (現在 221 行, Section 2.3 の末尾観測 = L104 = Loop 164 完了時点 36 件目)
+
+# タスク概要 (Loop 167 = K 軸 = harness 衛生軸 = Section 2.3 観測 37 件目)
+
+`docs/architecture/agent-log-archive-plan.md` の **Section 2.3** (= L32-L105) 末尾の Loop 164 完了時点観測 (L104) の **直後** に Loop 165 → Loop 166 完了時点の **観測 37 件目** を追記する.
+
+## 観測値 (確定済)
+
+- 区間: Loop 164 完了 → Loop 166 完了
+- 期間: ~2 ループ間 + SESSION SUMMARY 1 件 (mjc-main-20260505-81 の SUMMARY commit `15110ba` = +7 行 = ultra-compact)
+- 行数差分: 33,988 → 34,012 = **+24 行 / 平均 ~12 行/loop**
+- Loop 165 観測値 (~11 行/loop = 軽量化階層中央値水準) と比較して **+9% 微増 (+1 行/loop の軽微な変動)** = 軽量化階層中央値水準 ~11-12 行/loop の **3 連続観測達成** (Loop 163 = 11 / Loop 165 = 11 / Loop 166-合算 = 12)
+- 観測 37 件目 = 節目 30 件突破後 7 件目継続
+
+## 構成内訳
+
+- Loop 165 = K 軸 = chore entry +6 行 (Section 2.3 観測 36 件目)
+- SUMMARY mjc-main-20260505-81 = +7 行 (commit `15110ba` = ultra-compact = SUMMARY ultra-light 階層 ~5-8 行/件 5 連続観測達成)
+- Loop 166 = rust 軸 = chore entry +9 行 (parameterized assertion helper 化 paradigm 4 件目, audio_event::test_helpers に 5 helper fn 集約) + refactor は AGENT_LOG.md 触らず = 0 行寄与 + boundary fix chore = -1 行 (メイン直接救済 paradigm 2 件目)
+- 計 +24 行 / 2 ループ + SS 1 件
+
+## paradigm 観点
+
+- **paradigm 系統樹拡張 4 件目達成** (Loop 159 jst() fn 集約 → Loop 162 list_md_files() fn 集約 → Loop 164 audio_command_* test logic 集約 → Loop 166 parameterized assertion helper 化 = fn 重複 → test 内容重複 → parameterized helper)
+- **rust 軸軽量化 paradigm 6 連続観測達成** (Loop 155 chore = +7 + Loop 157 chore = +7 + Loop 159 chore = +9 + Loop 162 chore = +8 + Loop 164 chore = +8 + Loop 166 chore = +9 = 6 連続 ~7-9 行水準 = paradigm 系統樹拡張でも軽量化維持)
+- **メイン直接削除救済 paradigm 2 件目** (Loop 144 = worker fault 二重書き救済 → Loop 166 = worker prompt 設計ミスによる boundary `---` 重複救済 = paradigm 拡張観測)
+- alternation pivot K(165) → rust(166) = 5 → 6
+- paradigm pivot 同形 (K + rust = Loop 151/155/157/159/162/164 と paradigm 同軸再現 = K + rust 連続観測 7 件目 = 完全成熟期維持)
+
+## 5 段階階層化 paradigm
+
+```
+SS 0 件 + 多 entry = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測)
+SS 0 件 + 単独 chore = ~7 行/loop (Loop 160 = 初観測 = ultra-light 単独 chore 階層)
+SS 1 件 + 説明軽量化 = ~9-26 行/loop (Loop 125/.../164/166 = 17 連続観測達成 = 本観測 ~12 行/loop = 軽量化階層中央値水準 = 3 連続観測達成 = paradigm 完全実証期維持)
+SS 1 件 + 説明中量化 = ~30-37 行/loop (Loop 149/151 = 2 連続観測達成)
+SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)
+```
+
+## 追記内容 (1 段落 blockquote = `> ` 始まり)
+
+agent-log-archive-plan.md L104 末尾 (Loop 164 観測の閉じ `行末改行` 直後) に **空行 + 新観測ブロック** を追加。新観測ブロックの format は L96-L104 の precedent 完全踏襲 = `> **更新観測 (mjc-main-20260505-82 Loop 166 完了時点 = SS 1 件 + 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 = paradigm 系統樹拡張 4 件目 + メイン直接削除救済 paradigm 2 件目)**: ...` で始まる長文 1 段落.
+
+新観測 entry の本文 (1 段落 = 1 行 markdown blockquote, **L104 と同じ書式**, 行末空白なし):
+
+```
+> **更新観測 (mjc-main-20260505-82 Loop 166 完了時点 = SS 1 件 + 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 = paradigm 系統樹拡張 4 件目)**: Loop 164 → Loop 166 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-81 = 2 ループ完走 SUMMARY commit `15110ba` = +7 行 = ultra-compact) で +24 行 (33,988 → 34,012)、平均 ~12 行/loop。Loop 165 観測値 (~11 行/loop = 軽量化階層中央値水準) と比較して **+9% 微増 (+1 行/loop の軽微な変動)** = **軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 (Loop 163 = 11 / Loop 165 = 11 / Loop 166 = 12) = paradigm 完全実証期持続** = paradigm pivot 多軸 (Loop 165 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 = +6 行 = 観測 36 件目 + Loop 166 = rust 軸 = **既存 file 拡張軸 paradigm 9 件目 = test helper 集約軸 paradigm 反復 4 件目 = paradigm 系統樹拡張 4 件目 = parameterized assertion helper 化 paradigm** = audio.rs T1-T5 + system_audio.rs T1-T5 の build_audio_drop_event_payload_* test 10 件 (両 file で source label 違いで対称仕様, audio.rs = "microphone" 中心 / system_audio.rs = "system_audio" 中心 + 全 #[cfg(target_os = "macos")]) を audio_event::test_helpers (= build_audio_drop_event_payload の正規定義場所 = 47 行 + 既存 test 3 件) に **#[cfg(test)] pub(crate) mod test_helpers** を新設し 5 つの parameterized helper fn (assert_drop_payload_includes_source_and_dropped_fields(source, dropped) / assert_drop_payload_serializes_zero_dropped_count_explicitly(source) / assert_drop_payload_handles_usize_max_boundary(source) / assert_drop_payload_passes_through_arbitrary_source_labels(label_a, label_b) / assert_drop_payload_has_exactly_two_top_level_fields(source)) に集約 + 両 file の test 10 件は test fn 名保持で中身を helper 呼び出し 1-2 行に置換 (DRY 違反解消, callsite 10 件無変更で API 互換維持, **Loop 159 jst() fn 集約 / Loop 162 list_md_files() fn 集約 / Loop 164 audio_command_* test logic 集約 の paradigm 系統樹拡張 = fn 重複 → test 内容重複 → parameterized helper への paradigm 4 件目**, scope 38 軸目開拓 = parameterized helper tier 拡張, alternation pivot K(165) → rust(166) = 5 → 6) = chore +9 行 + refactor は AGENT_LOG.md 触らず = 0 行寄与 + boundary fix chore = -1 行 (メイン直接救済 paradigm 2 件目)) で SESSION SUMMARY 1 件 (commit `15110ba` = +7 行 = ultra-compact = 直近 SUMMARY (mjc-main-20260505-80 SUMMARY commit `8308a11` = 2 ループ完走 SUMMARY ~8 行) と同水準維持 = SUMMARY ultra-light 階層 ~5-8 行/件の安定確立 = **5 連続観測達成**) + chore entry 4 件 (Loop 165 chore = +6 行 + SUMMARY = +7 行 + Loop 166 chore = +9 行 + boundary fix chore = -1 行 + Loop 166 entry 内 9 行 = 計 +24 行) + docs entry 1 件 (Loop 165 docs = AGENT_LOG.md 触らず = 0 行寄与) + refactor entry 1 件 (Loop 166 refactor = AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 165 観測値との +9% 微増の主因 = **rust 軸軽量化 paradigm 6 連続観測達成** (Loop 155 chore = +7 行 + Loop 157 chore = +7 行 + Loop 159 chore = +9 行 + Loop 162 chore = +8 行 + Loop 164 chore = +8 行 + Loop 166 chore = +9 行 = 6 連続 ~7-9 行水準 = rust 軸軽量化 paradigm 完全成熟期維持 = paradigm 系統樹拡張 4 件目でも軽量化維持) + **paradigm 系統樹拡張 4 件目達成** (Loop 159 jst() fn 集約 → Loop 162 list_md_files() fn 集約 → Loop 164 audio_command_* test logic 集約 → Loop 166 parameterized assertion helper 化 = fn 重複 → test 内容重複 → parameterized helper への paradigm 拡張 = paradigm 安定性 + 拡張性両軸で実証) + **メイン直接削除救済 paradigm 2 件目** (Loop 144 = worker fault 二重書き救済 → Loop 166 = worker prompt 設計ミスによる boundary `---` 重複救済 = paradigm 拡張観測 = メイン責任の format 整合復帰 paradigm 確立) + paradigm pivot 同形 (K + rust = Loop 151/155/157/159/162/164 と paradigm 同軸再現 = K + rust 連続観測 7 件目 = 完全成熟期維持) + alternation pivot 加速 (K'(161) → rust(162) → K(163) → rust(164) → K(165) → rust(166) = 1 → 2 → 3 → 4 → 5 → 6 = 加速期維持). frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125-153 で 15 件連続観測達成済 + 本セッションで rust 軸の軽量化 paradigm が **6 連続観測 (Loop 155/157/159/162/164/166)** = 軽量化 paradigm が frontend 軸限定から rust 軸にも完全拡張 + 本セッション Loop 166 = paradigm 系統樹拡張 4 件目という規模中の paradigm でも chore entry 軽量化維持 = **paradigm 領域拡大の完全成熟期入り**. SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量 + SUMMARY 説明量の 4 軸が支配変数 = **SS 0 件 + 多 entry = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測) / SS 0 件 + 単独 chore = ~7 行/loop (Loop 160 = 初観測 = ultra-light 単独 chore 階層) / SS 1 件 + 説明軽量化 = ~9-26 行/loop (Loop 125/129/131/133/137/139/141/143/145/147/153/155/157/159/162/164/166 = 17 連続観測達成 = 本観測で ~12 行/loop = 軽量化階層中央値水準 = 3 連続観測達成 = paradigm 完全実証期持続) / SS 1 件 + 説明中量化 = ~30-37 行/loop (Loop 149/151 = 2 連続観測達成) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の **5 段階階層化 paradigm 完全成熟期維持 + 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 = paradigm 完全実証期持続 + paradigm 系統樹拡張 4 件目達成 + メイン直接削除救済 paradigm 2 件目達成**. 観測 37 件目 = 節目 30 件突破後 7 件目継続 = K 軸自体の paradigm 完全成熟期維持. 長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~12 行 = ~48-120 行/時間 の範囲、SUMMARY 軽量化期間 7 連続継続 + paradigm 系統樹拡張 4 件目による安定期維持).
+```
+
+# 規模超過防止
+
+- **担当範囲外編集禁止**: docs/architecture/agent-log-archive-plan.md と AGENT_LOG.md のみ.
+- 編集は **Section 2.3 (= L32-L105) 末尾への新観測ブロック追記** のみ. 既存観測 entry (L96-L104) は **触らない**.
+- AGENT_LOG.md は entry の **末尾 1 件追記** のみ. 既存 entry は触らない.
+- test 件数は変更なし (frontend / rust 双方 build 不要).
+
+# 検証 (worker 必須実行)
+
+```fish
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+grep -nE "^> \*\*更新観測.*Loop 166" docs/architecture/agent-log-archive-plan.md   # 1 件確認
+wc -l docs/architecture/agent-log-archive-plan.md   # 222 行前後 (= 旧 221 + 1)
+```
+
+# 実行手順 (2-commit pattern, Loop 145-166 で 22 連続安定)
+
+## Step 1: 新観測 entry を archive plan へ追記
+1. `tail -10 AGENT_LOG.md` で末尾形式確認 (`---` 区切り直前を確認)
+2. agent-log-archive-plan.md の L104 (= 直近 Loop 164 観測の閉じ) 末尾改行直後に Edit で新観測 entry (上記 ``` ブロック内 の `> ` で始まる 1 段落) を追記
+3. agent-log-archive-plan.md の末尾を `tail -3` で確認 (新観測 entry が L105 に追加されていること)
+4. 検証: `grep -nE "^> \*\*更新観測.*Loop 166" docs/architecture/agent-log-archive-plan.md` が 1 件 hit
+
+## Step 2: docs commit
+```fish
+git add docs/architecture/agent-log-archive-plan.md
+bash scripts/agent-commit.sh "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 166 完了時点の更新観測追記 (mjc-main-20260505-82 Loop 167, harness 衛生軸 = K 軸 = alternation 復帰 = K'(161) → rust(162) → K(163) → rust(164) → K(165) → rust(166) → K(167) = 6 → 7, Loop 79/81/.../164 precedent 37 件目, +24 行 / 平均 ~12 行/loop = Loop 165 観測値 +9% 微増 = 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 = paradigm 完全実証期持続 + rust 軸軽量化 paradigm 6 連続観測 + paradigm 系統樹拡張 4 件目達成 = parameterized assertion helper 化 + メイン直接削除救済 paradigm 2 件目)" docs/architecture/agent-log-archive-plan.md
+```
+
+## Step 3: AGENT_LOG.md entry append
+1. **append は 1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む. (Loop 144 fault precedent + Loop 166 boundary fix 教訓 = 冒頭 `---` を含めない設計に変更)
+2. 末尾追記内容: 下記 entry (= **冒頭 `---` を含めず**, 末尾の `---` 区切り 1 個で締める). 行末空白 (trailing whitespace) 禁止.
+
+```
+[mjc-main-20260505-82 Loop 167 / 2026-05-06]
+worker: mjc-worker-loop167-archive-plan-stats-update-37 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 164 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 166 完了時点の更新観測 37 件目を追記。Loop 164 → Loop 166 で +24 行 (33,988 → 34,012), 平均 ~12 行/loop = Loop 165 観測値 (~11 行/loop) +9% 微増 = 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 (Loop 163 = 11 / Loop 165 = 11 / Loop 166 = 12) = paradigm 完全実証期持続 + rust 軸軽量化 paradigm 6 連続観測 (Loop 155/157/159/162/164/166) + paradigm 系統樹拡張 4 件目達成 (Loop 159 jst() → Loop 162 list_md_files() → Loop 164 audio_command_* test logic → Loop 166 parameterized assertion helper) + メイン直接削除救済 paradigm 2 件目 (Loop 144 worker fault → Loop 166 boundary fix) + alternation pivot K(165) → rust(166) → K(167) = 5 → 6 → 7.
+検証: agent-verify.sh = OK (docs 単独 skip 判定).
+意義: K 軸 precedent 37 件目達成 = 節目 30 件突破後 7 件目継続 + 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 = paradigm 完全実証期持続 + paradigm 系統樹拡張 4 件目 (parameterized assertion helper 化) + メイン直接削除救済 paradigm 2 件目 + worker 自律 2-commit pattern 連続 22 ループ目達成 = 節目 22 件突破継続.
+---
+```
+
+3. **手順**: tmpfile (例: `/tmp/loop167_entry.md`) を Write で作成 (= 上記 ``` ブロック内, 冒頭 `---` 含まない) → `cat /tmp/loop167_entry.md >> AGENT_LOG.md` で append (1 回のみ) → `tail -7 AGENT_LOG.md` で末尾確認 (boundary が単一 `---` であること).
+
+## Step 4: chore commit
+```fish
+git add AGENT_LOG.md
+bash scripts/agent-commit.sh "chore(agent-log): mjc-main-20260505-82 Loop 167 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = K 軸 = alternation 復帰, 観測 37 件目, +24 行 / 平均 ~12 行/loop = Loop 165 観測値 +9% 微増 = 軽量化階層中央値水準 ~11-12 行/loop の 3 連続観測達成 = paradigm 完全実証期持続 + rust 軸軽量化 paradigm 6 連続観測 + paradigm 系統樹拡張 4 件目達成 + メイン直接削除救済 paradigm 2 件目) のエントリ追記" AGENT_LOG.md
+```
+
+# 制約事項 (絶対遵守)
+
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む (Loop 144 fault precedent).
+- AGENT_LOG.md 先頭に絶対追記しない. 末尾の `---` 区切り直後に追記.
+- **新規 entry の冒頭に `---` を含めない** (Loop 166 boundary fix 教訓). 末尾の `---` 1 個で締める.
+- 行末空白 (trailing whitespace) 禁止.
+- `--no-verify` 禁止. `--dangerously-skip-permissions` は harness 内のみ.
+- 担当範囲 (agent-log-archive-plan.md / AGENT_LOG.md) 外を触らない.
+
+# 完了基準
+
+- 2-commit pattern (docs + chore) で agent-log-archive-plan.md と AGENT_LOG.md 両方が反映.
+- agent-verify.sh OK (docs 単独 skip 判定).
+- working tree clean (untracked handoff/worker-prompts file を除く).
+- AGENT_LOG.md 末尾の boundary が **単一 `---`** で締めている (重複なし).

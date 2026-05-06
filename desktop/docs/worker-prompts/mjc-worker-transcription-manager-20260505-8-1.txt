@@ -1,0 +1,107 @@
+あなたは meet-jerky の作業担当ワーカー (mjc-worker-transcription-manager-20260505-8-1, sonnet) です。
+Phase 3 着手 = `TranscriptionManager` + `TranscriptionStateHandle` を `src-tauri/src/transcription.rs` から新規ファイル `src-tauri/src/transcription_manager.rs` に抽出する Tidy First refactor を担当します。
+
+# 作業ディレクトリ
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+# 必読ドキュメント (作業前)
+1. **`AGENT_LOG.md` は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. **冒頭で `tail -350 AGENT_LOG.md` で末尾だけ読め** (ファイル全体は ~24,800 行 / ~1.97MB あるため Read 全体禁止)
+3. `docs/architecture/transcription-refactor-plan.md` (Phase 3 の指針: L66-70 = 責務 5 Transcription state を `transcription/manager.rs` に抽出)
+4. `AGENTS.md` (優先順位 1 = クラッシュ修正への予防的寄与 = 巨大ファイル理解性向上)
+5. **大型ファイルは Read 全体禁止**: `transcription.rs` (~2400 行) は `head -200`, `sed -n '40,170p'`, `grep -n` 等で対象範囲のみ参照。一括 Read は禁止。
+
+# 抽出対象 (実コード grep 済、本ループ実規模)
+- `src-tauri/src/transcription.rs` 内:
+  - **L45-152**: `pub struct TranscriptionManager` (struct 定義 + `impl TranscriptionManager` 全メソッド)
+  - **L153-165**: `pub struct TranscriptionStateHandle(pub Mutex<TranscriptionManager>);` + `impl TranscriptionStateHandle`
+  - 合計 ~120 行抽出見込み
+
+# 抽出先 (新規ファイル)
+- `src-tauri/src/transcription_manager.rs` (新規作成)
+
+# 担当範囲外の編集禁止 (規模超過防止)
+- **編集してよいファイル**: `src-tauri/src/transcription.rs`, `src-tauri/src/transcription_manager.rs` (新規), `src-tauri/src/lib.rs` (`mod` 宣言 1 行追加のみ), `AGENT_LOG.md` (末尾追記のみ)
+- **編集してはいけないファイル**: 上記以外のすべて (audio.rs / session_manager.rs / app_detection.rs / commands 関連 / frontend 等は触らない)
+- もし他ファイルへの import 変更が必要に見えたら、それは抽出設計が誤り = `pub use` 互換層を `transcription.rs` 側に残すことで他ファイルの import を変更不要にする (Phase 1 / 2-A / 2-B で確立した precedent)
+
+# 具体手順 (TDD 不要、構造改善のみ = Tidy First)
+
+## Step 1: 現状把握
+- `head -50 src-tauri/src/transcription.rs` で先頭の `pub use` 5 件と `pub struct TranscriptionManager` 定義を確認
+- `sed -n '45,170p' src-tauri/src/transcription.rs` で抽出対象 (TranscriptionManager + TranscriptionStateHandle) の現在の中身を確認
+- `grep -n "TranscriptionManager\|TranscriptionStateHandle" src-tauri/src/transcription.rs | head -30` で内部参照箇所を確認
+- `head -30 src-tauri/src/lib.rs` で `mod` 宣言の alphabetical 順を確認 (既存: `mod transcription;` → `mod transcription_model_manager;` → `mod transcription_traits;` → `mod transcription_types;` → `mod transcription_whisper_local;` → `mod transcription_whisper_stream;`)
+- 既存の抽出 precedent (`src-tauri/src/transcription_model_manager.rs`, `src-tauri/src/transcription_whisper_local.rs`) を `head -50` で参照、互換層パターンを学ぶ
+
+## Step 2: 新規ファイル作成 (`src-tauri/src/transcription_manager.rs`)
+- ファイル先頭に必要な `use` を集約:
+  - `use crate::transcription_model_manager::ModelManager;` (TranscriptionManager の `model_manager` フィールド型)
+  - `use crate::transcription_traits::TranscriptionEngine;` (TranscriptionManager の `engine` フィールド型 = `Option<Arc<dyn TranscriptionEngine>>`)
+  - `use std::sync::{Arc, Mutex};` (Mutex は TranscriptionStateHandle で使用)
+  - その他、impl 内部で使う型 (`TranscriptionSource`, `TranscriptionSegment`, `TranscriptionErrorPayload` 等は `crate::transcription_types::*` から)
+  - **注意**: 抽出元の `transcription.rs` で `pub struct TranscriptionManager` と `pub struct TranscriptionStateHandle` がどのモジュール経由で参照しているかを `sed -n '1,45p'` で確認し、同じ参照形式を移植
+- `pub struct TranscriptionManager { ... }` (フィールドは元ファイルからコピー、振る舞い完全不変)
+- `impl TranscriptionManager { ... }` (全メソッドを元ファイルからコピー、`pub fn new(...)` 等のシグネチャ完全不変)
+- `pub struct TranscriptionStateHandle(pub Mutex<TranscriptionManager>);`
+- `impl TranscriptionStateHandle { ... }` (元ファイルからコピー)
+
+## Step 3: `transcription.rs` 修正
+- **L45-165 の TranscriptionManager + TranscriptionStateHandle 全部を削除**
+- 既存の `pub use` 群 (L13-39 周辺) の **同列に** 互換層を 1 行追加:
+  ```rust
+  pub use crate::transcription_manager::{TranscriptionManager, TranscriptionStateHandle};
+  ```
+  既存 5 件の `pub use` (types / traits / whisper_local / whisper_stream / model_manager) と同じスタイル
+- もし `transcription.rs` 内の他箇所で `TranscriptionManager` / `TranscriptionStateHandle` を参照している箇所があれば (例: `tauri::State<'_, TranscriptionStateHandle>` を引数に取る関数群)、`pub use` で再エクスポートしているため変更不要のはず。`grep -n` で確認。
+- 抽出元で使われていた `Arc` / `Mutex` などの use 文が抽出後も transcription.rs で必要かを `grep -n "Arc\|Mutex" src-tauri/src/transcription.rs` で確認、不要なら削除 (clippy unused_imports 警告ゼロ維持)
+
+## Step 4: `src-tauri/src/lib.rs` 修正
+- alphabetical 順に `mod transcription_manager;` を追加
+- 既存順序: `mod transcription;` → **`mod transcription_manager;` (新規追加)** → `mod transcription_model_manager;` → `mod transcription_traits;` → ... (alphabetical)
+
+## Step 5: 検証 (必須、件数不変が振る舞い不変の指標)
+- `cargo test --lib` (carry-on で実行、必ず **678 passed / 0 failed** 件数不変)
+  - もし 677 以下や 679 以上なら、抽出設計が誤り = 即座に修正、件数を 678 に戻す
+- `cargo clippy --lib -- -D warnings` (警告ゼロ必須)
+- `cargo fmt --check` (整形維持必須)
+- `git diff --check` (trailing whitespace なし必須)
+
+## Step 6: commit
+- 既存 precedent と同じスタイルで commit message を WHY 中心に書く:
+  - `refactor(transcription): TranscriptionManager + TranscriptionStateHandle を transcription_manager.rs に抽出 (Tidy First, Phase 3 着手, mjc-main-20260505-8 Loop 15, ~120 行抽出 + pub use 互換層 + lib.rs mod 宣言, 678 passed 件数不変, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)`
+- `bash scripts/agent-commit.sh "..." src-tauri/src/transcription.rs src-tauri/src/transcription_manager.rs src-tauri/src/lib.rs` または直接 `git add ... && git commit -m "..."`
+
+## Step 7: AGENT_LOG.md 末尾追記 (担当ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認
+- 末尾に以下フォーマットで追記 (新規ファイルに書いてから `cat ... >> AGENT_LOG.md`):
+  ```
+  ## 2026-05-05 JST mjc-worker-transcription-manager-20260505-8-1
+  - 担当セッション: mjc-worker-transcription-manager-20260505-8-1 (作業担当, sonnet)
+  - 役割: Phase 3 着手 = TranscriptionManager + TranscriptionStateHandle を transcription_manager.rs に抽出 (Tidy First, mjc-main-20260505-8 Loop 15)
+  - 作業範囲: src-tauri/src/transcription.rs (L45-165 削除 + 互換層 1 行追加) + src-tauri/src/transcription_manager.rs (新規, ~120 行) + src-tauri/src/lib.rs (mod 宣言 1 行追加)
+  - 結果: cargo test --lib 678 passed (件数不変), clippy --lib -D warnings 警告ゼロ, fmt OK
+  - 累計 transcription.rs 削減: 約 X 行 (元 2999 → 現在 Y 行)
+  - commit: <commit_hash>
+  ---
+  ```
+
+# 規模超過防止 (再掲)
+- **テスト件数は 678 件のまま不変** (Tidy First = 構造改善のみ、振る舞い完全不変)
+- **担当範囲外のファイル (audio.rs / session_manager.rs / app_detection.rs / frontend 等) を編集してはいけない**
+- **新規テスト追加禁止** (本ループは構造改善のみ、テスト件数を増やさない)
+- もし作業中に「他ファイルの import を変更する必要がある」と感じたら **手を止めて再考**: `pub use` 互換層パターンで吸収できるはず
+
+# 行末空白文字禁止
+- **行末の空白文字 (trailing whitespace) を絶対に残さない**
+- `git diff --check` で trailing whitespace ゼロを最終確認
+
+# 完了条件
+1. `src-tauri/src/transcription_manager.rs` 新規作成 (~120 行)
+2. `src-tauri/src/transcription.rs` から TranscriptionManager + TranscriptionStateHandle 削除 + `pub use` 互換層 1 行追加
+3. `src-tauri/src/lib.rs` に `mod transcription_manager;` 追加 (alphabetical 順)
+4. `cargo test --lib` 678 passed (件数不変)、`cargo clippy --lib -- -D warnings` 警告ゼロ、`cargo fmt --check` OK、`git diff --check` OK
+5. commit 実行 (refactor(transcription): ... のスタイル)
+6. AGENT_LOG.md 末尾追記 (担当ループ実績)
+
+完了したら本セッションを終了してください (claude -p の最終出力で結果を返す)。

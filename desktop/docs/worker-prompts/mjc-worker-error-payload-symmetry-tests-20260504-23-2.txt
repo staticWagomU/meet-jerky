@@ -1,0 +1,162 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は **20251 行 / 1.7MB+** あるので **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` 相当で **末尾だけ参照** すること。**末尾の SESSION SUMMARY (mjc-main-22) と直前 worker 4 件 (mjc-main-22 の 3 件 + mjc-main-23 Loop 1 = mjc-worker-realtime-stream-error-boundary-tests-20260504-23-1) が文脈の起点**。
+
+# 担当範囲 (厳守)
+- src-tauri/src/transcription.rs の **mod tests 末尾に test 3 件追加のみ**
+- 関数本体 (`build_transcription_error_payload` / `build_worker_panic_error_payload` / 他関数全て) は **完全無変更**
+- 他のファイルは編集しない (例外: AGENT_LOG.md 末尾追記のみ)
+- **Tidy First 厳守** = ユーザー観測可能な振る舞い不変、test 追加のみ
+
+# 背景
+mjc-main-23 Loop 1 (commit 7b4db11) で `is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` の境界 test を 3 件追加 (497 → 500 passed)。本 Loop 2 = D 候補継続 = transcription.rs の error payload 系関数群 (`build_transcription_error_payload` / `build_worker_panic_error_payload`) の対称性補強。
+
+既存 test 5 件の埋まり方を **2x2 マトリクス (関数 × TranscriptionSource enum)** で見ると 2 つの未保護セルがある:
+- `build_transcription_error_payload` × Microphone = `build_transcription_error_payload_preserves_empty_error_string` (l.1986-1991) で empty error + Microphone はカバー、ただし通常 error 文字列 + Microphone は **未保護**
+- `build_worker_panic_error_payload` × SystemAudio = **完全未保護** (既存 `test_worker_panic_payload_does_not_expose_panic_details` (l.1313-1328) は Microphone のみ、`build_worker_panic_error_payload_omits_source_when_none` (l.1974-1983) は None のみ)
+
+加えて、**改行入り error 文字列の JSON escape 挙動** (`\n` が `"\\n"` になる serde_json 標準動作) は Tauri event payload (Rust → JS string) 互換性として CI 固定価値あり = 未保護の独立軸。
+
+# データ構造仕様 (前提知識)
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionSource {
+    Microphone,    // → JSON: "microphone"
+    SystemAudio,   // → JSON: "system_audio"
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct TranscriptionErrorPayload {
+    pub error: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<TranscriptionSource>,
+}
+
+fn build_transcription_error_payload(error: String, source: Option<TranscriptionSource>) -> TranscriptionErrorPayload { ... }
+fn build_worker_panic_error_payload(source: Option<TranscriptionSource>) -> TranscriptionErrorPayload {
+    build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)
+}
+
+#[cfg(test)]
+fn transcription_error_payload_to_value(payload: &TranscriptionErrorPayload) -> serde_json::Value { ... }
+```
+
+# 追加する test 3 件 (mod tests 末尾に追記)
+
+## T1: build_transcription_error_payload + Microphone enum (関数 × enum マトリクス充填)
+```rust
+#[test]
+fn build_transcription_error_payload_serialization_with_microphone_source() {
+    // 既存 test_transcription_error_payload_serialization_with_source は SystemAudio のみカバー。
+    // Microphone enum バリアントの serialization (snake_case → "microphone") を CI 固定。
+    // 2x2 マトリクス (関数 × TranscriptionSource enum) の未保護セルを充填。
+    let payload = build_transcription_error_payload(
+        "マイク入力の処理に失敗しました".to_string(),
+        Some(TranscriptionSource::Microphone),
+    );
+    assert_eq!(
+        transcription_error_payload_to_value(&payload),
+        serde_json::json!({
+            "error": "マイク入力の処理に失敗しました",
+            "source": "microphone",
+        })
+    );
+}
+```
+
+## T2: build_worker_panic_error_payload + SystemAudio (関数 × enum マトリクス充填)
+```rust
+#[test]
+fn build_worker_panic_error_payload_serialization_with_system_audio_source() {
+    // 既存 test_worker_panic_payload_does_not_expose_panic_details は Microphone のみ、
+    // build_worker_panic_error_payload_omits_source_when_none は None のみ。
+    // SystemAudio enum バリアントは未保護 = 2x2 マトリクス (関数 × source) の最後の未充填セル。
+    // panic details 漏洩防止と source 値の正確性を同時に CI 固定。
+    let payload = build_worker_panic_error_payload(Some(TranscriptionSource::SystemAudio));
+    let v = transcription_error_payload_to_value(&payload);
+    assert_eq!(
+        v.get("error").and_then(|x| x.as_str()),
+        Some("文字起こしワーカーが異常終了しました"),
+        "panic 文言は固定 (panic details 漏洩防止)"
+    );
+    assert_eq!(
+        v.get("source").and_then(|x| x.as_str()),
+        Some("system_audio"),
+        "SystemAudio enum バリアントは snake_case で system_audio に serialize される"
+    );
+    let serialized = v.to_string();
+    assert!(!serialized.contains("panic"), "panic という文字列を含まない");
+    assert!(!serialized.contains("payload"), "payload という文字列を含まない");
+}
+```
+
+## T3: 改行入り error 文字列の JSON escape (Tauri event payload 互換性)
+```rust
+#[test]
+fn build_transcription_error_payload_escapes_newlines_in_error_string() {
+    // 改行を含む error 文字列が serde_json 標準で "\\n" にエスケープされる現契約を CI 固定。
+    // Tauri event payload (Rust → JS string) として渡る際、改行が JSON valid な escape sequence
+    // であることを保証 = フロントエンド側で JSON.parse 後に \n として復元される互換性を保護。
+    // 例: "ERROR\nstack trace\n  at line 42" のような複数行 error も payload として安全に運べる。
+    let payload = build_transcription_error_payload(
+        "ERROR\nstack trace\n  at line 42".to_string(),
+        Some(TranscriptionSource::SystemAudio),
+    );
+    let v = transcription_error_payload_to_value(&payload);
+    assert_eq!(
+        v.get("error").and_then(|x| x.as_str()),
+        Some("ERROR\nstack trace\n  at line 42"),
+        "as_str() で取り出すと \\n は復元される (JSON 内部表現は \\\\n だが Value 経由で透過)"
+    );
+    let serialized = v.to_string();
+    assert!(
+        serialized.contains(r"ERROR\nstack trace\n  at line 42"),
+        "to_string() の生 JSON 文字列では改行が \\\\n にエスケープされる: {serialized}"
+    );
+}
+```
+
+# 追記場所
+- `src-tauri/src/transcription.rs` の最終 test (= mjc-main-23 Loop 1 で追加された `is_realtime_stream_already_stopped_error_matches_across_newlines`、Cargo HEAD では l.2113 周辺) の **直後** = mod tests 末尾の `}` 閉じ括弧の直前に 3 件追加
+- 既存 test 構造 (struct literal → 関数呼び出し → assert!/assert_eq! の順) と命名規則 (`<関数名>_<期待動作>_<入力種別>`) を踏襲
+- assert! メッセージは現契約の固定理由を **日本語で明記**
+
+# 検証手順 (worker 完了前に必ず実行)
+1. `cd src-tauri && cargo test --lib build_transcription_error_payload 2>&1 | tail -20` で 既存 +1件 + 新規 2 件 が pass (T1, T3)
+2. `cd src-tauri && cargo test --lib build_worker_panic_error_payload 2>&1 | tail -20` で 既存 1 件 + 新規 1 件 が pass (T2)
+3. `cd src-tauri && cargo test --lib 2>&1 | tail -10` で全体 503 passed (500 + 3) を確認
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings 2>&1 | tail -10` で警告ゼロ維持
+5. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で差分なし
+6. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` で全段 OK
+
+# AGENT_LOG.md 追記 (重要、事故防止)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**
+- 新規追記は **必ずファイル末尾に行う**
+- **先頭は絶対に触らない**
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認 (末尾は mjc-main-23 Loop 1 のログ + `---` 区切り)
+  2. **末尾の `---` 直後に新規 worker ログを追記**
+  3. 追記後 `tail -50 AGENT_LOG.md` で末尾追記成功を確認
+- 追記内容: 開始日時 (JST)、担当セッション (mjc-worker-error-payload-symmetry-tests-20260504-23-2)、役割 (worker, sonnet)、作業範囲 (src-tauri/src/transcription.rs の mod tests 末尾に test 3 件追加のみ)、指示内容の要約、結果 (test 件数 500 → 503 passed +3 件、clippy 警告ゼロ、fmt 差分なし)、変更ファイル (1 件のみ)、検証結果 (上記 6 段階全 OK)、設計判断 (3 件絞り込み理由、命名規則踏襲、2x2 マトリクス充填思想)、残リスク (なし、関数本体無変更)、次アクション (メイン側でレビュー → コミット)
+
+# 規模超過防止
+- **test 3 件のみ**。4 件以上は scope 超過 = 別 Loop に回す
+- 関数本体 (`build_transcription_error_payload` / `build_worker_panic_error_payload`) を 1 文字でも触ったら scope 超過
+- 他 fn (例: `validate_stream_count_for_engine`, `parse_requested_transcription_sources`) の test 追加も scope 超過 = 別 Loop に回す
+- 担当範囲外 (transcription.rs 以外のファイル) の編集禁止
+- AGENT_LOG.md 以外のドキュメントファイル変更禁止
+- コミット禁止 (メイン側で実施)
+
+# T3 の特殊注意
+- T3 では `assert!(serialized.contains(r"ERROR\nstack trace\n  at line 42"), ...)` のように **raw string literal `r"..."`** を使い、Rust ソース上で `\n` を 2 文字 (`\` + `n`) として扱うこと
+- これは serde_json の `to_string()` 出力が JSON spec に従い改行を `\n` (2 文字 escape sequence) として出力することを CI 固定するため
+- もし `"ERROR\nstack trace\n  at line 42"` (通常文字列) を使うと Rust ソース時点で改行 (1 文字) になり、想定と逆の挙動 test になるので注意
+
+# 報告
+1 ターンで完結する形でまとめてください。報告内容: 変更内容、変更ファイル (transcription.rs と AGENT_LOG.md のみ)、検証結果 (6 段階全 OK)、test 件数推移 (500 → 503)、残リスク (なし)、AGENT_LOG.md 追記成功確認 (`tail -10` 結果のサマリ)。

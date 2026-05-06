@@ -1,0 +1,211 @@
+あなたは meet-jerky の worker エージェントです。Loop 137 = TranscriptView.tsx Engine Status 系 3 純粋関数 (getEngineStatusLabel + getEngineStatusDisplayLabel + getEngineStatusPillClass) を新 file `src/utils/engineStatusHelpers.ts` に抽出します。
+
+# 必読 (順序重要)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+3. AGENT_LOG.md は時系列順 (最古ログ = 先頭、最新ログ = 末尾) = ~33,418+ 行 = **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` で末尾だけ参照。**先頭は絶対に触らない**。新規追記は必ずファイル末尾の `---` 直後に行う。
+4. 既存 precedent (cat で全体確認すること、各 ~12-78 行で軽量):
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioLevelHelpers.ts` (Loop 125)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/permissionStatusHelpers.ts` (Loop 127)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/trackStatusAriaLabels.ts` (Loop 129)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptionEngineHelpers.ts` (Loop 131 = engine 機能特性 tier = 異階層 reference)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/aiTransmissionHelpers.ts` (Loop 133)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioSourceHelpers.ts` (Loop 135 = display tier (audio source) = 同 display tier の最近 precedent)
+
+# 範囲制限 (厳守)
+
+- 編集対象は `src/routes/TranscriptView.tsx` (関数定義 3 件削除 + import 追加) と新規 `src/utils/engineStatusHelpers.ts` のみ。
+- それ以外のファイルは触らない。
+- TranscriptView.tsx 全体 (2294 行) は **絶対に Read 全体しない** = 必要な範囲だけ `Read offset=... limit=...` で参照。
+- 行末空白文字 (trailing whitespace) は **禁止**。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+
+# タスク詳細
+
+## 抽出対象 (TranscriptView.tsx L286-L328 の 3 関数)
+
+```ts
+function getEngineStatusLabel(
+  engine: TranscriptionEngineType | undefined,
+): string {
+  if (!engine) {
+    return "確認中";
+  }
+  if (engine === "appleSpeech") {
+    return "Apple Speech（端末内）";
+  }
+  if (engine === "openAIRealtime") {
+    return "OpenAI Realtime";
+  }
+  if (engine === "elevenLabsRealtime") {
+    return "ElevenLabs Realtime";
+  }
+  return "Whisper（端末内）";
+}
+
+function getEngineStatusDisplayLabel(statusLabel: string): string {
+  if (statusLabel === "Apple Speech（端末内）") {
+    return "Apple Speech";
+  }
+  if (statusLabel === "OpenAI Realtime") {
+    return "OpenAI";
+  }
+  if (statusLabel === "ElevenLabs Realtime") {
+    return "ElevenLabs";
+  }
+  if (statusLabel === "Whisper（端末内）") {
+    return "Whisper";
+  }
+  return statusLabel;
+}
+
+function getEngineStatusPillClass(statusLabel: string): string {
+  if (statusLabel === "確認できません") {
+    return "meeting-status-pill-error";
+  }
+  if (statusLabel === "確認中") {
+    return "meeting-status-pill-neutral";
+  }
+  return "meeting-status-pill-active";
+}
+```
+
+注意: `TranscriptionEngineType` は `../types` から TranscriptView.tsx に既に import されている (L23 周辺)。新 file `engineStatusHelpers.ts` でも同じ `import type { TranscriptionEngineType } from "../types";` を使う = **utils 内 cross-import なし** = paradigm は Loop 125/127/131 と同じ標準形 (純粋関数 export 化 + import 1 行追加)。**utils 内 cross-import paradigm は 4 件目で打ち止め継続** (本 Loop での paradigm 増加なし)。
+
+## callsite (TranscriptView.tsx で 3 件)
+
+- L1383: `getEngineStatusLabel(settings?.transcriptionEngine)`
+- L1385: `getEngineStatusDisplayLabel(engineStatusLabel)`
+- L2036: `getEngineStatusPillClass(engineStatusLabel)`
+
+→ import 1 行追加だけで参照解決される (関数名は同じ)。
+
+## 責務階層精査結論 (メインで完了済 = 後続作業は trust)
+
+- transcriptionEngineHelpers.ts (Loop 131) = engine の **機能特性** (`getRequiresLocalModel` + `getExternalApiProvider`) = **predicate / model display tier**
+- engineStatusHelpers.ts (本 Loop 137 新規) = engine の **状態 UI 表示** (status label + display label + pill class) = **display tier (engine status)**
+- → 同 file 統合不可 (異階層) = 新 file 作成軸採用が責務階層的に妥当 = Loop 119/121/123/125/127/129/131/133/135 教訓継承
+
+## 手順
+
+1. **新 file 作成**: `src/utils/engineStatusHelpers.ts` を新規作成。内容:
+   ```ts
+   import type { TranscriptionEngineType } from "../types";
+
+   export function getEngineStatusLabel(
+     engine: TranscriptionEngineType | undefined,
+   ): string {
+     if (!engine) {
+       return "確認中";
+     }
+     if (engine === "appleSpeech") {
+       return "Apple Speech（端末内）";
+     }
+     if (engine === "openAIRealtime") {
+       return "OpenAI Realtime";
+     }
+     if (engine === "elevenLabsRealtime") {
+       return "ElevenLabs Realtime";
+     }
+     return "Whisper（端末内）";
+   }
+
+   export function getEngineStatusDisplayLabel(statusLabel: string): string {
+     if (statusLabel === "Apple Speech（端末内）") {
+       return "Apple Speech";
+     }
+     if (statusLabel === "OpenAI Realtime") {
+       return "OpenAI";
+     }
+     if (statusLabel === "ElevenLabs Realtime") {
+       return "ElevenLabs";
+     }
+     if (statusLabel === "Whisper（端末内）") {
+       return "Whisper";
+     }
+     return statusLabel;
+   }
+
+   export function getEngineStatusPillClass(statusLabel: string): string {
+     if (statusLabel === "確認できません") {
+       return "meeting-status-pill-error";
+     }
+     if (statusLabel === "確認中") {
+       return "meeting-status-pill-neutral";
+     }
+     return "meeting-status-pill-active";
+   }
+   ```
+
+2. **TranscriptView.tsx 修正**:
+   - L286-L328 の `function getEngineStatusLabel(...)` + `function getEngineStatusDisplayLabel(...)` + `function getEngineStatusPillClass(...)` 定義 3 件を **削除** (前後の空行も整理)
+   - 既存の utils import 群の中に次の import を **追加** (alphabetical 的に `audioSourceHelpers` の隣 = `engineStatusHelpers` で a 順):
+     ```ts
+     import {
+       getEngineStatusDisplayLabel,
+       getEngineStatusLabel,
+       getEngineStatusPillClass,
+     } from "../utils/engineStatusHelpers";
+     ```
+   - **挿入位置は `grep -n "from \"../utils/" src/routes/TranscriptView.tsx | head -30` で確認** してから決める。`audioSourceHelpers` の直後 / `liveCaptionStatus` の前あたりが alphabetical 的に妥当。
+   - **TranscriptionEngineType import (L23 周辺) は維持**: TranscriptView.tsx の他箇所 (L193 / L246 = 別関数の引数型) で引き続き使用されるため。
+   - callsite (L1383/L1385/L2036 = 関数名は同じ) は import 追加だけで参照解決される = 修正不要。
+
+# 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build = ✓ 通ること
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/engineStatusHelpers.ts
+```
+
+両方 OK のときのみ commit に進む。
+
+# 2-commit pattern (Loop 60-136 の 77 連続 precedent と完全同形)
+
+## commit 1 (refactor)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/routes/TranscriptView.tsx src/utils/engineStatusHelpers.ts
+git commit -m "refactor(frontend): TranscriptView の Engine Status 系 helpers を utils/engineStatusHelpers.ts に抽出 (mjc-main-20260505-68 Loop 137, frontend 軸 13 件目 = 純粋関数機能分離軸 frontend 版 10 件目, scope 32 軸目開拓, 大型 frontend file 責務分離 45 file 目, getEngineStatusLabel + getEngineStatusDisplayLabel + getEngineStatusPillClass 抽出, R6 段階的分割 7 件目, transcriptionEngineHelpers.ts (engine 機能特性 tier) との責務階層精査で異階層判定 = display tier (engine status) として独立, AGENTS.md priority 1 寄与)"
+```
+
+commit hash を取得 (`git log --oneline -1` の左端 7 文字) して `<COMMIT1_HASH>` として記録。
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に **append のみ** で追記。**先頭は絶対に触らない**。
+
+追記内容 (テンポラリファイル `/tmp/loop137-entry.md` を Write してから `cat /tmp/loop137-entry.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-68 Loop 137 / 2026-05-06]
+worker: mjc-worker-loop137-engine-status-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 3 件削除 + import 追加) + src/utils/engineStatusHelpers.ts (新規 ~50 行 = type import 1 行 + export 3 関数)
+内容: TranscriptView.tsx L286-L328 の getEngineStatusLabel + getEngineStatusDisplayLabel + getEngineStatusPillClass を新 file utils/engineStatusHelpers.ts に抽出。frontend 軸 13 件目 = 純粋関数機能分離軸 frontend 版 10 件目 = scope 32 軸目開拓 = 大型 frontend file 責務分離 45 file 目 = R6 段階的分割 7 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission + Loop 135 Audio Source の続編)。callsite 3 件 (L1383 + L1385 + L2036) は import 追加のみで参照解決。alternation pattern 29 連続維持 (K(136) → frontend(137))。メイン批判判断 = handoff 主張「engineStatusHelpers.ts 既存ゼロ」を grep で批判的検証 → 既存 transcriptionEngineHelpers.ts (Loop 131 = engine 機能特性 tier = predicate / model display tier) 発見 + 責務階層精査で **異階層判定** (本新 file = engine status の display tier (status label + display label + pill class)) → 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は `../types` から TranscriptionEngineType を import するのみ = **utils 内 cross-import なし** = paradigm 4 件目 (audioSourceHelpers.ts) で打ち止め継続。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/engineStatusHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <COMMIT1_HASH> refactor(frontend): TranscriptView の Engine Status 系 helpers を utils/engineStatusHelpers.ts に抽出
+依存関係追加: なし (types/ への type import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+## commit 2 (chore)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-68 Loop 137 = TranscriptView の Engine Status 系 helpers を utils/engineStatusHelpers.ts に抽出 (構造分離 45 file 目, frontend 軸 13 件目, scope 32 軸目開拓, 純粋関数機能分離軸 frontend 版 10 件目, alternation 29 連続維持, R6 段階的分割 7 件目, transcriptionEngineHelpers.ts との責務階層異階層判定)"
+```
+
+# 完了確認
+
+`git log --oneline -3` で 2 commit 反映を確認:
+- 最新 = chore(agent-log): ... Loop 137 ...
+- その 1 つ前 = refactor(frontend): ... engineStatusHelpers.ts ...
+
+両方表示されたら作業完了。final answer 不要、停止せずメインエージェントに引き継がれる。

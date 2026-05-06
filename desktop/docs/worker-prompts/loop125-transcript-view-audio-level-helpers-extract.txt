@@ -1,0 +1,126 @@
+あなたは meet-jerky プロジェクトの worker (claude sonnet) です。
+mjc-main-20260505-64 の Loop 125 を担当します。
+
+# 必読 (冒頭で必ず実施)
+
+1. **AGENT_LOG.md の末尾 350 行を読め** (`tail -350 AGENT_LOG.md`)。**時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。** 末尾の `---` 直後に新規エントリを追記すること。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md を読め。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md を読め。
+4. **precedent file = src/utils/modelSelectorHelpers.ts を cat 全体読み込みせよ** (Loop 112 frontend 軸 4 件目 純粋関数機能分離軸 frontend 版の最近接 precedent = 規模 SS = 18 行で短小)。
+5. **precedent file = src/utils/meetingDetectedBannerHelpers.ts を cat 全体読み込みせよ** (Loop 114 frontend 軸 5 件目 precedent = 構造例)。
+
+# タスク概要 (Loop 125 = frontend 軸 7 件目 = 純粋関数機能分離軸 frontend 版 4 件目)
+
+## 目的
+
+`src/routes/TranscriptView.tsx` (2457 行) から **2 純粋関数** を分離して **frontend file 責務分離 39 file 目** + **scope 26 軸目開拓 (新 file `src/utils/audioLevelHelpers.ts`)** を達成する。
+
+**メイン批判判断発掘 (Loop 119/121/123 教訓継承 = paradigm 反復 < 責務階層精査)**:
+- 既存 `utils/transcriptViewFormatters.ts` の責務 = 「string/time formatter 純粋関数」 = formatOperationError, getFileName, getCompactSessionTitle, getRecentSessionMeta, formatElapsedTime
+- 抽出候補の責務 = 「audio level の数値処理 + UI bar 計算」 = **異階層**
+- ∴ **新 file `audioLevelHelpers.ts` 作成軸採用** (既存 file 拡張軸ではない)
+- 既存 `utils/audioLevelPayload.ts` (Tauri event payload 型) も別責務 = 統合不可
+- 既存 `components/AudioLevelMeter.tsx` の `sanitizeAudioLevelForDisplay` (clamp のみ) と TranscriptView 版 `sanitizeAudioLevel` (Number.isFinite チェック付き) は **仕様微妙に異なる** = 統合せず別関数として残す
+
+## 成果物 (commit 順)
+
+### Commit 1: refactor(frontend) — TranscriptView 純粋関数 audio level helpers を utils/audioLevelHelpers.ts に抽出
+
+#### 1A. 新 file `src/utils/audioLevelHelpers.ts` を作成
+
+以下の **2 純粋関数** を新 file へ移動 (export 化):
+
+**純粋関数 (移動 + export 化)**:
+- TranscriptView.tsx L520-525 `sanitizeAudioLevel(level: number): number` → `export function`
+- TranscriptView.tsx L527-534 `getPopoverLevelBars(level: number): [number, number, number]` → `export function` (依存: sanitizeAudioLevel)
+
+新 file 内では `sanitizeAudioLevel` を `getPopoverLevelBars` から呼ぶので、両者を同 file 内で完結させる。
+
+**新 file の冒頭コメント**: なし (precedent = transcriptViewFormatters.ts に倣う = コメントなしシンプルスタイル)
+
+#### 1B. 元 file `src/routes/TranscriptView.tsx` の修正
+
+- L520-534 を削除 (2 関数まるごと)
+- 既存 import section (L1-30 周辺) に `import { sanitizeAudioLevel, getPopoverLevelBars } from "../utils/audioLevelHelpers";` を追加 (alphabetical 順を維持)
+- callsite 5 件は **無変更で動作する** (関数名そのまま、import 追加のみで参照解決):
+  - L735 `sanitizeAudioLevel(payload.level)`
+  - L1511 `Math.round(sanitizeAudioLevel(micLevel) * 100) === 0`
+  - L1514 `Math.round(sanitizeAudioLevel(systemAudioLevel) * 100) === 0`
+  - L1693 `getPopoverLevelBars(micLevel)`
+  - L1694 `getPopoverLevelBars(systemAudioLevel)`
+
+#### 1C. 検証 (Commit 1 前に必ず実行)
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build 両方通ること
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/audioLevelHelpers.ts  # 全項目 OK 確認
+```
+
+#### 1D. Commit 1 メッセージ (Conventional Commits)
+
+```
+refactor(frontend): TranscriptView の audio level helpers を utils/audioLevelHelpers.ts に抽出 (mjc-main-20260505-64 Loop 125, frontend 軸 7 件目 = 純粋関数機能分離軸 frontend 版 4 件目, scope 26 軸目開拓, 大型 frontend file 責務分離 39 file 目, sanitizeAudioLevel + getPopoverLevelBars 抽出, AGENTS.md priority 1 寄与)
+```
+
+ファイルは `git add src/routes/TranscriptView.tsx src/utils/audioLevelHelpers.ts` のみ (AGENT_LOG.md は次の Commit 2 で別途追加)。
+
+Commit 1 完了後、`git log -1 --format=%H` で hash を取得して **記憶しておく** (Commit 2 の AGENT_LOG.md 追記で参照)。
+
+### Commit 2: chore(agent-log) — Loop 125 エントリ追記
+
+#### 2A. AGENT_LOG.md 末尾追記
+
+末尾の `---` 直後に以下のフォーマットでエントリ追記:
+
+```
+[mjc-main-20260505-64 Loop 125 / 2026-05-06]
+worker: mjc-worker-loop125-transcript-view-audio-level-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (-15 行 = 2 関数削除 + import 1 行追加 = 実質 -14 行) + src/utils/audioLevelHelpers.ts (新規 ~17 行 = export 2 関数)
+内容: TranscriptView.tsx L520-534 の sanitizeAudioLevel + getPopoverLevelBars を新 file utils/audioLevelHelpers.ts に抽出。frontend 軸 7 件目 = 純粋関数機能分離軸 frontend 版 4 件目 = scope 26 軸目開拓 = 大型 frontend file 責務分離 39 file 目。callsite 5 件 (L735 + L1511 + L1514 + L1693 + L1694) は import 追加のみで参照解決。alternation pattern 17 連続成功維持 (K(124) → frontend(125))。メイン批判判断 = 既存 utils/transcriptViewFormatters.ts (string/time formatter) と utils/audioLevelPayload.ts (Tauri event payload) との責務階層精査で **異階層 = 新 file 作成軸採用** = Loop 119/121/123 教訓継承 (paradigm 反復 < 責務階層精査)。AudioLevelMeter.tsx の sanitizeAudioLevelForDisplay (clamp のみ) と TranscriptView 版 sanitizeAudioLevel (Number.isFinite チェック付き) は仕様微妙に異なるため統合せず別関数として残す。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/audioLevelHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <Commit 1 で取得した hash> refactor(frontend): TranscriptView の audio level helpers を utils/audioLevelHelpers.ts に抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: メイン側で SESSION SUMMARY 末尾追記 chore commit を予定
+```
+
+`<Commit 1 で取得した hash>` は **必ず実 hash に置換**すること (`git log -1 --format=%H` で取得した値の先頭 7 文字)。
+
+#### 2B. Commit 2 検証 + メッセージ
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-64 Loop 125 = TranscriptView の audio level helpers を utils/audioLevelHelpers.ts に抽出 (構造分離 39 file 目, frontend 軸 7 件目, scope 26 軸目開拓, 純粋関数機能分離軸 frontend 版 4 件目, alternation 17 連続成功)"
+```
+
+# 規模超過防止段落 (絶対遵守)
+
+- **担当範囲は src/routes/TranscriptView.tsx + src/utils/audioLevelHelpers.ts + AGENT_LOG.md のみ**。それ以外のファイル (src-tauri/, components/, hooks/, plan.md 等) は **絶対に触らない**。
+- TranscriptView.tsx は 2457 行の大型 file = **Read 全体禁止** = `head -540 src/routes/TranscriptView.tsx | tail -30` 等の範囲指定で参照する。L520-534 抽出 + import 行追加 (上部) のみが目標。
+- 検証は **npm run build (tsc + vite build) のみ** (frontend 軸 = cargo 不要)。
+- **行末の空白文字 (trailing whitespace) 禁止** = エディタ設定 + `grep -nP " +$" file` で必ず確認。
+- 抽出 2 関数以外の純粋関数 (28 件中 26 件) は **本 Loop で触らない** (Loop 127+ で段階的に対応)。
+
+# 完走判定基準
+
+- Commit 1 = refactor(frontend) 1 件
+- Commit 2 = chore(agent-log) 1 件
+- AGENT_LOG.md 末尾に Loop 125 entry 追加済
+- npm run build OK + agent-verify.sh OK
+- git status clean (handoff/* と worker-prompts/* untracked のみ残留)
+
+# precedent (cat 全体推奨)
+
+- src/utils/modelSelectorHelpers.ts (Loop 112 = 18 行 = 規模 SS = 最近接 precedent)
+- src/utils/meetingDetectedBannerHelpers.ts (Loop 114 = 構造例)
+- src/utils/transcriptViewFormatters.ts (Loop 107 = 同 utils/ 配下 = 命名スタイル参考)
+
+# その他
+
+- claude-agent-handoff-main.sh は触らない (interactive TUI 起動用)。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+- 完走後は端末で本 worker を終了 (claude -p print mode は最終出力一括方式 = stdout は完了まで空)。
+
+頑張ってください。Loop 125 完走 = 累計 worker 完走 224/224 (100% 維持) を期待します。

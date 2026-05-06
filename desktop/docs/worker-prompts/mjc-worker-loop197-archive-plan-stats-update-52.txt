@@ -1,0 +1,112 @@
+あなたは meet-jerky の worker です. mjc-main Loop 197 のタスクを 2-commit pattern で完走してください.
+
+# 最初に必ず実施
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ読む. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**. 先頭は絶対に触らない.
+2. `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾形状を再確認.
+
+# タスク
+
+`docs/architecture/agent-log-archive-plan.md` の **Section 2.3「増加率の推定」末尾** に Loop 196 完了時点の更新観測ブロックを 1 段落追加する (= 観測 52 件目 = 節目 50 件突破後 2 件目).
+
+## 背景 (Loop 195 = 観測 51 件目 = 節目 50 件突破後 1 件目 = 軽量化階層中央値水準下端維持の precedent 継承)
+
+- 本 file の Section 2.3 末尾は L134 = Loop 194 完了時点の観測ブロック (前回 Loop 195 worker が追記)
+- Loop 195 chore commit `97dcd2d` の構造を **そのまま継承** + 数値だけ更新
+
+## 主要計測結果 (Loop 194 完了時 → Loop 196 完了時、~2 ループ間)
+
+- AGENT_LOG.md: **34571 → 34601** = **+30 行** / 2 loop = 平均 **+15 行/loop**
+- SESSION SUMMARY 1 件 (mjc-main-20260505-94 = commit `411db2d` = +14 行 = 中量化階層下端)
+- chore entry のみ Loop 195 +8 行 (commit `97dcd2d`) + Loop 196 +8 行 (commit `818e02d`) = +16 行 / 2 loop = **+8 行/loop = 軽量化階層中央値水準下端維持**
+- docs entry 1 件 (Loop 195 = `97b2947` Section 2.3 観測 51 件目追記 = AGENT_LOG.md 触らず = 0 行)
+- refactor entry 1 件 (Loop 196 = `a905399` AGENT_LOG.md 触らず = 0 行)
+
+## 連続観測指標 (Loop 196 完了時点)
+
+- 軽量化階層中央値水準 ~11-12 行/loop の **18 連続観測達成** (Loop 163=11 / 165=11 / 166=12 / 168=12 / 170=12.5 / 172=12.5 / 174=11 / 176=14.5 / 178=11 / 180=8 / 182=8 / 184=8 / 186=8 / 188=8 / 190=8 / 192=9 / 194=8.5 / 196=8 = 軽量化階層下端維持の継続) = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 13 件目
+- frontend 軸軽量化 paradigm 27 連続観測達成
+- **rust 軸 const 集約 paradigm 反復 9 件目達成** (Loop 196 = transcription_commands_helpers.rs に ERROR_INVALID_TRANSCRIPTION_SOURCE + ERROR_APPLE_SPEECH_MULTIPLE_STREAMS 2 const 追加 + 7 callsite 統一) = **paradigm 系統樹拡張 12 件目候補** = 既存 file 拡張軸 paradigm rust 版開拓 = const 集約軸 frontend 10 + rust 2 = 計 12 連続 = paradigm 完全成熟期 cross-language 拡張更なる持続
+- alternation pattern pivot: K(193) → rust(194) → K(195) → rust(196) → K(197) = 33 → 34 → 35 → 36 → 37 = **加速期維持 = 節目 30 件突破後 7 件目**
+- メイン批判判断 連続 **97 セッション目達成** (handoff prompt R30 拡張事前探索 「主要候補なし」 を私が独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成)
+- worker 自律 2-commit pattern 連続 **51 ループ目達成** (Loop 145-196 = 52 連続安定 = 節目 50 件突破後 1 件目)
+- worker prompt 必須要素 9 (冒頭 `---` 含めない) **28 連続実証成功** (Loop 168-196 = 節目 25 連続突破後 3 件目)
+
+## 具体手順
+
+### Step 1: 現在の Section 2.3 末尾を確認
+
+`grep -n "^### 2.3\|^### 2.4" /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md`
+
+→ Section 2.3 が L32 開始、Section 2.4 が L136 開始. 末尾観測ブロックは L134 (Loop 194 完了時点).
+
+### Step 2: 既存 Loop 195 chore 構造の precedent
+
+`tail -350 AGENT_LOG.md` で Loop 195 entry の構造を確認 (`docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 194 完了時点の更新観測追記` commit `97b2947` の中身).
+
+### Step 3: 新観測ブロックを追加
+
+L134 の `> **更新観測 (mjc-main Loop 194 完了時点 ...)**: ...` 段落の **直後** (= L135 行は空行、L136 = `### 2.4` の前) に新たに 1 段落追加.
+
+新観測ブロック書式 (precedent L134 と同形式):
+
+```
+> **更新観測 (mjc-main Loop 196 完了時点 = SS 1 件 + 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続 = rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期 cross-language 拡張更なる持続 = paradigm 系統樹拡張 12 件目候補確立 = 節目 5 連続超え後 13 件目)**: Loop 194 → Loop 196 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-94 commit `411db2d`) で +30 行 (34571 → 34601)、平均 ~15 行/loop。**SUMMARY commit `411db2d` が中量化階層下端 (+14 行)** が支配変数で、chore entry のみだと Loop 195 +8 行 + Loop 196 +8 行 = +16 行 / 2 loop = +8 行/loop (Loop 195 = K 軸 = +8 行 = 軽量化階層中央値水準下端、Loop 196 = SS-S 規模 rust 軸 const 集約 paradigm 反復 9 件目 = +8 行 = **軽量化階層下端維持 = SS-S 規模で paradigm 反復 9 件目 (rust 軸 別 file 集約 paradigm 開拓) 達成 + paradigm 系統樹拡張 12 件目候補確立で記述定型化が更に進行**) = **軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 (Loop 163=11 / 165=11 / 166=12 / 168=12 / 170=12.5 / 172=12.5 / 174=11 / 176=14.5 / 178=11 / 180=8 / 182=8 / 184=8 / 186=8 / 188=8 / 190=8 / 192=9 / 194=8.5 / 196=8 = 軽量化階層下端維持の継続) = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 13 件目** = paradigm pivot 多軸 (Loop 195 = harness 衛生 K 軸 = chore entry 1 件 + docs entry 1 件 = 観測 51 件目 = 節目 50 件突破後 1 件目 + Loop 196 = **rust 軸** = **rust 軸 const 集約 paradigm 反復 9 件目 = paradigm 系統樹拡張 12 件目候補 = 既存 file 拡張軸 paradigm rust 版開拓 (transcription_commands_helpers.rs は既存 const TRANSCRIPTION_SOURCE_MICROPHONE/SYSTEM_AUDIO 2 件確立 file への並列拡張 = frontend statusLabels.ts pattern の rust 版開拓)** = src/transcription_commands_helpers.rs に `pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE: &str = "..."; pub(crate) const ERROR_APPLE_SPEECH_MULTIPLE_STREAMS: &str = "...";` 追加 + 文言 1 (4 callsite = 本番 1 + test 3) + 文言 2 (3 callsite = 本番 1 + test 2) = 計 7 callsite を const 参照に統一 (DRY 違反解消, callsite 7 件無変更で API 互換維持, ネット行数 ~+1 行のみ, **frontend 軸 const 集約 10 連続 (Loop 174-192) → rust 軸 const 集約 1 件目 (Loop 194 = cloud_whisper.rs 新規 const 追加軸 paradigm 1 件目) → rust 軸 const 集約 2 件目 (Loop 196 = transcription_commands_helpers.rs 既存 const 拡張軸 paradigm rust 版 1 件目) = paradigm 完全成熟期 12 連続観測 (frontend 10 + rust 2 = 計 12 件) = const 集約 paradigm の cross-language 拡張更なる持続**, alternation pivot K(195) → rust(196) = 35 → 36 = 節目 30 件突破後 6 件目 = pivot 加速期維持) = chore +8 行 + refactor は AGENT_LOG.md 触らず = 0 行寄与) で SESSION SUMMARY 1 件 (commit `411db2d` = +14 行 = SUMMARY 説明中量化階層下端 = 2 ループ実績 + メイン批判判断 連続 96 セッション目達成 + worker 自律 2-commit pattern 連続 50 ループ目達成 = 節目 50 件突破 + paradigm 完全成熟期 cross-language 拡張達成 = 節目 11 件突破 等の累積マイルストーン記述による説明量増加が主因) + chore entry 2 件 (Loop 195 chore = +8 行 + Loop 196 chore = +8 行 = 計 +16 行) + docs entry 1 件 (Loop 195 docs = archive-plan.md Section 2.3 観測 51 件目追記 = AGENT_LOG.md 触らず = 0 行寄与) + refactor entry 1 件 (Loop 196 refactor = AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。**rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補確立 = paradigm 完全成熟期 cross-language 拡張更なる持続 = 既存 file 拡張軸 paradigm rust 版開拓** (Loop 174-192 = frontend 軸 10 連続 const 集約 → Loop 194 = rust 軸 1 件目 const 集約 = 新規 const 追加軸 paradigm → Loop 196 = rust 軸 2 件目 const 集約 = 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補確立) + **メイン批判判断 連続 97 セッション目達成** (handoff prompt R30 拡張事前探索 「主要候補なし」 を私が独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成) + alternation pivot 加速継続 (... → K(193) → rust(194) → K(195) → rust(196) = 33 → 34 → 35 → 36 = pivot 加速期維持). 観測 52 件目 = 節目 50 件突破後 2 件目 = K 軸自体の paradigm 完全成熟期維持. 長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~8 行 chore = ~32 行/時間 の範囲、rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補確立 = paradigm 完全成熟期 cross-language 拡張更なる持続).
+```
+
+(改行は **1 段落 = 1 行 (long-form)** で、precedent 構造に準拠. blockquote `> ` 始まり、末尾は通常文字 (period の後改行) で閉じる)
+
+### Step 4: 検証
+
+`bash /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/scripts/agent-verify.sh /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md`
+
+→ docs のみ skip 判定 OK (cargo / npm 不要)
+
+### Step 5: 1 commit 目 (docs(architecture))
+
+`git add /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md && bash /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/scripts/agent-commit.sh "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 196 完了時点の更新観測追記 (mjc-main Loop 197, harness 衛生軸 = K 軸 = alternation 復帰 = K(195) → rust(196) → K(197) = 35 → 36 → 37, Loop 79/81/.../194 precedent 52 件目 = 節目 50 件突破後 2 件目, +30 行 / 平均 ~15 行/loop = SUMMARY 中量化階層下端 / chore のみ +8 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続 + frontend 軸軽量化 paradigm 27 連続観測達成 + rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補 = paradigm 完全成熟期 cross-language 拡張更なる持続)" docs/architecture/agent-log-archive-plan.md`
+
+### Step 6: 2 commit 目 (chore(agent-log))
+
+ファイルへ Write して `cat <file> >> AGENT_LOG.md` で append.
+
+**重要**:
+- entry テンプレート冒頭に `---` を **含めない** (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む.
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+entry テンプレート (冒頭 `---` なし、末尾 `---` 1 個):
+
+```
+[mjc-main Loop 197 / 2026-05-06]
+worker: mjc-worker-loop197-archive-plan-stats-update-52 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 194 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+変更: Loop 196 完了時点の更新観測ブロック追加 = AGENT_LOG.md +30 行 (34571 → 34601) / 平均 ~15 行/loop / SUMMARY commit `411db2d` 中量化階層下端 +14 行 / chore のみ Loop 195 +8 + Loop 196 +8 = +16 行 / 2 loop = +8 行/loop = 軽量化階層中央値水準下端維持 = **軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 13 件目** + frontend 軸軽量化 paradigm 27 連続観測達成 + **rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補 = paradigm 完全成熟期 cross-language 拡張更なる持続** (Loop 174-192 frontend 10 + Loop 194/196 rust 2 = 計 12 連続)
+意義: harness 衛生軸 = K 軸 = alternation 復帰 = K(195) → rust(196) → K(197) = 35 → 36 → 37 = 加速期維持 = 節目 30 件突破後 7 件目. Loop 79/81/.../194 precedent 52 件目 = 節目 50 件突破後 2 件目. plan 現状把握更新で archive plan rationale 維持 + paradigm 系統樹拡張観測の継続記録.
+検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
+備考: Loop 196 で rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補確立 = 既存 file 拡張軸 paradigm rust 版開拓 (transcription_commands_helpers.rs は既存 const 確立 file への並列拡張). 後継候補 = R36 (cloud_whisper.rs OpenAI API URL test fixture 集約 = test 内のみ + 規模 S) / R37 (大型 file 責務分離 52 件目候補 = 規模 M-L) / R34 (K 軸 2 連続 = ローカル最適化リスク批判要) のいずれか採用検討.
+---
+```
+
+(末尾は `---` 1 個 + 改行で締める. 冒頭は `---` を含めない = 前 entry の閉じ `---` を再利用)
+
+`bash /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/scripts/agent-commit.sh "chore(agent-log): mjc-main Loop 197 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = K 軸 = alternation 復帰, 観測 52 件目 = 節目 50 件突破後 2 件目, AGENT_LOG.md +30 行 / 平均 ~15 行/loop = SUMMARY 中量化階層下端 / chore のみ +8 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続 + frontend 軸軽量化 paradigm 27 連続観測達成 + rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補 = paradigm 完全成熟期 cross-language 拡張更なる持続) のエントリ追記" AGENT_LOG.md`
+
+### Step 7: 完走報告
+
+`git status --short` (working tree clean を確認) と `git log --oneline -3` (2 commit 反映を確認) を出力.
+
+# 規模超過防止 (重要)
+
+- **担当範囲外の編集禁止**: docs/architecture/agent-log-archive-plan.md と AGENT_LOG.md のみ編集. 他の file は触らない.
+- **Section 2.3 への追加は 1 段落のみ**. precedent (L134) の直後に追加.
+- **大型ファイル Read 全体禁止**: AGENT_LOG.md は **tail で末尾のみ読む**. 全体 Read 禁止.
+
+# 制約 (再掲)
+
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- 1 ループ目標 9-15 分以内 = K 軸は規模 SS = ~3-7 分が想定
+- 完了したら mjc-main に戻る (= worker process exit すれば自動)
+
+完走後、メインが check するため `git status --short` clean + `git log --oneline -3` で 2 commit 確認できる状態にしてください.

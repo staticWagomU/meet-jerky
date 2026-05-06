@@ -1,0 +1,189 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/apple_speech_macos.rs` (Loop 95 抽出, ~154 行 = inline module 全体抽出 paradigm の最近接 precedent = cfg(macos) 版)
+6. precedent (cat 全体): `cat src-tauri/src/realtime_ws_helpers.rs` (Loop 102 直前抽出, ~464 行 = realtime engine scope の直近 worker 自律学習 paradigm = 純粋関数 helpers 抽出版)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/openai_realtime_ws_task.rs` (~220 行)
+- 編集: `src-tauri/src/openai_realtime.rs` (`mod ws_task { ... }` block ~218 行削除 + L69 const 削除 + 冒頭 use alias 1 行追加)
+- 編集: `src-tauri/src/lib.rs` (1 行追加 = `mod openai_realtime_ws_task;`)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 104 タスク内容 (構造分離 27 件目, realtime engine 5 軸目, inline module 全体抽出 paradigm 2 件目 = cfg(macos) なし sub-paradigm)
+
+## 背景
+
+- Loop 100 = settings_commands 軸抽出 (機能分類軸 paradigm)。Loop 101 = transcription_commands_helpers 軸抽出 (純粋関数機能分離軸 paradigm)。Loop 102 = realtime_ws_helpers 軸抽出 (純粋関数機能分離軸 2 連続)。Loop 103 = harness 衛生軸 K (Section 2.3 観測追記 6 件目)。
+- Loop 104 では更なる paradigm pivot が必須 (純粋関数機能分離軸 3 連続防止 + K 軸 2 連続防止) = inline module 全体抽出 paradigm = apple_speech_macos.rs (Loop 95) 同形 sub-paradigm = **cfg(macos) なし版** = paradigm pivot 達成。
+- openai_realtime.rs (1018 行) は file 内に明確な 3 領域: (a) struct + impl 共通部 (L1-171 = OpenAIRealtimeEngine struct + impl + REALTIME_SAMPLE_RATE const + OpenAIRealtimeStream struct + impl new/feed/drain/finalize + Drop) と (b) `mod ws_task { ... }` (L177-394 = ~218 行 = WebSocket タスク本体 = RunParams struct + pub async fn run + pub(crate) fn handle_event) と (c) `#[cfg(test)] mod tests { ... }` (L396-1018 = ~622 行 = engine_construction + handle_event_* x 12 + push_error_* x 5 + engine_default_debug_* x 2 + audio_command_* x 3 + その他 = 計 33 tests)。後者 (b) を独立 file に分離することで、openai_realtime.rs は struct + impl + tests のみとなり、WebSocket I/O 詳細は openai_realtime_ws_task.rs に集約される。AGENTS.md priority 1 寄与。
+- caller は openai_realtime.rs L94 の 1 箇所のみ (`ws_task::run(ws_task::RunParams { ... })`) = production caller 影響 1 行
+- mod tests (L396-1018, 33 件) は **alias 戦略で無変更**: 元 file 冒頭に `use crate::openai_realtime_ws_task as ws_task;` を追加することで、tests 内の `ws_task::handle_event(...)` 22 箇所が全て無変更で動作する = test 移動不要 = 規模 S 維持
+- elevenlabs_realtime.rs (1190 → 636 行 = Loop 102 で -47% 達成) と並行して realtime engine scope = realtime_audio_command + realtime_audio_helpers + realtime_error_helpers + realtime_reader_task + realtime_ws_helpers (Loop 102) = 4 軸完了 + 本 Loop で 5 軸目達成 = scope depth 軸 (settings + transcription_commands + realtime engine) 4 件確立
+
+## 抽出対象 (openai_realtime.rs から openai_realtime_ws_task.rs へ移動)
+
+**Production block (openai_realtime.rs L177-394, ~218 行)**:
+
+- L177: `mod ws_task {`
+- L178-192: use 文 (std::sync/std::time/base64/futures_util/parking_lot/rubato/serde_json/tokio/tokio_tungstenite + crate::realtime_audio_helpers + crate::transcription_types + super::{AudioCommand, REALTIME_SAMPLE_RATE})
+- L194: `const READER_FINALIZE_TIMEOUT: Duration = Duration::from_secs(10);`
+- L196-205: `pub struct RunParams { ... }` (api_key + model + language + sample_rate + audio_rx + pending + speaker + source)
+- L207-345: `pub async fn run(params: RunParams) -> Result<(), String>` (~140 行 = WebSocket 接続 + session.update 送信 + リサンプラー準備 + reader_task spawn + 送信ループ + 終了処理)
+- L347-393: `pub(crate) fn handle_event(text, pending, speaker, source)` (~47 行 = JSON parse + completed event 処理 + error event 処理)
+- L394: `}` (mod ws_task closing brace)
+
+**Const 移動対象 (openai_realtime.rs L69)**:
+
+- L69: `const REALTIME_SAMPLE_RATE: u32 = 24_000;` (private const) → 新 file に移動 (ws_task 内のみで使用、外部参照ゼロ確認済)
+
+これら以外 (L1-68 = use 文 + struct + impl, L70-176 = OpenAIRealtimeStream + impl, L396-1018 = mod tests) は **絶対に触らない** (元 file 残留 + alias で吸収)。
+
+## 抽出方式 (Loop 95 apple_speech_macos.rs precedent 踏襲 + cfg(macos) 削除版)
+
+### 1. 新規 file 作成 = `src-tauri/src/openai_realtime_ws_task.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! OpenAI Realtime API の WebSocket タスク実装。
+//!
+//! `openai_realtime.rs` から `mod ws_task` を切り出し、WebSocket I/O 詳細
+//! (接続 + session.update + リサンプリング + 送受信ループ + handle_event) を集約する。
+//! caller は `openai_realtime.rs` の `OpenAIRealtimeStream::new` 内 spawn のみ。
+```
+
+元 `mod ws_task { ... }` の中身を、外側 `mod ws_task {` ブレースを取り除いた状態で flat に展開する。`pub` visibility は `RunParams` / `pub async fn run` / `pub(crate) fn handle_event` を維持 (caller `crate::openai_realtime_ws_task::run` から参照可能になるよう)。
+
+`use super::{AudioCommand, REALTIME_SAMPLE_RATE};` は移動先で **削除** し、代わりに以下を追加:
+- `use crate::realtime_audio_command::AudioCommand;` (元 file 冒頭 L28 と同じ use)
+- `const REALTIME_SAMPLE_RATE: u32 = 24_000;` (元 file L69 から移動)
+
+その他の use 文は維持:
+- `use std::sync::Arc;`
+- `use std::time::Duration;`
+- `use base64::Engine;`
+- `use futures_util::{SinkExt, StreamExt};`
+- `use parking_lot::Mutex;`
+- `use rubato::SincFixedIn;`
+- `use serde_json::json;`
+- `use tokio::sync::mpsc::UnboundedReceiver;`
+- `use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};`
+- `use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};`
+- `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};`
+
+`crate::realtime_reader_task::run_reader_task` と `crate::realtime_error_helpers::push_error` の参照 (L298, L384) は元 file と同じ crate:: 絶対パスのまま維持。
+
+注意: 新 file 全体には cfg 属性をかけない (apple_speech_macos.rs と異なる sub-paradigm = cfg(macos) なし版)。lib.rs 側でも cfg なしで `mod openai_realtime_ws_task;` を追加する。
+
+### 2. openai_realtime.rs 編集
+
+- L69 `const REALTIME_SAMPLE_RATE: u32 = 24_000;` 削除 (新 file へ移動)
+- L177-394 `mod ws_task { ... }` block 全体削除 (~218 行)
+- 冒頭の use 文ブロック (L24-31 付近) の **末尾に** `use crate::openai_realtime_ws_task as ws_task;` を 1 行追加 (alias 戦略 = production L94 caller + tests 内 22 箇所の `ws_task::run`/`ws_task::RunParams`/`ws_task::handle_event` を全て無変更で動作させる)
+  - 追加位置目安: `use crate::transcription_types::...;` の直後 (alphabetical 順 + 同 file の openai_realtime_ws_task alias は最後)
+- file 冒頭 docstring (L1-22) は不変
+- L33-176 (OpenAIRealtimeEngine + OpenAIRealtimeStream + impl + Drop) は不変
+- L396-1018 (mod tests) は完全不変 (33 件全て alias 経由で動作)
+- 削除後 openai_realtime.rs は ~798 行 (1018 - 218 - 1 const - 1 alias 追加 = -218 行) になる想定
+
+### 3. lib.rs 編集 (alphabetical 順, cfg なし)
+
+- 既存 `mod openai_realtime;` (L26) の **直後** に `mod openai_realtime_ws_task;` を 1 行追加 (alphabetical 順 = `openai_realtime` < `openai_realtime_ws_task` < `realtime_audio_command`)
+- それ以外の lib.rs 修正は禁止 (invoke_handler は影響なし = `tauri::command` 含まないため)
+
+### 4. test の取り扱い
+
+`mod tests` (L396-1018, 33 件) は touch しない。alias `use crate::openai_realtime_ws_task as ws_task;` を元 file 冒頭に追加することで、tests 内の `ws_task::handle_event(...)` 22 箇所が全て無変更で動作する = 移動不要 = test 件数 704 完全不変。
+
+## 規模超過防止 (重要)
+
+- L69 const 1 行削除 + L177-394 block 削除 + 冒頭 use alias 1 行追加 + lib.rs 1 行追加 + 新 file 作成以外は絶対に触らない
+- 担当範囲外の修正は禁止
+- トータル test 件数は **704 = 完全不変** (移動なし、alias 経由で 33 件全て動作)
+- 振る舞い不変 = caller path 変更なし (alias で吸収)
+- struct 共通部 (L33-176) と tests (L396-1018) は不変
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → エラーや warning が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/openai_realtime.rs src-tauri/src/openai_realtime_ws_task.rs src-tauri/src/lib.rs`
+
+注意: alias `use crate::openai_realtime_ws_task as ws_task;` は private alias = test mod (`#[cfg(test)] mod tests`) 内からは `super::ws_task::handle_event(...)` で参照されるはず。元 file の tests は `use super::*;` で全て import しているため alias も自動的に test mod に visible になる。clippy で `unused_imports` や `dead_code` が出る場合は **alias の visibility を `pub(crate)` または `pub(super)` に上げる** か、test mod 内に同じ alias を再追加する。
+
+# コミット (2-commit pattern, Loop 80/85-103 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/openai_realtime.rs src-tauri/src/openai_realtime_ws_task.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(realtime): mod ws_task (RunParams + run + handle_event + REALTIME_SAMPLE_RATE) を openai_realtime_ws_task.rs に抽出 (mjc-main-20260505-54 Loop 104, 機能分離軸 = realtime engine 5 軸目, 大型 rust file 責務分離 27 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-54 Loop 104 / 2026-05-05]
+worker: mjc-worker-openai-realtime-ws-task-loop104 (作業)
+範囲: src-tauri/src/openai_realtime.rs (mod ws_task block ~218 行削除 + REALTIME_SAMPLE_RATE const 1 行削除 + use alias 1 行追加) + src-tauri/src/openai_realtime_ws_task.rs (新規 ~220 行) + src-tauri/src/lib.rs (mod openai_realtime_ws_task; 1 行追加)
+内容: openai_realtime.rs L177-394 の mod ws_task block (RunParams struct + pub async fn run ~140 行 + pub(crate) fn handle_event ~47 行 + READER_FINALIZE_TIMEOUT const) を新 module openai_realtime_ws_task.rs に inline module 全体抽出。L69 REALTIME_SAMPLE_RATE const も新 file に移動 (ws_task 内のみで使用、外部参照ゼロ)。元 file 冒頭に use crate::openai_realtime_ws_task as ws_task; 追加で production L94 caller + tests 33 件 (handle_event 参照 22 箇所) 全て無変更。lib.rs に mod openai_realtime_ws_task; 追加 (alphabetical 順 = openai_realtime と realtime_audio_command の間)。元 file struct + impl 共通部 (L1-176) と mod tests (L396-1018) は完全不変。大型 rust file 責務分離 27 file 目 = realtime engine 5 軸目 (realtime_audio_command + realtime_audio_helpers + realtime_error_helpers + realtime_reader_task + realtime_ws_helpers Loop 102 + openai_realtime_ws_task Loop 104) = scope depth 軸 4 件確立 (settings + transcription_commands + realtime engine) = harness 衛生軸 (Loop 103) からの pivot 達成 = inline module 全体抽出 paradigm 2 件目 (apple_speech_macos Loop 95 cfg(macos) 版に対し本 Loop は cfg なし sub-paradigm)。openai_realtime.rs 1018 → ~798 行 (-22%)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(realtime): mod ws_task を openai_realtime_ws_task.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = realtime engine scope の 5 軸目分離 = WebSocket I/O 詳細の専用 file 化 = openai_realtime.rs を struct/impl + tests のみに簡素化)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換 (Loop 80/85-103 precedent)。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-54 Loop 104 = openai_realtime_ws_task.rs 抽出 (構造分離 27 file 目, realtime engine 5 軸目 = scope depth 軸 4 件確立, harness 衛生軸からの pivot 達成 = inline module 全体抽出 paradigm 2 件目 cfg(macos) なし sub-paradigm) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件 (openai_realtime.rs / openai_realtime_ws_task.rs / lib.rs / AGENT_LOG.md)
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば、特に alias visibility 関連の clippy warning 対処内容)
+
+1 ターンで完結する形でまとめてください。

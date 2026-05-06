@@ -1,0 +1,229 @@
+# Loop 76 Worker: render_session_markdown 抽出
+
+あなたは meet-jerky の worker (mjc-worker-loop76)。
+mjc-main-20260505-38 (canonical 名 mjc-main) からの発注。
+
+# 最初に必ず読むこと (順守必須)
+
+1. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. **大型ファイルは Read 全体禁止 = `tail`/`head`/`grep` で対象範囲のみ参照。**
+3. 末尾追記の手順:
+   - `tail -10 AGENT_LOG.md` で末尾を確認
+   - 末尾の `---` 直後 (最後のセッション SUMMARY 末尾) に新エントリを追記
+4. AGENT_LOG.md 末尾 350 行を `tail -350 AGENT_LOG.md` で読み、最新 SESSION SUMMARY (mjc-main-20260505-37) と Loop 74-75 のフォーマットを把握。
+5. `bash scripts/agent-verify.sh` の挙動を `cat scripts/agent-verify.sh` で確認 (修正対象 .rs ファイル群を引数に渡す pattern)。
+6. **trailing whitespace (行末空白) は禁止**。
+
+# 必読 precedent (cat で全体読み込み)
+
+- `cat src-tauri/src/session_manager_persist.rs` (Loop 75 = 単一 fn 抽出 + visibility 昇格パターン)
+- `cat src-tauri/src/session_store_parse.rs` (Loop 69 = 複数 fn 抽出 + tests は元 file に残置 = 本 Loop 76 では tests も移動するため部分的な参考)
+- `cat src-tauri/src/session_store_types.rs` (Loop 67 = 構造分離 mini precedent)
+- `cat src-tauri/src/lib.rs | head -60` で mod 宣言の整列順序を確認 (alphabetical)
+
+# タスク概要 (規模 S = ~38 行 fn + 9 件 tests + use 文整理)
+
+`src-tauri/src/session_store.rs` の **render_session_markdown** + 専用依存 fn 2 件 (`unix_secs_i64` / `io_invalid`) + 関連 tests 9 件 を、新規 module `src-tauri/src/session_store_render.rs` に集約抽出する。
+
+## 抽出対象 (session_store.rs から削除する範囲)
+
+1. **本体 fn (3 件)**:
+   - L42-72: `fn render_session_markdown(...)` (~31 行) ← visibility を `pub(crate)` に昇格
+   - L74-77: `fn unix_secs_i64(label: &str, unix_secs: u64) -> std::io::Result<i64>` ← private 維持
+   - L79-81: `fn io_invalid(message: impl Into<String>) -> Error` ← private 維持
+
+2. **関連 tests (9 件)** (mod tests 内、`#[test]` 関数):
+   - L409-423: `render_session_markdown_returns_same_content_as_save_session_markdown`
+   - L425-436: `render_session_markdown_returns_invalid_input_error_when_started_at_exceeds_i64`
+   - L438-452: `render_session_markdown_returns_invalid_input_error_when_segment_timestamp_overflows_checked_add`
+   - L454-464: `render_session_markdown_succeeds_with_zero_segments`
+   - L466-480: `render_session_markdown_returns_invalid_input_error_when_segment_abs_exceeds_i64`
+   - L580-584: `unix_secs_i64_returns_value_for_valid_u64_inputs`
+   - L586-599: `unix_secs_i64_returns_invalid_input_error_for_overflow`
+   - L601-609: `unix_secs_i64_error_message_includes_label_and_value_exactly`
+   - L611-620: `io_invalid_always_returns_invalid_input_kind_with_passed_message`
+   - **正確な行範囲は `grep -n "fn render_session_markdown\|fn unix_secs_i64\|fn io_invalid" src-tauri/src/session_store.rs` と前後の `#[test]` を頼りに確定する** (本 prompt の行番号は参考)
+
+3. **session_store.rs の use 文修正**:
+   - L7 `use std::io::{BufRead, BufReader, Error, ErrorKind, Read};` → `Error` を削除 (`use std::io::{BufRead, BufReader, ErrorKind, Read};` に変更、ErrorKind は tests で多用)
+   - L10-12 `use crate::datetime_fmt::{format_segment_timestamp_with_offset, format_session_header_timestamp_with_offset};` → 削除 (render 専用)
+   - L13 `use crate::markdown::{self, SessionMeta};` → 削除 (render 専用)
+   - 追加: `use crate::session_store_render::render_session_markdown;` (top-level use)
+   - L37 `let body = render_session_markdown(session, offset)?;` はそのまま (use 文経由で名前解決)
+
+## 新規 file の構造 (session_store_render.rs)
+
+```rust
+//! セッションを Markdown 文字列にレンダリングする内部ヘルパー module。
+//!
+//! ファイル I/O は session_store.rs に閉じ込めるため、こちらは pure な変換専門。
+
+use std::io::{Error, ErrorKind};
+
+use chrono::FixedOffset;
+
+use crate::datetime_fmt::{
+    format_segment_timestamp_with_offset, format_session_header_timestamp_with_offset,
+};
+use crate::markdown::{self, SessionMeta};
+use crate::session::Session;
+
+/// セッションを Markdown 文字列に整形する内部ヘルパー。
+pub(crate) fn render_session_markdown(
+    session: &Session,
+    offset: FixedOffset,
+) -> std::io::Result<String> {
+    // 元 session_store.rs L42-72 の本体をそのままコピー (振る舞い不変)
+}
+
+fn unix_secs_i64(label: &str, unix_secs: u64) -> std::io::Result<i64> {
+    // 元 session_store.rs L74-77 の本体をそのままコピー
+}
+
+fn io_invalid(message: impl Into<String>) -> Error {
+    // 元 session_store.rs L79-81 の本体をそのままコピー
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::io::ErrorKind;
+
+    use chrono::FixedOffset;
+    use tempfile::tempdir;
+
+    use crate::session::Session;
+    use crate::session_store::save_session_markdown;
+
+    fn jst() -> FixedOffset {
+        FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+
+    // 元 session_store.rs から移動した 9 tests を順次貼り付け
+    // (テスト本体は振る舞い不変、import の解決のみ意識)
+}
+```
+
+## lib.rs 修正
+
+`src-tauri/src/lib.rs` L29 (`mod session_store_parse;`) と L30 (`mod session_store_types;`) の間に **`mod session_store_render;`** を挿入 (alphabetical 順)。
+
+## visibility 方針 (重要、handoff より修正)
+
+- `render_session_markdown` のみ `pub(crate)` 昇格 (caller = session_store.rs L37)
+- `unix_secs_i64` / `io_invalid` は **private 維持** (caller は session_store_render.rs 内のみ)
+- これにより visibility 昇格は **1 fn のみ** (handoff 推奨の Plan A = 2 fn 昇格より最小)
+
+# 規模超過防止 (重要)
+
+- 担当範囲外の編集禁止: 本 prompt で指定した 3 file (session_store.rs / session_store_render.rs / lib.rs) **のみ**を変更すること
+- AGENT_LOG.md は **末尾追記のみ**、先頭/中間は絶対に触らない
+- test 件数は変動禁止: 元 705 件 → 移動後も **705 passed / 0 failed** (件数完全不変)
+- 既存 fn 名 / 引数 / 戻り型 / doc コメントは **完全に保持** (振る舞い不変)
+- **trailing whitespace (行末空白) 禁止**
+
+# 検証 (verify.sh + 手動 grep)
+
+```bash
+cd src-tauri
+cargo build --lib
+cargo test --lib                                # 705 passed / 0 failed (件数不変)
+cargo clippy --lib --tests -- -D warnings       # 警告ゼロ
+cargo fmt --check
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/session_store.rs src-tauri/src/session_store_render.rs src-tauri/src/lib.rs
+
+# 配置確認 grep
+grep -n "fn render_session_markdown\|fn unix_secs_i64\|fn io_invalid" src-tauri/src/session_store.rs   # 0 件 (削除確認)
+grep -n "fn render_session_markdown\|fn unix_secs_i64\|fn io_invalid" src-tauri/src/session_store_render.rs   # 各 1 件
+grep -n "session_store_render" src-tauri/src/lib.rs                                                   # 1 件
+grep -n "use crate::session_store_render::" src-tauri/src/session_store.rs                            # 1 件
+```
+
+# 2-commit pattern (必須、Loop 60-75 で 16 連続実証)
+
+## 1st commit (refactor)
+
+```bash
+git add src-tauri/src/session_store.rs src-tauri/src/session_store_render.rs src-tauri/src/lib.rs
+git commit -m "refactor(session_store): render_session_markdown と専用ヘルパー fn 3 件 + 関連 tests 9 件を session_store_render.rs に抽出 (mjc-main-20260505-38 Loop 76, ~38 行抽出 + tests 9 件移動 + lib.rs mod 追加 + use 文整理, session_store.rs 1133 → ~1095 行への段階的責務分離, AGENTS.md priority 1 寄与, visibility 昇格は render_session_markdown 1 fn のみ = 最小)"
+```
+
+`git rev-parse HEAD` で hash を取得。
+
+## AGENT_LOG.md エントリ追記 (Loop 74-75 と同フォーマット)
+
+`tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` 直後に以下を追記:
+
+```
+[mjc-main-20260505-38 Loop 76 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_store_render.rs (新規) を作成し、session_store.rs から以下を移動:
+  - render_session_markdown fn (~31 行、本体 + doc) を `pub(crate) fn` として配置
+  - unix_secs_i64 fn (4 行) を private fn として配置
+  - io_invalid fn (3 行) を private fn として配置
+  - mod tests 内に 9 件の test を移動 (render 5 + unix_secs_i64 3 + io_invalid 1)
+- src-tauri/src/lib.rs に `mod session_store_render;` を session_store_parse と session_store_types の間に追加 (alphabetical)
+- src-tauri/src/session_store.rs:
+  - L7 use std::io::{...} から Error を削除 (ErrorKind は tests で残置)
+  - L10-13 datetime_fmt + markdown 関連 use 文を削除 (render 専用)
+  - top-level に `use crate::session_store_render::render_session_markdown;` を追加
+  - 該当 fn 3 件 + tests 9 件を削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_store.rs ~1133 行 → ~1095 行への段階的責務分離)
+- session_manager_persist.rs (Loop 75) precedent 直接展開 + session_store_parse.rs (Loop 69) precedent 構造踏襲
+- 大型 rust file 責務分離 6 file 目達成 (audio / session_store / realtime / session_manager_types / session_manager_persist / session_store_render)
+- handoff X3 の Plan A (依存 fn を pub(crate) 化で残す) を批判的に修正 = render 専用ヘルパー 2 件は session_store_render.rs に同梱して private 維持 → visibility 昇格を 2→1 fn に削減 + locality 完全集約
+
+## How (Tidy First, behavior-preserving)
+- visibility: render_session_markdown のみ private → pub(crate) (caller 1 件 session_store.rs L37 から名前解決)、unix_secs_i64 / io_invalid は private 維持
+- 振る舞い不変 = 705 件 pass 件数不変
+- mod tests 内 jst() 再定義 (1 行 fn) で session_store.rs の jst() と独立
+- use 文: render 専用は新 file へ移動、共有は session_store.rs に残置
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_store.rs から `fn render_session_markdown` を grep: 0 件
+- session_store_render.rs から `pub(crate) fn render_session_markdown` を grep: 1 件
+- trailing whitespace: なし
+
+## commit
+- <commit-hash>
+```
+
+`<commit-hash>` には 1st commit の hash を入れる。
+
+## 2nd commit (chore: hash 反映)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 76 commit hash <hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-75 precedent 適用 17 連続)"
+```
+
+# 完走後の最終確認
+
+```bash
+git log --oneline -3
+git status --short
+cargo test --lib 2>&1 | tail -5
+```
+
+成功条件:
+- 直近 commit 2 件が refactor + chore (hash 反映)
+- working tree clean (untracked docs/handoff/* 等は元から)
+- test 705 passed / 0 failed
+
+# 注意事項 (critical)
+
+- `--no-verify` は厳禁
+- session_store.rs L37 の caller `let body = render_session_markdown(session, offset)?;` は **そのまま保持** (top-level use 文経由で名前解決)
+- session_store.rs 内 mod tests の他 tests (save_session_markdown 関連、list_session_files 関連、parse_session_started_at_secs 関連、unescape_inline_markdown_text 関連、write_session_markdown_to 関連) は **触らない** (移動禁止)
+- 移動 tests 9 件で `use std::io::ErrorKind;` を inline 宣言している箇所 (L588, L613) は新 mod tests の top-level use 文に集約してよい (短縮)
+- jst() を session_store.rs と session_store_render.rs の両方で定義することは許容 (test util 重複だが simplicity 優先)

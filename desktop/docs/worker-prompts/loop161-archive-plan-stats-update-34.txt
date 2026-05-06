@@ -1,0 +1,98 @@
+# mjc-worker-loop161-archive-plan-stats-update-34 / 2026-05-06 / mjc-main-20260505-79 Loop 161
+
+あなたは meet-jerky の作業エージェントです。Loop 161 = K' 軸 = harness 衛生軸 = `docs/architecture/agent-log-archive-plan.md` の Section 2.3 に Loop 160 完了時点の **更新観測 (34 件目 = SS 0 件 ultra-light 単独 chore 階層 ~7 行/loop の新発見)** を追記する作業を実施します。precedent = Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150/152/154/156/158/160 = 33 件。
+
+**注**: 本 Loop 161 = Loop 160 と同 K 軸 2 連続 = alternation pattern reset (47 → 1)。これは handoff prompt が許容した「Loop 162 推奨だが alternation reset リスク」の実証 + **新観測 paradigm「ultra-light 単独 chore 階層 ~7 行/loop」発見** = 観測価値高で受容。
+
+## 必読 (順序遵守)
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. `sed -n '96,100p' docs/architecture/agent-log-archive-plan.md` で Section 2.3 末尾の Loop 157 観測ブロック (L96) と Loop 159 観測ブロック (L98) と空行 (L99) と次セクション (L100 = "### 2.4") の構造を確認
+
+## 作業内容 (3 step)
+
+### Step 1: agent-log-archive-plan.md 編集
+
+L98 = Loop 159 観測ブロックの直後 (L99 = 空行) に新観測ブロック (mjc-main-20260505-79 Loop 160 完了時点) を追加する。
+
+Edit 操作:
+- old_string = L98 末尾 (`...ultra-light 階層安定化期入り)。`) + L99 の空行 + L100 (`### 2.4 既存運用の維持コスト`)
+- new_string = L98 末尾 + L99 空行 + 新観測ブロック + 空行 + L100
+
+具体的には次の Edit を実施 (空行構造を厳密に維持):
+
+old_string (3 行 = L98 末尾 + L99 空行 + L100):
+```
+~40-100 行/時間 の範囲、SUMMARY 軽量化期間 4 連続継続 + ultra-light 階層安定化期入り)。
+
+### 2.4 既存運用の維持コスト
+```
+
+new_string (5 行 = L98 末尾 + L99 空行 + 新 entry 1 行 + 空行 + L100):
+```
+~40-100 行/時間 の範囲、SUMMARY 軽量化期間 4 連続継続 + ultra-light 階層安定化期入り)。
+
+> **更新観測 (mjc-main-20260505-79 Loop 160 完了時点 = K' 軸 = SS 0 件 ultra-light 単独 chore 階層 ~7 行/loop の新発見)**: Loop 159 → Loop 160 (~1 ループ間 + SESSION SUMMARY 0 件) で +7 行 (33,937 → 33,944)、平均 ~7 行/loop。Loop 159 観測値 (~10 行/loop = SS 1 件 + 説明軽量化 + ultra-light 階層 + chore entry 動的軽量化) と比較して **-30% 減 (-3 行/loop)** = ultra-light 階層下端の更なる拡大、かつ既存 SS 0 件階層 (Loop 121/127/135 = ~11-12 行/loop = 3 連続観測) と比較して **-36% 減 (-4-5 行/loop)** = **SS 0 件 ultra-light 単独 chore サブ階層 ~7 行/loop の新発見** = 4 段階階層化 → 5 段階階層化への拡張観測 = paradigm pivot 単軸 (Loop 160 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 = +7 行 = 単独 chore のみで構成 = K 軸 K' 連続観測の SS なしバリエーション)。SS 0 件 + chore 1 件のみという新パターン = K 軸 32 件目 (Loop 158) → 33 件目 (Loop 160) は同 K 軸 2 連続 = alternation pattern reset (47 連続 → 1) でありながら、観測値の新階層発見が paradigm 価値として確立 = K 軸 alternation reset paradigm の意義: 「同軸連続でも観測値の新階層発見が達成できる」 = 軽量化階層下端の継続的拡大期入り = 5 段階階層化 paradigm への進化過程観測。Loop 159 観測値との -30% 減の主因 = **SS 0 件 vs SS 1 件 の構造的差異** (SS 0 件 = SUMMARY 行が不在のため自然減 + chore entry 単独構成 = 単独軽量) + **K' 軸が定型最軽量** (Loop 160 chore = +7 行 = K 軸定型 entry の精度限界値、~6-7 行が下限) + **SS 0 件階層との比較** (~11-12 行/loop) との -36% 減 = 単独 chore 階層が SS 0 件階層 (= 多 chore + docs 構成) より更に軽量。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) + rust 軸軽量化 paradigm (~7 行/件 = Loop 155/157/159 = 3 連続観測) + **K 軸 K' 単独 chore 階層 ~7 行/loop** = 全 paradigm で軽量化が完全実証期入り = paradigm 領域拡大の完全成熟期維持 + **5 段階階層化への進化観測**。SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量 + SUMMARY 説明量の 4 軸が支配変数 = **SS 0 件 + 多 entry = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測) / SS 0 件 + 単独 chore = ~7 行/loop (Loop 160 = 初観測 = ultra-light 単独 chore 階層の発見 = 5 段階階層化 paradigm 候補) / SS 1 件 + 説明軽量化 = ~9-26 行/loop (Loop 125/129/131/133/137/139/141/143/145/147/153/155/157/159 = 14 連続観測達成) / SS 1 件 + 説明中量化 = ~30-37 行/loop (Loop 149/151 = 2 連続観測達成) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の **5 段階階層化 paradigm への進化過程観測 + ultra-light 単独 chore サブ階層 ~7 行/loop の新発見**。観測 34 件目 = 節目突破後継続 = K 軸自体の paradigm 完全成熟期維持 + alternation reset リスクを伴う K' 軸 paradigm の意義実証。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~7 行 = ~28-70 行/時間 の範囲、軽量化階層下端の更なる拡大期入り)。
+
+### 2.4 既存運用の維持コスト
+```
+
+### Step 2: 検証
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop してから:
+
+```bash
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+```
+
+= OK (docs 単独変更 = 自動 skip 判定で OK)
+
+### Step 3: 2-commit pattern (worker 自律実行)
+
+#### Commit 1: docs
+
+```bash
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 160 完了時点の更新観測追記 (mjc-main-20260505-79 Loop 161, harness 衛生軸 = K' 軸 = alternation reset 受容, Loop 79/81/.../160 precedent 34 件目, +7 行 / 平均 ~7 行/loop = Loop 159 観測値 -30% 減 = ultra-light 階層下端の更なる拡大 + SS 0 件 ultra-light 単独 chore サブ階層 ~7 行/loop の新発見 = 5 段階階層化 paradigm への進化観測)"
+```
+
+#### Commit 2: chore (AGENT_LOG.md 末尾追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → `---` 直後に Loop 161 entry を append (**1 回のみ Edit/Write、複数回繰り返さない、append が成功したら直ちに次へ進む**):
+
+```
+[mjc-main-20260505-79 Loop 161 / 2026-05-06]
+worker: mjc-worker-loop161-archive-plan-stats-update-34 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 159 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 160 完了時点の更新観測 34 件目を追記。Loop 159 → Loop 160 で +7 行 (33,937 → 33,944), 平均 ~7 行/loop = Loop 159 観測 (~10 行/loop) -30% 減 = ultra-light 階層下端の更なる拡大 + SS 0 件 ultra-light 単独 chore サブ階層 ~7 行/loop の新発見 = 5 段階階層化 paradigm への進化観測 + alternation reset 受容 (K(160) → K'(161) = 同 K 軸 2 連続 = alternation 47 → 1)。
+検証: agent-verify.sh = OK (docs 単独 skip 判定)。
+意義: K 軸 precedent 34 件目達成 = 節目突破後継続 + ultra-light 単独 chore サブ階層 ~7 行/loop の新発見 = 4 段階 → 5 段階階層化への進化観測 + alternation reset 受容で K' 軸 paradigm の意義実証 + worker 自律 2-commit pattern 連続 17 ループ目達成 = 節目 17 件突破継続。
+---
+```
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-79 Loop 161 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = K' 軸 = alternation reset 受容, 観測 34 件目, +7 行 / 平均 ~7 行/loop = Loop 159 観測値 -30% 減 = ultra-light 階層下端の更なる拡大 + SS 0 件 ultra-light 単独 chore サブ階層 ~7 行/loop の新発見 = 5 段階階層化 paradigm への進化観測) のエントリ追記"
+```
+
+### 完了確認
+
+`git log --oneline -3` で 2 commit が作成されていることを確認。`git status --short` で working tree clean を確認 (handoff/worker-prompts ファイルは untracked 継続)。
+
+## 制約 (重要)
+
+- **担当範囲外の編集禁止**: 上記 2 file (agent-log-archive-plan.md / AGENT_LOG.md) のみ編集
+- **行末空白文字 (trailing whitespace) 禁止** = 各行末尾に空白文字を残さない
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から、Loop 146-160 で 15 連続実証成功)
+- 大型 file は Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **2-commit pattern を厳守** = docs commit + chore commit の 2 つを順番に作成
+- `--no-verify` 禁止、Keychain 実通信禁止、課金禁止
+- 課題発生時は中断して報告。状況不明なら勝手に file を作らない。
+
+## 想定完走時間
+
+規模 SS = ~3-5 分完走見込み (K 軸 = 定型タスクで最軽量、Loop 160 precedent = ~3 分)
+
+precedent: Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150/152/154/156/158/160 = 33 件全て完走実績。
+
+以上、よろしくお願いします。

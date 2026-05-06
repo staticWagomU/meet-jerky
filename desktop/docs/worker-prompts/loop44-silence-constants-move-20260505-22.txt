@@ -1,0 +1,159 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First (Kent Beck) で振る舞い不変の構造改善を 1 ループ完結で行います。
+
+# 最初に必ずやること
+1. **AGENT_LOG.md の末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で読んで状況把握する。AGENT_LOG.md は ~26,900 行 / 2.4MB あるので、Read ツールで全体を読まないこと (context 爆発)。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾に行う**。**先頭は絶対に触らない**。
+3. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 区切り行の直後に新エントリを Edit/Write append する。
+
+# タスク (Loop 44 候補 E = 沈黙検知定数 audio_utils.rs 移動 / mjc-main-20260505-22)
+
+## 背景
+- 前 Loop 42 (commit `5456409`) で **calculate_rms / is_tail_silent 関数** と **テスト 6 件** はすでに src-tauri/src/audio_utils.rs に locality 集約済。
+- ただし関連 const 3 件 (`MIN_FLUSH_SAMPLES` / `SILENCE_LOOKBACK_SAMPLES` / `SILENCE_THRESHOLD_RMS`) は src-tauri/src/transcription.rs L43/L46/L50 に残留 = locality 未完成。
+- 本ループでこの 3 const を audio_utils.rs に移して三位一体 (関数 + テスト + 定数) の locality 完成を達成する。
+
+## 移動対象 (transcription.rs L42-50 の rustdoc コメントごと 3 const)
+
+```rust
+/// 早期 flush を許可する最小チャンク長 (1 秒 @ 16kHz)。これ未満では Whisper の精度が落ちるため flush しない。
+pub(crate) const MIN_FLUSH_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize; // 16000
+
+/// 末尾の沈黙判定に使うウィンドウ長 (0.5 秒 @ 16kHz)。
+pub(crate) const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 2; // 8000
+
+/// 沈黙とみなす RMS 閾値 (-40dBFS 相当 ≈ 0.01)。実機の背景ノイズで再調整が必要。
+/// 調査担当推奨の -60dBFS (= 0.001) は会議室背景ノイズより低く誤判定リスクが大きいため、より安全側を選択。
+pub(crate) const SILENCE_THRESHOLD_RMS: f32 = 0.01;
+```
+
+## 残置すべき定数 (transcription.rs に残す)
+- `WHISPER_SAMPLE_RATE` (L30) = Whisper エンジンの根本仕様、audio_utils domain ではない
+- `CHUNK_DURATION_SECS` (L37) / `CHUNK_SAMPLES` (L40) = Whisper チャンク設計、audio_utils domain ではない
+
+## 実装手順 (3 ファイル変更)
+
+### 1. src-tauri/src/audio_utils.rs に const 3 件を追加
+- 場所: L20-23 セクションコメント `// ─ 沈黙検知ユーティリティ (純粋関数) ─` の直下、`pub(crate) fn calculate_rms` (L26) の **直前**
+- 追加内容:
+  - `use crate::transcription::WHISPER_SAMPLE_RATE;` を import (ファイル先頭の use ブロックに追加するか、沈黙検知セクション内で局所 use する判断は worker に委ねる。**locality 重視なら沈黙検知セクション内**を推奨、ただし Rust 慣習的にファイル先頭でも可)
+  - 上記 3 const + rustdoc コメントをそのまま移動 (rustdoc 文言は一字一句保持)
+
+### 2. src-tauri/src/audio_utils.rs L255-257 のテスト用 import を整理
+- 現状: `use crate::transcription::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS,};` (Loop 42 で追加した tests mod 内 import)
+- 移動後 audio_utils.rs 自身が定数を持つので、`use super::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS};` に変更する
+  - **理由**: tests mod は `use super::*;` を持つので完全削除も検討可能だが、L256-257 は明示 import で可読性高い = 同じ明示形式のまま super 経由にする方が diff 最小
+  - **判断は worker に委ねる**: 完全削除 (super::* 経由) でも `use super::{...}` でも OK
+
+### 3. src-tauri/src/transcription.rs L42-50 を削除
+- 上記 3 const + rustdoc コメントを削除
+- L41 の separator コメント (`// ─ 早期 flush を許可する最小チャンク長 ─` 等のセパレータがある場合) も整理判断
+- **削除後の transcription.rs L41 周辺がどう見えるか確認**: `WHISPER_SAMPLE_RATE` (L30) と `CHUNK_DURATION_SECS` (L37) / `CHUNK_SAMPLES` (L40) は残し、L41-50 のみ削除。直後の `// 文字起こしループ` セクション (L32-34) は CHUNK 系のラベルなので残す。
+- transcription.rs 内に他の use 文整理 (移動後 unused になるものはなし、grep で確認推奨) は不要
+
+### 4. src-tauri/src/transcription_whisper_stream.rs L7-10 の use 文を整理
+- 現状:
+  ```rust
+  use crate::audio_utils::{is_tail_silent, sinc_params, RESAMPLE_CHUNK_SIZE};
+  use crate::transcription::{
+      CHUNK_DURATION_SECS, CHUNK_SAMPLES, MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES,
+      SILENCE_THRESHOLD_RMS, WHISPER_SAMPLE_RATE,
+  };
+  ```
+- 変更後:
+  ```rust
+  use crate::audio_utils::{
+      is_tail_silent, sinc_params, MIN_FLUSH_SAMPLES, RESAMPLE_CHUNK_SIZE,
+      SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS,
+  };
+  use crate::transcription::{CHUNK_DURATION_SECS, CHUNK_SAMPLES, WHISPER_SAMPLE_RATE};
+  ```
+- (rustfmt で形式が変わる場合は cargo fmt 後の形式に従う)
+
+## 規模超過防止 (重要)
+
+- **本タスクは規模 SS-S (1 ループ完結確実)**。担当範囲は **3 ファイル (audio_utils.rs / transcription.rs / transcription_whisper_stream.rs) のみ**。
+- 他のテスト追加 / 他の関数移動 / 他のファイル整理は **絶対にしない**。範囲外の変更を見つけても今回は触らない。
+- **テスト件数の上限 = 0 件追加** (既存 702 passed が件数不変であることが振る舞い不変保証)。新規テスト追加は不要。
+- 大型ファイル (transcription.rs 688 行 / audio_utils.rs 314 行 / transcription_whisper_stream.rs) は **Read で全体を読まず、行範囲指定 (offset + limit) または `grep`/`sed -n 'A,Bp'` で対象範囲のみ参照** すること。
+
+## 検証手順 (必須)
+
+```bash
+cd src-tauri
+cargo test --lib 2>&1 | tail -5    # 702 passed / 0 failed が件数不変確認
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10   # 警告ゼロ確認
+cargo fmt --check 2>&1 | tail -5   # 整形 OK 確認
+```
+
+`cargo fmt --check` が失敗した場合は `cargo fmt` を実行して整形を反映してから再 check。
+
+加えて agent-verify.sh も走らせる:
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh src-tauri/src/audio_utils.rs src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs
+```
+
+## trailing whitespace 禁止 (必須)
+
+**追加・編集した行の行末に空白文字 (スペース・タブ) を入れない**。markdown / Rust ともに行末空白は禁止。CI が warning を吐く。worker 側で commit 前に grep で確認推奨:
+```bash
+grep -n ' $' src-tauri/src/audio_utils.rs src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs | head -5
+```
+何もヒットしないこと。
+
+## commit 手順 (worker 自走、scripts/agent-commit.sh 使用)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-commit.sh "refactor(transcription): 沈黙検知定数 3 件 (MIN_FLUSH_SAMPLES / SILENCE_LOOKBACK_SAMPLES / SILENCE_THRESHOLD_RMS) を audio_utils.rs に移動 (Tidy First, mjc-main-20260505-22 Loop 44)" src-tauri/src/audio_utils.rs src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs
+```
+
+## AGENT_LOG.md 末尾追記フォーマット
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認し、その直後に **以下のテンプレートで Write 形式で追記** (Edit ツールでは `---` が unique にならないため Write で末尾全文置換、または別ファイルに書いて `cat tmp.md >> AGENT_LOG.md` で append):
+
+```
+[mjc-main-20260505-22 Loop 44 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から沈黙検知定数 3 件 (`MIN_FLUSH_SAMPLES` / `SILENCE_LOOKBACK_SAMPLES` / `SILENCE_THRESHOLD_RMS`) を src-tauri/src/audio_utils.rs に移動 (rustdoc コメントごと)
+- src-tauri/src/audio_utils.rs に `use crate::transcription::WHISPER_SAMPLE_RATE;` import 追加 (定数依存維持)
+- src-tauri/src/audio_utils.rs L255-257 の tests mod 内 `use crate::transcription::{...}` を `use super::{...}` (または完全削除) に整理
+- src-tauri/src/transcription_whisper_stream.rs L7-10 の use 文整理 (3 const を audio_utils 経由に変更)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (関数 + テスト + 定数の locality 三位一体完成 = 理解性向上)
+- Loop 42 で関数 calculate_rms / is_tail_silent + テスト 6 件を audio_utils.rs に集約済 = 関連定数を同じ locality に置くのが Tidy First 的に自然
+- variety pivot 軸 = struct/const 移動軸 = Loop 33 から 11 ループ間隔 = sweep 警告完全クリア
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- WHISPER_SAMPLE_RATE は transcription.rs に残置 (Whisper 仕様、audio_utils domain でない)
+- CHUNK_DURATION_SECS / CHUNK_SAMPLES も transcription.rs 残置 (Whisper チャンク設計)
+- 3 const 移動による型変更なし、振る舞い完全保持
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (worker 自走で agent-commit.sh で生成された commit hash をここに記入)
+
+---
+```
+
+(注: `---` 区切り行を最後に必ず付ける = 次エントリの起点)
+
+## 完走判定基準
+1. 3 ファイル変更が反映されている (`git diff --stat` で 4 ファイル: audio_utils.rs / transcription.rs / transcription_whisper_stream.rs / AGENT_LOG.md)
+2. cargo test --lib: 702 passed / 0 failed (件数不変)
+3. cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+4. cargo fmt --check: OK
+5. trailing whitespace なし
+6. AGENT_LOG.md 末尾に Loop 44 エントリ追記、`---` で締める
+7. agent-commit.sh で commit 完了
+
+以上を満たしたら Final Answer で「Loop 44 完走、commit hash = XXXXXXX」と報告して終了する。

@@ -1,0 +1,70 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は 20120+ 行 / 1.7MB+ の巨大ファイル。**先頭は絶対に読まない・触らない**。`tail -350 AGENT_LOG.md` で末尾だけ参照する。**末尾には [SESSION SUMMARY @ 2026-05-04 ~19:00 JST] mjc-main-20260504-21 の状況メモがある。これがコンテキスト復元の起点**。
+
+# AGENT_LOG.md 追記ルール (極めて重要)
+- AGENT_LOG.md は **時系列順**: 最古ログが先頭、最新ログが末尾。
+- **新規追記は必ずファイル末尾に行う**。先頭は絶対に触らない。
+- 追記前に必ず `tail -10 AGENT_LOG.md` で現在の末尾を確認し、最終行が `---` (SESSION SUMMARY ブロックの区切り) で終わっていることを確認する。
+- 追記場所は「ファイルの最終行の `---` の **後**」。新しい区切り線 `---` の直後にエントリを追加し、エントリの最後にも `---` を付ける。
+- **先頭追記は事故**。本セッション (mjc-main-21) で 1 度発生し、メイン側で末尾移動修正した precedent あり。再発させない。
+
+# 担当範囲
+src-tauri/src/transcript_bridge.rs の **mod tests に test 3 件のみ追加**。関数本体 (segment_to_append_args / segment_to_append_args_at / build_append_args_for_emission / build_append_args_for_emission_at / normalize_speaker) は **完全無変更**。
+
+他ファイルは触らない。担当範囲外を編集禁止。コミット禁止 (メインがやる)。
+
+# 追加する test 3 件 (mod tests の末尾、既存最終 test `segment_to_append_args_saturates_to_u64_max_for_extreme_start_ms` の **直後**)
+
+## T1: segment_to_append_args_falls_back_to_stream_started_when_zero_start_and_observed_none
+- 目的: zero_start segment (start_ms=0, end_ms=0) を observed=None で渡した時に `observed_at_secs.unwrap_or(stream_started_at_secs)` の None 分岐 (= fallback to stream_started_at_secs) が happy path で動作することを CI 固定。
+- 既存 test (`zero_start_segment_uses_observed_time_when_available`) は observed=Some(1075) のみ、`offset_saturates_to_zero_when_segment_time_precedes_session_start` は has_engine_timestamp=true 経路 (start_ms=0, end_ms=100) のみ。**zero_start + observed=None + happy 経路** は未保護。
+- Setup:
+  - segment.start_ms = 0, end_ms = 0, speaker = Some("自分"), text = "test"
+  - session_started_at_secs = 1_000, stream_started_at_secs = 1_040
+  - segment_to_append_args (= observed=None 内部固定) を呼ぶ
+- Assert: offset == 40 (= stream_started 1040 - session_started 1000)
+- コメント: 「zero_start segment + observed=None で `unwrap_or(stream_started_at_secs)` の None 分岐が動く契約。observed=None 経路は segment_to_append_args の内部固定。」
+
+## T2: segment_to_append_args_trims_unicode_full_width_space_in_text
+- 目的: `segment.text.trim().to_string()` (line 45) の U+3000 (全角空白) trim 契約を CI 固定。既存 test は ASCII whitespace ("hello   world") のみ。`normalize_speaker_trims_unicode_full_width_space_u3000` (T1 系既存 test) は speaker 側だけ網羅、text 側は未保護。
+- Setup:
+  - segment.text = "\u{3000}\u{3000}hello\u{3000}\u{3000}", start_ms=2000, end_ms=3500, speaker=Some("自分")
+  - segment_to_append_args(&segment, 1000, 1040) を呼ぶ
+- Assert: text == "hello" (前後の U+3000 が trim される。内部 "hello" はそのまま)
+- コメント: 「U+3000 は str::trim 対象 (Unicode White_Space プロパティ準拠)。speaker 側で確認済の現契約を text 側でも固定。」
+
+## T3: segment_to_append_args_returns_empty_text_when_text_is_only_whitespace
+- 目的: text が全て whitespace (ASCII + Unicode 混在) の場合に `text.trim().to_string()` が空文字列 `""` を返す契約を CI 固定。「empty 時に "(empty)" 等のフォールバックを後付け」する誤改修への検知装置。
+- Setup:
+  - segment.text = "\u{3000}\t\n  \u{3000}", start_ms=2000, end_ms=3500, speaker=Some("自分")
+  - segment_to_append_args(&segment, 1000, 1040) を呼ぶ
+- Assert: text == "" (空文字列)
+- コメント: 「text 全 whitespace → trim 後 "" を返す契約。empty 時の fallback (例: "(空)" 等) を後付けする誤改修への検知。speaker 側 (`_is_trimmed_and_none_falls_back_to_unknown_label` の None fallback) と非対称な契約 = text には "不明" 相当のフォールバックは存在しない。」
+
+# 既存パターン踏襲 (厳守)
+- 命名規則: 既存 test 命名 (`segment_to_append_args_<期待動作>_<入力種別>`) を踏襲。
+- 構造: `let segment = TranscriptionSegment { ... };` → `let (_, _, _) = segment_to_append_args(...);` → `assert_eq!(...)` の順 = 既存 test と完全対称。
+- assert メッセージ: 既存 test と同様、なぜその値かを日本語で説明 (現契約の固定理由を明記)。
+- sample_segment ヘルパは start_ms=2000 が固定なので、T1 / T3 は sample_segment を使わず明示的に struct literal 構築する (既存 `zero_start_segment_uses_observed_time_when_available` 等と同パターン)。T2 は sample_segment の text 上書きパターンで OK だが、**明示的な struct literal の方が読みやすい** = 既存 `text_is_trimmed_before_append_without_collapsing_inner_whitespace` は sample_segment + text 上書き使用 → T2 もそれに合わせる。
+
+# Tidy First 厳守
+- 関数本体完全無変更 (mod tests のみに test 3 件追加)。
+- ユーザー観測可能な振る舞い不変。
+- 規模 XS = test 3 件のみ。test 4 件以上の追加は scope 超過、絶対禁止。
+
+# 完了後の確認
+1. `cargo test --lib --manifest-path src-tauri/Cargo.toml transcript_bridge::tests` で 3 件追加分が pass することを確認。元の test 件数 488 → 491 になっているはず。
+2. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` でゼロ警告確認。
+3. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` で差分なし確認。
+4. AGENT_LOG.md の **末尾に** 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存追加なし、失敗理由なし、次アクション (= メインが verify + commit) を追記。**先頭は絶対に触らない**。`tail -10 AGENT_LOG.md` で末尾を確認してから追記。
+5. 1 ターン完結報告: 変更ファイル / 検証結果 / 残リスク。
+
+# 残リスク事前明示
+- なし (関数本体無変更、test 追加のみ)。
+- 将来 text 仕様が変更された場合 (例: empty 時に明示的なフォールバック追加) は T3 を更新する必要があるが、それは別 Loop で対応。

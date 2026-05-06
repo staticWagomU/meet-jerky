@@ -1,0 +1,160 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は **20251 行 / 1.7MB+** あるので **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` 相当で **末尾だけ参照** すること。**末尾の SESSION SUMMARY (mjc-main-22) と直前 worker 5 件 (mjc-main-22 の 3 件 + mjc-main-23 Loop 1/2 の 2 件) が文脈の起点**。
+
+# 担当範囲 (厳守)
+- src-tauri/src/transcription.rs の **mod tests 末尾に test 3 件追加のみ**
+- 関数本体 (`parse_requested_transcription_sources` / 他関数全て) は **完全無変更**
+- 他のファイルは編集しない (例外: AGENT_LOG.md 末尾追記のみ)
+- **Tidy First 厳守** = ユーザー観測可能な振る舞い不変、test 追加のみ
+
+# 背景
+mjc-main-23 Loop 1 (commit 7b4db11) で `is_realtime_stream_already_stopped_error` 系の 3 方向対称補強 (497→500), Loop 2 (commit e1dbf4c) で error payload 系の 2x2 マトリクス充填 (500→503) を完了。本 Loop 3 = D 候補 3 ループ目締めとして、`parse_requested_transcription_sources` (l.1050-1072) の **入力空間境界** を対称補強する。
+
+`parse_requested_transcription_sources` の仕様:
+```rust
+fn parse_requested_transcription_sources(source: Option<&str>) -> Result<RequestedTranscriptionSources, String> {
+    let source = source.unwrap_or("both").trim();
+    match source {
+        TRANSCRIPTION_SOURCE_MICROPHONE => Ok(...),  // "microphone"
+        TRANSCRIPTION_SOURCE_SYSTEM_AUDIO => Ok(...), // "system_audio"
+        "both" => Ok(...),
+        _ => Err("文字起こしソースが不正です..."),
+    }
+}
+```
+
+= 3 段階パイプライン: **str::trim() → 完全一致 match → エラー or 構造体**
+
+既存 test 11 件 (l.1364-1426 + l.1920-1955):
+- accepts_known_values: None, " both ", "microphone", "system_audio", " microphone ", " system_audio " (= ASCII 半角 SP の前後 trim のみ)
+- rejects_unknown_values: "", " ", "mic", "system", "both,microphone"
+- returns_exact_error_message_for_unknown_value: "xyz"
+- rejects_uppercase_known_values: "BOTH", "Microphone", "System_Audio", "Both"
+- error_message_contains_source_constants: "xyz" の error が定数文字列を含むこと
+
+**未保護境界**:
+1. **ASCII whitespace 拡張** (`\t` / `\n` / 複数文字) = `str::trim()` は ASCII 半角 SP 以外も削除 = 既存テストは半角 SP のみで `\t`/`\n` 未保護
+2. **U+3000 全角空白** = `str::trim()` は Unicode `White_Space` プロパティに従う = 全角空白 (U+3000) は **削除される** ことが Rust 標準仕様 (1.30 以降) → `"\u{3000}microphone\u{3000}"` は trim 後 "microphone" になり Ok される。**現契約を CI 固定** (将来 trim_ascii() 等への変更で挙動変わる)
+3. **prefix 一致のみの拡張入力** (例: "microphone_extra") = match 完全一致仕様 → reject = `starts_with` 化等の誤改修を検知
+
+# 追加する test 3 件 (mod tests 末尾に追記)
+
+## T1: ASCII whitespace 拡張 (\t, \n) の trim
+```rust
+#[test]
+fn parse_requested_transcription_sources_trims_tab_and_newline_whitespace() {
+    // 既存 test_parse_requested_transcription_sources_accepts_known_values は
+    // ASCII 半角 SP の前後 trim のみカバー。
+    // タブ (\t) と改行 (\n) も str::trim() 対象 (ASCII whitespace) であることを CI 固定。
+    // trim_matches(' ') 等の限定 trim への誤改修を検知する装置。
+    assert_eq!(
+        parse_requested_transcription_sources(Some("\tmicrophone\n")).unwrap(),
+        RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        },
+        "タブと改行も str::trim() で除去される (ASCII whitespace 全般)"
+    );
+    assert_eq!(
+        parse_requested_transcription_sources(Some(" \t\nboth\n\t ")).unwrap(),
+        RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true,
+        },
+        "複数種類の ASCII whitespace 混在も全て trim される"
+    );
+}
+```
+
+## T2: U+3000 全角空白の trim (Unicode White_Space 仕様の現契約固定)
+```rust
+#[test]
+fn parse_requested_transcription_sources_trims_unicode_full_width_space_u3000() {
+    // Rust の str::trim() は Unicode White_Space プロパティ (UCD) に従い、
+    // U+3000 (全角空白) も削除する。
+    // 既存 test は U+3000 trim を未保護 = 将来 trim_ascii() 等への変更で挙動変わる。
+    // 現契約 (Unicode whitespace 全般を trim) を CI 固定する装置。
+    assert_eq!(
+        parse_requested_transcription_sources(Some("\u{3000}microphone\u{3000}")).unwrap(),
+        RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        },
+        "U+3000 (全角空白) も str::trim() で除去される現契約 (Unicode White_Space 準拠)"
+    );
+    assert_eq!(
+        parse_requested_transcription_sources(Some("\u{3000}\u{3000}both\u{3000}\u{3000}")).unwrap(),
+        RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true,
+        },
+        "複数の U+3000 連続も全て trim される"
+    );
+}
+```
+
+## T3: prefix 拡張入力の reject (完全一致仕様の境界)
+```rust
+#[test]
+fn parse_requested_transcription_sources_rejects_prefix_extension_inputs() {
+    // 既存 rejects_unknown_values は "mic" / "system" 等の短縮形のみカバー。
+    // "microphone_extra" / "both_only" のような prefix が known value と一致するが
+    // suffix が付いた拡張入力は未保護。match 完全一致仕様 (= starts_with でない) を
+    // CI 固定する装置 = `starts_with` / `contains` 化への誤改修を検知。
+    for source in ["microphone_extra", "system_audio_full", "both_only", "microphoneX"] {
+        let err = parse_requested_transcription_sources(Some(source))
+            .expect_err("prefix 一致のみの拡張入力は reject されるべき");
+        assert_eq!(
+            err,
+            "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。",
+            "prefix 拡張入力 {source:?} は完全一致 match を通らず reject される現契約"
+        );
+    }
+}
+```
+
+# 追記場所
+- `src-tauri/src/transcription.rs` の最終 test (= mjc-main-23 Loop 2 で追加された `build_transcription_error_payload_escapes_newlines_in_error_string`、Cargo HEAD では l.2180 周辺) の **直後** = mod tests 末尾の `}` 閉じ括弧の直前に 3 件追加
+- 既存 test 構造 (struct literal → 関数呼び出し → assert_eq! の順) と命名規則 (`<関数名>_<期待動作>_<入力種別>`) を踏襲
+- assert! メッセージは現契約の固定理由を **日本語で明記**
+
+# 検証手順 (worker 完了前に必ず実行)
+1. `cd src-tauri && cargo test --lib parse_requested_transcription_sources 2>&1 | tail -20` で 既存 4 件 + 新規 3 件 が pass
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -10` で全体 506 passed (503 + 3) を確認
+3. `cd src-tauri && cargo clippy --all-targets -- -D warnings 2>&1 | tail -10` で警告ゼロ維持
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で差分なし
+5. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` で全段 OK
+
+# AGENT_LOG.md 追記 (重要、事故防止)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**
+- 新規追記は **必ずファイル末尾に行う**
+- **先頭は絶対に触らない**
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認 (末尾は mjc-main-23 Loop 2 のログ + `---` 区切り)
+  2. **末尾の `---` 直後に新規 worker ログを追記**
+  3. 追記後 `tail -50 AGENT_LOG.md` で末尾追記成功を確認
+- 追記内容: 開始日時 (JST)、担当セッション (mjc-worker-parse-sources-input-boundary-tests-20260504-23-3)、役割 (worker, sonnet)、作業範囲 (src-tauri/src/transcription.rs の mod tests 末尾に test 3 件追加のみ)、指示内容の要約、結果 (test 件数 503 → 506 passed +3 件、clippy 警告ゼロ、fmt 差分なし)、変更ファイル (1 件のみ)、検証結果 (上記 5 段階全 OK)、設計判断 (3 件絞り込み理由、命名規則踏襲、入力空間境界の 3 段階パイプライン保護思想)、残リスク (なし、関数本体無変更)、次アクション (メイン側でレビュー → コミット → SESSION SUMMARY)
+
+# 規模超過防止
+- **test 3 件のみ**。4 件以上は scope 超過 = 別 Loop に回す
+- 関数本体 (`parse_requested_transcription_sources`) を 1 文字でも触ったら scope 超過
+- 他 fn (例: `validate_stream_count_for_engine`, `transcription_error_payload_to_value`) の test 追加も scope 超過 = 別 Loop に回す
+- 担当範囲外 (transcription.rs 以外のファイル) の編集禁止
+- AGENT_LOG.md 以外のドキュメントファイル変更禁止
+- コミット禁止 (メイン側で実施)
+
+# T2 の補足 (Rust 仕様確認)
+- Rust の `str::trim()` は **Unicode `White_Space` プロパティ** (UCD) に従う
+- U+3000 (Ideographic Space, 全角空白) は **`White_Space=Yes`** = `str::trim()` の削除対象
+- これは Rust 1.30 以降の標準仕様 (https://doc.rust-lang.org/std/primitive.str.html#method.trim)
+- **`str::trim_ascii()` は ASCII whitespace (` `, `\t`, `\n`, `\r`, `\x0c`, `\x0b`) のみ削除** = 仕様が異なる
+- 本 T2 は現実装 (`trim()` 使用) の現契約を CI 固定し、将来 `trim_ascii()` への「最適化」誤改修を検知する装置
+
+# 報告
+1 ターンで完結する形でまとめてください。報告内容: 変更内容、変更ファイル (transcription.rs と AGENT_LOG.md のみ)、検証結果 (5 段階全 OK)、test 件数推移 (503 → 506)、残リスク (なし)、AGENT_LOG.md 追記成功確認 (`tail -10` 結果のサマリ)。

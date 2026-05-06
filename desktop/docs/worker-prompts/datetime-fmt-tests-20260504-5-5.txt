@@ -1,0 +1,101 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読むこと:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16400 行 / 1.5MB 超なので `tail -200 AGENT_LOG.md` で末尾だけ参照
+
+担当範囲:
+- src-tauri/src/datetime_fmt.rs の `mod tests` 末尾への `#[test]` 関数追加のみ
+- 実装 (L1-L30)、既存テスト 5 件 + jst() helper (L37-L82) は変更禁止
+- 他のファイルは AGENT_LOG.md への追記以外触らない
+
+背景 / Why this matters:
+- meet-jerky は履歴 markdown 出力の timestamps を `datetime_fmt::format_*_with_offset` で整形する。これは履歴ファイル (AI 議事録の入力) と UI 表示両方に影響する根幹 fn。
+- 既存 5 件のテスト: JST 通常 (header / segment) + JST midnight cross + i64::MAX out-of-range error (両 fn)
+- 未カバーの境界:
+  1. **UTC offset = 0**: 全テストが JST (UTC+9) のみ。UTC や負 offset での挙動が未確認 → offset 引数の柔軟性を 1 つの値だけで test していると、実は実装が hard-coded JST 化されても気付けない。
+  2. **negative offset (UTC-5 等)**: 既存 midnight cross は JST(+9) で UTC→翌日。負 offset でも UTC→前日 (繰り下がり) する対称ケースが未確認。
+  3. **unix epoch 0 (1970-01-01)**: 境界 epoch 値の挙動が未確認。
+  4. **error 文言の具体性**: `contains("out of range")` のみで、format string `"Unix timestamp is out of range: {unix_secs}"` の構造が固定されていない。
+  5. **header と segment の整合性**: 同じ unix_secs に対して両 fn の HH:MM が一致する不変条件が未確認。
+
+追加してほしいテスト (5 件、~10-15 分で完了):
+
+1. `format_session_header_and_segment_with_utc_offset_zero_match_utc_time`:
+   - `let utc = FixedOffset::east_opt(0).unwrap();`
+   - 1_713_333_000 (UTC 2024-04-17 05:50:00) について:
+     - `format_session_header_timestamp_with_offset(1_713_333_000, utc).unwrap() == "2024-04-17 05:50"`
+     - `format_segment_timestamp_with_offset(1_713_333_000, utc).unwrap() == "05:50:00"`
+   - Why: UTC offset = 0 で JST 補正前の "生 UTC 時刻" が表示される契約を固定。実装が hard-coded JST 化される誤リファクタを 1 ケースで検知。
+
+2. `format_session_header_with_negative_offset_crosses_midnight_to_previous_day`:
+   - `let utc_minus_5 = FixedOffset::west_opt(5 * 3600).unwrap();`
+   - unix_secs を選んで「UTC では翌日 0時台、UTC-5 では前日 19時台」になる境界を確認。
+     - 例: 2024-04-17 02:30:00 UTC = 1_713_321_000 → UTC-5 では 2024-04-16 21:30
+     - もしくは: 2024-04-17 03:00:00 UTC = 1_713_322_800 → UTC-5 では 2024-04-16 22:00
+   - assertion: `format_session_header_timestamp_with_offset(<unix_secs>, utc_minus_5).unwrap() == "<expected previous day string>"`
+   - 実際の境界 unix_secs は worker 側で計算して固定する。calc 例:
+     - 2024-04-17 04:00:00 UTC = 1_713_326_400 → UTC-5 では 2024-04-16 23:00
+   - Why: negative offset で日付が「繰り下がる」境界の挙動を、JST midnight cross (繰り上がり) と対称的に test し、offset 計算が正方向のみ動く誤実装を検知。
+
+3. `format_session_header_and_segment_at_unix_epoch_zero_returns_1970_01_01`:
+   - `let utc = FixedOffset::east_opt(0).unwrap();`
+   - `format_session_header_timestamp_with_offset(0, utc).unwrap() == "1970-01-01 00:00"`
+   - `format_segment_timestamp_with_offset(0, utc).unwrap() == "00:00:00"`
+   - Why: unix epoch boundary (0) の特殊値で動作することを test で固定。1 や -1 などの周辺値は別ループで補完可能。
+
+4. `format_*_error_message_includes_specific_unix_secs_value`:
+   - `let err1 = format_session_header_timestamp_with_offset(i64::MAX, jst()).unwrap_err();`
+   - `let err2 = format_segment_timestamp_with_offset(i64::MAX, jst()).unwrap_err();`
+   - assertion:
+     - `assert_eq!(err1, format!("Unix timestamp is out of range: {}", i64::MAX))` (完全一致)
+     - `assert_eq!(err2, format!("Unix timestamp is out of range: {}", i64::MAX))` (完全一致)
+     - `assert_eq!(err1, err2)` (両 fn の error 文言が完全一致する不変条件)
+   - Why: 既存テストは `contains("out of range")` のみで、unix_secs 値が含まれる format string の構造が固定されていない。error 文言が変わると debug が困難になるため、UI/log 体験を保護する契約強制。両 fn の error 統一性も併せて固定。
+
+5. `format_session_header_and_segment_timestamps_share_hour_minute_for_same_unix_secs`:
+   - `let utc = FixedOffset::east_opt(0).unwrap();`
+   - 任意の unix_secs (例: 1_713_333_045 = 2024-04-17 05:50:45 UTC) で:
+     - `let header = format_session_header_timestamp_with_offset(1_713_333_045, utc).unwrap();` → `"2024-04-17 05:50"`
+     - `let segment = format_segment_timestamp_with_offset(1_713_333_045, utc).unwrap();` → `"05:50:45"`
+     - `assert!(header.ends_with(&segment[..5]))` (header の末尾 5 文字 "05:50" と segment の先頭 5 文字 "05:50" が一致)
+   - Why: 2 つの fn で同じ unix_secs に対して時:分が必ず一致する不変条件を固定。片方の format 文字列のみ更新する誤リファクタ (例: header が "%Y-%m-%d %H:%M:%S" に変わるなど) を検知。
+
+実装上の注意:
+- `FixedOffset::east_opt(秒)` は 正方向 (UTC+) のオフセット。例: `east_opt(9 * 3600)` = JST (UTC+9)。
+- `FixedOffset::west_opt(秒)` は 負方向 (UTC-) のオフセット。例: `west_opt(5 * 3600)` = EST (UTC-5)。
+- 既存 helper `jst()` (L37-L39) はそのまま使える。新規追加 helper は不要 (UTC や UTC-5 は test 内で直接 `FixedOffset::east_opt(0).unwrap()` / `FixedOffset::west_opt(5 * 3600).unwrap()` で生成)。
+- `chrono::FixedOffset` は既に `use` されているので追加 import 不要。
+- 実装 (L1-L30) は変更禁止。既存テストも変更禁止。
+- test 2 で boundary unix_secs を選ぶ際は、worker 側で実際に `cargo test` を回して期待文字列と一致するか確認する。一致しない場合は、boundary unix_secs を調整する (実装変更ではなく test の入力値を調整) 。
+
+検証 (順番):
+1. `cargo fmt --check` (失敗したら `cargo fmt` で修正後再チェック)
+2. `cargo clippy --no-deps --all-targets --all-features -- -D warnings` (警告ゼロ必須)
+3. `cargo test --no-fail-fast` (現在 310 passed → 追加 5 件で 315 passed になる想定)
+4. `bash scripts/agent-verify.sh src-tauri/src/datetime_fmt.rs AGENT_LOG.md`
+
+AGENT_LOG.md (末尾に追記) に以下を記載:
+- 開始日時 (JST)
+- 担当セッション名 (`mjc-worker-datetime-fmt-tests-20260504-5-5`)
+- 役割: テスト追加ワーカー (実装変更なし)
+- 作業範囲: src-tauri/src/datetime_fmt.rs の mod tests 末尾への #[test] 関数追加のみ
+- 指示内容 (要約)
+- 追加したテスト一覧 (テーブル形式: #, 関数名, assertion 数, 検証内容)
+- 不変条件 / 設計意図 (UTC offset 多様性, negative offset 繰り下がり対称, epoch zero, error 文言完全一致 + 両 fn 統一性, header と segment の HH:MM 整合性)
+- 変更ファイル
+- 検証結果 (チェック / 結果テーブル)
+- 追加 test 件数 / 追加後 total passed
+- 依存関係追加の有無 (なしの想定)
+- 失敗理由 (test 2 の boundary unix_secs 調整経緯があれば明記)
+- 残リスク (chrono のタイムゾーン DB / leap second 扱い, i64::MIN は別ループで補完余地)
+- 次アクション
+
+コミットは禁止 (メインがレビュー後に commit する)。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

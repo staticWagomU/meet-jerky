@@ -1,0 +1,106 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景 (Why)
+- 前ループ (mjc-main-20260504-13 Loop 3, commit 52a5439) で `audio.rs` (line 584-586, 非 cfg) と `system_audio.rs` (line 450-453, `#[cfg(target_os = "macos")]` ガード) に **同名同実装** の private fn `build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value` を配置した。本体は `json!({ "source": source, "dropped": dropped })` 1 行で完全一致。
+- これは Kent Beck 流 Tidy First の対象典型: 「同じものを 2 か所書いたから抽出する」純粋な構造変化。次ループでこの音声 drop 通知を frontend へ配線する behavior change (A2) を行う前に、共有モジュール抽出を済ませることで、その後の event 名定数化や frontend 連携をクリーンに進めやすくする。
+- 製品優先度 9 「録音状態の透明性」(product-concept.md) の連続改善線上の structural-only ステップ。
+
+# 担当範囲と具体的変更
+本ループは Tidy First (Kent Beck `tidying` skill 準拠) として **構造変化のみ、振る舞い不変、テスト追加なし** で 1 ファイル新規作成 + 3 ファイル更新を行う。
+
+## 1. 新規ファイル `src-tauri/src/audio_event.rs` を作成
+内容は以下の最小モジュール:
+
+```rust
+use serde_json::json;
+
+pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    json!({ "source": source, "dropped": dropped })
+}
+```
+
+- 可視性は `pub(crate)`。lib 外からは見えなくてよいが、`audio.rs` と `system_audio.rs` の両方からインポートする必要があるため、private のままでは不可。
+- `#[cfg(target_os = "macos")]` ガードは付けない (この helper 自体は platform-agnostic、json 文字列を組み立てるだけ)。
+- ファイル末尾に `mod tests` は **置かない**。テストは既存の audio.rs::tests と system_audio.rs::tests に残し、import 経由で同 fn を引き続き検証する。これにより test 数 450 は完全維持される。
+
+## 2. `src-tauri/src/lib.rs` の module 宣言追加
+- 1-20 行目の `mod app_detection;` 〜 `mod transcription;` の宣言群に `mod audio_event;` を **アルファベット順** に追加すること。`mod audio;` と `mod audio_utils;` の間に挿入するのが正解 (`audio` < `audio_event` < `audio_utils`)。
+
+## 3. `src-tauri/src/audio.rs` の更新
+- **line 584-586** の `fn build_audio_drop_event_payload(...)` 定義 (3 行) を **削除**。
+- **line 401-403 付近** の呼び出し:
+  ```rust
+  build_audio_drop_event_payload("microphone", dropped),
+  ```
+  を
+  ```rust
+  crate::audio_event::build_audio_drop_event_payload("microphone", dropped),
+  ```
+  に書き換える。
+- `audio.rs::tests` (mod tests 内) で `super::build_audio_drop_event_payload` または `build_audio_drop_event_payload` を呼んでいるテスト 5 件 (`build_audio_drop_event_payload_includes_source_and_dropped_fields_with_microphone` ほか T2-T5) を **すべて** `crate::audio_event::build_audio_drop_event_payload` 経由で呼ぶよう更新する。
+  - 既存 `use super::*;` のままでも、追加で `use crate::audio_event::build_audio_drop_event_payload;` を入れる、もしくは fully-qualified path で書くか、どちらでも可。最小差分を狙うなら `use crate::audio_event::build_audio_drop_event_payload;` を mod tests 先頭に 1 行追加するのが分かりやすい。
+- `serde_json::json` の import が他で使われていない場合は警告が出るので、不要になれば削除すること (ただし他テストや他関数で使っていたらそのまま残す)。`grep -n "json!\\|serde_json::" src-tauri/src/audio.rs` で確認。
+
+## 4. `src-tauri/src/system_audio.rs` の更新
+- **line 450-453** の `#[cfg(target_os = "macos")]` 付き `fn build_audio_drop_event_payload(...)` 定義 (4 行) を **削除**。
+- **line 333-335 付近** の呼び出し:
+  ```rust
+  build_audio_drop_event_payload("system_audio", dropped),
+  ```
+  を
+  ```rust
+  crate::audio_event::build_audio_drop_event_payload("system_audio", dropped),
+  ```
+  に書き換える。
+- `system_audio.rs::tests` (mod tests 内) で同関数を呼んでいる 5 件 (`build_audio_drop_event_payload_includes_source_and_dropped_fields_with_system_audio` ほか T2-T5) も同様に `crate::audio_event::build_audio_drop_event_payload` 経由で呼ぶよう更新する。
+  - これらのテストは `#[cfg(target_os = "macos")]` で guard されている可能性がある。**guard はそのまま維持**すること (system_audio.rs の他テストとの整合)。
+- `serde_json::json` の import が他で使われていない場合は警告が出るので削除する。`grep -n "json!\\|serde_json::" src-tauri/src/system_audio.rs` で確認。
+
+# 実装上の注意 (踏みやすい罠)
+- **テストを移動・削除しない**。今回の Tidy はあくまで「fn の置き場所を移す」だけ。テスト数 450 を厳守。テスト名の変更も不要。
+- **system_audio.rs の `#[cfg(target_os = "macos")]` ガードは削除しない**。helper fn 側は cfg なしで `audio_event.rs` に置くが、call site (line 333 付近) と test 群はもともと macos-only コードの中にあるので、その cfg 構造は触らない。
+- **lib.rs の module 順はアルファベット順**。既存が `audio`, `audio_utils` と並んでいるので `audio_event` はその間に置く。`mod audio_event;` は `mod audio;` の直下、`mod audio_utils;` の直上。
+- **可視性は `pub(crate)` で十分**。`pub` にすると外部 API 誤公開の検知が緩むので避ける。
+- **不要になった `use serde_json::json;` 削除を忘れない**。clippy `unused_imports` で必ず引っかかるので、削除後に clippy が clean になることで確認する。
+- **call site は完全な path (`crate::audio_event::build_audio_drop_event_payload`) を推奨**。`use crate::audio_event::build_audio_drop_event_payload;` を使う場合は、各ファイルの top-level に追加し、name shadowing が起きないか念のため目視確認する。
+- **rustfmt の影響でフォーマットが少しズレることがあるので必ず `cargo fmt -p meet-jerky` を最後にかける**。
+
+# 検証手順
+リポジトリルートは `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`。
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`
+2. `cargo fmt -p meet-jerky` (Rust)
+3. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (warnings ゼロ厳守)
+4. `cargo test -p meet-jerky --lib` (期待: **450 passed / 0 failed** = 前ループから不変)
+5. `cargo test -p meet-jerky --lib audio::tests` (期待: 44 passed)
+6. `cargo test -p meet-jerky --lib system_audio` (期待: 32 passed、macos の場合)
+7. (任意) `cargo test -p meet-jerky --lib audio_event` (期待: 0 passed = テスト無し定義)
+
+検証が失敗した場合は **ファイルを元に戻して報告のみ** を行うこと。
+
+# AGENT_LOG.md 記載項目
+末尾に新規セクションを `---` 区切りで追記。以下のテンプレートに沿うこと:
+
+```
+## セッション: mjc-worker-audio-event-extract
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-audio-event-extract
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src-tauri/src/audio_event.rs (新規) + src-tauri/src/lib.rs + src-tauri/src/audio.rs + src-tauri/src/system_audio.rs (Tidy First: 重複 private fn 共有モジュール抽出、test 追加なし)
+- **指示内容**: (本プロンプトの「担当範囲と具体的変更」を要約)
+- **結果**: 成功 / 失敗
+- **変更ファイル**: 新規 1 / 更新 3
+- **検証結果**:
+  - cargo fmt -p meet-jerky: ...
+  - cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings: ...
+  - cargo test -p meet-jerky --lib: 450 passed (前ループから不変)
+- **依存関係追加**: なし
+- **失敗理由**: なし
+- **次アクション**: メイン (mjc-main-20260504-14) によるレビュー → コミット
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

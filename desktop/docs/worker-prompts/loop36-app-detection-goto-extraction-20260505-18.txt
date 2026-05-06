@@ -1,0 +1,168 @@
+あなたは meet-jerky プロジェクトの sonnet worker です。
+
+# あなたのタスク (Tidy First, behavior-preserving)
+
+`src-tauri/src/app_detection.rs` (3231 行) から **GoToMeeting URL 検知関連 4 関数 + 1 const** を新規 `src-tauri/src/app_detection_goto.rs` に抽出してください。Webex/Whereby 抽出 (mjc-main-20260505-15 Loop 29 / mjc-main-20260505-16 Loop 31) と同パターン (variety pivot = extraction 軸 = test 移動 (Loop 35) と異なる別軸)。
+
+# 必須準備 (5 項目)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を実行して末尾 350 行を読む**。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない** (uniqueness 破壊事故防止)。
+4. **末尾追記の具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する。
+5. **行末の空白文字 (trailing whitespace) は禁止**。`grep -nE ' +$' <変更ファイル>` で出ないことを最終確認する。
+
+# 規模超過防止 (担当範囲外編集禁止)
+
+- 編集対象は **以下 4 ファイルのみ**:
+  - `src-tauri/src/app_detection_goto.rs` (新規作成)
+  - `src-tauri/src/app_detection.rs` (4 関数 + 1 const を削除、caller の path 更新)
+  - `src-tauri/src/lib.rs` (`mod app_detection_goto;` 追加)
+  - `AGENT_LOG.md` (Loop 36 entry 末尾追記)
+- **大型ファイルは Read 全体禁止** = `sed -n '795,845p' src-tauri/src/app_detection.rs` / `sed -n '525,540p'` 等で対象範囲のみ参照。
+- **新規テスト追加禁止、既存テスト改変禁止**。
+- **本体ロジックは一切変更禁止** = 関数・定数の中身そのまま移動。
+
+# 移動対象 (app_detection.rs 内の現状行範囲)
+
+- L798-801 const `GOTO_NON_ROOM_PATHS: &[&str]` (~4 行)
+- L803-811 fn `is_goto_host(host: &str) -> bool` (~9 行)
+- L813-822 fn `is_goto_meeting_url(host: &str, path: &str) -> bool` (~10 行)
+- L824-833 fn `is_goto_legacy_meeting_url(host: &str, path: &str) -> bool` (~10 行)
+- L835-844 fn `is_goto_app_meeting_url(host: &str, path: &str) -> bool` (~10 行)
+
+合計 ~43 行 = 規模 SS。
+
+# caller への影響
+
+- `app_detection.rs` L531-533 の `classify_meeting_url` 内で 3 関数を呼び出している:
+  ```
+  is_goto_meeting_url(&host, &parsed.path)
+      || is_goto_legacy_meeting_url(&host, &parsed.path)
+      || is_goto_app_meeting_url(&host, &parsed.path)
+  ```
+  → `crate::app_detection_goto::is_goto_*` 形式に書き換え (もしくは use 文経由)。
+- tests (`fn classify_meeting_url_goto_*`, `fn classify_meeting_url_recognizes_goto_legacy_*`, `fn classify_meeting_url_rejects_goto_legacy_*`, `fn is_goto_app_meeting_url_*`) は app_detection.rs に残置:
+  - `classify_meeting_url` 経由のテストは pub 関数を呼ぶので影響なし
+  - 直接 `is_goto_app_meeting_url` を呼ぶテスト (L3184+) は新ファイルから `pub(crate)` 化された関数を `crate::app_detection_goto::is_goto_app_meeting_url` で参照する形にする (もしくは use 文取り込み)
+
+# 共通ヘルパー (Webex precedent と同パターン)
+
+- `is_valid_dns_label` (app_detection.rs L725 = `pub(crate)`) を `is_goto_host` (新ファイル L810) で使用。
+- `app_detection_goto.rs` の冒頭で `use crate::app_detection::is_valid_dns_label;` で取り込む。
+- 他のヘルパー (`has_single_non_empty_segment` / `query_has_non_empty_param`) は GoToMeeting では使用しないため取り込み不要。
+
+# 手順詳細
+
+## STEP 1: 新ファイル `src-tauri/src/app_detection_goto.rs` 作成
+
+```rust
+use crate::app_detection::is_valid_dns_label;
+
+const GOTO_NON_ROOM_PATHS: &[&str] = &[
+    "about", "pricing", "blog", "login", "signup", "help", "terms", "privacy", "contact",
+    "products", "features", "download", "app", "api", "security", "status",
+];
+
+pub(crate) fn is_goto_host(host: &str) -> bool {
+    // ... (本文そのままコピー)
+}
+
+pub(crate) fn is_goto_meeting_url(host: &str, path: &str) -> bool {
+    // ... (本文そのままコピー、関数内 is_goto_host 呼び出しは self 参照になる)
+}
+
+pub(crate) fn is_goto_legacy_meeting_url(host: &str, path: &str) -> bool {
+    // ... (本文そのままコピー)
+}
+
+pub(crate) fn is_goto_app_meeting_url(host: &str, path: &str) -> bool {
+    // ... (本文そのままコピー)
+}
+```
+
+## STEP 2: `src-tauri/src/lib.rs` に mod 宣言を追加
+
+L2-3 付近の `mod app_detection_webex;` `mod app_detection_whereby;` 直後に:
+```rust
+mod app_detection_goto;
+```
+を追加 (アルファベット順なら whereby より前 = goto は g、whereby は w なので goto を先に置く)。
+
+## STEP 3: `app_detection.rs` から削除
+
+- L798-801 const `GOTO_NON_ROOM_PATHS` 削除
+- L803-844 fn `is_goto_host` / `is_goto_meeting_url` / `is_goto_legacy_meeting_url` / `is_goto_app_meeting_url` 削除
+- L531-533 caller を `crate::app_detection_goto::is_goto_*` 形式に更新 (Webex precedent と同じく内部呼び出し化、もしくは use 文経由で path prefix 省略)
+
+## STEP 4: 直接呼びテストの path 更新
+
+- `is_goto_app_meeting_url_*` テスト (L3184+) は `crate::app_detection_goto::is_goto_app_meeting_url(...)` で参照するか、tests mod 内で `use crate::app_detection_goto::is_goto_app_meeting_url;` を取り込む形にする。
+- Webex precedent の同形式参照を踏襲。
+
+## STEP 5: 検証
+
+`cd src-tauri` してから:
+- `cargo test --lib` → **700 passed / 0 failed** を維持 (件数不変)。
+- `cargo clippy --lib --tests -- -D warnings` → 警告ゼロ。
+- `cargo fmt` → 整形差異あれば自動適用 (Loop 22/29/33 precedent と同じ受け入れ判断)。
+- `cargo fmt --check` → OK。
+- `grep -nE ' +$' src/app_detection.rs src/app_detection_goto.rs src/lib.rs` → 出力ゼロ。
+- `bash ../scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/app_detection_goto.rs src-tauri/src/lib.rs` → OK。
+
+## STEP 6: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認してから、**ファイル末尾に** 以下のフォーマットで追記する:
+
+```
+[mjc-main-20260505-18 Loop 36 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs から GoToMeeting URL 検知関連 4 関数 (is_goto_host / is_goto_meeting_url / is_goto_legacy_meeting_url / is_goto_app_meeting_url) と const GOTO_NON_ROOM_PATHS を src-tauri/src/app_detection_goto.rs に抽出
+- src-tauri/src/lib.rs に `mod app_detection_goto;` 追加
+- app_detection.rs L531-533 caller を crate::app_detection_goto::is_goto_* 経由に更新
+- 直接呼びテスト (is_goto_app_meeting_url_*) の参照 path 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 3231 行縮小 = 理解性向上)
+- Webex (Loop 29) / Whereby (Loop 31) と同パターン継承
+- variety pivot 軸 = 「extraction」軸 = test 移動 (Loop 35) と別軸
+- transcription-refactor-plan.md L117-121 の将来課題 (app_detection.rs サービス別抽出) を継続実施
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 700 passed 件数不変
+- pub(crate) visibility で外部参照可能 (Webex precedent 同パターン)
+- is_valid_dns_label は app_detection.rs に残置 + pub(crate) のまま、app_detection_goto.rs から use 文で取り込み
+- tests は classify_meeting_url 経由のものは app_detection.rs 残置 (Loop 23 / 29 precedent 踏襲)、直接呼びテストは use 文経由参照
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- trailing whitespace: ゼロ
+
+## commit
+- <commit hash 後で別 chore で記入>
+---
+```
+
+## STEP 7: commit
+
+`bash ../scripts/agent-commit.sh "refactor(app_detection): GoToMeeting 検知 4 関数 + const を app_detection_goto.rs に抽出 (Tidy First, mjc-main-20260505-18 Loop 36)" src-tauri/src/app_detection.rs src-tauri/src/app_detection_goto.rs src-tauri/src/lib.rs AGENT_LOG.md` を実行する。
+
+成功後、`git log --oneline -1` で commit hash を確認し、AGENT_LOG.md の `<commit hash 後で別 chore で記入>` 部分を Edit ツールで実 hash に置き換える。続けて:
+`bash ../scripts/agent-commit.sh "chore(agent-log): Loop 36 commit hash <hash> を AGENT_LOG.md に記入" AGENT_LOG.md`
+
+# 完了基準
+
+- app_detection_goto.rs 新規作成 (~50 行)
+- app_detection.rs から 4 関数 + 1 const 削除、caller 更新
+- lib.rs に mod 宣言追加
+- cargo test 700 passed 維持
+- cargo clippy 警告ゼロ
+- cargo fmt OK
+- trailing whitespace ゼロ
+- AGENT_LOG.md 末尾に Loop 36 entry 追記済
+- commit 2 件 (本体 + commit hash 反映 chore) 完了
+
+完了したら最終報告のみ簡潔に。

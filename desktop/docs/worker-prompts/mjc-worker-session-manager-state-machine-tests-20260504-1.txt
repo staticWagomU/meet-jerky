@@ -1,0 +1,82 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (要点だけ)
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~15800 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。直近の Tidy First リファクタ (audio_utils.rs)、SESSION SUMMARY、および直前 commit `88c1f4e` (session_store の ErrorKind::NotFound 契約強制) が状況復元の起点です。
+
+## 担当範囲 (この範囲のみ編集)
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾に `#[test]` 関数を 3 件追加するのみ。
+- 実装コード、他テスト、他ファイルは編集禁止。
+
+## 前提情報 (調査済みなので追加調査は最小限)
+- session_manager.rs の API surface (5 関数):
+  - `start(title, started_at) -> Result<(), SessionManagerError>` — `AlreadyActive` のみ Err
+  - `start_with_output(title, started_at, output_dir, offset) -> Result<(), SessionManagerError>` — `AlreadyActive` のみ Err
+  - `append(speaker, offset_secs, text) -> Result<(), SessionManagerError>` — `NotActive` のみ Err
+  - `finalize(ended_at) -> Result<Session, SessionManagerError>` — `NotActive` のみ Err
+  - `discard() -> Result<(), SessionManagerError>` — `NotActive` のみ Err
+- 既存テスト 13 件の中に「state machine の混在遷移」(start → start_with_output / start_with_output → start / start_with_output → discard → append) を直接検証するものは存在しない。既存 `start_twice_returns_already_active_and_retains_first_session` は `start` 経由のみ。
+- 既存テストのヘルパー: `jst()`, `list_md_files(dir)`, `tempdir()` (tempfile crate)。模倣可能。
+
+## 追加するテスト 3 件 (関数名はそのまま使う)
+
+### A. `start_with_output_returns_already_active_when_started_via_basic_start`
+- 振る舞い: `start("title-A", 1700000000)` → `start_with_output("title-B", 1700000010, tmp_dir, jst())` が `Err(SessionManagerError::AlreadyActive)` を返す
+- 不変条件確認:
+  - 戻り値が AlreadyActive
+  - `is_active() == true`
+  - `current_title() == Some("title-A")` (元のタイトルが保たれる)
+  - `current_started_at_secs() == Some(1700000000)` (元の started_at が保たれる)
+- 設計意図: state machine の対称性。start で AlreadyActive になったら start_with_output でも同じく AlreadyActive を返す。
+
+### B. `start_returns_already_active_when_started_via_start_with_output`
+- 振る舞い: `start_with_output("title-A", 1700000000, tmp_dir, jst())` → `start("title-B", 1700000010)` が `Err(SessionManagerError::AlreadyActive)` を返す
+- 不変条件確認:
+  - 戻り値が AlreadyActive
+  - `is_active() == true`
+  - `current_title() == Some("title-A")` (元のタイトルが保たれる)
+  - `current_started_at_secs() == Some(1700000000)` (元の started_at が保たれる)
+- 設計意図: 上記 A の対称テスト。start_with_output 経由の active 状態でも start は AlreadyActive を返す。
+
+### C. `discard_clears_session_started_with_output_and_subsequent_append_returns_not_active`
+- 振る舞い: `start_with_output("title", 1700000000, tmp_dir, jst())` → `discard()` Ok → `append("speaker", 0, "text")` が `Err(SessionManagerError::NotActive)` を返す
+- 不変条件確認:
+  - discard の戻り値が Ok(())
+  - 後続 append の戻り値が NotActive
+  - `is_active() == false`
+  - **ファイルが書かれていないこと** (`list_md_files(tmp_dir).is_empty()` で確認)
+- 設計意図: discard は output 設定があっても何も書かずに sweep する。後続の append は NotActive を返す。
+
+## 作業指示
+1. 上記 3 関数を `mod tests` 末尾 (現在 L466 直前) に追加する。既存テストのスタイル (use 文、assert メッセージ、ヘルパー使用) に揃える。
+2. 書き換えた後、以下を **必ず** 実行する:
+   - `cd src-tauri && cargo fmt --check` (失敗したら `cargo fmt` で修正してから再確認)
+   - `cd src-tauri && cargo clippy --no-deps --all-targets --all-features -- -D warnings`
+   - `cd src-tauri && cargo test --no-fail-fast` (現状 269 passed → 追加後 272 passed のはず)
+   - `bash scripts/agent-verify.sh src-tauri/src/session_manager.rs AGENT_LOG.md`
+3. AGENT_LOG.md 末尾に、本作業のセクションを追記する (開始日時、担当セッション、役割、作業範囲、指示内容要約、追加した 3 関数の振る舞い・不変条件、変更ファイル、検証結果、追加 test 件数 (3)、依存関係追加なし、失敗理由、残リスク、次アクション)。
+
+## 禁止事項
+- 課金が発生する操作。
+- 他エージェントの変更を戻すこと。
+- 担当範囲外の編集 (実装コード、他テスト関数、他ファイル)。
+- `git commit` (コミットはメインが行う)。
+- `--no-verify`、`--dangerously-skip-permissions` (このプロンプトファイル経由の harness 内では既に skip-permissions 適用済み)。
+- 外部 API 呼び出し (elevenlabs / openai / hugging face など)。
+
+## 設計意図 (なぜこれをやるか)
+- 既存テストは `start` 経由の AlreadyActive のみ確認、`start_with_output` 経由の AlreadyActive 不変条件は未カバー。
+- discard 後の append が NotActive を返すことは間接的に他テストで確認されているが、**output 設定がある状態での discard** は未確認。これが書き込まずに sweep する不変条件を裏付ける。
+- state machine の網羅 (start vs start_with_output × discard) は将来 `start` と `start_with_output` の guard logic を統合/分離するリファクタへの安全網となる。
+- リスク極小: 既存テストの組み合わせを変えただけで新しい依存関係は不要。
+
+## 完了報告
+1 ターンで以下を簡潔にまとめてください:
+- 変更内容 (どの 3 関数を追加したか)
+- 変更ファイル (期待: `src-tauri/src/session_manager.rs` と `AGENT_LOG.md` の 2 件)
+- 検証結果 (各コマンドの結果、特に test 件数 269 → 272)
+- 残リスク
+- 次アクション (このワーカー範囲では「なし」が期待値)

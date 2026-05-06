@@ -1,0 +1,129 @@
+あなたは meet-jerky の作業 worker です。担当 loop = mjc-main-20260505-42 Loop 84 = K3' = detection-extension-plan.md に Phase 状態 subsection を新設 (機能拡張/docs 軸、agent-log-archive-plan.md Loop 82 precedent 適用)。
+
+# 必読: AGENT_LOG.md の末尾だけ読む (先頭厳禁)
+
+`tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ参照。**先頭は絶対に触らない**。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。**新規追記は必ずファイル末尾の `---` 直後に行う**。直前 entry に Loop 82 (archive plan 数値更新 + Phase 状態 subsection) と Loop 83 (init phase format 直書き共通化) と SESSION SUMMARY が書かれているので、その流儀で追記する。
+
+# 担当作業 (規模 SS docs only、振る舞い完全不変)
+
+`docs/architecture/detection-extension-plan.md` Section 5 末尾 (Phase 5 の `**想定 elapsed**: 複数ループ (優先度が上がった時点で実施)` 行 L232 の直後、Section 6 の `## 6. Open Questions` L234 の直前) に Phase 状態 subsection (`### Phase 状態 (mjc-main-20260505-42 Loop 84 時点)`) を新設。
+
+## 主旨と objectivity 確保
+
+- 既存記述の機械的整理のみ = 主観性 0
+- 各 Phase の状態 (完了 / 未着手 + 待ち項目 / 後追い) は plan 内 Section 5 + Section 6 + Q5/Q6 Resolved Block から取り出すだけ
+- Loop 82 の agent-log-archive-plan.md Phase 状態 subsection 新設 precedent と同パターン
+- AGENTS.md L46-L52 自律改善方針寄与: 後継メイン / 後続 Loop が Phase 状態を 1 箇所で確認できる索引化
+
+## 挿入位置確認 (Read で精読)
+
+```sh
+sed -n '220,240p' docs/architecture/detection-extension-plan.md
+```
+
+期待: L232 = `**想定 elapsed**: 複数ループ (優先度が上がった時点で実施)`、L233 = 空行、L234 = `## 6. Open Questions (要検証項目)`。
+
+## 追加内容 (~22 行 = 行末空白なし、blank line で section 区切り)
+
+L232 と L234 の間 (L233 空行を保持し、その直後) に以下を挿入:
+
+```markdown
+### Phase 状態 (mjc-main-20260505-42 Loop 84 時点)
+
+| Phase | 状態 | 待ち / 前提 | 想定再開 trigger |
+|-------|------|-------------|------------------|
+| Phase 1 | **完了** (mjc-main-20260505-36 Loop 72) | - | - (再開不要) |
+| Phase 2 | **未着手** | Q1/Q2 = 実機 (Slack デスクトップで huddle / Discord デスクトップで stage 参加) で window title を AppleScript 取得 | Q1/Q2 が解決 (実機実例の plan 取り込み) |
+| Phase 3 | **未着手 (任意)** | Phase 2 完了 + Q3 (Slack web 版 huddle 中 URL 形式の実機確認) | Phase 2 完了後、ユーザーから web 版 Slack 利用要望 |
+| Phase 4 | **未着手 (任意、識別困難見込み)** | Phase 2 完了 + Q4 (Discord web 版 stage URL 形式) = URL のみで識別困難の見込み | Phase 2 完了後、URL 識別可能性が確認できた場合 |
+| Phase 5 | **未着手 (後追い)** | 補助サービス (MS Teams Channel Calls / Zoom Phone) + 日本語 window title pattern + frontend アイコン (`MeetingDetectedBanner.tsx`) | Phase 2 完了 + 優先度上昇 (ユーザーフィードバック蓄積後) |
+
+**着手判断方針**:
+
+- 単独 main agent はメイン批判的判断の範囲で `docs/architecture/detection-extension-plan.md` の追記 / Q5/Q6 のような Resolved Block 起こしは可能だが、**Phase 2 以降の rust 実装着手は Q1/Q2 実機確認が前提**。実機確認なしの推測 pattern (例: 推測値 `"Huddle"` のみで着手) は実装の false positive リスクが残るため backlog 化が安全側。
+- Q1/Q2 解決時点で Phase 2 着手 (Phase 2 内手順は Section 5 Phase 2 = `**実装内容**` の段に既記載)。
+
+```
+
+(末尾の空行 1 つを保ち、続く `## 6. Open Questions (要検証項目)` (L234) の前に blank line 1 行を確保すること。)
+
+## 規模超過防止 (これ以外は何も触らない)
+
+- **`docs/architecture/detection-extension-plan.md` 以外の file 編集禁止**
+- **既存 Section 1-7 の本文編集禁止** = Phase 状態 subsection 新規挿入のみ
+- **Section 5 Phase 1-5 本文 / Section 6 Q1-Q8 / Q5/Q6 Resolved Block / AppleScript 参考は無変更**
+- **AGENT_LOG.md 末尾追記のみ** (先頭は絶対に触らない)
+
+## 検証手順
+
+- `agent-verify.sh docs/architecture/detection-extension-plan.md`: 行末空白なし
+- `grep -n "^### Phase 状態" docs/architecture/detection-extension-plan.md`: 1 件
+- `grep -n "^## 6. Open Questions" docs/architecture/detection-extension-plan.md`: 1 件 (位置不変)
+- `grep -n "^## 7. 参考" docs/architecture/detection-extension-plan.md`: 1 件 (位置不変)
+- `wc -l docs/architecture/detection-extension-plan.md`: ~22 行増加 (ベース ~290 行 → ~312 行)
+
+## 2-commit pattern (Loop 60-83 で 24 連続実証済 = 必ず守る)
+
+### Commit 1: docs commit
+```sh
+git add docs/architecture/detection-extension-plan.md
+git commit -m "docs(architecture): detection-extension-plan.md Section 5 末尾に Phase 状態 subsection 新設 (mjc-main-20260505-42 Loop 84, 機能拡張/docs 軸 = variety pivot, Phase 1 = 完了 / Phase 2 = Q1/Q2 待ち / Phase 3-4 = 任意 / Phase 5 = 後追い、Loop 82 archive plan precedent 適用、AGENTS.md L46-L52 自律改善方針寄与)"
+```
+
+`git rev-parse HEAD` で hash を取得し控える (40 桁 full hash)。
+
+### AGENT_LOG.md 末尾追記 (Loop 80 precedent: chore commit hash 自体は AGENT_LOG.md に書かない)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した後、ファイル末尾に以下のような entry を追記:
+
+```
+[mjc-main-20260505-42 Loop 84 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/detection-extension-plan.md Section 5 末尾 (Phase 5 直後 / Section 6 直前) に `### Phase 状態 (mjc-main-20260505-42 Loop 84 時点)` subsection 新設 (~22 行 = Phase 1-5 状態表 + 着手判断方針)
+- Phase 状態を 1 箇所で参照可能な索引化 = Phase 1 = 完了 / Phase 2 = Q1/Q2 待ち / Phase 3 = 任意 + Q3 待ち / Phase 4 = 任意 + Q4 待ち + 識別困難見込み / Phase 5 = 後追い
+
+## Why
+- AGENTS.md L46-L52 自律改善方針: plan の現状を機械的に整理 = 後続 Loop / 後継メインが Phase 状態を 1 箇所で確認可能
+- variety pivot: Loop 83 = 構造分離軸 → Loop 84 = 機能拡張/docs 軸 (検知拡張 plan)
+- Loop 82 = agent-log-archive-plan.md Phase 状態 subsection 新設 precedent の再適用 (主観性 0、既存記述の機械的整理)
+- 主観性管理: 「実機要件未解決のため Phase 2 着手不可」「Q1/Q2 解決時点で Phase 2 着手」は plan 既存記述 (Section 6 Q1/Q2 行 + Q5/Q6 Resolved Block) から機械的整理 = objectivity 確保
+
+## How (Tidy First, behavior-preserving docs)
+- 挿入位置: L232 (Phase 5 末尾 `**想定 elapsed**: 複数ループ`) と L234 (`## 6. Open Questions`) の間 = L233 空行直後
+- 既存記述の整理: Section 5 Phase 1-5 各文 + Section 6 Q1-Q4 表 + Q5/Q6 Resolved Block を Phase × 状態 × 待ち項目 × trigger の表形式で 1 行/Phase に集約
+- 着手判断方針: 「単独 main agent は plan 追記まで OK、rust 実装着手は実機要件解決前提」を明示 = 後続 Loop で「主観性高警告」候補に範囲限定の根拠を提供
+
+## Verify
+- agent-verify.sh: OK
+- grep -n "^### Phase 状態" docs/architecture/detection-extension-plan.md: 1 件
+- grep -n "^## 6. Open Questions" docs/architecture/detection-extension-plan.md: 1 件 (位置不変)
+- grep -n "^## 7. 参考" docs/architecture/detection-extension-plan.md: 1 件 (位置不変)
+- trailing whitespace: なし
+
+## Commits
+- <hash1> docs(architecture): detection-extension-plan.md Section 5 末尾に Phase 状態 subsection 新設
+
+---
+```
+
+`<hash1>` は実際の 40 桁 full hash で置換すること。**chore commit の hash 自体は AGENT_LOG.md に書かない** (Loop 80 precedent = placeholder 残留問題予防)。
+
+### Commit 2: chore commit (AGENT_LOG.md 追記分)
+```sh
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 84 commit hash <hash1 の 40 桁 full> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-83 precedent 適用 25 連続)"
+```
+
+## 完了報告
+
+- 「Loop 84 完走、agent-verify.sh OK、commit hash <commit1 hash> + <chore hash>」を最終出力に書く
+- Phase 状態表の Phase 1-5 各行 (5 件) と着手判断方針段落 1 件を報告
+- 主観性管理根拠を明記 (既存記述の機械的整理のみ)
+
+## 注意
+
+- **行末空白文字禁止** (trailing whitespace)
+- **AGENT_LOG.md 先頭は絶対に触らない** (時系列順、新規 entry は末尾の `---` 直後)
+- **Phase 状態表の `**完了**` / `**未着手**` 等の Markdown bold は backtick ではなく asterisk 2 個** (table cell 内整合)
+- 規模超過警告: docs 1 file 編集 + AGENT_LOG.md 末尾追記のみ。rust 実装着手・他 file 変更は範囲外。

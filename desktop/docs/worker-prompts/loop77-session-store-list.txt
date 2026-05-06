@@ -1,0 +1,217 @@
+# Loop 77 Worker: list_session_* 抽出
+
+あなたは meet-jerky の worker (mjc-worker-loop77)。
+mjc-main-20260505-38 (canonical 名 mjc-main) からの発注。
+
+# 最初に必ず読むこと (順守必須)
+
+1. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. **大型ファイルは Read 全体禁止 = `tail`/`head`/`grep` で対象範囲のみ参照。**
+3. 末尾追記の手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記
+4. AGENT_LOG.md 末尾 350 行を `tail -350 AGENT_LOG.md` で読み、最新 (Loop 76) のフォーマットを把握 (本 prompt の精神は Loop 76 worker prompt と同じ流れ)。
+5. **trailing whitespace (行末空白) は禁止**。
+
+# 必読 precedent (cat で全体読み込み)
+
+- `cat src-tauri/src/session_store_render.rs` (Loop 76 直近 = 188 行 = 本 Loop 77 の最重要 precedent)
+- `cat src-tauri/src/session_store_parse.rs` (Loop 69 = 純ヘルパー fn 抽出 + tests は元 file 残置 = 部分参照)
+- `cat src-tauri/src/lib.rs | head -60` で mod 整列順序を確認 (alphabetical)
+- `head -55 src-tauri/src/session_store.rs` で session_store.rs の use 文と top-level 構造を確認
+- 移動対象 fn の本体: `awk 'NR>=55 && NR<=110' src-tauri/src/session_store.rs` で範囲確認
+
+# タスク概要 (規模 M = ~55 行 fn + 8 件 tests + use 文整理)
+
+`src-tauri/src/session_store.rs` の **list_session_summaries** + **list_session_files** + 関連 tests 8 件 を、新規 module `src-tauri/src/session_store_list.rs` に集約抽出する。
+
+## 抽出対象 (session_store.rs から削除する範囲)
+
+1. **本体 fn (2 件)**:
+   - `list_session_summaries` (現 L55-93、~40 行) ← `pub fn` 維持 (外部 caller = `session_commands.rs:144` 1 件)
+   - `list_session_files` (現 L96-110、~15 行) ← `pub fn` 維持 (本 Loop は visibility 不変、外部 caller ゼロでも最小変更)
+
+2. **関連 tests (8 件、`#[test]` 関数)**:
+   - `list_session_files_returns_only_md_files` (L141)
+   - `list_session_files_ignores_md_directories` (L159)
+   - `list_session_summaries_returns_single_summary_with_metadata` (L171)
+   - `list_session_summaries_limits_search_text_size` (L195)
+   - `list_session_summaries_sorted_newest_first` (L214)
+   - `list_session_summaries_skips_unparsable_prefixes` (L239)
+   - `list_session_summaries_skips_out_of_js_date_range_prefixes` (L255)
+   - `list_session_summaries_uses_file_stem_when_title_is_empty` (L276)
+   - **正確な行範囲は `grep -n "^    fn list_session" src-tauri/src/session_store.rs` を頼りに前後の `#[test]` 行から確定する** (本 prompt の行番号は参考)
+   - 別の test 名で `list_session_files_returns_err_when_dir_does_not_exist` 等が末尾あり (Loop 76 後の状態) → 該当する test も全て移動 (`grep -n "fn list_session" src-tauri/src/session_store.rs` で全件確認)
+
+3. **session_store.rs の use 文修正**:
+   - `MAX_SESSION_SEARCH_TEXT_BYTES` 定数 (L19) は list_session_summaries 専用 → 移動
+   - 残りの use 文は session_store.rs に残置 (write_session_markdown_to / save_session_markdown / path_for_session で利用継続)
+   - 不要になった use を `cargo build --lib` のエラーで都度判定
+
+## 新規 file の構造 (session_store_list.rs)
+
+```rust
+//! セッション一覧 (list) 専門 module。
+//!
+//! ディスク I/O を伴うが、書き出し系 (write/save) は session_store.rs、
+//! 一覧系 (list) は本 module に分離。tests 共有のため共通 helper は重複定義する。
+
+use std::fs;
+use std::io::{BufRead, BufReader, Read};
+use std::path::{Path, PathBuf};
+
+use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};
+use crate::session_store_types::SessionSummary;
+
+const MAX_SESSION_SEARCH_TEXT_BYTES: u64 = 64 * 1024;
+
+/// `dir` 配下の `.md` ファイルを走査し、サマリーを新しい順に返す。
+pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>> {
+    // 元 session_store.rs L55-93 の本体をそのまま (振る舞い不変)
+}
+
+/// `dir` 配下の `.md` 拡張子ファイルを一覧する。
+pub fn list_session_files(dir: &Path) -> std::io::Result<Vec<PathBuf>> {
+    // 元 session_store.rs L96-110 の本体をそのまま
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    use chrono::FixedOffset;
+    use tempfile::tempdir;
+
+    use crate::session::Session;
+    use crate::session_store::save_session_markdown;
+
+    fn jst() -> FixedOffset {
+        FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+
+    // 元 session_store.rs から移動した 8 tests を順次貼り付け
+    // (テスト本体は振る舞い不変、import の解決のみ意識)
+}
+```
+
+## lib.rs 修正
+
+`src-tauri/src/lib.rs` の `mod session_store_parse;` の **直前** に **`mod session_store_list;`** を挿入 (alphabetical: `session_store` < `session_store_list` < `session_store_parse` < `session_store_render` < `session_store_types`)。
+
+## visibility 方針 (重要)
+
+- `list_session_summaries` / `list_session_files` とも **pub fn** 維持 (本 Loop は visibility 不変、最小変更)
+- visibility 降格 (pub → pub(crate)) は別 Tidy として後続 Loop に分離 (1 コミット = 1 観点の Tidy First)
+
+# 規模超過防止 (重要、規模 M)
+
+- 担当範囲外の編集禁止: 本 prompt で指定した 3 file (session_store.rs / session_store_list.rs / lib.rs) **のみ**を変更すること
+- AGENT_LOG.md は **末尾追記のみ**、先頭/中間は絶対に触らない
+- test 件数は変動禁止: 元 705 件 → 移動後も **705 passed / 0 failed** (件数完全不変)
+- 既存 fn 名 / 引数 / 戻り型 / doc コメントは **完全に保持** (振る舞い不変)
+- **trailing whitespace (行末空白) 禁止**
+- session_commands.rs / session_commands_inner 系は **触らない** (`session_store::list_session_summaries` の参照は新 file へ自動的に解決される)
+
+# 検証 (verify.sh + 手動 grep)
+
+```bash
+cd src-tauri
+cargo build --lib
+cargo test --lib                                # 705 passed / 0 failed (件数不変)
+cargo clippy --lib --tests -- -D warnings       # 警告ゼロ
+cargo fmt --check
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/session_store.rs src-tauri/src/session_store_list.rs src-tauri/src/lib.rs
+
+# 配置確認 grep
+grep -n "fn list_session_summaries\|fn list_session_files" src-tauri/src/session_store.rs   # 0 件 (削除確認)
+grep -n "fn list_session_summaries\|fn list_session_files" src-tauri/src/session_store_list.rs   # 各 1 件
+grep -n "session_store_list" src-tauri/src/lib.rs                                            # 1 件
+grep -n "MAX_SESSION_SEARCH_TEXT_BYTES" src-tauri/src/session_store.rs                       # 0 件 (移動確認)
+grep -n "MAX_SESSION_SEARCH_TEXT_BYTES" src-tauri/src/session_store_list.rs                  # 1 件以上
+grep -nE " +$" src-tauri/src/session_store_list.rs && echo FOUND || echo no-trailing-ws
+```
+
+# 2-commit pattern (必須、Loop 60-76 で 17 連続実証)
+
+## 1st commit (refactor)
+
+```bash
+git add src-tauri/src/session_store.rs src-tauri/src/session_store_list.rs src-tauri/src/lib.rs
+git commit -m "refactor(session_store): list_session_summaries + list_session_files + 関連 tests 8 件 + MAX_SESSION_SEARCH_TEXT_BYTES を session_store_list.rs に抽出 (mjc-main-20260505-38 Loop 77, ~55 行 fn + 8 件 tests 移動 + lib.rs mod 追加 + use 文整理, session_store.rs 976 → ~770 行への段階的責務分離, AGENTS.md priority 1 寄与, 大型 rust file 責務分離 7 file 目)"
+```
+
+`git rev-parse HEAD` で hash を取得。
+
+## AGENT_LOG.md エントリ追記 (Loop 76 と同フォーマット)
+
+`tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` 直後に以下を追記:
+
+```
+[mjc-main-20260505-38 Loop 77 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_store_list.rs (新規) を作成し、session_store.rs から以下を移動:
+  - list_session_summaries fn (~40 行) を `pub fn` として配置
+  - list_session_files fn (~15 行) を `pub fn` として配置
+  - MAX_SESSION_SEARCH_TEXT_BYTES 定数を移動
+  - mod tests 内に 8 件の test を移動 (list_session_files 2 件 + list_session_summaries 6 件)
+- src-tauri/src/lib.rs に `mod session_store_list;` を session_store と session_store_parse の間に追加 (alphabetical)
+- src-tauri/src/session_store.rs:
+  - 該当 fn 2 件 + tests 8 件 + 定数を削除
+  - 不要になった use 文を整理
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_store.rs 976 → ~770 行への段階的責務分離)
+- session_store_render.rs (Loop 76) precedent 直接展開 = list 系 (read I/O) を独立 module に分離
+- 大型 rust file 責務分離 7 file 目達成 (audio / session_store_render / session_store_list / session_store_types / realtime / session_manager_types / session_manager_persist)
+
+## How (Tidy First, behavior-preserving)
+- visibility: pub fn 2 件とも維持 (最小変更、降格は後続 Loop で別 Tidy として実施)
+- 振る舞い不変 = 705 件 pass 件数不変
+- mod tests 内 jst() 再定義 (1 行 fn) で session_store.rs と独立
+- session_commands.rs:144 の `session_store::list_session_summaries` 参照は use 文経由で新 file に自動解決
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_store.rs から `fn list_session_summaries\|fn list_session_files` を grep: 0 件
+- session_store_list.rs から `pub fn list_session_summaries\|pub fn list_session_files` を grep: 各 1 件
+- trailing whitespace: なし
+
+## commit
+- <commit-hash>
+```
+
+`<commit-hash>` には 1st commit の hash を入れる。
+
+## 2nd commit (chore: hash 反映)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 77 commit hash <hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-76 precedent 適用 18 連続)"
+```
+
+# 完走後の最終確認
+
+```bash
+git log --oneline -3
+git status --short
+cargo test --lib 2>&1 | tail -5
+```
+
+成功条件:
+- 直近 commit 2 件が refactor + chore (hash 反映)
+- working tree clean
+- test 705 passed / 0 failed
+
+# 注意事項 (critical)
+
+- `--no-verify` は厳禁
+- `session_store.rs` の他 fn (path_for_session / write_session_markdown_to / save_session_markdown) と関連 tests は **触らない**
+- `session_commands.rs` の `session_store::list_session_summaries(output_dir)` 呼び出し (L144) は **そのまま動く** (新 file が `pub fn` のため `crate::session_store::list_session_summaries` の path 解決は session_store.rs の use 文経由ではなく、lib.rs 直下の `mod session_store_list;` 経由で `session_store_list::list_session_summaries` になる → 既存の `session_store::list_session_summaries` 呼び出しを壊さないため、**session_store.rs に `pub use crate::session_store_list::list_session_summaries;` を追加** することが推奨される。OR session_commands.rs の use 文を変更する。**前者 (re-export) が最小変更**)
+- 同じく list_session_files の caller があれば re-export で互換性維持
+- jst() を session_store.rs と session_store_list.rs の両方で定義することは許容 (test util 重複だが simplicity 優先)
+- 移動 tests 内で利用される helper (例: save_session_markdown 経由の test = list test 内では未使用なら不要、使用なら use crate::session_store::save_session_markdown 追加)

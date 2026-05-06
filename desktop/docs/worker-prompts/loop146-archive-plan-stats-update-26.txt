@@ -1,0 +1,140 @@
+あなたは meet-jerky の worker です。Loop 146 = harness 衛生軸 (K 軸 = agent-log-archive-plan.md Section 2.3 観測追記 26 件目) を担当します。
+
+# 必読 (順番)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** (先頭は絶対に触らない、ファイル全体 Read 禁止 = ~33,625 行ある)。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1 = 「ハーネスを自律的に整える」)。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (Section 2.3 の precedent 25 件 + Loop 144 entry = 直前の precedent = L82 周辺)。
+
+# 重要な制約 (絶対)
+
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭 (L1 〜) は絶対に触らない。**
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。** (Loop 144 fault precedent から新規追加 = 二重書き防止)
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照。**
+- **行末の空白文字 (trailing whitespace) 禁止。**
+- 担当範囲外の編集禁止。本 Loop 146 は **docs/architecture/agent-log-archive-plan.md** (Section 2.3 末尾に観測追記) + **AGENT_LOG.md** (末尾に Loop 146 entry 追記) のみ。
+
+# 本 Loop の目的
+
+agent-log-archive-plan.md Section 2.3 に **Loop 145 完了時点の更新観測 entry** を追記する (precedent 25 件目: Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144)。
+
+## 観測対象データ (確定済 = メインで計算済)
+
+- Loop 143 → Loop 145 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-71 handoff)
+- AGENT_LOG.md 行数差分: 33,574 → 33,625 = **+51 行**
+- 平均: **~25.5 行/loop**
+- Loop 143 観測値 (~23.5 行/loop = SS 1 件 + 説明軽量化) と比較して微増 (~+8%) = **SS 1 件 + 説明軽量化パターンの 9 連続観測達成** (Loop 125 = ~22.5 / Loop 129 = ~23.5 / Loop 131 = ~24.5 / Loop 133 = ~24.5 / Loop 137 = ~24 / Loop 139 = ~24.5 / Loop 141 = ~24 / Loop 143 = ~23.5 / Loop 145 = ~25.5)
+- 階層化 paradigm 完全成熟期で **9 連続値域 ~22-26 行/loop に完全収束**
+- frontend 軸 chore entry 軽量化 paradigm = Loop 125/127/129/131/133/135/137/139/141/143/145 の **11 件連続観測** = paradigm 完全実証期 11 件突破
+
+## paradigm pivot 多軸の内訳 (本 2 ループ間 = Loop 144 + Loop 145)
+
+- Loop 144 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 (mjc-main-20260505-71 が実行 + worker fault → メイン直接救済 paradigm 1 件目)
+- Loop 145 = frontend 軸 = **重複削除 + 既存 file 拡張軸 paradigm 新規確立 1 件目** = AudioLevelMeter.tsx の getLevelColor + sanitizeAudioLevelForDisplay → audioLevelHelpers.ts 統合 (**DRY 違反解消**, scope 35 軸維持 = 新 file なし, **worker 自律学習進化 paradigm 2 件目** = MicrophoneSection / SystemAudioSection callsite 自律置換) = refactor + chore
+- 計: SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与)
+
+## SESSION SUMMARY 件数
+
+mjc-main-20260505-71 handoff SUMMARY 1 件 (commit `9e38563`、~30 行 = 2 ループ完走 + worker fault precedent + paradigm 新規確立記載 = 内容増)
+
+# 具体手順 (厳守、2-commit pattern)
+
+## Step 1: agent-log-archive-plan.md Section 2.3 末尾に観測 entry を追記
+
+`docs/architecture/agent-log-archive-plan.md` の Section 2.3 末尾 (現在 L82 = Loop 143 完了時点 entry) の直後に以下を追記:
+
+```markdown
+
+> **更新観測 (mjc-main-20260505-72 Loop 145 完了時点)**: Loop 143 → Loop 145 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-71) で +51 行 (33,574 → 33,625)、平均 ~25.5 行/loop。Loop 143 観測値 (~23.5 行/loop = SS 1 件 + 説明軽量化) と比較して微増 (~+8%) = paradigm pivot 多軸 (Loop 144 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 145 = frontend 軸 = **重複削除 + 既存 file 拡張軸 paradigm 新規確立 1 件目** = AudioLevelMeter.tsx の getLevelColor + sanitizeAudioLevelForDisplay → audioLevelHelpers.ts 統合 (DRY 違反解消, scope 35 軸維持 = 新 file なし, worker 自律学習進化 paradigm 2 件目 = MicrophoneSection / SystemAudioSection callsite 自律置換) = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 143 観測値 (~23.5 行/loop) との微増の主因 = **SESSION SUMMARY 1 件継続** (mjc-main-20260505-71 handoff SUMMARY commit `9e38563` = ~30 行 = 内容増 = 2 ループ完走 + worker fault precedent + paradigm 新規確立記載) + paradigm pivot 同形 (K + frontend) = **SS 1 件 + 説明軽量化パターンの 9 連続観測達成** (Loop 125 = ~22.5 行/loop / Loop 129 = ~23.5 行/loop / Loop 131 = ~24.5 行/loop / Loop 133 = ~24.5 行/loop / Loop 137 = ~24 行/loop / Loop 139 = ~24.5 行/loop / Loop 141 = ~24 行/loop / Loop 143 = ~23.5 行/loop / Loop 145 = ~25.5 行/loop) = **階層化 paradigm 完全成熟期で 9 連続値域 ~22-26 行/loop に完全収束**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137/139/141/143/145 の **11 件連続観測** = **frontend 軸軽量化 paradigm の 11 度目の観測 = paradigm 完全実証期 11 件突破**。SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量の 3 軸が支配変数 = **SS 0 件 = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測) / SS 1 件 + 説明軽量化 = ~22-26 行/loop (Loop 125/129/131/133/137/139/141/143/145 = 9 連続観測達成) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の 3 段階階層化が **SS 1 件軽量側で 9 連続観測達成 = paradigm 完全実証期更なる延長**。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~25.5 行 = ~102-255 行/時間 の範囲、アクティブセッション間の差異)。
+```
+
+注意:
+- 直前 entry (Loop 143 完了時点 = L82) の直後 = `---` セクション区切り (### 2.4) より前 (Section 2.3 内の連続した観測 entry の末尾)
+- trailing whitespace なし
+- Edit ツールを使い、Loop 143 観測 entry 末尾の `アクティブセッション間の差異)。` 直後に空行 + 上記新 entry を挿入する形式が安全 (ピンポイント挿入)
+
+## Step 2: 検証
+
+```bash
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+```
+
+docs-only 変更 = npm run build / cargo 系を skip 判定で OK のはず。
+
+## Step 3: refactor/docs 系 commit (1 件目)
+
+```bash
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "$(cat <<'EOF'
+docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 145 完了時点の更新観測追記 (mjc-main-20260505-72 Loop 146, harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144 precedent 25 件目, +51 行 / 平均 ~25.5 行/loop = SS 1 件 + 説明軽量化パターン 9 連続観測達成 + frontend 軸軽量化 paradigm 11 度目観測)
+EOF
+)"
+```
+
+## Step 4: AGENT_LOG.md 末尾 (`---` の直後) に Loop 146 entry を **1 回のみ** 追記
+
+**手順**:
+1. `tail -10 AGENT_LOG.md` で末尾を確認
+2. 末尾の `---` 直後に以下のテンプレートで append (Loop 144 entry と同形式)
+3. **append は 1 回のみ。Edit/Write を複数回繰り返さない。** (Loop 144 fault precedent)
+
+```
+[mjc-main-20260505-72 Loop 146 / 2026-05-06]
+worker: mjc-worker-loop146-archive-plan-stats-update-26 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md Section 2.3 (+1 件 = 更新観測 entry, ~14 行追加)
+内容: agent-log-archive-plan.md Section 2.3 に Loop 145 完了時点の更新観測 entry を追記。Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144 precedent の 25 件目。Loop 143 → Loop 145 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-71) で +51 行 (33,574 → 33,625)、平均 ~25.5 行/loop。Loop 143 観測値 (~23.5 行/loop) と比較して微増 (~+8%) = **SS 1 件 + 説明軽量化パターンの 9 連続観測達成** (Loop 125 = ~22.5 / Loop 129 = ~23.5 / Loop 131 = ~24.5 / Loop 133 = ~24.5 / Loop 137 = ~24 / Loop 139 = ~24.5 / Loop 141 = ~24 / Loop 143 = ~23.5 / Loop 145 = ~25.5) = **階層化 paradigm 完全成熟期で 9 連続値域 ~22-26 行/loop に完全収束**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137/139/141/143/145 の **11 件連続観測** = **frontend 軸軽量化 paradigm の 11 度目の観測**。alternation pattern 35 連続成功維持 (frontend(143) → K(144) → frontend(145) → K(146))。harness 衛生軸 = variety pivot (frontend → K)。長期平均 ~830 行/時間 とは依然乖離あり。
+変更ファイル: docs/architecture/agent-log-archive-plan.md
+検証: 該当なし (docs-only 変更, agent-verify.sh は doc-only 変更で npm run build / cargo 系を skip 判定)
+commit: <Step 3 の sha を埋める>
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+注意:
+- 末尾に `---` を必ず付ける (次の entry 用境界)
+- 行末 trailing whitespace なし
+- commit hash placeholder `<Step 3 の sha を埋める>` は Step 3 完了後の `git rev-parse --short HEAD` 結果で置換 (Loop 144 fault でリセット → Loop 145 再開で 1 連続スタート → 本 Loop 146 で 2 連続)
+- **append が成功したら直ちに Step 5 へ進む。同じ entry を再度書こうとしない。**
+
+## Step 5: chore commit (2 件目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-72 Loop 146 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144 precedent 25 件目, +51 行 / 平均 ~25.5 行/loop = SS 1 件 + 説明軽量化パターン 9 連続観測達成 + frontend 軸軽量化 paradigm 11 度目観測) のエントリ追記
+EOF
+)"
+```
+
+# 規模と所要時間
+
+- 規模: SS = ~3-5 分完走見込み
+- worker prompt 行数: 本 prompt は ~140 行 (precedent Loop 144 と同水準)
+
+# 上限明示
+
+- ファイルは agent-log-archive-plan.md と AGENT_LOG.md のみ編集
+- AGENT_LOG.md は **末尾に追記のみ** (先頭は絶対に触らない、append 1 回のみ)
+- agent-log-archive-plan.md は Section 2.3 末尾に新 entry 1 件追加のみ
+- それ以外のファイル変更禁止
+- test 件数の変動なし (docs-only)
+- trailing whitespace 禁止
+
+# 完了確認
+
+```bash
+git log --oneline -3
+git status --short
+wc -l AGENT_LOG.md docs/architecture/agent-log-archive-plan.md
+```
+
+期待結果:
+- 直近 2 commit が本 Loop 146 のもの
+- working tree clean (untracked のみ残存 OK)
+- AGENT_LOG.md ~33,640 行前後 (33,625 + ~14)
+- agent-log-archive-plan.md ~213 行前後 (199 + ~14)

@@ -1,0 +1,174 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/system_audio_pcm.rs` (Loop 91 抽出、機能分類軸)
+6. precedent (cat 全体): `cat src-tauri/src/secret_store_commands.rs` (Loop 93 抽出、tauri::command 抽出 paradigm)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/session_commands_list.rs` (~80-110 行)
+- 編集: `src-tauri/src/session_commands.rs` (list 関連 production ~18 行削除 + test 3 件削除 + 不要 import 整理 + `resolve_output_directory` を `pub(crate)` 化)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 + invoke_handler path 修正 1 件)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 97 タスク内容 (構造分離 22 件目, 新 scope = session_commands 軸 1 件目 = pivot)
+
+## 背景
+
+- Loop 95 = apple_speech_macos.rs 抽出 (cfg(macos) inline module 分離 paradigm)。Loop 96 = harness 衛生軸 (agent-log-archive-plan.md 観測追記)。
+- Loop 97 では session_commands.rs (523 行) の **list_session_summaries 系** (`list_session_summaries_inner` + `list_session_summaries_cmd` + 関連 test 3 件) を別 module へ抽出 = 構造分離 22 件目 = 新 scope = session_commands 軸 1 件目 = scope 14 種目達成。
+- session_commands.rs 本来責務 (start/finalize/discard 系のセッション操作) と list 系 (セッション列挙) は機能的に独立 = 分離で構造美向上。AGENTS.md priority 1 寄与。
+
+## 抽出対象 (session_commands.rs から session_commands_list.rs へ移動)
+
+**Production (session_commands.rs L133-154, ~22 行)**:
+- L133-135: section 区切りコメント (`// ─── list_session_summaries ───`) も含めて移動
+- L137-146: `pub fn list_session_summaries_inner(output_dir: &Path) -> Result<Vec<SessionSummary>, String>` (~10 行)
+- L148-154: `#[tauri::command] pub fn list_session_summaries_cmd(...)` (~7 行)
+
+**Test (session_commands.rs `mod tests` 内、3 件)**:
+- L282-297: `list_session_summaries_inner_returns_saved_summary` (Cycle 4)
+- L299-309: `list_session_summaries_inner_returns_empty_for_missing_dir`
+- L337-353: `list_session_summaries_inner_returns_error_when_path_is_a_file` (Cycle 5b)
+
+これ以外の test は **絶対に触らない** (start_session_inner_* / finalize_and_save_session_inner_* / discard_session_inner_* / resolve_output_directory_* / default_offset_* は別軸)。
+
+**helpers の取り扱い**:
+- `resolve_output_directory` (L35) は新 file からも呼ぶ必要があるため、`fn` を `pub(crate) fn` に変更する (1 行修正)
+- `now_unix_secs` (L19) と `default_offset` (L29) は session_commands.rs 内のみで利用 = 変更不要
+- これら 3 helper は session_commands.rs に残す = 新 file へ移動しない
+
+## 抽出方式 (Loop 90 transcription_commands_model.rs precedent + Loop 93 secret_store_commands.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/session_commands_list.rs`
+
+ファイル冒頭 docstring 例:
+
+```rust
+//! 保存済みセッションファイルの列挙に関する tauri コマンドと実装本体。
+//!
+//! `session_commands.rs` 本来責務 (start / finalize / discard 等のセッション操作) からは
+//! 機能境界が独立しているため別 module に分離。`resolve_output_directory` のみ
+//! `session_commands` から `pub(crate)` で借用する。
+```
+
+必要 import (移動):
+```rust
+use std::path::Path;
+
+use crate::session_commands::resolve_output_directory;
+use crate::session_store;
+use crate::session_store_types::SessionSummary;
+use crate::settings::SettingsStateHandle;
+```
+
+production 2 fn (`list_session_summaries_inner` + `list_session_summaries_cmd`) をそのまま移動。`#[cfg(test)] mod tests` を新 file 内に追加し、test 3 件を移動。test 内 `use super::*;` で十分 (SessionManager 不使用、tempdir のみ依存)。
+
+test 用 dev-dep が必要なら新 file 側 `#[cfg(test)] mod tests { use tempfile::tempdir; ... }` を書く (Cargo.toml は触らない、既存 dev-dep)。
+
+### 2. session_commands.rs 編集
+
+- 該当 production section (L133-154) を削除 (section 区切りコメント含む)
+- mod tests 内の関連 test 3 件 (L282-297, L299-309, L337-353) を削除
+- それ以外の test (start_session_inner_* / finalize_and_save_session_inner_* / discard_session_inner_* / resolve_output_directory_* / default_offset_*) は触らない
+- 不要になった import を整理 = `SessionSummary` の use を削除 (`use crate::session_store_types::SessionSummary;`)
+  - **慎重に**: `session_store::list_session_summaries` の use も新 file 移動後に session_commands.rs に残るかは cargo build で確認 (他 fn で使ってなければ削除)
+  - 残るべき import (start/finalize/discard で使用中) は削除しない
+- `resolve_output_directory` の signature を `fn resolve_output_directory(...)` から `pub(crate) fn resolve_output_directory(...)` に変更 (1 単語追加)
+
+### 3. lib.rs 編集 (alphabetical mod + invoke_handler path)
+
+- L33 `mod session_commands;` 直後 (alphabetical 順) に `mod session_commands_list;` 追加
+- L402 を以下に変更:
+  - `session_commands::list_session_summaries_cmd` → `session_commands_list::list_session_summaries_cmd`
+
+それ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production 2 fn / test 3 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller path 変更は lib.rs invoke_handler のみ、frontend `invoke('list_session_summaries_cmd')` 等の名前は不変
+- `resolve_output_directory` の `pub(crate)` 化以外 helpers は触らない
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import の clippy warning や build error が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/session_commands.rs src-tauri/src/session_commands_list.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85-95 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/session_commands.rs src-tauri/src/session_commands_list.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(session): セッション列挙 (list_session_summaries_inner + cmd) を session_commands_list.rs に抽出 (mjc-main-20260505-50 Loop 97, 機能分離軸 = session_commands 軸 1 件目, 大型 rust file 責務分離 22 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-50 Loop 97 / 2026-05-05]
+worker: mjc-worker-session-commands-list-loop97 (作業)
+範囲: src-tauri/src/session_commands.rs (list 関連 production ~22 行削除 + test 3 件削除 + 不要 import 整理 + resolve_output_directory pub(crate) 化) + src-tauri/src/session_commands_list.rs (新規 ~80-110 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 1 件)
+内容: session_commands.rs L133-154 の list 関連 (list_session_summaries_inner + list_session_summaries_cmd) を新 module session_commands_list.rs に抽出。tests 3 件 (list_session_summaries_inner_returns_saved_summary + list_session_summaries_inner_returns_empty_for_missing_dir + list_session_summaries_inner_returns_error_when_path_is_a_file) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod session_commands_list; 追加 (alphabetical = mod session_commands; 直後) + invoke_handler の session_commands::list_session_summaries_cmd を session_commands_list::list_session_summaries_cmd に変更。session_commands::resolve_output_directory を pub(crate) 化 (新 file から借用)。大型 rust file 責務分離 22 file 目 = session_commands 軸 1 件目 (新 scope) = apple_speech 軸 (Loop 95) からの pivot 達成 (機能分類軸 paradigm = system_audio_pcm/format / app_detection_* と同形)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(session): セッション列挙を session_commands_list.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = session_commands 軸の機能境界分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-50 Loop 97 = session_commands_list.rs 抽出 (構造分離 22 file 目, session_commands 軸 1 件目 = 新 scope, apple_speech 軸からの pivot 達成 = 機能分類軸 paradigm 復帰) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件 (新規 1 + 編集 3)
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

@@ -1,0 +1,165 @@
+あなたは meet-jerky の worker (mjc-worker-loop107-transcript-view-formatters-extract) です。
+mjc-main-20260505-55 (canonical = mjc-main) からの作業発注を受けます。
+
+# 作業内容 (規模 SS-S, ~5-10 分目安)
+
+`src/routes/TranscriptView.tsx` (2494 行 = 巨大 frontend file) の **純粋な表示文字列フォーマット helpers 5 関数** を新 module `src/utils/transcriptViewFormatters.ts` に抽出する。**frontend 軸 = 本セッション series 初挑戦 = 17 軸目開拓** (前任セッション Loop 106 K 軸からの paradigm pivot 達成)。
+
+## 目的
+- AGENTS.md priority 1 寄与 (大型 frontend file 責務分離 = TranscriptView.tsx 2494 行 → 削減 + utils/transcriptViewFormatters.ts 新規)
+- frontend 軸 = scope 17 軸目開拓 (本セッション series で初の frontend 直接抽出 = 大きな paradigm pivot)
+- 構造分離 29 file 目達成
+- メイン批判判断 連続 50 セッション目強化 (handoff 文書未列挙の TranscriptView.tsx 2494 行 を発掘)
+
+## 抽出関数 5 件 (純粋関数のみ、async/effects なし)
+
+| 関数名 | 行範囲 | 行数 | 依存 |
+|--------|--------|------|------|
+| formatOperationError | L73-75 | 3 | toErrorMessage (utils/errorMessage) |
+| getFileName | L77-79 | 3 | (なし) |
+| getCompactSessionTitle | L81-86 | 6 | (なし) |
+| getRecentSessionMeta | L88-103 | 16 | (なし) |
+| formatElapsedTime | L155-165 | 11 | (なし) |
+
+合計 = ~40 行 production 削除 + 新規 ~50 行 (use 文 + jsdoc 含む)
+
+## caller 修正
+
+src/routes/TranscriptView.tsx 内の caller (全て同 file 内) は **import 1 行追加** で対応 (関数名は変更なし、既存呼び出しは無変更):
+- formatOperationError: 3 callers (L1238, L1306, L1395)
+- getFileName: 2 callers (L1732, L2083)
+- getCompactSessionTitle: 1 caller (L2086)
+- getRecentSessionMeta: 1 caller (L2087)
+- formatElapsedTime: 1 caller (L1700)
+
+## 編集手順
+
+### Step 1: 新 file `src/utils/transcriptViewFormatters.ts` を作成
+
+```typescript
+import { toErrorMessage } from "./errorMessage";
+
+export function formatOperationError(prefix: string, e: unknown): string {
+  return `${prefix} ${toErrorMessage(e)}`;
+}
+
+export function getFileName(path: string): string {
+  return path.split(/[\\/]/).pop() || path;
+}
+
+export function getCompactSessionTitle(title: string): string {
+  const displayTitle = title
+    .replace(/\s-\s\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$/, "")
+    .trim();
+  return displayTitle || "無題の会議";
+}
+
+export function getRecentSessionMeta(startedAtSecs: number): string {
+  const startedAtMs = startedAtSecs * 1000;
+  if (!Number.isFinite(startedAtMs)) {
+    return "日時不明";
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return "日時不明";
+  }
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(startedAtDate);
+}
+
+/** 経過時間をフォーマットする */
+export function formatElapsedTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+```
+
+### Step 2: src/routes/TranscriptView.tsx から 5 関数定義を削除
+
+- L73-75 (formatOperationError) 削除
+- L77-79 (getFileName) 削除
+- L81-86 (getCompactSessionTitle) 削除
+- L88-103 (getRecentSessionMeta) 削除
+- L155-165 (formatElapsedTime + jsdoc) 削除 = `/** 経過時間をフォーマットする */` 含めて削除
+
+### Step 3: src/routes/TranscriptView.tsx に import 1 行追加
+
+既存の `import { toErrorMessage } from "../utils/errorMessage";` (L40 付近) の **直後** か、既存の utils import 群と一緒に挿入:
+
+```typescript
+import {
+  formatOperationError,
+  getFileName,
+  getCompactSessionTitle,
+  getRecentSessionMeta,
+  formatElapsedTime,
+} from "../utils/transcriptViewFormatters";
+```
+
+**注意**: `toErrorMessage` の import は **そのまま残す**こと (TranscriptView.tsx 内で他にも使用されている可能性あり、grep で確認)。
+
+# 検証コマンド (順番に実行、必須)
+
+1. `cd src-tauri && cargo build --lib 2>&1 | tail -5` で **rust 部分にエラーなし** を確認 (frontend 編集だが念のため)
+2. `cd .. && npm run build 2>&1 | tail -30` で **tsc + vite build 全 OK** を確認 (frontend test framework 未導入のため、これが最重要検証)
+3. `git diff --stat src/` で **2 file 編集 (TranscriptView.tsx 削除分 + transcriptViewFormatters.ts 新規)** を確認
+4. `bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/transcriptViewFormatters.ts` で全項目 OK 確認
+
+cargo test / clippy / fmt は **本 worker では走らせる必要なし** (rust ファイル無変更、frontend のみ)。`scripts/agent-verify.sh` が frontend だけならスキップ判定する設計。
+
+# 2-commit pattern (precedent 連続 46 ループ、frontend 軸初適用)
+
+1. **commit 1 (refactor)**: `git add src/routes/TranscriptView.tsx src/utils/transcriptViewFormatters.ts && git commit -m "refactor(frontend): 純粋表示フォーマット helpers (formatOperationError + getFileName + getCompactSessionTitle + getRecentSessionMeta + formatElapsedTime) を utils/transcriptViewFormatters.ts に抽出 (mjc-main-20260505-55 Loop 107, frontend 軸 = 17 軸目開拓 = 本セッション series 初, 大型 frontend file 責務分離 29 file 目, AGENTS.md priority 1 寄与)"`
+2. `git log --oneline -1` で **commit hash を取得 (実 hash を直接書く)**
+3. AGENT_LOG.md 末尾に Loop 107 エントリ追記 (下記 template、commit 1 の実 hash を直接埋める)
+4. **commit 2 (chore)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-55 Loop 107 = utils/transcriptViewFormatters.ts 抽出 (構造分離 29 file 目, frontend 軸 = 17 軸目開拓 = 本セッション series 初, K 軸からの paradigm pivot 達成 = 純粋関数機能分離軸 frontend 版) のエントリ追記"`
+
+# AGENT_LOG.md 末尾追記 template (commit 1 の実 hash を埋める)
+
+```
+---
+[mjc-main-20260505-55 Loop 107 / 2026-05-05]
+worker: mjc-worker-loop107-transcript-view-formatters-extract (作業)
+範囲: src/routes/TranscriptView.tsx (純粋関数 helpers 5 件削除 + import 1 行追加, ~40 行削減) + src/utils/transcriptViewFormatters.ts (新規 ~50 行)
+内容: TranscriptView.tsx L73-165 の純粋表示文字列フォーマット helpers (formatOperationError + getFileName + getCompactSessionTitle + getRecentSessionMeta + formatElapsedTime) を新 module utils/transcriptViewFormatters.ts に抽出。caller (同 file 内 5 関数 = 計 8 callers) は import 1 行追加 + 既存呼び出しは無変更。toErrorMessage の import は TranscriptView.tsx に残置 (他で使用)。大型 frontend file 責務分離 29 file 目 = frontend 軸 17 軸目開拓 (本セッション series 初の frontend 直接抽出 = 大きな paradigm pivot = K 軸 (Loop 106) からの完璧 pivot 達成) = 純粋関数機能分離軸 frontend 版 paradigm 確立。TranscriptView.tsx は 2494 → ~2454 行 (~1.6% 削減)。timeFormat.ts (既存 formatSegmentTimestamp) との関係は将来 loop で整理予定 (本 Loop では SKIP)。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)。npm run build 全項目 OK = tsc 型チェック OK + vite build OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <commit1_hash> refactor(frontend): 純粋表示フォーマット helpers を utils/transcriptViewFormatters.ts に抽出
+AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 17 軸目開拓)
+
+---
+```
+
+# 必須要素 (これを破ると AGENT_LOG.md 先頭混入事故 + trailing whitespace 警告が起きる)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` で末尾を読む** = 時系列順 = 最古先頭、最新末尾
+2. **新規追記は必ずファイル末尾に追加** = `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → 末尾に append
+3. **先頭は絶対に触らない**
+4. **AGENT_LOG.md の末尾追記**: ファイルへ Write or Edit (末尾 `---` の直後に新行を追加)
+5. **担当範囲外を絶対編集しない** = src/routes/TranscriptView.tsx + src/utils/transcriptViewFormatters.ts + AGENT_LOG.md 以外を触らない (timeFormat.ts も触らない、別 Loop で整理)
+6. **大型 file は Read 全体禁止** = TranscriptView.tsx (2494 行) は **Read 禁止 = head/tail/sed/grep のみ** で部分参照
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# precedent 参照 (rust 機能分離軸を frontend に翻訳)
+
+- 直近 rust 純粋関数機能分離軸 precedent: `25c4e11` chore(agent-log): session_commands_helpers.rs (Loop 105) = 純粋関数 helpers 軸 = 同形 paradigm
+- 構造同形: utils/* に純粋関数 export = caller に import 追加 + 既存 fn 削除 + 既存呼び出し無変更
+- 違い: rust は cargo test, clippy, fmt 必須 = frontend は npm run build (tsc + vite build) のみ + frontend test framework 未導入のため test 件数検証なし
+
+# 完走確認
+
+- `git log --oneline -3` で 2-commit (refactor + chore) を確認
+- `git status --short` で working tree clean (untracked のみ) を確認
+
+完了したら最終出力で「Loop 107 完走 = frontend 17 軸目開拓達成」を報告すること。

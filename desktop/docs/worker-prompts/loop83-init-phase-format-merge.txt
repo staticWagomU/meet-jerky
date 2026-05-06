@@ -1,0 +1,224 @@
+あなたは meet-jerky の作業 worker です。担当 loop = mjc-main-20260505-42 Loop 83 = L89-L110-merge = realtime engine init phase format 直書き共通化 (X4-2 続編)。
+
+# 必読: AGENT_LOG.md の末尾だけ読む (先頭厳禁)
+
+`tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ参照。**先頭は絶対に触らない**。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。**新規追記は必ずファイル末尾の `---` 直後に行う**。直前 entry に Loop 81 (push_error 共通化) と Loop 82 (archive plan 数値更新) と SESSION SUMMARY が書かれているので、その流儀で追記する。
+
+# 担当作業 (規模 SS、振る舞い完全不変)
+
+両 realtime engine の `impl Stream::new` 内 `task::spawn` closure 内 init phase エラー push 処理を、Loop 81 で共通化済の `crate::realtime_error_helpers::push_error` 呼び出しに統一する。**caller 2 件のみ**。新 file 作成不要、新 fn 定義不要、test 修正不要。
+
+## 事前確認 (実コードでのみ判断)
+
+`grep -n "\[ElevenLabs Realtime エラー\|\[OpenAI Realtime エラー" src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs`
+
+期待結果:
+- elevenlabs_realtime.rs:89 = `text: format!("[ElevenLabs Realtime エラー: {e}]"),`
+- openai_realtime.rs:110 = `text: format!("[OpenAI Realtime エラー: {e}]"),`
+
+`grep -n "pub async fn run" src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs`
+
+期待結果: 両方 `pub async fn run(params: RunParams) -> Result<(), String>` = **`e: String` 型確定**、`e.to_string()` 不要、直接 move OK。
+
+## 修正詳細
+
+### 1. elevenlabs_realtime.rs L88-95 (8 行) を 1 caller (5-7 行) に置換
+
+**現状 (L75-97 周辺、参考)**:
+```rust
+let task_handle = tauri::async_runtime::spawn(async move {
+    if let Err(e) = ws_task::run(ws_task::RunParams { ... })
+        .await
+    {
+        pending_for_task.lock().push(TranscriptionSegment {
+            text: format!("[ElevenLabs Realtime エラー: {e}]"),
+            start_ms: 0,
+            end_ms: 0,
+            source,
+            speaker: speaker.clone(),
+            is_error: Some(true),
+        });
+    }
+});
+```
+
+**変更後 (L88-95 を caller に置換)**:
+```rust
+let task_handle = tauri::async_runtime::spawn(async move {
+    if let Err(e) = ws_task::run(ws_task::RunParams { ... })
+        .await
+    {
+        crate::realtime_error_helpers::push_error(
+            "ElevenLabs",
+            &pending_for_task,
+            &speaker,
+            source,
+            e,
+        );
+    }
+});
+```
+
+### 2. openai_realtime.rs L106-116 (11 行 = コメント 2 行 + push 9 行) を コメント 2 行 + caller (5-7 行) に置換
+
+**現状 (L93-118 周辺、参考)**:
+```rust
+let task_handle = tauri::async_runtime::spawn(async move {
+    if let Err(e) = ws_task::run(ws_task::RunParams { ... })
+        .await
+    {
+        // タスク内で発生した致命的エラーをユーザーにも分かるように
+        // pending キューに 1 件だけ詰める (segment text に流す簡易方式)。
+        let mut q = pending_for_task.lock();
+        q.push(TranscriptionSegment {
+            text: format!("[OpenAI Realtime エラー: {e}]"),
+            start_ms: 0,
+            end_ms: 0,
+            source,
+            speaker: speaker.clone(),
+            is_error: Some(true),
+        });
+    }
+});
+```
+
+**変更後**:
+```rust
+let task_handle = tauri::async_runtime::spawn(async move {
+    if let Err(e) = ws_task::run(ws_task::RunParams { ... })
+        .await
+    {
+        // タスク内で発生した致命的エラーをユーザーにも分かるように
+        // pending キューに 1 件だけ詰める (segment text に流す簡易方式)。
+        crate::realtime_error_helpers::push_error(
+            "OpenAI",
+            &pending_for_task,
+            &speaker,
+            source,
+            e,
+        );
+    }
+});
+```
+
+中間変数 `let mut q = pending_for_task.lock();` は削除 (helper が `pending.lock().push(...)` を行うため)。
+
+## push_error signature 確認 (修正不要、参考)
+
+`src-tauri/src/realtime_error_helpers.rs` (Loop 81 で作成済):
+```rust
+pub(crate) fn push_error(
+    engine_label: &str,
+    pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
+    speaker: &Option<String>,
+    source: Option<TranscriptionSource>,
+    message: String,
+)
+```
+
+引数の型整合:
+- `"ElevenLabs"` / `"OpenAI"` = `&str` ✓
+- `&pending_for_task` = `&Arc<Mutex<Vec<TranscriptionSegment>>>` ✓
+- `&speaker` = `&Option<String>` ✓ (closure 内で `speaker = config.speaker.clone()` 後 RunParams 内に `speaker: speaker.clone()` で渡され、closure 自体の `speaker` 変数は引き続き存在)
+- `source` = `Option<TranscriptionSource>` (Copy trait) ✓ (closure 内で move/copy 両方 OK)
+- `e` = `String` (Result<(), String> の Err) ✓ (move OK)
+
+## 規模超過防止 (これ以外は何も触らない)
+
+- **新 file 作成禁止** (Loop 81 で realtime_error_helpers.rs 作成済み)
+- **test 修正禁止** = test 内 expected text は無変更で通る (assertion 内 format!() の結果は同一)
+- **L89 / L110 以外の format!("[... Realtime エラー") を触らない** (test 内 assertion は不変)
+- **L89 / L110 周辺 7-8 行 + L110 周辺 11 行 + コメント 2 行のみ編集**
+- **大型 file 全体 Read 禁止**: `Read offset/limit` で L60-L100 / L80-L120 程度に絞って読む
+
+## test 件数の上限明示
+
+- cargo test --lib 期待値: **704 passed / 0 failed (件数完全不変)** = format!() の結果が同一なので test 内 assertion は無変更で通る
+- 件数が変わったら**作業範囲超過の証拠** = 即停止して main に報告
+
+## 検証手順 (cd src-tauri 必須)
+
+```sh
+cd src-tauri
+cargo build --lib
+cargo test --lib  # 704 passed 期待
+cargo clippy --lib --tests -- -D warnings
+cargo fmt --check
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+```
+
+追加 grep 確認:
+- `grep -n "\\[ElevenLabs Realtime エラー: {e}\\]" src-tauri/src/elevenlabs_realtime.rs` = 0 件 (削除確認)
+- `grep -n "\\[OpenAI Realtime エラー: {e}\\]" src-tauri/src/openai_realtime.rs` = 0 件 (削除確認)
+- `grep -n "format!(\"\\[ElevenLabs Realtime" src-tauri/src/elevenlabs_realtime.rs` = test 内 assertion 4 件のみ (production 0 件)
+- `grep -n "format!(\"\\[OpenAI Realtime" src-tauri/src/openai_realtime.rs` = test 内 assertion 4 件のみ (production 0 件)
+- 行末空白なし (`grep -nE " +$" src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs`)
+
+## 2-commit pattern (Loop 60-82 で 23 連続実証済 = 必ず守る)
+
+### Commit 1: refactor commit
+```sh
+git add src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+git commit -m "refactor(realtime): init phase エラー push を realtime_error_helpers::push_error 経由に統一 (mjc-main-20260505-42 Loop 83, L89/L110 = X4-2 続編, caller 2 件で重複 format!() 削減 + 中間変数解消, AGENTS.md priority 1 寄与)"
+```
+
+`git rev-parse HEAD` で hash を取得し控える (40 桁 full hash)。
+
+### AGENT_LOG.md 末尾追記 (Loop 80 precedent: chore commit hash 自体は AGENT_LOG.md に書かない)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した後、ファイル末尾に以下のような entry を追記:
+
+```
+[mjc-main-20260505-42 Loop 83 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/elevenlabs_realtime.rs L88-95 (8 行) を `crate::realtime_error_helpers::push_error("ElevenLabs", &pending_for_task, &speaker, source, e)` (caller 1 件) に置換
+- src-tauri/src/openai_realtime.rs L106-116 のうち push 部分 (9 行) を `crate::realtime_error_helpers::push_error("OpenAI", &pending_for_task, &speaker, source, e)` (caller 1 件) に置換 + 中間変数 `let mut q = pending_for_task.lock();` 削除 + コメント 2 行は保持
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file の init phase エラー format 直書き ~17 行を Loop 81 で抽出済 push_error helper に統一)
+- Loop 81 (push_error 共通化) の自然な続編 = realtime_error_helpers.rs が production 全 caller の single entry-point に到達
+- 中間変数 `let mut q = ...` (openai 側のみ) を削除して両 file 構造対称化
+
+## How (Tidy First, behavior-preserving)
+- ws_task::run の戻り値型 = Result<(), String> 確認済 = `e: String` を直接 move
+- caller 引数: ("ElevenLabs"/"OpenAI", &pending_for_task, &speaker, source, e) で push_error signature と整合
+- format!() の結果が同一なので test 内 expected text 4 件は無変更
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `format!("[ElevenLabs Realtime エラー: {e}]")` を grep: 0 件 (production 0 件)
+- openai_realtime.rs から `format!("[OpenAI Realtime エラー: {e}]")` を grep: 0 件 (production 0 件)
+- trailing whitespace: なし
+
+## Commits
+- <hash1> refactor(realtime): init phase エラー push を realtime_error_helpers::push_error 経由に統一
+
+---
+```
+
+`<hash1>` は実際の 40 桁 full hash で置換すること。**chore commit の hash 自体は AGENT_LOG.md に書かない** (Loop 80 precedent = placeholder 残留問題予防)。
+
+### Commit 2: chore commit (AGENT_LOG.md 追記分)
+```sh
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 83 commit hash <hash1 の 40 桁 full> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-82 precedent 適用 24 連続)"
+```
+
+## 完了報告
+
+- 「Loop 83 完走、cargo test 704 passed、commit hash <commit1 hash> + <chore hash>、agent-verify.sh OK」を最終出力に書く
+- caller 数 (production 2 件削除 + caller 2 件追加) と中間変数削除 1 件を報告
+- 振る舞い不変根拠を明記 (format!() 結果が同一)
+
+## 注意
+
+- **行末空白文字禁止** (trailing whitespace)
+- AGENT_LOG.md 先頭は絶対に触らない (時系列順、新規 entry は末尾の `---` 直後)
+- worker prompt の予測 caller 行番号 (L88-95 / L106-116) は実コード grep + Read で確認した結果と整合 = 実態優先で判断 (例: L89 = format!() 行 / L110 = format!() 行)
+- 規模超過警告: caller 2 件 + 中間変数 1 件削除のみ。test 修正・他 file 変更は範囲外。

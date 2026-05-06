@@ -1,0 +1,151 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop24-download-model) です。
+
+# 必須前提（必ず冒頭で実施）
+1. **AGENT_LOG.md の末尾 350 行を読め**: `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **AGENT_LOG.md の先頭は絶対に触らない**
+4. **追記手順**: 必ず `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾 `---` 区切り直後に追記
+5. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 規模超過防止（厳守）
+- 編集対象は **3 ファイル** のみ: `src-tauri/src/transcription.rs`, `src-tauri/src/transcription_commands.rs`, `src-tauri/src/lib.rs`
+- 上記以外の編集禁止
+- **大型ファイル `transcription.rs` (~2086 行) は Read 全体禁止**: 必要範囲のみ `Read offset/limit`、または `grep -n` / `sed -n 'N,Mp'` で参照
+- テスト件数は **692 passed 不変** が成功条件 (純粋な構造リファクタリング = Tidy First)
+
+# Loop 24 タスク = Phase 3-B Tauri commands 抽出続き = download_model 全体抽出
+
+mjc-main-20260505-12 Loop 23 で `list_models` + `is_model_downloaded` を `transcription_commands.rs` に抽出した precedent の延長。本ループでは **`download_model` async 関数 (~40 行)** を `transcription_commands.rs` に移動する。
+
+## 現状（grep で確認済）
+
+### transcription.rs L46-85 (download_model 関数)
+- L46-48: doc comment 3 行 (`/// モデルをダウンロードする` 始まり)
+- L49: `#[tauri::command]`
+- L50-85: `pub async fn download_model(...) -> Result<String, String> { ... }` 本体
+
+### 依存関係
+- `tokio::task::spawn_blocking` (フルパス使用、use 不要)
+- `ModelManager::new()` → 既に `transcription_commands.rs` に `use crate::transcription_model_manager::ModelManager;` がある (Loop 23 で追加済)
+- `app.emit(...)` → `tauri::Emitter` trait が必要
+- `build_download_progress_payload` / `build_download_error_payload` → 同じ `transcription_commands.rs` 内で参照 (移動後は同モジュール内ですでに利用可)
+- `tauri::AppHandle` → フルパス使用
+
+### 参照状況
+- `transcription.rs` L36-38 の `use crate::transcription_commands::{build_download_error_payload, build_download_progress_payload};` は **download_model 内のみで使用** (grep で `build_download_*_payload` の参照は L37, 61, 73, 80 のみ確認、L37 は use 文自身、残り 3 箇所はすべて download_model 内) → **download_model 移動後は use 文も削除する**
+- `transcription.rs` L4 の `use tauri::Emitter;` は **download_model 内の `.emit()` のみで使用** (grep で `.emit(` の出現は L59, 71, 78 のみ確認、すべて download_model 内) → **download_model 移動後は L4 も削除する**
+- `lib.rs` invoke_handler 周辺で `transcription::download_model` を登録している箇所のパス更新が必要 (L356 付近を grep で確認)
+
+## 実施手順
+
+### 手順 1: transcription_commands.rs に download_model + use tauri::Emitter; を追加
+- `src-tauri/src/transcription_commands.rs` の **既存 `pub fn list_models()` の上、または `pub fn is_model_downloaded()` の下、または `#[cfg(test)] mod tests` の前**（rustfmt と整合する位置）に以下を追加:
+  ```rust
+  /// モデルをダウンロードする（プログレスイベントを送信）
+  ///
+  /// 失敗時は Result で Err を返すことに加え、`model-download-error` を emit する。
+  /// 既存の `invoke` catch 経路に加えて listen 側でも統一的にハンドリングできるようにする。
+  #[tauri::command]
+  pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result<String, String> {
+      let model_name_for_progress = model_name.clone();
+      let app_for_progress = app.clone();
+
+      // ダウンロードはブロッキングI/Oなので専用スレッドで実行
+      let join_result = tokio::task::spawn_blocking(move || {
+          let manager = ModelManager::new();
+          let model_name_ref = model_name_for_progress.clone();
+          manager.download_model(&model_name_for_progress, move |progress| {
+              let _ = app_for_progress.emit(
+                  "model-download-progress",
+                  build_download_progress_payload(progress, &model_name_ref),
+              );
+          })
+      })
+      .await
+      .map_err(|e| format!("ダウンロードタスクの実行に失敗しました: {e}"));
+
+      match join_result {
+          Ok(Ok(path)) => Ok(path.to_string_lossy().to_string()),
+          Ok(Err(msg)) => {
+              let _ = app.emit(
+                  "model-download-error",
+                  build_download_error_payload(&model_name, &msg),
+              );
+              Err(msg)
+          }
+          Err(msg) => {
+              let _ = app.emit(
+                  "model-download-error",
+                  build_download_error_payload(&model_name, &msg),
+              );
+              Err(msg)
+          }
+      }
+  }
+  ```
+- `transcription_commands.rs` の use 文に `use tauri::Emitter;` を追加（既存 `use crate::transcription_*` の整合する位置）
+
+### 手順 2: transcription.rs から削除
+- L46-85 (doc comment + `#[tauri::command]` + 関数本体 = 計 40 行) を削除
+- L4 の `use tauri::Emitter;` を削除
+- L36-38 の `use crate::transcription_commands::{build_download_error_payload, build_download_progress_payload};` を削除（参照ゼロ）
+- 直前/直後の空行整合性を確認（cargo fmt が自動修正可）
+
+### 手順 3: lib.rs invoke_handler のパス更新
+- `src-tauri/src/lib.rs` を `grep -n "transcription::download_model"` で確認後、`transcription::download_model` → `transcription_commands::download_model` に変更
+
+### 手順 4: 検証（必須）
+作業ディレクトリは `src-tauri/`:
+1. `cd src-tauri && cargo test --lib 2>&1 | tail -20` → **692 passed / 0 failed** 確認（件数不変）
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` → 警告ゼロ確認
+3. `cd src-tauri && cargo fmt --check 2>&1 | tail -10` → OK 確認（差分があれば `cargo fmt` で吸収して再 commit）
+
+**重要**: `unused_imports` warning が出る場合は手順 2 の use 文削除漏れを意味する → 該当 use 文を削除してから再検証
+
+### 手順 5: AGENT_LOG.md 末尾追記
+`tail -10 AGENT_LOG.md` で末尾形式確認後、以下のテンプレで追記（commit hash は agent-commit.sh 後に判明するため `<HASH>` プレースホルダで先に書き、必要なら自己 amend chore で更新）:
+
+```
+[mjc-main-20260505-12 Loop 24 / 2026-05-05 ~XX:XX JST]
+
+## What
+- `download_model` async Tauri command を `src-tauri/src/transcription_commands.rs` に移動 (~40 行)
+- `src-tauri/src/transcription.rs` から該当 40 行 + 不要 use 文 2 種 (`use tauri::Emitter;` + `use crate::transcription_commands::{build_download_*_payload};`) 削除
+- `src-tauri/src/lib.rs` invoke_handler `transcription::download_model` → `transcription_commands::download_model` に更新
+- `transcription_commands.rs` に `use tauri::Emitter;` 追加
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 続き
+- mjc-main-20260505-12 Loop 23 (list_models + is_model_downloaded) の延長 = 純粋委譲関数の安全側スライス先行から async 関数への自然拡張
+- variety 規則: extraction 2 連続 = Loop 25 まで extraction 続行可
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 692 passed 件数不変
+- async + tokio::task::spawn_blocking + tauri::Emitter trait method 呼び出しを完全に保持
+- 不要 use 文の自律削除 = clippy `unused_imports` warning 駆動の正しい Tidy
+
+## Verify
+- cargo test --lib: 692 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+```
+
+### 手順 6: commit
+作業ディレクトリは `desktop/` ルート (`/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`):
+```
+bash scripts/agent-commit.sh "refactor(transcription): download_model async Tauri command を transcription_commands.rs に抽出 (Tidy First, Phase 3-B 続き, mjc-main-20260505-12 Loop 24, ~40 行関数 + use tauri::Emitter; 移動 + 不要 use 文 2 種削除 + lib.rs invoke_handler パス更新, 692 passed 件数不変, clippy 警告ゼロ, fmt OK, transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 続き = mjc-main-20260505-12 Loop 23 (list_models + is_model_downloaded) の延長, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)" src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs src-tauri/src/lib.rs AGENT_LOG.md
+```
+
+# 完了条件
+- 上記 6 手順すべて完了
+- `git log --oneline -1` に Loop 24 commit が表示される
+- `git status --short` で対象 3 ファイル + AGENT_LOG.md の M 表示が消えている (commit 後)
+
+# 制約再掲
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` 禁止（harness 内では既に許可済）
+- メイン (`mjc-main`) には絶対に話しかけない（あなたは worker）
+- 完了後は静かに終了

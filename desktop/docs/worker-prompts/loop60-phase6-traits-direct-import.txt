@@ -1,0 +1,148 @@
+# Loop 60 = Phase 6 第 2 歩 + 第 1 歩補足統合 = StreamConfig/TranscriptionEngine/TranscriptionStream 直接 import 化 + transcript_bridge.rs インライン参照 3 箇所修正
+
+## 必読 (冒頭で必ず実行)
+
+1. **`tail -350 AGENT_LOG.md` で末尾だけ参照** (ファイル全体は ~28,580 行 / ~2.6MB のため Read 全体禁止)。AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾の `---` 直後に** 行う。**先頭は絶対に触らない**。
+2. AGENTS.md / docs/architecture/transcription-refactor-plan.md の存在は把握すれば良い (本タスクは plan.md 更新は **しない** = Phase 6 全完了時 (Loop 64-65) にまとめて反映する設計)。
+
+## ゴール
+
+Phase 6 第 2 歩 + 第 1 歩補足を 1 commit で完了:
+
+### A. file-level use ブロック分割 (4 ファイル)
+
+**1. `src-tauri/src/elevenlabs_realtime.rs` L19-22**:
+
+現状:
+```rust
+use crate::transcription::{
+    StreamConfig, TranscriptionEngine, TranscriptionSegment, TranscriptionSource,
+    TranscriptionStream,
+};
+```
+
+変更後 (2 行に分割):
+```rust
+use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
+```
+
+**2. `src-tauri/src/openai_realtime.rs` L29-32**: 上と完全同パターン (同じ 5 種 import)
+
+変更後:
+```rust
+use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
+```
+
+**3. `src-tauri/src/apple_speech.rs` L10** (単一 use 行):
+
+現状:
+```rust
+use crate::transcription::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+```
+
+変更後:
+```rust
+use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+```
+
+**4. `src-tauri/src/apple_speech.rs` L78-80** (nested mod 内 use):
+
+現状:
+```rust
+    use crate::transcription::{
+        StreamConfig, TranscriptionSegment, TranscriptionSource, TranscriptionStream,
+    };
+```
+
+変更後 (2 行に分割、indent 維持):
+```rust
+    use crate::transcription_traits::{StreamConfig, TranscriptionStream};
+    use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
+```
+
+### B. インライン参照 3 箇所修正 (1 ファイル)
+
+**5. `src-tauri/src/transcript_bridge.rs`** L461 / L472 / L477 のインライン参照:
+
+- L461: `|source: Option<crate::transcription::TranscriptionSource>|` → `|source: Option<crate::transcription_types::TranscriptionSource>|`
+- L472: `crate::transcription::TranscriptionSource::Microphone` → `crate::transcription_types::TranscriptionSource::Microphone`
+- L477: `crate::transcription::TranscriptionSource::SystemAudio` → `crate::transcription_types::TranscriptionSource::SystemAudio`
+
+注: 行番号は変動する可能性があるため、**`grep -n "crate::transcription::TranscriptionSource" src-tauri/src/transcript_bridge.rs`** で最新行を確認してから書き換え。3 箇所すべて同パターン (`crate::transcription::TranscriptionSource` → `crate::transcription_types::TranscriptionSource`)。
+
+## 担当範囲外 = 触らない
+
+- `src-tauri/src/transcription.rs` の互換 re-export 5 件は **全て残置** (Phase 6 全完了時 = Loop 64 で transcription.rs ファイル削除と同時に消える設計)
+- `src-tauri/src/transcription_panic_guard.rs` L6 / `src-tauri/src/transcription_commands.rs` L5 (TranscriptionLoopConfig caller) = Loop 63 (候補 V) 対象 = **触らない**
+- `src-tauri/src/transcription_whisper_local.rs` L5 (WhisperStream caller) = Loop 61 (候補 T) 対象 = **触らない**
+- elevenlabs_realtime.rs / openai_realtime.rs の nested mod 内 (L166, L488, L489, L199 など) は Loop 59 で書き換え済 = **触らない**
+- cloud_whisper.rs / transcript_bridge.rs L4 (file-level Segment use) は Loop 59 で書き換え済 = **触らない**
+- それ以外のファイル (audio*.rs / session*.rs / app_detection*.rs / lib.rs / etc.) = **触らない**
+
+## 検証 (必須、全件 OK 確認後 commit)
+
+1. `cd src-tauri && cargo test --lib` = **702 passed / 0 failed** (件数不変、上限超えたら Stop)
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings` = **警告ゼロ**
+3. `cd src-tauri && cargo fmt --check` = OK
+4. `bash scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/apple_speech.rs src-tauri/src/transcript_bridge.rs` = OK
+5. **trailing whitespace 禁止** (行末空白なし)
+
+検証で 1 件でも失敗したら **commit せず** にエラー内容を報告すること。
+
+## AGENT_LOG.md 追記 (commit 前)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → ファイル末尾の `---` 直後に以下の形式で **append** (= 既存内容の前後を変更しない):
+
+```
+[mjc-main-20260505-30 Loop 60 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 2 歩 + 第 1 歩補足統合 = StreamConfig/TranscriptionEngine/TranscriptionStream 直接 import 化 + transcript_bridge.rs インライン参照 3 箇所修正
+- elevenlabs_realtime.rs L19-22 / openai_realtime.rs L29-32 の file-level use ブロック (5 種 combined import) を 2 行に分割:
+  - `use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};`
+  - `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};`
+- apple_speech.rs L10 の `use crate::transcription::{StreamConfig, TranscriptionEngine, TranscriptionStream};` を `crate::transcription_traits::` に書き換え
+- apple_speech.rs L78-80 の nested mod 内 use (4 種) を 2 行に分割 (traits + types)
+- transcript_bridge.rs L461/L472/L477 のインライン参照 (`crate::transcription::TranscriptionSource`) を `crate::transcription_types::TranscriptionSource` に書き換え
+- transcription.rs の互換 re-export 5 件は全て残置 (Loop 64 で一括削除予定)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration = Phase 6 第 2 歩 + 第 1 歩補足 = 互換層段階的解体)
+- variety pivot = struct/const + import refactor 軸 = Loop 57 (struct/const) → Loop 58 (docs) → Loop 59 (struct/const + import refactor) → Loop 60 (struct/const + import refactor) で 2 ループ間隔 sweep 警告クリア + Phase 6 進行中で軸統一意義大
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文を機械的に書き換え (実体は transcription_traits.rs / transcription_types.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- elevenlabs/openai の use ブロックは TranscriptionSegment/TranscriptionSource (Loop 59 で 4 ファイル / 7 箇所書き換え済の補足) も同時に直接 import 化 = file-level scope の Phase 6 第 1 歩補完
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- <COMMIT_HASH_PLACEHOLDER>
+
+---
+```
+
+注: `<COMMIT_HASH_PLACEHOLDER>` は commit 後の hash で **自動置換** すること (ファイルへ Write 後、`git add ... && git commit -m "..." && hash=$(git rev-parse --short HEAD) && sed -i.bak "s/<COMMIT_HASH_PLACEHOLDER>/$hash/" AGENT_LOG.md && rm AGENT_LOG.md.bak && git add AGENT_LOG.md && git commit --amend --no-edit` の手順、または最初の commit 前に hash を確定させて埋め込む手順、いずれか worker 判断で良い)。
+
+## commit メッセージ
+
+```
+refactor(transcription): StreamConfig/TranscriptionEngine/TranscriptionStream の caller を transcription_traits.rs から直接 import 化 + transcript_bridge.rs インライン参照 3 箇所修正 (Phase 6 第 2 歩 + 第 1 歩補足, mjc-main-20260505-30 Loop 60, 4 ファイル / 5 箇所 use 文 + 3 インライン参照)
+```
+
+## ハーネス制約
+
+- `--no-verify` 禁止
+- メイン (発注元) は src-tauri/src/* / scripts/* を直接編集しない方針 = worker (あなた) が全ファイル編集を実施
+- AGENT_LOG.md への記入は worker (あなた) が直接実施
+- claude-agent-* のような harness ファイルは触らない
+
+以上。

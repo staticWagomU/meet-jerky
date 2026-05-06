@@ -1,0 +1,99 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+最初に AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md / AGENT_LOG.md の末尾 350 行 (= mjc-main-20260504-20 SESSION SUMMARY 含む) を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+
+src-tauri/src/app_detection.rs に純粋関数 `parse_throttle_key_to_display_name` を追加し、test を 5〜7 件追加する (F-Loop5 Loop 1, Tidy First, ユーザー観測不可)。
+
+# 背景
+
+前 mjc-main-20260504-20 で F-Loop3 機能完結 (= 会議終了通知が実機で動く状態到達) と F-Loop4 (= browser 経路での `last_seen_secs` 書き込み追加) を完了した。
+ただし `check_all_inactive_bundles` は依然 `WATCHED_BUNDLE_IDS` (Zoom/Teams/Teams legacy/FaceTime の 4 件) のみ巡回 (line 289 付近) のため、browser 経路で書き込まれた throttle_key (例: `"browser:com.apple.Safari:Google Meet:meet.google.com"` や `"window-title:com.apple.Safari:Zoom"`) は **読まれない** = browser-only セッション (Safari の Google Meet 等) は inactive 通知が発火しない。
+
+F-Loop5 を 2 段スライスで消化する:
+- **Loop 1 (本タスク)** = parse 純粋関数 + test 追加 (規模 XS, Tidy First, ユーザー観測不可)
+- **Loop 2 (本タスク後の別ループ)** = `check_all_inactive_bundles` の iteration を `WATCHED_BUNDLE_IDS` から `last_seen_secs.lock().keys()` に変更 + display name 解決 (規模 S, 振る舞い変更, ユーザー観測可能)
+
+本タスクは **Loop 1 のみ** に厳格に絞る。Loop 2 の iteration 変更は scope 外。
+
+# Why (価値)
+
+- 「同じ HashMap (`last_seen_secs`) に異なる形式の key が混在する」設計の境界を、parse 純粋関数として可視化する
+- Loop 2 の iteration 変更を最小差分にできる foundation = 後続が「iteration を回しつつ display name を解決」だけに集中できる
+- 純粋関数は test 容易 = 境界処理 (空文字、不正形式 throttle_key、`:` を含む host 名等) を CI で固定できる
+
+# 追加する関数
+
+シグネチャ:
+
+```rust
+/// throttle_key を会議アプリ表示名に変換する純粋関数。
+///
+/// `last_seen_secs` HashMap に格納される 3 つの key 形式を解釈する:
+/// - **アプリ経路 (handle_detection)**: bundle_id 単独 (例: `"us.zoom.xos"`) → `WATCHED_BUNDLE_IDS` lookup で `Some("Zoom")`
+/// - **browser 経路**: `"browser:<bundle_id>:<service>:<host>"` → 3 つ目のセグメント (service) を `Some` で返す
+/// - **window-title 経路**: `"window-title:<bundle_id>:<service>"` → 3 つ目のセグメント (service) を `Some` で返す
+/// - 上記いずれにも該当しない不正形式・未知 bundle_id は `None` を返す
+///
+/// `check_all_inactive_bundles` の iteration extension (= F-Loop5 Loop 2) で、
+/// `last_seen_secs` の key 全件巡回時に display name を解決するために呼ばれる予定。
+/// 本 Loop ではまだ誰も呼ばないため `#[allow(dead_code)]` を付ける。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+fn parse_throttle_key_to_display_name(key: &str) -> Option<String> { ... }
+```
+
+# 配置
+
+`inactive_notification_body` 関数 (line 449 付近) の直後、または `classify_meeting_url` (line 460 付近) の直前に置く (純粋関数集中ゾーン)。
+
+# 実装ルール (Loop 1 を XS スコープに保つために遵守)
+
+1. **3 経路のみ実装**: `WATCHED_BUNDLE_IDS` lookup と `"browser:..."` / `"window-title:..."` プレフィックス分割の 3 ケース。それ以外の境界処理 (例えば `:` を含む host 名で 4 セグメント超え) は **本 Loop scope 外**: 4 セグメント目以降は無視するか、`splitn(4, ':')` のような最小実装で OK。test も「最小ケース」に絞り、過剰な境界 test は Loop 2 後の別 Loop で追加できる
+2. **WATCHED_BUNDLE_IDS lookup**: 既存 const `WATCHED_BUNDLE_IDS: &[(&str, &str)]` (line 33) を `iter().find()` で検索し、`Some(app_name.to_string())` を返す
+3. **prefix 検出**: `key.strip_prefix("browser:")` または `key.strip_prefix("window-title:")` を使い、その後 `splitn(N, ':')` で分割する。要素数不足 (= service が無い) は `None`
+4. **3 つ目のセグメントが空文字なら `None`** を返す (例: `"browser:bundle::host"` のような不正形式)
+5. **その他の不正形式 (空文字、`":"` 単独等)** は `None`
+6. **戻り値は `Option<String>`** (lifetime 統一が困難なため `String` 化で統一)
+7. dead_code 戦略は **二重 attribute** = `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` + `#[allow(dead_code)]` (= mjc-main-20 Loop 1 で確立した precedent 踏襲、Loop 2 で iteration が呼んだ瞬間に削除する trigger)
+8. **既存 import への変更不要** (標準ライブラリのみで実装可能)
+
+# test 追加 (5〜7 件、最小ケースのみ)
+
+mod tests 末尾 (= 既存 `inactive_notification_body_truncates_seconds_to_minutes` 直後あたり) に以下 6 件追加:
+
+1. `parse_throttle_key_to_display_name_returns_app_name_for_known_bundle_id` = `"us.zoom.xos"` → `Some("Zoom".to_string())`
+2. `parse_throttle_key_to_display_name_returns_service_for_browser_key` = `"browser:com.apple.Safari:Google Meet:meet.google.com"` → `Some("Google Meet".to_string())`
+3. `parse_throttle_key_to_display_name_returns_service_for_window_title_key` = `"window-title:com.apple.Safari:Zoom"` → `Some("Zoom".to_string())`
+4. `parse_throttle_key_to_display_name_returns_none_for_unknown_bundle_id` = `"com.unknown.app"` → `None`
+5. `parse_throttle_key_to_display_name_returns_none_for_empty_key` = `""` → `None`
+6. `parse_throttle_key_to_display_name_returns_none_for_browser_key_with_empty_service` = `"browser:bundle::host"` → `None` (service セグメント空文字)
+
+各 test は 2-3 行で完結。doc コメント (`//`) で「契約: <何が固定されるか>」を 1 行書く。
+
+# 検証手順
+
+1. `cargo build --manifest-path src-tauri/Cargo.toml` (compile OK 確認)
+2. `cargo test --manifest-path src-tauri/Cargo.toml --lib --no-run` (test compile OK)
+3. `cargo test --manifest-path src-tauri/Cargo.toml --lib parse_throttle_key_to_display_name` (新規 6 件 pass 確認)
+4. `cargo test --manifest-path src-tauri/Cargo.toml --lib` (478 → 484 passed = +6 件確認、既存 test の regression なし確認)
+5. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (warning ゼロ維持)
+6. `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check` (差分なし確認)
+7. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK 確認)
+
+# AGENT_LOG.md 記載項目 (worker log 形式、末尾追記)
+
+開始日時 (JST) / 担当セッション (mjc-worker-parse-throttle-key-display-name-20260504-21-1) / 役割 (worker, sonnet) / 作業範囲 / 指示内容の要約 / 結果 / 変更ファイル / 検証結果 / 設計判断 / 依存関係追加 / 失敗理由 / 次アクション
+
+# 報告形式
+
+最後に変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめてください。
+
+# 規模超過防止 (再掲)
+
+- parse 関数のロジックは `WATCHED_BUNDLE_IDS lookup` + `"browser:..."`/"window-title:..." 分割の 3 ケースのみ
+- test は **6 件まで**。それ以上は Loop 2 後の別 Loop で追加可
+- iteration extension (= check_all_inactive_bundles 内の `for` ループ変更) は **scope 外** = Loop 2 (別ループ) で実施予定
+- frontend / settings / 他 rust ファイルには **触らない**

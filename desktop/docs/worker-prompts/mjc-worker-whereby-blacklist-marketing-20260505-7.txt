@@ -1,0 +1,128 @@
+あなたは meet-jerky の sonnet worker です。Whereby URL 検知の marketing pages blacklist 追加を実装してください (TDD Red→Green、AGENTS.md 優先順位 2 = 会議検知の網羅性への直接寄与)。
+
+# 必読 (順守必須)
+1. **AGENT_LOG.md は ~24,700 行の巨大ファイルなので Read 全体禁止**。`tail -350 AGENT_LOG.md` で末尾だけ読め。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+3. 末尾追記の具体手順: (a) `tail -10 AGENT_LOG.md` で末尾の `---` セパレータを確認 → (b) 末尾の `---` 直後に新規エントリを追記 → (c) 追記後 `tail -50 AGENT_LOG.md` で構造の整合を確認。
+4. 行末の空白文字 (trailing whitespace) 禁止。`git diff --check` で確認すること。
+5. 担当範囲外の編集禁止: 下記「変更ファイル一覧」以外は編集しない。
+6. cargo test --lib の合計件数は **674 → 678 (+4 件)** が指標。それ以外の件数増減があれば即座に作業中断して報告。
+7. app_detection.rs は ~3017 行の大型ファイル。**Read 全体禁止 = grep + sed/head/tail で対象範囲のみ参照**。
+
+# 実装方針
+
+## 目的
+- Whereby (`whereby.com` / `<sub>.whereby.com`) の marketing pages を WHEREBY_NON_ROOM_PATHS blacklist に追加 = 誤検知リスク削減
+- mjc-main-20260505-4 Loop 7 で実装した Whereby 検知の残リスク消化 = 6 ループ間隔の単発補強 (sweep 化しない約束)
+
+## 追加対象 marketing pages (4 件)
+- `download` (Whereby アプリダウンロードページ)
+- `app` (アプリ紹介ページ)
+- `for-teams` (法人向けページ)
+- `developers` (開発者ドキュメント)
+
+## 既存実装 (参考)
+- `src-tauri/src/app_detection.rs` L870-891: `WHEREBY_NON_ROOM_PATHS` 既存 20 entries (about / pricing / blog / login / signup / help / terms / privacy / contact / features / customers / embedded / embed / information / api / products / integrations / security / careers / status)
+- `src-tauri/src/app_detection.rs` L903-912: `is_whereby_meeting_url(host, path)` (`!WHEREBY_NON_ROOM_PATHS.contains(&room)` で判定)
+- `src-tauri/src/app_detection.rs` L3086-3094: 既存テスト 2 件 (`classify_meeting_url_whereby_rejects_blacklist_about` / `classify_meeting_url_whereby_rejects_blacklist_pricing`)
+
+## 実装ステップ
+
+### Step 1: TDD Red (テスト 4 件追加)
+- `src-tauri/src/app_detection.rs` の test mod (L3086 周辺、既存 about / pricing test の直後) に以下 4 件のテストを追加:
+  ```rust
+  #[test]
+  fn classify_meeting_url_whereby_rejects_blacklist_download() {
+      assert_eq!(classify_meeting_url("https://whereby.com/download"), None);
+  }
+
+  #[test]
+  fn classify_meeting_url_whereby_rejects_blacklist_app() {
+      assert_eq!(classify_meeting_url("https://whereby.com/app"), None);
+  }
+
+  #[test]
+  fn classify_meeting_url_whereby_rejects_blacklist_for_teams() {
+      assert_eq!(classify_meeting_url("https://whereby.com/for-teams"), None);
+  }
+
+  #[test]
+  fn classify_meeting_url_whereby_rejects_blacklist_developers() {
+      assert_eq!(classify_meeting_url("https://whereby.com/developers"), None);
+  }
+  ```
+- `cargo test --lib` 実行で 4 件 fail を確認 (Red 状態) — ただし TDD Red 検証は内部確認のみで commit はしない
+- メッセージ: 4 件は実装前 fail を確認したら次 Step に進む
+
+### Step 2: TDD Green (実装)
+- `src-tauri/src/app_detection.rs` L870-891 の `WHEREBY_NON_ROOM_PATHS` 配列に 4 entries 追加 (順序は意味的に近いものの近くに):
+  ```rust
+  const WHEREBY_NON_ROOM_PATHS: &[&str] = &[
+      "about",
+      "pricing",
+      "blog",
+      "login",
+      "signup",
+      "help",
+      "terms",
+      "privacy",
+      "contact",
+      "features",
+      "customers",
+      "embedded",
+      "embed",
+      "information",
+      "api",
+      "products",
+      "integrations",
+      "security",
+      "careers",
+      "status",
+      "download",         // 新規
+      "app",              // 新規
+      "for-teams",        // 新規
+      "developers",       // 新規
+  ];
+  ```
+- `cargo test --lib` 実行で 678 passed を確認 (Green 状態)
+
+### Step 3: 検証
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh src-tauri/src/app_detection.rs
+git diff --check
+```
+- cargo test --lib: 678 passed (件数 +4)
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- git diff --check: trailing whitespace なし
+
+# 変更ファイル一覧 (これ以外は編集禁止)
+1. `src-tauri/src/app_detection.rs` (4 entries 追加 + 4 テスト追加 = 計 8-12 行追加)
+2. `AGENT_LOG.md` (末尾追記、feature commit に同梱)
+
+# Commit メッセージ (WHY-focused)
+```
+feat(app_detection): Whereby marketing pages (download / app / for-teams / developers) を WHEREBY_NON_ROOM_PATHS blacklist に追加 (mjc-main-20260505-7 Loop 14, AGENTS.md 優先順位 2 = 会議検知の網羅性, mjc-main-20260505-4 Loop 7 の Whereby 検知実装の残リスク消化, 6 ループ間隔の単発補強 = sweep 化しない明示的約束, TDD Red→Green, テスト 4 件追加で 678 passed = 674 + 4, clippy 警告ゼロ, fmt OK, marketing pages 誤検知リスク削減により room name 候補の純度向上)
+```
+
+# AGENT_LOG.md 末尾追記の雛形
+
+```
+## 2026-05-05 JST mjc-main-20260505-7 Loop 14 (Whereby blacklist marketing pages 追加)
+- 担当セッション: mjc-main (canonical) = mjc-main-20260505-7 (メイン, opus) → sonnet worker
+- 役割: variety pivot 必須発動 = extraction 3 連続 (Loop 11/12/13) からの service detection 軸への完全 pivot
+- 作業範囲: src-tauri/src/app_detection.rs (4 entries + 4 tests)
+- 指示内容: download / app / for-teams / developers の 4 marketing pages を WHEREBY_NON_ROOM_PATHS に追加。Loop 7 から 6 ループ間隔の単発補強 (sweep 化しない約束 = Loop 15 以降は別軸)。
+- 実行結果: cargo test --lib 678 passed (= 674 + 4 件)、cargo clippy --lib -D warnings 警告ゼロ、cargo fmt --check OK、git diff --check OK
+- 戦略判断: 前任 mjc-main-20260505-6 が「Webex sweep の延長と同質 variety リスク」と懸念したが批判的再評価 = Webex sweep (4-5 連続) と単発補強は本質的に異なる、ユーザー方針「鵜呑みにせず批判的判断」継承
+- 次アクション: 後継 mjc-main-20260505-8 への予防的 handoff = 「2 ループ + 早期 handoff」precedent 連続 4 セッション目達成
+---
+```
+
+(実行結果は worker が実測値で書き換える)
+
+# 規模超過防止
+- 1 ループ完結が目標 (= 15 分以内、規模極小なので ~5-7 分予測)
+- 範囲が膨らんだら手前で止めて報告
+- 件数 (678 件以外) を観測したら即座に中断して原因報告

@@ -1,0 +1,209 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読 (順番厳守)
+1. AGENTS.md (運用ルール)
+2. docs/agent-harness-claude.md (ハーネス使用法)
+3. **AGENT_LOG.md は 22000+ 行 / 1.86MB+ あるので Read 全体禁止。`tail -350 AGENT_LOG.md` 相当で末尾だけ参照**
+4. src-tauri/src/session_store.rs の SessionSummary 定義 (l.118〜131) と既存 test 51 件の構造
+
+## AGENT_LOG.md 追記の重要ルール (必ず厳守)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**
+- **新規追記は必ずファイル末尾に行う** = `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+- **先頭は絶対に触らない**
+- 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **行末の空白文字 (trailing whitespace) 禁止** (rustfmt / cargo fmt --check で警告になる)
+
+## 担当範囲
+- `src-tauri/src/session_store.rs` の `mod tests` 末尾への test 関数 **3 件** 追加 (上限 = 3 件、超過禁止)
+- `AGENT_LOG.md` の末尾追記 1 件 (本作業の記録)
+- 既存 51 test / SessionSummary struct / 既存 #[derive] / 関数 / 他 struct は **完全無変更**
+
+## 背景 (mjc-main-20260504-34 Loop 3 = 「Debug 軸補強」13 連続 application)
+
+mjc-main-20260504-34 (本セッション) の Loop 1 で session.rs Session 全体 (commit 1f6f993)、Loop 2 で settings.rs TranscriptionEngineType enum (commit 741db26) を補強済。
+本 Loop 3 は **SessionSummary struct** (session_store.rs) で「Debug 軸補強」13 連続 application + 「format 不変条件」serde camelCase struct 系統 (= ModelInfo (mjc-main-33 Loop 1) と同形態) への application 拡張。
+
+mjc-main-32 Loop 1 で TranscriptionSegment struct (transcription.rs, camelCase, 6 fields) を補強済 = struct + camelCase 形態 2 連続 application 履歴あり (TranscriptionSegment / ModelInfo)。本 Loop 3 で SessionSummary struct (session_store.rs, camelCase, 4 fields) を補強し struct + camelCase 形態 3 連続 application + 別ファイル展開を完成。
+
+## SessionSummary の現状
+
+```rust
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionSummary {
+    pub path: PathBuf,
+    pub started_at_secs: u64,
+    pub title: String,
+    pub search_text: String,
+}
+```
+
+既存 51 test で以下が **守られていない**:
+- Debug 出力 contains assert (型名 + 全 4 field 名 + 値) — 既存 list_session_summaries_* 8 件は関数挙動の保護のみで Debug 軸 unrelated
+- PartialEq reflexive / field 単位独立等値判定 — 既存 test は assert_eq! で SessionSummary 全体を間接比較するのみ、PartialEq の field 単位独立性は未保護
+- serde camelCase 順向き JSON 形式 — 4 fields → "path" / "startedAtSecs" / "title" / "searchText" 各 JSON key 固定 + snake_case 不在 = 未保護
+
+## 追加するテスト (3 件、命名と構造は既存に対称形で揃える)
+
+### T1: session_summary_debug_output_contains_struct_name_and_all_four_field_names
+**Debug 軸補強 13 連続 application** = mjc-main-32 Loop 1 TranscriptionSegment / mjc-main-33 Loop 1 ModelInfo と同形態 (struct + camelCase) で別ファイル展開。
+
+```rust
+#[test]
+fn session_summary_debug_output_contains_struct_name_and_all_four_field_names() {
+    let summary = SessionSummary {
+        path: PathBuf::from("/tmp/sessions/1234-0.md"),
+        started_at_secs: 1_234_567_890,
+        title: "Daily Standup".to_string(),
+        search_text: "hello world".to_string(),
+    };
+    let output = format!("{:?}", summary);
+    assert!(output.contains("SessionSummary"), "型名 'SessionSummary' が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("path"), "field 名 'path' が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("started_at_secs"), "field 名 'started_at_secs' (snake_case) が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("title"), "field 名 'title' が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("search_text"), "field 名 'search_text' (snake_case) が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("1234567890"), "値 '1234567890' (started_at_secs) が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("Daily Standup"), "値 'Daily Standup' (title) が Debug 出力に含まれる契約: got {}", output);
+    assert!(output.contains("hello world"), "値 'hello world' (search_text) が Debug 出力に含まれる契約: got {}", output);
+}
+```
+
+### T2: session_summary_partial_eq_holds_reflexive_and_differs_for_each_field
+**PartialEq 軸独立補強** = 既存 list_session_summaries_* test は assert_eq! 経由で間接的に PartialEq を使うのみ。本 test は reflexive + 4 fields 単位独立等値判定を直接固定。
+
+```rust
+#[test]
+fn session_summary_partial_eq_holds_reflexive_and_differs_for_each_field() {
+    let base = SessionSummary {
+        path: PathBuf::from("/a"),
+        started_at_secs: 100,
+        title: "t".to_string(),
+        search_text: "s".to_string(),
+    };
+    let same = SessionSummary {
+        path: PathBuf::from("/a"),
+        started_at_secs: 100,
+        title: "t".to_string(),
+        search_text: "s".to_string(),
+    };
+    let path_diff = SessionSummary {
+        path: PathBuf::from("/b"),
+        ..base.clone()
+    };
+    let started_diff = SessionSummary {
+        started_at_secs: 200,
+        ..base.clone()
+    };
+    let title_diff = SessionSummary {
+        title: "u".to_string(),
+        ..base.clone()
+    };
+    let search_diff = SessionSummary {
+        search_text: "x".to_string(),
+        ..base.clone()
+    };
+    assert_eq!(base, same, "PartialEq reflexive: 同 4 field 値で等値");
+    assert_ne!(base, path_diff, "PartialEq: path のみ違うと不等値");
+    assert_ne!(base, started_diff, "PartialEq: started_at_secs のみ違うと不等値");
+    assert_ne!(base, title_diff, "PartialEq: title のみ違うと不等値");
+    assert_ne!(base, search_diff, "PartialEq: search_text のみ違うと不等値");
+}
+```
+
+### T3: session_summary_serde_serialize_uses_camel_case_for_all_four_fields
+**format 不変条件 application 拡張** = serde camelCase rule の順向き保護 (struct 系統) = mjc-main-32 Loop 1 TranscriptionSegment / mjc-main-33 Loop 1 ModelInfo と対称形。
+
+```rust
+#[test]
+fn session_summary_serde_serialize_uses_camel_case_for_all_four_fields() {
+    let summary = SessionSummary {
+        path: PathBuf::from("/tmp/x.md"),
+        started_at_secs: 42,
+        title: "T".to_string(),
+        search_text: "S".to_string(),
+    };
+    let value = serde_json::to_value(&summary).unwrap();
+    let obj = value.as_object().expect("SessionSummary should serialize as JSON object");
+    assert!(obj.contains_key("path"), "key 'path' が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("startedAtSecs"), "key 'startedAtSecs' (camelCase) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("title"), "key 'title' が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("searchText"), "key 'searchText' (camelCase) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert_eq!(obj.len(), 4, "SessionSummary の JSON object は 4 key 厳密: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(!obj.contains_key("started_at_secs"), "snake_case key 'started_at_secs' が JSON に含まれない契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(!obj.contains_key("search_text"), "snake_case key 'search_text' が JSON に含まれない契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert_eq!(obj.get("startedAtSecs").and_then(|v| v.as_u64()), Some(42), "startedAtSecs 値が JSON に正しく載る契約");
+    assert_eq!(obj.get("title").and_then(|v| v.as_str()), Some("T"), "title 値が JSON に正しく載る契約");
+    assert_eq!(obj.get("searchText").and_then(|v| v.as_str()), Some("S"), "searchText 値が JSON に正しく載る契約");
+}
+```
+
+## 規模超過防止 (重要)
+- 追加するテストは **必ず 3 件のみ** (T1/T2/T3)。4 件目以降は禁止。
+- 既存 51 test の改名・改修は禁止。
+- SessionSummary / 関数 / impl 本体への変更禁止。
+- 担当範囲外のファイル (session.rs / settings.rs / transcription.rs 等) への編集禁止。
+
+## 実施手順
+
+1. AGENTS.md / docs/agent-harness-claude.md / `tail -350 AGENT_LOG.md` を読む。
+2. `wc -l src-tauri/src/session_store.rs` で現在行数を確認 (1019 行想定)。
+3. `sed -n '1010,1019p' src-tauri/src/session_store.rs` で末尾構造 (l.1018〜の最終 test 閉じ + l.1019 の閉じ `}`) を確認。
+4. `mod tests {}` の閉じ `}` (l.1019) の **直前** に T1/T2/T3 を追加。
+5. 各テストの `#[test]` attr を忘れず付与。
+6. `PathBuf` は既に session_store.rs 内で use されているはずだが、tests block 内で必要なら `use std::path::PathBuf;` を確認 (既存 test で使われているなら不要)。
+7. trailing whitespace 厳禁。
+8. `cargo fmt --manifest-path src-tauri/Cargo.toml`
+9. `cargo fmt --check --manifest-path src-tauri/Cargo.toml` で差分なし確認
+10. `cargo clippy --lib --manifest-path src-tauri/Cargo.toml -- -D warnings` で警告ゼロ確認
+11. `cargo test --lib --manifest-path src-tauri/Cargo.toml -- --test-threads=1` で **595 → 598 passed** (+3 件、0 failed) を確認
+12. `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のフォーマットで追記:
+
+```markdown
+## mjc-worker-session-summary-debug-partialeq-serde-tests-20260504-34-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-summary-debug-partialeq-serde-tests-20260504-34-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-34 Loop 3
+
+### 作業範囲
+- `src-tauri/src/session_store.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 13 連続 application + 「format 不変条件」serde camelCase struct 系統 application 拡張 = SessionSummary (#[derive(Debug, Clone, PartialEq, Serialize)] + #[serde(rename_all = "camelCase")] + 4 fields path/started_at_secs/title/search_text) への Debug + PartialEq + serde camelCase 3 軸 application。
+- T1: session_summary_debug_output_contains_struct_name_and_all_four_field_names (Debug 出力に型名 + 全 4 snake_case field 名 + 値が含まれる契約)
+- T2: session_summary_partial_eq_holds_reflexive_and_differs_for_each_field (4 fields 単位独立等値判定 + reflexive)
+- T3: session_summary_serde_serialize_uses_camel_case_for_all_four_fields (4 fields の camelCase JSON key 名固定 + snake_case 不在 + 値正しさ)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 595 → 598 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/session_store.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / 既存 51 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 598 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <Xs>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 最終報告 (1 ターンで完結)
+- 変更内容、変更ファイル、検証結果、残リスクを簡潔にメインへ報告。
+- 1 ターンで完結する形でまとめる。

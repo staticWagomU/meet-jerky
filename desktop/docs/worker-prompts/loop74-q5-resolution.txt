@@ -1,0 +1,153 @@
+あなたは meet-jerky の worker (mjc-worker-loop74-q5-resolution) です。
+
+# 作業概要 (規模 SS、~5-10 行 docs 追記)
+
+`docs/architecture/detection-extension-plan.md` の Section 6 (Open Questions) のうち **Q5 のみ** を「Resolved」化し、コード調査結果を docs に追記します。Q7/Q8 はコード内に答えがなく実機要件のため触らない (mjc-main-20260505-37 の Loop 74 メイン批判判断結果)。
+
+# 必読 (冒頭で必ず実施)
+
+1. `tail -350 AGENT_LOG.md` で末尾を読む。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. 末尾の SESSION SUMMARY (mjc-main-20260505-36) と Loop 72/73 のエントリを読み、Phase 1 = MatchStrategy enum + WATCHED_BUNDLE_IDS 3-tuple 化が完了済を確認。
+3. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 → 末尾の `---` 直後に追記。
+4. 大型ファイル (`AGENT_LOG.md` ~30,000 行) は Read 全体禁止 = tail/head/grep のみ。
+
+# 担当範囲 (厳守、超過禁止)
+
+## 編集対象 (この 2 ファイルのみ)
+
+1. **`docs/architecture/detection-extension-plan.md`**: Section 6 の Q5 行を更新 + Q5 直下に Resolved Block を追記
+2. **`AGENT_LOG.md`**: 末尾に Loop 74 エントリを追記
+
+## 編集禁止
+
+- src-tauri/src/* (rust コード) には一切触らない (Phase 1 完了済、振る舞い不変維持)
+- frontend (src/) には一切触らない
+- Q1/Q2/Q3/Q4/Q6/Q7/Q8 は触らない (実機要件 / 別 phase 前提)
+- AGENT_LOG.md 先頭は絶対に触らない
+
+# 具体的手順
+
+## Step 1: 現状確認
+
+```bash
+grep -n "Q5" docs/architecture/detection-extension-plan.md
+sed -n '236,246p' docs/architecture/detection-extension-plan.md
+grep -n "serde" src-tauri/src/app_detection.rs | head -10
+grep -nE "to_string\(&bundle_ids\)|to_value\(&app\)" src-tauri/src/app_detection.rs | head -5
+```
+
+期待出力:
+- Q5 行: `| Q5 | \`MatchStrategy::WindowTitleContains\` の serde 影響範囲 | 中 (Phase 1 前提) | \`WATCHED_BUNDLE_IDS\` が serde Serialize/Deserialize の対象かを \`grep -n serde\` で確認 |`
+- serde grep: L25 (`use serde::Serialize;`) + L74-103 (struct 用) + L841 (`serde_json::to_string(&bundle_ids)` = `Vec<&str>` への serialize)
+
+## Step 2: Q5 行を「Resolved」に更新 + 直下に Resolved Block 追記
+
+`docs/architecture/detection-extension-plan.md` で:
+
+(a) Q5 行 (L242) の「重要度」列を「**中 → 解決済**」に変更。例:
+
+```
+| Q5 | `MatchStrategy::WindowTitleContains` の serde 影響範囲 | 解決済 (下記参照) | `WATCHED_BUNDLE_IDS` が serde Serialize/Deserialize の対象かを `grep -n serde` で確認 |
+```
+
+(b) Section 6 の表の **直後** (Q8 行のあと、`### AppleScript による window title 取得コマンド (参考)` の **直前**) に、以下の Resolved Block を挿入:
+
+```markdown
+### Q5 解決結果 (mjc-main-20260505-37 Loop 74 調査)
+
+**結論**: `MatchStrategy::WindowTitleContains` 拡張による外部 API への影響は **なし**。
+
+**根拠**:
+- `WATCHED_BUNDLE_IDS` は `app_detection.rs` 内の `const &[(&str, &str, MatchStrategy)]` で定義されており、外部 module / 外部 crate に直接 serialize されない。
+- `app_detection.rs` の serde 利用箇所は `MeetingAppDetectedPayload` enum (L74-103, struct field 単位の `#[serde(rename = ...)]`) と test 内の `serde_json::to_string(&bundle_ids)` (L841) のみ。後者は `Vec<&str>` 型 = bundle_id 文字列のみを抽出した flat 配列を serialize しており、`MatchStrategy` enum 自体は serialize 対象に含まれない。
+- `MatchStrategy` enum は `Debug + Clone + PartialEq + Eq` のみ derive され、`Serialize` / `Deserialize` 未実装。WindowTitleContains variant 追加で外部 IPC payload 形状は変化しない。
+
+**Phase 2 着手判断への寄与**: Phase 2 で WATCHED_BUNDLE_IDS に Slack/Discord エントリを追加する際、frontend / Tauri IPC 側の payload schema 変更は不要 = 後方互換性確保。
+```
+
+## Step 3: agent-verify.sh で検証
+
+```bash
+bash scripts/agent-verify.sh docs/architecture/detection-extension-plan.md
+```
+
+EXIT 0 を確認 (docs 単体変更のため rust/frontend skip 判定)。
+
+## Step 4: docs commit (1 つ目)
+
+```bash
+git add docs/architecture/detection-extension-plan.md
+git commit -m "docs(architecture): Q5 を Resolved 化 (MatchStrategy 拡張による serde 外部 API 影響なし、mjc-main-20260505-37 Loop 74)"
+```
+
+`git log -1 --format=%H` で **commit hash を必ず取得**。
+
+## Step 5: AGENT_LOG.md に Loop 74 エントリ追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、ファイル末尾の `---` 直後に下記 entry を追記 (Step 4 で取得した実 hash を埋める):
+
+```
+[mjc-main-20260505-37 Loop 74 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/detection-extension-plan.md Section 6 の Q5 を「解決済」化
+- Q5 解決結果 Resolved Block を Section 6 表の直後に追記 (~10 行)
+  - 結論: MatchStrategy::WindowTitleContains 拡張による外部 API 影響なし
+  - 根拠: WATCHED_BUNDLE_IDS は const flat、serde 対象は Vec<&str>、MatchStrategy enum は Serialize 未 derive
+  - Phase 2 着手判断への寄与: frontend / IPC payload schema 変更不要
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張、plan の継続 = 価値の連鎖
+- mjc-main-20260505-37 Loop 74 メイン批判判断 (連続 26 セッション目): handoff の Y1 説明 (Q5/Q7/Q8 コード完結) を実態 grep で再評価 → Q5 のみコード完結可能 / Q7/Q8 は plan 自身が「mdls 確認」記載 = 実機要件と判定 → Q5 のみ Resolved 化に範囲限定
+- 規模 SS = ~10 行 docs 追記、振る舞い不変、Phase 2 着手前準備
+
+## How (docs only)
+- Q5 行の重要度列を「中 (Phase 1 前提) → 解決済 (下記参照)」に変更
+- Section 6 表の直後 (AppleScript セクションの直前) に「### Q5 解決結果 (mjc-main-20260505-37 Loop 74 調査)」を挿入
+- Q7/Q8 は実機要件のため未変更 (Q1-Q2 と同様に Open のまま据え置き)
+
+## Verify
+- agent-verify.sh: OK (docs only)
+- grep -n "Q5 解決結果" docs/architecture/detection-extension-plan.md: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- <docs commit hash here>
+
+---
+```
+
+`tail` 直後に Edit ツールで末尾 `---` の直後に entry を挿入。**先頭追記事故防止のため Edit の old_string は末尾近傍 ~30 行を含めて unique 化する**。
+
+## Step 6: chore commit (2 つ目、hash 反映)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 74 commit hash <docs commit hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-73 precedent 適用 15 連続)"
+```
+
+# 検証制約
+
+- cargo は触らない (docs only、rust コード変更なし)
+- npm run build も不要
+- agent-verify.sh: OK のみ確認
+- trailing whitespace: 行末の空白文字 (` \n` パターン) 禁止 = `grep -nE ' +$' docs/architecture/detection-extension-plan.md` で空確認
+
+# 規模上限
+
+- detection-extension-plan.md: ~10-15 行追記 + Q5 行修正 1 行 (合計 ~12-16 行 net 増加)
+- AGENT_LOG.md: ~25-35 行 entry
+- 上限超過時は途中で停止して報告
+
+# precedent (継承事項)
+
+- 2-commit pattern: docs commit → hash 取得 → AGENT_LOG.md 更新 → chore commit (Loop 60-73 で 14 連続実証)
+- worker 自律実行: 完走後 final answer 不要、git status --short で完走確認可能
+- worker prompt ~150 行 simpler 化 (Loop 67-73 で実証 ~3-7 分完走)
+
+# 完走確認方法
+
+- `git status --short`: docs/architecture/detection-extension-plan.md と AGENT_LOG.md の M 表示が一旦出て、commit 後に消えること
+- `git log --oneline -3`: Loop 74 docs commit + chore commit が並ぶこと
+
+以上です。**先頭追記事故 + trailing whitespace + 規模超過 + Q7/Q8 改変 を必ず防止してください**。

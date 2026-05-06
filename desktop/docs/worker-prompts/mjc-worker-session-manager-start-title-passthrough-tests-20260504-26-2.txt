@@ -1,0 +1,144 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+担当範囲は厳密に以下のみ:
+- src-tauri/src/session_manager.rs の mod tests 末尾への test 関数 3 件追加
+- AGENT_LOG.md への末尾追記 1 件 (worker 完走報告)
+
+**他のファイルは一切編集しないでください。** session_manager.rs の関数本体 (l.1-150 の impl) や既存 test (l.196-1015 既存) も触らないでください。
+
+## 必読 (順序固定)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20700+ 行 / 1.7MB+ で巨大なため絶対に Read 全体を実行しないでください。** `tail -350 AGENT_LOG.md` 相当 (= Read で offset 指定する) で末尾だけ参照してください。AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行います。**先頭は絶対に触らないでください。**
+
+## 背景 (ループ概要)
+- セッション: mjc-main-20260504-26 Loop 2
+- 候補種別: B (session_manager.rs / 「責務分離の executable specification 化」パターンの application)
+- 直前 commit: a0a9c5f (mjc-main-26 Loop 1) で `is_valid_dns_label` の RFC 1035 仕様残境界 3 軸を CI 固定済 (524 → 527 passed)
+- mjc-main-24 で確立した「責務分離の executable specification 化」パターン (T2 finalize の clock 逆転 / T3 append の空文字列 skip しない) を `start` 関数に application する Loop
+- **既存カバレッジ確認済**:
+  - `Session::start` の空 title passthrough は session.rs:249 で test 化済 (Session struct level)
+  - `SessionManager::start` → `finalize` → `Session.title` の **層をまたぐ passthrough 契約** は **未保護** (SessionManager level)
+- 1 ループで上記 3 軸 (空 / NUL byte / 10_000 chars) を埋めれば SessionManager の title passthrough 責務が CI で固定される。
+
+## 対象関数 (実装は変更しない、test 追加のみ)
+- l.52-62 `SessionManager::start`:
+  ```rust
+  pub fn start(&self, title: String, started_at: u64) -> Result<(), SessionManagerError> {
+      let mut guard = self.lock();
+      if guard.is_some() {
+          return Err(SessionManagerError::AlreadyActive);
+      }
+      *guard = Some(ActiveSession {
+          session: Session::start(title, started_at),
+          output: None,
+      });
+      Ok(())
+  }
+  ```
+- 経路: `SessionManager::start(title, ...)` → `Session::start(title, ...)` → `Session.title = title`
+- `Session.title` は pub field (session.rs:16) で finalize 後の return Session に保持される
+- 「SessionManager 層は title を一切加工しない (passthrough)」が現契約
+
+## 追加する test の場所
+- src-tauri/src/session_manager.rs の `mod tests` 末尾
+- 直前の test = `append_preserves_empty_text_and_empty_speaker_without_skipping_segment` (mod tests 内最後の test) の **直後** (= 該当 test の閉じカッコ `}` の次の空行) に追記
+- mod tests の閉じ `}` (l.1017 ファイル末尾) の **手前** に挿入する
+- 位置確認: 事前に `tail -40 src-tauri/src/session_manager.rs` で末尾を確認すること
+
+## 追加 test 3 件 (内容固定、自由解釈禁止)
+
+### T1: 空 title passthrough
+```rust
+#[test]
+fn start_passes_empty_title_through_to_session_without_normalization() {
+    // Session::start の空 title passthrough は session.rs:249 で session-struct level として保護済。
+    // 本 test は SessionManager (上位層) → Session (下位層) の **層をまたぐ passthrough 契約** を保護する。
+    // 将来 SessionManager 層に title trim/normalize/validation が混入するリファクタを CI で検知する装置。
+    let manager = SessionManager::new();
+    manager
+        .start(String::new(), 1_700_000_000)
+        .expect("start with empty title should succeed (SessionManager 層は validation しない passthrough 契約)");
+    let session = manager
+        .finalize(1_700_000_100)
+        .expect("finalize");
+    assert_eq!(
+        session.title, "",
+        "SessionManager::start は title を一切加工せず Session::start へ forwarding する passthrough 契約。空文字も原値透過で finalize 後の Session.title に保持される。"
+    );
+}
+```
+
+### T2: NUL byte 含む title passthrough
+```rust
+#[test]
+fn start_passes_title_with_nul_bytes_through_to_session_without_sanitization() {
+    // 制御文字 (NUL byte) を含む title でも SessionManager 層は sanitization せず passthrough する契約を保護。
+    // 将来 SessionManager 層に control char filtering が混入するリファクタを CI で検知する装置。
+    let manager = SessionManager::new();
+    let title_with_nul = "\0\0\0".to_string();
+    manager
+        .start(title_with_nul.clone(), 1_700_000_000)
+        .expect("start with NUL bytes in title should succeed (SessionManager 層は sanitization しない passthrough 契約)");
+    let session = manager
+        .finalize(1_700_000_100)
+        .expect("finalize");
+    assert_eq!(
+        session.title, title_with_nul,
+        "SessionManager::start は title 内の制御文字 (NUL byte) を sanitization せず原値透過で保持する。filtering は呼び出し側の責務。"
+    );
+}
+```
+
+### T3: 10_000 chars 巨大 title passthrough
+```rust
+#[test]
+fn start_passes_huge_title_through_to_session_without_truncation() {
+    // size 制約なし passthrough。将来 SessionManager 層に title size limit (例: > 1024 chars truncate) が混入するリファクタを CI で検知する装置。
+    let manager = SessionManager::new();
+    let huge_title = "a".repeat(10_000);
+    manager
+        .start(huge_title.clone(), 1_700_000_000)
+        .expect("start with 10_000-char title should succeed (SessionManager 層は size 制約しない passthrough 契約)");
+    let session = manager
+        .finalize(1_700_000_100)
+        .expect("finalize");
+    assert_eq!(
+        session.title.len(),
+        10_000,
+        "SessionManager::start は title 長を truncation せず原値透過で保持する。size 制約は呼び出し側の責務。"
+    );
+    assert_eq!(
+        session.title, huge_title,
+        "10_000 chars 全文が一致 (truncation なし、加工なし)"
+    );
+}
+```
+
+## 規模超過防止
+- **追加 test は厳密に 3 件**。**4 件目を追加しないでください。**
+- **session_manager.rs の関数本体 (l.1-150) と既存 test (l.196-1015) は一切変更禁止**。
+- 既存 import / use 宣言 / mod tests の `use super::*` 等の構造も変更禁止。
+- 大型ファイル (session_manager.rs: 1017 行) は **Read 全体禁止 = `tail -50` や `Read(offset=..., limit=...)` で対象範囲のみ参照**。
+- 既存 test との重複: T1/T2/T3 は SessionManager level で未保護 (grep `start_passes` で 0 件確認済) なので追加で OK。
+- AGENT_LOG.md は **絶対に先頭から書かない**。`tail -10 AGENT_LOG.md` で末尾の `---` を確認し、その **直後の行から追記** する (区切り線 `---` の手前ではなく **直後**)。
+
+## 検証手順 (worker 内で実施)
+1. `cd src-tauri && cargo fmt --check` (差分なし確認)
+2. `cd src-tauri && cargo clippy -- -D warnings` (警告ゼロ確認)
+3. `cd src-tauri && cargo test --lib --test-threads=1 -- 2>&1 | tail -10` (527 → 530 passed 確認)
+
+## AGENT_LOG.md 末尾追記の最低要素
+- 開始日時 (JST) / 担当セッション (`mjc-worker-session-manager-start-title-passthrough-tests-20260504-26-2`) / 役割 (worker)
+- 作業範囲 (session_manager.rs mod tests 末尾 + AGENT_LOG.md 末尾追記)
+- 指示内容 (上記 T1/T2/T3 の 3 件追加)
+- 結果 (cargo fmt OK / clippy 警告ゼロ / cargo test 527 → 530 passed)
+- 変更ファイル (src-tauri/src/session_manager.rs, AGENT_LOG.md)
+- 検証結果 (各検証コマンドの末尾 1-3 行 quote)
+- 依存関係追加なし
+- 失敗理由 (発生した場合のみ、なければ「なし」)
+- 次アクション (「メインへ報告、commit 待ち」)
+
+## 1 ターン完結
+最後に変更内容、変更ファイル、検証結果、残リスクを 1 ターンで簡潔に報告してください。コミットは禁止 = メインが行います。

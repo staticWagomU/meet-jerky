@@ -1,0 +1,125 @@
+あなたは meet-jerky desktop アプリの worker (mjc-worker-loop182-status-undetermined-const) です。
+mjc-main (Loop 182) からの依頼を受けて、以下の作業を 1 回完走で実施してください。
+
+# 重要な前提
+
+- working directory = /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+- branch = main、本セッションは frontend 軸 = const 集約 paradigm 反復 5 件目
+- precedent: Loop 174 (CONTROL_CHARACTER_PATTERN) → Loop 176 (SESSION_DATETIME_UNKNOWN_LABEL) → Loop 178 (STATUS_UNCHECKABLE_LABEL + 新 file 作成軸) → Loop 180 (STATUS_CHECKING_LABEL = 反復 4 件目 = paradigm 完全成熟期突入確認) → 本 Loop 182 = 反復 5 件目
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない
+- AGENT_LOG.md は ~34,320 行 / 3.2MB+ あるので **大型 file Read 全体禁止 = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+- 行末空白 (trailing whitespace) 禁止
+
+# 作業内容: STATUS_UNDETERMINED_LABEL を src/utils/statusLabels.ts に追加 + 8 callsite/4 file を const 参照に統一
+
+## Step 1: 現状確認
+
+1. `tail -350 AGENT_LOG.md` で末尾を確認 (戦略文脈把握 + 末尾 `---` 位置確認)
+2. `cat src/utils/statusLabels.ts` で現状確認 (現在 2 行 = `STATUS_UNCHECKABLE_LABEL` + `STATUS_CHECKING_LABEL`)
+3. `grep -rn '"未確認"' src/ --include='*.ts' --include='*.tsx'` で 8 callsite 実在再確認
+
+## Step 2: src/utils/statusLabels.ts 拡張
+
+`src/utils/statusLabels.ts` に **3 行目** として以下を追加:
+
+```ts
+export const STATUS_UNDETERMINED_LABEL = "未確認";
+```
+
+期待結果: file は 3 行 = `STATUS_UNCHECKABLE_LABEL` / `STATUS_CHECKING_LABEL` / `STATUS_UNDETERMINED_LABEL` の並列 export
+
+## Step 3: 4 file の callsite を const 参照に統一 (全 file 既に statusLabels import 済 = import 拡張のみ)
+
+### 3-1. src/utils/permissionStatusHelpers.ts (1 callsite)
+
+- L1: `import { STATUS_CHECKING_LABEL } from "./statusLabels";`
+  - → `import { STATUS_CHECKING_LABEL, STATUS_UNDETERMINED_LABEL } from "./statusLabels";`
+- L20: `  return "未確認";`
+  - → `  return STATUS_UNDETERMINED_LABEL;`
+
+### 3-2. src/utils/liveCaptionStatus.ts (2 callsite)
+
+- L3: `import { STATUS_CHECKING_LABEL } from "./statusLabels";`
+  - → `import { STATUS_CHECKING_LABEL, STATUS_UNDETERMINED_LABEL } from "./statusLabels";`
+- L55: `  microphoneTrackLabel: "未確認",`
+  - → `  microphoneTrackLabel: STATUS_UNDETERMINED_LABEL,`
+- L56: `  systemAudioTrackLabel: "未確認",`
+  - → `  systemAudioTrackLabel: STATUS_UNDETERMINED_LABEL,`
+
+### 3-3. src/components/PermissionBanner.tsx (2 callsite)
+
+- L15: `import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";`
+  - → `import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";`
+- L71: `        : "未確認";`
+  - → `        : STATUS_UNDETERMINED_LABEL;`
+- L78: `        : "未確認";`
+  - → `        : STATUS_UNDETERMINED_LABEL;`
+
+### 3-4. src/routes/SettingsView.tsx (3 callsite)
+
+- L33: `import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";`
+  - → `import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";`
+- L1146: `                                : "未確認"}`
+  - → `                                : STATUS_UNDETERMINED_LABEL}`
+- L1174: `                                : "未確認"}`
+  - → `                                : STATUS_UNDETERMINED_LABEL}`
+- L1774: `  return renderBadge("permission-undetermined", "未確認");`
+  - → `  return renderBadge("permission-undetermined", STATUS_UNDETERMINED_LABEL);`
+
+**注**: SettingsView.tsx は 2000+ 行の大型 file = Read 全体禁止。Edit で正確に該当行を置換すること。L33 の import は既存 2 export を含む 1 行なので、`STATUS_UNDETERMINED_LABEL` を末尾に追加する形で書き換え。
+
+## Step 4: 検証
+
+`npm run build` を実行 (tsc + vite build) = エラーなく完走することを確認。
+
+`grep -rn '"未確認"' src/ --include='*.ts' --include='*.tsx'` で残存件数確認。
+期待結果: **statusLabels.ts L3 のみ** (定義行) が残り、callsite 8 件は全て消失。
+
+## Step 5: commit (1 個目 = refactor)
+
+```
+git add src/utils/statusLabels.ts src/utils/permissionStatusHelpers.ts src/utils/liveCaptionStatus.ts src/components/PermissionBanner.tsx src/routes/SettingsView.tsx
+git commit -m "refactor(frontend): STATUS_UNDETERMINED_LABEL を src/utils/statusLabels.ts に集約 + 4 file 8 callsite を const 参照に統一 (mjc-main Loop 182, frontend 軸 = const 集約 paradigm 反復 5 件目 = paradigm 完全成熟期完全成熟への移行, 既存 file 拡張軸 paradigm 16 件目, '未確認' 8 callsite を統一 + DRY 違反解消, alternation pivot K(181) → frontend(182) = 21 → 22, AGENTS.md priority 1 寄与)"
+```
+
+## Step 6: AGENT_LOG.md 末尾追記 + commit (2 個目 = chore)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` 位置を確認 (前 entry の閉じ `---` を再利用する設計).
+
+以下の entry テンプレートを **冒頭 `---` を含めず** 末尾に append (前 entry の閉じ `---` の直後から開始、末尾 `---` 1 個で締める):
+
+```
+[mjc-main Loop 182 / 2026-05-06]
+worker: mjc-worker-loop182-status-undetermined-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_UNDETERMINED_LABEL 追加) + src/utils/permissionStatusHelpers.ts (L1 import 拡張 + L20 callsite) + src/utils/liveCaptionStatus.ts (L3 import 拡張 + L55/L56 callsite) + src/components/PermissionBanner.tsx (L15 import 拡張 + L71/L78 callsite) + src/routes/SettingsView.tsx (L33 import 拡張 + L1146/L1174/L1774 callsite)
+変更: STATUS_UNDETERMINED_LABEL を src/utils/statusLabels.ts に export const 追加 (既存 STATUS_UNCHECKABLE_LABEL / STATUS_CHECKING_LABEL に並列) + 4 file 8 callsite (utils 2 + components 1 + routes 1) を const 参照に統一 = 完全一致 `"未確認"` 8 件を一括統合 + DRY 違反解消 + ネット行数 ~+1 行 (statusLabels.ts +1 行 + 既存 import 拡張 4 件はインライン書き換え + callsite 8 件は同行書き換え)
+意義: frontend 軸 = const 集約 paradigm 反復 5 件目 = paradigm 完全成熟期完全成熟への移行 + 既存 file 拡張軸 paradigm 16 件目達成 (Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176/180 + Loop 182 = 16 件目) + 重複候補 grep 探索 paradigm 17 件目達成 + Loop 178 で確立済の statusLabels.ts への 3 度目の拡張 = paradigm 一貫性完全維持 + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与
+検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"未確認"` = 1 件のみ確認 (statusLabels.ts L3 定義行のみ残存)
+備考: paradigm 反復 5 件目達成 = const 集約軸の完全成熟期完全成熟への移行確認. R26 (`"未許可"` 6 callsite/3 file) / R27 (`"未登録"` 3 callsite/2 file) を後継候補として handoff に記載済.
+---
+```
+
+**重要 (worker prompt 必須要素 9 = boundary `---` 重複 fault 防止)**:
+- entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用)
+- 末尾 `---` 1 個で締める
+- AGENT_LOG.md への append は **1 回のみ**。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む
+
+その後:
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 182 = STATUS_UNDETERMINED_LABEL を statusLabels.ts に集約 (frontend 軸, const 集約 paradigm 反復 5 件目 = paradigm 完全成熟期完全成熟への移行, 既存 file 拡張軸 paradigm 16 件目, alternation pivot K(181) → frontend(182) = 21 → 22, 重複候補 grep 探索 paradigm 17 件目達成) のエントリ追記"
+```
+
+## Step 7: 完了確認
+
+`git status --short` で working tree clean (untracked docs/handoff + docs/worker-prompts のみ) を確認.
+`git log --oneline -3` で 2 commit (refactor + chore) が反映されたことを確認.
+
+# 制約 (再掲)
+
+- 担当範囲外の編集禁止 (上記 5 file + AGENT_LOG.md のみ)
+- worker prompt 必須要素 9 つ全て適用
+- 行末空白禁止 / 大型 file Read 全体禁止 / 規模超過防止 / 先頭は触らない / 時系列順末尾追記 / AGENT_LOG.md 末尾 350 行を読め / append は 1 回のみ / 冒頭 `---` 含めない
+- 2-commit pattern (refactor + chore) を厳守
+- `--no-verify` 禁止

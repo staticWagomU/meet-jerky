@@ -1,0 +1,170 @@
+あなたは meet-jerky の worker エージェント mjc-worker-loop180-status-checking-const です。
+
+mjc-main から **frontend 軸 = const 集約 paradigm 反復 4 件目 (= paradigm 系統樹拡張 9 件目候補確立反復 = paradigm 完全成熟期突入候補) = `"確認中"` 14 callsite/8 file 集約** を 1 件発注されました。
+
+# あなたの作業
+
+## ゴール
+- `src/utils/statusLabels.ts` に `export const STATUS_CHECKING_LABEL = "確認中";` を追加 (既存 `STATUS_UNCHECKABLE_LABEL` に並べる)
+- 8 file 14 callsite の重複 string literal `"確認中"` を `STATUS_CHECKING_LABEL` 参照に統一
+- L1411 (TranscriptView.tsx) の `.includes("確認中")` も `.includes(STATUS_CHECKING_LABEL)` に置換
+- DRY 違反解消 + 件数完全不変
+- frontend 軸 = const 集約 paradigm 反復 4 件目 + 既存 file 拡張軸 paradigm 15 件目 + paradigm 系統樹拡張 9 件目候補確立反復 = paradigm 完全成熟期突入候補
+
+## AGENT_LOG.md 取り扱い (重要、必読)
+**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+
+具体手順:
+1. まず `tail -350 AGENT_LOG.md` で末尾を読む (大型 file = 全体 Read 禁止)。
+2. `tail -10 AGENT_LOG.md` で最末尾の `---` 区切り位置を確認。
+3. 末尾の `---` の **直後** (= 既存 `---` の次の行) から新 entry を追記する。
+4. **entry テンプレート冒頭に `---` を含めない**。前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める (boundary `---` 重複 fault 完全防止策 = Loop 168-179 で 12 連続実証成功)。
+5. **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent = Loop 146-179 で 34 連続成功実証)。
+
+## 作業手順
+
+### Step 1: 状況確認
+- `tail -350 AGENT_LOG.md` で末尾の文脈を読む (Loop 178/179 entry が末尾にあるはず)
+- `cat src/utils/statusLabels.ts` で既存 const を確認 (1 行のみ = `export const STATUS_UNCHECKABLE_LABEL = "確認できません";` のはず)
+
+### Step 2: refactor 実装
+
+#### 2-1. statusLabels.ts に const 追加
+- ファイル: `src/utils/statusLabels.ts`
+- 既存行: `export const STATUS_UNCHECKABLE_LABEL = "確認できません";`
+- 追加行 (既存行の **直後**、新しい行として):
+  ```ts
+  export const STATUS_CHECKING_LABEL = "確認中";
+  ```
+
+#### 2-2. 6 file の既存 import 文を extend
+**注意**: 以下 6 file は **既に** `import { STATUS_UNCHECKABLE_LABEL } from "...statusLabels";` を持っている (確認済)。
+import 文を `{ STATUS_UNCHECKABLE_LABEL, STATUS_CHECKING_LABEL }` に書き換えるだけ。新規 import 文の追加は不要。
+
+| File | 現 import | 行 |
+|---|---|---|
+| `src/utils/externalApiKeyHelpers.ts` | `import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";` | L1 |
+| `src/utils/engineStatusHelpers.ts` | `import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";` | L2 |
+| `src/utils/aiTransmissionHelpers.ts` | `import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";` | L3 |
+| `src/components/PermissionBanner.tsx` | `import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";` | L15 |
+| `src/routes/TranscriptView.tsx` | `import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";` | L68 |
+| `src/routes/SettingsView.tsx` | `import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";` | L33 |
+
+各ファイルでこの 1 行を:
+```ts
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "...";
+```
+に置換 (アルファベット順 = `STATUS_CHECKING_LABEL` を先に)。
+
+#### 2-3. 2 file に新規 import 文を追加
+**注意**: 以下 2 file は **未** import = 新規 import 文の追加が必要。
+
+| File | 既存 import 末尾 | 追加位置 |
+|---|---|---|
+| `src/utils/permissionStatusHelpers.ts` | (現状 import 文なし、または最小) | 既存 import 文の末尾、または file 先頭 |
+| `src/utils/liveCaptionStatus.ts` | L2: `import { CONTROL_CHARACTER_PATTERN } from "./transcriptSegment";` | L2 の直後 (L3 として追加) |
+
+追加する import 文:
+```ts
+import { STATUS_CHECKING_LABEL } from "./statusLabels";
+```
+
+permissionStatusHelpers.ts は現在 import 文がない可能性あり = `head -5 src/utils/permissionStatusHelpers.ts` で確認後、適切な位置 (file 先頭) に追加。
+
+#### 2-4. 14 callsite を const 参照に置換
+
+| File | 行 | 現コード断片 | 置換後 |
+|---|---|---|---|
+| `src/utils/externalApiKeyHelpers.ts` | L15 | `return "確認中";` | `return STATUS_CHECKING_LABEL;` |
+| `src/utils/engineStatusHelpers.ts` | L8 | `return "確認中";` | `return STATUS_CHECKING_LABEL;` |
+| `src/utils/engineStatusHelpers.ts` | L42 | `if (statusLabel === "確認中") {` | `if (statusLabel === STATUS_CHECKING_LABEL) {` |
+| `src/utils/permissionStatusHelpers.ts` | L7 | `return "確認中";` | `return STATUS_CHECKING_LABEL;` |
+| `src/utils/liveCaptionStatus.ts` | L51 | `engineLabel: "確認中",` | `engineLabel: STATUS_CHECKING_LABEL,` |
+| `src/utils/liveCaptionStatus.ts` | L52 | `aiTransmissionLabel: "確認中",` | `aiTransmissionLabel: STATUS_CHECKING_LABEL,` |
+| `src/utils/aiTransmissionHelpers.ts` | L9 | `return "確認中";` | `return STATUS_CHECKING_LABEL;` |
+| `src/components/PermissionBanner.tsx` | L66 | `? "確認中"` | `? STATUS_CHECKING_LABEL` |
+| `src/components/PermissionBanner.tsx` | L73 | `? "確認中"` | `? STATUS_CHECKING_LABEL` |
+| `src/routes/TranscriptView.tsx` | L1411 | `meetingStartBlockedReason?.includes("確認中")` | `meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)` |
+| `src/routes/SettingsView.tsx` | L1141 | `? "確認中"` | `? STATUS_CHECKING_LABEL` |
+| `src/routes/SettingsView.tsx` | L1169 | `? "確認中"` | `? STATUS_CHECKING_LABEL` |
+| `src/routes/SettingsView.tsx` | L1897 | `? "確認中"` | `? STATUS_CHECKING_LABEL` |
+| `src/routes/SettingsView.tsx` | L1901 | `? "確認中"` | `? STATUS_CHECKING_LABEL` |
+
+**重要**: 大型 file (TranscriptView.tsx, SettingsView.tsx) は **Read 全体禁止 = 該当行範囲のみ参照**. 例えば `sed -n '1135,1175p' src/routes/SettingsView.tsx` のように該当行 ±5 行を確認してから Edit する。
+
+**重要**: `"確認中..."` (loading suffix 付き、SettingsView L1755/L1766/L1953, PermissionBanner L190, ModelSelector L425/L452/L468) は **本ループでは触らない**。これらは別 entity (loading 表現) として後継 Loop で扱う。`"確認中"` の **完全一致** 14 callsite のみ対象。
+
+### Step 3: 検証
+**frontend 軸 = npm run build (tsc + vite build) のみ検証** (cargo 系不要):
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build 2>&1 | tail -30
+```
+
+期待: `tsc --noEmit && vite build` が成功 + 警告なし。失敗時は callsite 漏れ / typo / import 漏れを確認して修正。
+
+最後に grep 確認:
+```bash
+grep -n '"確認中"' src --include='*.ts' --include='*.tsx' -r
+```
+**期待結果**: 0 件 (完全一致 14 callsite が全て const 参照に置換されている)。
+
+### Step 4: AGENT_LOG.md に entry 追記 (1 回のみ、冒頭 `---` なし)
+
+**重要再掲**:
+- append は 1 回のみ。Edit/Write を複数回繰り返さない。
+- entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用)。末尾は `---` 1 個で締める。
+
+entry テンプレート (冒頭の `---` は省略、末尾 `---` 1 個):
+```
+[mjc-main Loop 180 / 2026-05-06]
+worker: mjc-worker-loop180-status-checking-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_CHECKING_LABEL 追加) + src/utils/externalApiKeyHelpers.ts (L1 import 拡張 + L15 callsite) + src/utils/engineStatusHelpers.ts (L2 import 拡張 + L8/L42 callsite) + src/utils/permissionStatusHelpers.ts (新規 import + L7 callsite) + src/utils/liveCaptionStatus.ts (新規 import + L51/L52 callsite) + src/utils/aiTransmissionHelpers.ts (L3 import 拡張 + L9 callsite) + src/components/PermissionBanner.tsx (L15 import 拡張 + L66/L73 callsite) + src/routes/TranscriptView.tsx (L68 import 拡張 + L1411 includes 引数) + src/routes/SettingsView.tsx (L33 import 拡張 + L1141/L1169/L1897/L1901 callsite)
+変更: STATUS_CHECKING_LABEL を src/utils/statusLabels.ts に export const 追加 (既存 STATUS_UNCHECKABLE_LABEL に並列) + 8 file 14 callsite (utils 5 + components 1 + routes 2) を const 参照に統一 = 完全一致 `"確認中"` 13 + L1411 の `.includes()` 引数 1 = 計 14 callsite を一括統合 + DRY 違反解消 + ネット行数 ~+1 行のみ (statusLabels.ts +1 行 + 既存 import 拡張 6 件はインライン書き換え + 新規 import 2 件は +2 行 + callsite 14 件は同行書き換え)
+意義: frontend 軸 = const 集約 paradigm 反復 4 件目 = paradigm 系統樹拡張 9 件目候補確立反復 = paradigm 完全成熟期突入候補 + 既存 file 拡張軸 paradigm 15 件目達成 (Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176 + Loop 180 = 15 件目) + 重複候補 grep 探索 paradigm 16 件目達成 + Loop 178 で確立済の statusLabels.ts への拡張 = paradigm 一貫性維持 + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 (最も価値の高い改善) 寄与
+検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"確認中"` = 0 件確認
+備考: paradigm 反復 4 件目達成 = 完全成熟期突入. R25/R26/R27 を後継候補として handoff に記載済 (`"未確認"` 8 callsite/4 file = 規模 M, `"未許可"` 6 callsite/3 file = 規模 M, `"未登録"` 3 callsite/2 file = 規模 S-M). `"確認中..."` (loading suffix 付き 5 callsite) は別 entity 扱いで除外, Loop 181+ R28 候補.
+---
+```
+
+### Step 5: 2-commit pattern で commit (`bash scripts/agent-commit.sh` または直接)
+
+**2-commit pattern (Loop 145-179 = 35 連続安定実証)**:
+
+#### Commit 1: refactor (実コード変更)
+```bash
+git add src/utils/statusLabels.ts src/utils/externalApiKeyHelpers.ts src/utils/engineStatusHelpers.ts src/utils/permissionStatusHelpers.ts src/utils/liveCaptionStatus.ts src/utils/aiTransmissionHelpers.ts src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx
+git commit -m "$(cat <<'EOF'
+refactor(frontend): STATUS_CHECKING_LABEL を src/utils/statusLabels.ts に集約 + 8 file 14 callsite を const 参照に統一 (mjc-main Loop 180, frontend 軸 = const 集約 paradigm 反復 4 件目 = paradigm 系統樹拡張 9 件目候補確立反復 = paradigm 完全成熟期突入候補, 既存 file 拡張軸 paradigm 15 件目, '確認中' 13 callsite + L1411 .includes() 引数 1 = 14 callsite を統一 + DRY 違反解消, alternation pivot K(179) → frontend(180) = 19 → 20, AGENTS.md priority 1 寄与)
+EOF
+)"
+```
+
+#### Commit 2: chore (AGENT_LOG.md 追記)
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main Loop 180 = STATUS_CHECKING_LABEL を statusLabels.ts に集約 (frontend 軸, const 集約 paradigm 反復 4 件目 = paradigm 系統樹拡張 9 件目候補確立反復 = paradigm 完全成熟期突入候補, 既存 file 拡張軸 paradigm 15 件目, alternation pivot K(179) → frontend(180) = 19 → 20, 重複候補 grep 探索 paradigm 16 件目達成) のエントリ追記
+EOF
+)"
+```
+
+### Step 6: 完了確認
+- `git status --short` で working tree clean を確認
+- `git log --oneline -3` で 2 commit (refactor + chore) が反映されていることを確認
+
+## 制約
+
+- **trailing whitespace 禁止** (行末空白文字)
+- **規模超過防止**: 14 callsite + 8 file の import 操作のみ、それ以上の編集は禁止
+- **大型 file (TranscriptView.tsx, SettingsView.tsx) は Read 全体禁止 = 該当行範囲 ±5 行のみ参照**
+- **`"確認中..."` (loading suffix 付き) は本ループでは触らない**
+- npm run build で警告ゼロ + grep `"確認中"` = 0 件を保証
+- `--no-verify` 禁止、`--dangerously-skip-permissions` 禁止
+- `git config` 禁止、force push 禁止
+
+## 完走目標
+- 規模 L = ~25-40 分目標
+- 2 commit (refactor + chore)
+
+頑張って! paradigm 反復 4 件目達成で完全成熟期突入が懸かっています。

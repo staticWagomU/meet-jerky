@@ -1,0 +1,119 @@
+あなたは meet-jerky の worker (sonnet) です。Loop 40 として **app_detection.rs の Zoom URL 検知関数群を src-tauri/src/app_detection_zoom.rs に抽出** します (Tidy First, 振る舞い不変)。
+
+# 必読 (まず実行)
+1. `tail -400 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**。
+2. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md` 参照。
+3. **大型ファイル (`AGENT_LOG.md` 26000+ 行 / `app_detection.rs` 3184 行) は Read 全体禁止 = tail/head/grep/sed -n で対象範囲のみ参照**。
+4. 行末 trailing whitespace 禁止。
+
+# 背景
+- mjc-main-20260505-20 Loop 40 = canonical mjc-main。
+- precedent 完全踏襲: Webex (mjc-main-20260505-15 Loop 29 = `b4a0098`) / Whereby (mjc-main-20260505-16 Loop 31 = `a523edd`) / GoToMeeting (mjc-main-20260505-18 Loop 36 = `1904e04`)。
+- variety: extraction 軸 = Loop 36 から 4 ループ間隔、別軸 3 件 (docs/test/docs) 挟んだ後の 4 件目 = 許容範囲。
+- 現在の app_detection.rs 3184 行のうち Zoom 検知関数は 4 つ + 共通ヘルパー依存。
+
+# 抽出対象 (実コードを sed で確認してから抽出)
+- 4 関数 (現在 app_detection.rs L710-797 付近):
+  1. `is_zoom_host(host: &str) -> bool` (L710- 付近、`zoom.us` / `zoomgov.com` + `*.zoom.us` / `*.zoomgov.com` 4 host pattern)
+  2. `is_zoom_meeting_url(host: &str, path: &str) -> bool` (L770- 付近、`/j/<id>` / `/wc/join/<id>` / `/wc/<id>/join` / `/my/<name>` の 4 path pattern)
+  3. `is_zoom_meeting_id(value: &str) -> bool` (helper、9-11 桁数字判定)
+  4. `is_zoom_web_client_meeting_url(path: &str) -> bool` (helper、`/wc/<id>/join` 形式判定)
+- 共通ヘルパー依存 (app_detection.rs に残置):
+  - `is_valid_dns_label` (Loop 29 で `pub(crate)` 化済、Webex/Whereby/GoToMeeting precedent と同パターン = `use crate::app_detection::is_valid_dns_label;` で取り込み)
+  - `has_single_non_empty_segment` (Loop 36 で `pub(crate)` 化済か要確認 = grep で確認、未 pub なら `pub(crate)` 化が必要)
+
+# タスク (1 ループ完結 = 規模 SS-S 想定)
+
+## Step 1: 構造把握 (Read 5 分以内)
+- `sed -n '700,800p' src-tauri/src/app_detection.rs` で is_zoom_* 4 関数の正確な行範囲と内部実装把握。
+- `grep -n "has_single_non_empty_segment\|is_valid_dns_label" src-tauri/src/app_detection.rs | head -10` で pub(crate) 状態と他サービスからの参照状況確認。
+- `grep -n "is_zoom" src-tauri/src/app_detection.rs | head -20` で caller (classify_meeting_url L517-518) と直接呼びテストの位置確認。
+
+## Step 2: 新規ファイル作成
+- `src-tauri/src/app_detection_zoom.rs` を新規作成。
+- 構造 (Webex/Whereby/GoToMeeting precedent 完全踏襲):
+  ```rust
+  use crate::app_detection::is_valid_dns_label;
+  // has_single_non_empty_segment が pub(crate) ならこちらも use
+
+  pub(crate) fn is_zoom_host(host: &str) -> bool { ... }
+  pub(crate) fn is_zoom_meeting_url(host: &str, path: &str) -> bool { ... }
+  fn is_zoom_meeting_id(value: &str) -> bool { ... }  // private (helper)
+  fn is_zoom_web_client_meeting_url(path: &str) -> bool { ... }  // private (helper)
+  ```
+- helper 2 つ (is_zoom_meeting_id / is_zoom_web_client_meeting_url) は Zoom 内部依存のため private で OK。
+
+## Step 3: 移動と caller 更新
+- 4 関数を `app_detection.rs` から削除 (use 文整理含む)。
+- `app_detection.rs` の `classify_meeting_url` 内 caller 更新:
+  - 現在: `} else if is_zoom_meeting_url(&host, &parsed.path) {`
+  - 変更後: `} else if crate::app_detection_zoom::is_zoom_meeting_url(&host, &parsed.path) {`
+- `src-tauri/src/lib.rs` に `mod app_detection_zoom;` 宣言追加 (Webex/Whereby/GoToMeeting precedent と同位置)。
+- 直接呼びテスト (例: `is_zoom_meeting_id_*` を直接呼ぶテスト) があれば、`use crate::app_detection_zoom::is_zoom_meeting_id;` 取り込みに更新。
+- classify_meeting_url 経由のテストは app_detection.rs 残置 (precedent 踏襲)。
+
+## Step 4: has_single_non_empty_segment の pub(crate) 化判断
+- `grep -n "fn has_single_non_empty_segment" src-tauri/src/app_detection.rs` で現在の visibility 確認。
+- もし `pub(crate)` でない場合、Webex (Loop 29) で `is_valid_dns_label` を `pub(crate)` 化したのと同パターンで `pub(crate)` 化が必要。
+- ただし、Zoom 内部の has_single_non_empty_segment 利用箇所が `is_zoom_meeting_url` 内のみで、かつ Zoom を抽出するなら、has_single_non_empty_segment を Zoom ファイルに **コピーする** 選択肢もある。**判断**: 他サービス (Teams も has_single_non_empty_segment を使っている) も使うなら共通 helper として `pub(crate)` 化が望ましい。**まず grep で他サービス使用状況を確認してから判断する**。
+
+## Step 5: 検証 (必須)
+- `cd src-tauri && cargo test --lib`: 全件 pass を維持 (現 702 件、件数不変が指標)
+- `cd src-tauri && cargo clippy --lib --tests -- -D warnings`: 警告ゼロ
+- `cd src-tauri && cargo fmt --check`: OK (failed なら `cargo fmt` で自動整形 OK)
+- `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/app_detection_zoom.rs src-tauri/src/lib.rs`: 自走で実行
+- 行末 trailing whitespace ゼロ確認
+
+## Step 6: AGENT_LOG.md 末尾追記 (必須)
+- 末尾 `---` の **後に** new entry を追記。`tail -10 AGENT_LOG.md` で末尾を確認してから書く。
+- entry 形式 (Loop 36 entry 参考、commit hash は最後に記入):
+```
+[mjc-main-20260505-20 Loop 40 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs から Zoom URL 検知関連 4 関数 (is_zoom_host / is_zoom_meeting_url / is_zoom_meeting_id / is_zoom_web_client_meeting_url) を src-tauri/src/app_detection_zoom.rs に抽出
+- src-tauri/src/lib.rs に `mod app_detection_zoom;` 追加
+- app_detection.rs L517 caller を crate::app_detection_zoom::is_zoom_meeting_url 経由に更新
+- 直接呼びテストの参照 path 更新 (該当があれば)
+- (has_single_non_empty_segment の pub(crate) 化を行った場合: 文言追加)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 縮小 = 理解性向上)
+- Webex (Loop 29) / Whereby (Loop 31) / GoToMeeting (Loop 36) precedent 完全踏襲 (4 件目連続 sweep だが別軸 3 件挟んだ後)
+- variety pivot 軸 = extraction 軸 = Loop 36 から 4 ループ間隔、別軸 (docs/test/docs) 3 件挟んだ後 = 許容範囲
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 702 passed 件数不変
+- pub(crate) visibility で外部参照可能 (Webex precedent 同パターン)
+- is_valid_dns_label は app_detection.rs に残置 + pub(crate) のまま、app_detection_zoom.rs から use 文で取り込み
+- has_single_non_empty_segment は (pub(crate) 化判断結果に応じて記述)
+- tests は classify_meeting_url 経由のものは app_detection.rs 残置、直接呼びテストは use 文経由参照に更新
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash、後で記入)
+```
+
+## Step 7: commit (必須)
+- staged: 変更 4 ファイル (app_detection.rs / app_detection_zoom.rs / lib.rs / AGENT_LOG.md)
+- メッセージ: `refactor(app_detection): Zoom 検知 4 関数を app_detection_zoom.rs に抽出 (Tidy First, mjc-main-20260505-20 Loop 40)`
+- `bash scripts/agent-commit.sh "<message>" src-tauri/src/app_detection.rs src-tauri/src/app_detection_zoom.rs src-tauri/src/lib.rs AGENT_LOG.md` を使用 (verify 自走 + commit + push なし)。
+- `--no-verify` 禁止。
+
+# 必ず守ること (再掲、worker prompt 必須要素 7 つ)
+1. **AGENT_LOG.md の末尾 350 行を読め (tail -350)、先頭は絶対触らない**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾、新規追記は必ずファイル末尾**
+3. 担当範囲外の編集禁止 (transcription.rs / 他モジュール等は触らない、抽出関連のみ)
+4. test 件数: 件数不変が指標 (新規 test は追加しない、移動のみ)
+5. 大型ファイル Read 全体禁止 = tail/head/grep/sed
+6. 行末 trailing whitespace 禁止
+7. 振る舞い不変保証 = cargo test --lib 件数不変 (702)
+
+# 完了判定
+- commit 1 件作成済 + AGENT_LOG.md tail に Loop 40 entry 追記済 + 検証 OK = 完了

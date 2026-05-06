@@ -1,0 +1,175 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読み、文脈を理解してから作業を開始してください。
+- AGENTS.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md の **末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で読む (ファイル全体は 23000+ 行で巨大なので Read 全体は禁止)
+
+## AGENT_LOG.md の構造ルール (極めて重要、絶対遵守)
+- AGENT_LOG.md は **時系列順** = 最古ログがファイル先頭、最新ログがファイル末尾。
+- 新規追記は **必ずファイル末尾に行う**。
+- **ファイル先頭は絶対に触らない**。
+- 追記前に必ず `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 区切りの直後に新エントリを追記。
+
+## 担当セッション情報
+- 担当セッション: `mjc-worker-whisper-request-params-debug-partialeq-clone-tests-20260504-35-3`
+- 役割: 作業担当 (worker, print mode)
+- 親セッション: `mjc-main-20260504-35` Loop 3
+
+## 作業範囲 (担当範囲外は絶対に触らない)
+- `src-tauri/src/cloud_whisper.rs` の `mod tests` の **末尾** に test 関数 3 件を追加するのみ。
+- `AGENT_LOG.md` への末尾追記 (本ループ実績エントリ)。
+- これら 2 ファイル以外は触らない。struct 定義 / build_whisper_request_params / 既存 test / 他関数は絶対に編集しない。
+
+## 大型ファイル参照ルール (重要)
+- `src-tauri/src/cloud_whisper.rs` は 516 行、`AGENT_LOG.md` は 23000+ 行。
+- **Read 全体禁止**。`sed -n 'A,Bp'` / `tail -N` / `head -N` / `grep -n` で対象範囲のみ参照すること。
+- cloud_whisper.rs では l.20-50 で WhisperRequestParams 定義 + build_whisper_request_params、l.122-516 で mod tests。
+
+## 実装タスク (Tidy First、振る舞い不変、Debug 軸補強パターン 16 連続 application、7 ファイル目展開)
+
+### 背景
+- mjc-main-20260504-35 Loop 1 で AppSettings (settings.rs)、Loop 2 で MeetingAppDetectedPayload (app_detection.rs) を補強済み。
+- 本 Loop 3 は 16 連続 application として **WhisperRequestParams struct (cloud_whisper.rs l.28-34)** を選定。
+- WhisperRequestParams は: `#[derive(Debug, Clone, PartialEq)]` + `#[allow(dead_code)]` + 4 fields:
+  - `model: String`
+  - `language: Option<String>`
+  - `response_format: String`
+  - `temperature: f32`
+- **Serialize 派生なし** (内部 struct、Whisper API へ multipart で送る前段の中間表現)、**PartialEq 派生あり** = Clone 独立性軸を `assert_ne!(cloned, original)` で **PartialEq 直接判定**する新手法を採用。
+- **f32 Float field を持つ初の補強対象** (これまでは u32 / u64 / PathBuf 等)。temperature = 0.0 等の non-NaN 値で test すれば PartialEq 比較は問題なし。
+- 価値:
+  1. 7 ファイル目への展開 (cloud_whisper.rs)
+  2. f32 Float field を含む struct への補強 (新形態)
+  3. 「Clone 独立性軸」5 連続 application かつ PartialEq 直接判定の新手法 (StreamConfig / ModelInfo は assert_eq、AppSettings / MeetingAppDetectedPayload は Debug 文字列間接、本 Loop は assert_ne で「mutate 後 != original」を直接 PartialEq で判定)
+  4. PartialEq 軸の field 単位独立判定継続 (mjc-main-33 Loop 2 / mjc-main-33 Loop 3 / mjc-main-34 Loop 2 / mjc-main-34 Loop 3 で確立済の手法を 4 fields 形態に拡張)
+
+### 追加する test 関数 3 件 (mod tests の末尾に追加)
+
+**T1**: `whisper_request_params_debug_output_contains_struct_name_and_all_four_field_names_with_option_variants`
+- 目的: WhisperRequestParams の Debug 出力に型名 + 全 4 snake_case field 名 + 値 + Option Some/None 両形態 + f32 が含まれる契約を CI 固定 (logger 経由のデバッグ性保護、特に `language` field の Some/None 区別表示と `temperature` の Float 表示形式を保護)。
+- 手順:
+  - `let with_lang = WhisperRequestParams { model: "small".to_string(), language: Some("ja".to_string()), response_format: "verbose_json".to_string(), temperature: 0.0 };`
+  - `let without_lang = WhisperRequestParams { model: "large-v3".to_string(), language: None, response_format: "json".to_string(), temperature: 0.5 };`
+  - `let with_dbg = format!("{with_lang:?}");`
+  - `let without_dbg = format!("{without_lang:?}");`
+  - assert: `with_dbg.contains("WhisperRequestParams")` (型名)
+  - assert: `with_dbg.contains("model")`, `with_dbg.contains("language")`, `with_dbg.contains("response_format")`, `with_dbg.contains("temperature")` (4 snake_case field 名)
+  - assert: `with_dbg.contains("\"small\"")`, `with_dbg.contains("\"ja\"")` (値、language は Some 中身として "ja" が出る)
+  - assert: `with_dbg.contains("Some")` (Option Some variant 表示)
+  - assert: `without_dbg.contains("None")` (Option None variant 表示)
+  - assert: `without_dbg.contains("\"large-v3\"")`, `without_dbg.contains("\"json\"")`
+  - assert: `with_dbg.contains("0.0")` (f32 0.0 の Debug 出力)
+  - assert: `without_dbg.contains("0.5")` (f32 0.5 の Debug 出力)
+  - 計 13 段程度の assert (1 型名 + 4 field 名 + 4 値 + Some/None + 2 f32)。
+
+**T2**: `whisper_request_params_partial_eq_holds_reflexive_and_differs_per_field`
+- 目的: WhisperRequestParams の `PartialEq` derive が field 単位独立に等値/不等値判定する契約を CI 固定 (`#[derive(PartialEq)]` の field 単位独立性を保護、特定 field を比較から除外する誤改修を遮断)。
+- 手順:
+  - `let base = WhisperRequestParams { model: "small".to_string(), language: Some("ja".to_string()), response_format: "verbose_json".to_string(), temperature: 0.0 };`
+  - reflexive: `assert_eq!(base, base.clone());`
+  - 4 fields 単位独立判定 (各 field を変えると不等):
+    - `let m_diff = WhisperRequestParams { model: "large-v3".to_string(), ..base.clone() };` → `assert_ne!(base, m_diff);`
+    - `let l_diff = WhisperRequestParams { language: Some("en".to_string()), ..base.clone() };` → `assert_ne!(base, l_diff);`
+    - `let l_none = WhisperRequestParams { language: None, ..base.clone() };` → `assert_ne!(base, l_none);` (Option Some vs None も不等)
+    - `let r_diff = WhisperRequestParams { response_format: "json".to_string(), ..base.clone() };` → `assert_ne!(base, r_diff);`
+    - `let t_diff = WhisperRequestParams { temperature: 0.5, ..base.clone() };` → `assert_ne!(base, t_diff);`
+  - 計 6 段の assert (1 reflexive + 5 不等)。
+
+**T3**: `whisper_request_params_clone_is_deep_and_mutation_breaks_partial_eq`
+- 目的: WhisperRequestParams の `Clone` derive が deep clone である契約を CI 固定。本 Loop は **PartialEq 派生型に対する Clone 独立性軸の新手法** = `assert_eq!(original, cloned)` で初期一致 → cloned 全 field を変更 → `assert_ne!(original, cloned)` + cloned の値を Debug 文字列で確認 + original の値を Debug 文字列で確認 (相互独立)。
+- 手順:
+  - `let original = WhisperRequestParams { model: "small".to_string(), language: Some("ja".to_string()), response_format: "verbose_json".to_string(), temperature: 0.0 };`
+  - `let mut cloned = original.clone();`
+  - `assert_eq!(original, cloned, "Clone 直後は等値");`
+  - cloned 全 field mutate:
+    - `cloned.model = "large-v3".to_string();`
+    - `cloned.language = None;`
+    - `cloned.response_format = "json".to_string();`
+    - `cloned.temperature = 0.5;`
+  - `assert_ne!(original, cloned, "全 field mutate 後は不等値");`
+  - 念のため original 側の保持を Debug 文字列で確認 (PartialEq 直接判定との 2 重保険):
+    - `let original_dbg = format!("{original:?}");`
+    - `assert!(original_dbg.contains("\"small\""));`
+    - `assert!(original_dbg.contains("Some"));`
+    - `assert!(original_dbg.contains("\"ja\""));`
+    - `assert!(original_dbg.contains("\"verbose_json\""));`
+    - `assert!(original_dbg.contains("0.0"));`
+    - `assert!(!original_dbg.contains("\"large-v3\""));`
+    - `assert!(!original_dbg.contains("None"));`
+    - `assert!(!original_dbg.contains("\"json\""));` ※注: `\"json\"` は full quote 付きで判定 (verbose_json には ":json" だが、独立 token としての "json" は別)
+  - 注意: `\"json\"` の確認は微妙 = `\"verbose_json\"` の中に "json" が含まれるので `contains("\"json\"")` だと `\"verbose_json\"` には含まれない (ダブルクオート開始位置が違う) が、`contains("json")` だけだと両方マッチする。テストの意図 = original で `cloned.response_format = "json"` の変更が混入していないことを示すため、`!original_dbg.contains("\"json\",")` のようにカンマ込みで検証する形にすれば確実。または `!original_dbg.contains("response_format: \"json\"")` のように field 名 + 値で判定する。安全な書き方を選ぶこと。
+  - assert!(!original_dbg.contains("0.5"));
+  - 計 11 段程度の assert (1 初期等値 + 1 mutate 後不等 + 5 original 維持 contains + 4 cloned 値混入なし)。
+
+### 振る舞い不変の保証
+- struct 定義 / build_whisper_request_params / 既存 test 全件 / 他関数は **完全に触らない**。
+- 追加するのは `mod tests` の末尾に 3 関数のみ。
+- Tidy First (構造的改善) として位置付け、振る舞い変更ゼロ。
+
+### 規模制約 (絶対遵守)
+- 追加する test は **3 件のみ**。1 件たりとも超過しないこと。
+- Debug 出力 / PartialEq field 単位独立 / Clone 独立性 (PartialEq + Debug 二重保険) の **3 軸構造**を破ってはいけない。
+- 既存 test、struct 定義、関数は変更禁止。
+
+### f32 値選択の注意
+- T1/T2/T3 全てで temperature は **0.0 と 0.5** のみを使う (NaN / Inf は使わない)。
+- f32 の PartialEq 比較は NaN を含まなければ通常 boolean = `temperature: 0.5` での `assert_ne` は安定動作。
+
+### 行末空白禁止
+- 編集する全ての行で行末に空白文字 (trailing whitespace) を残さないこと。
+
+## 検証手順
+作業完了後、以下を順に実行し、結果を AGENT_LOG.md に記録:
+1. `cd src-tauri && cargo fmt --check` (差分なしを確認、または cargo fmt 後に再確認)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -30` (警告ゼロ exit 0 を確認)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1 2>&1 | tail -10` (604 → 607 passed +3 件、0 failed を確認)
+
+## AGENT_LOG.md 追記内容 (末尾の `---` 直後に追記)
+
+```markdown
+## mjc-worker-whisper-request-params-debug-partialeq-clone-tests-20260504-35-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-whisper-request-params-debug-partialeq-clone-tests-20260504-35-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-35 Loop 3
+
+### 作業範囲
+- `src-tauri/src/cloud_whisper.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 16 連続 application + 7 ファイル目展開 (cloud_whisper.rs) + 「Clone 独立性軸」5 連続 application (PartialEq 直接判定の新手法) = WhisperRequestParams (#[derive(Debug, Clone, PartialEq)] + 4 fields including Option<String> + f32) への Debug + PartialEq field 単位独立 + Clone 独立性 (PartialEq + Debug 二重保険) 3 軸 application。
+- T1: whisper_request_params_debug_output_contains_struct_name_and_all_four_field_names_with_option_variants
+- T2: whisper_request_params_partial_eq_holds_reflexive_and_differs_per_field
+- T3: whisper_request_params_clone_is_deep_and_mutation_breaks_partial_eq
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <604 → 607 passed の数値、0 failed>
+
+### 変更ファイル
+- src-tauri/src/cloud_whisper.rs (mod tests 末尾に T1/T2/T3 追加、struct / build_whisper_request_params / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+<test result の末尾行を quote>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+<なし or 内容>
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 報告 (1 ターンで完結)
+最後に変更内容、変更ファイル、検証結果、残リスク、AGENT_LOG.md 追記の確認を 1 ターンでまとめて報告してください。

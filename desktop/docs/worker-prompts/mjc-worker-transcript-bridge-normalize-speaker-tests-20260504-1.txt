@@ -1,0 +1,76 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (要点だけ)
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~15900 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。直近 commit `ba0ad79` (session_manager state machine 3 件) と `88c1f4e` (session_store ErrorKind::NotFound 契約強制) と SESSION SUMMARY が状況復元の起点です。
+
+## 担当範囲 (この範囲のみ編集)
+- `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾に `#[test]` 関数を 5 件追加するのみ。
+- 実装コード、他テスト、他ファイルは編集禁止。
+
+## 前提情報 (調査済みなので追加調査は最小限)
+- `transcript_bridge.rs` の private fn `normalize_speaker` (L98-103) を直接呼び出すテストを追加する。
+- 該当実装:
+  ```rust
+  fn normalize_speaker(raw: Option<&str>) -> String {
+      match raw.map(str::trim) {
+          Some(s) if !s.is_empty() => s.to_string(),
+          _ => "不明".to_string(),
+      }
+  }
+  ```
+- 既存テスト `speaker_is_trimmed_and_none_falls_back_to_unknown_label` (L16) は `segment_to_append_args` 経由の **間接テスト**。本作業ではこれを補完する形で `normalize_speaker` の全分岐を直接カバーする。
+- `mod tests { use super::*; }` 既存なので private fn は `super::normalize_speaker` で参照できる (use 追加不要)。
+
+## 追加するテスト 5 件 (関数名はそのまま使う)
+
+### A. `normalize_speaker_returns_unknown_for_none`
+- 振る舞い: `normalize_speaker(None) == "不明"`
+
+### B. `normalize_speaker_returns_unknown_for_empty_string`
+- 振る舞い: `normalize_speaker(Some("")) == "不明"`
+
+### C. `normalize_speaker_returns_unknown_for_whitespace_only`
+- 振る舞い: `normalize_speaker(Some("   ")) == "不明"` および `normalize_speaker(Some("\t\n  ")) == "不明"` の 2 assertion (whitespace 文字種を 2 種類確認)
+
+### D. `normalize_speaker_passes_through_normal_label`
+- 振る舞い: `normalize_speaker(Some("Alice")) == "Alice"` および `normalize_speaker(Some("自分")) == "自分"` および `normalize_speaker(Some("相手側")) == "相手側"` の 3 assertion (英数字 + 日本語 + プロジェクト固有ラベル)
+
+### E. `normalize_speaker_trims_surrounding_whitespace_only`
+- 振る舞い:
+  - `normalize_speaker(Some("  Alice  ")) == "Alice"` (前後空白 trim、内部に空白なし)
+  - `normalize_speaker(Some(" Alice Bob ")) == "Alice Bob"` (前後 trim、**内部の空白は保持**) ← この 2 件目が重要 (内部 collapse しない契約)
+
+## 作業指示
+1. 上記 5 関数を `mod tests` 末尾に追加する。既存テストのスタイル (assert_eq! など) に揃える。
+2. 書き換えた後、以下を **必ず** 実行する:
+   - `cd src-tauri && cargo fmt --check` (失敗したら `cargo fmt` で修正してから再確認)
+   - `cd src-tauri && cargo clippy --no-deps --all-targets --all-features -- -D warnings`
+   - `cd src-tauri && cargo test --no-fail-fast` (現状 272 passed → 追加後 277 passed のはず)
+   - `bash scripts/agent-verify.sh src-tauri/src/transcript_bridge.rs AGENT_LOG.md`
+3. AGENT_LOG.md 末尾に、本作業のセクションを追記する (開始日時、担当セッション、役割、作業範囲、指示内容要約、追加した 5 関数の振る舞い・不変条件、変更ファイル、検証結果、追加 test 件数 (5)、依存関係追加なし、失敗理由、残リスク、次アクション)。
+
+## 禁止事項
+- 課金が発生する操作。
+- 他エージェントの変更を戻すこと。
+- 担当範囲外の編集 (実装コード、他テスト関数、他ファイル)。
+- `git commit` (コミットはメインが行う)。
+- `--no-verify`、`--dangerously-skip-permissions` (このプロンプトファイル経由の harness 内では既に skip-permissions 適用済み)。
+- 外部 API 呼び出し (elevenlabs / openai / hugging face など)。
+
+## 設計意図 (なぜこれをやるか)
+- 既存 `speaker_is_trimmed_and_none_falls_back_to_unknown_label` は `segment_to_append_args` 経由の間接テストのみ。`normalize_speaker` を別関数に抽出/インライン化するリファクタを行うと「責任は `normalize_speaker` か `segment_to_append_args` か」の切り分けができない。
+- 直接呼び出しテストで `normalize_speaker` の全分岐 (None / 空文字列 / whitespace-only / 通常 / trim 必要) を裏付けることで、リファクタ耐性を獲得し、また「内部空白を collapse しない」契約を明示する。
+- `Some(" Alice Bob ")` → `"Alice Bob"` のテストは特に重要: trim は前後のみ、内部空白は保持する契約 (会議で複数人の話者ラベル "Alice Bob" のような連名対応の余地を残すため)。
+- 前セッション (audio_utils, session_store) で確立した「private fn 直接テスト」パターンの正統な拡張。リスク極小。
+
+## 完了報告
+1 ターンで以下を簡潔にまとめてください:
+- 変更内容 (どの 5 関数を追加したか、各 assertion 数)
+- 変更ファイル (期待: `src-tauri/src/transcript_bridge.rs` と `AGENT_LOG.md` の 2 件)
+- 検証結果 (各コマンドの結果、特に test 件数 272 → 277)
+- 残リスク
+- 次アクション (このワーカー範囲では「なし」が期待値)

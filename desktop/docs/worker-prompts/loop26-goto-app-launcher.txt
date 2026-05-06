@@ -1,0 +1,130 @@
+あなたは meet-jerky リポジトリの worker (mjc-worker-loop26-goto-app-launcher) です。priority 2 直接寄与 = 会議検知の網羅性向上、TDD Red→Green。
+
+# 必読 (作業開始前)
+
+1. **AGENT_LOG.md は ~25,300 行 / 大規模ログ。**`tail -350 AGENT_LOG.md` で末尾のみ参照。**先頭は絶対に触らない。**AGENT_LOG.md は時系列順 (最古ログが先頭、最新ログが末尾)。新規追記は必ず**ファイル末尾**に行う。
+2. `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新規エントリを追記する。
+3. 大型ファイル (transcription.rs ~1712 行 / app_detection.rs ~3295 行) は **Read 全体禁止**。`tail/head/grep -n` で対象範囲のみ参照。
+4. 行末の空白文字 (trailing whitespace) 禁止。
+
+# タスク (variety pivot = service detection 軸)
+
+`src-tauri/src/app_detection.rs` に **GoToMeeting アプリ launcher URL (`app.goto.com/meet/<9-digit-id>`)** の検知関数 + tests を追加し、`classify_meeting_url` に統合する。
+
+## 設計方針 (重要)
+
+既存 GoToMeeting 系 3 関数のパターン:
+- L927: `is_goto_host` (meet.goto.com + subdomain.meet.goto.com)
+- L937: `is_goto_meeting_url` (host = meet.goto.com 系、任意 room 名)
+- L948: `is_goto_legacy_meeting_url` (host == "global.gotomeeting.com", path == "/join/<9-digit>")
+
+**新規追加**: `is_goto_app_meeting_url(host: &str, path: &str) -> bool` (host == "app.goto.com", path == "/meet/<9-digit>")
+
+これは Loop 22 で legacy URL (global.gotomeeting.com/join/<9-digits>) を追加したパターンの延長 = mjc-main-20260505-13 Loop 26 = GoToMeeting 系の段階的精緻化 (Whereby Loop 7→14 同パターン)。
+
+## 実装手順 (TDD Red→Green)
+
+### Step 1: テスト追加 (Red)
+
+`app_detection.rs` の tests mod に `is_goto_app_meeting_url` 用の単独 tests を追加 (既存 GoToMeeting tests 群の近くか tests mod 末尾):
+
+最低 7 件:
+1. `is_goto_app_meeting_url_accepts_9_digit_numeric_id`: host="app.goto.com", path="/meet/123456789" → true
+2. `is_goto_app_meeting_url_accepts_trailing_slash`: host="app.goto.com", path="/meet/123456789/" → true
+3. `is_goto_app_meeting_url_rejects_8_digit_id`: host="app.goto.com", path="/meet/12345678" → false
+4. `is_goto_app_meeting_url_rejects_10_digit_id`: host="app.goto.com", path="/meet/1234567890" → false
+5. `is_goto_app_meeting_url_rejects_alphanumeric_id`: host="app.goto.com", path="/meet/abc123def" → false
+6. `is_goto_app_meeting_url_rejects_other_host`: host="evil.goto.com", path="/meet/123456789" → false (subdomain spoofing 防御)
+7. `is_goto_app_meeting_url_rejects_meet_path_other_format`: host="app.goto.com", path="/meeting/123456789" → false
+
+加えて `classify_meeting_url` 統合テスト 1-2 件:
+8. `classify_meeting_url_accepts_goto_app_launcher`: "https://app.goto.com/meet/123456789" → Some(MeetingUrlClassification { service: GotoMeeting, host: "app.goto.com" })
+
+### Step 2: 関数実装 (Green)
+
+`is_goto_legacy_meeting_url` (L948-957) と同じスタイルで `is_goto_app_meeting_url` を実装:
+
+```rust
+fn is_goto_app_meeting_url(host: &str, path: &str) -> bool {
+    if host != "app.goto.com" {
+        return false;
+    }
+    let Some(id) = path.strip_prefix("/meet/") else {
+        return false;
+    };
+    let id = id.strip_suffix('/').unwrap_or(id);
+    id.len() == 9 && id.chars().all(|c| c.is_ascii_digit())
+}
+```
+
+`classify_meeting_url` の L527-528 統合:
+```rust
+} else if is_goto_meeting_url(&host, &parsed.path)
+    || is_goto_legacy_meeting_url(&host, &parsed.path)
+    || is_goto_app_meeting_url(&host, &parsed.path)
+{
+```
+
+`MeetingService::GotoMeeting` への分類 (既存と同じ).
+
+### Step 3: 検証
+
+```
+cd src-tauri
+cargo test --lib 2>&1 | tail -5
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cargo fmt --check
+```
+
+期待値:
+- cargo test --lib: **699 passed / 0 failed** (= 692 + 7 new tests; 統合テスト 1-2 件追加なら 700-701)
+- cargo clippy: 警告ゼロ
+- cargo fmt: 差分なし
+
+**規模超過防止**: app_detection.rs 編集のみ、他ファイル禁止。テスト件数 7-9 件以内。
+
+## Tidy First の追加判断 (autonomous, 任意)
+
+- 既存 GoToMeeting 関連 const があれば再利用検討。
+- 既存 `is_valid_dns_label` etc. は不要 (host 完全一致のため subdomain spoofing 防御は host == "app.goto.com" の固定文字列マッチで足りる)。
+
+## コミット
+
+`git diff --stat` 確認後、以下を実行:
+
+```
+bash scripts/agent-commit.sh "feat(app_detection): GoToMeeting アプリ launcher (app.goto.com/meet/<9-digit-id>) 検知を classify_meeting_url に追加 (mjc-main-20260505-13 Loop 26, AGENTS.md 優先順位 2 = 会議検知の網羅性, variety pivot = extraction 3 連続 (Loop 23, 24, 25) から service detection 軸への完全 pivot, is_goto_app_meeting_url(host, path) 新関数 = host 完全一致で subdomain spoofing 防御 + 9 桁 numeric ID 制約 = mjc-main-20260505-11 Loop 22 (legacy URL) precedent 完全踏襲, 既存 is_goto_meeting_url + is_goto_legacy_meeting_url と独立分離 (host pattern が app.goto.com vs global.gotomeeting.com で本質的に異なる), TDD Red→Green, テスト 7-9 件追加, clippy 警告ゼロ, fmt OK, GoToMeeting 段階的精緻化 = Whereby Loop 7→14 同パターン継承)" src-tauri/src/app_detection.rs
+```
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` 確認 → 直後に以下を追記 (`>>` で append):
+
+```
+[mjc-main-20260505-13 Loop 26 / 2026-05-05 ~JST]
+
+## What
+- `is_goto_app_meeting_url(host, path)` 関数を `src-tauri/src/app_detection.rs` に追加
+- `classify_meeting_url` の OR 条件 (L527-529) に新規関数を追加 = GotoMeeting 分類に統合
+- TDD で 7-9 件のテストを app_detection.rs tests mod に追加
+
+## Why
+- AGENTS.md 優先順位 2 = 会議検知の網羅性向上
+- mjc-main-20260505-11 Loop 22 (legacy URL = global.gotomeeting.com/join/<9-digits>) の延長 = GoToMeeting 段階的精緻化
+- variety pivot: extraction 3 連続 (Loop 23, 24, 25) から service detection 軸への完全 pivot
+- Whereby Loop 7→14 同パターン継承
+
+## How (TDD Red→Green)
+- host 完全一致 (`host == "app.goto.com"`) で subdomain spoofing 防御
+- path = `/meet/<9-digit-id>` 制約 (9 桁 numeric ID = legacy URL pattern と統一)
+- 既存 `is_goto_legacy_meeting_url` と独立分離 (host pattern が異なる)
+
+## Verify
+- cargo test --lib: 699+ passed / 0 failed (692 + 7 new tests, 統合テスト含めば 700-701)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+```
+
+**`---` を必ず行末につける** (次の追記者の起点)。

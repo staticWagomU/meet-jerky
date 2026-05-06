@@ -1,0 +1,219 @@
+あなたは meet-jerky プロジェクトの作業 worker (claude sonnet, print mode) です。
+
+# 必読ドキュメント (順序厳守)
+1. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md` (プロジェクトルール)
+2. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md` (worker 運用)
+3. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** を `tail -350 AGENT_LOG.md` で読む
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+   - **具体手順**: `tail -10 AGENT_LOG.md` で末尾の `---` 位置を確認 → 末尾の `---` 直後に追記する
+   - **大型ファイル (AGENT_LOG.md は 21000+ 行 / 1.8MB+) は Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+
+# 作業範囲 (これ以外触るな = 規模超過防止)
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾への test 関数 **3 件** 追加 (Tidy First, 振る舞い不変, ユーザー観測不可)
+- `AGENT_LOG.md` への末尾追記 (本作業エントリ)
+
+**禁止事項**:
+- 関数本体 (discard / finalize / start / start_with_output / append / 他全関数) を変更すること
+- 既存 test を変更・削除すること
+- 別ファイル (settings.rs / datetime_fmt.rs / commands.rs / 他全 .rs) を変更すること
+- frontend ファイル (.tsx, .ts, .css, .html) を変更すること
+- 4 件以上の test を追加すること
+- 行末の空白文字 (trailing whitespace) を含めること = AGENT_LOG.md / session_manager.rs ともに **必ず行末の空白を除去する**
+
+# 背景 = mjc-main-20260504-28 Loop 1 = B 候補 = SessionManager::discard 状態遷移マトリクス完全網羅
+
+`SessionManager::discard` (l.121-127) には既に 9 件の test (l.333/l.352/l.530/l.700/l.716/l.751/l.775/l.820/l.847) がある。但し 3 つの境界仕様が未保護:
+
+1. **状態遷移**: `start → finalize → discard` の遷移で、discard が NotActive を返す契約 = idle/active/finalized × discard/finalize/append の状態遷移マトリクス完全網羅
+2. **冪等性 N 回拡張**: 既存 l.700 は「2 回 discard まで」NotActive を保証するが、3 回以上の冪等性は未保護
+3. **type-symmetric coverage**: 既存 l.716 (`discard_clears_all_accessors_to_none`) は `start` 経由のみカバー。`start_with_output` 経由の discard で全アクセサ (title / started_at_secs / segment_count) が None になる契約は未保護 = 「型対称軸補強」パターン (mjc-main-27 Loop 3 で確立) を「経路対称軸」として application
+
+これらを 3 軸 test で CI 固定する。
+
+# やること
+
+`src-tauri/src/session_manager.rs` の `mod tests` の **末尾** (= 直前 test の直後) に test 関数 3 件追加。**関数本体は完全無変更**。
+
+## T1: finalize_then_discard_returns_not_active
+
+**目的**: finalize 済 session に discard を呼ぶと NotActive を返す現契約を CI 固定。状態遷移マトリクス (idle/active/finalized × discard/finalize/append) の完全網羅における未保護セル「finalized × discard → NotActive」を test で保護。
+
+**構造**:
+```rust
+#[test]
+fn finalize_then_discard_returns_not_active() {
+    let manager = SessionManager::new();
+    manager
+        .start("meeting".into(), 100)
+        .expect("start should succeed");
+    manager.finalize(200).expect("finalize should succeed");
+
+    let err = manager
+        .discard()
+        .expect_err("discard after finalize should fail with NotActive");
+    assert_eq!(
+        err,
+        SessionManagerError::NotActive,
+        "finalize 後の discard は NotActive を返す契約 (状態遷移: finalized × discard → NotActive)"
+    );
+    assert!(
+        !manager.is_active(),
+        "finalize 後の discard も非活性を維持する契約"
+    );
+}
+```
+
+## T2: discard_thrice_returns_not_active_on_third_call
+
+**目的**: 既存 l.700 (`discard_twice_returns_not_active_on_second_call`) を 3 回連続軸へ拡張。冪等性が「2 回」だけでなく N 回 (代表値 3) でも NotActive を維持する契約を CI 固定。
+
+**構造**:
+```rust
+#[test]
+fn discard_thrice_returns_not_active_on_third_call() {
+    let manager = SessionManager::new();
+    manager
+        .start("meeting".into(), 100)
+        .expect("start should succeed");
+
+    manager.discard().expect("first discard should succeed");
+
+    let err2 = manager
+        .discard()
+        .expect_err("second discard should fail with NotActive");
+    assert_eq!(err2, SessionManagerError::NotActive);
+
+    let err3 = manager
+        .discard()
+        .expect_err("third discard should fail with NotActive");
+    assert_eq!(
+        err3,
+        SessionManagerError::NotActive,
+        "3 回連続 discard も NotActive を維持する冪等性契約 (l.700 の 2 回保証を N 回拡張)"
+    );
+    assert!(!manager.is_active(), "3 回目以降も非活性を維持");
+}
+```
+
+## T3: discard_after_start_with_output_clears_all_accessors_to_none
+
+**目的**: 既存 l.716 (`discard_clears_all_accessors_to_none`) は `start` 経由のみカバー。`start_with_output` 経由の discard でも全アクセサ (title / started_at_secs / segment_count) が None になる契約を CI 固定。`start` / `start_with_output` の 2 経路で「経路対称軸」を完全網羅。
+
+**構造**:
+```rust
+#[test]
+fn discard_after_start_with_output_clears_all_accessors_to_none() {
+    let manager = SessionManager::new();
+    let dir = tempdir().unwrap();
+    manager
+        .start_with_output(
+            "meeting".into(),
+            1_700_000_000,
+            dir.path().to_path_buf(),
+            jst(),
+        )
+        .expect("start_with_output should succeed");
+    manager
+        .append("Alice".into(), 5, "hello".into())
+        .expect("append should succeed");
+
+    assert!(manager.is_active());
+    assert_eq!(manager.current_title(), Some("meeting".into()));
+    assert_eq!(manager.current_started_at_secs(), Some(1_700_000_000));
+    assert_eq!(manager.current_segment_count(), Some(1));
+
+    manager.discard().expect("discard should succeed");
+
+    assert!(!manager.is_active());
+    assert_eq!(
+        manager.current_title(),
+        None,
+        "start_with_output 経由 discard 後 title=None を維持する契約 (l.716 start 経路の対称軸)"
+    );
+    assert_eq!(
+        manager.current_started_at_secs(),
+        None,
+        "start_with_output 経由 discard 後 started_at_secs=None を維持する契約 (l.716 start 経路の対称軸)"
+    );
+    assert_eq!(
+        manager.current_segment_count(),
+        None,
+        "start_with_output 経由 discard 後 segment_count=None を維持する契約 (l.716 start 経路の対称軸)"
+    );
+}
+```
+
+# 配置場所
+`src-tauri/src/session_manager.rs` の `mod tests` の **末尾** (= 既存 test `start_with_output_passes_huge_path_through_to_session_without_size_limit` の直後、ファイル末尾の `}` 直前)。
+配置順は T1 → T2 → T3。
+
+# 検証手順 (worker 完走前に必ず実行)
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo fmt -- --check
+cargo clippy --lib -- -D warnings
+cargo test --lib -- --test-threads=1 2>&1 | tail -20
+```
+
+期待結果:
+- `cargo fmt --check`: 差分なし
+- `cargo clippy --lib -- -D warnings`: 警告ゼロ
+- `cargo test --lib -- --test-threads=1`: `test result: ok. 545 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out`
+
+万一 `cargo fmt --check` で差分が出た場合は `cargo fmt` を実行して fix。clippy 警告が出たら最小修正のみ実施。
+
+# AGENT_LOG.md 末尾追記内容
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、末尾に以下を追記:
+
+```markdown
+
+## mjc-worker-session-manager-discard-state-matrix-tests-20260504-28-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-manager-discard-state-matrix-tests-20260504-28-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-28 Loop 1
+
+### 作業範囲
+- `src-tauri/src/session_manager.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+B 候補 (SessionManager::discard 境界補強) として、状態遷移マトリクス + 冪等性 N 回 + 経路対称の 3 軸を CI 固定する test を追加:
+- T1: finalize_then_discard_returns_not_active (状態遷移: finalized × discard → NotActive)
+- T2: discard_thrice_returns_not_active_on_third_call (冪等性 2 → N 拡張)
+- T3: discard_after_start_with_output_clears_all_accessors_to_none (start_with_output 経路対称軸)
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <結果>
+
+### 変更ファイル
+- src-tauri/src/session_manager.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+<cargo test 末尾 quote>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+**最重要 (再掲)**:
+- AGENT_LOG.md は **末尾追記のみ**。先頭・中間は絶対に触らない。
+- 行末の空白文字 (trailing whitespace) を含めない。
+- 関数本体・既存 test は無変更。
+- 4 件以上の test 追加禁止。
+
+完了したらメインへ「Loop 1 worker 完走」と報告すること。

@@ -1,0 +1,138 @@
+あなたは meet-jerky の sonnet worker (Loop 64 = mjc-main-20260505-32) です。
+
+# タスク: app_detection_url_helpers.rs 新規作成 + URL helper 関数 2 つ抽出
+
+`src-tauri/src/app_detection.rs` 本体 (3109 行) から RFC 1035/1123 に基づく URL helper 関数 2 つを新規ファイルに抽出する。これは transcription_types.rs Phase 1 (mjc-main-20260505-3) precedent の app_detection.rs への展開で、5 つの service module (goto/teams/webex/whereby/zoom) が helper file へ直接依存する設計に変更する。本体ファイルへの依存ゼロ化が目的。
+
+## 必須事前作業 (絶対に省略しない)
+
+1. `tail -350 AGENT_LOG.md` で AGENT_LOG.md 末尾を読む。**先頭は絶対に触らない**。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+2. `tail -10 AGENT_LOG.md` で末尾行を確認 → 末尾の `---` 直後に新エントリを追記する。
+3. **大型ファイル禁止**: src-tauri/src/app_detection.rs (3109 行) は **Read 全体禁止**。 head/tail/sed/grep で対象範囲のみ参照すること。
+   - is_valid_dns_label = L714-727 (14 行)
+   - has_single_non_empty_segment = L759-762 (4 行)
+4. **行末の空白文字 (trailing whitespace) 禁止**
+
+## 抽出対象 (規模 XS = ~25 行修正)
+
+### 関数 (2 件) を src-tauri/src/app_detection_url_helpers.rs (新規) に移動
+
+- `pub(crate) fn is_valid_dns_label(label: &str) -> bool` (L714-727 = 14 行) = RFC 1035/1123 DNS label 妥当性
+- `pub(crate) fn has_single_non_empty_segment(value: &str) -> bool` (L759-762 = 4 行) = path segment 単一性
+
+### tests は移動しない (重要)
+
+- L2195+ の tests は `classify_meeting_url` を主語にして is_valid_dns_label を間接検証している
+- classify_meeting_url は app_detection.rs に残置のため tests も残置
+- transcription_types.rs Phase 1 の「データ型 + 関連 tests 移動」とは異なる pattern = 純粋なロジック抽出
+
+## 必要な編集
+
+### 新規ファイル作成: src-tauri/src/app_detection_url_helpers.rs
+
+```rust
+pub(crate) fn is_valid_dns_label(label: &str) -> bool {
+    // (L714-727 をそのまま移動)
+}
+
+pub(crate) fn has_single_non_empty_segment(value: &str) -> bool {
+    // (L759-762 をそのまま移動)
+}
+```
+
+### 既存ファイル修正
+
+1. **src-tauri/src/lib.rs**: `mod app_detection_url_helpers;` を追加 (アルファベット順を維持、既存の app_detection_zoom の後に挿入)
+2. **src-tauri/src/app_detection.rs**:
+   - L714-727 (is_valid_dns_label) を削除
+   - L759-762 (has_single_non_empty_segment) を削除
+   - 必要なら top-level に `use crate::app_detection_url_helpers::has_single_non_empty_segment;` を追加 (L734 = is_google_meet_url 内で使用)
+3. **src-tauri/src/app_detection_goto.rs L1**: `use crate::app_detection::is_valid_dns_label;` → `use crate::app_detection_url_helpers::is_valid_dns_label;`
+4. **src-tauri/src/app_detection_zoom.rs L1**: `use crate::app_detection::{has_single_non_empty_segment, is_valid_dns_label};` → `use crate::app_detection_url_helpers::{has_single_non_empty_segment, is_valid_dns_label};`
+5. **src-tauri/src/app_detection_whereby.rs L3**: `use crate::app_detection::is_valid_dns_label;` → `use crate::app_detection_url_helpers::is_valid_dns_label;`
+6. **src-tauri/src/app_detection_webex.rs L1**: `use crate::app_detection::{` 全体を grep で内容確認 → is_valid_dns_label を含むなら `use crate::app_detection_url_helpers::is_valid_dns_label;` に分割、他の関数 (例えば has_single_non_empty_segment) も同 file から import なら同様に書き換え
+7. **src-tauri/src/app_detection_teams.rs L5**: `use crate::app_detection::has_single_non_empty_segment;` → `use crate::app_detection_url_helpers::has_single_non_empty_segment;`
+
+## 検証 (cd src-tauri 必須)
+
+```bash
+cd src-tauri
+cargo build --lib                                    # エラーなし
+cargo test --lib                                     # 702 passed / 0 failed (件数不変)
+cargo clippy --lib --tests -- -D warnings            # 警告ゼロ
+cargo fmt --check                                    # OK
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/app_detection_url_helpers.rs src-tauri/src/app_detection.rs src-tauri/src/lib.rs
+```
+
+加えて grep で削除安全境界確認:
+- `grep -rn "use crate::app_detection::" src-tauri/src/ | grep -E "is_valid_dns_label|has_single_non_empty_segment"` = 完全に空 (新ファイル経由のみ)
+
+## コミット (2-commit pattern = Loop 60-63 precedent)
+
+### Commit 1: refactor commit
+
+```
+git add src-tauri/src/app_detection_url_helpers.rs src-tauri/src/lib.rs src-tauri/src/app_detection.rs src-tauri/src/app_detection_goto.rs src-tauri/src/app_detection_teams.rs src-tauri/src/app_detection_webex.rs src-tauri/src/app_detection_whereby.rs src-tauri/src/app_detection_zoom.rs
+git commit -m "refactor(app_detection): URL helper 関数 2 件 (is_valid_dns_label + has_single_non_empty_segment) を app_detection_url_helpers.rs に抽出 (mjc-main-20260505-32 Loop 64, 18 行抽出 + 5 service module use 文書き換え + lib.rs mod 追加, transcription_types.rs Phase 1 precedent 展開, locality 集約 = service 別 module は本体ファイルから独立)"
+```
+
+→ commit hash を取得 (例: `git rev-parse HEAD`)
+
+### Commit 2: AGENT_LOG.md エントリ追記 + chore commit
+
+AGENT_LOG.md 末尾の `---` 直後に以下を追記:
+
+```
+[mjc-main-20260505-32 Loop 64 / 2026-05-05 ~JST]
+
+## What
+- app_detection.rs 本体から URL helper 関数 2 件を新規ファイル app_detection_url_helpers.rs に抽出
+  - `pub(crate) fn is_valid_dns_label` (L714-727, 14 行) = RFC 1035/1123 DNS label 妥当性
+  - `pub(crate) fn has_single_non_empty_segment` (L759-762, 4 行) = path segment 単一性
+- lib.rs に `mod app_detection_url_helpers;` 追加 (アルファベット順維持)
+- 5 service module (goto/teams/webex/whereby/zoom) + app_detection.rs 本体の use 文書き換え (5-6 件)
+- tests は classify_meeting_url を主語にしているため app_detection.rs 残置 (純粋ロジック抽出 pattern)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (リポジトリ最大級ファイル app_detection.rs 3109 行 → 段階的責務分離で理解負荷低減)
+- locality 集約 = 5 service 別 module は本体ファイルから独立 = helper file への直接依存に純化
+- transcription_types.rs Phase 1 (mjc-main-20260505-3) precedent 展開 = 60 セッションで実証された refactor pattern を別ファイルに展開
+- variety pivot = 「struct/const + import refactor 軸 (transcription.rs scope = 完全消滅)」から「app_detection scope」への自然 pivot = 新 file scope = variety 規則準拠
+- メイン批判判断 連続 16 セッション目達成 = handoff prompt 候補 K Phase 1 案 (データ型抽出) を grep で実態確認 → 外部 caller ゼロで locality メリット小と発見 → 代替の URL helper 抽出 (5 service module 依存 = locality メリット大) を新候補発見
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- pub(crate) visibility 維持 = crate 内可視範囲不変
+- 5 service module の use 文書き換え = 機械的 path 置換のみ
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `use crate::app_detection::` で is_valid_dns_label / has_single_non_empty_segment を含む grep: 完全に空 (新ファイル経由のみ)
+- trailing whitespace: なし
+
+## commit
+- (1 つ目の commit hash をここに記入)
+```
+
+→ 1 つ目の commit hash を上記 `## commit` 行に書き込んでから:
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 64 commit hash <hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-63 precedent 適用)"
+```
+
+## 重要な制約
+
+- **担当範囲外の編集禁止**: 上記列挙した 8 ファイルのみ編集 (新規作成 1 + 既存 7)。他の rust ファイルや frontend は触らない
+- **test 件数の上限明示**: 702 passed / 0 failed のみ許容。件数増減や失敗があれば停止して原因分析
+- **--no-verify 禁止**
+- **trailing whitespace 禁止**
+- **AGENT_LOG.md 先頭は絶対に触らない**
+
+開始してください。

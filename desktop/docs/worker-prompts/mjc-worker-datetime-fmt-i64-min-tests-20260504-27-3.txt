@@ -1,0 +1,172 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は 21000+ 行 / 1.8MB+ あるので **必ず `tail -350 AGENT_LOG.md` で末尾だけ参照** してください。**Read で全体を読まないこと**。
+- 末尾には `mjc-worker-from-legacy-str-fail-safe-tests-20260504-27-2` (mjc-main-27 Loop 2) のエントリがあります。本タスクはその直後に追記します。
+
+# AGENT_LOG.md 追記の絶対ルール (mjc-main-21〜26 で 6 連続セッション事故ゼロ実績)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 → その直後に追記する。
+- **行末の空白文字 (trailing whitespace) を含めない**。git --check warning を防ぐ。
+
+# 担当範囲 (これ以外を絶対に編集しない)
+- `src-tauri/src/datetime_fmt.rs` の `mod tests` 末尾への test 関数 **3 件のみ** 追加
+- `AGENT_LOG.md` への末尾追記 (本タスクのエントリ 1 つ)
+
+担当範囲外 (関数本体 / 既存 test / 他ファイル / 他スクリプト) は **絶対に編集しない**。
+コミットは禁止です。コミットはメインが行います。
+
+# 規模超過防止 (重要)
+- 追加する test は **3 件ちょうど**。多くも少なくもしない。
+- 関数本体 (format_session_header_timestamp_with_offset / format_segment_timestamp_with_offset / 他全関数) は **完全に無変更**。
+- 既存 test は **完全に無変更**。
+- ファイル全体 (`src-tauri/src/datetime_fmt.rs` 136 行) を Read してよい (小型ファイル)。tail/head/grep で対象範囲のみ参照する。
+- `AGENT_LOG.md` (1.8MB+) は Read で全体読まない。tail のみ参照。
+
+# 背景 (mjc-main-20260504-27 Loop 3)
+直前 commit `c68882b` (mjc-main-27 Loop 2 = settings.rs `from_legacy_str` fail-safe 3 軸補強で 539 passed) の状態から、本 Loop は別ファイル (datetime_fmt.rs) に切り替えて型対称軸 i64::MIN の境界補強を application します。
+
+既存 test (l.111 `format_error_message_includes_specific_unix_secs_value`) は i64::MAX 軸のみカバー。本 test は **i64::MIN 軸 (型最小値、chrono の timestamp_opt() がもう一方の out of range 境界)** を 3 軸で CI 固定する。「同一関数の完全網羅戦略」パターン (mjc-main-26 で確立) を datetime_fmt.rs に application し、既存 i64::MAX 軸との対称構造を完成させる。
+
+# 実装内容 (T1/T2/T3 の 3 件)
+
+`src-tauri/src/datetime_fmt.rs` の関数シグネチャ (l.9-30) は:
+
+```rust
+pub fn format_session_header_timestamp_with_offset(
+    unix_secs: i64,
+    offset: FixedOffset,
+) -> Result<String, String>
+
+pub fn format_segment_timestamp_with_offset(
+    unix_secs: i64,
+    offset: FixedOffset,
+) -> Result<String, String>
+```
+
+両関数とも `offset.timestamp_opt(unix_secs, 0).single()` で None になった場合 `Err(format!("Unix timestamp is out of range: {unix_secs}"))` を返す。chrono は i64::MAX だけでなく i64::MIN でも LocalResult::None を返す (両端 out of range)。
+
+## T1: i64::MIN out of range (header)
+```rust
+#[test]
+fn format_session_header_timestamp_returns_error_for_i64_min_unix_secs() {
+    let err = format_session_header_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+    assert!(
+        err.contains("out of range"),
+        "i64::MIN (型最小値) も chrono::timestamp_opt() の out of range 境界として Err を返す現契約: i64::MAX 既存 test (l.64) との型対称軸を CI 固定 = unexpected error message: {err}"
+    );
+}
+```
+
+## T2: i64::MIN out of range (segment)
+```rust
+#[test]
+fn format_segment_timestamp_returns_error_for_i64_min_unix_secs() {
+    let err = format_segment_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+    assert!(
+        err.contains("out of range"),
+        "i64::MIN (型最小値) も chrono::timestamp_opt() の out of range 境界として Err を返す現契約: i64::MAX 既存 test (l.74) との型対称軸を CI 固定 = unexpected error message: {err}"
+    );
+}
+```
+
+## T3: i64::MIN で header/segment エラー値が一致 (型対称性 + 2 関数間契約一貫性)
+```rust
+#[test]
+fn format_error_message_includes_specific_i64_min_unix_secs_value() {
+    let err1 = format_session_header_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+    let err2 = format_segment_timestamp_with_offset(i64::MIN, jst()).unwrap_err();
+    assert_eq!(
+        err1,
+        format!("Unix timestamp is out of range: {}", i64::MIN),
+        "header の i64::MIN error message に具体値を含む現契約を CI 固定 (l.111 の i64::MAX 対称軸)"
+    );
+    assert_eq!(
+        err2,
+        format!("Unix timestamp is out of range: {}", i64::MIN),
+        "segment の i64::MIN error message に具体値を含む現契約を CI 固定 (l.111 の i64::MAX 対称軸)"
+    );
+    assert_eq!(
+        err1, err2,
+        "i64::MIN で 2 関数のエラー値が一致する現契約を CI 固定 = 既存 l.123 の i64::MAX 一致と型対称"
+    );
+}
+```
+
+# 配置場所
+- `src-tauri/src/datetime_fmt.rs` の `mod tests` 末尾 = 既存最後の test `format_session_header_and_segment_timestamps_share_hour_minute_for_same_unix_secs` (l.126-135) の直後に追加。
+- 具体的には `grep -n "format_session_header_and_segment_timestamps_share_hour_minute_for_same_unix_secs" src-tauri/src/datetime_fmt.rs` で位置特定 → そのテスト関数の終端の `}` 直後 → ファイル末尾 `}` (mod tests 終端) より上に挿入。
+- `jst()` ヘルパは既存 (l.37) なので import 不要。
+
+# 検証手順 (全て成功必須)
+作業ディレクトリは `src-tauri` で実行:
+
+1. `cd src-tauri && cargo fmt --check`
+   - 差分なしを確認 (出力なし = OK)
+   - 差分あれば `cargo fmt` で修正
+
+2. `cd src-tauri && cargo clippy --lib -- -D warnings`
+   - 警告ゼロを確認
+
+3. `cd src-tauri && cargo test --lib -- --test-threads=1`
+   - **539 → 542 passed** (+3 件、0 failed) を確認
+
+# AGENT_LOG.md 追記内容 (本タスク完了後)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した上で、その直後に以下のセクションを追記してください (**ファイル末尾追記必須、行末空白禁止**):
+
+```
+## mjc-worker-datetime-fmt-i64-min-tests-20260504-27-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-datetime-fmt-i64-min-tests-20260504-27-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-27 Loop 3
+
+### 作業範囲
+- `src-tauri/src/datetime_fmt.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替 (settings.rs → datetime_fmt.rs) で「test 密度の偏り是正」継続 + i64::MIN 型対称軸の境界補強を application。既存 test (l.111) は i64::MAX 軸のみカバーだったため、未保護だった i64::MIN 軸を 3 軸で CI 固定:
+- T1: i64::MIN out of range (header)
+- T2: i64::MIN out of range (segment)
+- T3: i64::MIN で header/segment エラー値が一致 (l.111 i64::MAX 対称軸)
+
+### 結果
+- cargo fmt --check: <出力>
+- cargo clippy --lib -- -D warnings: <出力>
+- cargo test --lib -- --test-threads=1: <test result>
+
+### 変更ファイル
+- src-tauri/src/datetime_fmt.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+<実際のコマンド出力末尾>
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+# 出力フォーマット
+1 ターンで完結する報告で、以下を含めてください:
+- 変更したファイルとそのテスト件数
+- cargo fmt / cargo clippy / cargo test の結果末尾
+- AGENT_LOG.md 末尾追記が完了したことの確認 (`tail -30 AGENT_LOG.md` で末尾確認)
+- 残リスク (想定なし)
+
+以上です。

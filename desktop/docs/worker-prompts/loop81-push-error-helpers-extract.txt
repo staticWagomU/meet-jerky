@@ -1,0 +1,229 @@
+あなたは meet-jerky の作業 worker (mjc-worker-loop81-push-error-helpers) です。
+担当: mjc-main-20260505-41 Loop 81 = X4-2 = push_error 共通化 = 新 file `realtime_error_helpers.rs` 抽出 + 両 file から `fn push_error` 削除 + caller 21 件更新。
+大型 rust file 責務分離 11 file 目達成見込。AGENTS.md 優先順位 1 (クラッシュ予防の構造美) に直接寄与。
+
+# 必読 (作業前に絶対読む)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む**
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**。
+   - **新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+   - 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+2. AGENTS.md (とくに priority 1)
+3. docs/autonomous-main-prompt-claude.md (運用ルール本体)
+4. **大型 rust file は `Read` で全体読み禁止**: `head/tail/grep` で対象範囲のみ参照する。`elevenlabs_realtime.rs` は ~750 行、`openai_realtime.rs` は ~900 行ある。
+
+# What (作業内容、scope を厳守)
+
+## A. 新 file 作成 (~25 行)
+
+`src-tauri/src/realtime_error_helpers.rs` を新規作成。内容は以下と同一:
+
+```rust
+use std::sync::Arc;
+
+use parking_lot::Mutex;
+
+use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
+
+/// Realtime engine 共通: ws_task 内で発生したエラーを segment text に流す。
+/// engine_label = "ElevenLabs" / "OpenAI" 等。
+pub(crate) fn push_error(
+    engine_label: &str,
+    pending: &Arc<Mutex<Vec<TranscriptionSegment>>>,
+    speaker: &Option<String>,
+    source: Option<TranscriptionSource>,
+    message: String,
+) {
+    pending.lock().push(TranscriptionSegment {
+        text: format!("[{engine_label} Realtime エラー: {message}]"),
+        start_ms: 0,
+        end_ms: 0,
+        source,
+        speaker: speaker.clone(),
+        is_error: Some(true),
+    });
+}
+```
+
+## B. lib.rs に mod 追加
+
+`src-tauri/src/lib.rs` の **L22 `mod realtime_audio_helpers;` の直後 (= L23)** に以下を挿入:
+
+```rust
+mod realtime_error_helpers;
+```
+
+(alphabetical: realtime_audio_helpers < realtime_error_helpers < secret_store)
+
+## C. elevenlabs_realtime.rs 更新
+
+### C-1. production caller (3 件) を変更
+
+- **L235** (`mod ws_task` 内 reader_task): `push_error(...)` → `crate::realtime_error_helpers::push_error("ElevenLabs", pending, speaker, source, message)` に変更
+- **L355**: 同上 → `crate::realtime_error_helpers::push_error("ElevenLabs", pending, speaker, source, message)`
+- **L360**: 同上 → `crate::realtime_error_helpers::push_error("ElevenLabs", pending, speaker, source, message)`
+
+### C-2. test caller (8 件、`mod ws_task` 内 sub mod `pending_timeout_tests` 内) を変更
+
+`super::push_error(...)` を `crate::realtime_error_helpers::push_error("ElevenLabs", ...)` に変更:
+
+- **L594, L615, L637, L654, L666, L682, L699, L713**
+
+### C-3. `fn push_error` 定義削除
+
+**L422-L436** (12 行: `fn push_error( ... }`) を削除。
+
+### C-4. test 内 expected text **無変更で OK**
+
+`"[ElevenLabs Realtime エラー: ...]"` の assert は format!() が同じ結果を生成するので **触らない**。
+
+## D. openai_realtime.rs 更新
+
+### D-1. production caller (2 件) を変更
+
+- **L305** (`mod ws_task` 内): `push_error(...)` → `crate::realtime_error_helpers::push_error("OpenAI", pending, speaker, source, message)` に変更
+- **L406**: `push_error(pending, speaker, source, message.to_string())` → `crate::realtime_error_helpers::push_error("OpenAI", pending, speaker, source, message.to_string())`
+
+### D-2. test caller (8 件、file 直下 `mod tests` 内) を変更
+
+`ws_task::push_error(...)` を `crate::realtime_error_helpers::push_error("OpenAI", ...)` に変更:
+
+- **L557, L579, L601, L617, L628, L643, L659, L673**
+
+### D-3. `pub(crate) fn push_error` 定義削除
+
+**L411-L425** (15 行: `pub(crate) fn push_error( ... }`) を削除。
+
+### D-4. test 内 expected text **無変更で OK**
+
+`"[OpenAI Realtime エラー: ...]"` の assert は format!() が同じ結果を生成するので **触らない**。
+
+## E. 不要 use 整理
+
+両 file で `fn push_error` 削除後、`use std::sync::Arc;` `use parking_lot::Mutex;` 等が他で使われ続けるか cargo build で確認。**不要になった use のみ** 削除。caller 経由の Arc/Mutex は残るはず。
+
+# scope 外 (絶対に触らない)
+
+- **elevenlabs_realtime.rs L89** (`text: format!("[ElevenLabs Realtime エラー: {e}]")`): これは `impl ElevenLabsRealtimeStream::new()` 内 init phase の format 直書きで、`push_error` 関数を経由しない別経路 = 本 Loop 81 scope 外。
+- **openai_realtime.rs L110** (同上): 同様に scope 外。
+- 上記 2 箇所は **触らない**。Loop 82+ で別 batch にて検討予定。
+
+# Why
+
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file の重複 ~25 行を single source of truth 化、engine_label 引数化で対称化)
+- 大型 rust file 責務分離 11 file 目達成 (Loop 80 = 10 file 目 = realtime_audio_helpers.rs の自然な続編)
+- visibility 非対称解消 = elevenlabs `fn push_error` (private) + openai `pub(crate) fn push_error` → 両方 `crate::realtime_error_helpers::push_error` で統一
+- 構造分離軸 2 連続 (Loop 80 → 81) = variety 警告境界 (3-4 連続) より遠い
+
+# How (規模超過防止 = 厳守)
+
+- **担当範囲外の編集禁止**: A/B/C/D/E 以外触らない (とくに scope 外 L89/L110)
+- **test 件数の上限**: cargo test --lib で **704 件全 pass、件数完全不変** (705 件超え禁止 = 新 test 追加禁止、703 件以下禁止 = 既存 test 削除禁止)
+- caller 21 件以外の編集禁止
+- 振る舞い不変 = 既存 test の expected text 完全一致を維持
+
+# 検証 (作業後に必ず実行)
+
+```
+cd src-tauri
+cargo build --lib
+cargo test --lib 2>&1 | tail -5    # → 704 passed / 0 failed
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -5    # → 警告ゼロ
+cargo fmt --check    # → OK
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/realtime_error_helpers.rs src-tauri/src/lib.rs
+grep -n "fn push_error" src-tauri/src/elevenlabs_realtime.rs    # → 0 件 (定義削除確認)
+grep -n "fn push_error" src-tauri/src/openai_realtime.rs    # → 0 件 (定義削除確認)
+grep -n "pub(crate) fn push_error" src-tauri/src/realtime_error_helpers.rs    # → 1 件
+grep -rn $'  *$' src-tauri/src/realtime_error_helpers.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/lib.rs    # → 0 件 (trailing whitespace なし)
+```
+
+# Commit (2-commit pattern = Loop 60-80 で 21 連続実証済)
+
+## Commit 1: refactor commit
+
+```
+git add src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/realtime_error_helpers.rs src-tauri/src/lib.rs
+git commit -m "refactor(realtime): push_error を realtime_error_helpers.rs に共通化 (mjc-main-20260505-41 Loop 81, engine_label 引数化で両 file 重複解消 ~27 行 + caller 21 件 + visibility 非対称解消, AGENTS.md priority 1 寄与, 大型 rust file 責務分離 11 file 目)"
+```
+
+hash を `git log -1 --format=%H` で取得し記録。
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 (最後の `---` の位置)。
+
+末尾の `---` の **直後** に以下を append (Read してから Edit、または `cat >> AGENT_LOG.md`):
+
+```
+
+[mjc-main-20260505-41 Loop 81 / 2026-05-05 ~JST]
+
+## What
+- 新 file `src-tauri/src/realtime_error_helpers.rs` (~26 行) を作成 = `pub(crate) fn push_error(engine_label: &str, ...)` 配置
+- `src-tauri/src/lib.rs` L23 に `mod realtime_error_helpers;` を alphabetical 順で挿入
+- elevenlabs_realtime.rs: production 3 caller (L235/L355/L360) + test 8 caller (L594/L615/L637/L654/L666/L682/L699/L713) を `crate::realtime_error_helpers::push_error("ElevenLabs", ...)` に変更 + `fn push_error` 定義 (~12 行) 削除
+- openai_realtime.rs: production 2 caller (L305/L406) + test 8 caller (L557/L579/L601/L617/L628/L643/L659/L673) を `crate::realtime_error_helpers::push_error("OpenAI", ...)` に変更 + `pub(crate) fn push_error` 定義 (~15 行) 削除
+- test 内 expected text は format!() 同結果のため無変更
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file 重複 ~27 行を single source of truth 化)
+- 大型 rust file 責務分離 11 file 目達成 (Loop 80 = realtime_audio_helpers.rs の自然な続編)
+- visibility 非対称解消 = 両 file `crate::realtime_error_helpers::push_error` で対称化
+- mjc-main-20260505-41 Loop 81 メイン批判判断 (連続 33 セッション目): handoff の expected text 4 件予測を grep + Read で 3 件と修正 + 無変更 OK 判定 + L89/L110 を scope 外と判定 = batch サイズ管理を継続
+
+## How (Tidy First, behavior-preserving)
+- visibility: elevenlabs private fn + openai pub(crate) fn → 両方 `crate::realtime_error_helpers::pub(crate) fn` で統一
+- engine_label 引数化: format!("[{engine_label} Realtime エラー: {message}]") で両 file 同 format 共有
+- L89/L110 (init phase format 直書き) は scope 外 = push_error 関数経由ではない別経路
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `fn push_error` を grep: 0 件
+- openai_realtime.rs から `fn push_error` を grep: 0 件
+- realtime_error_helpers.rs から `pub(crate) fn push_error` を grep: 1 件
+- trailing whitespace: なし
+
+## Commits
+- <hash1> refactor(realtime): push_error を realtime_error_helpers.rs に共通化
+- <hash2> chore(agent-log): Loop 81 commit hash <hash1> を AGENT_LOG.md に記入
+
+---
+```
+
+`<hash1>` は実際の commit 1 hash に置換。
+
+## Commit 2: chore commit
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 81 commit hash <hash1> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-80 precedent 適用 22 連続)"
+```
+
+# 完走報告
+
+完走したら最終 stdout に以下を出力:
+
+```
+[mjc-main-20260505-41 Loop 81] 完走
+- refactor commit: <hash1>
+- chore commit: <hash2>
+- cargo test --lib: 704 passed / 0 failed
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- 大型 rust file 責務分離 11 file 目達成
+```
+
+# 注意事項
+
+- `--no-verify` 禁止 (pre-commit hook を必ず通す)
+- `--dangerously-skip-permissions` は harness 内のみ
+- 課金禁止 (実 API 叩き厳禁、unit test のみ)
+- Keychain / Apple SpeechAnalyzer 実通信禁止
+- AGENT_LOG.md の **先頭は絶対に触らない**
+- caller 21 件以外触らない (とくに L89/L110 scope 外)
+- 行末の空白文字 (trailing whitespace) 禁止

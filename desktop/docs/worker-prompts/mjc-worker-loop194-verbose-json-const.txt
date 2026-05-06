@@ -1,0 +1,142 @@
+あなたは meet-jerky の Loop 194 worker です. rust 軸 const 集約 paradigm 反復 8 件目を実行してください.
+
+# 必読 (作業前に必ず参照)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1-9 の確認)
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md は ~34,549 行と大型なので **末尾 350 行のみ** `tail -350 AGENT_LOG.md` で参照. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う = 先頭は絶対に触らない**.
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/cloud_whisper.rs (778 行) は **大型 file につき Read 全体禁止**. `head -60` で先頭 use 宣言部 + `grep -n` で対象 callsite のみ参照.
+
+# タスク (Loop 194 = rust 軸 const 集約 paradigm 反復 8 件目)
+
+## 目的
+`cloud_whisper.rs` 内の文字列リテラル `"verbose_json"` 15 callsite を新規 const `RESPONSE_FORMAT_VERBOSE_JSON` に集約し、DRY 違反解消 + maintainability 向上を達成する.
+
+## 設計
+
+### Step 1: const 追加
+`src/cloud_whisper.rs` の先頭 use 宣言の直後 (L4 相当) に以下を追加:
+
+```rust
+const RESPONSE_FORMAT_VERBOSE_JSON: &str = "verbose_json";
+```
+
+具体的には:
+```rust
+use serde::Deserialize;
+
+use crate::transcription_types::TranscriptionSegment;
+
+const RESPONSE_FORMAT_VERBOSE_JSON: &str = "verbose_json";
+
+#[derive(Debug, Deserialize)]
+struct VerboseResponse {
+```
+
+### Step 2: 15 callsite を const 参照に置換
+
+事前 grep 結果 (15 callsite, 全て src/cloud_whisper.rs 内):
+
+- L48: `response_format: "verbose_json".to_string(),` → `response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),`
+- L94: `("response_format", "verbose_json".to_string()),` → `("response_format", RESPONSE_FORMAT_VERBOSE_JSON.to_string()),`
+- L207: 同上 (struct field) → 同パターン置換
+- L222: 同上 (struct field) → 同パターン置換
+- L275: 同上 (struct field) → 同パターン置換
+- L298: 同上 (tuple) → 同パターン置換
+- L321: 同上 (tuple) → 同パターン置換
+- L344: 同上 (tuple) → 同パターン置換
+- L368: 同上 (struct field) → 同パターン置換
+- L523: 同上 (struct field) → 同パターン置換
+- L555: 同上 (struct field) → 同パターン置換
+- L597: 同上 (struct field) → 同パターン置換
+- L702: `response_format: String::from("verbose_json"),` → `response_format: String::from(RESPONSE_FORMAT_VERBOSE_JSON),`
+- L729: 同上 → 同パターン置換
+- L762: 同上 → 同パターン置換
+
+**重要**: 形式維持 = `.to_string()` / `String::from()` / tuple それぞれの形式は変更せず、引数のみ const 参照に置換する.
+
+**手順**:
+1. `grep -n '"verbose_json"' src/cloud_whisper.rs` で行番号確認
+2. Edit ツールで each callsite 置換 (replace_all 使用可、ただし `"verbose_json"` の出現は全て置換対象なので `replace_all=true` で `"verbose_json"` → `RESPONSE_FORMAT_VERBOSE_JSON` 一括は **不可** = 形式違いのため個別置換要)
+3. ただし 3 パターンに分けて 3 回の `replace_all` も可能:
+   - `replace_all`: `"verbose_json".to_string()` → `RESPONSE_FORMAT_VERBOSE_JSON.to_string()` (12 件一括)
+   - `replace_all`: `String::from("verbose_json")` → `String::from(RESPONSE_FORMAT_VERBOSE_JSON)` (3 件一括)
+   - **これで callsite 全て置換完了**
+
+### Step 3: 検証
+
+`cd src-tauri` してから以下を全て実行 (注意: desktop 直下に Cargo.toml なし, src-tauri/Cargo.toml が rust ルート):
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo test --lib 2>&1 | tail -20      # 704 件 passed / 0 failed (件数完全不変必須)
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20  # 警告ゼロ必須
+cargo fmt --check                      # OK 必須
+cargo build --lib 2>&1 | tail -10      # エラーなし必須
+```
+
+**検証 grep**: `grep -c '"verbose_json"' src/cloud_whisper.rs` = **1 (const 定義行のみ)** であること.
+
+# 規模超過防止 (重要)
+
+- **対象 file は src/cloud_whisper.rs の 1 件のみ**. 他 file は触らない.
+- **cargo test 件数 704 件は完全不変必須**. test 追加 / 削除 / 件数変更禁止.
+- 上記 Step 1-3 以外の改造禁止 (struct rename / fn rename / VerboseResponse の変更等は禁止).
+- ネット行数増加は **+1 行 (const 定義) ± 0 行 (callsite は同行書き換え)** = 計 **+1 行のみ** が期待値.
+
+# commit (2-commit pattern, Loop 145-193 で 49 連続安定実証)
+
+## Commit 1: refactor
+
+```
+git add src/cloud_whisper.rs
+git commit -m "refactor(rust): RESPONSE_FORMAT_VERBOSE_JSON を cloud_whisper.rs に集約 + 15 callsite を const 参照に統一 (mjc-main Loop 194, rust 軸 = const 集約 paradigm 反復 8 件目, 新規 const 追加軸 paradigm 1 件目, 'verbose_json' 15 callsite (struct field 9 + tuple 3 + String::from 3) を統一 + DRY 違反解消, alternation pivot K(193) → rust(194) = 33 → 34, AGENTS.md priority 1 寄与)"
+```
+
+## Commit 2: chore(agent-log)
+
+AGENT_LOG.md の **末尾** に以下のテンプレートを追記する.
+
+**注意 (worker prompt 必須要素 9, Loop 166 boundary fix precedent から Loop 167-193 で 27 連続実証成功 = 節目 25 連続突破)**: entry テンプレートの **冒頭に `---` を含めない**. 前 entry の閉じ `---` を再利用する. 末尾は `---` 1 個で締める.
+
+**注意 (worker prompt 必須要素 8, Loop 144 fault precedent から Loop 146-193 で 48 連続成功実証)**: AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む.
+
+**手順**:
+1. `tail -10 AGENT_LOG.md` で末尾の閉じ `---` を確認
+2. 一時ファイルに entry を書き出し
+3. `cat <一時ファイル> >> AGENT_LOG.md` で **1 回だけ** append
+
+**entry テンプレート (冒頭の --- 含めない)**:
+
+```
+[mjc-main Loop 194 / 2026-05-06]
+worker: mjc-worker-loop194-verbose-json-const (作業)
+範囲: src/cloud_whisper.rs (use 宣言直後 L4 相当に const RESPONSE_FORMAT_VERBOSE_JSON: &str = "verbose_json"; 追加 + 15 callsite (L48/L94/L207/L222/L275/L298/L321/L344/L368/L523/L555/L597/L702/L729/L762) を const 参照に統一)
+変更: RESPONSE_FORMAT_VERBOSE_JSON を src/cloud_whisper.rs に新規 const として追加 + 15 callsite (struct field 9 + tuple 3 + String::from 3) を統一 + DRY 違反解消 + ネット行数 +1 行のみ (const 定義 +1 行、callsite 15 件は同行書き換え)
+意義: rust 軸 = const 集約 paradigm 反復 8 件目達成 = paradigm 完全成熟期 (frontend 軸 10 件 + rust 軸 8 件 = 計 18 件) + 新規 const 追加軸 paradigm 1 件目達成 = paradigm 系統樹拡張 11 件目 (cloud_whisper.rs は既存 const 0 件 = 新規 const block 追加 = 既存 file 拡張軸 paradigm 21 件目とは別系統樹位置) + 重複候補 grep 探索 paradigm 23 件目 + alternation pivot K(193) → rust(194) = 33 → 34 = 節目 30 件突破後 3 件目 + メイン批判判断 連続 96 セッション目達成 (handoff prompt R31 trait/generic 最有力推奨を grep で却下 + R30 修正版として "verbose_json" 15 件発見 = handoff 主張の批判検証達成) + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与
+検証: cargo test --lib (704 passed / 0 failed = 件数完全不変) / cargo clippy --lib --tests -- -D warnings (警告ゼロ) / cargo fmt --check OK / cargo build --lib OK / grep -c '"verbose_json"' src/cloud_whisper.rs = 1 (const 定義行のみ) 確認
+備考: paradigm 系統樹拡張 11 件目達成 = rust 軸 const 集約軸が新規 const 追加軸として正式 paradigm 確立. 後継 Loop 195+ 候補 = 別 rust file での const 集約継続 (例: openai_realtime.rs / elevenlabs_realtime.rs 等) または K 軸 (Section 2.3 観測 51 件目) または別 paradigm 開拓.
+---
+```
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 194 = RESPONSE_FORMAT_VERBOSE_JSON を cloud_whisper.rs に集約 (rust 軸, const 集約 paradigm 反復 8 件目 = paradigm 完全成熟期, 新規 const 追加軸 paradigm 1 件目 = paradigm 系統樹拡張 11 件目, alternation pivot K(193) → rust(194) = 33 → 34 = 節目 30 件突破後 3 件目, 重複候補 grep 探索 paradigm 23 件目, メイン批判判断 連続 96 セッション目達成) のエントリ追記"
+```
+
+# 完走条件
+
+1. `git log --oneline -3` で 2 commit (refactor + chore) が反映
+2. `git status --short` で working tree clean (untracked .tmp/handoff/worker-prompts のみ)
+3. cargo test --lib = 704 件 passed / 0 failed
+4. cargo clippy --lib --tests -- -D warnings = 警告ゼロ
+5. cargo fmt --check OK
+6. grep `"verbose_json"` src/cloud_whisper.rs = 1 件 (const 定義行のみ)
+
+# 注意 (再掲)
+
+- **行末の空白文字 (trailing whitespace) 禁止**: 全 file (rust + AGENT_LOG.md) で末尾空白入れない.
+- **AGENT_LOG.md への append は 1 回のみ**. 二重書き禁止.
+- **entry テンプレート冒頭に `---` 含めない**. 前 entry の閉じ `---` を再利用.
+- **commit メッセージは 1 行 (改行 raw 含めない)**.
+- **--no-verify 禁止**.
+- **Cargo.toml 場所**: desktop/src-tauri/Cargo.toml が rust ルート. cargo は必ず `cd src-tauri` してから実行.

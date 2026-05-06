@@ -1,0 +1,184 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop43-teams-extraction) です。
+
+# 必読 + AGENT_LOG.md ルール (絶対遵守)
+1. **AGENT_LOG.md は ~26,800 行 / ~2.3MB ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾構造を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (`src-tauri/src/app_detection.rs` / `src-tauri/src/app_detection_teams.rs` (新規) / `src-tauri/src/lib.rs` / `AGENT_LOG.md` 以外は触らない)
+6. **大型ファイルは Read 全体禁止** = app_detection.rs (3141 行) は **絶対全読禁止**、`grep` + `head/tail` + 行範囲指定 Read のみで参照
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 作業目的 (extraction 軸 = Webex/Whereby/GoToMeeting/Zoom precedent 5 件目、サービス別抽出シリーズの最終ピース)
+- src-tauri/src/app_detection.rs から Microsoft Teams URL 検知関連 4 関数 + ヘルパー 2 件を新規ファイル `src-tauri/src/app_detection_teams.rs` に集約
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 縮小 = 理解性向上)
+- variety pivot 軸 = extraction 軸 = Loop 40 (Zoom 抽出) から 3 ループ間隔、別軸 (docs L41 + test L42) を 2 件挟んだ後 = sweep 警告緩和、許容範囲
+
+# 抽出対象 (4 関数、Teams 専用ヘルパー含む)
+
+## メイン検知関数 (pub(crate) で公開)
+- `is_teams_meeting_url` (app_detection.rs L755-771) = `(host, path, query)` 3 引数版、Teams URL 4 系統 (work-or-school /l/meetup-join/, work-or-school /v2 with meetingjoin=true, work-or-school /meet/, teams.live.com /meet/) を判定
+
+## Teams 専用ヘルパー (新ファイル内 private で OK)
+- `is_teams_work_or_school_host` (app_detection.rs L773-775) = `host == teams.microsoft.com || teams.cloud.microsoft`
+- `has_non_empty_path_segments` (app_detection.rs L777-780) = `value.split('/').all(|segment| !segment.is_empty())` 判定 (Teams 以外で参照なし、grep で確認済 = メインが事前確認済)
+- `query_has_param` (app_detection.rs L787-794) = `query` 内 key=value 走査 (Teams 以外で参照なし、`query_has_non_empty_param` とは別物 = 後者は他サービスで使用、移動しない)
+
+## 共通ヘルパー (移動しない、use 文で取り込み)
+- `has_single_non_empty_segment` (app_detection.rs L782) = 既 `pub(crate)` (Webex/Whereby/Zoom precedent 同パターン)
+  - 新ファイルから `use crate::app_detection::has_single_non_empty_segment;` で参照
+
+# caller 更新 (1 箇所)
+- L536: `} else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {` を `} else if crate::app_detection_teams::is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {` に変更
+
+# lib.rs 更新 (1 行追加)
+- `mod app_detection_teams;` を `mod app_detection_zoom;` の直後 (アルファベット順) に追加
+
+# 規模制約 (重要)
+- 規模 S = ~30 行抽出 (4 関数合計) + 新規ファイル作成 + caller 1 件 + lib.rs 1 行追加
+- 1 ループ完結
+- 担当範囲: 4 ファイル (app_detection.rs / app_detection_teams.rs (新規) / lib.rs / AGENT_LOG.md)
+- 振る舞い完全不変 = cargo test --lib 件数不変 (702 passed)
+
+# 既知 precedent (Webex/Whereby/GoToMeeting/Zoom = 完全踏襲)
+- Webex (Loop 29 = `b4a0098`): app_detection_webex.rs に 8 関数集約
+- Whereby (Loop 31 = `a523edd`): app_detection_whereby.rs に 2 関数 + const 集約
+- GoToMeeting (Loop 36 = `1904e04`): app_detection_goto.rs に 4 関数 + const 集約
+- Zoom (Loop 40 = `99baa26`): app_detection_zoom.rs に 4 関数集約
+- 共通ヘルパー (`has_single_non_empty_segment` 等) は app_detection.rs 残置 + `pub(crate)` 化 + use 文経由参照
+
+# 具体作業手順
+
+## A. 新規ファイル作成
+- `src-tauri/src/app_detection_teams.rs` を新規作成
+- 内容構造:
+
+```rust
+//! Microsoft Teams URL 検知ロジック。
+//!
+//! `app_detection.rs` から Loop 43 で抽出 (Webex/Whereby/GoToMeeting/Zoom precedent 同パターン)。
+
+use crate::app_detection::has_single_non_empty_segment;
+
+/// Microsoft Teams 会議 URL を判定する。
+///
+/// 受理パターン (4 系統):
+/// - work-or-school host (`teams.microsoft.com` / `teams.cloud.microsoft`) + `/l/meetup-join/<segments>`
+/// - work-or-school host + path `/v2` または `/v2/` + query に `meetingjoin=true`
+/// - work-or-school host + `/meet/<id>`
+/// - `teams.live.com` + `/meet/<id>` (個人版)
+pub(crate) fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) -> bool {
+    (is_teams_work_or_school_host(host)
+        && path
+            .strip_prefix("/l/meetup-join/")
+            .is_some_and(has_non_empty_path_segments))
+        || (is_teams_work_or_school_host(host)
+            && (path == "/v2" || path == "/v2/")
+            && query_has_param(query, "meetingjoin", "true"))
+        || (is_teams_work_or_school_host(host)
+            && path
+                .strip_prefix("/meet/")
+                .is_some_and(has_single_non_empty_segment))
+        || (host == "teams.live.com"
+            && path
+                .strip_prefix("/meet/")
+                .is_some_and(has_single_non_empty_segment))
+}
+
+fn is_teams_work_or_school_host(host: &str) -> bool {
+    host == "teams.microsoft.com" || host == "teams.cloud.microsoft"
+}
+
+fn has_non_empty_path_segments(value: &str) -> bool {
+    let value = value.strip_suffix('/').unwrap_or(value);
+    !value.is_empty() && value.split('/').all(|segment| !segment.is_empty())
+}
+
+fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
+    query.is_some_and(|query| {
+        query.split('&').any(|param| {
+            let (param_key, param_value) = param.split_once('=').unwrap_or((param, ""));
+            param_key.eq_ignore_ascii_case(key) && param_value.eq_ignore_ascii_case(value)
+        })
+    })
+}
+```
+
+注意: `has_non_empty_path_segments` と `query_has_param` の rustdoc コメントは原典 (app_detection.rs) にもないため、追加せずに移動するだけで OK。`is_teams_work_or_school_host` も同様。
+
+## B. app_detection.rs から 4 関数削除 (L755-794 から該当箇所のみ)
+- L755-771: `is_teams_meeting_url` 関数本体
+- L773-775: `is_teams_work_or_school_host` 関数本体
+- L777-780: `has_non_empty_path_segments` 関数本体
+- L787-794: `query_has_param` 関数本体
+- 削除後、関連空行も整理 (Webex/Whereby/Zoom precedent と同様、隣接関数間 1 空行残す)
+
+注意: L782 の `pub(crate) fn has_single_non_empty_segment` は **絶対残置** (他サービスで使用)。
+注意: L796 の `pub(crate) fn query_has_non_empty_param` は **絶対残置** (Whereby 等で使用、`query_has_param` とは別関数)。
+
+## C. caller 更新 (L536, 1 箇所のみ)
+- 現: `} else if is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {`
+- 更新後: `} else if crate::app_detection_teams::is_teams_meeting_url(&host, &parsed.path, parsed.query.as_deref()) {`
+
+## D. lib.rs に mod 宣言追加
+- `mod app_detection_zoom;` の直後 (アルファベット順) に `mod app_detection_teams;` を追加
+- もし `app_detection_zoom` の後に `app_detection_whereby` がある場合は `app_detection_teams` を `whereby` の後 (zoom と whereby の間ではアルファベット順違反) または `whereby` 前に挿入 = アルファベット順で正しい位置を選ぶ
+  - アルファベット順: goto < teams < webex < whereby < zoom
+  - 既存順: goto / webex / whereby / zoom と仮定すれば teams は webex の前 = goto の後 ?
+  - 実際の lib.rs を grep で確認してから挿入位置を決める
+- `grep -n 'mod app_detection_' src-tauri/src/lib.rs` で確認してから追加
+
+# 検証 (必須)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/app_detection_teams.rs src-tauri/src/lib.rs AGENT_LOG.md`
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -20` で **702 passed** を確認 (件数不変が必須)
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10` で警告ゼロ確認
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で fmt OK
+5. trailing whitespace 確認 = `grep -nE ' +$' src-tauri/src/app_detection.rs src-tauri/src/app_detection_teams.rs src-tauri/src/lib.rs` で結果ゼロ
+6. `wc -l src-tauri/src/app_detection.rs src-tauri/src/app_detection_teams.rs` で 3141 → 約 3110 行 (-31 行) / 0 → 約 32 行 (新規) 確認
+
+# AGENT_LOG.md 末尾追記 (本ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記
+- format:
+```
+[mjc-main-20260505-21 Loop 43 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs から Microsoft Teams URL 検知関連 4 関数 (is_teams_meeting_url / is_teams_work_or_school_host / has_non_empty_path_segments / query_has_param) を src-tauri/src/app_detection_teams.rs に抽出
+- src-tauri/src/lib.rs に `mod app_detection_teams;` 追加 (アルファベット順)
+- app_detection.rs L536 caller を `crate::app_detection_teams::is_teams_meeting_url` 経由に更新
+- has_single_non_empty_segment / query_has_non_empty_param は app_detection.rs に残置 (pub(crate) のまま、他サービスで使用)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (app_detection.rs 縮小 = 理解性向上)
+- Webex (Loop 29) / Whereby (Loop 31) / GoToMeeting (Loop 36) / Zoom (Loop 40) precedent 完全踏襲 (5 件目、サービス別抽出シリーズの最終ピース)
+- variety pivot 軸 = extraction 軸 = Loop 40 から 3 ループ間隔、別軸 (docs L41 + test L42) を 2 件挟んだ後 = sweep 警告緩和、許容範囲
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 702 passed 件数不変
+- pub(crate) visibility = is_teams_meeting_url のみ (caller 経由)
+- Teams 専用ヘルパー (is_teams_work_or_school_host / has_non_empty_path_segments / query_has_param) は新ファイル内 private (fn) のまま
+- has_single_non_empty_segment は use crate::app_detection::has_single_non_empty_segment で取り込み (pub(crate) 既存)
+- query_has_non_empty_param は Whereby 等の他サービスで使用するため app_detection.rs に残置
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+```
+
+# コミット (worker 自走判断)
+- worker 自走で `bash scripts/agent-commit.sh "refactor(app_detection): Microsoft Teams 検知 4 関数を app_detection_teams.rs に抽出 (Tidy First, mjc-main-20260505-21 Loop 43)" src-tauri/src/app_detection.rs src-tauri/src/app_detection_teams.rs src-tauri/src/lib.rs AGENT_LOG.md` を実行してよい
+- もしくは `git add ... && git commit -m "..."` で直接 commit
+- commit 後、commit hash を確認して `chore(agent-log): Loop 43 commit hash <HASH> を AGENT_LOG.md に記入` chore commit を別途自走判断で実施 (Loop 22-42 precedent)
+
+# 完了の合図
+- AGENT_LOG.md に [mjc-main-20260505-21 Loop 43] エントリが追記されている
+- commit が成功している (git log --oneline -1 で確認可能)
+- 702 passed 件数不変、clippy 警告ゼロ、fmt OK
+
+以上。

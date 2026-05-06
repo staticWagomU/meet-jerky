@@ -1,0 +1,170 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順番に従う)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行 (`tail -350 AGENT_LOG.md`)**
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+   - **先頭は絶対に触らない** (24,000 行超)
+   - 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **docs/architecture/transcription-refactor-plan.md** (本作業の根拠 = Phase 1 仕上げ)
+
+# 担当範囲
+- 新規作成: `src-tauri/src/transcription_traits.rs`
+- 修正: `src-tauri/src/transcription.rs` (トレイト定義 3 つを削除 + 互換層追加)
+- 修正: `src-tauri/src/lib.rs` (`mod transcription_traits;` 追加)
+- 末尾追記: `AGENT_LOG.md`
+
+**担当範囲外 (絶対に編集禁止)**:
+- src-tauri/src/transcription.rs の **WhisperLocal 実装より下** (line 71 以降の WhisperLocal struct + impl 群、ModelManager、TranscriptionManager、worker loop 等)
+- src-tauri/src/transcription_types.rs (Loop 5 で抽出済み、変更不要)
+- 他の rust ファイル (cloud_whisper.rs / audio.rs / session_manager.rs 等)
+- frontend (src/) 全体
+- docs/ ディレクトリ (AGENT_LOG.md 末尾追記を除く)
+
+# 作業内容 (Tidy First、振る舞い不変)
+
+## Step 1: 新規ファイル作成
+
+`src-tauri/src/transcription_traits.rs` を新規作成し、以下の内容を書く:
+
+```rust
+use std::sync::Arc;
+
+use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
+
+/// 1 つのストリーミング文字起こしセッションの設定。
+#[derive(Debug, Clone)]
+pub struct StreamConfig {
+    /// 入力音声のサンプルレート。エンジン内部で必要に応じてリサンプルする。
+    pub sample_rate: u32,
+    /// 出力セグメントに付与する話者ラベル ("自分" / "相手側" など)。
+    pub speaker: Option<String>,
+    /// 入力音声ソース。ライブ UI がマイク/システム音声を表示上で識別するために使う。
+    pub source: Option<TranscriptionSource>,
+    /// 言語ヒント ("ja" / "en" / "auto")。エンジンが解釈する。
+    pub language: Option<String>,
+}
+
+/// マイク / システム音声など、複数の音声ソースに対する文字起こしを行う
+/// エンジンのファクトリ。
+///
+/// `start_stream` は呼び出すたびに独立した `TranscriptionStream` を返し、
+/// 並行して複数のストリームを動かせる必要がある (マイク + システム音声)。
+pub trait TranscriptionEngine: Send + Sync {
+    fn start_stream(
+        self: Arc<Self>,
+        config: StreamConfig,
+    ) -> Result<Box<dyn TranscriptionStream>, String>;
+}
+
+/// ストリーミング文字起こしの 1 セッションを表す。
+///
+/// 呼び出し元は raw PCM サンプルを `feed` で送り込み、確定した
+/// セグメントを `drain_segments` で非同期に取り出す。`finalize` で
+/// 残りのバッファをフラッシュして最終セグメントを得る。
+///
+/// 実装はサンプルレート変換やチャンク化、API 呼び出しなどの
+/// エンジン固有の責務をすべて内部に閉じ込める。
+pub trait TranscriptionStream: Send {
+    /// `StreamConfig::sample_rate` で指定したレートのサンプルを送り込む。
+    fn feed(&mut self, samples: &[f32]) -> Result<(), String>;
+
+    /// これまでに確定したセグメントを取り出す (非ブロッキング)。
+    fn drain_segments(&mut self) -> Vec<TranscriptionSegment>;
+
+    /// 残りのバッファを処理し、最終セグメントを返す。
+    /// 呼び出し後はストリームを使わない。
+    fn finalize(self: Box<Self>) -> Result<Vec<TranscriptionSegment>, String>;
+}
+```
+
+## Step 2: transcription.rs の修正
+
+src-tauri/src/transcription.rs の **トレイト定義セクション** (`// TranscriptionEngine / TranscriptionStream トレイト` コメントから `pub trait TranscriptionStream { ... }` の閉じ `}` まで、行範囲は ~22-69) を **削除**し、代わりに以下を挿入:
+
+```rust
+// ─────────────────────────────────────────────
+// TranscriptionEngine / TranscriptionStream トレイト (transcription_traits.rs に分離、互換層として再エクスポート)
+// ─────────────────────────────────────────────
+
+pub use crate::transcription_traits::{StreamConfig, TranscriptionEngine, TranscriptionStream};
+```
+
+注意:
+- transcription.rs の冒頭 use 文 (例: `use std::sync::Arc;`) は **WhisperLocal や他の場所** で使われている可能性。**削除しない** (clippy が unused import を警告する場合のみ削除)。
+- 内部参照は変わらず動く: `impl TranscriptionEngine for WhisperLocal` のような実装は、transcription.rs 内で `TranscriptionEngine` 名前が pub use 経由で見えるので変更不要。
+
+## Step 3: lib.rs の修正
+
+`grep -n "^mod " src-tauri/src/lib.rs` で既存 mod 宣言を確認。`mod transcription_types;` の **直前または直後** に `mod transcription_traits;` を追加。
+
+例:
+```rust
+mod transcription;
+mod transcription_traits;  // ← 追加
+mod transcription_types;
+```
+
+(alphabetical order なら traits → types の順、現状の方針に合わせる)
+
+## Step 4: 検証 (必ず実施)
+
+順番に実行 (失敗したら止めて報告):
+
+```bash
+cd src-tauri
+cargo fmt --check
+cargo clippy --lib -- -D warnings
+cargo test --lib 2>&1 | tail -10
+```
+
+**期待結果**:
+- cargo fmt --check: 整形 OK
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib: **667 passed (件数不変)**
+
+件数が変わったら **担当範囲外を編集した可能性** = 即座に止めて報告。
+
+## Step 5: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記:
+
+```markdown
+
+## 2026-05-05 JST mjc-worker-transcription-traits-extract-20260505-3-2
+- 担当セッション: mjc-worker-transcription-traits-extract-20260505-3-2 (作業担当, sonnet)
+- 役割: transcription.rs から トレイト定義 3 つ (StreamConfig / TranscriptionEngine / TranscriptionStream) を src-tauri/src/transcription_traits.rs に抽出 (Tidy First、振る舞い不変、Phase 1 仕上げ = データ型 + トレイト定義の分離完了)
+- 作業範囲: src-tauri/src/transcription_traits.rs (新規) + src-tauri/src/transcription.rs (トレイト定義削除 + 互換層 pub use 追加) + src-tauri/src/lib.rs (mod transcription_traits; 追加) + AGENT_LOG.md (末尾追記)
+- 指示内容: mjc-main-20260505-3 Loop 6 のタスクとして、transcription_traits.rs を新規作成し 3 型を移植 → transcription.rs 該当箇所を削除し pub use crate::transcription_traits::{...}; で再エクスポート互換層を残す → lib.rs に mod transcription_traits; を追加 → cargo fmt/clippy/test 検証 (667 件不変、警告ゼロ、整形 OK)
+- 結果: <ここに実際の結果を書く>
+- 変更ファイル: src-tauri/src/transcription_traits.rs (新規) + src-tauri/src/transcription.rs (削除/追加) + src-tauri/src/lib.rs (mod 追加)
+- 検証結果: <cargo fmt/clippy/test の結果を簡潔に書く>
+- 依存関係追加: なし
+- 失敗理由: <なければ「なし」>
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Phase 1 完了 = データ型 + トレイト定義分離、Phase 2 候補は Whisper エンジン抽出 = WhisperLocal + WhisperStream + 純粋関数を transcription_whisper.rs などに抽出)
+
+---
+```
+
+# 規模超過防止 (重要)
+
+- 件数 667 → 667 (不変) を厳守。**新規テストを追加しない** (Tidy First は振る舞い不変、テスト不要)。
+- 既存テストが壊れたら、抽出ミス = 即座に止めて報告。
+- 担当範囲外 (transcription.rs WhisperLocal 以降、他の .rs ファイル、frontend) を絶対に編集しない。
+- AGENT_LOG.md は **末尾追記のみ**。先頭は絶対に触らない。
+
+# trailing whitespace 禁止
+
+行末の空白文字 (trailing whitespace) は禁止。
+
+# 報告フォーマット (1 turn で完結)
+
+最後に以下を簡潔に報告:
+- 変更内容 (Step 1-3 の達成可否)
+- 変更ファイル (実際の path)
+- 検証結果 (cargo fmt/clippy/test の終了コードと test 件数)
+- 残リスク (もしあれば)
+- AGENT_LOG.md 末尾追記の確認 (`tail -5 AGENT_LOG.md` 結果)

@@ -1,0 +1,206 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md を必要範囲で読んでください (AGENT_LOG は 17000+ 行なので tail -300 で末尾だけ参照)。
+
+## 担当範囲
+`src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾への #[test] 関数 5 件追加のみ。
+**実装変更ゼロ、既存テスト変更ゼロ、visibility 変更ゼロ、import 追加は std/super のみ可。**
+
+他エージェントが他ファイルで作業している可能性があります。担当範囲外のファイルには触らないでください。コミットは禁止です (メインが行う)。
+
+## 1. 背景 / Why
+`build_append_args_for_emission_at` (line 74-90) は live transcription emission の核となる純粋関数で、以下 2 段階の早期リターンを持つ:
+
+```rust
+pub fn build_append_args_for_emission_at(
+    segment: &TranscriptionSegment,
+    session_started_at_secs: Option<u64>,
+    stream_started_at_secs: u64,
+    observed_at_secs: Option<u64>,
+) -> Option<(String, u64, String)> {
+    if segment.is_error.unwrap_or(false) {
+        return None;
+    }
+    let started = session_started_at_secs?;
+    Some(segment_to_append_args_at(segment, started, stream_started_at_secs, observed_at_secs))
+}
+```
+
+既存テスト 16 件のうち `build_append_args_for_emission` (test-only wrapper、observed_at_secs=None 固定、line 58-69) 経由のものは 4 件:
+- `build_append_args_saturates_offset_when_stream_precedes_session` (Some, observed=None)
+- `build_append_args_returns_some_with_same_values_as_segment_to_append_args` (Some, observed=None)
+- `build_append_args_returns_none_when_session_not_started` (None, observed=None)
+- `build_append_args_returns_none_for_error_segments` (Some, observed=None)
+
+**Gap**: `build_append_args_for_emission_at` を **直接呼び出し**、`observed_at_secs = Some(...)` を渡す経路がゼロ。
+- error 短絡が observed 経路でも有効か
+- session 未開始の早期リターンが observed があっても優先か
+- zero_start segment + observed=Some の挙動が `segment_to_append_args_at` 経由で正しく接続されているか
+- engine timestamp ありなら observed が無視される挙動が emission helper 経由でも維持されるか
+- 「error 短絡 → session_started? の順序」の優先順位 (first-violation contract)
+
+これらを 5 件の direct test で固定する。
+
+## 2. 具体的 test 案 (assertion レベル)
+
+`super::*` を use している tests mod 内なので `build_append_args_for_emission_at` を直接呼べる。ヘルパー `sample_segment()` は既存にある (line 109-118)。
+
+### T1. `build_append_args_for_emission_at_returns_none_for_error_segment_even_with_observed_time`
+```rust
+let mut segment = sample_segment();
+segment.is_error = Some(true);
+let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_000, Some(1_075));
+assert!(result.is_none(), "is_error の早期リターンは observed_at_secs があっても有効");
+```
+**意図**: error 短絡が observed 経路でも変わらず None を返す現契約を固定。
+
+### T2. `build_append_args_for_emission_at_returns_none_when_session_not_started_with_observed_time`
+```rust
+let segment = sample_segment(); // is_error = None
+let result = build_append_args_for_emission_at(&segment, None, 1_000, Some(1_075));
+assert!(result.is_none(), "session_started_at_secs == None なら observed があっても None");
+```
+**意図**: session 未開始の早期リターンが observed があっても優先される現契約を固定。
+
+### T3. `build_append_args_for_emission_at_uses_observed_time_for_zero_start_segment`
+```rust
+// Realtime 系の zero_start segment (start_ms=0, end_ms=0) は observed_at_secs に倒れる
+let segment = TranscriptionSegment {
+    text: "realtime".to_string(),
+    start_ms: 0,
+    end_ms: 0,
+    source: None,
+    speaker: Some("相手側".to_string()),
+    is_error: None,
+};
+let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_000, Some(1_075))
+    .expect("observed があれば Some を返す");
+assert_eq!(result.0, "相手側");
+assert_eq!(result.1, 75, "zero_start segment は observed_at_secs - session_started_at_secs を使う");
+assert_eq!(result.2, "realtime");
+```
+**意図**: emission helper 経由でも `segment_to_append_args_at` の zero_start ロジックが正しく接続されていることを保証。
+
+### T4. `build_append_args_for_emission_at_keeps_engine_timestamp_when_present_ignoring_observed_time`
+```rust
+// engine timestamp ありなら observed は無視される
+let segment = sample_segment(); // start_ms=2000, end_ms=3500, speaker="自分", text="こんにちは"
+let result = build_append_args_for_emission_at(&segment, Some(1_000), 1_040, Some(9_999))
+    .expect("Some を返す");
+assert_eq!(result.0, "自分");
+assert_eq!(result.1, 42, "engine timestamp あり時は observed を無視し engine timestamp が勝つ");
+assert_eq!(result.2, "こんにちは");
+```
+**意図**: emission helper 経由でも「engine timestamp 優先」の現契約が維持されていることを保証。observed=9_999 という極端値を渡しても 42 になることで「engine timestamp が確実に勝つ」を強く示す。
+
+### T5. `build_append_args_for_emission_at_short_circuits_on_error_before_checking_session_started`
+```rust
+// is_error=true かつ session_started_at_secs=None。
+// 実装は is_error チェックが先なので、segment_started がなくても is_error の None を返す経路を通る。
+// (もし順序が逆になった場合、segment_started?.None で先に None になり、`?` で None を返すが、
+//  実装上の優先順位を first-violation contract として明示的に固定する。)
+let mut segment = sample_segment();
+segment.is_error = Some(true);
+let result = build_append_args_for_emission_at(&segment, None, 1_000, Some(1_075));
+assert!(result.is_none(), "is_error と session 未開始の二重違反でも None (どちらが先でも結果同じ)");
+```
+**意図**: 二重違反の現契約 (どちらでも None) を固定。is_error と session check の順序は実装詳細だが、結果が None である契約を保証。
+
+## 3. 実装上の注意
+
+- `super::*` は既に use 済み。`TranscriptionSegment` は use 不要 (super 経由で見える)。
+- `sample_segment()` は line 109-118 にあるヘルパーで、既存テストでも使われている。**そのまま使うこと**。
+- T3 / T4 の数値の意味:
+  - T3: stream=1000 + observed=1075 → segment_abs_secs = 1075 → offset = 1075 - 1000 = 75
+  - T4: stream=1040 + start_ms=2000 → segment_offset_from_stream_secs = 2 → segment_abs_secs = 1042 → offset = 1042 - 1000 = 42
+  - これらは line 280-298 の `happy_path_forwards_text_and_computes_offset` と同じ計算ルールで、既存テストとの整合性を確認するための値。
+- **既存テストとの重複回避**: T1 と既存 `build_append_args_returns_none_for_error_segments` (line 268-277) は似ているが、後者は `build_append_args_for_emission` (observed=None 固定) 経由。T1 は `_at` を直接呼んで observed=Some(1075) を渡す違いを assertion comment で明示。
+- **T2 と既存 `build_append_args_returns_none_when_session_not_started`** (line 259-265) も同様の違い。コメントで観点を明示すること。
+- **コメントは日本語、簡潔に** (AGENTS.md 準拠)。
+- **eprintln や panic 系の assert はしない** (純粋関数なので不要)。
+
+## 4. 検証手順
+
+1. 編集後、まず差分が transcript_bridge.rs のみであることを確認:
+   ```bash
+   git status --short
+   git diff --stat
+   ```
+2. cargo fmt:
+   ```bash
+   cd src-tauri && cargo fmt
+   ```
+3. cargo test (lib のみ、355 → 360 になることを確認):
+   ```bash
+   cd src-tauri && cargo test --lib
+   ```
+4. cargo clippy default:
+   ```bash
+   cd src-tauri && cargo clippy --lib --tests -- -D warnings
+   ```
+5. cargo clippy uninlined_format_args:
+   ```bash
+   cd src-tauri && cargo clippy --lib --tests -- -D warnings -W clippy::uninlined_format_args
+   ```
+
+すべて通ることを確認。fail したらエラーメッセージを最終報告に含めること。
+
+## 5. AGENT_LOG.md 記載項目 (末尾に追記、`---` セパレータで既存項目と区切る)
+
+```
+### transcript_bridge.rs `build_append_args_for_emission_at` を direct (observed=Some) 経路 で 5 件補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST (実時刻)
+- **担当セッション**: `mjc-worker-transcript-bridge-emission-observed-tests-20260504-8-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+`build_append_args_for_emission_at` の direct test を 5 件追加: error 短絡 (observed=Some)、session 未開始 (observed=Some)、zero_start segment + observed 利用、engine timestamp 優先 (observed 無視)、二重違反短絡。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | build_append_args_for_emission_at_returns_none_for_error_segment_even_with_observed_time | is_error=Some(true) + observed=Some(1075) → None |
+| T2 | build_append_args_for_emission_at_returns_none_when_session_not_started_with_observed_time | session=None + observed=Some(1075) → None |
+| T3 | build_append_args_for_emission_at_uses_observed_time_for_zero_start_segment | start_ms=0/end_ms=0 + observed=Some(1075) → Some(("相手側", 75, "realtime")) |
+| T4 | build_append_args_for_emission_at_keeps_engine_timestamp_when_present_ignoring_observed_time | start_ms=2000 + observed=Some(9999) → Some(("自分", 42, "こんにちは")) (observed 無視) |
+| T5 | build_append_args_for_emission_at_short_circuits_on_error_before_checking_session_started | is_error=Some(true) + session=None → None (二重違反でも None) |
+
+#### 不変条件 / 設計意図
+- T1+T2 は早期リターン 2 段階のそれぞれが observed 経路でも有効である現契約を固定。
+- T3 は emission helper 経由で `segment_to_append_args_at` の zero_start ロジックが正しく接続されていることを保証 (Realtime 系の重要 path)。
+- T4 は engine timestamp 優先の現契約を emission helper 経由でも維持していることを保証。observed=9999 の極端値で「engine timestamp が確実に勝つ」を示す。
+- T5 は first-violation contract: 二重違反でも結果は None (どちらが先でも構わないが結果が None)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 355 → 360 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 360
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存の super::* で十分)
+
+#### 残リスク
+- T4 の 9_999 マジックナンバーは「engine timestamp が確実に勝つ」を示すための極端値で、将来 observed_at_secs の優先順位を変更する設計に変えたら test 修正が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+## 最終報告
+
+1 ターンで完結する形で以下を報告してください:
+- 追加 test 関数名 5 件
+- cargo test 結果 (355 → 360 になったか)
+- cargo clippy default / uninlined_format_args の警告数
+- 残リスク (あれば)
+- AGENT_LOG.md への追記が完了しているか
+
+実装後、上記検証コマンドを必ず実行してから報告してください。

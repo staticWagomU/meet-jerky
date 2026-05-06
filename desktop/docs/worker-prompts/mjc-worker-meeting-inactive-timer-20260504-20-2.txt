@@ -1,0 +1,212 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md を読み、AGENT_LOG.md は `tail -150 AGENT_LOG.md` 相当で末尾だけ参照してください。
+
+# 背景
+
+`src-tauri/src/app_detection.rs` の F-Loop3 (会議終了検知のアプリ統合) は Tidy First 多段スライスで以下まで完了:
+- Loop 1 (commit e94293c): `DetectionState` に `last_seen_secs: Mutex<HashMap<String, u64>>` フィールド追加
+- Loop 2 (commit 09d191c): `handle_detection` 内で `last_seen_secs.insert(now_secs)` 更新
+- **Loop 3a (commit 2196065)**: wrapper 関数 `check_meeting_inactive_for_bundle` + `last_notified_secs` フィールド + `MEETING_INACTIVE_THRESHOLD: Duration = 600s` const 追加 + STATE 未初期化時 None test 1 件 (476 passed)
+
+本 Loop (= **F-Loop3 Loop 3b, 機能完結**) では実機タイマーと通知発火を統合します。これで会議終了検知が **エンドツーエンドで動く状態** になります。
+
+# Why (この変更の動機)
+
+- F-Loop3 機能完結: タイマーがないと wrapper 関数 `check_meeting_inactive_for_bundle` が誰からも呼ばれない (現状 dead_code attribute 付き) = 機能としては未完成。
+- ユーザー観測可能な振る舞い変更: 「会議アプリが起動 → しばらく検知なし → 通知センターに『会議が終了した可能性』通知」フローが完成。
+- macOS 通知センター経由なので、画面共有中などで通知をミュートできる = ユーザーコントロール可能。
+
+# 担当範囲 (具体的な編集対象)
+
+src-tauri/src/app_detection.rs **1 ファイルのみ**。
+
+## 1. `inactive_notification_body` 純粋関数を追加 (test 容易性のため)
+
+`notification_body` 関数 (line 338-342 付近、現行 commit 後の正確な位置は要確認) の **直後** に追加:
+
+```rust
+/// inactive 通知の本文を生成する純粋関数。
+/// app_name と elapsed_secs を受け取って表示文を整形する。test 容易性のため `show_inactive_notification` から分離。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn inactive_notification_body(app_name: &str, elapsed_secs: u64) -> String {
+    let elapsed_min = elapsed_secs / 60;
+    format!(
+        "{app_name} が {elapsed_min} 分以上検知されていません。会議が終了している場合は録音と文字起こしを停止してください。"
+    )
+}
+```
+
+## 2. `show_inactive_notification` 関数を追加
+
+`show_notification` 関数 (line 326-335 付近、現行 commit 後の正確な位置は要確認) の **直後** に追加:
+
+```rust
+/// 会議アプリが long time 検知されていない場合の inactive 通知を発火する。
+/// `show_notification` と同じ Tauri Notification API を使い、本文だけ
+/// `inactive_notification_body` で生成する別 body にする。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn show_inactive_notification(app: &AppHandle, app_name: &str, elapsed_secs: u64) {
+    use tauri_plugin_notification::NotificationExt;
+
+    let title = "Meet Jerky";
+    let body = inactive_notification_body(app_name, elapsed_secs);
+
+    if let Err(e) = app.notification().builder().title(title).body(&body).show() {
+        eprintln!("[app_detection] inactive notification show failed: {e}");
+    }
+}
+```
+
+## 3. `check_all_inactive_bundles()` ヘルパー関数を追加
+
+`check_meeting_inactive_for_bundle` (前 Loop で追加) の **直後** に追加:
+
+```rust
+/// `WATCHED_BUNDLE_IDS` 全件に対して `check_meeting_inactive_for_bundle` を呼び、
+/// `Some(elapsed)` が返ったら `show_inactive_notification` を発火する。
+/// タイマースレッドから定期的に呼ばれる。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+fn check_all_inactive_bundles() {
+    let state = match STATE.get() {
+        Some(s) => s,
+        None => return,
+    };
+    for (bundle_id, app_name) in WATCHED_BUNDLE_IDS {
+        if let Some(elapsed) = check_meeting_inactive_for_bundle(bundle_id) {
+            show_inactive_notification(&state.app_handle, app_name, elapsed);
+        }
+    }
+}
+```
+
+## 4. `start()` 関数内でタイマースレッドを起動
+
+`start()` (line 98-113 付近、現行 commit 後の正確な位置は要確認) の `STATE.set(...).is_ok()` で `first_time` 確認後、`#[cfg(target_os = "macos")] macos::start_detection();` の **直前または直後** に **macOS 限定** でタイマースレッドを起動:
+
+```rust
+if first_time {
+    #[cfg(target_os = "macos")]
+    {
+        macos::start_detection();
+
+        // 会議終了検知タイマー: 60 秒周期で全 watched bundle を check し、
+        // 必要なら inactive 通知を発火する。
+        std::thread::spawn(|| loop {
+            std::thread::sleep(std::time::Duration::from_secs(60));
+            check_all_inactive_bundles();
+        });
+    }
+}
+```
+
+**重要**:
+- タイマースレッドは **無限ループ + sleep**。アプリ終了時に明示的な join はせず、デーモン的に動作させる (Tauri アプリ終了時に thread が殺される、これは既存 `std::thread::spawn` パターン (line 701, 736) と同じ)。
+- 既存 `macos::start_detection();` の前後どちらでも OK。**`macos::start_detection();` の後** が NSWorkspace 初期化と並走する形で自然。
+
+## 5. `#[allow(dead_code)]` attributeの削除
+
+以下の `#[allow(dead_code)]` を削除する (タイマーから wrapper が呼ばれて読み取り発生、wrapper が helper を呼んで notification 発火、で連鎖的に lint suppress が不要になる):
+
+- `MEETING_INACTIVE_THRESHOLD` const の `#[allow(dead_code)]` (line 47 付近の **2 行目** の attribute)
+- `DetectionState.last_seen_secs` フィールドの `#[allow(dead_code)]` (line 89 付近)
+- `DetectionState.last_notified_secs` フィールドの `#[allow(dead_code)]` (line 99 付近)
+- `check_meeting_inactive_for_bundle` 関数の `#[allow(dead_code)]` (line 240 付近の **2 行目** の attribute)
+
+**残す attribute**:
+- `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` は **そのまま残す** (非 macOS では Swift bridge 経由しないため依然 dead_code)
+- 新規追加した `inactive_notification_body` / `show_inactive_notification` / `check_all_inactive_bundles` の `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` も **そのまま残す**
+
+**重要**: `#[allow(dead_code)]` のみ削除し、`#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` は残す。各 attribute がどちら向けかは前後のコメント・doc コメントで判断すること。
+
+## 6. test 追加 (1-2 件)
+
+`#[cfg(test)] mod tests` 内、既存 `check_meeting_inactive_for_bundle_returns_none_when_state_uninitialized` の **直後** に挿入:
+
+```rust
+#[test]
+fn inactive_notification_body_includes_app_name_and_elapsed_minutes() {
+    // 通知文が「<app_name> が <分数> 分以上検知されていません」を含む契約を固定。
+    // app_name と分数の両方が body に embed される設計を CI で検知。
+    let body = inactive_notification_body("Zoom", 720); // 720 秒 = 12 分
+    assert!(body.contains("Zoom"), "body should contain app_name: {body}");
+    assert!(body.contains("12"), "body should contain elapsed_min: {body}");
+}
+
+#[test]
+fn inactive_notification_body_truncates_seconds_to_minutes() {
+    // 600 秒 = 10 分、659 秒 = 10 分 (整数除算で truncate される契約)、660 秒 = 11 分。
+    // 整数除算で minutes に丸める設計を CI で検知。
+    assert!(inactive_notification_body("X", 600).contains("10"));
+    assert!(inactive_notification_body("X", 659).contains("10"));
+    assert!(inactive_notification_body("X", 660).contains("11"));
+}
+```
+
+# 実装上の注意
+
+- **macOS cfg gate 厳守**: タイマースレッド起動は `#[cfg(target_os = "macos")]` で囲む。Linux/Windows では NSWorkspace コールバックが来ないため `last_seen_secs` が永久に空 = タイマーを動かしても無意味なので gate する。
+- **既存パターン踏襲**: `std::thread::spawn` は既存 `macos::detection_callback` (line 701) と `browser_url_callback` (line 736) で確立済 = 完全踏襲。
+- **lock 順序**: `check_all_inactive_bundles` は wrapper 関数を呼ぶだけで lock を直接取らない (wrapper 内部の lock 順序は前 Loop で確定済) = lock 干渉なし。
+- **`#[allow(dead_code)]` 削除の確認**: 削除後に `cargo clippy --all-targets -- -D warnings` で **dead_code warning が再発しない** ことを確認 = 連鎖的に呼び出されている証拠。もし warning が出たら削除しすぎ (=`#[cfg_attr]` 側まで消した可能性) を疑う。
+- **show_inactive_notification の test なし**: AppHandle が必要なため unit test 不能 = 純粋関数 `inactive_notification_body` の test で十分とする。**この判断を AGENT_LOG.md の「設計判断」に明記**。
+- **frontend event emit は scope 外**: 本 Loop では macOS 通知センター発火のみ。`meeting-inactive-detected` Tauri event 追加は次 Loop (= 将来 F-Loop5 等) に分離。
+- **担当範囲外を編集しない** (lib.rs / 他のファイル / Swift bridge は触らない)。
+- **コミット禁止**。実装と検証だけ。
+
+# 検証手順
+
+実装後、以下を順に実行して結果を AGENT_LOG.md に記録してください:
+
+1. `cargo test --manifest-path src-tauri/Cargo.toml --lib --no-run` (compile OK)
+2. `cargo test --manifest-path src-tauri/Cargo.toml --lib inactive_notification_body` (新規 test 2 件 pass)
+3. `cargo test --manifest-path src-tauri/Cargo.toml --lib check_meeting_inactive_for_bundle` (前 Loop の test 1 件維持)
+4. `cargo test --manifest-path src-tauri/Cargo.toml --lib should_notify_meeting_inactive` (既存 10 件維持)
+5. `cargo test --manifest-path src-tauri/Cargo.toml --lib` (全 478 passed 想定 = 既存 476 + 新規 2)
+6. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (warning 0 維持、dead_code 再発なし)
+7. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` (差分なし)
+8. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK)
+
+# AGENT_LOG.md 記載項目 (末尾に追記)
+
+```markdown
+## Worker Log: mjc-worker-meeting-inactive-timer-20260504-20-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-meeting-inactive-timer-20260504-20-2
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs にタイマー + show_inactive_notification + check_all_inactive_bundles + inactive_notification_body 純粋関数 + dead_code attribute 削除 + test 2 件 (F-Loop3 Loop 3b 機能完結, 振る舞い変更)
+
+### 指示内容の要約
+[何をしたかを簡潔に]
+
+### 結果
+- test 数推移: 476 → [N] passed ([+M] 件)
+- clippy: warning 0 維持 (dead_code 再発なし)
+- fmt: 差分なし
+- dead_code 削除箇所: [リスト]
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (1 ファイルのみ)
+
+### 検証結果
+[各コマンド結果]
+
+### 設計判断
+- show_inactive_notification の unit test 省略理由: AppHandle 依存のため = 純粋関数 inactive_notification_body の test で代替
+- タイマースレッド shutdown: アプリ終了時に明示的 join せず (既存 std::thread::spawn パターン踏襲)
+- frontend event emit 省略理由: 本 Loop は macOS 通知センター発火のみに絞る (Tidy First)
+- [その他]
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし (または [理由])
+
+### 次アクション
+メインで commit + 残り 1 ループ (F-Loop4 = browser_url_callback 経路の last_seen_secs 更新 / B カテゴリ別 fn 補強 / その他)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に 1 ターンで完結する形でまとめて報告してください。

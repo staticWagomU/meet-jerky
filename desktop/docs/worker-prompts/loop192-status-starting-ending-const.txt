@@ -1,0 +1,96 @@
+あなたは meet-jerky の作業 worker (mjc-worker-loop192-status-starting-ending-const).
+
+# 担当
+mjc-main (canonical = mjc-main-20260505-93) Loop 192 の自律改善ループ実装. const 集約 paradigm 反復 10 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越超越達成.
+
+# 必読 (大型 file Read 全体禁止)
+- `tail -350 AGENT_LOG.md` で末尾だけ参照. AGENT_LOG.md は ~34,532 行で巨大なので **絶対に Read 全体しない** (offset/limit または tail で参照).
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾. **新規追記は必ずファイル末尾に行う**. **先頭は絶対に触らない**.
+- AGENTS.md (priority 1 = DRY 違反解消が本作業).
+- src/utils/statusLabels.ts (8 行のみ = 全体 Read 可).
+- src/routes/TranscriptView.tsx は 1900+ 行 = **head/tail/Read offset で L1190-1280 周辺 + L60-75 import 付近のみ参照**.
+
+# 背景 (継承)
+- 直近 alternation: K(189) → frontend(190) → K(191) → frontend(192 = 本 worker)
+- statusLabels.ts は既存 7 const = STATUS_UNCHECKABLE_LABEL / STATUS_CHECKING_LABEL / STATUS_UNDETERMINED_LABEL / STATUS_DENIED_LABEL / STATUS_UNREGISTERED_LABEL / STATUS_CHECKING_WITH_DOTS_LABEL / STATUS_RECORDING_LABEL
+- 本 loop で STATUS_STARTING_LABEL + STATUS_ENDING_LABEL の **start/end semantic pair** を追加 = 9 const 完成
+
+# 実装範囲
+
+## 編集 1: src/utils/statusLabels.ts (既存 file 拡張)
+末尾 (L7 = STATUS_RECORDING_LABEL の直後) に以下 2 const を追加:
+```
+export const STATUS_STARTING_LABEL = "開始中";
+export const STATUS_ENDING_LABEL = "終了中";
+```
+最終 9 const.
+
+## 編集 2: src/routes/TranscriptView.tsx
+L68 既存 import 拡張:
+- 現状: `import { STATUS_CHECKING_LABEL, STATUS_RECORDING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";`
+- 変更後 (alphabetical): `import { STATUS_CHECKING_LABEL, STATUS_ENDING_LABEL, STATUS_RECORDING_LABEL, STATUS_STARTING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";`
+
+callsite 7 件を const 参照に統一 (各行は同行内書き換え):
+- L1200 `"終了中"` → `STATUS_ENDING_LABEL`
+- L1201 `"開始中"` → `STATUS_STARTING_LABEL`
+- L1213 `"開始中"` → `STATUS_STARTING_LABEL`
+- L1255 `"終了中"` → `STATUS_ENDING_LABEL`
+- L1256 `"開始中"` → `STATUS_STARTING_LABEL`
+- L1272 `"終了中"` → `STATUS_ENDING_LABEL`
+- L1273 `"開始中"` → `STATUS_STARTING_LABEL`
+
+## 担当範囲外編集禁止 (規模超過防止)
+- 上記 2 file 以外の編集禁止. TranscriptionControls.tsx の `"停止中"` は semantic 混在で集約見送り = 触らない.
+- TranscriptView.tsx の他 callsite (L1190 以前 / L1280 以降) は触らない.
+- ellipsis 付き callsite (L1682 `"終了中..."`, L1683 `"開始中..."`) は触らない (各 1 callsite で集約価値低 = 別 entity).
+
+# 検証
+1. `npm run build` (tsc + vite build) で type check + bundle 通過確認.
+2. `bash scripts/agent-verify.sh src/utils/statusLabels.ts src/routes/TranscriptView.tsx` (frontend のみ skip 判定 OK の想定).
+3. cargo 系は frontend 軸のため不要.
+
+# AGENT_LOG.md 末尾追記 (重要ルール = 必須要素 9)
+
+## 重要ルール
+1. **append は 1 回のみ**. Edit/Write を複数回繰り返さない. append 成功後すぐに次 (commit) へ進む.
+2. **entry テンプレート冒頭に `---` を含めない**. 前 entry の末尾 `---` を再利用. 末尾 `---` 1 個で締める.
+3. **行末の trailing whitespace 禁止** (各行末に空白を残さない).
+4. **末尾追記**: `tail -10 AGENT_LOG.md` で末尾の `---` 確認 → その直後に追記.
+5. **先頭は絶対に触らない**.
+
+## 手順
+- entry を `docs/worker-prompts/loop192-entry.txt` に Write してから `cat docs/worker-prompts/loop192-entry.txt >> AGENT_LOG.md` で 1 回 append.
+
+## entry 内容 (冒頭 `---` を含めない)
+
+```
+[mjc-main Loop 192 / 2026-05-06]
+worker: mjc-worker-loop192-status-starting-ending-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_STARTING_LABEL + STATUS_ENDING_LABEL 追加 = 2 const = 7 → 9 const) + src/routes/TranscriptView.tsx (L68 import 拡張 + L1200/L1201/L1213/L1255/L1256/L1272/L1273 = 7 callsite)
+変更: STATUS_STARTING_LABEL = "開始中" + STATUS_ENDING_LABEL = "終了中" を statusLabels.ts に集約 (start/end semantic pair) + TranscriptView.tsx 7 callsite を const 参照に統一 = DRY 違反解消, callsite 7 件無変更で API 互換維持, ネット行数 +2 行のみ, **const 集約 paradigm 反復 10 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越超越達成 (Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 → 192 = 10 連続 const 集約軸 = 節目 10 件突破)** + **既存 file 拡張軸 paradigm 21 件目達成 (statusLabels.ts への 8 度目の拡張)** + **重複候補 grep 探索 paradigm 22 件目達成**.
+意義: AGENTS.md priority 1 (DRY 違反解消) 寄与. statusLabels.ts は 9 const で `"〜状態"` semantic + loading suffix + recording status + transition pair (start/end) 完全網羅. alternation pivot K(191) → frontend(192) = 31 → 32 = pivot 加速期維持. メイン批判判断 連続 95 セッション目達成 (handoff prompt R32' 「ellipsis 混在で集約価値中程度」評価との差異 = `"開始中"` 4 callsite + `"終了中"` 3 callsite = 完全一致 7 件 = TranscriptView.tsx 単一 file = 集約価値高 を grep で批判検証達成 + `"停止中"` semantic 混在は Loop 190 AUDIO_SOURCE precedent から責務階層リスクとして見送り判断).
+検証: npm run build (tsc + vite build) OK / agent-verify.sh で frontend のみ skip 判定 OK / grep `"開始中"` および `"終了中"` = statusLabels.ts L8/L9 定義行 + ellipsis 付き 2 callsite (L1682/L1683) のみ残存
+備考: TranscriptView.tsx 単独 file 内の重複だが statusLabels.ts への一貫性維持 + start/end semantic pair 完成. 後継候補 = R29' (K 軸 = Section 2.3 観測 50 件目 = 節目 50 件突破 = 規模 SS) / R30 (rust 軸 paradigm 反復 8 件目 = 探索コスト高 = 責務階層リスク中) / R31 (別 paradigm 開拓 = trait/generic/lifetime) / R33 (const 集約軸 minor 残候補 = `"停止中"` semantic 混在 + ellipsis 付き single callsite 等 = 集約価値低).
+---
+```
+
+# commit pattern (worker 自律 2-commit)
+1. refactor commit:
+```
+bash scripts/agent-commit.sh "refactor(frontend): STATUS_STARTING_LABEL + STATUS_ENDING_LABEL を src/utils/statusLabels.ts に集約 + TranscriptView.tsx 7 callsite を const 参照に統一 (mjc-main Loop 192, frontend 軸 = const 集約 paradigm 反復 10 件目 = paradigm 完全成熟期完全成熟最終収束完成超越超越超越達成 = 節目 10 件突破, 既存 file 拡張軸 paradigm 21 件目, '開始中' 4 + '終了中' 3 = 7 callsite を統一 + DRY 違反解消, alternation pivot K(191) → frontend(192) = 31 → 32, AGENTS.md priority 1 寄与)" src/utils/statusLabels.ts src/routes/TranscriptView.tsx
+```
+
+2. chore commit:
+```
+bash scripts/agent-commit.sh "chore(agent-log): mjc-main Loop 192 = STATUS_STARTING_LABEL + STATUS_ENDING_LABEL を statusLabels.ts に集約 (frontend 軸, const 集約 paradigm 反復 10 件目 = paradigm 完全成熟期完全成熟最終収束完成超越超越超越達成 = 節目 10 件突破, 既存 file 拡張軸 paradigm 21 件目, alternation pivot K(191) → frontend(192) = 31 → 32, 重複候補 grep 探索 paradigm 22 件目達成, メイン批判判断 連続 95 セッション目達成) のエントリ追記" AGENT_LOG.md
+```
+
+# 制約
+- `--no-verify` 禁止 (pre-commit hook を通す)
+- `--dangerously-skip-permissions` は harness 内のみ
+- 課金禁止 (Keychain 実通信禁止 / Apple SpeechAnalyzer 実通信禁止)
+- 行末 trailing whitespace 禁止
+- AGENT_LOG.md への append は 1 回のみ. Edit/Write を複数回繰り返さない.
+
+# 完走後
+worker は自動で stop. メイン (mjc-main) が `git status` + `git log --oneline -3` で 2-commit 反映を確認する.

@@ -1,0 +1,150 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop41-plan-md-update) です。
+
+# 必読 + AGENT_LOG.md ルール (絶対遵守)
+1. **AGENT_LOG.md は ~26,800 行 / ~2.3MB ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾構造を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (`docs/architecture/transcription-refactor-plan.md` と `AGENT_LOG.md` 以外は触らない)
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** (transcription-refactor-plan.md は 207 行なので全読 OK)
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 作業目的 (docs 軸 variety pivot)
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新
+- 反映対象 2 件:
+  1. **mjc-main-20260505-19 Loop 38** = transcription_types 関連テスト 10 件 (TranscriptionSegment 4 + TranscriptionSource 3 + ModelInfo 3) を transcription_types.rs に移動 = commit `64fe9cd` (transcription.rs -426 行 = 75% 里程標突破)
+  2. **mjc-main-20260505-20 Loop 40** = app_detection.rs Zoom モジュール抽出 (4 関数) = commit `99baa26` (app_detection.rs -43 行)
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- variety pivot 軸 = 「docs」軸 = Loop 39 から 2 ループ間隔 = 許容範囲 (Loop 30/34/37/39 で 4-3-2-2 ループ間隔の precedent)
+
+# 規模制約 (重要)
+- 規模 SS-S = ~30-50 行追記 / 6 箇所更新
+- 1 ループ完結
+- 担当範囲: `docs/architecture/transcription-refactor-plan.md` / `AGENT_LOG.md` (2 ファイルのみ)
+- コード変更ゼロ (.rs ファイル絶対編集禁止)
+
+# 具体作業手順 (Loop 30 / 34 / 37 = commit 32885b5 / ecbf1af / d6626ed と同パターン継承)
+
+## A. 進捗サマリセクション更新 (L28)
+- 現在: `## 進捗サマリ (mjc-main-20260505-18 Loop 35 + 36 時点)`
+- 更新後: `## 進捗サマリ (mjc-main-20260505-20 Loop 38 + 40 時点)`
+
+## B. 累計削減行数の更新 (L42)
+- 現在: `**transcription.rs 累計削減**: 元 2999 行 → 現在 **1175 行** = **約 60.8% 縮小** (~1824 行削減) = **「60% 里程標突破」**`
+- 更新後: `**transcription.rs 累計削減**: 元 2999 行 → 現在 **749 行** = **約 75.0% 縮小** (~2250 行削減) = **「75% 里程標突破」**`
+- 注: `wc -l src-tauri/src/transcription.rs` で実数を再確認してから書く (必須、現状 749 行)
+
+## C. 残存課題セクション更新 (L44-50)
+- 既存の Loop 32 / Loop 33 / Loop 35 の記述を保全しつつ、以下を追加:
+  - **mjc-main-20260505-19 Loop 38 ✅ 完了**: transcription_types 関連テスト 10 件 (TranscriptionSegment 4 + TranscriptionSource 3 + ModelInfo 3) を transcription_types.rs に移動 (commit `64fe9cd`、-426 行 = 75% 里程標突破)
+- 残存 1175 行 → 749 行 に更新
+- L50 候補リストの「TranscriptionSegment テスト移動」が完了 = 「TranscriptionSegment テスト移動」を削り「WhisperStream テスト移動 / calculate_rms / is_tail_silent 系テスト移動」を残す形に整理
+
+## D. 関連: app_detection.rs Webex モジュール抽出セクション (L143-) の文章更新 (L154)
+- 既存 L143 (Webex) / L156 (Whereby) / L166 (GoToMeeting) サブセクションは維持
+- L154 の文章 ("同パターン (サービス別関数の独立モジュール化) は Whereby が Loop 31、GoToMeeting が Loop 36 で完了済み。残るは Zoom / Microsoft Teams (今後の Tidy First 候補だが、app_detection.rs サービス別抽出 sweep 化リスクあり = Webex (29) + Whereby (31) + GoToMeeting (36) で 3/7 ループ間隔、4 件目連続は sweep 警告超過 = 次回再訪は Loop 39+ 推奨)。") を以下に書き換え:
+
+```
+同パターン (サービス別関数の独立モジュール化) は Whereby が Loop 31、GoToMeeting が Loop 36、Zoom が Loop 40 で完了済み。残るは Microsoft Teams (今後の Tidy First 候補だが、app_detection.rs サービス別抽出 sweep 化リスクあり = Webex (29) + Whereby (31) + GoToMeeting (36) + Zoom (40) で 4/11 ループ間隔、5 件目連続は sweep 警告超過 = 次回再訪は Loop 42+ 推奨で別軸 1-2 ループ挟む)。
+```
+
+## E. app_detection_zoom.rs サブセクション新設 (GoToMeeting サブセクションの直後)
+- L166-177 の GoToMeeting サブセクションの直後に **新サブセクション** を追加:
+
+```markdown
+### app_detection_zoom.rs ✅ 完了 (mjc-main-20260505-20 Loop 40 = commit `99baa26`)
+
+mjc-main-20260505-20 Loop 40 で Zoom 検知関数群を `src-tauri/src/app_detection_zoom.rs` に集約した。
+
+- 関数 4 つ (`is_zoom_host` / `is_zoom_meeting_url` / `is_zoom_meeting_id` / `is_zoom_web_client_meeting_url`) を移動
+- pub(crate) で公開 = `is_zoom_host` / `is_zoom_meeting_url`、Zoom 内部依存の `is_zoom_meeting_id` / `is_zoom_web_client_meeting_url` は private 維持
+- ヘルパー `is_valid_dns_label` は Loop 29 (Webex 抽出) で `pub(crate)` 化済 = `use crate::app_detection::is_valid_dns_label` で取り込み
+- ヘルパー `has_single_non_empty_segment` も既 `pub(crate)` のまま = `use crate::app_detection::has_single_non_empty_segment` で取り込み
+- caller (`classify_meeting_url` 内の `is_zoom_meeting_url` 呼び出し) は `crate::app_detection_zoom::is_zoom_meeting_url` 経由に更新
+- tests は classify_meeting_url 経由テストのみ = 直接呼びテストなし = use 文更新不要
+- lib.rs に `mod app_detection_zoom` 宣言追加
+- 振る舞い不変 = 702 passed 件数不変
+- app_detection.rs 3184 → 3141 行 (-43 行)、app_detection_zoom.rs 0 → 44 行 (新規)
+```
+
+## F. transcription_types tests 移動 ✅ 完了 サブセクション新設 (transcription_error_payload tests 移動セクションの直後)
+- L191-201 の transcription_error_payload tests 移動セクションの直後に **新サブセクション** を追加:
+
+```markdown
+## 関連: transcription_types tests 移動 ✅ 完了 (mjc-main-20260505-19 Loop 38 = commit `64fe9cd`)
+
+mjc-main-20260505-19 Loop 38 で transcription_types 関連テスト 10 件 (~426 行) を transcription.rs から `src-tauri/src/transcription_types.rs` に移動した。
+
+- TranscriptionSegment 4 件: serialize / deserialize / debug / clone 系
+- TranscriptionSource 3 件: from_str / display / round-trip 系
+- ModelInfo 3 件: serialize / deserialize / equality 系
+- 移動先には `mod tests` 新設 + `use super::*` を取り込み
+- ModelInfo の unused import を削除 (移動時 cargo clippy --lib で検出 → 修正)
+- 規模 M 一括 (Loop 35 15 件 ~290 行 precedent 1.4 倍規模 = バンドル判断 sweep 1 件 vs 単独 3 ループ分割 sweep 3 件 で variety 規則的に圧倒的有利と批判判断)
+- 振る舞い不変 = 700 passed 件数不変、clippy 警告ゼロ、fmt OK
+- transcription.rs 1175 → 749 行 (-426 行) = **75% 里程標突破**、transcription_types.rs 41 → 471 行 (+430 行)
+```
+
+## G. 末尾参考セクション更新 (L207)
+- 現在: `(本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-18 Loop 35 + 36 時点で 1175 行 = 約 60.8% 縮小達成 = 60% 里程標突破)`
+- 更新後: `(本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-20 Loop 38 + 40 時点で 749 行 = 約 75.0% 縮小達成 = 75% 里程標突破)`
+
+# 既存記述の保全
+- L11 の `行数: 2999 行 (本プラン作成時点 2026-05-05)` は履歴保全のため残置
+- 9 責務マップ表 (L14-26) はそのまま維持 (行範囲が初版基準で変わるが、履歴情報として価値)
+- 最新情報は別セクションで追記する方式 (Loop 30 / 34 / 37 と同方針継承)
+
+# 検証 (必須)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` (.rs 編集なしのため Rust skip 判定の確認)
+2. trailing whitespace 確認 = `grep -nE ' +$' docs/architecture/transcription-refactor-plan.md` で結果ゼロ確認
+3. markdown 構文の整合性 = `head -5 docs/architecture/transcription-refactor-plan.md` で先頭破壊なし確認
+4. `tail -10 docs/architecture/transcription-refactor-plan.md` で末尾破壊なし確認
+5. `wc -l src-tauri/src/transcription.rs` で 749 行を実数確認
+
+# AGENT_LOG.md 末尾追記 (本ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記
+- format:
+```
+[mjc-main-20260505-21 Loop 41 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-18 Loop 35 + 36 → mjc-main-20260505-20 Loop 38 + 40
+  - 累計削減行数: 1175 行 (60.8%) → 749 行 (75.0%) = 75% 里程標突破
+  - 残存課題セクション: Loop 38 (transcription_types tests 移動 -426 行) 反映
+  - app_detection.rs 関連: Zoom 抽出 ✅ 完了 (Loop 40 = 99baa26) サブセクション新設 + L154 文章更新 (Webex/Whereby/GoToMeeting/Zoom 完了、Teams 残)
+  - transcription_types tests 移動 ✅ 完了 (Loop 38 = 64fe9cd) サブセクション新設
+  - 末尾参考: 1175 行 (60.8%) → 749 行 (75.0%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-19 Loop 38 (test 移動 -426 行 = 75% 里程標突破) と mjc-main-20260505-20 Loop 40 (extraction -43 行) の 2 件を 1 ループで一括反映
+- variety pivot = docs 軸 = Loop 39 から 2 ループ間隔 = 許容範囲 (Loop 30/34/37/39 = 4-3-2-2 ループ間隔の precedent)
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 最新情報は別セクションで追記する方式 (Loop 30 / 34 / 37 = commit 32885b5 / ecbf1af / d6626ed と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+- transcription.rs 749 行 wc -l 実数確認済
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+```
+
+# コミット (worker 自走判断)
+- worker 自走で `bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 38 transcription_types tests 移動 + Loop 40 Zoom 抽出を反映 (mjc-main-20260505-21 Loop 41, 75% 里程標突破 749 行 75.0% 縮小, 計画駆動継続性確保)" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` を実行してよい
+- もしくは `git add ... && git commit -m "..."` で直接 commit
+- commit 後、commit hash を確認して `chore(agent-log): Loop 41 commit hash <HASH> を AGENT_LOG.md に記入` chore commit を別途自走判断で実施 (Loop 22/31/32/33/34/35/36/37/38/39/40 precedent)
+
+# 完了の合図
+- AGENT_LOG.md に [mjc-main-20260505-21 Loop 41] エントリが追記されている
+- commit が成功している (git log --oneline -1 で確認可能)
+- markdown 構文整合性確認 OK
+
+以上。

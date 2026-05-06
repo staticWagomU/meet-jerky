@@ -1,0 +1,158 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (~31,000+ 行、~2.7MB+ あり、Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/app_detection_notification.rs` (94 行、Loop 87 抽出)
+6. precedent (cat 全体): `cat src-tauri/src/app_detection_inactive_decision.rs` (225 行、Loop 88 抽出)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/settings_permission.rs` (~100-130 行)
+- 編集: `src-tauri/src/settings.rs` (permission 関連 production ~63 行 + 関連 test 4 件削除)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 + invoke_handler の path 修正 2 件)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。他のファイル、他の機能、他の test には絶対に手を出さないでください。
+
+# Loop 89 タスク内容 (構造分離 15 件目, 別 scope = settings 軸 = pivot 達成)
+
+## 背景
+
+- Loop 87/88 で app_detection 機能分類軸 (notification + inactive_decision) を 2 連続抽出 = 構造分離 13/14 file 目達成。
+- handoff 警告「scope 払底気味」をメイン側で grep + Read 精査で覆し、別 scope = **settings.rs (953 行)** の permission 関連 section を発見 = 構造分離 15 件目。
+- settings.rs 本来責務 (AppSettings 永続化) と permission チェック (macOS C ABI bridge) は機能的に独立 = 分離で構造美向上 = AGENTS.md priority 1 寄与。
+
+## 抽出対象 (settings.rs から settings_permission.rs へ移動)
+
+**Production (settings.rs L195-260, ~66 行)**:
+- L195-197: section コメント `// パーミッションチェック` ヘッダ (移動)
+- L198-200: 3 const (`PERMISSION_UNDETERMINED` / `PERMISSION_DENIED` / `PERMISSION_GRANTED`)
+- L202-211: `fn permission_status_to_string(status: i32) -> String` (private fn)
+- L213-225: `#[tauri::command] pub fn check_microphone_permission() -> String`
+- L227-239: `#[tauri::command] pub fn check_screen_recording_permission() -> String`
+- L240-260: `#[cfg(target_os = "macos")] mod macos_permissions { extern "C" { ... } pub fn microphone_permission_status() pub fn screen_recording_permission_status() }`
+
+**Test (settings.rs `mod tests` 内、4 件)**:
+- L296: `test_permission_status_to_string_maps_known_values`
+- L580: `permission_status_to_string_returns_denied_for_negative_values_as_fail_safe`
+- L597: `permission_status_to_string_returns_denied_for_value_adjacent_to_granted_as_fail_safe`
+- L610: `permission_status_to_string_returns_denied_for_i32_max_as_fail_safe`
+
+各 test の **本体行範囲は `sed -n 'L,Lp' src-tauri/src/settings.rs` で確実に特定** (関数定義行から次の `#[test]` 直前まで)。**4 件のみ移動。これ以外の test は絶対に触らない**。
+
+## 抽出方式 (Loop 87/88 precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/settings_permission.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! macOS のマイク / 画面録画パーミッション状態を取得する tauri command と
+//! `permission_status_to_string` ヘルパを提供する。`settings.rs` 本体の
+//! `AppSettings` 永続化責務とは独立しているため、機能境界で分離する。
+```
+
+permission section の production 全体 (3 const + 4 fn + macos_permissions submod) をそのまま移動。`mod tests` を新 file 内に追加し、test 4 件を移動。
+
+### 2. settings.rs 編集
+
+- 該当 section (L195-260) を削除
+- mod tests 内の test 4 件 (L296, L580, L597, L610) を削除
+- 削除のみで他 import / 他 fn には触らない
+
+### 3. lib.rs 編集 (alphabetical mod + invoke_handler path)
+
+- `mod settings;` 直後に `mod settings_permission;` 追加 (alphabetical 順、secret_store と settings の関係に従う = `mod settings;` の後、もしくは settings_state がもしあればその前)
+  - 確認: `grep -nE "^mod settings" src-tauri/src/lib.rs` で位置決定
+- L383-384 を以下に変更:
+  - `settings::check_microphone_permission` → `settings_permission::check_microphone_permission`
+  - `settings::check_screen_recording_permission` → `settings_permission::check_screen_recording_permission`
+
+これ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production fn / test 4 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller path 変更による影響は lib.rs invoke_handler のみ、frontend `invoke('check_microphone_permission')` 等の名前は不変
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib`
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/settings.rs src-tauri/src/settings_permission.rs src-tauri/src/lib.rs`
+
+検証失敗時は最小修正で対応 (担当範囲内のみ)。
+
+# コミット (2-commit pattern, Loop 80/85/86/87/88 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/settings.rs src-tauri/src/settings_permission.rs src-tauri/src/lib.rs`
+
+メッセージ (HEREDOC):
+```
+refactor(settings): permission チェック関連 section を settings_permission.rs に抽出 (mjc-main-20260505-46 Loop 89, 機能分離軸 = settings 軸 1 件目, 大型 rust file 責務分離 15 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-46 Loop 89 / 2026-05-05]
+worker: mjc-worker-settings-permission-loop89 (作業)
+範囲: src-tauri/src/settings.rs (permission 関連 production ~66 行削除 + test 4 件削除) + src-tauri/src/settings_permission.rs (新規 ~100-130 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 2 件)
+内容: settings.rs L195-260 の permission section (3 const + permission_status_to_string + check_microphone_permission + check_screen_recording_permission + macos_permissions submod) を新 module settings_permission.rs に抽出。tests 4 件 (test_permission_status_to_string_maps_known_values + permission_status_to_string_returns_denied_for_negative_values_as_fail_safe + permission_status_to_string_returns_denied_for_value_adjacent_to_granted_as_fail_safe + permission_status_to_string_returns_denied_for_i32_max_as_fail_safe) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod settings_permission; 追加 + invoke_handler の settings::check_microphone_permission / settings::check_screen_recording_permission を settings_permission::* に変更。大型 rust file 責務分離 15 file 目 = settings 軸 1 件目 (新 scope) = handoff「scope 払底気味」警告をメイン側 grep + Read 精査で覆した発掘成果 = メイン批判判断 連続 40 セッション目寄与。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(settings): permission チェック関連 section を settings_permission.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = settings 軸の機能境界分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-46 Loop 89 = settings_permission.rs 抽出 (構造分離 15 file 目, settings 軸 1 件目 = 新 scope, handoff scope 払底気味警告を発掘で覆す) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件 (settings.rs, settings_permission.rs, lib.rs, AGENT_LOG.md)
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

@@ -1,0 +1,100 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読 (順序厳守)
+
+1. AGENTS.md (優先順位 2 = 会議検知の網羅性)
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で確認 (24,100+ 行 / 1.9MB+ あるので Read 全体禁止)
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+   - **先頭は絶対に触らない**
+   - **行末の空白文字 (trailing whitespace) 禁止**
+5. src-tauri/src/app_detection.rs の以下を必要箇所のみ tail/head/grep で確認 (2734 行あるので Read 全体禁止):
+   - `is_webex_host` (lines 783-791)
+   - `is_webex_meeting_url` (lines 793-800)
+   - `classify_meeting_url` の Webex 分岐 (line 519)
+   - `query_has_param` (lines 834-841)
+   - 既存 Webex テスト群 (lines 2695-2733)
+
+## 担当範囲
+
+- ファイル: `src-tauri/src/app_detection.rs` のみ
+- 機能: `classify_meeting_url` の Webex 検知に **`j.php?MTID=<token>` 形式 (Webex 招待メール旧形式 URL)** を追加
+- 関連: AGENT_LOG.md への 1 ループ実績追記 (末尾追記、トリミング)
+
+## 背景 (戦略整合性)
+
+- mjc-main-20260505-1 が Loop 2 で `*.webex.com/meet/<id>` (Personal Room) URL classify を追加し、Loop 3 で window title fallback を追加した
+- 既存実装の `is_webex_meeting_url` (line 793-800) には次のコメントがある:
+  ```
+  // Personal Room (`/meet/<id>`) のみ対応。
+  // j.php / wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
+  ```
+- 本ループはこの「将来課題」のうち **j.php 形式のみ** を対応する
+- AGENTS.md 優先順位 2 (会議検知の網羅性) に直接寄与
+- **「Debug 軸補強」「Copy 軸補強」等の派生型 CI 保護パターンには戻らない** (mjc-main-20260505-1 が 26 連続のローカル最適化から脱却した戦略を継承)
+
+## j.php URL 仕様 (招待メール旧形式)
+
+形式: `https://<site>.webex.com/<site>/j.php?MTID=<token>`
+
+例:
+- `https://acme.webex.com/acme/j.php?MTID=mabc123` (subdomain `acme`、path `/acme/j.php`)
+- `https://webex.com/webex/j.php?MTID=mxyz` (root `webex.com`、path `/webex/j.php`)
+
+検知条件 (誤検知防止のため厳格):
+1. `is_webex_host(host)` で host が `*.webex.com` または `webex.com` であること (DNS label 検証付き、既存)
+2. path が `/<single-segment>/j.php` または `/<single-segment>/j.php/` 形式であること
+3. query に `MTID=<non-empty value>` が含まれること
+
+「MTID 値が非空」の判定が新規必要。既存の `query_has_param(query, key, value)` は値完全一致なので使えない。
+新規ヘルパー `query_has_non_empty_param(query: Option<&str>, key: &str) -> bool` を追加するか、
+既存ヘルパーを再利用しつつ別の path 解析関数 `is_webex_jphp_meeting_url(host, path, query) -> bool` を追加してください。
+最小実装で構造一貫性を優先 (`query_has_param` の symmetric な命名で `query_has_non_empty_param` 追加が妥当)。
+
+## 実装方針 (TDD Red→Green)
+
+1. **TDD Red**: 失敗テストを 1 件先に追加し、`cargo test --lib` で失敗を確認
+   - 例: `classify_meeting_url("https://acme.webex.com/acme/j.php?MTID=mabc123")` が `Some(MeetingUrlClassification { service: "Webex", host: "acme.webex.com" })` を返す期待
+2. **TDD Green**: 最小実装で pass させる
+   - `query_has_non_empty_param` ヘルパー追加 (または等価関数)
+   - `is_webex_jphp_meeting_url(host, path, query) -> bool` 追加
+   - `classify_meeting_url` の Webex 分岐に OR 条件で追加: `is_webex_meeting_url(...) || is_webex_jphp_meeting_url(...)`
+3. **追加テスト** (Red phase 後、Green phase 前に揃える):
+   - **accept**: subdomain webex (`https://acme.webex.com/acme/j.php?MTID=mabc123`)
+   - **accept**: root webex (`https://webex.com/webex/j.php?MTID=mxyz`)
+   - **accept**: trailing slash 許容 (`https://acme.webex.com/acme/j.php/?MTID=mxyz`) ※既存パターンとの整合性のため、要否判断は実装者に委ねる。Personal Room (`/meet/<id>`) と同様 trailing slash 許容なら追加
+   - **reject**: MTID query 欠如 (`https://acme.webex.com/acme/j.php`)
+   - **reject**: MTID 空値 (`https://acme.webex.com/acme/j.php?MTID=`)
+   - **reject**: 非 webex host (`https://fake-webex.example.com/acme/j.php?MTID=mxyz`)
+   - **reject**: path segment 数違反 (例: `/acme/foo/j.php?MTID=mxyz` や `/j.php?MTID=mxyz`)
+4. **rustdoc 分類ルール更新**: `is_webex_meeting_url` 上のコメントを以下に書き換え:
+   ```
+   // Personal Room (`/meet/<id>`) と j.php 招待 URL (`/<site>/j.php?MTID=<token>`) に対応。
+   // wbxmjs / webappng 等の他形式は誤検知防止のため将来課題。
+   ```
+   (※「将来課題」リストから j.php を削除、対応済みリストに移動)
+
+## 規模・契約・検証
+
+- 担当範囲外の編集禁止 (app_detection.rs と AGENT_LOG.md のみ)
+- **テスト件数の上限**: 既存 646 → 新規追加は **最大 7 件まで**。現契約の rendering を変更する破壊的変更禁止
+- `--no-verify` 禁止
+- `cargo fmt` / `cargo clippy --lib -- -D warnings` / `cargo test --lib` 全てパス必須
+- frontend は触らない (`npm run build` 不要)
+
+## 報告
+
+最後に、変更内容、変更ファイル、検証結果 (`cargo test --lib` 件数 / clippy 警告数 / fmt 結果)、残リスクを簡潔に報告してください。
+
+## AGENT_LOG.md 追記の具体手順
+
+1. `tail -10 AGENT_LOG.md` で末尾構造確認
+2. 末尾の `---` セパレータの **直後** に新ループのエントリを追記
+3. 形式は直前ループ (mjc-main-20260505-1 Loop 3) を踏襲: 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション
+4. 末尾に新たな `---` セパレータを必ず置く
+5. 行末空白禁止
+
+1 ターンで完結する形でまとめてください。

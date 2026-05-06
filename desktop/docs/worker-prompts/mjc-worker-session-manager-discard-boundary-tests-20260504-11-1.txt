@@ -1,0 +1,295 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。1 ターンで完結する形でまとめてください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+# 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (末尾 200 行程度のみで OK)
+
+# 担当ファイル / 担当範囲
+- 編集対象: src-tauri/src/session_manager.rs の `mod tests` (line 177-) 内の **末尾** に #[test] 関数を 5 件追加するのみ。
+- 実装変更は禁止。visibility 変更も禁止。新規 import も避け (既存の `use super::*;` と `use tempfile::tempdir;`、std::panic::catch_unwind 等で完結する想定)。
+- 既存テスト名と完全一致しない名前にする (重複 fn 名はコンパイルエラー)。
+
+----------------------------------------------------------------------
+## 1. 背景 / Why
+----------------------------------------------------------------------
+
+`session_manager.rs` の `discard` (line 121-127) は活性セッションを保存せず破棄する pub fn。`guard.take()` で内部状態を None に戻し、`Some(_)` なら Ok、`None` なら NotActive を返すシンプルな構造。
+
+既存 discard 系テスト 4 件:
+- line 333 `discard_clears_active_session_without_finalizing`: basic start + append + discard → is_active false + finalize NotActive
+- line 352 `discard_when_idle_returns_not_active`: idle 状態の discard が NotActive
+- line 393 `is_active_recovers_from_poisoned_mutex_without_panic`: poisoned mutex 経由 is_active recover (discard 自体の recover は別)
+- line 530 `discard_clears_session_started_with_output_and_subsequent_append_returns_not_active`: start_with_output 後 append **せず** discard → disk 残留 0 確認
+
+ただし以下の **5 つの隣接 gap** が未テスト:
+
+1. **discard を 2 回連続呼ぶと 2 回目は NotActive** (Ok→Err transition の境界固定): 1 回目で take() 済の状態が 2 回目で正しく NotActive になるかは現状未固定。`finalize()` 後の 2 回目 NotActive は line 326-329 にあるが、discard 経由は無い。
+2. **discard 直後の current_started_at_secs / current_title / current_segment_count 全て None** (state cleanup の 3 軸固定): 既存は `is_active false` のみ確認、3 つの accessor (line 135-150) すべて None を返すかは未固定。誤改修で「discard が `started_at_secs` を残す」「title を残す」変更を入れた際の検知装置。
+3. **poisoned mutex 経由 discard も recover** (現状 is_active と append には recover test あるが discard には無い): `lock()` 内 (line 40-48) の `Err(err) => err.into_inner()` 経路を discard 専用で固定。is_active/append と同じ recover パターンが discard でも成立することを 3 軸目として明示固定。
+4. **append による disk 書込 → discard 後、disk file は残る** (discard はディスク cleanup しない契約 = ステルス削除しない): プロダクトコンセプト non-goals「録音・文字起こしのステルス動作はしない」(`docs/product-concept.md` line 53) と整合する重要な現契約。既存 line 530 は append せずに discard しているので disk が空、それと対称形に append→disk→discard の経路を固定する。誤改修で「discard 時にファイルも消す」変更を入れた際の検知装置。
+5. **discard 後、同一 title・同一 started_at で再 start 可能 + 新 session として独立** (state 完全 clean の確認 + SESSION_COUNTER 進行確認): discard が AlreadyActive を解除することは line 333 の append→NotActive で間接確認されているが、「同じ引数で再 start できる」「新 session として segments=0 になる」の直接固定は無い。
+
+これは前 mjc-main-20260504-10 ループ 1 で `persist_if_configured` を direct test (5 件) で固定した作業 (`f12afdb`) の隣接領域を埋める作業。同じ session_manager.rs 内の private/pub fn 契約網羅を完成させる位置付け。
+
+参考: AGENT_LOG.md 末尾 SESSION SUMMARY「次ループ候補 A'. session_manager.rs discard / is_active 系の追加補強 (規模 XS、価値中)」の実行版。
+
+----------------------------------------------------------------------
+## 2. 具体的 test 案 (assertion レベル)
+----------------------------------------------------------------------
+
+すべて `mod tests` (line 177-) 内の **末尾** に追加する。既存 test 群 (line 552 以降の `persist_if_configured_*` 系の **後ろ**) と同じスタイル。
+
+### T1: discard_twice_returns_not_active_on_second_call
+
+**目的**: 1 回目 Ok、2 回目 NotActive の transition を固定。`finalize` 後の 2 回目 NotActive (line 326-329) と同じパターンを discard 経由で対称形に固定。
+
+```rust
+#[test]
+fn discard_twice_returns_not_active_on_second_call() {
+    let manager = SessionManager::new();
+    manager
+        .start("meeting".into(), 100)
+        .expect("start should succeed");
+
+    manager.discard().expect("first discard should succeed");
+
+    let err = manager
+        .discard()
+        .expect_err("second discard should fail with NotActive");
+    assert_eq!(err, SessionManagerError::NotActive);
+    assert!(!manager.is_active(), "2 回目以降も非活性を維持");
+}
+```
+
+### T2: discard_clears_all_accessors_to_none
+
+**目的**: discard 後に `is_active=false` だけでなく、`current_started_at_secs` / `current_title` / `current_segment_count` の 3 つすべてが None を返すことを固定。state cleanup の 3 軸網羅。誤改修で「discard が started_at だけ残す」「title だけ残す」変更を入れた際の検知装置。
+
+```rust
+#[test]
+fn discard_clears_all_accessors_to_none() {
+    let manager = SessionManager::new();
+    manager
+        .start("meeting".into(), 1_700_000_000)
+        .expect("start should succeed");
+    manager
+        .append("Alice".into(), 5, "hello".into())
+        .expect("append should succeed");
+
+    // discard 前: 全 accessor が Some
+    assert!(manager.is_active());
+    assert_eq!(manager.current_title(), Some("meeting".into()));
+    assert_eq!(manager.current_started_at_secs(), Some(1_700_000_000));
+    assert_eq!(manager.current_segment_count(), Some(1));
+
+    manager.discard().expect("discard should succeed");
+
+    // discard 後: 全 accessor が None
+    assert!(!manager.is_active());
+    assert_eq!(
+        manager.current_title(),
+        None,
+        "discard 後 title=None を維持する契約"
+    );
+    assert_eq!(
+        manager.current_started_at_secs(),
+        None,
+        "discard 後 started_at_secs=None を維持する契約"
+    );
+    assert_eq!(
+        manager.current_segment_count(),
+        None,
+        "discard 後 segment_count=None を維持する契約"
+    );
+}
+```
+
+### T3: discard_recovers_from_poisoned_mutex_without_panic
+
+**目的**: `lock()` 内 (line 40-48) の poisoned mutex recover 経路を discard 専用で固定。既存 `is_active_recovers_from_poisoned_mutex_without_panic` (line 393) と `append_recovers_from_poisoned_mutex_without_panic` (line 410) と同じパターンを discard へ拡張、3 軸目。
+
+```rust
+#[test]
+fn discard_recovers_from_poisoned_mutex_without_panic() {
+    let manager = SessionManager::new();
+    manager
+        .start("meeting".into(), 100)
+        .expect("start should succeed");
+
+    let poison_result = std::panic::catch_unwind(|| {
+        let _guard = manager.current.lock().unwrap();
+        panic!("poison session manager mutex");
+    });
+    assert!(poison_result.is_err());
+
+    manager
+        .discard()
+        .expect("discard should recover from poisoned mutex and succeed");
+
+    assert!(!manager.is_active());
+    let err = manager
+        .discard()
+        .expect_err("second discard after recover should be NotActive");
+    assert_eq!(err, SessionManagerError::NotActive);
+}
+```
+
+### T4: discard_does_not_remove_already_persisted_disk_file_when_appended
+
+**目的**: append により disk に書込済の状態で discard した時、disk file は **残る** という現契約を固定。プロダクトコンセプト non-goals「録音・文字起こしのステルス動作はしない」(`docs/product-concept.md` 末尾) と整合する重要な観察。誤改修で「discard 時にファイルも消す」変更を入れた際の検知装置。
+
+注意: 既存 line 530 は **append せずに** discard しているので disk が空。それとは対称形のテストになる。
+
+```rust
+#[test]
+fn discard_does_not_remove_already_persisted_disk_file_when_appended() {
+    let manager = SessionManager::new();
+    let dir = tempdir().unwrap();
+    manager
+        .start_with_output(
+            "title".into(),
+            1_700_000_000,
+            dir.path().to_path_buf(),
+            jst(),
+        )
+        .expect("start_with_output should succeed");
+    manager
+        .append("Alice".into(), 5, "hello".into())
+        .expect("append should succeed");
+
+    // append により disk file が既に存在することを前提として確認
+    let files_before = list_md_files(dir.path());
+    assert_eq!(
+        files_before.len(),
+        1,
+        "append 後に disk file が 1 件存在しているはず: {files_before:?}"
+    );
+    let path_before = files_before[0].clone();
+    let contents_before = std::fs::read_to_string(&path_before).unwrap();
+
+    manager.discard().expect("discard should succeed");
+
+    // discard 後も disk file は残り、内容も変わらない (= ステルス削除しない契約)
+    assert!(!manager.is_active());
+    let files_after = list_md_files(dir.path());
+    assert_eq!(
+        files_after.len(),
+        1,
+        "discard 後も disk file は 1 件残るはず (ステルス削除しない契約): {files_after:?}"
+    );
+    assert_eq!(
+        files_after[0], path_before,
+        "discard 後も同じ path のファイルが残るはず"
+    );
+    let contents_after = std::fs::read_to_string(&files_after[0]).unwrap();
+    assert_eq!(
+        contents_after, contents_before,
+        "discard はディスク内容を改変しない契約"
+    );
+}
+```
+
+### T5: discard_allows_restart_with_same_title_and_started_at
+
+**目的**: discard 後、同一 title・同一 started_at で再 start でき、新 session として segments=0 から始まることを固定。「discard が AlreadyActive を解除」「state が完全に clean」「SESSION_COUNTER は進む (絶対値 assert は禁止、ただし accessor 経由の挙動だけ固定)」の 3 つを 1 件で網羅。
+
+```rust
+#[test]
+fn discard_allows_restart_with_same_title_and_started_at() {
+    let manager = SessionManager::new();
+    manager
+        .start("meeting".into(), 1_700_000_000)
+        .expect("first start should succeed");
+    manager
+        .append("Alice".into(), 5, "hello".into())
+        .expect("append should succeed");
+    assert_eq!(manager.current_segment_count(), Some(1));
+
+    manager.discard().expect("discard should succeed");
+
+    // 同一引数で再 start 可能 (= AlreadyActive にならない)
+    manager
+        .start("meeting".into(), 1_700_000_000)
+        .expect("restart with same title and started_at after discard should succeed");
+
+    // 新 session として segments=0 から始まる
+    assert!(manager.is_active());
+    assert_eq!(manager.current_title(), Some("meeting".into()));
+    assert_eq!(manager.current_started_at_secs(), Some(1_700_000_000));
+    assert_eq!(
+        manager.current_segment_count(),
+        Some(0),
+        "discard 後の再 start は新 session のため segments=0 のはず"
+    );
+}
+```
+
+----------------------------------------------------------------------
+## 3. 実装上の注意
+----------------------------------------------------------------------
+
+- すべての test は **既存 `mod tests` (line 177-) の末尾** に追加する。`mod tests` の中括弧の閉じ位置に注意。
+- 既存の `use super::*;` と `use tempfile::tempdir;` をそのまま流用。`std::panic::catch_unwind` は std prelude にないため `std::panic::catch_unwind` のフルパスで呼ぶ (既存 line 399, 416 と同じ書き方)。
+- `jst()` ヘルパ (line 182-184) と `list_md_files` (line 187-194) はすでにモジュール内にあるのでそのまま使える。
+- `SessionManagerError::NotActive` / `SessionManagerError::AlreadyActive` は `use super::*;` 経由で import 済み。
+- `current.lock()` (line 400, 417) は `manager.current.lock()` でアクセス可能 (current field は同モジュール内なので private でも見える)。
+- T4 の `start_with_output` は既存 `append_writes_segment_to_disk_when_started_with_output` (line 197-) と同じシグネチャで呼ぶ。
+- T5 の SESSION_COUNTER は session.rs の static AtomicU64 で「絶対値 assert は禁止」(SESSION SUMMARY の累積技術注意点に明記)。本テストでは current_segment_count==Some(0) のみ確認し、id 比較は行わない。
+- format string は uninlined_format_args 警告ゼロ維持のため `{files_before:?}` 形式で書く (既存テストも同形式)。
+- 不要な `#[allow(...)]` は付けない。
+
+----------------------------------------------------------------------
+## 4. 検証手順
+----------------------------------------------------------------------
+
+実装後、以下を順に実行して、すべてが pass することを確認:
+
+```bash
+# (1) 該当ファイルのみのテスト (高速)
+cd src-tauri && cargo test --lib session_manager -- --nocapture 2>&1 | tail -50
+
+# (2) clippy 警告ゼロ維持
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -30
+
+# (3) format check
+cd src-tauri && cargo fmt --check 2>&1 | tail -10
+
+# (4) ライブラリ全体テスト (400 件 → 405 件のはず)
+cd src-tauri && cargo test --lib 2>&1 | tail -20
+```
+
+期待:
+- (1): session_manager 関連 26 件 (既存 21 + 新規 5) すべて pass
+- (2): warning ゼロ
+- (3): diff なし
+- (4): 405 passed / 0 failed (前回 400 件 + 5 件)
+
+----------------------------------------------------------------------
+## 5. AGENT_LOG.md 記載項目
+----------------------------------------------------------------------
+
+最後に AGENT_LOG.md の末尾に以下の形式で 1 ブロック追記してください (既存末尾エントリと同じ構造):
+
+```
+## [YYYY-MM-DDTHH:MM:SS+09:00] mjc-worker-session-manager-discard-boundary-tests (旧 mjc-worker-...) - session_manager.rs discard 周辺契約 5 件追加
+
+- 担当セッション: mjc-worker-session-manager-discard-boundary-tests-20260504-11-1
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/session_manager.rs の `mod tests` 末尾に #[test] 5 件追加
+- 指示内容: discard 周辺契約 5 件 (T1: 2 回連続 NotActive transition / T2: 3 accessor すべて None / T3: poisoned mutex 経由 discard recover / T4: append 後 discard で disk file 残留 = ステルス削除しない契約 / T5: 同一引数 restart + 新 session segments=0)
+- 結果: <成功 or 失敗>
+- 変更ファイル: src-tauri/src/session_manager.rs (+N 行)
+- 検証結果: cargo test --lib (400 → 405 passed) / clippy 警告ゼロ / fmt check pass
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main-20260504-11) によるレビュー → コミット
+```
+
+報告には、追加した 5 件の test 名、変更行数、cargo test の最終 line (`test result: ok. N passed; 0 failed`)、clippy・fmt 結果を含めてください。
+
+以上です。1 ターンで完結する形でまとめてください。

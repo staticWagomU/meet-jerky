@@ -1,0 +1,176 @@
+あなたは meet-jerky の worker (mjc-worker-loop176-session-datetime-unknown-label-consolidate) です。
+
+# タスク
+
+`"日時不明"` (string literal) が `transcriptViewFormatters.ts` (L21/L25) と `sessionListHelpers.tsx` (L24/L28) の合計 2 file/4 箇所で重複している DRY 違反を、`transcriptViewFormatters.ts` に `export const SESSION_DATETIME_UNKNOWN_LABEL = "日時不明";` を追加して集約する (Loop 174 = CONTROL_CHARACTER_PATTERN 集約の paradigm 反復 2 件目 = const 集約 paradigm 反復)。
+
+# 必読 (冒頭で必ず実施)
+
+1. `tail -350 AGENT_LOG.md` で末尾 350 行を読み、Loop 174-175 の precedent (CONTROL_CHARACTER_PATTERN const 集約 paradigm) を理解する。
+2. `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptViewFormatters.ts` で全文 (45 行以下) を読む。
+3. `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/sessionListHelpers.tsx` の冒頭 50 行を `head -50` で読む。
+
+# AGENT_LOG.md 取り扱いルール (絶対遵守)
+
+- AGENT_LOG.md は **時系列順** = 最古ログが先頭、最新ログが末尾
+- 新規追記は **必ずファイル末尾** に行う = 末尾の `---` 直後に entry を追記する
+- **先頭は絶対に触らない**
+- 大型ファイル (~34,000 行以上) なので **Read 全体禁止** = `tail -350` / `head -N` / `grep` で対象範囲のみ参照
+- **append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent)
+- entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める) (Loop 166 boundary fix precedent)
+
+# 行末空白文字 (trailing whitespace) 禁止
+
+- 全ての追加行で末尾に space / tab を残さない (warning 防止)
+
+# 担当範囲外編集禁止
+
+- 編集対象は以下 3 file のみ:
+  - `src/utils/transcriptViewFormatters.ts` (export const 追加 + L21/L25 の literal 置換)
+  - `src/utils/sessionListHelpers.tsx` (import 追加 + L24/L28 の literal 置換)
+  - `AGENT_LOG.md` (末尾に entry append, 1 回のみ)
+- それ以外の file は触らない
+- test 件数の上限 = frontend test framework 未導入のため test 件数変化なし
+
+# 手順
+
+## Step 1: `transcriptViewFormatters.ts` に export const 追加 + 内部参照置換
+
+ファイル: `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptViewFormatters.ts`
+
+### 1-A: `export const SESSION_DATETIME_UNKNOWN_LABEL = "日時不明";` を追加
+
+L1 の `import { toErrorMessage } from "./errorMessage";` の **直後** (= L2 = 空行) を以下に変更:
+
+old:
+```
+import { toErrorMessage } from "./errorMessage";
+
+export function formatOperationError(prefix: string, e: unknown): string {
+```
+
+new:
+```
+import { toErrorMessage } from "./errorMessage";
+
+export const SESSION_DATETIME_UNKNOWN_LABEL = "日時不明";
+
+export function formatOperationError(prefix: string, e: unknown): string {
+```
+
+### 1-B: getRecentSessionMeta 内 L21/L25 の literal を const 参照に置換 (2 箇所)
+
+old:
+```
+    return "日時不明";
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return "日時不明";
+  }
+```
+
+new:
+```
+    return SESSION_DATETIME_UNKNOWN_LABEL;
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return SESSION_DATETIME_UNKNOWN_LABEL;
+  }
+```
+
+## Step 2: `sessionListHelpers.tsx` に import 追加 + literal 置換
+
+ファイル: `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/sessionListHelpers.tsx`
+
+### 2-A: 既存 import 行 L3 に `SESSION_DATETIME_UNKNOWN_LABEL` を追加
+
+old:
+```
+import { getCompactSessionTitle, getFileName } from "./transcriptViewFormatters";
+```
+
+new:
+```
+import {
+  getCompactSessionTitle,
+  getFileName,
+  SESSION_DATETIME_UNKNOWN_LABEL,
+} from "./transcriptViewFormatters";
+```
+
+### 2-B: getSessionStartedAtDisplay 内 L24/L28 の literal を const 参照に置換 (2 箇所)
+
+old:
+```
+    return { label: "日時不明", iso: null };
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return { label: "日時不明", iso: null };
+  }
+```
+
+new:
+```
+    return { label: SESSION_DATETIME_UNKNOWN_LABEL, iso: null };
+  }
+  const startedAtDate = new Date(startedAtMs);
+  if (Number.isNaN(startedAtDate.getTime())) {
+    return { label: SESSION_DATETIME_UNKNOWN_LABEL, iso: null };
+  }
+```
+
+## Step 3: 検証
+
+frontend 軸の検証手段は npm run build (tsc + vite build) のみ:
+
+```
+npm run build
+```
+
+エラーなく完走することを確認。`grep -rn '"日時不明"' src/` で literal が完全に消えていることも確認 (= 0 件)。
+
+## Step 4: commit (2-commit pattern)
+
+### 4-A: refactor commit
+
+```
+git add src/utils/transcriptViewFormatters.ts src/utils/sessionListHelpers.tsx
+git commit -m "refactor(frontend): SESSION_DATETIME_UNKNOWN_LABEL を transcriptViewFormatters.ts に集約 (mjc-main Loop 176, frontend 軸 = const 集約 paradigm 反復 2 件目 = paradigm 系統樹拡張 8 件目反復実証 = 既存 file 拡張軸 paradigm 14 件目, transcriptViewFormatters.ts L21/L25 + sessionListHelpers.tsx L24/L28 の '日時不明' 重複 string literal を transcriptViewFormatters.ts で export const 昇格 + 4 callsite を const 参照に統一 + DRY 違反解消, alternation pivot K(175) → frontend(176) = 15 → 16, AGENTS.md priority 1 寄与)"
+```
+
+### 4-B: AGENT_LOG.md entry append (1 回のみ)
+
+末尾を `tail -10 AGENT_LOG.md` で確認後、末尾の `---` 直後に以下 entry を **1 回だけ** append (冒頭 `---` を含めない):
+
+```
+
+[Loop 176 @ 2026-05-06 ~JST] mjc-main / mjc-worker-loop176-session-datetime-unknown-label-consolidate
+タスク: '日時不明' 重複 string literal (transcriptViewFormatters.ts L21/L25 + sessionListHelpers.tsx L24/L28 = 2 file/4 箇所) を transcriptViewFormatters.ts で export const SESSION_DATETIME_UNKNOWN_LABEL に集約
+ファイル: src/utils/transcriptViewFormatters.ts (export const 追加 + L21/L25 の literal 置換) + src/utils/sessionListHelpers.tsx (import 追加 + L24/L28 の literal 置換)
+理由: DRY 違反解消 = 2 utils で同一意味 (session 開始時刻 invalid 時 fallback ラベル) の同一 literal 重複定義を 1 箇所に集約 + paradigm 系統樹拡張 8 件目 (Loop 174 const 集約軸) の反復実証 = paradigm 反復による定型化期入り
+影響: callsite 4 箇所は const 参照経由で API 互換維持 + ネット行数 ±0 + production binary 0 影響
+paradigm: 既存 file 拡張軸 paradigm 14 件目 = const 集約軸 paradigm 反復 2 件目 (Loop 174 = CONTROL_CHARACTER_PATTERN 集約に続く反復) = paradigm 系統樹拡張 8 件目反復実証
+検証: npm run build ✓ (tsc + vite build エラー 0), '日時不明' literal grep 0 件確認, agent-verify.sh OK
+commit: <refactor commit hash> + <chore commit hash>
+依存関係追加: なし
+失敗理由: なし
+次アクション: なし (メイン側で次ループ判断)
+
+---
+```
+
+### 4-C: chore commit
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 176 = SESSION_DATETIME_UNKNOWN_LABEL を transcriptViewFormatters.ts に集約 (frontend 軸, const 集約 paradigm 反復 2 件目 = paradigm 系統樹拡張 8 件目反復実証, 既存 file 拡張軸 paradigm 14 件目, alternation pivot K(175) → frontend(176) = 15 → 16, 重複候補 grep 探索 paradigm 14 件目達成) のエントリ追記"
+```
+
+# 完走確認
+
+- `git status --short` で working tree clean (docs/handoff/* と docs/worker-prompts/* untracked のみ)
+- `git log --oneline -3` で 2 commit (refactor + chore) 反映を確認
+- `grep -rn '"日時不明"' src/` で 0 件確認

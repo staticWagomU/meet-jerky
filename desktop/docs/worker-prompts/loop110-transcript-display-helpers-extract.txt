@@ -1,0 +1,191 @@
+あなたは meet-jerky プロジェクトの worker (mjc-worker-loop110-transcript-display-helpers-extract) です。
+Loop 110 = frontend 軸 3 件目 = TranscriptDisplay.tsx 純粋関数 7 件 を新 file `src/utils/transcriptDisplayHelpers.ts` に抽出する作業を担当します。
+
+# 最初に必ず実施
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ読む (~32,700 行 / ~2.7MB あるので Read 全体禁止)
+2. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 (新規追記は **必ずファイル末尾** に行う、先頭は絶対に触らない)
+3. `cat src/utils/liveCaptionTrackHelpers.ts` で precedent file (Loop 108 = frontend 軸 2 件目) を全文確認
+4. `head -100 src/components/TranscriptDisplay.tsx` で抽出対象の 7 関数の現在の定義を確認
+
+# 作業範囲 (担当範囲外の編集禁止)
+
+## 1. 新規作成: `src/utils/transcriptDisplayHelpers.ts`
+
+以下の 7 純粋関数を export して新 file に移動 (TranscriptDisplay.tsx L17-93 から):
+
+```typescript
+import type { TranscriptSegment } from "../types";
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "./audioTrackLabels";
+import { isTranscriptErrorSegment } from "./transcriptSegment";
+import { formatSegmentTimestamp } from "./timeFormat";
+
+export function getSpeakerKind(
+  segment: TranscriptSegment,
+): "self" | "other" | null {
+  if (segment.source === "microphone") return "self";
+  if (segment.source === "system_audio") return "other";
+  if (segment.speaker === "自分") return "self";
+  if (segment.speaker) return "other";
+  return null;
+}
+
+export function getSpeakerLabel(segment: TranscriptSegment): string | null {
+  if (segment.source === "microphone") return "自分";
+  if (segment.source === "system_audio") return "相手側";
+  if (segment.speaker) return segment.speaker;
+  return "ソース不明";
+}
+
+export function getSpeakerAriaLabel(segment: TranscriptSegment): string {
+  if (segment.source === "microphone") return SELF_TRACK_DEVICE_LABEL;
+  if (segment.source === "system_audio") {
+    return OTHER_TRACK_DEVICE_LABEL;
+  }
+  if (segment.speaker === "自分") return "自分トラック";
+  if (segment.speaker) return `話者 ${segment.speaker}`;
+  return "音声ソース不明";
+}
+
+export function isSourceLessError(segment: TranscriptSegment): boolean {
+  return Boolean(
+    isTranscriptErrorSegment(segment) && !segment.speaker && !segment.source,
+  );
+}
+
+export function getSegmentAriaLabel(segment: TranscriptSegment): string {
+  const speakerLabel = isSourceLessError(segment)
+    ? "音声ソース不明"
+    : getSpeakerAriaLabel(segment);
+  if (isTranscriptErrorSegment(segment)) {
+    return `文字起こしエラー ${speakerLabel}: ${segment.text}`;
+  }
+  return `文字起こし ${formatSegmentTimestamp(segment.startMs)} ${speakerLabel}: ${segment.text}`;
+}
+
+export function getVisibleSpeakerLabel(segment: TranscriptSegment): string | null {
+  if (isSourceLessError(segment)) {
+    return "ソース不明";
+  }
+  return getSpeakerLabel(segment);
+}
+
+export function getSegmentCounts(segments: TranscriptSegment[]): {
+  self: number;
+  other: number;
+  unknown: number;
+  errors: number;
+  copyable: number;
+} {
+  return segments.reduce(
+    (counts, segment) => {
+      if (isTranscriptErrorSegment(segment)) {
+        counts.errors += 1;
+        return counts;
+      }
+      counts.copyable += 1;
+      const speakerKind = getSpeakerKind(segment);
+      if (speakerKind === "self") {
+        counts.self += 1;
+      } else if (speakerKind === "other") {
+        counts.other += 1;
+      } else {
+        counts.unknown += 1;
+      }
+      return counts;
+    },
+    { self: 0, other: 0, unknown: 0, errors: 0, copyable: 0 },
+  );
+}
+```
+
+行末の空白文字 (trailing whitespace) 禁止。空行末も含めて全行の末尾に whitespace を残さないこと。
+
+## 2. 編集: `src/components/TranscriptDisplay.tsx`
+
+- L17-93 の 7 純粋関数の定義を **完全削除** (`TranscriptDisplayProps` interface L95-98 + `export function TranscriptDisplay` L100 以降は **残す = 削除しない**)
+- 既存 import 群の中の以下 3 つは新 file に移管されたので **TranscriptDisplay.tsx 側で残置するか削除するか判断**:
+  - `import { formatSegmentTimestamp } from "../utils/timeFormat";` = TranscriptDisplay.tsx 内で他に直接使用されているか grep 確認 (`grep -n "formatSegmentTimestamp" src/components/TranscriptDisplay.tsx`) = 使用箇所が helper 内のみなら削除、他箇所でも使うなら残置
+  - `import { isTranscriptErrorSegment, ... } from "../utils/transcriptSegment";` = TranscriptDisplay.tsx 内で `isTranscriptErrorSegment` の他箇所使用を grep 確認 = 使用箇所があれば残置 (`isTranscriptSegmentPayload` + `isTranscriptionErrorPayload` は L17-93 外で使用されているため必ず残置)
+  - `import { OTHER_TRACK_DEVICE_LABEL, SELF_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";` = TranscriptDisplay.tsx 内で他箇所使用を grep 確認 = 使用なしなら削除
+
+- import に以下を追加 (既存 import 群と適切な位置に挿入、alphabetical 推奨):
+
+```typescript
+import {
+  getSegmentAriaLabel,
+  getSegmentCounts,
+  getSpeakerKind,
+  getSpeakerLabel,
+  getVisibleSpeakerLabel,
+} from "../utils/transcriptDisplayHelpers";
+```
+
+(`getSpeakerAriaLabel` + `isSourceLessError` は新 file 内 helper 同士で使用される内部関数だが、TranscriptDisplay.tsx 内から直接呼び出されていない場合は import 不要 = grep 確認: `grep -n "getSpeakerAriaLabel\|isSourceLessError" src/components/TranscriptDisplay.tsx` で L17-93 外の使用箇所を確認 = 確認した上で必要なものだけ追加 import する)
+
+- 既存 caller (同 file 内 5 箇所: L122 getSegmentCounts / L291 getSpeakerLabel / L514 getSpeakerKind / L515 getVisibleSpeakerLabel / L532 getSegmentAriaLabel) は **無変更** = 関数名は同一なので import 1 行追加だけで動作
+
+# 検証
+
+frontend 軸の場合:
+- `npm run build` (tsc + vite build) を実行 = 型エラーなし + build ✓ 確認 (frontend test framework 未導入のため test 件数検証なし)
+- `bash scripts/agent-verify.sh src/components/TranscriptDisplay.tsx src/utils/transcriptDisplayHelpers.ts` で全項目 OK 確認
+- cargo test 不要 (rust 無変更)
+
+# AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のエントリを追記:
+
+```
+[mjc-main-20260505-57 Loop 110 / 2026-05-05]
+worker: mjc-worker-loop110-transcript-display-helpers-extract (作業)
+範囲: src/components/TranscriptDisplay.tsx (純粋関数 7 件削除 + import 整理 + 新 import 1 行追加, ~75 行削減見込み) + src/utils/transcriptDisplayHelpers.ts (新規 ~95 行)
+内容: TranscriptDisplay.tsx L17-93 の純粋関数 7 件 (getSpeakerKind + getSpeakerLabel + getSpeakerAriaLabel + isSourceLessError + getSegmentAriaLabel + getVisibleSpeakerLabel + getSegmentCounts) を新 module utils/transcriptDisplayHelpers.ts に抽出。caller (同 file 内 5 箇所) は import 1 行追加 + 既存呼び出しは無変更。component 本体 (TranscriptDisplayProps + export function TranscriptDisplay) は TranscriptDisplay.tsx 内に残置。frontend 軸 3 件目 = 大型 frontend file 責務分離 31 file 目 = scope 19 軸目開拓 (TranscriptDisplay component = 異 file = scope 多様性継続) = 純粋関数機能分離軸 frontend 版 paradigm 継続 (Loop 107/108 と同 paradigm = K 軸 (Loop 109) を挟んだので軸 reset 解釈可能 = 警告境界回避)。TranscriptDisplay.tsx は 560 → ~485 行 (~13% 削減見込み)。LiveCaptionWindow.tsx に同名 getSpeakerLabel が別 signature (`string` vs ここでは `string | null`) で存在するため、新 file 名は TranscriptDisplay 専用 namespace 明示の transcriptDisplayHelpers.ts を採用 (共通化リスク回避設計、Loop 108 で確立した同 paradigm の継承)。メイン批判判断 = handoff 推奨候補 X1 を grep + Read 精査で 7 純粋関数 + 外部 caller ゼロ確認して採用 = 連続 52 セッション目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)。npm run build 全項目 OK = tsc 型チェック OK + vite build OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH> refactor(frontend): TranscriptDisplay 純粋関数 helpers を utils/transcriptDisplayHelpers.ts に抽出
+AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 19 軸目開拓)
+
+---
+```
+
+(`<REFACTOR_HASH>` は refactor commit の実 hash で置換。chore commit hash は意図的に書かない = Loop 60-109 で 49 連続成功した 2-commit pattern)
+
+# 2-commit pattern (worker 自律 連続 49 ループ成功 = 完全安定 pattern 化)
+
+1. **refactor commit (1 件目)**: 抽出作業 = `git add src/components/TranscriptDisplay.tsx src/utils/transcriptDisplayHelpers.ts && git commit -m "refactor(frontend): TranscriptDisplay 純粋関数 helpers を utils/transcriptDisplayHelpers.ts に抽出 (mjc-main-20260505-57 Loop 110, frontend 軸 3 件目, 大型 frontend file 責務分離 31 file 目, scope 19 軸目開拓, AGENTS.md priority 1 寄与)"`
+2. **refactor commit hash 取得**: `git log -1 --format=%H | head -c 7` で短縮 hash 取得
+3. **AGENT_LOG.md 末尾追記**: 上記エントリの `<REFACTOR_HASH>` を実 hash に置換し、`tail -10 AGENT_LOG.md` で末尾確認後、Write ツールで一時 file に書いた後 `cat <tmp_file> >> AGENT_LOG.md` で末尾に append (Edit ツールでは末尾 `---` が unique にならない場合あり = Write 後 cat append 推奨)
+4. **chore commit (2 件目)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-57 Loop 110 = utils/transcriptDisplayHelpers.ts 抽出 (構造分離 31 file 目, frontend 軸 3 件目 = scope 19 軸目開拓, 純粋関数機能分離軸 frontend 版 continuity = K 軸挟みで境界 reset)"` (chore commit 自身の hash は AGENT_LOG.md に書かない = 49 連続 precedent)
+
+# 規模超過防止
+
+- 編集対象 file: 2 つ (TranscriptDisplay.tsx + 新規 transcriptDisplayHelpers.ts)
+- 削除対象: TranscriptDisplay.tsx L17-93 の指定範囲のみ (L1-15 import 群 + L95 以降 component 本体は **削除しない**、ただし不要になった import の整理は許可)
+- caller 修正: import 1 行追加 (+ 不要 import 削除) のみ = 既存呼び出しは無変更
+- test 件数の上限: 704 件 (rust 無変更のため変動なし)
+- frontend test 件数: 検証なし (framework 未導入)
+
+# 注意点
+
+- **行末の空白文字 (trailing whitespace) 禁止**
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep` で対象範囲のみ参照
+- TranscriptDisplay.tsx 内の不要になった import の整理は `grep` で他箇所使用を確認してから削除 (誤削除リスク回避)
+- LiveCaptionWindow.tsx に同名 `getSpeakerLabel` が別 signature (`string`) で存在 = 共通化禁止 = TranscriptDisplay 専用 namespace `transcriptDisplayHelpers.ts` の名前を採用済 = 衝突回避済
+- 検証は `npm run build` で型エラーなし + ✓ built 確認
+- 同 file 内 caller (L122/L291/L514/L515/L532) は無変更 = function 名は完全同一保持
+
+# 完走後のメイン報告
+
+完走時に以下を main agent に報告:
+- refactor commit hash + chore commit hash
+- TranscriptDisplay.tsx 削減後の行数 (`wc -l src/components/TranscriptDisplay.tsx`)
+- transcriptDisplayHelpers.ts 行数 (`wc -l src/utils/transcriptDisplayHelpers.ts`)
+- npm run build 結果 (built in XXXms / modules transformed N)
+- agent-verify.sh 結果
+
+以上。

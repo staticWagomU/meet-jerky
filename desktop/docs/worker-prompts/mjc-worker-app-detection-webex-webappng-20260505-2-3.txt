@@ -1,0 +1,102 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読 (順序厳守)
+
+1. AGENTS.md (優先順位 2 = 会議検知の網羅性)
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で確認 (24,200+ 行 / 1.9MB+ あるので Read 全体禁止)
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+   - **先頭は絶対に触らない**
+   - **行末の空白文字 (trailing whitespace) 禁止**
+5. src-tauri/src/app_detection.rs の以下を必要箇所のみ tail/head/grep で確認 (2900+ 行あるので Read 全体禁止):
+   - `is_webex_host` / `is_webex_meeting_url` / `is_webex_jphp_meeting_url` / `is_webex_wbxmjs_meeting_url` (現状の Webex 関連実装)
+   - `classify_meeting_url` の Webex 分岐 (3 形態 OR)
+   - `is_wbxmjs_path` (Loop 2 で追加された path 検証パターン、本ループの参考実装)
+   - 既存 Webex テスト群 (Personal Room 5 件 + j.php 7 件 + wbxmjs 7 件 = 19 件)
+
+## 担当範囲
+
+- ファイル: `src-tauri/src/app_detection.rs` のみ
+- 機能: `classify_meeting_url` の Webex 検知に **`/webappng/sites/<site>/meeting/info/<token>` 形式 (Webex Web App Next Generation URL)** を追加
+- 関連: AGENT_LOG.md への 1 ループ実績追記 (末尾追記、トリミング)
+
+## 背景 (戦略整合性)
+
+- mjc-main-20260505-2 Loop 1 (commit bd41d05) で `j.php?MTID=<token>` 形式追加、Loop 2 (commit 2587b7a) で `wbxmjs/joinservice/sites/.../meeting/...` 形式追加
+- 既存 `is_webex_meeting_url` rustdoc (Loop 2 後の現状コメント):
+  ```
+  // Personal Room (`/meet/<id>`) / j.php 招待 URL (`/<site>/j.php?MTID=<token>`) /
+  // wbxmjs Meeting Join Service URL (`/wbxmjs/joinservice/sites/<site>/meeting/...`) に対応。
+  // webappng 等の他形式は誤検知防止のため将来課題。
+  ```
+- 本ループはこの「将来課題」のうち **webappng 形式** を対応 (4 形態目、Webex 招待 URL 主要 4 系統の最後)
+- AGENTS.md 優先順位 2 (会議検知の網羅性) に直接寄与
+- **「Debug 軸補強」「Copy 軸補強」等の派生型 CI 保護パターンには戻らない** (戦略転換継承)
+
+## webappng URL 仕様 (Webex Web App Next Generation)
+
+形式: `https://<site>.webex.com/webappng/sites/<site>/meeting/info/<token>`
+
+例:
+- `https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc`
+- `https://acme.webex.com/webappng/sites/acme/meeting/download/m123abc` (将来別 action 段の可能性、本ループでは `info` のみ accept)
+
+検知条件 (誤検知防止のため厳格):
+1. `is_webex_host(host)` で host が `*.webex.com` または `webex.com` であること (DNS label 検証付き、既存)
+2. path が `/webappng/sites/<site>/meeting/info/...` 形式であること
+   - prefix `/webappng/sites/` で始まる
+   - 次に site segment (非空)
+   - 次に `meeting` キーワード
+   - 次に `info` action segment ※ wbxmjs (任意 action 段) よりさらに厳格
+   - その後に最低 1 つの token segment (非空)
+3. query 不要
+
+## 実装方針 (TDD Red→Green)
+
+1. **TDD Red**: 失敗テストを 1 件先に追加し、`cargo test --lib` で失敗を確認
+   - 例: `classify_meeting_url("https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc")` が `Some(MeetingUrlClassification { service: "Webex", host: "acme.webex.com" })` を返す期待
+2. **TDD Green**: 最小実装で pass させる
+   - `is_webappng_path(path) -> bool` ヘルパー追加 (path prefix 検証 + segment 構造検証)
+   - `is_webex_webappng_meeting_url(host, path) -> bool` 追加 (host + path 両ガード)
+   - `classify_meeting_url` の Webex 分岐に OR 条件で追加: `... || is_webex_webappng_meeting_url(...)`
+3. **追加テスト** (Red phase 後、Green phase 前に揃える):
+   - **accept**: subdomain webex / 完全形 (`https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc`)
+   - **accept**: trailing slash 許容 (`https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc/`) ※既存 Personal Room / j.php / wbxmjs と整合性
+   - **reject**: token segment なし (`https://acme.webex.com/webappng/sites/acme/meeting/info`) ※ wbxmjs は accept だったが webappng は token 必須
+   - **reject**: action segment が `info` 以外 (`https://acme.webex.com/webappng/sites/acme/meeting/download/m123abc`)
+   - **reject**: `meeting` キーワード違反 (`https://acme.webex.com/webappng/sites/acme/foo/info/m123abc`)
+   - **reject**: 非 webex host (`https://fake-webex.example.com/webappng/sites/acme/meeting/info/m123abc`)
+   - **reject**: site segment 空 (`https://acme.webex.com/webappng/sites//meeting/info/m123abc`)
+4. **rustdoc 分類ルール更新**: `is_webex_meeting_url` 上のコメントを以下に書き換え:
+   ```
+   // Personal Room (`/meet/<id>`) / j.php 招待 URL (`/<site>/j.php?MTID=<token>`) /
+   // wbxmjs Meeting Join Service URL (`/wbxmjs/joinservice/sites/<site>/meeting/...`) /
+   // webappng URL (`/webappng/sites/<site>/meeting/info/<token>`) に対応。
+   // 他の Webex URL 形式は誤検知防止のため将来課題。
+   ```
+   (※「将来課題」リストから webappng を削除、対応済みリストに移動 = Webex 招待 URL 主要 4 系統網羅完了)
+
+## 規模・契約・検証
+
+- 担当範囲外の編集禁止 (app_detection.rs と AGENT_LOG.md のみ)
+- **テスト件数の上限**: 既存 660 → 新規追加は **最大 7 件まで**
+- `--no-verify` 禁止
+- `cargo fmt` / `cargo clippy --lib -- -D warnings` / `cargo test --lib` 全てパス必須
+- frontend は触らない (`npm run build` 不要)
+
+## 報告
+
+最後に、変更内容、変更ファイル、検証結果 (`cargo test --lib` 件数 / clippy 警告数 / fmt 結果)、残リスクを簡潔に報告してください。
+
+## AGENT_LOG.md 追記の具体手順
+
+1. `tail -10 AGENT_LOG.md` で末尾構造確認
+2. 末尾の `---` セパレータの **直後** に新ループのエントリを追記
+3. 形式は直前ループ (mjc-main-20260505-2 Loop 2 = wbxmjs 対応) を踏襲: 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション
+4. 末尾に新たな `---` セパレータを必ず置く
+5. 行末空白禁止
+
+1 ターンで完結する形でまとめてください。

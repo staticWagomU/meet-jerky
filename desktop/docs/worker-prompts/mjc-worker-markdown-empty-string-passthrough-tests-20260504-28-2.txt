@@ -1,0 +1,193 @@
+あなたは meet-jerky プロジェクトの作業 worker (claude sonnet, print mode) です。
+
+# 必読ドキュメント (順序厳守)
+1. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md` (プロジェクトルール)
+2. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md` (worker 運用)
+3. `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** を `tail -350 AGENT_LOG.md` で読む
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+   - **具体手順**: `tail -10 AGENT_LOG.md` で末尾の `---` 位置を確認 → 末尾の `---` 直後に追記する
+   - **大型ファイル (AGENT_LOG.md は 21000+ 行 / 1.8MB+) は Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+
+# 作業範囲 (これ以外触るな = 規模超過防止)
+- `src-tauri/src/markdown.rs` の `mod tests` 末尾への test 関数 **3 件** 追加 (Tidy First, 振る舞い不変, ユーザー観測不可)
+- `AGENT_LOG.md` への末尾追記 (本作業エントリ)
+
+**禁止事項**:
+- 関数本体 (format_session_markdown / inline_markdown_text / 他全関数) を変更すること
+- 既存 test を変更・削除すること
+- 別ファイル (session_manager.rs / settings.rs / 他全 .rs) を変更すること
+- frontend ファイル (.tsx, .ts, .css, .html) を変更すること
+- 4 件以上の test を追加すること
+- 行末の空白文字 (trailing whitespace) を含めること = AGENT_LOG.md / markdown.rs ともに **必ず行末の空白を除去する**
+
+# 背景 = mjc-main-20260504-28 Loop 2 = 別ファイル切替 = markdown.rs 空文字 passthrough 契約 完全網羅
+
+`markdown.rs` の `format_session_markdown` (l.24-49) は 14 件の test を持つが、SessionMeta.title / SessionSegment.speaker / SessionSegment.text の 3 つの主要 String フィールドの **空文字 passthrough 契約** が未保護:
+
+1. **title 軸**: `meta.title = ""` の場合、ヘッダは `# {} - {}\n` 形式で空文字を取り込み `#  - <started_at>\n` (`#` の後に 2 連続 space) を出力する現契約。空 title でも segment は出力される。
+2. **speaker 軸**: `segment.speaker = ""` の場合、segment 行は `**[<ts>] :** <text>  ` 形式で空 speaker を保持する現契約。空 speaker でも segment は出力される。
+3. **text 軸**: `segment.text = ""` の場合、segment 行は `**[<ts>] <speaker>:**   ` 形式で trailing 2 spaces を維持する現契約。**CommonMark の hard break (改行記号) は trailing 2 spaces で表現されるため、空 text でも 2 spaces は省略しない**。
+
+これらは「format_session_markdown が空文字フィールドを passthrough する責務」「上位層 (transcript_bridge / session_store) で空文字フィルタするべきという責務分離」を executable specification として固定する。
+
+# やること
+
+`src-tauri/src/markdown.rs` の `mod tests` の **末尾** (= 直前 test `inline_markdown_text_treats_full_width_space_and_nbsp_as_split_whitespace` の直後、ファイル末尾の `}` 直前) に test 関数 3 件追加。**関数本体は完全無変更**。
+
+## T1: format_session_markdown_with_empty_title_in_meta_produces_header_with_double_space
+
+**目的**: `meta.title = ""` でもヘッダを `#  - <started_at>\n` 形式 (`# ` + 空 title + ` - ` + started_at + `\n` = `#  - 2026-04-17 14:30\n`) で出力する現契約を CI 固定。「空 title だから skip」「空 title だから別 fallback (e.g. `# (untitled)`) を入れる」誤改修を遮断する装置。
+
+**構造**:
+```rust
+#[test]
+fn format_session_markdown_with_empty_title_in_meta_produces_header_with_double_space() {
+    let meta = SessionMeta {
+        title: String::new(),
+        started_at_display: "2026-04-17 14:30".to_string(),
+    };
+    let segments: Vec<SessionSegment> = Vec::new();
+
+    let expected = "#  - 2026-04-17 14:30\n";
+    assert_eq!(
+        format_session_markdown(&meta, &segments),
+        expected,
+        "空 title でも `# ` + 空 + ` - ` + started_at の format を維持する passthrough 契約"
+    );
+}
+```
+
+## T2: format_session_markdown_with_empty_speaker_in_segment_preserves_segment_layout
+
+**目的**: `segment.speaker = ""` でも segment 行を `**[<ts>] :** <text>  ` 形式 (空 speaker + `:` + space + text + trailing 2 spaces) で出力する現契約を CI 固定。「空 speaker だから segment 全体を skip」「空 speaker だから別 fallback (e.g. "(unknown)") を入れる」誤改修を遮断する装置。
+
+**構造**:
+```rust
+#[test]
+fn format_session_markdown_with_empty_speaker_in_segment_preserves_segment_layout() {
+    let meta = SessionMeta {
+        title: "title".to_string(),
+        started_at_display: "2026-04-17 14:30".to_string(),
+    };
+    let segments = vec![SessionSegment {
+        speaker: String::new(),
+        timestamp_display: "14:30:05".to_string(),
+        text: "hello".to_string(),
+    }];
+
+    let expected = "# title - 2026-04-17 14:30\n\n**[14:30:05] :** hello  ";
+    assert_eq!(
+        format_session_markdown(&meta, &segments),
+        expected,
+        "空 speaker でも `**[<ts>] :** <text>  ` の format を維持する passthrough 契約"
+    );
+}
+```
+
+## T3: format_session_markdown_with_empty_text_in_segment_preserves_trailing_two_spaces
+
+**目的**: `segment.text = ""` でも segment 行を `**[<ts>] <speaker>:**   ` 形式 (speaker + `:` + space + 空 text + **trailing 2 spaces**) で出力する現契約を CI 固定。CommonMark の hard break (改行記号) は trailing 2 spaces で表現されるため、空 text でも 2 spaces は省略されない。「空 text だから segment 全体を skip」「空 text だから trailing 2 spaces を省略」誤改修を遮断する装置。
+
+**構造**:
+```rust
+#[test]
+fn format_session_markdown_with_empty_text_in_segment_preserves_trailing_two_spaces() {
+    let meta = SessionMeta {
+        title: "title".to_string(),
+        started_at_display: "2026-04-17 14:30".to_string(),
+    };
+    let segments = vec![SessionSegment {
+        speaker: "speaker".to_string(),
+        timestamp_display: "14:30:05".to_string(),
+        text: String::new(),
+    }];
+
+    let expected = "# title - 2026-04-17 14:30\n\n**[14:30:05] speaker:**   ";
+    assert_eq!(
+        format_session_markdown(&meta, &segments),
+        expected,
+        "空 text でも trailing 2 spaces (CommonMark hard break) を維持する passthrough 契約"
+    );
+    assert!(
+        format_session_markdown(&meta, &segments).ends_with("  "),
+        "空 text でも末尾 2 spaces を保持: hard break 規約の executable specification"
+    );
+}
+```
+
+注意: T3 の expected 文字列の末尾は `**[14:30:05] speaker:**` + space + 空 text + **trailing 2 spaces** = `**[14:30:05] speaker:**   ` (`:` の後に space 1 個 + trailing 2 spaces で計 3 spaces)。Rust の raw string 化を避け、明示的にエスケープなしで `"...**[14:30:05] speaker:**   "` (末尾 3 spaces) と書く。
+
+# 配置場所
+`src-tauri/src/markdown.rs` の `mod tests` の **末尾** (= 既存 test `inline_markdown_text_treats_full_width_space_and_nbsp_as_split_whitespace` の直後、ファイル末尾の `}` 直前)。
+配置順は T1 → T2 → T3。
+
+# 検証手順 (worker 完走前に必ず実行)
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo fmt -- --check
+cargo clippy --lib -- -D warnings
+cargo test --lib -- --test-threads=1 2>&1 | tail -20
+```
+
+期待結果:
+- `cargo fmt --check`: 差分なし
+- `cargo clippy --lib -- -D warnings`: 警告ゼロ
+- `cargo test --lib -- --test-threads=1`: `test result: ok. 548 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out`
+
+万一 `cargo fmt --check` で差分が出た場合は `cargo fmt` を実行して fix。clippy 警告が出たら最小修正のみ実施。
+
+# AGENT_LOG.md 末尾追記内容
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、末尾に以下を追記:
+
+```markdown
+
+## mjc-worker-markdown-empty-string-passthrough-tests-20260504-28-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-markdown-empty-string-passthrough-tests-20260504-28-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-28 Loop 2
+
+### 作業範囲
+- `src-tauri/src/markdown.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替 (session_manager.rs → markdown.rs) で「test 密度の偏り是正」継続 + format_session_markdown の空文字 passthrough 契約 (3 つの主要 String フィールド: title / speaker / text) を 3 軸で CI 固定:
+- T1: format_session_markdown_with_empty_title_in_meta_produces_header_with_double_space
+- T2: format_session_markdown_with_empty_speaker_in_segment_preserves_segment_layout
+- T3: format_session_markdown_with_empty_text_in_segment_preserves_trailing_two_spaces
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <結果>
+
+### 変更ファイル
+- src-tauri/src/markdown.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+<cargo test 末尾 quote>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+**最重要 (再掲)**:
+- AGENT_LOG.md は **末尾追記のみ**。先頭・中間は絶対に触らない。
+- 行末の空白文字 (trailing whitespace) を含めない。
+- 関数本体・既存 test は無変更。
+- 4 件以上の test 追加禁止。
+
+完了したらメインへ「Loop 2 worker 完走」と報告すること。

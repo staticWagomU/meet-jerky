@@ -1,0 +1,113 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First で既存の振る舞いは絶対に変えず、テストのみ追加します。
+
+# 必読 (作業前に必ず参照)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** を `tail -350 AGENT_LOG.md` で読め (ファイル全体は 23000+ 行 / 1.9MB+ のため Read 全体禁止)。
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+- 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md`
+
+# 担当範囲 (規模超過防止 = 厳守)
+- 編集可: `src-tauri/src/app_detection.rs` の `mod tests` 内のみ (テスト追加 3 件、その他の関数は触らない)
+- 編集可: `AGENT_LOG.md` の **末尾追記のみ** (先頭・中間は触らない)
+- それ以外のファイル変更禁止 (Cargo.toml / 他 .rs / frontend / docs 全て触らない)
+- テスト追加は **3 件まで** (それ以上は超過、削減して提出)
+- 大型ファイル (app_detection.rs 2380+ 行 / AGENT_LOG.md 23000+ 行) は **Read 全体禁止 = tail/head/grep/sed で対象範囲のみ参照**
+- 行末に空白文字 (trailing whitespace) を残さない
+
+# タスク
+mjc-main-20260504-36 Loop 3 = ParsedUrlParts 構造体 (private struct) に対する「Debug 軸補強」19 連続 application + 「private struct 形態」2 連続 application + 「Clone 独立性軸」直接判定 (assert_ne) 連続 application + 「Option<String> Some/None 等値性」軸新規対応 + app_detection.rs 内 3 形態目補強 (深化)
+
+## 対象 struct (app_detection.rs l.592-596)
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ParsedUrlParts {
+    host: String,
+    path: String,
+    query: Option<String>,
+}
+```
+
+**重要**:
+- **private struct** (pub なし) なので mod tests からは `super::ParsedUrlParts` でアクセス可能
+- Serialize 派生なし = serde format 不変条件軸は使えない、代わりに **Option<String> Some/None 等値性** を T2/T3 で補強
+- `parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts>` (l.598 付近) の戻り値型として使用
+
+## 3 軸の追加テスト (3 件)
+
+### T1 = Debug 出力の不変条件 (1 件)
+- テスト名 `parsed_url_parts_debug_contains_field_values_with_option_some_and_none`
+- 内容: 2 ケースで Debug 出力を assert (8 段以上)
+  - case A = ParsedUrlParts { host: "meet.google.com", path: "/abc-defg-hij", query: Some("auth=xyz".to_string()) }
+    1. struct 名 `"ParsedUrlParts"` を contains
+    2. field 名 3 つ (`"host"` / `"path"` / `"query"`) を全て contains
+    3. 値 `"meet.google.com"` / `"/abc-defg-hij"` / `"auth=xyz"` を全て contains
+    4. 値 `"Some"` を contains (Option::Some の Debug format)
+    5. host → path → query の出現順 (`debug_str.find("host").unwrap() < debug_str.find("path").unwrap() < debug_str.find("query").unwrap()`)
+  - case B = ParsedUrlParts { host: "teams.microsoft.com", path: "/", query: None }
+    1. 値 `"None"` を contains (Option::None の Debug format)
+    2. 値 `"auth=xyz"` を contains しない (case A の query 値が混入していない)
+
+### T2 = PartialEq field 単位独立判定 + Option Some/None 等値性 (1 件)
+- テスト名 `parsed_url_parts_partial_eq_field_independent_and_option_some_vs_none_distinct`
+- 内容 (8 段以上 assert):
+  - reflexive: 同一インスタンス同士 == (1 段)
+  - field 単位独立: 3 fields それぞれを 1 つだけ別値に変えた 3 個のインスタンスを作り、それぞれ original と != (3 段)
+  - Option Some/None 等値性: query=None と query=Some("") の != (1 段)、query=Some("a") と query=Some("b") の != (1 段)、query=Some("x") 同士の == (1 段)、query=None 同士の == (1 段)
+
+### T3 = Clone 独立性 + assert_ne 直接判定 (Option<String> mutate 含む) (1 件)
+- テスト名 `parsed_url_parts_clone_is_deep_and_distinct_after_mutation_including_option`
+- 内容 (6 段以上 assert):
+  - original = ParsedUrlParts { host: "x.com", path: "/p", query: Some("k=v".to_string()) } を作成
+  - cloned1 = original.clone(), assert_eq!(cloned1, original) (1 段)
+  - cloned1.host を別値に変更 → assert_ne!(cloned1, original) (1 段)
+  - cloned2 = original.clone(); cloned2.path を別値に変更 → assert_ne!(cloned2, original) (1 段)
+  - cloned3 = original.clone(); cloned3.query を Some("k=other".to_string()) に変更 → assert_ne!(cloned3, original) (1 段)
+  - cloned4 = original.clone(); cloned4.query = None → assert_ne!(cloned4, original) (Option<String> Some → None 変更で != を 1 段)
+  - 元 original の query は Some("k=v") のまま不変であることを確認 (1 段)
+- **mjc-main-35 Loop 3 WhisperRequestParams の assert_ne 直接判定手法**を Option<String> field に拡張 = 「Clone 独立性軸」5 種手法照射の補強
+
+## 振る舞い不変の検証
+- アプリコード (struct 定義 / parse_url_host_and_path / 既存関数群) は **絶対に変更禁止**
+- mod tests 内のみ追加
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib parsed_url_parts 2>&1 | tail -10` で 3 件全 pass (新規 3 件)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | tail -5` で **616 passed / 0 failed** (前 613 → +3 件)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10` で警告ゼロ
+
+## AGENT_LOG.md への追記 (末尾追記、先頭は絶対触らない)
+末尾の `---` 直後に以下のフォーマットで 1 件追記:
+
+```markdown
+## [WORKER mjc-worker-parsed-url-parts-debug-partialeq-clone-tests-20260504-36-3] 開始: <現在時刻 ISO8601 JST>
+
+### タスク
+mjc-main-20260504-36 Loop 3 = ParsedUrlParts (private struct, app_detection.rs l.592-596) に Debug 出力 (Option Some/None 含む) / PartialEq field 単位独立判定 + Option Some/None 等値性 / Clone 独立性 (assert_ne 直接判定 + Option<String> mutate) の 3 軸テストを追加 + private struct 形態 2 連続 application + Option<String> Some/None 等値性軸新規対応
+
+### 結果
+- 追加テスト: parsed_url_parts_debug_contains_field_values_with_option_some_and_none / parsed_url_parts_partial_eq_field_independent_and_option_some_vs_none_distinct / parsed_url_parts_clone_is_deep_and_distinct_after_mutation_including_option (計 3 件)
+- cargo test --lib: 616 passed / 0 failed (前 613 → +3)
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- 「Debug 軸補強」19 連続 application 達成 (前 18 連続 → 19 連続)
+- 「private struct 形態」2 連続 application 達成 (mjc-main-33 Loop 2 RequestedTranscriptionSources に続く 2 形態目)
+- 「Clone 独立性軸」直接判定 (assert_ne) + Option<String> mutate 連続 application
+- 「Option<String> Some/None 等値性」軸新規対応 (Some "x" vs Some "y" / Some vs None / Some 同値 / None 同値 の 4 ケース)
+- app_detection.rs 内 3 形態目補強 (MeetingAppDetectedPayload + MeetingUrlClassification + ParsedUrlParts、深化)
+- ファイル: src-tauri/src/app_detection.rs (mod tests 内テスト追加のみ)
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+
+---
+```
+
+# 完了基準
+1. `git status --short` で `M src-tauri/src/app_detection.rs` と `M AGENT_LOG.md` の 2 件が表示されること (それ以外のファイル変更があれば超過)
+2. cargo test --lib で 616 passed / 0 failed
+3. cargo clippy --lib -- -D warnings 警告ゼロ
+4. AGENT_LOG.md 末尾に WORKER エントリ追記 (先頭は触らない)
+5. 行末に trailing whitespace を残さない
+
+タスク完了したら必ずメインに 1 行で報告: 「Loop 3 完了: 616 passed, ParsedUrlParts 3 軸補強完了 (private struct 2 連続 + Option Some/None 等値性軸新規)」

@@ -1,0 +1,143 @@
+あなたは meet-jerky プロジェクトの sonnet worker です。
+
+# あなたのタスク (Tidy First, behavior-preserving)
+
+`src-tauri/src/transcription.rs` の `mod tests` にある **`transcription_error_payload` 関連テスト 15 件** を `src-tauri/src/transcription_error_payload.rs` に新設する `#[cfg(test)] mod tests` へ移動してください。本体関数 (build_transcription_error_payload / build_worker_panic_error_payload / transcription_error_payload_to_value / is_realtime_stream_already_stopped_error / should_emit_realtime_stream_error) は既に transcription_error_payload.rs に存在 = テストを「定義と同じファイルに置く」SLAP 改善が目的です。
+
+# 必須準備 (5 項目)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を実行して末尾 350 行を読む**。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない** (uniqueness 破壊事故防止)。
+4. **末尾追記の具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する。
+5. **行末の空白文字 (trailing whitespace) は禁止**。`grep -nE ' +$' <変更ファイル>` で出ないことを最終確認する。
+
+# 規模超過防止 (担当範囲外編集禁止)
+
+- 編集対象は **以下 3 ファイルのみ**:
+  - `src-tauri/src/transcription.rs` (テスト 15 件と関連 use 文を削除)
+  - `src-tauri/src/transcription_error_payload.rs` (mod tests を新設して 15 件を受け入れ)
+  - `AGENT_LOG.md` (Loop 35 entry を末尾に追加)
+- **大型ファイルは Read 全体禁止** = `head -200 src-tauri/src/transcription.rs` / `sed -n '120,180p'` / `sed -n '600,850p'` 等で対象範囲のみ参照。AGENT_LOG.md は `tail -350 AGENT_LOG.md` で末尾だけ。
+- **test 件数上限 = 移動 15 件のみ**。新規テスト追加禁止、既存テスト改変禁止 (中身そのままコピーして移動)。
+- **本体関数 (production code) は一切触らない**。
+
+# 移動対象テスト 15 件 (transcription.rs 内の行範囲は移動前の現状値、参考)
+
+連続ブロック A (transcription.rs L120-180 = 4 件):
+1. L121 `test_worker_panic_payload_does_not_expose_panic_details`
+2. L138 `test_transcription_error_payload_serialization_with_source`
+3. L154 `test_transcription_error_payload_serialization_omits_missing_source`
+4. L166 `test_stopped_realtime_stream_errors_are_not_emitted_to_ui`
+
+連続ブロック B (transcription.rs L602-847 = 11 件):
+5. L603 `build_worker_panic_error_payload_omits_source_when_none`
+6. L614 `build_transcription_error_payload_preserves_empty_error_string`
+7. L622 `is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix`
+8. L638 `is_realtime_stream_already_stopped_error_matches_substring_at_any_position`
+9. L658 `is_realtime_stream_already_stopped_error_matches_across_newlines`
+10. L676 `build_transcription_error_payload_serialization_with_microphone_source`
+11. L694 `build_worker_panic_error_payload_serialization_with_system_audio_source`
+12. L723 `build_transcription_error_payload_escapes_newlines_in_error_string`
+13. L746 `transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name`
+14. L792 `transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants`
+15. L816 `transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source`
+
+# 手順詳細
+
+## STEP 1: transcription_error_payload.rs に mod tests を新設
+
+ファイル末尾 (現 L29) に以下を追加:
+
+```rust
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::transcription_types::{TranscriptionErrorPayload, TranscriptionSource};
+
+    // ここに 15 件のテストを順番に貼り付け (行末空白なし、本文そのまま)
+}
+```
+
+- **use 文整理**: `super::*` で本ファイル内の `build_transcription_error_payload` / `build_worker_panic_error_payload` / `transcription_error_payload_to_value` / `is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` を取り込む。
+- `TranscriptionErrorPayload` (struct) と `TranscriptionSource` (enum) は `crate::transcription_types::` から取り込む。
+- 移動するテストの本文は **transcription.rs から完全にそのままコピー** = アサーション内容や日本語コメントを変更しない。
+- 移動順序は上記 15 件の順 (元 transcription.rs の行順) を維持して可読性確保。
+
+## STEP 2: transcription.rs から該当 15 件を削除
+
+- ブロック A (連続 4 件、L120-180) を削除。
+- ブロック B (連続 11 件、L600 付近-L847) を削除。
+- L67-71 の use 文 (`use crate::transcription_error_payload::{...};`) を点検 = 残すテスト側で `should_emit_realtime_stream_error` などを使っていない場合は不要 import を削除する。`is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` / `build_transcription_error_payload` / `build_worker_panic_error_payload` / `transcription_error_payload_to_value` の参照は移動後 transcription.rs の残テストで使われているか **必ず grep で確認**:
+  - `cd src-tauri && grep -nE 'should_emit_realtime_stream_error|is_realtime_stream_already_stopped_error|build_transcription_error_payload|build_worker_panic_error_payload|transcription_error_payload_to_value' src/transcription.rs`
+- 残されたテストで参照されない関数は use 文から外して unused import を回避する (clippy 警告防止)。
+- `use crate::transcription_types::TranscriptionErrorPayload;` (L75) は残テストで参照されなければ削除する (`grep -nE 'TranscriptionErrorPayload' src/transcription.rs` で確認)。
+
+## STEP 3: 検証
+
+`cd src-tauri` してから:
+- `cargo test --lib` → **700 passed / 0 failed** を維持 (件数不変)。差異が出たら漏れか重複なので戻して再点検する。
+- `cargo clippy --lib --tests -- -D warnings` → 警告ゼロ。
+- `cargo fmt` → 整形差異あれば自動適用 (Loop 22/29/33 precedent と同じ受け入れ判断)。
+- `cargo fmt --check` → OK。
+- `grep -nE ' +$' src/transcription.rs src/transcription_error_payload.rs` → 出力ゼロを確認。
+- `bash ../scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs` → OK (skip 判定でも本人 cargo 検証通過なら OK)。
+
+## STEP 4: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認してから、**ファイル末尾に** 以下のフォーマットで追記する:
+
+```
+[mjc-main-20260505-18 Loop 35 / 2026-05-05 ~JST]
+
+## What
+- transcription_error_payload 関連テスト 15 件を src-tauri/src/transcription.rs から src-tauri/src/transcription_error_payload.rs の新設 #[cfg(test)] mod tests に移動
+  - ブロック A (4 件): test_worker_panic_payload_does_not_expose_panic_details / test_transcription_error_payload_serialization_with_source / test_transcription_error_payload_serialization_omits_missing_source / test_stopped_realtime_stream_errors_are_not_emitted_to_ui
+  - ブロック B (11 件): build_worker_panic_error_payload_omits_source_when_none / build_transcription_error_payload_preserves_empty_error_string / is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix / is_realtime_stream_already_stopped_error_matches_substring_at_any_position / is_realtime_stream_already_stopped_error_matches_across_newlines / build_transcription_error_payload_serialization_with_microphone_source / build_worker_panic_error_payload_serialization_with_system_audio_source / build_transcription_error_payload_escapes_newlines_in_error_string / transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name / transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants / transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source
+- transcription.rs の use 文を整理 (移動先で不要になった import を削除)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (テスト局所化 = SLAP 改善)
+- 「本体関数の定義と同じファイルにテストを置く」 = transcription_error_payload.rs の責務集約
+- variety 軸 = 「テスト移動」軸 (Loop 32 から 3 ループ間隔 = 許容範囲)、Loop 25 (17 件) / Loop 32 (4 件) precedent と同パターン
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存 700 passed 件数不変
+- mod tests 新設 + use 文取り込み (super::* + crate::transcription_types::TranscriptionErrorPayload + crate::transcription_types::TranscriptionSource)
+- transcription.rs use 文整理で unused import 警告防止
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- trailing whitespace: ゼロ
+
+## commit
+- <commit hash 後で別 chore で記入>
+---
+```
+
+## STEP 5: commit
+
+`bash ../scripts/agent-commit.sh "refactor(transcription): transcription_error_payload 関連テスト 15 件を transcription_error_payload.rs に移動 (Tidy First, mjc-main-20260505-18 Loop 35)" src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs AGENT_LOG.md` を実行する。
+
+commit 成功後、`git log --oneline -1` で commit hash を確認し、続けて 2 件目の chore commit:
+
+`AGENT_LOG.md` の Loop 35 entry の `## commit` 部分に commit hash を Edit ツールで追記:
+`- <hash>` のプレースホルダを実 hash に置き換える。
+
+その後 `bash ../scripts/agent-commit.sh "chore(agent-log): Loop 35 commit hash <hash> を AGENT_LOG.md に記入" AGENT_LOG.md` を実行。
+
+# 完了基準
+
+- transcription.rs から 15 件削除済 (他テスト・本体コードは無変更)
+- transcription_error_payload.rs に 15 件 + mod tests 新設済
+- cargo test 700 passed 維持
+- cargo clippy 警告ゼロ
+- cargo fmt OK
+- trailing whitespace ゼロ
+- AGENT_LOG.md 末尾に Loop 35 entry 追記済
+- commit 2 件 (本体 + commit hash 反映 chore) 完了
+
+完了したら最終報告のみ簡潔に。

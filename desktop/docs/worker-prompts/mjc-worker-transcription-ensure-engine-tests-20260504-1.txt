@@ -1,0 +1,56 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけでよい。直近の SESSION SUMMARY @ 2026-05-04 ~07:50 JST が状況復元の起点です)
+
+# 担当範囲
+
+`src-tauri/src/transcription.rs` の `mod tests` 末尾への #[test] 関数追加のみ。実装ロジック・docstring・既存テストは一切変更しないでください。
+
+# 目的
+
+`TranscriptionManager::load_model` と `ensure_engine` (Whisper パス) の「モデルがダウンロードされていない」エラーパスを 3 件のテストで裏付け、回帰防止カバレッジを拡張する。
+
+# 追加すべき #[test] 関数 (3 件)
+
+## A. `load_model_returns_error_when_model_not_downloaded`
+- 期待挙動: `TranscriptionManager::new()` で作った manager に対し、絶対に存在しないモデル名 (例: `"__nonexistent_test_model_xyz_999__"`) で `load_model` を呼ぶと `Err` を返し、エラー文言が日本語の `"モデルがダウンロードされていません:"` を prefix として含むことを確認。
+- 副作用検証: 失敗後も `manager.is_engine_loaded() == false` であることをアサート (engine が誤ってセットされない不変条件)。
+
+## B. `ensure_engine_returns_error_when_whisper_model_not_downloaded`
+- 期待挙動: `TranscriptionManager::new()` で作った manager に対し、`ensure_engine(&TranscriptionEngineType::Whisper, "__nonexistent_test_model_xyz_999__")` を呼ぶと `Err` を返し、エラー文言が同じ日本語 prefix を含むことを確認。
+- 副作用検証: 失敗後も `manager.is_engine_loaded() == false` かつ、内部の `loaded_engine_signature` が更新されていないこと (失敗時に signature を立てると後続の早期 return が壊れる)。`loaded_engine_signature` は private フィールドなので、代わりに「同じ条件で 2 回目の `ensure_engine` を呼んでも依然として `Err` を返す」ことで signature が記録されていない (= idempotent な失敗) ことを裏付ける。
+
+## C. `ensure_engine_does_not_set_engine_on_whisper_failure`
+- 期待挙動: B と類似だが、より明示的に「engine も signature も汚染されない」ことを示す目的のテスト。`ensure_engine` の Err 後に `is_engine_loaded() == false` を確認し、続けて違うモデル名 (もう一つの存在しないモデル名 `"__another_nonexistent_test_model_999__"`) で再度 `ensure_engine` を呼んでも引き続き `Err` を返すことを確認 (signature が汚染されていれば、最初の signature が一致せず再ロード試行 → 同じエラー、汚染されていなくても再ロード試行 → 同じエラー、なのでこれは「Err を返す」ことのみアサート)。
+
+# 設計上の注意点
+
+- `__nonexistent_test_model_xyz_999__` のような絶対に CI/開発環境にも存在しないモデル名を使うこと。`small` 等の実在モデル名は使わない (将来的に CI 環境にダウンロード済みケースが発生すると false negative)。
+- 既存テスト `test_model_not_downloaded_initially` (L1283) と同パターンで `ModelManager::new().get_model_path()` を経由する。`load_model` の挙動は内部で `model_manager.get_model_path().exists()` を判定するので、絶対不在のファイル名なら確実に false。
+- `TranscriptionEngineType` の import は既存テスト (`test_apple_speech_rejects_multiple_available_streams` 等) と同じ書き方を踏襲。`use crate::settings::TranscriptionEngineType;` がテストモジュール冒頭にあるか確認。なければ test 関数内で `use` するか fully qualified path で書く。
+- `is_engine_loaded()` は L577 で `#[cfg(test)]` 付きで公開されている。直接呼べる。
+- `loaded_engine_signature` は private なので、外部からは観測不能。test C は「2 回目の呼び出しが Err を返す」だけで間接確認。
+
+# 完了条件
+
+- 3 つの #[test] 関数を `mod tests` 末尾 (既存の最後の test の後ろ) に追加。
+- 実装ファイル本体は一切変更しない。
+- `cargo fmt --check` 合格。
+- `cargo clippy --no-deps --all-targets --all-features -- -D warnings` 合格 (警告ゼロ維持)。
+- `cargo test --no-fail-fast` 合格 (232 → 235 passed が期待値、追加 3 件すべて pass)。
+- `git diff --check` 合格 (whitespace error なし)。
+- `bash scripts/agent-verify.sh src-tauri/src/transcription.rs AGENT_LOG.md` 合格。
+- AGENT_LOG.md 末尾に作業セクションを追記 (開始日時、担当セッション、役割、作業範囲、指示内容要約、結果、追加 test 件数 / total passed、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクション)。
+- コミットは禁止 (メインがレビュー後にコミットする)。
+
+# 制約 (再掲)
+
+- 課金禁止。実 API (OpenAI / ElevenLabs) を叩くテストを書かない。
+- `--no-verify` 禁止。
+- 担当範囲外の編集禁止。他エージェントの差分を巻き戻さない。
+- 1 ターンで完結する報告を返してください。

@@ -1,0 +1,197 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読 (順番厳守)
+1. AGENTS.md (運用ルール)
+2. docs/agent-harness-claude.md (ハーネス使用法)
+3. **AGENT_LOG.md は 22000+ 行 / 1.86MB+ あるので Read 全体禁止。`tail -350 AGENT_LOG.md` 相当で末尾だけ参照**
+4. src-tauri/src/session.rs 全体 (現在 620 行) — テスト 21 件の構造と命名を確認
+
+## AGENT_LOG.md 追記の重要ルール (必ず厳守)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**
+- **新規追記は必ずファイル末尾に行う** = `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+- **先頭は絶対に触らない**
+- 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **行末の空白文字 (trailing whitespace) 禁止** (rustfmt / cargo fmt --check で警告になる)
+
+## 担当範囲
+- `src-tauri/src/session.rs` の `mod tests` 末尾への test 関数 **3 件** 追加 (上限 = 3 件、超過禁止)
+- `AGENT_LOG.md` の末尾追記 1 件 (本作業の記録)
+- 既存 21 test / Session struct / SessionSegment struct / 既存 #[derive] / impl は **完全無変更**
+
+## 背景 (mjc-main-20260504-34 Loop 1 = 「Debug 軸補強」パターン 11 連続 application)
+
+mjc-main-20260504-33 (旧 mjc-main) は 3 ループで以下を達成:
+- Loop 1: ModelInfo Debug + Clone deep 独立性 + serde camelCase format 3 軸 (Debug 軸補強 8 連続)
+- Loop 2: RequestedTranscriptionSources Debug + Copy + PartialEq 3 軸 (Debug 軸補強 9 連続、private struct 形態追加)
+- Loop 3: SessionManagerError Debug + thiserror Display + PartialEq 3 軸 (Debug 軸補強 10 連続、thiserror::Error 派生 enum 形態追加、format 不変条件パターンを serde 系から thiserror 文言系へ拡張)
+
+本 Loop 1 で「Debug 軸補強」**11 連続 application** を session.rs Session struct で達成し、加えて「format 不変条件 application」パターンを serde **default snake_case** (5 系統目) に拡張する。
+
+## session.rs の現状
+
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionSegment {
+    pub speaker: String,
+    pub timestamp_offset_secs: u64,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Session {
+    pub id: String,
+    pub title: String,
+    pub started_at: u64,
+    pub ended_at: Option<u64>,
+    pub segments: Vec<SessionSegment>,
+}
+```
+
+既存テストで残軸が以下:
+- l.607 = `session_segment_debug_output_equals_after_clone_for_all_field_types` (SessionSegment の Debug-Clone 一致は済) → **Session 全体の Debug-Clone 一致は未補強**
+- l.406 = `serde_json_round_trip_preserves_all_fields_for_4_state_combinations` (round-trip だが、camelCase / 別 key 名に誤改修されても round-trip で通ってしまう) → **JSON key 名 contract が未補強**
+
+## 追加するテスト (3 件、命名と構造は既存に対称形で揃える)
+
+### T1: session_debug_output_equals_after_clone_for_all_field_types_including_options_and_vec
+**Debug 軸補強 11 連続 application** = mjc-main-31 Loop 2 で SessionSegment Debug-Clone 一致は補強済 = Session 全体 (Vec / Option / String / u64 混合 5 fields) の Debug-Clone 一致を契約として固定する。l.607 (SessionSegment) と完全に対称形。
+
+```rust
+#[test]
+fn session_debug_output_equals_after_clone_for_all_field_types_including_options_and_vec() {
+    let mut original = Session::start("daily standup".to_string(), 1_234_567_890);
+    original.append_segment("Alice".to_string(), 5, "hello".to_string());
+    original.append_segment("Bob".to_string(), 10, "world".to_string());
+    original.finalize(1_234_568_000);
+    let cloned = original.clone();
+    assert_eq!(
+        format!("{:?}", original),
+        format!("{:?}", cloned),
+        "#[derive(Debug, Clone)] の組み合わせで Session 全体 (id/title/started_at/ended_at=Some/segments=2 件) の Debug 出力が clone 後も完全一致する契約 (mjc-main-31 Loop 2 の SessionSegment と対称形補強)"
+    );
+}
+```
+
+### T2: session_segment_serde_json_format_uses_snake_case_field_names_only
+**format 不変条件 application 拡張** = serde derive のデフォルト field name (snake_case = 元の field 名そのまま) を JSON object key として固定する契約。`#[serde(rename_all = "camelCase")]` などの誤改修を遮断する。l.406 (round-trip) は逆向きの保護 (JSON が壊れても fail) だが、これは順向きの保護 (key 名が変わったら fail)。
+
+```rust
+#[test]
+fn session_segment_serde_json_format_uses_snake_case_field_names_only() {
+    let segment = SessionSegment {
+        speaker: "Alice".to_string(),
+        timestamp_offset_secs: 42,
+        text: "hello world".to_string(),
+    };
+    let value = serde_json::to_value(&segment).unwrap();
+    let obj = value.as_object().expect("SessionSegment should serialize as JSON object");
+    assert!(obj.contains_key("speaker"), "key 'speaker' (snake_case) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("timestamp_offset_secs"), "key 'timestamp_offset_secs' (snake_case) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("text"), "key 'text' (snake_case) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert_eq!(obj.len(), 3, "SessionSegment の JSON object は 3 key 厳密 (camelCase 等の追加 key を遮断): got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(!obj.contains_key("timestampOffsetSecs"), "camelCase key 'timestampOffsetSecs' が JSON に含まれない契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert_eq!(obj.get("speaker").and_then(|v| v.as_str()), Some("Alice"), "speaker 値が JSON に正しく載る契約");
+    assert_eq!(obj.get("timestamp_offset_secs").and_then(|v| v.as_u64()), Some(42), "timestamp_offset_secs 値が JSON に正しく載る契約");
+    assert_eq!(obj.get("text").and_then(|v| v.as_str()), Some("hello world"), "text 値が JSON に正しく載る契約");
+}
+```
+
+### T3: session_serde_json_format_uses_snake_case_field_names_only_with_nested_segments
+**format 不変条件 application 拡張** = Session 全体 (5 fields + nested Vec<SessionSegment>) の JSON key 名 contract を固定。session_store に書き出される persistent JSON 形式の **逆向き不変条件**保護。
+
+```rust
+#[test]
+fn session_serde_json_format_uses_snake_case_field_names_only_with_nested_segments() {
+    let mut session = Session::start("title".to_string(), 1_000);
+    session.append_segment("Alice".to_string(), 5, "hello".to_string());
+    session.finalize(1_500);
+    let value = serde_json::to_value(&session).unwrap();
+    let obj = value.as_object().expect("Session should serialize as JSON object");
+    assert!(obj.contains_key("id"), "key 'id' が JSON に含まれる契約");
+    assert!(obj.contains_key("title"), "key 'title' が JSON に含まれる契約");
+    assert!(obj.contains_key("started_at"), "key 'started_at' (snake_case) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("ended_at"), "key 'ended_at' (snake_case) が JSON に含まれる契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(obj.contains_key("segments"), "key 'segments' が JSON に含まれる契約");
+    assert_eq!(obj.len(), 5, "Session の JSON object は 5 key 厳密 (camelCase 等の追加 key を遮断): got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(!obj.contains_key("startedAt"), "camelCase key 'startedAt' が JSON に含まれない契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert!(!obj.contains_key("endedAt"), "camelCase key 'endedAt' が JSON に含まれない契約: got {:?}", obj.keys().collect::<Vec<_>>());
+    assert_eq!(obj.get("title").and_then(|v| v.as_str()), Some("title"), "title 値が JSON に正しく載る契約");
+    assert_eq!(obj.get("started_at").and_then(|v| v.as_u64()), Some(1_000), "started_at 値が JSON に正しく載る契約");
+    assert_eq!(obj.get("ended_at").and_then(|v| v.as_u64()), Some(1_500), "ended_at=Some が JSON に u64 として載る契約");
+    let segments = obj.get("segments").and_then(|v| v.as_array()).expect("segments は JSON array");
+    assert_eq!(segments.len(), 1, "nested SessionSegment が 1 件 array に載る契約");
+    let seg0 = segments[0].as_object().expect("nested SessionSegment は JSON object");
+    assert!(seg0.contains_key("speaker"), "nested SessionSegment の key 'speaker' 契約");
+    assert!(seg0.contains_key("timestamp_offset_secs"), "nested SessionSegment の key 'timestamp_offset_secs' 契約");
+    assert!(seg0.contains_key("text"), "nested SessionSegment の key 'text' 契約");
+}
+```
+
+## 規模超過防止 (重要)
+- 追加するテストは **必ず 3 件のみ** (T1/T2/T3)。4 件目以降は禁止。
+- 既存 21 test の改名・改修は禁止。
+- Session / SessionSegment 本体への変更禁止 (impl, derive, field, 関数 signature すべて)。
+- 担当範囲外のファイル (transcription.rs / session_manager.rs / settings.rs 等) への編集禁止。
+
+## 実施手順
+
+1. AGENTS.md / docs/agent-harness-claude.md / `tail -350 AGENT_LOG.md` を読む。
+2. `wc -l src-tauri/src/session.rs` で現在行数 (620 行想定) を確認。
+3. `sed -n '600,620p' src-tauri/src/session.rs` で末尾構造 (l.607 SessionSegment Debug-Clone 一致テスト + 閉じ `}`) を確認。
+4. `mod tests {}` の閉じ `}` の **直前** に T1/T2/T3 を追加 (l.617〜の閉じ `}` の直前)。
+5. 各テストの `#[test]` attr を忘れず付与。
+6. trailing whitespace 厳禁。
+7. `cargo fmt --manifest-path src-tauri/Cargo.toml`
+8. `cargo fmt --check --manifest-path src-tauri/Cargo.toml` で差分なし確認
+9. `cargo clippy --lib --manifest-path src-tauri/Cargo.toml -- -D warnings` で警告ゼロ確認
+10. `cargo test --lib --manifest-path src-tauri/Cargo.toml -- --test-threads=1` で **589 → 592 passed** (+3 件、0 failed) を確認
+11. `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のフォーマットで追記:
+
+```markdown
+## mjc-worker-session-debug-clone-serde-key-tests-20260504-34-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-session-debug-clone-serde-key-tests-20260504-34-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-34 Loop 1
+
+### 作業範囲
+- `src-tauri/src/session.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 11 連続 application + 「format 不変条件 application」パターン拡張 (5 系統目 = serde default snake_case) = Session struct (#[derive(Debug, Clone, Serialize, Deserialize)] + 5 fields including Option<u64> / Vec<SessionSegment>) への Debug-Clone 一致 + SessionSegment serde JSON key 名 contract + Session serde JSON key 名 contract の 3 軸 application。
+- T1: session_debug_output_equals_after_clone_for_all_field_types_including_options_and_vec (mjc-main-31 Loop 2 SessionSegment と対称形)
+- T2: session_segment_serde_json_format_uses_snake_case_field_names_only (snake_case 3 key 厳密 + camelCase 不在 + 値正しさ)
+- T3: session_serde_json_format_uses_snake_case_field_names_only_with_nested_segments (snake_case 5 key 厳密 + nested SessionSegment 形態固定 + 値正しさ)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 589 → 592 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/session.rs (mod tests 末尾に T1/T2/T3 追加、struct / 既存 #[derive] / 既存 21 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 592 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <Xs>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 最終報告 (1 ターンで完結)
+- 変更内容、変更ファイル、検証結果、残リスクを簡潔にメインへ報告。
+- 1 ターンで完結する形でまとめる。

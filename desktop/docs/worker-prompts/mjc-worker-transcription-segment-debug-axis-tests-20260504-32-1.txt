@@ -1,0 +1,152 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (注意: 22000+ 行 / 1.86MB+ の大型ファイル。**`tail -350 AGENT_LOG.md` で末尾だけ参照** = 末尾追記の場所を視覚的に学習する)
+
+## AGENT_LOG.md 追記の絶対ルール (最重要)
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭は絶対に触らない。** 既存の先頭エントリを誤って書き換えると、過去の判断履歴が破壊される。
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記 (Edit ツールで `old_string` に末尾の `---\n` 周辺を取り、`new_string` に `---\n\n## <セッション名>\n...本文...\n---\n` を置く)
+- 過去の SESSION SUMMARY や旧 worker entry を改変しない。
+
+## 担当範囲 (これ以外への編集禁止)
+1. `src-tauri/src/transcription.rs` の `mod tests` 末尾 (現在の最終 `}` の直前 = l.2361 直前) への test 関数 **3 件追加**。
+2. `AGENT_LOG.md` への末尾追記 1 件。
+
+これ以外のファイル編集は厳禁。`pub struct TranscriptionSegment`, `pub enum TranscriptionSource`, 既存 61 test (= mod tests 内の既存 test 関数全て), 関数本体, impl ブロック, mod tests の冒頭・中間, etc. には一切触れないこと。
+
+## 規模超過防止
+- 追加する test は **必ず 3 件のみ**。4 件以上書かない。
+- 既存 test 関数 (61 件) を **1 行たりとも変更しない**。reorder, rename, refactor 含めて全て禁止。
+- 大型ファイル (transcription.rs = 2361 行) を Read 全体禁止。`sed -n '1,80p' src-tauri/src/transcription.rs` などで対象範囲のみ参照。
+- `mod tests` の中身は `tail -100 src-tauri/src/transcription.rs` で末尾だけ見れば足りる (Loop 3 で追加した 3 test の末尾 + ファイル末尾 `}` が見えれば追記位置が確定する)。
+
+## 行末空白禁止
+- 追加するコードの全ての行で trailing whitespace (行末の半角スペース・タブ) 禁止。**1 文字でも残すと clippy が CI で fail する**。
+
+## 指示内容: 「Debug 軸補強」パターン 5 連続 application = TranscriptionSegment
+
+`TranscriptionSegment` は `src-tauri/src/transcription.rs` l.27-39 で `#[derive(Debug, Clone, Serialize)]` + `#[serde(rename_all = "camelCase")]` で定義された struct。6 fields:
+- `text: String`
+- `start_ms: i64`
+- `end_ms: i64`
+- `source: Option<TranscriptionSource>` + `#[serde(skip_serializing_if = "Option::is_none")]`
+- `speaker: Option<String>` + `#[serde(skip_serializing_if = "Option::is_none")]`
+- `is_error: Option<bool>` + `#[serde(skip_serializing_if = "Option::is_none")]`
+
+`TranscriptionSource` は同ファイル l.19-23 で `#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]` + `#[serde(rename_all = "snake_case")]` で定義された enum (Microphone / SystemAudio)。
+
+以下 3 つの test を `mod tests` 末尾 (= 既存最終 test `transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source` 直後の `}` の **直前**) に追加せよ。
+
+### T1: `transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values`
+**契約**: TranscriptionSegment の Debug 出力が型名 `TranscriptionSegment` + **全 6 field 名 (snake_case のまま: `text`, `start_ms`, `end_ms`, `source`, `speaker`, `is_error`)** + 各 field 値 + Some/None 両 variant + enum variant 名を含む。
+**test 設計**:
+- 全 field を埋めた segment を 1 つ作る (text="hello", start_ms=100, end_ms=2000, source=Some(SystemAudio), speaker=Some("自分"), is_error=Some(true)).
+- `let dbg = format!("{:?}", segment);` で Debug 出力を取る。
+- 以下を `assert!(dbg.contains("..."), "...")` で順次確認:
+  - `"TranscriptionSegment"` (型名)
+  - `"text"`, `"start_ms"`, `"end_ms"`, `"source"`, `"speaker"`, `"is_error"` (snake_case の全 6 field 名)
+  - `"hello"`, `"100"`, `"2000"`, `"自分"`, `"true"` (値)
+  - `"Some"` (Option<T> の Some variant)
+  - `"SystemAudio"` (TranscriptionSource enum の variant 名)
+- これにより Debug 派生が消されたり、`#[derive(Debug)]` を手動実装に置き換えて field を隠蔽する誤改修を遮断する。
+
+### T2: `transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants`
+**契約**: `#[derive(Clone)]` 派生で clone した segment の Debug 出力が元と完全一致する。Some を全部埋めた case と None を混ぜた case の 2 通りで確認。
+**test 設計**:
+- 全 Some 埋め segment (text="full", start_ms=0, end_ms=500, source=Some(Microphone), speaker=Some("自分"), is_error=Some(false)) を作る → `assert_eq!(format!("{:?}", s), format!("{:?}", s.clone()))`
+- 全 Option None segment (text="bare", start_ms=-1, end_ms=0, source=None, speaker=None, is_error=None) を作る → 同じく `assert_eq!`
+- これにより Clone を手動実装して Option field を加工する誤改修を遮断する。
+
+### T3: `transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options`
+**契約**: `#[serde(rename_all = "camelCase")]` + `#[serde(skip_serializing_if = "Option::is_none")]` の組み合わせで、serde JSON 出力では:
+- 必須 field 名が camelCase (`text`, `startMs`, `endMs`)
+- snake_case (`start_ms`, `end_ms`, `is_error`) は **JSON に出ない**
+- None の Option field は JSON から省略される
+- Some の Option field の field 名は camelCase (`isError`, `speaker`, `source` (※ source は元から snake と camel の差異なし))
+**test 設計**:
+- `serde_json::to_value(&segment).unwrap()` で `serde_json::Value::Object` を取得する (or to_string -> contains).
+- まず None mix segment (text="bare", start_ms=-5, end_ms=0, source=None, speaker=None, is_error=None) を Serialize:
+  - `assert!(json.contains("\"text\""))`
+  - `assert!(json.contains("\"startMs\""))` (camelCase)
+  - `assert!(json.contains("\"endMs\""))`
+  - `assert!(!json.contains("\"start_ms\""))` (snake_case が出ないこと)
+  - `assert!(!json.contains("\"end_ms\""))`
+  - `assert!(!json.contains("\"is_error\""))`
+  - `assert!(!json.contains("\"isError\""))` (None なので出ない)
+  - `assert!(!json.contains("\"speaker\""))` (None なので出ない)
+  - `assert!(!json.contains("\"source\""))` (None なので出ない)
+- 次に全 Some 埋め segment (text="full", start_ms=10, end_ms=20, source=Some(SystemAudio), speaker=Some("相手側"), is_error=Some(true)) を Serialize:
+  - `assert!(json.contains("\"isError\""))` (Some なので出る、camelCase)
+  - `assert!(!json.contains("\"is_error\""))` (snake_case は出ない)
+  - `assert!(json.contains("\"systemAudio\"") || json.contains("system_audio"))` (TranscriptionSource は snake_case の方なので `system_audio` で OK)
+  - 注: TranscriptionSource は `#[serde(rename_all = "snake_case")]` なので value は `"system_audio"` 形式 = camelCase 化されない (struct field 名と enum variant value は別ルール)
+- `serde_json::to_string(&segment).unwrap()` で String 化して contains で判定する方式が読みやすい。
+- これにより serde rename_all が外されたり個別 rename された誤改修、skip_serializing_if が外された誤改修を遮断する。
+
+## 実装条件
+- `mod tests` 内に既に `use super::*;` がある (既存 test が動いているため)。新たな `use` 追加が必要なら mod tests 冒頭ではなく **追加 test 関数の中で `use serde_json::...;` のような local use** で済ませる (既存 import 無編集のため)。
+- 全 test は同期 (`#[tokio::test]` ではなく `#[test]`)。
+- `assert!`, `assert_eq!`, `assert_ne!` のメッセージは日本語可。「<契約>: <理由>」の形が読みやすい。
+- 既存 Loop 3 (TranscriptionErrorPayload 系) test と整合する命名 = `transcription_segment_<軸>_<対象>` 形式。
+- `format!("{:?}", segment)` を変数に束縛する場合は `let dbg = format!(...);` のように short identifier OK (Rust の `dbg!` macro と紛れない)。
+
+## 検証 (実装後に必ず実行)
+1. `cd src-tauri && cargo fmt --check` (差分なしを確認)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings` (警告ゼロを確認)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1` (前回 571 → +3 = **574 passed** を期待)
+
+各検証コマンドの末尾出力 (test 結果行) を AGENT_LOG.md 追記内に **そのまま quote** すること。
+
+## AGENT_LOG.md 追記内容 (必須)
+末尾の `---` 直後に以下のフォーマットで追記:
+
+```markdown
+## mjc-worker-transcription-segment-debug-axis-tests-20260504-32-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-segment-debug-axis-tests-20260504-32-1
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-32 Loop 1
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強パターン」5 連続 application = TranscriptionSegment (struct with 6 fields including 3 Option fields + serde camelCase) への Debug + Clone + serde format 軸の 3 種混合 application。
+- T1: transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values (Debug 出力に型名+全 6 snake_case field 名+値+Some/None+enum variant 名が含まれる契約)
+- T2: transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants (clone 後の Debug 出力が元と完全一致、Some 全埋め+None 混合の 2 case)
+- T3: transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options (serde JSON 出力が camelCase + None Option skip + snake_case 不在の契約)
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <test 結果末尾の "test result: ok. ..." 行をそのまま quote>
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / pub enum / 既存 61 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+\```
+test result: ok. NNN passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; ...
+\```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 最終報告
+変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめる。コミットは禁止 (メインが行う)。

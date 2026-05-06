@@ -1,0 +1,84 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読むこと:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16000 行 / 1.5MB 超なので `tail -200 AGENT_LOG.md` で末尾だけ参照
+
+担当範囲:
+- src-tauri/src/cloud_whisper_errors.rs の `mod tests` 末尾への `#[test]` 関数追加のみ
+- 実装 (L1-L37)、既存テスト、既存 doc、`#[allow(dead_code)]` の変更は禁止
+- 他のファイルは AGENT_LOG.md への追記以外触らない
+
+背景 / Why this matters:
+- meet-jerky はクラウド文字起こし API (OpenAI Whisper / ElevenLabs) のレスポンスを `classify_cloud_whisper_error` で 4 variant (`InvalidApiKey` / `RateLimited` / `ServerError` / `Other`) に分類する。これは UI のエラー表示・課金 (rate limit) の信頼性に直結する関数。
+- 既存 4 件のテストで 401, 429, 500, 599, 400, 418 と sanitize_error_body の経由パスはカバー済み。
+- 未カバーの致命的 gap が以下:
+  1. `5xx` 範囲の隣接境界 (`499`, `600`) — 範囲リファクタへの検知装置なし。
+  2. private fn `sanitize_error_body` の直接呼び出しテストなし — 関数抽出/インライン化リファクタの責任分離が崩れた時に切り分け不能。
+  3. multibyte 文字列の切り詰めが char base である契約 (`chars().take(MAX_ERROR_BODY_CHARS)`) を test で固定する装置なし — byte base への誤リファクタで invalid UTF-8 panic の致命バグに至る。
+  4. 200 系 success status を error path に誤呼出された場合に Other variant で safe に分類される契約が未確認。
+
+追加してほしいテスト (5 件、~10-15 分で完了):
+
+1. `classify_499_returns_other` (5xx 直前境界):
+   - `assert_eq!(classify_cloud_whisper_error(499, "boundary-before-5xx"), CloudWhisperError::Other { status: 499, message: "boundary-before-5xx".to_string() })`
+   - Why: 5xx 範囲の lower bound (500) と Other (499) の境界が壊れた瞬間に検知できる。
+
+2. `classify_600_returns_other` (5xx 直後境界):
+   - `assert_eq!(classify_cloud_whisper_error(600, "boundary-after-5xx"), CloudWhisperError::Other { status: 600, message: "boundary-after-5xx".to_string() })`
+   - Why: 5xx 範囲の upper bound (599) を 600 や 999 まで広げる誤リファクタを即座に検知。
+
+3. `classify_200_returns_other_safely` (success status を誤呼出された場合の安全網):
+   - `assert_eq!(classify_cloud_whisper_error(200, "unexpected success in error path"), CloudWhisperError::Other { status: 200, message: "unexpected success in error path".to_string() })`
+   - Why: 上位層 (transcription pipeline) で誤って success status を error path に渡しても crash せず Other に分類される契約。実装上 `match` の `_` 分岐で吸収されるが、明示的に test で固定すると将来 `_` を `400..=499` に絞る誤リファクタを検知できる。
+
+4. `sanitize_error_body_falls_back_to_empty_marker_for_whitespace_only_inputs` (private fn 直接テスト):
+   - `assert_eq!(super::sanitize_error_body(""), "HTTP error body was empty")`
+   - `assert_eq!(super::sanitize_error_body("   "), "HTTP error body was empty")`
+   - `assert_eq!(super::sanitize_error_body("\t\n  "), "HTTP error body was empty")`
+   - Why: 既存テストでは `classify_cloud_whisper_error(418, "")` 経由でしか empty marker フォールバックが確認されていない。private fn 直接呼び出しで `split_whitespace().collect::<Vec<_>>().join(" ")` の whitespace 多様性 (タブ/改行混在) を網羅し、関数抽出リファクタへの耐性を獲得する。
+
+5. `sanitize_error_body_truncates_multibyte_text_by_char_count_not_byte_count` (multibyte 切り詰めの致命的安全網):
+   - `let body = "あ".repeat(super::MAX_ERROR_BODY_CHARS + 5);` (205 chars × 3 bytes/char = 615 bytes)
+   - `let result = super::sanitize_error_body(&body);`
+   - `assert_eq!(result.chars().count(), super::MAX_ERROR_BODY_CHARS + 3);` (200 個の "あ" + "...")
+   - `assert!(result.ends_with("..."));`
+   - `assert!(result.starts_with("あ"));` (1 文字目が完全な "あ" であること = byte 切りでないこと)
+   - Why: 現実装は `chars().take(MAX_ERROR_BODY_CHARS)` で char base 切り詰め。これを `.bytes().take(N)` などに誤リファクタすると invalid UTF-8 で panic する致命バグになる。3 バイト文字 "あ" を 200 個並べることで、byte base 切り詰めへの誤リファクタを最も簡潔に検知できる。
+
+実装上の注意:
+- `MAX_ERROR_BODY_CHARS` は private const だが、`#[cfg(test)] mod tests` 内では `super::MAX_ERROR_BODY_CHARS` でアクセス可能 (既存 test L95 で使用済)。
+- `sanitize_error_body` も `super::sanitize_error_body` でアクセス可能。
+- 実装は変更禁止。`#[allow(dead_code)]` も触らない。
+- 既存テスト 4 件 (`classify_401_returns_invalid_api_key`, `classify_429_returns_rate_limited`, `classify_server_and_other_errors`, `classify_other_error_sanitizes_body`) は変更しない。
+
+検証 (順番):
+1. `cargo fmt --check` (失敗したら `cargo fmt` で修正後再チェック)
+2. `cargo clippy --no-deps --all-targets --all-features -- -D warnings` (警告ゼロ必須)
+3. `cargo test --no-fail-fast` (現在 289 passed → 追加 5 件で 294 passed になる想定)
+4. `bash scripts/agent-verify.sh src-tauri/src/cloud_whisper_errors.rs AGENT_LOG.md`
+
+AGENT_LOG.md (末尾に追記) に以下を記載:
+- 開始日時 (JST)
+- 担当セッション名 (`mjc-worker-cloud-whisper-errors-tests-20260504-5-1`)
+- 役割: テスト追加ワーカー (実装変更なし)
+- 作業範囲: src-tauri/src/cloud_whisper_errors.rs の mod tests 末尾への #[test] 関数追加のみ
+- 指示内容 (要約)
+- 追加したテスト一覧 (テーブル形式: #, 関数名, assertion 数, 検証内容)
+- 不変条件 / 設計意図 (5xx 境界 499/600, multibyte char base 切り詰め, empty marker フォールバック, 200 系誤呼出 safe)
+- 変更ファイル
+- 検証結果 (チェック / 結果テーブル)
+- 追加 test 件数 / 追加後 total passed
+- 依存関係追加の有無 (なしの想定)
+- 失敗理由
+- 残リスク
+- 次アクション
+
+コミットは禁止 (メインがレビュー後に commit する)。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

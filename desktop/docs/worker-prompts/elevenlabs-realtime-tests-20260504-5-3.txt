@@ -1,0 +1,115 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読むこと:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16100 行 / 1.5MB 超なので `tail -200 AGENT_LOG.md` で末尾だけ参照
+
+担当範囲:
+- src-tauri/src/elevenlabs_realtime.rs の `mod ws_task` 内 `#[cfg(test)] mod pending_timeout_tests` 末尾への `#[test]` 関数追加のみ
+  - `mod pending_timeout_tests` は L489 付近にあり、既に 3 件 (`wait_for_pending_after_commit_*`) のテストを持つ
+- 実装 (L1-L488)、既存テスト 5 件 (`mod tests` L551-L610)、`mod pending_timeout_tests` の既存 3 件は変更禁止
+- 他のファイルは AGENT_LOG.md への追記以外触らない
+
+背景 / Why this matters:
+- meet-jerky は ElevenLabs Realtime engine を含む 4 つの transcription engine を持つ。`mod ws_task` 内の以下 3 つの private fn は WebSocket イベント → UI 表示の根幹で、優先順位仕様が壊れると致命的:
+  1. `is_scribe_error_event(event_name: &str) -> bool` (L373-L375): `starts_with("scribe_") && ends_with("_error")` の event filter
+  2. `extract_transcript(value: &Value) -> Option<String>` (L393-L412): 優先順位 `transcript` → `text` → `words[].text/.word` join
+  3. `extract_error_message(value: &Value) -> Option<String>` (L414-L426): 優先順位 `message` → `error:string` → `error.message:object`
+- 既存テスト構成:
+  - `mod tests` (L551-): 5 件 (URL 構築 2 件、float_to_pcm16 1 件、engine_construction 1 件、scribe_error_events_are_queued 1 件)
+  - `mod pending_timeout_tests` (L489-): 3 件 (`wait_for_pending_after_commit_*`)
+- 上記 3 fn の直接テストはなし。`scribe_error_events_are_queued_as_error_segments` (mod tests 内) は `push_error` 経由の間接テストのみ。
+
+追加してほしいテスト (6 件、~15 分で完了):
+
+**追加先**: `mod ws_task { ... #[cfg(test)] mod pending_timeout_tests { ... } }` の **`mod pending_timeout_tests` 末尾** に追加。
+- `mod ws_task` 外側からは private fn にアクセスできないため、必ず `mod ws_task` 内側のテスト mod に追加すること。
+- 既存 `mod pending_timeout_tests` 内では `super::*` または `super::is_scribe_error_event` 等で private fn にアクセス可能。
+
+1. `is_scribe_error_event_returns_true_for_scribe_prefix_and_error_suffix`:
+   - `assert!(super::is_scribe_error_event("scribe_validation_error"))` (典型ケース)
+   - `assert!(super::is_scribe_error_event("scribe_audio_error"))` (typical)
+   - `assert!(super::is_scribe_error_event("scribe_some_long_underscore_error"))` (内部 underscore 多数)
+   - Why: AND 条件の両方マッチ pattern が壊れた瞬間に検知。
+
+2. `is_scribe_error_event_returns_false_when_either_prefix_or_suffix_missing`:
+   - `assert!(!super::is_scribe_error_event("scribe_audio"))` (suffix なし)
+   - `assert!(!super::is_scribe_error_event("audio_error"))` (prefix なし)
+   - `assert!(!super::is_scribe_error_event(""))` (空文字列)
+   - `assert!(!super::is_scribe_error_event("non_scribe_error"))` (prefix が "non_" で始まる)
+   - `assert!(!super::is_scribe_error_event("SCRIBE_ERROR"))` (大文字: case-sensitive 仕様確認)
+   - Why: AND 短絡条件と case-sensitive 仕様を 5 ケースで明示。
+
+3. `extract_transcript_prefers_transcript_field_over_text_field`:
+   - `let value = serde_json::json!({ "transcript": "hello", "text": "ignored" });`
+   - `assert_eq!(super::extract_transcript(&value), Some("hello".to_string()))`
+   - 別 case: `let value = serde_json::json!({ "text": "fallback only" });`
+   - `assert_eq!(super::extract_transcript(&value), Some("fallback only".to_string()))`
+   - Why: ElevenLabs API レスポンスの両 field 共存時の優先順位 (`transcript` first) を固定。順序リファクタを即座に検知。
+
+4. `extract_transcript_falls_back_to_words_array_with_text_or_word_keys`:
+   - `let value = serde_json::json!({ "words": [{"text": "hello"}, {"word": " world"}, {"text": "!"}] });`
+   - `assert_eq!(super::extract_transcript(&value), Some("hello world!".to_string()))` (text と word 混在で順序保持・空文字列 join)
+   - 別 case: `let value = serde_json::json!({ "words": [] });`
+   - `assert_eq!(super::extract_transcript(&value), Some("".to_string()))` (空 array → 空 string)
+   - 別 case: `let value = serde_json::json!({ "words": [{"unrelated": "x"}] });`
+   - `assert_eq!(super::extract_transcript(&value), Some("".to_string()))` (text/word ともになければ filter_map で skip → 空 string)
+   - Why: words array の text/word 両 key fallback と filter_map による空文字列 join を 3 ケースで網羅。
+
+5. `extract_transcript_returns_none_when_no_relevant_field_present`:
+   - `let value = serde_json::json!({});` (空 object)
+   - `assert_eq!(super::extract_transcript(&value), None)`
+   - 別 case: `let value = serde_json::json!({ "unrelated": "x", "other": 42 });`
+   - `assert_eq!(super::extract_transcript(&value), None)`
+   - 別 case: `let value = serde_json::json!({ "transcript": 123 });` (transcript が string でない場合)
+   - `assert_eq!(super::extract_transcript(&value), None)` (as_str() が None → 次の優先順位 text もない → None)
+   - Why: 全 fallback path が exhaust された時の None 返却契約。type 違い (number) で as_str() が失敗するケースも明示。
+
+6. `extract_error_message_traverses_three_priority_paths`:
+   - case 1: `let value = serde_json::json!({ "message": "top-level message", "error": "ignored" });`
+   - `assert_eq!(super::extract_error_message(&value), Some("top-level message".to_string()))` (message 優先)
+   - case 2: `let value = serde_json::json!({ "error": "string-error" });`
+   - `assert_eq!(super::extract_error_message(&value), Some("string-error".to_string()))` (error が string)
+   - case 3: `let value = serde_json::json!({ "error": { "message": "nested" } });`
+   - `assert_eq!(super::extract_error_message(&value), Some("nested".to_string()))` (error が object → message を取り出す)
+   - case 4: `let value = serde_json::json!({});`
+   - `assert_eq!(super::extract_error_message(&value), None)` (全 field 不在)
+   - Why: 3 段 fallback (`message` → `error:string` → `error.message:object`) を 4 ケースで網羅。ElevenLabs API のレスポンス形式バリエーション吸収 layer の不変条件。
+
+実装上の注意:
+- 追加先は `mod ws_task` 内の `#[cfg(test)] mod pending_timeout_tests` 末尾。`mod ws_task` の外側 (`mod tests`) には追加しない。
+- 既存 `mod pending_timeout_tests` のスコープ内では `super::is_scribe_error_event` / `super::extract_transcript` / `super::extract_error_message` でアクセス可能 (`use super::*;` が既にあれば直接呼べる)。先頭の `use` 文を確認すること。
+- `serde_json::json!` macro は既存 import されているはず (`use serde_json::Value;` 等)。なければ `use serde_json;` を追加する (mod scope 内に閉じるなら問題なし)。
+- 実装 (L373-L426) は変更禁止。既存テストも変更禁止。
+- mod 名 `pending_timeout_tests` のままでも、ws_task 内 private fn を test できる (mod 名は意味的にずれるが、追加優先で許容)。気になる場合は AGENT_LOG.md にその点を残リスクとして記録すること。
+
+検証 (順番):
+1. `cargo fmt --check` (失敗したら `cargo fmt` で修正後再チェック)
+2. `cargo clippy --no-deps --all-targets --all-features -- -D warnings` (警告ゼロ必須)
+3. `cargo test --no-fail-fast` (現在 299 passed → 追加 6 件で 305 passed になる想定)
+4. `bash scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs AGENT_LOG.md`
+
+AGENT_LOG.md (末尾に追記) に以下を記載:
+- 開始日時 (JST)
+- 担当セッション名 (`mjc-worker-elevenlabs-realtime-tests-20260504-5-3`)
+- 役割: テスト追加ワーカー (実装変更なし)
+- 作業範囲: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task` 内 `mod pending_timeout_tests` 末尾への `#[test]` 関数追加のみ
+- 指示内容 (要約)
+- 追加したテスト一覧 (テーブル形式: #, 関数名, assertion 数, 検証内容)
+- 不変条件 / 設計意図 (event filter AND 条件 + case-sensitive, transcript 優先順位 3 段 fallback, error_message 3 段 fallback, words array text/word key 両対応)
+- 変更ファイル
+- 検証結果 (チェック / 結果テーブル)
+- 追加 test 件数 / 追加後 total passed
+- 依存関係追加の有無 (なしの想定)
+- 失敗理由
+- 残リスク (mod 名 pending_timeout_tests は ws_task 全 private fn の test を含むようになるため意味的にずれる、別 mod に分離するリファクタは別ループで)
+- 次アクション
+
+コミットは禁止 (メインがレビュー後に commit する)。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

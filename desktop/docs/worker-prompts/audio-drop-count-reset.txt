@@ -1,0 +1,92 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景 / Why
+
+直前セッション (mjc-main-20260504-14) で「audio-drop-count」イベントの 3 段スライス分解 (rust 抽出 → frontend listener → UI 表示) を完了し、product-concept 優先度 9「録音状態の透明性」を user-visible にしました。
+
+ただし、frontend の累積 state (microphoneDropCountTotal / systemAudioDropCountTotal) はアプリ起動中ずっと累積し続け、新しいセッションを始めても 0 に戻りません。これはユーザー体験上、以下の問題があります:
+
+- 新セッション開始時に「前回の drop count が残っている」という違和感
+- 累積値が「いつから」のものか不明 (アプリ起動から?)
+
+本ループの目的は、**session start タイミングで drop count を 0 リセットする** ことで「fresh start = 期待通り」の UX を確立することです。STOP タイミングで reset すると stop 直後に履歴が消えてしまい UX 損失なので、START 側で reset する戦略を採用します。listener error (audioDropCountListenerError) は session 境界に依存しない debug 情報なので reset 対象外とします。
+
+これは前ループの自然な polish であり、audio-drop-count chain の最終仕上げに該当します。
+
+# 担当範囲
+
+**変更ファイル: src/routes/TranscriptView.tsx のみ (1 ファイル、1 関数、~2 行追加)**
+
+handleToggleMeeting の START 経路に既存の "過去 state を fresh にする" reset block (line 1006-1008) があります:
+
+```typescript
+      setLastSavedPath(null);
+      setSavedFileActionError(null);
+      setMeetingError(null);
+```
+
+この直後に以下 2 行を追加してください:
+
+```typescript
+      setMicrophoneDropCountTotal(0);
+      setSystemAudioDropCountTotal(0);
+```
+
+挿入位置の正確性:
+- "// START: session 開始 → mic → system audio → transcription" コメント (line 999) の **後**
+- "const title = `会議 ${new Date().toLocaleString("ja-JP")}`;" (line 1009) の **前**
+- 既存 reset block (setLastSavedPath / setSavedFileActionError / setMeetingError) の **直後**
+
+# 実装上の注意
+
+1. **STOP 経路には追加しない**: line 958-996 の `if (isMeetingActive)` ブロックには touch しないでください。stop 直後にも累積が見えるべきという UX 判断です。
+2. **listener error は reset しない**: `setAudioDropCountListenerError(null)` は **追加しないでください**。これは listener が機能しているかの debug 情報で、session 境界とは独立に持続表示すべきです。
+3. **既存パターン完全対称コピー**: 既存 3 行 (`setLastSavedPath(null)` 等) と完全に同じスタイル (4 文字 indent + setter(0)) で挿入してください。
+4. **他の setMicLevel(0) / setSystemAudioLevel(0) 呼び出し箇所には触らない**: 既存の error path の reset (line 1097, 1153, 1156, 1207, 1360, 1387 など) には drop count reset を追加する必要はありません。それらは「音量レベル表示の即時 0 化」が目的で、drop count は fresh start (session 開始時のみ) という分離 semantics を維持します。
+5. **新規 import 不要**: `setMicrophoneDropCountTotal` / `setSystemAudioDropCountTotal` は既に同コンポーネント内 line 610-611 で `useState` 経由で定義済みです。
+6. **コメント追加禁止**: `// reset drop counts` のような自明なコメントは追加しないでください。コードが何をしているかは setter 名から自明です。
+
+# 検証手順
+
+実装後、以下を順番に実行してください。
+
+```sh
+# 1. tsc + vite build (frontend test framework 未導入のため、型と build を主検証とする)
+npm run build
+
+# 2. cargo は frontend 変更のみなので不要だが、念のため lint 維持確認
+# (frontend のみ変更なので skip 可、agent-verify.sh が自動判定)
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx
+```
+
+期待結果:
+- `npm run build`: tsc 型エラーなし + vite build 完走 (bundle 約 486 KB ± 数 KB の範囲)
+- `agent-verify.sh`: rust 系は自動 skip、frontend build OK
+
+# AGENT_LOG.md 記載項目
+
+実装後、AGENT_LOG.md の末尾に以下を追記してください:
+
+- **開始日時 (JST)**
+- **担当セッション**: mjc-worker-audio-drop-count-reset
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: src/routes/TranscriptView.tsx の handleToggleMeeting START 経路に drop count reset 2 行を追加
+- **指示内容**: 上記の「担当範囲」「実装上の注意」セクションをそのまま記述
+- **結果**: 成功 / 失敗
+- **変更ファイル**: src/routes/TranscriptView.tsx のみ
+- **追加行**:
+  - `setMicrophoneDropCountTotal(0);` (line 1009 周辺)
+  - `setSystemAudioDropCountTotal(0);` (line 1010 周辺)
+- **検証結果**:
+  - `npm run build`: 結果と bundle サイズ
+  - `agent-verify.sh`: 結果
+- **依存関係追加**: なし
+- **失敗理由**: なし (もしあれば記載)
+- **次アクション**: メイン (mjc-main = mjc-main-20260504-15) によるレビュー → コミット
+
+# 最終報告
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

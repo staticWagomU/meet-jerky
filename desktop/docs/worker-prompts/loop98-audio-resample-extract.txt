@@ -1,0 +1,196 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/audio_silence.rs` (Loop 94 直前抽出 = 同 scope 純粋関数 paradigm 同形)
+6. precedent (cat 全体): `cat src-tauri/src/session_commands_list.rs` (Loop 97 直前抽出 = 機能分類軸 paradigm)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/audio_resample.rs` (~100-130 行)
+- 編集: `src-tauri/src/audio_utils.rs` (リサンプリング関連 production ~90 行削除 + test 4 件削除 + 不要 import 整理 [rubato 削除])
+- 編集: `src-tauri/src/transcription_whisper_stream.rs` (L10 use 文 1 行修正)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 1 行)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 98 タスク内容 (構造分離 23 件目, 同 scope = audio_resample 軸 1 件目, audio_silence と同 scope だが 3 ループ離れたため警告境界外)
+
+## 背景
+
+- Loop 94 = audio_silence.rs 抽出 (audio 軸 純粋関数機能分離 paradigm, 同 scope)。Loop 95 = apple_speech_macos.rs (cfg(macos) inline module 分離)。Loop 96 = harness 衛生軸。Loop 97 = session_commands_list.rs 抽出 (機能分類軸復帰)。
+- Loop 98 では audio_utils.rs (227 行) の **リサンプリング軸 section** (L21-108 + L184-226 = const + sinc_params + #[allow(dead_code)] resample_audio + test 4 件) を別 module へ抽出 = 構造分離 23 件目 = audio_resample 軸 1 件目 = audio_silence と同 scope だが 3 ループ離れたため警告境界外。
+- audio_utils.rs 本来責務 (sanitize 軸 = sanitize_audio_sample) と リサンプリング軸 (rubato 依存) は機能的に独立 = 分離で構造美向上 + rubato crate 依存の局所化。AGENTS.md priority 1 寄与。
+- audio_utils.rs は -60% 以上削減見込み (227 → ~85-95 行 = sanitize 軸のみのコンパクト file 化)。
+
+## 抽出対象 (audio_utils.rs から audio_resample.rs へ移動)
+
+**Production (audio_utils.rs L21-108, ~88 行)**:
+- L21-23: section 区切りコメント (`// ─── リサンプリング ───`) も含めて移動
+- L25-26: `pub(crate) const RESAMPLE_CHUNK_SIZE: usize = 1024;` (~2 行)
+- L28-37: `pub(crate) fn sinc_params() -> SincInterpolationParameters` (~10 行)
+- L39-108: `#[allow(dead_code)] pub(crate) fn resample_audio(...)` (~70 行)
+
+**Test (audio_utils.rs `mod tests` 内、4 件)**:
+- L184-186: section 区切りコメント (`// ─── resample_audio テスト ───`) も含めて移動
+- L188-195: `test_resample_same_rate`
+- L197-208: `test_resample_downsample_length`
+- L210-214: `test_resample_empty_input`
+- L216-226: `test_resample_preserves_silence`
+
+これ以外の test は **絶対に触らない** (sanitize_audio_sample_* 9 件は audio_utils.rs に残す)。
+
+**dead_code 取り扱い (重要)**:
+- `resample_audio` は `#[allow(dead_code)]` 付きで production caller ゼロ確認済 (transcription_whisper_stream.rs から呼ばれているのは `sinc_params` + `RESAMPLE_CHUNK_SIZE` のみ)。
+- `#[allow(dead_code)]` 注釈 + `pub(crate)` 可視性は **完全保持** (将来用残置の意図を尊重)。
+- 削除はしない。**移動のみ**。
+
+## 抽出方式 (Loop 94 audio_silence.rs precedent + Loop 91 system_audio_pcm.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/audio_resample.rs`
+
+ファイル冒頭 docstring 例:
+
+```rust
+//! 音声サンプルのサンプリングレート変換 (リサンプリング) ユーティリティ。
+//!
+//! `audio_utils.rs` から rubato 依存のリサンプリング軸を分離し、
+//! 同 file 内に sanitize 軸 (`sanitize_audio_sample`) と共存していた構造を
+//! 機能境界で整理する。`resample_audio` は `#[allow(dead_code)]` 付きで
+//! 将来用に保持 (production 呼出ゼロ、`sinc_params` / `RESAMPLE_CHUNK_SIZE` のみ
+//! `transcription_whisper_stream.rs` から使用)。
+```
+
+必要 import (移動):
+```rust
+use rubato::{
+    Resampler, SincFixedIn, SincInterpolationParameters, SincInterpolationType, WindowFunction,
+};
+```
+
+production 3 件 (`RESAMPLE_CHUNK_SIZE` + `sinc_params` + `resample_audio`) をそのまま移動。可視性は `pub(crate)` を完全保持。`#[allow(dead_code)]` も完全保持。`mod tests` を新 file 内に追加し、test 4 件を移動。test 内 `use super::*;` で十分。
+
+### 2. audio_utils.rs 編集
+
+- 該当 production section (L21-108) を削除 (section 区切りコメント含む)
+- mod tests 内の関連 test 4 件 (L184-226) を削除 (section 区切りコメント含む)
+- それ以外の test (sanitize_audio_sample_* 9 件) は触らない
+- 不要になった import を整理 = `use rubato::{...};` (L5-7) を削除
+  - **慎重に**: rubato は audio_utils.rs の他 fn では使われていないことを cargo build で確認
+- audio_utils.rs は header docstring + `sanitize_audio_sample` + 9 test の simple な file になる (~85-95 行)
+- header docstring は audio_utils.rs の責務が sanitize 軸のみになったことを反映するか、現行のままでも OK (worker 判断)
+
+### 3. transcription_whisper_stream.rs 編集 (caller 修正、最小限)
+
+L10 の use 文を変更:
+- 変更前: `use crate::audio_utils::{sinc_params, RESAMPLE_CHUNK_SIZE};`
+- 変更後: `use crate::audio_resample::{sinc_params, RESAMPLE_CHUNK_SIZE};`
+
+L57-79 の `sinc_params()` / `RESAMPLE_CHUNK_SIZE` 呼び出し本体は **無変更** (use 文経由で path 解決)。
+
+### 4. lib.rs 編集 (alphabetical mod 追加のみ)
+
+`mod audio_event;` の直後 (alphabetical 順) に `mod audio_resample;` を追加。
+
+mod 順序確認:
+```
+mod audio;
+mod audio_event;
+mod audio_resample;     ← 追加
+mod audio_sample_helpers;
+mod audio_silence;
+mod audio_traits;
+mod audio_utils;
+```
+
+invoke_handler は変更不要 (tauri::command 無し、純粋関数のみ)。
+
+それ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production 3 件 / test 4 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller path 変更は transcription_whisper_stream.rs L10 use 文 1 行のみ
+- `#[allow(dead_code)]` 注釈 + `pub(crate)` 可視性 + 関数 signature は完全保持
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import の clippy warning や build error が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/audio_utils.rs src-tauri/src/audio_resample.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85-97 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/audio_utils.rs src-tauri/src/audio_resample.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(audio): リサンプリング軸 (RESAMPLE_CHUNK_SIZE + sinc_params + resample_audio) を audio_resample.rs に抽出 (mjc-main-20260505-50 Loop 98, 機能分離軸 = audio_resample 軸 1 件目, 大型 rust file 責務分離 23 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-50 Loop 98 / 2026-05-05]
+worker: mjc-worker-audio-resample-loop98 (作業)
+範囲: src-tauri/src/audio_utils.rs (リサンプリング軸 production ~88 行削除 + test 4 件削除 + rubato use 削除) + src-tauri/src/audio_resample.rs (新規 ~100-130 行) + src-tauri/src/transcription_whisper_stream.rs (use 文 1 行修正) + src-tauri/src/lib.rs (mod 1 行追加)
+内容: audio_utils.rs L21-108 のリサンプリング軸 (RESAMPLE_CHUNK_SIZE + sinc_params + #[allow(dead_code)] resample_audio) を新 module audio_resample.rs に抽出。tests 4 件 (test_resample_same_rate + test_resample_downsample_length + test_resample_empty_input + test_resample_preserves_silence) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod audio_resample; 追加 (alphabetical = mod audio_event; 直後)。caller transcription_whisper_stream.rs L10 use 文を audio_utils → audio_resample に変更。可視性 pub(crate) + #[allow(dead_code)] は完全保持。大型 rust file 責務分離 23 file 目 = audio_resample 軸 1 件目 (同 scope = audio_silence Loop 94 と同 scope だが 3 ループ離れたため警告境界外) = session_commands 軸 (Loop 97) からの pivot 達成 (機能分類軸 → 純粋関数機能分離軸 paradigm)。audio_utils.rs は 227 → ~85-95 行 (-60% 以上削減)。rubato crate 依存も新 file へ局所化。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(audio): リサンプリング軸を audio_resample.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離 + rubato 依存の局所化)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-50 Loop 98 = audio_resample.rs 抽出 (構造分離 23 file 目, audio_resample 軸 1 件目 = 同 scope = audio_silence Loop 94 と同 scope だが 3 ループ離れたため警告境界外, session_commands 軸からの pivot 達成 = 純粋関数機能分離軸 paradigm 復帰) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 5 件 (新規 1 + 編集 4)
+- cargo test 704 passed 確認
+- audio_utils.rs 行数推移 (227 → 実測値)
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

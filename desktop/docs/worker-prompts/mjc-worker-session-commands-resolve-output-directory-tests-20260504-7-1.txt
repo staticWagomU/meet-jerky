@@ -1,0 +1,121 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (末尾 200 行) を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 1. 背景 / Why
+session_commands.rs (399 行 / 13 件既存) は `*_inner` パターンでテスト可能設計になっており、
+主要な start/finalize/discard/list の正常系・異常系は既存テストで覆われている。
+ただし以下の 2 fn が直接テストでカバーされていない:
+
+- `resolve_output_directory(settings_state)` (private fn, line 34-40):
+  AppSettings.output_directory が None or Some("") なら `default_output_directory()` を返し、
+  Some(非空文字) ならその文字列を `PathBuf::from(...)` で wrap して返す。
+  この 3 ケースは `match Some(dir) if !dir.is_empty()` の guard を含む 1 行の制御フロー全体の契約。
+  validation/trim は一切しない上位層責任境界 fn (前セッション ループ 2 で確立した契約強制パターン
+  の対象として典型的)。
+- `default_offset()` (private fn, line 28-30):
+  JST 固定 = `FixedOffset::east_opt(9 * 3600)` のハードコード値。
+  「将来ユーザー設定化する際はここを差し替えれば良い」とコメントあるため、
+  現状は単一定数契約として固定すべき。9 → 8 や 9*3600 → 9*60 のような typo 回帰検知装置。
+
+これら 5 件は session_commands.rs 内の private fn 直接テスト化で完結し、
+SessionManager や session_store, tauri::State などの依存を引き込まない。
+SettingsStateHandle は `pub Mutex<AppSettings>` で public field、AppSettings は Default 実装あり、
+テストから `SettingsStateHandle(parking_lot::Mutex::new(AppSettings { output_directory: ..., ..AppSettings::default() }))` で直接構築可能。
+**`SettingsStateHandle::new()` は呼ばないこと**(`AppSettings::load()` 経由で実環境の
+~/Library/Application Support/meet-jerky/settings.json を読みに行くため、テスト副作用と並列実行不安定の元になる)。
+
+## 2. 具体的 test 案 + assertion レベル
+src-tauri/src/session_commands.rs の `mod tests` 末尾 (line 398 の `}` 直前) に以下 5 件を追加する。
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | resolve_output_directory_returns_default_when_setting_is_none | AppSettings { output_directory: None, ..default() } で SettingsStateHandle 構築 → default_output_directory() と等しい PathBuf を返す。assert_eq! で比較。 |
+| T2 | resolve_output_directory_returns_default_when_setting_is_empty | output_directory: Some(String::new()) でも T1 と同じ結果 → guard `if !dir.is_empty()` の削除リファクタを検知。 |
+| T3 | resolve_output_directory_returns_setting_path_when_set_to_nonempty | output_directory: Some("/tmp/custom-output".into()) → PathBuf::from("/tmp/custom-output") と一致 (assert_eq!)。default_output_directory() とは「異なる」ことも assert_ne! で確認。 |
+| T4 | resolve_output_directory_does_not_trim_whitespace_in_setting_path | output_directory: Some(" /tmp/path ".into()) (前後 whitespace 込み) → PathBuf::from(" /tmp/path ") そのまま (assert_eq!)。**前後 whitespace は trim しない現挙動を契約化** (上位層責任境界パターン)。 |
+| T5 | default_offset_returns_jst_offset_constant | default_offset() == FixedOffset::east_opt(9 * 3600).unwrap() を assert_eq!。さらに `.local_minus_utc() == 9 * 3600` も追加で assert_eq! して秒値を二重に固定 (9 を 8 に書き換える typo + 9*3600 を 9*60 に書き換える typo を別軸で検知)。 |
+
+各 test は #[test] 属性、tokio など async 不要。SettingsStateHandle 構築は次のヘルパで簡略化してよい:
+
+```rust
+fn build_settings_handle_with_dir(dir: Option<String>) -> SettingsStateHandle {
+    use crate::settings::AppSettings;
+    use parking_lot::Mutex;
+    SettingsStateHandle(Mutex::new(AppSettings {
+        output_directory: dir,
+        ..AppSettings::default()
+    }))
+}
+```
+
+ただし、ヘルパを 1 つだけ追加するならシグネチャはシンプルに、追加コード量を最小に保つこと。
+2 種類以上のヘルパが必要になるなら、各 test の冒頭で直接 SettingsStateHandle を構築する方が読みやすい。判断は worker に任せる。
+
+## 3. 実装上の注意
+- `use parking_lot::Mutex;` と `use crate::settings::AppSettings;` は tests mod の中で `use super::*;` の後に追加する。既存 use との重複に注意。
+- `default_output_directory()` は `dirs::data_dir()` 依存で実環境のパスを返すが、`PathBuf` 比較は値比較なので副作用なし。CI / ローカル両方で動く。
+- T4 の whitespace 込みパスは「現在の挙動」を固定するもの。将来 trim を追加する場合に test 修正が必要、というのが意図 (誤リファクタ検知装置)。
+- `resolve_output_directory` は `&SettingsStateHandle` を引数に取るので、`&handle` を渡す。
+- 既存 13 件のテスト名・本体は **絶対に変更しない**。追加のみ。
+- `AppSettings { ..default() }` パターンは `..AppSettings::default()` と書く必要がある (struct update syntax)。
+- 5 件すべて test 関数のみ追加。session_commands.rs の本体ロジック (line 1-153) は **一切変更しない**。
+- `chrono::FixedOffset` は line 10 ですでに import 済み。tests mod 内では `use super::*;` で参照可能。
+
+## 4. 検証手順
+変更後、以下の順で検証してください:
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check` (差異がなければ pass)
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --quiet` で全 test pass、かつ total が 340 → 345 になることを確認
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --all-targets -- -D warnings` (default lint 警告ゼロ)
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings` (uninlined_format_args 警告ゼロ)
+
+いずれかが失敗したら、原因を特定して修正してから再実行。修正不可能な失敗 (環境制約など) は 5. の AGENT_LOG.md に「失敗理由」と「次アクション」を明記。
+
+## 5. AGENT_LOG.md 記載項目
+src-tauri/AGENT_LOG.md ではなく、リポジトリルートの **AGENT_LOG.md** (16500+ 行のもの) の末尾に追記してください。
+既存セッション (mjc-main-20260504-6) のフォーマットに合わせて、新しいエントリ:
+
+```
+### session_commands.rs resolve_output_directory の 4 ケース + default_offset の JST 定数契約 を 5 件で固定
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-session-commands-resolve-output-directory-tests-20260504-7-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_commands.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+[省略可、または 2-3 行]
+
+#### 追加したテスト
+[T1〜T5 の表]
+
+#### 不変条件 / 設計意図
+- T1+T2 は None / Some("") を default に倒す guard `if !dir.is_empty()` の対称ペアテスト。
+- T4 は前後 whitespace を trim しない上位層責任境界 fn の契約強制 (前セッション ループ 2 確立パターン再利用)。
+- T5 は default_offset の `9 * 3600` 二重固定 (== assert + .local_minus_utc() == 32400) で 9 → 8 / 3600 → 60 typo を別軸検知。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 340 → 345 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 X 件)
+- 追加後 total passed: 345
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T4 の whitespace 込みパスは将来 trim を追加すると test 修正が必要 (現契約保持なら意図通り、誤リファクタ検知装置)。
+- T5 の 9 * 3600 は将来 ユーザー設定化したら test 全面書き換え (コメント済みの方針なので意図通り)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

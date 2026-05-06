@@ -1,0 +1,312 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。1 ターンで完結する形でまとめてください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+# 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (末尾 200 行程度のみで OK)
+
+# 担当ファイル / 担当範囲
+- 編集対象: src-tauri/src/session_manager.rs の `mod tests` 末尾 (line 549 付近の `}` の手前) に #[test] 関数を 5 件追加するのみ。
+- 実装変更は禁止。visibility 変更も禁止。新規 import も極力避け (既存の `use super::*;` と `use tempfile::tempdir;` で完結する想定)。
+
+----------------------------------------------------------------------
+## 1. 背景 / Why
+----------------------------------------------------------------------
+
+`session_manager.rs` の private fn `persist_if_configured(active: &ActiveSession, phase: &str)` (line 164-175) は、append/finalize の各 pub fn から呼ばれて
+- `active.output` が `Some` のときのみ `session_store::write_session_markdown_to(...)` を呼んで disk へ Markdown を書き出す
+- `Err` が返っても in-memory の一貫性を壊さないために eprintln に留めて握りつぶす
+という単純な分岐契約を持つ。
+
+既存 16+ 件のテストは pub fn (`append` / `finalize`) 経由でこの契約を間接的に検証しているが、`persist_if_configured` を **直接呼び出すテスト** が無い。direct test を追加することで以下の契約を「pub fn の挙動が変わっても persist_if_configured 自身が崩れていないこと」として独立に固定できる:
+
+- **output=None の no-op 契約**: 出力設定が無いとき、disk 副作用ゼロ + in-memory state が変化しないこと (現状 pub fn では `start` (cfg(test) only) でしか output=None を作れず、direct fn 呼び出しで明示的に固定する価値がある)
+- **disk overwrite (idempotency) 契約**: 同じ active を 2 回 persist しても 1 ファイルに上書きされ、内容が同一であること (既存 test は append/finalize 経由で「累積書き出し」は確認しているが、「同じ state を 2 回呼んでも結果が同じ」という idempotency は未固定)
+- **panic-free 契約**: 親ディレクトリが存在しないなど I/O エラーが発生しても panic せず正常に return すること (既存 `append_keeps_segment_in_memory_when_output_dir_does_not_exist` line 430 で間接的に検証されているが、direct fn 呼び出しで「persist_if_configured 自身は panic しない」を独立に固定)
+- **phase ラベル一般性契約**: `phase` 引数は eprintln のラベルにしか使われない自由文字列であり、"append" / "finalize" 以外の任意文字列 (空文字、emoji 含む) でも crash しない (将来 phase ラベルを追加・変更する際に foot-gun 化しないよう固定)
+
+これは前 mjc-main-20260504-9 の SESSION SUMMARY (AGENT_LOG.md 末尾) で「候補 A: session_manager.rs persist_if_configured direct test (規模 XS、価値中、gap 薄め)」として残されている候補の実行版。「eprintln 観測は test では難しい (stderr 捕捉が必要)」という gap については、本 worker では **eprintln の中身を観測しない** 方針 (panic しないこと、disk state、in-memory state のみ assertion) で 5 件を構成する。
+
+----------------------------------------------------------------------
+## 2. 具体的 test 案 (assertion レベル)
+----------------------------------------------------------------------
+
+すべて `mod tests` (line 178) 内の **末尾**、line 549 の `discard_clears_session_started_with_output_and_subsequent_append_returns_not_active` test の閉じ `}` の **後** に追加する。`use super::*;` (line 179) で `persist_if_configured` / `ActiveSession` / `ActiveOutput` / `Session` / `FixedOffset` / `PathBuf` などすべて参照可能。`tempdir()` も既存 import 済み (line 180)。
+
+### T1: persist_if_configured_is_no_op_when_output_is_none
+
+**目的**: `output=None` のとき副作用ゼロ (file 作成されない) + active 自身の field が一切変化しないことを固定。
+
+```rust
+#[test]
+fn persist_if_configured_is_no_op_when_output_is_none() {
+    let dir = tempdir().unwrap();
+    let active = ActiveSession {
+        session: Session::start("title".into(), 1_700_000_000),
+        output: None,
+    };
+
+    // ディレクトリが存在しても、output=None なので書き出されないことを確認。
+    persist_if_configured(&active, "append");
+
+    let files = list_md_files(dir.path());
+    assert!(
+        files.is_empty(),
+        "output=None なら disk 副作用ゼロのはず: files={files:?}"
+    );
+    // session の state も不変 (segments 0、started_at 不変)。
+    assert_eq!(active.session.segments.len(), 0);
+    assert_eq!(active.session.started_at, 1_700_000_000);
+    assert_eq!(active.session.title, "title");
+}
+```
+
+### T2: persist_if_configured_writes_markdown_when_output_is_some
+
+**目的**: `output=Some` + 正常 path で `<dir>/<session_id>.md` に書き出され、ファイル本文に session の title が含まれることを固定 (direct fn 経由)。
+
+```rust
+#[test]
+fn persist_if_configured_writes_markdown_when_output_is_some() {
+    let dir = tempdir().unwrap();
+    let mut session = Session::start("会議メモ".into(), 1_713_333_000);
+    session.append_segment("自分".into(), 15, "hello".into());
+    let path = crate::session_store::path_for_session(dir.path(), &session);
+    let active = ActiveSession {
+        session,
+        output: Some(ActiveOutput {
+            path: path.clone(),
+            offset: jst(),
+        }),
+    };
+
+    persist_if_configured(&active, "append");
+
+    assert!(path.exists(), "direct persist で .md が作成されるはず: {path:?}");
+    let contents = std::fs::read_to_string(&path).unwrap();
+    assert!(
+        contents.contains("会議メモ"),
+        "session の title が markdown 本文に含まれるはず. contents=\n{contents}"
+    );
+    assert!(
+        contents.contains("**[14:50:15] 自分:** hello"),
+        "append された segment 行が含まれるはず. contents=\n{contents}"
+    );
+}
+```
+
+### T3: persist_if_configured_does_not_panic_when_path_parent_is_missing
+
+**目的**: 親ディレクトリが存在しない不正 path で I/O エラーが発生しても panic せず、return しても in-memory state が一切変化しないことを固定。eprintln の中身は観測しない。
+
+```rust
+#[test]
+fn persist_if_configured_does_not_panic_when_path_parent_is_missing() {
+    let dir = tempdir().unwrap();
+    let missing_parent = dir.path().join("not-exists-yet");
+    let invalid_path = missing_parent.join("session.md");
+    let active = ActiveSession {
+        session: Session::start("title".into(), 1_700_000_000),
+        output: Some(ActiveOutput {
+            path: invalid_path.clone(),
+            offset: jst(),
+        }),
+    };
+
+    // 親ディレクトリが無くても panic しないことのみ assert (eprintln は観測しない)。
+    persist_if_configured(&active, "finalize");
+
+    assert!(
+        !invalid_path.exists(),
+        "親ディレクトリ無しなら write は失敗、ファイルは作成されないはず: {invalid_path:?}"
+    );
+    // session state は不変。
+    assert_eq!(active.session.segments.len(), 0);
+    assert_eq!(active.session.title, "title");
+}
+```
+
+### T4: persist_if_configured_is_idempotent_when_called_repeatedly
+
+**目的**: 同じ `ActiveSession` を 2 回続けて persist しても、disk 上の content が完全に同一 (overwrite 契約) であることを固定。
+
+```rust
+#[test]
+fn persist_if_configured_is_idempotent_when_called_repeatedly() {
+    let dir = tempdir().unwrap();
+    let mut session = Session::start("idempotent".into(), 1_713_333_000);
+    session.append_segment("Alice".into(), 10, "first".into());
+    let path = crate::session_store::path_for_session(dir.path(), &session);
+    let active = ActiveSession {
+        session,
+        output: Some(ActiveOutput {
+            path: path.clone(),
+            offset: jst(),
+        }),
+    };
+
+    persist_if_configured(&active, "append");
+    let contents_first = std::fs::read_to_string(&path).expect("first persist should write file");
+
+    persist_if_configured(&active, "append");
+    let contents_second = std::fs::read_to_string(&path).expect("second persist should keep file");
+
+    assert_eq!(
+        contents_first, contents_second,
+        "同じ active を 2 回 persist しても disk content は同一 (overwrite idempotency) のはず"
+    );
+    // ファイル数も依然 1 件 (新規ファイルが追加されていない)。
+    let files = list_md_files(dir.path());
+    assert_eq!(
+        files.len(),
+        1,
+        "2 回 persist しても .md ファイルは 1 件のはず: {files:?}"
+    );
+}
+```
+
+### T5: persist_if_configured_accepts_arbitrary_phase_label_without_panic
+
+**目的**: `phase` 引数は eprintln のラベルにしか使われない自由文字列であり、"append" / "finalize" 以外 (空文字 / emoji / 多バイト / 改行) でも crash しないこと。disk 書き出しに成功する正常 path で実施し、phase 文字列が disk content に影響しないこと (label は eprintln のみで使われる契約) も併せて固定。
+
+```rust
+#[test]
+fn persist_if_configured_accepts_arbitrary_phase_label_without_panic() {
+    let dir = tempdir().unwrap();
+    let mut session = Session::start("phase-label".into(), 1_713_333_000);
+    session.append_segment("Bob".into(), 0, "msg".into());
+    let path = crate::session_store::path_for_session(dir.path(), &session);
+    let active = ActiveSession {
+        session,
+        output: Some(ActiveOutput {
+            path: path.clone(),
+            offset: jst(),
+        }),
+    };
+
+    // 各種 phase ラベルで panic しないことのみ確認。
+    for phase in ["append", "finalize", "", "🔥", "改行\nincluded", "phase=test"] {
+        persist_if_configured(&active, phase);
+    }
+
+    // 結果のファイル content には phase 文字列が混入しないこと (eprintln 専用契約)。
+    let contents = std::fs::read_to_string(&path).unwrap();
+    assert!(
+        !contents.contains("🔥"),
+        "phase ラベルは disk content には漏れないはず. contents=\n{contents}"
+    );
+    assert!(
+        !contents.contains("phase=test"),
+        "phase ラベルは disk content には漏れないはず. contents=\n{contents}"
+    );
+    assert!(
+        contents.contains("phase-label"),
+        "session の title は依然 disk content に含まれるはず. contents=\n{contents}"
+    );
+}
+```
+
+----------------------------------------------------------------------
+## 3. 実装上の注意
+----------------------------------------------------------------------
+
+- **追加位置厳守**: `mod tests` (line 178 ~ 549 付近の閉じ `}` のすぐ前) の **末尾** に追加。既存 test 関数の途中に挟まない。
+- **既存 import で完結させる**: `use super::*;` と `use tempfile::tempdir;` だけで全部参照可能。新たな `use` 行を足さないこと。
+  - `Session::start` は `super::*` 経由で参照可能 (line 1 の `use crate::session::Session;` が super:: で見える)。
+  - `crate::session_store::path_for_session` も同様 (line 2 の `use crate::session_store;` が super:: で見える)。
+- **private struct の field 直接構築**: `ActiveSession { session: ..., output: ... }` と `ActiveOutput { path: ..., offset: ... }` は同モジュール内なので問題なく構築できる。これは pub fn 経由テストでは到達できない領域なので、direct test の核心。
+- **eprintln の出力は観測しない**: T3/T5 は「panic しない」「disk state が期待どおり」のみ assert。stderr capture を導入しない (脆さの元になる)。
+- **session_id を使ったファイル名は `session_store::path_for_session` 経由で取得する**: ファイル名形式 (`<id>.md` 等) を test 内で hardcode しない。`path_for_session` の現契約に依存。
+- **マジックナンバー 1_700_000_000 / 1_713_333_000**: 既存 test と同じ値を使い、JST 14:50:15 などのフォーマット assert を再利用しやすくする。
+- **assertion メッセージ日本語**: 既存 test と同じく日本語で「〜のはず」と書く。
+- **fmt 乱れ防止**: `cargo fmt` を最後に必ず通す。
+- **assert マクロは `assert_eq!` / `assert!` のみ使う** (既存 test と同じく `pretty_assertions` 等は導入しない)。
+
+----------------------------------------------------------------------
+## 4. 検証手順
+----------------------------------------------------------------------
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+# 1. fmt
+cargo fmt --manifest-path src-tauri/Cargo.toml -- src-tauri/src/session_manager.rs
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+# 2. test (lib のみ)
+cargo test --manifest-path src-tauri/Cargo.toml --lib --quiet 2>&1 | tail -40
+
+# 3. clippy default
+cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests --quiet -- -D warnings 2>&1 | tail -20
+
+# 4. clippy uninlined_format_args (本リポの追加守り)
+cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests --quiet -- -W clippy::uninlined_format_args 2>&1 | tail -20
+
+# 期待:
+# - cargo test: 385 → 390 passed (+5)
+# - clippy default: 警告ゼロ
+# - clippy -W uninlined_format_args: 警告ゼロ
+```
+
+もしテストが失敗したら、failing test の出力を全文貼って、実装変更ではなく test 側を「現契約に合わせる」方向で修正案を提示してください (実装は本 worker の担当外)。
+
+----------------------------------------------------------------------
+## 5. AGENT_LOG.md 記載項目 (作業終了時に追記必須)
+----------------------------------------------------------------------
+
+AGENT_LOG.md の末尾 (`## [SESSION SUMMARY @ ...]` の **前**) に、新しい h3 セクションとして以下のフォーマットで追記してください。**SESSION SUMMARY セクションは触らないこと**。
+
+```markdown
+### session_manager.rs `persist_if_configured` の direct test 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-session-manager-persist-direct-tests-20260504-10-1`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_manager.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+persist_if_configured の direct test を 5 件で固定 (output=None no-op / output=Some 正常書き出し / 不正 path で panic-free / 同一 active 2 回呼びの idempotency / phase ラベル一般性)。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | persist_if_configured_is_no_op_when_output_is_none | output=None で disk 副作用ゼロ + session state 不変 |
+| T2 | persist_if_configured_writes_markdown_when_output_is_some | output=Some 正常 path で .md 書き出し + 本文に title/segment 含む |
+| T3 | persist_if_configured_does_not_panic_when_path_parent_is_missing | 親ディレクトリ無しでも panic せず session state 不変 |
+| T4 | persist_if_configured_is_idempotent_when_called_repeatedly | 同じ active を 2 回 persist しても disk content 同一 (overwrite idempotency) |
+| T5 | persist_if_configured_accepts_arbitrary_phase_label_without_panic | "append"/"finalize"/""/"🔥"/改行/"phase=test" でも panic せず disk content に phase 文字列漏れない |
+
+#### 不変条件 / 設計意図
+- T1 は output=None 分岐の no-op を direct で固定、output=None 経路を pub fn より独立に保護。
+- T2 は disk 書き出し最小契約の direct 版固定 (既存 pub fn 経由テストとの三角測量)。
+- T3 は I/O エラー時 panic-free 契約の direct 固定 (`?` リファクタへの誤改修検知)。
+- T4 は overwrite idempotency 契約の固定 (新規ファイル追加されないこと併せて固定)。
+- T5 は phase 引数が eprintln 専用 free string である現契約の固定。任意文字列で crash しないこと + disk content に漏れないことの 2 軸。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 385 → 390 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 390
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 `use super::*;` と `use tempfile::tempdir;` で完結)
+
+#### 残リスク
+- T3 は eprintln の中身を観測していない (stderr capture を入れる脆さを避けた選択)。eprintln の format 変更は別 test で固定する余地あり。
+- T5 の phase ラベル一覧は将来「特定 phase 名のみ受け入れる」防御強化を入れたら test 修正が必要 (現契約 = 自由文字列を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

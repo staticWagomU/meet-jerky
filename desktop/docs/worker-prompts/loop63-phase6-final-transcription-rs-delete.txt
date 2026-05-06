@@ -1,0 +1,216 @@
+# Loop 63 = Phase 6 最終 = transcription.rs ファイル削除 + lib.rs `mod transcription;` 削除 + plan.md 100% 達成記念更新
+
+## 必読 (冒頭で必ず実行)
+
+1. **`tail -350 AGENT_LOG.md` で末尾だけ参照** (ファイル全体は ~28,820 行 / ~2.6MB のため Read 全体禁止)。AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾の `---` 直後に** 行う。**先頭は絶対に触らない**。
+2. AGENTS.md / docs/architecture/transcription-refactor-plan.md の存在は把握すれば良い。本タスクは **plan.md を Phase 6 完全終了 = 100% 達成記念で更新する** = transcription-refactor-plan.md は read 対象 (規模感把握のため `head -50` と `tail -50` で構造把握、本タスクで編集)。
+
+## ゴール
+
+Phase 6 最終 = 元 2999 行 transcription.rs を完全削除し、Phase 6 timeline 完了 (3 部構成):
+
+### A. transcription.rs ファイル削除
+
+事前確認 (必須):
+```bash
+grep -rn "use crate::transcription[^_]" src-tauri/src/ 2>&1
+grep -rn "transcription::" src-tauri/src/ 2>&1 | grep -v "transcription_" | grep -v "transcription/"
+```
+
+両方とも **空 (= caller ゼロ)** を確認すること。1 件でも残っていたら **削除を中止して報告**。
+
+確認後:
+```bash
+git rm src-tauri/src/transcription.rs
+```
+
+### B. lib.rs `mod transcription;` 宣言削除
+
+事前 grep: `grep -n "^mod transcription\b" src-tauri/src/lib.rs` で正確な行番号確認 (現状 L25 想定)。
+
+**`src-tauri/src/lib.rs` L25** (`mod transcription;` 単独行) を削除。
+
+注: `mod transcription_*;` (transcription_commands / transcription_emission / etc.) は **触らない**。`^mod transcription;$` (アンダースコアなしの単独 transcription) のみを削除すること。
+
+削除後の lib.rs L24-36 想定:
+```rust
+mod transcript_bridge;
+mod transcription_commands;
+mod transcription_emission;
+mod transcription_error_payload;
+mod transcription_manager;
+mod transcription_model_manager;
+mod transcription_panic_guard;
+mod transcription_traits;
+mod transcription_types;
+mod transcription_whisper_local;
+mod transcription_whisper_stream;
+mod transcription_worker_loop;
+```
+
+### C. plan.md 100% 達成記念更新 (`docs/architecture/transcription-refactor-plan.md`)
+
+**3 箇所更新**:
+
+**C-1. 進捗サマリヘッダ (L28 周辺)**:
+
+現状:
+```markdown
+## 進捗サマリ (mjc-main-20260505-28 Loop 57 時点)
+```
+
+変更後:
+```markdown
+## 進捗サマリ (mjc-main-20260505-31 Loop 63 時点 = Phase 6 完全終了 = 100% 達成)
+```
+
+**C-2. 累計削減行数 (L42 周辺)**:
+
+現状:
+```markdown
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **29 行** = **約 99.0% 縮小** (~2970 行削減) = **「95% / 98% / 99% 里程標突破達成 + 98.8% からさらに +0.2pt 進展 = Phase 5 完全終了 = transcription.rs 完全ファサード化 (互換 re-export 5 件のみ、本体実装ゼロ・const ゼロ)」**
+```
+
+変更後:
+```markdown
+- **transcription.rs 累計削減**: 元 2999 行 → **ファイル削除完了** = **100% 達成** (~2999 行削減) = **「95% / 98% / 99% / 100% 里程標完全制覇 = Phase 6 完全終了 = transcription.rs ファイル自体を削除 (lib.rs から `mod transcription;` 宣言も削除) = リファクタプラン完全完遂」**
+```
+
+**C-3. ## 参考 セクション直前に新サブセクション追加** (現状 L421 `## 参考` 直前)
+
+以下のサブセクションを追加 (既存の `## 関連: WHISPER_SAMPLE_RATE 移動...` セクション末尾と `## 参考` の間に挿入):
+
+```markdown
+## 関連: Phase 6 完全終了 = transcription.rs ファイル削除 = 100% 達成 ✅ 完了 (mjc-main-20260505-30 Loop 60-61 + mjc-main-20260505-31 Loop 62-63 系列)
+
+mjc-main-20260505-30 Loop 60 ~ mjc-main-20260505-31 Loop 63 の 4 ループで Phase 6 (互換 re-export 層削除) を完全完遂し、transcription.rs ファイル自体を削除した = **元 2999 行 → 0 行 (ファイル削除) = 100% 達成 = リファクタプラン完全完遂**。
+
+### Phase 6 各歩 (4 ループ完了系列)
+
+- **第 1 歩 ✅ 完了 (Loop 59 = commit `d676fd5`)**: TranscriptionSegment / TranscriptionSource caller 直接 import 化 (4 ファイル / 7 箇所 use 文)
+- **第 2 歩 ✅ 完了 (Loop 60 = commit `d7bdc61`)**: StreamConfig / TranscriptionEngine / TranscriptionStream caller 直接 import 化 + transcript_bridge.rs インライン参照 3 箇所 + elevenlabs/openai file-level use ブロック分割 (5 ファイル / 8 箇所) + transcription.rs L5 + L11 に `#[allow(unused_imports)]` 追加
+- **第 3 歩 + 第 4 歩統合 ✅ 完了 (Loop 61 = commit `64aa904`)**: WhisperStream caller 直接 import 化 + TranscriptionStateHandle インライン参照修正 (3 ファイル / 4 箇所) + transcription.rs L19 + L26 に `#[allow(unused_imports)]` 追加 = T+U 統合判断で timeline 4 → 3 ループに圧縮 ~25% 効率化
+- **第 5 歩 ✅ 完了 (Loop 62 = commit `48c6558`)**: TranscriptionLoopConfig caller 直接 import 化 (2 ファイル / 2 use 文 = panic_guard:6 + commands:5) + transcription.rs L33 に `#[allow(unused_imports)]` 追加
+- **最終 ✅ 完了 (Loop 63 = commit `<COMMIT_HASH>`)**: transcription.rs ファイル削除 + lib.rs から `mod transcription;` 宣言削除 + plan.md 100% 達成記念更新 = **Phase 6 完全終了 = リファクタプラン完全完遂**
+
+### `#[allow(unused_imports)]` 第 3 解パターン (Loop 60 で発見、Loop 61-62 継承)
+
+Phase 6 移行中に互換 re-export を残す必要があったが、全 caller を直接 import 化すると `pub use` が unused になる。Loop 57 で発見された「unused なら削除が正解」とは逆に、移行中は **`#[allow(unused_imports)]` を付けて互換層維持しつつ clippy 警告を抑制** する第 3 解が Loop 60 で発見された。これにより worker は段階的に caller を書き換えながら、各ループで cargo clippy 警告ゼロを維持できた。Loop 63 (本ループ) で transcription.rs ファイル自体を削除することで、互換層と allow 注記がすべて消滅 = 完全に解消。
+
+### Phase 6 完全終了 = リファクタプラン完全完遂の意義
+
+- transcription.rs は元 2999 行 = リポジトリ最大級の単一ファイル (9 責務混在) → **ファイル削除 = 0 行 = 100% 完遂**
+- 9 責務すべてが独立モジュールに locality 集約完了:
+  - データ型 → transcription_types.rs
+  - トレイト → transcription_traits.rs
+  - Whisper エンジン → transcription_whisper_local.rs / transcription_whisper_stream.rs
+  - Model 管理 → transcription_model_manager.rs
+  - Transcription state → transcription_manager.rs
+  - Audio resampling + 沈黙検知 → audio_utils.rs (沈黙検知三位一体 locality)
+  - Tauri commands → transcription_commands.rs
+  - Worker loop → transcription_worker_loop.rs / transcription_panic_guard.rs / transcription_emission.rs / transcription_error_payload.rs
+- AGENTS.md 優先順位 1 (クラッシュ修正) / 4 (リアルタイム文字起こし低遅延化) への予防的寄与 = 巨大ファイル理解難度低減を **完全達成** (= 9 責務混在状態が完全解消、各責務単独で理解可能 + 最適化対象特定容易)
+- 後続 Tidy First 機会は (1) docs / 進捗サマリ刷新 / (2) frontend 軸 (LiveCaptionWindow.tsx 580 行 / MeetingDetectedBanner.tsx 526 行) / (3) 検知拡張 (Discord stage / Slack Huddle 等) / (4) audio*.rs / session*.rs / app_detection*.rs の責務分離 (該当ファイルが 1000 行超ならば検討) などへ移行
+```
+
+**C-4. ## 参考 セクションの末尾行 (L426 周辺)**:
+
+現状:
+```markdown
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-28 Loop 57 時点で 29 行 = 約 99.0% 縮小達成 = 95% / 98% / 99% 里程標突破達成 + 98.8% からさらに +0.2pt 進展 = Phase 5 完全終了 = transcription.rs 完全ファサード化)
+```
+
+変更後:
+```markdown
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-31 Loop 63 時点で **ファイル削除完了 = 100% 達成** = 95% / 98% / 99% / 100% 里程標完全制覇 = Phase 6 完全終了 = リファクタプラン完全完遂)
+```
+
+## 担当範囲外 = 触らない
+
+- それ以外のファイル (audio*.rs / session*.rs / app_detection*.rs / elevenlabs / openai / apple_speech / transcript_bridge / cloud_whisper / etc.) = **触らない**
+- AGENT_LOG.md は **末尾の `---` 直後に append のみ** = 先頭厳禁
+
+## 検証 (必須、全件 OK 確認後 commit)
+
+1. `cd src-tauri && cargo build --lib` = エラーなし (lib.rs から `mod transcription;` 削除 + ファイル削除後の整合性確認)
+2. `cd src-tauri && cargo test --lib` = **702 passed / 0 failed** (件数不変、上限超えたら Stop)
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings` = **警告ゼロ**
+4. `cd src-tauri && cargo fmt --check` = OK
+5. `bash scripts/agent-verify.sh src-tauri/src/lib.rs docs/architecture/transcription-refactor-plan.md` = OK
+6. **trailing whitespace 禁止** (行末空白なし)
+7. `ls src-tauri/src/transcription.rs 2>&1` = ファイル存在しないことを確認 (`No such file or directory`)
+8. `grep -rn "use crate::transcription[^_]" src-tauri/src/ 2>&1` = 完全に空
+9. `grep -rn "transcription::" src-tauri/src/ 2>&1 | grep -v "transcription_" | grep -v "transcription/"` = 完全に空
+
+検証で 1 件でも失敗したら **commit せず** にエラー内容を報告すること。
+
+## AGENT_LOG.md 追記 (commit 前)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → ファイル末尾の `---` 直後に以下の形式で **append**:
+
+```
+[mjc-main-20260505-31 Loop 63 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 最終 = transcription.rs ファイル削除 + lib.rs `mod transcription;` 宣言削除 + plan.md 100% 達成記念更新
+- 元 2999 行 transcription.rs (mjc-main-20260505-3 時点) → 0 行 (ファイル削除) = **100% 達成 = リファクタプラン完全完遂**
+- transcription.rs ファイル削除 (`git rm`)、lib.rs L25 `mod transcription;` 削除 (mod 宣言ブロックのアルファベット順維持)
+- transcription-refactor-plan.md 4 箇所更新: 進捗サマリヘッダ / 累計削減行数 / Phase 6 完全終了 サブセクション (新規追加 + Loop 60-63 系列の歩み + `#[allow(unused_imports)]` 第 3 解パターン解説 + 完遂意義) / 末尾 ## 参考 行
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (リポジトリ最大級単一ファイルの完全解体 = 9 責務独立モジュール化完遂 = クラッシュバグ混入リスク予防最大化)
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的寄与 (各責務単独で最適化対象特定容易化)
+- メイン批判判断: Loop 62 完了後 grep で `use crate::transcription[^_]` および `transcription::` インライン参照が完全ゼロ確認 = ファイル削除の安全境界 100% 確定 = Loop 63 削除工程実施可と確定
+- variety pivot 軸 = 「struct/const + import refactor 軸 4 連続 (Loop 59-62) sweep 警告」は **Phase 6 完了 = 軸自体が消滅** で自己解消 + Loop 64+ で別軸 (frontend / 検知拡張 / docs) へ自然移行可能 = exception 判断完了
+
+## How (Tidy First, behavior-preserving)
+- transcription.rs ファイル削除 = 互換層 5 件全削除 = 全 caller 既に直接 import 化済 (Loop 59-62 で完了) = 振る舞い完全不変
+- lib.rs `mod transcription;` 宣言削除 = mod 宣言ブロックのアルファベット順維持 = 振る舞い完全不変
+- plan.md は markdown 編集 = 振る舞い完全不変
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- transcription.rs: ファイル存在しない (削除確認)
+- use crate::transcription[^_] grep: 完全に空
+- transcription:: インライン参照 grep: 完全に空
+- trailing whitespace: なし
+
+## commit
+- <COMMIT_HASH>
+
+---
+```
+
+注: `<COMMIT_HASH>` は **実コミット後の hash** で確実に置換すること。**2-commit pattern** で行う:
+
+1. すべての変更を `git add src-tauri/src/lib.rs docs/architecture/transcription-refactor-plan.md AGENT_LOG.md`
+   - transcription.rs 削除は `git rm` で既にステージ済
+2. `git commit -m "refactor(transcription): transcription.rs ファイル削除 + lib.rs から mod transcription 宣言削除 + plan.md 100% 達成記念更新 (Phase 6 完全終了 = リファクタプラン完全完遂, mjc-main-20260505-31 Loop 63, 元 2999 行 → 0 行 = 100% 達成)"`
+3. `hash=$(git rev-parse --short HEAD)` で hash を取得
+4. AGENT_LOG.md と plan.md (Loop 63 の `<COMMIT_HASH>` placeholder 2 箇所) を `$hash` に置換 (`sed -i.bak "s/<COMMIT_HASH>/$hash/g" AGENT_LOG.md docs/architecture/transcription-refactor-plan.md && rm AGENT_LOG.md.bak docs/architecture/transcription-refactor-plan.md.bak`)
+5. `git add AGENT_LOG.md docs/architecture/transcription-refactor-plan.md`
+6. `git commit -m "chore(agent-log): Loop 63 commit hash $hash を AGENT_LOG.md + plan.md に記入 (worker amend 時の hash 更新漏れ補正、自律 precedent 適用)"`
+
+## commit メッセージ
+
+```
+refactor(transcription): transcription.rs ファイル削除 + lib.rs から mod transcription 宣言削除 + plan.md 100% 達成記念更新 (Phase 6 完全終了 = リファクタプラン完全完遂, mjc-main-20260505-31 Loop 63, 元 2999 行 → 0 行 = 100% 達成)
+```
+
+## ハーネス制約
+
+- `--no-verify` 禁止
+- メイン (発注元) は src-tauri/src/* / scripts/* を直接編集しない方針 = worker (あなた) が全ファイル編集を実施
+- AGENT_LOG.md への記入は worker (あなた) が直接実施
+- claude-agent-* のような harness ファイルは触らない
+
+## 重要: 歴史的記念ループ
+
+本ループは元 2999 行 = リポジトリ最大級単一ファイルの **完全解体達成 = 100% 完遂** の歴史的記念ループ。AGENT_LOG.md エントリと commit メッセージで「Phase 6 完全終了 = リファクタプラン完全完遂」「100% 達成」を明示することで、後続セッションが本達成の歴史的意義を認識できるようにする。
+
+以上。

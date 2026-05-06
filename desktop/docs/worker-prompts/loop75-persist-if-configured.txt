@@ -1,0 +1,225 @@
+あなたは meet-jerky の worker (mjc-worker-loop75-persist-if-configured) です。
+
+# 作業概要 (規模 XS、~16 行抽出 + caller 2 箇所修正)
+
+`src-tauri/src/session_manager.rs` の唯一の standalone fn `persist_if_configured` (L151-164, 14 行 + doc 3 行) を新 file `src-tauri/src/session_manager_persist.rs` に抽出します。これにより session_manager.rs は impl SessionManager method のみの構造になり、persist 機能が独立 module 化されます。
+
+# 必読 (冒頭で必ず実施)
+
+1. `tail -350 AGENT_LOG.md` で末尾を読む。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. 末尾の Loop 73 entry (session_manager_types.rs 抽出 = 同 scope の precedent) と Loop 74 entry (Q5 Resolved) を読む。
+3. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 → 末尾の `---` 直後に追記。
+4. **大型ファイル (`AGENT_LOG.md` ~30,000 行 / session_manager.rs ~1263 行) は Read 全体禁止 = tail/head/grep のみ**。
+
+# precedent (継承事項、必ず参照)
+
+- `src-tauri/src/session_manager_types.rs` (Loop 73 = 18 行 = struct 抽出 precedent): cat で完全読み込み推奨
+- `src-tauri/src/session_store_parse.rs` (Loop 69 = 32 行 = pure fn 抽出 precedent): cat で完全読み込み推奨
+
+両者は session_manager_persist.rs の構造テンプレート。
+
+# 担当範囲 (厳守、超過禁止)
+
+## 編集対象 (この 4 ファイルのみ)
+
+1. **`src-tauri/src/session_manager_persist.rs`** (新規): persist_if_configured fn を移送
+2. **`src-tauri/src/lib.rs`**: `mod session_manager_persist;` を追加 (session_manager と session_manager_types の近傍に配置)
+3. **`src-tauri/src/session_manager.rs`**: 元 fn 削除 + use 文追加 (caller の 2 箇所は同 file 内 = 修正不要、relative path で呼べる)
+4. **`AGENT_LOG.md`**: 末尾に Loop 75 entry を追記
+
+## 編集禁止
+
+- 他の session_*.rs / app_detection*.rs 等には触らない (振る舞い不変維持)
+- frontend (src/) には一切触らない
+- AGENT_LOG.md 先頭は絶対に触らない
+- test 件数を変更しない (705 件のまま)
+
+# 実態確認 (mjc-main-20260505-37 が事前 grep 済)
+
+- `persist_if_configured` 本体: session_manager.rs L151-164 (14 行) + doc コメント 3 行 (L148-150)
+- caller (実装): L85 (`persist_if_configured(active, "append");`) + L97 (`persist_if_configured(&active, "finalize");`) = **2 箇所** (handoff prompt の「3 箇所」予測は誤り、再確認済)
+- caller (tests): L546/572/602/621 = 4 箇所 (mod tests 内、`use super::*;` 経由なので修正方法を要検討)
+- 依存:
+  - `crate::session_store::write_session_markdown_to` (pub fn、抽出後も呼び出し可)
+  - `crate::session_manager_types::ActiveSession` (Loop 73 で既に抽出済)
+- 振る舞い変更なし (純構造変更、Tidy First)
+
+# 具体的手順
+
+## Step 1: precedent 確認
+
+```bash
+cat src-tauri/src/session_manager_types.rs
+cat src-tauri/src/session_store_parse.rs | head -20
+```
+
+両者の構造を見て、新 file のテンプレートを把握する。
+
+## Step 2: persist_if_configured 本体の確認
+
+```bash
+sed -n '148,165p' src-tauri/src/session_manager.rs
+grep -n persist_if_configured src-tauri/src/session_manager.rs
+```
+
+caller 行を特定。
+
+## Step 3: `src-tauri/src/session_manager_persist.rs` 新規作成
+
+```rust
+//! Session の persist 専門 module。
+//!
+//! `persist_if_configured` は append / finalize 等の phase で session manager から呼び出され、
+//! ディスク書き出しエラーは in-memory の一貫性を壊さないようログに留めて無視する。
+
+use crate::session_manager_types::ActiveSession;
+use crate::session_store;
+
+/// ディスク書き出しエラーは in-memory の一貫性を壊さないよう、ログに留めて無視する。
+/// Phase 5 時点では tracing 未導入のため eprintln で暫定対応。
+/// `phase` は append/finalize などの呼び出し文脈をログに残すためのラベル。
+pub(crate) fn persist_if_configured(active: &ActiveSession, phase: &str) {
+    if let Some(output) = &active.output {
+        if let Err(err) =
+            session_store::write_session_markdown_to(&output.path, &active.session, output.offset)
+        {
+            eprintln!(
+                "[session_manager] failed to persist session on {} to {:?}: {}",
+                phase, output.path, err
+            );
+        }
+    }
+}
+```
+
+(実際の元 fn 本体は変更せず移送、visibility は private → `pub(crate)` 昇格 = caller が他 module から呼ぶ必要あり)
+
+## Step 4: lib.rs に mod 追加
+
+```bash
+grep -n "mod session_manager" src-tauri/src/lib.rs
+```
+
+session_manager / session_manager_types 行の近傍に `mod session_manager_persist;` を追加 (既存 module 並びに合わせて alphabetical order 維持)。
+
+## Step 5: session_manager.rs の修正
+
+(a) L148-164 (doc 3 行 + fn 14 行 = 計 17 行) を **削除**
+
+(b) imports に追加:
+
+```rust
+use crate::session_manager_persist::persist_if_configured;
+```
+
+(c) caller (L85, L97) は名前そのままで OK = `persist_if_configured(active, "append");` / `persist_if_configured(&active, "finalize");` → 修正不要 (use 文経由で名前解決)
+
+(d) test 内の caller (L546/572/602/621): `use super::*;` で見えるが `super::*` は session_manager.rs 内の名前のみ。`persist_if_configured` は別 module になるので、test 内で:
+
+```rust
+use crate::session_manager_persist::persist_if_configured;
+```
+
+を追加するか、`super::persist_if_configured` を `crate::session_manager_persist::persist_if_configured` に書き換える。
+
+**安全な方針**: tests mod 直下に `use crate::session_manager_persist::persist_if_configured;` を追加 (1 行)、caller 4 箇所は名前そのままで OK。
+
+## Step 6: 検証
+
+```bash
+cd src-tauri
+cargo build --lib 2>&1 | tail -20
+cargo test --lib 2>&1 | tail -30   # 705 件 pass を確認
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cargo fmt --check 2>&1 | tail -10
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/session_manager.rs src-tauri/src/session_manager_persist.rs src-tauri/src/lib.rs
+```
+
+EXIT 0 確認 + 705 件 pass + 警告ゼロ。
+
+## Step 7: refactor commit (1 つ目)
+
+```bash
+git add src-tauri/src/session_manager.rs src-tauri/src/session_manager_persist.rs src-tauri/src/lib.rs
+git commit -m "refactor(session_manager): persist_if_configured を session_manager_persist.rs に抽出 (mjc-main-20260505-37 Loop 75, ~14 行抽出 + lib.rs mod 追加, session_manager.rs は impl method のみに整理, AGENTS.md priority 1 寄与)"
+```
+
+`git log -1 --format=%H` で **commit hash を必ず取得**。
+
+## Step 8: AGENT_LOG.md に Loop 75 entry 追記
+
+`tail -10 AGENT_LOG.md` で末尾 `---` 確認後、末尾の `---` 直後に追記:
+
+```
+[mjc-main-20260505-37 Loop 75 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/session_manager_persist.rs (新規 ~25 行) に persist_if_configured fn (本体 14 行 + doc 3 行) を抽出
+- src-tauri/src/lib.rs に `mod session_manager_persist;` 追加
+- src-tauri/src/session_manager.rs から L148-164 (~17 行) を削除 + `use crate::session_manager_persist::persist_if_configured;` を追加
+- session_manager.rs の tests mod 内に `use crate::session_manager_persist::persist_if_configured;` を追加 (caller 4 件のテストが見えるよう)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (session_manager.rs ~1263 行 → ~1246 行への段階的責務分離、5 file 目)
+- session_manager_types.rs (Loop 73) precedent 直接展開 + session_store_parse.rs (Loop 69) precedent 構造踏襲 = persist 専門 module 化で意図表明
+- session_manager.rs 整理: standalone fn が persist_if_configured 1 件のみだったのが 0 件になり、impl SessionManager method のみの構造美達成
+- 振る舞い不変 = 705 件 pass 件数不変
+
+## How (Tidy First, behavior-preserving)
+- visibility: private → `pub(crate)` 昇格 (session_manager.rs / tests から call 可能化)
+- 依存: ActiveSession (session_manager_types 既抽出) + session_store::write_session_markdown_to (既 pub) = 新 pub 化不要
+- caller (実装 2 + tests 4 = 6 箇所): use 文経由で名前解決 = 呼び出し側 fn 不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- session_manager.rs から `^fn ` を grep: 0 件 (すべて impl method 内に)
+- session_manager_persist.rs から `pub(crate) fn persist_if_configured` を grep: 1 件
+- trailing whitespace: なし
+
+## commit
+- <refactor commit hash here>
+
+---
+```
+
+Edit ツールで末尾追記 (old_string は末尾近傍 ~30 行を含めて unique 化)。
+
+## Step 9: chore commit (2 つ目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 75 commit hash <refactor commit hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-74 precedent 適用 16 連続)"
+```
+
+# 検証制約
+
+- `cd src-tauri` してから cargo (desktop 直下に Cargo.toml なし)
+- 705 件 pass を必ず確認 (件数増減があればロールバック)
+- `--no-verify` 禁止
+- trailing whitespace: 行末の空白文字禁止
+
+# 規模上限
+
+- session_manager_persist.rs: ~25 行 (新規)
+- lib.rs: 1 行追加
+- session_manager.rs: -17 行 (削除) + 2 行追加 (tests + 実装の use 文) = net -15 行
+- AGENT_LOG.md: ~35 行 entry
+- 上限超過時は途中で停止して報告
+
+# precedent (継承事項)
+
+- 2-commit pattern: refactor commit → hash 取得 → AGENT_LOG.md 更新 → chore commit (Loop 60-74 で 15 連続実証)
+- worker 自律実行: 完走後 final answer 不要、git status --short で完走確認可能
+- session_manager_types.rs (Loop 73) で同 scope 抽出を実証済 = テンプレート確立
+
+# 完走確認方法
+
+- `git status --short`: src-tauri/src/* 3 ファイルと AGENT_LOG.md の M / ?? 表示が出て、commit 後にすべて消えること
+- `git log --oneline -3`: Loop 75 refactor commit + chore commit が並ぶこと
+
+以上です。**先頭追記事故 + trailing whitespace + 規模超過 + 振る舞い変更 + 件数増減 を必ず防止してください**。

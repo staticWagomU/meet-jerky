@@ -1,0 +1,103 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md を読んでください。
+AGENT_LOG.md は ~14900 行 / 1.5MB あるので末尾だけ参照する場合は `tail -300 AGENT_LOG.md` で十分です。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+- `src-tauri/src/app_detection.rs` の **tests モジュール末尾のみ** に test を追加
+- AGENT_LOG.md 末尾追記のみ
+
+# 背景
+`classify_meeting_url` は Google Meet / Zoom / Microsoft Teams の URL を分類する純粋関数で、URL の prefix・port・path・query を厳密にチェックして誤検知を防いでいる。既存の test は会議サービス本体・トレーリングドット・whitespace 混入などをカバーしているが、以下の境界仕様が明示テスト未整備で、回帰の温床になり得る。本タスクではこれら **既存仕様を裏付けるテスト** を追加するのみで、実装ロジックは一切変更しない。
+
+# 仕様: 追加するテスト一覧
+
+すべて `mod tests` 内に新しい `#[test]` 関数として追加すること。既存の test は変更しない。各 test 関数名は説明的に。
+
+## 1. `classify_meeting_url_rejects_empty_and_whitespace_only`
+- `""` (空文字列) → None
+- `"   "` (半角スペースのみ) → None
+- `"\t\n"` (タブ + 改行のみ) → None
+- `"\u{3000}"` (全角スペース 1 文字) → None  ※ trim().chars().any(is_whitespace) で reject される
+
+## 2. `classify_meeting_url_rejects_non_http_schemes`
+以下すべて None:
+- `"file:///path/to/file"`
+- `"ftp://meet.google.com/abc-defg-hij"`
+- `"ws://meet.google.com/abc-defg-hij"`
+- `"chrome://settings/"`
+- `"javascript:alert(1)"`  ※ `://` がないので split_once で None になる経路
+
+## 3. `classify_meeting_url_rejects_missing_scheme`
+- `"meet.google.com/abc-defg-hij"` → None
+- `"//meet.google.com/abc-defg-hij"` → None
+- `"/abc-defg-hij"` → None
+
+## 4. `classify_meeting_url_rejects_userinfo_in_authority`
+host poisoning 防御の確認:
+- `"https://attacker@meet.google.com/abc-defg-hij"` → None
+- `"https://user:pass@meet.google.com/abc-defg-hij"` → None
+- `"https://meet.google.com@evil.example.com/abc-defg-hij"` → None  (これも `@` を含むため reject)
+
+## 5. `classify_meeting_url_rejects_invalid_port`
+- `"https://meet.google.com:/abc-defg-hij"` (空ポート) → None
+- `"https://meet.google.com:abc/abc-defg-hij"` (非数値ポート) → None
+- `"https://meet.google.com:99999/abc-defg-hij"` (u16 範囲外) → None
+- `"https://meet.google.com:65536/abc-defg-hij"` (u16 上限超過) → None
+- `"https://meet.google.com:-1/abc-defg-hij"` (負数) → None
+
+## 6. `classify_meeting_url_accepts_valid_port`
+肯定ケースの確認 (回帰防止):
+- `"https://meet.google.com:8443/abc-defg-hij"` → Some (`service: "Google Meet"`, `host: "meet.google.com"`)
+- `"https://meet.google.com:0/abc-defg-hij"` → Some (port 0 は u16 で valid)
+
+ヒント: 既存の `MeetingUrlClassification` フィールドへの assertion は、L811-862 付近の既存 test (`classify_meeting_url_returns_service_and_host_only` など) のスタイルに合わせる。`Some(MeetingUrlClassification { service: ..., host: ... })` リテラル比較。
+
+## 7. `classify_meeting_url_rejects_ipv6_host_for_meeting_services`
+ブラケット形式 IPv6 は parser 側でサポートされているが、Google Meet / Zoom / Teams のホスト判定はドメイン名ベースなので必ず None になる:
+- `"https://[::1]/j/123456789"` → None
+- `"https://[2001:db8::1]/abc-defg-hij"` → None
+- `"https://[::1]:8443/l/meetup-join/secret"` → None
+
+## 8. `classify_meeting_url_rejects_double_scheme_separator`
+- `"https://://meet.google.com/abc-defg-hij"` → None  (split_once により scheme が "https" → after_scheme が "://meet.google.com..." → authority が空文字 → reject)
+- `"https://"` → None (authority 空)
+- `"https:///abc-defg-hij"` → None (authority 空)
+
+# テスト実装上の注意
+- 各 `#[test]` 関数は最大 ~10 行程度に収めること。
+- `assert_eq!` のスタイルは既存テスト (L1062 以降の `classify_meeting_url_rejects_non_meeting_or_non_join_urls`) を踏襲する。
+- 既存 test の枠を越えたエントリ追加 (例えば肯定ケースに新たな会議サービスを足す) は禁止。
+- `classify_meeting_url` シグネチャ・実装・他関数は **一切変更しない**。テスト追加のみ。
+- もし上記いずれかのケースが「実は実装が誤って Some を返している」ことを発見した場合は、test を skip して報告に明記し、コードは変更せずに終了する (バグ報告のみ)。
+
+# 検証
+1. `git diff --check`
+2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets --all-features -- -D warnings`
+4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast`
+5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+3, 4 はビルド・実行時間が数分単位で掛かるためフォアグラウンド完了まで必ず待つ。clippy は警告ゼロ維持必須、現在 210 passed の状態から **追加テスト分だけ増えた値で全合格** を確認する (例: 8 ケース追加なら 218 passed 期待)。
+
+# AGENT_LOG.md 追記
+末尾に新セクション: `### classify_meeting_url の境界仕様テストを 8 種類追加し回帰防止カバレッジを拡張`。
+記載項目: 開始日時 (JST)、担当セッション (`mjc-worker-classify-url-edge-tests-20260504-1`)、役割、作業範囲、指示内容 (このプロンプトの要約)、結果、変更ファイル、検証結果 (cargo fmt / clippy / test の合否、追加 test 件数、追加後の total passed)、依存関係追加の有無 (なし)、失敗理由 (なし)、次アクション。
+
+# 報告形式 (1 ターンで完結)
+最後に以下を簡潔にまとめて出力:
+- 追加した test 関数名一覧 (上記 1〜8)
+- 各 test 内の assertion 件数
+- cargo fmt / clippy / test の最終結果 (test の追加前 210 → 追加後 N passed)
+- もし「実装が誤って Some を返した」ケースを発見したらここで報告 (skip して残リスクとする)
+- 残リスク (実機 URL での挙動は未確認、parser の他のサニタイズ層との重複確認は未実施 等)
+
+# 禁止事項
+- 既存の `classify_meeting_url` 実装変更
+- `parse_url_host_and_path`, `strip_port`, `validate_port`, `normalize_url_host` 等の補助関数変更
+- 他のソースファイル変更
+- `git commit` の実行
+- `--no-verify`
+- 既存テストの削除・改変
+- 検知ロジックや会議サービスの追加・削除

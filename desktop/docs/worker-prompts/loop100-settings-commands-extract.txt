@@ -1,0 +1,174 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/settings_permission.rs` (Loop 89 抽出、settings 軸 1 件目)
+6. precedent (cat 全体): `cat src-tauri/src/secret_store_commands.rs` (Loop 93 抽出、tauri::command 抽出 paradigm)
+7. precedent (cat 全体): `cat src-tauri/src/session_commands_list.rs` (Loop 97 抽出、tauri::command + helper pub(crate) 化 precedent)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/settings_commands.rs` (~40-60 行)
+- 編集: `src-tauri/src/settings.rs` (tauri commands 4 件 production ~30 行削除 + section 区切りコメント整理)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 + invoke_handler path 修正 4 件)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 100 タスク内容 (構造分離 24 件目, settings 軸 2 件目 = scope depth 充実)
+
+## 背景
+
+- Loop 89 = settings_permission.rs 抽出 (settings 軸 1 件目 = マイク/画面録画 permission 軸)。
+- Loop 95-98 = apple_speech_macos / session_commands_list / audio_resample 抽出 (新 scope 開拓継続)。Loop 99 = harness 衛生軸 (agent-log-archive-plan.md 観測追記)。
+- Loop 100 では settings.rs (836 行) の **tauri commands 4 件** (`get_settings` / `update_settings` / `get_default_output_directory` / `select_output_directory`) を別 module へ抽出 = 構造分離 24 件目 = settings 軸 2 件目 = scope 15 軸の depth 充実達成。
+- settings.rs 本来責務 (`AppSettings` 構造体 + 永続化ロジック + `TranscriptionEngineType` enum) と tauri commands (UI 公開 API) は機能的に独立 = 分離で構造美向上。AGENTS.md priority 1 寄与。
+- settings_permission.rs (Loop 89) との関係: 同じ settings 軸の機能分類だが、permission 軸 (macOS パーミッション状態) と settings_commands 軸 (AppSettings 直接操作 + デフォルト出力先取得) は責務独立 = 並立 OK。
+
+## 抽出対象 (settings.rs から settings_commands.rs へ移動)
+
+**Production (settings.rs L160-192, ~30 行)**:
+- L160-162: section 区切りコメント (`// ─── Tauri コマンド ───` 等) は **削除** (新 file 側で書き直す or 不要)
+- L163-167: `pub fn get_settings(state: tauri::State<'_, SettingsStateHandle>) -> AppSettings` (4 行 + docstring 1 行)
+- L169-178: `pub fn update_settings(settings: AppSettings, state: tauri::State<'_, SettingsStateHandle>) -> Result<(), String>` (9 行 + docstring 1 行)
+- L180-184: `pub fn get_default_output_directory() -> String` (4 行 + docstring 1 行)
+- L186-192: `pub fn select_output_directory() -> Option<String>` (6 行 + docstring 1 行)
+
+**Test**:
+- settings.rs `mod tests` 内の test は **絶対に触らない**。tauri commands は state mock 困難なため直接 test されていない (tests = AppSettings + TranscriptionEngineType + default_output_directory のみ) = 全件 settings.rs に残す。
+- 新 file `settings_commands.rs` 側に **新規 test は追加しない** (move only paradigm 維持、件数完全不変)。
+
+**helpers の取り扱い**:
+- `default_output_directory` (settings.rs L139) は既に `pub fn` = 新 file から `crate::settings::default_output_directory` で参照可能。**変更不要**。
+- `AppSettings` (L57) / `SettingsStateHandle` (L151) は既に pub = 変更不要。
+- settings.rs 残るべき内容: `deserialize_engine_type_with_fallback` / `TranscriptionEngineType` + impl / `AppSettings` + Default + impl / `default_output_directory` / `SettingsStateHandle` + impl + 全 tests = **不変**
+
+## 抽出方式 (Loop 89 settings_permission + Loop 93 secret_store_commands + Loop 97 session_commands_list precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/settings_commands.rs`
+
+ファイル冒頭 docstring 例:
+
+```rust
+//! `AppSettings` の取得 / 更新 / デフォルト出力先取得 / フォルダ選択ダイアログを
+//! 提供する tauri コマンド群。`settings.rs` 本体の `AppSettings` 永続化責務 +
+//! `TranscriptionEngineType` 定義とは独立しているため、機能境界で分離する。
+//! `settings_permission.rs` (Loop 89) と並立する settings 軸 2 件目。
+```
+
+必要 import (移動):
+```rust
+use crate::settings::{default_output_directory, AppSettings, SettingsStateHandle};
+```
+
+production 4 fn (`get_settings` + `update_settings` + `get_default_output_directory` + `select_output_directory`) をそのまま移動。各 fn の docstring も移動 (`/// 現在の設定を返す` 等)。test mod は **追加しない**。
+
+### 2. settings.rs 編集
+
+- L160-192 の tauri commands 4 件 + section 区切りコメント (`// ─── Tauri コマンド ───` 等) を削除 (~30 行削除)
+- 直後 L194-196 の `// ─── テスト ───` section 区切りコメントは **残す** (tests は不変)
+- `mod tests` 内の test 群は **一切触らない**
+- 不要になった import を整理:
+  - settings.rs に残る fn が `rfd::FileDialog` を参照していなければ削除候補だが、**他 fn で利用がない** ことを cargo build で確認した上で削除
+  - `AppSettings` / `SettingsStateHandle` の use は settings.rs 内定義のため不要 (self 参照)
+  - その他既存 import (serde / Mutex / PathBuf / dirs 等) は残す
+- 構造体定義 / impl / Default / `default_output_directory` 関数は **完全に不変**
+
+### 3. lib.rs 編集 (alphabetical mod + invoke_handler path)
+
+- 既存 `mod settings;` 直後 (alphabetical 順 = `mod settings_commands;` → `mod settings_permission;` の順) に `mod settings_commands;` 追加
+  - **重要**: `mod settings_commands;` は `mod settings;` と `mod settings_permission;` の間に来る (alphabetical)
+- L389-392 の invoke_handler 4 件を以下に変更:
+  - `settings::get_settings` → `settings_commands::get_settings`
+  - `settings::update_settings` → `settings_commands::update_settings`
+  - `settings::get_default_output_directory` → `settings_commands::get_default_output_directory`
+  - `settings::select_output_directory` → `settings_commands::select_output_directory`
+- `.manage(settings::SettingsStateHandle::new())` (L376 付近) は **不変** (SettingsStateHandle は settings.rs 残留)
+
+それ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production 4 fn (~30 行) 以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動なし、削除/追加禁止)
+- 振る舞い不変 = caller path 変更は lib.rs invoke_handler 4 件のみ、frontend `invoke('get_settings')` / `invoke('update_settings')` / `invoke('get_default_output_directory')` / `invoke('select_output_directory')` 等の名前は不変
+- `AppSettings` / `SettingsStateHandle` / `default_output_directory` / `TranscriptionEngineType` / 全 tests は完全に不変
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import の clippy warning や build error が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/settings.rs src-tauri/src/settings_commands.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85-99 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/settings.rs src-tauri/src/settings_commands.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(settings): tauri commands 4 件 (get_settings / update_settings / get_default_output_directory / select_output_directory) を settings_commands.rs に抽出 (mjc-main-20260505-51 Loop 100, 機能分離軸 = settings 軸 2 件目, 大型 rust file 責務分離 24 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-51 Loop 100 / 2026-05-05]
+worker: mjc-worker-settings-commands-loop100 (作業)
+範囲: src-tauri/src/settings.rs (tauri commands 4 件 production ~30 行削除 + section 区切りコメント整理) + src-tauri/src/settings_commands.rs (新規 ~40-60 行) + src-tauri/src/lib.rs (mod 追加 + invoke_handler path 修正 4 件)
+内容: settings.rs L160-192 の tauri commands 4 件 (get_settings + update_settings + get_default_output_directory + select_output_directory) を新 module settings_commands.rs に抽出。tests は state mock 困難のため直接 test 無し → 移動不要 (件数完全不変)。lib.rs に mod settings_commands; 追加 (alphabetical = mod settings; と mod settings_permission; の間) + invoke_handler の settings::xxx を settings_commands::xxx に変更 (4 件)。settings.rs 内の AppSettings / TranscriptionEngineType / default_output_directory / SettingsStateHandle / 全 tests は完全に不変。大型 rust file 責務分離 24 file 目 = settings 軸 2 件目 (scope depth 充実) = audio_resample 軸 (Loop 98) からの pivot 達成 = 機能分類軸 paradigm 9 件目 (system_audio_pcm/format / app_detection_* / session_commands_list / secret_store_commands と同形)。settings_permission.rs (Loop 89) と並立する settings 軸 2 件目達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(settings): tauri commands 4 件を settings_commands.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = settings 軸の UI 公開 API 機能境界分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-51 Loop 100 = settings_commands.rs 抽出 (構造分離 24 file 目, settings 軸 2 件目 = scope depth 充実, audio_resample 軸からの pivot 達成 = 機能分類軸 paradigm 復帰) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件 (新規 1 + 編集 3)
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

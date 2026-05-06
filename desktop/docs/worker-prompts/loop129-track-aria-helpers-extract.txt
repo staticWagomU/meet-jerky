@@ -1,0 +1,151 @@
+あなたは meet-jerky プロジェクトの worker (claude sonnet) です。
+mjc-main-20260505-65 の Loop 129 を担当します。
+
+# 必読 (冒頭で必ず実施)
+
+1. **AGENT_LOG.md の末尾 350 行を読め** (`tail -350 AGENT_LOG.md`)。**時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。** 末尾の `---` 直後に新規エントリを追記すること。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md を読め。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md を読め。
+4. **precedent file = src/utils/permissionStatusHelpers.ts を cat 全体読み込みせよ** (Loop 127 frontend 軸 8 件目 直近 precedent = 規模 SS = 28 行 = 同 R6 paradigm の 2 件目)。
+5. **precedent file = src/utils/audioLevelHelpers.ts を cat 全体読み込みせよ** (Loop 125 = 17 行 = 同 R6 paradigm の 1 件目 = SSS 最小規模 paradigm 参考)。
+6. **依存元 file = src/utils/audioTrackLabels.ts を cat 全体読み込みせよ** (新 file が import する constants 元)。
+
+# タスク概要 (Loop 129 = frontend 軸 9 件目 = 純粋関数機能分離軸 frontend 版 6 件目 = R6 段階的分割 3 件目)
+
+## 目的
+
+`src/routes/TranscriptView.tsx` (2414 行 Loop 127 後) から **2 純粋関数** を分離して **frontend file 責務分離 41 file 目** + **scope 28 軸目開拓 (新 file `src/utils/trackStatusAriaLabels.ts`)** を達成する。
+
+**メイン批判判断発掘 (Loop 119/121/123/125/127 教訓継承 = paradigm 反復 < 責務階層精査)**:
+- 既存 `utils/audioTrackLabels.ts` の責務 = 「canonical な device label string 定数」 (primitives tier = pure `export const`)
+- 抽出候補の責務 = 「ARIA 用 status label との runtime 合成」 (presentation/composition tier = runtime `statusLabel` parameter)
+- ∴ **新 file `trackStatusAriaLabels.ts` 作成軸採用** (既存 file 拡張軸ではない = 異階層 = constants tier ≠ presentation tier)
+- R6 (TranscriptView.tsx 残 純粋関数 段階的分割抽出) の 3 件目 = Loop 125 audio level helpers + Loop 127 permission status helpers の続編
+
+## 成果物 (commit 順)
+
+### Commit 1: refactor(frontend) — TranscriptView 純粋関数 track ARIA helpers を utils/trackStatusAriaLabels.ts に抽出
+
+#### 1A. 新 file `src/utils/trackStatusAriaLabels.ts` を作成
+
+以下の **2 純粋関数** を新 file へ移動 (export 化):
+
+**純粋関数 (移動 + export 化)**:
+- TranscriptView.tsx L398-400 `getMicTrackStatusAriaLabel(statusLabel: string): string` → `export function`
+- TranscriptView.tsx L402-404 `getSystemAudioTrackStatusAriaLabel(statusLabel: string): string` → `export function`
+
+両関数は **`audioTrackLabels.ts` の `SELF_TRACK_DEVICE_LABEL` + `OTHER_TRACK_DEVICE_LABEL` 定数に依存** = 新 file 冒頭に `import { OTHER_TRACK_DEVICE_LABEL, SELF_TRACK_DEVICE_LABEL } from "./audioTrackLabels";` を追加する必要あり (alphabetical 順)。
+
+**新 file の内容 (例)**:
+
+```typescript
+import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "./audioTrackLabels";
+
+export function getMicTrackStatusAriaLabel(statusLabel: string): string {
+  return `${SELF_TRACK_DEVICE_LABEL}: ${statusLabel}`;
+}
+
+export function getSystemAudioTrackStatusAriaLabel(statusLabel: string): string {
+  return `${OTHER_TRACK_DEVICE_LABEL}: ${statusLabel}`;
+}
+```
+
+**新 file の冒頭コメント**: なし (precedent = audioLevelHelpers.ts / permissionStatusHelpers.ts に倣う = コメントなしシンプルスタイル)
+
+#### 1B. 元 file `src/routes/TranscriptView.tsx` の修正
+
+- L398-404 を削除 (2 関数まるごと、関数間の空行 L401 含む = 計 7 行)
+- 既存 import section に `import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";` を追加 (alphabetical 順を維持、Loop 127 の `permissionStatusHelpers` の隣等)
+- **既存の `import { OTHER_TRACK_DEVICE_LABEL, SELF_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";` は維持** (TranscriptView.tsx 内で 15 箇所以上使用されているため、削除すると build error)
+- callsite 6 件は **無変更で動作する** (関数名そのまま、import 追加のみで参照解決):
+  - L1589 `getMicTrackStatusAriaLabel(micTrackStatusLabel),`
+  - L1590 `getSystemAudioTrackStatusAriaLabel(systemAudioTrackStatusLabel),`
+  - L2064 `aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}`
+  - L2065 `title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}`
+  - L2083-2084 `aria-label={getSystemAudioTrackStatusAriaLabel(...)}`
+  - L2086-2087 `title={getSystemAudioTrackStatusAriaLabel(...)}`
+
+注意: 削除後の行番号は変動するため、`grep -n "function getMicTrackStatusAriaLabel\|function getSystemAudioTrackStatusAriaLabel" src/routes/TranscriptView.tsx` で抽出範囲確定後に削除。
+
+#### 1C. 検証 (Commit 1 前に必ず実行)
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build 両方通ること
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/trackStatusAriaLabels.ts
+```
+
+#### 1D. Commit 1 メッセージ (Conventional Commits)
+
+```
+refactor(frontend): TranscriptView の track ARIA helpers を utils/trackStatusAriaLabels.ts に抽出 (mjc-main-20260505-65 Loop 129, frontend 軸 9 件目 = 純粋関数機能分離軸 frontend 版 6 件目, scope 28 軸目開拓, 大型 frontend file 責務分離 41 file 目, getMicTrackStatusAriaLabel + getSystemAudioTrackStatusAriaLabel 抽出, R6 段階的分割 3 件目, AGENTS.md priority 1 寄与)
+```
+
+ファイルは `git add src/routes/TranscriptView.tsx src/utils/trackStatusAriaLabels.ts` のみ。
+
+Commit 1 完了後、`git log -1 --format=%H` で hash を取得して **記憶しておく**。
+
+### Commit 2: chore(agent-log) — Loop 129 エントリ追記
+
+#### 2A. AGENT_LOG.md 末尾追記
+
+末尾の `---` 直後に以下のフォーマットでエントリ追記:
+
+```
+[mjc-main-20260505-65 Loop 129 / 2026-05-06]
+worker: mjc-worker-loop129-track-aria-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (-7 行 = 2 関数削除 + import 1 行追加 = 実質 -6 行) + src/utils/trackStatusAriaLabels.ts (新規 ~11 行 = import 1 行 + export 2 関数)
+内容: TranscriptView.tsx L398-404 の getMicTrackStatusAriaLabel + getSystemAudioTrackStatusAriaLabel を新 file utils/trackStatusAriaLabels.ts に抽出。frontend 軸 9 件目 = 純粋関数機能分離軸 frontend 版 6 件目 = scope 28 軸目開拓 = 大型 frontend file 責務分離 41 file 目 = R6 段階的分割 3 件目 (Loop 125 audio level helpers + Loop 127 permission status helpers の続編)。callsite 6 件 (L1589 + L1590 + L2064 + L2065 + L2083 + L2086) は import 追加のみで参照解決。alternation pattern 21 連続成功維持 (K(128) → frontend(129))。メイン批判判断 = 既存 utils/audioTrackLabels.ts (constants tier = pure export const) との責務階層精査で **異階層 = 新 file 作成軸採用** = Loop 119/121/123/125/127 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は audioTrackLabels.ts から SELF/OTHER_TRACK_DEVICE_LABEL を import = 2 件目の utils 内 cross-import paradigm。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/trackStatusAriaLabels.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <Commit 1 で取得した hash> refactor(frontend): TranscriptView の track ARIA helpers を utils/trackStatusAriaLabels.ts に抽出
+依存関係追加: なし (audioTrackLabels.ts への内部 import のみ)
+失敗理由: なし
+次アクション: メイン側で SESSION SUMMARY 末尾追記 chore commit を予定
+
+---
+```
+
+`<Commit 1 で取得した hash>` は **必ず実 hash の先頭 7 文字に置換**。
+追記末尾には `---` を必ず付けること (precedent 準拠)。
+
+#### 2B. Commit 2 検証 + メッセージ
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-65 Loop 129 = TranscriptView の track ARIA helpers を utils/trackStatusAriaLabels.ts に抽出 (構造分離 41 file 目, frontend 軸 9 件目, scope 28 軸目開拓, 純粋関数機能分離軸 frontend 版 6 件目, alternation 21 連続成功, R6 段階的分割 3 件目)"
+```
+
+# 規模超過防止段落 (絶対遵守)
+
+- **担当範囲は src/routes/TranscriptView.tsx + src/utils/trackStatusAriaLabels.ts + AGENT_LOG.md のみ**。それ以外のファイル (src-tauri/, components/, hooks/, plan.md 等) は **絶対に触らない**。
+- TranscriptView.tsx は 2414 行の大型 file = **Read 全体禁止** = `head -410 src/routes/TranscriptView.tsx | tail -20` 等の範囲指定で参照する。L398-404 抽出 + import 行追加 (上部) のみが目標。
+- 検証は **npm run build (tsc + vite build) のみ** (frontend 軸 = cargo 不要)。
+- **行末の空白文字 (trailing whitespace) 禁止** = エディタ設定 + `grep -nP " +$" file` で必ず確認。
+- 抽出 2 関数以外の純粋関数 (残 21 件 = R6 段階的分割の Loop 130+ 候補) は **本 Loop で触らない** (将来 Loop で段階的に対応)。
+- `import { OTHER_TRACK_DEVICE_LABEL, SELF_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";` は TranscriptView.tsx で 15+ 箇所使用 = **削除しない** (削除すると tsc error)。
+
+# 完走判定基準
+
+- Commit 1 = refactor(frontend) 1 件
+- Commit 2 = chore(agent-log) 1 件
+- AGENT_LOG.md 末尾に Loop 129 entry 追加済
+- npm run build OK + agent-verify.sh OK
+- git status clean (handoff/* と worker-prompts/* untracked のみ残留)
+
+# precedent (cat 全体推奨)
+
+- src/utils/permissionStatusHelpers.ts (Loop 127 = 28 行 = 規模 SS = 直近 precedent)
+- src/utils/audioLevelHelpers.ts (Loop 125 = 17 行 = 同 R6 paradigm の 1 件目)
+- src/utils/audioTrackLabels.ts (5 行 = 依存元 constants file)
+
+# その他
+
+- claude-agent-handoff-main.sh は触らない (interactive TUI 起動用)。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+- 完走後は端末で本 worker を終了 (claude -p print mode は最終出力一括方式 = stdout は完了まで空)。
+
+頑張ってください。Loop 129 完走 = 累計 worker 完走 228/228 (100% 維持) を期待します。

@@ -1,0 +1,195 @@
+あなたは meet-jerky リポジトリ専用の Sonnet ワーカーです。GoToMeeting の legacy URL `global.gotomeeting.com/join/<9-digit-numeric-id>` 検知を `app_detection.rs` の `classify_meeting_url` に追加してください (TDD Red→Green、AGENTS.md 優先順位 2 = 会議検知の網羅性に直接寄与)。
+
+# 必読 (まず最初に)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** (`tail -350 AGENT_LOG.md` 相当) を読む
+  - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+  - **先頭は絶対に触らない**
+  - 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+
+# 大型ファイル参照ルール
+- `app_detection.rs` は 3174 行 = **Read 全体禁止**。`tail`/`head`/`grep`/`sed -n '<開始>,<終了>p'` で必要範囲のみ参照。
+- 編集対象は L920-944 (既存 `is_goto_host` / `is_goto_meeting_url` 周辺、新関数追加先) + L527-528 (`classify_meeting_url` 統合点) + tests mod 末尾 (L3160-3220 周辺、テスト追加先)。
+
+# 目的 (priority 2 への直接寄与)
+
+GoToMeeting の legacy URL 形式 `https://global.gotomeeting.com/join/<9-digit-id>` は GoToMeeting の最古形式の URL であり、企業環境で現役で使用されている (招待メール / カレンダー予定の URL でよく出現)。現在の `is_goto_host` は `meet.goto.com` のみ対応 = legacy URL を検知できていない = 検知漏れ。
+
+# 実装計画
+
+## 1. 新関数 `is_goto_legacy_meeting_url` を `app_detection.rs` に追加
+
+L944 の `is_goto_meeting_url` の直後 (L945 周辺) に追加:
+
+```rust
+fn is_goto_legacy_meeting_url(host: &str, path: &str) -> bool {
+    if host != "global.gotomeeting.com" {
+        return false;
+    }
+    let Some(id) = path.strip_prefix("/join/") else {
+        return false;
+    };
+    let id = id.strip_suffix('/').unwrap_or(id);
+    id.len() == 9 && id.chars().all(|c| c.is_ascii_digit())
+}
+```
+
+**設計判断**:
+- host は `global.gotomeeting.com` 完全一致のみ (subdomain 対応なし) = legacy 形式は subdomain を持たない
+- path は `/join/<9-digit-numeric>` のみ = 9 桁 numeric ID は GoToMeeting の最も documented standard
+- 末尾 `/` (trailing slash) は許容 (`strip_suffix('/')`)
+- ID が他の長さや非数字を含む場合は false (DNS spoofing と同等の URL spoofing 防御)
+- ファイル内既存 `is_goto_meeting_url` と完全に独立 = path validation logic が異なる (room 名 vs 9-digit-id)
+
+## 2. `classify_meeting_url` 統合 (L527-528)
+
+```rust
+} else if is_goto_meeting_url(&host, &parsed.path)
+    || is_goto_legacy_meeting_url(&host, &parsed.path)
+{
+    "GoToMeeting"
+```
+
+(既存 `} else if is_goto_meeting_url(&host, &parsed.path) {` を上記に書き換え)
+
+## 3. テスト追加 (TDD Red→Green、tests mod 内)
+
+既存 GoToMeeting テストの近く (L3160-3220 付近、`classify_meeting_url` の GoToMeeting テスト直後) に **5 件以上** 追加:
+
+```rust
+#[test]
+fn classify_meeting_url_recognizes_goto_legacy_join_url() {
+    let result = classify_meeting_url("https://global.gotomeeting.com/join/123456789");
+    assert_eq!(
+        result,
+        Some(MeetingUrlClassification {
+            service: "GoToMeeting".to_string(),
+            host: "global.gotomeeting.com".to_string(),
+        })
+    );
+}
+
+#[test]
+fn classify_meeting_url_recognizes_goto_legacy_join_url_with_trailing_slash() {
+    let result = classify_meeting_url("https://global.gotomeeting.com/join/987654321/");
+    assert_eq!(
+        result,
+        Some(MeetingUrlClassification {
+            service: "GoToMeeting".to_string(),
+            host: "global.gotomeeting.com".to_string(),
+        })
+    );
+}
+
+#[test]
+fn classify_meeting_url_rejects_goto_legacy_non_numeric_id() {
+    assert_eq!(
+        classify_meeting_url("https://global.gotomeeting.com/join/abc123def"),
+        None
+    );
+}
+
+#[test]
+fn classify_meeting_url_rejects_goto_legacy_short_id() {
+    // 8 桁 = 9 桁制約を破る
+    assert_eq!(
+        classify_meeting_url("https://global.gotomeeting.com/join/12345678"),
+        None
+    );
+}
+
+#[test]
+fn classify_meeting_url_rejects_goto_legacy_long_id() {
+    // 10 桁 = 9 桁制約を破る
+    assert_eq!(
+        classify_meeting_url("https://global.gotomeeting.com/join/1234567890"),
+        None
+    );
+}
+
+#[test]
+fn classify_meeting_url_rejects_goto_legacy_non_join_path() {
+    assert_eq!(
+        classify_meeting_url("https://global.gotomeeting.com/about"),
+        None
+    );
+}
+
+#[test]
+fn classify_meeting_url_rejects_goto_legacy_subdomain_spoofing() {
+    // global.gotomeeting.com を subdomain として偽装する URL は拒否
+    assert_eq!(
+        classify_meeting_url("https://fake.global.gotomeeting.com/join/123456789"),
+        None
+    );
+}
+```
+
+# TDD 手順
+
+1. **Red phase**: テスト 7 件のみ追加 + classify_meeting_url 統合は **未着手** で `cargo test --lib 2>&1 | tail -10` で 7 件 fail を確認 (期待値: `685 passed; 7 failed`)
+2. **Green phase**: `is_goto_legacy_meeting_url` 関数追加 + classify_meeting_url 統合 → `cargo test --lib 2>&1 | tail -5` で **692 passed = 685 + 7** を確認
+3. clippy / fmt / git diff --check で警告ゼロ
+
+# 重要な留意点
+
+- **担当範囲外の編集禁止** (app_detection.rs L527-528 + L920-955 周辺 + tests mod の指定範囲のみ)
+- **テスト件数の上限**: 685 + 7 = **692 passed** が必須指標
+- **行末の trailing whitespace 禁止** (`git diff --check` 警告ゼロ確認)
+- 既存 `is_goto_host` / `is_goto_meeting_url` は変更禁止 = legacy URL は完全に独立した関数で実装
+- DNS spoofing 防御: host 完全一致 (`!=` チェック) で `fake.global.gotomeeting.com` のような subdomain spoofing を防ぐ
+
+# 検証 (cargo は cd src-tauri から実行)
+
+```
+cd src-tauri && cargo test --lib 2>&1 | tail -5
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cd src-tauri && cargo fmt --check
+git diff --check
+```
+
+期待値:
+- cargo test: **692 passed = 685 + 7** (件数増加 7 件のみ)
+- cargo clippy: 警告ゼロ (`-D warnings` 強制下)
+- cargo fmt --check: OK
+- git diff --check: trailing whitespace 警告ゼロ
+
+# AGENT_LOG.md 末尾追記
+
+検証完了後、`AGENT_LOG.md` 末尾 (`tail -10 AGENT_LOG.md` で確認した末尾の `---` 直後) に以下フォーマットで追記:
+
+```
+[WORKER COMPLETED @ 2026-05-05 ~Loop22 JST] mjc-worker-goto-legacy-url-20260505-11-2
+- GoToMeeting legacy URL (global.gotomeeting.com/join/<9-digit-id>) 検知追加 (TDD Red→Green、variety pivot = extraction 3 連続から service detection 軸への完全 pivot)
+- 新関数: is_goto_legacy_meeting_url(host, path) を app_detection.rs に追加 (~12 行、host 完全一致で subdomain spoofing 防御 + 9 桁 numeric ID 制約)
+- classify_meeting_url 統合: is_goto_meeting_url || is_goto_legacy_meeting_url で "GoToMeeting" 分類 (L527-528)
+- テスト: 7 件追加 (positive 2 件 + negative 5 件: 非 numeric / 短 ID / 長 ID / 非 join path / subdomain spoofing)
+- 検証: cargo test --lib **692 passed = 685 + 7** / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK / git diff --check 警告ゼロ
+- 設計判断: 既存 is_goto_host (meet.goto.com 専用) と path pattern が異なる (`/join/<9-digits>` vs 任意 room 名) ため独立関数で分離
+- sweep 化しない約束: app.goto.com/meet/<id> アプリ launcher 追加は本ループでは未着手 = 後続ループに譲る (Loop 18 base → 22 legacy URL の段階的精緻化、Whereby Loop 7→14 と同パターン)
+- AGENTS.md 優先順位 2 = 会議検知の網羅性に直接寄与
+- commit: <commit hash>
+```
+
+# コミット
+
+```
+git add src-tauri/src/app_detection.rs AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+feat(app_detection): GoToMeeting legacy URL (global.gotomeeting.com/join/<9-digit-id>) 検知を classify_meeting_url に追加 (mjc-main-20260505-11 Loop 22, AGENTS.md 優先順位 2 = 会議検知の網羅性, variety pivot = extraction 3 連続から service detection 軸への完全 pivot, is_goto_legacy_meeting_url(host, path) 新関数 = host 完全一致で subdomain spoofing 防御 + 9 桁 numeric ID 制約, 既存 is_goto_meeting_url と独立分離 (path pattern が `/join/<9-digits>` vs 任意 room 名で本質的に異なる), TDD Red→Green, テスト 7 件追加で 692 passed = 685 + 7, clippy 警告ゼロ, fmt OK, sweep 化しない約束 = app.goto.com/meet/<id> アプリ launcher は本ループ未着手で後続ループに譲る = Whereby Loop 7→14 段階的精緻化パターン継承)
+EOF
+)"
+```
+
+(コミット周期目標: 15 分以内)
+
+# 完了基準
+1. is_goto_legacy_meeting_url 関数追加完了
+2. classify_meeting_url 統合完了
+3. テスト 7 件追加完了 (positive 2 + negative 5)
+4. cargo test --lib **692 passed** (件数 +7)
+5. cargo clippy --lib --tests -- -D warnings 警告ゼロ
+6. cargo fmt --check OK
+7. git diff --check trailing whitespace 警告ゼロ
+8. AGENT_LOG.md 末尾追記完了
+9. commit 1 件作成完了

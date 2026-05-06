@@ -1,0 +1,314 @@
+あなたは meet-jerky の作業 worker (mjc-worker-loop85-reader-task-runner) です。
+タスク = mjc-main-20260505-43 Loop 85 = X4-3 Phase 1 = reader_task entry 共通化 (関数渡し inline closure 方式)
+
+# 必読 (絶対遵守)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1 = クラッシュ予防の構造美)
+2. AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾。**先頭は絶対に触らない**。`tail -350 AGENT_LOG.md` で末尾だけ参照、`tail -10` で `---` 区切りを確認後、その直後に新規エントリ追加。
+3. precedent file 全体読み込み (cat 推奨):
+   - cat src-tauri/src/realtime_audio_helpers.rs
+   - cat src-tauri/src/realtime_error_helpers.rs
+4. 行末空白文字 (trailing whitespace) 禁止。
+5. 大型ファイルは Read 全体禁止 = tail/head/grep/Read offset+limit で対象範囲のみ参照 (elevenlabs_realtime.rs / openai_realtime.rs はどちらも 1000+ 行)。
+6. 担当範囲外の編集禁止。
+7. test 件数: 704 件 → 704 件 (件数完全不変、増減 0 件)。
+
+# 担当範囲 (4 file のみ)
+
+- src-tauri/src/realtime_reader_task.rs (新規作成、~40 行目安)
+- src-tauri/src/lib.rs (`mod realtime_reader_task;` 1 行追加、L23 直後)
+- src-tauri/src/elevenlabs_realtime.rs (reader_task spawn block 置換、L226-257 → ~10 行)
+- src-tauri/src/openai_realtime.rs (reader_task spawn block 置換、L295-326 → ~10 行)
+
+# タスク背景 (Why)
+
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file の reader_task spawn block ~25 行重複を single source of truth 化)
+- 大型 rust file 責務分離 12 file 目達成 (Loop 80 = realtime_audio_helpers.rs / Loop 81 = realtime_error_helpers.rs の自然な続編)
+- 投機的抽象回避 = 関数渡し方式は具体的 2 caller の重複削除 = AGENTS.md「Don't add features beyond what the task requires」OK
+- mjc-main-20260505-43 Loop 85 メイン批判判断 連続 37 セッション目: handoff の X4-3「投機的抽象リスク要検討」を grep + Read で精査 = trait 方式は free function に対する trait impl が不可能 (struct なし) = 投機的抽象 → 関数渡し inline closure 方式に絞り込み
+
+# 詳細手順
+
+## Step 1: precedent + 既存構造確認
+
+- cat src-tauri/src/realtime_audio_helpers.rs (構造を design template として参照)
+- cat src-tauri/src/realtime_error_helpers.rs (同上、~25 行)
+- Read src-tauri/src/elevenlabs_realtime.rs offset=220 limit=50 (reader_task block 全体)
+- Read src-tauri/src/openai_realtime.rs offset=290 limit=50 (reader_task block 全体)
+
+## Step 2: ws_rx 型確認 (検証用)
+
+- grep -n "ws_stream.split\|let.*ws_rx" src-tauri/src/elevenlabs_realtime.rs
+- grep -n "ws_stream.split\|let.*ws_rx" src-tauri/src/openai_realtime.rs
+- ws_rx 型 = `futures_util::stream::SplitStream<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>` を確認
+
+## Step 3: 新 file 作成 (Write)
+
+src-tauri/src/realtime_reader_task.rs を Write で新規作成 (~40 行):
+
+```rust
+use std::sync::Arc;
+
+use futures_util::StreamExt;
+use futures_util::stream::SplitStream;
+use parking_lot::Mutex;
+use tokio::net::TcpStream;
+use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+
+use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};
+
+/// ws_stream.split() の rx 側 = realtime engine 共通の WS reader stream。
+pub(crate) type WsReader = SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>;
+
+/// Realtime engine 共通: WS から受信したメッセージを順次 on_event に渡す。
+/// engine_label は push_error の format に使う ("ElevenLabs" / "OpenAI" 等)。
+/// on_event は WS protocol 固有の handle_event を closure で受ける。
+pub(crate) async fn run_reader_task<F>(
+    mut ws_rx: WsReader,
+    pending: Arc<Mutex<Vec<TranscriptionSegment>>>,
+    speaker: Option<String>,
+    source: Option<TranscriptionSource>,
+    engine_label: &'static str,
+    on_event: F,
+) where
+    F: Fn(&str, &Arc<Mutex<Vec<TranscriptionSegment>>>, &Option<String>, Option<TranscriptionSource>)
+        + Send
+        + 'static,
+{
+    while let Some(msg) = ws_rx.next().await {
+        let msg = match msg {
+            Ok(m) => m,
+            Err(e) => {
+                crate::realtime_error_helpers::push_error(
+                    engine_label,
+                    &pending,
+                    &speaker,
+                    source,
+                    e.to_string(),
+                );
+                break;
+            }
+        };
+        match msg {
+            Message::Text(text) => on_event(&text, &pending, &speaker, source),
+            Message::Close(_) => break,
+            _ => {}
+        }
+    }
+}
+```
+
+## Step 4: lib.rs に mod 追加
+
+- src-tauri/src/lib.rs の L21-23 (`mod realtime_audio_command; / mod realtime_audio_helpers; / mod realtime_error_helpers;`) の **直後 (L24)** に `mod realtime_reader_task;` を追加 (alphabetical 順保持)
+- Edit ツールで old_string = `mod realtime_error_helpers;\n` (改行込みで unique 確保)、new_string = `mod realtime_error_helpers;\nmod realtime_reader_task;\n`
+
+## Step 5: caller 置換 (elevenlabs)
+
+src-tauri/src/elevenlabs_realtime.rs の **L226-257 の reader_task spawn block 全体** を以下で置換 (Edit ツール):
+
+old_string (L226-257 全体、35 行):
+```
+        let pending_for_reader = Arc::clone(&pending);
+        let speaker_for_reader = speaker.clone();
+        let source_for_reader = source;
+        let reader_task = tokio::spawn(async move {
+            while let Some(msg) = ws_rx.next().await {
+                let msg = match msg {
+                    Ok(m) => m,
+                    Err(e) => {
+                        crate::realtime_error_helpers::push_error(
+                            "ElevenLabs",
+                            &pending_for_reader,
+                            &speaker_for_reader,
+                            source_for_reader,
+                            e.to_string(),
+                        );
+                        break;
+                    }
+                };
+                match msg {
+                    Message::Text(text) => {
+                        handle_event(
+                            &text,
+                            &pending_for_reader,
+                            &speaker_for_reader,
+                            source_for_reader,
+                        );
+                    }
+                    Message::Close(_) => break,
+                    _ => {}
+                }
+            }
+        });
+```
+
+new_string (~10 行):
+```
+        let pending_for_reader = Arc::clone(&pending);
+        let speaker_for_reader = speaker.clone();
+        let source_for_reader = source;
+        let reader_task = tokio::spawn(crate::realtime_reader_task::run_reader_task(
+            ws_rx,
+            pending_for_reader,
+            speaker_for_reader,
+            source_for_reader,
+            "ElevenLabs",
+            |text, pending, speaker, source| handle_event(text, pending, speaker, source),
+        ));
+```
+
+## Step 6: caller 置換 (openai)
+
+src-tauri/src/openai_realtime.rs の **L294-326 の reader_task spawn block 全体** を以下で置換 (Edit ツール):
+
+old_string (L294-326 全体、コメント `// ─── 4. 受信タスクを別 task で起こす ───` を含む):
+```
+        // ─── 4. 受信タスクを別 task で起こす ───
+        let pending_for_reader = Arc::clone(&pending);
+        let speaker_for_reader = speaker.clone();
+        let source_for_reader = source;
+        let reader_task = tokio::spawn(async move {
+            while let Some(msg) = ws_rx.next().await {
+                let msg = match msg {
+                    Ok(m) => m,
+                    Err(e) => {
+                        crate::realtime_error_helpers::push_error(
+                            "OpenAI",
+                            &pending_for_reader,
+                            &speaker_for_reader,
+                            source_for_reader,
+                            e.to_string(),
+                        );
+                        break;
+                    }
+                };
+                match msg {
+                    Message::Text(text) => {
+                        handle_event(
+                            &text,
+                            &pending_for_reader,
+                            &speaker_for_reader,
+                            source_for_reader,
+                        );
+                    }
+                    Message::Close(_) => break,
+                    _ => {}
+                }
+            }
+        });
+```
+
+new_string:
+```
+        // ─── 4. 受信タスクを別 task で起こす ───
+        let pending_for_reader = Arc::clone(&pending);
+        let speaker_for_reader = speaker.clone();
+        let source_for_reader = source;
+        let reader_task = tokio::spawn(crate::realtime_reader_task::run_reader_task(
+            ws_rx,
+            pending_for_reader,
+            speaker_for_reader,
+            source_for_reader,
+            "OpenAI",
+            |text, pending, speaker, source| handle_event(text, pending, speaker, source),
+        ));
+```
+
+## Step 7: 不要 import 整理
+
+両 file の `mod ws_task` 内で、reader_task block 削除後に未使用になる import がないか cargo build / clippy で確認。`use futures_util::{SinkExt, StreamExt};` の `StreamExt` は ws_tx.send (SinkExt) でなく ws_rx.next (StreamExt) で使われていたが、ws_rx は run_reader_task に move = mod ws_task 内では `StreamExt` 不要になる可能性。warning が出たら StreamExt を import から外す (SinkExt は ws_tx.send で必要なので残す)。
+
+## Step 8: 検証
+
+```bash
+cd src-tauri && cargo build --lib 2>&1 | tail -30
+cd src-tauri && cargo test --lib 2>&1 | tail -20  # 704 passed 確認
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cd src-tauri && cargo fmt --check 2>&1 | tail -10
+bash scripts/agent-verify.sh src-tauri/src/realtime_reader_task.rs src-tauri/src/lib.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+```
+
+## Step 9: build エラー対応 (起こりえるもの)
+
+- closure capture `Send + 'static` 違反: closure 内の handle_event は free fn = capture なし = 自然に満たすはず。万一エラーなら `move |text, p, s, src| handle_event(text, p, s, src)` で move closure 化。
+- ws_rx 型不一致: `WsReader` type alias が tokio-tungstenite version と整合していない可能性 = `SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>` のジェネリック引数を確認。
+- `StreamExt` import 残骸 warning: 削除する。
+
+## Step 10: 2-commit pattern (Loop 80 precedent 連続 25 ループ目達成中)
+
+### Commit 1
+```
+git add src-tauri/src/realtime_reader_task.rs src-tauri/src/lib.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+git commit -m "$(cat <<'EOF'
+refactor(realtime): reader_task entry を realtime_reader_task::run_reader_task に共通化 (mjc-main-20260505-43 Loop 85, 関数渡し方式 Phase 1, 大型 rust file 責務分離 12 file 目, AGENTS.md priority 1 寄与)
+EOF
+)"
+```
+
+### Step 11: AGENT_LOG.md エントリ追記 (Commit 2 へ向けた準備)
+
+`tail -10 AGENT_LOG.md` で末尾 `---` 区切りを確認。直後に新規エントリ追加。**chore commit hash は AGENT_LOG.md に書かない (Loop 80 precedent = placeholder 残留問題予防)。メインで補正する**。
+
+template:
+
+```
+[mjc-main-20260505-43 Loop 85 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/realtime_reader_task.rs (新規 ~40 行) を作成 = `pub(crate) async fn run_reader_task<F>` + `pub(crate) type WsReader` 配置
+- src-tauri/src/lib.rs L24 に `mod realtime_reader_task;` 追加 (alphabetical 順保持)
+- src-tauri/src/elevenlabs_realtime.rs L226-257 + src-tauri/src/openai_realtime.rs L294-326 の reader_task spawn block (各 ~30-33 行) を `crate::realtime_reader_task::run_reader_task(...)` caller 各 1 件 (~10 行) に置換
+- 関数渡し inline closure 方式 = closure `|text, pending, speaker, source| handle_event(text, pending, speaker, source)` で WS protocol 固有の handle_event を渡す
+- engine_label 引数化 ("ElevenLabs" / "OpenAI") で両 file 共有
+- 振る舞い不変 = cargo test --lib 704 件全 pass (件数完全不変)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file 重複 ~30 行を single source of truth 化)
+- 大型 rust file 責務分離 12 file 目達成 (Loop 80 = realtime_audio_helpers / Loop 81 = realtime_error_helpers の自然な続編)
+- realtime engine の 3 軸 (音声処理 / エラー / WS reader) が全部 single source of truth 化 = 構造美の最終形
+- 投機的抽象回避 = 関数渡し方式は具体的 2 caller の重複削除
+- mjc-main-20260505-43 Loop 85 メイン批判判断 連続 37 セッション目: handoff の X4-3「投機的抽象リスク要検討」を grep + Read で精査 = trait 方式は free function に対する trait impl 不可能 (struct なし) → 関数渡し inline closure 方式に絞り込み
+
+## How (Tidy First, behavior-preserving)
+- ws_rx 型 = SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>> を `pub(crate) type WsReader` で abstract
+- closure F signature: `Fn(&str, &Arc<Mutex<Vec<TranscriptionSegment>>>, &Option<String>, Option<TranscriptionSource>) + Send + 'static`
+- engine_label 引数化で両 file 共有 (push_error と同 design pattern)
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `let reader_task = tokio::spawn(async move` を grep: 0 件
+- openai_realtime.rs から `let reader_task = tokio::spawn(async move` を grep: 0 件
+- realtime_reader_task.rs から `pub(crate) async fn run_reader_task` を grep: 1 件
+- realtime_reader_task.rs から `pub(crate) type WsReader` を grep: 1 件
+- trailing whitespace: なし
+
+## Commits
+- <hash1> refactor(realtime): reader_task entry を realtime_reader_task::run_reader_task に共通化
+
+---
+```
+
+### Commit 2
+```
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-43 Loop 85 = reader_task entry 共通化 (X4-3 Phase 1, 関数渡し inline closure 方式, 大型 rust file 責務分離 12 file 目, realtime engine 3 軸 single source of truth 化達成) のエントリ追記
+EOF
+)"
+```
+
+# 完了判定
+
+- 4 file の git diff で意図通りの変更を確認
+- cargo test --lib 704 件全 pass
+- cargo clippy / fmt / agent-verify.sh 全 OK
+- AGENT_LOG.md 末尾に新規エントリが追加され、`<hash1>` placeholder のみ残留 (`<hash2>` placeholder は書かない = Loop 80 precedent)
+- 2 commit が完了
+
+完走後、メインが `git log --oneline -3` で確認し、chore commit hash 補正を行う。

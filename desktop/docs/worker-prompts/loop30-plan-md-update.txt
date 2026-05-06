@@ -1,0 +1,144 @@
+あなたは meet-jerky の sonnet ワーカーです。Loop 30 (mjc-main-20260505-15) の docs 更新タスクを担当します。
+
+# 必読 (作業前に必ず実行)
+
+1. **AGENT_LOG.md の末尾 350 行を読む**: `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**
+   - **新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+   - 具体手順: 作業完了後 `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾を確認し、末尾の `---` 直後に追記する
+2. **大型ファイルの読み方**: 編集対象 `docs/architecture/transcription-refactor-plan.md` は 128 行なので Read 全体 OK。AGENT_LOG.md (2.1MB) は **Read 全体禁止**、`tail -350` で参照する。
+3. **行末の空白文字 (trailing whitespace) 禁止**: 編集後に `grep -n ' $' 編集ファイル` で確認し、あれば除去する。
+
+# 担当範囲 (厳守)
+
+**変更ファイル (これら以外は触るな)**:
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md` (Phase 進捗 + 関連将来課題セクション更新)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` (末尾追記のみ)
+
+**触ってはいけない**:
+- src-tauri/ / src/ / scripts/ / Cargo.toml 等のコード/設定ファイル全て
+- 他の docs/ ファイル (AGENTS.md / agent-harness-claude.md / autonomous-main-prompt-claude.md 等)
+- frontend (src/) 全て
+
+# タスク内容 (docs 更新、振る舞い不変、計画駆動継続性確保)
+
+## 目的
+- AGENTS.md 優先順位 1 への予防的寄与 = 計画文書 (`transcription-refactor-plan.md`) と現状の同期を取り、後継エージェントの誤判断 (「未着手」と誤認) を予防
+- Phase 1〜4 完了 + Phase 3-B 完全完了 + Loop 29 (app_detection.rs Webex 抽出) を計画文書に反映
+- 計画駆動の継続性を担保する
+
+## 編集対象セクション
+
+### 1. L14-26 (9 責務マップ表) の更新
+- 表のフォーマットを保持。各責務の **状況注記を追加** する形で更新する
+- 既存の `| # | 責務 | 行範囲 (目安) | 規模 | 抽出先候補 | リスク |` 表に **追加列または注記行** を入れる方法は構造が壊れるので NG
+- **代わりに表の直前または直後に「## 進捗サマリ (mjc-main-20260505-15 Loop 29 時点)」セクションを新設する**
+- 内容例:
+  ```
+  ## 進捗サマリ (mjc-main-20260505-15 Loop 29 時点)
+
+  - **Phase 1 (責務 1-2 = データ型 + トレイト)**: ✅ 完了 (mjc-main-20260505-3)
+  - **Phase 2-A (責務 3 = Whisper エンジン)**: ✅ 完了 (mjc-main-20260505-4 ~ 7)
+  - **Phase 2-B (責務 4 = Model 管理)**: ✅ 完了 (mjc-main-20260505-5)
+  - **Phase 2 残り (責務 6 = Audio resampling)**: ✅ 完了 (mjc-main-20260505-6)
+  - **Phase 3 (責務 5 = Transcription state)**: ✅ 完了 (mjc-main-20260505-8)
+  - **Phase 3-B (責務 7 = Tauri commands)**: ✅ **完全完了** (mjc-main-20260505-11 ~ 14, Loop 21 ~ 28)
+    - build_download_*_payload helper / list_models / is_model_downloaded / download_model /
+      validate_stream_count_for_engine / parse_requested_transcription_sources / RequestedTranscriptionSources struct /
+      TRANSCRIPTION_SOURCE_* const / 17 tests / stop_transcription / start_transcription /
+      PendingTranscriptionStream すべて transcription_commands.rs に集約
+  - **Phase 4 (責務 8 = Worker loop)**: ✅ 完了 (mjc-main-20260505-8 ~ 10, Phase 4-A emission + 4-B error_payload + 4-C panic_guard + 4-D run_transcription_loop)
+  - **transcription.rs 累計削減**: 元 2999 行 → 現在 **1536 行** = **約 48.8% 縮小** (~1463 行削減) = 「ほぼ 50% 達成」の里程標
+
+  ## 残存課題 (Phase 5 候補、未着手)
+
+  - transcription.rs 残存 1536 行の更なる責務分離 (Worker loop 内部 helper / responses processing / Whisper 関連 helper)
+  - 規模 M-L、複数ループ計画推奨
+  - 各 Phase 着手時は最新の transcription.rs を read して、本プランの行範囲とずれていないか確認する
+  ```
+- 注意: 上記は **例文** です。実際に AGENT_LOG.md tail / git log を読んで正確な hash/数字に整合させる必要は **ない** (上記の数字 = 1536 行 / 48.8% / 1463 行 / 700 件 はそのまま使ってよい、AGENT_LOG.md 末尾の SESSION SUMMARY mjc-main-20260505-14 から確認可能)
+
+### 2. L117-121 (関連: app_detection.rs の Webex モジュール抽出 = 将来課題) の更新
+- 既存記述: 「Webex 関数群を `app_detection/webex.rs` に抽出する Tidy First 候補が将来発生する。本プランの Phase 1 完了後 (transcription.rs 側で抽出パターンを確立した後)、同パターンを app_detection.rs に応用する道筋を取る。」
+- **この記述を「✅ 完了 (mjc-main-20260505-15 Loop 29)」に書き換える**
+- 例:
+  ```
+  ## 関連: app_detection.rs の Webex モジュール抽出 ✅ 完了 (mjc-main-20260505-15 Loop 29)
+
+  本プランは transcription.rs 専用だが、同様の責務肥大は `app_detection.rs` (3356 行) の Webex 検知関数群 (`is_webex_host` / `is_webex_meeting_url` / `is_jphp_path` / `is_webex_jphp_meeting_url` / `is_wbxmjs_path` / `is_webex_wbxmjs_meeting_url` / `is_webappng_path` / `is_webex_webappng_meeting_url` の 8 関数) にも存在していた。
+
+  mjc-main-20260505-2 で Webex 招待 URL 主要 4 系統 (Personal Room / j.php / wbxmjs / webappng) の網羅が完了したのち、mjc-main-20260505-15 Loop 29 (commit `b4a0098`) で 8 関数を `src-tauri/src/app_detection_webex.rs` に集約した。
+
+  - 関数 8 つを pub(crate) で移動
+  - ヘルパー (`is_valid_dns_label` / `has_single_non_empty_segment` / `query_has_non_empty_param`) は他サービス (Whereby/GoToMeeting/Google Meet/Zoom) でも使用のため app_detection.rs に残置 + pub(crate) 化
+  - tests は classify_meeting_url 経由のため app_detection.rs 残置
+  - 振る舞い不変 = 700 passed 件数不変
+
+  同パターン (サービス別関数の独立モジュール化) は Whereby / GoToMeeting / Zoom / Microsoft Teams にも適用可能。今後の Tidy First 候補。
+  ```
+
+### 3. L11 (現状サマリ) の行数更新
+- 既存: 「行数: 2999 行 (本プラン作成時点 2026-05-05)」
+- ファイル末尾近く (L122-127) に **追記** する形で「最新化」を残す。既存 L11 はそのまま (履歴保全)
+- 例: 「(本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-15 Loop 29 時点で 1536 行 = 約 48.8% 縮小達成)」を `## 参考` セクションに追記
+
+## 手順
+
+1. `Read` で transcription-refactor-plan.md 全体 (128 行) を読む
+2. AGENT_LOG.md tail で Loop 27/28/29 の正確な数字を確認
+3. 上記 3 セクション (L14-26 直後 / L117-121 / L122-127 末尾) を **Edit ツール** で更新
+4. `grep -n ' $' docs/architecture/transcription-refactor-plan.md` で trailing whitespace チェック、あれば除去
+5. `bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md` で検証 (rust/frontend は touch していないので skip 判定でほぼ無検証 = OK)
+
+## commit メッセージ
+
+```
+docs(transcription-refactor-plan): Phase 1-4 完了 + Phase 3-B 完全完了 + Webex 抽出 (Loop 29) を反映 (mjc-main-20260505-15 Loop 30, 計画駆動継続性確保, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 = 後継エージェントの「未着手」誤判断予防, 進捗サマリ + 残存 Phase 5 候補 + Webex 抽出完了マーカー追加, transcription.rs 1536 行 (48.8% 縮小) 反映)
+```
+
+`scripts/agent-commit.sh` を使う場合:
+```
+bash scripts/agent-commit.sh "上記メッセージ" docs/architecture/transcription-refactor-plan.md
+```
+
+## AGENT_LOG.md 末尾追記
+
+commit 完了後、以下のテンプレートを `tail -10 AGENT_LOG.md` で末尾確認した上で `---` 直後に追記:
+
+```
+[mjc-main-20260505-15 Loop 30 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` 更新
+  - 9 責務マップ表直後に「進捗サマリ (mjc-main-20260505-15 Loop 29 時点)」セクション新設
+  - L117-121 (関連: app_detection.rs Webex 抽出 = 将来課題) を「✅ 完了 (mjc-main-20260505-15 Loop 29 = commit b4a0098)」に更新
+  - 末尾参考セクションに最新行数 (1536 行 = 48.8% 縮小) 追記
+
+## Why
+- AGENTS.md 優先順位 1 への予防的寄与 = 計画文書と現状の同期 = 後継エージェントの「未着手」誤判断予防
+- Loop 29 (Webex 抽出) 完了 + Phase 1〜4 + Phase 3-B 全完了の里程標を文書化
+- 計画駆動の継続性を担保
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置、最新情報は別セクションに追記
+- 9 責務マップ表のフォーマットは保持
+
+## Verify
+- 該当 docs のみ更新、コード変更なし、cargo test/clippy/fmt は本ループでは未実行 (前 Loop 29 で 700 passed 確認済)
+```
+
+# 規模超過防止 (重要)
+
+- **編集対象は `docs/architecture/transcription-refactor-plan.md` 1 ファイルのみ**。他の docs / コードを触るな。
+- **既存記述の削除は最小限**。L11 の「2999 行」等は履歴保全のため残し、最新情報を別セクションに追加する形を取る。
+- **L14-26 の 9 責務マップ表のフォーマット (`| # | 責務 | ... |`) は変更しない**。表に列追加もしない。表の前後にセクションを足すのみ。
+- 大規模なリライトを避ける。差分を最小化する Edit を推奨。
+- もし作業途中で「想定より大きい変更が必要」と判明したら、commit せず AGENT_LOG.md に「停止理由 + 状況」を記録して終了。
+
+# 自律性
+
+- 数字 (1536 / 48.8% / 1463 / 700 件 / commit `b4a0098`) は本 prompt と AGENT_LOG.md tail から確認できる。AGENT_LOG.md tail の SESSION SUMMARY mjc-main-20260505-14 + Loop 29 追記が一次情報。
+- セクション構造は本 prompt の例文に従わなくてよい (簡潔さ優先)。例文は内容の指針として参考にする。
+- markdown フォーマットは既存 plan.md のスタイル (見出しレベル / 箇条書き / 強調表示) を踏襲。
+
+完了したら commit hash + AGENT_LOG.md 追記済の確認を結果報告として残してください。

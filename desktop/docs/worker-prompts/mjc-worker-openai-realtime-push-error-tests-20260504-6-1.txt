@@ -1,0 +1,310 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -300 AGENT_LOG.md` で末尾だけ参照すれば十分)
+
+担当範囲: src-tauri/src/openai_realtime.rs のみ
+- visibility 変更 1 行 (private → `pub(crate)`)
+- 既存 `mod tests` (L473-) への #[test] 関数 5 件追加
+- それ以外のファイルは変更しない (clippy.toml / Cargo.toml / 他 src ファイル)
+- コミットは禁止 (メインが行う)
+
+# 背景 / Why
+
+`mod ws_task` 内の `fn push_error` (L418-L432) は WebSocket エラーイベントから
+TranscriptionSegment を生成する核心 fn ですが、現状は `handle_event` 経由の
+**間接テストのみ** (`error_events_are_queued_as_error_segments` L506,
+`handle_event_pushes_error_message` L562) でカバーされています。
+
+直接テストを追加する価値:
+1. **prefix 文言契約の固定**: `text = format!("[OpenAI Realtime エラー: {message}]")`
+   の prefix `"[OpenAI Realtime エラー: "` と suffix `"]"` をユーザー向け文言として固定。
+   将来 prefix が削除/変更されたら CI が落ちて気付ける。
+2. **不変条件の固定**: `start_ms=0, end_ms=0, is_error=Some(true)` の 3 値を 1 関数で
+   契約強制。エラーセグメントが時刻情報を持たない・UI 側 error 装飾駆動という設計を保護。
+3. **source/speaker passthrough 契約**: `Some(TranscriptionSource::Microphone)` / `None`
+   の双方向 passthrough と speaker の clone 動作を直接固定。
+4. **関数分離リファクタへの耐性**: 将来 push_error がインライン化/別 fn 統合された場合、
+   間接テストでは fn 自体の存在検知ができない。直接テストで fn 単体の契約を保護。
+5. **elevenlabs_realtime との対称性**: elevenlabs 側は既に同種 private fn 3 つを直接
+   テスト済 (commit 8235878)。openai 側もテストすることで、両 Realtime engine の
+   error path 不変条件を同水準で保護できる。
+
+# 具体的な実装変更
+
+## 変更 1: visibility 変更 (1 行)
+
+src-tauri/src/openai_realtime.rs L418:
+
+```rust
+    fn push_error(
+```
+↓
+```rust
+    pub(crate) fn push_error(
+```
+
+理由: 同じ ws_task mod 内の `pub(crate) fn float_to_pcm16` (L461) と同流儀。
+外側 `mod tests` から `ws_task::push_error(...)` で呼べるようにする。
+クレート内可視化のみで外部公開はしない。
+
+## 変更 2: テスト 5 件追加
+
+`mod tests` (L473-L618) の末尾 (L617 の `}` の直前) に以下の 5 件を追加してください。
+
+各テストは独立した `#[test] fn` とすること (1 fn 1 観点で assertion 落下時の特定容易化)。
+
+### T1. push_error_format_prefix_and_suffix_are_fixed
+
+**目的**: ユーザー向け prefix `"[OpenAI Realtime エラー: "` と suffix `"]"` の完全一致契約。
+
+```rust
+#[test]
+fn push_error_format_prefix_and_suffix_are_fixed() {
+    let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+    let speaker = Some("自分".to_string());
+
+    ws_task::push_error(
+        &pending,
+        &speaker,
+        Some(TranscriptionSource::Microphone),
+        "connection closed".to_string(),
+    );
+
+    let segments = pending.lock();
+    assert_eq!(segments.len(), 1);
+    // prefix と suffix を含む完全一致で文言契約を強制。
+    // prefix を削る・bracket を消すリファクタを CI で即座検知する。
+    assert_eq!(
+        segments[0].text,
+        "[OpenAI Realtime エラー: connection closed]"
+    );
+}
+```
+
+### T2. push_error_sets_zero_timestamps_and_is_error_true
+
+**目的**: エラーセグメントの time-less + is_error=Some(true) 不変条件を 1 関数で固定。
+
+```rust
+#[test]
+fn push_error_sets_zero_timestamps_and_is_error_true() {
+    let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+    let speaker = Some("自分".to_string());
+
+    ws_task::push_error(
+        &pending,
+        &speaker,
+        Some(TranscriptionSource::Microphone),
+        "rate limit".to_string(),
+    );
+
+    let segments = pending.lock();
+    assert_eq!(segments.len(), 1);
+    // エラーセグメントは時刻情報を持たない・is_error=Some(true) で UI 側 error 装飾を駆動。
+    // この 3 値同時が「エラーセグメント」の identity 契約。
+    assert_eq!(segments[0].start_ms, 0);
+    assert_eq!(segments[0].end_ms, 0);
+    assert_eq!(segments[0].is_error, Some(true));
+}
+```
+
+### T3. push_error_passes_source_through
+
+**目的**: source の Option<TranscriptionSource> passthrough 契約 (Some / None 両方向)。
+
+```rust
+#[test]
+fn push_error_passes_source_through() {
+    // ケース 1: Some(Microphone) は Some(Microphone) のまま渡る
+    {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+        ws_task::push_error(
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+            "err".to_string(),
+        );
+        assert_eq!(pending.lock()[0].source, Some(TranscriptionSource::Microphone));
+    }
+
+    // ケース 2: None は None のまま渡る
+    {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+        ws_task::push_error(&pending, &speaker, None, "err".to_string());
+        assert_eq!(pending.lock()[0].source, None);
+    }
+}
+```
+
+### T4. push_error_clones_speaker_field
+
+**目的**: speaker の Option<String> clone 動作 (Some / None 両方向)。
+
+```rust
+#[test]
+fn push_error_clones_speaker_field() {
+    // ケース 1: Some("自分") が clone されて渡る (元の所有権は保持される)
+    {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+        ws_task::push_error(
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+            "err".to_string(),
+        );
+        assert_eq!(pending.lock()[0].speaker, Some("自分".to_string()));
+        // 元の speaker が clone 後も有効であることを確認 (move されていない)
+        assert_eq!(speaker, Some("自分".to_string()));
+    }
+
+    // ケース 2: None は None のまま渡る
+    {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker: Option<String> = None;
+        ws_task::push_error(
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+            "err".to_string(),
+        );
+        assert_eq!(pending.lock()[0].speaker, None);
+    }
+}
+```
+
+### T5. push_error_with_empty_message_still_produces_brackets
+
+**目的**: 空 message でも prefix/suffix を保つ現挙動の固定 (空 message でも UI 上はエラー
+セグメントとして識別可能)。multibyte message 含む現状の text 埋め込み挙動も併せて保護。
+
+```rust
+#[test]
+fn push_error_with_empty_and_multibyte_messages_preserve_text_format() {
+    // ケース 1: 空 message でも prefix/suffix が残り "[OpenAI Realtime エラー: ]" になる
+    {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+        ws_task::push_error(
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+            "".to_string(),
+        );
+        // 空 message でも UI 側でエラー判定できるよう bracket だけは残す現契約。
+        assert_eq!(pending.lock()[0].text, "[OpenAI Realtime エラー: ]");
+    }
+
+    // ケース 2: 日本語マルチバイト message が prefix/suffix の間にそのまま埋め込まれる
+    {
+        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
+        let speaker = Some("自分".to_string());
+        ws_task::push_error(
+            &pending,
+            &speaker,
+            Some(TranscriptionSource::Microphone),
+            "認証エラーが発生しました".to_string(),
+        );
+        // multibyte の余分な escape/sanitize がないことを契約として固定。
+        assert_eq!(
+            pending.lock()[0].text,
+            "[OpenAI Realtime エラー: 認証エラーが発生しました]"
+        );
+    }
+}
+```
+
+# 実装上の注意
+
+- **配置場所**: `mod tests` (L473-L618) の最後、`}` (L618) の直前に挿入。
+  既存テスト `handle_event_ignores_invalid_json` (L603-L617) の後ろ。
+- **`use super::*;` は既存 (L474) で対応済み**。`Arc`, `Mutex`, `TranscriptionSegment`,
+  `TranscriptionSource` は既存 import で参照可能。新規 use 追加不要。
+- **`ws_task::push_error` の visibility**: T1-T5 すべて `ws_task::push_error(...)` 形式で
+  呼ぶこと。これにより visibility 変更 (`pub(crate)`) が正しく機能していることも
+  併せて検証される。
+- 他 ファイルは編集しない。
+- `mod tests` 内の既存 9 テスト (L476-L617) は変更しない。
+- コメント: 必要最小限。各 fn の `// xxx` で意図を 1 行明記する程度に留める。
+
+# 検証手順
+
+すべて /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop で実行:
+
+1. `cd src-tauri && cargo fmt -- --check` (format 確認)
+2. `cd src-tauri && cargo test --lib openai_realtime` (該当 fn が pass し、件数が +5 されることを確認)
+3. `cd src-tauri && cargo test` (全体 315 → 320 passed を確認)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings` (default lint warnings ゼロ確認)
+5. `cd src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings`
+   (uninlined_format_args 警告も含めゼロ確認)
+
+5 件すべてパスし、追加した #[test] 関数 5 件分が test 出力に表示されること。
+
+# AGENT_LOG.md 記載項目
+
+末尾に以下のセクションを追記してください:
+
+```
+### openai_realtime.rs ws_task::push_error 直接テストを 5 件追加
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-openai-realtime-push-error-tests-20260504-6-1`
+- **役割**: テスト追加ワーカー (visibility 変更 1 行 + テスト 5 件)
+- **作業範囲**: `src-tauri/src/openai_realtime.rs` の `mod ws_task` 内
+  `fn push_error` の visibility 変更 (`pub(crate)`) と `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+ws_task 内 private fn `push_error` (L418-L432) の visibility を `pub(crate)` に広げ、
+外側 `mod tests` から直接呼べるようにする。その上で、prefix/suffix 文言契約・
+zero timestamps + is_error=Some(true) の不変条件・source/speaker passthrough・
+empty/multibyte message の text format 保持を 5 件で直接テストする。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | push_error_format_prefix_and_suffix_are_fixed | text 完全一致で prefix `"[OpenAI Realtime エラー: "` と suffix `"]"` を契約強制 |
+| T2 | push_error_sets_zero_timestamps_and_is_error_true | start_ms=0 / end_ms=0 / is_error=Some(true) を 1 fn で固定 |
+| T3 | push_error_passes_source_through | Some(Microphone) / None の双方向 passthrough |
+| T4 | push_error_clones_speaker_field | Some("自分") の clone 確認 (元保持) と None passthrough |
+| T5 | push_error_with_empty_and_multibyte_messages_preserve_text_format | 空 message → "[OpenAI Realtime エラー: ]" / 日本語 message → そのまま埋め込み |
+
+#### 不変条件 / 設計意図
+- elevenlabs_realtime と完全対称な error path 直接テスト構造を確立。
+- prefix/suffix 文言は UI ユーザー文言契約として CI で強制。
+- visibility 変更は同 mod 内 `pub(crate) fn float_to_pcm16` と同流儀。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 315 → 320 passed (新規 5 件、既存 0 件破壊)
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 12 件)
+- 追加後 total passed: 320
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 失敗理由
+- なし (該当する場合のみ記載)
+
+#### 残リスク
+- T5 の "[OpenAI Realtime エラー: ]" は空 message 時の現挙動を固定しており、
+  将来「空 message なら push しない」リファクタを採用する場合は test 修正が必要。
+  ただし「エラーは UI に必ず表示される」契約を保つ意図なら現挙動が望ましい。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

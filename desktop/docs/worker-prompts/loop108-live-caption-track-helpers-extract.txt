@@ -1,0 +1,184 @@
+あなたは meet-jerky プロジェクトの worker (mjc-worker-loop108-live-caption-track-helpers-extract) です。
+Loop 108 = frontend 軸 2 件目 = LiveCaptionWindow.tsx 純粋関数 5 件 + 関連 type 2 件 を新 file `src/utils/liveCaptionTrackHelpers.ts` に抽出する作業を担当します。
+
+# 最初に必ず実施
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ読む (~32,500 行 / ~2.7MB あるので Read 全体禁止)
+2. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 (新規追記は **必ずファイル末尾** に行う、先頭は絶対に触らない)
+3. `cat src/utils/transcriptViewFormatters.ts` で precedent file (Loop 107 = frontend 軸 1 件目) を全文確認
+4. `cat src/components/LiveCaptionWindow.tsx | head -130` で抽出対象の 5 関数 + 2 type の現在の定義を確認
+
+# 作業範囲 (担当範囲外の編集禁止)
+
+## 1. 新規作成: `src/utils/liveCaptionTrackHelpers.ts`
+
+以下の 5 関数 + 2 type を export して新 file に移動 (LiveCaptionWindow.tsx L42-127 から):
+
+```typescript
+import type { TranscriptSegment } from "../types";
+import { isTranscriptErrorSegment } from "./transcriptSegment";
+import { formatSegmentTimestamp } from "./timeFormat";
+import type { LiveCaptionStatusPayload } from "./liveCaptionStatus";
+
+type AudioSource = NonNullable<TranscriptSegment["source"]>;
+
+export type LatestBySource = Record<AudioSource, TranscriptSegment | null>;
+
+export type TrackCaptureState = "active" | "switching" | "inactive";
+
+export function createEmptyLatestBySource(): LatestBySource {
+  return {
+    microphone: null,
+    system_audio: null,
+  };
+}
+
+export function getSpeakerLabel(segment: TranscriptSegment): string {
+  if (segment.source === "microphone") return "自分";
+  if (segment.source === "system_audio") return "相手側";
+  return segment.speaker || "ソース不明";
+}
+
+export function getSpeakerClassName(segment: TranscriptSegment): string {
+  if (segment.source === "microphone") {
+    return "live-transcript-speaker live-transcript-speaker-self";
+  }
+  if (segment.source === "system_audio") {
+    return "live-transcript-speaker live-transcript-speaker-other";
+  }
+  return "live-transcript-speaker live-transcript-speaker-unknown";
+}
+
+export function getTrackStateLabel(
+  segment: TranscriptSegment | null,
+  captureLabel: string,
+): string {
+  if (!segment) {
+    return captureLabel;
+  }
+  if (isTranscriptErrorSegment(segment)) {
+    return `${captureLabel}・エラー`;
+  }
+  return `${captureLabel}・${formatSegmentTimestamp(segment.startMs)}`;
+}
+
+export function getTrackCaptureState(label: string): TrackCaptureState {
+  const normalizedLabel = label.trim();
+  if (normalizedLabel.includes("切替中")) {
+    return "switching";
+  }
+  if (
+    normalizedLabel.includes("録音中") ||
+    normalizedLabel.includes("取得中")
+  ) {
+    return "active";
+  }
+  return "inactive";
+}
+
+export function getVisibleTrackSummary(status: LiveCaptionStatusPayload): string {
+  const microphoneState = getTrackCaptureState(status.microphoneTrackLabel);
+  const systemAudioState = getTrackCaptureState(status.systemAudioTrackLabel);
+
+  if (microphoneState === "switching" || systemAudioState === "switching") {
+    return "切替中";
+  }
+  if (microphoneState === "active" && systemAudioState === "active") {
+    return "Mic + System";
+  }
+  if (microphoneState === "active") {
+    return "Mic only";
+  }
+  if (systemAudioState === "active") {
+    return "System only";
+  }
+  return "未取得";
+}
+```
+
+行末の空白文字 (trailing whitespace) 禁止。空行末も含めて全行の末尾に whitespace を残さないこと。
+
+## 2. 編集: `src/components/LiveCaptionWindow.tsx`
+
+- L42-127 の 5 関数 + 2 type の定義を **完全削除** (`AudioSource` type は新 file に移動するが、`TrackMeta` type と `TRACKS` const + `hideLiveCaptionOverlayWindow` 関数 + 各 message constant は **残す = 削除しない**)
+- import に以下を追加 (既存 import 群と適切な位置に挿入、alphabetical 推奨):
+
+```typescript
+import {
+  createEmptyLatestBySource,
+  getSpeakerClassName,
+  getSpeakerLabel,
+  getTrackCaptureState,
+  getTrackStateLabel,
+  getVisibleTrackSummary,
+  type LatestBySource,
+} from "../utils/liveCaptionTrackHelpers";
+```
+
+(`TrackCaptureState` type は LiveCaptionWindow.tsx 内で直接参照されていないので import 不要。`AudioSource` type は新 file 内で局所使用 = LiveCaptionWindow.tsx 側で別途参照する場合は削除した既存定義を維持)
+
+注意: `AudioSource` type は LiveCaptionWindow.tsx 内で `TrackMeta` の `source` field 型として参照されているか確認。参照されていれば、`type AudioSource = NonNullable<TranscriptSegment["source"]>;` は LiveCaptionWindow.tsx 内に残すか、新 file から再 export するかを判断 (推奨: LiveCaptionWindow.tsx 内に残す = component 側との結合を最小化)
+
+- 既存 caller (L134/151/206/235/240/304/305/316/330/521/524 計 12 箇所) は **無変更** = 関数名/型名は同一なので import 1 行追加だけで動作
+
+# 検証
+
+frontend 軸の場合:
+- `npm run build` (tsc + vite build) を実行 = 型エラーなし + build ✓ 確認 (frontend test framework 未導入のため test 件数検証なし)
+- `bash scripts/agent-verify.sh src/components/LiveCaptionWindow.tsx src/utils/liveCaptionTrackHelpers.ts` で全項目 OK 確認
+- cargo test 不要 (rust 無変更)
+
+# AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のエントリを追記:
+
+```
+[mjc-main-20260505-56 Loop 108 / 2026-05-05]
+worker: mjc-worker-loop108-live-caption-track-helpers-extract (作業)
+範囲: src/components/LiveCaptionWindow.tsx (純粋関数 5 件 + 関連 type 2 件削除 + import 1 行追加, ~63 行削減) + src/utils/liveCaptionTrackHelpers.ts (新規 ~85 行)
+内容: LiveCaptionWindow.tsx L42-127 の純粋関数 helpers 5 件 (createEmptyLatestBySource + getSpeakerLabel + getSpeakerClassName + getTrackStateLabel + getTrackCaptureState + getVisibleTrackSummary) + 関連 type 2 件 (LatestBySource + TrackCaptureState) を新 module utils/liveCaptionTrackHelpers.ts に抽出。caller (同 file 内 12 箇所) は import 1 行追加 + 既存呼び出しは無変更。TrackMeta type + TRACKS const + hideLiveCaptionOverlayWindow + message constants は LiveCaptionWindow.tsx 内に残置 (component 密結合)。frontend 軸 2 件目 = 大型 frontend file 責務分離 30 file 目 = scope 18 軸目開拓 (LiveCaptionWindow component = 異 file = scope 多様性継続) = 純粋関数機能分離軸 frontend 版 paradigm 継続 (Loop 107 utils/transcriptViewFormatters.ts と同 paradigm = continuity)。LiveCaptionWindow.tsx は 580 → ~517 行 (~10.9% 削減)。TranscriptDisplay.tsx に同名 getSpeakerLabel が別 signature で存在するため、新 file 名は LiveCaption 専用 namespace 明示の liveCaptionTrackHelpers.ts を採用 (共通化リスク回避設計)。メイン批判判断 = handoff 「最有力推奨 X2 = SettingsView.tsx」をトップレベル純粋関数なし判定で SKIP し、J' = LiveCaptionWindow.tsx を grep + Read 精査で 5 純粋関数発掘して採用 = 連続 51 セッション目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 105 で確認済)。npm run build 全項目 OK = tsc 型チェック OK + vite build OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH> refactor(frontend): LiveCaptionWindow 純粋関数 helpers + type を utils/liveCaptionTrackHelpers.ts に抽出
+AGENTS.md priority: 1 (大型 frontend file 責務分離継続 + scope 18 軸目開拓)
+
+---
+```
+
+(`<REFACTOR_HASH>` は refactor commit の実 hash で置換。chore commit hash は意図的に書かない = Loop 60-107 で 47 連続成功した 2-commit pattern)
+
+# 2-commit pattern (worker 自律 連続 47 ループ成功 = 完全安定 pattern 化)
+
+1. **refactor commit (1 件目)**: 抽出作業 = `git add src/components/LiveCaptionWindow.tsx src/utils/liveCaptionTrackHelpers.ts && git commit -m "refactor(frontend): LiveCaptionWindow 純粋関数 helpers + type を utils/liveCaptionTrackHelpers.ts に抽出 (mjc-main-20260505-56 Loop 108, frontend 軸 2 件目, 大型 frontend file 責務分離 30 file 目, scope 18 軸目開拓, AGENTS.md priority 1 寄与)"`
+2. **refactor commit hash 取得**: `git log -1 --format=%H | head -c 7` で短縮 hash 取得
+3. **AGENT_LOG.md 末尾追記**: 上記エントリの `<REFACTOR_HASH>` を実 hash に置換し、`tail -10 AGENT_LOG.md` で末尾確認後、`tee -a` か `cat <<EOF >> AGENT_LOG.md` で末尾に append (Edit ツールでは末尾 `---` が unique にならない場合あり = Write 後 cat append 推奨)
+4. **chore commit (2 件目)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-56 Loop 108 = utils/liveCaptionTrackHelpers.ts 抽出 (構造分離 30 file 目, frontend 軸 2 件目 = scope 18 軸目開拓, 純粋関数機能分離軸 frontend 版 continuity) のエントリ追記"` (chore commit 自身の hash は AGENT_LOG.md に書かない = 47 連続 precedent)
+
+# 規模超過防止
+
+- 編集対象 file: 2 つ (LiveCaptionWindow.tsx + 新規 liveCaptionTrackHelpers.ts)
+- 削除対象: LiveCaptionWindow.tsx L42-127 の指定範囲のみ (TrackMeta + TRACKS + hideLiveCaptionOverlayWindow は **削除しない**)
+- caller 修正: import 1 行追加のみ = 既存呼び出しは無変更
+- test 件数の上限: 704 件 (rust 無変更のため変動なし)
+- frontend test 件数: 検証なし (framework 未導入)
+
+# 注意点
+
+- **行末の空白文字 (trailing whitespace) 禁止**
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep` で対象範囲のみ参照
+- LiveCaptionWindow.tsx 内に AudioSource type 参照があるか grep 確認 (`grep -n AudioSource src/components/LiveCaptionWindow.tsx`) = 必要なら型定義を残置 (推奨)
+- TranscriptDisplay.tsx に同名 getSpeakerLabel が別 signature で存在 = 共通化禁止 = LiveCaptionWindow 専用 namespace `liveCaptionTrackHelpers.ts` の名前を採用済 = 衝突回避済
+- 検証は `npm run build` で型エラーなし + ✓ built 確認
+- 同 file 内 caller は無変更 = function/type 名は完全同一保持
+
+# 完走後のメイン報告
+
+完走時に以下を main agent に報告:
+- refactor commit hash + chore commit hash
+- LiveCaptionWindow.tsx 削減後の行数 (`wc -l src/components/LiveCaptionWindow.tsx`)
+- liveCaptionTrackHelpers.ts 行数 (`wc -l src/utils/liveCaptionTrackHelpers.ts`)
+- npm run build 結果 (built in XXXms / modules transformed N)
+- agent-verify.sh 結果
+
+以上。

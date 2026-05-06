@@ -1,0 +1,206 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -200 AGENT_LOG.md` で末尾だけ参照)
+
+担当範囲: src-tauri/src/audio.rs のみ
+- 既存 `mod tests` (L580-) への #[test] 関数 5 件追加のみ
+- 実装変更は禁止
+- 他ファイルは編集しない
+- コミットは禁止 (メインが行う)
+
+# 背景 / Why
+
+`fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32` (L291-L301) は
+マイク音声の声量計算 (UI レベルメーター駆動) の核心 fn です。
+
+```rust
+fn calculate_rms_from_sum(sum_squares: f32, sample_count: usize) -> f32 {
+    if sample_count == 0 {
+        return 0.0;
+    }
+    let rms = (sum_squares / sample_count as f32).sqrt();
+    if rms.is_nan() {
+        return 0.0;
+    }
+    rms.clamp(0.0, 1.0)
+}
+```
+
+既存 3 件の直接テスト (count=0 / negative sum / clamp above) は重要 path をカバーしていますが、
+以下の境界が **直接テスト未カバー**:
+
+1. **`f32::NAN` sum_squares**: `is_nan()` の防御コードの存在意義
+2. **`f32::INFINITY` sum_squares**: NaN → 0.0 と +Inf → 1.0 の対称性 (clamp の責務)
+3. **中間値の sqrt 精度**: sum=4.0, count=16 → 0.5 (sqrt 演算の数値正確性)
+4. **count=1 の単一サンプル境界**: sum=0.25, count=1 → 0.5
+5. **clamp 上限ジャスト**: sum=1.0, count=1 → 1.0 (1.0 が減衰しない境界)
+
+直接テスト追加の価値:
+1. **`is_nan()` 防御コードの保護**: `if rms.is_nan() { return 0.0; }` を消すと
+   NaN.clamp(0, 1) の挙動 (実装依存) でレベルメーターが NaN になり UI に化け文字が出る危険。
+   T1 で消した瞬間に test が落ちる検知装置。
+2. **NaN と +Inf の責務分離**: NaN → 0.0 (early return) / +Inf → 1.0 (clamp) で扱いが
+   非対称。T1 と T2 で対称性が「意図的な非対称」であることを契約として明示。
+3. **数値計算の正確性**: T3 で sqrt の中間値精度 (epsilon 1e-6) を保護。f32 演算精度の
+   退行を検知。
+4. **境界ジャスト**: T4/T5 で clamp 境界の上下 (count=1 で full-scale = 境界ジャスト) を固定。
+
+# 具体的な実装変更
+
+実装は変更しません。**`mod tests` 末尾**に以下の 5 件を追加してください。
+
+各テストは独立した `#[test] fn` とすること。`use super::*;` は既存 (L582) で対応済み。
+`assert_close` (L584) は既存 helper として利用可能。epsilon は 1e-6 を基本とする。
+
+### T1. calculate_rms_from_sum_returns_zero_for_nan_sum_squares
+
+**目的**: NaN sum_squares → 0.0 で `is_nan()` 防御コードの存在意義を保護。
+
+```rust
+#[test]
+fn calculate_rms_from_sum_returns_zero_for_nan_sum_squares() {
+    // NaN sum_squares は sqrt(NaN/count) = NaN を生み、is_nan() の早期 return で 0.0 になる。
+    // is_nan() ブロックを消すと NaN.clamp(0, 1) の実装依存挙動で UI が化ける危険がある。
+    // この防御コードの存在を契約として保護する。
+    assert_eq!(calculate_rms_from_sum(f32::NAN, 4), 0.0);
+}
+```
+
+### T2. calculate_rms_from_sum_clamps_positive_infinity_to_one
+
+**目的**: +Inf sum_squares → 1.0 (clamp) で NaN との非対称な責務分離を明示。
+
+```rust
+#[test]
+fn calculate_rms_from_sum_clamps_positive_infinity_to_one() {
+    // +Inf.sqrt() は +Inf。is_nan() は false なので早期 return しない。
+    // clamp(0, 1) で 1.0 に押さえられる。NaN → 0.0 と +Inf → 1.0 の非対称性は
+    // 「異常値の種類別に意味のある最大/最小値を返す」設計意図の現れ。
+    assert_eq!(calculate_rms_from_sum(f32::INFINITY, 4), 1.0);
+}
+```
+
+### T3. calculate_rms_from_sum_returns_known_value_for_middle_range
+
+**目的**: sqrt 演算の数値精度 (中間値) を eps 1e-6 で保護。
+
+```rust
+#[test]
+fn calculate_rms_from_sum_returns_known_value_for_middle_range() {
+    // sum=4.0, count=16 → sqrt(4.0 / 16.0) = sqrt(0.25) = 0.5
+    // 中間値で sqrt 演算の数値精度退行を検知する。
+    // f32 sqrt の精度は IEEE 754 レベルで保証されるが、誤って sqrt を消すリファクタや
+    // sample_count を i32 に変えると精度が落ちる可能性を検知する。
+    assert_close(calculate_rms_from_sum(4.0, 16), 0.5, 1e-6);
+}
+```
+
+### T4. calculate_rms_from_sum_handles_single_sample_count
+
+**目的**: count=1 の単一サンプル境界で sqrt(sum) = 期待値であること。
+
+```rust
+#[test]
+fn calculate_rms_from_sum_handles_single_sample_count() {
+    // count=1 では sum / count = sum なので sqrt(sum) が直接 RMS になる。
+    // sum=0.25 → sqrt(0.25) = 0.5。count=1 の境界で 0 除算や u32 cast の罠を検知する。
+    assert_close(calculate_rms_from_sum(0.25, 1), 0.5, 1e-6);
+}
+```
+
+### T5. calculate_rms_from_sum_at_clamp_upper_boundary
+
+**目的**: clamp 上限ジャスト (1.0) が減衰しないことを境界として保護。
+
+```rust
+#[test]
+fn calculate_rms_from_sum_at_clamp_upper_boundary() {
+    // sum=1.0, count=1 → sqrt(1.0) = 1.0。clamp(0, 1) は 1.0 を 1.0 のまま通す。
+    // 境界ジャスト値で「過剰な丸め」や「< 1.0 への押し下げ」リファクタを検知する。
+    assert_close(calculate_rms_from_sum(1.0, 1), 1.0, 1e-6);
+}
+```
+
+# 実装上の注意
+
+- **配置場所**: 既存 `mod tests` (L580-) の最後の `}` の直前。
+  最後のテスト `calculate_rms_from_sum_clamps_above_one_to_one` の直後。
+- `use super::*;` は既存 (L582) で対応済み。新規 use 不要。
+- `assert_close` (L584-L589) は eps 比較用 helper。T3-T5 で利用。T1/T2 は `assert_eq!` で完全一致。
+- 実装 (`fn calculate_rms_from_sum`) は変更しない。
+- 他のテスト関数を変更しない。
+- コメント: 必要最小限。各 fn の `// xxx` で意図を 1 行明記する程度に留める。
+- T2 の +Inf について: f32 算術上 `+inf.clamp(0.0, 1.0)` は 1.0 を返すが、念のため worker は
+  事前に `cargo test` で T2 が pass するか確認すること。万一実装挙動が変なら報告する。
+
+# 検証手順
+
+すべて /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop で実行:
+
+1. `cd src-tauri && cargo fmt -- --check`
+2. `cd src-tauri && cargo test --lib audio` (既存 29 件 + 新規 5 件)
+3. `cd src-tauri && cargo test` (全体 325 → 330 passed)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings`
+5. `cd src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings`
+
+# AGENT_LOG.md 記載項目
+
+末尾に以下のセクションを追記してください:
+
+```
+### audio.rs calculate_rms_from_sum の NaN/+Inf/中間値/count=1/clamp 上限境界 を 5 件で固定
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-audio-rms-calculation-tests-20260504-6-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/audio.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+calculate_rms_from_sum の 5 つの境界 (NaN sum_squares で is_nan() 防御コードを保護 / +Inf sum_squares
+で NaN との非対称な責務分離を明示 / sum=4 count=16 で sqrt 数値精度を eps 1e-6 で固定 /
+count=1 単一サンプル境界 / clamp 上限 1.0 ジャスト) を 5 件で直接テストし、UI レベルメーター
+駆動の核心 fn を保護する。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | calculate_rms_from_sum_returns_zero_for_nan_sum_squares | NaN → 0.0 (is_nan() 防御コード保護) |
+| T2 | calculate_rms_from_sum_clamps_positive_infinity_to_one | +Inf → 1.0 (clamp 責務、NaN と非対称) |
+| T3 | calculate_rms_from_sum_returns_known_value_for_middle_range | sum=4 count=16 → 0.5 (sqrt 精度 eps 1e-6) |
+| T4 | calculate_rms_from_sum_handles_single_sample_count | sum=0.25 count=1 → 0.5 |
+| T5 | calculate_rms_from_sum_at_clamp_upper_boundary | sum=1.0 count=1 → 1.0 (clamp 上限ジャスト) |
+
+#### 不変条件 / 設計意図
+- NaN → 0.0 と +Inf → 1.0 は意図的な非対称 (異常値種別ごとの最小/最大値返却)。
+- is_nan() 早期 return を消すと NaN.clamp の実装依存で UI が化ける危険を T1 で保護。
+- T3 は sqrt 演算の数値精度退行を eps 1e-6 で検知する装置。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 325 → 330 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 5 件)
+- 追加後 total passed: 330
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T2 (+Inf → 1.0) は f32 演算の IEEE 754 仕様に依存。`+inf.clamp(0, 1)` の挙動が
+  Rust 標準の f32::clamp 仕様で 1.0 を返すことに依拠している。標準ライブラリ仕様変更は考慮外。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

@@ -1,0 +1,110 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First で既存の振る舞いは絶対に変えず、テストのみ追加します。
+
+# 必読 (作業前に必ず参照)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** を `tail -350 AGENT_LOG.md` で読め (ファイル全体は 23000+ 行 / 1.9MB+ のため Read 全体禁止)。
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+- 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md`
+
+# 担当範囲 (規模超過防止 = 厳守)
+- 編集可: `src-tauri/src/audio.rs` の `mod tests` 内のみ (テスト追加 3 件、その他の関数は触らない)
+- 編集可: `AGENT_LOG.md` の **末尾追記のみ** (先頭・中間は触らない)
+- それ以外のファイル変更禁止 (Cargo.toml / 他 .rs / frontend / docs 全て触らない)
+- テスト追加は **3 件まで** (それ以上は超過、削減して提出)
+- 大型ファイル (audio.rs 921 行 / AGENT_LOG.md 23000+ 行) は **Read 全体禁止 = tail/head/grep/sed で対象範囲のみ参照**
+- 行末に空白文字 (trailing whitespace) を残さない
+
+# タスク
+mjc-main-20260504-36 Loop 2 = AudioDevice 構造体に対する「Debug 軸補強」18 連続 application + **8 ファイル目展開 (audio.rs 初)** + 「Clone 独立性軸」(PartialEq 未派生型 = Debug 文字列間接判定パターン) 連続 application + 「format 不変条件 application」serde default snake_case struct 系統 2 連続 application
+
+## 対象 struct (audio.rs l.16-19)
+```rust
+/// フロントエンドに返すオーディオデバイス情報
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct AudioDevice {
+    pub name: String,
+    pub id: String,
+}
+```
+
+**重要**: `#[derive(...)]` に **PartialEq は派生していない** + `#[serde(rename_all = ...)]` 指定もなし = default snake_case (field 名そのまま JSON key 化) です。
+
+## 3 軸の追加テスト (3 件)
+
+### T1 = Debug 出力の不変条件 (1 件)
+- テスト名 `audio_device_debug_contains_field_values_in_declaration_order`
+- 対象: AudioDevice { name: "Built-in Microphone".to_string(), id: "device-001".to_string() } の `format!("{:?}", value)` 出力
+- assert (6 段以上):
+  1. struct 名 `"AudioDevice"` を contains
+  2. field 名 `"name"` と `"id"` を両方 contains
+  3. 値 `"Built-in Microphone"` と `"device-001"` を両方 contains
+  4. name の出現位置 < id の出現位置 で **構造体宣言順を反映** することを確認 (`debug_str.find("name").unwrap() < debug_str.find("id").unwrap()`)
+
+### T2 = Clone 独立性 (PartialEq 未派生 = Debug 文字列間接判定) (1 件)
+- テスト名 `audio_device_clone_is_deep_and_does_not_mutate_original`
+- 内容: PartialEq 派生がないため、cloned 側を mutate した後 original の Debug 文字列で間接的に独立性を確認 (mjc-main-35 Loop 1 AppSettings と同じパターン)
+  - original = AudioDevice { name: "Mic-A", id: "id-A" } を作成
+  - cloned = original.clone()
+  - cloned の name と id を別値 (例: "Mic-B" / "id-B") に変更
+  - format!("{:?}", original) で original の Debug 文字列を取得し、以下を assert (5 段以上):
+    1. original の Debug 文字列に「変更後の cloned の値」("Mic-B" / "id-B") が **含まれていない**
+    2. original の Debug 文字列に「original の元値」("Mic-A" / "id-A") が **含まれている**
+    3. field 単位独立に 2 fields × (元値あり + 新値なし) で 4 段以上の細かい assert
+
+### T3 = serde Serialize default snake_case JSON key 名固定 (1 件)
+- テスト名 `audio_device_serde_serialize_uses_default_snake_case_for_both_fields`
+- 内容:
+  - serde_json::to_value(&device).as_object() で Object を取得
+  - assert (6 段以上):
+    1. `obj.len() == 2` 厳密 (field 数固定)
+    2. key `"name"` 存在 + 値 `"Built-in Microphone"` 一致 (serde_json::json!("..."))
+    3. key `"id"` 存在 + 値 `"device-001"` 一致
+    4. key `"Name"` (PascalCase) 不在
+    5. key `"deviceId"` / `"device_id"` 等の改名キー不在 (serde rename 誤導入の遮断)
+    6. JSON 直列化文字列の中で name 先 id 後の出現順 (`json.find("\"name\"").unwrap() < json.find("\"id\"").unwrap()`)
+  - **「format 不変条件 application」serde default snake_case struct 系統 2 連続 application** = mjc-main-34 Loop 1 Session / SessionSegment に続く 2 系統目
+
+## 振る舞い不変の検証
+- アプリコード (struct 定義 / list_audio_devices / 既存関数群) は **絶対に変更禁止**
+- mod tests 内のみ追加 (l.588 以降)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib audio_device 2>&1 | tail -10` で 3 件全 pass (新規 3 件)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | tail -8` で **613 passed / 0 failed** (前 610 → +3 件)
+- `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10` で警告ゼロ
+
+## AGENT_LOG.md への追記 (末尾追記、先頭は絶対触らない)
+末尾の `---` 直後に以下のフォーマットで 1 件追記:
+
+```markdown
+## [WORKER mjc-worker-audio-device-debug-clone-serde-tests-20260504-36-2] 開始: <現在時刻 ISO8601 JST>
+
+### タスク
+mjc-main-20260504-36 Loop 2 = AudioDevice 構造体に Debug 出力 / Clone 独立性 (PartialEq 未派生 = Debug 文字列間接判定) / serde default snake_case JSON key 名固定 の 3 軸テストを追加 + 8 ファイル目展開 (audio.rs 初)
+
+### 結果
+- 追加テスト: audio_device_debug_contains_field_values_in_declaration_order / audio_device_clone_is_deep_and_does_not_mutate_original / audio_device_serde_serialize_uses_default_snake_case_for_both_fields (計 3 件)
+- cargo test --lib: 613 passed / 0 failed (前 610 → +3)
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- 「Debug 軸補強」18 連続 application 達成 (前 17 連続 → 18 連続)
+- 8 ファイル目展開 (audio.rs 初): transcription / settings / session / session_manager / session_store / app_detection / cloud_whisper に続く 8 ファイル目
+- 「Clone 独立性軸」PartialEq 未派生 + Debug 文字列間接判定パターン継続 application
+- 「format 不変条件 application」serde default snake_case struct 系統 2 連続 application 達成 (Session/SessionSegment に続く)
+- ファイル: src-tauri/src/audio.rs (mod tests 内テスト追加のみ)
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+
+---
+```
+
+# 完了基準
+1. `git status --short` で `M src-tauri/src/audio.rs` と `M AGENT_LOG.md` の 2 件が表示されること (それ以外のファイル変更があれば超過)
+2. cargo test --lib で 613 passed / 0 failed
+3. cargo clippy --lib -- -D warnings 警告ゼロ
+4. AGENT_LOG.md 末尾に WORKER エントリ追記 (先頭は触らない)
+5. 行末に trailing whitespace を残さない
+
+タスク完了したら必ずメインに 1 行で報告: 「Loop 2 完了: 613 passed, AudioDevice 3 軸補強 + 8 ファイル目展開完了」

@@ -1,0 +1,107 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# AGENT_LOG.md の取り扱い (重要)
+1. 冒頭で **必ず** `tail -350 AGENT_LOG.md` で末尾 350 行を読んでください。
+2. AGENT_LOG.md は **時系列順 = 最古ログがファイル先頭、最新ログがファイル末尾**。新規追記は **必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 区切り直後に新規エントリを append。
+5. **行末の空白文字 (trailing whitespace) 禁止**。エディタの auto-trim を有効にするか、書き込み前に確認。
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**。app_detection.rs (3017 行) は全 Read せず、行範囲を指定して Read するか grep で絞る。
+
+# 担当範囲 (厳守)
+- **編集対象は src-tauri/src/app_detection.rs のみ**。他ファイル編集禁止 (lib.rs / 他 *.rs / frontend / docs 等は触らない)。
+- AGENT_LOG.md への作業ログ追記は OK。
+
+# タスク: Whereby (`whereby.com` / `<subdomain>.whereby.com`) ミーティング URL 検知の追加
+
+AGENTS.md 優先順位 2 = 会議検知の網羅性。既存 4 サービス (Google Meet / Zoom / Webex / Teams) に Whereby を追加する。
+
+## 仕様
+
+Whereby のミーティング URL 形式:
+- `https://whereby.com/<room-name>` (root 形式、Whereby 公開ルーム)
+- `https://<subdomain>.whereby.com/<room-name>` (subdomain 形式、organization 用カスタムサブドメイン、例: `mycompany.whereby.com/team-room`)
+
+通常ページ (約款・ヘルプ等) との区別が必要。Whereby の `whereby.com/` 配下には以下のような non-room path が存在する (blacklist 対象):
+- `about`, `pricing`, `blog`, `login`, `signup`, `help`, `terms`, `privacy`, `contact`, `features`, `customers`, `embedded`, `embed`, `information`, `api`, `products`, `integrations`, `security`, `careers`, `status`
+
+## 実装方針 (既存 `is_zoom_meeting_url` / `is_webex_meeting_url` パターン踏襲)
+
+1. **`is_whereby_host(host: &str) -> bool`** を新規追加:
+   - `host == "whereby.com"` または `host.ends_with(".whereby.com")` を accept
+   - ただし DNS label 偽装 (`fake-whereby.com`, `whereby.com.attacker.example`, `whereby.example.com`) を排除する厳格チェック
+   - 既存 `is_zoom_host` (line 699-) や `is_webex_host` (line 787-) と同水準の検証を行う
+
+2. **`is_whereby_meeting_url(host: &str, path: &str) -> bool`** を新規追加:
+   - `is_whereby_host(host)` を要件
+   - **path が単一 segment 厳格** (= `path.strip_prefix('/')` 後に末尾 `/` を許容しつつ、内部に `/` を含まない、つまり `/<room-name>` のみ accept、`/<room>/extra` は reject)
+   - room-name 部分が **空でない** こと
+   - room-name が **blacklist (上記 non-room path)** に含まれないこと (lowercase 比較を推奨、ただし既存 `normalize_url_host` で host は lowercase 化されているため room-name 側の case 扱いは既存サービスのパターンに合わせる)
+   - blacklist は `const WHEREBY_NON_ROOM_PATHS: &[&str] = &[...];` で定数化
+
+3. **`classify_meeting_url` (line 511-535) に Whereby 分岐を追加**:
+   - 既存 `else if is_teams_meeting_url(...)` の **前または後** に `else if is_whereby_meeting_url(&host, &parsed.path) { "Whereby" }` を追加
+   - service 文字列は `"Whereby"` (Cap1 + 残小文字、既存 `"Webex"` / `"Zoom"` / `"Microsoft Teams"` 等の命名規則踏襲)
+
+4. **rustdoc の更新は不要** (line 546- は window title fallback 用 rustdoc。今回は URL classify のみ追加なので、line 507-510 の URL classify rustdoc に変更が必要なら最小限の追加を許可するが、必須ではない)
+
+## TDD: テスト追加 (`#[cfg(test)] mod tests` 内、5-7 件目安)
+
+以下を最小として網羅:
+1. `whereby.com/<room-name>` accept (例: `https://whereby.com/team-meeting`)
+2. `<sub>.whereby.com/<room-name>` accept (例: `https://mycompany.whereby.com/quick-call`)
+3. `whereby.com/about` reject (blacklist)
+4. `whereby.com/pricing` reject (blacklist)
+5. `whereby.com/<room>/extra` reject (path 2 segment 以上)
+6. DNS label 偽装 (`whereby.com.fake.example` または `fake-whereby.com`) reject
+7. `whereby.com/` (空 room-name) reject
+
+`classify_meeting_url_returns_service_and_host_only` (line 1125 周辺) の Webex / Teams 等のテストパターンを踏襲し、戻り値が `Some(MeetingUrlClassification { service: "Whereby", host: <expected> })` であることを assert すること。
+
+## 検証 (必須、全て pass を確認)
+
+実装後、以下を順に実行して **件数 + 警告ゼロ** を確認:
+
+```bash
+cargo test --lib --manifest-path=src-tauri/Cargo.toml 2>&1 | tail -20
+cargo clippy --lib --manifest-path=src-tauri/Cargo.toml -- -D warnings 2>&1 | tail -30
+cargo fmt --manifest-path=src-tauri/Cargo.toml -- --check
+```
+
+期待値:
+- `cargo test --lib`: **667 + 5〜7 = 672〜674 passed** (既存 667 件は破壊しない)
+- `cargo clippy`: 警告ゼロ
+- `cargo fmt --check`: OK
+
+破壊した場合は実装を見直し、件数増加と既存テスト維持を両立させる。**既存 667 件のテストを 1 件でも fail させた場合、実装をロールバックして安全な分岐に変更すること**。
+
+## 規模超過防止 (重要)
+
+- **このループでの app_detection.rs 編集量目安: 50〜80 行** (新規関数 2 つ + classify_meeting_url 1 行追加 + テスト 5-7 件 + blacklist 定数 1 つ)
+- 80 行を大幅に超える場合は、自分で提案範囲を縮小して安全側 (例: subdomain 形式のみ、root 形式は将来課題) で commit 可能な状態を作る
+- 担当範囲外 (lib.rs / 他 *.rs / frontend / docs 等) は **絶対に編集しない**
+- テスト件数の上限: **+10 件まで**。既存 1100+ 件のテストを破壊する変更は禁止
+
+## AGENT_LOG.md への追記要件
+
+実装完了後、AGENT_LOG.md 末尾の `---` 直後に以下のエントリを追記:
+
+- 開始日時 (実時刻)
+- 担当セッション名: `mjc-worker-app-detection-whereby-20260505-4`
+- 役割: 作業担当 (Whereby ミーティング URL 検知追加)
+- 作業範囲: src-tauri/src/app_detection.rs のみ
+- 指示内容: 上記タスクの要約
+- 結果: 成功 / 部分成功 / 失敗 のいずれか
+- 変更ファイル: src-tauri/src/app_detection.rs (+ AGENT_LOG.md 自身)
+- 検証結果: cargo test pass 件数 / clippy 警告数 / fmt 結果
+- 依存関係追加の有無: なし (既存 std のみ使用想定)
+- 失敗理由 (失敗時のみ)
+- 次アクション: メイン側で diff レビュー + commit へ
+- mjc-main-20260505-4 Loop 7 のループ番号明示
+
+## 最後に
+
+1 ターンで完結する形で、変更ファイル一覧、検証結果 (件数 + 警告ゼロ確認)、残リスク (例: 約款ページ path のうち blacklist 漏れ候補) を簡潔に報告してください。
+
+コミットは禁止 (メイン側で実施)。

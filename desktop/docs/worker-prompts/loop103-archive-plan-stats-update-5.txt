@@ -1,0 +1,97 @@
+あなたは meet-jerky の worker (mjc-worker-archive-plan-stats-update-5-loop103) です。
+mjc-main-20260505-53 (canonical = mjc-main) からの作業発注を受けます。
+
+# 作業内容 (規模 SS, ~3-5 分目安)
+
+`docs/architecture/agent-log-archive-plan.md` の **Section 2.3 増加率の推定** に **6 件目の更新観測** (mjc-main-20260505-53 Loop 102 時点) を追記する。
+
+## 目的
+- harness 衛生軸 = K 軸 = paradigm pivot 達成 (Loop 102 純粋関数機能分離軸 → Loop 103 K 軸 = 完璧 pivot, 3 連続防止)
+- agent-log-archive-plan.md Section 2.3 観測累積 6 件目 (Loop 79/81/86/95/98 precedent → 6 件目)
+- AGENTS.md priority 5-7 寄与 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+## 数値 (本 worker は計算済の数値をそのまま埋める = 二度計算不要)
+- 前回観測 (Loop 98 時点): 32,014 行
+- 現在 Loop 102 完了後: **32,264 行** (`wc -l AGENT_LOG.md` で確認 = 32264)
+- 増分: **+250 行** (Loop 99-102 = 4 ループ間 + SESSION SUMMARY 1 件 = mjc-main-20260505-52 SUMMARY)
+- 平均: **~63 行/loop** (250 ÷ 4 = 62.5 ≈ 63)
+- Loop 98 観測 (~72 行/loop) との比較: **~13% 減**
+
+## paradigm 内訳 (Loop 99-102 = 4 ループ)
+- Loop 99 = harness 衛生 K 軸 (mjc-main-20260505-50 chore entry 1 件)
+- Loop 100 = 機能分類軸 (settings_commands.rs 抽出 = refactor + chore + SESSION SUMMARY)
+- Loop 101 = 純粋関数機能分離軸 (transcription_commands_helpers.rs 抽出 = refactor + chore)
+- Loop 102 = 純粋関数機能分離軸 (realtime_ws_helpers.rs 抽出 = refactor + chore)
+- 純粋関数機能分離軸 2 連続だが Loop 99-102 全体では paradigm pivot 多軸 (K 軸 1 + 機能分類軸 1 + 純粋関数機能分離軸 2)
+
+## 追記内容 (Section 2.3 末尾、`> **更新観測 (mjc-main-20260505-50 Loop 98 時点)**` の **直後** に空行 1 つ挟んで挿入)
+
+```
+> **更新観測 (mjc-main-20260505-53 Loop 102 時点)**: Loop 98 → Loop 102 (~4 ループ間 + SESSION SUMMARY 1 件) で +250 行 (32,014 → 32,264)、平均 ~63 行/loop。Loop 98 観測値 (~72 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (Loop 99 = harness 衛生 K 軸 + Loop 100 = 機能分類軸 = settings_commands 軸 + Loop 101 = 純粋関数機能分離軸 = transcription_commands_helpers 軸 + Loop 102 = 純粋関数機能分離軸 = realtime_ws_helpers 軸 = realtime engine 4 軸目開拓) で SESSION SUMMARY 1 件 + chore entry 4 件 + refactor entry 3 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~63 行 = ~252-630 行/時間 の範囲、アクティブセッション間の差異)。
+```
+
+挿入後の Section 2.3 末尾構造:
+```
+... (Loop 81 観測)
+... (Loop 86 観測)
+... (Loop 95 観測)
+... (Loop 98 観測)
+[新規追記: Loop 102 観測]
+
+### 2.4 既存運用の維持コスト
+```
+
+## 編集手順
+1. `head -50 docs/architecture/agent-log-archive-plan.md | tail -25` で Section 2.3 の末尾位置 (Loop 98 観測の直後 = `### 2.4` の直前の空行) を確認
+2. Edit ツールで `> **更新観測 (mjc-main-20260505-50 Loop 98 時点)**: ...` 行末の `(アクティブセッション間の差異)。` (改行込み = 段落終端) を unique 識別子として使い、その直後に空行 1 行 + 上記新規 `> **更新観測 (mjc-main-20260505-53 Loop 102 時点)**: ...` 段落を挿入する
+3. `head -55 docs/architecture/agent-log-archive-plan.md | tail -10` で挿入後の構造を確認
+
+## precedent file (参照推奨)
+過去の Loop 81/86/95/98 観測の追記 commit (例: `f6263c3 docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 98 時点の更新観測追記`) を `git show f6263c3 --stat` 等で確認すれば構造同形。
+
+# 検証コマンド (順番に実行)
+1. `git diff docs/architecture/agent-log-archive-plan.md` で **追加行のみ + 既存行無変更** を確認
+2. `head -55 docs/architecture/agent-log-archive-plan.md | tail -10` で構造確認
+3. `bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md` で全項目 OK 確認
+
+cargo test / clippy / fmt は **本 worker では走らせる必要なし** (rust ファイル無変更、docs のみ)。`scripts/agent-verify.sh` が docs だけならスキップ判定する設計。
+
+# 2-commit pattern (precedent 連続 42 ループ)
+
+1. **commit 1 (docs)**: `git add docs/architecture/agent-log-archive-plan.md && git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 102 時点の更新観測追記 (mjc-main-20260505-53 Loop 103, harness 衛生軸 = variety pivot, Loop 79/81/86/95/98 precedent 6 件目, +250 行 / 平均 ~63 行/loop)"`
+2. `git log --oneline -1` で **commit hash を取得 (実 hash を直接書く)**
+3. AGENT_LOG.md 末尾に Loop 103 エントリ追記 (下記 template、commit 1 の実 hash を直接埋める)
+4. **commit 2 (chore)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-53 Loop 103 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, Loop 79/81/86/95/98 precedent 6 件目, +250 行 / 平均 ~63 行/loop) のエントリ追記"`
+
+# AGENT_LOG.md 末尾追記 template (commit 1 の実 hash を埋める)
+
+```
+---
+[mjc-main-20260505-53 Loop 103 / 2026-05-05]
+worker: mjc-worker-archive-plan-stats-update-5-loop103 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 6 件目追記、~5 行)
+内容: Loop 102 完了時点 (32,264 行) の更新観測を Section 2.3 末尾に追記。Loop 98 → Loop 102 で +250 行 / 平均 ~63 行/loop。Loop 98 観測 (~72 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (K 軸 + 機能分類軸 + 純粋関数機能分離軸 2 連続) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 102 純粋関数機能分離軸 → Loop 103 K 軸 = 3 連続防止)、Loop 79/81/86/95/98 precedent 6 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 102 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <commit1_hash> docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 102 時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
+```
+
+# 必須要素 (これを破ると AGENT_LOG.md 先頭混入事故 + trailing whitespace 警告が起きる)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` で末尾を読む** = 時系列順 = 最古先頭、最新末尾
+2. **新規追記は必ずファイル末尾に追加** = `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → 末尾に append
+3. **先頭は絶対に触らない**
+4. **AGENT_LOG.md の末尾追記**: ファイルへ Write or Edit (末尾 `---` の直後に新行を追加)
+5. **担当範囲外を絶対編集しない** = agent-log-archive-plan.md / AGENT_LOG.md 以外を触らない
+6. **大型 file は Read 全体禁止** = AGENT_LOG.md は `tail -350 AGENT_LOG.md` で末尾だけ参照
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 完走確認
+- `git log --oneline -3` で 2-commit (docs + chore) を確認
+- `git status --short` で working tree clean (untracked のみ) を確認
+
+完了したら最終出力で「Loop 103 完走」を報告すること。

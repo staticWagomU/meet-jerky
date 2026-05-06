@@ -1,0 +1,258 @@
+あなたは meet-jerky プロジェクトの worker です。Loop 71 = `docs/architecture/detection-extension-plan.md` を新規作成 = Slack Huddle / Discord stage / 補助 service (MS Teams Channel Calls 等) の検知拡張のための **Phase 設計 plan ドキュメント** = AGENTS.md priority 2 (会議サービス検知) への将来準備寄与 = variety pivot 完全実行 (大型 rust file 責務分離 7 連続到達からの完全離脱)。
+
+# 必読: AGENT_LOG.md の規律 (絶対遵守)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を実行し末尾を読め**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (本タスクは新 docs file 1 + AGENT_LOG.md のみ、rust コード一切編集しない)
+6. **AGENT_LOG.md は `tail -400` のみ参照、Read 全体禁止**
+7. **行末の空白文字 (trailing whitespace) 禁止**
+8. **rust 編集なし** = cargo test 不要 (ただし最終 verify として agent-verify.sh は実行)
+9. **2-commit pattern 厳守**: docs commit → hash 取得 → AGENT_LOG.md 追記 → chore commit。amend 禁止 (Loop 60-70 で 11 連続成功)。
+
+# 作業ディレクトリ
+
+`/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop`
+
+# 背景: メイン批判判断
+
+- Loop 64-70 = 大型 rust file 責務分離 7 連続到達 = sweep 警告超過
+- Loop 71 = **強い variety pivot 必須** = 機能拡張軸 (priority 2) へ完全シフト
+- 実コード変更は規模 M (window title pattern matching インフラ要) = 1 ループ困難
+- → **設計 plan ドキュメント** に縮退 = 規模 SS = 1 ループ完結 + 後続実装の道筋確保
+- precedent: `docs/architecture/transcription-refactor-plan.md` (Phase 1-6 完全完遂、47KB) = 同一の Phase 設計 pattern
+
+# 事前調査 (worker 必須実行)
+
+以下の grep を **実行して結果を Plan に反映** すること。メイン推定の前提を盲信せず、実態確認が必須。
+
+## 調査 1: 現状の検知アーキテクチャ
+
+```bash
+grep -nE '^const WATCHED_BUNDLE_IDS|^const NOTIFICATION_THROTTLE|^const MEETING_INACTIVE_THRESHOLD' src-tauri/src/app_detection.rs
+sed -n '30,50p' src-tauri/src/app_detection.rs  # WATCHED_BUNDLE_IDS の中身
+grep -nE 'fn handle_(detection|browser_url_detection|window_title)' src-tauri/src/app_detection.rs
+grep -nE 'throttle_key|parse_throttle_key' src-tauri/src/app_detection.rs | head -10
+ls -la src-tauri/src/app_detection_*.rs  # 既存サービス別 file
+```
+
+## 調査 2: window title 経路の既存実装範囲
+
+```bash
+grep -nE 'window-title:|window_title|fn .*window.*title' src-tauri/src/app_detection.rs | head -20
+grep -rE 'window_title' src-tauri/src/ | head -10
+```
+
+## 調査 3: ブラウザ URL 経路の既存実装範囲
+
+```bash
+grep -nE 'fn classify_browser_url|fn extract_meeting_service' src-tauri/src/app_detection.rs
+ls src-tauri/src/app_detection_*.rs  # サービス別 module
+```
+
+## 調査 4: Slack/Discord 言及の有無
+
+```bash
+grep -rnE 'slack|discord|huddle|stage' src-tauri/src/ -i | head -10
+grep -rnE 'slack|discord|huddle' docs/ -i | head -20
+```
+
+# 作業手順
+
+## Step 1. 事前調査の結果メモ
+
+調査 1-4 の結果を頭の中で整理。Plan の Section 2 (Current State) に正確に反映。
+
+## Step 2. 新 file 作成
+
+`docs/architecture/detection-extension-plan.md` を新規作成。以下の構造で記述:
+
+```markdown
+# 検知拡張 Plan = Slack Huddle / Discord stage / 補助 service
+
+> **作成**: mjc-main-20260505-35 Loop 71 (2026-05-05 ~JST)
+> **目的**: AGENTS.md priority 2 (会議サービス検知) の段階的拡張に向けた設計プラン
+> **状態**: ドラフト (実装未着手、後続 Loop で Phase 1 から段階導入)
+
+## 1. Overview
+
+(2-3 段落で背景説明)
+- 現在の検知対象は Zoom / Microsoft Teams (新旧) / FaceTime + 6 ブラウザ service (Webex / Whereby / GoToMeeting / Zoom Web / Microsoft Teams Web / Google Meet)
+- 拡張要望: Slack Huddle (デスクトップアプリ主流、web 部分対応) + Discord stage (デスクトップアプリ + web 両方) + 補助 = MS Teams Channel Calls / Zoom Phone 等
+- 単純 bundle ID 追加では誤通知 (Slack 起動 ≠ 会議) = window title pattern matching 必須
+- 段階的に Phase 1-4 で導入する設計
+
+## 2. Current State (現状把握、調査結果を反映)
+
+### 2.1 WATCHED_BUNDLE_IDS const (調査 1 の結果)
+
+(grep で確認した実際の中身を表形式で記述。bundle_id / 表示名)
+
+### 2.2 検知経路 (3 系統)
+
+(調査 2-3 で確認した throttle_key 3 形式を表形式で記述)
+- bundle_id 単独 (アプリ起動経路)
+- browser:... (ブラウザ URL 経路)
+- window-title:... (window title 経路、現在の実装範囲)
+
+### 2.3 既存サービス別 module (調査 1 の結果)
+
+(app_detection_*.rs ファイル一覧と各責任)
+
+## 3. Target Services (拡張対象)
+
+### 3.1 Slack Huddle
+- bundle_id: `com.tinyspeck.slackmacgap` (デスクトップアプリ)
+- web: `app.slack.com/client/<workspace>/<channel>` ※ huddle 中の URL/title 要検証
+- window title 例: "Huddle in #general (3) - Slack" など (要検証)
+- 課題: huddle 開始/終了の境界検出 = window title 変化が必要
+
+### 3.2 Discord stage
+- bundle_id: `com.hnc.Discord` (デスクトップアプリ)
+- web: `discord.com/channels/<server-id>/<stage-id>` ※ stage 形式要検証
+- window title 例: "#general | Stage Channel - Discord" など (要検証)
+
+### 3.3 補助 (低優先)
+- MS Teams Channel Calls (既存 com.microsoft.teams2 内、call 状態識別不可)
+- Zoom Phone (us.zoom.xos と同一 bundle、phone vs meeting 識別不可)
+
+## 4. Detection Strategy (検知戦略)
+
+### 4.1 推奨経路選択
+
+(各 service ごとに推奨経路 = bundle_id / browser URL / window title のいずれか + 理由)
+
+### 4.2 既存基盤 vs 新規実装
+
+(調査 2 で window title 経路がどこまで既存かを反映 = もし throttle_key で window-title 形式が既にサポートされているなら、新規実装は service 識別ロジックのみ)
+
+## 5. Phase Plan (段階設計)
+
+### Phase 1: 検知条件構造の拡張 (規模 SS-S)
+
+- WATCHED_BUNDLE_IDS を `&[(bundle_id, app_name, MatchStrategy)]` に拡張
+- MatchStrategy enum 新規 (`AppLaunch` / `WindowTitleContains(&'static str)` / `BrowserUrl(&'static str)`)
+- 既存 4 アプリは全て `AppLaunch` 互換、振る舞い不変
+- axis test: 既存 702 件全 pass + MatchStrategy enum の単体 test 3-5 件追加
+- 想定 elapsed: 1 ループ (~10-15 分)
+
+### Phase 2: window title pattern matching 拡張 (規模 SS-M)
+
+- 現在の throttle_key window-title 形式が部分実装かフル実装か (調査 2 結果) に応じて差分実装
+- pattern matching helper を `app_detection_window_title.rs` に新 file 抽出
+- 想定 elapsed: 1-2 ループ
+
+### Phase 3: Slack Huddle 検知実装 (規模 S)
+
+- WATCHED_BUNDLE_IDS に `("com.tinyspeck.slackmacgap", "Slack Huddle", WindowTitleContains("Huddle"))` 追加
+- `app_detection_slack.rs` 新規 (検知ロジック + axis test)
+- 想定 elapsed: 1 ループ
+
+### Phase 4: Discord stage 検知実装 (規模 S)
+
+- WATCHED_BUNDLE_IDS に `("com.hnc.Discord", "Discord Stage", WindowTitleContains("Stage"))` 追加
+- ブラウザ URL 経路は別途 (Phase 4.5 候補)
+- `app_detection_discord.rs` 新規
+- 想定 elapsed: 1 ループ
+
+### Phase 5: 補助 + axis test 拡充 (低優先)
+
+- MS Teams Channel Calls / Zoom Phone (識別が難しい場合は backlog 化)
+- frontend 側 MeetingDetectedBanner.tsx の表示対応 (アイコン追加等)
+
+## 6. Open Questions (要検証項目)
+
+- Slack Huddle 中の window title 実例 (英語/日本語)
+- Discord stage 中の window title / URL 実例
+- WATCHED_BUNDLE_IDS 構造拡張時の serde 影響範囲
+- window title localization 対応 (日本語 "ハドル" / "ステージ" 等)
+
+## 7. 参考
+
+- `docs/architecture/transcription-refactor-plan.md` (Phase 1-6 完全完遂 precedent)
+- `src-tauri/src/app_detection.rs` (WATCHED_BUNDLE_IDS / handle_detection / handle_browser_url_detection)
+- `src-tauri/src/app_detection_*.rs` 6 件 (サービス別 module precedent)
+```
+
+**重要**: 上記は構造テンプレートであり、調査 1-4 の結果を **正確に反映** すること。前提が間違っていたら訂正して書く (例: window title 経路が既にフル実装済なら Phase 2 を縮小)。
+
+## Step 3. 検証
+
+```bash
+bash scripts/agent-verify.sh docs/architecture/detection-extension-plan.md 2>&1 | tail -5  # docs だけなので skip 検出 = OK
+grep -nE ' +$' docs/architecture/detection-extension-plan.md  # trailing whitespace ゼロ
+wc -l docs/architecture/detection-extension-plan.md  # 200-300 行目安
+```
+
+## Step 4. 1 つ目の commit (docs)
+
+```bash
+git add docs/architecture/detection-extension-plan.md
+git commit -m "docs(architecture): 検知拡張 plan (Slack Huddle / Discord stage / 補助 service の段階設計) を新規作成 (mjc-main-20260505-35 Loop 71, ~XXX 行, transcription-refactor-plan.md precedent 直接展開, AGENTS.md priority 2 将来準備寄与, variety pivot = 大型 rust 責務分離 7 連続から機能拡張軸へ完全シフト)"
+```
+
+XXX は実際の行数で置換。commit hash を取得 (`git rev-parse HEAD`)。
+
+## Step 5. AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` 直後に以下を追記:
+
+```
+[mjc-main-20260505-35 Loop 71 / 2026-05-05 ~JST]
+
+## What
+- docs/architecture/detection-extension-plan.md (新規 ~XXX 行) を作成 = Slack Huddle / Discord stage / 補助 service (MS Teams Channel Calls / Zoom Phone) の段階拡張 plan
+- 構成: Overview / Current State / Target Services / Detection Strategy / Phase Plan (Phase 1-5) / Open Questions / 参考
+- worker grep 調査 (WATCHED_BUNDLE_IDS / throttle_key 3 形式 / window title 経路 / Slack/Discord 言及) を反映
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張に向けた将来準備寄与
+- variety pivot 完全実行 = Loop 64-70 大型 rust file 責務分離 7 連続到達 = sweep 警告超過 → 機能拡張軸へ完全シフト
+- 実コード変更は規模 M (window title pattern matching インフラ要) で 1 ループ困難 → 設計 plan のみに縮退
+- transcription-refactor-plan.md precedent (Phase 1-6 完全完遂、Loop 1-63 で実装) と同一 pattern
+
+## How
+- worker grep 調査 4 件で現状把握 → Section 2 に正確反映
+- Phase 1-5 + 各規模見積を記述
+- Open Questions に要検証項目を残し、後続 Loop の調査タスクを明示
+
+## Verify
+- agent-verify.sh: OK (docs のみ skip)
+- trailing whitespace: なし
+- 行数: ~XXX (200-300 目安)
+
+## commit
+- <ここに Step 4 で取得した hash を記入>
+
+---
+```
+
+**重要**: 既存の前 SESSION SUMMARY の `---` を **絶対に消さない**。冒頭に空行 1 行 + 内容 + 末尾に `---` + 空行 1 行。
+
+## Step 6. 2 つ目の commit (chore = AGENT_LOG.md hash 記入)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 71 commit hash <hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-70 precedent 適用 12 連続)"
+```
+
+## Step 7. 完了報告
+
+stdout に以下を出力:
+```
+Loop 71 完了: docs=<hash1> / chore=<hash2> / detection-extension-plan.md ~XXX 行 / verify OK
+```
+
+# 厳守事項 (簡潔版)
+
+- `--no-verify` / `--dangerously-skip-permissions` 禁止
+- 実 API 通信 / Keychain / SpeechAnalyzer 禁止
+- AGENT_LOG.md = 末尾追記のみ + trailing whitespace 禁止
+- rust コード一切編集しない (docs のみ)
+- amend 禁止 = 2-commit pattern (docs + chore) 厳守
+
+規模: 新 docs 1 + AGENT_LOG.md 追記、想定 8-12 分 (調査 + 執筆込み)。
+
+以上。

@@ -1,0 +1,321 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -200 AGENT_LOG.md` で末尾だけ参照)
+
+担当範囲: src-tauri/src/elevenlabs_realtime.rs のみ
+- ws_task 内 inner mod `pending_timeout_tests` (L482-) への #[test] 関数 5 件追加
+- 実装変更は禁止 (visibility 変更も無し、`fn push_error` は private のまま)
+- 他ファイルは編集しない
+- コミットは禁止 (メインが行う)
+
+# 背景 / Why
+
+`mod ws_task` 内の `fn push_error` (L428-L442) は WebSocket エラーイベントから
+TranscriptionSegment を生成する核心 fn ですが、現状は `handle_event` 経由の
+**間接テストのみ** (`scribe_error_events_are_queued_as_error_segments` L675、ファイル
+トップ mod tests 内) でカバーされています。
+
+直近のループ (commit d002aac) で **openai_realtime.rs 側の同種 push_error を 5 件で
+直接テスト化** しました。本ループは elevenlabs 側を同じ 5 件構造で直接テスト化し、
+両 Realtime engine の error path 不変条件を完全対称な水準で保護します。
+
+直接テストを追加する価値:
+1. **prefix 文言契約の固定**: `"[ElevenLabs Realtime エラー: {message}]"` の prefix
+   `"[ElevenLabs Realtime エラー: "` と suffix `"]"` をユーザー向け文言として固定。
+2. **不変条件の固定**: `start_ms=0, end_ms=0, is_error=Some(true)` の 3 値を 1 関数で
+   契約強制。
+3. **source/speaker passthrough 契約**: `Some(TranscriptionSource::Microphone)` / `None` の
+   双方向 passthrough と speaker の clone 動作を直接固定。
+4. **関数分離リファクタへの耐性**.
+5. **openai_realtime との完全対称**: prefix 文言の違いを除いて構造的に同じテストを書く。
+
+# 配置方針 (重要)
+
+elevenlabs_realtime.rs では既に **`mod ws_task` 内に `mod pending_timeout_tests`**
+(L482-L631) があり、ws_task 内 private fn の直接テスト場として使われています
+(前セッション ループ 3 で is_scribe_error_event / extract_transcript /
+extract_error_message の 6 件をここに追加済み)。
+
+本ループは **`mod pending_timeout_tests` の末尾**に追加してください。
+visibility を広げる必要はありません。`super::push_error` で呼べます。
+
+ファイルトップの `mod tests` (L634-) には追加しないこと。
+
+# 具体的な実装変更
+
+実装は変更しません。**`mod pending_timeout_tests` (L482-L631) の末尾**
+(`extract_error_message_traverses_three_priority_paths` の終了 `}` の直後、
+`}` (L631 の inner mod 閉じ) の直前) に以下の 5 件を追加してください。
+
+各テストは独立した `#[test] fn` とすること。
+
+inner mod の use はインデント 8 空白。`super::*;` ではなく `super::push_error` 形式で呼ぶ
+(既存 `super::is_scribe_error_event(...)` と同流儀)。
+
+inner mod 内では `Arc`, `Mutex`, `Vec`, `Some`, `Option` 等は標準で使えるが、
+`TranscriptionSegment`, `TranscriptionSource` は `super::super::TranscriptionSegment` または
+fully qualified path で参照する必要がある。**既存テスト** (L549- 等) で `super::is_scribe_error_event`
+の他に `Value` 等が使われている箇所を参照して、同流儀で書くこと。
+
+具体的には、既存テスト `extract_error_message_traverses_three_priority_paths` (L608) などが
+どの fully qualified path を使っているか確認した上で、`Arc<Mutex<Vec<TranscriptionSegment>>>` の
+import 方法を踏襲してください。
+
+### T1. push_error_format_prefix_and_suffix_are_fixed
+
+```rust
+#[test]
+fn push_error_format_prefix_and_suffix_are_fixed() {
+    use std::sync::Arc;
+    use parking_lot::Mutex;
+    let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+        Arc::new(Mutex::new(Vec::new()));
+    let speaker = Some("自分".to_string());
+
+    super::push_error(
+        &pending,
+        &speaker,
+        Some(super::super::TranscriptionSource::Microphone),
+        "connection closed".to_string(),
+    );
+
+    let segments = pending.lock();
+    assert_eq!(segments.len(), 1);
+    // prefix と suffix を含む完全一致で文言契約を強制。
+    assert_eq!(
+        segments[0].text,
+        "[ElevenLabs Realtime エラー: connection closed]"
+    );
+}
+```
+
+### T2. push_error_sets_zero_timestamps_and_is_error_true
+
+```rust
+#[test]
+fn push_error_sets_zero_timestamps_and_is_error_true() {
+    use std::sync::Arc;
+    use parking_lot::Mutex;
+    let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+        Arc::new(Mutex::new(Vec::new()));
+    let speaker = Some("自分".to_string());
+
+    super::push_error(
+        &pending,
+        &speaker,
+        Some(super::super::TranscriptionSource::Microphone),
+        "rate limit".to_string(),
+    );
+
+    let segments = pending.lock();
+    assert_eq!(segments.len(), 1);
+    // エラーセグメント identity 契約: 時刻情報なし + is_error=Some(true)
+    assert_eq!(segments[0].start_ms, 0);
+    assert_eq!(segments[0].end_ms, 0);
+    assert_eq!(segments[0].is_error, Some(true));
+}
+```
+
+### T3. push_error_passes_source_through
+
+```rust
+#[test]
+fn push_error_passes_source_through() {
+    use std::sync::Arc;
+    use parking_lot::Mutex;
+
+    // ケース 1: Some(Microphone) は Some(Microphone) のまま渡る
+    {
+        let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let speaker = Some("自分".to_string());
+        super::push_error(
+            &pending,
+            &speaker,
+            Some(super::super::TranscriptionSource::Microphone),
+            "err".to_string(),
+        );
+        assert_eq!(
+            pending.lock()[0].source,
+            Some(super::super::TranscriptionSource::Microphone)
+        );
+    }
+
+    // ケース 2: None は None のまま渡る
+    {
+        let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let speaker = Some("自分".to_string());
+        super::push_error(&pending, &speaker, None, "err".to_string());
+        assert_eq!(pending.lock()[0].source, None);
+    }
+}
+```
+
+### T4. push_error_clones_speaker_field
+
+```rust
+#[test]
+fn push_error_clones_speaker_field() {
+    use std::sync::Arc;
+    use parking_lot::Mutex;
+
+    // ケース 1: Some("自分") が clone されて渡る (元の所有権は保持される)
+    {
+        let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let speaker = Some("自分".to_string());
+        super::push_error(
+            &pending,
+            &speaker,
+            Some(super::super::TranscriptionSource::Microphone),
+            "err".to_string(),
+        );
+        assert_eq!(pending.lock()[0].speaker, Some("自分".to_string()));
+        // 元の speaker が clone 後も有効であることを確認 (move されていない)
+        assert_eq!(speaker, Some("自分".to_string()));
+    }
+
+    // ケース 2: None は None のまま渡る
+    {
+        let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let speaker: Option<String> = None;
+        super::push_error(
+            &pending,
+            &speaker,
+            Some(super::super::TranscriptionSource::Microphone),
+            "err".to_string(),
+        );
+        assert_eq!(pending.lock()[0].speaker, None);
+    }
+}
+```
+
+### T5. push_error_with_empty_and_multibyte_messages_preserve_text_format
+
+```rust
+#[test]
+fn push_error_with_empty_and_multibyte_messages_preserve_text_format() {
+    use std::sync::Arc;
+    use parking_lot::Mutex;
+
+    // ケース 1: 空 message でも prefix/suffix が残り "[ElevenLabs Realtime エラー: ]" になる
+    {
+        let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let speaker = Some("自分".to_string());
+        super::push_error(
+            &pending,
+            &speaker,
+            Some(super::super::TranscriptionSource::Microphone),
+            "".to_string(),
+        );
+        assert_eq!(pending.lock()[0].text, "[ElevenLabs Realtime エラー: ]");
+    }
+
+    // ケース 2: 日本語マルチバイト message が prefix/suffix の間にそのまま埋め込まれる
+    {
+        let pending: Arc<Mutex<Vec<super::super::TranscriptionSegment>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let speaker = Some("自分".to_string());
+        super::push_error(
+            &pending,
+            &speaker,
+            Some(super::super::TranscriptionSource::Microphone),
+            "認証エラーが発生しました".to_string(),
+        );
+        assert_eq!(
+            pending.lock()[0].text,
+            "[ElevenLabs Realtime エラー: 認証エラーが発生しました]"
+        );
+    }
+}
+```
+
+# 実装上の注意
+
+- **配置場所**: `mod pending_timeout_tests` (L482-L631) の末尾、`}` (L631 の inner mod 閉じ) の直前。
+- **inner mod のため、各テストで `use std::sync::Arc; use parking_lot::Mutex;` を fn 内で書く**
+  (既存スタイルに合わせる。inner mod 全体の `use` を 1 つだけ追加してもよいが、既存 6 件の追加 fn が
+  関数内 use を使っていない場合は `super::super::TranscriptionSegment` 形式に統一する)。
+- **既存 6 件のテストがどう書いているかを必ず確認**してから貼り付け方を調整すること。
+  特に `Arc<Mutex<Vec<TranscriptionSegment>>>` の path 解決方法は、既存テストを 1 つ読んで踏襲する。
+  もし既存テストが inner mod の **トップ** で `use super::super::*;` のような import を
+  していたら、その流儀に従って fn 内 use を不要にする。
+- 実装 (`fn push_error`) は変更しない。visibility 変更しない。
+- 他のテスト関数を変更しない。
+- ファイルトップの `mod tests` (L634-) には追加しない。
+- `#[allow(dead_code)]` 等の attribute 追加不要。
+
+# 検証手順
+
+すべて /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop で実行:
+
+1. `cd src-tauri && cargo fmt -- --check`
+2. `cd src-tauri && cargo test --lib elevenlabs_realtime` (既存 11 件 + 新規 5 件)
+3. `cd src-tauri && cargo test` (全体 330 → 335 passed)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings`
+5. `cd src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings`
+
+# AGENT_LOG.md 記載項目
+
+末尾に以下のセクションを追記してください:
+
+```
+### elevenlabs_realtime.rs ws_task::push_error 直接テストを 5 件追加 (openai 側との完全対称構造を確立)
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-elevenlabs-realtime-push-error-tests-20260504-6-4`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装/visibility 変更なし)
+- **作業範囲**: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task` 内
+  `mod pending_timeout_tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+ws_task 内 private fn `push_error` (L428-L442) を、既存 inner mod (pending_timeout_tests)
+内で `super::push_error` 形式で 5 件直接テスト化する。openai_realtime.rs と完全対称な
+prefix 文言契約 (`"[ElevenLabs Realtime エラー: "`) + zero timestamps + is_error=Some(true) +
+source/speaker passthrough + 空/multibyte message の text format 保持を固定する。
+
+#### 追加したテスト
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | push_error_format_prefix_and_suffix_are_fixed | prefix `"[ElevenLabs Realtime エラー: "` + suffix `"]"` 完全一致 |
+| T2 | push_error_sets_zero_timestamps_and_is_error_true | start_ms=0 / end_ms=0 / is_error=Some(true) |
+| T3 | push_error_passes_source_through | Some(Microphone) / None 双方向 passthrough |
+| T4 | push_error_clones_speaker_field | Some("自分") clone (元保持) / None passthrough |
+| T5 | push_error_with_empty_and_multibyte_messages_preserve_text_format | 空 message → "[ElevenLabs Realtime エラー: ]" / 日本語 multibyte 埋め込み |
+
+#### 不変条件 / 設計意図
+- openai_realtime.rs の push_error 5 件 (commit d002aac) と完全対称な error path 直接テスト構造。
+- 両 Realtime engine の error path 不変条件を同水準で保護。
+- prefix 文言の違いは仕様 (text format prefix のみ)。それ以外は構造的に同一。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 330 → 335 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 12 件)
+- 追加後 total passed: 335
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T5 の "[ElevenLabs Realtime エラー: ]" は空 message 時の現挙動を固定。openai 側 T5 と同様。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

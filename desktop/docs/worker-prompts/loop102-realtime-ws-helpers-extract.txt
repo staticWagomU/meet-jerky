@@ -1,0 +1,128 @@
+あなたは meet-jerky の worker (mjc-worker-realtime-ws-helpers-loop102) です。
+mjc-main-20260505-53 (canonical = mjc-main) からの作業発注を受けます。
+
+# 作業内容 (規模 S, ~8-12 分目安)
+
+`src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task` (L146-964) 内に定義されている純粋関数 4 つ + 関連 tests 19 件を、新規 module `src-tauri/src/realtime_ws_helpers.rs` に抽出する。
+
+## 抽出対象 (production = 4 関数, ~49 行)
+- L358-360: `fn is_scribe_error_event(event_name: &str) -> bool` (3 行)
+- L364-376: `async fn wait_for_pending_after_commit(pending: &Arc<Mutex<Vec<TranscriptionSegment>>>, previous_len: usize, timeout: Duration)` (13 行)
+- L378-397: `fn extract_transcript(value: &Value) -> Option<String>` (20 行)
+- L399-411: `fn extract_error_message(value: &Value) -> Option<String>` (13 行)
+
+可視性は元 `private` (mod ws_task 内) から **`pub(crate)` に昇格** する (caller が module 越境のため)。
+
+## 抽出対象 (tests = 19 件移動)
+`mod ws_task` 内 `#[cfg(test)] mod pending_timeout_tests` (L414-963) 内の以下 19 テストを **新 file 内の #[cfg(test)] mod tests に移動**:
+
+1. L437 `wait_for_pending_after_commit_returns_when_pending_grows` (#[tokio::test])
+2. L458 `wait_for_pending_after_commit_returns_after_deadline_when_pending_unchanged` (#[tokio::test])
+3. L470 `wait_for_pending_after_commit_returns_immediately_when_already_grown` (#[tokio::test])
+4. L482 `is_scribe_error_event_returns_true_for_scribe_prefix_and_error_suffix` (#[test])
+5. L491 `is_scribe_error_event_returns_false_when_either_prefix_or_suffix_missing` (#[test])
+6. L500 `extract_transcript_prefers_transcript_field_over_text_field` (#[test])
+7. L512 `extract_transcript_falls_back_to_words_array_with_text_or_word_keys` (#[test])
+8. L529 `extract_transcript_returns_none_when_no_relevant_field_present` (#[test])
+9. L541 `extract_error_message_traverses_three_priority_paths` (#[test])
+10. L715 `is_scribe_error_event_returns_true_for_minimal_overlap_scribe_error`
+11. L722 `is_scribe_error_event_returns_true_for_zero_length_middle_scribe_double_underscore_error`
+12. L732 `extract_error_message_falls_back_to_priority2_when_priority1_message_is_non_string`
+13. L754 `extract_error_message_falls_back_to_priority3_when_priority2_error_is_non_string`
+14. L776 `extract_error_message_returns_none_when_all_priorities_yield_non_string`
+15. L792 `extract_transcript_falls_back_to_text_when_transcript_is_non_string`
+16. L819 `extract_transcript_falls_back_to_words_when_transcript_and_text_are_non_string`
+17. L854 `extract_transcript_returns_none_when_words_field_is_non_array`
+18. L889 `extract_transcript_does_not_fall_back_within_word_entry_when_text_is_non_string`
+19. L923 `extract_transcript_joins_only_string_entries_in_mixed_words_array_in_order`
+
+テスト本体内の `super::is_scribe_error_event` 等の参照は、新 file 内 `mod tests` にそのまま `super::` 参照として保持できる (super = 新 file の root scope = pub(crate) fn が見える)。
+
+## 残置対象 (重要)
+`mod pending_timeout_tests` 内の **`push_error_*` tests 5 件 (L565, L587, L608, L644, L679)** は `realtime_error_helpers::push_error` のテストであり、**新 file へは移動しない**。これらは `mod pending_timeout_tests` 内に残置する (module 名はそのまま `pending_timeout_tests` で OK = 名前リネームは不要、シンプル化優先)。
+
+`make_segment` ヘルパ (L425) は wait_for_* tests から使われている = 新 file 内の mod tests へ複製、または push_error_* tests 側でも使われていれば両方に置く必要あり。先に push_error_* tests を grep で精査し、`make_segment` を呼んでいるか確認すること。
+
+## caller 修正 (production)
+ws_task module 内の以下 5 箇所が直接呼んでいる:
+- L275 `wait_for_pending_after_commit(...)`
+- L318 `extract_transcript(&value)`
+- L333 `extract_error_message(&value)`
+- L343 `is_scribe_error_event(event_name)`
+- L344 `extract_error_message(&value)`
+
+ws_task module 内の use 文 block (L158-161 付近) に **1 行追加**:
+```rust
+use crate::realtime_ws_helpers::{
+    extract_error_message, extract_transcript, is_scribe_error_event, wait_for_pending_after_commit,
+};
+```
+
+これで L275/L318/L333/L343/L344 の呼び出しはそのまま動く (use 文で in-scope)。本体は無変更。
+
+## lib.rs 修正 (alphabetical 挿入)
+`src-tauri/src/lib.rs` L30 の `mod realtime_reader_task;` と L31 の `mod secret_store;` の間に **`mod realtime_ws_helpers;`** を 1 行追加 (alphabetical: realtime_reader_task → realtime_ws_helpers → secret_store)。
+
+## precedent file (参照必須)
+`src-tauri/src/transcription_commands_helpers.rs` (Loop 101 = mjc-main-20260505-52 の抽出 file) を `cat src-tauri/src/transcription_commands_helpers.rs` で全体読み込み、構造 (use 文 + pub(crate) fn 群 + #[cfg(test)] mod tests) を参考にする。
+
+# 検証コマンド (順番に実行)
+1. `cd src-tauri && cargo test --lib 2>&1 | tail -20` で **704 passed / 0 failed** 確認 (件数完全不変、move のみ)
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` で警告ゼロ確認
+3. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で OK 確認
+4. `cd src-tauri && cargo build --lib 2>&1 | tail -10` でエラーなし確認
+5. `bash scripts/agent-verify.sh src-tauri/src/realtime_ws_helpers.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/lib.rs` で全項目 OK 確認
+
+cargo は **必ず `cd src-tauri` してから** 実行する (desktop 直下に Cargo.toml なし)。
+
+# 2-commit pattern (precedent 連続 41 ループ + 進化 pattern)
+1. **commit 1 (refactor)**: `git add src-tauri/src/realtime_ws_helpers.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/lib.rs && git commit -m "refactor(realtime): 純粋関数 helpers (is_scribe_error_event + wait_for_pending_after_commit + extract_transcript + extract_error_message) を realtime_ws_helpers.rs に抽出 (mjc-main-20260505-53 Loop 102, 機能分離軸 = realtime engine 4 軸目, 大型 rust file 責務分離 26 file 目, AGENTS.md priority 1 寄与)"`
+2. `git log --oneline -1` で **commit hash を取得 (実 hash を直接書く、placeholder を使わない)**
+3. AGENT_LOG.md 末尾に Loop 102 エントリ追記 (下記 template、commit 1 の実 hash を直接埋める、commit 2 chore の hash は空のまま書かない)
+4. **commit 2 (chore)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-53 Loop 102 = realtime_ws_helpers.rs 抽出 (構造分離 26 file 目, realtime engine 4 軸目 = 「3 軸完了 = 構造美の最終形」批判判断達成, transcription_commands_helpers Loop 101 と同 paradigm = 純粋関数機能分離軸 2 連続 = 3 連続境界注意) のエントリ追記"`
+
+# AGENT_LOG.md 末尾追記 template (commit 1 の実 hash を埋める)
+
+```
+---
+[mjc-main-20260505-53 Loop 102 / 2026-05-05]
+worker: mjc-worker-realtime-ws-helpers-loop102 (作業)
+範囲: src-tauri/src/elevenlabs_realtime.rs (純粋関数 helpers production ~49 行削除 + test 19 件削除 + use 文 1 行追加) + src-tauri/src/realtime_ws_helpers.rs (新規 ~XXX 行) + src-tauri/src/lib.rs (mod 1 行追加)
+内容: elevenlabs_realtime.rs `mod ws_task` (L146-964) 内の純粋関数 4 つ (is_scribe_error_event + async wait_for_pending_after_commit + extract_transcript + extract_error_message) を新 module realtime_ws_helpers.rs に抽出。可視性は private → pub(crate) に昇格 (caller が module 越境のため)。tests 19 件を新 file 内 #[cfg(test)] mod tests に移動 (wait_for_*/is_scribe_*/extract_transcript_*/extract_error_message_*)。push_error_* tests 5 件は realtime_error_helpers のテストのため pending_timeout_tests 内に残置。lib.rs に mod realtime_ws_helpers; 追加 (alphabetical = mod realtime_reader_task; と mod secret_store; の間)。caller ws_task module 内に use 文 1 行追加 = production 呼び出し L275/L318/L333/L343/L344 は無変更。大型 rust file 責務分離 26 file 目 = realtime engine 4 軸目達成 (handoff 候補リスト「3 軸完了 = 構造美の最終形」批判判断 = メイン批判判断 連続 48 セッション目達成) = transcription_commands_helpers Loop 101 と同 paradigm = 純粋関数機能分離軸 2 連続 (3 連続境界注意 = Loop 103 で別 paradigm 必須)。elevenlabs_realtime.rs は 1079 → ~XXX 行 (-XX%, ws_task 内純粋関数 + tests 抽出効果)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <commit1_hash> refactor(realtime): 純粋関数 helpers を realtime_ws_helpers.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = realtime engine 4 軸目 = ws_task 内 mod 越境純粋関数の独立化 + state 依存無しの helpers 局所化)
+
+---
+```
+
+# 必須要素 (これを破ると AGENT_LOG.md 先頭混入事故 + trailing whitespace 警告が起きる)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` で末尾を読む** = 時系列順 = 最古先頭、最新末尾
+2. **新規追記は必ずファイル末尾に追加** = `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → 末尾に append
+3. **先頭は絶対に触らない** (Edit ツールで先頭を編集すると過去ログ破壊事故)
+4. **AGENT_LOG.md の末尾追記**: ファイルへ Write or Edit (末尾 `---` の直後に新行を追加)。`Edit` で末尾 `---` の直前に挿入すると別位置に入る恐れ → 推奨は `Write` で末尾分のみ書いた後 `cat <file> >> AGENT_LOG.md` で append、または末尾の文字列を context つけて Edit
+5. **担当範囲外を絶対編集しない** = elevenlabs_realtime.rs/realtime_ws_helpers.rs/lib.rs/AGENT_LOG.md 以外を触らない、test 件数の上限は 704 (移動のみ = 件数完全不変が必達)
+6. **大型 file は Read 全体禁止** = elevenlabs_realtime.rs (1079 行) は `head -200 <f> | tail -60` 等の範囲限定 Read で参照 (ただし precedent transcription_commands_helpers.rs は cat 全体 OK)
+7. **行末の空白文字 (trailing whitespace) 禁止** = エディタで保存時に検出、Edit で生成する文字列にも空白行末を作らない
+
+# 注意点 (Loop 102 固有)
+
+- `mod ws_task` の use 文 block は L147-161 にある = 既存 use の **末尾** に新 use 文を追加 (alphabetical 並びに沿うなら `use crate::realtime_audio_helpers` の下、`use crate::transcription_types` の前後どちらか自然な位置)
+- `make_segment` helper (元 L425) は `wait_for_pending_after_commit_returns_*` tests で `make_segment()` として使われる = **新 file の mod tests 内に複製**。push_error_* tests 5 件でも make_segment を呼んでいる場合は、元 file 側の pending_timeout_tests 内にも残置する必要がある (grep で `make_segment\(\)` の caller 全件を確認すること)
+- `mod pending_timeout_tests` 内の use 文 (L415-423: `use std::sync::Arc;` `use std::time::{Duration, Instant};` `use parking_lot::Mutex;` `use crate::transcription_types::TranscriptionSegment;` `use crate::transcription_types::TranscriptionSource;` `use super::wait_for_pending_after_commit;` 等) は、**移動先 mod tests / 残置 mod pending_timeout_tests それぞれで必要なものだけを使う**
+- `use super::wait_for_pending_after_commit` 等の `super::` 参照は、新 file 移動後は `super::wait_for_pending_after_commit` 自体が新 file root を指すため自然に動く
+- 元 file 側の `mod pending_timeout_tests` は push_error_* 5 件のみが残るため、不要 use 文 (Mutex/TranscriptionSegment 等) は削除すべき = `cargo clippy -- -D warnings` で `unused_imports` 警告として検出される
+- pub(crate) 昇格時の dead_code 警告は出ないはず (caller が同 crate 内 = ws_task module 内で呼ぶ)
+
+# 完走確認
+
+- `git log --oneline -3` で 2-commit (refactor + chore) を確認
+- `git status --short` で working tree clean (untracked のみ) を確認
+- `cargo test --lib` 704 passed が必須 (1 件でも増減したら fail)
+
+完了したら最終出力で「Loop 102 完走」を報告すること。

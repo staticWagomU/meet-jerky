@@ -1,0 +1,296 @@
+あなたは meet-jerky のワーカーエージェント (mjc-worker-tests-merge-loop55) です。
+mjc-main-20260505-27 Loop 55 として、`src-tauri/src/transcription.rs` の tests mod 4 件を 2 つの移動先ファイルに **一括移動** + transcription.rs tests mod 完全削除 を担当します。
+
+# 必須要素 (絶対遵守)
+
+1. **冒頭で AGENT_LOG.md の末尾 350 行を読む** (`tail -350 AGENT_LOG.md`)。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾の `---` 直後を確認 → そこに追記。
+5. **担当範囲外の編集禁止**。本タスクは以下 4 ファイルのみ編集:
+   - `src-tauri/src/transcription.rs` (tests mod 削除 + use 文 2 件削除)
+   - `src-tauri/src/transcription_error_payload.rs` (既存 tests mod に 1 件追加)
+   - `src-tauri/src/transcription_commands.rs` (既存 tests mod に 3 件追加)
+   - `AGENT_LOG.md` (末尾追記のみ)
+6. **大型ファイル Read は禁止 = tail/head/grep で対象範囲のみ参照**。AGENT_LOG.md は ~28000 行、transcription_commands.rs は 598 行のため tests mod 周辺のみ Read で OK。
+7. **行末の空白文字 (trailing whitespace) 禁止**。
+8. **tests 4 件は cargo test --lib 件数不変** = 件数変化があれば即座に調査・修正。
+
+# タスク内容 = 4 tests 一括移動
+
+## 背景 + メイン批判判断 (連続 8 セッション目)
+
+handoff サマリは「候補 P (RequestedTranscriptionSources 3 tests, Loop 55+)」と「候補 Q (should_emit 1 件, Loop 55+)」を別々のループで実施する案。
+しかしメイン (mjc-main-20260505-27) が grep で実態確認 → これら 4 tests は **transcription.rs tests mod の唯一の構成要素** で、 use 文 2 件 (L44 + L45-47) もこれらの tests のみで使用。
+**1 ループでマージ移動すれば transcription.rs tests mod 完全削除 = 残るのは互換 re-export + WHISPER_SAMPLE_RATE のみ (~40 行) = 98.7% 縮小最終形に到達** = 規模 S (~141 行) で過去 Loop 50/51/53 と同等の 1 ループ完結確実 → **マージ判断採用**。
+
+## 実態確認済の起点情報 (メイン側 grep 確認済)
+
+- transcription.rs 現状: 193 行
+- L1-40: 互換 re-export + WHISPER_SAMPLE_RATE const (= 残置)
+- L42-193: tests mod (= 完全削除対象)
+  - L44: `use crate::transcription_commands::RequestedTranscriptionSources;`
+  - L45-47: `use crate::transcription_error_payload::{is_realtime_stream_already_stopped_error, should_emit_realtime_stream_error};`
+  - L49-64: `should_emit_realtime_stream_error_is_logical_negation_of_already_stopped` (1 件、~16 行) → transcription_error_payload.rs へ
+  - L66-138: `requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names` (1 件、~73 行) → transcription_commands.rs へ
+  - L140-160: `requested_transcription_sources_copy_semantics_allow_use_after_move` (1 件、~21 行) → transcription_commands.rs へ
+  - L162-192: `requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field` (1 件、~31 行) → transcription_commands.rs へ
+- transcription_commands.rs: 598 行、tests mod L299 既存 = 末尾の `}` 直前に 3 tests 追加
+- transcription_error_payload.rs: 343 行、tests mod L32 既存 = 末尾の `}` 直前に 1 件追加
+
+## 実装手順
+
+### Step 1: transcription_error_payload.rs に should_emit 1 件を追加
+
+1. `tail -50 src-tauri/src/transcription_error_payload.rs` で tests mod 末尾構造確認 (`mod tests` の `}` 位置)
+2. tests mod 内に追記 (既存の `use super::*` 等を活用、必要なら `use super::*` で `is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` を import 済か確認)
+3. 既存 use 文で取り込めない場合は tests mod 先頭に追加
+
+追加するテスト本体:
+```rust
+    #[test]
+    fn should_emit_realtime_stream_error_is_logical_negation_of_already_stopped() {
+        for input in [
+            "Realtime ストリームが既に停止しています",
+            "リサンプリングエラー: invalid",
+            "",
+            "Realtime ストリーム",
+            "OpenAI Realtime ストリームが既に停止しています extra suffix",
+        ] {
+            assert_eq!(
+                should_emit_realtime_stream_error(input),
+                !is_realtime_stream_already_stopped_error(input),
+                "symmetry violated for input: {input:?}"
+            );
+        }
+    }
+```
+
+### Step 2: transcription_commands.rs に RequestedTranscriptionSources 3 tests を追加
+
+1. `sed -n '290,320p' src-tauri/src/transcription_commands.rs` で tests mod 周辺の use 文構造確認
+2. 既存 tests mod 内に 3 tests 追加 (use 文は既存の `use super::*` 等で `RequestedTranscriptionSources` を import 済か確認、未 import なら追加)
+
+追加する 3 tests 本体 (transcription.rs L66-192 から逐字コピー、indentation を tests mod 階層に合わせる):
+
+```rust
+    #[test]
+    fn requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names() {
+        // 両 true case
+        let both = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true,
+        };
+        let s_both = format!("{:?}", both);
+        assert!(
+            s_both.contains("RequestedTranscriptionSources"),
+            "Debug should contain type name: {}",
+            s_both
+        );
+        assert!(
+            s_both.contains("use_mic"),
+            "Debug should contain field 'use_mic': {}",
+            s_both
+        );
+        assert!(
+            s_both.contains("use_system"),
+            "Debug should contain field 'use_system': {}",
+            s_both
+        );
+        assert!(
+            s_both.contains("true"),
+            "both-true Debug should contain 'true': {}",
+            s_both
+        );
+
+        // 両 false case
+        let neither = RequestedTranscriptionSources {
+            use_mic: false,
+            use_system: false,
+        };
+        let s_neither = format!("{:?}", neither);
+        assert!(
+            s_neither.contains("RequestedTranscriptionSources"),
+            "Debug should contain type name: {}",
+            s_neither
+        );
+        assert!(
+            s_neither.contains("use_mic"),
+            "Debug should contain field 'use_mic': {}",
+            s_neither
+        );
+        assert!(
+            s_neither.contains("use_system"),
+            "Debug should contain field 'use_system': {}",
+            s_neither
+        );
+        assert!(
+            s_neither.contains("false"),
+            "both-false Debug should contain 'false': {}",
+            s_neither
+        );
+
+        // 混合 case (mic-only) で true と false が両方とも出ることを確認
+        let mic_only = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let s_mic = format!("{:?}", mic_only);
+        assert!(
+            s_mic.contains("true"),
+            "mic-only Debug should contain 'true': {}",
+            s_mic
+        );
+        assert!(
+            s_mic.contains("false"),
+            "mic-only Debug should contain 'false': {}",
+            s_mic
+        );
+    }
+
+    #[test]
+    fn requested_transcription_sources_copy_semantics_allow_use_after_move() {
+        let original = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        // Copy 派生があれば、let copied = original で move されず、original も使える
+        let copied = original;
+        // original を copied と独立に使えることを確認
+        assert!(
+            original.use_mic,
+            "original.use_mic should still be readable (Copy)"
+        );
+        assert!(
+            !original.use_system,
+            "original.use_system should still be readable (Copy)"
+        );
+        // copied 側も値が独立して使える
+        assert!(copied.use_mic, "copied.use_mic should match");
+        assert!(!copied.use_system, "copied.use_system should match");
+    }
+
+    #[test]
+    fn requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field() {
+        let a = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let same = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: false,
+        };
+        let mic_diff = RequestedTranscriptionSources {
+            use_mic: false, // 違う
+            use_system: false,
+        };
+        let system_diff = RequestedTranscriptionSources {
+            use_mic: true,
+            use_system: true, // 違う
+        };
+        let both_diff = RequestedTranscriptionSources {
+            use_mic: false,
+            use_system: true,
+        };
+
+        // reflexive 等値
+        assert_eq!(a, same, "same field values should be equal");
+        // 片方の field 違いで不等値
+        assert_ne!(a, mic_diff, "differs by use_mic");
+        assert_ne!(a, system_diff, "differs by use_system");
+        // 両 field 違いで不等値
+        assert_ne!(a, both_diff, "differs by both");
+    }
+```
+
+### Step 3: transcription.rs から tests mod + 区切りコメント完全削除
+
+L38-193 の以下を削除:
+
+```
+// ─────────────────────────────────────────────
+// テスト
+// ─────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    ... (中身全部)
+}
+```
+
+削除後の transcription.rs は L1-37 まで (= 互換 re-export 層 + WHISPER_SAMPLE_RATE const) のみ = ~37 行。
+
+注意: 末尾の改行は維持。
+
+## Verify (必須)
+
+```
+cd src-tauri && cargo test --lib 2>&1 | tail -20
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cd src-tauri && cargo fmt --check
+cd .. && bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs src-tauri/src/transcription_commands.rs
+grep -nP " +$" src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs src-tauri/src/transcription_commands.rs
+```
+
+判定基準:
+- cargo test --lib: **702 passed / 0 failed** (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK (exit 0)
+- trailing whitespace grep: 0 件
+
+## commit
+
+```
+bash scripts/agent-commit.sh "refactor(transcription): tests mod 4 件 (should_emit 1 + RequestedTranscriptionSources 3) を transcription_error_payload.rs / transcription_commands.rs に移動 (Tidy First, mjc-main-20260505-27 Loop 55, tests mod 完全削除 = 互換層 + 1 const のみ ~37 行)" src-tauri/src/transcription.rs src-tauri/src/transcription_error_payload.rs src-tauri/src/transcription_commands.rs
+```
+
+## AGENT_LOG.md 末尾追記
+
+commit 完了後、以下を AGENT_LOG.md 末尾の `---` 直後に追記:
+
+```
+[mjc-main-20260505-27 Loop 55 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から tests mod 4 件を 2 ファイルに一括移動 = transcription.rs tests mod 完全削除
+  - should_emit_realtime_stream_error_is_logical_negation_of_already_stopped (1 件、~16 行) → transcription_error_payload.rs
+  - requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names (1 件、~73 行) → transcription_commands.rs
+  - requested_transcription_sources_copy_semantics_allow_use_after_move (1 件、~21 行) → transcription_commands.rs
+  - requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field (1 件、~31 行) → transcription_commands.rs
+- transcription.rs L38-193 (区切りコメント + tests mod 全体) 削除
+- use 文 2 件 完全削除 (L44 RequestedTranscriptionSources / L45-47 should_emit + is_already_stopped)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs を最終形 = 互換 re-export + WHISPER_SAMPLE_RATE のみに到達 = 巨大ファイル責務分離プラン Phase 5 完了相当)
+- メイン批判判断 = handoff サマリの「候補 P / Q を別ループで実施」を grep 実態確認で 1 ループマージ最適と訂正 = メイン批判判断 連続 8 セッション目
+- 規模 S (~141 行) = Loop 50/51/53 と同等の 1 ループ完結確実
+- variety pivot = test 軸 = Loop 53 から 1 ループ pivot (Loop 54 docs) 後 + 1 ループでまとめて最終形へ移行 = 後続 Loop 56+ で完全な軸 pivot へ移行可能
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs: 193 → ~37 行 (-156 行) = ~98.7% 縮小最終形 (= 元 2999 行から -2962 行)
+- transcription_error_payload.rs: 343 → ~360 行 (+17 行)
+- transcription_commands.rs: 598 → ~723 行 (+125 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash は agent-commit.sh の出力をここに記入)
+```
+
+# 完了基準
+
+- 4 tests 全部移動済 (transcription.rs から完全削除、移動先 2 ファイルに正しい indentation で追加)
+- transcription.rs ~37 行 (互換 re-export + 1 const のみ)
+- 全検証 pass (test 件数不変、clippy 警告ゼロ、fmt OK)
+- commit 1 件
+- AGENT_LOG.md 末尾に Loop 55 ブロック追記済 (commit hash 記入)
+- trailing whitespace なし
+
+開始してください。

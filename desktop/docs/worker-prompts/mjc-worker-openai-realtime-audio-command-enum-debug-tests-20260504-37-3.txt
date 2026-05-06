@@ -1,0 +1,216 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 最初に必ず実行すること (順序厳守)
+
+1. `tail -350 AGENT_LOG.md` で末尾を読み、SESSION SUMMARY (mjc-main-36) と直前 Loop 1/2 (mjc-main-37 Loop 1 = openai_realtime.rs OpenAIRealtimeEngine、Loop 2 = elevenlabs_realtime.rs ElevenLabsRealtimeEngine) の追記場所を視覚的に学習せよ。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾の `---` 直後** に行うこと。
+3. **先頭は絶対に触らない**。
+4. 必読: AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (それぞれ短い)。
+
+# 担当範囲 (厳守)
+
+以下 2 ファイル **のみ** 編集可。他ファイルは絶対に触らない。
+
+- `src-tauri/src/openai_realtime.rs` の **`mod tests` (l.472-) の末尾に新規 3 件のテストを追加するのみ**
+  - 既存の test 関数、`pub struct OpenAIRealtimeEngine`、`enum AudioCommand`、`impl` ブロック、`use` 宣言、derive 属性、ws_task module、その他の関数は **完全無変更**。
+  - struct/enum field/variant の追加削除、derive の追加削除、可視性変更は **絶対禁止** (Tidy First 原則 = 振る舞い不変)。
+- `AGENT_LOG.md` の **末尾の `---` 直後に追記**
+
+# 大型ファイル参照ルール (重要)
+
+- `src-tauri/src/openai_realtime.rs` (1067 行、Loop 1 で +3 件追加済) と `AGENT_LOG.md` (23548+ 行) は **`Read` 全体禁止**。
+- 必要箇所のみ `tail` / `head` / `grep` / `sed -n 'A,Bp'` で参照すること。
+- `mod tests` 末尾追記位置確認は `tail -10 src-tauri/src/openai_realtime.rs` で十分。
+- 既存テスト命名規則確認は `grep -n "fn " src-tauri/src/openai_realtime.rs | tail -40` で十分。
+- AudioCommand enum 定義確認は `sed -n '81,90p' src-tauri/src/openai_realtime.rs`。
+
+# 実装内容 (Tidy First, 振る舞い不変、追加テストは厳密に 3 件のみ、上限超過禁止)
+
+`src-tauri/src/openai_realtime.rs` の `mod tests` (l.472- 既存) の **末尾 (= mod tests の閉じ括弧 `}` の直前、Loop 1 で追加済の `engine_new_with_owned_string_debug_format_contains_provided_model_value` テストの後ろ)** に、以下 3 件の `#[test]` 関数を追加せよ。
+
+## 対象型
+
+```rust
+#[derive(Debug)]
+enum AudioCommand {
+    Samples(Vec<f32>),
+    /// 入力終了を示す。WS タスクは flush してから WS をクローズする。
+    Finalize,
+}
+```
+
+= **private enum** (= `pub` ではないので外部公開されない、ws_task module 内部の制御コマンド用)、`Debug` のみ derive。`Clone` / `PartialEq` / `Default` / `Serialize` / `Deserialize` は **派生なし**。
+- `Samples(Vec<f32>)` = tuple variant (Vec<f32> payload、PCM サンプル投入用)
+- `Finalize` = unit variant (入力終了通知用)
+
+`mod tests` 内では `use super::*;` 経由で AudioCommand に touch 可能 (private 同一 module 範囲内)。
+
+## 追加する 3 件のテスト
+
+### T1: `audio_command_samples_variant_debug_format_contains_variant_name_and_payload_floats`
+
+`AudioCommand::Samples(vec![1.0_f32, -0.5, 0.0])` の Debug 出力に以下が含まれることを **3 段以上の assert** で確認する。
+
+- variant 名 `"Samples"` を含む
+- `1.0` の Debug 表示を含む (Rust の f32 Debug は `1.0` 形式)
+- `-0.5` の Debug 表示を含む
+- `0.0` の Debug 表示を含む (オプション 4 段目、3 段必須を超える場合は採用)
+
+例:
+```rust
+#[test]
+fn audio_command_samples_variant_debug_format_contains_variant_name_and_payload_floats() {
+    let cmd = AudioCommand::Samples(vec![1.0_f32, -0.5, 0.0]);
+    let formatted = format!("{cmd:?}");
+    assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+    assert!(formatted.contains("1.0"), "first sample: {formatted}");
+    assert!(formatted.contains("-0.5"), "second sample: {formatted}");
+    assert!(formatted.contains("0.0"), "third sample: {formatted}");
+}
+```
+
+### T2: `audio_command_finalize_variant_debug_format_is_exact_variant_name`
+
+`AudioCommand::Finalize` (= unit variant) の Debug 出力が **完全一致** で `"Finalize"` であることを **2 段以上の assert** で確認する。
+
+- `formatted == "Finalize"` の `assert_eq!`
+- `formatted.contains("Finalize")` (補助的 contains)
+
+unit variant は Rust の Debug 仕様で「variant 名のみ」が出力される (括弧やフィールドなし) ことを CI 固定。
+
+例:
+```rust
+#[test]
+fn audio_command_finalize_variant_debug_format_is_exact_variant_name() {
+    let cmd = AudioCommand::Finalize;
+    let formatted = format!("{cmd:?}");
+    assert_eq!(formatted, "Finalize", "完全一致: {formatted}");
+    assert!(formatted.contains("Finalize"));
+}
+```
+
+### T3: `audio_command_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets`
+
+`AudioCommand::Samples(vec![])` (= 空 Vec<f32> payload) の Debug 出力に以下が含まれることを **3 段以上の assert** で確認する。
+
+- variant 名 `"Samples"` を含む
+- 空 Vec の Debug 表示 `"[]"` を含む (Rust の Vec<f32> Debug は空時 `[]`)
+- variant 名と `[]` が同一文字列内に共存することを「文字列全体形」`"Samples([])"` の `contains` で確認
+
+例:
+```rust
+#[test]
+fn audio_command_samples_with_empty_vec_debug_format_contains_variant_name_and_empty_brackets() {
+    let cmd = AudioCommand::Samples(vec![]);
+    let formatted = format!("{cmd:?}");
+    assert!(formatted.contains("Samples"), "variant 名: {formatted}");
+    assert!(formatted.contains("[]"), "空 Vec の Debug 表示: {formatted}");
+    assert!(formatted.contains("Samples([])"), "tuple variant 形式: {formatted}");
+}
+```
+
+## 追加位置
+
+`mod tests` の **最後のテスト関数の後ろ**、`mod tests` の閉じ括弧 `}` の直前に追加 (= Loop 1 で追加した `engine_new_with_owned_string_debug_format_contains_provided_model_value` の後ろ)。
+
+## 既存テストとの命名衝突を避ける
+
+既存 test 群は `float_to_pcm16_*` / `engine_*` / `error_events_*` / `handle_event_*` / `push_error_*` / `is_scribe_error_event_*` 等。本 Loop の 3 件は `audio_command_samples_*` / `audio_command_finalize_*` で衝突しない。
+
+## 厳禁事項
+
+- テスト件数 **3 件超** の追加禁止 (上限厳格)。
+- 既存テストの編集 / 削除 / 並べ替え禁止 (Loop 1 で追加した 3 件含む)。
+- `enum AudioCommand` の variant 追加削除、derive 変更、可視性変更禁止。
+- `pub struct OpenAIRealtimeEngine` の変更禁止。
+- `impl OpenAIRealtimeEngine` / `impl OpenAIRealtimeStream` の関数追加削除禁止。
+- `use` 宣言の追加削除禁止 (`super::*` で AudioCommand は既に import 済の想定)。
+- `mod tests` の `#[cfg(test)]` 属性変更禁止。
+- 行末空白 (trailing whitespace) **禁止**。最終確認時に `grep -n " $" <file>` で確認すること。
+- 派生型の動作を変える変更禁止 (Tidy First = 振る舞い不変)。
+- **実 OpenAI Realtime API への通信は絶対に発生させない** (本テストは AudioCommand enum の Debug 出力のみで、`start_stream` 等のネットワーク経路は呼び出さない)。
+
+# AGENT_LOG.md 末尾追記内容
+
+`AGENT_LOG.md` の **末尾の `---` の直後** に、以下フォーマットで追記する (先頭は絶対に触らない)。
+
+```
+## [YYYY-MM-DD HH:MM JST] mjc-worker-openai-realtime-audio-command-enum-debug-tests-20260504-37-3 (mjc-main-37 Loop 3)
+
+### 役割
+作業担当 / openai_realtime.rs AudioCommand (private enum) の Debug 軸補強
+
+### 作業範囲
+- src-tauri/src/openai_realtime.rs (mod tests 末尾に T1/T2/T3 追加、enum / struct / impl / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 指示内容
+mjc-main-37 から発注。「Debug 軸補強」22 連続 application + enum 形態 5 連続 application (TranscriptionSource → SessionManagerError → TranscriptionEngineType → MeetingAppDetectedPayload に続く 5 形態目) + 同一ファイル内 2 形態目補強 (Engine struct + AudioCommand enum) + 「private enum + tuple variant (Vec<f32> payload) + unit variant」混合形態への新形態 application + WebSocket task 内部制御コマンドの Debug 出力契約 CI 保護 の 5 軸戦略価値で T1 (Samples variant + 値) / T2 (Finalize variant 完全一致) / T3 (Samples 空 Vec) を 3 件追加。Tidy First = 振る舞い不変、enum/struct/impl 完全無変更、テスト件数厳密に 3 件のみ。
+
+### 結果
+3 件追加、cargo test --lib 625 件 passed (旧 622 → +3 件、これは検証コマンドで確認した実測値で置換すること)。
+
+### 変更ファイル
+- src-tauri/src/openai_realtime.rs (mod tests 末尾 T1/T2/T3 追加)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+[cargo test --lib の末尾 1-2 行を実コピー]
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+(`YYYY-MM-DD HH:MM JST` は実時刻、`625 件 passed` は実測値で置換すること。)
+
+# 検証手順 (順守)
+
+実装後、以下を順に実行せよ。
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo test --lib openai_realtime 2>&1 | tail -20
+cargo test --lib 2>&1 | tail -10
+cargo clippy --lib -- -D warnings 2>&1 | tail -10
+```
+
+- `cargo test --lib openai_realtime`: 既存 (Loop 1 含む) + 新規 3 件全て pass を確認。
+- `cargo test --lib`: lib 全体で 625 件 passed (622 + 3) を確認。
+- `cargo clippy --lib -- -D warnings`: 警告ゼロを確認。
+
+# 報告フォーマット (1 ターン完結、簡潔に)
+
+## 変更内容
+- T1/T2/T3 を openai_realtime.rs `mod tests` 末尾に追加 (enum / struct / impl / 既存 test 完全無変更)
+- AGENT_LOG.md 末尾追記
+
+## 変更ファイル
+- src-tauri/src/openai_realtime.rs
+- AGENT_LOG.md
+
+## 検証結果
+- cargo test --lib openai_realtime: X passed
+- cargo test --lib: 625 passed (622 → +3)
+- cargo clippy --lib -- -D warnings: 0 warnings
+
+## 残リスク
+- なし (Tidy First, 振る舞い不変)
+
+# 重要な注意事項 (再掲)
+
+- **AGENT_LOG.md は時系列順、新規追記は必ず末尾の `---` 直後**
+- **先頭は絶対に触らない**
+- **テスト件数 3 件のみ、上限超過禁止**
+- **enum / struct / impl / 既存 test 完全無変更**
+- **行末空白禁止**
+- **大型ファイル Read 全体禁止 (tail/head/grep/sed で対象範囲のみ)**
+- **担当範囲外編集禁止**
+- **実 OpenAI Realtime API への通信絶対禁止**

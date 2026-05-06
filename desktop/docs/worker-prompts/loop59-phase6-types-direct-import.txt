@@ -1,0 +1,101 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First (Kent Beck) に従い、構造改善のみで振る舞い不変の Phase 6 = caller refactor 1 件目 (TranscriptionSegment / TranscriptionSource 直接 import 化) を 1 ループで完了してください。
+
+# 必読 (この順で)
+1. 冒頭で必ず `tail -350 AGENT_LOG.md` を実行し、末尾 350 行を読んでください。
+2. **AGENT_LOG.md は時系列順 = 最古ログがファイル先頭、最新ログがファイル末尾です。新規追記は必ずファイル末尾に行ってください**。
+3. **ファイル先頭は絶対に触らないでください**。誤って先頭に追記すると過去全ログが破壊されます。
+4. 具体手順: 編集前に必ず `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` の直後に新規エントリを追記してください。
+5. 大型ファイルは Read 全体禁止 = `tail` / `head` / `grep` で対象範囲のみ参照 (AGENT_LOG.md は ~28,300+ 行 / ~2.6MB)。
+6. **行末の空白文字 (trailing whitespace) 禁止**。
+
+# 担当タスク = Phase 6 第 1 歩 = TranscriptionSegment / TranscriptionSource の直接 import 化
+
+`src-tauri/src/transcription.rs` は現在 29 行 = 互換 re-export 5 件のみの完全ファサード化済 (mjc-main-20260505-28 Loop 57 達成、99.0% 縮小)。次の Phase 6 では、各 caller の `use crate::transcription::...` を「実体モジュールへの直接 import」に書き換えていき、最終的に transcription.rs ファイル自体を削除する。本ループはその **1 件目 = TranscriptionSegment / TranscriptionSource (transcription_types.rs から再エクスポート)**。
+
+## 修正対象 (4 ファイル / 7 箇所、メインが grep で確定済)
+
+すべて `use crate::transcription::` を `use crate::transcription_types::` に書き換える (= 直接 import 化、transcription_types.rs に実体定義あり)。
+
+| # | ファイル | 行 | 現在 | 変更後 |
+|---|---------|-----|------|-------|
+| 1 | `src-tauri/src/transcript_bridge.rs` | L4 | `use crate::transcription::TranscriptionSegment;` | `use crate::transcription_types::TranscriptionSegment;` |
+| 2 | `src-tauri/src/cloud_whisper.rs` | L3 | `use crate::transcription::TranscriptionSegment;` | `use crate::transcription_types::TranscriptionSegment;` |
+| 3 | `src-tauri/src/cloud_whisper.rs` | L125 | `    use crate::transcription::TranscriptionSegment;` (test mod 内) | `    use crate::transcription_types::TranscriptionSegment;` |
+| 4 | `src-tauri/src/elevenlabs_realtime.rs` | L166 | `    use crate::transcription::{TranscriptionSegment, TranscriptionSource};` (test mod 内) | `    use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` |
+| 5 | `src-tauri/src/elevenlabs_realtime.rs` | L488 | `        use crate::transcription::TranscriptionSegment;` (test mod 内) | `        use crate::transcription_types::TranscriptionSegment;` |
+| 6 | `src-tauri/src/elevenlabs_realtime.rs` | L489 | `        use crate::transcription::TranscriptionSource;` | `        use crate::transcription_types::TranscriptionSource;` |
+| 7 | `src-tauri/src/openai_realtime.rs` | L199 | `    use crate::transcription::{TranscriptionSegment, TranscriptionSource};` (test mod 内) | `    use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` |
+
+**重要**: 修正前に必ず `grep -rn "crate::transcription::TranscriptionSegment\|crate::transcription::TranscriptionSource\|crate::transcription::{TranscriptionSegment\|crate::transcription::{TranscriptionSource" src-tauri/src/` で全 7 箇所の存在を実態確認すること。**もし箇所数が一致しない場合 (例えば追加箇所あり / 上記表からズレあり) はメインに報告するために停止し、ユーザーに状況を伝える AGENT_LOG.md エントリを書いて完了**。
+
+## transcription.rs L5 の互換 re-export (`pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};`) の判断
+
+caller 7 箇所をすべて直接 import 化した後、transcription.rs L5 の `pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` は crate 内 caller がゼロになる。ただし `pub use` は外部公開 API なので「unused」とは限らない。判断手順:
+
+1. caller 7 箇所修正後、`cd src-tauri && cargo clippy --lib --tests -- -D warnings` を実行
+2. もし「unused import」or 「unused re-export」エラーが出たら → transcription.rs L1-5 の `// データ型 (...)` セクション 5 行 (区切りコメント 3 行 + 空行 + `pub use ...` 1 行 = 5 行) を完全削除
+3. もしエラーが出ない (= clippy 警告ゼロのまま) → transcription.rs L5 はそのまま残す (Phase 6 の他 4 互換 re-export と同居、Phase 6 全体完了時に transcription.rs ファイル削除と共に消える)
+
+**この判断は worker 自身が clippy 結果を見て決定**。Loop 57 の二重批判判断 precedent に倣う (handoff 指示「残置」を worker が clippy で「削除が正解」と訂正したパターン)。
+
+## 検証手順 (順守)
+
+1. `cd src-tauri && cargo test --lib`: **702 passed / 0 failed** 件数不変 (修正前後で同一)
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`: 警告ゼロ
+3. `cd src-tauri && cargo fmt --check`: OK
+4. `bash scripts/agent-verify.sh <変更ファイル群>`: OK (rust 自動判定)
+
+## 担当範囲外の編集禁止 (規模超過防止)
+
+- 編集対象は **上記 7 箇所のみ + 必要なら transcription.rs L1-5 の互換 re-export セクション**。それ以外のファイル / 行は一切編集しない。
+- `git diff` で変更行が「7 行 (caller import 修正) + 0 or 5 行 (transcription.rs 互換層削除分)」のみであること。
+- frontend (TypeScript / npm) は触らない。
+- AGENT_LOG.md には末尾エントリ (下記テンプレート) のみ追記、それ以外の本文書き換えは禁止。
+- **cargo test 件数の上限明示**: 702 passed のまま不変であること。**もし件数が変動したら 振る舞い不変ではない = 即座に rollback して停止し、メインに報告する AGENT_LOG.md エントリを書く**。
+
+# AGENT_LOG.md 追記テンプレート (末尾の `---` 直後に追記、行末空白なし)
+
+```
+[mjc-main-20260505-29 Loop 59 / 2026-05-05 ~JST]
+
+## What
+- Phase 6 第 1 歩 = `TranscriptionSegment` / `TranscriptionSource` の caller 直接 import 化
+- 4 ファイル / 7 箇所の `use crate::transcription::{TranscriptionSegment, TranscriptionSource}` を `use crate::transcription_types::{...}` に書き換え:
+  - transcript_bridge.rs L4 / cloud_whisper.rs L3 + L125 / elevenlabs_realtime.rs L166 + L488 + L489 / openai_realtime.rs L199
+- transcription.rs L1-5 の互換 re-export `pub use crate::transcription_types::{...}` セクション: <残置 OR 削除> (clippy 結果による判断)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (transcription.rs 完全削除への migration 開始 = Phase 6 第 1 歩)
+- mjc-main-20260505-28 Loop 57 で transcription.rs を 29 行 = 完全ファサード化達成 → 各 caller を直接 import 化することで互換層を段階的に解体し、最終的に transcription.rs ファイル削除を目指す
+- variety pivot = struct/const + import refactor 軸 = Loop 57 (struct/const) → Loop 58 (docs) → Loop 59 (struct/const + import refactor) で 1 ループ間隔 = 健全
+
+## How (Tidy First, behavior-preserving)
+- caller の use 文を機械的に書き換え (実体は transcription_types.rs にあり、互換層を経由しない方が直接的)
+- 振る舞い不変 = 型は同一なので 702 passed 件数不変
+- transcription.rs 互換層 (L5 `pub use crate::transcription_types::{...}`) の判断は clippy 結果ベース (worker 二重批判判断 precedent 継承)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit 後に hash を記入)
+```
+
+# 完走後の手順
+1. `cd src-tauri && cargo test --lib && cargo clippy --lib --tests -- -D warnings && cargo fmt --check` で全検証
+2. `bash scripts/agent-verify.sh <変更ファイル群>` で OK 確認
+3. `git diff` で変更が指定範囲内のみであることを確認
+4. AGENT_LOG.md 末尾に上記テンプレートを追記 (commit hash は仮置きで `<commit hash>` のまま)
+5. `bash scripts/agent-commit.sh "refactor(transcription): TranscriptionSegment/Source の caller を transcription_types.rs から直接 import 化 (Phase 6 第 1 歩, mjc-main-20260505-29 Loop 59, 4 ファイル / 7 箇所)" <変更ファイル群> AGENT_LOG.md` で commit
+6. commit 後、`git log -1 --format=%H` で hash 取得 → AGENT_LOG.md 末尾の `<commit hash>` を実 hash の短縮 (7 文字) に置換 → `git commit --amend --no-edit` で同 commit に統合 OR 別 chore commit (どちらでも OK、Loop 58 worker は --amend で 1 commit 完結 = 効率的だった)
+7. completion 時に「commit hash = XXXXXXX」を明示してメインに報告
+
+# 制約再確認
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- 課金禁止 (cargo は OK、ただし課金系 API は test 範囲のみ)
+- メインに最終 commit hash を伝えること

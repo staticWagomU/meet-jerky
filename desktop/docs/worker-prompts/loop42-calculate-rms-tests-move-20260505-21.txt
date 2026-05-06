@@ -1,0 +1,187 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop42-calculate-rms-tests-move) です。
+
+# 必読 + AGENT_LOG.md ルール (絶対遵守)
+1. **AGENT_LOG.md は ~26,800 行 / ~2.3MB ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾構造を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (`src-tauri/src/transcription.rs` / `src-tauri/src/audio_utils.rs` / `AGENT_LOG.md` 以外は触らない)
+6. **大型ファイルは Read 全体禁止** = transcription.rs (749 行) は全読 OK、audio_utils.rs (250 行) は全読 OK
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 作業目的 (test 移動軸 = Loop 38 から 4 ループ間隔 = OK、variety pivot)
+- `src-tauri/src/transcription.rs` の 沈黙検知テスト 6 件を `src-tauri/src/audio_utils.rs` のテストモジュールに移動
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (関数とテストの locality 回復、巨大ファイル理解性向上)
+- variety pivot 軸 = test 移動軸 = Loop 38 (transcription_types tests 移動) から 4 ループ間隔 = sweep 警告クリア
+
+# メインの批判的判断 (重要、worker は前提を理解せよ)
+- 前任 handoff の前提では「移動先 = transcription_whisper_local.rs」と記述されていた
+- メインが grep で実態確認 = `calculate_rms` / `is_tail_silent` の **実体は audio_utils.rs L26 + L36** に存在 (`pub(crate)`)
+- transcription.rs L65 は `use crate::audio_utils::{calculate_rms, is_tail_silent};` で既に audio_utils 経由で参照済
+- 関数の locality に従ってテストを移動 = audio_utils.rs が正しい移動先
+- これは Loop 39 (handoff candidate A の前提を批判判断 → Case B 自律選択) と同じ批判的姿勢の継承 = 鵜呑みにしないルール
+
+# 規模制約 (重要)
+- 規模 SS-S = テスト 6 件 (~54 行) を移動
+- 1 ループ完結
+- 担当範囲: 2 ファイル (transcription.rs / audio_utils.rs) + AGENT_LOG.md
+- 振る舞い完全不変 = cargo test --lib 件数不変 (702 passed)
+
+# 移動対象テスト (transcription.rs L356-414)
+
+```
+L356: 別途残置 (separator コメント = `// 沈黙検知ロジック テスト` 直前空行)
+L356-358: separator コメント (削除対象、移動先に同等なし)
+L361-363: test_calculate_rms_empty_slice_returns_zero
+L365-373: test_calculate_rms_silence_signal_below_threshold
+L375-383: test_calculate_rms_voice_signal_above_threshold
+L385-393: test_is_tail_silent_returns_false_when_buffer_too_short
+L395-404: test_is_tail_silent_detects_voice_then_silence_pattern
+L406-414: test_is_tail_silent_rejects_voice_then_voice
+```
+
+これらテストは以下を参照:
+- `calculate_rms(...)` / `is_tail_silent(...)` (free function calls = transcription.rs テストモジュールでは `use crate::audio_utils::{calculate_rms, is_tail_silent}` 経由)
+- `SILENCE_THRESHOLD_RMS` / `SILENCE_LOOKBACK_SAMPLES` / `MIN_FLUSH_SAMPLES` (transcription.rs L43-50 の `pub(crate)` const、`use super::*` 経由参照)
+
+# 移動先 (audio_utils.rs)
+
+audio_utils.rs L133-250 に既存 `mod tests { use super::*; ... }` あり。
+
+末尾 `}` (L250 の閉じ括弧の直前) に新セクションとして 6 件追記:
+
+```rust
+    // ─────────────────────────────────────────
+    // 沈黙検知ロジック テスト (transcription.rs から移動 = locality 回復、Loop 42)
+    // ─────────────────────────────────────────
+
+    use crate::transcription::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS};
+
+    #[test]
+    fn test_calculate_rms_empty_slice_returns_zero() {
+        assert_eq!(calculate_rms(&[]), 0.0);
+    }
+
+    #[test]
+    fn test_calculate_rms_silence_signal_below_threshold() {
+        let samples = vec![0.0001_f32; 16000]; // -80dBFS 相当
+        let rms = calculate_rms(&samples);
+        assert!(
+            rms < SILENCE_THRESHOLD_RMS,
+            "rms={rms} should be below SILENCE_THRESHOLD_RMS={SILENCE_THRESHOLD_RMS}"
+        );
+    }
+
+    #[test]
+    fn test_calculate_rms_voice_signal_above_threshold() {
+        let samples = vec![0.1_f32; 16000]; // -20dBFS 相当
+        let rms = calculate_rms(&samples);
+        assert!(
+            rms > SILENCE_THRESHOLD_RMS,
+            "rms={rms} should be above SILENCE_THRESHOLD_RMS={SILENCE_THRESHOLD_RMS}"
+        );
+    }
+
+    #[test]
+    fn test_is_tail_silent_returns_false_when_buffer_too_short() {
+        // buffer.len() < lookback の場合は誤検知防止のため false を返す
+        let buffer = vec![0.0001_f32; SILENCE_LOOKBACK_SAMPLES - 1];
+        assert!(
+            !is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
+            "buffer shorter than lookback should return false"
+        );
+    }
+
+    #[test]
+    fn test_is_tail_silent_detects_voice_then_silence_pattern() {
+        // 1 秒の音声 (-20dBFS) + 0.5 秒の沈黙 (-80dBFS)
+        let mut buffer = vec![0.1_f32; MIN_FLUSH_SAMPLES];
+        buffer.extend(vec![0.0001_f32; SILENCE_LOOKBACK_SAMPLES]);
+        assert!(
+            is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
+            "tail silence should be detected in voice+silence pattern"
+        );
+    }
+
+    #[test]
+    fn test_is_tail_silent_rejects_voice_then_voice() {
+        // 全部音声レベル (0.1) では沈黙と判定されないこと
+        let buffer = vec![0.1_f32; MIN_FLUSH_SAMPLES + SILENCE_LOOKBACK_SAMPLES];
+        assert!(
+            !is_tail_silent(&buffer, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS),
+            "all-voice buffer should not be detected as silent"
+        );
+    }
+```
+
+注意:
+- `use crate::transcription::{...}` は audio_utils.rs テストモジュール内で、テストブロック群の **直前** に置く (L207 の `// ─ resample_audio テスト ─` ヘッダ手前と同じパターン、ただし use はテスト全体スコープ)
+- もしくは追加セクション内のローカル `use` でも OK (`fn test_*` の直前にこのセクション専用の `use` を 1 行で書く形 = Rust 的に許可される)
+- `super::*` 経由で `calculate_rms` / `is_tail_silent` はアクセス可能 (audio_utils tests mod 既存の use super::* を活用)
+
+# transcription.rs 側の削除
+
+## A. テスト本体 (L356-414) 削除
+- L356 の空行から L414 の `}` (test_is_tail_silent_rejects_voice_then_voice の閉じ括弧) までを削除
+- 削除後、L355 (test_ensure_engine_elevenlabs_loads_engine_without_api_key_check の閉じ `}`) と L416 の separator コメント (`// ─ モデル未ダウンロード エラーパス テスト ─`) が直接隣接する形
+
+## B. import 削除 (L65)
+- `use crate::audio_utils::{calculate_rms, is_tail_silent};` を削除
+- 注: 他のテストで calculate_rms / is_tail_silent が使われていないか **必ず grep で確認** してから削除
+  - `grep -nE 'calculate_rms|is_tail_silent' src-tauri/src/transcription.rs` を実行
+  - L65 の use 行と L361-414 のテスト本体だけがマッチするはず
+  - 他の参照があれば import 削除はせず、テスト移動だけに留める判断 OK (ただし要報告)
+
+# 検証 (必須)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/audio_utils.rs AGENT_LOG.md`
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -20` で **702 passed** を確認 (件数不変が必須)
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10` で警告ゼロ確認
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で fmt OK
+5. trailing whitespace 確認 = `grep -nE ' +$' src-tauri/src/transcription.rs src-tauri/src/audio_utils.rs` で結果ゼロ
+6. `wc -l src-tauri/src/transcription.rs src-tauri/src/audio_utils.rs` で 749 → 約 691 行 (-58 行) / 250 → 約 308 行 (+58 行) 確認
+
+# AGENT_LOG.md 末尾追記 (本ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記
+- format:
+```
+[mjc-main-20260505-21 Loop 42 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から沈黙検知ロジック関連テスト 6 件 (test_calculate_rms_* 3 件 + test_is_tail_silent_* 3 件) を src-tauri/src/audio_utils.rs のテストモジュールに移動
+- transcription.rs L65 の `use crate::audio_utils::{calculate_rms, is_tail_silent};` を削除 (移動後 unused)
+- audio_utils.rs テストモジュール内に `use crate::transcription::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS};` を追加 (移動先で必要)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (関数とテストの locality 回復、transcription.rs 縮小 = 理解性向上)
+- 関数 (calculate_rms / is_tail_silent) の実体は audio_utils.rs L26 / L36 に存在 = locality 回復
+- variety pivot 軸 = test 移動軸 = Loop 38 (transcription_types tests 10 件) から 4 ループ間隔 = sweep 警告クリア
+- メインが handoff candidate C の前提 (移動先 = transcription_whisper_local.rs) を grep で実態確認 → audio_utils.rs に訂正 = Loop 39 と同じ批判的判断の継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- audio_utils.rs 既存 tests mod (`use super::*`) に追加 = calculate_rms / is_tail_silent は super::* 経由でアクセス
+- 定数参照のため `use crate::transcription::{MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS}` を追加
+- transcription.rs 側 separator コメント 1 件削除
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+```
+
+# コミット (worker 自走判断)
+- worker 自走で `bash scripts/agent-commit.sh "refactor(transcription): 沈黙検知テスト 6 件 (calculate_rms 3 + is_tail_silent 3) を audio_utils.rs に移動 (Tidy First, mjc-main-20260505-21 Loop 42)" src-tauri/src/transcription.rs src-tauri/src/audio_utils.rs AGENT_LOG.md` を実行してよい
+- もしくは `git add ... && git commit -m "..."` で直接 commit
+- commit 後、commit hash を確認して `chore(agent-log): Loop 42 commit hash <HASH> を AGENT_LOG.md に記入` chore commit を別途自走判断で実施 (Loop 22-41 precedent)
+
+# 完了の合図
+- AGENT_LOG.md に [mjc-main-20260505-21 Loop 42] エントリが追記されている
+- commit が成功している (git log --oneline -1 で確認可能)
+- 702 passed 件数不変、clippy 警告ゼロ、fmt OK
+
+以上。

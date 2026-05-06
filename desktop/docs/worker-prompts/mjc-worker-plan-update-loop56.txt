@@ -1,0 +1,162 @@
+あなたは meet-jerky プロジェクトの worker (sonnet) です。Tidy First で markdown 1 ファイル更新を 1 ループ完結で実施してください。
+
+# 必須前提 (worker prompt 必須要素)
+
+1. 冒頭で `tail -350 AGENT_LOG.md` を読み、現在の状況を把握する (絶対先頭は触らない)
+2. AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。**新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+3. 末尾追記具体手順: `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → その直後に新規エントリを追記
+4. 担当範囲外の編集禁止 (markdown 1 ファイルのみ)、cargo test 件数の追加禁止 (件数不変が必須)
+5. 大型ファイル (AGENT_LOG.md ~28200 行) は Read 全体禁止 = `tail -350` でのみ参照
+6. **行末の空白文字 (trailing whitespace) 禁止** = 末尾の余分なスペース・タブを残さない
+7. 終了時 `bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` 成功確認 → `bash scripts/agent-commit.sh "<commit message>" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` で commit
+
+# タスク = Loop 56 候補 D'' (plan.md 再更新 = Loop 55 反映 93.6% → 98.8%)
+
+## 背景
+
+- mjc-main-20260505-27 Loop 55 で transcription.rs tests mod 4 件を 2 ファイル分散移動 (commit `93dcd18`)
+- transcription.rs: 193 → **36 行** (-157 行) = **98.8% 縮小最終形** (元 2999 行から累計 -2963 行)
+- transcription_error_payload.rs: 343 → 360 行 (+17 行) = should_emit_realtime_stream_error 1 test 同居
+- transcription_commands.rs: 598 → 717 行 (+119 行) = RequestedTranscriptionSources 3 tests 同居
+- 95% / 98% 里程標突破達成 + transcription.rs 責務分離プラン Phase 5 完了相当
+- plan.md は Loop 53 時点 (193 行 / 93.6%) で停止しているため Loop 55 反映が必要
+
+## 編集対象ファイル
+
+`docs/architecture/transcription-refactor-plan.md`
+
+## 編集箇所 (4 箇所)
+
+### 1. L28 進捗サマリのヘッダを更新
+
+**変更前**:
+```
+## 進捗サマリ (mjc-main-20260505-26 Loop 53 時点)
+```
+
+**変更後**:
+```
+## 進捗サマリ (mjc-main-20260505-27 Loop 55 時点)
+```
+
+### 2. L42 累計削減行数の文言を更新
+
+**変更前**:
+```
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **193 行** = **約 93.6% 縮小** (~2806 行削減) = **「90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展」**
+```
+
+**変更後**:
+```
+- **transcription.rs 累計削減**: 元 2999 行 → 現在 **36 行** = **約 98.8% 縮小** (~2963 行削減) = **「95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)」**
+```
+
+### 3. L57 直後 (Loop 53 行の次) に Loop 55 サブセクション 1 行を追加 + L58 残存行数を更新
+
+**変更前 (L57-58)**:
+```
+- **mjc-main-20260505-26 Loop 53 ✅ 完了**: StreamConfig Debug/Clone tests 3 件 (stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none / stream_config_debug_output_equals_after_clone_for_some_and_none_variants / stream_config_clone_produces_independent_copy_for_option_string_fields) を transcription.rs から transcription_traits.rs に移動 = StreamConfig 定義 + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 6 tests (Mock 3 + StreamConfig Debug/Clone 3) 同居の locality 完成 (commit `bbe9afc`、-134 行)
+- transcription.rs 残存 **193 行** の更なる責務分離
+```
+
+**変更後**:
+```
+- **mjc-main-20260505-26 Loop 53 ✅ 完了**: StreamConfig Debug/Clone tests 3 件 (stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none / stream_config_debug_output_equals_after_clone_for_some_and_none_variants / stream_config_clone_produces_independent_copy_for_option_string_fields) を transcription.rs から transcription_traits.rs に移動 = StreamConfig 定義 + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 6 tests (Mock 3 + StreamConfig Debug/Clone 3) 同居の locality 完成 (commit `bbe9afc`、-134 行)
+- **mjc-main-20260505-27 Loop 55 ✅ 完了**: tests mod 4 件 (should_emit_realtime_stream_error_is_logical_negation_of_already_stopped 1 件 → transcription_error_payload.rs / requested_transcription_sources Debug + Copy + PartialEq 3 件 → transcription_commands.rs) を一括移動 = transcription.rs tests mod 完全削除 + use 文 2 件完全削除 = 互換 re-export 5 件 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const のみの **36 行最終形達成** = Phase 5 完了相当 (commit `93dcd18`、-157 行)
+- transcription.rs 残存 **36 行** = Phase 5 完了相当の最終形 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)、残る Tidy First 機会は (1) WHISPER_SAMPLE_RATE 移動最終判断 (Phase 5 仕上げ) / (2) 互換層削除 Phase 6 / (3) docs / frontend / 検知拡張
+```
+
+### 4. L373「## 参考」直前に新規セクション追加
+
+**追加位置**: 現 L371 (StreamConfig Debug/Clone tests 移動の最終行 = `transcription_traits.rs 229 → 366 行 (+137 行 = StreamConfig 関連 + コメント)`) の次に空行 1 つ + 以下のセクション全体 + 空行 1 つ → 既存「## 参考」へ続く
+
+```markdown
+## 関連: tests mod 完全削除 = 36 行最終形達成 ✅ 完了 (mjc-main-20260505-27 Loop 55 = commit `93dcd18`)
+
+mjc-main-20260505-27 Loop 55 で transcription.rs の tests mod 4 件 (~157 行) を 2 ファイルに一括分散移動した = **transcription.rs 36 行最終形達成 = Phase 5 完了相当**。
+
+- 移動対象 (transcription.rs L38-193 = 区切りコメント + tests mod 全体):
+  - `should_emit_realtime_stream_error_is_logical_negation_of_already_stopped` (~16 行) → `transcription_error_payload.rs` (should_emit / is_already_stopped 関数本体と同居)
+  - `requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names` (~73 行) → `transcription_commands.rs`
+  - `requested_transcription_sources_copy_semantics_allow_use_after_move` (~21 行) → `transcription_commands.rs`
+  - `requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field` (~31 行) → `transcription_commands.rs` (RequestedTranscriptionSources struct と同居 = locality 完璧)
+- transcription.rs の use 文 2 件完全削除 (`RequestedTranscriptionSources` / `should_emit + is_already_stopped`) = 移動後 unused
+- 移動先既存 / 新規 `#[cfg(test)] mod tests` (`use super::*;` で関連 struct / 関数アクセス)
+- メイン批判判断: handoff サマリの「候補 P (3 tests, Loop 55+) と候補 Q (1 件, Loop 55+) を別ループで実施」案を grep で実態確認 → 4 tests 全て transcription.rs tests mod の唯一の構成要素 + use 文 2 件もこれらの tests のみで使用と判明 → **1 ループでマージ移動すれば transcription.rs tests mod 完全削除 + use 文 2 件完全削除 + 36 行最終形に到達** と訂正採用 = メイン批判判断 連続 8 セッション目達成
+- variety pivot 軸 = test 軸 = Loop 53 から 1 ループ pivot (Loop 54 docs) 後 + 1 ループでまとめて最終形へ移行 = 後続 Loop 56+ で完全な軸 pivot へ移行可能
+- 振る舞い不変 = 702 passed 件数不変、clippy 警告ゼロ、fmt OK
+- transcription.rs 193 → **36 行** (-157 行) = **98.8% 縮小最終形** (元 2999 行から累計 -2963 行)、transcription_error_payload.rs 343 → 360 行 (+17 行)、transcription_commands.rs 598 → 717 行 (+119 行)
+
+### Phase 5 完了相当の意義
+
+- transcription.rs は元 2999 行 = リポジトリ最大級 → 36 行 = 互換 re-export 5 件 + 区切りコメント + `WHISPER_SAMPLE_RATE` 1 const のみ
+- 全ての具体実装 (データ型 / トレイト / Whisper エンジン / Model 管理 / TranscriptionManager / Tauri commands / Worker loop / Audio 処理 / 沈黙検知) は別モジュールに locality 集約済
+- 残る課題は (1) WHISPER_SAMPLE_RATE 移動最終判断 (audio_utils.rs と新規 transcription_constants.rs の選択 = Phase 5 仕上げ判断) / (2) Phase 6 = 互換 re-export 層削除 (全 caller の `use crate::transcription::...` を直接 import に書き換え、規模 M、複数ループ計画推奨) の 2 軸
+- AGENTS.md 優先順位 1 (クラッシュ修正) / 4 (リアルタイム文字起こし低遅延化) への予防的寄与 = 巨大ファイル理解難度を最大限まで低減達成
+```
+
+### 5. L378 末尾参考行を更新
+
+**変更前**:
+```
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-26 Loop 53 時点で 193 行 = 約 93.6% 縮小達成 = 90% 里程標突破達成 + 85% 里程標突破からさらに +8.6pt 進展)
+```
+
+**変更後**:
+```
+- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-27 Loop 55 時点で 36 行 = 約 98.8% 縮小達成 = 95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当)
+```
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、その**直後**に以下のエントリを追記してください (絶対に先頭は触らない):
+
+```
+[mjc-main-20260505-28 Loop 56 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリヘッダ: mjc-main-20260505-26 Loop 53 時点 → mjc-main-20260505-27 Loop 55 時点
+  - 累計削減行数: 193 行 (93.6%) → 36 行 (98.8%) = 95% / 98% 里程標突破達成 + Phase 5 完了相当
+  - 残存課題セクション: Loop 55 (tests mod 4 件 一括分散移動 -157 行 = 36 行最終形達成) 反映
+  - 残存行数: 193 行 → 36 行 + 残課題 (WHISPER_SAMPLE_RATE 移動最終判断 / 互換層削除 Phase 6 / docs / frontend / 検知拡張) を再整理
+  - 新サブセクション 1 件 (## 参考 直前): 「tests mod 完全削除 = 36 行最終形達成 ✅ 完了」+ Phase 5 完了相当の意義
+  - 末尾参考: 193 行 (93.6%) → 36 行 (98.8%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防 + Phase 5 完了相当という 95% / 98% 里程標突破の歴史的記録)
+- mjc-main-20260505-27 Loop 55 (tests mod 4 件 一括分散移動 = 36 行最終形達成) を 1 ループで反映
+- variety pivot = docs 軸 = Loop 54 から 2 ループ間隔 = 警告境界だが許容、test 軸 = transcription.rs 余地ゼロ = 続行不可能のため docs が最優先
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 1 件を末尾「## 参考」前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- (commit hash はメインが後追い chore commit で記入)
+
+---
+```
+
+**注意**: 末尾の `---` まで含めてください。次セッションが追記する起点になります。
+
+## commit メッセージ
+
+```
+docs(transcription-refactor-plan): Loop 55 tests mod 完全削除 + 36 行最終形達成を反映 (mjc-main-20260505-27 Loop 55, 98.8% 縮小, 95% / 98% 里程標突破 + Phase 5 完了相当)
+```
+
+## 作業フロー
+
+1. `tail -350 AGENT_LOG.md` で現在の状況を把握 (絶対先頭は触らない)
+2. `Read docs/architecture/transcription-refactor-plan.md` で全体構造確認
+3. `Edit` で 5 箇所を順次更新 (L28 ヘッダ / L42 累計 / L57-58 Loop 53 直後 + 残存行数 / L373 直前 新規セクション / L378 末尾)
+4. `tail -10 AGENT_LOG.md` で末尾 `---` を確認、その直後に Loop 56 エントリを追記
+5. `bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` で検証
+6. `bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 55 tests mod 完全削除 + 36 行最終形達成を反映 (mjc-main-20260505-27 Loop 55, 98.8% 縮小, 95% / 98% 里程標突破 + Phase 5 完了相当)" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` で commit
+
+完了したら commit hash を最終応答で報告してください。

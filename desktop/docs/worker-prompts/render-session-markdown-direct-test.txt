@@ -1,0 +1,110 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景 / Why
+
+session_store.rs の private fn `render_session_markdown` (line 43-73) は `save_session_markdown` 経由でしかカバーされておらず、direct test がゼロです。
+
+前 mjc-main-13 Loop 1 (b81a752) で `write_session_markdown_to` の direct test 5 件を追加し、`save_session_markdown = path_for_session + write_session_markdown_to` の構成要素 2 つの分離検証は完成しました。
+
+残る `render_session_markdown` は `write_session_markdown_to` line 35-39 で `?` で呼ばれており、render エラーが file 書き出し前に伝播することは間接的にカバーされています。direct test の価値は:
+
+1. **file 書き出し経路に依存せず render エラー単独検証** = render と write の責任分離を test レベルでも明示
+2. **render の 5 つのエラー path** (started_at i64 cast / header chrono format / segment checked_add / segment i64 cast / segment chrono format) を、ファイル I/O 副作用なしで独立 assert
+3. **将来 render_session_markdown を pub 化したときの互換性検証** = save_session_markdown 不在でも独立に test する基盤
+
+これは Tidy First の延長 (構造を test 側にも反映)。
+
+# 担当範囲
+
+**変更ファイル: src-tauri/src/session_store.rs のみ (tests mod 内に test 5 件追加)**
+
+tests mod は line 200-201 で `#[cfg(test)] mod tests { use super::*; ` 形式。`use super::*;` 経由で private fn `render_session_markdown` も呼び出せます。既存 helper `jst()` (line 206) を使い回してください。
+
+## 追加 test 5 件 (T1-T5)
+
+すべて `tests` mod 内 (`save_session_markdown_writes_file_with_expected_header` の隣あたり、line 437 の `save_session_markdown_returns_error_for_overflowing_segment_timestamp` test 直後に挿入推奨) に追加してください。
+
+### T1: render_session_markdown_returns_same_content_as_save_session_markdown
+- 正常系の session (started_at = 1700000000, segments 1 件) で `render_session_markdown(&session, jst())` → Ok(String)
+- 同じ session を `save_session_markdown` でファイルに書き、`fs::read_to_string` で読む
+- 2 つの文字列が完全一致 (`assert_eq!`)
+- **意図**: render と write+read の構成要素 2 つの一致契約 = render を直接呼んでも save 経由でも同じ markdown が得られる
+
+### T2: render_session_markdown_returns_invalid_input_error_when_started_at_exceeds_i64
+- `Session { started_at: u64::MAX, ... }` で render
+- `render_session_markdown(&session, jst())` = Err
+- err.kind() == ErrorKind::InvalidInput
+- err.to_string() に "session started_at" を含む (`unix_secs_i64` の label)
+- **意図**: started_at の i64 cast 失敗が render の最初の `?` で短絡する契約
+
+### T3: render_session_markdown_returns_invalid_input_error_when_segment_timestamp_overflows_checked_add
+- `Session { started_at: u64::MAX, segments: vec![SessionSegment { timestamp_offset_secs: 1, ... }], ... }` で render
+- ただし started_at = u64::MAX だと T2 の経路で先に落ちるため、started_at = u64::MAX - 0 にせず `started_at = i64::MAX as u64 - 100`、`timestamp_offset_secs = u64::MAX` の組み合わせで `checked_add` overflow を強制
+- `render_session_markdown(&session, jst())` = Err
+- err.to_string() に "session segment timestamp overflow" を含む (line 59 の `ok_or_else`)
+- **意図**: segment の `checked_add` 結果が None になる経路が個別に伝播する契約 = T2 (started_at 単独) と T3 (segment 結合) の経路差分を独立に固定
+
+### T4: render_session_markdown_succeeds_with_zero_segments
+- `Session { started_at: 1700000000, segments: vec![], ... }` で render
+- `render_session_markdown(&session, jst())` = Ok(String)
+- 結果文字列が "session segment timestamp" を含まない (segment 行が生成されない契約)
+- **意図**: 空 segments の collect が `?` で詰まらない契約 = `Vec<_>::collect::<Result<_>>` の挙動依存
+
+### T5: render_session_markdown_returns_invalid_input_error_when_segment_abs_exceeds_i64
+- `Session { started_at: i64::MAX as u64, segments: vec![SessionSegment { timestamp_offset_secs: 1, ... }], ... }` で render
+- 計算: i64::MAX as u64 + 1 = i64::MAX as u64 + 1 (u64 表現可能、checked_add は通過)
+- ただし unix_secs_i64("session segment timestamp", ...) で i64 cast が失敗
+- err.kind() == ErrorKind::InvalidInput
+- err.to_string() に "session segment timestamp" を含む (line 60 の label)
+- **意図**: T3 (checked_add overflow) と T5 (segment の i64 cast 失敗) の経路を別個に固定 = `?` 演算子の同名 label 区別が必要な経路差分
+
+# 実装上の注意
+
+1. **既存 jst() helper を使う**: line 206 の `fn jst() -> FixedOffset` を再利用してください。新規 helper 作成は不要です。
+2. **既存 Session / SessionSegment 構造体**: src-tauri/src/session.rs の構造体をそのまま使います。ID は `Session::new(...)` で正常生成されますが、started_at を任意値に設定するために直接フィールドアクセス (struct literal `Session { id: ..., started_at: ..., ... }`) する必要があるかもしれません。Session の field が pub なら直接、そうでなければ `.set_started_at` 等の helper が必要です。**注**: 既存 test (`save_session_markdown_returns_error_for_out_of_range_started_at` line 423) で u64::MAX の started_at を持つ session を作っているので、その作り方をそのまま参照してください。
+3. **`use std::io::ErrorKind`**: tests mod で必要なら `use std::io::ErrorKind;` を追加してください。既存 import は line 200 周辺の `use super::*;` で済んでいる可能性大ですが、コンパイルエラーが出る場合のみ追加してください。
+4. **ファイル I/O は T1 のみ**: T1 で `save_session_markdown` の比較に tempfile が必要です。既存 test (line 211 等) で使っている `tempfile::TempDir` パターンをそのまま流用してください。T2-T5 は render 単独呼び出しなので I/O 不要。
+5. **assert messages の expected 値**: error message は `unix_secs_i64` の label 接頭辞 (`session started_at` / `session segment timestamp`) と `to_string()` で生成される format を確認しながら書いてください。`contains(...)` で柔軟にマッチしてください (完全一致は脆い)。
+6. **コメント追加禁止**: 自明なコメントは不要です。
+
+# 検証手順
+
+```sh
+cargo fmt -p meet-jerky
+cd src-tauri && cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings && cargo test -p meet-jerky --lib && cd ..
+bash scripts/agent-verify.sh src-tauri/src/session_store.rs
+```
+
+期待結果:
+- cargo test: **456 passed** (前回 451 + 新規 5)
+- clippy -D warnings: ゼロ
+- agent-verify.sh: 全段 OK
+
+# AGENT_LOG.md 記載項目
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-render-session-markdown-direct-test
+- 役割: 作業担当 (sonnet)
+- 作業範囲: session_store.rs tests mod に render_session_markdown direct test 5 件追加
+- 指示内容: 上記 T1-T5 の概要をそのまま記述
+- 結果: 成功 / 失敗
+- 変更ファイル: src-tauri/src/session_store.rs のみ
+- 追加テスト名 (5 件):
+  - render_session_markdown_returns_same_content_as_save_session_markdown
+  - render_session_markdown_returns_invalid_input_error_when_started_at_exceeds_i64
+  - render_session_markdown_returns_invalid_input_error_when_segment_timestamp_overflows_checked_add
+  - render_session_markdown_succeeds_with_zero_segments
+  - render_session_markdown_returns_invalid_input_error_when_segment_abs_exceeds_i64
+- 検証結果: cargo fmt / clippy / cargo test / agent-verify.sh
+- 依存関係追加: なし
+- 失敗理由: なし (もしあれば記載)
+- 次アクション: メイン (mjc-main = mjc-main-20260504-15) によるレビュー → コミット
+
+# 最終報告
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。
+
+**注**: prompt 中に数値矛盾や field 名の不整合がありそうな場合は、worker 側で計算式と実コードを再確認して修正してください。前ループでも prompt の expected 値ラベルと計算値の矛盾を worker が自律検出・修正した実績があります。

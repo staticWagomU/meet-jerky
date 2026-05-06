@@ -1,0 +1,97 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md を読んでください。
+AGENT_LOG.md は ~14900 行 / 1.5MB あるので末尾だけ参照する場合は `tail -300 AGENT_LOG.md` で十分です。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+- `src-tauri/src/app_detection.rs` の **tests モジュール末尾のみ** に test を追加
+- AGENT_LOG.md 末尾追記のみ
+
+# 背景
+`classify_meeting_window_title` は Google Meet のタブタイトル / Zoom デスクトップアプリのウィンドウタイトルを判定する純粋関数。`strip_prefix` ベースで厳密 prefix 一致を採用し、大文字小文字の違い・前置空白・余分な空白などを reject する設計だが、それを裏付ける境界テストが薄い。本タスクでは **既存仕様を裏付けるテスト** を追加するのみで、実装ロジックは一切変更しない。
+
+# 仕様: 追加するテスト
+
+すべて `mod tests` 内に新しい `#[test]` 関数として追加。既存の test は変更しない。アサーションスタイルは既存テスト (例: `classify_meeting_window_title_rejects_meet_alone`) を踏襲。
+
+## 1. `classify_meeting_window_title_rejects_leading_whitespace`
+strict prefix 一致なので前置空白は reject:
+- `" Meet - abc-defg-hij"` (半角スペース) → None
+- `"\tMeet - abc-defg-hij"` (タブ) → None
+- `"  Zoom Meeting"` (前置スペース 2 つ) → None
+- `"\u{3000}Zoom ミーティング"` (全角スペース) → None
+
+## 2. `classify_meeting_window_title_rejects_case_mismatch`
+- `"MEET - abc-defg-hij"` → None  (`Meet` と大小一致しない)
+- `"meet - abc-defg-hij"` → None
+- `"ZOOM Meeting"` → None
+- `"zoom meeting"` → None
+- `"ZOOM ミーティング"` → None
+
+## 3. `classify_meeting_window_title_rejects_meet_without_space_after_dash`
+prefix は `"Meet - "` (末尾スペース必須):
+- `"Meet -abc-defg-hij"` → None  (ハイフン直後にスペースなし)
+- `"Meet-abc-defg-hij"` → None  (Meet 直後にハイフン)
+- `"Meet  - abc-defg-hij"` → None  (Meet と en-dash の間にスペース 2 つ)
+
+## 4. `classify_meeting_window_title_accepts_meet_with_extra_trailing_content`
+肯定ケースの確認 (回帰防止) — prefix の後ろに非空文字列があれば Some:
+- `"Meet - abc-defg-hij - 追加情報"` → Some (Google Meet, host="")
+- `"Meet \u{2013} 名前 with spaces"` → Some (Google Meet)
+- `"Meet \u{2014} 🎉"` → Some (Google Meet, 絵文字含み)
+
+## 5. `classify_meeting_window_title_accepts_zoom_with_unusual_suffix`
+肯定ケース:
+- `"Zoom Meeting - paused"` → Some (Zoom)
+- `"Zoom ミーティング (録画停止中)"` → Some (Zoom)
+- `"Zoom Meeting"` の後ろに改行があるパターン: `"Zoom Meeting\n参加者: 山田"` → Some (Zoom)
+
+## 6. `classify_meeting_window_title_handles_only_whitespace_after_meet_dash`
+prefix の後ろが whitespace のみ (空文字判定にかからない場合) の挙動を裏付ける:
+- `"Meet -  "` (ハイフン+スペース+スペース2つ追加) → 仕様確認: prefix `"Meet - "` の後の rest = `" "` (スペース1つ)。`is_empty()` は false なので **Some を返す可能性が高い**。
+  - もし Some が返るなら → assertion で `Some(...)` を確認し、コメントで「現仕様: 末尾 whitespace のみは Some を返す」を明記
+  - もし None が返るなら → assertion で None を確認し、コメントで「現仕様: 末尾 whitespace のみも除外」を明記
+- `"Meet \u{2013} \t"` (en-dash + space + tab) → 同様に実際の挙動を確認して assertion
+
+実装を読まずに先にテストを書いてもよい。`assert_eq!` を試行錯誤で実装してテスト失敗が出たら正しい挙動を assertion に書き直すこと。**実装側は一切変更しない**。
+
+## 7. `classify_meeting_window_title_rejects_control_characters`
+Swift から渡される異常系:
+- `"Meet - \nabc"` (改行が rest 内にある場合は Some の可能性大: rest 非空)。実装挙動を裏付ける形で assertion。
+- `""` は既存テストでカバー済みなので除外。
+- `"\0"` (NULL 文字) → None (Meet/Zoom prefix にマッチしない)
+- `"\u{FEFF}Meet - abc-defg-hij"` (BOM 前置) → None (Meet prefix にマッチしない)
+
+# テスト実装上の注意
+- 各 `#[test]` 関数は最大 ~15 行程度に収める
+- すべて既存の `assert_eq!` スタイルを踏襲
+- 実装コード (`pub fn classify_meeting_window_title` および補助関数) は **一切変更しない**
+- 第 6 / 第 7 のテストは「実装の現挙動を裏付ける」性格のため、最初の cargo test で失敗したら assertion を実装に合わせて訂正する (実装側を変えない)
+
+# 検証
+1. `git diff --check`
+2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets --all-features -- -D warnings`
+4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast`
+5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+clippy 警告ゼロ維持必須、test は 223 passed から **追加分だけ増えた値で全合格** を確認 (7 関数 → 230 passed 期待)。
+
+# AGENT_LOG.md 追記
+末尾に新セクション: `### classify_meeting_window_title の境界仕様テスト 7 種類を追加し回帰防止カバレッジを拡張`。
+記載項目: 開始日時 (JST)、担当セッション (`mjc-worker-window-title-edge-tests-20260504-1`)、役割、作業範囲、指示内容 (このプロンプトの要約)、結果、変更ファイル、検証結果 (cargo fmt / clippy / test の合否、追加 test 件数、追加後の total passed)、依存関係 (なし)、失敗理由 (なし)、次アクション。
+
+# 報告形式 (1 ターンで完結)
+- 追加した test 関数名一覧 (1〜7) と各 assertion 件数
+- cargo fmt / clippy / test の最終結果 (test 数の変化 223 → N)
+- 第 6 / 第 7 のテストで実際の挙動を確認した内容 (Some か None か)
+- 残リスク
+
+# 禁止事項
+- 既存の `classify_meeting_window_title` 実装変更
+- 補助関数 (例: 文字列正規化を加える等) の追加
+- 他のソースファイル変更
+- `git commit` の実行
+- `--no-verify`
+- 既存テストの削除・改変

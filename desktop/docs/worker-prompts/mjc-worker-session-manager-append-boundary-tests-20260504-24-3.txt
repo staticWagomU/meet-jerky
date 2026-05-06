@@ -1,0 +1,103 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20500+ 行 / 1.7MB+ あります。Read で全体を読まず、`tail -350 AGENT_LOG.md` 相当で末尾 350 行のみ参照してください。** 末尾には [SESSION SUMMARY @ 2026-05-04 ~16:50 JST] mjc-main-23 状況メモ + 直前の WORKER LOG (Loop 1 = current_started_at_secs / Loop 2 = finalize 境界 各 3 件) があります。
+
+# AGENT_LOG.md 追記の絶対ルール (事故防止)
+- AGENT_LOG.md は **時系列順** = **最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない。** 先頭追記は重大事故扱い。
+- 追記前に必ず `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認する。
+- 末尾の `---` 直後に追記する。Edit ツール使用時は old_string に末尾数行を含めて一意性を確保する。
+
+# 担当範囲 (規模 XS、scope 厳守)
+src-tauri/src/session_manager.rs の **mod tests 末尾** (= 直前 Loop 2 で追加された `finalize_preserves_u64_max_ended_at_without_truncation` の直後、`}` で mod tests を閉じる直前) に **test 3 件のみ追加**。
+
+**関数本体は完全無変更** (`src-tauri/src/session_manager.rs` の test 以外の場所、`src-tauri/src/session.rs`、その他全ファイルは触らない)。test 追加のみ。
+
+# 大型ファイル参照ルール
+- src-tauri/src/session_manager.rs は ~970 行 (Loop 2 後)。**Read 全体は OK** だが test 追加は末尾の `}` 直前のみ。
+- AGENT_LOG.md は **必ず tail で参照**。Read 全体は禁止。
+
+# 追加する test 3 件 (Tidy First、ユーザー観測不可、振る舞い不変)
+
+## test 1: `append_preserves_offset_secs_zero_for_immediate_segment_at_session_start`
+- **目的**: SessionManager::append が offset_secs=0 (session 開始直後の即時 segment、左境界) を受け入れて Session.segments[0].timestamp_offset_secs に原値透過で保存する契約を CI 固定
+- **手順**:
+  1. `let manager = SessionManager::new();`
+  2. `manager.start("instant_segment_session".into(), 1_700_000_000).expect("start");`
+  3. `manager.append("Alice".into(), 0, "immediate".into()).expect("append with offset_secs=0 should succeed");`
+  4. `let session = manager.finalize(1_700_000_100).expect("finalize");`
+  5. `assert_eq!(session.segments.len(), 1, "1 segment が保存される");`
+  6. `assert_eq!(session.segments[0].timestamp_offset_secs, 0, "offset_secs=0 は原値透過で保存される");`
+  7. `assert_eq!(session.segments[0].text, "immediate", "text も原値透過");`
+- **意図**: 「if offset_secs == 0 { skip }」のような『0 を unset として扱う』防衛的最適化誤改修を検知する装置。session 開始直後の発話 (offset_secs=0) は real flow で発生しうる。
+- **assert メッセージ**: 「offset_secs=0 (session 開始直後の即時 segment) は原値透過で保存される。0 を unset として扱う防衛的最適化を CI で遮断する。」
+
+## test 2: `append_preserves_offset_secs_u64_max_without_truncation`
+- **目的**: SessionManager::append が offset_secs=u64::MAX (極端値、右境界) を truncation なく原値透過で Session.segments[0].timestamp_offset_secs に保存する契約を CI 固定
+- **手順**:
+  1. `let manager = SessionManager::new();`
+  2. `manager.start("far_future_segment".into(), 1_700_000_000).expect("start");`
+  3. `manager.append("Bob".into(), u64::MAX, "far future".into()).expect("append with offset_secs=u64::MAX should succeed");`
+  4. `let session = manager.finalize(u64::MAX).expect("finalize");`
+  5. `assert_eq!(session.segments[0].timestamp_offset_secs, u64::MAX, "offset_secs=u64::MAX は truncation なく保存される");`
+- **意図**: 内部で `offset_secs as i64` cast 等を入れた場合に signed overflow で負値化するような誤改修を検知する装置。Loop 1 T3 (started_at u64::MAX) / Loop 2 T3 (ended_at u64::MAX) と対称的に offset_secs 側も u64 型契約を CI 固定。
+- **assert メッセージ**: 「offset_secs=u64::MAX は truncation なく保存される。`as i64` cast 等の符号付き truncation を CI で遮断する。」
+
+## test 3: `append_preserves_empty_text_and_empty_speaker_without_skipping_segment`
+- **目的**: SessionManager::append が text="" / speaker="" の空文字列入力を skip せず、segment として保存する契約を CI 固定 (文字列軸の境界)
+- **手順**:
+  1. `let manager = SessionManager::new();`
+  2. `manager.start("empty_string_session".into(), 1_700_000_000).expect("start");`
+  3. `manager.append(String::new(), 0, String::new()).expect("append with empty speaker and empty text should succeed");`
+  4. `manager.append("Alice".into(), 5, "second".into()).expect("second append");`
+  5. `let session = manager.finalize(1_700_000_100).expect("finalize");`
+  6. `assert_eq!(session.segments.len(), 2, "空文字列入力でも segment は skip されず保存される");`
+  7. `assert_eq!(session.segments[0].speaker, "", "empty speaker は原値透過");`
+  8. `assert_eq!(session.segments[0].text, "", "empty text は原値透過");`
+  9. `assert_eq!(session.segments[1].speaker, "Alice", "後続 append は前 segment に影響なく保存される");`
+- **意図**: 「if text.is_empty() { skip }」のような『空文字列を skip する』防衛的最適化誤改修を検知する装置。realtime 文字起こしで空 segment が発生する可能性 (例: silence chunk、partial result 確定前の commit) があり、それを skip すると segment 順序の整合性が壊れる。append の責務は「呼ばれたら必ず push」であり、filtering は呼び出し側の責務という設計契約を CI 固定。
+- **assert メッセージ**: 「空文字列入力でも segment は skip されず保存される。append の責務は『呼ばれたら必ず push』。filtering は呼び出し側の責務という設計契約を CI で固定する。」
+
+# 既存パターン踏襲 (厳守)
+- 命名規則: `<関数名>_<期待動作>_<入力種別>` を Loop 1/Loop 2 と完全対称に踏襲
+- 構造: `let manager = SessionManager::new()` → `start` → `append` → `finalize` → `assert_eq!` の順で既存 test (例: l.358 `append_without_start_returns_not_active_and_append_after_start_retains_segment`) と完全対称
+- assert メッセージは現契約の固定理由を日本語で明記
+- `mod tests` 内の最末尾 test (= Loop 2 で追加された `finalize_preserves_u64_max_ended_at_without_truncation`) の直後に追加
+
+# 検証
+1. `cd src-tauri && cargo test --lib session_manager 2>&1 | tail -40` で 3 件追加 + 全 pass を確認
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -10` で 512 → 515 passed (+3 件) を確認
+3. `cd src-tauri && cargo clippy --all-targets -- -D warnings 2>&1 | tail -20` で警告ゼロ維持を確認
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -10` で差分なしを確認
+
+# AGENT_LOG.md 追記
+末尾に以下のフォーマットで `[WORKER LOG @ ...]` ブロック追加 (時系列順厳守、先頭追記禁止):
+
+```
+---
+[WORKER LOG @ 2026-05-04 ~17:30 JST] mjc-main-20260504-24 worker (session_manager.rs append 境界 test 3 件追加, 規模 XS, Tidy First, ユーザー観測不可)
+- 開始日時: 2026-05-04 ~17:30 JST (推定)
+- 担当セッション: mjc-main-20260504-24 用 worker (メイン委任)
+- 役割: 作業担当エージェント
+- 作業範囲: src-tauri/src/session_manager.rs の mod tests 末尾に test 3 件追加 (関数本体無変更)
+- 指示内容: SessionManager::append の境界 test 3 軸補強 (offset_secs 左境界 0 / 右境界 u64::MAX / 空文字列入力)
+- 結果: ...
+- 変更ファイル: src-tauri/src/session_manager.rs (test 追加のみ)
+- 検証結果: cargo test 512 → 515 passed (+3 件), clippy -D warnings ゼロ, fmt 差分なし
+- 依存追加: なし
+- 次アクション: メインへ報告 → メインが verify + commit
+```
+
+# 完了条件
+- src-tauri/src/session_manager.rs に test 3 件追加 (関数本体無変更)
+- cargo test 全 pass (+3 件)
+- clippy -D warnings ゼロ
+- cargo fmt 差分なし
+- AGENT_LOG.md 末尾に WORKER LOG 追記
+- コミットしないこと (メインがやる)
+- 最後に 1 ターンで「変更内容、変更ファイル、検証結果、残リスク」を簡潔報告

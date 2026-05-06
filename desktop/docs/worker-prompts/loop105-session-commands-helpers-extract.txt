@@ -1,0 +1,204 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/transcription_commands_helpers.rs` (Loop 101 抽出, ~452 行 = 純粋関数 helpers 軸 paradigm の最近接 precedent)
+6. precedent (cat 全体): `cat src-tauri/src/session_commands_list.rs` (Loop 97 抽出, ~84 行 = session_commands 軸 1 件目 + 同 scope の直近 precedent)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/session_commands_helpers.rs` (~85 行 = production 16 行 + tests 50 行 + use 文 + docstring)
+- 編集: `src-tauri/src/session_commands.rs` (helpers 3 件 ~16 行削除 + tests 5 件 + helper fn ~45 行削除 + 冒頭 use 文 1 行追加)
+- 編集: `src-tauri/src/session_commands_list.rs` (use 文 1 行修正 = `crate::session_commands::resolve_output_directory` → `crate::session_commands_helpers::resolve_output_directory`)
+- 編集: `src-tauri/src/lib.rs` (1 行追加 = `mod session_commands_helpers;`)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 105 タスク内容 (構造分離 28 件目, session_commands 軸 2 件目 = scope depth 軸 5 件確立, 純粋関数 helpers 軸 paradigm)
+
+## 背景
+
+- Loop 101 = transcription_commands_helpers (純粋関数 helpers 軸)。Loop 102 = realtime_ws_helpers (純粋関数 helpers 軸 2 連続)。Loop 103 = harness 衛生軸 K (paradigm pivot)。Loop 104 = openai_realtime_ws_task (inline module 全体抽出 paradigm)。
+- Loop 105 では Y 既存 scope = session_commands 軸 2 件目 = scope depth 充実 = 純粋関数 helpers 軸復帰 (Loop 103/104 で 2 ループ間隔離れて警告境界外)。
+- session_commands.rs (452 行) は file 冒頭 docstring で「Tauri コマンドの薄いアダプタ層。実ロジックは *_inner 関数に集約してテスト可能にし、#[tauri::command] は State / 現在時刻取得などの周辺をまとめるだけの薄いラッパーにする。」と意図表明 = しかし helpers 3 件 (now_unix_secs / default_offset / resolve_output_directory) が同 file 内に残置 = 抽出することで session_commands.rs を tauri commands + *_inner 実装のみに簡素化できる。
+- session_commands_list.rs (Loop 97 = session_commands 軸 1 件目) と並立する **session_commands 軸 2 件目** 達成 = scope depth 軸 5 件確立 (settings + transcription_commands + realtime engine + system_audio + session_commands)。
+
+## 抽出対象
+
+**Production (session_commands.rs L18-40, ~16 行)**:
+
+- L18-23: `fn now_unix_secs() -> u64` (private, ~6 行 = SystemTime::now / duration_since / map / unwrap_or)
+- L28-30: `fn default_offset() -> FixedOffset` (private, ~3 行 = JST 固定 = `FixedOffset::east_opt(9 * 3600).expect(...)`)
+- L34-40: `pub(crate) fn resolve_output_directory(settings_state: &SettingsStateHandle) -> PathBuf` (~7 行 = settings から output_directory 解決)
+- L25-27 docstring (default_offset の docstring) は移動先で維持
+- L16-17 / L25-27 / L32-33 の docstring も移動先で維持
+
+**Tests + helper fn (session_commands.rs L329-373, ~45 行)**:
+
+- L330-337: `build_settings_handle_with_dir(dir: Option<String>) -> SettingsStateHandle` test helper fn (~8 行) = resolve_output_directory tests 専用 (start/finalize/discard tests は使わない確認済)
+- L339-344: `#[test] fn resolve_output_directory_returns_default_when_setting_is_none` (~6 行)
+- L346-351: `#[test] fn resolve_output_directory_returns_default_when_setting_is_empty` (~6 行)
+- L353-359: `#[test] fn resolve_output_directory_returns_setting_path_when_set_to_nonempty` (~7 行)
+- L361-366: `#[test] fn resolve_output_directory_does_not_trim_whitespace_in_setting_path` (~6 行)
+- L368-373: `#[test] fn default_offset_returns_jst_offset_constant` (~6 行)
+
+`now_unix_secs` の direct test は **存在しない** (`grep -n "now_unix_secs" src-tauri/src/session_commands.rs` で確認可能、production 2 caller のみ) = 移動 test ゼロ。
+
+これら以外 (元 file 共通部 = docstring L1-5 + use 文 L6-14 + 機能境界コメント L42-44 + start_session_inner L51-83 + start_session L86-101 + finalize_and_save_session_inner L86-100 + finalize_and_save_session L103-120 + discard_session_inner L123-126 + discard_session L128-138 + tests 残り) は **絶対に触らない**。
+
+## 抽出方式 (Loop 102 realtime_ws_helpers.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/session_commands_helpers.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! `session_commands.rs` から純粋関数 helpers (now_unix_secs / default_offset
+//! / resolve_output_directory) を切り出した module。
+//!
+//! caller は `session_commands.rs` の start/finalize 系と
+//! `session_commands_list.rs` の `list_sessions`。
+```
+
+use 文 (新 file 用):
+
+```rust
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use chrono::FixedOffset;
+
+use crate::settings::{default_output_directory, SettingsStateHandle};
+```
+
+その下に L18-40 の helpers 3 件 (now_unix_secs / default_offset / resolve_output_directory) を **そのまま docstring 込みで移植**。visibility は now_unix_secs と default_offset を `pub(crate) fn` に **昇格** (元 file caller から `crate::session_commands_helpers::now_unix_secs()` で参照可能にする)。resolve_output_directory は元から pub(crate) なので維持。
+
+最後に `#[cfg(test)] mod tests { ... }` block を追加し、L329-373 の build_settings_handle_with_dir + 5 tests を移植。tests 内の use 文は以下:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::FixedOffset;
+}
+```
+
+(注: `super::*` で `resolve_output_directory` / `default_offset` 含めた helpers が import される)
+
+### 2. session_commands.rs 編集
+
+- L16-17 + L18-23 (now_unix_secs + docstring) 削除
+- L25-27 + L28-30 (default_offset + docstring) 削除
+- L32-33 + L34-40 (resolve_output_directory + docstring) 削除
+- 削除合計 ~30 行 (docstring 込み)
+- L329-373 (空行 + build_settings_handle_with_dir + 5 tests) 削除 = ~45 行
+- 冒頭の use 文ブロック (L6-14) の **末尾に** `use crate::session_commands_helpers::{default_offset, now_unix_secs, resolve_output_directory};` を 1 行追加 (alphabetical 順 = `crate::session_manager` の前)
+- file 冒頭 docstring (L1-5) は不変
+- L51 以降の start/finalize/discard 系 fn は不変
+- L141-: tests block 冒頭 `mod tests { use super::*; ... }` の `use` 文は無変更 (super:: 経由で helpers が visible になる必要あるため、もし unused_imports 警告が出れば super::* の他に何か追加が必要)
+
+注意: 元 file 内の caller (L71/75/77/107/111/112) は use 文経由で **無変更** で動作する想定。
+
+### 3. session_commands_list.rs 編集 (use 文 1 行修正)
+
+- L9 `use crate::session_commands::resolve_output_directory;` を `use crate::session_commands_helpers::resolve_output_directory;` に変更
+- それ以外の session_commands_list.rs 修正は禁止 (L29 caller は無変更 = use 経由で動作)
+
+### 4. lib.rs 編集 (alphabetical 順)
+
+- 既存 `mod session_commands_list;` (L36) の **直後** に `mod session_commands_helpers;` を追加するか、`mod session_commands;` (L35) と `mod session_commands_list;` (L36) の間に挿入するか、alphabetical = `session_commands` < `session_commands_helpers` < `session_commands_list` < `session_manager` のため **L35 と L36 の間** に `mod session_commands_helpers;` を 1 行挿入
+- それ以外の lib.rs 修正は禁止
+
+### 5. test の取り扱い
+
+- 移動対象 5 tests (resolve_output_directory_* x 4 + default_offset_returns_jst_offset_constant) + build_settings_handle_with_dir helper fn は新 file の `mod tests` 内に配置
+- start_session_inner / finalize_and_save_session_inner / discard_session_inner 等の他 tests は **絶対に触らない** (build_settings_handle_with_dir に依存していない確認済)
+- トータル test 件数は **704 = 完全不変** (5 件移動だけ、削除/追加なし)
+
+## 規模超過防止 (重要)
+
+- L18-40 helpers 3 件 + L329-373 tests + helper fn + 元 file use 文 1 行追加 + session_commands_list.rs use 文 1 行修正 + lib.rs 1 行追加 + 新 file 作成以外は絶対に触らない
+- 担当範囲外の修正は禁止
+- トータル test 件数は **704 = 完全不変**
+- 振る舞い不変 = caller path 変更なし (use 経由で吸収)
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → エラーや warning が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/session_commands.rs src-tauri/src/session_commands_helpers.rs src-tauri/src/session_commands_list.rs src-tauri/src/lib.rs`
+
+注意: 元 file 内の `mod tests` から helpers が参照される場合 (start_session_inner_passes_*_through_to_session_without_normalization 等が default_offset を直接使っているか?)。**事前に `grep -nE "default_offset|now_unix_secs|resolve_output_directory" src-tauri/src/session_commands.rs` で全 caller を確認** し、test 内 caller があればそれは use 文経由で動作する (元 file 冒頭の use 追加で test mod も super::* 経由で visible)。
+
+# コミット (2-commit pattern, Loop 80/85-104 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/session_commands.rs src-tauri/src/session_commands_helpers.rs src-tauri/src/session_commands_list.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(session): 純粋関数 helpers (now_unix_secs + default_offset + resolve_output_directory) を session_commands_helpers.rs に抽出 (mjc-main-20260505-54 Loop 105, 機能分離軸 = session_commands 軸 2 件目, 大型 rust file 責務分離 28 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-54 Loop 105 / 2026-05-05]
+worker: mjc-worker-session-commands-helpers-loop105 (作業)
+範囲: src-tauri/src/session_commands.rs (helpers 3 件 ~16 行 + tests 5 件 + helper fn ~45 行削除 + 冒頭 use 1 行追加) + src-tauri/src/session_commands_helpers.rs (新規 ~85 行) + src-tauri/src/session_commands_list.rs (use 文 1 行修正) + src-tauri/src/lib.rs (mod session_commands_helpers; 1 行追加)
+内容: session_commands.rs L18-40 の helpers 3 件 (now_unix_secs ~6 行 + default_offset ~3 行 + resolve_output_directory ~7 行) と L329-373 の tests 5 件 (resolve_output_directory_* x 4 + default_offset_returns_jst_offset_constant) + build_settings_handle_with_dir test helper fn を新 module session_commands_helpers.rs に抽出。元 file 冒頭に use crate::session_commands_helpers::{default_offset, now_unix_secs, resolve_output_directory}; 追加で production caller 6 件 + 元 file tests 内の caller 全て無変更。session_commands_list.rs の use 文を crate::session_commands_helpers::resolve_output_directory に書き換え。lib.rs に mod session_commands_helpers; 追加 (alphabetical 順 = session_commands と session_commands_list の間)。元 file 共通部 (docstring + use + start/finalize/discard 系 + 他 tests) は完全不変。大型 rust file 責務分離 28 file 目 = session_commands 軸 2 件目 (Loop 97 session_commands_list 軸 1 件目との並立) = scope depth 軸 5 件確立 (settings + transcription_commands + realtime engine + system_audio + session_commands) = inline module 全体抽出軸 (Loop 104) からの pivot 達成 = 純粋関数 helpers 軸 (Loop 102/101 paradigm = 2 ループ間隔離れて警告境界外で復帰)。session_commands.rs 452 → ~390 行 (-14%)。
+振る舞い: cargo test --lib 704 passed (件数完全不変, 5 件移動のみ)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(session): 純粋関数 helpers を session_commands_helpers.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = session_commands 軸の 2 件目分離 = tauri commands 薄いアダプタ層化と純粋関数 helpers の明示分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換 (Loop 80/85-104 precedent)。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-54 Loop 105 = session_commands_helpers.rs 抽出 (構造分離 28 file 目, session_commands 軸 2 件目 = scope depth 軸 5 件確立, inline module 軸からの pivot 達成 = 純粋関数 helpers 軸復帰) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 5 件 (session_commands.rs / session_commands_helpers.rs / session_commands_list.rs / lib.rs / AGENT_LOG.md)
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

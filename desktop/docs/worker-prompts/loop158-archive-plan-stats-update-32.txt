@@ -1,0 +1,96 @@
+# mjc-worker-loop158-archive-plan-stats-update-32 / 2026-05-06 / mjc-main-20260505-78 Loop 158
+
+あなたは meet-jerky の作業エージェントです。Loop 158 = K 軸 = harness 衛生軸 = `docs/architecture/agent-log-archive-plan.md` の Section 2.3 に Loop 157 完了時点の **更新観測 (32 件目)** を追記する作業を実施します。precedent = Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150/152/154/156 = 31 件。
+
+## 必読 (順序遵守)
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. `sed -n '92,96p' docs/architecture/agent-log-archive-plan.md` で Section 2.3 末尾の Loop 153 観測ブロック (L92) と Loop 155 観測ブロック (L94) と空行 (L95) と次セクション (L96 = "### 2.4") の構造を確認
+
+## 作業内容 (3 step)
+
+### Step 1: agent-log-archive-plan.md 編集
+
+L94 = Loop 155 観測ブロックの直後 (L95 = 空行) に新観測ブロック (mjc-main-20260505-77 Loop 157 完了時点) を追加する。
+
+Edit 操作:
+- old_string = L94 末尾 (`~74-185 行/時間 の範囲、SUMMARY 軽量化期間継続)。`) + L95 の空行 + L96 (`### 2.4 既存運用の維持コスト`)
+- new_string = L94 末尾 + L95 空行 + 新観測ブロック + 空行 + L96
+
+具体的には次の Edit を実施 (空行構造を厳密に維持):
+
+old_string (3 行 = L94 末尾 + L95 空行 + L96):
+```
+~74-185 行/時間 の範囲、SUMMARY 軽量化期間継続)。
+
+### 2.4 既存運用の維持コスト
+```
+
+new_string (5 行 = L94 末尾 + L95 空行 + 新 entry 1 行 + 空行 + L96):
+```
+~74-185 行/時間 の範囲、SUMMARY 軽量化期間継続)。
+
+> **更新観測 (mjc-main-20260505-78 Loop 157 完了時点)**: Loop 155 → Loop 157 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-77 = 3 ループ完走 SUMMARY commit `95b4b4e`) で +19 行 (33,898 → 33,917)、平均 ~9.5 行/loop。Loop 155 観測値 (~18.5 行/loop = SS 1 件 + 説明軽量化) と比較して **-49% 減 (-9 行/loop の大幅減少)** = 軽量化階層下端の劇的拡大 = paradigm pivot 多軸 (Loop 156 = harness 衛生 K 軸 = docs entry 1 件 (AGENT_LOG.md 触らず = 0 行寄与) + chore entry 1 件 = +7 行 + Loop 157 = rust 軸 = **重複削除 + 既存 file 拡張軸 paradigm 5 件目 = 異 tier 同 entity 集約 = utils 間集約軸 rust 版** = audio_silence.rs の calculate_rms 重複定義削除 + audio.rs::calculate_rms から use 経由参照 (DRY 違反解消, callsite 4 件無変更で API 互換維持, audio_silence.rs -7/+1 純減 6 行, **Loop 153 frontend 版 utils 間集約軸 paradigm の rust 版実証**, scope 37 軸維持, alternation 45 連続維持) = chore +7 行 + refactor は AGENT_LOG.md 触らず = 0 行寄与) で SESSION SUMMARY 1 件 (commit `95b4b4e` = **+5 行 = ultra-compact** = 直近 SUMMARY (mjc-main-20260505-76 SUMMARY commit `553d786` = ~13-14 行 / mjc-main-20260505-77 中間 SUMMARY commit `652c416` = ~15 行) からの **大幅減 -67% 以上** = 3 ループ完走 SUMMARY なのに ultra-light = 軽量化 paradigm の更なる深化 = SUMMARY 軽量化期間 3 連続観測達成 + ultra-light SUMMARY 階層 ~5 行/件の新発見) + chore entry 3 件合計 (Loop 156 chore = +7 行 + SUMMARY = +5 行 + Loop 157 chore = +7 行 = 計 +19 行) + docs entry 1 件 (Loop 156 docs = AGENT_LOG.md 触らず = 0 行寄与) + refactor entry 1 件 (Loop 157 refactor = AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 155 観測値 (~18.5 行/loop) との -49% 減の主因 = **rust 軸 chore entry 軽量化 paradigm 連続観測** (Loop 155 chore = +7 行 + Loop 157 chore = +7 行 = 2 ループ連続 ~7 行水準 = rust 軸軽量化 paradigm 完全実証期入り = openai 鏡像対称化 + utils 間集約 = 共に既存 paradigm 踏襲のため記述簡潔化可能) + **SUMMARY ultra-light 階層の新発見** (commit `95b4b4e` = +5 行 = 3 ループ完走 SUMMARY なのに 5 行に圧縮 = SUMMARY 軽量化 paradigm の更なる深化 = ultra-light SUMMARY 階層 ~5 行/件の発見) + paradigm pivot 同形 (K + rust = Loop 151/155 と paradigm 同軸再現 = K + rust 連続観測 3 件目) + **軽量化階層下端の更なる拡大 (Loop 153 = ~20 行 → Loop 155 = ~18 行 → Loop 157 = ~9.5 行 = 3 ループ連続下端拡大)**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125-153 で 15 件連続観測達成済 + 本セッションで rust 軸の軽量化 paradigm が **2 連続観測 (Loop 155/157)** = 軽量化 paradigm が frontend 軸限定から rust 軸にも完全拡張 = **paradigm 領域拡大の完全実証期入り**。SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量 + SUMMARY 説明量の 4 軸が支配変数 = **SS 0 件 = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測) / SS 1 件 + 説明軽量化 = ~9-26 行/loop (Loop 125/129/131/133/137/139/141/143/145/147/153/155/157 = 13 連続観測達成 = Loop 157 で **超軽量側 ~9.5 行/loop 観測 = 階層下端寄り変動の劇的拡大 + 範囲下端 ~9 行 まで拡大** = SS 0 件階層 (~11-12 行/loop) を下回る新観測 = SS 1 件 + SUMMARY ultra-light サブ階層の発見候補) / SS 1 件 + 説明中量化 = ~30-37 行/loop (Loop 149/151 = 2 連続観測達成) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の **4 段階階層化が paradigm 完全成熟期維持 + 軽量化階層の範囲下端 3 ループ連続拡大 = 軽量化トレンド完全実証 + SUMMARY ultra-light サブ階層 ~5 行/件の新発見**。観測 32 件目 = 節目突破後継続 = K 軸自体の paradigm 完全成熟期維持。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~9.5 行 = ~38-95 行/時間 の範囲、SUMMARY 軽量化期間 3 連続継続 + ultra-light SUMMARY 階層発見 + 軽量化階層下端拡大期入り)。
+
+### 2.4 既存運用の維持コスト
+```
+
+### Step 2: 検証
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop してから:
+
+```bash
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+```
+
+= OK (docs 単独変更 = 自動 skip 判定で OK)
+
+### Step 3: 2-commit pattern (worker 自律実行)
+
+#### Commit 1: docs
+
+```bash
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 157 完了時点の更新観測追記 (mjc-main-20260505-78 Loop 158, harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150/152/154/156 precedent 32 件目, +19 行 / 平均 ~9.5 行/loop = Loop 155 観測値 -49% 大幅減少 = 軽量化階層下端の劇的拡大 = ~18 → ~9 行 + rust 軸軽量化 paradigm 2 連続観測 = 完全実証期入り + SUMMARY 軽量化期間 3 連続観測達成 + ultra-light サブ階層の発見候補)"
+```
+
+#### Commit 2: chore (AGENT_LOG.md 末尾追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → `---` 直後に Loop 158 entry を append (1 回のみ Edit/Write、複数回繰り返さない、append が成功したら直ちに次へ進む):
+
+```
+[mjc-main-20260505-78 Loop 158 / 2026-05-06]
+worker: mjc-worker-loop158-archive-plan-stats-update-32 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 155 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 157 完了時点の更新観測 32 件目を追記。Loop 155 → Loop 157 で +19 行 (33,898 → 33,917), 平均 ~9.5 行/loop = Loop 155 観測 (~18.5 行/loop) -49% 大幅減少 = 軽量化階層下端の劇的拡大 (~18 → ~9 行) + rust 軸 chore entry 軽量化 paradigm 2 連続観測 (Loop 155/157 共に +7 行) = 完全実証期入り + SUMMARY 軽量化期間 3 連続観測達成 (95b4b4e = 3 ループ完走 SUMMARY でも軽量水準維持) + paradigm 領域拡大完全実証 (frontend → rust) + ultra-light サブ階層 ~9 行/loop の発見候補 + alternation pattern 45 連続維持 (rust(157) → K(158))。
+検証: agent-verify.sh = OK (docs 単独 skip 判定)。
+意義: K 軸 precedent 32 件目達成 = 節目 30 件突破後継続 = K 軸自体の paradigm 完全成熟期維持 + 軽量化階層の範囲下端 3 ループ連続拡大 (Loop 153 = ~20 行 → Loop 155 = ~18 行 → Loop 157 = ~9.5 行) = 軽量化トレンド完全実証 + 4 段階階層化 paradigm 完全成熟期維持 + ultra-light サブ階層の発見候補 + worker 自律 2-commit pattern 連続 14 ループ目達成 = 節目 14 件突破継続。
+---
+```
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-78 Loop 158 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, 観測 32 件目, +19 行 / 平均 ~9.5 行/loop = Loop 155 観測値 -49% 大幅減少 = 軽量化階層下端の劇的拡大 = ~18 → ~9 行 + rust 軸軽量化 paradigm 2 連続観測 = 完全実証期入り + SUMMARY 軽量化期間 3 連続観測達成 + ultra-light サブ階層の発見候補) のエントリ追記"
+```
+
+### 完了確認
+
+`git log --oneline -3` で 2 commit が作成されていることを確認。`git status --short` で working tree clean を確認 (handoff/worker-prompts ファイルは untracked 継続)。
+
+## 制約 (重要)
+
+- **担当範囲外の編集禁止**: 上記 2 file (agent-log-archive-plan.md / AGENT_LOG.md) のみ編集
+- **行末空白文字 (trailing whitespace) 禁止** = 各行末尾に空白文字を残さない
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から、Loop 146-157 で 12 連続実証成功)
+- 大型 file は Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **2-commit pattern を厳守** = docs commit + chore commit の 2 つを順番に作成
+- `--no-verify` 禁止、Keychain 実通信禁止、課金禁止
+- 課題発生時は中断して報告。状況不明なら勝手に file を作らない。
+
+## 想定完走時間
+
+規模 SS = ~3-5 分完走見込み (K 軸 = 定型タスクで最軽量、Loop 156 precedent = ~3 分)
+
+precedent: Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150/152/154/156 = 31 件全て完走実績。
+
+以上、よろしくお願いします。

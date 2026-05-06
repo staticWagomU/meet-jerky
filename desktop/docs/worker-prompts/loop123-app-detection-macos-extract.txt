@@ -1,0 +1,188 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+他エージェントも同時に作業中の可能性があるので、担当範囲外の編集は禁止。コミット禁止 → と言いたいところだが、本タスクは **2-commit pattern** を自律実行してください (詳細後述)。
+
+## 必読 (冒頭)
+
+1. **AGENT_LOG.md の末尾 350 行** を `tail -350 AGENT_LOG.md` で読む。**先頭は絶対に触らない**。AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。具体手順 = `tail -10 AGENT_LOG.md` で末尾の `---` を確認 → その直後に追記。
+2. AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (短いので全文読む)
+3. **precedent: src-tauri/src/apple_speech_macos.rs (Loop 95 抽出済 = 同 paradigm の rust 版 1 件目)** を `cat` で全体読込 (~250 行) = 本 Loop は **2 件目** で構造を踏襲する
+
+## 担当範囲 (Loop 123)
+
+**rust 軸 = inline module 全体抽出軸 cfg(macos) 付き = Loop 95 と同 paradigm の rust 版 2 件目**:
+
+`src-tauri/src/app_detection.rs` L410-L525 の `#[cfg(target_os = "macos")] mod macos { ... }` (~115 行) を新 file `src-tauri/src/app_detection_macos.rs` に inline module 全体抽出する。
+
+これは **大型 rust file 責務分離 38 file 目 + scope 25 軸目開拓 + alternation pattern 15 連続維持 (K(122) → rust(123))**。
+
+### 責務階層精査済 (採用根拠)
+
+メイン側で精査結果:
+- mod macos = **FFI bridge layer (extern "C" + Swift callback wrapper)** = app_detection.rs の Rust 側 logic と **異階層**
+- → **新 file 作成軸が妥当** (Loop 119/121 教訓継承: paradigm 反復 < 責務階層精査)
+- handoff 副推奨候補 R5 (inactive_decision/notification 統合) は **責務階層精査で却下** (state/AppHandle 依存層 ≠ 純粋関数層 = 既に分離済 = 統合候補ゼロ)
+
+### 抽出対象の構造
+
+```
+src-tauri/src/app_detection.rs L410-L525:
+- L410-L411: #[cfg(target_os = "macos")] mod macos {
+- L412-L413: use std::ffi::{c_char, c_void, CStr, CString};
+- L414: use super::{handle_browser_url_detection, handle_detection, WATCHED_BUNDLE_IDS};
+- L416-L417: type DetectionCallback = ...
+- L419-L429: extern "C" { ... } block (meet_jerky_app_detection_start / _stop)
+- L431-L437: type BrowserUrlCallback = ...
+- L439-L463: extern "C" fn detection_callback(...)
+- L465-L498: extern "C" fn browser_url_callback(...)
+- L500-L524: pub fn start_detection() {...}
+- L525: }
+```
+
+### 外部 caller (1 件のみ)
+
+`src-tauri/src/app_detection.rs` L147 (`start` fn 内、`#[cfg(target_os = "macos")]` ブロック配下):
+```
+macos::start_detection();
+```
+
+## 実装手順 (順守)
+
+### Step 1: app_detection.rs 内 関数の visibility 修正 (pub(crate) 化)
+
+`super::{handle_browser_url_detection, handle_detection, WATCHED_BUNDLE_IDS}` を新 file から `crate::app_detection::{...}` で参照するため、以下を `pub(crate)` 化:
+
+- L163: `fn handle_detection(bundle_id: &str, app_name: &str) {` → `pub(crate) fn handle_detection(...)`
+- L285: `fn handle_browser_url_detection(bundle_id: &str, ...) {` → `pub(crate) fn handle_browser_url_detection(...)`
+
+`WATCHED_BUNDLE_IDS` は既に `pub(crate)` (L51) なので変更不要。
+
+### Step 2: 新 file `src-tauri/src/app_detection_macos.rs` を作成
+
+apple_speech_macos.rs の precedent 構造に倣う。冒頭に file レベル doc コメント:
+
+```rust
+//! 会議アプリ検知 (NSWorkspace + AppleScript) の macOS 固有 FFI ブリッジ実装。
+//!
+//! `app_detection.rs` から `#[cfg(target_os = "macos")]` の `mod macos` を切り出し、
+//! Swift 側 (meet_jerky_app_detection_start) との extern "C" 境界を集約する。
+//! caller は `app_detection.rs::start` の `#[cfg(target_os = "macos")]` ブロック内のみ。
+
+#![cfg(target_os = "macos")]
+
+use std::ffi::{c_char, c_void, CStr, CString};
+
+use crate::app_detection::{handle_browser_url_detection, handle_detection, WATCHED_BUNDLE_IDS};
+
+// ... (extern "C" block + 2 callback fn + start_detection)
+```
+
+注意:
+- file 全体を `#![cfg(target_os = "macos")]` でガードする (apple_speech_macos.rs と同 pattern。これにより non-macos build で dead code 警告を抑制)
+- `pub fn start_detection()` → **`pub(crate) fn start_detection()`** に変更 (mod 外部から呼ばれる必要があるが、crate 外からは不要)
+- `extern "C" fn detection_callback / browser_url_callback` は file 内 private のまま (現在も module 内 private)
+- `extern "C" {}` block と `type` alias もそのまま維持
+
+### Step 3: app_detection.rs 内の元コード削除
+
+L406-L408 の section 区切りコメント (`// ─────...` の `macOS 固有の実装` 説明) と L410-L525 全体 (mod macos { ... }) を削除。
+
+### Step 4: app_detection.rs L147 の caller を新 file 参照に置換
+
+L144-L156 の `start` fn 内 `#[cfg(target_os = "macos")]` ブロックで:
+```
+macos::start_detection();
+```
+を:
+```
+crate::app_detection_macos::start_detection();
+```
+に変更。
+
+(あるいは file 冒頭の use セクションに `#[cfg(target_os = "macos")] use crate::app_detection_macos;` を追加して `macos::start_detection();` を維持するアプローチでも可。差分最小なら fully qualified path 推奨。)
+
+### Step 5: lib.rs に mod 登録 (alphabetical order)
+
+`src-tauri/src/lib.rs` L4 (`mod app_detection_inactive_decision;`) の **直後** に挿入:
+```
+mod app_detection_macos;
+```
+
+これで alphabetical: `app_detection_inactive_decision` < `app_detection_macos` < `app_detection_meeting_classifier` の順で正しい。
+
+### Step 6: 検証 (cd src-tauri 必須 = desktop 直下に Cargo.toml なし)
+
+```bash
+cd src-tauri
+cargo fmt --check
+cargo clippy --lib --tests -- -D warnings
+cargo test --lib   # 704 件件数完全不変を確認
+cargo build --lib
+```
+
+**期待結果**: 警告ゼロ、test 704 件 passed (件数完全不変、追加削除なし)、build エラーなし。
+
+### Step 7: refactor commit を作成
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src-tauri/src/app_detection.rs src-tauri/src/app_detection_macos.rs src-tauri/src/lib.rs
+git commit -m "$(cat <<'EOF'
+refactor(rust): app_detection の macOS FFI bridge mod を app_detection_macos.rs に inline module 全体抽出 (mjc-main-20260505-63 Loop 123, rust 軸 = inline module 全体抽出軸 cfg(macos) 付き 2 件目, scope 25 軸目開拓, 大型 rust file 責務分離 38 file 目, Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目, handle_detection + handle_browser_url_detection を pub(crate) 化, AGENTS.md priority 1 寄与)
+EOF
+)"
+```
+
+commit 後、`git log --oneline -1` で実 hash を取得。
+
+### Step 8: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認後、その直後にエントリを追記:
+
+```markdown
+[mjc-main-20260505-63 Loop 123 / 2026-05-06]
+worker: mjc-worker-loop123-app-detection-macos-extract (作業)
+範囲: src-tauri/src/app_detection.rs (-115 行 + visibility 修正 2 箇所 + use/caller 修正) + src-tauri/src/app_detection_macos.rs (新規 ~125 行 file レベル #![cfg(target_os = "macos")] + use + extern "C" block + 2 callback fn + pub(crate) fn start_detection) + src-tauri/src/lib.rs (+1 行 mod 登録 alphabetical 挿入)
+内容: app_detection.rs L410-L525 の `#[cfg(target_os = "macos")] mod macos { ... }` (~115 行) を新 file app_detection_macos.rs に inline module 全体抽出。Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目 = scope 25 軸目開拓 = 大型 rust file 責務分離 38 file 目。handle_detection (L163) と handle_browser_url_detection (L285) を pub(crate) 化 (新 file から crate::app_detection::{...} で参照するため)。WATCHED_BUNDLE_IDS は既に pub(crate)。caller (L147) は crate::app_detection_macos::start_detection() に置換。app_detection.rs は 2579 → ~2466 行。alternation pattern 15 連続成功維持 (K(122) → rust(123))。メイン批判判断 = handoff 副推奨候補 R5 (inactive_decision / notification 統合) を責務階層精査で却下 (state/AppHandle 依存層 ≠ 純粋関数層 = 既に分離済) + 自律発見「mod macos 抽出」採用 = 連続 61 セッション目達成。Loop 119/121 教訓 (paradigm 反復 < 責務階層精査) を強く継承。
+変更ファイル: src-tauri/src/app_detection.rs, src-tauri/src/app_detection_macos.rs, src-tauri/src/lib.rs
+検証: cargo fmt --check OK, cargo clippy --lib --tests -- -D warnings 警告ゼロ, cargo test --lib 704 件 passed (件数完全不変), cargo build --lib OK
+commit: <REPLACE_WITH_REFACTOR_COMMIT_HASH> refactor(rust): app_detection の macOS FFI bridge mod を app_detection_macos.rs に inline module 全体抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+`<REPLACE_WITH_REFACTOR_COMMIT_HASH>` は Step 7 で取得した実 hash に置換すること。chore commit hash は意図的に書かない (現時点では未知のため)。
+
+### Step 9: chore commit を作成
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-63 Loop 123 = app_detection の macOS FFI bridge mod を app_detection_macos.rs に inline module 全体抽出 (構造分離 38 file 目, rust 軸, scope 25 軸目開拓, Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目, alternation 15 連続成功, handle_detection + handle_browser_url_detection を pub(crate) 化)
+EOF
+)"
+```
+
+## 必須要素 (再掲、必ず守る)
+
+1. **AGENT_LOG.md は末尾にのみ追記**。先頭は絶対に触らない。
+2. **大型ファイル (app_detection.rs 2579 行) は Read 全体禁止 = tail/head/grep で対象範囲のみ参照**。
+3. **行末の空白文字 (trailing whitespace) 禁止**。
+4. **test 件数の上限 = 704 件 (件数完全不変)** = テスト追加削除しない。本 Loop は構造分離のみで test logic 不変。
+5. **担当範囲外の編集禁止** = 上記 Step 1-9 で指定された file (app_detection.rs / app_detection_macos.rs / lib.rs / AGENT_LOG.md) のみ編集。
+6. **2-commit pattern**: refactor commit → hash 取得 → AGENT_LOG.md 末尾追記 (実 hash 反映) → chore commit。
+
+## 検証制約 (再掲)
+
+- 課金禁止 (elevenlabs/openai 系の実 API 叩き厳禁)
+- `--no-verify` 禁止
+- Keychain 実通信禁止 / Apple SpeechAnalyzer 実通信禁止
+- cargo は `cd src-tauri` してから実行 (desktop 直下に Cargo.toml なし)
+- test 704 件 passed (件数完全不変) を厳守
+
+## 完了報告
+
+最後に、変更内容、変更ファイル、検証結果 (cargo test 件数、cargo clippy 警告数、cargo fmt 結果)、両 commit hash、残リスク (あれば) を簡潔に報告。1 ターンで完結する形でまとめる。

@@ -1,0 +1,204 @@
+あなたは meet-jerky の worker (mjc-worker-loop186-status-unregistered-const) です。
+
+# タスク (Loop 186 = frontend 軸 = const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束)
+
+`"未登録"` 文字列リテラル 3 callsite (2 file) を `src/utils/statusLabels.ts` に新規追加する `STATUS_UNREGISTERED_LABEL` const に置換する。
+
+## 範囲 (限定 = 規模超過防止)
+
+**編集対象 (4 file のみ)**:
+1. `src/utils/statusLabels.ts` (新規 const 追加 1 行)
+2. `src/utils/externalApiKeyHelpers.ts` (import 拡張 + L17 + L29 callsite)
+3. `src/routes/SettingsView.tsx` (import 拡張 + L1904 callsite)
+4. `AGENT_LOG.md` (末尾追記 1 entry)
+
+**範囲外 (これらは触らない)**:
+- 上記 4 file 以外のあらゆる file
+- 上記 file 内であっても、以下に列挙した line 以外
+- `"登録済み"` 等、`"未登録"` 以外の文字列リテラル (本ループの scope 外)
+- rust コード (frontend 軸のため不要)
+
+## 具体手順 (順序厳守)
+
+### Step 1: statusLabels.ts に const 追加
+
+`src/utils/statusLabels.ts` を Read で読む (現在 4 行 = 軽量 file). 末尾に以下 1 行を追加:
+
+```typescript
+export const STATUS_UNREGISTERED_LABEL = "未登録";
+```
+
+**完成形**:
+```typescript
+export const STATUS_UNCHECKABLE_LABEL = "確認できません";
+export const STATUS_CHECKING_LABEL = "確認中";
+export const STATUS_UNDETERMINED_LABEL = "未確認";
+export const STATUS_DENIED_LABEL = "未許可";
+export const STATUS_UNREGISTERED_LABEL = "未登録";
+```
+
+### Step 2: externalApiKeyHelpers.ts を修正
+
+L1 既存 import:
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
+```
+
+これを:
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNREGISTERED_LABEL } from "./statusLabels";
+```
+
+L17 callsite:
+```typescript
+  return hasExternalApiKey ? "登録済み" : "未登録";
+```
+
+これを:
+```typescript
+  return hasExternalApiKey ? "登録済み" : STATUS_UNREGISTERED_LABEL;
+```
+
+L29 callsite:
+```typescript
+  if (statusLabel === "未登録") {
+```
+
+これを:
+```typescript
+  if (statusLabel === STATUS_UNREGISTERED_LABEL) {
+```
+
+注: `"登録済み"` は本ループ scope 外なので **触らない**。
+
+### Step 3: SettingsView.tsx を修正
+
+L33 既存 import:
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
+```
+
+これを (alphabetical order 維持):
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
+```
+
+L1904 callsite (周辺は `: hasKey ? "登録済み" : "未登録";` のような ternary fallback):
+```typescript
+          : "未登録";
+```
+
+これを:
+```typescript
+          : STATUS_UNREGISTERED_LABEL;
+```
+
+注: 同 file 内に `"登録済み"` 等あるが本ループ scope 外。
+
+### Step 4: 検証
+
+```bash
+# 1. "未登録" 残存確認 = statusLabels.ts L5 定義行のみ残存が期待値
+grep -rn '"未登録"' src/
+
+# 2. frontend build
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build
+```
+
+`grep` 結果は `src/utils/statusLabels.ts:5:export const STATUS_UNREGISTERED_LABEL = "未登録";` の 1 件のみ期待。
+
+`npm run build` は tsc + vite build が成功すれば OK。
+
+### Step 5: 1 番目の commit (refactor)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/utils/statusLabels.ts src/utils/externalApiKeyHelpers.ts src/routes/SettingsView.tsx
+git commit -m "refactor(frontend): STATUS_UNREGISTERED_LABEL を src/utils/statusLabels.ts に集約 + 2 file 3 callsite を const 参照に統一 (mjc-main Loop 186, frontend 軸 = const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束, 既存 file 拡張軸 paradigm 18 件目, '未登録' 3 callsite を統一 + DRY 違反解消, alternation pivot K(185) → frontend(186) = 25 → 26, AGENTS.md priority 1 寄与)"
+```
+
+commit 完了後 `git log --oneline -1` で hash を取得し、Step 6 で使用。
+
+### Step 6: AGENT_LOG.md に entry 追記
+
+**重要 (worker prompt 必須要素 9)**: AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾**。**先頭は絶対に触らない**。
+
+#### 6-1: 末尾確認
+
+```bash
+tail -10 AGENT_LOG.md
+```
+
+末尾は `---` (boundary 区切り) 1 行で終わっているはず。**この `---` の直後に新 entry を追加する**。
+
+#### 6-2: entry テンプレート
+
+以下の内容を temp file (`/tmp/loop186-entry.txt`) に Write し、`cat /tmp/loop186-entry.txt >> AGENT_LOG.md` で **1 回だけ** append。
+
+**重要 (worker prompt 必須要素 9)**: 冒頭に `---` を **含めない**。前 entry の閉じ `---` を再利用するため、entry は `[mjc-main Loop 186 ...]` から始める。**末尾の `---` 1 個で締める**。
+
+```
+[mjc-main Loop 186 / 2026-05-06]
+worker: mjc-worker-loop186-status-unregistered-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_UNREGISTERED_LABEL 追加) + src/utils/externalApiKeyHelpers.ts (L1 import 拡張 + L17/L29 callsite) + src/routes/SettingsView.tsx (L33 import 拡張 + L1904 callsite)
+変更: STATUS_UNREGISTERED_LABEL を src/utils/statusLabels.ts に export const 追加 (既存 4 const = STATUS_UNCHECKABLE/CHECKING/UNDETERMINED/DENIED に並列 = 5 const 完成) + 2 file 3 callsite (utils 1 + routes 1) を const 参照に統一 = 完全一致 `"未登録"` 3 件を一括統合 + DRY 違反解消 + ネット行数 ~+1 行 (statusLabels.ts +1 行 + 既存 import 拡張 2 件はインライン書き換え + callsite 3 件は同行書き換え)
+意義: frontend 軸 = const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束 + 既存 file 拡張軸 paradigm 18 件目達成 (Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176/180/182/184 + Loop 186 = 18 件目) + 重複候補 grep 探索 paradigm 19 件目達成 + Loop 178 で確立済の statusLabels.ts への 5 度目の拡張 = paradigm 一貫性完全維持 + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与 + unchecked/checking/undetermined/denied/unregistered semantic 並列が 5 const で完成 = const 集約軸 paradigm 完全成熟期完全成熟最終収束達成
+検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"未登録"` = 1 件のみ確認 (statusLabels.ts L5 定義行のみ残存)
+備考: paradigm 反復 7 件目達成 = const 集約軸の paradigm 完全成熟期完全成熟最終収束完成. 残候補 = R28 (`"確認中..."` 5 callsite = 別 entity 扱い) + R21 (rust 軸) + R17 (別 paradigm 開拓) のみ.
+---
+```
+
+**注意点**:
+- 行末に空白 (trailing whitespace) を含めない
+- 上記の `---` は **末尾の 1 個のみ** (boundary 区切り). 冒頭には `---` を入れない (前 entry の閉じ `---` を再利用)
+- append は **Edit/Write を複数回繰り返さず、1 回で append が成功したら直ちに次へ進む** (Loop 144 fault precedent)
+
+#### 6-3: append 実行
+
+```bash
+cat /tmp/loop186-entry.txt >> AGENT_LOG.md
+```
+
+### Step 7: 2 番目の commit (chore agent-log)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 186 = STATUS_UNREGISTERED_LABEL を statusLabels.ts に集約 (frontend 軸, const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束, 既存 file 拡張軸 paradigm 18 件目, alternation pivot K(185) → frontend(186) = 25 → 26, 重複候補 grep 探索 paradigm 19 件目達成) のエントリ追記"
+```
+
+### Step 8: 完了確認
+
+```bash
+git status --short
+git log --oneline -3
+```
+
+`git status` は `working tree clean` (untracked の docs/handoff/* は無視可)。
+`git log` の上 2 件が本ループの commit (refactor + chore agent-log)。
+
+# 制約 (再掲、重要)
+
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` 禁止 (harness 内のみ)
+- 行末空白 (trailing whitespace) 禁止
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない
+- entry テンプレート冒頭に `---` を含めない (boundary 重複 fault 防止 = Loop 166 precedent + 17 連続実証成功)
+- 大型 file (AGENT_LOG.md ~34420 行) は Read 全体禁止 = `tail -10 AGENT_LOG.md` で末尾だけ確認
+- 範囲外の file (上記 4 file 以外) は **絶対に触らない**
+- range 内 file でも、上記列挙した line 以外は触らない (例: SettingsView.tsx の他 line, externalApiKeyHelpers.ts の `"登録済み"` 等)
+- rust 系検証は skip 可 (frontend 軸のみ = cargo test 不要)
+- AGENTS.md / docs/autonomous-main-prompt-claude.md / docs/agent-harness-claude.md を必ず参照
+- 完了したら final answer で返事 (待機モード禁止 = 即座に 2-commit して終わる)
+
+# 期待される完了状態 (2-commit pattern)
+
+1. commit 1: `refactor(frontend): STATUS_UNREGISTERED_LABEL を src/utils/statusLabels.ts に集約 + 2 file 3 callsite を const 参照に統一` = 3 file 変更
+2. commit 2: `chore(agent-log): mjc-main Loop 186 = ...` = AGENT_LOG.md 1 file 変更
+
+`git status` working tree clean (untracked の docs/* は無視) を確認後、final answer で返事してください。
+
+# AGENT_LOG.md 末尾を冒頭で必ず確認
+
+冒頭で `tail -350 AGENT_LOG.md` を実行 → 直近 entry (Loop 185 + Loop 184 + Loop 183 + Loop 182 + SUMMARY) と末尾 boundary `---` の存在を確認してから着手すること。

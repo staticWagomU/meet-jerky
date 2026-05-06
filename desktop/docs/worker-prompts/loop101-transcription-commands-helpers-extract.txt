@@ -1,0 +1,168 @@
+あなたは meet-jerky の worker (sonnet) = mjc-worker-transcription-commands-helpers-loop101 です。
+
+# 最初に必ず実施 (規律)
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾 350 行を読み、最新 SESSION SUMMARY (mjc-main-20260505-51) と進化 pattern (Loop 80-100 で worker 自律 2-commit pattern 連続 40 ループ目達成) を確認する。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。具体手順 = `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+3. `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/transcription_commands_model.rs` (100 行 = 同 scope precedent, Loop 90) と `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/audio_resample.rs` (141 行 = 同 paradigm precedent, Loop 98) を全文 cat で読み、新 file 構造の precedent を把握する。
+4. `wc -l` で transcription_commands.rs (630 行) のサイズ確認は OK だが、**Read 全体禁止 = tail/head/grep で対象範囲のみ参照** すること。
+
+# 担当タスク (Loop 101 = transcription_commands_helpers.rs 抽出 = 純粋関数機能分離軸 paradigm pivot)
+
+**目的**: src-tauri/src/transcription_commands.rs (630 行) から純粋関数群 (struct RequestedTranscriptionSources + 2 const + 2 fn validate/parse) と関連 tests 20 件を新 module `transcription_commands_helpers.rs` に抽出する。**transcription_commands 軸 2 件目** (Loop 90 transcription_commands_model.rs と並立) = scope depth 充実 + **paradigm pivot** = 機能分類軸 (Loop 100 settings_commands) → 純粋関数機能分離軸 (audio_silence Loop 94 / audio_resample Loop 98 と同形)。
+
+## 抽出範囲 (production = L10-58, transcription_commands.rs)
+- L10-14: `pub(crate) struct RequestedTranscriptionSources { use_mic: bool, use_system: bool }` (`#[derive(Debug, Clone, Copy, PartialEq, Eq)]` 付き)
+- L16-17: `pub(crate) const TRANSCRIPTION_SOURCE_MICROPHONE` / `TRANSCRIPTION_SOURCE_SYSTEM_AUDIO`
+- L19-34: `pub(crate) fn validate_stream_count_for_engine`
+- L36-58: `pub(crate) fn parse_requested_transcription_sources`
+
+## 抽出範囲 (tests = transcription_commands.rs L235-629 のうち下記 20 件)
+**ALL 20 件を新 file の `#[cfg(test)] mod tests` に移動する**:
+1. transcription_source_constants_are_snake_case_lowercase (L235-239)
+2. test_parse_requested_transcription_sources_accepts_known_values (L241-285)
+3. test_parse_requested_transcription_sources_rejects_unknown_values (L287-303)
+4. test_apple_speech_rejects_multiple_available_streams (L305-314)
+5. test_apple_speech_allows_single_available_stream (L316-320)
+6. test_other_engines_allow_multiple_available_streams (L322-332)
+7. parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value (L334-342)
+8. parse_requested_transcription_sources_rejects_uppercase_known_values (L344-355)
+9. parse_requested_transcription_sources_error_message_contains_source_constants (L357-369)
+10. validate_stream_count_for_engine_apple_speech_rejects_two_with_exact_error_message (L373-386)
+11. validate_stream_count_for_engine_apple_speech_rejects_three_streams_with_same_error_message (L388-402)
+12. validate_stream_count_for_engine_apple_speech_rejects_usize_max_streams (L404-416)
+13. validate_stream_count_for_engine_apple_speech_allows_zero_streams (L418-424)
+14. validate_stream_count_for_engine_other_engines_allow_zero_and_usize_max_streams (L426-439)
+15. parse_requested_transcription_sources_trims_tab_and_newline_whitespace (L441-463)
+16. parse_requested_transcription_sources_trims_unicode_full_width_space_u3000 (L465-488)
+17. parse_requested_transcription_sources_rejects_prefix_extension_inputs (L490-510)
+18. requested_transcription_sources_debug_output_contains_struct_name_and_both_field_names (L512-581)
+19. requested_transcription_sources_copy_semantics_allow_use_after_move (L583-600)
+20. requested_transcription_sources_partial_eq_holds_reflexive_and_differs_for_each_field (L602-629)
+
+**移動しないテスト** = transcription_commands.rs の `mod tests` には L371 のコメント (`// --- validate_stream_count_for_engine boundary + 文言完全一致 ---`) もあるが、移動対象 test の上にあるならそれも一緒に削除可能 (削除して可)。
+
+## 担当範囲外 (絶対に触らない)
+- transcription_commands.rs の **L60 以降の production**: stop_transcription / start_transcription / PendingTranscriptionStream は完全に不変 = **触るな**。
+- start_transcription L124 (`parse_requested_transcription_sources(source.as_deref())?`) と L141 (`validate_stream_count_for_engine(...)`) の **呼び出しは無変更**。新 file からの import を use 文 1 行追加で対応する (下記参照)。
+- transcription_commands.rs L1-8 の use 文も基本不変 = 移動した struct/const/fn が無くなって不要になった use があれば削除可能だが、**他に必要なものを誤削除しないよう注意**。
+- transcription_commands.rs の他 tests (本 prompt L52 の番号外のテスト) があれば触らない。`mod tests { use super::*; ... }` の外殻と他 test は完全に保持する。
+
+## 新 file の構造 (規模 ~450-470 行想定)
+```rust
+//! 文字起こし開始時の純粋関数 helpers (validate / parse / 関連定数 / RequestedTranscriptionSources struct)。
+//!
+//! Loop 101 で transcription_commands.rs から分離。state 依存ゼロの純粋関数のみ。
+
+use crate::settings::TranscriptionEngineType;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RequestedTranscriptionSources {
+    pub(crate) use_mic: bool,
+    pub(crate) use_system: bool,
+}
+
+pub(crate) const TRANSCRIPTION_SOURCE_MICROPHONE: &str = "microphone";
+pub(crate) const TRANSCRIPTION_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
+
+pub(crate) fn validate_stream_count_for_engine(
+    engine_type: &TranscriptionEngineType,
+    stream_count: usize,
+) -> Result<(), String> {
+    // 元コードを完全コピー (型 path だけ TranscriptionEngineType に置換、`crate::settings::TranscriptionEngineType` → use 経由の `TranscriptionEngineType` でも OK)
+}
+
+pub(crate) fn parse_requested_transcription_sources(
+    source: Option<&str>,
+) -> Result<RequestedTranscriptionSources, String> {
+    // 元コードを完全コピー
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // 20 件のテストを完全コピー (assert 文の `crate::settings::TranscriptionEngineType` は use 経由 or full path どちらでも、元 file の表記を保持しても OK)
+}
+```
+
+**注**: use 文の path 表記は元 file と同じ (`crate::settings::TranscriptionEngineType::*`) でも、新 file 冒頭で `use crate::settings::TranscriptionEngineType;` を追加して短縮形 (`TranscriptionEngineType::AppleSpeech`) でも OK。**振る舞い不変** が条件なので test の文字列 assert は 1 文字も変えるな。
+
+## caller 修正 (transcription_commands.rs)
+- L1-8 の use 文の直後 (おそらく L8 直後) に `use crate::transcription_commands_helpers::{parse_requested_transcription_sources, validate_stream_count_for_engine, RequestedTranscriptionSources, TRANSCRIPTION_SOURCE_MICROPHONE, TRANSCRIPTION_SOURCE_SYSTEM_AUDIO};` を追加 ... **ただし L60-225 の start_transcription 内で参照されるのは `parse_requested_transcription_sources` と `validate_stream_count_for_engine` のみ** = `RequestedTranscriptionSources` / 2 const は production caller では不要 = use 文に含めなくて OK。
+  - **最小修正方針**: `use crate::transcription_commands_helpers::{parse_requested_transcription_sources, validate_stream_count_for_engine};` 1 行のみ。
+- L124 / L141 の呼び出しコードはそのまま (関数名は use で解決)。
+- 他は無変更。
+
+## lib.rs 更新
+- L51 `mod transcription_commands;` の **直後** に `mod transcription_commands_helpers;` を 1 行追加 (alphabetical 順 = `transcription_commands` と `transcription_commands_model` の間)。
+- L52 `mod transcription_commands_model;` (既存) より前に置く。
+
+# 検証手順 (順序厳守)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --all`
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib --tests -- -D warnings` で警告ゼロ。
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib` で **704 passed / 0 failed (件数完全不変)**。件数が 704 から動いたら抽出ミス = 直す。
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/transcription_commands.rs src-tauri/src/transcription_commands_helpers.rs src-tauri/src/lib.rs AGENT_LOG.md` で全項目 OK。
+5. trailing whitespace 0 件 (`grep -nE " +$" 対象 file` でゼロ確認)。
+
+# 規模超過防止
+- 本タスクの diff は ±550 行以内 (新規 +470, 削除 -450, lib.rs +1, caller use +1) = これを大きく超える場合は何かおかしい = 立ち止まって状況確認。
+- **テスト件数 704 件完全不変** が確認できなかったら commit してはいけない。
+- transcription_commands.rs 内の他コード (L60-225 production / 他 tests / use 文) は **絶対に変更しない**。
+
+# Commit pattern (Loop 80-100 進化 pattern 完璧踏襲)
+
+**2-commit pattern**:
+
+## Commit 1 = refactor (実体変更)
+- 対象 file: src-tauri/src/transcription_commands.rs (削除のみ) + src-tauri/src/transcription_commands_helpers.rs (新規) + src-tauri/src/lib.rs (mod 追加)
+- 中身: 上記の抽出 + use 文追加 + mod 追加
+- メッセージ:
+```
+refactor(transcription): 純粋関数 helpers (validate_stream_count_for_engine + parse_requested_transcription_sources + RequestedTranscriptionSources + 2 const) を transcription_commands_helpers.rs に抽出 (mjc-main-20260505-52 Loop 101, 機能分離軸 = transcription_commands 軸 2 件目, 大型 rust file 責務分離 25 file 目, AGENTS.md priority 1 寄与)
+```
+- `git add src-tauri/src/transcription_commands.rs src-tauri/src/transcription_commands_helpers.rs src-tauri/src/lib.rs && git commit -m "..."` で commit。
+- commit 完了直後に `git log --oneline -1` で hash を実 hash で取得して **記憶しておく** (次の chore に直書きするため)。
+
+## Commit 2 = chore(agent-log) (ログ追記 = 2-commit pattern)
+- 対象: AGENT_LOG.md (末尾に Loop 101 entry 追記、--- 直後 + 末尾 ---)
+- 追記内容のテンプレ (実 hash を refactor commit の実 hash で **直接** 書く、chore commit の hash は **書かない**):
+```
+[mjc-main-20260505-52 Loop 101 / 2026-05-05]
+worker: mjc-worker-transcription-commands-helpers-loop101 (作業)
+範囲: src-tauri/src/transcription_commands.rs (純粋関数 helpers production ~50 行削除 + test 20 件削除 + use 文追加) + src-tauri/src/transcription_commands_helpers.rs (新規 ~470 行) + src-tauri/src/lib.rs (mod 1 行追加)
+内容: transcription_commands.rs L10-58 の純粋関数 helpers (struct RequestedTranscriptionSources + 2 const + validate_stream_count_for_engine + parse_requested_transcription_sources) を新 module transcription_commands_helpers.rs に抽出。tests 20 件を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod transcription_commands_helpers; 追加 (alphabetical = mod transcription_commands; と mod transcription_commands_model; の間)。caller transcription_commands.rs に use 文 1 行追加 (use crate::transcription_commands_helpers::{parse_requested_transcription_sources, validate_stream_count_for_engine};)。可視性 pub(crate) は完全保持。大型 rust file 責務分離 25 file 目 = transcription_commands 軸 2 件目 (scope depth 充実 = settings 軸 (Loop 100) と並立 pattern 確立) = settings_commands 軸 (Loop 100) からの paradigm pivot 達成 = 機能分類軸 9 件目 → 純粋関数機能分離軸 (audio_silence Loop 94 / audio_resample Loop 98 と同形) paradigm 復帰。transcription_commands.rs は 630 → ~180 行 (-71%, 本セッション最大削減級)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <refactor commit hash> refactor(transcription): 純粋関数 helpers を transcription_commands_helpers.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = transcription_commands 軸の純粋関数機能境界分離 + state 依存無しの helpers 局所化)
+
+---
+```
+- 追記後、`git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-52 Loop 101 = transcription_commands_helpers.rs 抽出 (構造分離 25 file 目, transcription_commands 軸 2 件目 = scope depth 充実, settings_commands 軸からの paradigm pivot 達成 = 純粋関数機能分離軸 paradigm 復帰) のエントリ追記"` で commit。
+- `--no-verify` 禁止。
+
+# AGENT_LOG.md 末尾追記の手順厳守
+1. 追記前 `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認。
+2. 追記内容を一時 file に Write し、`cat <一時 file> >> AGENT_LOG.md` で末尾に append。**Edit ツールで `---` の unique 性に依存しない**。
+3. 追記後 `tail -50 AGENT_LOG.md` で正しく末尾に入ったか目視確認。
+4. trailing whitespace チェック: `grep -nE " +$" AGENT_LOG.md | tail -5` で本セッション分にゼロ確認。
+
+# 完了基準
+- transcription_commands.rs から純粋関数 helpers (struct + 2 const + 2 fn) と tests 20 件が消え、新 file transcription_commands_helpers.rs に移動済。
+- lib.rs に mod transcription_commands_helpers; 追加済 (alphabetical)。
+- transcription_commands.rs に use 文 1 行追加済。
+- cargo test --lib 704 passed (件数完全不変、本セッション move only)。
+- clippy / fmt / verify.sh OK。
+- 2-commit (refactor + chore) 完了。`git log --oneline -3` で 2 commit が反映されているか確認。
+- AGENT_LOG.md 末尾の chore commit 内容に `<refactor commit hash>` placeholder が残っていない (実 hash 直書き)。
+- chore commit hash は AGENT_LOG.md には書かない (Loop 80-100 進化 pattern 踏襲)。
+
+# 失敗時の対応
+- `cargo test --lib` 件数が 704 から動いたら、**移動 test の重複 / 漏れ / cfg 属性誤り** = 該当 file 修正後に再検証。
+- caller の use 文修正で `unused import` warning が出たら、**未使用 import を削除** (use 文 1 行追加が無駄なら caller 内部で full path 経由でも OK)。
+- trailing whitespace 警告 (clippy / verify.sh) が出たら **該当行を sed -i 's/[[:space:]]*$//' 等で修正** して再 commit。
+- `--amend` 禁止 (commit hash 安定性のため)。問題があれば追加 commit で修正。
+
+以上、本タスク = mjc-main-20260505-52 Loop 101 の指示。完了したら静かに stop。メインが `git log --oneline -3` と AGENT_LOG.md tail で完走確認します。

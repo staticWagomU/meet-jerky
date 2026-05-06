@@ -1,0 +1,222 @@
+あなたは meet-jerky の worker です。Loop 141 = frontend 軸 (R6i = TranscriptView.tsx Transcription Source 系 4 純粋関数 + 1 const → utils/transcriptionSourceHelpers.ts に抽出) を担当します。
+
+# 必読 (順番)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** (先頭は絶対に触らない、ファイル全体 Read 禁止 = ~33,491 行ある)。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1)。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioSourceHelpers.ts (precedent = R6 段階的分割 6 件目 = 4 件統合パターン)。
+4. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/externalApiKeyHelpers.ts (precedent = R6 段階的分割 8 件目 = 直前 frontend 軸抽出)。
+5. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioTrackLabels.ts (cross-import 元 = SELF_TRACK_DEVICE_LABEL + OTHER_TRACK_DEVICE_LABEL)。
+
+# 重要な制約 (絶対)
+
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭 (L1 〜) は絶対に触らない。**
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照。**TranscriptView.tsx (~2217 行) は **行範囲 Read のみ** (L97-L300 範囲のみ確認)。
+- **行末の空白文字 (trailing whitespace) 禁止。**
+
+# 本 Loop の目的
+
+TranscriptView.tsx の Transcription Source 系 4 純粋関数 + 1 const を新 file `src/utils/transcriptionSourceHelpers.ts` に抽出する。
+
+## 抽出対象 (TranscriptView.tsx の現在位置)
+
+| 名前 | 行 | 種別 |
+|------|-----|------|
+| `APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON` | L103 | const string |
+| `getTranscriptionSourceStatus` | L128-L155 | 純粋関数 (primitives only) |
+| `getTranscriptionSourceStatusAriaText` | L157-L184 | 純粋関数 (SELF/OTHER_TRACK_DEVICE_LABEL 使用) |
+| `getTranscriptionSourceArg` | L186-L194 | 純粋関数 (primitives only) |
+| `getTranscriptionStartBlockedReason` | L196-L250 | 純粋関数 (SELF/OTHER_TRACK_DEVICE_LABEL + APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON + TranscriptionEngineType 使用) |
+
+## TranscriptView.tsx 内の callsite (7 + 6 箇所)
+
+### `APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON` の callsite
+- L232 (新 file 内移動)
+- L278 (`getMeetingStartBlockedReason` 内 = 本 Loop では関数自体は移動しないが、const 参照は新 file からの import に変更)
+- L725 (template literal 内)
+- L868, L948, L1016, L1075 (`throw new Error(...)`)
+
+### `getTranscription...` 系の callsite
+- L764, L854, L1093 (`getTranscriptionSourceArg`)
+- L1224 (`getTranscriptionSourceStatus`)
+- L1230 (`getTranscriptionSourceStatusAriaText`)
+- L1238 (`getTranscriptionStartBlockedReason`)
+
+# 戦略
+
+**Tidy First** = TranscriptView.tsx から 4 関数 + 1 const を物理移動 + import 追加 (動作不変)。
+
+## 新 file `src/utils/transcriptionSourceHelpers.ts` の構造 (期待 ~115 行)
+
+```typescript
+import type { TranscriptionEngineType } from "../types";
+import { OTHER_TRACK_DEVICE_LABEL, SELF_TRACK_DEVICE_LABEL } from "./audioTrackLabels";
+
+export const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
+  "Apple Speech では同時録音はサポートされていません。"; // 実際の文言は L103-L106 を確認
+
+export function getTranscriptionSourceStatus(
+  isTranscribing: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string | null {
+  // L128-L155 の本体をそのまま移動
+}
+
+export function getTranscriptionSourceStatusAriaText(
+  isTranscribing: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): string | null {
+  // L157-L184 の本体をそのまま移動
+}
+
+export function getTranscriptionSourceArg(
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+): "microphone" | "system_audio" | "both" | null {
+  // L186-L194 の本体をそのまま移動
+}
+
+export function getTranscriptionStartBlockedReason(
+  isTranscribing: boolean,
+  isSettingsLoading: boolean,
+  settingsError: unknown,
+  isAnySourceRecording: boolean,
+  isMicRecording: boolean,
+  isSystemAudioRecording: boolean,
+  transcriptionEngine: TranscriptionEngineType | undefined,
+  requiresLocalModel: boolean,
+  isModelDownloaded: boolean | undefined,
+  modelDownloadedError: unknown,
+  externalApiProvider: string | null,
+  hasExternalApiKey: boolean | undefined,
+  externalApiKeyError: unknown,
+): string | null {
+  // L196-L250 の本体をそのまま移動
+}
+```
+
+**注意**: 関数本体は **TranscriptView.tsx の L128-L250 を sed/Read で正確にコピーすること**。文言や条件分岐の細部を改変してはならない。const の文言も L103-L106 を正確にコピー。
+
+## TranscriptView.tsx 側の変更
+
+1. L103-L106 の `APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON` 定義を削除
+2. L128-L250 の 4 関数定義を全て削除
+3. import 追加 (既存 import block 末尾):
+   ```typescript
+   import {
+     APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON,
+     getTranscriptionSourceArg,
+     getTranscriptionSourceStatus,
+     getTranscriptionSourceStatusAriaText,
+     getTranscriptionStartBlockedReason,
+   } from "../utils/transcriptionSourceHelpers";
+   ```
+
+callsite 13 箇所は **import 追加のみで参照解決** (関数名 / const 名は不変)。
+
+# 具体手順 (厳守、2-commit pattern)
+
+## Step 1: 関数本体の確認
+
+```bash
+sed -n '103,106p;128,250p' src/routes/TranscriptView.tsx
+```
+
+を実行し、移動対象の正確な内容を把握する。
+
+## Step 2: 新 file 作成
+
+`src/utils/transcriptionSourceHelpers.ts` を Write で作成。本体は Step 1 の sed 出力を正確にコピー (function → export function に変更)。
+
+## Step 3: TranscriptView.tsx の編集
+
+Edit ツールで:
+- L103-L106 const 定義削除
+- L128-L250 4 関数定義削除
+- import block 末尾に新 file からの import 追加
+
+## Step 4: 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/transcriptionSourceHelpers.ts
+```
+
+**期待**: tsc OK, vite build ✓ built (~1926 modules transformed), agent-verify.sh 全項目 OK。
+
+エラーが出たら fix してから次へ。
+
+## Step 5: refactor commit (1 件目)
+
+```bash
+git add src/routes/TranscriptView.tsx src/utils/transcriptionSourceHelpers.ts
+git commit -m "$(cat <<'EOF'
+refactor(frontend): TranscriptView の Transcription Source 系 helpers を utils/transcriptionSourceHelpers.ts に抽出 (mjc-main-20260505-69 Loop 141, frontend 軸 15 件目 = 純粋関数機能分離軸 frontend 版 12 件目, scope 34 軸目開拓, 大型 frontend file 責務分離 47 file 目, getTranscriptionSourceStatus + getTranscriptionSourceStatusAriaText + getTranscriptionSourceArg + getTranscriptionStartBlockedReason + APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON const 抽出, R6 段階的分割 9 件目, audioTrackLabels.ts cross-import = utils 内 cross-import paradigm 5 件目に拡張 = 打ち止め継続主張覆し, AGENTS.md priority 1 寄与)
+EOF
+)"
+```
+
+## Step 6: AGENT_LOG.md 末尾 (`---` の直後) に Loop 141 entry を追記
+
+**手順**:
+1. `tail -10 AGENT_LOG.md` で末尾を確認
+2. `git rev-parse --short HEAD` で Step 5 の sha を取得
+3. 末尾の `---` 直後に以下のテンプレートで append:
+
+```
+[mjc-main-20260505-69 Loop 141 / 2026-05-06]
+worker: mjc-worker-loop141-transcription-source-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 4 件 + const 1 件削除 + import 追加) + src/utils/transcriptionSourceHelpers.ts (新規 ~115 行 = import 2 行 + export const 1 + export 4 関数)
+内容: TranscriptView.tsx L103-L106 + L128-L250 の APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON const + getTranscriptionSourceStatus + getTranscriptionSourceStatusAriaText + getTranscriptionSourceArg + getTranscriptionStartBlockedReason を新 file utils/transcriptionSourceHelpers.ts に抽出。frontend 軸 15 件目 = 純粋関数機能分離軸 frontend 版 12 件目 = scope 34 軸目開拓 = 大型 frontend file 責務分離 47 file 目 = R6 段階的分割 9 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission + Loop 135 Audio Source + Loop 137 Engine Status + Loop 139 External API Key の続編)。callsite 13 件 (const 7 + 関数 6) は import 追加のみで参照解決 (関数名 / const 名は不変)。alternation pattern 32 連続維持 (K(140) → frontend(141))。メイン批判判断 = handoff 主張「R6i Transcription Source 系 4 件抽出」を grep で批判的検証 → 関数行番号 (L128/L157/L186/L196) は handoff 推測値 (L118/L147/L176/L186) と異なることを確認 + APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON が 7 callsite で使用される依存関係を新規発見 + 既存 meetingStartRequest.ts (localStorage 永続化 tier) との責務階層精査で **異 tier 判定** (本新 file = transcription source entity の display + predicate tier) → 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135/137/139 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は audioTrackLabels.ts から SELF_TRACK_DEVICE_LABEL + OTHER_TRACK_DEVICE_LABEL を import = **utils 内 cross-import paradigm 5 件目に拡張** (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus、4 件目 = audioSourceHelpers.ts → audioTrackLabels、5 件目 = transcriptionSourceHelpers.ts → audioTrackLabels) = **paradigm 4 件目で打ち止め継続主張の覆し**。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/transcriptionSourceHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <Step 5 の sha を埋める>
+依存関係追加: なし (audioTrackLabels.ts + types/ への import のみ)
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+## Step 7: chore commit (2 件目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-69 Loop 141 = TranscriptView の Transcription Source 系 helpers + APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON const を utils/transcriptionSourceHelpers.ts に抽出 (構造分離 47 file 目, frontend 軸 15 件目, scope 34 軸目開拓, 純粋関数機能分離軸 frontend 版 12 件目, alternation 32 連続維持, R6 段階的分割 9 件目, utils 内 cross-import paradigm 5 件目に拡張 = 打ち止め継続主張覆し, audioTrackLabels.ts への cross-import)
+EOF
+)"
+```
+
+# 規模と所要時間
+
+- 規模: SS-S = ~5-7 分完走見込み
+- worker prompt 行数: 本 prompt は ~190 行
+
+# 上限明示
+
+- 編集対象ファイル: src/routes/TranscriptView.tsx + src/utils/transcriptionSourceHelpers.ts (新規) + AGENT_LOG.md のみ
+- それ以外のファイル変更禁止
+- 関数本体や const 文言は **絶対に改変しない** (移動のみ)
+- callsite 13 件は import 追加のみで参照解決 (関数名 / const 名不変)
+- test 件数の変動なし (frontend のみ + 動作不変)
+- trailing whitespace 禁止
+
+# 完了確認
+
+```bash
+git log --oneline -3
+git status --short | grep -v "^??"
+wc -l src/routes/TranscriptView.tsx src/utils/transcriptionSourceHelpers.ts
+```
+
+期待結果:
+- 直近 2 commit が本 Loop 141 のもの
+- working tree clean (untracked のみ残存 OK)
+- TranscriptView.tsx ~2090 行前後 (-130 行 = 4 関数 + 1 const + 関連空行)
+- transcriptionSourceHelpers.ts ~115 行

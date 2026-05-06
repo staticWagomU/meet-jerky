@@ -1,0 +1,175 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読
+
+1. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+2. **先頭は絶対に触らない**
+3. AGENT_LOG.md 全体は 21500+ 行 / 1.85MB+ あるので **Read 全体禁止**。`tail -350 AGENT_LOG.md` で末尾だけ確認
+4. AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md は冒頭で読む
+5. `src-tauri/src/cloud_whisper_errors.rs` は 361 行ある。**`Read` で全体を読む** (361 行は Read 上限内)。
+
+## セッション
+
+- セッション名: mjc-worker-cloud-whisper-errors-meta-symmetric-tests-20260504-29-3
+- メイン: mjc-main-20260504-29 (Loop 3)
+
+## 担当範囲 (担当範囲外の編集厳禁)
+
+- `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾に **test 関数 3 件のみ追加** (関数本体・既存 test 19 件は完全無変更)
+- `AGENT_LOG.md` への末尾追記 (本エントリのみ、先頭は触らない)
+
+それ以外の編集は **絶対禁止**。
+
+## 規模制約
+
+- 追加 test は **3 件ちょうど**。
+- 関数 `classify_cloud_whisper_error` / `sanitize_error_body` の本体と定数 `MAX_ERROR_BODY_CHARS` は **絶対に変更しない**。
+- AGENT_LOG.md は本エントリ 1 件のみ末尾追記。
+
+## 背景・目的
+
+`cloud_whisper_errors.rs` (361 行) の既存 19 test は status 軸 (401/429/5xx/400/499/600/200/u16 端点/隣接値) と body 軸 (空/multibyte/200 char 境界/whitespace normalize/multiline+control chars) と漏洩防止軸 (401/429/500/599 で body 無視) と pure function 軸 (idempotency / status 数値が message に漏れない / 異 status 同 body で message 一致) を網羅。
+
+handoff サマリの「対称軸補強」パターン (型/経路/フィールド/層 の 4 特殊形) を踏まえ、本 Loop は「**メタ対称軸補強**」= status 軸 / body 軸 / pure function 軸の **異なる対称軸を 1 ループで一通り application** する 3 軸構造を採用。
+
+未保護軸:
+1. **status 軸 (3xx redirect 範囲)**: 既存 test は 200 / 400-499 / 500-599 / 600 / 0 / 1 / u16::MAX をカバーするが、3xx 範囲 (301/302/304 等の redirect) は未保護
+2. **body 軸 (NUL byte の passthrough)**: 既存 test は whitespace 系 (`\n` `\t` `\r` `空白`) を split_whitespace で除去するが、NUL byte (`\0`) は `char::is_whitespace()` で false なので passthrough されるはず — この性質は test 0
+3. **pure function 軸 (同 status × 異 body の message 差異)**: 既存 T19 (l.319 `classify_other_is_pure_function_with_status_in_field_only_not_in_message`) は idempotency (同 status × 同 body) と「異 status × 同 body で message 一致」をカバーするが、対称軸の片方「同 status × 異 body で message 差異」は未保護
+
+## 追加する test 3 件 (命名と意図を厳守)
+
+### T1: `classify_returns_other_for_3xx_redirect_status_range_without_falling_through_to_5xx`
+
+- 目的: 3xx (redirect) status (301 / 302 / 304) は 500..=599 範囲外なので Other に落ちる現契約を CI 固定。「将来 3xx を別 variant にする誤改修」「3xx を ServerError に誤分類する誤改修」を遮断。
+- 実装:
+  ```rust
+  for (status, body) in [
+      (301, "moved permanently"),
+      (302, "found"),
+      (304, "not modified"),
+  ] {
+      assert_eq!(
+          classify_cloud_whisper_error(status, body),
+          CloudWhisperError::Other {
+              status,
+              message: body.to_string(),
+          },
+          "{status} (3xx redirect) は 500..=599 範囲外で Other に落ちる契約 (ServerError ではない)"
+      );
+  }
+  ```
+
+### T2: `classify_other_preserves_nul_byte_in_body_message_because_nul_is_not_whitespace`
+
+- 目的: NUL byte (`\0`) は `char::is_whitespace()` で false なので `split_whitespace` で除去されず、message に passthrough する現契約を CI 固定。「将来 NUL byte を sanitize で消す誤改修」「NUL を whitespace 扱いする誤改修」を遮断。
+- 実装:
+  ```rust
+  let body = "abc\0def";
+  let CloudWhisperError::Other { message, .. } = classify_cloud_whisper_error(400, body) else {
+      panic!("400 should classify as Other");
+  };
+  assert_eq!(
+      message, "abc\0def",
+      "NUL byte は char::is_whitespace で false なので split_whitespace で除去されず passthrough する契約"
+  );
+  assert!(
+      message.contains('\0'),
+      "message に NUL byte が含まれる (sanitize で消されない)"
+  );
+  ```
+
+### T3: `classify_other_with_same_status_yields_distinct_messages_for_distinct_bodies_pure_function_inverse_axis`
+
+- 目的: 同 status × 異 body で message が異なる現契約を CI 固定。既存 T19 (異 status × 同 body で message 一致) の「逆対称軸」(pure function の入力空間の独立性) を補強。「将来 message を status 依存にする誤改修」と相補的に「message を body 非依存にする誤改修」を遮断。
+- 実装:
+  ```rust
+  let a = classify_cloud_whisper_error(404, "body alpha");
+  let b = classify_cloud_whisper_error(404, "body beta");
+  if let (
+      CloudWhisperError::Other { status: status_a, message: msg_a },
+      CloudWhisperError::Other { status: status_b, message: msg_b },
+  ) = (a, b)
+  {
+      assert_eq!(status_a, 404);
+      assert_eq!(status_b, 404);
+      assert_eq!(msg_a, "body alpha");
+      assert_eq!(msg_b, "body beta");
+      assert_ne!(
+          msg_a, msg_b,
+          "同 status (404) × 異 body で message は異なる契約 (pure function: body は message に passthrough、status の値だけで上書きしない)"
+      );
+  } else {
+      panic!("both 404 calls should classify as Other");
+  }
+  ```
+
+## Tidy First 厳守
+
+- 関数本体 (`classify_cloud_whisper_error` / `sanitize_error_body`) と定数 `MAX_ERROR_BODY_CHARS` は **変更禁止**。
+- 既存 test 19 件は **変更禁止**。
+- `mod tests` の末尾 (= 直前 test `classify_other_is_pure_function_with_status_in_field_only_not_in_message` の `}` の直後、`mod tests` の `}` の前、l.360 周辺) に test 3 件を追加。
+
+## 検証手順 (順番厳守)
+
+1. `cargo fmt --check`
+2. `cargo clippy --lib -- -D warnings` で警告ゼロを確認
+3. `cargo test --lib -- --test-threads=1` で 560 passed (= 557 + 3) を確認
+
+`cargo fmt --check` で差分が出たら 1 度だけ `cargo fmt` で整形して再 check (1 往復のみ許可)。
+
+## AGENT_LOG.md 追記の手順 (先頭追記事故防止)
+
+1. `tail -10 AGENT_LOG.md` で末尾の `---` を確認
+2. 末尾の `---` の **直後** に本エントリを追記。先頭は **絶対に触らない**。
+3. **行末の空白文字 (trailing whitespace) は絶対に書かない**。worker 完走後に `grep -n " $" AGENT_LOG.md | tail -20` で末尾の trailing whitespace 警告ゼロを確認。
+4. AGENT_LOG.md エントリのテンプレート:
+
+```markdown
+## mjc-worker-cloud-whisper-errors-meta-symmetric-tests-20260504-29-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-cloud-whisper-errors-meta-symmetric-tests-20260504-29-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-29 Loop 3
+
+### 作業範囲
+- `src-tauri/src/cloud_whisper_errors.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+別ファイル切替で `cloud_whisper_errors.rs` (361 行 / 既存 19 test は status/body/漏洩防止/pure function を網羅) を「メタ対称軸補強」パターンで補強 = status 軸 / body 軸 / pure function 軸の異なる対称軸を 1 ループで一通り application。
+- T1: classify_returns_other_for_3xx_redirect_status_range_without_falling_through_to_5xx (status 軸: 3xx redirect = 301/302/304)
+- T2: classify_other_preserves_nul_byte_in_body_message_because_nul_is_not_whitespace (body 軸: NUL byte passthrough)
+- T3: classify_other_with_same_status_yields_distinct_messages_for_distinct_bodies_pure_function_inverse_axis (pure function 軸: 同 status × 異 body の対称軸補強)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib -- --test-threads=1: `test result: ok. 560 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <X>s`
+
+### 変更ファイル
+- src-tauri/src/cloud_whisper_errors.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・定数・既存 test 19 件無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 560 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <X>s
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 完了後の報告
+
+1 ターンで完結する形で、変更内容、変更ファイル、検証結果 (末尾 quote)、残リスクを報告してください。

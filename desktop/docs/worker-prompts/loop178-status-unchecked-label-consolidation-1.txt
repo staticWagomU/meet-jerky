@@ -1,0 +1,172 @@
+あなたは meet-jerky の作業 worker (mjc-worker-loop178-status-unchecked-label-consolidation-1) です。
+メインから「`"確認できません"` 重複 string literal を新 file `src/utils/statusLabels.ts` に export const 昇格 + 7 file 11 callsite を const 参照に統一する」refactor 作業を依頼されました。
+
+# 概要
+
+mjc-main Loop 178 = frontend 軸 = const 集約 paradigm 反復 3 件目 = paradigm 系統樹拡張 8 件目反復 3 件目 + 新 file 作成軸組み合わせ = paradigm 系統樹拡張 9 件目候補.
+
+precedent:
+- Loop 174 = `CONTROL_CHARACTER_PATTERN` 重複 const を `transcriptSegment.ts` で export 昇格 + `liveCaptionStatus.ts` から import 経由参照 = const 集約 paradigm 1 件目 (既存 file 拡張軸)
+- Loop 176 = `SESSION_DATETIME_UNKNOWN_LABEL` 重複 string literal を `transcriptViewFormatters.ts` で export 昇格 + `sessionListHelpers.tsx` から import 経由参照 = const 集約 paradigm 反復 2 件目 (既存 file 拡張軸)
+- 本 Loop 178 = `STATUS_UNCHECKABLE_LABEL` 重複 string literal を **新 file** `src/utils/statusLabels.ts` に export const 昇格 + 7 file から import 経由参照 = const 集約 paradigm 反復 3 件目 + 新 file 作成軸 = paradigm 系統樹拡張 9 件目候補
+
+# 最初に必ず実施
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md を Read
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md を Read (該当節のみ)
+3. **AGENT_LOG.md は ~34,211 行 / ~3.2MB+ ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**. AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。先頭は絶対に触らない. `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記.
+
+# 作業内容 (具体的、規模 M-L)
+
+## 0. 事前確認
+
+- 対象 11 callsite を grep で検証:
+  ```bash
+  grep -rn '"確認できません"' src/
+  ```
+- 期待 11 callsite/7 file:
+  - `src/utils/externalApiKeyHelpers.ts:10` `return "確認できません";`
+  - `src/utils/externalApiKeyHelpers.ts:24` `if (statusLabel === "確認できません") {`
+  - `src/utils/engineStatusHelpers.ts:38` `if (statusLabel === "確認できません") {`
+  - `src/utils/aiTransmissionHelpers.ts:23` `if (statusLabel === "確認できません") {`
+  - `src/utils/aiTransmissionHelpers.ts:33` `if (statusLabel === "確認できません") {`
+  - `src/components/PermissionBanner.tsx:67` `? "確認できません"`
+  - `src/components/PermissionBanner.tsx:74` `? "確認できません"`
+  - `src/routes/TranscriptView.tsx:1140` `? "確認できません"`
+  - `src/routes/TranscriptView.tsx:1143` `? "確認できません"`
+  - `src/routes/SettingsView.tsx:1759` `"確認できません",`
+  - `src/routes/SettingsView.tsx:1898` `? "確認できません"`
+- **加えて**: `src/routes/SettingsView.tsx:1761` に `\`確認できません: ${toErrorMessage(error)}\`` のテンプレートリテラル (部分文字列) があり、これも `\`${STATUS_UNCHECKABLE_LABEL}: ${toErrorMessage(error)}\`` に置換する (DRY 一貫性維持).
+
+## 1. 新 file 作成: `src/utils/statusLabels.ts`
+
+ファイル全体の内容:
+```ts
+export const STATUS_UNCHECKABLE_LABEL = "確認できません";
+```
+
+- 1 行のみ. trailing whitespace 禁止.
+
+## 2. 7 file の編集
+
+各 file で:
+- 先頭 import 群に `import { STATUS_UNCHECKABLE_LABEL } from "<相対 path>/statusLabels";` を追加 (アルファベット順位置を維持)
+- callsite の `"確認できません"` 文字列リテラルを `STATUS_UNCHECKABLE_LABEL` 識別子に置換
+
+具体 path 指定:
+
+### (a) `src/utils/externalApiKeyHelpers.ts`
+- 1 行目に `import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";` を追加
+- L10: `return "確認できません";` → `return STATUS_UNCHECKABLE_LABEL;`
+- L24: `if (statusLabel === "確認できません") {` → `if (statusLabel === STATUS_UNCHECKABLE_LABEL) {`
+
+### (b) `src/utils/engineStatusHelpers.ts`
+- 既存 `import type { TranscriptionEngineType } from "../types";` の直後 (新規行) に `import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";` 追加
+- L38: `if (statusLabel === "確認できません") {` → `if (statusLabel === STATUS_UNCHECKABLE_LABEL) {`
+
+### (c) `src/utils/aiTransmissionHelpers.ts`
+- 既存 import 群末尾 (`import { isExternalTransmissionLabel } from "./liveCaptionStatus";` の直後) に `import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";` 追加
+- L23: `if (statusLabel === "確認できません") {` → `if (statusLabel === STATUS_UNCHECKABLE_LABEL) {`
+- L33: `if (statusLabel === "確認できません") {` → `if (statusLabel === STATUS_UNCHECKABLE_LABEL) {`
+
+### (d) `src/components/PermissionBanner.tsx`
+- 既存 import 群の中で `../utils/...` 系の adjacent 位置 (アルファベット順) に `import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";` を追加
+- L67: `? "確認できません"` → `? STATUS_UNCHECKABLE_LABEL`
+- L74: `? "確認できません"` → `? STATUS_UNCHECKABLE_LABEL`
+
+### (e) `src/routes/TranscriptView.tsx`
+- 既存 `../utils/...` import 群 (アルファベット順) の妥当な位置に `import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";` を追加
+- L1140: `? "確認できません"` → `? STATUS_UNCHECKABLE_LABEL`
+- L1143: `? "確認できません"` → `? STATUS_UNCHECKABLE_LABEL`
+
+### (f) `src/routes/SettingsView.tsx`
+- 既存 `../utils/...` import 群 (アルファベット順) の妥当な位置に `import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";` を追加
+- L1759: `"確認できません",` → `STATUS_UNCHECKABLE_LABEL,`
+- L1761: `\`確認できません: ${toErrorMessage(error)}\`` → `` `${STATUS_UNCHECKABLE_LABEL}: ${toErrorMessage(error)}` `` (テンプレートリテラル内も DRY 一貫性のため置換)
+- L1898: `? "確認できません"` → `? STATUS_UNCHECKABLE_LABEL`
+
+# 担当範囲外編集禁止
+
+- **アプリの振る舞い変更禁止**. 純粋に const 集約 + import 追加 + literal → identifier 置換のみ.
+- production code (新 file 1 件 + 既存 7 file の callsite 周辺) と、必要に応じた import 追加 のみ.
+- 上記以外の test や docs や config を変更しない.
+- AGENT_LOG.md の **末尾追記のみ** (Step 4 で実施).
+
+# 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+grep -rn '"確認できません"' src/  # 0 件 (statusLabels.ts の 1 件のみ残る = "確認できません" の string literal は新 file 内 1 箇所のみ) を期待
+grep -rn 'STATUS_UNCHECKABLE_LABEL' src/  # 1 (export) + 7 (import) + 12 (callsite = 11 + L1761 内) = 20 件を期待
+npm run build  # tsc + vite build OK を期待
+```
+
+注意: `grep -rn '"確認できません"' src/` の結果は **`statusLabels.ts` の 1 件のみ** (新 file 内 export 値) になる。callsite からは消える。
+
+期待最終件数の参考確認:
+- `grep -c 'STATUS_UNCHECKABLE_LABEL' src/utils/statusLabels.ts` = 1 (export 行)
+- 各 callsite file = import 1 + callsite 件数
+
+# 大型 file 注意
+
+- `src/routes/SettingsView.tsx` および `src/routes/TranscriptView.tsx` は **大型 file = Read 全体禁止** = `head -50 src/routes/SettingsView.tsx` で import 群構造確認、`sed -n '1755,1765p' src/routes/SettingsView.tsx` で L1759/L1761 周辺確認、`sed -n '1888,1905p' src/routes/SettingsView.tsx` で L1898 周辺確認 = 部分参照のみ.
+- 同様に `TranscriptView.tsx` も `head -50` + `sed -n '1135,1150p'` で部分参照.
+
+# AGENT_LOG.md への追記 (Step 4)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に **以下の entry テンプレート (冒頭に `---` を含めない)** を append:
+
+```
+[mjc-main Loop 178 / 2026-05-06]
+worker: mjc-worker-loop178-status-unchecked-label-consolidation-1 (作業)
+範囲: src/utils/statusLabels.ts (新規 +1 行) + src/utils/externalApiKeyHelpers.ts (+1 行 import / -2 / +2 = 1 net) + src/utils/engineStatusHelpers.ts (+1 / -1 / +1 = 1 net) + src/utils/aiTransmissionHelpers.ts (+1 / -2 / +2 = 1 net) + src/components/PermissionBanner.tsx (+1 / -2 / +2 = 1 net) + src/routes/TranscriptView.tsx (+1 / -2 / +2 = 1 net) + src/routes/SettingsView.tsx (+1 / -3 / +3 = 1 net)
+内容: 7 file に分散していた 11 callsite + 1 template literal の `"確認できません"` 重複 string literal を、新規 utils file `src/utils/statusLabels.ts` で `export const STATUS_UNCHECKABLE_LABEL = "確認できません";` として昇格 + 各 file で `STATUS_UNCHECKABLE_LABEL` 識別子参照に統一 = DRY 違反解消 = callsite の振る舞い完全保存。**const 集約軸 paradigm 反復 3 件目 = paradigm 系統樹拡張 8 件目反復 3 件目** + **新 file 作成軸組み合わせ = paradigm 系統樹拡張 9 件目候補** (Loop 174/176 = 既存 file 拡張軸 vs 本 Loop 178 = 新 file 作成軸 = 担当 entity 広範 = permission/engine/transmission/API key 汎用 fallback = 責務階層整合性高)。alternation pattern: K(177) → frontend(178) = pivot 成功 (17 → 18)。
+振る舞い: npm run build (tsc + vite build) OK、cargo は frontend のみ無変更のため不要。
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- (commit hash 1) refactor(frontend): STATUS_UNCHECKABLE_LABEL を新 file src/utils/statusLabels.ts で export 昇格 + 7 file 12 callsite を const 参照に統一
+AGENTS.md priority: 1 (DRY 違反解消 + paradigm 反復による定型化期更なる延長)
+
+---
+```
+
+**重要**:
+- entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める). Loop 168-177 で 10 連続実証成功の boundary 整合 paradigm.
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む.
+- 行末の **trailing whitespace 禁止** (vite/tsc には影響しないが、コードレビュー観点で禁止).
+
+# 2-commit pattern (Loop 145-177 で 33 連続成功)
+
+1. 1 つ目 commit: refactor の本体
+   ```bash
+   git add src/utils/statusLabels.ts src/utils/externalApiKeyHelpers.ts src/utils/engineStatusHelpers.ts src/utils/aiTransmissionHelpers.ts src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx
+   git commit -m "refactor(frontend): STATUS_UNCHECKABLE_LABEL を新 file src/utils/statusLabels.ts で export 昇格 + 7 file 12 callsite を const 参照に統一 (mjc-main Loop 178, frontend 軸 = const 集約 paradigm 反復 3 件目 = paradigm 系統樹拡張 8 件目反復 3 件目 + 新 file 作成軸組み合わせ = paradigm 系統樹拡張 9 件目候補, '確認できません' 11 callsite + 1 template literal を統一 + DRY 違反解消, alternation pivot K(177) → frontend(178) = 17 → 18, AGENTS.md priority 1 寄与)"
+   ```
+
+2. 2 つ目 commit: AGENT_LOG.md entry
+   - 上の commit が成功してから commit hash の頭 7 文字を取得 (`git log --oneline -1` で確認)
+   - AGENT_LOG.md の `(commit hash 1)` プレースホルダを実際の hash に置き換え (Edit)
+   - その後:
+     ```bash
+     git add AGENT_LOG.md
+     git commit -m "chore(agent-log): mjc-main Loop 178 = STATUS_UNCHECKABLE_LABEL を新 file src/utils/statusLabels.ts に集約 (frontend 軸, const 集約 paradigm 反復 3 件目 = paradigm 系統樹拡張 8 件目反復 3 件目 + 新 file 作成軸組み合わせ = paradigm 系統樹拡張 9 件目候補, alternation pivot K(177) → frontend(178) = 17 → 18, 重複候補 grep 探索 paradigm 15 件目達成) のエントリ追記"
+     ```
+
+# 完了条件 (Definition of Done)
+
+- [ ] `src/utils/statusLabels.ts` 新規作成 (1 行).
+- [ ] 7 file (3 utils + 1 component + 2 routes + 加えて: 当然 utils 内 2 件と routes 1 件 + components 1 件) で import 追加 + callsite 置換完了 (合計 11 callsite + 1 template literal partial = 12 箇所).
+- [ ] `grep -rn '"確認できません"' src/` の結果は **`statusLabels.ts` の 1 件のみ** (callsite から消える).
+- [ ] `npm run build` OK.
+- [ ] AGENT_LOG.md entry 追記完了 (末尾追記、冒頭 `---` 含めず、append 1 回のみ).
+- [ ] 2 commit 作成完了 (refactor + chore).
+- [ ] 担当範囲外の file は触らない.
+
+# 何かに迷ったら
+
+- import path 解決が `tsc` で失敗したら `tsc --noEmit` で具体エラー確認.
+- callsite 行番号が手元と異なる場合は **常に grep で再検証** (handoff prompt 鵜呑み禁止 = メイン批判判断 paradigm 継承).
+- アプリの振る舞いを変更しない. const 名は **`STATUS_UNCHECKABLE_LABEL`** に固定 (precedent と整合).
+- L1761 のテンプレートリテラル置換だけ unique なので、**`确認できません` の文字を間違えない** (utf-8 「確」: `確` 注意).
+
+期待時間: ~15-30 分 (M-L 規模, callsite 11 + import 7 + template literal partial 1 = 全 12 箇所 + 新 file 1).

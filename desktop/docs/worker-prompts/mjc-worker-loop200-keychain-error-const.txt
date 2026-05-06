@@ -1,0 +1,125 @@
+あなたは meet-jerky の rust worker です. mjc-main Loop 200 のタスクを 2-commit pattern で完走してください.
+
+# 最初に必ず実施
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ読む. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**. 先頭は絶対に触らない.
+2. `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾形状を再確認 (末尾の `---` を確認).
+
+# タスク
+
+`src-tauri/src/secret_store.rs` の error message (完全一致 3 callsite = 全件本番) を **新 const 1 件を追加** + **3 callsite を const 参照に統一** する.
+
+## 背景 (Loop 198 = transcription_error_payload.rs ERROR_TRANSCRIPTION_WORKER_ABEND 集約 paradigm の継承)
+
+- 本 file には `SERVICE` const のみ存在 (Keychain サービス名). error message 用 const は未確立 = **新規 const 追加軸 paradigm 反復 11 件目** = paradigm 系統樹拡張 11 件目反復 (Loop 194 cloud_whisper.rs / Loop 198 transcription_error_payload.rs と同系統樹).
+- 本番品質寄与最高: 3 callsite **全件本番** (L56 set_secret / L74 get_secret / L92 delete_secret = いずれも `#[cfg(not(any(target_os = "macos", target_os = "windows")))]` ブロック内のスタブ実装).
+- AGENTS.md priority 1 (UI/log 文言契約 cohesion + DRY 違反解消) 寄与最高.
+- alternation pivot: K(199) → rust(200) = 39 → 40 = **節目 40 件突破** = pivot 加速期維持.
+
+## 具体手順
+
+### Step 1: file 全体を Read
+
+`src-tauri/src/secret_store.rs` (200 行 = 中規模、Read 全体 OK) を確認.
+
+### Step 2: const 1 件を追加
+
+L14 の `SERVICE` const 直後 (= L15-L18 の空行＋既存コメントの間) に以下 4 行を追加. 配置は SERVICE const 直後の空行を維持しつつ:
+
+```rust
+/// 非対応プラットフォーム (Linux 等) のスタブ実装が返す共通エラーメッセージ。
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const ERROR_KEYCHAIN_NOT_SUPPORTED: &str =
+    "このプラットフォームでは Keychain がサポートされていません";
+```
+
+**配置設計の根拠**:
+- 本 const は **非対応プラットフォーム専用** = `#[cfg(not(any(target_os = "macos", target_os = "windows")))]` でガード = supported platform では存在しない (dead_code 不要)
+- 既存 SERVICE const は逆に supported platform でのみ使用 → `#[cfg_attr(...allow(dead_code))]` pattern. 対称的 cfg pattern で OK.
+- visibility は `const` のみ (file 内のみで使用、`pub(crate)` 不要)
+- 命名規則: 既存 const と SCREAMING_SNAKE_CASE で並列
+
+### Step 3: 3 callsite を const 参照に統一
+
+完全一致 callsite 3 件を置換 (3 件すべて同 file 内、すべて `#[cfg(not(any(target_os = "macos", target_os = "windows")))]` ブロック内):
+
+- **L56** (本番 `set_secret` の非対応プラットフォーム分岐):
+  ```rust
+  // Before
+  Err("このプラットフォームでは Keychain がサポートされていません".to_string())
+  // After
+  Err(ERROR_KEYCHAIN_NOT_SUPPORTED.to_string())
+  ```
+
+- **L74** (本番 `get_secret` の非対応プラットフォーム分岐): 同上の置換
+
+- **L92** (本番 `delete_secret` の非対応プラットフォーム分岐): 同上の置換
+
+**触らないもの**:
+- L119-121 の `assert!(err.contains("プラットフォーム"))` = 部分一致 = 触らない (test L114-122 も `#[cfg(not(any(target_os = "macos", target_os = "windows")))]` でガードされているが、assertion は部分一致なので const 化と無関係)
+- 他の error message (`"Keychain エントリの作成に失敗しました: {e}"` 等) = 別 semantic = 触らない
+
+### Step 4: 検証
+
+`cd src-tauri` してから:
+- `cargo test --lib` (704 件 passed / 0 failed = **件数完全不変**)
+- `cargo clippy --lib --tests -- -D warnings` (警告ゼロ)
+- `cargo fmt --check`
+- `cargo build --lib` (エラーなし)
+
+注意: macOS でビルドすると `#[cfg(not(any(target_os = "macos", target_os = "windows")))]` ブロックは全て除外されるため、新 const も callsite 置換も「コンパイルされない」が、cargo build/test は通る (これが正しい挙動).
+
+### Step 5: agent-verify.sh
+
+`cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/secret_store.rs`
+
+### Step 6: 1 commit 目 (refactor)
+
+`git add src-tauri/src/secret_store.rs && bash scripts/agent-commit.sh "refactor(rust): ERROR_KEYCHAIN_NOT_SUPPORTED を secret_store.rs に集約 + 3 callsite を const 参照に統一 (mjc-main Loop 200, rust 軸 = const 集約 paradigm 反復 11 件目, paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 = Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON / Loop 198 transcription_error_payload.rs ERROR_TRANSCRIPTION_WORKER_ABEND precedent と同系統樹, 'このプラットフォームでは Keychain がサポートされていません' 3 callsite (全件本番 = set_secret/get_secret/delete_secret スタブ) を統一 + DRY 違反解消, 非対応プラットフォーム向けエラーメッセージの単一 source of truth 化, alternation pivot K(199) → rust(200) = 39 → 40 = 節目 40 件突破, AGENTS.md priority 1 寄与)" src-tauri/src/secret_store.rs`
+
+### Step 7: 2 commit 目 (AGENT_LOG.md append)
+
+ファイルへ Write して `cat <file> >> AGENT_LOG.md` で append.
+
+**重要**:
+- entry テンプレート冒頭に `---` を **含めない** (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む.
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+entry テンプレート (冒頭 `---` なし、末尾 `---` 1 個):
+
+```
+[mjc-main Loop 200 / 2026-05-06]
+worker: mjc-worker-loop200-keychain-error-const (作業)
+範囲: src-tauri/src/secret_store.rs (const ERROR_KEYCHAIN_NOT_SUPPORTED 追加 + L56/L74/L92 = 3 callsite 全件本番を const 参照に統一)
+変更: const ERROR_KEYCHAIN_NOT_SUPPORTED を secret_store.rs に追加 (`#[cfg(not(any(target_os = "macos", target_os = "windows")))]` でガード = 非対応プラットフォーム専用 = 既存 SERVICE const の cfg_attr pattern と対称) + L56 set_secret + L74 get_secret + L92 delete_secret = 3 callsite (全件本番) を const 参照に統一 + DRY 違反解消 + ネット行数 ~+4 行 (const 4 行追加 + callsite 3 件は同行書き換え)
+意義: rust 軸 = const 集約 paradigm 反復 11 件目達成 = paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 paradigm 反復 (Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON / Loop 198 transcription_error_payload.rs ERROR_TRANSCRIPTION_WORKER_ABEND precedent と同系統樹) + 全件本番品質寄与最高 = 非対応プラットフォーム向けエラーメッセージの単一 source of truth 化 + UI/log 文言契約 cohesion 向上 + 文言改修時の整合性保証 + DRY 違反解消 + AGENTS.md priority 1 寄与最高 (品質/可用性 = error message 一貫性) + alternation pivot K(199) → rust(200) = 39 → 40 = 節目 40 件突破 = pivot 加速期維持 = 節目 30 件突破後 9 件目 + paradigm 完全成熟期 cross-language 拡張更なる持続達成 = const 集約軸 frontend 10 + rust 4 = 計 14 連続
+検証: cargo test (704 件件数完全不変) + cargo clippy --lib --tests -- -D warnings (警告ゼロ) + cargo fmt --check OK + cargo build --lib OK / agent-verify.sh は rust skip 判定 OK / grep `"このプラットフォームでは Keychain"` = 1 件のみ確認 (const 定義行のみ残存)
+備考: paradigm 反復 11 件目達成 = rust 軸 const 集約軸の paradigm 完全成熟期 cross-language 拡張更なる持続 = paradigm 系統樹拡張 11 件目反復 4 連続 (Loop 194 / 196 / 198 / 200) = const 集約軸 frontend 10 + rust 4 = 計 14 連続 = paradigm 系統樹拡張第 11 件目の連続反復観測. 後継候補 = R30''' (system_audio_format.rs 非 f32 PCM 集約 = 規模 SSS = 本番 1 + test 2) / R34 (K 軸 = Section 2.3 観測 54 件目) / R37 (大型 file 責務分離 52 件目候補) のいずれか採用検討.
+---
+```
+
+(末尾は `---` 1 個 + 改行で締める. 冒頭は `---` を含めない = 前 entry の閉じ `---` を再利用)
+
+`bash scripts/agent-commit.sh "chore(agent-log): mjc-main Loop 200 = ERROR_KEYCHAIN_NOT_SUPPORTED を secret_store.rs に集約 (rust 軸, const 集約 paradigm 反復 11 件目, paradigm 系統樹拡張 11 件目反復 4 連続, 新規 const 追加軸 = Loop 194/198 と同系統樹, 非対応プラットフォーム向けエラーメッセージ単一 source of truth 化, alternation pivot K(199) → rust(200) = 39 → 40 = 節目 40 件突破, AGENTS.md priority 1 寄与) のエントリ追記" AGENT_LOG.md`
+
+### Step 8: 完走報告
+
+`git status --short` (working tree clean を確認) と `git log --oneline -3` (2 commit 反映を確認) を出力.
+
+# 規模超過防止 (重要)
+
+- **担当範囲外の編集禁止**: src-tauri/src/secret_store.rs と AGENT_LOG.md のみ編集. 他の rust file は触らない.
+- **test 件数の上限**: cargo test 後の件数は 704 件 (passed) 完全不変. 件数が変動したら原因を分析して報告.
+- **大型ファイル Read 全体禁止**: AGENT_LOG.md は **tail で末尾のみ読む**. 全体 Read 禁止 (~3.2MB+).
+- **secret_store.rs (200 行) は中規模** = Read 全体 OK.
+
+# 制約 (再掲)
+
+- `cargo` は `cd src-tauri` してから実行 (desktop 直下に Cargo.toml なし)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- 1 ループ目標 9-15 分以内 (規模 SSS = ~3-5 分目安)
+- 完了したら mjc-main に戻る (= worker process exit すれば自動)
+
+完走後、メインが check するため `git status --short` clean + `git log --oneline -3` で 2 commit 確認できる状態にしてください.

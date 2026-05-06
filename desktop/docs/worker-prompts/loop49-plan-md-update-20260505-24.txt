@@ -1,0 +1,149 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 最初に読むこと
+- AGENTS.md (運用ルール)
+- docs/product-concept.md (プロダクト方針)
+- docs/agent-harness-claude.md (ハーネス概要)
+- **AGENT_LOG.md は末尾 350 行のみ `tail -350 AGENT_LOG.md` で参照**。先頭は絶対に触らない。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+- **docs/architecture/transcription-refactor-plan.md は完全読** (現状 297 行)
+
+# 担当範囲 (docs 更新、振る舞い不変)
+**docs/architecture/transcription-refactor-plan.md** を最新状態に更新する。
+
+## 反映対象 (Loop 47 + 48 の 2 件一括反映)
+1. **mjc-main-20260505-23 Loop 47 = ModelManager 関連テスト 4 件を transcription_model_manager.rs に移動 (commit `9e0a66b`、transcription.rs -28 行 = 649 → 621 行)**
+2. **mjc-main-20260505-24 Loop 48 = CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を transcription_whisper_stream.rs に移動 (commit `57e1e13`、transcription.rs -10 行 = 621 → 611 行)**
+
+# 具体手順
+
+## Step 1. 進捗サマリ更新 (L28-42 周辺)
+- L28 のセクションタイトル: `## 進捗サマリ (mjc-main-20260505-22 Loop 42-45 時点)` → `## 進捗サマリ (mjc-main-20260505-24 Loop 48 時点)`
+- L42 の累計削減行数: `現在 **649 行** = **約 78.4% 縮小** (~2350 行削減) = **「75% 里程標突破からさらに +3.4pt 進展」**` → `現在 **611 行** = **約 79.6% 縮小** (~2388 行削減) = **「75% 里程標突破からさらに +4.6pt 進展」**`
+
+## Step 2. 残存課題セクション更新 (L44-55 周辺)
+既存の Loop 32/33/35/38/42/44/45 ✅ 完了行の **下** に以下 2 行を追加:
+```
+- **mjc-main-20260505-23 Loop 47 ✅ 完了**: ModelManager 関連テスト 4 件 (test_list_available_models_not_empty / test_list_available_models_includes_small / test_model_manager_get_path / test_model_not_downloaded_initially) を transcription_model_manager.rs に移動 = ModelManager の locality 完成 (関数本体 + テスト同居) (commit `9e0a66b`、-28 行)
+- **mjc-main-20260505-24 Loop 48 ✅ 完了**: CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を transcription_whisper_stream.rs に移動 = チャンク設計定数の locality 集約 (使用元の WhisperStream と同居) (commit `57e1e13`、-10 行)
+```
+
+L53 の文章: `transcription.rs 残存 **649 行**` → `transcription.rs 残存 **611 行**`
+
+L54 の候補リスト: `Mock* trait tests 3 件 + MockEngine/MockStream impl 移動 / ModelManager tests 4 件移動 / ensure_engine tests 3 件移動` → `Mock* trait tests 3 件 + MockEngine/MockStream impl 移動 / ensure_engine tests 3 件移動` (ModelManager tests は Loop 47 で完了したので削除)
+
+## Step 3. 新サブセクション 2 件を末尾「## 参考」セクション直前に追加
+
+### サブセクション 1: ModelManager tests 移動 ✅ 完了 (Loop 47)
+
+```markdown
+## 関連: ModelManager tests 移動 ✅ 完了 (mjc-main-20260505-23 Loop 47 = commit `9e0a66b`)
+
+mjc-main-20260505-23 Loop 47 で ModelManager 関連テスト 4 件 (~25 行) を transcription.rs から `src-tauri/src/transcription_model_manager.rs` に移動した = ModelManager の locality 完成。
+
+- 移動対象 (transcription.rs L63-89):
+  - `test_list_available_models_not_empty`
+  - `test_list_available_models_includes_small`
+  - `test_model_manager_get_path`
+  - `test_model_not_downloaded_initially`
+- 移動先: transcription_model_manager.rs の新規 `#[cfg(test)] mod tests` (`use super::*;` で ModelManager + with_dir(#[cfg(test)]) アクセス)
+- transcription.rs L60 の `use crate::transcription_model_manager::ModelManager;` を削除 (移動後 unused、grep で 5/5 件すべて移動対象内 = 完全な切り分け可能と確定)
+- メイン批判判断: handoff 候補 G を採用判断時、grep で transcription.rs の ModelManager 参照範囲を実態確認 → 5/5 件すべて移動対象内 = use 文同時削除可と確定 = メイン批判判断 連続 4 セッション目
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 649 → 621 行 (-28 行)、transcription_model_manager.rs 149 → 181 行 (+32 行)
+```
+
+### サブセクション 2: CHUNK 定数移動 ✅ 完了 (Loop 48)
+
+```markdown
+## 関連: CHUNK 定数移動 ✅ 完了 (mjc-main-20260505-24 Loop 48 = commit `57e1e13`)
+
+mjc-main-20260505-24 Loop 48 で CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を transcription.rs から `src-tauri/src/transcription_whisper_stream.rs` に移動した = チャンク設計定数の locality 集約。
+
+- 移動対象 (transcription.rs L33-40):
+  - `CHUNK_DURATION_SECS` (チャンクの蓄積目標 5 秒)
+  - `CHUNK_SAMPLES` (16kHz × 5 秒 = 80,000 サンプル)
+- 残置: `WHISPER_SAMPLE_RATE` (Whisper 仕様 = transcription.rs の最上位定数として継続、transcription_whisper_stream.rs / audio_utils.rs の両方から参照される広域定数のため)
+- 移動先: transcription_whisper_stream.rs の `use` 文直後 (rustdoc コメント + セクションヘッダごと移植)
+- import 整理: transcription_whisper_stream.rs L10 の `use crate::transcription::{CHUNK_DURATION_SECS, CHUNK_SAMPLES, WHISPER_SAMPLE_RATE};` を `use crate::transcription::WHISPER_SAMPLE_RATE;` に変更 (CHUNK_DURATION_SECS / CHUNK_SAMPLES は同ファイル内 self-contained 化)
+- メイン批判判断: handoff 候補 H/F/J/K すべて却下し、grep で実態確認 → CHUNK_DURATION_SECS / CHUNK_SAMPLES の外部参照は transcription_whisper_stream.rs のみ (L70/L80/L81/L109) と判明 → locality 集約先を transcription_whisper_stream.rs に確定 = メイン批判判断 連続 5 セッション目
+- variety pivot 軸 = struct/const 移動軸 = Loop 44 から 4 ループ間隔 = sweep 警告完全クリア
+- Loop 33 (TranscriptionLoopConfig) / Loop 44 (沈黙検知 const) と同型 = 「const は使用箇所に locality 集約する」Tidy First 原則 3 件目
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 621 → 611 行 (-10 行)、transcription_whisper_stream.rs 235 → 245 行 (+10 行)
+```
+
+## Step 4. 末尾参考更新 (L296 周辺)
+最終行近傍の `649 行 = 約 78.4% 縮小達成 = 75% 里程標突破からさらに +3.4pt 進展` → `611 行 = 約 79.6% 縮小達成 = 75% 里程標突破からさらに +4.6pt 進展`
+
+## Step 5. 検証
+- `bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md 2>&1 | tail -10` (rust skip 判定確認)
+- `head -1 docs/architecture/transcription-refactor-plan.md` (先頭 `# transcription.rs 責務分離プラン` 維持確認)
+- `tail -3 docs/architecture/transcription-refactor-plan.md` (末尾整合性確認、~3.4pt → ~4.6pt 反映確認)
+- `grep -nP " +$" docs/architecture/transcription-refactor-plan.md` で trailing whitespace ゼロ確認 (空出力)
+- `wc -l docs/architecture/transcription-refactor-plan.md` で行数確認 (現状 297 → ~330 行程度に増加見込み)
+
+## Step 6. AGENT_LOG.md 末尾追記
+- `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記 (先頭追記事故厳禁)
+- 形式 (上記 Loop 46 と同型):
+```
+[mjc-main-20260505-24 Loop 49 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-22 Loop 42-45 → mjc-main-20260505-24 Loop 48 時点
+  - 累計削減行数: 649 行 (78.4%) → 611 行 (79.6%) = 75% 里程標突破からさらに +4.6pt 進展
+  - 残存課題セクション: Loop 47 (ModelManager tests -28 行) + Loop 48 (CHUNK 定数 -10 行) 反映
+  - 新サブセクション 2 件: ModelManager tests 移動 ✅ + CHUNK 定数移動 ✅
+  - 末尾参考: 649 行 (78.4%) → 611 行 (79.6%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-23 Loop 47 + mjc-main-20260505-24 Loop 48 の 2 件を 1 ループで一括反映
+- variety pivot = docs 軸 = Loop 46 から 3 ループ間隔 = 許容範囲
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 既存サブセクション (Webex / Whereby / GoToMeeting / Zoom / Teams / TranscriptionLoopConfig / transcription_error_payload tests / transcription_types tests / 沈黙検知三位一体 / WhisperStream tests) はすべて保全
+- 最新情報は新サブセクション 2 件として追記する方式 (Loop 30/34/37/41/46 = commit precedent と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+- transcription.rs 611 行 wc -l 実数確認済
+
+## commit
+- (worker 自走 commit 後に hash を記入)
+```
+
+## Step 7. コミット (worker 自走)
+- `bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 47 ModelManager tests + Loop 48 CHUNK 定数移動を反映 (mjc-main-20260505-24 Loop 49, 79.6% 縮小 611 行 +4.6pt 進展, 計画駆動継続性確保)" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md`
+
+# 規模超過防止 (重要)
+- このタスクは規模 SS-S (~30-50 行追加 + 数箇所更新) = **plan.md 1 ファイル + AGENT_LOG.md 末尾追記** のみ。
+- 担当範囲外 (transcription.rs / transcription_whisper_stream.rs / src-tauri/* / frontend / scripts など) は **絶対に編集しない**
+- plan.md L11 の `2999 行` の歴史的記述は **触らない** (履歴保全)
+- 9 責務マップ表 (L14-26) は **触らない** (構造保全)
+- Phase 1-4 の段階分割記述 (L58-119) は **触らない** (履歴保全)
+- 既存サブセクション (Webex / Whereby / GoToMeeting / Zoom / Teams / TranscriptionLoopConfig / transcription_error_payload tests / transcription_types tests / 沈黙検知三位一体 / WhisperStream tests) は **触らない** (履歴保全)
+- 他に「ついでに整理」したくなっても **しない** (別ループでメインが判断する)
+- test 件数の上限明示: docs のみの変更のため test 件数変化は **ゼロ** (702 passed のまま不変、cargo test 実行不要)
+
+# 大型ファイルの参照ルール
+- AGENT_LOG.md は **27,200+ 行 / ~2.5MB** = `tail -350 AGENT_LOG.md` で末尾だけ参照、Read で全体読まない
+- plan.md (現状 297 行) は全体 Read OK
+
+# 検証制約
+- cmake あり → cargo test 実行不要 (本タスクは docs のみ変更、振る舞い完全不変)
+- frontend 変更なし → npm 検証不要
+- 課金禁止
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+
+最後に、変更内容、変更ファイル、検証結果、残リスク、commit hash を簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

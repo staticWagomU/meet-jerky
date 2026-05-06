@@ -1,0 +1,131 @@
+あなたは meet-jerky 自律改善ループの worker (mjc-worker-loop153-speaker-label) です。
+担当 = mjc-main-20260505-76 Loop 153 = R7''' = paradigm 4 件目 = utils 間集約軸 (re-export 戦略) = `getSpeakerLabel` の重複定義削除。
+
+# 最初に必ず読む
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` (末尾 350 行のみ)
+   - 重要: AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は必ず **ファイル末尾** に行う。**先頭は絶対に触らない**。
+   - **append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault 防止 = Loop 146/147/148/149/150/151/152 で 7 連続成功実証)
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (優先順位 1-9)
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール)
+
+# 担当タスク (作業範囲を厳守)
+
+## 背景
+
+`getSpeakerLabel` が 2 箇所で重複定義されている:
+- `src/utils/liveCaptionTrackHelpers.ts:23-27` (戻り値 `string`)
+- `src/utils/transcriptDisplayHelpers.ts:19-24` (戻り値 `string | null`、ただし実装上は常に string を返す過剰宣言)
+
+両者の実装は実質完全に同等 (microphone → "自分", system_audio → "相手側", speaker || "ソース不明")。
+TranscriptDisplay.tsx は `transcriptDisplayHelpers` から、LiveCaptionWindow.tsx は `liveCaptionTrackHelpers` から `getSpeakerLabel` を import 中 = 典型的 DRY 違反。
+
+## 統合戦略 (re-export 方式 = TranscriptDisplay.tsx 無変更)
+
+1. `src/utils/transcriptDisplayHelpers.ts` の `getSpeakerLabel` (L19-24 = 関数定義 6 行) を **削除**
+2. `src/utils/transcriptDisplayHelpers.ts` の冒頭 import セクションに以下 2 行を追加 (順序は既存 import の後ろ):
+   ```ts
+   import { getSpeakerLabel } from "./liveCaptionTrackHelpers";
+   ```
+   そして既存 import の後ろ (空行 1 つ挟んで) または末尾に:
+   ```ts
+   export { getSpeakerLabel };
+   ```
+   または 1 行にまとめて (より簡潔):
+   ```ts
+   export { getSpeakerLabel } from "./liveCaptionTrackHelpers";
+   ```
+   ただし内部で `getVisibleSpeakerLabel` (L52-59) が `getSpeakerLabel(segment)` を呼び出すため、**`import` で内部スコープにも持ってくる必要がある**。最終構成:
+   ```ts
+   import { getSpeakerLabel } from "./liveCaptionTrackHelpers";
+   // ... (other imports)
+   export { getSpeakerLabel };
+   ```
+   または並べて 2 行で OK。
+3. `src/components/TranscriptDisplay.tsx` は **無変更** (re-export 経由で互換維持)
+4. `src/components/LiveCaptionWindow.tsx` は **無変更** (元から liveCaptionTrackHelpers から import)
+5. `getVisibleSpeakerLabel` (transcriptDisplayHelpers.ts L52-59) の戻り値型 `string | null` は **そのまま維持** (callsite 影響を避けるため、削除前の動作を保つ)。`string` は `string | null` のサブタイプなので TS 互換性問題なし。
+
+## 担当範囲外の編集禁止
+
+- 上記 2 ファイル以外を変更しない (LiveCaptionWindow.tsx は無変更、TranscriptDisplay.tsx も無変更が目標)
+- `getVisibleSpeakerLabel` の戻り値型変更 (string | null → string) **禁止** (callsite 影響回避)
+- `getSpeakerLabel` の実装変更禁止 (liveCaptionTrackHelpers 側の元実装を維持)
+
+## 検証 (必須、失敗したら commit しない)
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && npm run build` (tsc + vite build)
+   - 期待: ✓ built (エラー 0)
+2. `bash scripts/agent-verify.sh src/utils/transcriptDisplayHelpers.ts` (frontend 自動判定で npm run build 走行)
+   - 期待: 全項目 OK
+3. `git status --short` で変更ファイル確認 (1 file = transcriptDisplayHelpers.ts のみ目標、もし TranscriptDisplay.tsx も変更したら 2 file)
+
+## 行末の空白文字 (trailing whitespace) 禁止
+
+書いた内容の各行末に余計な空白を入れないこと。Edit ツール使用時は必ず正確な空白を保つ。
+
+## commit (2-commit pattern = 連続 9 ループ目を狙う)
+
+### Commit 1: refactor commit
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/utils/transcriptDisplayHelpers.ts
+# (もし TranscriptDisplay.tsx も変更があれば追加)
+git commit -m "$(cat <<'EOF'
+refactor(frontend): getSpeakerLabel 重複定義を transcriptDisplayHelpers から削除 + liveCaptionTrackHelpers から re-export
+
+mjc-main-20260505-76 Loop 153, frontend 軸 = 重複削除 + 既存 file 拡張軸 paradigm 4 件目 (utils 間集約軸 = re-export 戦略),
+DRY 違反解消 (transcriptDisplayHelpers.ts L19-24 と liveCaptionTrackHelpers.ts L23-27 が実質同実装),
+戻り値型 string | null → string 統一 (実装上常に string 返却 = 過剰宣言是正),
+re-export 経由で TranscriptDisplay.tsx + LiveCaptionWindow.tsx 共に無変更で API 互換維持,
+npm run build ✓, AGENTS.md priority 1 寄与
+EOF
+)"
+```
+
+### Commit 2: chore commit (AGENT_LOG.md 追記)
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-76 Loop 153 = getSpeakerLabel 重複定義を transcriptDisplayHelpers から削除 + liveCaptionTrackHelpers から re-export (frontend 軸, paradigm 4 件目 = utils 間集約軸 = re-export 戦略, DRY 違反解消, alternation 42 連続維持) のエントリ追記"
+```
+
+## AGENT_LOG.md 末尾追記内容 (必ず末尾に追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下を追記 (1 回のみ):
+
+```
+[Loop 153 @ 2026-05-06 ~JST] mjc-main-20260505-76 / mjc-worker-loop153-speaker-label
+タスク: getSpeakerLabel 重複定義を transcriptDisplayHelpers.ts から削除 + liveCaptionTrackHelpers.ts から re-export
+ファイル: src/utils/transcriptDisplayHelpers.ts (L19-24 関数削除 + import + re-export 追加)
+理由: DRY 違反解消 = 2 utils で同名関数の実質同実装定義、戻り値型 string vs string | null は実装上の過剰宣言を統一
+影響: TranscriptDisplay.tsx + LiveCaptionWindow.tsx は無変更で API 互換維持 (re-export 経由)
+paradigm: 既存 file 拡張軸 paradigm 4 件目 = utils 間集約軸 = re-export 戦略 (Loop 145 同 file 内 + Loop 147 別 file 統合 + Loop 149 3 file 集約に続く 4 件目バリエーション)
+検証: npm run build ✓ (tsc + vite build エラー 0), agent-verify.sh OK
+commit: <refactor commit hash> + <chore commit hash>
+依存関係追加: なし
+失敗理由: なし
+次アクション: なし (メイン側で次ループ判断)
+
+---
+```
+
+# あなたが守る規律
+
+- 待機モード禁止、final answer で停止せず作業完遂まで継続
+- AGENT_LOG.md 先頭追記禁止 = 必ず末尾追記 = `tail -10 AGENT_LOG.md` で確認後追記
+- AGENT_LOG.md への append は **1 回のみ**。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む
+- 行末の trailing whitespace 禁止
+- 担当範囲外の編集禁止
+- 検証失敗したら commit しない (rollback 検討)
+- 大型 file は Read 全体禁止 = 該当範囲のみ Read offset/limit で参照 (本タスクの transcriptDisplayHelpers.ts は 88 行で全体 Read 可)
+- 2-commit pattern = refactor → chore の順で実行
+
+# 完走条件
+
+1. transcriptDisplayHelpers.ts の getSpeakerLabel が削除され、liveCaptionTrackHelpers から re-export されている
+2. npm run build ✓
+3. AGENT_LOG.md 末尾に Loop 153 entry 1 件追記済 (1 回のみ)
+4. refactor commit + chore commit の 2 件作成済
+5. `git status --short` でクリーン (worker-prompts と handoff 系の untracked 除く)
+
+完走したら最後に「Loop 153 完走 (2 commit + AGENT_LOG.md 追記済、npm run build ✓)」を出力して終了。

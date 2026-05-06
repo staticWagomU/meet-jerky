@@ -1,0 +1,357 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。1 ターンで完結する形でまとめてください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+# 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (末尾 200 行程度のみで OK)
+
+# 担当ファイル / 担当範囲
+- 編集対象: src-tauri/src/elevenlabs_realtime.rs の `mod ws_task::pending_timeout_tests` (line 482-) 内の **末尾** に #[test] 関数を 5 件追加するのみ。
+- 実装変更は禁止。visibility 変更も禁止。新規 import も避け (既存の `super::*;` と `serde_json::json!` で完結する想定)。
+
+----------------------------------------------------------------------
+## 1. 背景 / Why
+----------------------------------------------------------------------
+
+`elevenlabs_realtime.rs` の private fn `extract_transcript(value: &Value) -> Option<String>` (line 393-412) は、3 段 priority chain で transcript 文字列を抽出する:
+1. `value["transcript"]` を string として取り出す
+2. `or_else` で `value["text"]` を string として取り出す (transcript が None の時)
+3. `or_else` で `value["words"]` を array として取り出し、各 entry の `text` field 優先、無ければ `word` field を join する (上記 2 つも None の時)
+
+既存 3 件 (line 568, 580, 597) は **基本パス** (transcript vs text の優先 / words array の text+word 両方拾う / 完全 None) をカバーしているが、以下の **chain 各段の non-string fallback** と **words 内の構造ロバスト性** が未テスト:
+
+- `transcript` が non-string (null/number/array) の時に `text` へ fallback するか
+- `transcript` と `text` 両方 non-string でも `words` array へ fallback するか
+- `words` field 自体が non-array (null/number/string/object) の時 None
+- `words` array entry の `text` が non-string でも `word` field へ priority 内 fallback するか
+- 混在 words array (text-string entry + 非適合 entry + word-string entry が混在) で適合分のみ正しく join される順序
+
+これは前 mjc-main-20260504-9 ループ 3 で elevenlabs `is_scribe_error_event` + `extract_error_message` を固定した作業 (`6760d58`) の **延長線上**、および本セッション (mjc-main-20260504-10) ループ 2 で openai `handle_event` の non-string silent return を固定した作業 (`266ef37`) の **対称形**。`extract_transcript` の chain 構造を openai の flat 1 段 check と test 上で対比固定することで、将来 elevenlabs の chain を openai 風に flat 化、または openai に elevenlabs 風の or_else fallback を追加する誤改修への検知装置になる。
+
+参考: 直近 SESSION SUMMARY (AGENT_LOG.md 末尾) の「次ループ候補 Y. elevenlabs_realtime.rs extract_transcript boundary (規模 XS、価値低)」の実行版。価値は SUMMARY 通り中〜低だが、上記 3 段 chain × non-string fallback の網羅性向上には十分意義がある。
+
+----------------------------------------------------------------------
+## 2. 具体的 test 案 (assertion レベル)
+----------------------------------------------------------------------
+
+すべて `mod ws_task::pending_timeout_tests` (line 482-) 内の **末尾** に追加する。既存 test 群 (line 568-606 の `extract_transcript_*` 系 3 件、line 608-630 の `extract_error_message_*` 系、ほか) と同じスタイル。`super::extract_transcript` で private fn を直接呼ぶ既存パターンを踏襲。
+
+### T1: extract_transcript_falls_back_to_text_field_when_transcript_is_non_string
+
+**目的**: chain priority 1 (transcript) が non-string (null/number/array) で None になったときに、priority 2 (text) へ正しく fallback することを 3 ケースで固定。既存 `_returns_none_when_no_relevant_field_present` の "transcript: 123" で None になるケースは text/words が無い前提だが、本テストでは text を併置することで「fallback が機能する」ことを直接固定する。
+
+```rust
+#[test]
+fn extract_transcript_falls_back_to_text_when_transcript_is_non_string() {
+    // ケース 1: transcript=null, text="fallback" → text を採用
+    let value = serde_json::json!({ "transcript": null, "text": "fallback" });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("fallback".to_string()),
+        "transcript=null は as_str() で None、text へ or_else fallback するはず"
+    );
+
+    // ケース 2: transcript=number, text="from text"
+    let value = serde_json::json!({ "transcript": 42, "text": "from text" });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("from text".to_string()),
+        "transcript=number は as_str() で None、text へ or_else fallback するはず"
+    );
+
+    // ケース 3: transcript=array, text="x"
+    let value = serde_json::json!({ "transcript": ["a", "b"], "text": "x" });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("x".to_string()),
+        "transcript=array は as_str() で None、text へ or_else fallback するはず"
+    );
+}
+```
+
+### T2: extract_transcript_falls_back_to_words_when_transcript_and_text_are_non_string
+
+**目的**: chain priority 1 (transcript) と priority 2 (text) が両方 non-string で None になったときに、priority 3 (words array) へ正しく fallback することを固定。
+
+```rust
+#[test]
+fn extract_transcript_falls_back_to_words_when_transcript_and_text_are_non_string() {
+    // ケース 1: transcript=null, text=null, words=[{"text":"a"},{"word":"b"}] → "ab"
+    let value = serde_json::json!({
+        "transcript": null,
+        "text": null,
+        "words": [{ "text": "a" }, { "word": "b" }]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("ab".to_string()),
+        "transcript/text 両方 null なら words array へ fallback、text/word 両方拾うはず"
+    );
+
+    // ケース 2: transcript=number, text=array, words=[{"text":"x"}] → "x"
+    let value = serde_json::json!({
+        "transcript": 42,
+        "text": ["nested", "array"],
+        "words": [{ "text": "x" }]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("x".to_string()),
+        "transcript=number と text=array で 2 段抜けて words へ fallback するはず"
+    );
+
+    // ケース 3: transcript field 無し、text=number, words=[] → Some("") (空 array でも Some)
+    let value = serde_json::json!({ "text": 99, "words": [] });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("".to_string()),
+        "text=number で 1 段抜け、words=[] でも array なので Some(\"\") のはず"
+    );
+}
+```
+
+### T3: extract_transcript_returns_none_when_words_field_is_non_array
+
+**目的**: priority 3 の `words` field が array でない (null/number/string/object) 場合、`as_array()` が None を返し、最終的に `extract_transcript` 全体が None になることを固定。
+
+```rust
+#[test]
+fn extract_transcript_returns_none_when_words_field_is_non_array() {
+    // ケース 1: words=null
+    let value = serde_json::json!({ "words": null });
+    assert_eq!(
+        super::extract_transcript(&value),
+        None,
+        "words=null は as_array() で None、最終的に None のはず"
+    );
+
+    // ケース 2: words=number
+    let value = serde_json::json!({ "words": 42 });
+    assert_eq!(
+        super::extract_transcript(&value),
+        None,
+        "words=number は as_array() で None のはず"
+    );
+
+    // ケース 3: words=string
+    let value = serde_json::json!({ "words": "not-an-array" });
+    assert_eq!(
+        super::extract_transcript(&value),
+        None,
+        "words=string は as_array() で None のはず"
+    );
+
+    // ケース 4: words=object
+    let value = serde_json::json!({ "words": { "text": "still-not-array" } });
+    assert_eq!(
+        super::extract_transcript(&value),
+        None,
+        "words=object は as_array() で None のはず (top-level の text 探索とは独立)"
+    );
+}
+```
+
+### T4: extract_transcript_falls_back_to_word_key_when_text_in_word_entry_is_non_string
+
+**目的**: `words` array の entry 内で `text` field が non-string (null/number/array) でも、entry 内 `word` field へ priority 内 fallback することを固定。実装 line 404-405 の `word.get("text").or_else(|| word.get("word"))` の振る舞いを保護。
+
+注意: 実装は `.get("text").or_else(|| word.get("word"))` の **後** に `.and_then(|v| v.as_str())` をかけるので、`text=non-string` のケースでは `or_else` が動かず、結局 `text=non-string`+ `word=string` の entry は **filter_map で skip される** はず...
+
+**【ここで実装挙動を再確認】**:
+```rust
+.filter_map(|word| {
+    word.get("text")
+        .or_else(|| word.get("word"))
+        .and_then(|v| v.as_str())
+})
+```
+
+`.or_else` は `Option<&Value>` 上で動くので、`word.get("text")` が `Some(Value::Null)` なら `or_else` は **動かない** (`Some` だから)。`.and_then(|v| v.as_str())` で None になり filter_map で skip。
+
+つまり「`text=null` で `word` へ fallback」は **動かない**のが現契約。これは将来「text が non-string なら word へ fallback したい」改修への gap。テストはこの **現契約** を固定する方向で書く:
+
+```rust
+#[test]
+fn extract_transcript_does_not_fall_back_within_word_entry_when_text_is_non_string() {
+    // ケース 1: words=[{"text":null,"word":"actual"}] → Some("") (text=null で or_else 動かず、as_str() None で skip)
+    let value = serde_json::json!({
+        "words": [{ "text": null, "word": "actual" }]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("".to_string()),
+        "text=null は or_else が動かず (Some(Null) だから)、as_str() で None、skip され Some(\"\") になる現契約のはず"
+    );
+
+    // ケース 2: words=[{"text":42,"word":"y"}] → Some("")
+    let value = serde_json::json!({
+        "words": [{ "text": 42, "word": "y" }]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("".to_string()),
+        "text=number でも or_else 動かず、word fallback されない現契約"
+    );
+
+    // ケース 3: text field absent、word="z" → Some("z") (or_else が初めて動く)
+    let value = serde_json::json!({
+        "words": [{ "word": "z" }]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("z".to_string()),
+        "text field 自体無しなら or_else で word が採用される (text=non-string とは違う経路)"
+    );
+}
+```
+
+**重要**: T4 ケース 1/2 が現実装で本当に Some("") になるか、worker は `cargo test` で確認すること。もし `Some("actual")` になるなら、実装の挙動を勘違いしているので test 側を実装挙動に合わせて修正してください (実装は変更禁止)。
+
+### T5: extract_transcript_joins_only_string_entries_in_mixed_words_array_in_order
+
+**目的**: words array に「text-string entry / 非適合 entry / word-string entry」が混在しているとき、適合分のみ正しい順序で join されることを固定。`filter_map` の挙動と `Vec::join("")` の順序保証を試験。
+
+```rust
+#[test]
+fn extract_transcript_joins_only_string_entries_in_mixed_words_array_in_order() {
+    // ケース 1: 適合 (text=str, word=str) と非適合 (unrelated, text=null+word=null) が混在
+    let value = serde_json::json!({
+        "words": [
+            { "text": "a" },
+            { "unrelated": "skip" },
+            { "text": null, "word": null },
+            { "word": "c" }
+        ]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("ac".to_string()),
+        "適合 entry のみ順序保ったまま join、非適合は skip されるはず"
+    );
+
+    // ケース 2: 全 entry が non-string field のみ → Some("") (空 join)
+    let value = serde_json::json!({
+        "words": [
+            { "text": 42 },
+            { "word": 99 },
+            { "text": null, "word": null }
+        ]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("".to_string()),
+        "全 entry が非適合なら空文字 Some(\"\") を返すはず (None ではない)"
+    );
+
+    // ケース 3: 順序保証 regression sanity check (text を 3 つ並べる)
+    let value = serde_json::json!({
+        "words": [{ "text": "x" }, { "text": "y" }, { "text": "z" }]
+    });
+    assert_eq!(
+        super::extract_transcript(&value),
+        Some("xyz".to_string()),
+        "filter_map と join の順序が保たれるはず"
+    );
+}
+```
+
+----------------------------------------------------------------------
+## 3. 実装上の注意
+----------------------------------------------------------------------
+
+- **追加位置厳守**: `mod ws_task::pending_timeout_tests` (line 482〜) の **末尾**。具体的には、最後の既存 test (たぶん line 700+ の何か、`tail -200 elevenlabs_realtime.rs` で位置確認すること) の閉じ `}` の **後**、`pending_timeout_tests` mod 自体の閉じ `}` の **手前**。前 worker (mjc-worker-elevenlabs-realtime-boundary-tests-20260504-9-3) が追加した `is_scribe_error_event_*` / `extract_error_message_*` 系の更に **後** に置くこと。
+- **既存 import で完結**: `use super::*;` 系で `serde_json::json!` も使えるはず (既存 test が使っている)。
+- **assertion メッセージは日本語**: 既存 test スタイル踏襲。
+- **fmt 乱れ防止**: `cargo fmt` を最後に必ず通す。
+- **重要な実装上の罠**:
+  - line 397-398: `value.get("text").and_then(|v| v.as_str()).map(str::to_string)` は `transcript` の or_else fallback と並列で動くが、`.map(str::to_string)` の後さらに `.or_else(|| { ... words ...})` がチェーンする。すなわち priority 1+2 が両方 None なら priority 3 へ。
+  - line 404-405: `word.get("text").or_else(|| word.get("word"))` は **`Option<&Value>` 上の or_else** であり、`text=null` (Some(Value::Null)) は or_else を起動しない。これが T4 の核心契約。
+  - 既存 line 605: `serde_json::json!({ "transcript": 123 })` で None を返すが、これは text/words が無いため。T1 で text を併置したケースが現契約で Some("...") になることが本テストの新規価値。
+
+----------------------------------------------------------------------
+## 4. 検証手順
+----------------------------------------------------------------------
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+# 1. fmt
+cargo fmt --manifest-path src-tauri/Cargo.toml -- src-tauri/src/elevenlabs_realtime.rs
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+# 2. test (lib のみ)
+cargo test --manifest-path src-tauri/Cargo.toml --lib --quiet 2>&1 | tail -40
+
+# 3. clippy default
+cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests --quiet -- -D warnings 2>&1 | tail -20
+
+# 4. clippy uninlined_format_args
+cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests --quiet -- -W clippy::uninlined_format_args 2>&1 | tail -20
+
+# 期待:
+# - cargo test: 395 → 400 passed (+5)
+# - clippy default: 警告ゼロ
+# - clippy -W uninlined_format_args: 警告ゼロ
+```
+
+もし T4 の挙動が想定と違う (例: `Some("actual")` を返す) ことが test 失敗で判明したら、実装挙動に合わせて T4 ケースの期待値を修正し、AGENT_LOG.md にも「実装の挙動が prompt の想定と違っていたので test 期待値を実装に合わせた」と記録してください。実装変更は禁止。
+
+----------------------------------------------------------------------
+## 5. AGENT_LOG.md 記載項目 (作業終了時に追記必須)
+----------------------------------------------------------------------
+
+AGENT_LOG.md の末尾 (`## [SESSION SUMMARY @ ...]` の **前**) に、新しい h3 セクションとして以下のフォーマットで追記してください。**SESSION SUMMARY セクションは触らないこと**。
+
+```markdown
+### elevenlabs_realtime.rs `extract_transcript` の chain 各段 non-string fallback + words array 構造ロバスト性 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-elevenlabs-extract-transcript-boundary-tests-20260504-10-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/elevenlabs_realtime.rs` の `mod ws_task::pending_timeout_tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+extract_transcript の 3 段 priority chain (transcript → text → words array) における各段 non-string fallback と words array の構造ロバスト性を 5 件で固定。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | extract_transcript_falls_back_to_text_when_transcript_is_non_string | transcript=null/number/array で text fallback |
+| T2 | extract_transcript_falls_back_to_words_when_transcript_and_text_are_non_string | transcript+text 両方 non-string で words array fallback、空 array で Some("") |
+| T3 | extract_transcript_returns_none_when_words_field_is_non_array | words=null/number/string/object で None |
+| T4 | extract_transcript_does_not_fall_back_within_word_entry_when_text_is_non_string | words entry の text=null/number で or_else 動かず skip (= Some("") 集約)、text absent + word=string で or_else 動く現契約 |
+| T5 | extract_transcript_joins_only_string_entries_in_mixed_words_array_in_order | 適合 + 非適合 entry 混在で適合分のみ join、全非適合で Some("")、3 entry 順序保証 |
+
+#### 不変条件 / 設計意図
+- T1+T2 は or_else chain が non-string Value::Null/Number/Array をスキップして次 priority へ進む現契約を 2 段にわたって固定 (openai の flat 1 段 check との構造差分明示)。
+- T3 は priority 3 の `as_array()` 失敗時の None 集約を 4 種類の non-array 値で網羅。
+- T4 は `Option<&Value>::or_else` が「Some(Value::Null) では起動しない」という Rust の Option 仕様の現契約依存を test 文書化。`text=null` で `word` fallback できないことが意外性の高い契約なので明示固定。
+- T5 は filter_map と join の順序保証を sanity check + 全非適合で None ではなく Some("") を返す境界 (既存 line 590, 593 の "空 array で Some" と整合).
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 395 → 400 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 400
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし (既存 super::* + serde_json::json! で完結)
+
+#### 残リスク
+- T4 の「text=null では word fallback しない」現契約は、将来「text が non-string なら word へ fallback する」防御強化を入れたら test 修正が必要。**このテストはむしろ "意外性高い現契約" を test で明示することで将来の改修判断を支援する位置付け**。
+- T1/T2 の chain 段数依存契約は実装の or_else 連結を変えると壊れる (意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

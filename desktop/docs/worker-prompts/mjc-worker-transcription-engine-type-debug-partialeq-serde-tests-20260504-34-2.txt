@@ -1,0 +1,179 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 必読 (順番厳守)
+1. AGENTS.md (運用ルール)
+2. docs/agent-harness-claude.md (ハーネス使用法)
+3. **AGENT_LOG.md は 22000+ 行 / 1.86MB+ あるので Read 全体禁止。`tail -350 AGENT_LOG.md` 相当で末尾だけ参照**
+4. src-tauri/src/settings.rs の TranscriptionEngineType 定義 (l.20〜52) と既存 test 25 件の構造
+
+## AGENT_LOG.md 追記の重要ルール (必ず厳守)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**
+- **新規追記は必ずファイル末尾に行う** = `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+- **先頭は絶対に触らない**
+- 大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **行末の空白文字 (trailing whitespace) 禁止** (rustfmt / cargo fmt --check で警告になる)
+
+## 担当範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 **3 件** 追加 (上限 = 3 件、超過禁止)
+- `AGENT_LOG.md` の末尾追記 1 件 (本作業の記録)
+- 既存 25 test / TranscriptionEngineType enum / AppSettings struct / 既存 #[derive] / 関数 / impl は **完全無変更**
+
+## 背景 (mjc-main-20260504-34 Loop 2 = 「Debug 軸補強」12 連続 application)
+
+mjc-main-20260504-34 (本セッション) の Loop 1 で session.rs Session 全体の Debug-Clone 一致 + serde JSON key 名 contract を補強済 (commit 1f6f993)。
+本 Loop 2 は **TranscriptionEngineType enum** (settings.rs) で「Debug 軸補強」12 連続 application + 「format 不変条件 application」serde camelCase enum variant 系統への application 拡張。
+
+mjc-main-32 Loop 2 で TranscriptionSource enum (transcription.rs, snake_case) を補強済 = enum 形態 2 連続 application。本 Loop 2 で TranscriptionEngineType enum (settings.rs, **camelCase**) を補強し、enum 形態 3 連続 + 別ファイル展開 + camelCase 系統 application を完成。
+
+## TranscriptionEngineType の現状
+
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum TranscriptionEngineType {
+    Whisper,
+    AppleSpeech,
+    OpenAIRealtime,
+    ElevenLabsRealtime,
+}
+```
+
+既存 25 test で以下が **守られていない**:
+- Debug 出力に各 variant 名が含まれる contains assert (= log/panic 時の variant 識別性)
+- PartialEq の reflexive / variant 単位独立等値判定 (既存 from_legacy_str test は assert_eq! で間接的に使うが、**直接の PartialEq 軸テストはない**)
+- serde camelCase 4 variants 各 JSON 文字列の不変条件 (Whisper → "whisper" / AppleSpeech → "appleSpeech" / OpenAIRealtime → "openAIRealtime" / ElevenLabsRealtime → "elevenLabsRealtime") = round-trip 保護はあるが順向き保護なし
+
+## 追加するテスト (3 件、命名と構造は既存に対称形で揃える)
+
+### T1: transcription_engine_type_debug_output_contains_each_variant_name_per_variant
+**Debug 軸補強 12 連続 application** = mjc-main-32 Loop 2 で TranscriptionSource enum を補強済の対称形。
+
+```rust
+#[test]
+fn transcription_engine_type_debug_output_contains_each_variant_name_per_variant() {
+    let whisper = TranscriptionEngineType::Whisper;
+    let apple = TranscriptionEngineType::AppleSpeech;
+    let openai = TranscriptionEngineType::OpenAIRealtime;
+    let elevenlabs = TranscriptionEngineType::ElevenLabsRealtime;
+    assert!(format!("{:?}", whisper).contains("Whisper"), "Debug 出力に variant 'Whisper' が含まれる契約: got {:?}", whisper);
+    assert!(format!("{:?}", apple).contains("AppleSpeech"), "Debug 出力に variant 'AppleSpeech' が含まれる契約: got {:?}", apple);
+    assert!(format!("{:?}", openai).contains("OpenAIRealtime"), "Debug 出力に variant 'OpenAIRealtime' が含まれる契約: got {:?}", openai);
+    assert!(format!("{:?}", elevenlabs).contains("ElevenLabsRealtime"), "Debug 出力に variant 'ElevenLabsRealtime' が含まれる契約: got {:?}", elevenlabs);
+    let dbg_w = format!("{:?}", whisper);
+    let dbg_a = format!("{:?}", apple);
+    let dbg_o = format!("{:?}", openai);
+    let dbg_e = format!("{:?}", elevenlabs);
+    assert_ne!(dbg_w, dbg_a, "異なる variant の Debug 出力は異なる契約 (Whisper vs AppleSpeech)");
+    assert_ne!(dbg_w, dbg_o, "異なる variant の Debug 出力は異なる契約 (Whisper vs OpenAIRealtime)");
+    assert_ne!(dbg_w, dbg_e, "異なる variant の Debug 出力は異なる契約 (Whisper vs ElevenLabsRealtime)");
+    assert_ne!(dbg_a, dbg_o, "異なる variant の Debug 出力は異なる契約 (AppleSpeech vs OpenAIRealtime)");
+    assert_ne!(dbg_a, dbg_e, "異なる variant の Debug 出力は異なる契約 (AppleSpeech vs ElevenLabsRealtime)");
+    assert_ne!(dbg_o, dbg_e, "異なる variant の Debug 出力は異なる契約 (OpenAIRealtime vs ElevenLabsRealtime)");
+}
+```
+
+### T2: transcription_engine_type_partial_eq_holds_reflexive_and_differs_between_variants
+**PartialEq 軸独立補強** = 既存 from_legacy_str test は assert_eq! で間接的に使うのみ、本 test は PartialEq reflexive + 4 variants 単位独立等値判定を直接固定。
+
+```rust
+#[test]
+fn transcription_engine_type_partial_eq_holds_reflexive_and_differs_between_variants() {
+    assert_eq!(TranscriptionEngineType::Whisper, TranscriptionEngineType::Whisper, "PartialEq reflexive: Whisper == Whisper");
+    assert_eq!(TranscriptionEngineType::AppleSpeech, TranscriptionEngineType::AppleSpeech, "PartialEq reflexive: AppleSpeech == AppleSpeech");
+    assert_eq!(TranscriptionEngineType::OpenAIRealtime, TranscriptionEngineType::OpenAIRealtime, "PartialEq reflexive: OpenAIRealtime == OpenAIRealtime");
+    assert_eq!(TranscriptionEngineType::ElevenLabsRealtime, TranscriptionEngineType::ElevenLabsRealtime, "PartialEq reflexive: ElevenLabsRealtime == ElevenLabsRealtime");
+    assert_ne!(TranscriptionEngineType::Whisper, TranscriptionEngineType::AppleSpeech, "異 variant 不等値: Whisper != AppleSpeech");
+    assert_ne!(TranscriptionEngineType::Whisper, TranscriptionEngineType::OpenAIRealtime, "異 variant 不等値: Whisper != OpenAIRealtime");
+    assert_ne!(TranscriptionEngineType::Whisper, TranscriptionEngineType::ElevenLabsRealtime, "異 variant 不等値: Whisper != ElevenLabsRealtime");
+    assert_ne!(TranscriptionEngineType::AppleSpeech, TranscriptionEngineType::OpenAIRealtime, "異 variant 不等値: AppleSpeech != OpenAIRealtime");
+    assert_ne!(TranscriptionEngineType::AppleSpeech, TranscriptionEngineType::ElevenLabsRealtime, "異 variant 不等値: AppleSpeech != ElevenLabsRealtime");
+    assert_ne!(TranscriptionEngineType::OpenAIRealtime, TranscriptionEngineType::ElevenLabsRealtime, "異 variant 不等値: OpenAIRealtime != ElevenLabsRealtime");
+}
+```
+
+### T3: transcription_engine_type_serde_serialize_uses_camel_case_for_each_variant
+**format 不変条件 application 拡張** = serde camelCase rule の 4 variants 順向き保護 (round-trip 既存 test は逆向きのみ)。
+
+```rust
+#[test]
+fn transcription_engine_type_serde_serialize_uses_camel_case_for_each_variant() {
+    assert_eq!(serde_json::to_value(&TranscriptionEngineType::Whisper).unwrap().as_str(), Some("whisper"), "Whisper variant が JSON 文字列 'whisper' (camelCase) に serialize される契約");
+    assert_eq!(serde_json::to_value(&TranscriptionEngineType::AppleSpeech).unwrap().as_str(), Some("appleSpeech"), "AppleSpeech variant が JSON 文字列 'appleSpeech' (camelCase) に serialize される契約");
+    assert_eq!(serde_json::to_value(&TranscriptionEngineType::OpenAIRealtime).unwrap().as_str(), Some("openAIRealtime"), "OpenAIRealtime variant が JSON 文字列 'openAIRealtime' (camelCase, 連続大文字 'AI' 維持) に serialize される契約");
+    assert_eq!(serde_json::to_value(&TranscriptionEngineType::ElevenLabsRealtime).unwrap().as_str(), Some("elevenLabsRealtime"), "ElevenLabsRealtime variant が JSON 文字列 'elevenLabsRealtime' (camelCase) に serialize される契約");
+    let snake_w = serde_json::to_string(&TranscriptionEngineType::Whisper).unwrap();
+    assert!(!snake_w.contains("WHISPER"), "snake_case / SCREAMING_CASE への誤改修を遮断: got {}", snake_w);
+    let snake_o = serde_json::to_string(&TranscriptionEngineType::OpenAIRealtime).unwrap();
+    assert!(!snake_o.contains("open_a_i_realtime"), "snake_case 'open_a_i_realtime' への誤改修を遮断: got {}", snake_o);
+    assert!(!snake_o.contains("OpenAIRealtime"), "PascalCase そのままへの誤改修を遮断: got {}", snake_o);
+}
+```
+
+## 規模超過防止 (重要)
+- 追加するテストは **必ず 3 件のみ** (T1/T2/T3)。4 件目以降は禁止。
+- 既存 25 test の改名・改修は禁止。
+- TranscriptionEngineType / AppSettings / 関数 / impl 本体への変更禁止。
+- 担当範囲外のファイル (transcription.rs / session.rs / session_manager.rs 等) への編集禁止。
+
+## 実施手順
+
+1. AGENTS.md / docs/agent-harness-claude.md / `tail -350 AGENT_LOG.md` を読む。
+2. `wc -l src-tauri/src/settings.rs` で現在行数を確認 (647 行想定)。
+3. `sed -n '630,647p' src-tauri/src/settings.rs` で末尾構造 (l.640〜の最終 test + 閉じ `}`) を確認。
+4. `mod tests {}` の閉じ `}` の **直前** に T1/T2/T3 を追加。
+5. 各テストの `#[test]` attr を忘れず付与。
+6. trailing whitespace 厳禁。
+7. `cargo fmt --manifest-path src-tauri/Cargo.toml`
+8. `cargo fmt --check --manifest-path src-tauri/Cargo.toml` で差分なし確認
+9. `cargo clippy --lib --manifest-path src-tauri/Cargo.toml -- -D warnings` で警告ゼロ確認
+10. `cargo test --lib --manifest-path src-tauri/Cargo.toml -- --test-threads=1` で **592 → 595 passed** (+3 件、0 failed) を確認
+11. `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のフォーマットで追記:
+
+```markdown
+## mjc-worker-transcription-engine-type-debug-partialeq-serde-tests-20260504-34-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-transcription-engine-type-debug-partialeq-serde-tests-20260504-34-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-34 Loop 2
+
+### 作業範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 12 連続 application + 「format 不変条件」serde camelCase enum variant 系統への application 拡張 = TranscriptionEngineType (#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)] + #[serde(rename_all = "camelCase")] + 4 unit variants Whisper / AppleSpeech / OpenAIRealtime / ElevenLabsRealtime) への Debug + PartialEq + serde camelCase 3 軸 application。
+- T1: transcription_engine_type_debug_output_contains_each_variant_name_per_variant (4 variants 名 contains + 4! = 6 通り pair の Debug 出力相違)
+- T2: transcription_engine_type_partial_eq_holds_reflexive_and_differs_between_variants (4 reflexive + 6 不等)
+- T3: transcription_engine_type_serde_serialize_uses_camel_case_for_each_variant (4 variants の camelCase JSON 文字列固定 + snake_case / PascalCase 不在)
+
+### 結果
+- cargo fmt --check: 差分なし
+- cargo clippy --lib -- -D warnings: 警告ゼロ (exit 0)
+- cargo test --lib -- --test-threads=1: 592 → 595 passed (+3 件、0 failed)
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に T1/T2/T3 追加、enum / 既存 #[derive] / 既存 25 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+test result: ok. 595 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <Xs>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 最終報告 (1 ターンで完結)
+- 変更内容、変更ファイル、検証結果、残リスクを簡潔にメインへ報告。
+- 1 ターンで完結する形でまとめる。

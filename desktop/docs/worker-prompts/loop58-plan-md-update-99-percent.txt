@@ -1,0 +1,116 @@
+あなたは meet-jerky の worker (sonnet) です。Tidy First (Kent Beck) に従い、構造改善のみで振る舞い不変の docs 更新を 1 ループで完了してください。
+
+# 必読 (この順で)
+1. 冒頭で必ず `tail -350 AGENT_LOG.md` を実行し、末尾 350 行を読んでください。
+2. **AGENT_LOG.md は時系列順 = 最古ログがファイル先頭、最新ログがファイル末尾です。新規追記は必ずファイル末尾に行ってください**。
+3. **ファイル先頭は絶対に触らないでください**。誤って先頭に追記すると過去全ログが破壊されます。
+4. 具体手順: 編集前に必ず `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` の直後に新規エントリを追記してください。
+5. 大型ファイルは Read 全体禁止 = `tail` / `head` / `grep` で対象範囲のみ参照してください (AGENT_LOG.md は ~28,300+ 行 / ~2.6MB)。
+6. **行末の空白文字 (trailing whitespace) 禁止**。マークダウン編集時に末尾スペースが入らないよう注意。
+
+# 担当タスク
+`docs/architecture/transcription-refactor-plan.md` を **mjc-main-20260505-28 Loop 57 (= WHISPER_SAMPLE_RATE 移動 + 互換 re-export 削除 = 36 → 29 行 = 99.0% 縮小達成 = Phase 5 完全終了 = transcription.rs 完全ファサード化)** で再更新する。
+
+## 更新箇所 (5 箇所 + 1 新サブセクション = 6 編集)
+
+### 1. 進捗サマリヘッダ更新
+- 現在 (L28): `## 進捗サマリ (mjc-main-20260505-27 Loop 55 時点)`
+- 変更後: `## 進捗サマリ (mjc-main-20260505-28 Loop 57 時点)`
+
+### 2. 累計削減行数更新 (L42 付近、進捗サマリ末尾)
+- 現在: `- **transcription.rs 累計削減**: 元 2999 行 → 現在 **36 行** = **約 98.8% 縮小** (~2963 行削減) = **「95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)」**`
+- 変更後: `- **transcription.rs 累計削減**: 元 2999 行 → 現在 **29 行** = **約 99.0% 縮小** (~2970 行削減) = **「95% / 98% / 99% 里程標突破達成 + 98.8% からさらに +0.2pt 進展 = Phase 5 完全終了 = transcription.rs 完全ファサード化 (互換 re-export 5 件のみ、本体実装ゼロ・const ゼロ)」**`
+
+### 3. 残存課題セクションの末尾項目更新 (Loop 55 行を Loop 57 行で延長)
+- 現在 (L58 付近): `- **mjc-main-20260505-27 Loop 55 ✅ 完了**: tests mod 4 件 (...) を一括移動 = transcription.rs tests mod 完全削除 + use 文 2 件完全削除 = 互換 re-export 5 件 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const のみの **36 行最終形達成** = Phase 5 完了相当 (commit \`93dcd18\`、-157 行)`
+- 変更後: 上記行はそのまま残す + その直後に下記 1 行を追加:
+  - `- **mjc-main-20260505-28 Loop 57 ✅ 完了**: WHISPER_SAMPLE_RATE 定数を audio_utils.rs に移動 + 互換 re-export 残置を clippy 検証で削除 = transcription.rs 36 → 29 行 = **99.0% 縮小達成 = Phase 5 完全終了 = 完全ファサード化** (commit \`68c67d1\`、-7 行)`
+
+### 4. 残存課題セクション末尾の総括行更新 (L59 付近)
+- 現在: `- transcription.rs 残存 **36 行** = Phase 5 完了相当の最終形 (互換 re-export + WHISPER_SAMPLE_RATE 1 const のみ)、残る Tidy First 機会は (1) WHISPER_SAMPLE_RATE 移動最終判断 (Phase 5 仕上げ) / (2) 互換層削除 Phase 6 / (3) docs / frontend / 検知拡張`
+- 変更後: `- transcription.rs 残存 **29 行** = Phase 5 完全終了 = 完全ファサード化 (互換 re-export 5 件のみ、本体実装ゼロ・const ゼロ)、残る Tidy First 機会は (1) Phase 6 = 互換層削除 (transcription.rs 完全削除への migration、6 caller refactor、複数ループ計画推奨) / (2) docs / frontend / 検知拡張`
+
+### 5. 末尾「## 参考」直前に新サブセクション 1 件を追加
+位置: 既存「## 関連: tests mod 完全削除 = 36 行最終形達成 ✅ 完了 (mjc-main-20260505-27 Loop 55 = commit `93dcd18`)」セクション (Phase 5 完了相当の意義サブセクションを含む) の **直後**、`## 参考` の **直前** に下記を挿入:
+
+```
+## 関連: WHISPER_SAMPLE_RATE 移動 + 互換層削除 = 29 行最終形達成 ✅ 完了 (mjc-main-20260505-28 Loop 57 = commit `68c67d1`)
+
+mjc-main-20260505-28 Loop 57 で transcription.rs から `WHISPER_SAMPLE_RATE` 定数を audio_utils.rs に移動し、さらに互換 re-export 残置を clippy 検証で削除した = **transcription.rs 29 行最終形達成 = Phase 5 完全終了 = 完全ファサード化**。
+
+- 移動対象: `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` (transcription.rs 唯一の本体実装)
+- 移動先: audio_utils.rs L25 = 既存の `use crate::transcription::WHISPER_SAMPLE_RATE;` を const 定義に置換 (self-reference 解消)
+- 連動変更: transcription_whisper_stream.rs L6 既存 use ブロックに WHISPER_SAMPLE_RATE 統合 (別 use 文 → ブロック合流 = -1 行)
+- 互換層判断: 当初 `pub(crate) use crate::audio_utils::WHISPER_SAMPLE_RATE;` を transcription.rs に残置する設計だったが、`cargo clippy --lib --tests -- -D warnings` で「unused import」エラーを検出 (= 既に呼び出し元ゼロ、各 caller は audio_utils 経由で参照済) → 残置せず削除が正解と判断
+- メイン批判判断: handoff サマリの「audio_utils.rs vs 新規 transcription_constants.rs」案を grep で実態確認 → transcription_whisper_stream.rs L6 が既に audio_utils を import している = audio_utils.rs 配置で単方向依存 + 沈黙検知三位一体 locality (Loop 44) と一貫 + 新規ファイル不要 = audio_utils.rs に確定 = メイン批判判断 連続 9 セッション目達成
+- 振る舞い不変 = 702 passed 件数不変、clippy 警告ゼロ、fmt OK
+- transcription.rs 36 → **29 行** (-7 行) = **99.0% 縮小最終形** (元 2999 行から累計 -2970 行)
+- audio_utils.rs 324 → 325 行 (+1 行) = 沈黙検知 3 const + WHISPER_SAMPLE_RATE 1 件 + 関数 + tests = sample_rate 系 4 件統合 locality 完璧
+- transcription_whisper_stream.rs 245 → 244 行 (-1 行) = use ブロック統合
+
+### Phase 5 完全終了 = transcription.rs 完全ファサード化の意義
+
+- transcription.rs 29 行最終形 = 互換 re-export 5 件のみ (本体実装ゼロ・const ゼロ):
+  - L1-5: TranscriptionSegment / TranscriptionSource (transcription_types.rs)
+  - L7-11: StreamConfig / TranscriptionEngine / TranscriptionStream (transcription_traits.rs)
+  - L13-17: WhisperStream (transcription_whisper_stream.rs)
+  - L19-23: TranscriptionStateHandle (transcription_manager.rs)
+  - L25-29: TranscriptionLoopConfig (transcription_worker_loop.rs)
+- WHISPER_SAMPLE_RATE は audio_utils.rs に集約 = sample_rate 系 4 件 + 沈黙検知関数 + tests の locality 完璧
+- 残る課題は **Phase 6 のみ** = 互換 re-export 5 件を全 caller (cloud_whisper.rs / elevenlabs_realtime.rs / transcript_bridge.rs / transcription_commands.rs / transcription_panic_guard.rs / transcription_whisper_local.rs の 6 ファイル) で直接 import に書き換え、最終的に transcription.rs ファイル自体を削除する migration (規模 M、6 ループ計画推奨)
+- AGENTS.md 優先順位 1 (クラッシュ修正) / 4 (リアルタイム文字起こし低遅延化) への予防的寄与 = 巨大ファイル理解難度低減を最大限まで達成 (元 2999 行 = 9 責務混在 → 9 責務全て独立モジュールに locality 集約 + transcription.rs 自体は ファサード)
+
+```
+
+### 6. 末尾「## 参考」最終行更新 (L399 付近)
+- 現在: `- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-27 Loop 55 時点で 36 行 = 約 98.8% 縮小達成 = 95% / 98% 里程標突破達成 + 90% 里程標突破からさらに +5.2pt 進展 = Phase 5 完了相当)`
+- 変更後: `- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-28 Loop 57 時点で 29 行 = 約 99.0% 縮小達成 = 95% / 98% / 99% 里程標突破達成 + 98.8% からさらに +0.2pt 進展 = Phase 5 完全終了 = transcription.rs 完全ファサード化)`
+
+# 担当範囲外の編集禁止 (規模超過防止)
+- **編集対象は `docs/architecture/transcription-refactor-plan.md` のみ**。それ以外のファイル (Rust コード / TypeScript / 他 docs) は一切編集しない。
+- AGENT_LOG.md には末尾エントリ (下記テンプレート) のみ追記、それ以外の本文書き換えは禁止。
+- cargo / npm はこのループでは検証 skip 可 (markdown のみ = 振る舞い完全不変)。`bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md` のみで OK。
+- **cargo test 件数の上限明示**: 本ループは markdown のみのため cargo test 件数は 702 のまま不変。万が一テストを走らせる場合は 702 passed であること。
+
+# AGENT_LOG.md 追記テンプレート (末尾の `---` 直後に追記、行末空白なし)
+
+```
+[mjc-main-20260505-29 Loop 58 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリヘッダ: mjc-main-20260505-27 Loop 55 時点 → mjc-main-20260505-28 Loop 57 時点
+  - 累計削減行数: 36 行 (98.8%) → 29 行 (99.0%) = 95% / 98% / 99% 里程標突破達成 + Phase 5 完全終了 + 完全ファサード化
+  - 残存課題セクション: Loop 57 (WHISPER_SAMPLE_RATE 移動 + 互換層削除 -7 行 = 29 行最終形達成) 反映
+  - 残存行数総括: 36 行 → 29 行 + 残課題 (Phase 6 互換層削除 / docs / frontend / 検知拡張) を再整理
+  - 新サブセクション 1 件 (## 参考 直前): 「WHISPER_SAMPLE_RATE 移動 + 互換層削除 = 29 行最終形達成 ✅ 完了」+ Phase 5 完全終了 + 完全ファサード化の意義
+  - 末尾参考: 36 行 (98.8%) → 29 行 (99.0%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防 + 99.0% / Phase 5 完全終了 / 完全ファサード化という歴史的記録)
+- mjc-main-20260505-28 Loop 57 (WHISPER_SAMPLE_RATE 移動 + 互換層削除 = 36 → 29 行 = 99.0% 達成 = Phase 5 完全終了) を 1 ループで反映
+- variety pivot = docs 軸 = Loop 56 から 1 ループ pivot 後 = 警告境界手前だが 99.0% + Phase 5 完全終了の歴史的記録優先 = 許容、test 軸 = transcription.rs 余地ゼロ続行不可
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 1 件を末尾「## 参考」直前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- (commit 後に hash を記入)
+```
+
+# 完走後の手順
+1. `bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md` で OK 確認
+2. `git diff docs/architecture/transcription-refactor-plan.md` で 6 編集 (進捗サマリヘッダ / 累計削減 / 残存課題項目追加 / 残存行数総括 / 新サブセクション / 末尾参考) を確認
+3. AGENT_LOG.md 末尾に上記テンプレートを追記 (commit hash は仮置きで `<commit hash>` のまま)
+4. `bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 57 WHISPER_SAMPLE_RATE 移動 + 互換層削除 + 99.0% 達成 + Phase 5 完全終了 + 完全ファサード化を反映 (mjc-main-20260505-28 Loop 57, 99.0% 縮小, Phase 5 完全終了)" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` で commit
+5. commit 後、`git log -1 --format=%H` で hash を取得し、AGENT_LOG.md 末尾の `<commit hash>` を実際の hash に置換 (この更新も commit する場合は別 chore commit になるが、メインが処理するため worker は完了を報告するだけで OK)
+
+# 制約再確認
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- メインに最終 commit hash を伝えるため、completion 時に「commit hash = XXXXXXX」を明示すること

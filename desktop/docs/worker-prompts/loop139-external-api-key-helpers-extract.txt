@@ -1,0 +1,206 @@
+あなたは meet-jerky の worker エージェントです。Loop 139 = TranscriptView.tsx External API Key 系 3 純粋関数 (getExternalApiKeyStatusLabel + getExternalApiKeyStatusPillClass + getExternalApiKeyStatusAriaLabel) を新 file `src/utils/externalApiKeyHelpers.ts` に抽出します。
+
+# 必読 (順序重要)
+
+1. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+3. AGENT_LOG.md は時系列順 (最古ログ = 先頭、最新ログ = 末尾) = ~33,442+ 行 = **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` で末尾だけ参照。**先頭は絶対に触らない**。新規追記は必ずファイル末尾の `---` 直後に行う。
+4. 既存 precedent (cat で全体確認すること、各 ~12-78 行で軽量):
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/audioSourceHelpers.ts` (Loop 135)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/engineStatusHelpers.ts` (Loop 137 = 直近 precedent = 同 display tier 異 entity の最近例)
+   - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/transcriptionEngineHelpers.ts` (Loop 131 = engine 機能特性 tier = 異階層 reference)
+
+# 範囲制限 (厳守)
+
+- 編集対象は `src/routes/TranscriptView.tsx` (関数定義 3 件削除 + import 追加) と新規 `src/utils/externalApiKeyHelpers.ts` のみ。
+- それ以外のファイルは触らない。
+- TranscriptView.tsx 全体 (2255 行) は **絶対に Read 全体しない** = 必要な範囲だけ `Read offset=... limit=...` で参照。
+- 行末空白文字 (trailing whitespace) は **禁止**。
+- `--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ。
+
+# タスク詳細
+
+## 抽出対象 (TranscriptView.tsx L291-L332 の 3 関数)
+
+```ts
+function getExternalApiKeyStatusLabel(
+  externalApiProvider: string | null,
+  hasExternalApiKey: boolean | undefined,
+  externalApiKeyError: unknown,
+): string | null {
+  if (!externalApiProvider) {
+    return null;
+  }
+  if (externalApiKeyError) {
+    return "確認できません";
+  }
+  if (hasExternalApiKey === undefined) {
+    return "確認中";
+  }
+  return hasExternalApiKey ? "登録済み" : "未登録";
+}
+
+function getExternalApiKeyStatusPillClass(statusLabel: string | null): string {
+  if (statusLabel === "登録済み") {
+    return "meeting-status-pill-active";
+  }
+  if (statusLabel === "確認できません") {
+    return "meeting-status-pill-error";
+  }
+  if (statusLabel === "未登録") {
+    return "meeting-status-pill-idle";
+  }
+  return "meeting-status-pill-neutral";
+}
+
+function getExternalApiKeyStatusAriaLabel(
+  externalApiProvider: string | null,
+  statusLabel: string | null,
+): string | null {
+  if (!externalApiProvider || !statusLabel) {
+    return null;
+  }
+  if (statusLabel === "登録済み") {
+    return `${externalApiProvider} API キー: 登録済み。キー値は画面に再表示されません`;
+  }
+  return `${externalApiProvider} API キー: ${statusLabel}`;
+}
+```
+
+注意: 全て primitives 引数 + null 引数のみ = **utils import なし、type import なし** = cross-import paradigm 増加なし。paradigm は Loop 125/127/131/137 と同じ標準形 (純粋関数 export 化 + import 1 行追加) = utils 内 cross-import paradigm 4 件目で打ち止め継続。
+
+## callsite (TranscriptView.tsx で 3 件)
+
+- L1381: `getExternalApiKeyStatusLabel(externalApiProvider, hasExternalApiKey, externalApiKeyError)` (外側で参照)
+- L1393: `getExternalApiKeyStatusAriaLabel(externalApiProvider, externalApiKeyStatusLabel)` (外側で参照)
+- L2016: `getExternalApiKeyStatusPillClass(externalApiKeyStatusLabel)` (className 内)
+
+→ import 1 行追加だけで参照解決される (関数名は同じ)。
+
+## 責務階層精査結論 (メインで完了済 = 後続作業は trust)
+
+- transcriptionEngineHelpers.ts (Loop 131) = engine の **機能特性** = predicate / model display tier
+- engineStatusHelpers.ts (Loop 137) = engine の **状態 UI 表示** = display tier (engine status)
+- externalApiKeyHelpers.ts (本 Loop 139 新規) = engine の **使用条件 (External API key 登録状態) UI 表示** = display tier (external API key) = **異 entity** (engine 自体ではなく engine の前提条件)
+- → 同 file 統合不可 (異 entity / 異階層) = 新 file 作成軸採用が責務階層的に妥当 = Loop 119/121/123/125/127/129/131/133/135/137 教訓継承
+
+## 手順
+
+1. **新 file 作成**: `src/utils/externalApiKeyHelpers.ts` を新規作成。内容:
+   ```ts
+   export function getExternalApiKeyStatusLabel(
+     externalApiProvider: string | null,
+     hasExternalApiKey: boolean | undefined,
+     externalApiKeyError: unknown,
+   ): string | null {
+     if (!externalApiProvider) {
+       return null;
+     }
+     if (externalApiKeyError) {
+       return "確認できません";
+     }
+     if (hasExternalApiKey === undefined) {
+       return "確認中";
+     }
+     return hasExternalApiKey ? "登録済み" : "未登録";
+   }
+
+   export function getExternalApiKeyStatusPillClass(
+     statusLabel: string | null,
+   ): string {
+     if (statusLabel === "登録済み") {
+       return "meeting-status-pill-active";
+     }
+     if (statusLabel === "確認できません") {
+       return "meeting-status-pill-error";
+     }
+     if (statusLabel === "未登録") {
+       return "meeting-status-pill-idle";
+     }
+     return "meeting-status-pill-neutral";
+   }
+
+   export function getExternalApiKeyStatusAriaLabel(
+     externalApiProvider: string | null,
+     statusLabel: string | null,
+   ): string | null {
+     if (!externalApiProvider || !statusLabel) {
+       return null;
+     }
+     if (statusLabel === "登録済み") {
+       return `${externalApiProvider} API キー: 登録済み。キー値は画面に再表示されません`;
+     }
+     return `${externalApiProvider} API キー: ${statusLabel}`;
+   }
+   ```
+
+2. **TranscriptView.tsx 修正**:
+   - L291-L332 の `function getExternalApiKeyStatusLabel(...)` + `function getExternalApiKeyStatusPillClass(...)` + `function getExternalApiKeyStatusAriaLabel(...)` 定義 3 件を **削除** (前後の空行も整理)
+   - 既存の utils import 群の中に次の import を **追加** (alphabetical 的に `engineStatusHelpers` の隣 = `externalApiKeyHelpers` で a 順):
+     ```ts
+     import {
+       getExternalApiKeyStatusAriaLabel,
+       getExternalApiKeyStatusLabel,
+       getExternalApiKeyStatusPillClass,
+     } from "../utils/externalApiKeyHelpers";
+     ```
+   - **挿入位置は `grep -n "from \"../utils/" src/routes/TranscriptView.tsx | head -30` で確認** してから決める。`engineStatusHelpers` の直後 / `liveCaptionStatus` の前あたりが alphabetical 的に妥当。
+   - callsite (L1381/L1393/L2016 = 関数名は同じ) は import 追加だけで参照解決される = 修正不要。
+
+# 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+npm run build  # tsc + vite build = ✓ 通ること
+bash scripts/agent-verify.sh src/routes/TranscriptView.tsx src/utils/externalApiKeyHelpers.ts
+```
+
+両方 OK のときのみ commit に進む。
+
+# 2-commit pattern (Loop 60-138 の 79 連続 precedent と完全同形)
+
+## commit 1 (refactor)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/routes/TranscriptView.tsx src/utils/externalApiKeyHelpers.ts
+git commit -m "refactor(frontend): TranscriptView の External API Key 系 helpers を utils/externalApiKeyHelpers.ts に抽出 (mjc-main-20260505-68 Loop 139, frontend 軸 14 件目 = 純粋関数機能分離軸 frontend 版 11 件目, scope 33 軸目開拓, 大型 frontend file 責務分離 46 file 目, getExternalApiKeyStatusLabel + getExternalApiKeyStatusPillClass + getExternalApiKeyStatusAriaLabel 抽出, R6 段階的分割 8 件目, transcriptionEngineHelpers.ts + engineStatusHelpers.ts との責務階層精査で異 entity 判定 = display tier (external API key) として独立, AGENTS.md priority 1 寄与)"
+```
+
+commit hash を取得 (`git log --oneline -1` の左端 7 文字) して `<COMMIT1_HASH>` として記録。
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に **append のみ** で追記。**先頭は絶対に触らない**。
+
+追記内容 (テンポラリファイル `/tmp/loop139-entry.md` を Write してから `cat /tmp/loop139-entry.md >> AGENT_LOG.md`):
+
+```
+[mjc-main-20260505-68 Loop 139 / 2026-05-06]
+worker: mjc-worker-loop139-external-api-key-helpers-extract (作業)
+範囲: src/routes/TranscriptView.tsx (関数定義 3 件削除 + import 追加) + src/utils/externalApiKeyHelpers.ts (新規 ~45 行 = export 3 関数, import なし)
+内容: TranscriptView.tsx L291-L332 の getExternalApiKeyStatusLabel + getExternalApiKeyStatusPillClass + getExternalApiKeyStatusAriaLabel を新 file utils/externalApiKeyHelpers.ts に抽出。frontend 軸 14 件目 = 純粋関数機能分離軸 frontend 版 11 件目 = scope 33 軸目開拓 = 大型 frontend file 責務分離 46 file 目 = R6 段階的分割 8 件目 (Loop 125 audio level + Loop 127 permission status + Loop 129 track ARIA + Loop 131 engine 機能特性 + Loop 133 AI Transmission + Loop 135 Audio Source + Loop 137 Engine Status の続編)。callsite 3 件 (L1381 + L1393 + L2016) は import 追加のみで参照解決。alternation pattern 31 連続維持 (K(138) → frontend(139))。メイン批判判断 = 既存 transcriptionEngineHelpers.ts (engine 機能特性 tier) + engineStatusHelpers.ts (engine status display tier) との責務階層精査で **異 entity 判定** (本新 file = engine の使用条件 = External API key 登録状態 display tier) → 新 file 作成軸採用妥当 = Loop 119/121/123/125/127/129/131/133/135/137 教訓継承 (paradigm 反復 < 責務階層精査)。新 file は import なし (全て primitives 引数) = **utils 内 cross-import paradigm 4 件目 (audioSourceHelpers.ts) で打ち止め継続**。
+変更ファイル: src/routes/TranscriptView.tsx, src/utils/externalApiKeyHelpers.ts
+検証: npm run build OK (tsc + vite build), bash scripts/agent-verify.sh OK
+commit: <COMMIT1_HASH> refactor(frontend): TranscriptView の External API Key 系 helpers を utils/externalApiKeyHelpers.ts に抽出
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+## commit 2 (chore)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-68 Loop 139 = TranscriptView の External API Key 系 helpers を utils/externalApiKeyHelpers.ts に抽出 (構造分離 46 file 目, frontend 軸 14 件目, scope 33 軸目開拓, 純粋関数機能分離軸 frontend 版 11 件目, alternation 31 連続維持, R6 段階的分割 8 件目, transcriptionEngineHelpers + engineStatusHelpers との責務階層異 entity 判定)"
+```
+
+# 完了確認
+
+`git log --oneline -3` で 2 commit 反映を確認:
+- 最新 = chore(agent-log): ... Loop 139 ...
+- その 1 つ前 = refactor(frontend): ... externalApiKeyHelpers.ts ...
+
+両方表示されたら作業完了。final answer 不要、停止せずメインエージェントに引き継がれる。

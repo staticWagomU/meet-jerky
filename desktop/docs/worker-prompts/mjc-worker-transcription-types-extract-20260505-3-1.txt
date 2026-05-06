@@ -1,0 +1,161 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順番に従う)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行 (`tail -350 AGENT_LOG.md`)**
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+   - **先頭は絶対に触らない** (24,000 行超、過去ログを編集すると致命的な情報破壊になる)
+   - 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **docs/architecture/transcription-refactor-plan.md** (本作業の根拠 = Phase 1 着手)
+
+# 担当範囲
+- 新規作成: `src-tauri/src/transcription_types.rs`
+- 修正: `src-tauri/src/transcription.rs` (データ型 4 つを削除 + 互換層追加)
+- 修正: `src-tauri/src/lib.rs` (`mod transcription_types;` 追加)
+- 末尾追記: `AGENT_LOG.md`
+
+**担当範囲外 (絶対に編集禁止)**:
+- src-tauri/src/transcription.rs の line 60 以降 (トレイト定義以降)
+- 他の rust ファイル (cloud_whisper.rs / transcript_bridge.rs / elevenlabs_realtime.rs / audio.rs / session_manager.rs 等)
+- frontend (src/) 全体
+- docs/ ディレクトリ (AGENT_LOG.md の末尾追記を除く)
+
+# 作業内容 (Tidy First、振る舞い不変)
+
+## Step 1: 新規ファイル作成
+
+`src-tauri/src/transcription_types.rs` を新規作成し、以下の内容を書く:
+
+```rust
+use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionSource {
+    Microphone,
+    SystemAudio,
+}
+
+/// 文字起こし結果の1セグメント
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptionSegment {
+    pub text: String,
+    pub start_ms: i64,
+    pub end_ms: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<TranscriptionSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speaker: Option<String>, // "自分" (mic) or "相手側" (system audio)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_error: Option<bool>,
+}
+
+/// 文字起こし worker から UI へ通知するエラー payload。
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct TranscriptionErrorPayload {
+    pub error: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<TranscriptionSource>,
+}
+
+/// 利用可能なモデルの情報
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelInfo {
+    pub name: String,
+    pub display_name: String,
+    pub size_mb: u64,
+    pub url: String,
+}
+```
+
+## Step 2: transcription.rs の修正
+
+src-tauri/src/transcription.rs の **line 15 から line 57** (データ型セクション、`// データ型` コメントから ModelInfo struct の閉じ `}` まで) を **削除**し、代わりに以下を挿入:
+
+```rust
+// ─────────────────────────────────────────────
+// データ型 (transcription_types.rs に分離、ここから互換層として再エクスポート)
+// ─────────────────────────────────────────────
+
+pub use crate::transcription_types::{
+    ModelInfo, TranscriptionErrorPayload, TranscriptionSegment, TranscriptionSource,
+};
+```
+
+注意:
+- transcription.rs の line 11 にある `use serde::Serialize;` は他の場所 (例: WhisperLocal の derive 等) で使われている可能性あり。grep で確認し、使われていれば残す、使われていなければ削除可能。**安全側は残す** (clippy が unused import を警告する場合のみ削除)。
+- データ型の rustdoc コメント (例: `/// 文字起こし結果の1セグメント`) は transcription_types.rs に移植済み (Step 1 のコード参照)。transcription.rs 側からは削除する。
+
+## Step 3: lib.rs の修正
+
+`grep -n "^mod " src-tauri/src/lib.rs` で既存 mod 宣言を確認。`mod transcription;` の **直前または直後** に `mod transcription_types;` を追加。
+
+例:
+```rust
+mod transcription;
+mod transcription_types;  // ← 追加 (transcription.rs から pub use で再エクスポート)
+```
+
+## Step 4: 検証 (必ず実施)
+
+順番に実行 (失敗したら止めて報告):
+
+```bash
+cd src-tauri
+cargo fmt --check
+cargo clippy --lib -- -D warnings
+cargo test --lib 2>&1 | tail -10
+```
+
+**期待結果**:
+- cargo fmt --check: 整形 OK
+- cargo clippy --lib -- -D warnings: 警告ゼロ
+- cargo test --lib: **667 passed (件数不変)**
+
+件数が変わったら **担当範囲外を編集した可能性** = 即座に止めて報告。
+
+## Step 5: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記:
+
+```markdown
+
+## 2026-05-05 JST mjc-worker-transcription-types-extract-20260505-3-1
+- 担当セッション: mjc-worker-transcription-types-extract-20260505-3-1 (作業担当, sonnet)
+- 役割: transcription.rs (2999 行) から データ型 4 つ (TranscriptionSource / TranscriptionSegment / TranscriptionErrorPayload / ModelInfo) を src-tauri/src/transcription_types.rs に抽出 (Tidy First、振る舞い不変、Phase 1 着手 = docs/architecture/transcription-refactor-plan.md の最初のステップ)
+- 作業範囲: src-tauri/src/transcription_types.rs (新規) + src-tauri/src/transcription.rs (line 15-57 削除 + 互換層 pub use 追加) + src-tauri/src/lib.rs (mod transcription_types; 追加) + AGENT_LOG.md (末尾追記)
+- 指示内容: mjc-main-20260505-3 Loop 5 のタスクとして、transcription_types.rs を新規作成し 4 型を移植 → transcription.rs 該当箇所を削除し pub use crate::transcription_types::*; で再エクスポート互換層を残す → lib.rs に mod transcription_types; を追加 → cargo fmt/clippy/test 検証 (667 件不変、警告ゼロ、整形 OK)
+- 結果: <ここに実際の結果を書く>
+- 変更ファイル: src-tauri/src/transcription_types.rs (新規) + src-tauri/src/transcription.rs (削除/追加) + src-tauri/src/lib.rs (mod 追加)
+- 検証結果: <cargo fmt/clippy/test の結果を簡潔に書く>
+- 依存関係追加: なし
+- 失敗理由: <なければ「なし」>
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ (Phase 2 候補は Whisper エンジンまたは Model 管理の抽出)
+
+---
+```
+
+# 規模超過防止 (重要)
+
+- 件数 667 → 667 (不変) を厳守。**新規テストを追加しない** (Tidy First は振る舞い不変、テスト不要)。
+- 既存テストが壊れたら、抽出ミス = 即座に止めて報告。
+- 担当範囲外 (transcription.rs line 60 以降、他の .rs ファイル、frontend) を絶対に編集しない。
+- AGENT_LOG.md は **末尾追記のみ**。先頭は絶対に触らない。
+
+# trailing whitespace 禁止
+
+行末の空白文字 (trailing whitespace) は禁止。clippy / fmt が警告する可能性。
+
+# 報告フォーマット (1 turn で完結)
+
+最後に以下を簡潔に報告:
+- 変更内容 (Step 1-3 の達成可否)
+- 変更ファイル (実際の path)
+- 検証結果 (cargo fmt/clippy/test の終了コードと test 件数)
+- 残リスク (もしあれば)
+- AGENT_LOG.md 末尾追記の確認 (`tail -5 AGENT_LOG.md` 結果)

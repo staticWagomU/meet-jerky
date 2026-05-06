@@ -1,0 +1,158 @@
+あなたは meet-jerky の rust worker です. mjc-main Loop 196 のタスクを 2-commit pattern で完走してください.
+
+# 最初に必ず実施
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾だけ読む. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**. 先頭は絶対に触らない.
+2. `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾形状を再確認.
+
+# タスク
+
+`src-tauri/src/transcription_commands_helpers.rs` の error message 2 種類 (完全一致 7 callsite) を **既存 const パターンに並列して新 const 2 件を追加** + **7 callsite を const 参照に統一** する.
+
+## 背景 (Loop 194 = cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON 集約 paradigm の継承)
+
+- 本 file は既に `pub(crate) const TRANSCRIPTION_SOURCE_MICROPHONE/SYSTEM_AUDIO` 2 件確立済 = **既存 const パターンへの並列拡張** = paradigm 系統樹拡張 12 件目候補 (rust 軸 別 file 集約 paradigm 反復 9 件目 + 既存 const file 拡張軸 rust 版開拓)
+- 本番品質寄与あり: 本番 2 件 (L22, L47) + test 5 件 (L162, L173, L205, L221, L328) = 計 7 callsite を統一
+- AGENTS.md priority 1 (UI/log 文言契約 cohesion + DRY 違反解消) 寄与
+
+## 具体手順
+
+### Step 1: file 全体を Read
+
+`src-tauri/src/transcription_commands_helpers.rs` (453 行 = 中規模、Read 全体 OK) を確認.
+
+### Step 2: const 2 件を追加
+
+L13-L14 の既存 const 直後 (= L15 行目) に以下 2 行を追加:
+
+```rust
+pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE: &str =
+    "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。";
+pub(crate) const ERROR_APPLE_SPEECH_MULTIPLE_STREAMS: &str =
+    "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
+```
+
+(命名規則: 既存 `TRANSCRIPTION_SOURCE_*` パターンと並列の SCREAMING_SNAKE_CASE)
+
+### Step 3: 7 callsite を const 参照に統一
+
+完全一致 callsite のみ置換 (部分一致 `assert!(err.contains("..."))` は **触らない**):
+
+**文言 1 (`"文字起こしソースが不正です。..."` 完全一致 4 件)**:
+- L47 (本番 `parse_requested_transcription_sources` 内 return Err): 文字列 literal を `ERROR_INVALID_TRANSCRIPTION_SOURCE` 参照に置換
+- L162 (test `parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value` 内): 文字列 literal を `ERROR_INVALID_TRANSCRIPTION_SOURCE` 参照に置換
+- L173 (test `parse_requested_transcription_sources_rejects_uppercase_known_values` 内): 同上
+- L328 (test `parse_requested_transcription_sources_rejects_prefix_extension_inputs` 内): 同上
+
+**文言 2 (`"Apple SpeechAnalyzer は現在、..."` 完全一致 3 件)**:
+- L22 (本番 `validate_stream_count_for_engine` 内 return Err): 文字列 literal を `ERROR_APPLE_SPEECH_MULTIPLE_STREAMS` 参照に置換
+- L205 (test `validate_stream_count_for_engine_apple_speech_rejects_two_with_exact_error_message` 内): 同上
+- L221 (test `validate_stream_count_for_engine_apple_speech_rejects_three_streams_with_same_error_message` 内): 同上
+
+**触らないもの**:
+- `error.contains("文字起こしソースが不正です")` (L115) = 部分一致 = 触らない
+- `assert!(err.contains("Apple SpeechAnalyzer"))` (L134, L235) = 部分一致 = 触らない
+- `error.contains("microphone")` / `error.contains("system_audio")` / `error.contains("both")` (L119-121) = 触らない
+- `s_both.contains("RequestedTranscriptionSources")` 等 Debug test の文字列 = 別 semantic = 触らない
+
+### Step 4: 本番側の置換例
+
+```rust
+// L21-L25 (Before)
+return Err(
+    "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。"
+        .to_string(),
+);
+
+// (After)
+return Err(ERROR_APPLE_SPEECH_MULTIPLE_STREAMS.to_string());
+```
+
+```rust
+// L46-L50 (Before)
+_ => Err(
+    "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+        .to_string(),
+),
+
+// (After)
+_ => Err(ERROR_INVALID_TRANSCRIPTION_SOURCE.to_string()),
+```
+
+### Step 5: test 側の置換例
+
+```rust
+// Before (assert_eq! 完全一致)
+assert_eq!(
+    err,
+    "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+);
+
+// After
+assert_eq!(err, ERROR_INVALID_TRANSCRIPTION_SOURCE);
+```
+
+(test mod 内なので `use super::*;` (L55) 経由で const 参照可能)
+
+### Step 6: 検証
+
+`cd src-tauri` してから:
+- `cargo test --lib` (704 件 passed / 0 failed = **件数完全不変**)
+- `cargo clippy --lib --tests -- -D warnings` (警告ゼロ)
+- `cargo fmt --check`
+- `cargo build --lib` (エラーなし)
+
+### Step 7: agent-verify.sh
+
+`cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/transcription_commands_helpers.rs`
+
+### Step 8: 1 commit 目 (refactor)
+
+`git add src-tauri/src/transcription_commands_helpers.rs && bash scripts/agent-commit.sh "refactor(rust): ERROR_INVALID_TRANSCRIPTION_SOURCE + ERROR_APPLE_SPEECH_MULTIPLE_STREAMS を transcription_commands_helpers.rs に集約 + 7 callsite を const 参照に統一 (mjc-main Loop 196, rust 軸 = const 集約 paradigm 反復 9 件目 = 別 file 集約 paradigm 開拓, 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補, 文言 1 (4 件 = 本番 1 + test 3) + 文言 2 (3 件 = 本番 1 + test 2) = 計 7 callsite を統一 + DRY 違反解消, alternation pivot K(195) → rust(196) = 35 → 36, AGENTS.md priority 1 寄与)" src-tauri/src/transcription_commands_helpers.rs`
+
+### Step 9: 2 commit 目 (AGENT_LOG.md append)
+
+ファイルへ Write して `cat <file> >> AGENT_LOG.md` で append.
+
+**重要**:
+- entry テンプレート冒頭に `---` を **含めない** (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない. append が成功したら直ちに次へ進む.
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+entry テンプレート (冒頭 `---` なし、末尾 `---` 1 個):
+
+```
+[mjc-main Loop 196 / 2026-05-06]
+worker: mjc-worker-loop196-error-message-consolidation (作業)
+範囲: src-tauri/src/transcription_commands_helpers.rs (pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE + ERROR_APPLE_SPEECH_MULTIPLE_STREAMS 追加 + 本番 2 件 + test 5 件 = 計 7 callsite を const 参照に統一)
+変更: pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE + ERROR_APPLE_SPEECH_MULTIPLE_STREAMS を transcription_commands_helpers.rs に追加 (既存 TRANSCRIPTION_SOURCE_MICROPHONE/SYSTEM_AUDIO 2 const に並列 = 4 const 構造) + 文言 1 (`"文字起こしソースが不正です..."` 4 callsite = 本番 L47 + test L162/L173/L328) + 文言 2 (`"Apple SpeechAnalyzer..."` 3 callsite = 本番 L22 + test L205/L221) = 計 7 callsite を const 参照に統一 + DRY 違反解消 + ネット行数 ~+1 行 (const 2 行追加 + 多くの callsite が 5 行 → 1 行に圧縮)
+意義: rust 軸 = const 集約 paradigm 反復 9 件目 = 別 rust file 集約 paradigm 開拓 (cloud_whisper.rs Loop 194 = 新規 const 追加軸 paradigm 1 件目に続く 2 件目 = rust 軸 const 集約 paradigm 反復 9 件目達成) + 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補 (既存 const 確立 file への並列拡張 rust 版 = frontend statusLabels.ts pattern の rust 版開拓) + 重複候補 grep 探索 paradigm 24 件目達成 + 本番 2 件 + test 5 件 = 計 7 callsite を統一 + UI/log 文言契約 cohesion 向上 + 文言改修時の整合性保証 + DRY 違反解消 + AGENTS.md priority 1 寄与 (品質/可用性 = error message 一貫性) + メイン批判判断 連続 97 セッション目達成 (handoff prompt R30 拡張事前探索結果 「主要候補なし」 を私が独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成) + alternation pivot K(195) → rust(196) = 35 → 36 = 加速期維持 = 節目 30 件突破後 6 件目
+検証: cargo test (704 件件数完全不変) + cargo clippy --lib --tests -- -D warnings (警告ゼロ) + cargo fmt --check OK + cargo build --lib OK / agent-verify.sh は rust skip 判定 OK / grep `"文字起こしソースが不正です。microphone"` = 1 件のみ確認 (const 定義行のみ残存) + grep `"Apple SpeechAnalyzer は現在"` = 1 件のみ確認 (const 定義行のみ残存)
+備考: paradigm 反復 9 件目達成 = rust 軸 const 集約軸の paradigm 完全成熟期 cross-language 拡張更なる持続 = 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補 = const 集約軸 frontend 10 + rust 2 = 計 12 連続 = paradigm 系統樹拡張第 12 件目開拓. 後継候補 = R36 (test fixture URL 集約 = test maintainability 向上のみ) / R34 (K 軸 2 連続) / R37 (大型 file 責務分離 52 件目候補) のいずれか採用検討.
+---
+```
+
+(末尾は `---` 1 個 + 改行で締める. 冒頭は `---` を含めない = 前 entry の閉じ `---` を再利用)
+
+`bash scripts/agent-commit.sh "chore(agent-log): mjc-main Loop 196 = ERROR_INVALID_TRANSCRIPTION_SOURCE + ERROR_APPLE_SPEECH_MULTIPLE_STREAMS を transcription_commands_helpers.rs に集約 (rust 軸, const 集約 paradigm 反復 9 件目 = 別 rust file 集約 paradigm 開拓, 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補, alternation pivot K(195) → rust(196) = 35 → 36, 重複候補 grep 探索 paradigm 24 件目, メイン批判判断 連続 97 セッション目達成) のエントリ追記" AGENT_LOG.md`
+
+### Step 10: 完走報告
+
+`git status --short` (working tree clean を確認) と `git log --oneline -3` (2 commit 反映を確認) を出力.
+
+# 規模超過防止 (重要)
+
+- **担当範囲外の編集禁止**: src-tauri/src/transcription_commands_helpers.rs と AGENT_LOG.md のみ編集. 他の rust file は触らない.
+- **test 件数の上限**: cargo test 後の件数は 704 件 (passed) 完全不変. 件数が変動したら原因を分析して報告.
+- **大型ファイル Read 全体禁止**: AGENT_LOG.md は **tail で末尾のみ読む**. 全体 Read 禁止 (~3.2MB+).
+- **transcription_commands_helpers.rs (453 行) は中規模** = Read 全体 OK.
+
+# 制約 (再掲)
+
+- `cargo` は `cd src-tauri` してから実行 (desktop 直下に Cargo.toml なし)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- 1 ループ目標 9-15 分以内
+- 完了したら mjc-main に戻る (= worker process exit すれば自動)
+
+完走後、メインが check するため `git status --short` clean + `git log --oneline -3` で 2 commit 確認できる状態にしてください.

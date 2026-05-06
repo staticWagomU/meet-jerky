@@ -1,0 +1,162 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は 21000+ 行 / 1.8MB+ あるので **必ず `tail -350 AGENT_LOG.md` で末尾だけ参照** してください。**Read で全体を読まないこと**。
+- 末尾には `mjc-worker-start-with-output-passthrough-tests-20260504-27-1` (mjc-main-27 Loop 1) のエントリがあります。本タスクはその直後に追記します。
+
+# AGENT_LOG.md 追記の絶対ルール (mjc-main-21〜26 で 6 連続セッション事故ゼロ実績)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 → その直後に追記する。
+- **行末の空白文字 (trailing whitespace) を含めない**。git --check warning を防ぐ。
+
+# 担当範囲 (これ以外を絶対に編集しない)
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 **3 件のみ** 追加
+- `AGENT_LOG.md` への末尾追記 (本タスクのエントリ 1 つ)
+
+担当範囲外 (関数本体 / 既存 test / 他ファイル / 他スクリプト) は **絶対に編集しない**。
+コミットは禁止です。コミットはメインが行います。
+
+# 規模超過防止 (重要)
+- 追加する test は **3 件ちょうど**。多くも少なくもしない。
+- 関数本体 (from_legacy_str / 他全関数) は **完全に無変更**。
+- 既存 test は **完全に無変更**。
+- 大型ファイル (AGENT_LOG.md / settings.rs) を Read で全体読まない。tail/head/grep で対象範囲のみ参照する。
+
+# 背景 (mjc-main-20260504-27 Loop 2)
+直前 commit `974b787` (mjc-main-27 Loop 1 = `SessionManager::start_with_output` の output_dir passthrough 3 軸補強で 536 passed) の状態から、本 Loop は別ファイル (settings.rs) に切り替えて `TranscriptionEngineType::from_legacy_str` の fail-safe 境界補強を application します。
+
+mjc-main-26 Loop 3 (999fdbc) で確立した「fail-safe semantic の executable specification 化」パターンを、`from_legacy_str` の catch-all (`_ => Self::Whisper`) ブランチに到達する 3 つの未保護値で application します。
+
+# 実装内容 (T1/T2/T3 の 3 件)
+
+`src-tauri/src/settings.rs` の `from_legacy_str` シグネチャ (l.41-52) は:
+
+```rust
+pub fn from_legacy_str(value: &str) -> Self {
+    match value {
+        "local" | "whisper" => Self::Whisper,
+        "cloud" | "openAIRealtime" | "openai_realtime" => Self::OpenAIRealtime,
+        "elevenLabsRealtime" | "elevenlabs_realtime" | "eleven_labs_realtime" => {
+            Self::ElevenLabsRealtime
+        }
+        "appleSpeech" | "apple_speech" => Self::AppleSpeech,
+        _ => Self::Whisper,  // ← fail-safe = ローカル Whisper (課金なし)
+    }
+}
+```
+
+既存 test (l.354-) は known 値 (local/cloud/whisper/openAIRealtime/elevenLabsRealtime/elevenlabs_realtime/appleSpeech) + 不明値 ("unknown") をカバー済。本 test は **catch-all 経路** に到達する 3 つの未保護パターンを CI 固定する。
+
+## T1: 空文字 fail-safe
+```rust
+#[test]
+fn from_legacy_str_returns_whisper_for_empty_string_as_fail_safe() {
+    assert_eq!(
+        TranscriptionEngineType::from_legacy_str(""),
+        TranscriptionEngineType::Whisper,
+        "空文字は catch-all で Whisper に倒される fail-safe 契約: 設定欠損時のデフォルトをローカル Whisper (課金なし) に固定"
+    );
+}
+```
+
+## T2: 大文字混在 fail-safe (case sensitivity 設計の固定)
+```rust
+#[test]
+fn from_legacy_str_returns_whisper_for_uppercase_known_value_as_fail_safe() {
+    assert_eq!(
+        TranscriptionEngineType::from_legacy_str("WHISPER"),
+        TranscriptionEngineType::Whisper,
+        "known 値 \"whisper\" の大文字版 \"WHISPER\" は catch-all で Whisper に倒される: case sensitivity 設計 (lowercase のみ accept) を CI 固定 = 「将来 case-insensitive 化する誤改修」を遮断する装置 (この test では fail-safe で同じ結果になるが、別 known 値の大文字版で結果が変わる誤改修を間接的に検知)"
+    );
+}
+```
+
+## T3: 空白パディング fail-safe (trim 不在の固定)
+```rust
+#[test]
+fn from_legacy_str_returns_whisper_for_known_value_with_whitespace_padding_as_fail_safe() {
+    assert_eq!(
+        TranscriptionEngineType::from_legacy_str(" whisper "),
+        TranscriptionEngineType::Whisper,
+        "known 値 \"whisper\" の前後に空白を含む形は catch-all で Whisper に倒される: trim しない設計を CI 固定 = 「将来 trim 処理を追加する誤改修」を遮断する装置 (この test では fail-safe で同じ結果になるが、trim 化により別 known 値が一致する誤改修を間接的に検知)"
+    );
+}
+```
+
+# 配置場所
+- `src-tauri/src/settings.rs` の `mod tests` 末尾 = mjc-main-26 Loop 3 (999fdbc) で追加された `permission_status_to_string_returns_denied_for_i32_max_as_fail_safe` の直後に追加。
+- 具体的には `grep -n "permission_status_to_string_returns_denied_for_i32_max_as_fail_safe" src-tauri/src/settings.rs` で位置特定 → そのテスト関数の終端の `}` 直後 → ファイル末尾 `}` (mod tests 終端) より上に挿入。
+- `TranscriptionEngineType` は既に scope 内 (`use super::*;` 経由) なので追加 import 不要。
+
+# 検証手順 (全て成功必須)
+作業ディレクトリは `src-tauri` で実行:
+
+1. `cd src-tauri && cargo fmt --check`
+   - 差分なしを確認 (出力なし = OK)
+   - 差分あれば `cargo fmt` で修正
+
+2. `cd src-tauri && cargo clippy --lib -- -D warnings`
+   - 警告ゼロを確認
+
+3. `cd src-tauri && cargo test --lib -- --test-threads=1`
+   - **536 → 539 passed** (+3 件、0 failed) を確認
+
+# AGENT_LOG.md 追記内容 (本タスク完了後)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した上で、その直後に以下のセクションを追記してください (**ファイル末尾追記必須、行末空白禁止**):
+
+```
+## mjc-worker-from-legacy-str-fail-safe-tests-20260504-27-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-from-legacy-str-fail-safe-tests-20260504-27-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-27 Loop 2
+
+### 作業範囲
+- `src-tauri/src/settings.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+S 候補 (settings.rs / fail-safe semantic の executable specification 化) として、`TranscriptionEngineType::from_legacy_str` の `_ => Self::Whisper` fail-safe 契約を未保護だった 3 軸で CI 固定する test を追加:
+- T1: 空文字 → Whisper fail-safe (入力空間最左境界)
+- T2: "WHISPER" 大文字混在 → Whisper fail-safe (case sensitivity 設計の固定)
+- T3: " whisper " 空白パディング → Whisper fail-safe (trim 不在の固定)
+
+### 結果
+- cargo fmt --check: <出力>
+- cargo clippy --lib -- -D warnings: <出力>
+- cargo test --lib -- --test-threads=1: <test result>
+
+### 変更ファイル
+- src-tauri/src/settings.rs (mod tests 末尾に T1/T2/T3 追加、関数本体・既存 test 無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+<実際のコマンド出力末尾>
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+# 出力フォーマット
+1 ターンで完結する報告で、以下を含めてください:
+- 変更したファイルとそのテスト件数
+- cargo fmt / cargo clippy / cargo test の結果末尾
+- AGENT_LOG.md 末尾追記が完了したことの確認 (`tail -30 AGENT_LOG.md` で末尾確認)
+- 残リスク (想定なし)
+
+以上です。

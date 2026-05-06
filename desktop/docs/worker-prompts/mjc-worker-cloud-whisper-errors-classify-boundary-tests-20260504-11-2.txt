@@ -1,0 +1,286 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。1 ターンで完結する形でまとめてください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。
+
+# 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (末尾 200 行程度のみで OK)
+
+# 担当ファイル / 担当範囲
+- 編集対象: src-tauri/src/cloud_whisper_errors.rs の `mod tests` (line 39-) 内の **末尾** に #[test] 関数を 5 件追加するのみ。
+- 実装変更は禁止。visibility 変更も禁止。新規 import も避け (既存の `use super::*;` で完結する想定。`super::sanitize_error_body` / `super::MAX_ERROR_BODY_CHARS` も既存スタイル)。
+- 既存テスト名と完全一致しない名前にする (重複 fn 名はコンパイルエラー)。
+
+----------------------------------------------------------------------
+## 1. 背景 / Why
+----------------------------------------------------------------------
+
+`cloud_whisper_errors.rs` の `classify_cloud_whisper_error(status: u16, body: &str)` (line 11-21) は 4 分岐 match:
+
+```rust
+match status {
+    401 => CloudWhisperError::InvalidApiKey,
+    429 => CloudWhisperError::RateLimited,
+    500..=599 => CloudWhisperError::ServerError,
+    _ => CloudWhisperError::Other { status, message: sanitize_error_body(body) },
+}
+```
+
+既存テスト 14 件のうち classify 系 7 件を整理すると、テスト済み status は **401 / 429 / 400 / 418 / 499 / 500 / 599 / 600 / 200** (= 9 status)。各分岐 1〜2 件しかなく、**隣接 boundary** と **range 一様性** と **body 取扱の対称性** が gap として明確に未網羅:
+
+1. **401 の隣接 (402)** および **429 の隣接 (428 / 430)** → 全て Other に落ちることが未固定 (400 は既存有、402 は無)
+2. **500..=599 range の中間** (501 / 520 / 550 / 598) → 全て ServerError になる range の一様性が未固定 (上下限 500/599 のみ既存)
+3. **u16 端点** (0 / 1 / u16::MAX = 65535) → Other で overflow なしが未固定
+4. **classify が body を 401/429/5xx 分岐で完全無視する契約**: 既存 401 test (line 44-49) は body="some body" を渡しているが、結果が `InvalidApiKey` (variant に message field 無し) になることだけ確認、「body の文字列内容が結果に一切漏れない (= sanitize されない)」という重要な対称性は未固定。同様に 429 (line 52-57) は body="" を渡し、5xx (line 60-68) も body="" を渡しているので、これら 3 分岐で **長い・特殊な body でも結果に漏れない** ことの直接固定は無い。
+5. **Other 系の (status, body) → (status_field, sanitize(body)) 純粋関数性**: 同じ (status, body) を 2 回呼んでも結果が同じ、status の数値が message に漏れない、status field のみに正しく入ることの直接固定は無い。
+
+これは前 mjc-main-9 の `61e282a` で `sanitize_error_body` の `>` 境界 (199/200/201) と正規化順序と multibyte 境界を完全網羅した作業の **classify 側補完**。sanitize の入口 (= classify の `_ => Other` 分岐) を経由する経路を、上流 4 分岐すべてに渡って体系的に網羅する。
+
+参考: AGENT_LOG.md 末尾 SESSION SUMMARY「次ループ候補 B'. cloud_whisper.rs / cloud_whisper_errors.rs の追加 boundary (規模 XS、価値中、要事前 grep)」のうち、grep の結果 cloud_whisper_errors.rs の classify_* に明確な gap を発見した実行版。cloud_whisper.rs (516 行) は既存 26 件で network 系 fn 中心、本タスクでは触れない。
+
+----------------------------------------------------------------------
+## 2. 具体的 test 案 (assertion レベル)
+----------------------------------------------------------------------
+
+すべて `mod tests` (line 40-) 内の **末尾** に追加する。既存最後のテストは `sanitize_error_body_truncates_multibyte_at_exactly_201_chars` (line 200-) のはず (要確認)。
+
+### T1: classify_returns_other_for_status_adjacent_to_401_and_429
+
+**目的**: 401 と 429 の隣接 boundary (400 は既存有、402、428、430) で Other に落ち、status field がそれぞれ正しく入ることを 4 status で固定。誤改修で「400-402 を invalid_api_key として扱う」「428-430 を rate_limited として扱う」変更を入れた際の検知装置。
+
+```rust
+#[test]
+fn classify_returns_other_for_status_adjacent_to_401_and_429() {
+    // 401 隣接: 402 (400 は既存 line 70 でテスト済なのでここでは含めない)
+    assert_eq!(
+        classify_cloud_whisper_error(402, "payment required"),
+        CloudWhisperError::Other {
+            status: 402,
+            message: "payment required".to_string(),
+        },
+        "402 は 401 の隣接 +1 でも Other に落ち、InvalidApiKey にならないこと"
+    );
+
+    // 429 隣接: 428 と 430
+    assert_eq!(
+        classify_cloud_whisper_error(428, "precondition required"),
+        CloudWhisperError::Other {
+            status: 428,
+            message: "precondition required".to_string(),
+        },
+        "428 は 429 の隣接 -1 でも Other に落ち、RateLimited にならないこと"
+    );
+    assert_eq!(
+        classify_cloud_whisper_error(430, "rfc-unassigned"),
+        CloudWhisperError::Other {
+            status: 430,
+            message: "rfc-unassigned".to_string(),
+        },
+        "430 は 429 の隣接 +1 でも Other に落ち、RateLimited にならないこと"
+    );
+}
+```
+
+### T2: classify_returns_server_error_for_5xx_range_interior
+
+**目的**: 500..=599 range の中間 (501 / 520 / 550 / 598) で全て ServerError になる range の一様性を固定。誤改修で「特定の 5xx (例: 503/504) を別分岐に分ける」変更を入れた際の検知装置。500/599 (上下限) は既存 line 60-68 でテスト済なのでここでは含めない。
+
+```rust
+#[test]
+fn classify_returns_server_error_for_5xx_range_interior() {
+    // 500..=599 range の中間 4 点 (上下限 500/599 は既存 line 60-68 で網羅済)
+    for status in [501u16, 520, 550, 598] {
+        assert_eq!(
+            classify_cloud_whisper_error(status, "any body"),
+            CloudWhisperError::ServerError,
+            "5xx range 内の {status} は ServerError になるはず (range の一様性)"
+        );
+    }
+}
+```
+
+### T3: classify_returns_other_for_u16_endpoints_without_overflow
+
+**目的**: u16 端点 (0 / 1 / u16::MAX = 65535) で Other に落ち、status field に正しく入ることを 3 点で固定。overflow なし。`u16` は 0..=65535 のため、これらは「現実の HTTP では起こらない値」だが純粋関数として crash せず Other に落ちる契約を固定。誤改修で `as` キャストや `try_into` を入れて panic する変更の検知装置。
+
+```rust
+#[test]
+fn classify_returns_other_for_u16_endpoints_without_overflow() {
+    assert_eq!(
+        classify_cloud_whisper_error(0, "zero status"),
+        CloudWhisperError::Other {
+            status: 0,
+            message: "zero status".to_string(),
+        },
+        "u16::MIN (0) は Other に落ち、crash しない契約"
+    );
+    assert_eq!(
+        classify_cloud_whisper_error(1, "one"),
+        CloudWhisperError::Other {
+            status: 1,
+            message: "one".to_string(),
+        },
+        "u16=1 は Other に落ちる (1xx 系の下端より下)"
+    );
+    assert_eq!(
+        classify_cloud_whisper_error(u16::MAX, "max status"),
+        CloudWhisperError::Other {
+            status: u16::MAX,
+            message: "max status".to_string(),
+        },
+        "u16::MAX (65535) は Other に落ち、overflow なしで status field に正しく入る契約"
+    );
+}
+```
+
+### T4: classify_does_not_leak_body_into_invalid_api_key_or_rate_limited_or_server_error_variants
+
+**目的**: 401/429/500..=599 の 3 分岐で、body 引数が結果に一切漏れない (= sanitize されない、variant 内に文字列が現れない) ことを固定。CloudWhisperError は PartialEq derive 済みなので variant 比較で十分。誤改修で「InvalidApiKey に message field を追加」「RateLimited に retry_after_text を入れる」「ServerError に body を入れる」変更を入れた際の検知装置。
+
+```rust
+#[test]
+fn classify_does_not_leak_body_into_invalid_api_key_or_rate_limited_or_server_error_variants() {
+    // 401 with various non-trivial bodies
+    let long_body = "x".repeat(1000);
+    let multibyte_body = "あ".repeat(500);
+    let multiline_body = "line1\nline2\r\nline3\t  trailing  ";
+
+    for body in [long_body.as_str(), multibyte_body.as_str(), multiline_body, ""] {
+        assert_eq!(
+            classify_cloud_whisper_error(401, body),
+            CloudWhisperError::InvalidApiKey,
+            "401 は body (`{}`...) を完全無視して InvalidApiKey に落ちる契約",
+            &body.chars().take(20).collect::<String>()
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(429, body),
+            CloudWhisperError::RateLimited,
+            "429 は body を完全無視して RateLimited に落ちる契約"
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(500, body),
+            CloudWhisperError::ServerError,
+            "500 は body を完全無視して ServerError に落ちる契約"
+        );
+        assert_eq!(
+            classify_cloud_whisper_error(599, body),
+            CloudWhisperError::ServerError,
+            "599 は body を完全無視して ServerError に落ちる契約"
+        );
+    }
+}
+```
+
+### T5: classify_other_is_pure_function_with_status_in_field_only_not_in_message
+
+**目的**: Other variant の `status` field と `message` field は独立して構成される純粋関数であることを固定。同じ (status, body) を 2 回呼んでも結果が同一 (idempotency)、status の数値が message に混入しない、message に渡した body 文字列のみが (sanitize 後) 入ることを 3 点で固定。誤改修で「message に status を prefix する」「呼び出しごとにカウンタを進める」変更を入れた際の検知装置。
+
+```rust
+#[test]
+fn classify_other_is_pure_function_with_status_in_field_only_not_in_message() {
+    // (1) idempotency: 同じ (status, body) を 2 回呼ぶと結果が同一
+    let first = classify_cloud_whisper_error(404, "not found");
+    let second = classify_cloud_whisper_error(404, "not found");
+    assert_eq!(first, second, "同じ入力で 2 回呼んでも結果同一 (純粋関数性)");
+
+    // (2) status の数値が message に漏れない (404 という文字列が message に含まれない)
+    if let CloudWhisperError::Other { status, message } = first {
+        assert_eq!(status, 404, "status field に 404 が入る");
+        assert_eq!(
+            message, "not found",
+            "message field には body のみが入り、status の数値文字列は混入しない契約"
+        );
+        assert!(
+            !message.contains("404"),
+            "message に status の数値 '404' が漏れていない契約: message=`{message}`"
+        );
+    } else {
+        panic!("404 should classify as Other");
+    }
+
+    // (3) 異なる status・同じ body でも message が同一 (status 非依存)
+    let a = classify_cloud_whisper_error(403, "shared body");
+    let b = classify_cloud_whisper_error(409, "shared body");
+    if let (
+        CloudWhisperError::Other { message: msg_a, .. },
+        CloudWhisperError::Other { message: msg_b, .. },
+    ) = (a, b)
+    {
+        assert_eq!(
+            msg_a, msg_b,
+            "同じ body なら message は status 非依存で同一になる契約"
+        );
+        assert_eq!(msg_a, "shared body");
+    } else {
+        panic!("403 and 409 should both classify as Other");
+    }
+}
+```
+
+----------------------------------------------------------------------
+## 3. 実装上の注意
+----------------------------------------------------------------------
+
+- すべての test は **既存 `mod tests` (line 40-) の末尾** に追加する。`mod tests` の中括弧の閉じ位置に注意 (現状 line 211 末尾あたりが閉じ)。
+- 既存の `use super::*;` をそのまま流用。`super::sanitize_error_body` や `super::MAX_ERROR_BODY_CHARS` は既存テスト (line 140, 153, 162 等) と同じ呼び方で OK。本タスクでは sanitize 系は触らないので不要。
+- T1 の `400` は既存 line 70-75 でテスト済のため、本テストでは含めず 402/428/430 のみ。
+- T3 の `u16::MAX` は Rust 標準の constant (= 65535)。
+- T4 の `for body in [..]` 配列は要素型を一致させる必要がある。`String::as_str()` で `&str` に揃える既存パターン。
+- T5 の if-let-else / panic! は既存 line 96-100 と同じスタイル。
+- format string は uninlined_format_args 警告ゼロ維持のため `{message}` / `{status}` 形式で書く。
+- 不要な `#[allow(...)]` は付けない。
+- `CloudWhisperError` は既存テスト (line 47, 55, 63, 67, 71-74 等) で variant 比較されているので PartialEq 実装済 + variant 構文も既知。
+
+----------------------------------------------------------------------
+## 4. 検証手順
+----------------------------------------------------------------------
+
+実装後、以下を順に実行して、すべてが pass することを確認:
+
+```bash
+# (1) 該当ファイルのみのテスト (高速)
+cd src-tauri && cargo test --lib cloud_whisper_errors -- --nocapture 2>&1 | tail -50
+
+# (2) clippy 警告ゼロ維持
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -30
+
+# (3) format check
+cd src-tauri && cargo fmt --check 2>&1 | tail -10
+
+# (4) ライブラリ全体テスト (405 件 → 410 件のはず)
+cd src-tauri && cargo test --lib 2>&1 | tail -20
+```
+
+期待:
+- (1): cloud_whisper_errors 関連 19 件 (既存 14 + 新規 5) すべて pass
+- (2): warning ゼロ
+- (3): diff なし
+- (4): 410 passed / 0 failed (前回 405 件 + 5 件)
+
+----------------------------------------------------------------------
+## 5. AGENT_LOG.md 記載項目
+----------------------------------------------------------------------
+
+最後に AGENT_LOG.md の末尾に以下の形式で 1 ブロック追記してください (既存末尾エントリと同じ構造):
+
+```
+## [YYYY-MM-DDTHH:MM:SS+09:00] mjc-worker-cloud-whisper-errors-classify-boundary-tests - cloud_whisper_errors.rs classify_cloud_whisper_error 5 件追加
+
+- 担当セッション: mjc-worker-cloud-whisper-errors-classify-boundary-tests-20260504-11-2
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/cloud_whisper_errors.rs の `mod tests` 末尾に #[test] 5 件追加
+- 指示内容: classify_cloud_whisper_error 4 分岐 boundary 補強 5 件 (T1: 401/429 隣接 (402/428/430) → Other / T2: 5xx range 中間 4 点 (501/520/550/598) → ServerError 一様性 / T3: u16 端点 (0/1/65535) → Other で overflow なし / T4: 401/429/500/599 で body=long/multibyte/multiline/empty 全て無視 / T5: Other variant の (status, body) 純粋関数性 + status 数値が message に漏れない + 同 body は status 非依存)
+- 結果: <成功 or 失敗>
+- 変更ファイル: src-tauri/src/cloud_whisper_errors.rs (+N 行)
+- 検証結果: cargo test --lib (405 → 410 passed) / clippy 警告ゼロ / fmt check pass
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main-20260504-11) によるレビュー → コミット
+```
+
+報告には、追加した 5 件の test 名、変更行数、cargo test の最終 line (`test result: ok. N passed; 0 failed`)、clippy・fmt 結果を含めてください。
+
+以上です。1 ターンで完結する形でまとめてください。

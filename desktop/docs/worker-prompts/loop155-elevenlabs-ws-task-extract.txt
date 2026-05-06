@@ -1,0 +1,129 @@
+# mjc-worker-loop155-elevenlabs-ws-task-extract / 2026-05-06 / mjc-main-20260505-77 Loop 155
+
+あなたは meet-jerky の作業エージェントです。Loop 155 = R8'' = inline module 抽出軸 rust 版 = `src/elevenlabs_realtime.rs` の `mod ws_task { ... }` を新 file `src/elevenlabs_realtime_ws_task.rs` に抽出する作業を実施します。precedent = `src/openai_realtime_ws_task.rs` (lib.rs:31 で既に同形抽出済)。
+
+## 必読 (順序遵守)
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. `cat src/elevenlabs_realtime.rs` (636 行 = full Read OK) で抽出対象の全体構造把握
+3. `cat src/openai_realtime_ws_task.rs` (precedent file = full Read OK) で **同形抽出の参考に**
+4. `head -10 src/openai_realtime.rs` で **alias use 戦略** (`use crate::openai_realtime_ws_task as ws_task;`) を参考にする
+5. `grep -n "^mod " src/lib.rs` で `mod elevenlabs_realtime;` の行と `mod openai_realtime_ws_task;` の行を確認
+
+## 作業内容 (8 step)
+
+### Step 1: 新 file 作成
+
+`src/elevenlabs_realtime_ws_task.rs` を新規作成し、以下の構造で記述:
+
+- 冒頭 doc コメント (3-5 行) = 「ElevenLabs Scribe v2 Realtime API の WebSocket タスク実装。`elevenlabs_realtime.rs` から `mod ws_task` を切り出し、WebSocket I/O 詳細 (接続 + base64 PCM16 送信 + commit + handle_event) を集約する。caller は `elevenlabs_realtime.rs` の `ElevenLabsRealtimeStream::new` 内 spawn のみ。」 (precedent = openai_realtime_ws_task.rs:1-5 と同形)
+- use 句 = 既存 ws_task 内の use 句 (L147-L165) を移植。ただし以下を変更:
+  - `use super::{AudioCommand, ELEVENLABS_REALTIME_SAMPLE_RATE};` を **削除** (新 file 側に const 定義移動 + AudioCommand は `use crate::realtime_audio_command::AudioCommand;` で別途記載 = 既に L18 にある同 import を新 file 側 use リストにそのまま追加)
+- `const ELEVENLABS_REALTIME_SAMPLE_RATE: u32 = 16_000;` を **新 file 側に定義** (private で OK = openai_realtime_ws_task.rs:22 precedent と同形)
+- `const PENDING_AFTER_COMMIT_TIMEOUT: Duration = Duration::from_secs(10);` (既存 L167) もそのまま新 file に持ってくる
+- `pub struct RunParams { ... }` (L169-L178)
+- `pub async fn run(params: RunParams) -> Result<(), String> { ... }` (L180-L290)
+- `pub(crate) fn build_realtime_url(...) -> String { ... }` (L292-L303)
+- `pub(crate) fn handle_event(...) { ... }` (L305-L360)
+- `#[cfg(test)] mod pending_timeout_tests { ... }` (L362-L520) = ws_task 内 inner test module 全体をそのまま新 file 末尾に持ってくる
+
+**重要**: 新 file 内の `super::` 参照は不要 (ws_task の親 mod が無くなるため)。AudioCommand と ELEVENLABS_REALTIME_SAMPLE_RATE は新 file 内の use / const に直接書く。
+
+### Step 2: 旧 file `src/elevenlabs_realtime.rs` 修正
+
+- L52 の `const ELEVENLABS_REALTIME_SAMPLE_RATE: u32 = 16_000;` を **削除**
+- L146-L521 の `mod ws_task { ... }` ブロック全体を **削除**
+- 上方 use 句エリア (L14-L21 のあたり、`use crate::transcription_types::...` の直後あたり) に **新規 1 行**: `use crate::elevenlabs_realtime_ws_task as ws_task;` を追加
+
+### Step 3: lib.rs 修正
+
+`src/lib.rs` の `mod elevenlabs_realtime;` の直後 (L29 のあたり) に新規 1 行: `mod elevenlabs_realtime_ws_task;` を追加。アルファベット順を維持する場合は `mod elevenlabs_realtime_ws_task;` を `mod elevenlabs_realtime;` の直後に置く (`mod openai_realtime_ws_task;` precedent と同パターン)。
+
+### Step 4: callsite 確認 (修正不要)
+
+elevenlabs_realtime.rs 内の以下の callsite は **alias use により無変更維持**:
+- L76 `ws_task::run(ws_task::RunParams { ... })`
+- L529, L538, L540 (tests 内) `ws_task::build_realtime_url(...)`
+- L555 (tests 内) `ws_task::handle_event(...)`
+
+すべて無変更で OK。確認のみ。
+
+### Step 5: 検証
+
+cd src-tauri してから以下を実行:
+
+```bash
+cargo build --lib 2>&1 | tail -10
+cargo test --lib 2>&1 | tail -20
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10
+cargo fmt --check 2>&1 | tail -5
+```
+
+**期待結果**:
+- cargo build = エラーなし
+- cargo test = **704 passed / 0 failed** (件数完全不変)
+- cargo clippy = 警告ゼロ
+- cargo fmt = OK
+
+### Step 6: frontend 検証 (sanity)
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop してから:
+
+```bash
+npm run build 2>&1 | tail -5
+```
+
+= ✓ built (frontend 無変更だが念のため確認)
+
+### Step 7: 2-commit pattern (worker 自律実行)
+
+#### Commit 1: refactor
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh src-tauri/src/elevenlabs_realtime.rs src-tauri/src/elevenlabs_realtime_ws_task.rs src-tauri/src/lib.rs
+git add src-tauri/src/elevenlabs_realtime.rs src-tauri/src/elevenlabs_realtime_ws_task.rs src-tauri/src/lib.rs
+git commit -m "refactor(rust): elevenlabs_realtime の mod ws_task を新 file elevenlabs_realtime_ws_task.rs に抽出 (mjc-main-20260505-77 Loop 155, rust 軸 = inline module 抽出軸 rust 版 = scope 37 軸目開拓 = ElevenLabs WebSocket task tier, 大型 rust file 責務分離 33 file 目, ws_task module を pub fn run / RunParams / build_realtime_url / handle_event + inner pending_timeout_tests 5 件 完全コピーで件数完全不変, elevenlabs_realtime.rs に \`use crate::elevenlabs_realtime_ws_task as ws_task;\` で API 互換維持 = callsite 5 件無変更, ELEVENLABS_REALTIME_SAMPLE_RATE 移動 + lib.rs に mod 宣言 1 行追加, openai_realtime_ws_task.rs precedent と完全同形 = 鏡像対称化, AGENTS.md priority 1 寄与)"
+```
+
+#### Commit 2: chore (AGENT_LOG.md 末尾追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → `---` 直後に Loop 155 entry を append (1 回のみ Edit/Write、複数回繰り返さない、append が成功したら直ちに次へ進む):
+
+```
+[mjc-main-20260505-77 Loop 155 / 2026-05-06]
+worker: mjc-worker-loop155-elevenlabs-ws-task-extract (作業)
+範囲: src/elevenlabs_realtime.rs (mod ws_task 削除 + ELEVENLABS_REALTIME_SAMPLE_RATE 削除 + use alias 1 行追加) + src/elevenlabs_realtime_ws_task.rs (新規 ~376 行 = doc + use + const + RunParams + run + build_realtime_url + handle_event + inner pending_timeout_tests 5 件) + src/lib.rs (mod elevenlabs_realtime_ws_task; 追加)
+内容: elevenlabs_realtime.rs L146-L521 の mod ws_task module 全体を新 file elevenlabs_realtime_ws_task.rs に抽出。**rust 軸 33 件目 = inline module 抽出軸 rust 版 = scope 37 軸目開拓 = ElevenLabs WebSocket task tier = 大型 rust file 責務分離 33 file 目** (Loop 121 throttle_key + Loop 123 app_detection_macos + Loop 104 openai_realtime_ws_task の続編 = inline module 抽出軸 4 件目 + openai_realtime_ws_task.rs precedent と完全同形 = 鏡像対称化)。callsite 5 件 (L76 run/RunParams + L529/L538/L540 build_realtime_url + L555 handle_event) は \`use crate::elevenlabs_realtime_ws_task as ws_task;\` alias で **無変更維持** (Loop 121/123 precedent + openai 側 precedent と同戦略)。**ELEVENLABS_REALTIME_SAMPLE_RATE 移動 + 件数完全不変保証**: 旧 file L52 const 削除 + 新 file 側に同 const 定義 (private OK = openai_realtime_ws_task.rs precedent と同形)。**inner test module pending_timeout_tests 5 件 完全コピーで件数完全不変** + outer tests (engine_construction_records_model_id 等 8 件) は無変更。alternation pattern 44 連続維持 (K(154) → rust(155))。メイン批判判断 = handoff prompt 主張の R8'' rust inline module 抽出を独自 grep で検証 → src-tauri/src 全 file から非 tests inline module を網羅検索 → settings_permission.rs:48 mod macos_permissions (16 行 + cfg(target_os="macos") gate = 機能境界明示) + elevenlabs_realtime.rs:146 mod ws_task (376 行 = 大規模 + openai_realtime_ws_task precedent あり) の 2 候補発見 → ws_task を採用 (precedent 完全踏襲 + 規模大 + scope 開拓価値高) + macos_permissions は規模小 + cfg gate 機能境界として残す方が読みやすい判定で却下 = メイン批判判断 連続 76 セッション目達成。
+検証: cargo test --lib = 704 passed / 0 failed (件数完全不変) + cargo clippy --lib --tests -- -D warnings = 警告ゼロ + cargo fmt --check = OK + cargo build --lib = エラーなし + npm run build = ✓ built + agent-verify.sh = OK。
+意義: scope 37 軸目開拓 (ElevenLabs WebSocket task tier) + 大型 rust file 責務分離 33 file 目 + inline module 抽出軸 4 件目 + 鏡像対称化 (openai/elevenlabs ws_task が同形構造になる = readability 向上 + maintainability 向上) + worker 自律 2-commit pattern 連続 11 ループ目達成 = 節目 11 件突破継続 + alternation pattern 44 連続維持。
+---
+```
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-77 Loop 155 = elevenlabs_realtime の mod ws_task を新 file elevenlabs_realtime_ws_task.rs に抽出 (構造分離 33 file 目, rust 軸 = inline module 抽出軸 rust 版 = scope 37 軸目開拓 = ElevenLabs WebSocket task tier, openai_realtime_ws_task.rs precedent と完全同形 = 鏡像対称化, alternation 44 連続維持, ws_task module を pub fn run / RunParams / build_realtime_url / handle_event + inner pending_timeout_tests 5 件 完全コピーで件数完全不変, ELEVENLABS_REALTIME_SAMPLE_RATE 移動, use alias で API 互換維持) のエントリ追記"
+```
+
+### Step 8: 完了確認
+
+`git log --oneline -3` で 2 commit が作成されていることを確認。`git status --short` で working tree clean を確認 (handoff/worker-prompts ファイルは untracked 継続)。
+
+## 制約 (重要)
+
+- **担当範囲外の編集禁止**: 上記 4 file (elevenlabs_realtime.rs / elevenlabs_realtime_ws_task.rs / lib.rs / AGENT_LOG.md) のみ編集
+- **テスト件数の上限**: cargo test 件数は **704 passed のまま完全不変** (新規 test 追加禁止 + 既存削除禁止)
+- **行末空白文字 (trailing whitespace) 禁止** = 各 file の各行末尾に空白文字を残さない
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から)
+- 大型 file は Read 全体禁止 = tail/head/grep で対象範囲のみ参照 (本 file は 636 行で full read OK = 例外)
+- **2-commit pattern を厳守** = refactor commit + chore commit の 2 つを順番に作成
+- `--no-verify` 禁止、Keychain 実通信禁止、課金禁止
+- 課題発生時は中断して報告。状況不明なら勝手に file を作らない。
+
+## 想定完走時間
+
+規模 SS-S = ~5-15 分完走見込み (rust 軸 = cargo test + clippy + fmt + build = やや時間かかる)
+
+precedent: Loop 104 openai_realtime_ws_task 抽出 + Loop 121 throttle_key 抽出 + Loop 123 app_detection_macos 抽出 = 同形 inline module 抽出軸の 3 precedent 全て完走実績。
+
+以上、よろしくお願いします。

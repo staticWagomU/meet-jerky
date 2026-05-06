@@ -1,0 +1,166 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md, docs/product-concept.md, docs/agent-harness-claude.md, AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景 / Why
+
+直前のループ (mjc-main-15 Loop 1, commit 200f97f) で audio-drop-count chain (rust extract → frontend listen → UI display → session reset) の semantics を完成させました。
+
+ただし、event 名 `"audio-drop-count"` は現在以下の **3 箇所に重複** しています:
+
+- `src-tauri/src/audio.rs` line 401 (mic emitter スレッド)
+- `src-tauri/src/system_audio.rs` line 333 (system emitter スレッド、cfg(target_os = "macos") ガード内)
+- `src/routes/TranscriptView.tsx` line 809 (frontend listener)
+
+frontend (TypeScript) は別言語空間で同期は手動責任のため触りません。本ループでは **rust 側 2 箇所** を `audio_event::AUDIO_DROP_EVENT_NAME` 定数経由に集約します。
+
+これは Kent Beck 流の Tidy First (構造変化のみ・振る舞い不変・テストの assertion 内容は変更しない) です。価値は:
+
+1. **将来 event 名を変更する場合の単一書き換え地点化** (現在は rust 2 箇所同時編集が必要)
+2. **「event 名は audio_event モジュールが所有する」という所有権境界の明確化** (前 mjc-main-14 Loop 1 で audio_event.rs を抽出した方針の延長)
+3. **typo 検知** (文字列リテラル → 定数で compile error 化)
+
+# 担当範囲
+
+**変更ファイル: 3 ファイル**
+
+1. **`src-tauri/src/audio_event.rs`**: 定数追加 + 定数値固定 test 1 件追加
+2. **`src-tauri/src/audio.rs`**: line 401 の `"audio-drop-count"` を定数参照に置換
+3. **`src-tauri/src/system_audio.rs`**: line 333 の `"audio-drop-count"` を定数参照に置換
+
+## 1. audio_event.rs の変更内容
+
+現状 (5 行):
+```rust
+use serde_json::json;
+
+pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    json!({ "source": source, "dropped": dropped })
+}
+```
+
+変更後 (定数 + inline mod tests を追加):
+```rust
+use serde_json::json;
+
+pub(crate) const AUDIO_DROP_EVENT_NAME: &str = "audio-drop-count";
+
+pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    json!({ "source": source, "dropped": dropped })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn audio_drop_event_name_is_audio_drop_count_kebab_case() {
+        assert_eq!(AUDIO_DROP_EVENT_NAME, "audio-drop-count");
+    }
+}
+```
+
+定数 test の意図:
+- frontend (TranscriptView.tsx line 809) は手動同期責任のため、rust 側の event 名がリファクタで意図せず変わったら frontend が壊れる
+- この test は「event 名を変更したら test が落ちる」検知装置 = 文字列を意図的に変更する場合は本 test も同時更新する責任を明示する文書
+
+## 2. audio.rs の変更内容
+
+line 400-403 を以下のように変更:
+
+変更前:
+```rust
+                    let _ = app_handle.emit(
+                        "audio-drop-count",
+                        crate::audio_event::build_audio_drop_event_payload("microphone", dropped),
+                    );
+```
+
+変更後:
+```rust
+                    let _ = app_handle.emit(
+                        crate::audio_event::AUDIO_DROP_EVENT_NAME,
+                        crate::audio_event::build_audio_drop_event_payload("microphone", dropped),
+                    );
+```
+
+## 3. system_audio.rs の変更内容
+
+line 332-335 を以下のように変更:
+
+変更前:
+```rust
+                    let _ = app_handle.emit(
+                        "audio-drop-count",
+                        crate::audio_event::build_audio_drop_event_payload("system_audio", dropped),
+                    );
+```
+
+変更後:
+```rust
+                    let _ = app_handle.emit(
+                        crate::audio_event::AUDIO_DROP_EVENT_NAME,
+                        crate::audio_event::build_audio_drop_event_payload("system_audio", dropped),
+                    );
+```
+
+# 実装上の注意
+
+1. **test 5 件は変更しない**: audio.rs / system_audio.rs の既存 5 件 × 2 = 10 件は payload の構造を assert する build_audio_drop_event_payload の test です。event 名とは独立です。touch しないでください。
+2. **build_audio_drop_event_payload の use 行は維持**: audio.rs line 587 と system_audio.rs line 453 の `use crate::audio_event::build_audio_drop_event_payload;` は既存テストで使うのでそのままにしてください。
+3. **AUDIO_DROP_EVENT_NAME を `use` で import しない**: 呼び出し側 (audio.rs / system_audio.rs) では fully-qualified path `crate::audio_event::AUDIO_DROP_EVENT_NAME` のまま使ってください。`use crate::audio_event::AUDIO_DROP_EVENT_NAME;` を追加すると tests mod 側との use 重複や `unused_imports` の警告経路が増えるリスクがあります。fully-qualified path のほうが、build_audio_drop_event_payload の呼び出し側も同じ fully-qualified スタイルで揃っています。
+4. **eprintln マクロは触らない**: line 399 / 329-331 のデバッグログは並存維持です (前ループ判断の累積)。
+5. **cfg ガード**: system_audio.rs の emit 呼び出しはおそらく `#[cfg(target_os = "macos")]` の文脈にあります。定数 AUDIO_DROP_EVENT_NAME 自体は platform-agnostic に audio_event.rs に置くだけで OK (cfg ガード不要)。non-macos でも参照されない (system_audio.rs の cfg ガード内のみで使用) ので dead_code 警告も出ない想定。
+6. **frontend (TranscriptView.tsx) は touch しない**: 別言語空間。手動同期責任。
+7. **コメント追加禁止**: 自明なコメントは不要です。
+
+# 検証手順
+
+```sh
+# 1. cargo fmt
+cargo fmt -p meet-jerky
+
+# 2. clippy 警告ゼロ維持確認
+cd src-tauri && cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings && cd ..
+
+# 3. cargo test (audio_event 新規 1 件 + 既存 450 件 = 451 件全 pass 期待)
+cd src-tauri && cargo test -p meet-jerky --lib && cd ..
+
+# 4. agent-verify.sh で総合検証
+bash scripts/agent-verify.sh src-tauri/src/audio_event.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs
+```
+
+期待結果:
+- cargo fmt: 何も変更なし or わずかな調整
+- clippy -D warnings: ゼロ
+- cargo test: **451 passed** (前回 450 + 新規 1 = audio_event_name_is_audio_drop_count_kebab_case)
+- agent-verify.sh: 全段 OK
+
+# AGENT_LOG.md 記載項目
+
+実装後、AGENT_LOG.md の末尾に以下を追記してください:
+
+- **開始日時 (JST)**
+- **担当セッション**: mjc-worker-audio-drop-event-name-const
+- **役割**: 作業担当 (sonnet)
+- **作業範囲**: rust 側 audio-drop-count event 名の重複文字列リテラル 2 箇所を audio_event::AUDIO_DROP_EVENT_NAME 定数に集約 + 定数値固定 test 1 件追加
+- **指示内容**: 上記の「担当範囲」「実装上の注意」セクションをそのまま記述
+- **結果**: 成功 / 失敗
+- **変更ファイル**:
+  - src-tauri/src/audio_event.rs (定数 + 1 件 test 追加)
+  - src-tauri/src/audio.rs (line 401 を定数参照化)
+  - src-tauri/src/system_audio.rs (line 333 を定数参照化)
+- **追加テスト名**: audio_drop_event_name_is_audio_drop_count_kebab_case
+- **検証結果**:
+  - cargo fmt
+  - clippy -D warnings
+  - cargo test
+  - agent-verify.sh
+- **依存関係追加**: なし
+- **失敗理由**: なし (もしあれば記載)
+- **次アクション**: メイン (mjc-main = mjc-main-20260504-15) によるレビュー → コミット
+
+# 最終報告
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

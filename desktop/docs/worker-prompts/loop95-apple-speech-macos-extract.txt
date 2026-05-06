@@ -1,0 +1,176 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/system_audio_format.rs` (Loop 92 抽出, ~165 行 = cfg(macos) 関連 paradigm の最近接 precedent)
+6. precedent (cat 全体): `cat src-tauri/src/audio_silence.rs` (Loop 94 直前抽出, ~98 行 = 直近 worker 自律学習 paradigm)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/apple_speech_macos.rs` (~158 行)
+- 編集: `src-tauri/src/apple_speech.rs` (`mod macos { ... }` block ~159 行削除 + L37 caller 1 行修正)
+- 編集: `src-tauri/src/lib.rs` (1 行追加 = `#[cfg(target_os = "macos")] mod apple_speech_macos;`)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 95 タスク内容 (構造分離 21 件目, 別 scope = apple_speech 軸 1 件目, cfg(macos) inline module 分離 paradigm)
+
+## 背景
+
+- Loop 91/92 = system_audio 軸 2 連続抽出 (system_audio_pcm + system_audio_format = 機能分類軸 paradigm)。Loop 93 = secret_store_commands 軸抽出。Loop 94 = audio_silence 軸抽出 = 純粋関数機能分離軸 paradigm。
+- Loop 95 では新 scope へ pivot = apple_speech.rs (382 行) の `#[cfg(target_os = "macos")] mod macos` inline block を別 file に分離 = 構造分離 21 件目 = 新 scope = paradigm = cfg(macos) inline module 全体分離。
+- apple_speech.rs は file 内に明確な 2 領域: (a) クロスプラットフォーム共通部 (L1-69 = AppleSpeechEngine struct + impl new + impl TranscriptionEngine cfg switch + language_to_locale + normalize_segment_text) と (b) `#[cfg(target_os = "macos")] mod macos { ... }` (L71-229 = ~159 行 = FFI extern "C" + SpeechBridge + RawSegment + AppleSpeechStream + impl x 4 + Drop)。後者を独立 file に分離することで、apple_speech.rs は共通部 + tests のみとなり、macOS 専用 ABI 詳細は apple_speech_macos.rs に集約される。AGENTS.md priority 1 寄与。
+- caller は apple_speech.rs L37 の 1 箇所のみ (`macos::AppleSpeechStream::new` 参照) = 影響範囲最小。
+- mod tests (L231-382, 11 件) は **触らない** = 全て language_to_locale + normalize_segment_text + AppleSpeechEngine 共通部 symbol の test = 共通部に残るため移動不要。
+
+## 抽出対象 (apple_speech.rs から apple_speech_macos.rs へ移動)
+
+**Production block (apple_speech.rs L71-229, ~159 行)**:
+
+- L71: `#[cfg(target_os = "macos")]`
+- L72: `mod macos {`
+- L73-79: use 文 (std::ffi/serde/super/transcription_traits/transcription_types)
+- L81-84: SpeechBridge struct (`#[repr(C)]` + zero-sized type)
+- L86-100: `extern "C"` block (5 関数 = create/feed/drain_json/finalize/destroy/free_string)
+- L102-109: RawSegment struct (Deserialize + startMs/endMs field rename)
+- L111-116: AppleSpeechStream struct
+- L120: `unsafe impl Send for AppleSpeechStream {}`
+- L122-145: `impl AppleSpeechStream { pub fn new(...) }`
+- L147-181: `impl AppleSpeechStream { fn drain_inner(...) }`
+- L184-212: `impl TranscriptionStream for AppleSpeechStream` (feed/drain_segments/finalize)
+- L214-228: `impl Drop for AppleSpeechStream`
+- L229: `}` (mod macos closing brace)
+
+これ以外 (L1-69 共通部 + L231-382 tests) は **絶対に触らない** (元 file 残留)。
+
+## 抽出方式 (Loop 91 system_audio_pcm.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/apple_speech_macos.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! Apple SpeechAnalyzer (macOS 26+) の FFI ブリッジ実装。
+//!
+//! `apple_speech.rs` から `#[cfg(target_os = "macos")]` の `mod macos` を切り出し、
+//! macOS 専用 ABI 詳細 (extern "C" + SpeechBridge + AppleSpeechStream + RAII) を集約する。
+//! caller は `apple_speech.rs` の `AppleSpeechEngine::start_stream` のみ。
+```
+
+元 `mod macos { ... }` の中身を、外側 `mod macos {` ブレースを取り除いた状態で flat に展開する。`pub` visibility は SpeechBridge / AppleSpeechStream / 既存 pub fn を維持 (caller `crate::apple_speech_macos::AppleSpeechStream::new` から参照可能になるよう)。
+
+`use super::{language_to_locale, normalize_segment_text};` は移動先では `use crate::apple_speech::{language_to_locale, normalize_segment_text};` に変換 (super 参照の相対パス → crate 絶対パス)。
+
+その他の use 文は維持:
+- `use std::ffi::{c_char, CStr, CString};`
+- `use serde::Deserialize;`
+- `use crate::transcription_traits::{StreamConfig, TranscriptionStream};`
+- `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};`
+
+注意: 新 file 全体には cfg 属性をかけない。lib.rs 側で `#[cfg(target_os = "macos")] mod apple_speech_macos;` 方式で macos 限定化する。
+
+### 2. apple_speech.rs 編集
+
+- L71-229 (`#[cfg(target_os = "macos")] mod macos { ... }`) 全体を削除 (~159 行)
+- L37 `let stream = macos::AppleSpeechStream::new(config)?;` を `let stream = crate::apple_speech_macos::AppleSpeechStream::new(config)?;` に変更
+- file 冒頭 docstring (L1-6) は不変
+- L231 以降の mod tests (11 件) は不変
+- 削除後 apple_speech.rs は ~225 行 (L1-69 共通部 + L231-382 tests + 中間空行) になる想定
+
+### 3. lib.rs 編集 (alphabetical 順 + cfg 属性)
+
+- 既存 `mod apple_speech;` の **直後** に `#[cfg(target_os = "macos")] mod apple_speech_macos;` を 1 行追加 (alphabetical 順 = `apple_speech` < `apple_speech_macos` < `audio`)
+- それ以外の lib.rs 修正は禁止 (invoke_handler は影響なし = `tauri::command` 含まないため)
+
+### 4. test の取り扱い
+
+`mod tests` (L231-382, 11 件) は touch しない。全 test は共通部 symbol (language_to_locale + normalize_segment_text + AppleSpeechEngine) のみを参照しており、macos module 内部 (AppleSpeechStream 等) を直接 test していないため移動不要。
+
+## 規模超過防止 (重要)
+
+- L71-229 と L37 caller 1 行と lib.rs 1 行以外は絶対に触らない
+- 担当範囲外の修正は禁止
+- トータル test 件数は **704 = 完全不変** (移動なし)
+- 振る舞い不変 = caller path 変更は apple_speech.rs L37 のみ
+- 共通部 (L1-69) と tests (L231-382) は不変
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → エラーや warning が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/apple_speech.rs src-tauri/src/apple_speech_macos.rs src-tauri/src/lib.rs`
+
+注意: macos / 非 macos どちらの target でも build / clippy 通る必要あり。CI は Linux なので非 macos build 通過が特に重要。`#[allow(dead_code)]` 警告等が出たら最小修正で対処 (`apple_speech_macos.rs` は cfg(macos) でのみコンパイルされるため非 macos 環境ではそもそも module 自体が消える = warning は出にくいはず)。
+
+# コミット (2-commit pattern, Loop 80/85/86/87/88/89/90/91/92/93/94 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/apple_speech.rs src-tauri/src/apple_speech_macos.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(apple-speech): cfg(macos) FFI ブリッジ (extern + SpeechBridge + AppleSpeechStream + impl x 4 + Drop) を apple_speech_macos.rs に抽出 (mjc-main-20260505-49 Loop 95, 機能分離軸 = apple_speech 軸 1 件目, 大型 rust file 責務分離 21 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-49 Loop 95 / 2026-05-05]
+worker: mjc-worker-apple-speech-macos-loop95 (作業)
+範囲: src-tauri/src/apple_speech.rs (mod macos { ... } block ~159 行削除 + L37 caller 1 行修正) + src-tauri/src/apple_speech_macos.rs (新規 ~158 行) + src-tauri/src/lib.rs (#[cfg(target_os = "macos")] mod apple_speech_macos; 1 行追加)
+内容: apple_speech.rs L71-229 の #[cfg(target_os = "macos")] mod macos { ... } block (FFI extern "C" 5 関数 + SpeechBridge zero-sized type + RawSegment Deserialize + AppleSpeechStream struct + unsafe impl Send + impl AppleSpeechStream new/drain_inner + impl TranscriptionStream feed/drain_segments/finalize + impl Drop) を新 module apple_speech_macos.rs に抽出。L37 caller 1 行を crate::apple_speech_macos::AppleSpeechStream::new に書き換え。lib.rs に #[cfg(target_os = "macos")] mod apple_speech_macos; 追加 (alphabetical 順)。元 file 共通部 (L1-69 = AppleSpeechEngine + impl TranscriptionEngine cfg switch + language_to_locale + normalize_segment_text) と tests (L231-382, 11 件) は不変。大型 rust file 責務分離 21 file 目 = apple_speech 軸 1 件目 (新 scope) = audio_silence 軸 (Loop 94) からの pivot 達成 = paradigm 切り替え (純粋関数機能分離軸 → cfg(macos) inline module 分離軸)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(apple-speech): cfg(macos) FFI ブリッジを apple_speech_macos.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = apple_speech 軸の cfg(macos) 局所化 = クロスプラットフォーム共通部と macOS 専用 ABI を 2 file に明示分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換 (Loop 80/85/86/87/88/89/90/91/92/93/94 precedent)。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-49 Loop 95 = apple_speech_macos.rs 抽出 (構造分離 21 file 目, apple_speech 軸 1 件目 = 新 scope, audio_silence 軸からの pivot 達成 = cfg(macos) inline module 分離 paradigm) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件 (apple_speech.rs / apple_speech_macos.rs / lib.rs / AGENT_LOG.md)
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

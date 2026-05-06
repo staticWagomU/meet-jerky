@@ -1,0 +1,112 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+担当範囲は厳密に以下のみ:
+- src-tauri/src/app_detection.rs の mod tests 末尾への test 関数 3 件追加
+- AGENT_LOG.md への末尾追記 1 件 (worker 完走報告)
+
+**他のファイルは一切編集しないでください。** app_detection.rs の関数本体や既存 test も触らないでください。
+
+## 必読 (順序固定)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20700+ 行 / 1.7MB+ で巨大なため絶対に Read 全体を実行しないでください。** `tail -350 AGENT_LOG.md` 相当 (= Read で offset 指定する: 例 `Read(file_path, offset=20400, limit=350)`) で末尾だけ参照してください。AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行います。**先頭は絶対に触らないでください。**
+
+## 背景 (ループ概要)
+- セッション: mjc-main-20260504-26 Loop 1
+- 候補種別: M (会議検知の信頼性 / app_detection.rs 境界補強)
+- 直前 commit: a00d76d (mjc-main-25 Loop 3) で is_valid_dns_label の RFC 1035/1123 仕様 3 軸 (63 バイト accept / 64 バイト reject / 数字始まり accept) を CI 固定済
+- 前 Loop 3 で「長さ右境界 + 数字始まり (文字種先頭軸)」をカバーしたが、**3 軸が未保護で残っている**:
+  - 長さ左境界内側 (1 バイト最小 label accept)
+  - 末尾ハイフン reject (RFC 1035: `bytes.last().is_some_and(is_ascii_alphanumeric)`)
+  - 先頭ハイフン reject (RFC 1035: `bytes.first().is_some_and(is_ascii_alphanumeric)`)
+- 1 ループで上記 3 軸を埋めれば `is_valid_dns_label` (l.696-712) は **RFC 1035/1123 仕様完全網羅** に到達する。
+
+## 対象関数 (実装は変更しない、test 追加のみ)
+- l.696-712 `is_valid_dns_label`:
+  ```rust
+  fn is_valid_dns_label(label: &str) -> bool {
+      let bytes = label.as_bytes();
+      !bytes.is_empty()
+          && bytes.len() <= 63
+          && bytes.iter().all(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
+          && bytes.first().is_some_and(|byte| byte.is_ascii_alphanumeric())
+          && bytes.last().is_some_and(|byte| byte.is_ascii_alphanumeric())
+  }
+  ```
+- l.681-694 `is_zoom_host` から `subdomain.split('.').all(is_valid_dns_label)` で呼び出される
+- l.511 `classify_meeting_url` (公開 API) から URL parse 経路を通じて間接的に呼ばれる
+
+## 追加する test の場所
+- src-tauri/src/app_detection.rs の `mod tests` 末尾
+- 直前の test = l.2222-2231 `classify_meeting_url_accepts_zoom_subdomain_label_starting_with_digit_per_rfc_1123` の **直後** (= l.2231 の `}` の次の空行) に追記
+- mod tests の閉じ `}` (`#[cfg(test)] mod tests { ... }` の末尾) の **手前** に挿入する。位置確認は事前に `tail -40 src-tauri/src/app_detection.rs` で末尾を確認すること。
+
+## 追加 test 3 件 (内容固定、自由解釈禁止)
+
+### T1: 1 バイト最短 label accept
+```rust
+#[test]
+fn classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_minimum_length_1_byte() {
+    assert_eq!(
+        classify_meeting_url("https://a.zoom.us/j/123456789"),
+        Some(MeetingUrlClassification {
+            service: "Zoom".to_string(),
+            host: "a.zoom.us".to_string(),
+        }),
+        "is_valid_dns_label は最短 label (1 バイト alphanumeric) を accept する必要がある (現契約: !bytes.is_empty() の左境界内側)"
+    );
+}
+```
+
+### T2: 末尾ハイフン label reject
+```rust
+#[test]
+fn classify_meeting_url_rejects_zoom_subdomain_label_with_trailing_hyphen_per_rfc_1035() {
+    assert_eq!(
+        classify_meeting_url("https://my-.zoom.us/j/123456789"),
+        None,
+        "is_valid_dns_label は RFC 1035 仕様で末尾ハイフン label を reject する必要がある (現契約: bytes.last().is_some_and(is_ascii_alphanumeric))"
+    );
+}
+```
+
+### T3: 先頭ハイフン label reject
+```rust
+#[test]
+fn classify_meeting_url_rejects_zoom_subdomain_label_with_leading_hyphen_per_rfc_1035() {
+    assert_eq!(
+        classify_meeting_url("https://-my.zoom.us/j/123456789"),
+        None,
+        "is_valid_dns_label は RFC 1035 仕様で先頭ハイフン label を reject する必要がある (現契約: bytes.first().is_some_and(is_ascii_alphanumeric))"
+    );
+}
+```
+
+## 規模超過防止
+- **追加 test は厳密に 3 件**。**4 件目を追加しないでください。**
+- **app_detection.rs の関数本体は一切変更禁止** (l.1-1010 の本体 + l.696-712 の is_valid_dns_label + 他全関数)。
+- **既存 test も変更禁止** (l.1017-2231 既存)。
+- 既存 import / use 宣言 / mod tests の `use super::*` 等の構造も変更禁止。
+- 大型ファイル (app_detection.rs: 2200+ 行) は **Read 全体禁止 = `tail -40` や `Read(offset=..., limit=...)` で対象範囲のみ参照**。
+- 既存 test との重複: 上記 T1/T2/T3 は既存にゼロ (grep `1-byte|trailing.hyphen|leading.hyphen` で 0 件確認済) なので追加で OK。
+- AGENT_LOG.md は **絶対に先頭から書かない**。`tail -10 AGENT_LOG.md` で末尾の `---` を確認し、その **直後の行から追記** する (区切り線 `---` の手前ではなく **直後**)。
+
+## 検証手順 (worker 内で実施)
+1. `cd src-tauri && cargo fmt --check` (差分なし確認)
+2. `cd src-tauri && cargo clippy -- -D warnings` (警告ゼロ確認)
+3. `cd src-tauri && cargo test --lib --test-threads=1 -- 2>&1 | tail -10` (524 → 527 passed 確認)
+
+## AGENT_LOG.md 末尾追記の最低要素
+- 開始日時 (JST) / 担当セッション (`mjc-worker-dns-label-additional-boundary-tests-20260504-26-1`) / 役割 (worker)
+- 作業範囲 (app_detection.rs mod tests 末尾 + AGENT_LOG.md 末尾追記)
+- 指示内容 (上記 T1/T2/T3 の 3 件追加)
+- 結果 (cargo fmt OK / clippy 警告ゼロ / cargo test 524 → 527 passed)
+- 変更ファイル (src-tauri/src/app_detection.rs, AGENT_LOG.md)
+- 検証結果 (各検証コマンドの末尾 1-3 行 quote)
+- 依存関係追加なし
+- 失敗理由 (発生した場合のみ、なければ「なし」)
+- 次アクション (「メインへ報告、commit 待ち」)
+
+## 1 ターン完結
+最後に変更内容、変更ファイル、検証結果、残リスクを 1 ターンで簡潔に報告してください。コミットは禁止 = メインが行います。

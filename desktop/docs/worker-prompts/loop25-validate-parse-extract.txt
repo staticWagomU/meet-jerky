@@ -1,0 +1,139 @@
+あなたは meet-jerky リポジトリの worker (mjc-worker-loop25-validate-parse) です。Tidy First 原則 (Kent Beck) に従い、振る舞い不変の構造改善を実行します。
+
+# 必読 (作業開始前)
+
+1. **AGENT_LOG.md は ~25,300 行 / 大規模ログ。**`tail -350 AGENT_LOG.md` で末尾のみ参照。**先頭は絶対に触らない。**AGENT_LOG.md は時系列順 (最古ログが先頭、最新ログが末尾)。新規追記は必ず**ファイル末尾**に行う。
+2. `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新規エントリを追記する。
+3. 大型ファイル (transcription.rs ~2034 行 / app_detection.rs ~3295 行) は **Read 全体禁止**。`tail/head/grep -n` で対象範囲のみ参照。
+4. 行末の空白文字 (trailing whitespace) 禁止。
+
+# タスク (Phase 3-B 続き = mjc-main-20260505-13 Loop 25)
+
+`src-tauri/src/transcription.rs` から **2 つの純粋 helper 関数 + 関連 struct + 関連 const + 全 17 件のテスト** を `src-tauri/src/transcription_commands.rs` に移動する。Tidy First, behavior-preserving。
+
+## 移動対象 (transcription.rs から削除 + transcription_commands.rs へ追加)
+
+### 関数 (2 件)
+- L34-49: `fn validate_stream_count_for_engine(engine_type, stream_count) -> Result<(), String>` (~16 行)
+- L254-276: `fn parse_requested_transcription_sources(source) -> Result<RequestedTranscriptionSources, String>` (~23 行)
+
+### Struct + Const (3 件 = struct 1 + const 2)
+- L245-249: `struct RequestedTranscriptionSources { use_mic: bool, use_system: bool }` (`#[derive(Debug, Clone, Copy, PartialEq, Eq)]`)
+- L251: `const TRANSCRIPTION_SOURCE_MICROPHONE: &str = "microphone";`
+- L252: `const TRANSCRIPTION_SOURCE_SYSTEM_AUDIO: &str = "system_audio";`
+
+### Tests (17 件、tests mod 内に分散)
+- L394: `transcription_source_constants_are_snake_case_lowercase`
+- L400: `test_parse_requested_transcription_sources_accepts_known_values`
+- L446: `test_parse_requested_transcription_sources_rejects_unknown_values`
+- L480: `test_apple_speech_rejects_multiple_available_streams`
+- L491: `test_apple_speech_allows_single_available_stream`
+- L497: `test_other_engines_allow_multiple_available_streams`
+- L956: `parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value`
+- L966: `parse_requested_transcription_sources_rejects_uppercase_known_values`
+- L979: `parse_requested_transcription_sources_error_message_contains_source_constants`
+- L1031: `validate_stream_count_for_engine_apple_speech_rejects_two_with_exact_error_message`
+- L1046: `validate_stream_count_for_engine_apple_speech_rejects_three_streams_with_same_error_message`
+- L1062: `validate_stream_count_for_engine_apple_speech_rejects_usize_max_streams`
+- L1076: `validate_stream_count_for_engine_apple_speech_allows_zero_streams`
+- L1084: `validate_stream_count_for_engine_other_engines_allow_zero_and_usize_max_streams`
+- L1223: `parse_requested_transcription_sources_trims_tab_and_newline_whitespace`
+- L1247: `parse_requested_transcription_sources_trims_unicode_full_width_space_u3000`
+- L1272: `parse_requested_transcription_sources_rejects_prefix_extension_inputs`
+
+**`grep -n` で各 fn の `#[test]` 属性 + 終了 `}` 行範囲を確認してから一括 cut & paste する。**
+
+## 移動方針
+
+### Visibility (重要)
+- `validate_stream_count_for_engine` → `pub(crate) fn` で transcription_commands.rs に追加 (transcription.rs の start_transcription から呼び出されるため)
+- `parse_requested_transcription_sources` → `pub(crate) fn` で transcription_commands.rs に追加 (同上)
+- `RequestedTranscriptionSources` struct → `pub(crate) struct` (戻り値型のため pub(crate))
+- `RequestedTranscriptionSources` の 2 fields (`use_mic`, `use_system`) → 既に pattern matching で使われるため `pub(crate)` 必須
+- `TRANSCRIPTION_SOURCE_MICROPHONE` / `TRANSCRIPTION_SOURCE_SYSTEM_AUDIO` → `pub(crate) const` (テストで参照)
+
+### transcription.rs 側の更新 (呼び出し元 + use)
+- L104 `let requested_sources = parse_requested_transcription_sources(source.as_deref())?;` → `let requested_sources = crate::transcription_commands::parse_requested_transcription_sources(source.as_deref())?;` (または上部で `use crate::transcription_commands::parse_requested_transcription_sources;` 追加)
+- L121 `validate_stream_count_for_engine(&engine_type, available_stream_count)?;` → 同様
+- L246-249 struct 定義削除
+- L251-252 const 定義削除
+- L34-49 関数定義削除
+- L254-276 関数定義削除
+
+### transcription.rs tests mod 内の use 追加
+- 移動先の関数 / struct / const をテスト以外でも参照する場合、tests mod の `use super::*;` だけでは不足。**ただし全 17 件のテストは transcription_commands.rs に移動するため、transcription.rs 側 tests mod での use 追加は基本不要**。
+- もし他の transcription.rs tests から `RequestedTranscriptionSources` 等を参照する箇所があれば (grep で再確認)、`use crate::transcription_commands::RequestedTranscriptionSources;` 等を追加。
+
+### transcription_commands.rs 側の追加
+- 関数 + struct + const をファイル末尾の `#[cfg(test)] mod tests` 直前に追加
+- 17 tests を `mod tests` 内に追加 (既存 2 tests = `test_download_progress_payload_serialization` / `test_download_error_payload_serialization` の後に append)
+- 必要な use 追加: 移動するテスト群が `crate::settings::TranscriptionEngineType` を参照するため、tests mod 内に明示 `use` か絶対パス参照を維持
+
+## 検証 (必須)
+
+```
+cd src-tauri
+cargo test --lib 2>&1 | tail -5
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cargo fmt --check
+```
+
+期待値:
+- cargo test --lib: **692 passed / 0 failed** (件数完全不変、Loop 24 と同じ)
+- cargo clippy: 警告ゼロ
+- cargo fmt: 差分なし
+
+**件数が変わったら抽出ミス**: 移動漏れまたは重複があるはず → 即座に grep で残存確認 + 重複確認。
+
+## Tidy First の追加判断 (autonomous, 任意)
+
+- もし `RequestedTranscriptionSources` の `pub(crate)` 化で field の `pub(crate)` 化が必要なら適切に。
+- もし transcription.rs 側で **未使用 use 文** が残ったら自律削除 (Loop 24 precedent = `use tauri::Emitter;` 削除事例)。
+- もし transcription.rs から transcription_commands.rs の use 文を path で書く方が短ければ path 方式採用。
+
+## 規模超過防止 (重要)
+
+- **関数 + struct + const + 17 tests 以外の編集禁止**。
+- **テストの行数を増やすことは禁止** (移動のみ、内容改変禁止)。
+- 規模が予想 (~250 行移動) を 50% 超えたら一旦停止し、レビュー要求。
+
+## コミット
+
+`git diff --stat` 確認後、以下を実行:
+
+```
+bash scripts/agent-commit.sh "refactor(transcription): validate_stream_count_for_engine + parse_requested_transcription_sources を transcription_commands.rs に抽出 (Tidy First, Phase 3-B 続き, mjc-main-20260505-13 Loop 25, ~39 行関数 + RequestedTranscriptionSources struct (4 行) + TRANSCRIPTION_SOURCE_* const 2 行 + 17 tests 移動 + transcription.rs 呼び出し元 2 箇所 use 経由参照に更新, 692 passed 件数不変, clippy 警告ゼロ, fmt OK, transcription-refactor-plan.md L24 責務 7 (Tauri commands) Phase 3-B 続き = mjc-main-20260505-12 Loop 23/24 (list_models + is_model_downloaded + download_model) の延長, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)" src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs
+```
+
+## AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` 確認 → 直後に以下を追記 (`>>` で append):
+
+```
+[mjc-main-20260505-13 Loop 25 / 2026-05-05 ~JST]
+
+## What
+- `validate_stream_count_for_engine` + `parse_requested_transcription_sources` を `src-tauri/src/transcription_commands.rs` に移動
+- `RequestedTranscriptionSources` struct + `TRANSCRIPTION_SOURCE_MICROPHONE` / `TRANSCRIPTION_SOURCE_SYSTEM_AUDIO` const を移動
+- 関連 17 tests を transcription_commands.rs の tests mod に移動
+- transcription.rs 呼び出し元 2 箇所 (L104, L121) を `crate::transcription_commands::*` 経由に変更
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) の Phase 3-B 続き
+- mjc-main-20260505-12 Loop 23 (list_models + is_model_downloaded) + Loop 24 (download_model) の延長 = 純粋 helper の集約場所として transcription_commands.rs の役割確立
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 692 passed 件数不変
+- pub(crate) で visibility 最小化 (関数 + struct + struct fields + const 全て)
+- 17 tests のセット移動でモジュール責務一致
+
+## Verify
+- cargo test --lib: 692 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+---
+```
+
+**`---` を必ず行末につける** (次の追記者の起点)。

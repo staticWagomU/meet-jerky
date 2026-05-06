@@ -1,0 +1,100 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序重要)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** = 末尾追記の場所を視覚的に学習する
+
+# AGENT_LOG.md の追記運用 (絶対遵守)
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+- **先頭は絶対に触らない**。
+- 具体手順: 編集前に `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- AGENT_LOG.md は 22000+ 行 / 1.86MB+ あるため Read 全体禁止。tail/head/grep で対象範囲のみ参照すること。
+- **行末の空白文字 (trailing whitespace) 禁止**。記述後に grep で確認する。
+
+# 担当範囲 (絶対遵守)
+- src-tauri/src/session.rs の `mod tests` 末尾 (l.502 付近の最終 `}` 直前 / 既存 18 test の後) に test 関数 3 件のみ追加。
+- pub struct SessionSegment / pub struct Session / impl Session / pub fn start / pub fn append_segment / pub fn finalize / pub fn duration_secs / 既存 test 18 件は **完全無変更**。
+- 担当範囲外の他ファイル編集は禁止。
+- AGENT_LOG.md への末尾追記 1 エントリ (本作業の記録)。
+- それ以外の編集 (worker-prompts/handoff/scripts/その他 src/ ファイル) は一切禁止。
+
+# 大型ファイル参照ルール
+- session.rs は 503 行と中規模だが、必要箇所のみ tail/head/grep で参照すること。Read 全体は許容範囲だが mod tests 末尾に追加する目的なら `tail -50 src-tauri/src/session.rs` で十分。
+- AGENT_LOG.md は 22000+ 行のため Read 全体禁止。
+
+# 検証制約
+- 課金禁止 / `--no-verify` 禁止。
+- macOS 権限ダイアログ防止 (実 Apple 権限要求は禁止、本 Loop は struct Debug 軸のみで権限不要)。
+- `cargo fmt --check` / `cargo clippy --lib -- -D warnings` / `cargo test --lib -- --test-threads=1` 全て pass 必須。
+- 既存 565 件 + 新規 3 件 = 568 件 pass を目標。
+
+# 実装内容 (3 軸 application = Debug 軸補強パターンを struct with fields へ拡張)
+
+## 文脈
+- mjc-main-20260504-30 Loop 1 で SecretKey enum (フィールドなし enum) の Debug 軸補強完了。
+- mjc-main-20260504-31 Loop 1 で AppleSpeechEngine (unit struct) の Debug 軸補強完了。
+- 本 Loop 2 は **「Debug 軸補強パターン」を struct with fields に拡張する 3 連続 application**。
+
+## 既存 18 test の網羅軸 (本 Loop で重複しないこと)
+- start / finalize / append_segment / duration_secs / clone / serde_json round trip は既に網羅済。
+- ただし **Debug 出力の format (struct 名 + field 名) 検証は完全に未保護**。
+- `session_segment_clone_preserves_all_three_fields_independently` (l.351) は field 等価性のみ検証、Debug 出力 format は未検証。
+
+## 実コード上の確定情報 (Read で確認済)
+- SessionSegment の field 名 (順序通り): `speaker`, `timestamp_offset_secs`, `text` (型 String / u64 / String)
+- Session の field 名 (順序通り): `id`, `title`, `started_at`, `ended_at`, `segments`
+- 両 struct とも `#[derive(Debug, Clone, Serialize, Deserialize)]` 派生
+
+## 未保護の軸 (本 Loop で 3 軸 application)
+
+### T19 (Debug 出力 = SessionSegment field 名軸)
+名称: `session_segment_debug_output_contains_struct_name_and_all_three_field_names`
+契約:
+- `SessionSegment { speaker: "alice".to_string(), timestamp_offset_secs: 42, text: "hi".to_string() }` の `format!("{:?}", segment)` が以下を全て含むこと:
+  - 型名 `"SessionSegment"`
+  - field 名 `"speaker"`, `"timestamp_offset_secs"`, `"text"`
+  - 値 `"alice"`, `"42"`, `"hi"`
+- `#[derive(Debug)]` 自動派生による「struct with named fields は型名+全フィールド名出力」Rust 言語仕様の executable specification 化
+- 「将来 Debug を手動実装に切り替えて field を隠蔽する誤改修」「field を rename する誤改修」を遮断する装置
+
+### T20 (Debug 出力 = Session field 名軸)
+名称: `session_debug_output_contains_struct_name_and_all_five_field_names_including_options_and_vec`
+契約:
+- `Session::start("Daily".to_string(), 1234567890)` で生成した Session の `format!("{:?}", session)` が以下を全て含むこと:
+  - 型名 `"Session"`
+  - field 名 `"id"`, `"title"`, `"started_at"`, `"ended_at"`, `"segments"`
+  - 値 `"Daily"`, `"1234567890"`, `"None"` (Option::None の Debug 出力), `"[]"` (空 Vec の Debug 出力) のうちいずれか or 全て
+- 5 field の混在 (String / u64 / Option<u64> / Vec<SessionSegment>) でも Debug 出力に全 field 名が含まれる契約を CI 固定
+- 「将来 Debug 手動実装で Option / Vec field を隠蔽する誤改修」を遮断する装置
+
+### T21 (Debug 出力 + Clone 派生 = clone 後 Debug 出力同一軸)
+名称: `session_segment_debug_output_equals_after_clone_for_all_field_types`
+契約:
+- 元 SessionSegment と `.clone()` 後の SessionSegment の `format!("{:?}", ...)` が完全一致 (`assert_eq!(format!("{:?}", original), format!("{:?}", cloned))`)
+- field 等価性 (既存 T16 = session_segment_clone_preserves_all_three_fields_independently) を超えて、**Debug 出力 format まで含めて完全コピー** であることを保護
+- `#[derive(Debug, Clone)]` の組み合わせで「Clone が field 順や Debug 表現まで含めて 100% 同一」契約の executable specification 化
+- 「将来 Clone を手動実装で field 順を変える / 値を加工する誤改修」を遮断する装置
+
+# 実装手順
+1. `tail -350 AGENT_LOG.md` で末尾 (本セッション Loop 1 = mjc-main-20260504-31 Loop 1 残務回収エントリ) を確認。
+2. `tail -50 src-tauri/src/session.rs` で mod tests 末尾の閉じ波括弧位置を確認。
+3. **mod tests の最終 `}` の直前** に T19/T20/T21 を順に追加。
+4. `cd src-tauri && cargo fmt` で整形。
+5. `cd src-tauri && cargo fmt --check` で差分なし確認。
+6. `cd src-tauri && cargo clippy --lib -- -D warnings` で警告ゼロ確認。
+7. `cd src-tauri && cargo test --lib -- --test-threads=1` で 568 passed 確認。
+8. `tail -10 AGENT_LOG.md` で末尾の `---` を確認。
+9. AGENT_LOG.md の末尾 `---` の直後に新エントリ (`## mjc-worker-session-debug-axis-tests-20260504-31-2`) を追記。本作業の開始日時/役割/作業範囲/指示内容/結果/変更ファイル/検証結果/依存関係/失敗理由/次アクションを含める。
+10. **行末の trailing whitespace を `grep -nE " $" src-tauri/src/session.rs` と `grep -nE " $" AGENT_LOG.md` で確認** (新規追加箇所のみ、既存行は対象外)。
+
+# 報告形式
+最後に以下を簡潔に報告:
+- 変更内容 (T19/T20/T21 の追加箇所と契約の要約)
+- 変更ファイル (src-tauri/src/session.rs, AGENT_LOG.md)
+- 検証結果 (cargo fmt/clippy/test の結果文字列)
+- 残リスク (なし / あり と説明)
+
+1 ターンで完結する形でまとめてください。コミットは禁止 (メインがレビュー後に行う)。

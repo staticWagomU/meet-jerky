@@ -1,0 +1,150 @@
+あなたは meet-jerky リポジトリ専用の Sonnet ワーカーです。Phase 3-B Tauri commands 抽出の最初の小さな第一歩として、`build_download_progress_payload` と `build_download_error_payload` の純粋関数 2 つ + そのテスト 2 件を `src-tauri/src/transcription_commands.rs` に抽出してください (Tidy First, 振る舞い不変)。
+
+# 必読 (まず最初に)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` の **末尾 350 行** (`tail -350 AGENT_LOG.md` 相当) を読む
+  - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+  - **先頭は絶対に触らない**
+  - 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md`
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md` (Phase 3-B 着手の根拠)
+
+# 大型ファイル参照ルール
+- `transcription.rs` は 2125 行 = **Read 全体禁止**。`tail`/`head`/`grep`/`sed -n '<開始>,<終了>p'` で必要範囲のみ参照。
+- 編集対象は L42-50 (関数 2 つ) + L419-437 (テスト 2 件) + L1-40 (use 文周辺) のみ。
+
+# 目的 (priority 1 への予防的寄与)
+
+`docs/architecture/transcription-refactor-plan.md` の責務 7 (Tauri commands、L24) サブ分割の最初の安全側着手として、純粋関数の payload builder 2 つを抽出する。Phase 4-A emission 抽出 (40 行) と同パターンで、最も安全な小規模スライスから始め、後続ループで `list_models` / `is_model_downloaded` / `download_model` 等の本体コマンドを段階的に追加する。
+
+# 抽出対象 (純粋関数 2 件 + tests 2 件 ≒ ~25 行)
+
+## 1. 関数 (transcription.rs L42-50)
+
+```rust
+/// `model-download-progress` イベントの payload を組み立てる（純粋関数）
+fn build_download_progress_payload(progress: f64, model: &str) -> serde_json::Value {
+    serde_json::json!({ "progress": progress, "model": model })
+}
+
+/// `model-download-error` イベントの payload を組み立てる（純粋関数）
+fn build_download_error_payload(model: &str, message: &str) -> serde_json::Value {
+    serde_json::json!({ "model": model, "message": message })
+}
+```
+
+## 2. テスト (transcription.rs L419-437)
+
+```rust
+#[test]
+fn test_download_progress_payload_serialization() {
+    // 既存 progress イベントの payload 形を固定化（回帰防止）。
+    // 型側 DownloadProgressPayload { progress, model } と噛み合う形を保証する。
+    let payload = build_download_progress_payload(0.5, "small");
+    let s = payload.to_string();
+    assert!(s.contains("\"progress\":0.5"), "got: {s}");
+    assert!(s.contains("\"model\":\"small\""), "got: {s}");
+}
+
+#[test]
+fn test_download_error_payload_serialization() {
+    // model-download-error の payload は { model, message } のフラットキー。
+    // TypeScript 側 DownloadErrorPayload と噛み合う形を保証する。
+    let payload = build_download_error_payload("small", "HTTP 404");
+    let s = payload.to_string();
+    assert!(s.contains("\"model\":\"small\""), "got: {s}");
+    assert!(s.contains("\"message\":\"HTTP 404\""), "got: {s}");
+}
+```
+
+## 3. transcription.rs L70-105 の `download_model` Tauri コマンドが両関数を 3 箇所で呼ぶ (L81, L93, L100)
+
+# 抽出先
+
+新規ファイル `src-tauri/src/transcription_commands.rs` に以下を配置:
+- `pub(crate)` 可視性で 2 関数を移動
+- 末尾に `#[cfg(test)] mod tests { ... }` 付きで 2 テストを移動 (テストは `super::*` import で関数参照)
+
+# 互換層 (transcription.rs 側)
+
+L36 周辺 (既存の use 群直後) に追加:
+```rust
+use crate::transcription_commands::{build_download_error_payload, build_download_progress_payload};
+```
+
+これで L81 / L93 / L100 の `download_model` 内呼び出しは無変更で動作する。
+
+# lib.rs 編集
+
+`src-tauri/src/lib.rs` の L20 `mod transcription;` と L21 `mod transcription_emission;` の **間** に挿入:
+```rust
+mod transcription_commands;
+```
+
+(alphabetical 順: `transcription` < `transcription_commands` < `transcription_emission` を維持)
+
+# 重要な留意点
+
+- **振る舞い不変 = TDD 不要** (既存 685 件のテストが migration 一貫性を保証、件数不変が指標)
+- pub(crate) 昇格でクロスモジュール呼び出しの最小公開範囲を達成
+- doc コメント (`///`) は移動時に維持
+- **担当範囲外の編集禁止** (L42-50 + L419-437 + L1-40 use 群 + lib.rs L20-21 のみ)
+- **テスト件数の上限**: 685 passed (件数不変が必須指標、削減も増加も NG)
+- **行末の trailing whitespace 禁止** (`git diff --check` で trailing whitespace 警告ゼロ確認)
+
+# 検証 (cargo は cd src-tauri から実行)
+
+```
+cd src-tauri && cargo test --lib 2>&1 | tail -5
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cd src-tauri && cargo fmt --check
+git diff --check
+```
+
+期待値:
+- cargo test: **685 passed** (件数不変)
+- cargo clippy: 警告ゼロ (`-D warnings` 強制下)
+- cargo fmt --check: OK
+- git diff --check: trailing whitespace 警告ゼロ
+
+# AGENT_LOG.md 末尾追記
+
+検証完了後、`AGENT_LOG.md` 末尾 (`tail -10 AGENT_LOG.md` で確認した末尾の `---` 直後) に以下フォーマットで追記:
+
+```
+[WORKER COMPLETED @ 2026-05-05 ~Loop21 JST] mjc-worker-download-payload-extract-20260505-11-1
+- Phase 3-B Tauri commands 抽出の前段準備 (Tidy First) = 純粋関数 2 つ + tests 2 件を transcription_commands.rs に移動
+- 移動: build_download_progress_payload (3 行) + build_download_error_payload (3 行) → src-tauri/src/transcription_commands.rs (pub(crate))
+- テスト 2 件 (test_download_progress_payload_serialization + test_download_error_payload_serialization) も transcription_commands.rs の cfg(test) mod に移動
+- 互換層: transcription.rs 冒頭に use 1 行追加 (crate::transcription_commands::{build_download_error_payload, build_download_progress_payload}) で L81/L93/L100 の download_model 内呼び出し維持
+- lib.rs: mod transcription_commands; を mod transcription; と mod transcription_emission; の間に挿入 (alphabetical 順維持)
+- 検証: cargo test --lib **685 passed** (件数不変) / clippy --lib --tests -D warnings 警告ゼロ / fmt --check OK / git diff --check 警告ゼロ
+- transcription.rs: 2125 → 約 2105-2107 行 (~18-20 行削減: 関数 6 行 + tests 19 行 - 互換 use 1 行)
+- transcription-refactor-plan.md L24 責務 7 (Tauri commands) の安全側スライス先行 = Phase 4-A emission (40 行) precedent と同パターン
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続
+- commit: <commit hash>
+```
+
+`<commit hash>` は実際のコミット直後に `git log --oneline -1` で確認した値で置き換える。
+
+# コミット
+
+```
+git add src-tauri/src/transcription.rs src-tauri/src/transcription_commands.rs src-tauri/src/lib.rs AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+refactor(transcription): build_download_*_payload を transcription_commands.rs に抽出 (Tidy First, Phase 3-B 着手, mjc-main-20260505-11 Loop 21, ~10 行関数 + テスト 2 件 + use 1 行互換 + lib.rs mod 宣言, 685 passed 件数不変, clippy 警告ゼロ, fmt OK, transcription-refactor-plan.md L24 責務 7 (Tauri commands) の安全側スライス先行 = Phase 4-A emission precedent 同パターン, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与継続)
+EOF
+)"
+```
+
+(コミット周期目標: 15 分以内)
+
+# 完了基準
+1. transcription_commands.rs 新規作成完了
+2. transcription.rs から関数 2 つ + テスト 2 件削除 + use 1 行追加
+3. lib.rs に mod 宣言追加 (alphabetical 順維持)
+4. cargo test --lib **685 passed** 件数不変
+5. cargo clippy --lib --tests -- -D warnings 警告ゼロ
+6. cargo fmt --check OK
+7. git diff --check trailing whitespace 警告ゼロ
+8. AGENT_LOG.md 末尾追記完了
+9. commit 1 件作成完了

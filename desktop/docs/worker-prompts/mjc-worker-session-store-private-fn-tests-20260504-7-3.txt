@@ -1,0 +1,106 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (末尾 200 行) を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 1. 背景 / Why
+session_store.rs (548 行 / 25 件既存) には pub fn 中心のテストが揃っているが、private helper fn 3 つは direct test されていない:
+
+- `unix_secs_i64(label: &str, unix_secs: u64) -> std::io::Result<i64>` (line 75-78)
+  u64 → i64 変換 + overflow エラー文言生成。
+  実装: `i64::try_from(unix_secs).map_err(|_| io_invalid(format!("{label} is out of i64 range: {unix_secs}")))`
+
+- `io_invalid(message: impl Into<String>) -> Error` (line 80-82)
+  `ErrorKind::InvalidInput` で Error を always 構築する最小 helper。
+
+- `unescape_inline_markdown_text(value: &str) -> String` (line 84-101)
+  6 文字 (`\\`, `` \` ``, `\*`, `\_`, `\[`, `\]`) を unescape、それ以外の `\X` は `\X` のまま。
+  末尾 lone `\` も `\` のまま (chars.next() が None で `out.push(ch)` の else 分岐へ)。
+  間接的に `list_session_summaries_unescapes_markdown_title_for_display` (line 371) で test されているが、
+  6 文字すべての unescape + other passthrough + lone backslash の direct test は無い。
+
+これらは markdown.rs の `inline_markdown_text` (前セッション既存テスト) と対称的な encode/decode 契約。
+session_store 側の decode の現挙動を direct test で固定することで、双方向 escape 契約を独立に保護できる。
+
+既存 25 件は `parse_session_started_at_secs` 7 件 (boundary 完全網羅) と pub fn 18 件で構成され、
+上記 3 fn は **1 件も direct test されていない**。
+
+## 2. 具体的 test 案 + assertion レベル
+src-tauri/src/session_store.rs の `mod tests` 末尾 (line ~547 の最後の test 関数の後) に以下 5 件を追加する。
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | unix_secs_i64_returns_value_for_valid_u64_inputs | `unix_secs_i64("test", 0).unwrap() == 0` + `unix_secs_i64("test", i64::MAX as u64).unwrap() == i64::MAX` (両端境界の正常系) |
+| T2 | unix_secs_i64_returns_invalid_input_error_for_overflow | `unix_secs_i64("test", (i64::MAX as u64) + 1).unwrap_err().kind() == ErrorKind::InvalidInput` + `unix_secs_i64("test", u64::MAX).unwrap_err().kind() == ErrorKind::InvalidInput` (overflow 2 軸) |
+| T3 | unix_secs_i64_error_message_includes_label_and_value_exactly | `unix_secs_i64("session started_at", u64::MAX).unwrap_err().to_string() == "session started_at is out of i64 range: 18446744073709551615"` (label + value の format 完全一致、文言変更時に test 修正必須) |
+| T4 | io_invalid_always_returns_invalid_input_kind_with_passed_message | `io_invalid("any message").kind() == ErrorKind::InvalidInput` + `to_string() == "any message"` + 別 input "別のメッセージ" でも同じ kind/passthrough を確認 (kind 不変条件 + message passthrough) |
+| T5 | unescape_inline_markdown_text_unescapes_six_target_chars_and_passes_others | for 各 (input, expected) in [(r"\\", "\\"), (r"\`", "`"), (r"\*", "*"), (r"\_", "_"), (r"\[", "["), (r"\]", "]")] で `assert_eq!(unescape_inline_markdown_text(input), expected)` ; さらに `unescape_inline_markdown_text(r"\!") == r"\!"`, `unescape_inline_markdown_text(r"\X") == r"\X"`, `unescape_inline_markdown_text(r"\") == r"\"` (lone trailing backslash) を assert (6 文字 unescape + 非対象 `\X` passthrough + lone backslash 保持) |
+
+各 test は #[test] 属性、async 不要。
+
+## 3. 実装上の注意
+- 追加先は `mod tests` の最後の `}` 直前 (line ~547 付近)。新規 inner mod は不要、tests mod 直下に追加。
+- `ErrorKind` は `std::io::ErrorKind`。tests mod の `use super::*;` だけだと参照できないので、各 test 関数内で `use std::io::ErrorKind;` を局所 import するか、tests mod 冒頭に追記。**既存の use 文と重複しないよう注意** (既存に `use super::*;`, `use crate::session::Session;`, `use tempfile::tempdir;` がある)。
+- T3 の expected error 文字列 `"session started_at is out of i64 range: 18446744073709551615"` は `u64::MAX = 18446744073709551615`。format の "{label} is out of i64 range: {unix_secs}" を実装からコピーして組み立てる。`assert_eq!` で完全一致。
+- T5 の `r"\\"` は raw string で `\\` (2 文字 = backslash 2 つ)、これを unescape すると `\\` の `\` の次が `\` で「6 文字のうち 1 つ (backslash)」にマッチして `escaped` (= 2 つ目の `\`) を push、結果 `"\\"` (1 文字 = backslash 1 つ)。Rust の raw string `r"\\"` と通常の `"\\"` は同じ「文字 \ 2 つ」。unescape 結果 `"\\"` は通常文字列で `"\\"` (= 1 つの `\`)。混乱しやすいので一行ずつ確認しながら書くこと。
+- T5 の `r"\!"` (raw string) は backslash + `!` の 2 文字。`!` は 6 文字に含まれないので `\!` がそのまま (2 文字) 返る。
+- T5 の lone trailing backslash `r"\"` は単一 backslash 1 文字。実装は `if ch == '\\'` 分岐に入り `chars.peek()` が `None` を返すので `else { out.push(ch) }` の `out.push('\\')` で結果 `"\"` (= backslash 1 文字)。
+- 5 件すべて test 関数のみ追加。本体ロジック (line 1-198) は **一切変更しない**。
+- 既存 25 件のテスト名・本体は **絶対に変更しない**。
+
+## 4. 検証手順
+変更後、以下の順で検証してください:
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check`
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | grep "test result"` で全 test pass、かつ total が 350 → 355 になることを確認
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --all-targets -- -D warnings`
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings`
+
+いずれかが失敗したら原因を特定して修正してから再実行。
+
+## 5. AGENT_LOG.md 記載項目
+リポジトリルートの AGENT_LOG.md 末尾に追記。フォーマットは前ループ (`### transcription.rs private fn ...`) に揃える。
+
+```
+### session_store.rs private fn (unix_secs_i64 の 3 軸 + io_invalid + unescape_inline_markdown_text 6 文字 + 非対象 + lone trailing backslash) を 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-session-store-private-fn-tests-20260504-7-3`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/session_store.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+[省略可]
+
+#### 追加したテスト
+[T1〜T5 の表]
+
+#### 不変条件 / 設計意図
+- T1+T2 は unix_secs_i64 の 0 / i64::MAX as u64 / overflow 2 軸を boundary + invariant の対称ペアで固定。
+- T3 はエラー文言の format ("{label} is out of i64 range: {unix_secs}") を完全一致で固定 (UI/log 文言契約)。
+- T4 は io_invalid の `ErrorKind::InvalidInput` 不変条件 + message passthrough を 2 input で固定。
+- T5 は markdown.rs `inline_markdown_text` (encode 側) と対称な decode 側の 6 文字 unescape + 非対象 backslash sequence の passthrough + lone trailing backslash 保持を contract として固定。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 350 → 355 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 X 件)
+- 追加後 total passed: 355
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T3 の文言完全一致は将来 format 変更時に test 修正が必要 (UI 文言契約として意図的)。
+- T5 の `\X` passthrough 現挙動は markdown spec 拡張で 7 文字目以降を unescape する設計に変えたら test 修正が必要。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

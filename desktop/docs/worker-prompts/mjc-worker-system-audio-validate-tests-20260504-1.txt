@@ -1,0 +1,100 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (1.5MB+。`tail -300 AGENT_LOG.md` 相当で末尾だけでよい。直近 SESSION SUMMARY と直近 5 commit が状況復元の起点。直近 4 commit は audio.rs / session_commands.rs / session_store.rs / transcription.rs のテスト追加)
+
+# 担当範囲
+
+`src-tauri/src/system_audio.rs` の `mod tests` 末尾への #[test] 関数追加のみ。実装ロジック・docstring・既存テストは一切変更しないでください。
+
+# 目的
+
+`system_audio::sanitize_pcm_sample` (private fn, L44-50) の**直接呼び出しテスト**と、`system_audio::validate_audio_format_properties` (private fn, L84-108) の**未カバー None ケース 2 件 + エラー文言 prefix 確認 2 件**を追加する。
+
+既存テスト:
+- `f32_pcm_bytes_to_mono_sanitizes_invalid_samples`, `f32_pcm_bytes_to_mono_sanitizes_before_downmix` は `sanitize_pcm_sample` を**間接的に**叩く。直接テストはまだ無い。
+- `validate_audio_format_*` 5 件は `Some(...)` パターンのみ。`None` (bits_per_channel / channel_count を取得できない) ケースが未テスト。エラー文言 (`"bits_per_channel を取得できない"` / `"channel 数を取得できない"` 等) も `is_err()` のみで prefix 比較されていない。
+
+# 関数仕様 (再掲)
+
+```rust
+fn sanitize_pcm_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
+}
+```
+
+`validate_audio_format_properties` の None 経路 (L97-106):
+```rust
+match bits_per_channel {
+    Some(32) => {}
+    Some(_) => return Err("bits_per_channel が 32 ではない"),
+    None => return Err("bits_per_channel を取得できない"),
+}
+match channel_count {
+    Some(ch) if ch == expected_channels => {}
+    Some(_) => return Err("channel 数が設定値と不一致"),
+    None => return Err("channel 数を取得できない"),
+}
+```
+
+# 追加すべき #[test] 関数 (7 件)
+
+## sanitize_pcm_sample 系 (5 件)
+
+注: audio.rs の sanitize_sample テストと同パターン (commit d312bb8 を参照)。`system_audio::sanitize_pcm_sample` も同等の実装なので対称的に追加する。
+
+### A. `sanitize_pcm_sample_returns_zero_for_nan` — `f32::NAN` → 0.0
+### B. `sanitize_pcm_sample_returns_zero_for_positive_infinity` — `f32::INFINITY` → 0.0
+### C. `sanitize_pcm_sample_returns_zero_for_negative_infinity` — `f32::NEG_INFINITY` → 0.0
+### D. `sanitize_pcm_sample_clamps_above_one_to_one` — 1.5 → 1.0
+### E. `sanitize_pcm_sample_clamps_below_minus_one_to_minus_one` — -1.5 → -1.0
+
+## validate_audio_format_properties の未カバーケース (4 件)
+
+### F. `validate_audio_format_properties_rejects_when_bits_per_channel_unknown`
+- 入力 `(is_float=true, is_big_endian=false, bits_per_channel=None, channel_count=Some(1), expected_channels=1)` → Err。
+- エラー文言が `"bits_per_channel を取得できない"` と完全一致 (この関数のエラーは `&'static str` なので exact match で書ける)。
+
+### G. `validate_audio_format_properties_rejects_when_channel_count_unknown`
+- 入力 `(is_float=true, is_big_endian=false, bits_per_channel=Some(32), channel_count=None, expected_channels=1)` → Err。
+- エラー文言が `"channel 数を取得できない"` と完全一致。
+
+### H. `validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths`
+- 既存 5 件の `is_err()` 確認をエラー文言レベルに上げる回帰防止 test。
+- 1 つの test 関数内で 4 つの assertion (non_float / big_endian / wrong_bits / channel_mismatch) のエラー文言を完全一致確認:
+  - non_float: `"非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)"`
+  - big_endian: `"BigEndian フォーマット (NativeEndian が必要)"`
+  - wrong_bits (Some(16)): `"bits_per_channel が 32 ではない"`
+  - channel_mismatch (Some(2), expected 1): `"channel 数が設定値と不一致"`
+
+# 設計上の注意点
+
+- `sanitize_pcm_sample` と `validate_audio_format_properties` はどちらも `pub` ではない private fn だが、同モジュールの `mod tests` 内から呼べる (`use super::*` で既存のとおり)。
+- `validate_audio_format_properties` は `#[cfg(target_os = "macos")]` ガードが付いているか? 確認: L82 のソースを見る限り、`fn validate_audio_format_properties(...)` 単体には cfg なし、`fn validate_audio_format_description(...)` のみ macOS gate (L113)。よって test は cfg なしで OK のはず。読んで確認すること。
+- F/G の入力の `Some(1)` / `Some(32)` は最後に判定される条件が None で先に返るようにするため。
+- H の `assert_eq!` で `Err(&'static str)` を比較するときは `result.unwrap_err()` で `&'static str` を取り出して比較する書き方が自然。`Result<(), &'static str>` なら `assert_eq!(result.unwrap_err(), "...")`。
+- 既存テストでは `assert!(...is_err())` のみで文言を確認していない。Hには「既存 5 件は文言確認していない、本 test がそれを補強」というコメントを test 関数定義の前に 1 行で残してよい。
+
+# 完了条件
+
+- 9 つの #[test] 関数を `mod tests` 末尾 (現在の最後の test の後ろ) に追加。
+- 実装ファイル本体は一切変更しない。
+- `cargo fmt --check` 合格。
+- `cargo clippy --no-deps --all-targets --all-features -- -D warnings` 合格 (警告ゼロ維持)。
+- `cargo test --no-fail-fast` 合格 (254 → 263 passed が期待値、追加 9 件すべて pass)。
+- `git diff --check` 合格。
+- `bash scripts/agent-verify.sh src-tauri/src/system_audio.rs AGENT_LOG.md` 合格。
+- AGENT_LOG.md 末尾に作業セクションを追記。
+- コミットは禁止。
+
+# 制約 (再掲)
+
+- 課金禁止。`--no-verify` 禁止。担当範囲外の編集禁止。1 ターンで完結する報告を返してください。

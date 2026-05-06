@@ -1,0 +1,79 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (要点だけ)
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16000 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。直近 commit `d423211` (transcript_bridge normalize_speaker 5 件) と `ba0ad79` (session_manager state machine 3 件) と SESSION SUMMARY が状況復元の起点です。
+
+## 担当範囲 (この範囲のみ編集)
+- `src-tauri/src/session.rs` の `mod tests` 末尾に `#[test]` 関数を 4 件追加するのみ。
+- 実装コード、他テスト、他ファイルは編集禁止。
+
+## 前提情報 (調査済みなので追加調査は最小限)
+- `Session::start` (L23-33) は `static SESSION_COUNTER: AtomicU64` を `fetch_add(1, Ordering::Relaxed)` で incrementし、`id = format!("{started_at}-{seq}")` を生成する。
+- 既存テストは 4 件のみ:
+  - `start_creates_session_with_initial_state` (id が non-empty なことのみ確認、format 契約は未確認)
+  - `finalize_sets_ended_at_and_duration_secs_reports_elapsed`
+  - `duration_secs_saturates_when_end_precedes_start`
+  - `append_segment_pushes_segments_in_order`
+- session_store.rs の `parse_session_started_at_secs` は `id` を `'-'` で split して started_at_secs を取り出す → **id format 契約は session_store の前提**。
+
+## 追加するテスト 4 件 (関数名はそのまま使う)
+
+### A. `start_assigns_unique_ids_across_consecutive_calls`
+- 振る舞い: 同じ started_at で 3 回連続 `Session::start` を呼ぶと、3 つの id がすべて異なる (counter 単調増加保証)
+- 不変条件: `s1.id != s2.id`, `s2.id != s3.id`, `s1.id != s3.id` (HashSet で重複なし確認でも可)
+- 注意: グローバル `SESSION_COUNTER` を使うので、絶対値 (`"1000-0"` 等) は assert せず、**差異のみ** 確認する。並列 test 実行下でも安全。
+- 設計意図: 同じ started_at で複数 session を作っても id 衝突しない不変条件 (履歴ファイル名衝突回避の根幹)。
+
+### B. `start_id_starts_with_started_at_prefix_and_hyphen`
+- 振る舞い: `Session::start("title".into(), 1700000000)` の id が `"1700000000-"` で始まる
+- 不変条件: `session.id.starts_with("1700000000-")`、かつ `session.id.contains('-')` (format 契約の二重確認)
+- 設計意図: session_store::parse_session_started_at_secs の入力契約 (id を `-` で split して `started_at_secs` を取り出す) を session 側で裏付ける。format が `"{seq}-{started_at}"` のような順序逆転に書き換えられたら即座に検知できる。
+
+### C. `append_segment_after_finalize_records_post_finalize_segment`
+- 振る舞い: `start` → `append` (1 件) → `finalize` → `append` (1 件) を実行すると、`segments.len() == 2` になる
+- 不変条件:
+  - `session.is_finalized() == true` (finalize 後の状態は変わらない)
+  - `session.segments.len() == 2`
+  - `session.segments[1].speaker == "post-finalize-speaker"` (finalize 後の append が確実に push される)
+- 設計意図: 現状仕様 (finalize 後も append 可能) を test で固定する。将来「finalize 後の append は禁止」というリファクタが入った場合に気付ける。仕様変更が必要なら test を意図的に書き換える形で議論できる。
+
+### D. `finalize_called_twice_overwrites_ended_at_with_latest_value`
+- 振る舞い: `start("title", 1000)` → `finalize(1300)` → `finalize(1500)` を実行すると `ended_at == Some(1500)` になり、`duration_secs() == Some(500)` になる (後勝ち)
+- 不変条件:
+  - 1 回目 finalize 後: `ended_at == Some(1300)`, `duration_secs() == Some(300)`
+  - 2 回目 finalize 後: `ended_at == Some(1500)`, `duration_secs() == Some(500)` (後勝ち上書き)
+- 設計意図: 現状仕様 (finalize 冪等性なし、後勝ち) を test で固定する。realtime engine が「会議終了タイミングを更新する」ような場合、最新値が反映される動作の前提。
+
+## 作業指示
+1. 上記 4 関数を `mod tests` 末尾に追加する。既存テストのスタイル (assert_eq!、`session.is_finalized()`、`session.duration_secs()` の使用など) に揃える。
+2. 書き換えた後、以下を **必ず** 実行する:
+   - `cd src-tauri && cargo fmt --check` (失敗したら `cargo fmt` で修正してから再確認)
+   - `cd src-tauri && cargo clippy --no-deps --all-targets --all-features -- -D warnings`
+   - `cd src-tauri && cargo test --no-fail-fast` (現状 277 passed → 追加後 281 passed のはず)
+   - `bash scripts/agent-verify.sh src-tauri/src/session.rs AGENT_LOG.md`
+3. AGENT_LOG.md 末尾に、本作業のセクションを追記する (開始日時、担当セッション、役割、作業範囲、指示内容要約、追加した 4 関数の振る舞い・不変条件、変更ファイル、検証結果、追加 test 件数 (4)、依存関係追加なし、失敗理由、残リスク、次アクション)。
+
+## 禁止事項
+- 課金が発生する操作。
+- 他エージェントの変更を戻すこと。
+- 担当範囲外の編集 (実装コード、他テスト関数、他ファイル)。
+- `git commit` (コミットはメインが行う)。
+- `--no-verify`、`--dangerously-skip-permissions`。
+- 外部 API 呼び出し。
+
+## 設計意図 (なぜこれをやるか)
+- session.rs はシステムの中核 (Session は履歴の単位)。テスト 4 件は薄く、**id format 契約**と**counter 一意性**は session_store の前提として直結する重要な不変条件。
+- `finalize` 後の append / `finalize` の冪等性は現状仕様を test で固定することで、リファクタ時の「意図せぬ振る舞い変更」を即座に検知できる。
+- 既存テストの自然な延長で、新規依存ゼロ、リスク極小。
+
+## 完了報告
+1 ターンで以下を簡潔にまとめてください:
+- 変更内容 (どの 4 関数を追加したか、各 assertion 数)
+- 変更ファイル (期待: `src-tauri/src/session.rs` と `AGENT_LOG.md` の 2 件)
+- 検証結果 (各コマンドの結果、特に test 件数 277 → 281)
+- 残リスク
+- 次アクション (このワーカー範囲では「なし」が期待値)

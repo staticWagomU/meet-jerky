@@ -1,0 +1,186 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+最初に AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md / AGENT_LOG.md の **末尾** 350 行 (= mjc-main-20260504-20 SESSION SUMMARY + mjc-main-21 Loop 1 worker log を含む) を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+
+src-tauri/src/app_detection.rs の以下 3 箇所を変更 (F-Loop5 Loop 2 = 機能完結, 振る舞い変更, ユーザー観測可能):
+
+1. **`check_meeting_inactive_for_bundle` 関数の引数名 rename**: `bundle_id: &str` → `throttle_key: &str`、関連 doc コメント更新 (line 240-278 付近)
+2. **`check_all_inactive_bundles` 関数の iteration 変更**: `WATCHED_BUNDLE_IDS` 巡回から `last_seen_secs.lock().keys()` 全件巡回に変更 + `parse_throttle_key_to_display_name` で display name 解決 (line 280-294 付近)
+3. **`parse_throttle_key_to_display_name` 関数の dead_code 二重 attribute 削除**: `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` + `#[allow(dead_code)]` の両方を削除 (line 456 付近、Loop 1 で追加した `parse_throttle_key_to_display_name` の上の 2 行)
+
+# 背景
+
+前 mjc-main-21 Loop 1 (commit cceffa3) で `parse_throttle_key_to_display_name` 純粋関数を追加し、3 経路 (`bundle_id` 単独 / `"browser:..."` / `"window-title:..."`) の throttle_key を display name に変換できる foundation を完成させた。
+ただし `check_all_inactive_bundles` は依然 `WATCHED_BUNDLE_IDS` (Zoom/Teams/Teams legacy/FaceTime の 4 件) のみ巡回 = browser 経路で書き込まれた throttle_key (= mjc-main-20 Loop 3, commit 527a2a3 で書き込み開始) は **読まれない** = browser-only セッション (Safari の Google Meet 等) は inactive 通知が発火しない設計乖離が残っている。
+
+本 Loop で iteration を `last_seen_secs.lock().keys()` の **全件巡回** に変更することで、F-Loop5 が機能完結し、Safari の Google Meet 等でも会議終了通知が実機で動く状態に到達する。
+
+# Why (価値)
+
+- product-concept.md「ユーザーが録音の開始を忘れても 検知・通知・開始できる体験」の **終了側体験を browser-only セッションにも拡張** = アプリ経路と同等の終了通知体験
+- 「同じ HashMap (`last_seen_secs`) に異なる形式の key が混在する」設計の境界 (= parse 純粋関数) と消費側 (= iteration) を一貫させる
+- mjc-main-20 Loop 3 (527a2a3) で foundation を作った browser 経路の last_seen_secs エントリが、本 Loop で **初めて消費される** = データ収集 → データ消費の対称性が runtime で完成
+
+# 実装ルール
+
+## 1. `check_meeting_inactive_for_bundle` の引数 rename (line 246 付近)
+
+旧:
+```rust
+fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
+    let state = STATE.get()?;
+    ...
+    let last_seen_secs = state
+        .last_seen_secs
+        .lock()
+        .get(bundle_id)
+        .copied()
+        .unwrap_or(0);
+    let last_notified_secs = state
+        .last_notified_secs
+        .lock()
+        .get(bundle_id)
+        .copied()
+        .unwrap_or(0);
+    ...
+    if result.is_some() {
+        state
+            .last_notified_secs
+            .lock()
+            .insert(bundle_id.to_string(), now_secs);
+    }
+    ...
+}
+```
+
+新 (引数名のみ変更、ロジック完全不変):
+```rust
+fn check_meeting_inactive_for_bundle(throttle_key: &str) -> Option<u64> {
+    let state = STATE.get()?;
+    ...
+    let last_seen_secs = state
+        .last_seen_secs
+        .lock()
+        .get(throttle_key)
+        .copied()
+        .unwrap_or(0);
+    let last_notified_secs = state
+        .last_notified_secs
+        .lock()
+        .get(throttle_key)
+        .copied()
+        .unwrap_or(0);
+    ...
+    if result.is_some() {
+        state
+            .last_notified_secs
+            .lock()
+            .insert(throttle_key.to_string(), now_secs);
+    }
+    ...
+}
+```
+
+doc コメント (line 240-245 付近) の `bundle_id` を `throttle_key` に書き換え、「`last_seen_secs` HashMap の key (= bundle_id 単独 / `"browser:..."` / `"window-title:..."` の 3 形式) を引数として受ける」旨に更新。
+
+## 2. `check_all_inactive_bundles` の iteration 変更 (line 284-294 付近)
+
+旧:
+```rust
+fn check_all_inactive_bundles() {
+    let state = match STATE.get() {
+        Some(s) => s,
+        None => return,
+    };
+    for (bundle_id, app_name) in WATCHED_BUNDLE_IDS {
+        if let Some(elapsed) = check_meeting_inactive_for_bundle(bundle_id) {
+            show_inactive_notification(&state.app_handle, app_name, elapsed);
+        }
+    }
+}
+```
+
+新 (lock を即解放してから iterate、display name 解決失敗時は skip):
+```rust
+fn check_all_inactive_bundles() {
+    let state = match STATE.get() {
+        Some(s) => s,
+        None => return,
+    };
+    // last_seen_secs MutexGuard を即解放してから iterate (デッドロック回避)。
+    // throttle_key は 3 形式の混在 (bundle_id 単独 / "browser:..." / "window-title:...") = parse_throttle_key_to_display_name で表示名に解釈する。
+    let throttle_keys: Vec<String> = state
+        .last_seen_secs
+        .lock()
+        .keys()
+        .cloned()
+        .collect();
+    for throttle_key in throttle_keys {
+        if let Some(app_name) = parse_throttle_key_to_display_name(&throttle_key) {
+            if let Some(elapsed) = check_meeting_inactive_for_bundle(&throttle_key) {
+                show_inactive_notification(&state.app_handle, &app_name, elapsed);
+            }
+        }
+    }
+}
+```
+
+doc コメント (line 280-283 付近) を更新: 「`last_seen_secs` の key 全件を巡回し、`parse_throttle_key_to_display_name` で display name に変換した上で `check_meeting_inactive_for_bundle` を呼ぶ。アプリ経路 (Zoom/Teams/FaceTime) と browser 経路 (Safari 等) の両方が対象」旨を明示。
+
+## 3. `parse_throttle_key_to_display_name` の dead_code 二重 attribute 削除 (line 456 付近)
+
+Loop 1 で追加した:
+```rust
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+fn parse_throttle_key_to_display_name(key: &str) -> Option<String> {
+```
+
+を、本 Loop で iteration が parse を呼ぶようになる = 関数が live になるため、両 attribute を **削除** する:
+```rust
+fn parse_throttle_key_to_display_name(key: &str) -> Option<String> {
+```
+
+ただし非 macOS ビルドで dead_code 警告が出る場合は `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` のみ残す (= mjc-main-20 Loop 2 の dead_code 削除パターン踏襲)。
+**判定基準**: `cargo clippy --all-targets -- -D warnings` で警告が出るかどうか。出るなら `#[cfg_attr(...)]` だけ残す、出ないなら両方削除。
+
+# 実装上の注意 (規模超過防止)
+
+- **新規 test 追加なし** が default。`check_all_inactive_bundles` は副作用 (notification 発火) を持つため unit test 不能。`check_meeting_inactive_for_bundle` の引数 rename だけでは既存 test (`check_meeting_inactive_for_bundle_returns_none_when_state_uninitialized`) は文字列リテラル `"us.zoom.xos"` を渡しているのでそのまま pass する
+- ただし、引数 rename に追従して既存 test の引数も `throttle_key` 形式の例 (例: `"browser:com.apple.Safari:Google Meet:meet.google.com"`) を使った test を 1 件追加するのは OK (規模 XS で許容)。**だが必須ではない**
+- 担当範囲外の編集禁止 (frontend / settings / 他 rust ファイル一切触らない)
+- `WATCHED_BUNDLE_IDS` const 自体は削除しない (test や他箇所で使われている可能性あり = `grep -n "WATCHED_BUNDLE_IDS" src-tauri/src/app_detection.rs` で確認してから判断、削除する場合は影響を慎重に確認)
+
+# 検証手順
+
+1. `cargo build --manifest-path src-tauri/Cargo.toml` (compile OK 確認、引数 rename と iteration 変更の影響なし確認)
+2. `cargo test --manifest-path src-tauri/Cargo.toml --lib --no-run` (test compile OK)
+3. `cargo test --manifest-path src-tauri/Cargo.toml --lib check_meeting_inactive_for_bundle` (既存 1 件 + 新規 test 追加した場合) pass 確認
+4. `cargo test --manifest-path src-tauri/Cargo.toml --lib parse_throttle_key_to_display_name` (Loop 1 追加 6 件全 pass 確認)
+5. `cargo test --manifest-path src-tauri/Cargo.toml --lib` (484 maintained or +1 件 = 485 確認、既存 test の regression なし確認)
+6. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (warning ゼロ維持、`parse_throttle_key_to_display_name` の dead_code attribute 削除後に警告再発しないか確認)
+7. `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check` (差分なし確認)
+8. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK 確認)
+
+# AGENT_LOG.md 記載項目 (worker log 形式、**ファイル末尾追記必須**)
+
+**重要**: AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾** の構造を保つこと。新規追記は **必ずファイル末尾** (= 最終行の SESSION SUMMARY ブロック直後の `---` 区切り線の後ろ) に行う。前 Loop (mjc-main-21 Loop 1) で先頭追記事故が発生したため、本 Loop は厳守。
+
+具体手順:
+- `tail -10 AGENT_LOG.md` で末尾を確認
+- 末尾の最終行 (`---` 等) の直後に新規 worker log セクションを追加
+- 先頭は **絶対に触らない**
+
+記載項目: 開始日時 (JST) / 担当セッション (mjc-worker-check-all-inactive-iteration-extension-20260504-21-2) / 役割 (worker, sonnet) / 作業範囲 / 指示内容の要約 / 結果 / 変更ファイル / 検証結果 / 設計判断 / 依存関係追加 / 失敗理由 / 次アクション
+
+# 報告形式
+
+最後に変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめてください。
+
+# F-Loop5 機能完結によるユーザー体験 (本 Loop で達成予定)
+
+- Safari / Chrome 等で Google Meet / Zoom Web / Teams Web に参加 → 10 分間 URL 変化なし → macOS 通知センターに「Google Meet が <分数> 分以上検知されていません。会議が終了している場合は録音と文字起こしを停止してください。」通知
+- アプリ経路 (Zoom/Teams/FaceTime) の終了通知と同等の体験を browser-only セッションにも拡張

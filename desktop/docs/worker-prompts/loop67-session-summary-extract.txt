@@ -1,0 +1,183 @@
+あなたは meet-jerky の worker (sonnet) です。Loop 67 = session_store.rs Phase 1 = SessionSummary struct 抽出を実行してください。
+
+# 最初に必ず読むこと
+
+1. `tail -300 AGENT_LOG.md` で末尾 300 行のみ読む。**先頭は絶対に触らない**。AGENT_LOG.md は時系列順 (最古先頭、最新末尾)。**新規追記は必ずファイル末尾 = `tail -10` で末尾の `---` 位置確認 → 直後に追記**。
+2. src-tauri/src/session_store.rs L1-25 (use 文 + 定数)、L115-135 (SessionSummary 構造体周辺)、L200-205 (tests block 開始 + use super::*)、L1018-1030 (tests 内 SessionSummary 使用箇所例) を Read。**1175 行 file のため Read 全体禁止 = head/tail/grep で対象範囲のみ参照**。
+3. src-tauri/src/transcription_types.rs L1-30 を Read (precedent reference)。
+4. src-tauri/src/lib.rs L1-40 (mod 宣言一覧、新 module 追加位置確認)
+5. src-tauri/src/session_commands.rs L10-20 (L13 use 文確認)
+
+# 担当範囲 (これ以外は触らない)
+
+- **新規作成**: src-tauri/src/session_store_types.rs (~20 行、SessionSummary struct のみ)
+- **修正**: src-tauri/src/session_store.rs (struct L120-131 削除、tests L200 mod tests 内に `use crate::session_store_types::SessionSummary;` 追加)
+- **修正**: src-tauri/src/session_commands.rs (L13 の use 文書き換え)
+- **修正**: src-tauri/src/lib.rs (`mod session_store_types;` 追加)
+- **追記**: AGENT_LOG.md 末尾エントリ追加
+
+session_store.rs の他の関数 (path_for_session / write_session_markdown_to / render_session_markdown / save_session_markdown / list_session_summaries / list_session_files など) は**触らない**。
+
+# やること = SessionSummary struct の抽出 = transcription_types.rs precedent 完全踏襲
+
+## Step 1: 新規 file 作成 = src-tauri/src/session_store_types.rs
+
+session_store.rs L120-131 の SessionSummary struct (ドキュメントコメント L116-123 含む) を session_store_types.rs に移動する。
+
+新ファイル想定構造:
+```rust
+use std::path::PathBuf;
+
+use serde::Serialize;
+
+/// 一覧表示用のサマリー情報。
+///
+/// - `path` はセッションファイルへの絶対パス。
+/// - `started_at_secs` はファイル名先頭（`<started_at>-<seq>.md`）から復元。
+/// - `title` はファイル先頭行 `# ...` の `# ` を除いた残り全体（日付を含む）。
+///   日付を分離しない方針: 呼び出し側が素のヘッダ文字列をそのまま見せれば十分。
+/// - `search_text` は本文検索用。表示はせず、巨大ファイルで UI を重くしないため先頭だけ読む。
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionSummary {
+    pub path: PathBuf,
+    pub started_at_secs: u64,
+    pub title: String,
+    pub search_text: String,
+}
+```
+
+注意:
+- `serde::Serialize` use 文必要
+- `std::path::PathBuf` use 文必要
+- ドキュメントコメント全部維持
+- derive / serde rename_all 維持
+- pub visibility 維持
+
+## Step 2: lib.rs 編集
+
+`mod session_store_types;` を追加する。アルファベット順 = `mod session_store;` の直後 (= L23 `mod session_store;` の次行に L24 `mod session_store_types;` を挿入。続く `mod settings;` (元 L24) はそのまま)。
+
+## Step 3: session_store.rs 編集
+
+1. L116-131 の SessionSummary 構造体定義 (ドキュメントコメント + struct 本体) を削除する。
+2. L11 `use serde::Serialize;` は他で使っていないかを `grep Serialize src-tauri/src/session_store.rs` で確認。SessionSummary 削除後に使用箇所ゼロなら削除推奨 (cargo clippy unused warning 回避)。**確認結果次第で削除/残置を判断**。
+3. session_store.rs 内部 caller (list_session_summaries L136 + L163) で SessionSummary 使用 = use 文または完全修飾 path で対応:
+   - **推奨**: ファイル冒頭の use 文ブロックに `use crate::session_store_types::SessionSummary;` を追加 (alphabetical 順位置に挿入、`use crate::session::Session;` の後あたり)
+4. tests block (L200 開始) 内の `use super::*;` (L202) のみでは SessionSummary が見えなくなる:
+   - **対応**: L202 の `use super::*;` の直後 (L203 = `use crate::session::Session;` の前または後) に `use crate::session_store_types::SessionSummary;` を追加。
+
+## Step 4: session_commands.rs 編集
+
+L13 `use crate::session_store::{self, SessionSummary};` を以下の 2 行に分割:
+
+```rust
+use crate::session_store;
+use crate::session_store_types::SessionSummary;
+```
+
+書き換え後の行順は alphabetical 順 (`session_store` < `session_store_types`) を維持。
+
+## Step 5: 検証コマンド (順次実行)
+
+`cd src-tauri` してから:
+
+1. `cargo build --lib` (エラーなし)
+2. `cargo test --lib` (**702 passed / 0 failed = 件数不変**、増減ゼロを確認)
+3. `cargo clippy --lib --tests -- -D warnings` (警告ゼロ、unused use warning が出たら対応)
+4. `cargo fmt --check` (フォーマット OK)
+
+`cd ..` してから:
+
+5. `bash scripts/agent-verify.sh src-tauri/src/session_store_types.rs src-tauri/src/session_store.rs src-tauri/src/lib.rs src-tauri/src/session_commands.rs`
+6. `grep -nE 'pub struct SessionSummary' src-tauri/src/session_store.rs` で **空 (= 削除確認)**
+7. `grep -nE 'pub struct SessionSummary' src-tauri/src/session_store_types.rs` で 1 件確認
+8. trailing whitespace 確認
+
+検証で 1 件でも失敗したら**即停止して報告**。
+
+## Step 6: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾位置確認 → **末尾 (`## commit\n- 1ed49b3` の後)** に空行を介して新エントリ追加。先頭は絶対に触らない。
+
+エントリ内容 (commit hash は Step 7 で更新):
+
+```
+[mjc-main-20260505-33 Loop 67 / 2026-05-05 ~JST]
+
+## What
+- session_store.rs から SessionSummary struct (~12 行) を新規ファイル session_store_types.rs に抽出
+- lib.rs に `mod session_store_types;` 追加 (session_store の直後)
+- session_store.rs 内部 caller 用 use 文追加
+- tests mod に `use crate::session_store_types::SessionSummary;` 追加
+- session_commands.rs L13 use 文を 2 行に分割
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (1175 行 file の段階的責務分離)
+- locality 集約 = SessionSummary が独立 file = データ型単独 module 化
+- transcription_types.rs (mjc-main-20260505-3) precedent 直接展開
+- variety pivot = audio scope (Loop 66) → session_store scope = 新 scope
+- メイン批判判断 連続 19 セッション目達成 = 候補 X session_manager.rs Phase 1 (SessionManagerError) を grep で外部 caller ゼロ発見 → SessionSummary 抽出 (session_commands.rs 直接依存 = locality メリット大) を新候補発見
+
+## How (Tidy First, behavior-preserving)
+- struct 本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- pub visibility 維持
+- derive / serde rename_all 維持
+- ドキュメントコメント維持
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `pub struct SessionSummary` を session_store.rs で grep: 完全に空
+- `pub struct SessionSummary` を session_store_types.rs で grep: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- <hash>
+```
+
+## Step 7: 2-commit pattern (Loop 60-66 precedent 7 連続継承)
+
+### Step 7-A: refactor commit
+
+```sh
+git add src-tauri/src/session_store_types.rs src-tauri/src/session_store.rs src-tauri/src/lib.rs src-tauri/src/session_commands.rs
+git commit -m "refactor(session_store): SessionSummary struct を session_store_types.rs に抽出 (mjc-main-20260505-33 Loop 67, 12 行抽出 + lib.rs mod 追加 + session_commands.rs use 分割, transcription_types.rs precedent 完全踏襲, AGENTS.md priority 1 寄与)"
+```
+
+`--no-verify` 厳禁。
+
+commit hash 取得:
+```sh
+HASH=$(git log --oneline -1 | awk '{print $1}')
+echo "Loop 67 commit: $HASH"
+```
+
+### Step 7-B: AGENT_LOG.md の `<hash>` を実際の hash に書き換え → chore commit
+
+```sh
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 67 commit hash <HASH> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-66 precedent 適用 8 連続)"
+```
+
+`<HASH>` を実際の hash に置換した状態で実行。
+
+最終確認: `git log --oneline -3` で 2 commit が正しく積まれていることを確認。
+
+# 規模超過防止
+
+- 担当範囲外の編集禁止 (session_store.rs の他関数や test ブロック内の SessionSummary axis tests L1020-1089 は触らない、ただし test mod 冒頭 L200-205 の use 文追加のみ OK)
+- test 件数: **702 件で不変** = 0 件増減
+- 大型 file (session_store.rs / AGENT_LOG.md) は Read 全体禁止
+
+# 行末空白文字 (trailing whitespace) 禁止
+
+- 全ファイルで新規追加部分に trailing whitespace を作らない
+
+# 完了報告
+
+すべて完了したら 2 commit hash + cargo test 件数 + AGENT_LOG.md 末尾エントリ追加完了を報告。

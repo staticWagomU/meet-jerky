@@ -1,0 +1,117 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 重要な制約
+
+- 課金が発生する操作は禁止
+- 担当範囲外 (autonomous-main-prompt-claude.md / detection-extension-plan.md / rust ファイル / frontend / 他 docs) の編集禁止
+- AGENT_LOG.md は時系列順 (最古ログが先頭、最新ログが末尾)。新規追記は必ずファイル末尾に行う。**先頭は絶対に触らない**
+- 大型 file は `tail`/`head`/`grep` で対象範囲のみ参照、`Read` での全体読み込みは禁止 (AGENT_LOG.md は ~32,014 行 で Read 不可)
+- 行末の空白文字 (trailing whitespace) 禁止
+- 振る舞い不変 (docs only) なので test 件数上限の変動なし: 704 件 / 0 失敗 (本タスクは docs only のため cargo skip)
+- `--no-verify` 禁止
+- メイン (mjc-main) は別途 SESSION SUMMARY を書くので、本 worker は SESSION SUMMARY を書かない
+
+# 必読 (冒頭で必ず読む)
+
+1. `tail -350 AGENT_LOG.md` で末尾を確認 (Loop 98 + SESSION SUMMARY mjc-main-20260505-50 までの entry 含む)
+2. `cat AGENTS.md` (priority、ハーネス指針)
+3. `cat docs/agent-harness-claude.md` (worker 運用ルール)
+4. `cat docs/architecture/agent-log-archive-plan.md` で plan 全体把握 (~157 行、編集前現状)
+
+# 担当範囲
+
+`docs/architecture/agent-log-archive-plan.md` の **Section 2.3 にのみ追記** (Section 2.1 の表は変更しない、Phase 状態 subsection も変更しない)。
+
+## 1. 編集対象 (1 file)
+
+`docs/architecture/agent-log-archive-plan.md`:
+- 既存の Section 2.3 内、`> **更新観測 (mjc-main-20260505-49 Loop 95 時点)**: ...` block (現在 L40) の **直後** に、新しい更新観測 block を 1 件追記
+- Section 2.1 表 / Section 2.2 / Section 2.3 既存内容 (Loop 81 / Loop 86 時点 / Loop 95 時点 の既存 3 block) は **変更しない** (元数値の精度議論を避けるため)
+- Phase 状態 subsection は変更しない
+
+## 2. 追記内容
+
+現在 Section 2.3 の最終 block (L40) は次の通り:
+```
+> **更新観測 (mjc-main-20260505-49 Loop 95 時点)**: Loop 86 → Loop 95 (~9 ループ間) で +754 行 (31,045 → 31,799)、平均 ~84 行/loop。Loop 86 観測値 (~61 行/loop) と比較して ~38% 増 = 構造分離 paradigm sustained loop が連続 (Loop 87/88/89/90/91/92/93/94/95 = 9 連続) で各 loop の refactor entry + chore entry が機械的均等加算。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~84 行 = ~336-840 行/時間 の範囲、アクティブセッション間の差異)。
+```
+
+その **直後** (L40 の後に空行を 1 行入れて、続けて以下の block を追記):
+
+```
+> **更新観測 (mjc-main-20260505-50 Loop 98 時点)**: Loop 95 → Loop 98 (~3 ループ間 + SESSION SUMMARY 1 件) で +215 行 (31,799 → 32,014)、平均 ~72 行/loop。Loop 95 観測値 (~84 行/loop) と比較して ~14% 減 = paradigm pivot 連続 (Loop 96 = harness 衛生 K 軸 1 連続復帰 + Loop 97 = 機能分類軸 = session_commands 軸 + Loop 98 = 純粋関数機能分離軸 = audio_resample 軸) で SESSION SUMMARY 1 件 + chore entry 4 件 + docs entry 1 件 + refactor entry 0 行 (refactor は AGENT_LOG.md 触らず) の混合増加が寄与。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~72 行 = ~288-720 行/時間 の範囲、アクティブセッション間の差異)。
+```
+
+つまり Section 2.3 末尾に新 block 1 件 (= 1 段落) を追加する。block 間に空行を 1 行入れる。
+
+## 3. 編集後検証
+
+```bash
+wc -l docs/architecture/agent-log-archive-plan.md
+# 元 157 行 → 159 行 (新 block 1 段落 + 空行 1 行 = +2 行) になることを確認
+
+grep -nE "Loop 98 時点" docs/architecture/agent-log-archive-plan.md
+# 1 件 (新規追記行) 表示されることを確認
+
+grep -nE "[ 	]$" docs/architecture/agent-log-archive-plan.md
+# 0 件 (trailing whitespace なし) 確認
+
+bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md
+# docs only のため fmt/test/build skip、軽量検証 OK
+```
+
+## 4. コミット (2-commit pattern, Loop 80/85-98 precedent 13 連続)
+
+### Commit 1: docs(architecture)
+
+```
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 98 時点の更新観測追記 (mjc-main-20260505-50 Loop 99, harness 衛生軸 = variety pivot, Loop 95 → Loop 98 = +215 行 / 平均 ~72 行/loop, Loop 79/82/86/96 precedent 5 件目)"
+```
+
+`git log --oneline -1` で commit hash を取得し、以下の `<docs_hash>` 部分に **実 hash で直接書き込む** (Loop 80/85-98 precedent = placeholder 残留問題予防)。
+
+### AGENT_LOG.md に Loop 99 entry 追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認し、最終 `---` 直後に以下を追記 (`<docs_hash>` は実 hash で置換、`<chore_hash>` は **書かない** = Loop 80/85-98 precedent):
+
+```
+[mjc-main-20260505-50 Loop 99 / 2026-05-05]
+- 担当: agent-log-archive-plan.md Section 2.3 に Loop 98 時点の更新観測 block を追記 (harness 衛生軸 = variety pivot, Loop 79/82/86/96 precedent 5 件目)
+- 変更: docs/architecture/agent-log-archive-plan.md (+2 行)
+- 検証: wc -l (+2 行), grep -nE "Loop 98 時点" (1 件), trailing whitespace 0 件, bash scripts/agent-verify.sh OK (docs only = fmt/test/build skip)
+- commit: <docs_hash> (docs commit hash は実 hash 直書き、chore commit hash は記入しない = Loop 80/85-98 precedent 踏襲)
+- 結果: 振る舞い不変 (docs only) / 704 件 0 失敗 (test 不実行 = docs only のため cargo skip)
+- AGENTS.md priority 寄与: L46-L52 自律改善方針 (ハーネスを自律的に整える)
+- 次アクション: chore commit (本 Loop 99 自身) 後、メイン (mjc-main-20260505-50) が handoff 判断
+
+---
+```
+
+### Commit 2: chore(agent-log)
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-50 Loop 99 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, Loop 79/82/86/96 precedent 5 件目, +215 行 / 平均 ~72 行/loop) のエントリ追記"
+```
+
+## 5. 報告 (1 ターン完結)
+
+最後に以下を簡潔に報告してください:
+- 変更内容: agent-log-archive-plan.md Section 2.3 への新 block 1 件追記 (+2 行)
+- 変更ファイル: docs/architecture/agent-log-archive-plan.md (+2 行) / AGENT_LOG.md (+9 行 = Loop 99 entry)
+- 検証結果: wc -l / grep / trailing 0 件 / agent-verify.sh OK
+- commit 2 件: docs commit hash + chore commit hash (両方の実 hash を報告)
+- 残リスク: なし (docs only、振る舞い不変)
+
+## 重要事項 (再掲)
+
+- AGENT_LOG.md 先頭は絶対に触らない (時系列順 = 末尾追記のみ)
+- trailing whitespace 禁止
+- 担当範囲外 (autonomous-main-prompt-claude.md / detection-extension-plan.md / 他 docs / rust ファイル) の編集禁止
+- 規模超過防止: 編集行数の上限 = +12 行以内 (agent-log-archive-plan.md +2 行 + AGENT_LOG.md +10 行)
+- 振る舞い不変なので test 不実行 / cargo skip
+- 1 ターン完結
+- AGENT_LOG.md エントリ末尾に `---` を必ず付ける (時系列追記の区切り)
+- 2-commit pattern (Loop 60-98 で 39 連続観測の安定 pattern) を厳守: docs commit → hash 取得 → AGENT_LOG.md 追記 (実 hash 直書き) → chore commit

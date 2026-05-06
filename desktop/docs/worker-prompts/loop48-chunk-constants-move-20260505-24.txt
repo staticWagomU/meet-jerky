@@ -1,0 +1,112 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 最初に読むこと
+- AGENTS.md (運用ルール)
+- docs/product-concept.md (プロダクト方針)
+- docs/agent-harness-claude.md (ハーネス概要)
+- **AGENT_LOG.md は末尾 350 行のみ `tail -350 AGENT_LOG.md` で参照**。先頭は絶対に触らない。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+- src-tauri/src/transcription.rs L1-51 (本体) を Read (621 行ファイルだが本体は L1-51 のみ、tests mod は触れない)
+- src-tauri/src/transcription_whisper_stream.rs (235 行、全体読 OK)
+
+# 担当範囲 (Tidy First, 振る舞い不変)
+src-tauri/src/transcription.rs から **チャンク設計定数 2 件** を src-tauri/src/transcription_whisper_stream.rs に移動する。
+
+## 移動対象 (transcription.rs L33-40)
+```rust
+// ─────────────────────────────────────────────
+// 文字起こしループ
+// ─────────────────────────────────────────────
+
+/// チャンクの蓄積目標（秒）
+pub(crate) const CHUNK_DURATION_SECS: f64 = 5.0;
+
+/// 16kHz での5秒分のサンプル数
+pub(crate) const CHUNK_SAMPLES: usize = (WHISPER_SAMPLE_RATE as f64 * CHUNK_DURATION_SECS) as usize; // 80,000
+```
+
+## 残置するもの (移動しない)
+- transcription.rs L30 の `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` は残置 (Whisper 仕様 = transcription.rs の最上位定数として継続、transcription_whisper_stream.rs / audio_utils.rs の両方から参照される広域定数のため)
+- transcription.rs L1-51 の他のすべての pub use 再エクスポート文・コメントヘッダ
+- transcription.rs L52-621 の tests mod は **絶対に触らない**
+
+# 具体手順
+
+## Step 1. transcription.rs から 2 const を削除
+- L33-40 のセクションヘッダコメント (3 行) + CHUNK_DURATION_SECS の rustdoc + 定義 + 空行 + CHUNK_SAMPLES の rustdoc + 定義 を削除
+- WHISPER_SAMPLE_RATE (L29-30) は **残置**
+- 削除前後で transcription.rs L1-51 の他セクションが破壊されないこと
+
+## Step 2. transcription_whisper_stream.rs に 2 const を追加
+- 配置場所: L10 の `use crate::transcription::{...}` の **直後**、`pub struct WhisperStream` 定義より前 (元コメント `// 文字起こしループ` のセクションヘッダごと移植)
+- import 整理: L10 を `use crate::transcription::WHISPER_SAMPLE_RATE;` に変更 (CHUNK_DURATION_SECS / CHUNK_SAMPLES は同ファイル内で self-contained に)
+- 新セクションヘッダのコメント `// ───── // 文字起こしループ // ─────` ごと移植
+- rustdoc コメント (`/// チャンクの蓄積目標（秒）` など) も保持
+
+## Step 3. 検証 (担当範囲内のみ実行)
+- `cd src-tauri && cargo test --lib 2>&1 | tail -30` で **702 passed / 0 failed** の **件数不変** を確認
+- `cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20` で **警告ゼロ** 確認
+- `cd src-tauri && cargo fmt --check 2>&1` で OK 確認
+- `bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs 2>&1 | tail -20` で OK 確認
+- 行末の空白文字 (trailing whitespace) が **無い** こと: `grep -nP " +$" src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs | head` で空出力確認
+
+## Step 4. AGENT_LOG.md 末尾追記
+- `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記 (先頭追記事故厳禁)
+- 形式 (上記 Loop 47 と同型):
+```
+[mjc-main-20260505-24 Loop 48 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数 2 件を src-tauri/src/transcription_whisper_stream.rs に移動 (rustdoc コメントごと)
+- transcription_whisper_stream.rs L10 の use 文を `use crate::transcription::WHISPER_SAMPLE_RATE;` に整理 (CHUNK_DURATION_SECS / CHUNK_SAMPLES は self-contained 化)
+- transcription.rs L33-40 のセクションヘッダ「文字起こしループ」コメントごと削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (チャンク設計定数の locality 集約 = WhisperStream + チャンク定数同居で理解性向上)
+- grep で実態確認: CHUNK_DURATION_SECS / CHUNK_SAMPLES の外部参照は transcription_whisper_stream.rs のみ (L70/L80/L81/L109) = 完全な切り分け可能
+- variety pivot 軸 = struct/const 移動軸 = Loop 44 から 4 ループ間隔 = sweep 警告完全クリア
+- Loop 33 (TranscriptionLoopConfig) / Loop 44 (沈黙検知 const) と同型 = 「const は使用箇所に locality 集約する」Tidy First 原則 3 件目
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- WHISPER_SAMPLE_RATE は transcription.rs に残置 (audio_utils.rs / transcription_whisper_stream.rs 両方から参照される広域定数)
+- 2 const 移動による型変更なし、振る舞い完全保持
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (worker 自走 commit 後に hash を記入)
+```
+
+## Step 5. コミット (worker 自走)
+- `bash scripts/agent-commit.sh "refactor(transcription): CHUNK_DURATION_SECS / CHUNK_SAMPLES 定数を transcription_whisper_stream.rs に移動 (Tidy First, mjc-main-20260505-24 Loop 48)" src-tauri/src/transcription.rs src-tauri/src/transcription_whisper_stream.rs AGENT_LOG.md`
+
+# 規模超過防止 (重要)
+- このタスクは規模 SS (~10 行) = 1 ファイル + 1 ファイルの **2 const 移動 + use 文 1 行整理 + AGENT_LOG.md 末尾追記** のみ。
+- 担当範囲外 (transcription_manager.rs / transcription_worker_loop.rs / transcription_traits.rs / audio_utils.rs / frontend / scripts / docs/architecture/transcription-refactor-plan.md など) は **絶対に編集しない**
+- transcription.rs L52-621 の tests mod は **絶対に触らない**
+- 他に「ついでに整理」したくなっても **しない** (別ループでメインが判断する)
+- WHISPER_SAMPLE_RATE は **移動しない、残置のまま**
+- test 件数の上限明示: 移動による test 件数変化は **ゼロ** (702 passed のまま不変)
+
+# 大型ファイルの参照ルール
+- AGENT_LOG.md は **27,200+ 行 / ~2.5MB** = `tail -350 AGENT_LOG.md` で末尾だけ参照、Read で全体読まない
+- transcription.rs (621 行) は **L1-51 の本体のみ Read**、L52-621 の tests mod は触れないので Read 不要
+- transcription_whisper_stream.rs (235 行) は全体 Read OK
+
+# 検証制約
+- cmake あり → cargo test 全 pass 想定 (702 件)
+- frontend test framework 未導入 → npm 検証は **本タスクでは不要** (Rust のみ変更)
+- 課金禁止
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+
+最後に、変更内容、変更ファイル、検証結果、残リスク、commit hash を簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

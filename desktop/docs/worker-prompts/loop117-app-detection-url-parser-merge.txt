@@ -1,0 +1,192 @@
+あなたは meet-jerky プロジェクトの worker (claude sonnet) です。
+mjc-main-20260505-60 の Loop 117 を担当します。
+
+# 必読 (冒頭で必ず実施)
+
+1. **AGENT_LOG.md の末尾 350 行を読め** (`tail -350 AGENT_LOG.md`)。**時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。** 末尾の `---` 直後に新規エントリを追記すること。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md を読め。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md を読め。
+4. **既存 file `src-tauri/src/app_detection_url_helpers.rs` (24 行) を cat 全体読み込みせよ** (= 統合先 file = 既存 2 関数 `is_valid_dns_label` + `has_single_non_empty_segment` + `pub(crate)` visibility 確認)。
+5. **app_detection.rs の L547-L652 (約 110 行 = 移動対象範囲) を `sed -n '547,652p' src-tauri/src/app_detection.rs` で精読**。
+
+# タスク概要 (Loop 117 = rust 軸復帰 + 既存 file 拡張軸 = 新 paradigm)
+
+## 目的
+
+`src-tauri/src/app_detection.rs` (2826 行) から URL parser 6 純粋関数 + ParsedUrlParts struct を **既存 `src-tauri/src/app_detection_url_helpers.rs` (24 行)** に統合追加し、**既存 file 拡張軸 (新 paradigm)** を確立する。
+
+**重要 (メイン批判判断発掘成果)**: 新 file 作成ではなく、**既存 file への統合追加** を採用する理由:
+- 既存 `app_detection_url_helpers.rs` は DNS label / path segment 検証 (URL 小要素検証) を扱う
+- 移動対象 6 関数は URL 全体 parse (host / path / query parser) を扱う
+- 両者は **「URL 検知用 helper」という責務が一致** (既存 file 冒頭コメント `//! URL 検知用の汎用 helper 関数群。` と完全合致)
+- → 新 file 作成より既存 file 拡張が責務集約的に適切 = file 数不増 + 保守性向上
+
+## 成果物 (commit 順)
+
+### Commit 1: refactor(rust) — app_detection の URL parser 6 関数 + ParsedUrlParts struct を既存 app_detection_url_helpers.rs に統合追加
+
+#### 1A. 既存 `src-tauri/src/app_detection_url_helpers.rs` に統合追加
+
+以下の **6 純粋関数 + 1 struct** を、既存 file 末尾に追加する (= 既存 2 関数の **後** に追加):
+
+**移動対象 (app_detection.rs から削除 + app_detection_url_helpers.rs に追加)**:
+- L547-L554 `fn normalize_url_host(host: &str) -> Option<String>` → `pub(crate) fn` に visibility 変更
+- L556-L561 `struct ParsedUrlParts { host, path, query }` (`#[derive(Debug, Clone, PartialEq, Eq)]`) → `pub(crate) struct ParsedUrlParts` (= フィールドも `pub(crate)`) に visibility 変更
+- L563-L602 `fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts>` → `pub(crate) fn` に visibility 変更
+- L604-L614 `fn extract_query(rest: &str) -> Option<String>` → `pub(crate) fn` に visibility 変更
+- L616-L636 `fn strip_port(host_port: &str) -> Option<&str>` → `pub(crate) fn` に visibility 変更
+- L638-L643 `fn validate_port(port: &str) -> Option<()>` → `pub(crate) fn` に visibility 変更
+- L645-L652 `pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool` → そのまま (visibility 変更不要)
+
+**重要な依存関係**:
+- `parse_url_host_and_path` 内で `strip_port` + `extract_query` を呼ぶ → 同 file 内で解決
+- `strip_port` 内で `validate_port` を呼ぶ → 同 file 内で解決
+- 6 関数すべて副作用なし純粋関数 = 抽出 caller fix は use 文のみ
+
+**ParsedUrlParts struct のフィールド visibility**:
+- 元 = フィールド 3 件 (host / path / query) は private (struct 自体も private)
+- 新 = `pub(crate) struct ParsedUrlParts` + フィールドも `pub(crate)` (caller の app_detection.rs L443-L444 で `parsed.host` アクセスがあるため)
+
+**追加後の app_detection_url_helpers.rs 想定構造**:
+```rust
+//! URL 検知用の汎用 helper 関数群。
+//!
+//! RFC 1035/1123 に基づく DNS label 妥当性検証と、path segment 単一性検証、
+//! および URL 全体 (host/path/query) の parse helper を提供する。
+//! goto/teams/webex/whereby/zoom の各 service module から直接 import して使用する。
+
+pub(crate) fn is_valid_dns_label(label: &str) -> bool { /* 既存 */ }
+pub(crate) fn has_single_non_empty_segment(value: &str) -> bool { /* 既存 */ }
+
+pub(crate) fn normalize_url_host(host: &str) -> Option<String> { /* 移動 */ }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ParsedUrlParts {
+    pub(crate) host: String,
+    pub(crate) path: String,
+    pub(crate) query: Option<String>,
+}
+
+pub(crate) fn parse_url_host_and_path(url: &str) -> Option<ParsedUrlParts> { /* 移動 */ }
+pub(crate) fn extract_query(rest: &str) -> Option<String> { /* 移動 */ }
+pub(crate) fn strip_port(host_port: &str) -> Option<&str> { /* 移動 */ }
+pub(crate) fn validate_port(port: &str) -> Option<()> { /* 移動 */ }
+pub(crate) fn query_has_non_empty_param(query: Option<&str>, key: &str) -> bool { /* 移動 */ }
+```
+
+**規模目安**: 既存 24 行 → ~130-140 行 (+106-116 行)。
+
+**冒頭コメントの拡張**: `//! RFC 1035/1123 に基づく DNS label 妥当性検証と、path segment 単一性検証` の後に「、および URL 全体 (host/path/query) の parse helper」を追加する案 (任意、可読性向上のため推奨)。
+
+#### 1B. `src-tauri/src/app_detection.rs` の修正
+
+**削除する関数定義 + struct** (L547-L652 = 約 106 行):
+- L547-L554 `fn normalize_url_host`
+- L556-L561 `struct ParsedUrlParts`
+- L563-L602 `fn parse_url_host_and_path`
+- L604-L614 `fn extract_query`
+- L616-L636 `fn strip_port`
+- L638-L643 `fn validate_port`
+- L645-L652 `pub(crate) fn query_has_non_empty_param`
+
+**追加する use 文** (app_detection.rs 既存 use ブロック内 = alphabetical order を維持):
+- 既存に `use crate::app_detection_url_helpers::{is_valid_dns_label, has_single_non_empty_segment};` のような import があるか確認、あればそれに 6 件追加。なければ新規 use 文を追加:
+  ```rust
+  use crate::app_detection_url_helpers::{
+      normalize_url_host,
+      parse_url_host_and_path,
+      query_has_non_empty_param,
+  };
+  ```
+- (`extract_query`, `strip_port`, `validate_port`, `ParsedUrlParts` の use 文は app_detection.rs 内で直接呼び出さないため不要、ただし `parse_url_host_and_path` が返す ParsedUrlParts 型を扱う L443-L444 で `parsed.host` にアクセスするため `ParsedUrlParts` も use する必要があるか確認)
+
+**caller 修正**:
+- L443: `let parsed = parse_url_host_and_path(url)?;` → そのまま (use 文経由で参照)
+- L444: `let host = normalize_url_host(&parsed.host)?;` → そのまま (use 文経由で参照)
+- 他に `query_has_non_empty_param` を app_detection.rs 内で呼ぶ箇所があれば use 文経由で参照
+
+**最終確認 grep**:
+- `grep -n "normalize_url_host\|parse_url_host_and_path\|extract_query\|strip_port\|validate_port\|query_has_non_empty_param\|ParsedUrlParts" src-tauri/src/app_detection.rs | head` で重複定義 / 未使用 import がないか最終確認
+
+**app_detection.rs 削減見積もり**: -106 行 (2826 → ~2720 行)。
+
+#### 1C. `src-tauri/src/app_detection_webex.rs` の修正
+
+**use 文 1 行変更** (L1):
+- 元: `use crate::app_detection::query_has_non_empty_param;`
+- 新: `use crate::app_detection_url_helpers::query_has_non_empty_param;`
+
+**変更箇所**: L1 のみ。L37 `query_has_non_empty_param(query, "MTID")` 呼び出しは無変更 (= use 文経由で解決)。
+
+#### 1D. lib.rs 確認
+
+- `mod app_detection_url_helpers;` は既に L7 に登録済 (確認のみ、変更不要)
+- `mod app_detection;` も既に L1 に登録済 (確認のみ、変更不要)
+- mod 登録 alphabetical order 維持 (= 変更不要)
+
+#### 1E. 検証
+
+- `cd src-tauri && cargo test --lib` で **704 件 / 0 失敗を維持** (= 件数完全不変)
+- `cd src-tauri && cargo clippy --lib --tests -- -D warnings` で警告ゼロ
+- `cd src-tauri && cargo fmt --check` OK
+- `cd src-tauri && cargo build --lib` エラーなし
+- `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/app_detection_url_helpers.rs src-tauri/src/app_detection_webex.rs` で全項目 OK
+- 検証 OK 後 `git add src-tauri/src/app_detection.rs src-tauri/src/app_detection_url_helpers.rs src-tauri/src/app_detection_webex.rs && git commit -m "refactor(rust): app_detection の URL parser 6 関数 + ParsedUrlParts struct を既存 app_detection_url_helpers.rs に統合追加 (mjc-main-20260505-60 Loop 117, rust 軸復帰, scope 22 軸目変種, 既存 file 拡張軸 = 新 paradigm, 大型 rust file 責務分離 35 file 目, AGENTS.md priority 1 寄与)"`
+
+**commit hash を `git log -1 --format=%h` で取得して、後続 commit 2 で AGENT_LOG.md 内に実 hash で書き込む。chore commit hash は書かない (placeholder 残留問題予防)**。
+
+### Commit 2: chore(agent-log) — Loop 117 エントリ追記
+
+`AGENT_LOG.md` の **末尾の `---` 直後** に以下のエントリを追記 (時系列順 = 末尾追記、先頭触らない、trailing whitespace 禁止):
+
+```
+[mjc-main-20260505-60 Loop 117 / 2026-05-06]
+worker: mjc-worker-loop117-app-detection-url-parser-merge (作業)
+範囲: src-tauri/src/app_detection.rs (URL parser 6 関数 + ParsedUrlParts struct 削除 + use 文 1 ブロック追加, ~106 行削減) + src-tauri/src/app_detection_url_helpers.rs (既存 24 行 + 6 関数 + 1 struct = ~130-140 行, 統合追加) + src-tauri/src/app_detection_webex.rs (use 文 1 行 path 変更)
+内容: app_detection.rs の URL parser 6 純粋関数 (normalize_url_host + parse_url_host_and_path + extract_query + strip_port + validate_port + query_has_non_empty_param) + ParsedUrlParts struct を **既存 app_detection_url_helpers.rs (24 行 = is_valid_dns_label + has_single_non_empty_segment) に統合追加** = 「既存 file 拡張軸 = 新 paradigm」確立。新 file 作成ではなく既存 file 拡張を選択した理由 = 両者とも「URL 検知用 helper」という責務が一致 (既存 file 冒頭コメント `//! URL 検知用の汎用 helper 関数群。` と合致) = file 数不増 + 保守性向上。rust 軸復帰 (frontend 軸 6 連続から paradigm 大幅 pivot 達成) + scope 22 軸目変種 (app_detection scope 復帰 + URL parser 責務集約) + 機能分類軸変種 + 大型 rust file 責務分離 35 file 目 + メイン批判判断 連続 56 セッション目達成 (handoff 文書に記載のない新規発掘 + 既存 file 統合可能性 grep で発見)。alternation pattern (K(115) → frontend(116) → rust(117)) = paradigm pivot 連鎖。
+振る舞い: cargo test (lib) = 704 件 / 0 失敗 (件数完全不変)。cargo clippy --lib --tests -- -D warnings 警告ゼロ。cargo fmt --check OK。cargo build --lib エラーなし。
+verify: scripts/agent-verify.sh 全項目 OK。
+commits:
+- <REFACTOR_HASH> refactor(rust): app_detection の URL parser 6 関数 + ParsedUrlParts struct を既存 app_detection_url_helpers.rs に統合追加
+AGENTS.md priority: 1 (大型 rust file 責務分離 + 既存 file 拡張軸 = file 数不増で責務集約 + 保守性向上)
+
+---
+```
+
+**`<REFACTOR_HASH>` は実際の hash で置換**。chore commit hash は **書かない**。
+
+検証 OK 後 `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-60 Loop 117 = app_detection URL parser 6 関数 + ParsedUrlParts struct を既存 app_detection_url_helpers.rs に統合追加 (構造分離 35 file 目, rust 軸復帰, scope 22 軸目変種, 既存 file 拡張軸 = 新 paradigm)"`
+
+# 制約 (絶対遵守)
+
+- 担当範囲は **src-tauri/src/app_detection.rs + src-tauri/src/app_detection_url_helpers.rs + src-tauri/src/app_detection_webex.rs + AGENT_LOG.md のみ**。他 file は触らない。
+- lib.rs の mod 登録は **既に存在** (L7 = `mod app_detection_url_helpers;`) のため変更不要。
+- 行末の **trailing whitespace 禁止**。
+- AGENT_LOG.md の **先頭は絶対に触らない**。**末尾の `---` 直後に追記**。
+- `--no-verify` 禁止。`--dangerously-skip-permissions` は harness 内のみ。
+- 規模超過防止: production 削減 ~106 行 + 既存 file 拡張 ~110-115 行 = 規模 SS-S。これより大幅増は規模超過。
+- 大型 file (AGENT_LOG.md ~32,830 行 / app_detection.rs 2826 行) は **絶対に Read 全体禁止** = `tail -350 AGENT_LOG.md` / `sed -n '547,652p' src-tauri/src/app_detection.rs` で範囲のみ参照。
+- cargo は `cd src-tauri && cargo ...` で実行 (desktop 直下に Cargo.toml なし)。
+- elevenlabs/openai 系の実 API 叩きは **厳禁** (課金禁止)。
+- Keychain 実通信禁止 / Apple SpeechAnalyzer 実通信禁止。
+- test 件数 704 件は **件数完全不変** (= test 移動なし、URL parser 関数の direct test は app_detection.rs 内に存在しない = classify_meeting_url 経由の間接 test のみ存在)。
+
+# 2-commit pattern (56 連続ループで実証済 = 完全安定)
+
+1. refactor(rust) commit を作成 (file 編集 + verify + git add + git commit)
+2. `git log -1 --format=%h` で refactor hash 取得
+3. AGENT_LOG.md 末尾エントリ内の `<REFACTOR_HASH>` placeholder を実 hash で置換書き込み (chore hash は書かない)
+4. chore(agent-log) commit を作成 (AGENT_LOG.md edit + git add + git commit)
+
+# 完走基準
+
+- 2 commit 反映 (`git log --oneline -3` で確認)
+- cargo test (lib) 704 件 / 0 失敗 維持
+- cargo clippy --lib --tests -- -D warnings 警告ゼロ
+- cargo fmt --check OK
+- bash scripts/agent-verify.sh OK
+- AGENT_LOG.md 末尾エントリ追記済 (先頭無変更)
+- src-tauri/src/app_detection.rs ~2720 行 (2826 行 -106 行)
+- src-tauri/src/app_detection_url_helpers.rs ~130-140 行 (24 行 +110 行)
+- src-tauri/src/app_detection_webex.rs use 文 1 行変更
+- 既存 file 拡張軸 = 新 paradigm 確立 (新 file 作成なし)

@@ -1,0 +1,84 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (末尾 350 行) を読んでください。
+
+# 背景
+src-tauri/src/app_detection.rs の純粋関数:
+- `should_warn_polling_stall` (line 153-174, 5 引数 → Option<u64>) - 既存 test 4 件 (line 1464-1486)
+- `should_notify_meeting_inactive` (line 176-201, 5 引数 → Option<u64>) - 既存 test 10 件 T1-T10 (line 1488-1568 周辺、最後の境界補強 T6-T10 は前 mjc-main-20260504-17 Loop 2 commit 986caa6 で追加)
+
+`should_warn_polling_stall` は既存 test 4 件のみで、`should_notify_meeting_inactive` の T6-T10 のような境界条件補強が **未実施**。これは前 Loop 2 で確立した「設計判断を test で executable specification 化」パターンの **対称な application 余地**。
+
+# Why (この test 補強の目的)
+- `should_warn_polling_stall` の境界選択 (`<=` を採用) を executable specification として固定 = `<` に変える誤改修を CI で検知
+- `should_warn_polling_stall` 内の `saturating_sub` 非 panic 契約を固定 (clock skew = last_warned_secs > now_secs ケース)
+- `should_notify_meeting_inactive` T6 (境界等値) と T9 (clock skew) と完全対称な application で **2 つの純粋関数の境界保護を揃える**
+- 関数本体は無変更 = 振る舞い不変の Tidy First
+
+# 担当範囲
+- ファイル: src-tauri/src/app_detection.rs のみ
+- 既存 `should_warn_polling_stall_throttled_returns_none` test (line 1483-1486) の **直下** に新規 test 2 件追加
+- 既存 4 件と関数本体は無変更
+- それ以外のファイルは触らない
+
+# 実装内容 (この通りに書いてください)
+追加位置: line 1486 の `}` (test 関数閉じ) 直後、line 1488 の `#[test]` (`should_notify_meeting_inactive_first_call_returns_none`) の **直前**。
+
+```rust
+    #[test]
+    fn should_warn_polling_stall_boundary_at_expected_times_three_returns_none() {
+        // 境界: elapsed == expected_interval_secs * 3 ぴったり (= 9s) は正常範囲扱いで None
+        // (実装は `elapsed <= expected_interval_secs * 3` で短絡)。
+        // この境界を保護する: `<=` を `<` に変える誤改修を CI で検知。
+        assert_eq!(should_warn_polling_stall(1009, 1000, 0, 3, 60), None);
+        // 境界の 1 秒外: elapsed = 10 > 9 で Some(10)
+        assert_eq!(should_warn_polling_stall(1010, 1000, 0, 3, 60), Some(10));
+    }
+
+    #[test]
+    fn should_warn_polling_stall_clock_skew_last_warned_after_now_returns_none() {
+        // clock 巻き戻し相当: last_warned_secs > now_secs。
+        // saturating_sub で 0 に飽和し、0 < throttle (60) で None を返す契約を固定。
+        // saturating_sub を sub に変える panic 化、または巻き戻し時に throttle を無視する誤改修を検知。
+        // 前提: elapsed = 30s > expected(3) * 3 = 9s なので throttle 経路まで到達する。
+        assert_eq!(should_warn_polling_stall(1000, 970, 1500, 3, 60), None);
+    }
+```
+
+# 実装上の注意
+- 4 文字 indent (既存 test と完全一致, tab なし)
+- 既存 4 件の命名スタイル (snake_case, `should_warn_polling_stall_<状況>_returns_<値>`) と完全対称
+- コメントは「境界保護目的」を 1-2 行で明示 (前 mjc-main-17 Loop 2 で T6-T10 に書いた説明スタイルと統一)
+- 新規 test 2 件のみ、関数本体 (line 153-174) と既存 test 4 件 (line 1464-1486) は **完全無変更**
+- assertion で u64 overflow 系 (now_secs = u64::MAX) は **scope 外**:
+  - 理由: should_notify_meeting_inactive T10 と同じ application を将来追加可能だが、本 Loop は **2 件に絞る** ことで 1 ターン完走確実性を最優先
+- `expected_interval_secs = 0` ケース (W10 候補) も scope 外: 価値小、別ループ送り
+
+# 検証手順
+作業後、以下を順に実行して全てゼロ failure を確認してください:
+
+1. `cd src-tauri && cargo test --lib --no-run` (compile 確認)
+2. `cd src-tauri && cargo test --lib should_warn_polling_stall` (該当 test 全実行 = 既存 4 + 新規 2 = 6 件 pass)
+3. `cd src-tauri && cargo test --lib` (全 test 実行、471 passed = 前 469 + 2 件確認)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings` (warning 0)
+5. `cd src-tauri && cargo fmt --check` (差分なし)
+6. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK)
+
+# AGENT_LOG.md 記載項目
+AGENT_LOG.md **末尾** に以下を追記してください (前 SUMMARY 後の領域、AGENT_LOG.md の **先頭ではなく末尾** = 過去 worker での誤追記事故を再発しないよう注意):
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-should-warn-polling-stall-boundary
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/app_detection.rs に test 2 件追加 (Loop 3)
+- 指示内容の要約
+- 結果 (test 数推移 469 → 471、clippy 0、fmt 差分なし)
+- 変更ファイル: src-tauri/src/app_detection.rs (1 ファイルのみ)
+- 検証結果 (各コマンドの pass/fail)
+- 依存関係追加: なし
+- 失敗理由: なし (該当時のみ)
+- 次アクション: メインで commit + 次ループ判断 (3 ループ完了で予防的ハンドオフ判断)
+
+# 完了報告
+最後に、変更内容、変更ファイル、検証結果 (test 数推移 469 → 471 を含む)、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。コミットは禁止です。

@@ -1,0 +1,96 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけでよい。直近の SESSION SUMMARY @ 2026-05-04 ~07:50 JST と直近 2 commit が状況復元の起点です)
+
+# 担当範囲
+
+`src-tauri/src/session_store.rs` の `mod tests` 末尾への #[test] 関数追加のみ。実装ロジック・docstring・既存テストは一切変更しないでください。
+
+# 目的
+
+`session_store::parse_session_started_at_secs` (private fn, src-tauri/src/session_store.rs:174-181) の境界仕様を直接テストし、回帰防止カバレッジを拡張する。
+
+既存テストは全て `list_session_summaries` 経由の間接テスト (`list_session_summaries_skips_unparsable_prefixes`, `list_session_summaries_skips_out_of_js_date_range_prefixes`)。直接呼び出しテストはまだ無いため、parse の入力パターン網羅性を補強できる。
+
+# 関数仕様 (再掲)
+
+```rust
+fn parse_session_started_at_secs(stem: &str) -> Option<u64> {
+    let prefix = stem.split('-').next().unwrap_or("");
+    let started_at_secs = prefix.parse::<u64>().ok()?;
+    if started_at_secs > MAX_JS_DATE_UNIX_SECS {
+        return None;
+    }
+    Some(started_at_secs)
+}
+```
+
+`MAX_JS_DATE_UNIX_SECS = 8_640_000_000_000` (L20)。
+
+# 追加すべき #[test] 関数 (8 件)
+
+各 test は単体で意味を持ち、関数名は WHAT を示すこと。
+
+## A. `parse_session_started_at_secs_returns_none_for_empty_string`
+- 入力 `""` → `split('-').next()` は `Some("")` → `"".parse::<u64>()` → Err → `None`。
+- 期待: `assert_eq!(parse_session_started_at_secs(""), None);`
+
+## B. `parse_session_started_at_secs_accepts_pure_numeric_without_hyphen`
+- 入力 `"1234567890"` → split で先頭 `"1234567890"` → 1234567890。
+- 期待: `Some(1234567890)`。
+
+## C. `parse_session_started_at_secs_accepts_numeric_with_suffix_after_hyphen`
+- 入力 `"1234567890-meet-abc"` → split で先頭 `"1234567890"` → 1234567890。
+- 期待: `Some(1234567890)` (現実的なファイル名形式)。
+
+## D. `parse_session_started_at_secs_returns_none_for_leading_hyphen`
+- 入力 `"-1234567890"` → split で先頭 `""` → parse 失敗 → `None`。
+- 期待: `None`。
+
+## E. `parse_session_started_at_secs_returns_none_for_overflow_u64`
+- 入力 `"99999999999999999999999"` (u64 の上限 18446744073709551615 を超える) → parse 失敗 → `None`。
+- 期待: `None`。
+
+## F. `parse_session_started_at_secs_returns_none_for_negative_sign_prefix`
+- 入力 `"-12345"` → 上記 D と同じ理由で `None`。
+- D と入力が異なるが意図は別なので別 test として分離 (D は「ハイフン始まり」の構文ケース、F は「負号として扱われない」ことを示す意図)。
+- 期待: `None`。
+
+## G. `parse_session_started_at_secs_accepts_boundary_max`
+- 入力 `"8640000000000"` (= `MAX_JS_DATE_UNIX_SECS`) → `8_640_000_000_000` → `> MAX` ではなく `== MAX` なので Some。
+- 期待: `Some(8_640_000_000_000)`。
+
+## H. `parse_session_started_at_secs_returns_none_just_above_boundary`
+- 入力 `"8640000000001"` (= `MAX_JS_DATE_UNIX_SECS + 1`) → > MAX → `None`。
+- 期待: `None`。
+
+# 設計上の注意点
+
+- `parse_session_started_at_secs` は `pub` ではないため `mod tests` 内から `super::parse_session_started_at_secs` 等で呼ぶ。既存テストの import 様式を踏襲。
+- `MAX_JS_DATE_UNIX_SECS` も同じく private const なので、test では数値リテラル `8_640_000_000_000` を直接書いてよい。マジックナンバーになるが、test がコメントで「`MAX_JS_DATE_UNIX_SECS`」と明示すれば可読性は保てる。
+- E (overflow) のテストでは parse の Err 判定をしているのみ。具体的な ParseIntErrorKind の確認は不要。
+- 8 件全てが純粋関数呼び出しで I/O なし、副作用なし、依存なし。
+
+# 完了条件
+
+- 8 つの #[test] 関数を `mod tests` 末尾 (既存の最後の test の後ろ) に追加。
+- 実装ファイル本体は一切変更しない。
+- `cargo fmt --check` 合格。
+- `cargo clippy --no-deps --all-targets --all-features -- -D warnings` 合格 (警告ゼロ維持)。
+- `cargo test --no-fail-fast` 合格 (235 → 243 passed が期待値、追加 8 件すべて pass)。
+- `git diff --check` 合格。
+- `bash scripts/agent-verify.sh src-tauri/src/session_store.rs AGENT_LOG.md` 合格。
+- AGENT_LOG.md 末尾に作業セクションを追記 (開始日時、担当セッション、役割、作業範囲、指示内容要約、結果、追加 test 件数 / total passed、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクション)。
+- コミットは禁止 (メインがレビュー後にコミットする)。
+
+# 制約 (再掲)
+
+- 課金禁止。
+- `--no-verify` 禁止。
+- 担当範囲外の編集禁止。他エージェントの差分を巻き戻さない。
+- 1 ターンで完結する報告を返してください。

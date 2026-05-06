@@ -1,0 +1,183 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読み、文脈を理解してから作業を開始してください。
+- AGENTS.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md の **末尾 350 行のみ** を `tail -350 AGENT_LOG.md` で読む (ファイル全体は 23000+ 行で巨大なので Read 全体は禁止)
+
+## AGENT_LOG.md の構造ルール (極めて重要、絶対遵守)
+- AGENT_LOG.md は **時系列順** = 最古ログがファイル先頭、最新ログがファイル末尾。
+- 新規追記は **必ずファイル末尾に行う**。
+- **ファイル先頭は絶対に触らない**。
+- 追記前に必ず `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 区切りの直後に新エントリを追記。
+
+## 担当セッション情報
+- 担当セッション: `mjc-worker-meeting-app-detected-payload-debug-clone-serde-tests-20260504-35-2`
+- 役割: 作業担当 (worker, print mode)
+- 親セッション: `mjc-main-20260504-35` Loop 2
+
+## 作業範囲 (担当範囲外は絶対に触らない)
+- `src-tauri/src/app_detection.rs` の `mod tests` の **末尾** に test 関数 3 件を追加するのみ。
+- `AGENT_LOG.md` への末尾追記 (本ループ実績エントリ)。
+- これら 2 ファイル以外は触らない。enum 定義 / impl ブロック / 既存 test / 他関数は絶対に編集しない。
+
+## 大型ファイル参照ルール (重要)
+- `src-tauri/src/app_detection.rs` は **2263 行** で極めて巨大、`AGENT_LOG.md` は 23000+ 行。
+- **Read 全体禁止**。`sed -n 'A,Bp'` / `tail -N` / `head -N` / `grep -n` で対象範囲のみ参照すること。
+- app_detection.rs では l.50-80 で MeetingAppDetectedPayload 定義、l.931-2263 で mod tests を確認すれば十分。
+- 既存最終 test の直後 (l.2262 付近) に追加する。
+
+## 実装タスク (Tidy First、振る舞い不変、Debug 軸補強パターン 15 連続 application、6 ファイル目展開)
+
+### 背景
+- mjc-main-20260504-35 Loop 1 で AppSettings (settings.rs) を 14 連続 application 完了。
+- 本ループは 15 連続 application として **MeetingAppDetectedPayload enum (app_detection.rs l.52-77)** を選定。
+- MeetingAppDetectedPayload は: `#[derive(Debug, Clone, Serialize)]` + `#[serde(tag = "source")]` + 2 variants:
+  - `App { #[serde(rename = "bundleId")] bundle_id: String, #[serde(rename = "appName")] app_name: String }`
+  - `Browser { #[serde(rename = "bundleId")] bundle_id: String, #[serde(rename = "appName")] app_name: String, service: String, #[serde(rename = "urlHost")] url_host: String, #[serde(rename = "browserName")] browser_name: String }`
+- **新形態 = `#[serde(tag = "source")]` の tagged enum + field-level rename**。これまでの enum (TranscriptionSource は serde rename_all = "snake_case", TranscriptionEngineType は serde rename_all = "camelCase") とは別系統の serde 表現。
+- **PartialEq 未派生** なので、T2 は PartialEq ではなく **Clone deep 独立性軸** を採用 (Loop 1 AppSettings に続く 4 連続 application、Debug 文字列で間接判定する手法)。
+- 価値:
+  1. enum 形態 4 連続 application (TranscriptionSource → SessionManagerError → TranscriptionEngineType → MeetingAppDetectedPayload)
+  2. 6 ファイル目への展開 (transcription / settings / session / session_manager / session_store + app_detection)
+  3. 「format 不変条件 application」7 系統目 = tagged enum + field-level rename の新軸
+  4. PartialEq 未派生型に対する Clone 独立性軸の汎用展開 4 連続 application
+
+### 追加する test 関数 3 件 (mod tests の末尾に追加)
+
+**T1**: `meeting_app_detected_payload_debug_output_contains_variant_names_and_all_field_names`
+- 目的: MeetingAppDetectedPayload の Debug 出力に 2 variants 名 + 全 field 名 + 値が含まれる契約を CI 固定 (logger 経由のデバッグ性保護)。
+- 手順:
+  - `let app_variant = MeetingAppDetectedPayload::App { bundle_id: "us.zoom.xos".to_string(), app_name: "zoom.us".to_string() };`
+  - `let browser_variant = MeetingAppDetectedPayload::Browser { bundle_id: "com.google.Chrome".to_string(), app_name: "Google Chrome".to_string(), service: "Google Meet".to_string(), url_host: "meet.google.com".to_string(), browser_name: "Chrome".to_string() };`
+  - `let app_dbg = format!("{app_variant:?}");`
+  - `let browser_dbg = format!("{browser_variant:?}");`
+  - assert: `app_dbg.contains("App")` (variant 名)
+  - assert: `app_dbg.contains("bundle_id")`, `app_dbg.contains("app_name")` (snake_case field 名)
+  - assert: `app_dbg.contains("us.zoom.xos")`, `app_dbg.contains("zoom.us")` (値)
+  - assert: `browser_dbg.contains("Browser")` (variant 名)
+  - assert: `browser_dbg.contains("bundle_id")`, `browser_dbg.contains("app_name")`, `browser_dbg.contains("service")`, `browser_dbg.contains("url_host")`, `browser_dbg.contains("browser_name")` (snake_case 5 field 名)
+  - assert: `browser_dbg.contains("com.google.Chrome")`, `browser_dbg.contains("Google Chrome")`, `browser_dbg.contains("Google Meet")`, `browser_dbg.contains("meet.google.com")`, `browser_dbg.contains("Chrome")` (5 値)
+  - 計 16 段程度の `assert!` 単位 assert (2 variants 名 + 7 field 名 + 7 値)。
+
+**T2**: `meeting_app_detected_payload_clone_is_deep_and_does_not_mutate_original`
+- 目的: MeetingAppDetectedPayload の `Clone` derive が deep clone である契約を CI 固定 (PartialEq 未派生対応として Debug 文字列で間接判定)。
+- 手順:
+  - `let original = MeetingAppDetectedPayload::Browser { bundle_id: "com.apple.Safari".to_string(), app_name: "Safari".to_string(), service: "Microsoft Teams".to_string(), url_host: "teams.microsoft.com".to_string(), browser_name: "Safari".to_string() };`
+  - `let cloned = original.clone();`
+  - `let cloned_dbg = format!("{cloned:?}");`
+  - cloned 側の値の存在を Debug 文字列で確認 (deep clone されていれば値が同じ Debug 出力に再現される):
+    - `assert!(cloned_dbg.contains("Browser"));`
+    - `assert!(cloned_dbg.contains("com.apple.Safari"));`
+    - `assert!(cloned_dbg.contains("Safari"));`
+    - `assert!(cloned_dbg.contains("Microsoft Teams"));`
+    - `assert!(cloned_dbg.contains("teams.microsoft.com"));`
+  - original 側を新しい値で **再束縛** (let mut + 別 enum 値) し、cloned が影響を受けないことを確認:
+    - `let original = MeetingAppDetectedPayload::App { bundle_id: "DIFFERENT".to_string(), app_name: "DIFFERENT_NAME".to_string() };` (re-binding)
+    - `let _ = original;` (unused warning 回避)
+    - `let cloned_dbg_after = format!("{cloned:?}");`
+    - `assert!(cloned_dbg_after.contains("Browser"), "cloned: 再束縛後も Browser variant 維持");`
+    - `assert!(cloned_dbg_after.contains("com.apple.Safari"), "cloned: 元の bundle_id 維持");`
+    - `assert!(cloned_dbg_after.contains("Microsoft Teams"), "cloned: 元の service 維持");`
+    - `assert!(!cloned_dbg_after.contains("DIFFERENT"), "cloned: 再束縛後の値混入なし");`
+  - 注意: enum は struct と違って field を直接 mutate できない (`cloned.bundle_id = ...` は variant が match される必要がある)。簡潔さのため `let original = ...` の **再束縛** 手法で「元変数を別 instance へ置き換えても cloned は影響を受けない」契約を Debug で検証する。これは「変数 binding と heap data の分離」を CI 固定する変奏。
+  - 計 10 段程度の assert (5 cloned 値存在 + 5 cloned 影響なし)。
+
+**T3**: `meeting_app_detected_payload_serde_serialize_uses_tagged_enum_with_field_level_rename`
+- 目的: MeetingAppDetectedPayload の `#[serde(tag = "source")]` + field-level `#[serde(rename = "...")]` JSON contract を CI 固定 (Frontend 側 Tauri event payload 構造との contract 保護、tag 名 "source" や field 名 "bundleId" 等を保護)。
+- 手順:
+  - **App variant** test:
+    - `let app = MeetingAppDetectedPayload::App { bundle_id: "us.zoom.xos".to_string(), app_name: "zoom.us".to_string() };`
+    - `let json = serde_json::to_value(&app).expect("serialize ok");`
+    - `let obj = json.as_object().expect("object");`
+    - assert: `obj.len() == 3` (source tag + 2 fields)
+    - assert: `obj.contains_key("source")` (tag key)
+    - assert: `obj.contains_key("bundleId")` (field-level rename camelCase)
+    - assert: `obj.contains_key("appName")` (field-level rename camelCase)
+    - assert: `!obj.contains_key("bundle_id")` (snake_case 不在)
+    - assert: `!obj.contains_key("app_name")` (snake_case 不在)
+    - assert: `obj["source"] == json!("app")` (tag value, App variant が #[serde(rename = "app")])
+    - assert: `obj["bundleId"] == json!("us.zoom.xos")`, `obj["appName"] == json!("zoom.us")` (値)
+  - **Browser variant** test:
+    - `let browser = MeetingAppDetectedPayload::Browser { bundle_id: "com.google.Chrome".to_string(), app_name: "Google Chrome".to_string(), service: "Google Meet".to_string(), url_host: "meet.google.com".to_string(), browser_name: "Chrome".to_string() };`
+    - `let json = serde_json::to_value(&browser).expect("serialize ok");`
+    - `let obj = json.as_object().expect("object");`
+    - assert: `obj.len() == 6` (source tag + 5 fields)
+    - assert: `obj.contains_key("source")`, `obj.contains_key("bundleId")`, `obj.contains_key("appName")`, `obj.contains_key("service")`, `obj.contains_key("urlHost")`, `obj.contains_key("browserName")`
+    - assert: `!obj.contains_key("url_host")`, `!obj.contains_key("browser_name")` (snake_case 不在)
+    - assert: `obj["source"] == json!("browser")` (tag value)
+    - assert: `obj["bundleId"] == json!("com.google.Chrome")`, `obj["appName"] == json!("Google Chrome")`, `obj["service"] == json!("Google Meet")`, `obj["urlHost"] == json!("meet.google.com")`, `obj["browserName"] == json!("Chrome")`
+  - 計 24 段程度の assert (3 + 8 + 13 程度)。
+
+### 振る舞い不変の保証
+- enum 定義 / impl ブロック / 既存 test 数十件 / 他関数は **完全に触らない**。
+- 追加するのは `mod tests` の末尾に 3 関数のみ。
+- Tidy First (構造的改善) として位置付け、振る舞い変更ゼロ。
+
+### 規模制約 (絶対遵守)
+- 追加する test は **3 件のみ**。1 件たりとも超過しないこと。
+- Debug 出力 / Clone 独立性 / serde tagged + field-level rename format の **3 軸構造**を破ってはいけない。
+- 既存 test、enum 定義、他関数は変更禁止。
+
+### 行末空白禁止
+- 編集する全ての行で行末に空白文字 (trailing whitespace) を残さないこと。
+
+### 注意: enum cfg 属性
+- MeetingAppDetectedPayload には `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` が付いていますが、これは型自体を全 OS でビルドさせ、macOS 以外では dead_code を allow する指定です。
+- 既存 mod tests には `#[cfg(target_os = "macos")]` の有無の patterns があります。**追加する 3 test は `#[cfg(target_os = "macos")]` を付けない** (= 全 OS で実行される) で OK = enum 自体は全 OS でコンパイルされ、3 軸 test も全 OS で意味があります。
+- ただし周辺の test 構造 (例: 既存の最後の test がどこにあるか、`#[cfg(target_os = "macos")]` block の中か外か) を `tail -50 src-tauri/src/app_detection.rs` で確認し、適切な場所に追加してください。
+
+## 検証手順
+作業完了後、以下を順に実行し、結果を AGENT_LOG.md に記録:
+1. `cd src-tauri && cargo fmt --check` (差分なしを確認、または cargo fmt 後に再確認)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -30` (警告ゼロ exit 0 を確認)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1 2>&1 | tail -10` (601 → 604 passed +3 件、0 failed を確認)
+
+## AGENT_LOG.md 追記内容 (末尾の `---` 直後に追記)
+
+```markdown
+## mjc-worker-meeting-app-detected-payload-debug-clone-serde-tests-20260504-35-2
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-meeting-app-detected-payload-debug-clone-serde-tests-20260504-35-2
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-35 Loop 2
+
+### 作業範囲
+- `src-tauri/src/app_detection.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強」パターン 15 連続 application + 「format 不変条件 application」7 系統目 = tagged enum + field-level rename + 「Clone 独立性軸」4 連続 application = MeetingAppDetectedPayload (#[derive(Debug, Clone, Serialize)] + #[serde(tag = "source")] + App { 2 fields with rename } + Browser { 5 fields with rename }) への Debug + Clone 独立性 + serde tagged + field-level rename 3 軸 application。
+- T1: meeting_app_detected_payload_debug_output_contains_variant_names_and_all_field_names
+- T2: meeting_app_detected_payload_clone_is_deep_and_does_not_mutate_original
+- T3: meeting_app_detected_payload_serde_serialize_uses_tagged_enum_with_field_level_rename
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <601 → 604 passed の数値、0 failed>
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (mod tests 末尾に T1/T2/T3 追加、enum / 既存 #[derive] / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+```
+<test result の末尾行を quote>
+```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+<なし or 内容>
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 報告 (1 ターンで完結)
+最後に変更内容、変更ファイル、検証結果、残リスク、AGENT_LOG.md 追記の確認を 1 ターンでまとめて報告してください。

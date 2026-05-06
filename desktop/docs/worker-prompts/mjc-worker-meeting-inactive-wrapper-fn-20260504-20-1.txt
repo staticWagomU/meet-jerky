@@ -1,0 +1,201 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md を読み、AGENT_LOG.md は `tail -200 AGENT_LOG.md` 相当で末尾だけ参照してください。
+
+# 背景
+
+`src-tauri/src/app_detection.rs` には会議終了 (= アプリ・ブラウザ URL がしばらく検知されない状態) を判定する純粋関数 `should_notify_meeting_inactive` (line 196-217) が既に整備済みです。引数は `(now_secs, last_seen_secs, last_notified_secs, inactive_threshold_secs, throttle_secs) -> Option<u64>`。test 10 件 (T1-T10, line 1555-1640 付近) で境界網羅済。
+
+直前のセッション (mjc-main-20260504-19) で F-Loop3 を Tidy First 多段スライス分割し、以下まで完了しました:
+- Loop 1 (commit e94293c): `DetectionState` に `last_seen_secs: Mutex<HashMap<String, u64>>` フィールド追加 (struct + `start()` 初期化、`#[allow(dead_code)]` ピンポイント)
+- Loop 2 (commit 09d191c): `handle_detection` 内で `last_seen_secs.insert(now_secs)` 更新ブロック追加 = 既存 `Instant` ベース throttle と並走
+
+残作業は「wrapper 関数 + 実機タイマー」ですが、規模超過リスクのため **本 Loop ではタイマーを含めず wrapper 関数 + state 追加 + 純粋関数の wrapper integration test だけ** に絞ります (= F-Loop3 Loop 3a)。タイマー統合は次 Loop (3b) に分離。
+
+# Why (この変更の動機)
+
+- `should_notify_meeting_inactive` 純粋関数は `last_notified_secs` を **引数で要求** するため、wrapper を呼ぶ前に `DetectionState` に `last_notified_secs: Mutex<HashMap<String, u64>>` を保持する必要がある (= 設計乖離の解消最終段)。
+- wrapper 関数を **タイマーから切り離して独立に追加** することで、Tidy First 原則 (構造変更と振る舞い変更を分離) を厳守する。本 Loop は誰も wrapper を呼ばないため **ユーザー観測不可な内部準備**。
+- 純粋関数 (`should_notify_meeting_inactive`) は引数で受け取るが、wrapper はインスタンス state を読み・書きする impure な接続層 = この境界を関数として明示することで test 容易性を保つ。
+
+# 担当範囲 (具体的な編集対象)
+
+src-tauri/src/app_detection.rs **1 ファイルのみ**。
+
+## 1. `DetectionState` struct に `last_notified_secs` フィールドを追加
+
+line 84-91 付近の既存定義 (Loop 1 で `last_seen_secs` を追加した直後) に **対称な形** で並べる:
+
+```rust
+struct DetectionState {
+    app_handle: AppHandle,
+    last_seen: Mutex<HashMap<String, Instant>>,
+    latest_payload: Mutex<Option<MeetingAppDetectedPayload>>,
+    /// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。Loop 2 以降で update。
+    #[allow(dead_code)]
+    last_seen_secs: Mutex<HashMap<String, u64>>,
+    /// `should_notify_meeting_inactive` 用の最終 inactive 通知時刻 (epoch secs)。
+    /// wrapper 関数 `check_meeting_inactive_for_bundle` がスロットリング判定に使う。
+    /// Loop 3b で timer から呼ばれるまでは write されないため lint suppress。
+    #[allow(dead_code)]
+    last_notified_secs: Mutex<HashMap<String, u64>>,
+}
+```
+
+## 2. `start()` 関数内 `STATE.set(...)` の初期化に同フィールドを追加
+
+line 100-107 付近:
+
+```rust
+let first_time = STATE
+    .set(DetectionState {
+        app_handle,
+        last_seen: Mutex::new(HashMap::new()),
+        latest_payload: Mutex::new(None),
+        last_seen_secs: Mutex::new(HashMap::new()),
+        last_notified_secs: Mutex::new(HashMap::new()),
+    })
+    .is_ok();
+```
+
+## 3. `MEETING_INACTIVE_THRESHOLD` const 追加
+
+`NOTIFICATION_THROTTLE` (line 43) の **直後** に対称定義:
+
+```rust
+/// 会議アプリが「inactive (終了した可能性が高い)」と判定する閾値。
+/// `should_notify_meeting_inactive` の `inactive_threshold_secs` 引数に渡す。
+/// 600 秒 = 10 分。これより短いと画面共有等で URL polling が止まる正常状態を誤検知する恐れ。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+const MEETING_INACTIVE_THRESHOLD: Duration = Duration::from_secs(600);
+```
+
+## 4. wrapper 関数 `check_meeting_inactive_for_bundle` 追加
+
+`should_notify_meeting_inactive` 純粋関数の **直後** (line 217 付近) に追加:
+
+```rust
+/// 指定 bundle id が会議 inactive 通知の発火対象かを判定する wrapper。
+///
+/// `DetectionState` から `last_seen_secs` / `last_notified_secs` を読み、
+/// 純粋関数 `should_notify_meeting_inactive` を呼ぶ。`Some(elapsed)` を返した
+/// ときは副作用として `last_notified_secs` も書き込む (スロットリング更新)。
+///
+/// `STATE` 未初期化または対象 bundle が一度も検知されていない場合は `None`。
+/// Loop 3b で std::thread タイマーから呼ばれる予定。本 Loop では誰も呼ばないため
+/// `#[allow(dead_code)]` を付与。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[allow(dead_code)]
+fn check_meeting_inactive_for_bundle(bundle_id: &str) -> Option<u64> {
+    let state = STATE.get()?;
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let last_seen_secs = state
+        .last_seen_secs
+        .lock()
+        .get(bundle_id)
+        .copied()
+        .unwrap_or(0);
+    let last_notified_secs = state
+        .last_notified_secs
+        .lock()
+        .get(bundle_id)
+        .copied()
+        .unwrap_or(0);
+    let result = should_notify_meeting_inactive(
+        now_secs,
+        last_seen_secs,
+        last_notified_secs,
+        MEETING_INACTIVE_THRESHOLD.as_secs(),
+        NOTIFICATION_THROTTLE.as_secs(),
+    );
+    if result.is_some() {
+        state
+            .last_notified_secs
+            .lock()
+            .insert(bundle_id.to_string(), now_secs);
+    }
+    result
+}
+```
+
+## 5. test 追加 (1-2 件、wrapper の boundary)
+
+`#[cfg(test)] mod tests` 内、既存 `should_notify_meeting_inactive_now_secs_max_with_seen_returns_some_huge_elapsed` (line 1638 付近) の **直後** に挿入。
+
+注意: wrapper は `STATE` (OnceLock) と `tauri::AppHandle` に依存するため、unit test で直接呼ぶのは難しい。**`STATE` 未初期化時に `None` を返す safety 契約のみ** を test として固定する 1 件で十分:
+
+```rust
+#[test]
+fn check_meeting_inactive_for_bundle_returns_none_when_state_uninitialized() {
+    // STATE を初期化していないテスト環境で wrapper が安全に None を返す契約を固定。
+    // STATE.get() が None のとき early return することで AppHandle や lock を触らず
+    // panic / hang を回避する設計を CI で検知する。
+    assert_eq!(check_meeting_inactive_for_bundle("us.zoom.xos"), None);
+}
+```
+
+**注意**: 他の test が `start()` を呼んで `STATE` を初期化していると本 test が干渉する可能性あり。**既存 test で `start()` を呼んでいる箇所がないか必ず確認**してください (`grep -n "start(" src-tauri/src/app_detection.rs` 等で確認可能、`fn start(`定義のみで呼び出し test なら問題なし)。もし `STATE` を触る test があれば、本 test を **別の名前のモジュールに分離する** か、wrapper test を追加せず純粋関数の網羅で十分とみなしてスキップしても OK (その場合は AGENT_LOG.md に「STATE 干渉のため wrapper test スキップ」と明記)。
+
+# 実装上の注意
+
+- **Tidy First 厳守**: 振る舞い変更しない (誰も wrapper を呼ばない)。タイマー統合・通知発火・dead_code 削除は次 Loop (3b)。
+- **既存パターン踏襲**: `last_seen_secs` フィールド (Loop 1) と完全対称な構造で `last_notified_secs` を並べる。doc コメント・`#[allow(dead_code)]` ピンポイント・`Mutex<HashMap<String, u64>>` 型まで揃える。
+- **新規 use 不要**: `std::time::SystemTime` / `std::time::UNIX_EPOCH` は既に `handle_detection` (line 140-143) で fully-qualified path で利用済 = 同じ書き方を踏襲。
+- **lock 順序**: 既存 `last_seen.lock()` / `latest_payload.lock()` / `last_seen_secs.lock()` の順序に新規 `last_notified_secs.lock()` を **干渉させない**。wrapper 関数内では `last_seen_secs.lock()` と `last_notified_secs.lock()` を **別々のスコープで取得・即解放** する (上記コード例の通り)。
+- **`should_notify_meeting_inactive` 関数本体は無変更**。引数受け渡しのみ。
+- **既存 test 10 件無変更**。
+- **担当範囲外を編集しない** (lib.rs / 他のファイル / Swift bridge は触らない)。
+- **コミット禁止**。実装と検証だけ。
+
+# 検証手順
+
+実装後、以下を順に実行して結果を AGENT_LOG.md に記録してください:
+
+1. `cargo test --manifest-path src-tauri/Cargo.toml --lib --no-run` (compile OK)
+2. `cargo test --manifest-path src-tauri/Cargo.toml --lib check_meeting_inactive_for_bundle` (新規 test 1 件 pass)
+3. `cargo test --manifest-path src-tauri/Cargo.toml --lib should_notify_meeting_inactive` (既存 10 件 pass、`should_warn_polling_stall` の W 系 10 件も含むかも、合計件数を控えること)
+4. `cargo test --manifest-path src-tauri/Cargo.toml --lib` (全 476 passed 想定 = 既存 475 + 新規 1)
+5. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (warning 0 維持)
+6. `cargo fmt --manifest-path src-tauri/Cargo.toml --check` (差分なし)
+7. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (全段 OK)
+
+# AGENT_LOG.md 記載項目 (末尾に追記)
+
+```markdown
+## Worker Log: mjc-worker-meeting-inactive-wrapper-fn-20260504-20-1
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-meeting-inactive-wrapper-fn-20260504-20-1
+- **役割**: worker (sonnet)
+- **作業範囲**: src-tauri/src/app_detection.rs に wrapper 関数 + state 追加 + const 追加 + test 1 件 (F-Loop3 Loop 3a, Tidy First, ユーザー観測不可)
+
+### 指示内容の要約
+[何をしたかを簡潔に]
+
+### 結果
+- test 数推移: 475 → [N] passed ([+M] 件)
+- clippy: warning 0 維持
+- fmt: 差分なし
+- STATE 干渉問題: [あり/なし、対応]
+
+### 変更ファイル
+- src-tauri/src/app_detection.rs (1 ファイルのみ)
+
+### 検証結果
+[各コマンド結果]
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし (または [理由])
+
+### 次アクション
+メインで commit + Loop 3b (timer 統合 + show_inactive_notification + dead_code 削除) または別タスク
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に 1 ターンで完結する形でまとめて報告してください。

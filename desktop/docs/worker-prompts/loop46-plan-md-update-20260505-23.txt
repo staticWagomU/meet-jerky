@@ -1,0 +1,193 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop46-plan-md-update) です。
+
+# 必読 + AGENT_LOG.md ルール (絶対遵守)
+1. **AGENT_LOG.md は ~27,100 行 / ~2.5MB ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾構造を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (`docs/architecture/transcription-refactor-plan.md` と `AGENT_LOG.md` 以外は触らない)
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** (transcription-refactor-plan.md は 235 行なので全読 OK)
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 作業目的 (docs 軸 variety pivot)
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新
+- 反映対象 4 件:
+  1. **mjc-main-20260505-21 Loop 42** = 沈黙検知テスト 6 件 (calculate_rms 3 + is_tail_silent 3) を audio_utils.rs に移動 = commit `5456409` (transcription.rs -61 行)
+  2. **mjc-main-20260505-21 Loop 43** = app_detection.rs Microsoft Teams モジュール抽出 (4 関数) = commit `6bf1438` (app_detection.rs -32 行、**サービス別抽出シリーズ 5 件全完了里程標**)
+  3. **mjc-main-20260505-22 Loop 44** = 沈黙検知定数 3 件 (MIN_FLUSH_SAMPLES / SILENCE_LOOKBACK_SAMPLES / SILENCE_THRESHOLD_RMS) を audio_utils.rs に移動 = commit `52098b6` (transcription.rs -10 行、**沈黙検知三位一体 locality 完成**)
+  4. **mjc-main-20260505-22 Loop 45** = WhisperStream テスト 2 件 + helper を transcription_whisper_stream.rs に移動 = commit `2a7190b` (transcription.rs -29 行、WhisperStream locality 部分完成)
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- variety pivot 軸 = 「docs」軸 = Loop 41 から 5 ループ間隔 = 許容範囲 (Loop 30/34/37/39/41/46 で 4-3-2-2-5 ループ間隔の precedent)
+
+# 規模制約 (重要)
+- 規模 SS-S = ~50-80 行追記 / 6-7 箇所更新
+- 1 ループ完結
+- 担当範囲: `docs/architecture/transcription-refactor-plan.md` / `AGENT_LOG.md` (2 ファイルのみ)
+- コード変更ゼロ (.rs ファイル絶対編集禁止)
+
+# 具体作業手順 (Loop 30 / 34 / 37 / 41 = commit 32885b5 / ecbf1af / d6626ed / 322b38d と同パターン継承)
+
+## A. 進捗サマリセクション更新 (L28)
+- 現在: `## 進捗サマリ (mjc-main-20260505-20 Loop 38 + 40 時点)`
+- 更新後: `## 進捗サマリ (mjc-main-20260505-22 Loop 42-45 時点)`
+
+## B. 累計削減行数の更新 (L42)
+- 現在: `**transcription.rs 累計削減**: 元 2999 行 → 現在 **749 行** = **約 75.0% 縮小** (~2250 行削減) = **「75% 里程標突破」**`
+- 更新後: `**transcription.rs 累計削減**: 元 2999 行 → 現在 **649 行** = **約 78.4% 縮小** (~2350 行削減) = **「75% 里程標突破からさらに +3.4pt 進展」**`
+- 注: `wc -l src-tauri/src/transcription.rs` で実数を再確認してから書く (必須、現状 649 行)
+
+## C. 残存課題セクション更新 (L44-52)
+- 既存の Loop 32 / Loop 33 / Loop 35 / Loop 38 の記述を保全しつつ、以下を追加 (時系列順):
+  - **mjc-main-20260505-21 Loop 42 ✅ 完了**: 沈黙検知テスト 6 件 (calculate_rms 3 + is_tail_silent 3) を audio_utils.rs に移動 (commit `5456409`、-61 行)
+  - **mjc-main-20260505-22 Loop 44 ✅ 完了**: 沈黙検知定数 3 件 (MIN_FLUSH_SAMPLES / SILENCE_LOOKBACK_SAMPLES / SILENCE_THRESHOLD_RMS) を audio_utils.rs に移動 = 関数 (Loop 32) + テスト (Loop 42) + 定数 (Loop 44) の三位一体 locality 完成 (commit `52098b6`、-10 行)
+  - **mjc-main-20260505-22 Loop 45 ✅ 完了**: WhisperStream テスト 2 件 (test_whisper_stream_feed_errors_when_resampler_state_missing / test_whisper_stream_finalize_errors_when_resampler_state_missing) + helper (stream_with_missing_resampler) を transcription_whisper_stream.rs に移動 (commit `2a7190b`、-29 行)
+- 残存 749 行 → 649 行 に更新
+- L51 候補リストの「`calculate_rms` / `is_tail_silent` 系」と「WhisperStream テスト移動」が完了 = 削除し、新候補「Mock* trait tests 3 件 + MockEngine/MockStream impl 移動 / ModelManager tests 4 件移動 / ensure_engine tests 3 件移動」を追加
+
+## D. 関連: app_detection.rs Webex モジュール抽出セクション (L143-) の文章更新 (L155)
+- 既存サブセクション (L143 Webex / L156 Whereby / L166 GoToMeeting / L180 Zoom) は維持
+- L155 の文章 ("同パターン (サービス別関数の独立モジュール化) は Whereby が Loop 31、GoToMeeting が Loop 36、Zoom が Loop 40 で完了済み。残るは Microsoft Teams (今後の Tidy First 候補だが、app_detection.rs サービス別抽出 sweep 化リスクあり = Webex (29) + Whereby (31) + GoToMeeting (36) + Zoom (40) で 4/11 ループ間隔、5 件目連続は sweep 警告超過 = 次回再訪は Loop 42+ 推奨で別軸 1-2 ループ挟む)。") を以下に書き換え:
+
+```
+同パターン (サービス別関数の独立モジュール化) は Whereby が Loop 31、GoToMeeting が Loop 36、Zoom が Loop 40、Microsoft Teams が Loop 43 で完了済み = **サービス別抽出シリーズ 5 件全完了** (Webex 29 + Whereby 31 + GoToMeeting 36 + Zoom 40 + Teams 43 = 5/14 ループ間隔)。次の Tidy First 候補は別パターン (worker_loop サブ抽出 / 純粋関数化 / docs 更新等) を選ぶ。
+```
+
+## E. app_detection_teams.rs サブセクション新設 (Zoom サブセクションの直後)
+- L180-192 の Zoom サブセクションの直後に **新サブセクション** を追加:
+
+```markdown
+### app_detection_teams.rs ✅ 完了 (mjc-main-20260505-21 Loop 43 = commit `6bf1438`)
+
+mjc-main-20260505-21 Loop 43 で Microsoft Teams 検知関数群を `src-tauri/src/app_detection_teams.rs` に集約した = **サービス別抽出シリーズ 5 件全完了里程標**。
+
+- 関数 4 つ (`is_teams_meeting_url` / `is_teams_work_or_school_host` / `has_non_empty_path_segments` / `query_has_param`) を移動
+- pub(crate) で公開 = `is_teams_meeting_url` のみ (caller 経由)、Teams 専用ヘルパー 3 件は新ファイル内 private 維持
+- ヘルパー `has_single_non_empty_segment` は Loop 29 (Webex 抽出) で `pub(crate)` 化済 = `use crate::app_detection::has_single_non_empty_segment` で取り込み
+- ヘルパー `query_has_non_empty_param` は Whereby 等の他サービスで使用するため app_detection.rs 残置 (`query_has_param` とは別物)
+- caller (`classify_meeting_url` 内の `is_teams_meeting_url` 呼び出し) は `crate::app_detection_teams::is_teams_meeting_url` 経由に更新
+- tests は classify_meeting_url 経由テストのみ = 直接呼びテストなし = use 文更新不要
+- lib.rs に `mod app_detection_teams` 宣言追加 (アルファベット順: goto < teams < webex)
+- 振る舞い不変 = 702 passed 件数不変
+- app_detection.rs 3141 → 3109 行 (-32 行)、app_detection_teams.rs 0 → 48 行 (新規)
+- **これにより app_detection.rs サービス別抽出シリーズは Webex/Whereby/GoToMeeting/Zoom/Teams の 5 件全完了** = 累計 -247 行 (3356 → 3109 行 = ~7.4% 縮小)
+```
+
+## F. 沈黙検知三位一体 locality サブセクション新設 (transcription_types tests 移動セクションの直後)
+- L217-228 の transcription_types tests 移動セクションの直後に **新サブセクション** を追加:
+
+```markdown
+## 関連: 沈黙検知三位一体 locality ✅ 完了 (mjc-main-20260505-21 Loop 42 + mjc-main-20260505-22 Loop 44)
+
+沈黙検知関連 (関数 + テスト + 定数) の locality を audio_utils.rs に集約完成。
+
+### Loop 42 = 沈黙検知テスト 6 件移動 (commit `5456409`)
+
+- 移動対象: test_calculate_rms_empty_slice_returns_zero / test_calculate_rms_silence_signal_below_threshold / test_calculate_rms_voice_signal_above_threshold / test_is_tail_silent_returns_false_when_buffer_too_short / test_is_tail_silent_detects_voice_then_silence_pattern / test_is_tail_silent_rejects_voice_then_voice
+- 移動先: audio_utils.rs 既存 tests mod (`use super::*` で関数アクセス済) に追記
+- メイン批判判断: handoff candidate C の前提「移動先 = transcription_whisper_local.rs」を grep で実態確認 → calculate_rms / is_tail_silent の実体は audio_utils.rs L26 + L36 (`pub(crate)`) と判明 → audio_utils.rs に訂正
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 749 → 688 行 (-61 行)、audio_utils.rs 250 → 314 行 (+64 行)
+
+### Loop 44 = 沈黙検知定数 3 件移動 (commit `52098b6`)
+
+- 移動対象: `MIN_FLUSH_SAMPLES` (1 秒 @ 16kHz) / `SILENCE_LOOKBACK_SAMPLES` (0.5 秒 @ 16kHz) / `SILENCE_THRESHOLD_RMS` (-40dBFS 相当 = 0.01)
+- 残置: `WHISPER_SAMPLE_RATE` / `CHUNK_DURATION_SECS` / `CHUNK_SAMPLES` は Whisper 仕様 = transcription.rs 残置
+- 依存解決: audio_utils.rs に `use crate::transcription::WHISPER_SAMPLE_RATE;` import 追加
+- use 文整理: transcription_whisper_stream.rs L7-10 の use 文整理 (3 const を audio_utils 経由に変更)、audio_utils.rs L255-257 の tests mod 内 `use crate::transcription::{...}` も `use super::{...}` に整理
+- メイン批判判断: handoff 候補 A (規模 M リスク) と候補 D (docs 6 件目連続警告超過リスク) を排除し候補 E (沈黙検知定数移動) を採用 = variety + locality + 規模の三軸評価
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 688 → 678 行 (-10 行)、audio_utils.rs 314 → 324 行 (+10 行)
+
+### 三位一体 locality の意義
+
+- 関数 `calculate_rms` / `is_tail_silent` は元々 audio_utils.rs に存在 (Loop 32 で resample_audio テスト移動時の precedent から確認)
+- Loop 42 でテスト 6 件、Loop 44 で定数 3 件を audio_utils.rs に集約 = **関数 + テスト + 定数すべてが audio_utils.rs に同居**
+- これにより沈黙検知ロジックの理解性が大幅向上 (1 ファイル read で全体把握可能)
+- AGENTS.md 優先順位 4 (リアルタイム文字起こし低遅延化) における将来の最適化対象特定が容易化
+```
+
+## G. WhisperStream tests 移動サブセクション新設 (沈黙検知三位一体 locality サブセクションの直後)
+- F で追加した沈黙検知三位一体 locality サブセクションの直後に **新サブセクション** を追加:
+
+```markdown
+## 関連: WhisperStream tests 移動 ✅ 完了 (mjc-main-20260505-22 Loop 45 = commit `2a7190b`)
+
+mjc-main-20260505-22 Loop 45 で WhisperStream 直接テスト 2 件 + 専用 helper を transcription_whisper_stream.rs に移動した = WhisperStream の locality 部分完成。
+
+- 移動対象:
+  - helper `stream_with_missing_resampler` (transcription.rs L63-76)
+  - test `test_whisper_stream_feed_errors_when_resampler_state_missing` (L105-110)
+  - test `test_whisper_stream_finalize_errors_when_resampler_state_missing` (L112-117)
+- 移動先: `transcription_whisper_stream.rs` の新規 tests mod (`use super::*` + `use crate::transcription_traits::TranscriptionStream;`)
+- 残置: Mock* trait テスト 3 件 (MockEngine / MockStream + impl + test_stream_lifecycle_feed_drain_finalize / test_stream_config_speaker_propagates_to_segments / test_feed_empty_samples_is_noop_in_mock) は `transcription_traits.rs` の locality に従って **Loop 47+ で別途処理予定**
+- メイン批判判断: handoff 候補 A の規模見積「WhisperStream tests = 規模 M (~30-60 件)」を grep で実態確認 → 5 件 + helper のみと判明 → さらに 5 件のうち WhisperStream 直接関連は 2 件、Mock* trait test は 3 件と locality 区別 → Plan A (部分移動) で確実性最大化
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 678 → 649 行 (-29 行)、transcription_whisper_stream.rs 200 → 235 行 (+35 行)
+```
+
+## H. 末尾参考セクション更新 (L235)
+- 現在: `(本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-20 Loop 38 + 40 時点で 749 行 = 約 75.0% 縮小達成 = 75% 里程標突破)`
+- 更新後: `(本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-22 Loop 42-45 時点で 649 行 = 約 78.4% 縮小達成 = 75% 里程標突破からさらに +3.4pt 進展)`
+
+# 既存記述の保全
+- L11 の `行数: 2999 行 (本プラン作成時点 2026-05-05)` は履歴保全のため残置
+- 9 責務マップ表 (L14-26) はそのまま維持 (行範囲が初版基準で変わるが、履歴情報として価値)
+- 既存サブセクション (Webex / Whereby / GoToMeeting / Zoom / TranscriptionLoopConfig / transcription_error_payload tests / transcription_types tests) はすべて保全
+- 最新情報は別セクションで追記する方式 (Loop 30 / 34 / 37 / 41 と同方針継承)
+
+# 検証 (必須)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` (.rs 編集なしのため Rust skip 判定の確認)
+2. trailing whitespace 確認 = `grep -nE ' +$' docs/architecture/transcription-refactor-plan.md` で結果ゼロ確認
+3. markdown 構文の整合性 = `head -5 docs/architecture/transcription-refactor-plan.md` で先頭破壊なし確認
+4. `tail -10 docs/architecture/transcription-refactor-plan.md` で末尾破壊なし確認
+5. `wc -l src-tauri/src/transcription.rs` で 649 行を実数確認
+
+# AGENT_LOG.md 末尾追記 (本ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記
+- format:
+```
+[mjc-main-20260505-23 Loop 46 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-20 Loop 38 + 40 → mjc-main-20260505-22 Loop 42-45
+  - 累計削減行数: 749 行 (75.0%) → 649 行 (78.4%) = 75% 里程標突破からさらに +3.4pt 進展
+  - 残存課題セクション: Loop 42 (沈黙検知 tests -61 行) + Loop 44 (沈黙検知 const -10 行) + Loop 45 (WhisperStream tests -29 行) 反映
+  - app_detection.rs 関連: Microsoft Teams 抽出 ✅ 完了 (Loop 43 = 6bf1438) サブセクション新設 + L155 文章更新 (サービス別抽出シリーズ 5 件全完了里程標)
+  - 沈黙検知三位一体 locality ✅ 完了 サブセクション新設 (Loop 42 + 44 統合)
+  - WhisperStream tests 移動 ✅ 完了 (Loop 45 = 2a7190b) サブセクション新設
+  - 末尾参考: 749 行 (75.0%) → 649 行 (78.4%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-21 Loop 42 + 43 + mjc-main-20260505-22 Loop 44 + 45 の 4 件を 1 ループで一括反映
+- variety pivot = docs 軸 = Loop 41 から 5 ループ間隔 = 許容範囲 (Loop 30/34/37/39/41/46 = 4-3-2-2-5 ループ間隔の precedent)
+
+## How (docs 更新、振る舞い不変)
+- 既存記述 (L11 行数 2999 等) は履歴保全のため残置
+- 9 責務マップ表のフォーマット保持
+- 既存サブセクション (Webex / Whereby / GoToMeeting / Zoom / TranscriptionLoopConfig / transcription_error_payload tests / transcription_types tests) はすべて保全
+- 最新情報は別セクションで追記する方式 (Loop 30 / 34 / 37 / 41 = commit 32885b5 / ecbf1af / d6626ed / 322b38d と同パターン継承)
+- trailing whitespace なし確認済
+
+## Verify
+- 該当 docs のみ更新、コード変更なし
+- agent-verify.sh: Rust/frontend ともに skip 判定 (変更なし)
+- markdown 構文整合性確認: head/tail で先頭末尾破壊なし
+- transcription.rs 649 行 wc -l 実数確認済
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+```
+
+# コミット (worker 自走判断)
+- worker 自走で `bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 42 沈黙検知 tests + Loop 43 Teams 抽出 + Loop 44 沈黙検知 const + Loop 45 WhisperStream tests を反映 (mjc-main-20260505-23 Loop 46, 78.4% 縮小 649 行 +3.4pt 進展, サービス別抽出シリーズ 5 件全完了, 沈黙検知三位一体 locality 完成, 計画駆動継続性確保)" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md` を実行してよい
+- もしくは `git add ... && git commit -m "..."` で直接 commit
+- commit 後、commit hash を確認して `chore(agent-log): Loop 46 commit hash <HASH> を AGENT_LOG.md に記入` chore commit を別途自走判断で実施 (Loop 22/31/32/33/34/35/36/37/38/39/40/41/42/43/44/45 precedent)
+
+# 完了の合図
+- AGENT_LOG.md に [mjc-main-20260505-23 Loop 46] エントリが追記されている
+- commit が成功している (git log --oneline -1 で確認可能)
+- markdown 構文整合性確認 OK
+
+以上。

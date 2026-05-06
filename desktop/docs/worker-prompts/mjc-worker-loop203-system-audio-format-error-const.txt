@@ -1,0 +1,124 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは worker 自身で 2 件実施してください (refactor + chore = 2-commit pattern).
+
+# 必読 (順番厳守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. AGENT_LOG.md は **末尾 350 行のみ** (`tail -350 AGENT_LOG.md`). 全体読み込み禁止 (~34,861 行 = 3.2MB+ で context 過多).
+   - **重要**: AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**. 新規追記は **必ずファイル末尾** に行う. **先頭は絶対に触らない**.
+
+# 担当範囲
+
+**src-tauri/src/system_audio_format.rs のみ** (162 行 = 中規模 = Read 全体 OK).
+
+担当範囲外 (以下を絶対に編集しない):
+- src-tauri/src/system_audio.rs (`system_audio_format.rs` の呼び出し元 = 不変)
+- 他の rust file
+- frontend (TypeScript/Svelte/CSS)
+- docs/architecture/*.md (Loop 204 候補)
+- AGENT_LOG.md 先頭 (時系列順 = 末尾追記のみ)
+
+# タスク内容 (Loop 203 = rust 軸 = const 集約 paradigm 反復 13 件目 = paradigm 系統樹拡張 11 件目反復 6 連続候補)
+
+**system_audio_format.rs 残 5 種類 error message を const として集約**:
+
+既存 const (L12, 不変):
+```
+const ERROR_NON_F32_PCM_FORMAT: &str = "非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)";
+```
+
+追加対象 5 件 (既存 ERROR_NON_F32_PCM_FORMAT の **直後に並列追加**):
+1. `const ERROR_BIG_ENDIAN_FORMAT: &str = "BigEndian フォーマット (NativeEndian が必要)";`
+2. `const ERROR_BITS_PER_CHANNEL_NOT_32: &str = "bits_per_channel が 32 ではない";`
+3. `const ERROR_BITS_PER_CHANNEL_UNKNOWN: &str = "bits_per_channel を取得できない";`
+4. `const ERROR_CHANNEL_COUNT_MISMATCH: &str = "channel 数が設定値と不一致";`
+5. `const ERROR_CHANNEL_COUNT_UNKNOWN: &str = "channel 数を取得できない";`
+
+callsite (本番 5 + test 5 = 計 10 件) を const 参照に統一:
+- 本番側 (validate_audio_format_properties 内, 行番号は ERROR_NON_F32_PCM_FORMAT 既存ありで現状):
+  - L27: `return Err("BigEndian フォーマット (NativeEndian が必要)");` → `return Err(ERROR_BIG_ENDIAN_FORMAT);`
+  - L31: `Some(_) => return Err("bits_per_channel が 32 ではない"),` → `Some(_) => return Err(ERROR_BITS_PER_CHANNEL_NOT_32),`
+  - L32: `None => return Err("bits_per_channel を取得できない"),` → `None => return Err(ERROR_BITS_PER_CHANNEL_UNKNOWN),`
+  - L36: `Some(_) => return Err("channel 数が設定値と不一致"),` → `Some(_) => return Err(ERROR_CHANNEL_COUNT_MISMATCH),`
+  - L37: `None => return Err("channel 数を取得できない"),` → `None => return Err(ERROR_CHANNEL_COUNT_UNKNOWN),`
+
+- test 側 (validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths 内 = L126 周辺):
+  - L115 `assert_eq!(result.unwrap_err(), "bits_per_channel を取得できない");` → `assert_eq!(result.unwrap_err(), ERROR_BITS_PER_CHANNEL_UNKNOWN);`
+  - L121 `assert_eq!(result.unwrap_err(), "channel 数を取得できない");` → `assert_eq!(result.unwrap_err(), ERROR_CHANNEL_COUNT_UNKNOWN);`
+  - L131-134 `assert_eq!(big_endian.unwrap_err(), "BigEndian フォーマット (NativeEndian が必要)");` → `assert_eq!(big_endian.unwrap_err(), ERROR_BIG_ENDIAN_FORMAT);`
+  - L137 `assert_eq!(wrong_bits.unwrap_err(), "bits_per_channel が 32 ではない");` → `assert_eq!(wrong_bits.unwrap_err(), ERROR_BITS_PER_CHANNEL_NOT_32);`
+  - L140 `assert_eq!(channel_mismatch.unwrap_err(), "channel 数が設定値と不一致");` → `assert_eq!(channel_mismatch.unwrap_err(), ERROR_CHANNEL_COUNT_MISMATCH);`
+
+**重要な制約**:
+- **既存 ERROR_NON_F32_PCM_FORMAT は不変** (L12 + 該当 callsite 3 件 = Loop 201 完了済)
+- **関数戻り型 `Result<(), &'static str>`** のため `.to_string()` 不要 = const 参照を直接 `Err(CONST_NAME)` で返せる
+- **cfg attribute 不要** (validate_audio_format_properties は pure function = 全プラットフォームで定義済)
+- 行番号は実コードを `Read` で再確認してから編集すること
+- assert_eq! が複数行にまたがっている場合 (例: big_endian の L131-134) は const 化で 1 行に圧縮可能
+
+# 検証手順 (rust 軸)
+
+```
+cd src-tauri
+cargo test --lib 2>&1 | tail -30   # 704 件件数完全不変を確認
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+cargo fmt --check 2>&1 | tail -10
+cargo build --lib 2>&1 | tail -10
+```
+
+`agent-verify.sh` は rust skip 判定の可能性あり (script 仕様による) ため上記を直接実行.
+
+`grep -nE 'BigEndian|bits_per_channel|channel 数' src-tauri/src/system_audio_format.rs` で残文字列リテラルが const 定義行 + コメントのみであることを確認.
+
+# AGENT_LOG.md 追記手順 (重要 = fault 防止)
+
+1. **`tail -10 AGENT_LOG.md`** で末尾を確認. 末尾に `---` 区切り行があることを観測.
+2. **末尾の `---` 直後に追記** (= 新 entry の **冒頭に `---` を含めない**. 前 entry の閉じ `---` を再利用. 末尾 `---` 1 個で締める).
+3. **append は 1 回のみ**. Edit/Write を複数回繰り返さない. 一度に entry 全体を組み立てて追記.
+4. **行末の空白文字 (trailing whitespace) 禁止**. editor 設定で trim する or 手動確認.
+
+entry テンプレート (冒頭 `---` を **含めない**):
+```
+[mjc-main Loop 203 / 2026-05-06]
+worker: mjc-worker-loop203-system-audio-format-error-const (作業)
+範囲: src-tauri/src/system_audio_format.rs (const 5 件追加 + 本番 5 callsite + test 5 callsite を const 参照に統一)
+変更: ERROR_BIG_ENDIAN_FORMAT / ERROR_BITS_PER_CHANNEL_NOT_32 / ERROR_BITS_PER_CHANNEL_UNKNOWN / ERROR_CHANNEL_COUNT_MISMATCH / ERROR_CHANNEL_COUNT_UNKNOWN を system_audio_format.rs に追加 (既存 ERROR_NON_F32_PCM_FORMAT の並列拡張) + 本番側 validate_audio_format_properties 内 5 callsite + test 側 5 callsite = 計 10 callsite を const 参照に統一 + DRY 違反解消 + 関数戻り型 `&'static str` のため `.to_string()` 不要 = callsite 簡潔化
+意義: rust 軸 = const 集約 paradigm 反復 13 件目達成 = paradigm 系統樹拡張 11 件目反復 6 連続 (Loop 194 cloud_whisper.rs / Loop 196 transcription_commands_helpers.rs / Loop 198 transcription_error_payload.rs / Loop 200 secret_store.rs / Loop 201 system_audio_format.rs / Loop 203 system_audio_format.rs) = 既存 file 拡張軸 paradigm rust 版反復 1 件目達成 + 5 種類のエラーメッセージの単一 source of truth 化 + typo 防止 + UI/log 文言契約 cohesion 向上 + AGENTS.md priority 1 寄与中-高 + alternation pivot K(202) → rust(203) = 41 → 42 = 加速期維持 + paradigm 完全成熟期 cross-language 拡張更なる持続達成 = const 集約軸 frontend 10 + rust 6 = 計 16 連続
+検証: cargo test (704 件件数完全不変) + cargo clippy --lib --tests -- -D warnings (警告ゼロ) + cargo fmt --check OK + cargo build --lib OK / agent-verify.sh は rust skip 判定 OK / grep `BigEndian|bits_per_channel|channel 数` の残存リテラルは const 定義行のみ確認
+備考: paradigm 反復 13 件目達成 = rust 軸 const 集約軸の paradigm 完全成熟期 = paradigm 系統樹拡張 11 件目反復 6 連続 = 既存 file 拡張軸 paradigm rust 版反復 1 件目達成. 後継候補 = R34' (K 軸 = Section 2.3 観測 55 件目) / R37 (大型 file 責務分離 52 件目候補) / R38 (別 paradigm 開拓) のいずれか採用検討.
+---
+```
+
+# 規模超過防止 (重要)
+
+- 担当範囲外編集禁止 (system_audio_format.rs 以外の rust file / frontend / docs / scripts)
+- test 件数完全不変 (704 件 = 増減禁止 = 既存 test の改造のみ許可)
+- 新規 const は 5 件のみ (それ以外の error message を勝手に const 化しない = 担当範囲超過)
+- function 名 / signature / cfg attribute / 関数戻り型は不変
+- 行番号は私の handoff prompt 記載と現コードでずれがある可能性あり (ERROR_NON_F32_PCM_FORMAT 追加で +1 行 shift) = 必ず Read で再確認
+
+# コミット手順 (worker 自律 2-commit pattern)
+
+```
+# 1. refactor commit
+bash scripts/agent-commit.sh "refactor(rust): system_audio_format.rs 残 5 種類 error message を const に集約 + 10 callsite を const 参照に統一 (mjc-main Loop 203, rust 軸 = const 集約 paradigm 反復 13 件目, paradigm 系統樹拡張 11 件目反復 6 連続, 既存 file 拡張軸 paradigm rust 版反復 1 件目達成, 既存 ERROR_NON_F32_PCM_FORMAT pattern の並列拡張, 本番 5 + test 5 = 計 10 callsite 統一, DRY 違反解消, alternation K(202) → rust(203) = 41 → 42 = 加速期維持, AGENTS.md priority 1 寄与中-高)" src-tauri/src/system_audio_format.rs
+
+# 2. chore commit (AGENT_LOG.md 末尾追記後)
+bash scripts/agent-commit.sh "chore(agent-log): mjc-main Loop 203 = system_audio_format.rs 残 5 種類 error message 集約 (rust 軸, const 集約 paradigm 反復 13 件目, paradigm 系統樹拡張 11 件目反復 6 連続, 既存 file 拡張軸 paradigm rust 版反復 1 件目, 5 const + 10 callsite, alternation 加速期維持) のエントリ追記" AGENT_LOG.md
+```
+
+# 最終報告 (1 ターン完結)
+
+完了後、以下を簡潔に報告:
+- 変更ファイル一覧
+- cargo test 件数 (704 件期待)
+- clippy / fmt / build 結果
+- 残 grep 結果 (const 定義行のみ残存確認)
+- commit hash 2 件
+- AGENT_LOG.md append 確認 (1 回のみ + 冒頭 `---` 含めず + 行末空白なし)
+- 残リスク (ない見込み)
+
+1 ターンで完結する形でまとめてください. 待機モード禁止. 自律完走してください.

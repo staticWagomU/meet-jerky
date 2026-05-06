@@ -1,0 +1,69 @@
+あなたは meet-jerky の作業担当エージェント (Claude Code, print mode, sonnet) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+他者の変更を戻さず担当範囲外を編集しない。コミットは禁止。
+最初に必ず AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md / AGENT_LOG.md (`tail -200`) を読む。
+
+# 背景
+直前 Loop 1 (commit 353da45) で `audio-drop-count` UI 表示を集約 1 ブロックから per-source badge に移行した際、新規 CSS class 追加を回避するため className `audio-source-silence-badge` を流用した。これにより drop badge は「入力待ち」と同じグレー pill 表示になっており、視覚的に「警告」と認識しにくい。
+
+本ループはその意図的な妥協を解消する Tidy After 的 polish:
+- 新規 className `audio-source-drop-badge` を追加 (silence-badge と同じサイズ・形状 + meeting-alert と同じ警告色)
+- MicrophoneSection / SystemAudioSection の drop badge の className を新規 class に切り替え
+
+# Why
+1. **意味と視覚の一致**: silence-badge (グレー = neutral) と drop-badge (赤系 = warning) で意味の異なる health 指標を視覚的に分離
+2. **既存パターンとの完全対称**: silence-badge のサイズ・形状 + meeting-alert の警告色 = 既存デザイン語彙の組み合わせのみで新規デザイン要素を導入しない
+3. **将来の拡張余地**: drop count threshold 別の色階調 (yellow → red) など、独自進化させる際の単独 class が確保される
+
+# 担当範囲
+
+## 1. src/App.css
+- 既存 `.audio-source-silence-badge` 定義 (line 824-833) の **直下** に以下を追加 (定義順序を意味グループに揃える):
+  ```css
+  .audio-source-drop-badge {
+    border-radius: 999px;
+    padding: 0.12rem 0.42rem;
+    font-size: 0.68rem;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--transcript-error-color);
+    background-color: var(--transcript-error-bg);
+    border: 1px solid color-mix(in srgb, var(--transcript-error-color) 30%, transparent);
+  }
+  ```
+- silence-badge との差は color / background-color / border の 3 プロパティのみ (サイズ系の 5 プロパティは完全同一 = pill 形状の一貫性)。
+
+## 2. src/components/MicrophoneSection.tsx
+- drop badge の className を `audio-source-silence-badge` から `audio-source-drop-badge` に変更 (Loop 1 で追加した line 117 付近の span)。
+- それ以外 (silence-badge 本体、prop 定義、aria 属性、表示テキスト) は **触らない**。
+
+## 3. src/components/SystemAudioSection.tsx
+- drop badge の className を同様に `audio-source-drop-badge` に変更 (Loop 1 で追加した line 92 付近の span)。
+- それ以外は触らない。
+
+# 実装上の注意
+- silence-badge 本体の className は `audio-source-silence-badge` のまま維持 = drop と silence の意味分離が CSS 名前空間と一致する。
+- `var(--transcript-error-color)` / `var(--transcript-error-bg)` は既存 CSS 変数 (line 2017 / 2022 の meeting-alert / meeting-error と同じ変数) を再利用 = 新規 CSS 変数の定義禁止。
+- color-mix の構文は既存 meeting-alert (line 2023) と完全同一 = `color-mix(in srgb, var(--transcript-error-color) 30%, transparent)` のコピー。
+- App.css 内の他の class 定義は **触らない**。
+- MicrophoneSection / SystemAudioSection の他 prop / 構造は触らない。
+
+# 検証手順
+1. `npm run build` (tsc + vite build) → 通過確認
+2. `bash scripts/agent-verify.sh src/App.css src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx`
+3. bundle サイズが大きく変動していないこと確認 (CSS class 1 件追加で +0.05 KB 程度の見込み)
+
+# AGENT_LOG.md 記載項目 (末尾に追記、先頭追記禁止)
+- セッション名: mjc-worker-audio-drop-badge-css
+- 開始日時 (JST)
+- 役割: 作業担当 (sonnet)
+- 担当範囲: 上記 3 ファイル
+- 指示内容: drop badge の className を silence-badge 流用から audio-source-drop-badge 専用 class に切替 + App.css に同 class を silence-badge サイズ + meeting-alert 警告色で追加
+- 結果 (成功/失敗)
+- 変更ファイル
+- 検証結果 (npm run build / bundle サイズ / agent-verify.sh)
+- 依存関係追加: なし
+- 失敗理由 (なければ「なし」)
+- 次アクション: メイン (mjc-main) によるレビュー → コミット
+
+最後に変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめる。

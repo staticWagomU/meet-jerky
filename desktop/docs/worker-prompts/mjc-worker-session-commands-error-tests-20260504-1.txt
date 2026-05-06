@@ -1,0 +1,102 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md を読んでください。
+AGENT_LOG.md は ~15100 行 / 1.5MB+ あるので末尾だけ参照する場合は `tail -300 AGENT_LOG.md` で十分です。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+- `src-tauri/src/session_commands.rs` の **tests モジュール末尾のみ** に test を追加
+- AGENT_LOG.md 末尾追記のみ
+
+# 背景
+`finalize_and_save_session_inner` (L86-100) と `list_session_summaries_inner` (L139-145) はそれぞれユーザー向けのエラーメッセージ (`"出力ディレクトリの作成に失敗しました: {e}"`, `"セッション一覧の取得に失敗しました: {e}"`) を持つが、これらが実際に返されるエラーパスは未テスト。今回はテスト追加のみで実装ロジックは変更しない。
+
+# 仕様: 追加するテスト 2 件
+
+すべて `mod tests` 内に新しい `#[test]` 関数として追加。`tempdir()`, `jst()`, `start_session_inner`, `SessionManager::new` など既存ヘルパーを再利用する。
+
+## 1. `finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file`
+
+`output_dir` 引数のパスが既に **ファイル** として存在する場合、`std::fs::create_dir_all` は `AlreadyExists` 系のエラーを返す。エラーメッセージが Japanese prefix を含むことを確認:
+
+```rust
+let manager = SessionManager::new();
+let dir = tempdir().unwrap();
+// 出力先と同名のファイルを先に作る
+let blocking_file = dir.path().join("blocking");
+std::fs::write(&blocking_file, b"existing content").unwrap();
+
+start_session_inner(&manager, "会議".into(), 100, dir.path(), jst())
+    .expect("start should succeed");
+manager
+    .append("user".to_string(), 5, "hello".to_string())
+    .expect("append should succeed");
+
+// blocking_file がファイルなのでディレクトリとして作成できない
+let err = finalize_and_save_session_inner(&manager, &blocking_file, 1_713_333_100, jst())
+    .expect_err("should error when path is a file not a directory");
+
+assert!(
+    err.starts_with("出力ディレクトリの作成に失敗しました"),
+    "unexpected error message: {err}"
+);
+// finalize 後は manager がアイドル状態に戻る (finalize 自体は成功している)
+assert!(!manager.is_active());
+```
+
+注意: `finalize_and_save_session_inner` は L92 で `manager.finalize` を **先に** 呼んでセッションを取り出してから create_dir_all → save を呼ぶ。よって create_dir_all が失敗してもセッションは既に finalize 済みでアイドル状態になっている (これは既存仕様 — テストでこれを assert する)。
+
+## 2. `list_session_summaries_inner_returns_error_when_path_is_a_file`
+
+`output_dir` がファイル (ディレクトリではない) を指している場合、`session_store::list_session_summaries` は `read_dir` 段階で `NotADirectory` 系エラーを返す。`list_session_summaries_inner` の `output_dir.exists()` チェック (L140) は通過するため、エラーが伝播されてユーザー向けメッセージに包装される:
+
+```rust
+let dir = tempdir().unwrap();
+let blocking_file = dir.path().join("not_a_dir.txt");
+std::fs::write(&blocking_file, b"hello").unwrap();
+assert!(blocking_file.exists());
+assert!(blocking_file.is_file());
+
+let err = list_session_summaries_inner(&blocking_file)
+    .expect_err("should error when path is a file not a directory");
+
+assert!(
+    err.starts_with("セッション一覧の取得に失敗しました"),
+    "unexpected error message: {err}"
+);
+```
+
+# テスト実装上の注意
+- 各 `#[test]` 関数は最大 ~25 行程度。
+- 既存テストの import / ヘルパー (`tempdir()`, `jst()`, `SessionManager`, `start_session_inner` 等) を流用する。新規 import はなしで完結するはず (現状 `mod tests` 冒頭の use を確認して必要なら追加するが、最小限に)。
+- 実装コード (`pub fn`, private fn) は **一切変更しない**。
+- もし「実装が誤って Ok を返す」「メッセージが期待 prefix と異なる」ケースを発見した場合は、test を skip して報告に明記し、コードは変更せずに終了する (バグ報告のみ)。
+- アサーションスタイルは既存テスト (例: L209 `finalize_and_save_session_inner_returns_error_when_idle`) と一貫させる。
+
+# 検証
+1. `git diff --check`
+2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets --all-features -- -D warnings`
+4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast`
+5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/session_commands.rs AGENT_LOG.md`
+
+clippy 警告ゼロ維持必須、test は **230 → 232 passed** を期待。
+
+# AGENT_LOG.md 追記
+末尾に新セクション: `### session_commands.rs のユーザー向けエラーメッセージ経路を 2 件のテストで裏付け`。
+記載項目: 開始日時 (JST)、担当セッション (`mjc-worker-session-commands-error-tests-20260504-1`)、役割、作業範囲、指示内容 (このプロンプトの要約)、結果、変更ファイル、検証結果 (cargo fmt / clippy / test の合否、追加 test 件数、追加後の total passed)、依存関係 (なし)、失敗理由 (なし)、次アクション。
+
+# 報告形式 (1 ターンで完結)
+- 追加した test 関数名 2 件
+- 各テスト内で確認したエラーメッセージ prefix
+- finalize_and_save テストでの「create_dir_all 失敗時に manager が既にアイドル」副作用の確認結果
+- cargo fmt / clippy / test の最終結果 (test 数の変化 230 → N)
+- 残リスク
+
+# 禁止事項
+- `pub fn finalize_and_save_session_inner`, `list_session_summaries_inner`, その他関数の実装変更
+- 他のソースファイル変更
+- `git commit` の実行
+- `--no-verify`
+- 既存テストの削除・改変
+- 新しい依存関係 (Cargo.toml) の追加

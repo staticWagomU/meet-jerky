@@ -1,0 +1,107 @@
+あなたは meet-jerky 自律改善ループの worker (mjc-worker-loop154-archive-plan-stats-update-30) です。
+担当 = mjc-main-20260505-76 Loop 154 = K 軸 = harness 衛生軸 = agent-log-archive-plan.md Section 2.3 観測追記 30 件目 (節目突破)。
+
+# 最初に必ず読む
+
+1. `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` (末尾 350 行のみ)
+   - 重要: AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は必ず **ファイル末尾** に行う。**先頭は絶対に触らない**。
+   - **append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault 防止 = Loop 146/147/148/149/150/151/152/153 で 8 連続成功実証)
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (優先順位 1-9)
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール)
+
+# 担当タスク
+
+## 観測対象 (事前計算済み = メイン側で確認済み)
+
+- 前回観測時点 = Loop 151 完了時点 (mjc-main-20260505-75) = 33,820 行
+- 今回観測時点 = Loop 153 完了時点 (mjc-main-20260505-76) = **33,861 行**
+- 差分 = +41 行 / 2 ループ = **~20.5 行/loop**
+- precedent: Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136/138/140/142/144/146/148/150/152 = 29 件 = 本 entry が **30 件目** = 節目突破
+
+## 重要な解釈ポイント
+
+- Loop 151 観測値 (~36.5 行/loop = SS 1 件 + 説明中量化) と比較して **大幅減少 (-44%)** = 第 4 階層 (中量化) からの離脱
+- 主因 = mjc-main-20260505-75 handoff SUMMARY commit `553d786` が **軽量化** (~13-14 行 = 直近 ~50 行から大幅減 = SUMMARY 説明量の軽量化が支配変数として再支配)
+- この値 ~20.5 行/loop は **既存階層の境界**:
+  - SS 1 件 + 説明軽量化 ~22-26 行/loop の **下端寄り変動** (Loop 147 = ~24.5 行/loop の同水準下振れ)
+  - または **新軽量階層 ~20-22 行/loop** の発見候補 (Loop 153 = SS 1 件軽量 + frontend 軸 paradigm 4 件目達成 = 軽量 chore + 軽量 SUMMARY)
+- paradigm pivot 多軸 (Loop 152 = harness 衛生 K 軸 + Loop 153 = frontend 軸 = paradigm 4 件目 = utils 間集約軸 = re-export 戦略)
+- alternation pattern 42 連続成功 (Loop 152 K → Loop 153 frontend) = pivot 維持
+
+## 担当変更 (1 ファイル)
+
+`docs/architecture/agent-log-archive-plan.md` の Section 2.3 (現在 L90 が最新観測 entry = mjc-main-20260505-75 Loop 151 完了時点) の **直後** に以下の観測 entry を追記してください (entry 30 件目 = 節目突破)。
+
+挿入位置: L90 直後 (= L91 を新規 entry にする = 既存 L91 以降が後ろにずれる)。挿入する内容:
+
+```
+> **更新観測 (mjc-main-20260505-76 Loop 153 完了時点)**: Loop 151 → Loop 153 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-75) で +41 行 (33,820 → 33,861)、平均 ~20.5 行/loop。Loop 151 観測値 (~36.5 行/loop = SS 1 件 + 説明中量化) と比較して **-44% 減 (-16 行/loop の大幅減少)** = 第 4 階層 (中量化) からの離脱 = paradigm pivot 多軸 (Loop 152 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 153 = frontend 軸 = **重複削除 + 既存 file 拡張軸 paradigm 4 件目 = utils 間集約軸 = re-export 戦略** = transcriptDisplayHelpers.ts の getSpeakerLabel 重複定義を liveCaptionTrackHelpers.ts から re-export (DRY 違反解消, 戻り値型 string vs string | null は実装上常に string = 過剰宣言是正, TranscriptDisplay.tsx + LiveCaptionWindow.tsx 共に無変更で API 互換維持, scope 36 軸維持) = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 151 観測値 (~36.5 行/loop) との -44% 減の主因 = **SESSION SUMMARY 1 件軽量化** (mjc-main-20260505-75 handoff SUMMARY commit `553d786` = ~13-14 行 = 直近 SUMMARY (Loop 145 = ~30 行 / Loop 147 = ~33 行 / Loop 149 = ~50 行 / Loop 151 = ~50 行) からの大幅減 = 内容簡潔化 = 2 ループ完走の事実記載のみで内訳簡素化) + paradigm pivot 同形 (K + frontend) = **既存階層 SS 1 件 + 説明軽量化 ~22-26 行/loop の下端寄り変動 (Loop 147 = ~24.5 行/loop の同水準下振れ) または新軽量階層 ~20-22 行/loop の発見候補**。frontend 軸 chore entry の軽量化 paradigm (~12-14 行/件) は Loop 125/127/129/131/133/135/137/139/141/143/145/147/149/151/153 の **15 件連続観測** = **frontend 軸軽量化 paradigm の 15 度目の観測 = paradigm 完全実証期 15 件突破**。SESSION SUMMARY 件数 + paradigm 多様性 + entry 説明量 + SUMMARY 説明量の 4 軸が支配変数 = **SS 0 件 = ~11-12 行/loop (Loop 121/127/135 = 3 連続観測) / SS 1 件 + 説明軽量化 = ~20-26 行/loop (Loop 125/129/131/133/137/139/141/143/145/147/153 = 11 連続観測達成 = Loop 153 で軽量側 ~20.5 行/loop 観測 = 階層下端寄り変動の新観測 + 範囲拡大 ~20 行 まで) / SS 1 件 + 説明中量化 = ~30-37 行/loop (Loop 149/151 = 2 連続観測達成 = paradigm 完全実証期入り) / SS 1 件 + 説明大量化 = ~42 行/loop (Loop 123)** の **4 段階階層化が paradigm 完全成熟期維持 + 軽量化階層の範囲下端拡大**。観測 30 件目 = 節目突破 = K 軸自体の paradigm 完全成熟期入り。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~20.5 行 = ~82-205 行/時間 の範囲、SUMMARY 軽量化期間入り)。
+```
+
+## 担当範囲外の編集禁止
+
+- agent-log-archive-plan.md Section 2.3 以外を変更しない
+- entry 内容の独自改変禁止 (上記をそのまま挿入)
+- 既存 entry の編集禁止
+
+## 行末の空白文字 (trailing whitespace) 禁止
+
+書いた内容の各行末に余計な空白を入れないこと。Edit ツール使用時は必ず正確な空白を保つ。
+
+## 検証 (docs のみなので軽量)
+
+1. `bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md` (docs 自動 skip 判定で OK)
+2. `git status --short` で変更ファイル確認 (docs/architecture/agent-log-archive-plan.md と AGENT_LOG.md の 2 file)
+
+## commit (2-commit pattern = 連続 10 ループ目を狙う)
+
+### Commit 1: docs commit
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add docs/architecture/agent-log-archive-plan.md
+git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 153 完了時点の更新観測追記 (mjc-main-20260505-76 Loop 154, harness 衛生軸 = variety pivot, 観測 30 件目 = 節目突破, +41 行 / 平均 ~20.5 行/loop = Loop 151 観測値からの -44% 減 = 第 4 階層離脱 + 軽量化階層下端寄り変動 ~20 行まで範囲拡大 + SUMMARY 軽量化期間入り)"
+```
+
+### Commit 2: chore commit
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-76 Loop 154 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, 観測 30 件目 = 節目突破, +41 行 / 平均 ~20.5 行/loop = Loop 151 観測値 -44% 減 = 第 4 階層離脱 + 軽量化階層下端寄り変動 ~20 行まで範囲拡大) のエントリ追記"
+```
+
+## AGENT_LOG.md 末尾追記内容 (必ず末尾に追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下を追記 (1 回のみ):
+
+```
+[Loop 154 @ 2026-05-06 ~JST] mjc-main-20260505-76 / mjc-worker-loop154-archive-plan-stats-update-30
+タスク: agent-log-archive-plan.md Section 2.3 に Loop 153 完了時点の更新観測追記 (観測 30 件目 = 節目突破)
+ファイル: docs/architecture/agent-log-archive-plan.md (Section 2.3 = L90 直後に entry 追記)
+理由: AGENT_LOG.md 増分の継続観測 = Loop 151 → Loop 153 で +41 行 / 平均 ~20.5 行/loop = Loop 151 観測値 (~36.5 行/loop) の -44% 減 = 第 4 階層 (中量化) からの離脱 + SUMMARY 軽量化期間入り
+影響: docs のみ = アプリ動作変更なし
+paradigm: harness 衛生軸 K = variety pivot (frontend(153) → K(154) = alternation 43 連続維持)
+検証: docs のみ = npm run build / cargo test 不要 = agent-verify.sh OK
+commit: <docs commit hash> + <chore commit hash>
+依存関係追加: なし
+失敗理由: なし
+次アクション: なし (メイン側で次ループ判断)
+
+---
+```
+
+# あなたが守る規律
+
+- 待機モード禁止、final answer で停止せず作業完遂まで継続
+- AGENT_LOG.md 先頭追記禁止 = 必ず末尾追記
+- AGENT_LOG.md への append は **1 回のみ**
+- 行末の trailing whitespace 禁止
+- 担当範囲外の編集禁止
+- 2-commit pattern = docs → chore の順で実行
+
+# 完走条件
+
+1. agent-log-archive-plan.md Section 2.3 に Loop 153 完了時点 entry 1 件追記済 (30 件目 = 節目突破)
+2. AGENT_LOG.md 末尾に Loop 154 entry 1 件追記済 (1 回のみ)
+3. docs commit + chore commit の 2 件作成済
+4. `git status --short` でクリーン (worker-prompts と handoff 系の untracked 除く)
+
+完走したら最後に「Loop 154 完走 (2 commit + AGENT_LOG.md 追記済、観測 30 件目 = 節目突破)」を出力して終了。

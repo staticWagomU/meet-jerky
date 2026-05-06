@@ -1,0 +1,84 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景
+
+直前のループ (commit e969943) で `should_notify_meeting_inactive` 純粋関数 + 基本 test 5 件 (T1-T5) を `src-tauri/src/app_detection.rs` に追加した。これは会議終了検知 (product-concept 優先度 8/9) の Loop 1 完結スライス。
+
+T1-T5 で「初回 / アクティブ範囲内 / 通知発火 / throttle 抑止 / 同時刻保守」の 5 状態を網羅したが、**境界条件 (boundary)** はまだ固定していない。具体的には:
+
+- 設計判断: `elapsed < inactive_threshold_secs` 境界 (`<=` ではなく `<`) = 「閾値ちょうどの elapsed = 通知発火」 (前 mjc-main-17 Loop 1 の commit 説明より)
+- u64 の overflow / saturating 動作 (now_secs = u64::MAX 等)
+- 引数 0 値 (inactive_threshold_secs=0 / throttle_secs=0)
+- last_notified > now_secs (時刻巻き戻し / saturating_sub の 0 飽和)
+
+これらが test で固定されていないと、将来的な誤改修 (`<=` への変更、saturating_sub の panic 化等) を検知できない。
+
+# Why (なぜこれが価値か)
+
+1. **設計判断の可視化**: Loop 1 commit 説明で「`elapsed < threshold` を採用」と明記したが、test がないと将来「説明と異なる」改修を防げない。境界 1 個 (T_boundary) を test 化することで設計意図を仕様レベルに格上げする。
+2. **saturating の非 panic 契約固定**: `now_secs.saturating_sub(last_notified_secs)` は Loop 1 で導入した saturating ガード。`last_notified > now_secs` (時計巻き戻し) で panic 化への誤改修を T_clock_skew で検知する。
+3. **0 値 boundary の挙動明示**: inactive_threshold_secs=0 / throttle_secs=0 は実用設定としてはあり得ないが、関数の数学的契約として「閾値 0 → 即発火」「throttle 0 → 連続発火」が満たされていることを T_zero_threshold / T_zero_throttle で固定する。
+4. **u64 overflow boundary**: now_secs=u64::MAX で elapsed = u64::MAX - last_seen が巨大になっても Some(elapsed) を返す = panic 化への誤改修検知。
+5. **Loop 1 と完全対称な構造**: 同じファイル / 同じ関数 / 直下追加 = worker が 1 ターンで完走する確実な scope。
+
+# 担当範囲
+
+src-tauri/src/app_detection.rs **のみ** (1 ファイル、tests mod 内のみ)。
+
+## 追加するもの
+
+`should_notify_meeting_inactive_now_equals_last_seen_returns_none` (Loop 1 で追加した最後の test、現在 line 1521-1525 付近) の **直下** に test 5 件追加する。
+
+| # | テスト名 | 引数 (now, last_seen, last_notified, threshold, throttle) | 期待値 | 検知装置 |
+|---|---|---|---|---|
+| T6 | `_threshold_boundary_returns_some` | (1300, 1000, 0, 300, 600) → elapsed = 300 = threshold | Some(300) | `<` を `<=` に変える誤改修 (= 境界ちょうどで発火しない化) |
+| T7 | `_zero_threshold_returns_some_when_elapsed_positive` | (1001, 1000, 0, 0, 600) → elapsed = 1, threshold = 0 | Some(1) | threshold 0 で常に None にしてしまう誤改修 |
+| T8 | `_zero_throttle_returns_some_when_inactive` | (1000, 600, 999, 300, 0) → elapsed = 400 ≥ 300, throttle = 0 | Some(400) | throttle 0 を「無効化」と読み替えてしまう誤改修 |
+| T9 | `_clock_skew_last_notified_after_now_returns_none` | (1000, 600, 1500, 300, 600) → elapsed = 400, saturating_sub(1500-from-1000) = 0 < throttle 600 | None | saturating_sub を sub に変える panic 化 / または「巻き戻しは throttle 無視」誤改修 |
+| T10 | `_now_secs_max_with_seen_returns_some_huge_elapsed` | (u64::MAX, 1, 0, 300, 600) → elapsed = u64::MAX - 1 | Some(u64::MAX - 1) | u64 overflow への panic 化 / または不要なキャスト追加 |
+
+## test 内コメントスタイル
+
+各 test に 1 行コメントで「何を検知しているか」を残す。Loop 1 の T1-T5 と同スタイル (前提条件 + 期待値の 1-2 行 //)。
+
+## 実装上の注意
+
+1. **T6 が最重要**: 設計判断 1 (`<` boundary) の固定。assert は `Some(300)` (threshold と elapsed が同値) で発火することを必ず明示。
+2. **T9 の saturating 動作確認**:
+   - `now_secs.saturating_sub(last_notified_secs)` は last_notified > now_secs のとき 0 を返す
+   - 0 < throttle (600) なので throttle check に引っかかり None
+   - **重要**: T9 では elapsed = 400 ≥ threshold 300 で第 4 条件は通過するが、第 5 条件 (throttle) で None になる経路
+3. **T10 の `u64::MAX - 1`**: assert に `Some(u64::MAX - 1)` を直接書く。リテラル化禁止 (= `Some(18446744073709551614)` は書かない)。
+4. **既存 test 5 件 (T1-T5) を変更しない**: 直下に純粋追加のみ。
+5. **import 追加禁止 / module 分割禁止 / 関数本体 (line 176-201) も touch しない**: tests mod 内のみ。
+
+# 検証手順
+
+1. `cargo fmt -p meet-jerky --check` (差分なし期待)
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (警告ゼロ期待)
+3. `cargo test -p meet-jerky --lib` (現在 462 passed → +5 で **467 passed** 期待)
+4. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` (rust 検証通過、frontend 自動 skip 期待)
+
+検証コマンドの結果 (`passed` の数値) を必ず最終報告に含める。
+
+# AGENT_LOG.md 記載項目
+
+末尾に追記する形で:
+- 開始日時 (JST)
+- 担当セッション = mjc-worker-meeting-inactive-boundary-tests
+- 役割 = 作業担当 (sonnet)
+- 担当範囲 = src-tauri/src/app_detection.rs tests mod のみ (test 5 件追加)
+- 指示内容の要約 (このファイルへの参照可)
+- 結果 (成功/失敗)
+- 変更ファイル
+- 検証結果 (cargo fmt / clippy / test passed 数値 / agent-verify)
+- 依存関係追加の有無
+- 失敗理由 (あれば)
+- 次アクション (メイン mjc-main によるレビュー → コミット)
+
+# 最終報告
+
+変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。

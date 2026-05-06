@@ -1,0 +1,156 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順番厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20800+ 行 / 1.7MB+ あるので絶対に Read 全体しないこと。`tail -350 AGENT_LOG.md` で末尾だけ参照すること。** 末尾には mjc-main-20260504-25 Loop 1 (Google Meet path 桁契約) と Loop 2 (Teams /v2 query 経路) のセクションがあり、本タスクの直前の状況復元に必須。
+
+# 重要: AGENT_LOG.md の追記ルール (絶対遵守)
+- AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は必ずファイル末尾に行う。
+- **先頭は絶対に触らない**。先頭追記すると時系列が壊れる過去事故あり (mjc-main-21 で発生 → mjc-main-22 以降は worker prompt で末尾追記明示の継続適用で 5 連続セッション事故ゼロ達成中、本タスクで 6 連続セッション目)。
+- 追記前に **必ず `tail -10 AGENT_LOG.md` で末尾を確認**してから、末尾の `---` 直後に追記する。
+- 大型ファイル (AGENT_LOG.md / app_detection.rs 等) は Read 全体禁止 = `tail` / `head` / `grep -n` で対象範囲のみ参照すること。
+
+# 担当範囲 (絶対遵守)
+- **`src-tauri/src/app_detection.rs` の `mod tests` 末尾に test 3 件追加のみ**。
+- **関数本体 (`classify_meeting_url` / `is_zoom_host` / `is_valid_dns_label` / 他全ての関数) は完全無変更**。
+- 他ファイルへの変更は禁止 (AGENT_LOG.md 末尾追記を除く)。
+- 担当範囲外の編集禁止。
+- 規模超過防止: **3 件のみ追加**、4 件以上は scope 超過扱い。
+- コミット禁止 (メインがコミットする)。
+
+# 挿入位置
+- `src-tauri/src/app_detection.rs` の現末尾は **l.2195 の `}` (mod tests 末尾)** (Loop 2 で +3 件追加された結果)。
+- 既存最終 test (Loop 2 で追加) は **`classify_meeting_url_rejects_teams_v2_with_meetingjoin_key_only_no_equals`** (Loop 2 last test)。
+- 挿入位置は **Loop 2 の last test の `}` (関数末尾) の直後**、つまり mod tests 末尾の `}` の直前。
+- 形式は既存 test と完全対称: `#[test]` + `fn xxx() { ... }` の Rust test 関数 3 つを上記位置に挿入。
+- 確認手順: `tail -15 src-tauri/src/app_detection.rs` で Loop 2 last test の末尾を視覚確認してから挿入位置を決定すること。
+
+# 追加する test 3 件 (具体仕様)
+
+## 背景
+- `classify_meeting_url` は Zoom 経路で `is_zoom_host` (l.681) → `is_valid_dns_label` (l.696) を呼ぶ。
+- `is_zoom_host` (l.681): `zoom.us` / `zoomgov.com` 完全一致 OR `<sub>.zoom.us` / `<sub>.zoomgov.com` で subdomain の各 label が `is_valid_dns_label` で valid。
+- `is_valid_dns_label` (l.696): RFC 1035/1123 の DNS label 規則を実装:
+  - `!bytes.is_empty()` (非空)
+  - `bytes.len() <= 63` (RFC 1035 上限)
+  - 全文字 ASCII alphanumeric or `-`
+  - 先頭・末尾は ASCII alphanumeric (`-` 不可)
+- 既存 test (l.1305-1335) でカバー済の境界:
+  - 空 subdomain `.zoom.us` reject ✅
+  - 空 label `evil..zoom.us` reject ✅
+  - underscore `bad_label.zoom.us` reject ✅
+  - leading hyphen `-bad.zoom.us` reject ✅
+  - trailing hyphen `bad-.zoom.us` reject ✅
+- 未保護の境界:
+  - **長さ最大値 63 バイト ぴったり accept** (RFC 1035 上限ぴったり、`<= 63` の左境界内側、`< 64` の境界)
+  - **長さ右境界外側 64 バイト reject** (RFC 1035 上限超過、`<= 63` の `<= 64` 化誤改修を遮断)
+  - **数字始まり label accept** (RFC 1123 仕様、RFC 952 では禁止だったがアップデート許容)
+- これら 3 つは「対称的補強の 3 軸構造」に綺麗に適用可能 = 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与継続。
+
+## 追加 test 仕様 (mod tests 末尾、Loop 2 last test の直後に追加)
+
+### T1: `classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_max_length_63_bytes`
+- 目的: `is_valid_dns_label` の `bytes.len() <= 63` 上限ぴったり (左境界内側) accept 動作を CI 固定。RFC 1035 仕様の executable spec。
+- 仕様: 63 バイトの ASCII 小文字 label (例: `"a".repeat(63)`) を subdomain として持つ Zoom URL `https://<63 文字 a>.zoom.us/j/123456789` を accept する現契約を CI 固定。
+- 期待: `Some(MeetingUrlClassification { service: "Zoom".to_string(), host: format!("{}.zoom.us", "a".repeat(63)) })` を返す。
+- 実装ヒント:
+```rust
+let label = "a".repeat(63);
+let url = format!("https://{}.zoom.us/j/123456789", label);
+let expected_host = format!("{}.zoom.us", label);
+assert_eq!(
+    classify_meeting_url(&url),
+    Some(MeetingUrlClassification {
+        service: "Zoom".to_string(),
+        host: expected_host,
+    }),
+    "is_valid_dns_label は RFC 1035 上限 63 バイトぴったり (現契約: bytes.len() <= 63) を accept する必要がある"
+);
+```
+
+### T2: `classify_meeting_url_rejects_zoom_subdomain_label_exceeding_dns_label_max_length_64_bytes`
+- 目的: `is_valid_dns_label` の `bytes.len() <= 63` 上限超過 (右境界外側) reject 動作を CI 固定。「`<= 63` を `<= 64` に変える誤改修」を遮断する装置。
+- 仕様: 64 バイトの ASCII 小文字 label (例: `"a".repeat(64)`) を subdomain として持つ Zoom URL `https://<64 文字 a>.zoom.us/j/123456789` を `None` で reject する現契約を CI 固定。
+- 期待: `classify_meeting_url(...) == None`。
+- 実装ヒント:
+```rust
+let label = "a".repeat(64);
+let url = format!("https://{}.zoom.us/j/123456789", label);
+assert_eq!(
+    classify_meeting_url(&url),
+    None,
+    "is_valid_dns_label は RFC 1035 上限 63 バイト超過 (現契約: bytes.len() <= 63) = 64 バイトは reject する必要がある"
+);
+```
+
+### T3: `classify_meeting_url_accepts_zoom_subdomain_label_starting_with_digit_per_rfc_1123`
+- 目的: `is_valid_dns_label` の `bytes.first().is_some_and(|byte| byte.is_ascii_alphanumeric())` の数字始まり許容動作 (RFC 1123 仕様) を CI 固定。「数字始まり reject」厳格化誤改修を遮断。
+- 仕様: 数字始まり label (例: `1company`) を subdomain として持つ Zoom URL `https://1company.zoom.us/j/123456789` を accept する現契約を CI 固定。
+- 期待: `Some(MeetingUrlClassification { service: "Zoom".to_string(), host: "1company.zoom.us".to_string() })` を返す。
+- 実装ヒント:
+```rust
+assert_eq!(
+    classify_meeting_url("https://1company.zoom.us/j/123456789"),
+    Some(MeetingUrlClassification {
+        service: "Zoom".to_string(),
+        host: "1company.zoom.us".to_string(),
+    }),
+    "is_valid_dns_label は RFC 1123 仕様で数字始まり label を accept する必要がある (現契約: bytes.first().is_some_and(is_ascii_alphanumeric))"
+);
+```
+
+# 設計思想
+- 「対称的補強の 3 軸構造」パターン (前 mjc-main-22/23/24 で確立、本セッション Loop 1/2 で application 継続) を `is_valid_dns_label` に application: 3 つの独立軸 (長さ左境界内側 / 長さ右境界外側 / 文字種 数字始まり) を 1 軸ずつ別 test で保護。
+- 1 commit で「`is_valid_dns_label` の RFC 1035/1123 仕様の executable specification 化」を完成。
+- 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与継続 = Zoom 公式 host (subdomain 含む) の認識漏れ/偽認識を遮断する装置。
+- Tidy First 厳守 = ユーザー観測可能な振る舞い不変 = 関数本体無変更 + test 追加のみ。
+
+# 実装手順
+1. `tail -15 src-tauri/src/app_detection.rs` で末尾構造を視覚確認 (Loop 2 last test の末尾位置と mod tests 末尾の `}` 位置を確認)。
+2. `Edit` ツールで Loop 2 last test の `}` の直後 + mod tests 末尾の `}` の直前に test 3 件挿入。
+3. 既存 test の Rust スタイル (`#[test]` + `fn ...() { assert_eq!(..., expected, "msg"); }` の単発 assert + 5 引数版) を踏襲。
+4. T1/T2 は `format!` で URL を組み立てるパターンを採用 (`"a".repeat(63)` / `"a".repeat(64)` を使用)。
+5. T3 は固定文字列 `"https://1company.zoom.us/j/123456789"` を直接使用。
+
+# 検証 (順番厳守、全段 OK 必須)
+1. `cargo test --lib classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_max_length_63_bytes` で T1 が PASS することを確認。
+2. `cargo test --lib classify_meeting_url_rejects_zoom_subdomain_label_exceeding_dns_label_max_length_64_bytes` で T2 が PASS することを確認。
+3. `cargo test --lib classify_meeting_url_accepts_zoom_subdomain_label_starting_with_digit_per_rfc_1123` で T3 が PASS することを確認。
+4. `cargo test --lib` 全体で **524 passed** (521 → +3 件) になることを確認。
+5. `cargo clippy --all-targets -- -D warnings` で警告ゼロ確認。
+6. `cargo fmt --check` で差分なし確認 (差分があれば `cargo fmt` を 1 回適用)。
+7. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` で全段 OK 確認。
+
+# AGENT_LOG.md 追記 (検証成功後)
+1. `tail -10 AGENT_LOG.md` で末尾確認。
+2. 末尾の `---` 直後 (= ファイル一番下) に新規セクションを追記:
+
+```markdown
+## mjc-worker-zoom-host-dns-label-rfc-boundary-tests-20260504-25-3 (Loop 3)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-25 Loop 3
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/app_detection.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: Loop 2 の last test `classify_meeting_url_rejects_teams_v2_with_meetingjoin_key_only_no_equals` の直後に、`is_valid_dns_label` の RFC 1035/1123 仕様の境界 test 3 件追加 (T1: 長さ最大値 63 バイト accept / T2: 長さ右境界外側 64 バイト reject / T3: 数字始まり label accept)
+- **結果**: 全 test PASS (521 → 524 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/app_detection.rs` のみ
+- **検証結果**: cargo test 524 passed / clippy -D warnings 警告ゼロ / cargo fmt 差分なし / agent-verify 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: Loop 1 (Google Meet 桁契約) / Loop 2 (Teams query 経路) と同じ「対称的補強の 3 軸構造」パターンを `is_valid_dns_label` に application = 3 つの独立軸 (長さ左境界内側 / 長さ右境界外側 / 文字種 数字始まり) を 1 軸ずつ別 test で保護
+- **設計判断 2**: 既存 test は空 subdomain / 空 label / underscore / leading-trailing hyphen reject のみカバー = 「長さ最大値ぴったり」「長さ超過」「数字始まり」3 軸は完全未保護で相補的なカバー
+- **設計判断 3**: 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与継続 = Zoom 公式 host (subdomain 含む) の RFC 仕様認識を test で固定 = 本セッション 3 ループ全体で Google Meet (Loop 1) / Microsoft Teams (Loop 2) / Zoom (Loop 3) の 3 大会議サービス全てを境界 test で強化
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---
+```
+
+# 報告 (1 ターンで完結)
+- 変更ファイル: `src-tauri/src/app_detection.rs` のみ
+- 検証結果: cargo test 件数、clippy 警告数、fmt 差分、agent-verify 結果
+- 残リスク
+- 1 ターンで完結する形でまとめてください。

@@ -1,0 +1,255 @@
+あなたは meet-jerky の worker (mjc-worker-loop188-status-checking-with-dots-const) です。
+
+# タスク (Loop 188 = frontend 軸 = const 集約 paradigm 反復 8 件目 = paradigm 完全成熟期完全成熟最終収束完成超越)
+
+`"確認中..."` 文字列リテラル 6 callsite (3 file) を `src/utils/statusLabels.ts` に新規追加する `STATUS_CHECKING_WITH_DOTS_LABEL` const に置換する。
+
+メイン批判検証で handoff prompt 主張 (5 callsite) の差異 (実際は 6 callsite, ModelSelector.tsx L445 漏れ) を検出済 = 本ループはメイン批判判断 連続 93 セッション目達成の実証作業。
+
+## 範囲 (限定 = 規模超過防止)
+
+**編集対象 (5 file のみ)**:
+1. `src/utils/statusLabels.ts` (新規 const 追加 1 行)
+2. `src/components/PermissionBanner.tsx` (L15 既存 import 拡張 + L190 callsite)
+3. `src/components/ModelSelector.tsx` (**新規 import 追加** + L445 + L468 callsite)
+4. `src/routes/SettingsView.tsx` (L33 既存 import 拡張 + L1755 + L1766 + L1953 callsite)
+5. `AGENT_LOG.md` (末尾追記 1 entry)
+
+**範囲外 (これらは触らない)**:
+- 上記 5 file 以外のあらゆる file
+- 上記 file 内であっても、以下に列挙した line 以外
+- `"確認中..."` 以外の文字列リテラル (本ループの scope 外)
+- rust コード (frontend 軸のため不要)
+
+## 具体手順 (順序厳守)
+
+### Step 1: statusLabels.ts に const 追加
+
+`src/utils/statusLabels.ts` 末尾に以下 1 行を追加:
+
+```typescript
+export const STATUS_CHECKING_WITH_DOTS_LABEL = "確認中...";
+```
+
+**完成形 (6 const)**:
+```typescript
+export const STATUS_UNCHECKABLE_LABEL = "確認できません";
+export const STATUS_CHECKING_LABEL = "確認中";
+export const STATUS_UNDETERMINED_LABEL = "未確認";
+export const STATUS_DENIED_LABEL = "未許可";
+export const STATUS_UNREGISTERED_LABEL = "未登録";
+export const STATUS_CHECKING_WITH_DOTS_LABEL = "確認中...";
+```
+
+### Step 2: PermissionBanner.tsx を修正 (既存 import 拡張)
+
+L15 既存 import (alphabetical order):
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
+```
+
+これを (alphabetical order = STATUS_CHECKING_LABEL の直後に STATUS_CHECKING_WITH_DOTS_LABEL):
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_CHECKING_WITH_DOTS_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
+```
+
+L190 callsite:
+```typescript
+          {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
+```
+
+これを:
+```typescript
+          {isCheckingPermissions ? STATUS_CHECKING_WITH_DOTS_LABEL : "権限を再チェック"}
+```
+
+### Step 3: ModelSelector.tsx を修正 (**新規 import 追加**)
+
+ModelSelector.tsx は statusLabels import が **未存在** = 新規 import 追加が必要。
+
+L1 既存:
+```typescript
+import { useState, useEffect, useRef } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+```
+
+ファイル内の他の import 群 (例: `from "../utils/..."` 系) を `grep -n "import" src/components/ModelSelector.tsx | head -20` で確認し、適切な位置 (alphabetical または既存の utils import の近く) に以下を追加:
+
+```typescript
+import { STATUS_CHECKING_WITH_DOTS_LABEL } from "../utils/statusLabels";
+```
+
+L445 callsite:
+```typescript
+          {isFetchingDownloaded ? "確認中..." : "状態を再確認"}
+```
+
+これを:
+```typescript
+          {isFetchingDownloaded ? STATUS_CHECKING_WITH_DOTS_LABEL : "状態を再確認"}
+```
+
+L468 callsite:
+```typescript
+        {isFetchingDownloaded
+          ? "確認中..."
+```
+
+これを:
+```typescript
+        {isFetchingDownloaded
+          ? STATUS_CHECKING_WITH_DOTS_LABEL
+```
+
+### Step 4: SettingsView.tsx を修正 (既存 import 拡張)
+
+L33 既存 import (alphabetical order):
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
+```
+
+これを (alphabetical order = STATUS_CHECKING_LABEL の直後に STATUS_CHECKING_WITH_DOTS_LABEL):
+```typescript
+import { STATUS_CHECKING_LABEL, STATUS_CHECKING_WITH_DOTS_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
+```
+
+L1755 callsite:
+```typescript
+    return renderBadge("", "確認中...", true);
+```
+
+これを:
+```typescript
+    return renderBadge("", STATUS_CHECKING_WITH_DOTS_LABEL, true);
+```
+
+L1766 callsite (同じ pattern):
+```typescript
+    return renderBadge("", "確認中...", true);
+```
+
+これを:
+```typescript
+    return renderBadge("", STATUS_CHECKING_WITH_DOTS_LABEL, true);
+```
+
+L1953 callsite:
+```typescript
+              {isFetchingHasKey ? "確認中..." : "状態を再確認"}
+```
+
+これを:
+```typescript
+              {isFetchingHasKey ? STATUS_CHECKING_WITH_DOTS_LABEL : "状態を再確認"}
+```
+
+注: L1755 と L1766 は同じ文字列パターン。Edit ツールで `replace_all=true` を使うか、unique な context 付きで個別に Edit する。
+
+### Step 5: 検証
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+# 1. "確認中..." 残存確認 = statusLabels.ts L6 定義行のみ残存が期待値
+grep -rn '"確認中\.\.\."' src/
+
+# 2. frontend build
+npm run build
+```
+
+`grep` 結果は `src/utils/statusLabels.ts:6:export const STATUS_CHECKING_WITH_DOTS_LABEL = "確認中...";` の 1 件のみ期待。
+
+`npm run build` は tsc + vite build が成功すれば OK。
+
+### Step 6: 1 番目の commit (refactor)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add src/utils/statusLabels.ts src/components/PermissionBanner.tsx src/components/ModelSelector.tsx src/routes/SettingsView.tsx
+git commit -m "refactor(frontend): STATUS_CHECKING_WITH_DOTS_LABEL を src/utils/statusLabels.ts に集約 + 3 file 6 callsite を const 参照に統一 (mjc-main Loop 188, frontend 軸 = const 集約 paradigm 反復 8 件目 = paradigm 完全成熟期完全成熟最終収束完成超越, 既存 file 拡張軸 paradigm 19 件目 + 新規 import 追加軸 paradigm 1 件目, '確認中...' 6 callsite を統一 + DRY 違反解消, alternation pivot K(187) → frontend(188) = 27 → 28, AGENTS.md priority 1 寄与)"
+```
+
+### Step 7: AGENT_LOG.md に entry 追記
+
+**重要 (worker prompt 必須要素 9)**: AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾**。**先頭は絶対に触らない**。
+
+#### 7-1: 末尾確認
+
+```bash
+tail -10 AGENT_LOG.md
+```
+
+末尾は `---` (boundary 区切り) 1 行で終わっているはず。**この `---` の直後に新 entry を追加する**。
+
+#### 7-2: entry テンプレート
+
+以下の内容を temp file (`/tmp/loop188-entry.txt`) に Write し、`cat /tmp/loop188-entry.txt >> AGENT_LOG.md` で **1 回だけ** append。
+
+**重要 (worker prompt 必須要素 9)**: 冒頭に `---` を **含めない**。前 entry の閉じ `---` を再利用する。**末尾の `---` 1 個で締める**。
+
+```
+[mjc-main Loop 188 / 2026-05-06]
+worker: mjc-worker-loop188-status-checking-with-dots-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_CHECKING_WITH_DOTS_LABEL 追加) + src/components/PermissionBanner.tsx (L15 import 拡張 + L190 callsite) + src/components/ModelSelector.tsx (新規 import 追加 + L445 + L468 callsite) + src/routes/SettingsView.tsx (L33 import 拡張 + L1755 + L1766 + L1953 callsite)
+変更: STATUS_CHECKING_WITH_DOTS_LABEL を src/utils/statusLabels.ts に export const 追加 (既存 5 const に並列 = 6 const 完成) + 3 file 6 callsite (components 2 file + routes 1 file) を const 参照に統一 = 完全一致 `"確認中..."` 6 件を一括統合 + DRY 違反解消 + ネット行数 ~+2 行 (statusLabels.ts +1 行 + ModelSelector.tsx 新規 import +1 行 + 既存 import 拡張 2 件はインライン書き換え + callsite 6 件は同行書き換え)
+意義: frontend 軸 = const 集約 paradigm 反復 8 件目 = paradigm 完全成熟期完全成熟最終収束完成超越 + 既存 file 拡張軸 paradigm 19 件目達成 (PermissionBanner.tsx + SettingsView.tsx) + 新規 import 追加軸 paradigm 1 件目 (ModelSelector.tsx = statusLabels import 未存在で新規追加) + 重複候補 grep 探索 paradigm 20 件目達成 = 節目 20 件突破 + Loop 178 で確立済の statusLabels.ts への 6 度目の拡張 = paradigm 一貫性完全維持 + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与 + メイン批判判断 連続 93 セッション目達成 (handoff prompt R28 主張 = 5 callsite 主張だが実際は 6 callsite/3 file = ModelSelector.tsx L445 が handoff prompt 漏れを grep で検出 + 各 file の statusLabels import 状態を批判検証 = 1 file 新規 import 必要 + 2 file 既 import を確認)
+検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"確認中..."` = 1 件のみ確認 (statusLabels.ts L6 定義行のみ残存)
+備考: paradigm 反復 8 件目達成 = const 集約軸の paradigm 完全成熟期完全成熟最終収束完成超越. statusLabels.ts は 6 const で `"〜状態"` semantic + loading suffix 付き完全網羅. 新規 import 追加軸 paradigm の開拓 = 後継候補は別 paradigm 探索が必要. 残候補 = R21 (rust 軸) / R17 (別 paradigm 開拓) のみ.
+---
+```
+
+**注意点**:
+- 行末に空白 (trailing whitespace) を含めない
+- 上記の `---` は **末尾の 1 個のみ** (boundary 区切り). 冒頭には `---` を入れない
+- append は **Edit/Write を複数回繰り返さず、1 回で append が成功したら直ちに次へ進む** (Loop 144 fault precedent)
+
+#### 7-3: append 実行
+
+```bash
+cat /tmp/loop188-entry.txt >> AGENT_LOG.md
+```
+
+### Step 8: 2 番目の commit (chore agent-log)
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 188 = STATUS_CHECKING_WITH_DOTS_LABEL を statusLabels.ts に集約 (frontend 軸, const 集約 paradigm 反復 8 件目 = paradigm 完全成熟期完全成熟最終収束完成超越, 既存 file 拡張軸 paradigm 19 件目 + 新規 import 追加軸 paradigm 1 件目, alternation pivot K(187) → frontend(188) = 27 → 28, 重複候補 grep 探索 paradigm 20 件目達成 = 節目 20 件突破, メイン批判判断 連続 93 セッション目達成) のエントリ追記"
+```
+
+### Step 9: 完了確認
+
+```bash
+git status --short
+git log --oneline -3
+```
+
+`git status` は `working tree clean` (untracked の docs/handoff/* は無視可)。
+`git log` の上 2 件が本ループの commit (refactor + chore agent-log)。
+
+# 制約 (再掲、重要)
+
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` 禁止 (harness 内のみ)
+- 行末空白 (trailing whitespace) 禁止
+- AGENT_LOG.md への append は **1 回のみ**. Edit/Write を複数回繰り返さない
+- entry テンプレート冒頭に `---` を含めない (boundary 重複 fault 防止 = Loop 166 precedent + 19 連続実証成功)
+- 大型 file (AGENT_LOG.md ~34444 行) は Read 全体禁止 = `tail -10 AGENT_LOG.md` で末尾だけ確認
+- SettingsView.tsx 約 ~2200 行 + ModelSelector.tsx 約 ~700 行 = Read 全体禁止 = sed -n や Edit で対象範囲のみ操作
+- 範囲外の file (上記 5 file 以外) は **絶対に触らない**
+- range 内 file でも、上記列挙した line 以外は触らない
+- rust 系検証は skip 可 (frontend 軸のみ = cargo test 不要)
+- AGENTS.md / docs/autonomous-main-prompt-claude.md / docs/agent-harness-claude.md を必ず参照
+- 完了したら final answer で返事 (待機モード禁止 = 即座に 2-commit して終わる)
+
+# 期待される完了状態 (2-commit pattern)
+
+1. commit 1: `refactor(frontend): STATUS_CHECKING_WITH_DOTS_LABEL を src/utils/statusLabels.ts に集約 + 3 file 6 callsite を const 参照に統一` = 4 file 変更
+2. commit 2: `chore(agent-log): mjc-main Loop 188 = ...` = AGENT_LOG.md 1 file 変更
+
+`git status` working tree clean (untracked の docs/* は無視) を確認後、final answer で返事してください。
+
+# AGENT_LOG.md 末尾を冒頭で必ず確認
+
+冒頭で `tail -100 AGENT_LOG.md` を実行 → 直近 entry (Loop 187 + Loop 186 + ...) と末尾 boundary `---` の存在を確認してから着手すること。

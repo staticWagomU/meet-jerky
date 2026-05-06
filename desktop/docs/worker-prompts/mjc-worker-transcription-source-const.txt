@@ -1,0 +1,122 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 背景
+
+前 mjc-main-16 Loop 2 (commit 9eecc11) で `src-tauri/src/audio_event.rs` に `pub(crate) const AUDIO_SOURCE_MICROPHONE = "microphone"` / `pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO = "system_audio"` を導入し、`src-tauri/src/audio.rs` / `src-tauri/src/system_audio.rs` の event payload 出力 4 箇所を集約済み。
+
+ただし `src-tauri/src/transcription.rs` には同じ文字列値 `"microphone"` / `"system_audio"` が parse 処理 (CLI/設定入力解釈) として line 1052 / 1056 の match arm に残っている。これは event payload 出力責務 (audio_event.rs) とは異なる責務 (parse 処理) のため、audio_event.rs の定数を流用するのではなく **transcription.rs ローカルに別途定数定義する** 形が責務境界を保つ正しい設計選択。
+
+これは前 mjc-main-16 SUMMARY で「同じ文字列値だが別責務」と明示された候補 G4 の 1 ループ完結スライス。
+
+# Why (なぜこれが価値か)
+
+1. **責務境界の明示**: audio_event.rs (event payload 出力) と transcription.rs (parse 処理) が同じ文字列値を持つことを「2 箇所定数定義」という形で目に見える分離にする。同じ文字列値だが違う責務であることをコードレベルで宣言する = DRY 違反だが「責務境界の見える化 > DRY」優先判断。
+2. **typo 検知の強化**: 文字列リテラル → 定数化により、誤タイプによる match 失敗を compile error 化。
+3. **将来の identifier 変更時の単一書き換え地点化**: parse 処理側の "microphone" / "system_audio" を変更したい場合、定数 1 箇所のみで対応可能 (CLI 後方互換ブレークの判断もしやすい)。
+4. **Tidy First 原則**: 振る舞い不変、構造のみ改善、テスト追加のみ。前 mjc-main-16 Loop 2 と完全対称な 2 件目 application = 知見定着。
+
+# 担当範囲
+
+src-tauri/src/transcription.rs **のみ** (1 ファイル)。
+
+## 追加するもの
+
+### (1) 定数 2 個
+
+`parse_requested_transcription_sources` 関数 (line 1047-1069 付近) の **直前** に以下を追加:
+
+```rust
+const TRANSCRIPTION_SOURCE_MICROPHONE: &str = "microphone";
+const TRANSCRIPTION_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
+```
+
+doc comment は不要 (定数名で意図が自明 + audio_event.rs の AUDIO_SOURCE_* も doc comment なし)。`pub(crate)` 不要 (ファイル内のみ参照のため private で十分)。
+
+### (2) match arm 書き換え (line 1052 / 1056)
+
+`parse_requested_transcription_sources` 内の match arm:
+
+```rust
+"microphone" => Ok(RequestedTranscriptionSources { ... }),
+"system_audio" => Ok(RequestedTranscriptionSources { ... }),
+```
+
+を:
+
+```rust
+TRANSCRIPTION_SOURCE_MICROPHONE => Ok(RequestedTranscriptionSources { ... }),
+TRANSCRIPTION_SOURCE_SYSTEM_AUDIO => Ok(RequestedTranscriptionSources { ... }),
+```
+
+に変更。**注意**: Rust の match arm 左辺で大文字 const は pattern として動く (`const A: &str = "foo"; match s { A => ... }`)。`SCREAMING_SNAKE_CASE` であれば変数 binding と区別される。
+
+`"both"` arm と `_` (Err) arm はそのまま (touch しない)。
+
+### (3) error message (line 1065) は **触らない**
+
+```rust
+"文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+```
+
+の中の "microphone、system_audio、both" は user-facing message で別責務。Loop 拡大を避けるため touch しない。**この箇所と定数値の一致は別ループ送り** (Loop 4+ で test 化検討)。
+
+### (4) test 1 件追加
+
+既存 tests mod の中、`test_parse_requested_transcription_sources_accepts_known_values` (line 1356 付近) の **直前または直後** に以下の test 1 件追加:
+
+```rust
+#[test]
+fn transcription_source_constants_are_snake_case_lowercase() {
+    assert_eq!(TRANSCRIPTION_SOURCE_MICROPHONE, "microphone");
+    assert_eq!(TRANSCRIPTION_SOURCE_SYSTEM_AUDIO, "system_audio");
+}
+```
+
+これは前 mjc-main-16 Loop 2 (audio_event.rs の `audio_source_constants_are_snake_case_lowercase` test) と完全対称な命名 + 検知装置。**test 名は `transcription_source_*` プレフィックスで audio_event.rs と区別する**。
+
+# 実装上の注意
+
+1. **既存の test 内文字列リテラル ("microphone" / "system_audio") は touch しない**:
+   - line 1320: `Some("microphone")` (TranscriptionSource enum serialize 出力期待値)
+   - line 1338: `"source": "system_audio"` (json! 内 serialize 期待値)
+   - line 1372/1379: `parse_requested_transcription_sources(Some("microphone"))` (test 入力)
+   - line 1397-1398: `error.contains("microphone")` / `error.contains("system_audio")` (error 文言 assert)
+   これらは「parse 入力 / serialize 出力 / error 文言」の **passthrough 検知装置** として残す = 定数化すると将来定数値変更で test が追従し検知装置にならなくなる (前 mjc-main-16 Loop 2 と同一判断継承)。
+2. **doc comment line 761-762 は touch しない**: 「マイクのみ / システム音声のみ」の説明文内の `"microphone"` / `"system_audio"` は doc 用途で別責務。
+3. **import 追加禁止**: 同ファイル内 const 参照のため不要。
+4. **module 分割禁止**: transcription.rs 1 ファイル内で完結。新規 transcription_source.rs を切らない。
+5. **audio_event.rs / audio.rs / system_audio.rs / その他のファイルは touch しない**: これらは event payload 出力責務で別。
+6. **fully-qualified path 不要**: 同ファイル内で `TRANSCRIPTION_SOURCE_MICROPHONE` 直接参照。
+
+# 検証手順
+
+1. `cargo fmt -p meet-jerky --check` (差分なし期待)
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (警告ゼロ期待)
+3. `cargo test -p meet-jerky --lib` (現在 467 passed → +1 で **468 passed** 期待)
+4. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` (rust 検証通過、frontend 自動 skip 期待)
+
+検証コマンドの結果 (`passed` の数値) を必ず最終報告に含める。
+
+# AGENT_LOG.md 記載項目
+
+末尾に追記:
+- 開始日時 (JST)
+- 担当セッション = mjc-worker-transcription-source-const
+- 役割 = 作業担当 (sonnet)
+- 担当範囲 = src-tauri/src/transcription.rs のみ (定数 2 + match arm 書き換え 2 + test 1 件)
+- 指示内容の要約
+- 結果 (成功/失敗)
+- 変更ファイル
+- 検証結果 (cargo fmt / clippy / test passed 数値 / agent-verify)
+- 依存関係追加の有無
+- 失敗理由 (あれば)
+- 次アクション (メイン mjc-main によるレビュー → コミット)
+
+# 最終報告
+
+変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。
+
+**特に重要**: match arm 左辺で const が pattern として正しく解釈されたか (= compile error が出ていないか) を必ず確認・報告してください。出ていれば、該当箇所を文字列リテラルに戻して fallback 報告し、設計選択 A2 (定数定義 + 静的 assert で代替) への切り替えを提案してください。

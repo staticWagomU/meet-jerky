@@ -1,0 +1,174 @@
+あなたは meet-jerky の作業担当エージェント (Claude Code, print mode) = mjc-worker-app-detection-notification-loop87 です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。コミットは禁止しません (実施してください)。
+
+# 必読 (順番厳守)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読んで状況を把握する**。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**先頭は絶対に触らない**。
+2. AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (各 Read 全体可)
+3. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** (AGENT_LOG.md 31K+ 行、app_detection.rs 3117 行 = ヒント参照のみ)
+
+# 担当範囲 (Loop 87 = 構造分離 13 件目 = 機能分類軸 1 件目)
+
+`src-tauri/src/app_detection.rs` から **notification 関連 4 fn** を新 module `src-tauri/src/app_detection_notification.rs` に抽出する。
+
+## 抽出対象 (production fn 4 件)
+
+`app_detection.rs` の以下 4 fn を新 file へ移動 (~30 行 + doc コメント):
+
+- L443-452: `fn show_notification(app: &AppHandle, app_name: &str)`
+- L458-467: `fn show_inactive_notification(app: &AppHandle, app_name: &str, elapsed_secs: u64)` (`#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 付き)
+- L470-474: `fn notification_body(app_name: &str) -> String` (`#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 付き、純粋関数)
+- L479-484: `fn inactive_notification_body(app_name: &str, elapsed_secs: u64) -> String` (`#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 付き、純粋関数)
+
+抽出後、新 file 内では visibility を `pub(crate)` に変更 (caller は同 crate 内 app_detection.rs のため)。
+
+## 抽出対象 (axis test 3 件、`#[cfg(test)] mod tests` 内)
+
+`app_detection.rs` の以下 3 test を新 file の `#[cfg(test)] mod tests` 内に移動:
+
+- L937-949: `fn notification_body_does_not_claim_click_starts_recording()`
+- L1750-1762: `fn inactive_notification_body_includes_app_name_and_elapsed_minutes()`
+- L1765-1771: `fn inactive_notification_body_truncates_seconds_to_minutes()`
+
+移動先での import: `use super::{notification_body, inactive_notification_body};`
+
+## caller 修正 (app_detection.rs 内、3 件)
+
+- L190: `show_notification(&state.app_handle, app_name);` → `crate::app_detection_notification::show_notification(&state.app_handle, app_name);`
+- L320: `show_inactive_notification(&state.app_handle, &app_name, elapsed);` → `crate::app_detection_notification::show_inactive_notification(&state.app_handle, &app_name, elapsed);`
+- L418: `show_notification(&state.app_handle, &classification.service);` → `crate::app_detection_notification::show_notification(&state.app_handle, &classification.service);`
+
+(あるいは file 冒頭で `use crate::app_detection_notification::{show_notification, show_inactive_notification};` してそのまま元の呼び出しを残してもよい。後者を推奨 = 修正が冒頭 1 行追加 + 削除なし。)
+
+## lib.rs 修正
+
+`src-tauri/src/lib.rs` L3 (`mod app_detection_goto;`) と L4 (`mod app_detection_teams;`) の間に **alphabetical 順を維持して** `mod app_detection_notification;` を追加。
+
+## 新 file の構造 (推奨テンプレート)
+
+```rust
+//! 会議アプリ検知時の OS 通知 (banner) を発火する helper。
+//!
+//! `app_detection.rs` 本体の `handle_detection` / `handle_browser_url_detection` /
+//! `check_all_inactive_bundles` から呼ばれる。AppHandle 依存の `show_*` と
+//! 純粋関数 `*_body` で構成される。
+
+use tauri::AppHandle;
+
+pub(crate) fn show_notification(app: &AppHandle, app_name: &str) {
+    use tauri_plugin_notification::NotificationExt;
+
+    let title = "Meet Jerky";
+    let body = notification_body(app_name);
+
+    if let Err(e) = app.notification().builder().title(title).body(&body).show() {
+        eprintln!("[app_detection] notification show failed: {e}");
+    }
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn show_inactive_notification(app: &AppHandle, app_name: &str, elapsed_secs: u64) {
+    use tauri_plugin_notification::NotificationExt;
+
+    let title = "Meet Jerky";
+    let body = inactive_notification_body(app_name, elapsed_secs);
+
+    if let Err(e) = app.notification().builder().title(title).body(&body).show() {
+        eprintln!("[app_detection] inactive notification show failed: {e}");
+    }
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn notification_body(app_name: &str) -> String {
+    format!(
+        "{app_name} を検出しました。自分/相手側トラックの録音と文字起こしの状態をアプリで確認してください。"
+    )
+}
+
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub(crate) fn inactive_notification_body(app_name: &str, elapsed_secs: u64) -> String {
+    let elapsed_min = elapsed_secs / 60;
+    format!(
+        "{app_name} が {elapsed_min} 分以上検知されていません。会議が終了している場合は録音と文字起こしを停止してください。"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{inactive_notification_body, notification_body};
+
+    #[test]
+    fn notification_body_does_not_claim_click_starts_recording() {
+        // (元 L937-949 の内容を移植)
+    }
+
+    #[test]
+    fn inactive_notification_body_includes_app_name_and_elapsed_minutes() {
+        // (元 L1750-1762 の内容を移植)
+    }
+
+    #[test]
+    fn inactive_notification_body_truncates_seconds_to_minutes() {
+        // (元 L1765-1771 の内容を移植)
+    }
+}
+```
+
+# 規模超過防止 (重要)
+
+- 担当範囲は **app_detection.rs L443-484 (notification 4 fn) + L937-949 / L1750-1771 (test 3 件) + lib.rs mod 追加 + 新 file `app_detection_notification.rs`** に限定。他の fn / test / file は触らない。
+- **test 件数の上限**: cargo test --lib は **704 件全 pass** を維持 (件数完全不変)。test 移動のみで増減なし。
+- 振る舞い不変: notification_body / inactive_notification_body は format!() マクロが同じ expected text を生成する純粋関数なので、test 内 assert は完全に無変更で OK。
+- doc コメント (`#[cfg_attr]` 含む) を new file に正確に移植する。元の `///` doc も保持。
+
+# 検証手順 (順番厳守、worker 自身で全実施)
+
+1. `cd src-tauri && cargo build --lib` (エラーなし確認)
+2. `cd src-tauri && cargo clippy --lib --tests -- -D warnings` (警告ゼロ確認)
+3. `cd src-tauri && cargo fmt --check` (OK 確認)
+4. `cd src-tauri && cargo test --lib 2>&1 | tail -20` (704 passed 確認、件数完全不変)
+5. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs src-tauri/src/app_detection_notification.rs src-tauri/src/lib.rs` で総合検証
+
+# 2-commit pattern (Loop 60-86 連続 27 ループ実証 + Loop 80/85/86 進化 pattern)
+
+1. **refactor commit**: app_detection.rs + app_detection_notification.rs + lib.rs を staging して commit
+   - メッセージ: `refactor(app-detection): notification 関連 4 fn を app_detection_notification.rs に抽出 (mjc-main-20260505-45 Loop 87, 機能分類軸 1 件目, 大型 rust file 責務分離 13 file 目, AGENTS.md priority 1 寄与)`
+   - **commit 後、`git log -1 --format=%h` で実 hash を取得**
+2. AGENT_LOG.md 末尾の `---` 直後に Loop 87 エントリを追記
+   - **取得した refactor commit 実 hash を直接書く** (placeholder `<hash>` を書かない、Loop 80/85/86 precedent)
+   - chore commit hash は **書かない** = 後でメインが補正、または自身で chore commit 後に edit する場合は実 hash を書く
+3. **chore commit**: AGENT_LOG.md のみ staging して commit
+   - メッセージ: `chore(agent-log): mjc-main-20260505-45 Loop 87 = app_detection_notification.rs 抽出 (構造分離 13 file 目, 機能分類軸 1 件目, sweep 警告対象外) のエントリ追記`
+
+# AGENT_LOG.md 末尾追記 手順 (重要)
+
+1. `tail -10 AGENT_LOG.md` で末尾を確認 (末尾は `---` 区切り)
+2. 末尾の `---` 直後に Loop 87 エントリを追記。形式 (precedent 踏襲):
+
+```
+[mjc-main-20260505-45 Loop 87 / 2026-05-05]
+worker: mjc-worker-app-detection-notification-loop87 (作業)
+範囲: src-tauri/src/app_detection.rs (notification 4 fn 削除 + caller 3 件修正 + axis test 3 件削除) + src-tauri/src/app_detection_notification.rs (新規 ~XX 行) + src-tauri/src/lib.rs (mod 追加)
+内容: app_detection.rs L443-484 の show_notification / show_inactive_notification / notification_body / inactive_notification_body 4 fn を新 module app_detection_notification.rs に抽出 (機能分類軸 = 過去のサービス別 URL 経路軸とは別 sweep)。axis test 3 件 (notification_body_does_not_claim_click_starts_recording / inactive_notification_body_includes_app_name_and_elapsed_minutes / inactive_notification_body_truncates_seconds_to_minutes) を新 file 内 #[cfg(test)] mod tests に移動。caller は app_detection.rs 内のみ 3 件 (L190 / L320 / L418) で `crate::app_detection_notification::` 経由に変更 (または file 冒頭 use 文追加)。lib.rs alphabetical 順に `mod app_detection_notification;` を app_detection_goto と app_detection_teams の間に挿入。大型 rust file 責務分離 13 file 目 = 機能分類軸 1 件目 = サービス別軸 7 file (Loop 1-65 圏) 完了後の新 axis 開始。
+振る舞い: cargo test --lib 704 passed (件数完全不変、format!() expected text 同一のため test assert 無変更)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <refactor 実 hash> refactor(app-detection): notification 関連 4 fn を app_detection_notification.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = 機能分類軸の single source of truth 化)
+
+---
+```
+
+3. **trailing whitespace (行末の空白文字) を絶対に入れない**。エディタ設定で「保存時 trailing whitespace 削除」を有効化、または保存後 `grep -nE " +$" AGENT_LOG.md | tail -5` で確認 = 出力ゼロが正常。
+
+# 完了報告
+
+worker prompt 完了時 (1 ターンで報告) に、以下を簡潔にまとめる:
+
+- 変更ファイル 3 件 (app_detection.rs / app_detection_notification.rs / lib.rs) + AGENT_LOG.md 1 件 = 4 file 変更
+- cargo test 件数 (704 passed)、clippy 警告ゼロ、fmt OK
+- refactor commit hash + chore commit hash 両方
+- 残リスク (基本なし、振る舞い不変のため)
+- 1 ターンで完結する形でまとめてください。

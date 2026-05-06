@@ -1,0 +1,83 @@
+あなたは meet-jerky プロジェクトの worker (mjc-worker-loop120-archive-plan-stats-update-13) です。
+Loop 120 = K 軸 = harness 衛生軸 = `docs/architecture/agent-log-archive-plan.md` の Section 2.3 末尾に **観測表 13 件目** を追記する作業を担当します (Loop 79/81/86/95/98/102/106/109/111/113/115/118 の precedent 12 件目達成済 = 13 件目追記)。paradigm pivot (rust → K) + alternation pattern 11 連続成功 → 12 連続維持。
+
+# 最初に必ず実施
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ読む (~33,038 行 / ~4MB あるので Read 全体禁止)。AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+2. `tail -10 AGENT_LOG.md` で末尾の `---` 区切りを確認 (新規追記は末尾の `---` 直後)
+3. `wc -l AGENT_LOG.md` で現在行数を確認 (期待値: 33,038 行 = Loop 119 完走 + mjc-main-20260505-61 SESSION SUMMARY 追記後時点)
+4. `sed -n '46,57p' docs/architecture/agent-log-archive-plan.md` で Section 2.3 の現状 (観測表 12 件目末尾 L56) を確認
+
+# 作業範囲 (担当範囲外の編集禁止)
+
+## 編集: `docs/architecture/agent-log-archive-plan.md`
+
+Section 2.3 末尾 (現在 L56 末尾 + L57 空行) に **観測表 13 件目** を追記する。L57 (`### 2.4 既存運用の維持コスト` の前の空行) の **直前** に挿入。
+
+追記内容:
+
+```
+> **更新観測 (mjc-main-20260505-61 Loop 119 完了時点)**: Loop 117 → Loop 119 (~2 ループ間 + SESSION SUMMARY 1 件 mjc-main-20260505-61) で +79 行 (32,959 → 33,038)、平均 ~40 行/loop。Loop 117 観測値 (~46 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (Loop 118 = harness 衛生 K 軸 = docs entry 1 件 + chore entry 1 件 + Loop 119 = rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = app_detection.rs classify_meeting_url + classify_meeting_window_title → app_detection_meeting_classifier.rs (新規) = refactor + chore) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 触らず = 0 行寄与) の混合増加が寄与。Loop 117 観測値 (~46 行/loop) と比較して ~13% 減の主因 = SESSION SUMMARY 1 件 (mjc-main-20260505-61 のみ、~57 行) + paradigm pivot 2 軸 (K + rust) = 12 件目の 3 軸混合 (K + frontend + rust) よりも paradigm 数縮小 + chore entry が長文化 (Loop 119 の API 互換維持戦略 (pub use re-export) 説明等) でも軽量化 paradigm 継続。長期平均 ~830 行/時間 とは依然乖離あり (1 ループ ~40 行 = ~160-400 行/時間 の範囲、アクティブセッション間の差異)。
+```
+
+注意:
+- **行末の空白文字 (trailing whitespace) 禁止**
+- 追記位置 = L56 末尾の改行直後 + 空行 1 行を保ち、その後に上記 1 行追記、更にその後に空行を保つ (既存の format に合わせる)
+- 既存の Section 2.3 観測表 1-12 件目には触らない
+- 数値は本指示文の通り (32,959 → 33,038 = +79 行)
+
+# 検証
+
+- `bash scripts/agent-verify.sh docs/architecture/agent-log-archive-plan.md` で全項目 OK 確認
+- rust ファイル無変更のため cargo test 不要
+- frontend 無変更のため npm run build 不要
+
+# AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に以下のエントリを追記:
+
+```
+[mjc-main-20260505-62 Loop 120 / 2026-05-06]
+worker: mjc-worker-loop120-archive-plan-stats-update-13 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾に観測表 13 件目追記、~3 行)
+内容: Loop 119 完了時点 (33,038 行) の更新観測を Section 2.3 末尾に追記。Loop 117 → Loop 119 で +79 行 / 平均 ~40 行/loop。Loop 117 観測 (~46 行/loop) と比較して ~13% 減 = paradigm pivot 多軸 (Loop 118 K 軸 + Loop 119 rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = app_detection_meeting_classifier.rs (新規) 抽出) で SESSION SUMMARY 1 件 + chore entry 3 件 + docs entry 1 件 + refactor entry 1 件 (refactor は AGENT_LOG.md 0 行寄与) の混合増加が寄与。harness 衛生軸 = variety pivot 達成 (Loop 119 rust 軸 → Loop 120 K 軸 = paradigm pivot 達成 + alternation pattern 完璧継続: K(111) → frontend(112) → K(113) → frontend(114) → K(115) → frontend(116) → rust(117) → K(118) → rust(119) → K(120) = 12 連続成功)、Loop 79/81/86/95/98/102/106/109/111/113/115/118 precedent 13 件目達成。
+振る舞い: rust ファイル無変更のため cargo test 不要 (704 件件数完全不変は前 Loop 119 で確認済)
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <DOCS_HASH> docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 119 完了時点の更新観測追記
+AGENTS.md priority: 5-7 (harness 衛生 = AGENT_LOG.md archive 戦略 plan の現実値継続観測)
+
+---
+```
+
+(`<DOCS_HASH>` は docs commit の実 hash で置換。chore commit hash は意図的に書かない = Loop 60-119 で 59 連続成功した 2-commit pattern)
+
+# 2-commit pattern (worker 自律 連続 59 ループ成功 = 完全安定 pattern 化)
+
+1. **docs commit (1 件目)**: `git add docs/architecture/agent-log-archive-plan.md && git commit -m "docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 119 完了時点の更新観測追記 (mjc-main-20260505-62 Loop 120, harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118 precedent 13 件目, +79 行 / 平均 ~40 行/loop)"`
+2. **docs commit hash 取得**: `git log -1 --format=%H | head -c 7` で短縮 hash 取得
+3. **AGENT_LOG.md 末尾追記**: 上記エントリの `<DOCS_HASH>` を実 hash に置換し、`tail -10 AGENT_LOG.md` で末尾確認後、Write ツールで一時 file に書いた後 `cat <tmp_file> >> AGENT_LOG.md` で末尾に append (Edit ツールでは末尾 `---` が unique にならない場合あり = Write 後 cat append 推奨)
+4. **chore commit (2 件目)**: `git add AGENT_LOG.md && git commit -m "chore(agent-log): mjc-main-20260505-62 Loop 120 = agent-log-archive-plan.md Section 2.3 更新観測追記 (harness 衛生軸 = variety pivot, Loop 79/81/86/95/98/102/106/109/111/113/115/118 precedent 13 件目, +79 行 / 平均 ~40 行/loop) のエントリ追記"` (chore commit 自身の hash は AGENT_LOG.md に書かない = 59 連続 precedent)
+
+# 規模超過防止
+
+- 編集対象 file: 2 つ (agent-log-archive-plan.md + AGENT_LOG.md)
+- 追記行数: agent-log-archive-plan.md = ~3 行 (空行含む)、AGENT_LOG.md = ~13 行 (entry + `---`)
+- test 件数の上限: 704 件 (rust 無変更のため変動なし)
+- frontend test 件数: 検証なし (framework 未導入)
+
+# 注意点
+
+- **行末の空白文字 (trailing whitespace) 禁止**
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep`/`sed -n 'X,Yp'` で対象範囲のみ参照
+- agent-log-archive-plan.md の Section 2.3 既存観測表 (12 件) には触らない
+- 数値計算: 33,038 - 32,959 = +79 行、+79 / 2 ループ ≈ ~40 行/loop、~40 / 46 ≈ ~87% (= ~13% 減)
+
+# 完走後のメイン報告
+
+完走時に以下を main agent に報告:
+- docs commit hash + chore commit hash
+- agent-log-archive-plan.md 編集後の Section 2.3 末尾 3 行 (`sed -n '56,59p' docs/architecture/agent-log-archive-plan.md`)
+- agent-verify.sh 結果
+
+以上。

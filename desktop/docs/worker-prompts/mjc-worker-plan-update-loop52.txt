@@ -1,0 +1,139 @@
+あなたは meet-jerky の Tidy First worker (sonnet) です。Loop 52 で `docs/architecture/transcription-refactor-plan.md` を mjc-main-20260505-25 Loop 50/51 の 2 件を一括反映する形で更新してください。
+
+# 最初に必ず実施すること (worker prompt 必須要素)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を読み、運用ルールと直近セッション状況を把握する**。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. AGENT_LOG.md 追記の具体手順 = `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に Write で別ファイルを作り、`cat <file> >> AGENT_LOG.md` で append。Edit では末尾 `---` が unique にならない可能性が高いので避ける。
+5. **担当範囲外の編集禁止**: 本タスクは plan.md 1 ファイル + AGENT_LOG.md 末尾追記 + git commit の 3 操作のみ。それ以外のファイル (transcription.rs / src-tauri/* / package.json / scripts/* 等) は **絶対に触らない**。test 件数や transcription.rs 行数は引数として与えるので、これを真として扱い、独自に計測 / 検証する必要はない。
+6. **大型ファイル全体 Read 禁止**: AGENT_LOG.md は ~28,000 行 / ~2.5MB のため、必ず `tail -350 AGENT_LOG.md` で末尾だけ読む。`Read` ツールでファイル全体を開かないこと。plan.md は 330 行なので全体 Read OK。
+7. **行末の空白文字 (trailing whitespace) 禁止**。エディタ設定や手動で末尾 trim を確認する。
+
+# Loop 52 の編集内容
+
+## 対象ファイル
+
+`/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md`
+
+## 編集 A: 進捗サマリセクションの更新 (L28-42 周辺)
+
+現状:
+- L28: `## 進捗サマリ (mjc-main-20260505-24 Loop 48 時点)`
+- L42: `**transcription.rs 累計削減**: 元 2999 行 → 現在 **611 行** = **約 79.6% 縮小** (~2388 行削減) = **「75% 里程標突破からさらに +4.6pt 進展」**`
+
+更新後:
+- L28: `## 進捗サマリ (mjc-main-20260505-25 Loop 51 時点)`
+- L42: `**transcription.rs 累計削減**: 元 2999 行 → 現在 **327 行** = **約 89.1% 縮小** (~2672 行削減) = **「85% 里程標突破からさらに +4.1pt 進展 = 90% 里程標到達直前」**`
+
+## 編集 B: 残存課題セクションに Loop 50 + 51 反映 (L44-58 周辺)
+
+現状の L54 と L55 の間に、新たな 2 行を Loop 48 ✅ 完了行の直後に追加:
+
+```
+- **mjc-main-20260505-25 Loop 50 ✅ 完了**: MockEngine / MockStream impl + 3 tests (test_stream_lifecycle_feed_drain_finalize / test_stream_config_speaker_propagates_to_segments / test_feed_empty_samples_is_noop_in_mock) を transcription.rs から transcription_traits.rs に移動 = TranscriptionEngine / TranscriptionStream トレイト本体 + Mock 実装 + 3 tests 同居の locality 完成 (commit `3906d08`、-177 行)
+- **mjc-main-20260505-25 Loop 51 ✅ 完了**: TranscriptionManager 関連 tests 6 件 (test_ensure_engine_creates_whisper_local_when_supported / test_ensure_engine_returns_error_for_unsupported_engine / test_ensure_engine_persists_engine_for_session / test_ensure_engine_returns_error_when_model_not_downloaded / test_validate_stream_count_for_engine_accepts_max_per_engine 系) を transcription.rs から transcription_manager.rs に移動 = ensure_engine 関数本体 + 6 tests 同居の locality 完成 (commit `451e720`、-107 行)
+```
+
+## 編集 C: L55 (`transcription.rs 残存 **611 行** の更なる責務分離`) を `transcription.rs 残存 **327 行** の更なる責務分離` に更新
+
+## 編集 D: L56 (`候補: Mock* trait tests 3 件 + MockEngine/MockStream impl 移動 / ensure_engine tests 3 件移動`) を以下に更新:
+
+`候補: tests mod 内の StreamConfig Debug tests / その他 tests の関連ファイル locality 集約 / WHISPER_SAMPLE_RATE 移動の最終判断 / docs / frontend / 検知拡張`
+
+## 編集 E: 末尾の参考行 (L329) を更新
+
+現状: `- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-24 Loop 48 時点で 611 行 = 約 79.6% 縮小達成 = 75% 里程標突破からさらに +4.6pt 進展)`
+
+更新後: `- (本プラン作成時の 2999 行は mjc-main-20260505-3 時点。mjc-main-20260505-25 Loop 51 時点で 327 行 = 約 89.1% 縮小達成 = 85% 里程標突破からさらに +4.1pt 進展 = 90% 里程標到達直前)`
+
+## 編集 F: 新サブセクション 2 件を末尾「## 参考」セクションの直前に追加
+
+「## 関連: CHUNK 定数移動 ✅ 完了 (mjc-main-20260505-24 Loop 48 = commit `57e1e13`)」セクションの直後 (L323 末尾) と、「## 参考」セクション (L324) の間に、新サブセクション 2 件を挿入:
+
+```
+## 関連: Mock impl + tests 移動 ✅ 完了 (mjc-main-20260505-25 Loop 50 = commit `3906d08`)
+
+mjc-main-20260505-25 Loop 50 で MockEngine / MockStream impl + 関連 tests 3 件 (~177 行) を transcription.rs から `src-tauri/src/transcription_traits.rs` に移動した = TranscriptionEngine / TranscriptionStream トレイト本体 + Mock 実装 + 3 tests 同居の locality 完成。
+
+- 移動対象:
+  - `MockEngine` struct + `TranscriptionEngine impl`
+  - `MockStream` struct + `TranscriptionStream impl`
+  - `test_stream_lifecycle_feed_drain_finalize` / `test_stream_config_speaker_propagates_to_segments` / `test_feed_empty_samples_is_noop_in_mock`
+- 移動先: transcription_traits.rs の新規 `#[cfg(test)] mod tests` (`use super::*;` で StreamConfig / TranscriptionEngine / TranscriptionStream + Mock* アクセス) + 既存トレイト定義との locality 完成
+- transcription.rs の use 文整理: 移動後に unused になった `use crate::transcription_traits::{TranscriptionEngine, TranscriptionStream};` 等を削除
+- メイン批判判断: handoff 候補 F の前提「Mock 関連は transcription.rs L?? に存在 = 移動先 transcription_traits.rs」を grep で実態確認 → Mock 参照は transcription.rs tests mod 内のみ + transcription_traits.rs L7-16 で StreamConfig 定義 = locality 完璧と確定 = メイン批判判断 連続 6 セッション目
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 611 → 434 行 (-177 行)、transcription_traits.rs 48 → 229 行 (+181 行)
+
+## 関連: TranscriptionManager tests 移動 ✅ 完了 (mjc-main-20260505-25 Loop 51 = commit `451e720`)
+
+mjc-main-20260505-25 Loop 51 で TranscriptionManager 関連 tests 6 件 (~107 行) を transcription.rs から `src-tauri/src/transcription_manager.rs` に移動した = ensure_engine 関数本体 + 6 tests 同居の locality 完成。
+
+- 移動対象 (TranscriptionManager / ensure_engine 関連 tests 6 件):
+  - `test_ensure_engine_creates_whisper_local_when_supported`
+  - `test_ensure_engine_returns_error_for_unsupported_engine`
+  - `test_ensure_engine_persists_engine_for_session`
+  - `test_ensure_engine_returns_error_when_model_not_downloaded`
+  - `test_validate_stream_count_for_engine_accepts_max_per_engine` 系を含む 6 件
+- 移動先: transcription_manager.rs の新規 / 既存 `#[cfg(test)] mod tests` (`use super::*;` で TranscriptionManager + ensure_engine アクセス)
+- transcription.rs の use 文整理: 移動後に unused になった use 文を完全削除 (1 ループ完結)
+- メイン批判判断: handoff サマリ予測「3 件・規模 SS」を grep で実態確認 → 「6 件・規模 SS-S」訂正 → 一括移動で use 文完全削除 + 1 ループ完結 + locality 完璧の 3 点優位達成 = メイン批判判断 連続 6 セッション目
+- 振る舞い不変 = 702 passed 件数不変
+- transcription.rs 434 → 327 行 (-107 行)、transcription_manager.rs 124 → 235 行 (+111 行)
+
+```
+
+# 検証手順 (worker 完了直前に必ず実施)
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-verify.sh docs/architecture/transcription-refactor-plan.md
+```
+
+(plan.md は markdown のみ → rust / frontend は skip 判定で軽量に終わる)
+
+# AGENT_LOG.md 末尾追記 (worker 完了直前に必ず実施)
+
+末尾の `---` 直後に以下フォーマットで追記:
+
+```
+[mjc-main-20260505-26 Loop 52 / 2026-05-05 ~JST]
+
+## What
+- `docs/architecture/transcription-refactor-plan.md` を最新状態に更新:
+  - 進捗サマリセクション: mjc-main-20260505-24 Loop 48 → mjc-main-20260505-25 Loop 51 時点
+  - 累計削減行数: 611 行 (79.6%) → 327 行 (89.1%) = 85% 里程標突破からさらに +4.1pt 進展 = 90% 里程標到達直前
+  - 残存課題セクション: Loop 50 (Mock impl + 3 tests -177 行) + Loop 51 (TranscriptionManager tests 6 件 -107 行) 反映
+  - 新サブセクション 2 件: Mock impl + tests 移動 ✅ + TranscriptionManager tests 移動 ✅
+  - 末尾参考: 611 行 (79.6%) → 327 行 (89.1%) 更新
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (計画駆動継続性 = 後継エージェントの「未着手」誤判断予防)
+- mjc-main-20260505-25 Loop 50 + Loop 51 の 2 件を 1 ループで一括反映 (variety pivot = docs 軸 = Loop 49 から 3 ループ間隔 = 警告境界だが許容)
+- test 軸 9 件目連続超過警告から完全 pivot
+
+## How (Tidy First, behavior-preserving)
+- markdown のみ更新 = 振る舞い完全不変 = cargo test 件数変化なし
+- 既存節構造を維持し、新サブセクション 2 件を末尾「## 参考」前に追加
+
+## Verify
+- agent-verify.sh: OK (markdown のみ → rust/frontend skip)
+- trailing whitespace: なし
+
+## commit
+- (worker が agent-commit.sh で自走 commit、commit hash は後でメインが反映)
+```
+
+# 完了後コミット手順
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-commit.sh "docs(transcription-refactor-plan): Loop 50 Mock impl + Loop 51 TranscriptionManager tests を反映 (mjc-main-20260505-25 Loop 50/51, 89.1% 縮小 327 行 +9.5pt 進展, 計画駆動継続性確保)" docs/architecture/transcription-refactor-plan.md AGENT_LOG.md
+```
+
+(commit hash はメインが後ほど追記 chore commit する。worker は commit までで完了。)
+
+# 最終確認
+
+worker の作業結果は git status --short に `M docs/architecture/transcription-refactor-plan.md` および `M AGENT_LOG.md` の両方が見える状態 → bash scripts/agent-commit.sh で commit 後 working tree clean 状態 (untracked のみ残る) を目指す。

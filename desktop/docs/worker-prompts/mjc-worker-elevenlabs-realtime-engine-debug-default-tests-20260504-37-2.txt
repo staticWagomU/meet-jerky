@@ -1,0 +1,217 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 最初に必ず実行すること (順序厳守)
+
+1. `tail -350 AGENT_LOG.md` で末尾を読み、SESSION SUMMARY (mjc-main-36) と直前 Loop 1 (mjc-main-37 Loop 1 = openai_realtime.rs) の追記場所を視覚的に学習せよ。
+2. AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾の `---` 直後** に行うこと。先頭追記は事故になるので厳禁。
+3. **先頭は絶対に触らない**。
+4. 必読: AGENTS.md / docs/product-concept.md / docs/agent-harness-claude.md (それぞれ短い)。
+
+# 担当範囲 (厳守)
+
+以下 2 ファイル **のみ** 編集可。他ファイルは絶対に触らない。
+
+- `src-tauri/src/elevenlabs_realtime.rs` の **`mod tests` (l.1022-) の末尾に新規 3 件のテストを追加するのみ**
+  - 既存の test 関数、`pub struct ElevenLabsRealtimeEngine`、`impl` ブロック、`use` 宣言、derive 属性、ws_task module、その他の関数は **完全無変更**。
+  - struct field の追加削除、derive の追加削除、可視性変更は **絶対禁止** (Tidy First 原則 = 振る舞い不変)。
+- `AGENT_LOG.md` の **末尾の `---` 直後に追記**
+  - 末尾以外への追記禁止。先頭追記事故の precedent あり。
+
+# 大型ファイル参照ルール (重要)
+
+- `src-tauri/src/elevenlabs_realtime.rs` (1081 行) と `AGENT_LOG.md` (23500+ 行) は **`Read` 全体禁止**。
+- 必要箇所のみ `tail` / `head` / `grep` / `sed -n 'A,Bp'` で参照すること。
+- 既存テスト命名規則確認は `grep -n "fn " src-tauri/src/elevenlabs_realtime.rs | tail -40` で十分。
+- 末尾追記位置確認は `tail -10 src-tauri/src/elevenlabs_realtime.rs` で十分。
+
+# 実装内容 (Tidy First, 振る舞い不変、追加テストは厳密に 3 件のみ、上限超過禁止)
+
+`src-tauri/src/elevenlabs_realtime.rs` の `mod tests` (l.1022- 既存) の **末尾 (= mod tests の閉じ括弧 `}` の直前)** に、以下 3 件の `#[test]` 関数を追加せよ。
+
+## 対象型
+
+```rust
+#[derive(Debug, Default)]
+pub struct ElevenLabsRealtimeEngine {
+    pub model_id: String,
+}
+
+impl ElevenLabsRealtimeEngine {
+    pub fn new(model_id: impl Into<String>) -> Self {
+        Self {
+            model_id: model_id.into(),
+        }
+    }
+}
+```
+
+= `Debug` と `Default` のみ derive。`Clone` / `PartialEq` / `Serialize` / `Deserialize` は **派生なし**。OpenAI 系 (mjc-main-37 Loop 1 で補強済) と **完全に対称形** (field 名のみ `model` → `model_id` に異なる)。
+
+## 追加する 3 件のテスト
+
+### T1: `engine_default_debug_format_contains_type_name_and_empty_model_id_field`
+
+`ElevenLabsRealtimeEngine::default()` の Debug 出力に以下が含まれることを **3 段の assert** で確認する。
+
+- 型名 `"ElevenLabsRealtimeEngine"` を含む
+- field 名 `"model_id"` を含む (snake_case)
+- 空文字列を表す `"\"\""` を含む
+
+例:
+```rust
+#[test]
+fn engine_default_debug_format_contains_type_name_and_empty_model_id_field() {
+    let engine = ElevenLabsRealtimeEngine::default();
+    let formatted = format!("{engine:?}");
+    assert!(formatted.contains("ElevenLabsRealtimeEngine"), "型名: {formatted}");
+    assert!(formatted.contains("model_id"), "field 名: {formatted}");
+    assert!(formatted.contains("\"\""), "空 String を Debug 出力: {formatted}");
+}
+```
+
+### T2: `engine_new_with_str_slice_debug_format_contains_provided_model_id_value`
+
+`ElevenLabsRealtimeEngine::new("scribe_v2_realtime")` (= **&str slice** から `Into<String>` 経由) の Debug 出力に以下が含まれることを **3 段の assert** で確認する。
+
+- 型名 `"ElevenLabsRealtimeEngine"` を含む
+- field 名 `"model_id"` を含む
+- 渡した model_id 値 `"scribe_v2_realtime"` を Debug 文字列として `"\"scribe_v2_realtime\""` 形式で含む
+
+例:
+```rust
+#[test]
+fn engine_new_with_str_slice_debug_format_contains_provided_model_id_value() {
+    let engine = ElevenLabsRealtimeEngine::new("scribe_v2_realtime");
+    let formatted = format!("{engine:?}");
+    assert!(formatted.contains("ElevenLabsRealtimeEngine"));
+    assert!(formatted.contains("model_id"));
+    assert!(formatted.contains("\"scribe_v2_realtime\""));
+}
+```
+
+### T3: `engine_new_with_owned_string_debug_format_contains_provided_model_id_value`
+
+`ElevenLabsRealtimeEngine::new(String::from("scribe_v2_legacy"))` (= **owned String** から `Into<String>` 経由) の Debug 出力に以下が含まれることを **3 段の assert** で確認する。
+
+- 型名 `"ElevenLabsRealtimeEngine"` を含む
+- field 名 `"model_id"` を含む
+- 渡した model_id 値 `"scribe_v2_legacy"` を Debug 文字列として `"\"scribe_v2_legacy\""` 形式で含む
+
+= `Into<String>` の **&str path と owned String path 双方を CI でカバー**する (T2 と合わせて Into<String> bound の 2 path をカバー)。
+
+例:
+```rust
+#[test]
+fn engine_new_with_owned_string_debug_format_contains_provided_model_id_value() {
+    let engine = ElevenLabsRealtimeEngine::new(String::from("scribe_v2_legacy"));
+    let formatted = format!("{engine:?}");
+    assert!(formatted.contains("ElevenLabsRealtimeEngine"));
+    assert!(formatted.contains("model_id"));
+    assert!(formatted.contains("\"scribe_v2_legacy\""));
+}
+```
+
+## 追加位置
+
+`mod tests` の **最後のテスト関数の後ろ**、`mod tests` の閉じ括弧 `}` の直前に追加。
+
+## 既存テストとの命名衝突を避ける
+
+既存の test 関数群は `is_scribe_error_event_*` / `extract_transcript_*` / `extract_error_message_*` / `push_error_*` 等の命名規則。本 Loop の 3 件は `engine_default_*` / `engine_new_with_*_debug_format_*` で衝突しない。
+
+## 厳禁事項
+
+- テスト件数 **3 件超** の追加禁止 (上限厳格)。
+- 既存テストの編集 / 削除 / 並べ替え禁止。
+- `pub struct ElevenLabsRealtimeEngine` の field 追加削除、derive 変更、可視性変更禁止。
+- `impl ElevenLabsRealtimeEngine` の関数追加削除禁止。
+- `use` 宣言の追加削除禁止 (`super::*` で ElevenLabsRealtimeEngine は既に import 済の想定だが、必要なら `mod tests` 直下の `use super::*;` を確認)。
+- `mod tests` の `#[cfg(test)]` 属性変更禁止。
+- 行末空白 (trailing whitespace) **禁止**。最終確認時に `grep -n " $" <file>` 等で確認すること。
+- 派生型の動作を変える変更禁止 (Tidy First = 振る舞い不変)。
+- **実 ElevenLabs API への通信は絶対に発生させない** (本テストは派生型の Debug / Default のみで、`start_stream` 等のネットワーク経路は呼び出さない)。
+
+# AGENT_LOG.md 末尾追記内容
+
+`AGENT_LOG.md` の **末尾の `---` の直後** に、以下フォーマットで追記する (先頭は絶対に触らない)。
+
+```
+## [YYYY-MM-DD HH:MM JST] mjc-worker-elevenlabs-realtime-engine-debug-default-tests-20260504-37-2 (mjc-main-37 Loop 2)
+
+### 役割
+作業担当 / elevenlabs_realtime.rs ElevenLabsRealtimeEngine の Debug + Default + Into<String> 軸補強
+
+### 作業範囲
+- src-tauri/src/elevenlabs_realtime.rs (mod tests 末尾に T1/T2/T3 追加、struct / impl / 既存 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 指示内容
+mjc-main-37 から発注。「Debug 軸補強」21 連続 application + 10 ファイル目展開 (elevenlabs_realtime.rs 初) + 「Clone 派生欠如形態」2 連続 application + Default 軸 + Into<String> 入力タイプ別軸 2 連続 + OpenAI 系 (mjc-main-37 Loop 1) との対称形構築 (双子達成) の 5 軸戦略価値で T1/T2/T3 を 3 件追加。Tidy First = 振る舞い不変、struct/impl 完全無変更、テスト件数厳密に 3 件のみ。
+
+### 結果
+3 件追加、cargo test --lib 622 件 passed (旧 619 → +3 件、これは検証コマンドで確認した実測値で置換すること)。
+
+### 変更ファイル
+- src-tauri/src/elevenlabs_realtime.rs (mod tests 末尾 T1/T2/T3 追加)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+[cargo test --lib の末尾 1-2 行を実コピー]
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+(`YYYY-MM-DD HH:MM JST` は実時刻、`622 件 passed` は実測値で置換すること。)
+
+# 検証手順 (順守)
+
+実装後、以下を順に実行せよ。
+
+```bash
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo test --lib elevenlabs_realtime 2>&1 | tail -20
+cargo test --lib 2>&1 | tail -10
+cargo clippy --lib -- -D warnings 2>&1 | tail -10
+```
+
+- `cargo test --lib elevenlabs_realtime`: 既存 + 新規 3 件全て pass を確認。
+- `cargo test --lib`: lib 全体で 622 件 passed (619 + 3) を確認。
+- `cargo clippy --lib -- -D warnings`: 警告ゼロを確認。
+
+# 報告フォーマット (1 ターン完結、簡潔に)
+
+## 変更内容
+- T1/T2/T3 を elevenlabs_realtime.rs `mod tests` 末尾に追加 (struct / impl / 既存 test 完全無変更)
+- AGENT_LOG.md 末尾追記
+
+## 変更ファイル
+- src-tauri/src/elevenlabs_realtime.rs
+- AGENT_LOG.md
+
+## 検証結果
+- cargo test --lib elevenlabs_realtime: X passed
+- cargo test --lib: 622 passed (619 → +3)
+- cargo clippy --lib -- -D warnings: 0 warnings
+
+## 残リスク
+- なし (Tidy First, 振る舞い不変)
+
+# 重要な注意事項 (再掲)
+
+- **AGENT_LOG.md は時系列順、新規追記は必ず末尾の `---` 直後**
+- **先頭は絶対に触らない**
+- **テスト件数 3 件のみ、上限超過禁止**
+- **struct / impl / 既存 test 完全無変更**
+- **行末空白禁止**
+- **大型ファイル Read 全体禁止 (tail/head/grep/sed で対象範囲のみ)**
+- **担当範囲外編集禁止**
+- **実 ElevenLabs API への通信絶対禁止**

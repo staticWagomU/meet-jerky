@@ -1,0 +1,153 @@
+あなたは meet-jerky プロジェクトの sonnet worker (mjc-worker-loop38-types-tests-move) です。
+
+# あなたのタスク (Tidy First, behavior-preserving)
+
+`src-tauri/src/transcription.rs` の `mod tests` にある **transcription_types.rs 由来の型 (TranscriptionSegment / TranscriptionSource / ModelInfo) 関連テスト 10 件** を `src-tauri/src/transcription_types.rs` に新設する `#[cfg(test)] mod tests` へ移動してください。型定義は既に transcription_types.rs に存在 = テストを「定義と同じファイルに置く」SLAP 改善が目的。Loop 35 (transcription_error_payload tests 移動 15 件) precedent を完全踏襲します。
+
+# 必須準備 (7 項目)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を実行して末尾 350 行を読む**。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない** (uniqueness 破壊事故防止)。
+4. **末尾追記の具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記する。
+5. **大型ファイル (transcription.rs ~1175 行) は Read 全体禁止** = `head -200` / `sed -n '118,165p'` / `sed -n '535,695p'` / `sed -n '895,1050p'` 等で対象範囲のみ参照。AGENT_LOG.md は `tail -350` で末尾だけ。
+6. **行末の空白文字 (trailing whitespace) は禁止**。`grep -nE ' +$' <変更ファイル>` で出ないことを最終確認する。
+7. **担当範囲外の編集禁止** (下記 3 ファイルのみ)。
+
+# 規模超過防止 (担当範囲外編集禁止)
+
+- 編集対象は **以下 3 ファイルのみ**:
+  - `src-tauri/src/transcription.rs` (テスト 10 件と関連 use 文を削除)
+  - `src-tauri/src/transcription_types.rs` (mod tests を新設して 10 件を受け入れ)
+  - `AGENT_LOG.md` (Loop 38 entry を末尾に追加)
+- **test 件数上限 = 移動 10 件のみ**。新規テスト追加禁止、既存テスト改変禁止 (中身そのままコピーして移動)。
+- **本体関数 (production code) は一切触らない**。
+- 他の `.rs` ファイル (transcription_worker_loop / transcription_error_payload / 等) も触らない。
+
+# 移動対象テスト 10 件 (transcription.rs 内の行範囲は移動前現状値、参考)
+
+## ブロック A: TranscriptionSegment 関連 4 件 (L118-690)
+1. L118 `test_transcription_segment_serialization` (~46 行 / 単独存在)
+2. L539 `transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values` (~48 行)
+3. L589 `transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants` (~30 行)
+4. L621 `transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options` (~70 行)
+
+## ブロック B: TranscriptionSource 関連 3 件 (L693-762, 連続)
+5. L693 `transcription_source_debug_output_contains_each_variant_name_per_variant` (~18 行)
+6. L713 `transcription_source_copy_trait_keeps_original_usable_after_assignment` (~24 行)
+7. L739 `transcription_source_serde_serializes_each_variant_with_snake_case_value` (~24 行)
+
+## ブロック C: ModelInfo 関連 3 件 (L898-1046, 単独 + 連続)
+8. L898 `model_info_debug_output_contains_struct_name_and_all_four_field_names` (~54 行)
+9. L954 `model_info_clone_produces_independent_copy_for_string_fields_and_size_mb` (~36 行)
+10. L992 `model_info_serialize_uses_camel_case_for_all_four_fields` (~55 行)
+
+合計: ~405 行 (Loop 35 = 15 件 ~290 行 precedent 1.4 倍規模 = 1 ループ完結見込み)
+
+**精確な行範囲は実コード再 grep**: `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && awk '/^\s*fn (test_)?(transcription_segment|transcription_source|model_info)\w*/{print NR": "$0}' src-tauri/src/transcription.rs` で再確認してから操作。
+
+# スコープダウン代替案 (時間制約時)
+
+万一 transcription.rs sed/edit が予想以上に複雑で 1 ループ完結が危ぶまれる場合の縮小案:
+- **代替 1**: ブロック A (TranscriptionSegment 4 件) のみ移動 → 規模 SS-S (~194 行) で確実完了。残りは Loop 41+ の test 移動で。
+- **代替 2**: ブロック A + B (Segment + Source 7 件) のみ移動 → 規模 S (~260 行)。
+
+ただし通常時は **10 件全部移動を優先** (variety sweep 効率の観点 = 1 ループバンドルが 3 ループ分割より圧倒的に有利)。
+
+# 手順詳細
+
+## STEP 1: transcription_types.rs に mod tests を新設
+
+ファイル末尾 (現 41 行) に以下を追加:
+
+```rust
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ここに 10 件のテストを順番に貼り付け (行末空白なし、本文そのまま、#[test] 属性も含めて)
+}
+```
+
+- **use 文整理**: `super::*` で本ファイル内の `TranscriptionSource` (enum) / `TranscriptionSegment` (struct) / `TranscriptionErrorPayload` (struct) / `ModelInfo` (struct) を取り込む。
+- 移動するテストの本文は **transcription.rs から完全にそのままコピー** = アサーション内容や日本語コメントを変更しない。`#[test]` 属性も含めて移動する。
+- 移動順序は上記 10 件の順 (元 transcription.rs の行順) を維持して可読性確保。
+- テスト本文中で参照される外部 crate (例: `serde_json`) は内部関数なので追加 use 不要 (full path で書かれているはず、grep で確認)。
+
+## STEP 2: transcription.rs から該当 10 件を削除
+
+- ブロック A (4 件、L118-690 範囲内の散在 4 箇所) を削除。
+- ブロック B (連続 3 件、L693-762) を削除。
+- ブロック C (3 件、L898-1046 範囲内の散在) を削除。
+- 削除後、`mod tests` の `use` 行 / `use crate::transcription_types::{ModelInfo, TranscriptionSegment, TranscriptionSource};` 等の import を点検する:
+  - 残されたテストで `TranscriptionSegment` / `TranscriptionSource` / `ModelInfo` への参照があるか必ず grep で確認:
+    `cd src-tauri && grep -nE 'TranscriptionSegment|TranscriptionSource|ModelInfo' src/transcription.rs`
+  - 参照が残るなら use 文は維持。**全部消えるなら use 文削除** (clippy `unused_imports` 警告防止)。
+  - `pub use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` (L5 付近の re-export) は本体コードや他モジュールから使われている可能性が高いので、**`grep -nrE 'use crate::transcription::(TranscriptionSegment|TranscriptionSource|ModelInfo)'` で利用箇所を確認してから削除判断する**。re-export は通常は維持 (互換性確保)。
+
+## STEP 3: 検証 (必須)
+
+`cd src-tauri` してから:
+- `cargo test --lib` → **700 passed / 0 failed** を維持 (件数不変)。差異が出たら漏れか重複なので戻して再点検する。
+- `cargo clippy --lib --tests -- -D warnings` → 警告ゼロを維持。
+- `cargo fmt --check` → 整形済みを確認 (差分が出れば `cargo fmt` 自走 OK)。
+
+`cd ..` (desktop ルート) で:
+- `bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_types.rs AGENT_LOG.md`
+- `grep -nE ' +$' src-tauri/src/transcription.rs src-tauri/src/transcription_types.rs` で trailing whitespace ゼロ確認。
+- `wc -l src-tauri/src/transcription.rs` で 1175 行 → 約 770 行 (実数誤差 ±20 行) を確認。
+
+## STEP 4: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記:
+
+```
+[mjc-main-20260505-19 Loop 38 / 2026-05-05 ~JST]
+
+## What
+- transcription_types.rs 関連テスト 10 件 (TranscriptionSegment 4 / TranscriptionSource 3 / ModelInfo 3) を transcription.rs から transcription_types.rs に移動:
+  - ブロック A: test_transcription_segment_serialization / transcription_segment_debug_output_contains_struct_name_all_six_field_names_and_values / transcription_segment_debug_output_equals_after_clone_for_some_and_none_variants / transcription_segment_serde_serializes_with_camel_case_field_names_and_skips_none_options
+  - ブロック B: transcription_source_debug_output_contains_each_variant_name_per_variant / transcription_source_copy_trait_keeps_original_usable_after_assignment / transcription_source_serde_serializes_each_variant_with_snake_case_value
+  - ブロック C: model_info_debug_output_contains_struct_name_and_all_four_field_names / model_info_clone_produces_independent_copy_for_string_fields_and_size_mb / model_info_serialize_uses_camel_case_for_all_four_fields
+- transcription_types.rs に `#[cfg(test)] mod tests` 新設 (use super::*)
+- transcription.rs L118-1046 の散在 10 件削除 + use 文整理
+- transcription.rs 行数: 1175 → ~770 行 (-~405 行 = 累計 ~74% 縮小達成)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (巨大ファイルの SLAP 改善 = 「型と型のテストを同じファイルに置く」locality 最大化)
+- Loop 35 (transcription_error_payload tests 15 件移動 290 行) precedent 完全踏襲、規模 1.4 倍
+- variety pivot = test 移動軸 = Loop 35 から 3 ループ間隔 (Loop 32→35→38 で間隔維持) = 許容範囲
+- バンドル判断 = 単独 3 ループ分割 (sweep 3 件) より 1 ループバンドル (sweep 1 件) が variety 規則的に有利
+
+## How (Tidy First, 振る舞い不変)
+- transcription_types.rs に `#[cfg(test)] mod tests` 新設 + `use super::*`
+- 10 件のテスト本文はアサーション含めそのままコピー (#[test] 属性込み)
+- transcription.rs からは順次削除、use 文整理 (unused_imports 警告防止)
+- 700 passed 件数不変、clippy 警告ゼロ、fmt OK
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: warnings 0
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash は worker 自走 commit 後に確定、必要なら chore commit / amend で反映)
+```
+
+# コミット (worker 自走判断)
+
+- 通常パターン: `bash scripts/agent-commit.sh "refactor(transcription): transcription_types 関連テスト 10 件 (Segment 4 + Source 3 + ModelInfo 3) を transcription_types.rs に移動 (Tidy First, mjc-main-20260505-19 Loop 38)" src-tauri/src/transcription.rs src-tauri/src/transcription_types.rs AGENT_LOG.md` または `git add ... && git commit -m "..."`
+- commit 後、commit hash を確認して **(オプション A) 別途 chore commit で AGENT_LOG.md に hash 反映** (Loop 22-36 precedent) または **(オプション B) `git commit --amend` で hash を AGENT_LOG.md エントリに反映** (Loop 37 precedent)。どちらでも OK = worker 自走判断。
+
+# 完了の合図
+
+- AGENT_LOG.md に [mjc-main-20260505-19 Loop 38] エントリが追記されている
+- commit が成功している (`git log --oneline -1`)
+- 700 passed / 0 failed / clippy 0 warning 維持
+- transcription.rs 行数が ~770 行 (誤差 ±20 行) に減少
+- trailing whitespace ゼロ確認
+
+以上。

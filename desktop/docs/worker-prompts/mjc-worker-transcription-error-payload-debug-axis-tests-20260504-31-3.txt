@@ -1,0 +1,104 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序重要)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行を tail -350 AGENT_LOG.md で読む** = 末尾追記の場所を視覚的に学習する
+
+# AGENT_LOG.md の追記運用 (絶対遵守)
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+- **先頭は絶対に触らない**。
+- 具体手順: 編集前に tail -10 AGENT_LOG.md で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- AGENT_LOG.md は 22000+ 行 / 1.86MB+ あるため Read 全体禁止。tail/head/grep で対象範囲のみ参照すること。
+- **行末の空白文字 (trailing whitespace) 禁止**。記述後に grep で確認する。
+
+# 担当範囲 (絶対遵守)
+- src-tauri/src/transcription.rs の `mod tests` 末尾の最終 `}` の直前 (既存 58 test の後) に test 関数 3 件のみ追加。
+- pub struct TranscriptionErrorPayload (l.42-46) / pub enum TranscriptionSource (l.21) / その他既存 type / pub fn / 既存 58 test は **完全無変更**。
+- 担当範囲外の他ファイル編集は禁止。
+- AGENT_LOG.md への末尾追記 1 エントリ (本作業の記録)。
+- それ以外の編集 (worker-prompts/handoff/scripts/その他 src/ ファイル) は一切禁止。
+
+# 大型ファイル参照ルール
+- transcription.rs は 2257 行と大規模。Read 全体禁止。tail/head/grep で対象範囲のみ参照すること。
+- 必要箇所:
+  - l.42-46: TranscriptionErrorPayload struct 定義
+  - l.19-26: TranscriptionSource enum 定義
+  - mod tests の末尾を tail で確認 (`tail -100 src-tauri/src/transcription.rs` 程度で末尾 `}` の位置を把握)
+- AGENT_LOG.md は 22000+ 行のため Read 全体禁止。
+
+# 検証制約
+- 課金禁止 / `--no-verify` 禁止。
+- 実 OpenAI/ElevenLabs API 呼び出し禁止 (本 Loop は struct Debug/Clone/PartialEq 軸のみで API 不要)。
+- cargo fmt --check / cargo clippy --lib -- -D warnings / cargo test --lib -- --test-threads=1 全て pass 必須。
+- 既存 568 件 + 新規 3 件 = 571 件 pass を目標。
+
+# 実装内容 (3 軸 application = Debug 軸補強パターン 4 連続 application + struct with Option<enum> 拡張)
+
+## 文脈
+- mjc-main-20260504-30 Loop 1 で SecretKey enum (フィールドなし enum) の Debug 軸補強完了。
+- mjc-main-20260504-31 Loop 1 で AppleSpeechEngine (unit struct) の Debug 軸補強完了。
+- mjc-main-20260504-31 Loop 2 で SessionSegment / Session (struct with primitive/Option/Vec fields) の Debug 軸補強完了。
+- 本 Loop 3 は **「Debug 軸補強パターン」を struct with Option<enum> field に拡張する 4 連続 application** = enum 値を field に含む struct の Debug 出力契約を CI 固定。
+
+## 実コード上の確定情報 (Read で確認済)
+- TranscriptionErrorPayload の field 名 (順序通り): `error` (String), `source` (Option<TranscriptionSource>)
+- TranscriptionSource enum variant: `Microphone`, `SystemAudio` (#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)] / #[serde(rename_all = "snake_case")])
+- TranscriptionErrorPayload は #[derive(Debug, Clone, Serialize, PartialEq, Eq)] 派生 = Hash は含まない
+- 既存 test は l.1331 (test_transcription_error_payload_serialization_with_source) と l.1347 (test_transcription_error_payload_serialization_omits_missing_source) で serialization 軸のみ網羅 = Debug / Clone / PartialEq の executable specification は未保護
+
+## 未保護の軸 (本 Loop で 3 軸 application)
+
+### T1 (Debug 出力 = 型名 + 全 field 名 + Some/None 表現 + enum variant 名軸)
+名称: `transcription_error_payload_debug_output_contains_struct_name_field_names_and_some_variant_with_enum_name`
+契約:
+- `TranscriptionErrorPayload { error: "msg".to_string(), source: Some(TranscriptionSource::SystemAudio) }` の `format!("{:?}", payload)` が以下を全て含むこと:
+  - 型名 `"TranscriptionErrorPayload"`
+  - field 名 `"error"`, `"source"`
+  - 値 `"msg"`
+  - Some の Debug 表現 `"Some"` (Option::Some の Debug 出力)
+  - enum variant 名 `"SystemAudio"` (TranscriptionSource::SystemAudio の Debug 出力)
+- 別 case で `source: None` の payload を生成し、その Debug 出力に `"None"` が含まれることも追加 assert
+- `#[derive(Debug)]` 自動派生による「struct with Option<enum> field の Debug 出力」契約を executable specification 化
+- 「将来 source field の Debug 表現を変える誤改修」「TranscriptionSource enum variant rename の波及」を遮断する装置
+
+### T2 (Clone 後 Debug 出力一致軸)
+名称: `transcription_error_payload_debug_output_equals_after_clone_for_some_and_none_variants`
+契約:
+- 元 TranscriptionErrorPayload (Some 持ち) と `.clone()` 後の Debug 出力が完全一致 (`assert_eq!`)
+- 元 TranscriptionErrorPayload (None 持ち) と `.clone()` 後の Debug 出力が完全一致 (`assert_eq!`)
+- `#[derive(Debug, Clone)]` の組み合わせで「Clone が field 順や Debug 表現まで含めて 100% 同一」契約の executable specification 化
+- 「将来 Clone を手動実装で Option field を加工する誤改修」を遮断する装置
+
+### T3 (PartialEq の executable specification 軸 = reflexive + 異 field で 不等)
+名称: `transcription_error_payload_partial_eq_holds_reflexive_and_differs_for_distinct_error_or_source`
+契約:
+- 同 (error, source) を持つ 2 つの payload で `==` (reflexive 含む)
+- 異 error / 同 source で `!=`
+- 同 error / 異 source (Some(Microphone) vs Some(SystemAudio)) で `!=`
+- 同 error / Some vs None の source 差で `!=`
+- `#[derive(PartialEq, Eq)]` による「全 field が等値判定対象」契約の executable specification 化
+- 「将来 PartialEq を手動実装で source を等値判定から除外する誤改修」を遮断する装置
+
+# 実装手順
+1. tail -350 AGENT_LOG.md で末尾 (本セッション Loop 1 / Loop 2 エントリ) を確認。
+2. tail -100 src-tauri/src/transcription.rs で mod tests 末尾の最終 `}` 位置を確認。
+3. **mod tests の最終 `}` の直前** に T1/T2/T3 を順に追加。
+4. cd src-tauri && cargo fmt で整形。
+5. cd src-tauri && cargo fmt --check で差分なし確認。
+6. cd src-tauri && cargo clippy --lib -- -D warnings で警告ゼロ確認。
+7. cd src-tauri && cargo test --lib -- --test-threads=1 で 571 passed 確認。
+8. tail -10 AGENT_LOG.md で末尾の `---` を確認。
+9. AGENT_LOG.md の末尾 `---` の直後に新エントリ (## mjc-worker-transcription-error-payload-debug-axis-tests-20260504-31-3) を追記。本作業の開始日時/役割/作業範囲/指示内容/結果/変更ファイル/検証結果/依存関係/失敗理由/次アクションを含める。
+10. **行末の trailing whitespace を grep -nE " $" で確認** (新規追加箇所のみ)。
+
+# 報告形式
+最後に以下を簡潔に報告:
+- 変更内容 (T1/T2/T3 の追加箇所と契約の要約)
+- 変更ファイル (src-tauri/src/transcription.rs, AGENT_LOG.md)
+- 検証結果 (cargo fmt/clippy/test の結果文字列)
+- 残リスク (なし / あり と説明)
+
+1 ターンで完結する形でまとめてください。コミットは禁止 (メインがレビュー後に行う)。

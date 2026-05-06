@@ -1,0 +1,160 @@
+あなたは meet-jerky の sonnet ワーカーです。Loop 29 (mjc-main-20260505-15) の Tidy First 抽出タスクを担当します。
+
+# 必読 (作業前に必ず実行)
+
+1. **AGENT_LOG.md の末尾 350 行を読む**: `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+   - **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾**
+   - **新規追記は必ずファイル末尾に行う。先頭は絶対に触らない**
+   - 具体手順: 作業完了後 `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾を確認し、末尾の `---` 直後に追記する
+2. **大型ファイルの読み方**: `src/app_detection.rs` (3356 行) は **Read 全体禁止**。`grep -n` / `tail -N +開始行 | head -N` で対象範囲のみ参照する。AGENT_LOG.md (2.1MB) も同様。
+3. **行末の空白文字 (trailing whitespace) 禁止**: 編集後に `grep -n ' $' 編集ファイル` で確認し、あれば除去する。
+
+# 担当範囲 (厳守)
+
+**変更ファイル (これら以外は触るな)**:
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/app_detection.rs` (関数削除 + ヘルパー pub(crate) 化 + classify_meeting_url 呼び出し path 更新)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/app_detection_webex.rs` (新規作成 = Webex 関数 8 つ集約)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/lib.rs` (`mod app_detection_webex;` 追加)
+- `/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` (末尾追記のみ)
+
+**触ってはいけない**:
+- transcription.rs / transcription_commands.rs / その他全ての Rust ファイル
+- frontend (src/) 全て
+- scripts/ / docs/ / Cargo.toml / lib.rs の他箇所 (mod 宣言 1 行追加のみ許可)
+- tests コード本体の改変 (test 関数の名前変更や本体修正は禁止)
+
+# タスク内容 (Tidy First, behavior-preserving)
+
+## 目的
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3356 行 app_detection.rs の理解性向上)
+- transcription-refactor-plan.md L117-121 で「将来課題」として記載済 = 計画駆動の延長
+- Webex 検知 8 関数を独立モジュールに集約
+
+## 移動対象関数 (8 つ、すべて L794-873)
+- `is_webex_host` (L794-802)
+- `is_webex_meeting_url` (L804-813)
+- `is_jphp_path` (L815-824)
+- `is_webex_jphp_meeting_url` (L826-828)
+- `is_wbxmjs_path` (L830-845)
+- `is_webex_wbxmjs_meeting_url` (L847-849)
+- `is_webappng_path` (L851-869)
+- `is_webex_webappng_meeting_url` (L871-873)
+
+## ヘルパー (移動しない、app_detection.rs に残置 + pub(crate) 化)
+- `is_valid_dns_label` (L721): Whereby/GoToMeeting/Google Meet/Zoom でも使用
+- `has_single_non_empty_segment` (L998): Whereby/Google Meet/Zoom でも使用
+- `query_has_non_empty_param` (L1012): 複数サービスの query 検証で使用
+
+これら 3 つは `fn ...` から `pub(crate) fn ...` に変更する (Webex モジュールから `use crate::app_detection::{is_valid_dns_label, has_single_non_empty_segment, query_has_non_empty_param};` で参照するため)。
+
+## 手順
+
+### 1. 新規ファイル作成
+- `src-tauri/src/app_detection_webex.rs` を新規作成
+- 上記 8 関数を `pub(crate) fn` で移動 (visibility 拡張)
+- 必要 use 追加: `use crate::app_detection::{is_valid_dns_label, has_single_non_empty_segment, query_has_non_empty_param};`
+- 関数間の相互参照は同モジュール内なので prefix 不要 (`is_webex_host` を直接呼ぶ)
+
+### 2. app_detection.rs 修正
+- 8 関数の本体を **削除** (L794-873)
+- ヘルパー 3 つを `pub(crate) fn` に変更 (L721, L998, L1012)
+- `classify_meeting_url` の L519-522 を以下に変更:
+  ```
+  } else if crate::app_detection_webex::is_webex_meeting_url(&host, &parsed.path)
+      || crate::app_detection_webex::is_webex_jphp_meeting_url(&host, &parsed.path, parsed.query.as_deref())
+      || crate::app_detection_webex::is_webex_wbxmjs_meeting_url(&host, &parsed.path)
+      || crate::app_detection_webex::is_webex_webappng_meeting_url(&host, &parsed.path)
+  ```
+  または冒頭に `use crate::app_detection_webex::{is_webex_meeting_url, is_webex_jphp_meeting_url, is_webex_wbxmjs_meeting_url, is_webex_webappng_meeting_url};` を追加して prefix なしで呼ぶ (rustfmt の行長制限と整合する形を選ぶ)
+
+### 3. lib.rs 修正
+- `mod app_detection;` の **直後** に `mod app_detection_webex;` を追加 (alphabetical 順、1 行のみ追加)
+- 既存の `mod transcription_*;` 群と同パターン (lib.rs L21-31 参照)
+
+### 4. tests の扱い
+- **tests は app_detection.rs に残置** (Webex tests 30+ 件は classify_meeting_url 経由のため、関数移動後も呼び出し可能)
+- ただし **直接 `is_webex_*` を呼ぶ tests があれば** (grep で確認) `crate::app_detection_webex::*` 経由参照に変更する (use 追加または prefix 付与)
+- 新規 tests は追加不要 (振る舞い不変 refactor のため、既存 700 件のテストが migration の一貫性を保証)
+
+### 5. 自律 Tidy 余地 (見つけたら実施可、すべて許可)
+- rustfmt による use 文順序自動整形 → 受け入れる
+- `cargo fmt` で行長超過行が wrap される → 受け入れる
+- 不要な use 文削除 → clippy unused_imports 警告駆動で実施
+- 関数定義順の調整 (新ファイル内のみ) → 元の順序を保持推奨
+
+## 検証 (順序通り実行、すべて pass しなければ commit しない)
+
+```
+cd src-tauri
+cargo test --lib 2>&1 | tail -20
+# 期待: 700 passed / 0 failed (件数不変)
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -20
+# 期待: 警告ゼロ
+cargo fmt --check 2>&1 | tail -10
+# 期待: 出力なし (整形済み)
+```
+
+**test 件数は 700 で不変**。新規テスト追加禁止。
+**もし test が失敗したら**:
+- 関数の use 漏れ / visibility 不足 / 関数移動時のシグネチャ変化を確認
+- 自動 fix を試みた後、もう一度検証
+- 3 回試して pass しないなら commit せず AGENT_LOG.md に「失敗状況 + 何を試したか」を記録して終了
+
+## commit メッセージ
+
+```
+refactor(app_detection): Webex 検知 8 関数を app_detection_webex.rs に抽出 (Tidy First, mjc-main-20260505-15 Loop 29, ~80 行関数 + ヘルパー 3 つ pub(crate) 化 + lib.rs mod 宣言 + classify_meeting_url 呼び出し path 更新, 700 passed 件数不変, clippy 警告ゼロ, fmt OK, transcription-refactor-plan.md L117-121 将来課題着手 = transcription.rs Phase 3-B 完了後の自然 pivot, AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 = app_detection.rs 3356 行の理解性向上)
+```
+
+`scripts/agent-commit.sh` を使う場合:
+```
+bash scripts/agent-commit.sh "上記メッセージ" src-tauri/src/app_detection.rs src-tauri/src/app_detection_webex.rs src-tauri/src/lib.rs
+```
+
+## AGENT_LOG.md 末尾追記
+
+commit 完了後、以下のテンプレートを `tail -10 AGENT_LOG.md` で末尾確認した上で `---` 直後に追記:
+
+```
+[mjc-main-20260505-15 Loop 29 / 2026-05-05 ~JST]
+
+## What
+- `is_webex_host` / `is_webex_meeting_url` / `is_jphp_path` / `is_webex_jphp_meeting_url` / `is_wbxmjs_path` / `is_webex_wbxmjs_meeting_url` / `is_webappng_path` / `is_webex_webappng_meeting_url` の 8 関数を `src-tauri/src/app_detection_webex.rs` に移動
+- `is_valid_dns_label` / `has_single_non_empty_segment` / `query_has_non_empty_param` を `pub(crate)` に変更 (Webex モジュールから参照のため)
+- `classify_meeting_url` L519-522 を `crate::app_detection_webex::*` 経由参照に更新
+- `lib.rs` に `mod app_detection_webex;` 追加 (alphabetical 順)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (3356 行 app_detection.rs の理解性向上)
+- transcription-refactor-plan.md L117-121 「将来課題」着手 = transcription.rs Phase 3-B 完了後の自然 pivot
+- mjc-main-20260505-2 で Webex 招待 URL 主要 4 系統 (Personal Room / j.php / wbxmjs / webappng) の網羅完了の延長
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = 既存テスト 700 passed 件数不変
+- pub(crate) で visibility 最小化 (関数 8 つ + ヘルパー 3 つ)
+- ヘルパーは Webex 以外でも使われるため app_detection.rs 残置 + pub(crate) 化
+- tests は classify_meeting_url 経由のため app_detection.rs 残置 (Loop 23 precedent)
+
+## Verify
+- cargo test --lib: 700 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+```
+
+# 規模超過防止 (重要)
+
+- **test 件数は 700 で不変**。新規 test を追加するな。
+- **削除対象は 8 関数のみ**。他の関数を変更するな。
+- **ヘルパーの実装は変更しない**。`fn` を `pub(crate) fn` にするだけ。
+- **classify_meeting_url の OR 条件構造は維持**。Webex 4 関数の呼び出し path だけ変更。
+- **lib.rs は 1 行追加のみ**。他の編集禁止。
+- **tests コード本体は変更しない**。test 関数の名前変更/本体修正禁止。grep で直接 `is_webex_*` を呼ぶ tests があれば use 追加 or prefix 付与のみ許可。
+- もし作業途中で「想定より大きい変更が必要」と判明したら、commit せず AGENT_LOG.md に「停止理由 + 状況」を記録して終了 (rollback は不要、変更を捨てる場合は `git stash` のみ)。
+
+# 自律性
+
+- worker prompt の手順から逸脱せざるを得ない場合 (例: ヘルパーの実際の参照箇所がもっと多い、想定外の依存) は、**commit せず** AGENT_LOG.md に状況メモを書いて終了。メイン側で再判断する。
+- prefix 形式 (`crate::app_detection_webex::is_webex_meeting_url`) と use 経由 (短縮形) のどちらが行長制限と整合するかは自律判断 OK。
+- rustfmt が use 文順序を自動変更する場合は受け入れる (Loop 28 precedent)。
+
+完了したら commit hash + AGENT_LOG.md 追記済の確認を結果報告として残してください。

@@ -1,0 +1,88 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (末尾 350 行) を読んでください。
+
+# 背景
+前 mjc-main-20260504-17 Loop 3 (commit 457a545) で transcription.rs に以下の定数を追加しました:
+- `const TRANSCRIPTION_SOURCE_MICROPHONE: &str = "microphone";` (line 1047)
+- `const TRANSCRIPTION_SOURCE_SYSTEM_AUDIO: &str = "system_audio";` (line 1048)
+
+ただし、line 1067-1069 の error message:
+```
+"文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+```
+の中の `microphone` と `system_audio` は文字列リテラルのまま (= 定数化していない、これは Loop 3 の意図的判断)。
+
+既存 test:
+- `transcription_source_constants_are_snake_case_lowercase` (line 1359-1362): 定数値 = "microphone" / "system_audio" を assert
+- `parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value` (line 1907-1914): error message 全文一致を assert
+
+「定数値が将来変更されたら error message も合わせる」整合性は **手動管理** のままです。
+
+# Why (この test を追加する目的)
+- 既存 exact error message test だけでは「test が落ちた理由 = 定数値と error message の不整合」が test 名から読みづらい
+- 新規 test は assertion (`contains` 系) と test 名で「定数値と error message の整合性検知装置である」と意図を明示する = executable specification
+- 価値小だが、Loop 3 で意図的に touch しなかった部分の Tidy After 消化として位置付けられる
+- 実装は assert 2 件のみ、worker 1 ターン完走確実
+
+# 担当範囲
+- ファイル: src-tauri/src/transcription.rs のみ
+- 既存 test 1916-1927 行目 `parse_requested_transcription_sources_rejects_uppercase_known_values` の **直下** に新規 test 1 件追加
+- それ以外のファイルは触らない
+- error message line 1067-1069 と const line 1047-1048 は **無変更**
+
+# 実装内容 (この通りに書いてください)
+追加位置: `parse_requested_transcription_sources_rejects_uppercase_known_values` test の閉じ `}` 直後、`should_emit_realtime_stream_error_is_logical_negation_of_already_stopped` test の `#[test]` 直前。
+
+```rust
+    #[test]
+    fn parse_requested_transcription_sources_error_message_contains_source_constants() {
+        let err = parse_requested_transcription_sources(Some("xyz"))
+            .expect_err("unknown source should be rejected");
+        assert!(
+            err.contains(TRANSCRIPTION_SOURCE_MICROPHONE),
+            "error message should contain TRANSCRIPTION_SOURCE_MICROPHONE ({TRANSCRIPTION_SOURCE_MICROPHONE:?}): {err:?}"
+        );
+        assert!(
+            err.contains(TRANSCRIPTION_SOURCE_SYSTEM_AUDIO),
+            "error message should contain TRANSCRIPTION_SOURCE_SYSTEM_AUDIO ({TRANSCRIPTION_SOURCE_SYSTEM_AUDIO:?}): {err:?}"
+        );
+    }
+```
+
+# 実装上の注意
+- 4 文字 indent + tab なし (既存 test と完全一致)
+- `#[test]` attribute は他 test と同じ位置 (test 関数の直前 1 行)
+- format string で `{TRANSCRIPTION_SOURCE_MICROPHONE:?}` のような直接 const 参照する captured identifier 形式を採用 = Rust 1.58+ の機能で既存コードでも使用されている
+- "both" 用の assert は **追加しない** = both は別定数化されていないため scope 外 (今回は const 化済の 2 値のみ整合性検知)
+- 既存 test (line 1359 / 1907 / 1917) は無変更、関数本体 (line 1050-1072) も無変更 = 振る舞い不変
+- ファイルの他の場所は一切触らない
+
+# 検証手順
+作業後、以下を順に実行して全てゼロ failure を確認してください:
+
+1. `cd src-tauri && cargo test --lib --no-run` (compile 確認)
+2. `cd src-tauri && cargo test --lib parse_requested_transcription_sources_error_message_contains_source_constants` (新規 test の単独実行)
+3. `cd src-tauri && cargo test --lib` (全 test 実行、469 passed = 前 468 + 1 件確認)
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings` (warning 0)
+5. `cd src-tauri && cargo fmt --check` (差分なし)
+6. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` (全段 OK)
+
+# AGENT_LOG.md 記載項目
+AGENT_LOG.md **末尾** に以下を追記してください (前 SUMMARY 後の領域、AGENT_LOG.md の **先頭ではなく末尾** = 過去 worker での誤追記事故を再発しないよう注意):
+
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-transcription-source-error-message-contains
+- 役割: worker (sonnet)
+- 作業範囲: src-tauri/src/transcription.rs に test 1 件追加 (G5)
+- 指示内容の要約
+- 結果 (test 数推移 468 → 469、clippy 0、fmt 差分なし)
+- 変更ファイル: src-tauri/src/transcription.rs (1 ファイルのみ)
+- 検証結果 (各コマンドの pass/fail)
+- 依存関係追加: なし
+- 失敗理由: なし (該当時のみ)
+- 次アクション: メインで commit + 次ループ判断
+
+# 完了報告
+最後に、変更内容、変更ファイル、検証結果 (test 数推移 468 → 469 を含む)、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。コミットは禁止です。

@@ -1,0 +1,32 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/transcription_worker_loop.rs
+- AGENT_LOG.md
+
+目的:
+- `src-tauri/src/transcription_worker_loop.rs` 内の `Duration::from_millis(50)` の重複を、意味が分かる private const に集約してください。
+- 可能なら `Duration::from_millis(5)` も、active polling/yield の意味が分かる private const にしてください。
+- 値は変えないでください。挙動変更ではなく Tidy First の保守性改善です。
+- 文字起こしループの低遅延性に関わる値なので、const 名は idle/no-data wait と active/yield wait の違いが分かる名前にしてください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+- 課金が発生する操作は禁止です。
+- 実機権限や外部サービスが必要な検証はしないでください。
+- 単なる機械的変更に見えないよう、AGENT_LOG.md には「値は不変」「低遅延挙動の意味を名前へ移した」こと、検証結果、依存関係追加なしを明記してください。
+
+検証:
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_worker_loop`
+- 上記フィルタで対象テストがない場合は、その旨を AGENT_LOG.md に書いたうえで `cargo test --manifest-path src-tauri/Cargo.toml --lib` を実行してください。
+- 余力があれば `cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings` も実行してください。
+
+AGENT_LOG.md:
+- 開始日時、担当セッション `mj-worker-loop205-transcription-loop-poll-constants-20260506-215912`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

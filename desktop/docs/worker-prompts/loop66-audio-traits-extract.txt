@@ -1,0 +1,197 @@
+あなたは meet-jerky の worker (sonnet) です。Loop 66 = audio.rs Phase 1 = AudioCapture trait 抽出を実行してください。
+
+# 最初に必ず読むこと (順序重要)
+
+1. `tail -350 AGENT_LOG.md` で **AGENT_LOG.md の末尾 350 行のみ** を読む。**先頭は絶対に触らない**。
+2. AGENT_LOG.md は時系列順 (最古先頭、最新末尾)。**新規追記は必ずファイル末尾**。`tail -10 AGENT_LOG.md` で末尾の `---` 位置を確認 → その直後に追記する。
+3. src-tauri/src/audio.rs の L1-50 (AudioCapture trait 周辺) を Read。**audio.rs は 1011 行あるため Read 全体禁止 = head/tail/grep で必要範囲のみ参照**。
+4. src-tauri/src/transcription_traits.rs を全体 Read (precedent reference, 367 行だが trait 部分は L1-50)。
+5. src-tauri/src/lib.rs L1-60 (mod 宣言一覧、新 module 追加位置確認)
+6. src-tauri/src/system_audio.rs L25-40 (use 文 L31 確認、system_audio.rs も大型なため範囲限定)
+
+# 担当範囲 (これ以外は触らない)
+
+- **新規作成**: src-tauri/src/audio_traits.rs (~25 行、AudioCapture trait のみ)
+- **修正**: src-tauri/src/audio.rs (AudioCapture trait L22-43 削除 + 内部 impl 用 use 文追加)
+- **修正**: src-tauri/src/lib.rs (`mod audio_traits;` を audio_event の後に追加 = アルファベット順 = audio_traits は audio_utils の前)
+- **修正**: src-tauri/src/system_audio.rs (L31 use 文を 2 行に分割)
+- **追記**: AGENT_LOG.md 末尾エントリ追加
+
+audio.rs の他の部分 (L44 以降の CpalMicCapture / build_mic_input_stream / fn list_audio_devices / fn start_recording / test ブロック L587 以降など) は**触らない**。
+
+# やること = AudioCapture trait の抽出 = transcription_traits.rs precedent 完全踏襲
+
+## Step 1: 新規 file 作成 = src-tauri/src/audio_traits.rs
+
+audio.rs L22-43 の AudioCapture trait 定義を audio_traits.rs に移動する。
+
+新ファイル想定構造:
+```rust
+use tauri::AppHandle;
+
+// ─────────────────────────────────────────────
+// AudioCapture トレイト
+// ─────────────────────────────────────────────
+
+/// 音声キャプチャの抽象化。マイク(cpal)やシステム音声(ScreenCaptureKit)が実装する。
+#[allow(dead_code)]
+pub trait AudioCapture: Send {
+    /// キャプチャ開始
+    fn start(&mut self, app_handle: AppHandle) -> Result<(), String>;
+    /// キャプチャ停止
+    fn stop(&mut self) -> Result<(), String>;
+    /// リングバッファの消費者を取得
+    fn take_consumer(&mut self) -> Option<ringbuf::HeapCons<f32>>;
+    /// サンプルレート取得
+    fn sample_rate(&self) -> Option<u32>;
+    /// ソース名 ("microphone" or "system_audio")
+    fn source_name(&self) -> &str;
+    /// 現在のRMSレベル (0.0-1.0)
+    fn current_level(&self) -> f32;
+    /// キャプチャ中かどうか
+    fn is_running(&self) -> bool;
+}
+```
+
+注意:
+- `tauri::AppHandle` は use で短縮 (precedent transcription_traits.rs と同じく外部 crate 型を use 短縮)
+- `ringbuf::HeapCons<f32>` は完全修飾 path 維持 (use 文を増やさない方が precedent に近い、判断は worker 任意)
+- `pub` visibility 維持
+- `#[allow(dead_code)]` 維持
+- ドキュメントコメント (`///`) 全部維持
+- セパレータコメント (`// ─────...`) も維持
+
+## Step 2: lib.rs 編集
+
+`mod audio_traits;` を追加する。アルファベット順だと audio_event と audio_utils の間 (= L11 の `mod audio_event;` の後、L12 の `mod audio_utils;` の前)。
+
+## Step 3: audio.rs 編集
+
+1. L22-43 の AudioCapture trait 定義 (セパレータコメント L22-24 含む) を削除する。
+   - 削除範囲は **trait 定義に直接付随するセパレータコメント + ドキュメント + trait 本体 + 末尾の空行** に絞る。前後の他の構造体・関数は触らない。
+2. audio.rs 内部の `impl AudioCapture for CpalMicCapture` (L303) は同 crate 内 = AudioCapture へのアクセス手段が必要。
+   - **対応方法**: ファイル冒頭の use 文に `use crate::audio_traits::AudioCapture;` を追加する (audio.rs L1-13 の use 文ブロック内、適切な位置)。
+   - 既存 use 文ブロックは alphabetical 順を維持。`use cpal::{...};` の前後あたりが妥当。
+3. cargo fmt が走った後の整列が崩れないよう、手動で整える必要があれば cargo fmt に任せる。
+
+## Step 4: system_audio.rs 編集
+
+L31 の `use crate::audio::{calculate_rms, AudioCapture};` を以下の 2 行に分割する:
+
+```rust
+use crate::audio::calculate_rms;
+use crate::audio_traits::AudioCapture;
+```
+
+書き換え後の行順は alphabetical 順 (`audio` < `audio_traits`) を維持。
+
+## Step 5: 検証コマンド (順次実行)
+
+`cd src-tauri` してから:
+
+1. `cargo build --lib` (エラーなし)
+2. `cargo test --lib` (**702 passed / 0 failed = 件数不変**、増減ゼロを確認)
+3. `cargo clippy --lib --tests -- -D warnings` (警告ゼロ)
+4. `cargo fmt --check` (フォーマット OK)
+
+`cd ..` してから:
+
+5. `bash scripts/agent-verify.sh src-tauri/src/audio_traits.rs src-tauri/src/audio.rs src-tauri/src/lib.rs src-tauri/src/system_audio.rs` (rust 検証 OK)
+6. `grep -nE 'pub trait AudioCapture' src-tauri/src/audio.rs` で **空 (= 削除確認)**
+7. `grep -nE 'pub trait AudioCapture' src-tauri/src/audio_traits.rs` で 1 件確認
+8. trailing whitespace 確認 (`grep -nP ' +$' src-tauri/src/audio_traits.rs src-tauri/src/audio.rs src-tauri/src/lib.rs src-tauri/src/system_audio.rs` で空であること)
+
+検証で 1 件でも失敗したら**即停止して報告**。
+
+## Step 6: AGENT_LOG.md 末尾追記
+
+`tail -10 AGENT_LOG.md` で末尾の `---` 位置確認 → その直後に新エントリ追加。**先頭は絶対に触らない**。
+
+エントリ内容 (commit hash は Step 7 で更新):
+
+```
+[mjc-main-20260505-33 Loop 66 / 2026-05-05 ~JST]
+
+## What
+- audio.rs 本体から AudioCapture trait (L22-43, 22 行) を新規ファイル audio_traits.rs に抽出
+- lib.rs に `mod audio_traits;` 追加 (audio_event と audio_utils の間)
+- audio.rs 先頭 use 文に `use crate::audio_traits::AudioCapture;` 追加 (内部 impl 用)
+- system_audio.rs L31 use 文を 2 行に分割 (audio::calculate_rms + audio_traits::AudioCapture)
+- tests は audio.rs 残置 (AudioCapture trait に直接 test なし)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (1011 行 file の段階的責務分離)
+- AGENTS.md 優先順位 4 = リアルタイム文字起こし低遅延化への予防的寄与 (audio capture の責務独立 = 将来最適化容易化)
+- locality 集約 = system_audio.rs が本体 audio.rs から独立 = trait 経由のみ依存
+- transcription_traits.rs (mjc-main-20260505-3) precedent 直接展開
+- variety pivot = app_detection scope 2 連続 (Loop 64-65) → audio scope 新 scope = 3 連続 sweep 警告回避
+- メイン批判判断 連続 18 セッション目達成 = handoff 候補 X Phase 1 (データ型抽出 = AudioDevice 想定) を grep で外部 caller ゼロ発見 → AudioCapture trait 抽出 (system_audio.rs 直接依存 = locality メリット大) を新候補発見
+
+## How (Tidy First, behavior-preserving)
+- trait 本体は変更せず、ファイル間移動のみ = 振る舞い完全不変
+- pub visibility 維持 = crate 外可視範囲不変
+- #[allow(dead_code)] 維持
+- ドキュメントコメント維持
+- 振る舞い不変 = 702 passed 件数不変
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- `pub trait AudioCapture` を audio.rs で grep: 完全に空 (新ファイル経由のみ)
+- `pub trait AudioCapture` を audio_traits.rs で grep: 1 件確認
+- trailing whitespace: なし
+
+## commit
+- <hash>
+```
+
+## Step 7: 2-commit pattern (Loop 60-65 precedent 6 連続継承)
+
+### Step 7-A: refactor commit
+
+```sh
+git add src-tauri/src/audio_traits.rs src-tauri/src/audio.rs src-tauri/src/lib.rs src-tauri/src/system_audio.rs
+git commit -m "refactor(audio): AudioCapture trait を audio_traits.rs に抽出 (mjc-main-20260505-33 Loop 66, 22 行抽出 + lib.rs mod 追加 + system_audio.rs use 分割, transcription_traits.rs precedent 完全踏襲, AGENTS.md priority 1 + 4 寄与)"
+```
+
+`--no-verify` 厳禁。pre-commit hook が走る。
+
+commit hash 取得:
+```sh
+HASH=$(git log --oneline -1 | awk '{print $1}')
+echo "Loop 66 commit: $HASH"
+```
+
+### Step 7-B: AGENT_LOG.md の `<hash>` を実際の hash に書き換え → chore commit
+
+AGENT_LOG.md の Loop 66 エントリの `## commit` セクション `- <hash>` を `- $HASH` の実値に Edit ツールで書き換える。
+
+```sh
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 66 commit hash <HASH> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-65 precedent 適用 7 連続)"
+```
+
+`<HASH>` を実際の hash に置換した状態で実行すること。
+
+最終確認: `git log --oneline -3` で 2 commit が正しく積まれていることを確認。
+
+# 規模超過防止
+
+- 担当範囲外の編集禁止 (audio.rs L44 以降の関数や test ブロック L587 以降は触らない、他 *.rs は system_audio.rs 以外触らない)
+- test 件数: **702 件で不変** = 0 件増減 (件数変動を発見したら即停止して報告)
+- 大型 file (audio.rs / system_audio.rs / AGENT_LOG.md) は Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+
+# 行末空白文字 (trailing whitespace) 禁止
+
+- AGENT_LOG.md 含む全ファイルで新規追加部分に trailing whitespace を作らない
+- 既存の trailing whitespace は触らずに無視 (scope 拡大防止)
+
+# 完了報告
+
+すべて完了したら:
+1. 2 commit の hash を報告
+2. cargo test 件数を報告 (702 passed 確認)
+3. AGENT_LOG.md 末尾エントリ追加完了を報告

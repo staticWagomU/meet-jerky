@@ -1,0 +1,197 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+担当範囲外のファイル編集禁止。コミットは禁止 (本タスクは worker 自律 commit を行う、後述参照)。
+
+# 最初に必ず読むもの
+
+1. AGENTS.md (~50 行) と docs/product-concept.md (~60 行) と docs/agent-harness-claude.md (~150 行)
+2. **AGENT_LOG.md は ~29,500 行 / ~2.7MB ある。Read 全体禁止。`tail -350 AGENT_LOG.md` 相当で末尾だけ参照する。**
+3. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾確認 → 末尾の `---` の直後に追記。
+5. docs/architecture/detection-extension-plan.md の **Section 5 Phase 1** セクション (~30 行) を読む = 本 Loop の設計仕様
+6. precedent file (cat 全体読み込み): `src-tauri/src/audio_traits.rs` (24 行) / `src-tauri/src/session_store_types.rs` (19 行) / `src-tauri/src/realtime_audio_command.rs` (12 行) のうちどれか 1 つ = 「単純な型/enum を crate 内 module に切り出す pattern」の参考
+
+# 担当タスク (Loop 72 = 検知拡張 Phase 1 = MatchStrategy enum 導入 + WATCHED_BUNDLE_IDS 型拡張)
+
+**目的**: AGENTS.md priority 2 (会議サービス検知の拡張) への将来準備寄与。Loop 71 で作成された detection-extension-plan.md の Phase 1 段階に従い、`WATCHED_BUNDLE_IDS` の型を 2-tuple `(&str, &str)` から 3-tuple `(&str, &str, MatchStrategy)` に拡張し、4 アプリ全てを `MatchStrategy::AppLaunch` で振る舞い不変にする **Tidy First 純構造変更**。
+
+## 想定変更箇所 (実態確認済)
+
+`src-tauri/src/app_detection.rs` のみ:
+
+1. **L33 (const 定義)** = 型を `&[(&str, &str)]` → `&[(&str, &str, MatchStrategy)]` に変更し、4 アプリ全てに `MatchStrategy::AppLaunch` を付与
+2. **L501-503 (handle_detection 内 lookup)** = `find(|(bundle_id, _)| ...)` → `find(|(bundle_id, _, _)| ...)`、`.map(|(_, app_name)| ...)` → `.map(|(_, app_name, _)| ...)`
+3. **L819 (tests start_detection)** = `.map(|(id, _)| *id)` → `.map(|(id, _, _)| *id)`
+4. **L852 (tests watched_bundle_ids_includes_native_meeting_apps)** = `.map(|(id, _)| *id)` → `.map(|(id, _, _)| *id)`
+
+確認のため `grep -n 'WATCHED_BUNDLE_IDS' src-tauri/src/app_detection.rs` で 10 件 (L33/468/500-501/731/819/852/1754/1783/1789) を再確認すること。L468/L500/L1754/L1783/L1789 は doc comment / コメント = 必要に応じて軽更新 (型変更を反映)、ただし大幅書き換えは禁止。
+
+## MatchStrategy enum 定義
+
+**配置場所**: `src-tauri/src/app_detection.rs` の `WATCHED_BUNDLE_IDS` 定義の **直前** (L32 付近、`const NOTIFICATION_THROTTLE` より前)。
+
+```rust
+/// 会議アプリの検知方式を表現する enum。
+///
+/// - `AppLaunch`: bundle ID が前面に出た瞬間に会議開始と判定する (Zoom/Teams/FaceTime 等の会議専用アプリ向け)。
+/// - `WindowTitleContains(pattern)`: bundle ID が前面 + window title に pattern を含む場合のみ会議と判定する
+///   (Slack/Discord 等の常時起動アプリ向け、Phase 2 で利用)。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum MatchStrategy {
+    AppLaunch,
+    WindowTitleContains(&'static str),
+}
+```
+
+**dead_code 警告対策**: `WindowTitleContains` variant は Phase 1 では未使用 = clippy 警告の可能性 → `#[allow(dead_code)]` を enum 全体に付与済 (cfg_attr で macOS 以外も同時にカバー)。
+**visibility**: `enum` は private (crate-internal use のみ)。`pub` は不要。
+**Derive**: `Debug` (テスト用) + `Clone` (将来 Owned で扱う可能性) + `PartialEq` + `Eq` (axis test 比較用)。
+
+## WATCHED_BUNDLE_IDS の新形
+
+```rust
+/// 検知対象の Bundle ID 一覧。新しい会議アプリが増えたらここに追加する。
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+const WATCHED_BUNDLE_IDS: &[(&str, &str, MatchStrategy)] = &[
+    ("us.zoom.xos", "Zoom", MatchStrategy::AppLaunch),
+    ("com.microsoft.teams2", "Microsoft Teams", MatchStrategy::AppLaunch),
+    // 旧 Teams (legacy, Electron 版)。新版に切り替わっても誤検知にはならないため両方監視。
+    ("com.microsoft.teams", "Microsoft Teams", MatchStrategy::AppLaunch),
+    ("com.apple.FaceTime", "FaceTime", MatchStrategy::AppLaunch),
+];
+```
+
+**注意**: `MatchStrategy::AppLaunch` は **const 文脈で使用可能** (variant にデータなし、const fn 不要)。`WindowTitleContains(&'static str)` も `&'static str` のみ持つため const 文脈で構築可能。
+
+## 追加 axis test (3 件、tests mod 末尾、~30 行以内)
+
+`#[cfg(test)] mod tests { ... }` 内、既存 test の末尾に追加:
+
+```rust
+#[test]
+fn match_strategy_app_launch_equality_contract() {
+    // AppLaunch 同士は等価
+    assert_eq!(MatchStrategy::AppLaunch, MatchStrategy::AppLaunch);
+}
+
+#[test]
+fn match_strategy_window_title_contains_equality_contract() {
+    // 同一 pattern は等価
+    assert_eq!(
+        MatchStrategy::WindowTitleContains("Huddle"),
+        MatchStrategy::WindowTitleContains("Huddle")
+    );
+    // 異なる pattern は非等価
+    assert_ne!(
+        MatchStrategy::WindowTitleContains("Huddle"),
+        MatchStrategy::WindowTitleContains("Stage")
+    );
+    // AppLaunch と WindowTitleContains は非等価
+    assert_ne!(
+        MatchStrategy::AppLaunch,
+        MatchStrategy::WindowTitleContains("Huddle")
+    );
+}
+
+#[test]
+fn watched_bundle_ids_all_use_app_launch_strategy() {
+    // Phase 1 では既存 4 アプリ全てが AppLaunch。Phase 2 で WindowTitleContains 追加時にこの test を更新する。
+    for (_, _, strategy) in WATCHED_BUNDLE_IDS {
+        assert_eq!(*strategy, MatchStrategy::AppLaunch, "Phase 1 は全て AppLaunch のはず");
+    }
+}
+```
+
+L731 の tests use 文 `use super::{handle_browser_url_detection, handle_detection, WATCHED_BUNDLE_IDS};` に `MatchStrategy` を追加: `use super::{handle_browser_url_detection, handle_detection, MatchStrategy, WATCHED_BUNDLE_IDS};`
+
+## 規模超過防止 (重要)
+
+- **Phase 2-5 (Slack/Discord 追加 + window title pattern matching) は本 Loop の対象外、禁止。**
+- 本 Loop は WATCHED_BUNDLE_IDS の型拡張 + MatchStrategy enum 定義 + 既存 4 アプリの `AppLaunch` 付与 + 既存 caller の destructure pattern 修正 + axis test 3 件のみ。
+- doc comment の大幅書き換え禁止。型変更を反映する程度の軽更新のみ。
+- test 件数: 既存 702 件全 pass + 新規 3 件 = **705 件目標**。
+
+## 検証手順 (cd src-tauri 必須)
+
+```bash
+cd src-tauri
+cargo build --lib
+cargo test --lib  # 705 passed / 0 failed (新規 3 件追加)
+cargo clippy --lib --tests -- -D warnings  # 警告ゼロ
+cargo fmt --check
+```
+
+`bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` も実行 (rust 自動判別で cargo fmt + cargo test 実行)。
+
+## trailing whitespace 禁止
+
+- 全行末スペース・タブなし。`grep -nE ' +$' src-tauri/src/app_detection.rs` で末尾空白文字確認 → 空のはず。
+- `git diff` で `\ No newline at end of file` 警告が出ないことも確認。
+
+## 2-commit pattern (Loop 60-71 で 12 連続安定動作 = 必ず実行)
+
+### Step 1: refactor commit
+```bash
+git add src-tauri/src/app_detection.rs
+git commit -m "refactor(app_detection): MatchStrategy enum 導入 + WATCHED_BUNDLE_IDS を 3-tuple 型へ拡張 (mjc-main-20260505-36 Loop 72, detection-extension-plan.md Phase 1, 既存 4 アプリ AppLaunch で振る舞い不変, axis test 3 件追加, AGENTS.md priority 2 将来準備寄与)"
+```
+
+### Step 2: hash を取得して AGENT_LOG.md に追記
+```bash
+LOOP72_HASH=$(git log -1 --format=%h)
+# AGENT_LOG.md の末尾に Loop 72 エントリを追記 (What/Why/How/Verify/commit セクション、~50 行)
+# commit セクションに $LOOP72_HASH を記入
+```
+
+### Step 3: chore commit
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 72 commit hash $LOOP72_HASH を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-71 precedent 適用 13 連続)"
+```
+
+## AGENT_LOG.md 追記内容 (末尾追記、~50 行)
+
+```markdown
+[mjc-main-20260505-36 Loop 72 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/app_detection.rs に MatchStrategy enum (2 variants: AppLaunch / WindowTitleContains(&'static str)) を新規定義 (~12 行 doc 込み)
+- WATCHED_BUNDLE_IDS の型を `&[(&str, &str)]` → `&[(&str, &str, MatchStrategy)]` に拡張、既存 4 アプリ全てに `MatchStrategy::AppLaunch` を付与 (振る舞い不変)
+- handle_detection 内 lookup destructure pattern 修正 (L501-503: `(bundle_id, _, _)` / `(_, app_name, _)`)
+- tests destructure pattern 修正 (L819/L852: `.map(|(id, _, _)| *id)`)
+- tests use 文に `MatchStrategy` 追加
+- axis test 3 件追加: `match_strategy_app_launch_equality_contract` / `match_strategy_window_title_contains_equality_contract` / `watched_bundle_ids_all_use_app_launch_strategy`
+
+## Why
+- AGENTS.md 優先順位 2 = 会議サービス検知の段階拡張に向けた将来準備寄与
+- Loop 71 plan (detection-extension-plan.md) Phase 1 の継続実装 = 価値の連鎖
+- Tidy First 純構造変更 = 振る舞い不変、既存 702 件 + 新規 3 件 = 705 件全 pass
+- WindowTitleContains variant は Phase 2 (Slack Huddle / Discord stage 検知) で使用、Phase 1 で型基盤を準備
+
+## How (Tidy First, behavior-preserving)
+- enum visibility: private (crate-internal use のみ、pub 不要)
+- Derive: Debug / Clone / PartialEq / Eq (axis test 比較用)
+- dead_code 警告対策: `#[cfg_attr(not(target_os = "macos"), allow(dead_code))]` 付与
+- 4 アプリ全て AppLaunch = handle_detection 内の振る舞い不変、既存 throttle 動作維持
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 705 passed / 0 failed (新規 3 件追加で +3)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- WATCHED_BUNDLE_IDS の caller (10 件) 全て 3-tuple 対応済を grep で確認
+- trailing whitespace: なし
+
+## commit
+- {LOOP72_HASH}
+```
+
+## 報告フォーマット
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。1 ターンで完結する形でまとめてください。
+
+---
+
+このタスクは規模 SS = ~3-7 分完了目安。実装と axis test の差し込みは precedent (audio_traits.rs / session_store_types.rs / realtime_audio_command.rs) を直接展開可能。

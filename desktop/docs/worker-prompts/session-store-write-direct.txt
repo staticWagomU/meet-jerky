@@ -1,0 +1,188 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (`tail -200 AGENT_LOG.md` で末尾の SESSION SUMMARY のみ)
+
+# 担当範囲 (touch するファイルは 1 つのみ)
+src-tauri/src/session_store.rs の `mod tests` 末尾に新規 #[test] を 5 件 (T1-T5) 追加。**既存 test の編集禁止**。
+
+# 背景
+session_store.rs には pub fn `write_session_markdown_to` (line 33-40) があり、これは「指定パスにセッションの Markdown を書き出す」関数。`save_session_markdown` (line 107-115) の中で `path_for_session` と組み合わせて使われている。
+
+現状、`write_session_markdown_to` の direct test は 1 件もない (save_session_markdown 経由でのみカバーされている)。前 mjc-main-12 で `path_for_session` の direct test 5 件を追加したのと対称に、もう一つの構成要素である `write_session_markdown_to` の単独契約を固定する。
+
+これにより `save_session_markdown = path_for_session + write_session_markdown_to` の合成構造が、構成要素 2 つの direct test で完全分離検証される。
+
+# Why (この test 群が捕捉する誤改修)
+1. **T1**: `write_session_markdown_to` を直接呼んだときの結果が `save_session_markdown` と内容一致する契約 = path 計算と書き出しを分離可能 = 将来 incremental append で write 単独を呼ぶ実装が入る道筋を保護
+2. **T2**: 既存ファイルを **完全上書き** する契約 = `fs::write` の truncate 挙動 = `OpenOptions::append(true)` 等への誤改修検知装置 (incremental write の前提条件)
+3. **T3**: 親ディレクトリ存在しない path 単独で `NotFound` を返す契約 = `save_session_markdown_returns_err_when_dir_does_not_exist` (line 480-493) は dir 経由なので、write 単独で呼んだときも同じ NotFound 契約 (path 単位の OS error 透過性) を独立に固定
+4. **T4**: `started_at = i64::MAX as u64 + 1` で render エラーが write 側まで `?` で素通り伝播する契約 = `?` 演算子の握り潰し誤改修検知装置 (前 mjc-main-10 の persist_if_configured `?` 罠と対称)。**書き出し開始前 error なのでファイルは作成されない**
+5. **T5**: `segment.timestamp_offset_secs = u64::MAX` で `checked_add` overflow → render エラー → write 側まで `?` で素通り伝播 = T4 と対をなす別経路 error の同じ構造契約
+
+# 具体的 test 案 (assertion レベル)
+
+```rust
+#[test]
+fn write_session_markdown_to_writes_same_content_as_save_session_markdown_for_explicit_path() {
+    // T1: write_session_markdown_to の direct 呼び出し結果が save_session_markdown と内容一致
+    let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+    session.append_segment("自分".into(), 15, "hello".into());
+    let dir1 = tempdir().unwrap();
+    let dir2 = tempdir().unwrap();
+
+    // direct path 指定で write_session_markdown_to
+    let direct_path = dir1.path().join("explicit_name.md");
+    write_session_markdown_to(&direct_path, &session, jst()).unwrap();
+
+    // save_session_markdown 経由 (path_for_session で導出される標準 path)
+    let composed_path = save_session_markdown(dir2.path(), &session, jst()).unwrap();
+
+    let direct_content = fs::read_to_string(&direct_path).unwrap();
+    let composed_content = fs::read_to_string(&composed_path).unwrap();
+    assert_eq!(
+        direct_content, composed_content,
+        "write_session_markdown_to と save_session_markdown は path 以外で内容差分なしの契約 = 構成要素 2 つの分離"
+    );
+}
+
+#[test]
+fn write_session_markdown_to_truncates_and_overwrites_existing_file_completely() {
+    // T2: 既存ファイルの完全上書き (truncate) 契約
+    let session = Session::start("新内容".to_string(), 1_713_333_000);
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("target.md");
+
+    // 先に長い既存内容を書く
+    let pre_existing = "# 旧内容ヘッダ\n\n".to_string() + &"x".repeat(10_000);
+    fs::write(&path, &pre_existing).unwrap();
+    assert!(
+        fs::read_to_string(&path).unwrap().len() > 10_000,
+        "前提: 既存ファイルが長い"
+    );
+
+    write_session_markdown_to(&path, &session, jst()).unwrap();
+
+    let after = fs::read_to_string(&path).unwrap();
+    assert!(
+        after.starts_with("# 新内容 - "),
+        "新内容で完全上書きされる契約: {}",
+        &after[..40.min(after.len())]
+    );
+    assert!(
+        !after.contains("旧内容ヘッダ"),
+        "旧内容が残らない契約 = fs::write の truncate 挙動 = OpenOptions::append への誤改修検知装置"
+    );
+    assert!(
+        !after.contains("xxxxxxxxxx"),
+        "旧 body の長い x 列が残らない契約"
+    );
+}
+
+#[test]
+fn write_session_markdown_to_returns_not_found_when_parent_dir_missing() {
+    // T3: 親ディレクトリ無しで NotFound を返す path 単独契約
+    let tmp = tempdir().unwrap();
+    let missing_dir_path = tmp.path().join("does-not-exist").join("file.md");
+    let session = Session::start("test".to_string(), 1_700_000_000);
+
+    let err = write_session_markdown_to(&missing_dir_path, &session, jst()).unwrap_err();
+
+    assert_eq!(
+        err.kind(),
+        ErrorKind::NotFound,
+        "親ディレクトリ無し path 単独で NotFound 契約: {err}"
+    );
+    assert!(
+        !missing_dir_path.exists(),
+        "ファイルが作成されていないこと"
+    );
+}
+
+#[test]
+fn write_session_markdown_to_propagates_render_error_for_out_of_range_started_at_without_creating_file() {
+    // T4: render エラーが ? で素通り伝播し、書き出し前 error なのでファイル未作成
+    let session = Session::start("会議メモ".to_string(), i64::MAX as u64 + 1);
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("should_not_exist.md");
+
+    let err = write_session_markdown_to(&path, &session, jst()).unwrap_err();
+
+    assert_eq!(
+        err.kind(),
+        ErrorKind::InvalidInput,
+        "render エラーの ErrorKind が write 側まで ? で素通り伝播する契約"
+    );
+    assert!(
+        err.to_string().contains("out of i64 range"),
+        "error message も握り潰されず伝播する契約: {err}"
+    );
+    assert!(
+        !path.exists(),
+        "render error は書き出し前なのでファイル未作成 = ? が握り潰されず render を先に評価する契約"
+    );
+}
+
+#[test]
+fn write_session_markdown_to_propagates_segment_overflow_error_without_creating_file() {
+    // T5: segment timestamp overflow → render error → write 側まで ? で素通り伝播 (T4 と対をなす別経路)
+    let mut session = Session::start("会議メモ".to_string(), 1_713_333_000);
+    session.append_segment("自分".into(), u64::MAX, "hello".into());
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("should_not_exist_either.md");
+
+    let err = write_session_markdown_to(&path, &session, jst()).unwrap_err();
+
+    assert_eq!(
+        err.kind(),
+        ErrorKind::InvalidInput,
+        "segment overflow の ErrorKind が write 側まで ? で素通り伝播する契約"
+    );
+    assert!(
+        err.to_string().contains("overflow"),
+        "error message も握り潰されず伝播する契約: {err}"
+    );
+    assert!(
+        !path.exists(),
+        "render error は書き出し前なのでファイル未作成 = T4 と同じ ? 早期 return 契約の別経路確認"
+    );
+}
+```
+
+# 実装上の注意
+- **既存 test の編集禁止**。新規 5 件は `mod tests` の末尾 (line 825 直前、`}` の前) に追記する。
+- 既存 import (line 200-204) で `super::*`, `crate::session::Session`, `tempfile::tempdir`, `std::io::ErrorKind` (個別 import) は揃っている。新規 import は不要。
+- `jst()` ヘルパー (line 206) と `fs` (line 6 経由で `super::*` 経由参照可) を使う。
+- `session.id` の format は `format!("{started_at}-{seq}")`、絶対値 assert 禁止 (mjc-main-12 SUMMARY 参照)。本 test 群では `session.id` の絶対値を直接比較しないので問題なし。
+- T2 の `pre_existing` は 10_000 chars 程度で truncate 確認に充分。MAX_SESSION_SEARCH_TEXT_BYTES (64 * 1024) より小さいが、本 test は search ではなく write 側の truncate なのでサイズ要件は緩い。
+- T4 の `Session::start` 第 2 引数は `u64`。`i64::MAX as u64 + 1` で u64 範囲内かつ i64::try_from が失敗する境界を作る。
+- T5 の `append_segment` 第 2 引数 `u64::MAX` は `started_at + u64::MAX` で `checked_add` がオーバーフローする保証あり。
+- 命名規則: 既存の `write_session_markdown_to_*` プレフィックスはまだ使われていないので新規導入。長くても assertion 内容を表す snake_case 名でよい。
+
+# 検証手順
+1. `cargo fmt -p meet-jerky` (適用)
+2. `cargo clippy -p meet-jerky --all-targets --no-deps -- -D warnings` (warnings ゼロ確認)
+3. `cargo test -p meet-jerky --lib session_store::tests` (新規 5 件含む全 session_store test pass 確認)
+4. `cargo test -p meet-jerky --lib` (全 lib test = 430 → 435 passed 確認、failed 0 維持)
+
+# AGENT_LOG.md 記載項目
+末尾に新セクションとして以下を追記:
+- 開始日時 (JST)
+- 担当セッション: mjc-worker-session-store-write-direct
+- 役割: 作業担当 (sonnet)
+- 作業範囲: src-tauri/src/session_store.rs の mod tests 内に新規 unit test 5 件追加
+- 指示内容: T1-T5 (本 prompt の各 test の主旨を 1 行で)
+- 結果: 成功/失敗
+- 変更ファイル: src-tauri/src/session_store.rs のみ
+- 追加テスト名: 5 件の関数名一覧
+- 検証結果: cargo fmt / clippy / test (430 → 435 passed)
+- 依存関係追加: なし
+- 失敗理由: なし or 詳細
+- 次アクション: メイン (mjc-main-20260504-13) によるレビュー → コミット
+
+# 1 ターンで完結する形でまとめてください。

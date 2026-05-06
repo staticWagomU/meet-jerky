@@ -1,0 +1,114 @@
+あなたは meet-jerky の Tidy First worker (sonnet) です。Loop 53 で transcription.rs から StreamConfig 関連 Debug tests 3 件を transcription_traits.rs に移動してください。
+
+# 最初に必ず実施すること (worker prompt 必須要素)
+
+1. **冒頭で `tail -350 AGENT_LOG.md` を読み、運用ルールと直近セッション状況を把握する**。
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**。
+3. **先頭は絶対に触らない**。
+4. AGENT_LOG.md 追記の具体手順 = `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記 (Edit ツールでは末尾 `---` が unique にならない可能性が高いので、Write で別ファイルを作り `cat <file> >> AGENT_LOG.md` で append するか、`echo` で末尾追記する)。
+5. **担当範囲外の編集禁止**: 本タスクは transcription.rs + transcription_traits.rs + AGENT_LOG.md 末尾追記 + git commit の操作のみ。それ以外のファイル (lib.rs / 他のモジュール / package.json / scripts/* 等) は **絶対に触らない**。test 件数の上限は **702 passed 件数不変**。
+6. **大型ファイル全体 Read 禁止**: AGENT_LOG.md は ~28,000 行 / ~2.5MB のため、必ず `tail -350 AGENT_LOG.md` で末尾だけ読む。`Read` ツールでファイル全体を開かないこと。transcription.rs (327 行) / transcription_traits.rs (229 行) は全体 Read OK。
+7. **行末の空白文字 (trailing whitespace) 禁止**。
+
+# Loop 53 の編集内容
+
+## 移動対象 (transcription.rs L67-198 = 3 tests、~132 行)
+
+1. **L67-128: `stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none`** (62 行)
+2. **L130-154: `stream_config_debug_output_equals_after_clone_for_some_and_none_variants`** (25 行)
+3. **L156-198: `stream_config_clone_produces_independent_copy_for_option_string_fields`** (43 行)
+
+## 移動先 (transcription_traits.rs)
+
+既存 `mod tests` (L50-229) の末尾 (L228-229 の閉じ `}` 直前) に追加。
+
+具体的には L228 の `}` (`test_feed_empty_samples_is_noop_in_mock` の閉じ) と L229 の `}` (mod tests の閉じ) の間に新規 3 tests を挿入。区切りとしてコメントヘッダ「`// ─────────────────────────────────────────\n    // StreamConfig Debug / Clone セマンティクス テスト\n    // ─────────────────────────────────────────`」を追加してから 3 tests を挿入する。
+
+### use 文 (移動後)
+
+transcription_traits.rs L52-55 の既存 use 文で十分:
+- `use super::*;` (L52) → StreamConfig アクセス可能
+- `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource};` (L53) → TranscriptionSource::Microphone / SystemAudio アクセス可能
+
+= **既存 use 文に追加変更なし**。
+
+### transcription.rs 側の編集
+
+- L67-198 の 3 tests を完全削除 (新規追加 use 文がある場合の整理を含む)
+- L43-65 の最初の test (`should_emit_realtime_stream_error_is_logical_negation_of_already_stopped`) は残置 (transcription_error_payload.rs locality で別ループ候補)
+- L200-326 の RequestedTranscriptionSources 関連 3 tests は残置 (transcription_commands.rs locality で別ループ候補)
+- L44-48 の use 文は残置 (上記 2 つの test 群が引き続き使用):
+  - `use super::*;` (StreamConfig 残存テスト用 + RequestedTranscriptionSources も super::* 経由は無効、別 use 必要)
+  - `use crate::transcription_commands::RequestedTranscriptionSources;` (L200- で使用 = 残置)
+  - `use crate::transcription_error_payload::{is_realtime_stream_already_stopped_error, should_emit_realtime_stream_error};` (L50- で使用 = 残置)
+- 移動後に unused になる import がないか cargo clippy で確認。**TranscriptionSource::Microphone / SystemAudio はもう transcription.rs では未使用** = `use super::*;` が import している StreamConfig 等を使う他のテストが残っているか確認。
+  - 確認: 残置 tests 内で StreamConfig 使用箇所は **なし** (RequestedTranscriptionSources / should_emit のみ) = `use super::*;` も完全 unused になる可能性 = その場合は削除。
+  - ただし RequestedTranscriptionSources は別 use 文経由なので super::* には依存しない。
+  - 万一 super::* が unused warning → `use super::*;` 削除して、tests 内で必要な型は明示 use する形に整理。
+  - cargo clippy --lib --tests -- -D warnings で確認 + 必要に応じ修正。
+
+## transcription.rs の最終形 (確認)
+
+- L1-41 (互換層 + WHISPER_SAMPLE_RATE 定数 + コメントヘッダ): 不変
+- L43-... の tests mod: should_emit (L50-65) + RequestedTranscriptionSources 3 件 (L200-326) = 計 4 tests のみ残存
+
+## transcription_traits.rs の最終形 (確認)
+
+- L1-48 (use 文 + StreamConfig / TranscriptionEngine / TranscriptionStream トレイト本体): 不変
+- L50-... の tests mod: 既存 3 tests (Mock 関連) + 新規 3 tests (StreamConfig Debug/Clone) = 計 6 tests
+
+# 検証手順 (worker 完了直前に必ず実施)
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri
+cargo test --lib --test-threads=1 2>&1 | tail -30  # 702 passed / 0 failed が必須
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -30  # 警告ゼロ
+cargo fmt --check 2>&1 | tail -10  # OK
+cd ..
+bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_traits.rs
+```
+
+# AGENT_LOG.md 末尾追記 (worker 完了直前に必ず実施)
+
+末尾の `---` 直後に以下フォーマットで追記:
+
+```
+[mjc-main-20260505-26 Loop 53 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から StreamConfig Debug/Clone tests 3 件を src-tauri/src/transcription_traits.rs に移動
+  - test_stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none
+  - test_stream_config_debug_output_equals_after_clone_for_some_and_none_variants
+  - test_stream_config_clone_produces_independent_copy_for_option_string_fields
+- transcription_traits.rs 既存 tests mod (Mock 関連 3 tests と同居) に追加 = StreamConfig 定義 + Mock 実装 + 6 tests 同居の locality 完成
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (StreamConfig の Debug/Clone セマンティクスは型定義場所の transcription_traits.rs に locality 集約することで理解性向上)
+- メイン批判判断 = handoff 候補 M の予測「StreamConfig Debug tests 4 件」を grep で実態確認 → 3 件 (StreamConfig 関連) と判明 → 訂正後採用 = メイン批判判断 連続 7 セッション目
+- variety pivot = test 軸 = Loop 51 から 1 ループ pivot 後 = sweep 警告から復帰許容
+- transcription_traits.rs の locality = StreamConfig 定義 (L7-16) + TranscriptionEngine/TranscriptionStream トレイト + Mock 実装 + 関連 tests 完全同居
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription_traits.rs L52-55 の既存 use 文 (`use super::*` + `use crate::transcription_types::{TranscriptionSegment, TranscriptionSource}`) で新規 3 tests の依存全 import 済 = use 文追加変更なし
+- transcription.rs 側 use 文 (`use super::*` / `use crate::transcription_commands::RequestedTranscriptionSources` / `use crate::transcription_error_payload::{...}`) は残置 tests (should_emit + RequestedTranscriptionSources 3 件) が引き続き使用 = unused が出れば clippy で検出 + 整理
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (worker が agent-commit.sh で自走 commit、commit hash は後でメインが反映)
+```
+
+# 完了後コミット手順
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+bash scripts/agent-commit.sh "refactor(transcription): StreamConfig Debug/Clone tests 3 件を transcription_traits.rs に移動 (Tidy First, mjc-main-20260505-26 Loop 53)" src-tauri/src/transcription.rs src-tauri/src/transcription_traits.rs AGENT_LOG.md
+```
+
+(commit hash はメインが後ほど追記 chore commit する。worker は commit までで完了。)

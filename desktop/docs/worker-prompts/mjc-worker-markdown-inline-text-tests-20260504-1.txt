@@ -1,0 +1,98 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (要点だけ)
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は ~16100 行 / 1.5MB+ あるので `tail -300 AGENT_LOG.md` 相当で末尾だけ参照してください。直近 commit `53e5766` (session 中核 4 件) と `d423211` (transcript_bridge normalize_speaker 5 件) と SESSION SUMMARY が状況復元の起点です。
+
+## 担当範囲 (この範囲のみ編集)
+- `src-tauri/src/markdown.rs` の `mod tests` 末尾に `#[test]` 関数を 5 件追加するのみ。
+- 実装コード、他テスト、他ファイルは編集禁止。
+
+## 前提情報 (調査済みなので追加調査は最小限)
+- `markdown.rs` の private fn `inline_markdown_text` (L51-61):
+  ```rust
+  fn inline_markdown_text(value: &str) -> String {
+      let normalized = value.split_whitespace().collect::<Vec<_>>().join(" ");
+      let mut escaped = String::with_capacity(normalized.len());
+      for ch in normalized.chars() {
+          if matches!(ch, '\\' | '`' | '*' | '_' | '[' | ']') {
+              escaped.push('\\');
+          }
+          escaped.push(ch);
+      }
+      escaped
+  }
+  ```
+- エスケープ対象は 6 文字: `\\`, `` ` ``, `*`, `_`, `[`, `]`
+- 既存テスト `test_format_session_markdown_escapes_inline_markdown_marks` (L124) は `*`, `[`, `]`, `` ` ``, `\\` をカバーするが、**`_` (アンダースコア) のエスケープは未カバー** — これが致命的なリグレッション検知漏れ。
+- `mod tests { use super::*; }` 既存なので private fn は `super::inline_markdown_text` で参照できる。
+
+## 追加するテスト 5 件 (関数名はそのまま使う)
+
+### A. `inline_markdown_text_returns_empty_for_empty_input`
+- 振る舞い: `inline_markdown_text("") == ""`
+- 設計意図: `split_whitespace().join(" ")` の挙動 (空入力 → 空 vec → "") を仕様として固定。
+
+### B. `inline_markdown_text_returns_empty_for_whitespace_only_input`
+- 振る舞い: 以下 3 assertion
+  - `inline_markdown_text("   ") == ""`
+  - `inline_markdown_text("\t\n  ") == ""`
+  - `inline_markdown_text(" \t \n ") == ""`
+- 設計意図: whitespace のみは出力ゼロ。`split_whitespace` が tab/newline を含むすべての ASCII whitespace を区切り文字として扱う仕様の裏付け。
+
+### C. `inline_markdown_text_escapes_underscore_explicitly`
+- 振る舞い:
+  - `inline_markdown_text("_") == "\\_"`
+  - `inline_markdown_text("hello_world") == "hello\\_world"`
+  - `inline_markdown_text("__bold__") == "\\_\\_bold\\_\\_"`
+- 設計意図: **既存テストで `_` のエスケープが一度も確認されていない致命的な検知漏れを補完**。`_` を escape 対象から外すリファクタが入った場合に即座に検知。
+
+### D. `inline_markdown_text_escapes_each_special_char_individually`
+- 振る舞い: 6 文字を個別 1 文字 + 単独 escape 確認
+  - `inline_markdown_text("\\") == "\\\\"`
+  - `inline_markdown_text("`") == "\\`"`
+  - `inline_markdown_text("*") == "\\*"`
+  - `inline_markdown_text("_") == "\\_"` (※ C と重複するが、6 文字を網羅する文書として残す)
+  - `inline_markdown_text("[") == "\\["`
+  - `inline_markdown_text("]") == "\\]"`
+- 設計意図: エスケープ対象 6 文字すべてが個別に確認される。将来エスケープ対象を 1 文字でも変更したら即座に検知。
+
+### E. `format_session_markdown_handles_single_segment_correctly`
+- 振る舞い:
+  - meta `title="会議"`, `started_at_display="2026-04-17 14:30"`
+  - segments 1 件: `speaker="自分"`, `timestamp_display="14:30:05"`, `text="hello"`
+  - 期待: `"# 会議 - 2026-04-17 14:30\n\n**[14:30:05] 自分:** hello  "`
+- 設計意図: 既存 happy_path は 2 segments の場合のみ。1 segment の場合に `lines.join("\n")` がどう振る舞うかを test で固定。
+
+## 作業指示
+1. 上記 5 関数を `mod tests` 末尾に追加する。既存テストのスタイル (`assert_eq!`) に揃える。
+2. 書き換えた後、以下を **必ず** 実行する:
+   - `cd src-tauri && cargo fmt --check` (失敗したら `cargo fmt` で修正してから再確認)
+   - `cd src-tauri && cargo clippy --no-deps --all-targets --all-features -- -D warnings`
+   - `cd src-tauri && cargo test --no-fail-fast` (現状 281 passed → 追加後 286 passed のはず)
+   - `bash scripts/agent-verify.sh src-tauri/src/markdown.rs AGENT_LOG.md`
+3. AGENT_LOG.md 末尾に、本作業のセクションを追記する (開始日時、担当セッション、役割、作業範囲、指示内容要約、追加した 5 関数の振る舞い・不変条件、変更ファイル、検証結果、追加 test 件数 (5)、依存関係追加なし、失敗理由、残リスク、次アクション)。
+
+## 禁止事項
+- 課金が発生する操作。
+- 他エージェントの変更を戻すこと。
+- 担当範囲外の編集 (実装コード、他テスト関数、他ファイル)。
+- `git commit` (コミットはメインが行う)。
+- `--no-verify`、`--dangerously-skip-permissions`。
+- 外部 API 呼び出し。
+
+## 設計意図 (なぜこれをやるか)
+- markdown は履歴ファイルの最終出力形式。エスケープ契約が壊れると、保存済み履歴の renderer (frontend / external markdown renderer) で文字化け、構造破綻、XSS 類似の問題が起き得る。
+- `_` のエスケープが既存 test で一度も確認されていないのは現状の重大な検知漏れ → 候補 C で必ず補完。
+- private fn 直接呼び出しテストは前セッション (audio_utils, system_audio, transcript_bridge) で確立したパターンの正統な拡張。
+
+## 完了報告
+1 ターンで以下を簡潔にまとめてください:
+- 変更内容 (どの 5 関数を追加したか、各 assertion 数)
+- 変更ファイル (期待: `src-tauri/src/markdown.rs` と `AGENT_LOG.md` の 2 件)
+- 検証結果 (各コマンドの結果、特に test 件数 281 → 286)
+- 残リスク
+- 次アクション (このワーカー範囲では「なし」が期待値)

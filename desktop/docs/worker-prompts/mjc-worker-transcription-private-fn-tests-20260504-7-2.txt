@@ -1,0 +1,111 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (末尾 200 行) を読んでください。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+## 1. 背景 / Why
+transcription.rs (1896 行 / 37 件既存) には small/pure な private fn が 5 つある:
+- `parse_requested_transcription_sources` (line 1047-1069) — Option<&str> → Result<RequestedTranscriptionSources, String>
+- `build_transcription_error_payload` (line 1081-1086) — error + source → TranscriptionErrorPayload
+- `build_worker_panic_error_payload` (line 1088-1092) — source → 固定文言 payload
+- `is_realtime_stream_already_stopped_error` (line 1099-1101) — &str → bool (substring 判定)
+- `should_emit_realtime_stream_error` (line 1103-1105) — &str → bool (前者の `!` wrapper)
+
+既存テストの状況 (line 1300-1419) を grep + 読み込みで確認済み:
+- `test_parse_requested_transcription_sources_accepts_known_values` (1356) — None / " both " / "microphone" / "system_audio" の正常系
+- `test_parse_requested_transcription_sources_rejects_unknown_values` (1388) — `["", " ", "mic", "system", "both,microphone"]` を reject、エラー文言は contains のみ
+- `test_stopped_realtime_stream_errors_are_not_emitted_to_ui` (1405) — 4 input で should_emit を別々に確認、対称性の同時確認は無い
+- `test_worker_panic_payload_does_not_expose_panic_details` (1310) — source = Some(Microphone) のみ、None ケース無い
+- `test_transcription_error_payload_serialization_with_source` (1327), `test_transcription_error_payload_serialization_omits_missing_source` (1343) — 通常文言、empty string ケース無い
+
+**真の gap** (既存と重複しない):
+1. **エラー文言完全一致** — 既存は contains のみ、UI 表示文字列の完全契約として固定されていない
+2. **case-sensitive 契約** — "BOTH" / "Microphone" / "Both" のような大文字混在が match の機械的判定に依存して reject される現挙動
+3. **対称契約 (should_emit == !is_already_stopped)** — 同一 input で 2 fn の挙動が常に逆であることを 1 件で固定
+4. **build_worker_panic_error_payload の source=None** — `Option<TranscriptionSource>` の `None` で source key が omit される対称契約
+5. **build_transcription_error_payload の空 error 受理** — validation/normalization しない上位層責任境界 fn の現挙動固定
+
+## 2. 具体的 test 案 + assertion レベル
+src-tauri/src/transcription.rs の `mod tests` 末尾 (line 1880 の最後の test 関数の後) に以下 5 件を追加する。
+**inner mod / 既存テスト関数の改変は禁止**。追加のみ。
+
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value | Some("xyz") → `assert_eq!(err, "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。")` で完全一致 (contains ではない `==`)。文言の一字でも変わったら test 失敗。 |
+| T2 | parse_requested_transcription_sources_rejects_uppercase_known_values | for source in ["BOTH", "Microphone", "System_Audio", "Both"] で reject 確認 + 同じ完全一致エラー文言を assert (case-sensitive 契約 + T1 文言の再確認)。 |
+| T3 | should_emit_realtime_stream_error_is_logical_negation_of_already_stopped | for input in ["Realtime ストリームが既に停止しています", "リサンプリングエラー: invalid", "", "Realtime ストリーム", "OpenAI Realtime ストリームが既に停止しています extra suffix"] で `assert_eq!(should_emit_realtime_stream_error(input), !is_realtime_stream_already_stopped_error(input))` を全 input で実行。**対称契約 (always opposite) を 1 件で固定**。 |
+| T4 | build_worker_panic_error_payload_omits_source_when_none | `let payload = build_worker_panic_error_payload(None); let v = transcription_error_payload_to_value(&payload);` → `v.get("source").is_none()` を assert。さらに `v.get("error").and_then(|x| x.as_str()) == Some("文字起こしワーカーが異常終了しました")` も assert。**source=None で omit される build_transcription_error_payload と対称な omit 契約**。 |
+| T5 | build_transcription_error_payload_preserves_empty_error_string | `let payload = build_transcription_error_payload(String::new(), Some(TranscriptionSource::Microphone)); let v = transcription_error_payload_to_value(&payload);` → `v.get("error").and_then(|x| x.as_str()) == Some("")` を assert。**validation/normalization しない上位層責任境界 fn の現挙動 (空文字 passthrough) を固定**。 |
+
+各 test は #[test] 属性、tokio など async 不要。
+T3 の input は最低 5 種類 (matched, unmatched, 空, 部分一致 "Realtime ストリーム" のみ, 後方サフィックス付き完全パターン) を含めること。
+
+## 3. 実装上の注意
+- 追加先は `mod tests` の最後の `}` 直前 (line ~1894 付近)。既存 inner mod (もしあれば) の中ではなく、tests mod 直下に置く。
+- `transcription_error_payload_to_value` は既に `#[cfg(test)]` で公開されている (line 1095) ので tests mod から直接呼べる (`super::*` 経由)。
+- `TranscriptionSource::Microphone` などは既存テストで使われている import パスをそのまま流用 (line 1312 を参照)。
+- `RequestedTranscriptionSources` は private struct だが tests mod から `super::*` 経由で参照可能。
+- T1 のエラー文言は実装 (line 1064-1067) の文字列リテラルをそのままコピー。「。」を含む全角句点 + 全角カンマ「、」が混在するので、コピペで間違えないよう注意:
+  ```
+  "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
+  ```
+- T3 の input "Realtime ストリーム" (substring "Realtime ストリームが既に停止しています" の先頭部分のみ) は **`is_realtime_stream_already_stopped_error` が `contains("Realtime ストリームが既に停止しています")` で判定するため、部分一致ではなく完全文言を含むかをチェックする必要がある。よって "Realtime ストリーム" だけだと `false` を返す**。すなわち `should_emit_realtime_stream_error("Realtime ストリーム")` は `true` (= !false)。これを T3 の対称性 assert で確認する。
+- 5 件すべて test 関数のみ追加。本体ロジック (line 1-1238) は **一切変更しない**。
+- 既存 37 件のテスト名・本体は **絶対に変更しない**。
+
+## 4. 検証手順
+変更後、以下の順で検証してください:
+
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check`
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | grep "test result"` で全 test pass、かつ total が 345 → 350 になることを確認
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --all-targets -- -D warnings`
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --all-targets -- -W clippy::uninlined_format_args -D warnings`
+
+いずれかが失敗したら原因を特定して修正してから再実行。
+
+## 5. AGENT_LOG.md 記載項目
+リポジトリルートの AGENT_LOG.md 末尾に追記。フォーマットは前ループ (`### session_commands.rs resolve_output_directory ...`) に揃える。
+
+```
+### transcription.rs private fn (parse_requested_transcription_sources エラー文言完全一致 + case-sensitive、should_emit_realtime_stream_error の is_already_stopped との対称契約、build_worker_panic_error_payload の source=None omit、build_transcription_error_payload の空文字 passthrough) を 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-transcription-private-fn-tests-20260504-7-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcription.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+[省略可]
+
+#### 追加したテスト
+[T1〜T5 の表]
+
+#### 不変条件 / 設計意図
+- T1+T2 はエラー文言の完全一致と case-sensitive 契約を 2 軸で固定。文言変更や lowercase 化リファクタを即検知。
+- T3 は同一 input での should_emit == !is_already_stopped 対称契約。両 fn の inline 化リファクタへの耐性 + 一方の文言変更で他方が追従しないバグを検知。
+- T4 は build_worker_panic_error_payload の source=None omit 契約 (build_transcription_error_payload との対称性確保)。
+- T5 は validation しない上位層責任境界 fn の現挙動 (空文字 passthrough) 固定 (前セッション ループ 2 確立パターン再利用)。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 345 → 350 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件 (assertion 計 約 X 件)
+- 追加後 total passed: 350
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+
+#### 残リスク
+- T1/T2 のエラー文言完全一致は文言変更時に test 修正が必要 (UI 文言契約として意図的)。
+- T2 の case-sensitive 契約は将来 case-insensitive match へ変更したら test 改修が必要 (現契約を意図的に固定)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
+1 ターンで完結する形でまとめてください。

@@ -1,0 +1,170 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (1.5MB+。`tail -300 AGENT_LOG.md` 相当で末尾だけでよい。直近 SESSION SUMMARY @ 2026-05-04 ~10:30 JST と直近 6 commit が状況復元の起点。直近 5 commit はテスト追加 31 件)
+
+# タスク種別: Tidy First (構造改善のみ、振る舞い完全保持)
+
+# 担当範囲
+
+3 ファイル変更:
+- `src-tauri/src/audio_utils.rs` (新規作成)
+- `src-tauri/src/lib.rs` (`mod audio_utils;` を 1 行追加)
+- `src-tauri/src/audio.rs` (`fn sanitize_sample` の実装を 1 行に置換)
+- `src-tauri/src/system_audio.rs` (`fn sanitize_pcm_sample` の実装を 1 行に置換)
+
+合計 4 ファイル。担当範囲外の他ファイルは一切編集しないでください。
+
+# 目的
+
+`audio.rs:sanitize_sample` (L287-293) と `system_audio.rs:sanitize_pcm_sample` (L44-50) が**完全に同一の実装** (`if sample.is_finite() { sample.clamp(-1.0, 1.0) } else { 0.0 }`) であるため、共通実装 `crate::audio_utils::sanitize_audio_sample` に切り出して両者から呼び出す。
+
+このリファクタは振る舞い完全保持: 既存テスト (audio.rs に 6 件、system_audio.rs に 6 件、計 12 件、本セッションのループ 4・5 で追加済み) はすべて引き続き pass する想定。
+
+# 詳細手順
+
+## 1. `src-tauri/src/audio_utils.rs` を新規作成
+
+内容 (この通り 1:1 でファイル全体):
+
+```rust
+//! 音声サンプル処理の共通ユーティリティ。
+//!
+//! `audio.rs` と `system_audio.rs` で重複していた sanitize 処理を集約する。
+
+/// 音声サンプル (f32) を正規化する。
+///
+/// - `NaN` / `±Inf` は 0.0 に置換 (downstream の RMS 計算で NaN 伝播を防ぐ)
+/// - 有限値は `[-1.0, 1.0]` の範囲にクランプ
+pub fn sanitize_audio_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_audio_sample_returns_zero_for_nan() {
+        assert_eq!(sanitize_audio_sample(f32::NAN), 0.0);
+    }
+
+    #[test]
+    fn sanitize_audio_sample_returns_zero_for_positive_infinity() {
+        assert_eq!(sanitize_audio_sample(f32::INFINITY), 0.0);
+    }
+
+    #[test]
+    fn sanitize_audio_sample_returns_zero_for_negative_infinity() {
+        assert_eq!(sanitize_audio_sample(f32::NEG_INFINITY), 0.0);
+    }
+
+    #[test]
+    fn sanitize_audio_sample_clamps_above_one_to_one() {
+        assert_eq!(sanitize_audio_sample(1.5), 1.0);
+    }
+
+    #[test]
+    fn sanitize_audio_sample_clamps_below_minus_one_to_minus_one() {
+        assert_eq!(sanitize_audio_sample(-1.5), -1.0);
+    }
+
+    #[test]
+    fn sanitize_audio_sample_passes_through_finite_values_in_range() {
+        assert_eq!(sanitize_audio_sample(0.0), 0.0);
+        assert_eq!(sanitize_audio_sample(0.5), 0.5);
+        assert_eq!(sanitize_audio_sample(-0.5), -0.5);
+        assert_eq!(sanitize_audio_sample(1.0), 1.0);
+        assert_eq!(sanitize_audio_sample(-1.0), -1.0);
+    }
+}
+```
+
+## 2. `src-tauri/src/lib.rs` に module 宣言を追加
+
+L1-19 のアルファベット順 `mod` 群の中に `mod audio_utils;` を挿入。`audio` と `cloud_whisper` の間に入れる (アルファベット順)。具体的には:
+
+```
+mod app_detection;
+mod apple_speech;
+mod audio;
+mod audio_utils;       // ← この 1 行を追加
+mod cloud_whisper;
+...
+```
+
+## 3. `src-tauri/src/audio.rs` の `sanitize_sample` 実装を委譲化
+
+L287-293 の現状:
+```rust
+fn sanitize_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
+}
+```
+
+を以下に置換 (関数 signature と private 性は保持):
+```rust
+fn sanitize_sample(sample: f32) -> f32 {
+    crate::audio_utils::sanitize_audio_sample(sample)
+}
+```
+
+既存の audio.rs テスト 6 件 (sanitize_sample_*) はそのまま動く想定。**変更しない**。
+
+## 4. `src-tauri/src/system_audio.rs` の `sanitize_pcm_sample` 実装を委譲化
+
+L44-50 の現状:
+```rust
+fn sanitize_pcm_sample(sample: f32) -> f32 {
+    if sample.is_finite() {
+        sample.clamp(-1.0, 1.0)
+    } else {
+        0.0
+    }
+}
+```
+
+を以下に置換 (関数 signature と private 性は保持):
+```rust
+fn sanitize_pcm_sample(sample: f32) -> f32 {
+    crate::audio_utils::sanitize_audio_sample(sample)
+}
+```
+
+既存の system_audio.rs テスト 6 件 (sanitize_pcm_sample_*) はそのまま動く想定。**変更しない**。
+
+# 設計上の注意点
+
+- `audio.rs` と `system_audio.rs` の wrapper fn は **削除しない**。理由: モジュール境界での命名 (`sanitize_sample` / `sanitize_pcm_sample`) を残すことで、各モジュール内の呼び出し箇所を変える必要がない。「共通化のためにモジュール内 API を不必要に変更する」のは Tidy First の最小スライス原則に反する。
+- 既存テストは「`audio.rs::sanitize_sample` 経由で committed の挙動が動く」「`system_audio.rs::sanitize_pcm_sample` 経由で committed の挙動が動く」を引き続き保証する (委譲経由でも同じテストが機能)。
+- `audio_utils.rs` 自体の独自テスト 6 件は「共通実装を直接観測する」契約強制。3 層の test (audio.rs / system_audio.rs / audio_utils.rs) で同じ仕様を異なる視点で裏付ける構造。
+- `pub fn sanitize_audio_sample` は crate-public。`pub(crate)` でもよいが、将来別モジュールから使う可能性を考慮し `pub` で十分 (lib crate なので外部 binary には公開されない)。
+- 新規 dependency 追加なし。`use` 追加なし (`crate::audio_utils::sanitize_audio_sample` を fully qualified で書くため)。
+
+# 完了条件
+
+- 4 ファイル変更が指示通り。
+- `cargo fmt --check` 合格。
+- `cargo clippy --no-deps --all-targets --all-features -- -D warnings` 合格 (警告ゼロ維持)。
+- `cargo test --no-fail-fast` 合格 (263 → 269 passed が期待値、`audio_utils.rs` の新規 test 6 件追加分)。
+- 既存 12 件のテスト (audio.rs sanitize_sample_*, system_audio.rs sanitize_pcm_sample_*) はすべて引き続き pass。
+- `git diff --check` 合格。
+- `bash scripts/agent-verify.sh src-tauri/src/audio_utils.rs src-tauri/src/lib.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs AGENT_LOG.md` 合格。
+- AGENT_LOG.md 末尾に作業セクションを追記 (開始日時、担当セッション、役割、作業範囲、指示内容要約、結果、追加 test 件数 / total passed、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクション)。
+- コミットは禁止 (メインがレビュー後にコミットする)。
+
+# 制約 (再掲)
+
+- 課金禁止。`--no-verify` 禁止。担当範囲外の編集禁止。1 ターンで完結する報告を返してください。

@@ -1,0 +1,174 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序重要)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** = 末尾追記の場所を視覚的に学習する
+
+# AGENT_LOG.md の追記運用 (絶対遵守)
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。
+- **先頭は絶対に触らない**。
+- 具体手順: 編集前に `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+- AGENT_LOG.md は 21800+ 行 / 1.86MB+ あるため Read 全体禁止。tail/head/grep で対象範囲のみ参照すること。
+- **行末の空白文字 (trailing whitespace) 禁止**。記述後に grep で確認する。
+
+# 担当範囲 (絶対遵守)
+- src-tauri/src/apple_speech.rs の `mod tests` 末尾 (l.313 の `}` 直前 / 既存 9 test の後) に test 関数 3 件のみ追加。
+- pub struct AppleSpeechEngine の定義 / impl / pub fn language_to_locale / fn normalize_segment_text / mod macos / 既存 test 9 件は **完全無変更**。
+- 担当範囲外の他ファイル編集は禁止。
+- AGENT_LOG.md への末尾追記 1 エントリ (本作業の記録)。
+- それ以外の編集 (worker-prompts/handoff/scripts/その他 src/ ファイル) は一切禁止。
+
+# 検証制約
+- 課金禁止 (実 Apple SpeechAnalyzer 呼び出しは禁止)。
+- macOS 権限ダイアログ防止 (実 Speech Recognition 権限要求は禁止)。
+- `cargo fmt --check` / `cargo clippy --lib -- -D warnings` / `cargo test --lib -- --test-threads=1` 全て pass 必須。
+- 既存 563 件 + 新規 3 件 = 566 件 pass を目標。
+
+# 実装内容 (3 軸 application = メタ対称軸補強パターン: error message 軸 + format 軸 + Debug 軸)
+
+既存 9 test の網羅軸:
+- language_to_locale_maps_supported_languages (ja/en happy path)
+- language_to_locale_falls_back_to_japanese_for_auto_or_unknown (auto/empty/xx)
+- normalize_segment_text_trims_edges_only (multibyte 含む)
+- engine_errors_on_non_macos (Linux only cfg, contains 判定のみ)
+- normalize_segment_text_returns_empty_for_empty_input
+- normalize_segment_text_returns_empty_for_whitespace_only_inputs
+- normalize_segment_text_preserves_internal_whitespace_only_trims_edges
+- language_to_locale_is_case_sensitive_and_falls_back_for_uppercase
+- language_to_locale_falls_back_for_empty_and_whitespace_inputs
+
+未保護の軸 (本 Loop で 3 軸 application):
+
+## T10 (error message 軸 = 文言完全一致による UI 体験保護)
+名称: `apple_speech_engine_new_returns_exact_japanese_error_message_on_non_macos_build`
+cfg: `#[cfg(not(target_os = "macos"))]`
+契約:
+- 非 macOS で `AppleSpeechEngine::new()` を呼ぶと完全一致の Err 文字列を返す
+- 完全一致対象: `"Apple SpeechAnalyzer は macOS でのみ利用できます。Whisper など別エンジンを選択してください。"`
+意義:
+- 既存 `engine_errors_on_non_macos` は `assert!(err.contains("macOS"))` の弱い contains 判定のみ
+- 文言完全一致による「将来 UI 表示文言が壊れる誤改修」遮断
+- mjc-main-30 Loop 1 (secret_store T5 = `set_api_keys_return_consistent_japanese_message_for_empty_input`) と同型の保護パターンを apple_speech に application
+
+実装例:
+```rust
+#[test]
+#[cfg(not(target_os = "macos"))]
+fn apple_speech_engine_new_returns_exact_japanese_error_message_on_non_macos_build() {
+    // 既存 engine_errors_on_non_macos は contains 判定のみで、文言が "macOS" を
+    // 含む別文字列に変えられても検知できない。完全一致 assert で UI 表示文言の
+    // 体験保護を CI 固定する。Whisper 案内文の維持を保証する装置。
+    let err = AppleSpeechEngine::new().unwrap_err();
+    assert_eq!(
+        err,
+        "Apple SpeechAnalyzer は macOS でのみ利用できます。Whisper など別エンジンを選択してください。"
+    );
+}
+```
+
+## T11 (format 軸 = locale 文字列の BCP-47 形式不変条件)
+名称: `language_to_locale_returns_values_always_in_bcp47_pattern_for_supported_and_fallback_inputs`
+契約 (全 input について language_to_locale の戻り値が以下を満たす):
+- ハイフン `-` を 1 つ含む
+- ハイフンの左側は ASCII 小文字のみ
+- ハイフンの右側は ASCII 大文字のみ
+- 左右どちらも空でない
+意義:
+- 既存 test は絶対値 ("ja-JP" / "en-US") は固定するが、format 規則は明示していない
+- 将来 variant 追加 (例: "fr" → "fr-FR", "de" → "de-DE") 時の format 一貫性を for ループ走査で保証
+- 「将来 ISO 639-1 単独 ("ja") に変える誤改修」「format を変える誤改修」遮断
+- mjc-main-30 Loop 1 (secret_store T10 = `secret_key_account_strings_use_lowercase_kebab_case_format_for_all_variants`) と同型の format 不変条件 application
+
+実装例:
+```rust
+#[test]
+fn language_to_locale_returns_values_always_in_bcp47_pattern_for_supported_and_fallback_inputs() {
+    // BCP-47 形式 (xx-XX = 小文字-大文字) を全 input で保証する。既存 test は
+    // 絶対値を固定するが format 規則は未明示のため、将来 variant 追加時の format
+    // 一貫性を CI 固定する。「ISO 639-1 単独 ("ja") への変更」「format 変更」の
+    // 誤改修を遮断する装置。
+    for input in ["ja", "en", "auto", "", "xx", "Ja", "JA", "fr"] {
+        let locale = language_to_locale(input);
+        let parts: Vec<&str> = locale.split('-').collect();
+        assert_eq!(
+            parts.len(),
+            2,
+            "BCP-47 ハイフン区切りが 2 部分でない (input={input}, locale={locale})"
+        );
+        let (lang, region) = (parts[0], parts[1]);
+        assert!(
+            !lang.is_empty(),
+            "ハイフン左側 (language) が空 (input={input}, locale={locale})"
+        );
+        assert!(
+            !region.is_empty(),
+            "ハイフン右側 (region) が空 (input={input}, locale={locale})"
+        );
+        assert!(
+            lang.chars().all(|c| c.is_ascii_lowercase()),
+            "ハイフン左側に小文字以外 (input={input}, locale={locale})"
+        );
+        assert!(
+            region.chars().all(|c| c.is_ascii_uppercase()),
+            "ハイフン右側に大文字以外 (input={input}, locale={locale})"
+        );
+    }
+}
+```
+
+## T12 (Debug 軸 = unit struct の Debug 出力契約)
+名称: `apple_speech_engine_debug_output_uses_struct_name_without_internal_field_leakage`
+契約:
+- `format!("{:?}", AppleSpeechEngine)` の出力に `"AppleSpeechEngine"` が含まれる
+- 出力に内部状態を示唆する `{` `}` の波括弧ペアは含まれない (unit struct なのでフィールド出力なし)
+意義:
+- `#[derive(Debug)]` 自動派生による「unit struct はフィールドなし出力」Rust 言語仕様の executable specification 化
+- 「将来 AppleSpeechEngine に internal state を追加して Debug でフィールドが漏れる誤改修」遮断
+- mjc-main-30 Loop 1 (secret_store T8) は enum (variant 名出力) → 本 T12 は unit struct (型名のみ) で application 範囲拡張
+- 「Debug 軸補強」パターンの 2 連続セッション application
+
+実装例:
+```rust
+#[test]
+fn apple_speech_engine_debug_output_uses_struct_name_without_internal_field_leakage() {
+    // unit struct の Debug 出力は型名のみで構成される (#[derive(Debug)] 自動派生
+    // による Rust 言語仕様) 現契約を CI 固定する。将来「internal state 追加で
+    // Debug にフィールドが漏れる誤改修」を遮断する装置。enum 派生 (Loop 1) と
+    // 相補的に struct 派生をカバーすることで Debug 軸補強パターンを 2 連続適用。
+    let dbg_output = format!("{:?}", AppleSpeechEngine);
+    assert!(
+        dbg_output.contains("AppleSpeechEngine"),
+        "Debug 出力に struct 名がない: {dbg_output}"
+    );
+    assert!(
+        !dbg_output.contains('{'),
+        "Debug 出力に内部フィールドの波括弧が含まれる (unit struct 契約違反): {dbg_output}"
+    );
+    assert!(
+        !dbg_output.contains('}'),
+        "Debug 出力に内部フィールドの波括弧が含まれる (unit struct 契約違反): {dbg_output}"
+    );
+}
+```
+
+# 実装手順
+1. 必読ドキュメントを順番に読む。AGENT_LOG.md は `tail -350 AGENT_LOG.md` で末尾のみ参照 (SESSION SUMMARY @ 2026-05-04 ~20:30 JST 部分が状況復元の起点)。
+2. `src-tauri/src/apple_speech.rs` 全体を Read (314 行で全体読み OK)。既存 test 9 件の文言・構造を確認。
+3. mod tests 末尾 (現状 l.313 の `}` 直前) に T10 / T11 / T12 を順番に追加。実装例の文面を尊重して微調整可。
+4. 検証 (順番):
+   - `cd src-tauri && cargo fmt --check` (差分なし確認)
+   - `cd src-tauri && cargo clippy --lib -- -D warnings` (警告ゼロ確認)
+   - `cd src-tauri && cargo test --lib -- --test-threads=1` (563 → 566 passed 確認)
+5. AGENT_LOG.md 末尾追記:
+   - `tail -10 AGENT_LOG.md` で現在の末尾を確認
+   - 末尾の `---` 直後に新エントリ (`## mjc-worker-apple-speech-meta-symmetric-tests-20260504-30-2` 見出し) を Edit ツールで追加
+   - 内容: 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果 (`test result: ok. 566 passed; 0 failed; ...`)、依存関係追加 (なし)、失敗理由 (なし)、次アクション (メインへ報告、commit 待ち)
+6. **行末空白チェック**: `grep -nE ' +$' src-tauri/src/apple_speech.rs` と `grep -nE ' +$' AGENT_LOG.md | tail -5` で trailing whitespace 0 件を確認。
+
+# 完了報告 (1 ターンで完結)
+- 変更ファイル一覧
+- 検証結果 (test 件数、clippy 警告数、fmt 差分)
+- 残リスク (なければ「なし」)

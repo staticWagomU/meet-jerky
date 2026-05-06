@@ -1,0 +1,165 @@
+あなたは meet-jerky の sonnet worker (mjc-worker-loop47-model-manager-tests-move) です。
+
+# 必読 + AGENT_LOG.md ルール (絶対遵守)
+1. **AGENT_LOG.md は ~27,200 行 / ~2.5MB ある = `tail -350 AGENT_LOG.md` で末尾だけ参照**
+2. **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う**
+3. **先頭は絶対に触らない**
+4. 末尾追記の具体手順: `tail -10 AGENT_LOG.md` で末尾構造を確認 → 末尾の `---` 直後に追記
+5. **担当範囲外の編集禁止** (`src-tauri/src/transcription.rs` と `src-tauri/src/transcription_model_manager.rs` と `AGENT_LOG.md` 以外は触らない)
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** (transcription.rs は 649 行、transcription_model_manager.rs は 149 行 = どちらも全読 OK)
+7. **行末の空白文字 (trailing whitespace) 禁止**
+
+# 作業目的 (test 軸 variety pivot, ModelManager locality 完成)
+- `src-tauri/src/transcription.rs` から ModelManager 関連テスト 4 件を `src-tauri/src/transcription_model_manager.rs` に移動
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (ModelManager の locality 完成 = 関数本体 + テスト同居で理解性向上)
+- variety pivot 軸 = test 軸 = Loop 45 から 2 ループ間隔 (Loop 46 で docs 軸 pivot を挟んだ後) = 許容範囲
+
+# 規模制約 (重要)
+- 規模 SS = ~28 行削除 + 35 行新規 (4 tests + use 文)
+- 1 ループ完結確実
+- 担当範囲: 3 ファイル (`src-tauri/src/transcription.rs` / `src-tauri/src/transcription_model_manager.rs` / `AGENT_LOG.md`)
+- frontend 触れない、他コードファイル触れない
+
+# 移動対象 (transcription.rs L63-89)
+
+```rust
+    #[test]
+    fn test_list_available_models_not_empty() {
+        let models = ModelManager::list_available_models();
+        assert!(!models.is_empty());
+    }
+
+    #[test]
+    fn test_list_available_models_includes_small() {
+        let models = ModelManager::list_available_models();
+        assert!(models.iter().any(|m| m.name == "small"));
+    }
+
+    #[test]
+    fn test_model_manager_get_path() {
+        let manager = ModelManager::new();
+        let path = manager.get_model_path("small");
+        assert!(path.to_str().unwrap().contains("ggml-small.bin"));
+    }
+
+    #[test]
+    fn test_model_not_downloaded_initially() {
+        // ダウンロードしていないモデルは false を返すべき
+        // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
+        let manager = ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
+        assert!(!manager.is_model_downloaded("small"));
+    }
+```
+
+# 具体作業手順 (Loop 32 / 35 / 38 / 42 / 45 = test 移動 precedent 継承)
+
+## A. transcription.rs から 4 tests 削除
+- L63-89 の 4 つの test (`test_list_available_models_not_empty` / `test_list_available_models_includes_small` / `test_model_manager_get_path` / `test_model_not_downloaded_initially`) を削除
+- 削除する範囲は **`#[test]` 直前の空行から最後の `}` まで含む** (元コードのインデント・空行構造を尊重)
+
+## B. transcription.rs L60 の use 文削除
+- 現状: `    use crate::transcription_model_manager::ModelManager;`
+- → 削除 (4 tests 移動後、ModelManager は transcription.rs tests mod 内で使われない = grep 確認済 = 5/5 件すべて移動対象内)
+- 削除前に再度 `grep -n 'ModelManager' src-tauri/src/transcription.rs` で確認 = 結果が L60 (use 文) のみであることを確認してから削除
+
+## C. transcription_model_manager.rs 末尾に tests mod 新設
+- 現状: 149 行、`#[cfg(test)]` は L20 の `pub fn with_dir` 注釈のみ = tests mod 未存在
+- 新規追加: ファイル末尾に以下を追記
+
+```rust
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_list_available_models_not_empty() {
+        let models = ModelManager::list_available_models();
+        assert!(!models.is_empty());
+    }
+
+    #[test]
+    fn test_list_available_models_includes_small() {
+        let models = ModelManager::list_available_models();
+        assert!(models.iter().any(|m| m.name == "small"));
+    }
+
+    #[test]
+    fn test_model_manager_get_path() {
+        let manager = ModelManager::new();
+        let path = manager.get_model_path("small");
+        assert!(path.to_str().unwrap().contains("ggml-small.bin"));
+    }
+
+    #[test]
+    fn test_model_not_downloaded_initially() {
+        // ダウンロードしていないモデルは false を返すべき
+        // 実際のダウンロードディレクトリを参照しないようにユニークな一時ディレクトリを使用
+        let manager = ModelManager::with_dir(std::env::temp_dir().join("meet-jerky-test-models"));
+        assert!(!manager.is_model_downloaded("small"));
+    }
+}
+```
+
+- `use super::*;` で ModelManager + `pub fn with_dir(#[cfg(test)])` 等にアクセス可能
+- `ModelInfo` は ModelManager の本体で既 import 済 = tests mod 内で別途 import 不要 (`list_available_models` の戻り値が `Vec<ModelInfo>` だが、テスト内で型注釈は不要)
+- インデント = 4 spaces (Rust 標準)
+
+# 振る舞い不変保証
+- cargo test --lib: **702 passed** 件数不変 (移動前 = 移動後)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+
+# 検証 (必須、順番厳守)
+1. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo test --lib 2>&1 | tail -5` で 702 passed 確認
+2. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10` で警告ゼロ確認
+3. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri && cargo fmt --check 2>&1` で整形 OK 確認
+4. `cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop && bash scripts/agent-verify.sh src-tauri/src/transcription.rs src-tauri/src/transcription_model_manager.rs AGENT_LOG.md`
+5. trailing whitespace 確認: `grep -nE ' +$' src-tauri/src/transcription.rs src-tauri/src/transcription_model_manager.rs` で結果ゼロ確認
+6. `wc -l src-tauri/src/transcription.rs src-tauri/src/transcription_model_manager.rs` で行数変化確認 (期待: transcription.rs ~621 行、transcription_model_manager.rs ~184 行)
+
+# AGENT_LOG.md 末尾追記 (本ループ実績)
+- `tail -10 AGENT_LOG.md` で末尾構造確認 → 末尾の `---` 直後に追記
+- format:
+
+```
+[mjc-main-20260505-23 Loop 47 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/transcription.rs から ModelManager 関連テスト 4 件 (test_list_available_models_not_empty / test_list_available_models_includes_small / test_model_manager_get_path / test_model_not_downloaded_initially) を src-tauri/src/transcription_model_manager.rs に移動
+- transcription.rs L60 の `use crate::transcription_model_manager::ModelManager;` を削除 (移動後 unused)
+- transcription_model_manager.rs に新規 `#[cfg(test)] mod tests` 追加 (`use super::*;`)
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ修正の予防的寄与 (ModelManager の locality 完成 = 関数本体 + テスト同居で理解性向上)
+- variety pivot 軸 = test 軸 = Loop 45 から 2 ループ間隔 (Loop 46 で docs 軸 pivot を挟んだ後) = 許容範囲
+- ModelManager 関連テストは ModelManager 本体 (transcription_model_manager.rs) と locality 一致が自然 = Loop 32 (resample_audio tests) / Loop 38 (transcription_types tests) / Loop 42 (沈黙検知 tests) precedent 継承
+
+## How (Tidy First, behavior-preserving)
+- 振る舞い不変 = cargo test --lib 件数不変 = 702 passed
+- transcription.rs から L60 use 文 + L63-89 4 tests を削除
+- transcription_model_manager.rs に新規 tests mod 追加 (`use super::*;` で ModelManager + with_dir(#[cfg(test)]) アクセス)
+- transcription.rs: 649 → ~621 行 (-28 行) / transcription_model_manager.rs: 149 → ~184 行 (+35 行)
+
+## Verify
+- cargo test --lib: 702 passed / 0 failed (件数不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- trailing whitespace: なし
+
+## commit
+- (commit hash 反映 chore commit で別途記入)
+```
+
+# コミット (worker 自走判断)
+- worker 自走で `bash scripts/agent-commit.sh "refactor(transcription): ModelManager テスト 4 件を transcription_model_manager.rs に移動 (Tidy First, mjc-main-20260505-23 Loop 47)" src-tauri/src/transcription.rs src-tauri/src/transcription_model_manager.rs AGENT_LOG.md` を実行してよい
+- もしくは `git add ... && git commit -m "..."` で直接 commit
+- commit 後、commit hash を確認して `chore(agent-log): Loop 47 commit hash <HASH> を AGENT_LOG.md に記入` chore commit を別途自走判断で実施 (Loop 22-46 precedent)
+
+# 完了の合図
+- AGENT_LOG.md に [mjc-main-20260505-23 Loop 47] エントリが追記されている
+- commit が成功している (git log --oneline -1 で確認可能)
+- cargo test --lib: 702 passed 件数不変
+
+以上。

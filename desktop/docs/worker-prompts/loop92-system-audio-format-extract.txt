@@ -1,0 +1,178 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/system_audio_pcm.rs` (Loop 91 直前抽出、~204 行、同 scope precedent)
+6. precedent (cat 全体): `cat src-tauri/src/app_detection_inactive_decision.rs` (Loop 88 抽出、~225 行、機能分類軸 precedent)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/system_audio_format.rs` (~140-170 行)
+- 編集: `src-tauri/src/system_audio.rs` (production 2 fn ~44 行削除 + use CMFormatDescription 削除 + use 追加 + test 9 件削除)
+- 編集: `src-tauri/src/lib.rs` (mod 追加 1 行のみ)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 92 タスク内容 (構造分離 18 件目, system_audio 軸 2 件目 = 機能分類軸)
+
+## 背景
+
+- Loop 91 = system_audio 軸 1 件目 (system_audio_pcm.rs = PCM bytes → mono f32 変換) 達成。
+- Loop 92 = system_audio 軸 2 件目 (system_audio_format.rs = audio format 検証) = **機能分類軸 2 連続** = Loop 87/88 の app_detection 機能分類軸 2 連続 (notification + inactive_decision) と同 paradigm = 許容範囲。
+- ScreenCaptureKitCapture 入力処理から audio format 検証 (Float32 / NativeEndian / 32bit / channel count) を切り出し、screencapturekit crate 依存をこの軸に閉じ込める構造美向上。AGENTS.md priority 1 寄与。
+
+## 抽出対象 (system_audio.rs から system_audio_format.rs へ移動)
+
+**Production (system_audio.rs Loop 91 後の line numbers)**:
+- L36-62: `fn validate_audio_format_properties(is_float: bool, is_big_endian: bool, bits_per_channel: Option<u32>, channel_count: Option<u32>, expected_channels: u32) -> Result<(), &'static str>` (~27 行 純粋関数, cfg なし, doc コメント含む)
+- L67-79: `#[cfg(target_os = "macos")] fn validate_audio_format_description(fmt: &CMFormatDescription, expected_channels: u32) -> Result<(), &'static str>` (~13 行, CMFormatDescription 依存, validate_audio_format_properties に委譲)
+
+**移動しない (system_audio.rs に残置)**:
+- L81-83 + L85-92: `FORMAT_WARN_ONCE` static + `warn_system_audio_format_once` (cfg(macos), tauri::AppHandle::emit 依存 = ScreenCaptureKitCapture 内警告 emission のため移動しない)
+
+**Test (system_audio.rs `mod tests` 内, 9 件)**:
+
+`grep -nE "validate_audio_format_properties" src-tauri/src/system_audio.rs` で正確な行番号を取得してから削除すること。テスト fn 名:
+
+- L416-461 付近: 5 件 (test_validate_audio_format_valid_f32_native_mono / test_validate_audio_format_rejects_non_float / test_validate_audio_format_rejects_big_endian / test_validate_audio_format_rejects_channel_count_mismatch / test_validate_audio_format_rejects_unexpected_bits_per_channel)
+- L463-475 付近: 2 件 (validate_audio_format_properties_rejects_when_bits_per_channel_unknown / validate_audio_format_properties_rejects_when_channel_count_unknown)
+- L477-510 付近: 2 件 (validate_audio_format_properties_error_messages_match_documented_strings_for_known_paths / validate_audio_format_properties_returns_first_violation_when_multiple_invalid)
+
+合計 = **9 件** (validate_audio_format_properties 関連のみ)
+
+**移動しない test (絶対に触らない)**:
+- `build_audio_drop_event_payload` 関連 5 件 (cfg(target_os = "macos"))
+- 上記 9 件以外の `mod tests` 内 fn (もしあれば)
+
+## 抽出方式 (Loop 91 system_audio_pcm.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/system_audio_format.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! ScreenCaptureKit が配信する音声フォーマット (Float32 / NativeEndian / 32bit / channel count) の検証関数群。
+//!
+//! `system_audio.rs` の ScreenCaptureKitCapture 入力処理から audio format 検証軸を切り出して
+//! 機能境界で分離する。`screencapturekit::CMFormatDescription` への依存を当軸に閉じ込める。
+//!
+//! `validate_audio_format_properties` は純粋関数 (cfg なし) として unit test 可能。
+//! `validate_audio_format_description` は CMFormatDescription を受けるラッパー (cfg(macos) 限定)。
+```
+
+必要 import:
+
+```rust
+#[cfg(target_os = "macos")]
+use screencapturekit::CMFormatDescription;
+```
+
+production 移動:
+- `validate_audio_format_properties` を **private fn** として配置 (caller の validate_audio_format_description が同 file 内なので公開不要)
+- `validate_audio_format_description` を **`#[cfg(target_os = "macos")] pub(crate) fn`** で公開 (caller は system_audio.rs L219 の cfg(macos) 内)
+
+`mod tests` を新 file 末尾に追加し、test 9 件を移動。`use super::*;` で内部参照可能。
+
+### 2. system_audio.rs 編集
+
+- L36-62: `validate_audio_format_properties` 削除 (doc コメント L36-37 含む)
+- L67-79: `validate_audio_format_description` 削除 (doc コメント L64-66 + cfg attr L67 含む)
+- 削除後の構造: L34 `use crate::system_audio_pcm::f32_pcm_bytes_to_mono;` 直後に `FORMAT_WARN_ONCE` static (旧 L81-83) が来る形
+- use 整理: **L28 `use screencapturekit::CMFormatDescription;` 削除** (validate_audio_format_description 移動で system_audio.rs では使わなくなる)
+- use 追加: `use crate::system_audio_pcm::f32_pcm_bytes_to_mono;` (L34) の **直後または近く** に `use crate::system_audio_format::validate_audio_format_description;` を **`#[cfg(target_os = "macos")]` 属性付き** で追加 (caller L219 が cfg(macos) 内のため非 macos build で unused warning を避ける)
+- mod tests 内の関連 test 9 件を削除 (上記列挙、行番号は移動順で変動するため tail/head/grep で確認しつつ削除)
+- それ以外の test (`build_audio_drop_event_payload` 系 + その他 read_f32_ne / sanitize_pcm_sample / f32_pcm_bytes_to_mono は Loop 91 で全て移動済) は **触らない**
+
+### 3. lib.rs 編集 (alphabetical mod)
+
+- L40 `mod system_audio;` の **直後** (alphabetical = system_audio_format < system_audio_pcm) に `mod system_audio_format;` を 1 行挿入
+- 結果順: `mod system_audio;` → `mod system_audio_format;` (新規) → `mod system_audio_pcm;`
+- invoke_handler 修正は **不要** (format helpers は tauri::command でない)
+
+それ以外の lib.rs 修正は禁止。
+
+## 規模超過防止 (重要)
+
+- **production 2 fn / test 9 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller は use 経由で見える名前のまま、cfg 属性も保持
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import warning が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/system_audio.rs src-tauri/src/system_audio_format.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85/86/87/88/89/90/91 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/system_audio.rs src-tauri/src/system_audio_format.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(system-audio): audio format 検証関数 (Float32/NativeEndian/32bit/channel count) を system_audio_format.rs に抽出 (mjc-main-20260505-47 Loop 92, 機能分離軸 = system_audio 軸 2 件目, 大型 rust file 責務分離 18 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-47 Loop 92 / 2026-05-05]
+worker: mjc-worker-system-audio-format-loop92 (作業)
+範囲: src-tauri/src/system_audio.rs (audio format 検証 production 2 fn ~40 行削除 + test 9 件削除 + use CMFormatDescription 削除 + use 追加 cfg(target_os="macos") 付き) + src-tauri/src/system_audio_format.rs (新規 ~140-170 行) + src-tauri/src/lib.rs (mod system_audio_format; 追加)
+内容: system_audio.rs 内の validate_audio_format_properties (純粋関数 cfg なし) + validate_audio_format_description (cfg(macos) CMFormatDescription 依存) を新 module system_audio_format.rs に抽出。tests 9 件 (validate_audio_format_properties 関連 = is_err 系 5 件 + unknown 系 2 件 + error message 1 件 + first violation 1 件) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod system_audio_format; 追加。validate_audio_format_description のみ pub(crate) で公開、validate_audio_format_properties は private 維持 (caller が同 file 内のため)。caller (system_audio.rs L219 = ScreenCaptureKitCapture impl 内 cfg(macos)) は cfg(target_os="macos") 付きで use 文 1 行追加するのみ = 振る舞い不変。screencapturekit::CMFormatDescription への依存を当軸に閉じ込めて構造美向上。大型 rust file 責務分離 18 file 目 = system_audio 軸 2 件目 = 機能分類軸 2 連続 (Loop 87/88 app_detection 機能分類軸 precedent と同 paradigm) = Loop 91 PCM 軸からの機能カテゴリ pivot 達成。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(system-audio): audio format 検証関数を system_audio_format.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = system_audio 軸の機能境界分離 + screencapturekit crate 依存の局所化)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-47 Loop 92 = system_audio_format.rs 抽出 (構造分離 18 file 目, system_audio 軸 2 件目 = 機能分類軸 2 連続, screencapturekit 依存局所化) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 4 件
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

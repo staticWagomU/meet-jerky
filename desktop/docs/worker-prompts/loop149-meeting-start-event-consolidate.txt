@@ -1,0 +1,184 @@
+あなたは meet-jerky の worker です。Loop 149 = frontend 軸 19 件目 = **重複削除 + 既存 file 拡張軸 paradigm 3 件目** = MEETING_START_REQUEST_EVENT 3 file 重複削除 + meetingStartRequest.ts 統合を担当します。
+
+# 必読 (順番)
+
+1. **AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読む** (先頭は絶対に触らない、ファイル全体 Read 禁止 = ~33,686 行ある)。
+2. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md (priority 1 = 「ハーネスを自律的に整える」 = DRY 違反解消)。
+3. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/meetingStartRequest.ts (cat 全体読み込み = 42 行のみ = 既存 file)。
+4. /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src/utils/liveCaptionStatus.ts (cat 全体読み込み = 232 行 = precedent file = event constant と localStorage が同 file 共存)。
+
+# 重要な制約 (絶対)
+
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭 (L1 〜) は絶対に触らない。**
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。** (Loop 144 fault precedent / Loop 146/147/148 で 3 連続成功実証)
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記。
+- **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** (App.tsx / MeetingDetectedBanner.tsx / TranscriptView.tsx は対象 line 周辺のみ参照)。
+- **行末の空白文字 (trailing whitespace) 禁止。**
+- 担当範囲外の編集禁止。本 Loop 149 は src/utils/meetingStartRequest.ts (export 追加) + src/App.tsx (L8 削除 + import 追加) + src/components/MeetingDetectedBanner.tsx (L27 削除 + import 追加) + src/routes/TranscriptView.tsx (L109 削除 + import 追加) + AGENT_LOG.md (末尾追記) のみ。
+
+# 本 Loop の目的 (paradigm 3 件目達成)
+
+`MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested"` が **3 file で完全重複定義** されている = **DRY 違反**:
+- src/App.tsx L8
+- src/components/MeetingDetectedBanner.tsx L27
+- src/routes/TranscriptView.tsx L109
+
+これを `src/utils/meetingStartRequest.ts` に集約 + export 化 + 3 file の重複定義を削除 + import 追加で paradigm 3 件目達成。
+
+## 責務階層精査 (実施済)
+
+- `meetingStartRequest.ts` = 「meeting start request」関連の utils file (localStorage 永続化 tier)
+- `MEETING_START_REQUEST_EVENT` = 「meeting start」の Tauri event coordination tier
+- 異 tier だが **同 entity (meeting start request)**
+- precedent: `liveCaptionStatus.ts` で `LIVE_CAPTION_STATUS_EVENT` + `LIVE_CAPTION_STATUS_STORAGE_KEY` + localStorage 関数 + display helpers が共存 = entity 単位で集約する方針確立済
+- 判断: **同 entity (meeting start request) を理由に既存 file 拡張軸採用 = paradigm 3 件目**
+
+# 具体手順 (厳守、2-commit pattern)
+
+## Step 1: src/utils/meetingStartRequest.ts に MEETING_START_REQUEST_EVENT を export 追加
+
+`src/utils/meetingStartRequest.ts` の先頭 (L1 = `const PENDING_MEETING_START_STORAGE_KEY = ...` の **直前**) に以下を追加:
+
+```typescript
+export const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";
+
+```
+
+注意:
+- 空行 1 行を後ろに入れて既存 const と区別
+- trailing whitespace なし
+
+## Step 2: src/App.tsx の L8 重複定義削除 + import 追加
+
+`src/App.tsx` を `head -30 src/App.tsx` で確認後、Edit ツールで:
+
+1. L8 の `const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";` 行を **削除**
+2. import 文を追加 (既存の utils import 群があれば追記、なければ新規追加)
+
+```typescript
+import { MEETING_START_REQUEST_EVENT } from "./utils/meetingStartRequest";
+```
+
+注意:
+- 既存 import の path 規則 (`./utils/...`) に合わせる
+- L27 の `listen(MEETING_START_REQUEST_EVENT, ...)` 参照は import 追加で解決済 = 変更不要
+- trailing whitespace なし
+
+## Step 3: src/components/MeetingDetectedBanner.tsx の L27 重複定義削除 + import 追加
+
+`src/components/MeetingDetectedBanner.tsx` を `head -40 src/components/MeetingDetectedBanner.tsx` で確認後、Edit ツールで:
+
+1. L27 の `const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";` 行を **削除**
+2. import 文を追加
+
+```typescript
+import { MEETING_START_REQUEST_EVENT } from "../utils/meetingStartRequest";
+```
+
+注意:
+- path は `../utils/meetingStartRequest` (components/ から utils/ への相対 path)
+- 既存 import 群の中で `meetingStartRequest` 関連の import が既にあれば、そこに追加 (例: `import { hasPendingMeetingStartRequest, ..., MEETING_START_REQUEST_EVENT } from "../utils/meetingStartRequest";`)
+- L305 の `emit(MEETING_START_REQUEST_EVENT)` 参照は import 追加で解決済 = 変更不要
+- trailing whitespace なし
+
+## Step 4: src/routes/TranscriptView.tsx の L109 重複定義削除 + import 追加
+
+`src/routes/TranscriptView.tsx` を `head -120 src/routes/TranscriptView.tsx` で確認後、Edit ツールで:
+
+1. L109 の `const MEETING_START_REQUEST_EVENT = "meet-jerky-start-recording-requested";` 行を **削除**
+2. import 文を追加
+
+```typescript
+import { MEETING_START_REQUEST_EVENT } from "../utils/meetingStartRequest";
+```
+
+注意:
+- path は `../utils/meetingStartRequest` (routes/ から utils/ への相対 path)
+- 既存 import 群の中で `meetingStartRequest` 関連の import が既にあれば、そこに追加
+- L229 の `listen(MEETING_START_REQUEST_EVENT, ...)` 参照は import 追加で解決済 = 変更不要
+- trailing whitespace なし
+
+## Step 5: 検証
+
+```bash
+bash scripts/agent-verify.sh src/utils/meetingStartRequest.ts src/App.tsx src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx
+```
+
+期待結果:
+- npm run build (tsc + vite build) ✓ (frontend 軸 = npm のみ検証)
+- cargo 系は frontend-only 変更で skip 判定
+
+## Step 6: refactor commit (1 件目)
+
+```bash
+git add src/utils/meetingStartRequest.ts src/App.tsx src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx
+git commit -m "$(cat <<'EOF'
+refactor(frontend): MEETING_START_REQUEST_EVENT 3 file 重複定義を meetingStartRequest.ts に集約 + DRY 違反解消 (mjc-main-20260505-73 Loop 149, frontend 軸 19 件目 = 重複削除 + 既存 file 拡張軸 paradigm 3 件目, MEETING_START_REQUEST_EVENT が App.tsx L8 + MeetingDetectedBanner.tsx L27 + TranscriptView.tsx L109 で完全重複 (DRY 違反) のため meetingStartRequest.ts に export 追加 + 3 file の重複定義削除 + import 追加, 同 entity (meeting start request) で precedent liveCaptionStatus.ts (event + localStorage 共存) と同形, scope 35 軸維持 = 新 file なし, AGENTS.md priority 1 寄与, alternation 37 連続維持 (K(148) → frontend(149)))
+EOF
+)"
+```
+
+## Step 7: AGENT_LOG.md 末尾 (`---` の直後) に Loop 149 entry を **1 回のみ** 追記
+
+**手順**:
+1. `tail -10 AGENT_LOG.md` で末尾を確認
+2. 末尾の `---` 直後に以下のテンプレートで append (Loop 147 entry と同形式)
+3. **append は 1 回のみ。Edit/Write を複数回繰り返さない。**
+
+```
+[mjc-main-20260505-73 Loop 149 / 2026-05-06]
+worker: mjc-worker-loop149-meeting-start-event-consolidate (作業)
+範囲: src/utils/meetingStartRequest.ts (+1 行 = export 追加) + src/App.tsx (-1 行 + import 追加) + src/components/MeetingDetectedBanner.tsx (-1 行 + import 追加) + src/routes/TranscriptView.tsx (-1 行 + import 追加) + AGENT_LOG.md (末尾追記)
+内容: MEETING_START_REQUEST_EVENT 3 file 重複定義 (App.tsx L8 + MeetingDetectedBanner.tsx L27 + TranscriptView.tsx L109) を meetingStartRequest.ts に集約 + DRY 違反解消。frontend 軸 19 件目 = **重複削除 + 既存 file 拡張軸 paradigm 3 件目** (Loop 145 = AudioLevelMeter sanitize / Loop 147 = LiveCaptionWindow TRACKS+AudioSource に続く 3 件目)。同 entity (meeting start request) を理由に既存 file 拡張軸採用 = liveCaptionStatus.ts precedent (event + localStorage 共存) と同形。scope 35 軸維持 (新 file なし)。AGENTS.md priority 1 寄与 (ハーネスを自律的に整える + DRY 違反解消)。alternation pattern 38 連続成功維持 (K(148) → frontend(149))。
+変更ファイル: src/utils/meetingStartRequest.ts, src/App.tsx, src/components/MeetingDetectedBanner.tsx, src/routes/TranscriptView.tsx
+検証: npm run build ✓ (tsc + vite build), agent-verify.sh OK (frontend-only 変更で cargo 系 skip)
+commit: <Step 6 の sha を埋める>
+依存関係追加: なし
+失敗理由: なし
+次アクション: chore commit (本 entry 追記の commit) を続けて作成
+
+---
+```
+
+注意:
+- 末尾に `---` を必ず付ける (次の entry 用境界)
+- 行末 trailing whitespace なし
+- commit hash placeholder `<Step 6 の sha を埋める>` は Step 6 完了後の `git rev-parse --short HEAD` 結果で置換
+- **append が成功したら直ちに Step 8 へ進む。同じ entry を再度書こうとしない。**
+
+## Step 8: chore commit (2 件目)
+
+```bash
+git add AGENT_LOG.md
+git commit -m "$(cat <<'EOF'
+chore(agent-log): mjc-main-20260505-73 Loop 149 = MEETING_START_REQUEST_EVENT 3 file 重複定義を meetingStartRequest.ts に集約 + DRY 違反解消 (frontend 軸 19 件目 = 重複削除 + 既存 file 拡張軸 paradigm 3 件目, 同 entity = meeting start request, AGENTS.md priority 1 寄与, alternation 38 連続維持) のエントリ追記
+EOF
+)"
+```
+
+# 規模と所要時間
+
+- 規模: SS = ~5-7 分完走見込み (4 file 編集 + 検証 + 2 commit)
+- worker prompt 行数: 本 prompt は ~190 行 (Loop 147 = ~150 行より長め = 4 file 編集 + 責務階層精査詳細記載)
+
+# 上限明示
+
+- ファイルは src/utils/meetingStartRequest.ts + src/App.tsx + src/components/MeetingDetectedBanner.tsx + src/routes/TranscriptView.tsx + AGENT_LOG.md のみ編集
+- AGENT_LOG.md は **末尾に追記のみ** (先頭は絶対に触らない、append 1 回のみ)
+- それ以外のファイル変更禁止
+- npm run build OK (tsc + vite build)
+- trailing whitespace 禁止
+
+# 完了確認
+
+```bash
+git log --oneline -3
+git status --short
+grep -rn "MEETING_START_REQUEST_EVENT" src/ --include="*.ts" --include="*.tsx"
+```
+
+期待結果:
+- 直近 2 commit が本 Loop 149 のもの
+- working tree clean (untracked のみ残存 OK)
+- grep 結果: meetingStartRequest.ts (export 1 件) + App.tsx (import 1 件 + 参照 1 件 = listen) + MeetingDetectedBanner.tsx (import 1 件 + 参照 1 件 = emit) + TranscriptView.tsx (import 1 件 + 参照 1 件 = listen) = 計 7 行 (重複定義削除済 = 元 9 行から -2 行のはず... 実際は import 追加 +3 行 + 元の参照 3 行 + 重複定義削除 -3 行 + export 追加 +1 行 = 計 7 行で OK)

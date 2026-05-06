@@ -1,0 +1,142 @@
+あなたは meet-jerky の worker (mjc-main Loop 198) です。
+
+# 大目的
+
+`"文字起こしワーカーが異常終了しました"` 4 callsite を `src/transcription_error_payload.rs` に新規 const `ERROR_TRANSCRIPTION_WORKER_ABEND` として集約し、4 callsite を const 参照に統一する。
+= rust 軸 const 集約 paradigm 反復 10 件目達成 = paradigm 系統樹拡張 11 件目 (新規 const 追加軸 = Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON precedent と同系統樹) の反復 = paradigm 完全成熟期 cross-language 拡張更なる持続。
+= AGENTS.md priority 1 寄与 (panic 文言の単一 source of truth 化 + typo 防止 + UI emit メッセージの改変リスク CI 固定)。
+
+# 必読
+
+最初に `tail -350 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾を読んで状況を把握せよ。AGENT_LOG.md は ~34,646 行 / ~3.2MB あるので、Read 全体は禁止。tail/head/grep で必要な範囲のみ参照せよ。
+
+AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は必ずファイル末尾に行う。**先頭は絶対に触らない**。
+
+末尾の SESSION SUMMARY セクション (mjc-main-20260505-95) に Loop 196/197 + 残候補一覧 + R30' 探索結果が記載されている。本タスクは Loop 198 = 後継メイン (mjc-main-20260505-96) が独自 grep 再探索で発見した第一推奨候補 = `"文字起こしワーカーが異常終了しました"` 4 件集約。
+
+# 実装内容
+
+## ステップ 1: src/transcription_error_payload.rs を読む
+
+`cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/src-tauri/src/transcription_error_payload.rs` で全体を確認 (~360 行)。L1 が `use crate::transcription_types::...` で始まる。
+
+## ステップ 2: const 追加
+
+`use crate::transcription_types::...` の直後 (= L1 の直後) に空行を挟んで以下を挿入:
+
+```rust
+pub(crate) const ERROR_TRANSCRIPTION_WORKER_ABEND: &str = "文字起こしワーカーが異常終了しました";
+```
+
+## ステップ 3: 4 callsite を const 参照に統一
+
+以下 4 箇所を Edit で書き換え:
+
+1. **L13** (本番):
+   - Before: `build_transcription_error_payload("文字起こしワーカーが異常終了しました".to_string(), source)`
+   - After: `build_transcription_error_payload(ERROR_TRANSCRIPTION_WORKER_ABEND.to_string(), source)`
+
+2. **L42** (test, mod tests 内):
+   - Before: `Some("文字起こしワーカーが異常終了しました")`
+   - After: `Some(ERROR_TRANSCRIPTION_WORKER_ABEND)`
+   - `mod tests` 内では `use super::*` 経由で参照可能
+
+3. **L104** (test):
+   - 同様に `Some("文字起こしワーカーが異常終了しました")` → `Some(ERROR_TRANSCRIPTION_WORKER_ABEND)`
+
+4. **L198** (test):
+   - 同様に `Some("文字起こしワーカーが異常終了しました")` → `Some(ERROR_TRANSCRIPTION_WORKER_ABEND)`
+   - 同 callsite の直後にコメント `"panic 文言は固定 (panic details 漏洩防止)"` がある = これは callsite の **第二引数の説明文** = 触らない
+
+L42 / L104 / L198 の 3 callsite は `mod tests` 内 = `use super::*` で `ERROR_TRANSCRIPTION_WORKER_ABEND` が visible になる。tests 内の use 句は変更不要。
+
+# 規模超過防止
+
+- **担当範囲外の編集禁止**: src/transcription_error_payload.rs **以外** の rust file は触らない (callsite が他 file にもないか grep で確認済 = 4 件全て transcription_error_payload.rs 内)
+- **test 件数の上限**: cargo test --lib は **704 件 完全不変** が必須。test 追加・削除一切禁止
+- **大型 file Read 禁止**: AGENT_LOG.md は tail/head/grep のみ
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 検証 (rust 軸 必須)
+
+修正後、以下を実行 (`cd src-tauri && cargo ...`):
+
+```
+cd src-tauri && cargo test --lib 2>&1 | tail -10
+cd src-tauri && cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10
+cd src-tauri && cargo fmt --check 2>&1 | tail -5
+cd src-tauri && cargo build --lib 2>&1 | tail -5
+```
+
+期待:
+- cargo test: **704 passed / 0 failed** (件数完全不変)
+- cargo clippy: 警告ゼロ
+- cargo fmt: OK
+- cargo build: エラーなし
+
+# コミット (2-commit pattern, Loop 145-197 で 53 連続安定)
+
+## Commit 1: refactor
+
+```
+git add src-tauri/src/transcription_error_payload.rs
+git commit -m "refactor(rust): ERROR_TRANSCRIPTION_WORKER_ABEND を transcription_error_payload.rs に集約 + 4 callsite を const 参照に統一 (mjc-main Loop 198, rust 軸 = const 集約 paradigm 反復 10 件目, paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 = Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON precedent と同系統樹, '文字起こしワーカーが異常終了しました' 4 callsite (本番 1 + test 3) を統一 + DRY 違反解消, panic 文言の単一 source of truth 化, alternation pivot K(197) → rust(198) = 37 → 38, AGENTS.md priority 1 寄与)"
+```
+
+## Commit 2: chore (AGENT_LOG.md entry)
+
+AGENT_LOG.md の末尾に entry を append する。
+
+**重要**: entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)。
+
+具体手順:
+1. `tail -10 /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md` で末尾構造を確認 (末尾は `---` で終わっているはず)
+2. `Write` ツールで `/tmp/loop198-entry.md` に以下を書き出す (冒頭 `---` 含めない、末尾 `---` 1 個):
+
+```markdown
+
+## [TASK ENTRY @ 2026-05-06 ~JST] mjc-main Loop 198 = ERROR_TRANSCRIPTION_WORKER_ABEND を transcription_error_payload.rs に集約
+
+mjc-main-20260505-96 セッション (canonical 移譲済) Loop 198 = rust 軸 = const 集約 paradigm 反復 10 件目達成 = paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 = Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON precedent と同系統樹.
+
+`src/transcription_error_payload.rs` に `pub(crate) const ERROR_TRANSCRIPTION_WORKER_ABEND: &str = "文字起こしワーカーが異常終了しました";` 追加 + 4 callsite (本番 1: L13 build_worker_panic_error_payload + test 3: L42/L104/L198) を const 参照に統一 = panic 文言の単一 source of truth 化 + typo 防止 + UI emit メッセージの改変リスク CI 固定.
+
+メイン批判判断 連続 98 セッション目達成 = 後継 mjc-main-20260505-96 が handoff prompt R30' 主張「主要候補なし」 (前任 mjc-main-20260505-95 の事前探索結果) を独自 grep で再探索 + transcription_error_payload.rs / secret_store.rs / system_audio_format.rs に有力候補発見 = 第一推奨 = transcription_error_payload.rs の 4 callsite を採用 = 批判検証達成.
+
+alternation pattern pivot 加速継続: rust(196) → K(197) → rust(198) = 36 → 37 → 38 = 加速期更なる強化 = 節目 30 件突破後 8 件目.
+
+worker prompt 必須要素 9 (冒頭 `---` 含めない) 30 連続実証成功 (Loop 168-198 = 節目 25 連続突破後 5 件目).
+
+worker 自律 2-commit pattern 連続 53 ループ目達成 (Loop 145-198 = 54 連続安定 = 節目 50 件突破後 3 件目).
+
+const 集約 paradigm 反復 10 件目達成 = frontend 10 + rust 3 = 計 13 連続 = paradigm 完全成熟期 cross-language 拡張更なる持続.
+
+AGENTS.md priority 1 寄与 = panic 文言固定 + UI emit 信頼性向上.
+
+検証: cargo test --lib 704 件完全不変 / cargo clippy --lib --tests -- -D warnings 警告ゼロ / cargo fmt --check OK / cargo build --lib エラーなし.
+
+---
+```
+
+3. `cat /tmp/loop198-entry.md >> /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENT_LOG.md`
+4. **append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から必須要素 8)
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main Loop 198 = ERROR_TRANSCRIPTION_WORKER_ABEND を transcription_error_payload.rs に集約 (rust 軸, const 集約 paradigm 反復 10 件目, paradigm 系統樹拡張 11 件目反復, 新規 const 追加軸 = Loop 194 と同系統樹, panic 文言単一 source of truth 化, alternation pivot K(197) → rust(198) = 37 → 38, メイン批判判断 連続 98 セッション目達成) のエントリ追記"
+```
+
+# 完了確認
+
+`git status --short` が clean (untracked のみ) + `git log --oneline -3` で 2 commit 反映確認。
+
+# 注意事項 (再掲)
+
+- **冒頭 `---` 含めない / 末尾 `---` 1 個** (worker prompt 必須要素 9 の継承)
+- **append は 1 回のみ** (worker prompt 必須要素 8 の継承)
+- **trailing whitespace 禁止**
+- **大型 file Read 禁止 = tail/head/grep**
+- **担当範囲外 file 編集禁止**
+- **test 件数完全不変 = 704 passed**
+- **2-commit pattern (refactor + chore)**
+- **commit hash 引用なし** (worker は git log の hash を引用しない、メインが SESSION SUMMARY で引用)

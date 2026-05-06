@@ -1,0 +1,150 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コミットは禁止です。
+
+## 必読 (順序厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみ** = `tail -350 AGENT_LOG.md` で参照する。AGENT_LOG.md 全体は 23800 行超 / 1.9MB+ あるため Read 全体禁止。
+
+## AGENT_LOG.md 追記ルール (絶対遵守)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**。新規追記は **必ずファイル末尾** に行う。**先頭は絶対に触らない**。
+- 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に新エントリを追記する。
+
+## 担当範囲 (これ以外を編集禁止)
+
+ファイル: `src-tauri/src/cloud_whisper.rs`
+
+範囲: 末尾の `mod tests { ... }` ブロック (l.122-) の **末尾 (最後の test 関数の `}` 直後、ファイル末尾の閉じ `}` の直前)** に、private deserialization struct (`#[derive(Debug, Deserialize)]`) の Debug 出力契約を CI 保護する **3 件の test 関数** を追加する。
+
+対象 struct (どちらも private):
+- `VerboseSegment` (l.10-15): `start: f64`, `end: f64`, `text: String`
+- `VerboseResponse` (l.5-7): `segments: Vec<VerboseSegment>`
+
+確認手順:
+- `tail -30 src-tauri/src/cloud_whisper.rs` で末尾位置を確認
+- 既存テスト名 (`parses_verbose_response_*`, `parse_whisper_*`, `build_whisper_*`, `whisper_request_params_*`) と被らないように命名
+
+## 実装内容 (3 軸)
+
+### test 1: VerboseSegment Debug 軸 (struct 名 + 3 fields の値 contains)
+```
+#[test]
+fn verbose_segment_debug_format_contains_struct_name_and_all_field_values() {
+    let segment = VerboseSegment {
+        start: 1.5,
+        end: 3.25,
+        text: String::from("こんにちは"),
+    };
+    let formatted = format!("{segment:?}");
+    assert!(
+        formatted.contains("VerboseSegment"),
+        "struct 名: {formatted}"
+    );
+    assert!(formatted.contains("start"), "start field 名: {formatted}");
+    assert!(formatted.contains("1.5"), "start 値: {formatted}");
+    assert!(formatted.contains("end"), "end field 名: {formatted}");
+    assert!(formatted.contains("3.25"), "end 値: {formatted}");
+    assert!(formatted.contains("text"), "text field 名: {formatted}");
+    assert!(formatted.contains("こんにちは"), "text 値: {formatted}");
+}
+```
+
+### test 2: VerboseResponse Debug 軸 (struct 名 + 複数 segments nested 値 contains)
+```
+#[test]
+fn verbose_response_debug_format_contains_struct_name_and_nested_segment_values() {
+    let response = VerboseResponse {
+        segments: vec![
+            VerboseSegment {
+                start: 0.0,
+                end: 1.0,
+                text: String::from("first"),
+            },
+            VerboseSegment {
+                start: 1.0,
+                end: 2.0,
+                text: String::from("second"),
+            },
+        ],
+    };
+    let formatted = format!("{response:?}");
+    assert!(
+        formatted.contains("VerboseResponse"),
+        "outer struct 名: {formatted}"
+    );
+    assert!(
+        formatted.contains("segments"),
+        "segments field 名: {formatted}"
+    );
+    assert!(
+        formatted.contains("VerboseSegment"),
+        "inner struct 名: {formatted}"
+    );
+    assert!(formatted.contains("first"), "1 番目 text 値: {formatted}");
+    assert!(formatted.contains("second"), "2 番目 text 値: {formatted}");
+}
+```
+
+### test 3: VerboseResponse 空 Vec Debug 軸 (空 `[]` 表示)
+```
+#[test]
+fn verbose_response_with_empty_segments_debug_format_contains_empty_vec_brackets() {
+    let response = VerboseResponse { segments: vec![] };
+    let formatted = format!("{response:?}");
+    assert!(
+        formatted.contains("VerboseResponse"),
+        "struct 名: {formatted}"
+    );
+    assert!(
+        formatted.contains("segments"),
+        "segments field 名: {formatted}"
+    );
+    assert!(formatted.contains("[]"), "空 Vec の Debug 表示: {formatted}");
+}
+```
+
+## 規模超過防止 (絶対遵守)
+
+- 担当範囲は **上記 3 件の test 関数のみ**。それ以外のファイル / 関数 / モジュールを編集しない。
+- アプリコード (構造体定義、derive、関数本体等) は **一切変更しない** = Tidy First の振る舞い不変原則。
+- 新規 test は **正確に 3 件** とする (4 件以上 / 2 件以下は不可)。
+- 既存テストの順序や内容を変更しない。
+- 大型ファイルは Read 全体禁止 = `tail`/`head`/`grep`/`sed -n 'NN,MMp'` で対象範囲のみ参照。
+- **行末の空白文字 (trailing whitespace) 禁止**。
+
+## use 文の確認
+
+l.124 で `use super::*;` 済 (test mod の冒頭) = 同一クレートの private struct (VerboseResponse / VerboseSegment) は test mod から直接アクセス可能。追加の use 文は不要。
+
+## 検証手順
+
+1. `cd src-tauri && cargo test --lib cloud_whisper:: 2>&1 | tail -10` で 3 件増加を確認 (既存件数 → +3 件)。
+2. `cd src-tauri && cargo test --lib 2>&1 | tail -5` で全体テスト件数 631 → 634 件 (3 件増) を確認。
+3. `cd src-tauri && cargo clippy --lib -- -D warnings 2>&1 | tail -10` で警告ゼロを確認。
+4. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で format 準拠を確認 (差分があれば `cargo fmt` 実行)。
+
+## AGENT_LOG.md 追記内容 (テンプレート)
+
+`tail -10 AGENT_LOG.md` で末尾の `---` を確認した上で、末尾に以下の形式で追記:
+
+```
+## YYYY-MM-DD HH:MM JST mjc-worker-cloud-whisper-verbose-private-debug-tests-20260504-38-3
+- 担当セッション: mjc-worker-cloud-whisper-verbose-private-debug-tests-20260504-38-3 (作業担当, sonnet)
+- 役割: cloud_whisper.rs の private deserialization struct (VerboseResponse / VerboseSegment, `#[derive(Debug, Deserialize)]`) の Debug 出力契約 CI 保護
+- 作業範囲: src-tauri/src/cloud_whisper.rs の `mod tests` 末尾に 3 件の test 関数追加 (VerboseSegment 全 fields Debug / VerboseResponse 複数 segments nested Debug / VerboseResponse 空 Vec の `[]` Debug)
+- 指示内容: 「Debug 軸補強」25 連続 application + cloud_whisper.rs 内 2 形態目補強 (WhisperRequestParams = mjc-main-35 Loop 3 → VerboseResponse/Segment = 本 Loop 3) + 「private deserialization struct 形態」初対応 + Vec<T> nested Debug 出力 / 空 Vec `[]` 表示パターン継続 application + serde Deserialize でのみ構築される production path の Debug 契約保護
+- 結果: <pass/fail と件数>
+- 変更ファイル: src-tauri/src/cloud_whisper.rs (+ N 行 / - 0 行、3 件 test 追加)
+- 検証結果: cargo test --lib cloud_whisper <件数 passed>、cargo test --lib 全体 <件数 passed>、cargo clippy --lib -- -D warnings 警告ゼロ、cargo fmt --check OK
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
+```
+
+## 報告形式 (1 ターン完結)
+
+最後に、変更内容、変更ファイル、検証結果 (test 件数 / clippy / fmt)、残リスクを 5-10 行で簡潔に報告してください。

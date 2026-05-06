@@ -1,0 +1,156 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md、AGENT_LOG.md (tail 300 で十分) を読んでください。
+他エージェントも同時に作業している可能性があります。担当範囲外を編集しないでください。コミット禁止。
+
+# 担当範囲
+- `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾に #[test] 関数を **5 件追加するのみ**。
+- 実装本体 (`normalize_speaker` line 98-103 + 周辺) は **一切変更しない** (visibility / ロジック含めて完全に non-touch)。
+- 既存テスト関数も削除/変更しない。
+- 他ファイル編集禁止。
+
+# 1. 背景 / Why
+
+`normalize_speaker` (line 98-103) は話者ラベルを正規化する private fn。実装は以下の 1 行ロジック:
+
+```rust
+fn normalize_speaker(raw: Option<&str>) -> String {
+    match raw.map(str::trim) {
+        Some(s) if !s.is_empty() => s.to_string(),
+        _ => "不明".to_string(),
+    }
+}
+```
+
+既存 5 件 (line 301-327) は以下を確認済:
+- `None` → "不明"
+- `Some("")` → "不明"
+- `Some("   ")` (ASCII spaces) / `Some("\t\n  ")` (ASCII tab/newline/spaces) → "不明"
+- `Some("Alice")` / `Some("自分")` / `Some("相手側")` → そのまま (trim 後 non-empty)
+- `Some("  Alice  ")` / `Some(" Alice Bob ")` → 前後 ASCII whitespace trim
+
+**確認した gap**:
+1. **U+3000 全角空白**: `str::trim` は Unicode `White_Space` プロパティ全体を対象にするので U+3000 もトリム対象。既存テストは ASCII whitespace のみで、U+3000 trim の現契約は未確認。
+2. **U+3000 のみ入力での fallback**: Unicode whitespace のみで構成された input は trim 後 empty になり "不明" にフォールバックする現契約も未確認。
+3. **NUL byte (`\0`)**: NUL は `char::is_whitespace` で false なので trim 対象外、passthrough される現契約。
+4. **Control character (`\x01` 等)**: ASCII control characters の多くは whitespace ではないので trim されず passthrough される現契約。
+5. **Zero-width space (ZWSP, U+200B)**: ZWSP は Unicode 上「不可視だが whitespace ではない」現契約 (`char::is_whitespace` で false)。trim されず passthrough。
+
+これら 5 件で `str::trim` の Unicode whitespace 解釈境界を完全に固定する。`is_whitespace` 仕様の解釈変更や、独自 trim 実装への誤リファクタを CI で検知する装置になる。
+
+# 2. 追加する 5 件のテスト案 (assertion レベル)
+
+すべて `transcript_bridge.rs` の `mod tests` 末尾に追加。private fn `normalize_speaker` は同じファイル内の `tests` mod から `super::*` 経由で直接呼べる (既存パターン踏襲、line 301-327 と同じ呼び方)。
+
+## T1. `normalize_speaker_trims_unicode_full_width_space_u3000`
+- 入力: `Some("\u{3000}相手側\u{3000}")` (U+3000 全角空白で挟まれた CJK)
+- assert: `assert_eq!(normalize_speaker(Some("\u{3000}相手側\u{3000}")), "相手側")`
+- 補助 assert (混在パターン): `assert_eq!(normalize_speaker(Some("\u{3000}  Alice  \u{3000}")), "Alice")` (U+3000 + ASCII spaces 混在も trim される)
+- 意図: `str::trim` が Unicode `White_Space` プロパティ全体を対象にする現契約を固定。ASCII whitespace のみ trim する独自実装への誤リファクタを検知。
+
+## T2. `normalize_speaker_returns_unknown_for_only_unicode_full_width_spaces`
+- 入力: `Some("\u{3000}\u{3000}")` (U+3000 のみ)
+- assert: `assert_eq!(normalize_speaker(Some("\u{3000}\u{3000}")), "不明")`
+- 補助 assert (Unicode whitespace 混在のみ): `assert_eq!(normalize_speaker(Some("\u{3000}\t\n\u{3000}")), "不明")` (U+3000 + ASCII whitespace 混在で構成された input も trim 後 empty)
+- 意図: trim 後 empty の判定が Unicode whitespace でも正しく fallback "不明" に倒れる現契約を固定。`is_empty()` 判定漏れを検知。
+
+## T3. `normalize_speaker_passes_through_nul_byte_label`
+- 入力: `Some("\0")` (単一 NUL byte)
+- assert: `assert_eq!(normalize_speaker(Some("\0")), "\0")` (passthrough)
+- 補助 assert (NUL + 通常文字): `assert_eq!(normalize_speaker(Some("\0Alice")), "\0Alice")` (NUL は前置でも trim されない)
+- 意図: NUL byte が `char::is_whitespace` で false である現契約を固定。NUL を whitespace 扱いする独自実装への誤リファクタを検知。
+
+## T4. `normalize_speaker_passes_through_control_character_label`
+- 入力: `Some("\x01alpha")` (SOH = U+0001 + 通常文字)
+- assert: `assert_eq!(normalize_speaker(Some("\x01alpha")), "\x01alpha")` (passthrough、`\x01` は trim 対象外)
+- 補助 assert (DEL = U+007F): `assert_eq!(normalize_speaker(Some("\u{007F}beta")), "\u{007F}beta")` (DEL も control だが whitespace ではない、passthrough)
+- 意図: ASCII control characters の多くが `char::is_whitespace` で false である現契約を固定 (whitespace 扱いされる例外は `\t \n \r \x0B \x0C` の 5 種のみ)。control character を一律 trim する独自実装への誤リファクタを検知。
+
+## T5. `normalize_speaker_passes_through_zero_width_space_label`
+- 入力: `Some("\u{200B}name")` (ZWSP + 通常文字)
+- assert: `assert_eq!(normalize_speaker(Some("\u{200B}name")), "\u{200B}name")` (passthrough、ZWSP は trim 対象外)
+- 補助 assert (ZWJ = U+200D): `assert_eq!(normalize_speaker(Some("\u{200D}name")), "\u{200D}name")` (ZWJ も passthrough)
+- 補助 assert (ZWSP のみ input): `assert_eq!(normalize_speaker(Some("\u{200B}\u{200B}")), "\u{200B}\u{200B}")` (ZWSP のみでも trim されないので fallback ではなく passthrough)
+- 意図: Zero-width space / Zero-width joiner が「不可視だが whitespace ではない」現契約 (`char::is_whitespace` で false) を固定。Unicode 上の zero-width 文字を whitespace 扱いする独自実装への誤リファクタを検知。
+
+# 3. 実装上の注意
+
+- 既存テスト 5 件 (line 301-327) は `super::*` import 経由で `normalize_speaker` を直接呼んでいる。同じパターンを踏襲する。
+- 関数本体は **絶対に変更しない**。テスト追加のみ。
+- Unicode escape (`\u{3000}` / `\u{200B}` / `\u{200D}` / `\u{007F}` / `\x01` / `\0`) は Rust の string literal でそのまま使える。
+- 補助 assert を 1 件の `#[test]` 関数内に複数並べてよい (既存 `normalize_speaker_returns_unknown_for_whitespace_only` の 2 assert パターン踏襲)。
+- assert マクロは `assert_eq!` のみ使う、`#[should_panic]` は不要。
+- 既存テストとの重複を避けるため、ASCII whitespace のみの input は新規テストでは扱わない (T2 の補助 assert で「U+3000 + ASCII whitespace 混在」を入れるのは既存とは異なるシナリオなので OK)。
+- inline コメントは「現契約を意図的に固定」が読み取れる 1 行で十分 (例: `// U+3000 は str::trim の対象`)。長文コメント不要。
+
+# 4. 検証手順
+
+担当範囲は src-tauri/src/transcript_bridge.rs のみ。
+
+```
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+cargo fmt
+cargo test --lib --quiet 2>&1 | tail -50
+cargo clippy --lib --all-targets --quiet 2>&1 | tail -30
+cargo clippy --lib --all-targets --quiet -- -W clippy::uninlined_format_args 2>&1 | tail -30
+```
+
+期待結果:
+- cargo fmt: 差分なし
+- cargo test: **375 → 380 passed** (5 件追加で 0 failed)
+- cargo clippy default: 警告ゼロ
+- cargo clippy uninlined_format_args: 警告ゼロ
+
+すべて pass で初めて完了。
+
+# 5. AGENT_LOG.md 記載項目 (担当範囲完了後に必ず追記)
+
+`AGENT_LOG.md` 末尾に以下フォーマットで追記する:
+
+```markdown
+### transcript_bridge.rs `normalize_speaker` の Unicode whitespace 境界 5 件で補強
+
+- **開始日時 (JST)**: 2026-05-04 ~XX:XX JST
+- **担当セッション**: `mjc-worker-transcript-bridge-normalize-speaker-boundary-tests-20260504-9-2`
+- **役割**: テスト追加ワーカー (テストのみ 5 件、実装変更なし)
+- **作業範囲**: `src-tauri/src/transcript_bridge.rs` の `mod tests` 末尾への #[test] 関数 5 件追加
+
+#### 指示内容 (要約)
+normalize_speaker の Unicode whitespace 境界を 5 件で固定 (U+3000 trim / U+3000 のみ fallback / NUL passthrough / control char passthrough / ZWSP passthrough)。
+
+#### 追加したテスト
+| # | 関数名 | 検証内容 |
+|---|--------|---------|
+| T1 | normalize_speaker_trims_unicode_full_width_space_u3000 | U+3000 で挟まれた "相手側" が trim される (str::trim の Unicode 対応固定) |
+| T2 | normalize_speaker_returns_unknown_for_only_unicode_full_width_spaces | U+3000 のみ / U+3000 + ASCII whitespace 混在 → "不明" fallback |
+| T3 | normalize_speaker_passes_through_nul_byte_label | NUL byte は trim 対象外、passthrough |
+| T4 | normalize_speaker_passes_through_control_character_label | SOH (\x01) / DEL (U+007F) は whitespace ではない、passthrough |
+| T5 | normalize_speaker_passes_through_zero_width_space_label | ZWSP (U+200B) / ZWJ (U+200D) は whitespace ではない、passthrough |
+
+#### 不変条件 / 設計意図
+- T1+T2 は str::trim の Unicode `White_Space` プロパティ準拠を固定、ASCII-only trim の独自実装への誤リファクタを検知。
+- T3+T4+T5 は char::is_whitespace の「ASCII tab/newline/CR/VT/FF + 一部 Unicode space」のみ true である現契約を、3 種類の不可視/制御文字で固定。
+
+#### 検証結果
+- cargo fmt: pass
+- cargo test: 375 → 380 passed
+- cargo clippy default: 警告ゼロ
+- cargo clippy -W uninlined_format_args: 警告ゼロ
+
+#### 追加 test 件数 / total passed
+- 追加 test 関数: 5 件
+- 追加後 total passed: 380
+
+#### 依存関係
+- 新規 Cargo.toml 依存: なし
+- import 追加: なし
+
+#### 残リスク
+- T3/T4/T5 の passthrough 契約は将来「control character / zero-width 文字も sanitize 対象に含める」設計に変えたら test 修正が必要 (現契約を意図的に固定)。
+- T1/T2 の U+3000 trim 契約は str::trim の Unicode 仕様変更に追随する (Rust std の現契約に依存)。
+
+#### 次アクション
+なし (このワーカーの担当作業完了)
+```
+
+最後に「変更内容、変更ファイル、検証結果、残リスク」を 1 ターンで簡潔に報告してください。

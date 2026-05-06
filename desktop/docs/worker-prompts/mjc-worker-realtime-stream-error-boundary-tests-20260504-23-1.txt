@@ -1,0 +1,119 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md は **20251 行 / 1.7MB+** あるので **絶対に Read 全体しない**。`tail -350 AGENT_LOG.md` 相当で **末尾だけ参照** すること。**末尾の SESSION SUMMARY (mjc-main-22) と直前 worker 3 件 (mjc-worker-segment-to-append-args-tests / mjc-worker-build-append-emission-at / mjc-worker-emission-helper-3layer) が文脈の起点**。
+
+# 担当範囲 (厳守)
+- src-tauri/src/transcription.rs の **mod tests 末尾に test 3 件追加のみ**
+- 関数本体 (`is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` / 他関数全て) は **完全無変更**
+- 他のファイルは編集しない (例外: AGENT_LOG.md 末尾追記のみ)
+- **Tidy First 厳守** = ユーザー観測可能な振る舞い不変、test 追加のみ
+
+# 背景
+mjc-main-22 (旧メイン) で transcript_bridge.rs の境界保護を 31 → 40 件 (+9 件) に拡充完了。本セッション (mjc-main-23) で別ファイル切り替え (transcript_bridge.rs → transcription.rs) で認知文脈をリセットしつつ、test 密度の偏り (transcript_bridge.rs に集中) を是正する Loop 1。
+
+`is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error` (transcription.rs l.1102-1108) は Realtime stream の "graceful stop" を UI noise として捨てるかを判定する **gate 純粋関数 (副作用ゼロ)**。既存 test は 2 件のみ:
+- `test_stopped_realtime_stream_errors_are_not_emitted_to_ui` (l.1428-1442) = prefix 違いの 3 ケース + 別エラー文言 1 ケース
+- `should_emit_realtime_stream_error_is_logical_negation_of_already_stopped` (l.1957-1972) = symmetry property 5 ケース (prefix なし、空文字列、部分文字列、suffix 付きを含む)
+
+# 追加する test 3 件 (mod tests 末尾に追記)
+
+## T1: 大文字小文字違い = 大小区別契約の CI 固定
+```rust
+#[test]
+fn is_realtime_stream_already_stopped_error_is_case_sensitive_for_ascii_realtime_prefix() {
+    // 既存 test は "Realtime" 大文字始まりのみ。"realtime" 小文字始まりは
+    // substring 一致 ("Realtime ストリームが既に停止しています") を満たさず
+    // false を返す現契約を CI 固定。
+    // 大小区別を to_lowercase 等で潰す誤改修を検知する装置。
+    assert!(
+        !is_realtime_stream_already_stopped_error("realtime ストリームが既に停止しています"),
+        "ASCII 部分は大小区別される現契約 (substring 一致は case-sensitive)"
+    );
+    assert!(
+        should_emit_realtime_stream_error("realtime ストリームが既に停止しています"),
+        "false 判定なら UI emit される (graceful stop 扱いされない)"
+    );
+}
+```
+
+## T2: 文字列途中 substring (suffix 付き) = 任意位置一致の挙動を CI 固定
+```rust
+#[test]
+fn is_realtime_stream_already_stopped_error_matches_substring_at_any_position() {
+    // 既存 test は prefix 付き ("OpenAI Realtime ..." 等) と prefix なし
+    // ("Realtime ストリーム..." property test 内) のみ。
+    // substring が文字列の中間に出現するケース (prefix + suffix 両方付き) は未保護。
+    // contains() 仕様上 true を返す現契約を CI 固定 (誤って startsWith 化する改修を検知)。
+    assert!(
+        is_realtime_stream_already_stopped_error(
+            "WARNING: OpenAI Realtime ストリームが既に停止しています (graceful)"
+        ),
+        "substring が中間 (prefix + suffix 両側) に出現しても true (contains 任意位置一致)"
+    );
+    assert!(
+        !should_emit_realtime_stream_error(
+            "WARNING: OpenAI Realtime ストリームが既に停止しています (graceful)"
+        ),
+        "true 判定なら UI emit を抑止 (graceful stop の noise を捨てる)"
+    );
+}
+```
+
+## T3: 改行を含む多行メッセージ = 改行越え contains 一致の現契約固定
+```rust
+#[test]
+fn is_realtime_stream_already_stopped_error_matches_across_newlines() {
+    // 既存 test は単行メッセージのみ。多行メッセージで substring が
+    // 行をまたいで出現しないケースでも、contains() は \n を区切らないため
+    // true を返す現契約を CI 固定。
+    // 例: "ERROR\nOpenAI Realtime ストリームが既に停止しています\nstack trace..."
+    let multiline = "ERROR\nOpenAI Realtime ストリームが既に停止しています\nstack trace at line 42";
+    assert!(
+        is_realtime_stream_already_stopped_error(multiline),
+        "改行を含む多行メッセージでも substring が単一行内にあれば true"
+    );
+    assert!(
+        !should_emit_realtime_stream_error(multiline),
+        "true なら UI emit 抑止 (多行 stack trace 含む graceful stop も noise として捨てる)"
+    );
+}
+```
+
+# 追記場所
+- `src-tauri/src/transcription.rs` の最終 test (= `validate_stream_count_for_engine_other_engines_allow_zero_and_usize_max_streams`, l.2049 周辺) の **直後** = mod tests 末尾の `}` 閉じ括弧の直前に 3 件追加
+- 既存 test 構造 (struct literal → 関数呼び出し → assert!/assert_eq! の順) と命名規則 (`<関数名>_<期待動作>_<入力種別>`) を踏襲
+- assert! のメッセージは現契約の固定理由を **日本語で明記** (「〜を CI 固定」「〜への誤改修を検知」等)
+
+# 検証手順 (worker 完了前に必ず実行)
+1. `cd src-tauri && cargo test --lib is_realtime_stream_already_stopped 2>&1 | tail -20` で追加 test 3 件 + 既存 1 件が pass
+2. `cd src-tauri && cargo test --lib should_emit_realtime_stream 2>&1 | tail -20` で追加 test 3 件 + 既存 2 件が pass
+3. `cd src-tauri && cargo test --lib 2>&1 | tail -10` で全体 500 passed (497 + 3) を確認
+4. `cd src-tauri && cargo clippy --all-targets -- -D warnings 2>&1 | tail -10` で警告ゼロ維持
+5. `cd src-tauri && cargo fmt --check 2>&1 | tail -5` で差分なし
+6. `bash scripts/agent-verify.sh src-tauri/src/transcription.rs` で全段 OK
+
+# AGENT_LOG.md 追記 (重要、事故防止)
+- AGENT_LOG.md は **時系列順 = 最古ログが先頭、最新ログが末尾**
+- 新規追記は **必ずファイル末尾に行う**
+- **先頭は絶対に触らない** (mjc-main-15 で先頭追記事故が初発、mjc-main-21 で再発、その後の改善で防止継続中)
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認 (末尾は SESSION SUMMARY または直前 worker のログ + `---` 区切り)
+  2. **末尾の `---` 直後に新規 worker ログを追記**
+  3. 追記後 `tail -50 AGENT_LOG.md` で末尾追記成功を確認
+- 追記内容: 開始日時 (JST)、担当セッション (mjc-worker-realtime-stream-error-boundary-tests-20260504-23-1)、役割 (worker, sonnet)、作業範囲 (src-tauri/src/transcription.rs の mod tests 末尾に test 3 件追加のみ)、指示内容の要約、結果 (test 件数 497 → 500 passed +3 件、clippy 警告ゼロ、fmt 差分なし)、変更ファイル (1 件のみ)、検証結果 (上記 6 段階全 OK)、設計判断 (3 件絞り込み理由、命名規則踏襲)、残リスク (なし、関数本体無変更)、次アクション (メイン側でレビュー → コミット)
+
+# 規模超過防止
+- **test 3 件のみ**。4 件以上は scope 超過 = 別 Loop に回す
+- 関数本体 (`is_realtime_stream_already_stopped_error` / `should_emit_realtime_stream_error`) を 1 文字でも触ったら scope 超過
+- 他 fn (例: `validate_stream_count_for_engine`, `parse_requested_transcription_sources`) の test 追加も scope 超過 = 別 Loop に回す
+- 担当範囲外 (transcription.rs 以外のファイル) の編集禁止
+- AGENT_LOG.md 以外のドキュメントファイル変更禁止
+- コミット禁止 (メイン側で実施)
+
+# 報告
+1 ターンで完結する形でまとめてください。報告内容: 変更内容、変更ファイル (transcription.rs と AGENT_LOG.md のみ)、検証結果 (6 段階全 OK)、test 件数推移 (497 → 500)、残リスク (なし)、AGENT_LOG.md 追記成功確認 (`tail -10` 結果のサマリ)。

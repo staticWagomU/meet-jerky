@@ -1,0 +1,153 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読ドキュメント
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness-claude.md
+- AGENT_LOG.md (注意: 22000+ 行 / 1.86MB+ の大型ファイル。**`tail -350 AGENT_LOG.md` で末尾だけ参照** = 末尾追記の場所を視覚的に学習する)
+
+## AGENT_LOG.md 追記の絶対ルール (最重要)
+- **AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。**
+- **先頭は絶対に触らない。**
+- **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記 (Edit ツールで `old_string` に末尾の `---\n` 周辺を取り、`new_string` に `---\n\n## <セッション名>\n...本文...\n---\n` を置く)
+- 過去の SESSION SUMMARY や旧 worker entry を改変しない。
+
+## 担当範囲 (これ以外への編集禁止)
+1. `src-tauri/src/transcription.rs` の `mod tests` 末尾 (現在の最終 `}` の直前) への test 関数 **3 件追加**。
+2. `AGENT_LOG.md` への末尾追記 1 件。
+
+これ以外のファイル編集は厳禁。`pub struct StreamConfig`, `pub enum TranscriptionSource`, `pub struct TranscriptionSegment`, 既存 67 test (= mod tests 内の既存 test 関数全て、Loop 1/2 で追加した 6 件含む), 関数本体, impl ブロック, mod tests の冒頭・中間, etc. には一切触れないこと。
+
+## 規模超過防止
+- 追加する test は **必ず 3 件のみ**。4 件以上書かない。
+- 既存 test 関数 (67 件) を **1 行たりとも変更しない**。
+- 大型ファイル (transcription.rs = 2588 行前後) を Read 全体禁止。`sed -n '60,75p'` などで対象範囲のみ参照。
+- `mod tests` の中身は `tail -100 src-tauri/src/transcription.rs` で末尾だけ見れば足りる。
+
+## 行末空白禁止
+- 追加するコードの全ての行で trailing whitespace (行末の半角スペース・タブ) 禁止。**1 文字でも残すと clippy が CI で fail する**。
+
+## 指示内容: 「Debug 軸補強」7 連続 application + Clone deep clone 独立性軸 = StreamConfig
+
+`StreamConfig` は `src-tauri/src/transcription.rs` l.64-72 で以下の通り定義された struct:
+
+```rust
+#[derive(Debug, Clone)]
+pub struct StreamConfig {
+    pub sample_rate: u32,
+    pub speaker: Option<String>,
+    pub source: Option<TranscriptionSource>,
+    pub language: Option<String>,
+}
+```
+
+これは Loop 1 (TranscriptionSegment) / Loop 2 (TranscriptionSource enum) と異なり **Serialize 派生を持たない内部設定型** = Tauri Emitter で送られない内部構造体形態への application = 「Debug 軸補強」7 連続 application + 新規軸「Clone の deep clone 独立性」を追加する。
+
+以下 3 つの test を `mod tests` 末尾 (= 既存最終 test = Loop 2 で追加した `transcription_source_serde_serializes_each_variant_with_snake_case_value` 直後の `}` の **直前**) に追加せよ。
+
+### T1: `stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none`
+**契約**: `format!("{:?}", config)` の Debug 出力に「StreamConfig」型名 + 全 4 snake_case field 名 (`sample_rate`, `speaker`, `source`, `language`) + 各値 (44100 / Some + 値 / None / enum variant 名) が含まれる契約を CI 固定する。
+**test 設計**:
+- 全 field を埋めた config を作る (sample_rate=44100, speaker=Some("自分"), source=Some(TranscriptionSource::Microphone), language=Some("ja")).
+- `let dbg = format!("{:?}", config);`
+- 以下を順次 assert:
+  - `dbg.contains("StreamConfig")` (型名)
+  - `dbg.contains("sample_rate")`, `dbg.contains("speaker")`, `dbg.contains("source")`, `dbg.contains("language")` (全 4 field 名)
+  - `dbg.contains("44100")` (sample_rate 値)
+  - `dbg.contains("自分")` (speaker 値)
+  - `dbg.contains("ja")` (language 値)
+  - `dbg.contains("Some")` (Option Some variant)
+  - `dbg.contains("Microphone")` (TranscriptionSource enum variant 名)
+- 次に None 混合 config を作る (sample_rate=0, speaker=None, source=None, language=None) → 別の `let dbg2 = format!("{:?}", config2);`
+  - `dbg2.contains("None")` (Option None variant)
+  - `dbg2.contains("0")` (sample_rate=0)
+
+### T2: `stream_config_debug_output_equals_after_clone_for_some_and_none_variants`
+**契約**: `#[derive(Clone)]` 派生で clone した config の Debug 出力が元と完全一致する。Some 全埋め case と None 全部 case の 2 通り。
+**test 設計**:
+- 全 Some config (sample_rate=48000, speaker=Some("相手側"), source=Some(TranscriptionSource::SystemAudio), language=Some("en")):
+  - `assert_eq!(format!("{:?}", c), format!("{:?}", c.clone()), "全 Some config の Debug 出力は clone 後と完全一致する");`
+- 全 None config (sample_rate=16000, speaker=None, source=None, language=None):
+  - `assert_eq!(format!("{:?}", c2), format!("{:?}", c2.clone()), "全 None config の Debug 出力は clone 後と完全一致する");`
+
+### T3: `stream_config_clone_produces_independent_copy_for_option_string_fields`
+**契約**: `#[derive(Clone)]` の deep clone 性 = Option<String> の内部 String まで複製され、clone 後 cloned を mutate しても original は不変であることを CI 固定する。これにより「Clone を Rc<T> ベースで shallow に変える / Cow を導入する」誤改修を遮断する。
+**test 設計**:
+- `let original = StreamConfig { sample_rate: 22050, speaker: Some("orig_speaker".to_string()), source: Some(TranscriptionSource::Microphone), language: Some("ja".to_string()) };`
+- `let mut cloned = original.clone();`
+- `cloned.speaker = Some("mutated_speaker".to_string());` (cloned の speaker を別文字列に書き換え)
+- `cloned.source = Some(TranscriptionSource::SystemAudio);` (cloned の source を別 variant に書き換え)
+- `cloned.language = None;` (cloned の language を None に書き換え)
+- `cloned.sample_rate = 99999;` (cloned の sample_rate を別値に書き換え)
+- 以下を assert で original 不変性を確認:
+  - `assert_eq!(original.sample_rate, 22050, "original の sample_rate は cloned mutation 後も不変");`
+  - `assert_eq!(original.speaker.as_deref(), Some("orig_speaker"), "original の speaker は cloned mutation 後も不変");`
+  - `assert_eq!(original.source, Some(TranscriptionSource::Microphone), "original の source は cloned mutation 後も不変");`
+  - `assert_eq!(original.language.as_deref(), Some("ja"), "original の language は cloned mutation 後も不変");`
+- 同時に cloned が想定通り変わっていることも確認:
+  - `assert_eq!(cloned.sample_rate, 99999, "cloned の sample_rate は mutation で 99999 に変わる");`
+  - `assert_eq!(cloned.speaker.as_deref(), Some("mutated_speaker"));`
+  - `assert_eq!(cloned.source, Some(TranscriptionSource::SystemAudio));`
+  - `assert!(cloned.language.is_none(), "cloned の language は None に変わる");`
+
+## 実装条件
+- `mod tests` 内に既に `use super::*;` がある。新たな import 不要。
+- 全 test は同期 (`#[tokio::test]` ではなく `#[test]`)。
+- format string で `{dbg}` のような uninlined args を使うと clippy が警告を出すので、文字列変数は inline (`{var}`) で書くこと。`{:?}` のような fmt spec は inline できない場合があるため、その場合は `format!("{:?}", var)` で別変数に束縛してから inline する。
+
+## 検証 (実装後に必ず実行)
+1. `cd src-tauri && cargo fmt --check` (差分なしを確認)
+2. `cd src-tauri && cargo clippy --lib -- -D warnings` (警告ゼロを確認)
+3. `cd src-tauri && cargo test --lib -- --test-threads=1` (前回 577 → +3 = **580 passed** を期待)
+
+各検証コマンドの末尾出力 (test 結果行) を AGENT_LOG.md 追記内に **そのまま quote** すること。
+
+## AGENT_LOG.md 追記内容 (必須)
+末尾の `---` 直後に以下のフォーマットで追記:
+
+```markdown
+## mjc-worker-stream-config-debug-clone-independence-tests-20260504-32-3
+
+- **開始日時 (JST)**: 2026-05-04
+- **担当セッション**: mjc-worker-stream-config-debug-clone-independence-tests-20260504-32-3
+- **役割**: 作業担当 (worker, print mode)
+- **セッション**: mjc-main-20260504-32 Loop 3
+
+### 作業範囲
+- `src-tauri/src/transcription.rs` の `mod tests` 末尾への test 関数 3 件追加
+- `AGENT_LOG.md` への末尾追記 (本エントリ)
+
+### 指示内容
+「Debug 軸補強パターン」7 連続 application + Clone deep clone 独立性軸 = StreamConfig (struct with u32 + 3 Option fields, Serialize 派生なしの内部設定型) への Debug + Clone-Debug 一致 + Clone deep 独立性 3 軸 application。
+- T1: stream_config_debug_output_contains_struct_name_all_four_field_names_with_some_and_none (Debug 出力に型名+全 4 snake_case field 名+値+Some/None+enum variant 名が含まれる契約)
+- T2: stream_config_debug_output_equals_after_clone_for_some_and_none_variants (clone 後の Debug 出力が元と完全一致、Some 全埋め+None 全部の 2 case)
+- T3: stream_config_clone_produces_independent_copy_for_option_string_fields (Clone の deep clone 性 = cloned mutation 後も original 不変)
+
+### 結果
+- cargo fmt --check: <結果>
+- cargo clippy --lib -- -D warnings: <結果>
+- cargo test --lib -- --test-threads=1: <test 結果末尾の "test result: ok. ..." 行をそのまま quote>
+
+### 変更ファイル
+- src-tauri/src/transcription.rs (mod tests 末尾に T1/T2/T3 追加、pub struct / pub enum / 既存 67 test は完全無変更)
+- AGENT_LOG.md (本エントリ末尾追記)
+
+### 検証結果 (末尾 quote)
+\```
+test result: ok. NNN passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; ...
+\```
+
+### 依存関係追加
+なし
+
+### 失敗理由
+なし
+
+### 次アクション
+メインへ報告、commit 待ち
+---
+```
+
+## 最終報告
+変更内容、変更ファイル、検証結果、残リスクを簡潔に報告。1 ターンで完結する形でまとめる。コミットは禁止 (メインが行う)。

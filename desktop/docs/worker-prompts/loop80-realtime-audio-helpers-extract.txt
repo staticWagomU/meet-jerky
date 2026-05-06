@@ -1,0 +1,176 @@
+あなたは meet-jerky の worker (mjc-worker-realtime-audio-helpers-extract) です。
+
+本タスクは mjc-main-20260505-40 Loop 80 (X4 = WS タスク共通化 Phase 1 = resample_block + float_to_pcm16 を新 file `realtime_audio_helpers.rs` に抽出)。
+
+# 必読 (worker prompt 必須要素)
+
+1. AGENT_LOG.md の末尾 350 行を `tail -350 AGENT_LOG.md` で読め
+2. AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う
+3. 先頭は絶対に触らない
+4. 具体手順: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. 担当範囲外の編集禁止 + test 件数の絶対値は **705 → 704** (重複 test 1 件削減のため -1、本タスク内で完全に意図的)
+6. 大型ファイル (elevenlabs_realtime.rs 1141 行 / openai_realtime.rs 1096 行) は `tail/head/grep -n` で対象範囲のみ参照、**Read 全体禁止**
+7. 行末の空白文字 (trailing whitespace) 禁止
+
+# タスク内容
+
+src-tauri/src/elevenlabs_realtime.rs と src-tauri/src/openai_realtime.rs の `mod ws_task` に**重複定義**された `resample_block` (26 行) と `float_to_pcm16` (9 行) を新 file `src-tauri/src/realtime_audio_helpers.rs` に抽出する。
+
+mjc-main-20260505-40 が grep + Read 精読で両 file の実装が**完全同一**であることを確認済。
+
+# 実コードの位置 (mjc-main grep 確認済)
+
+## elevenlabs_realtime.rs (1141 行)
+- `mod ws_task {` 開始: L147
+- `use rubato::{Resampler, SincFixedIn};` 等の use 文: L151-157
+- `fn resample_block` 定義: L437-462 (26 行)
+- `pub(crate) fn float_to_pcm16` 定義: L464-472 (9 行)
+- `#[cfg(test)] mod tests` 内 `fn float_to_pcm16_handles_full_range_and_clamping`: L1036
+
+## openai_realtime.rs (1096 行)
+- `mod ws_task {` 開始: L179
+- `use rubato::{Resampler, SincFixedIn};` 等の use 文: L183-189
+- `fn resample_block` 定義: L426-451 (26 行)
+- `pub(crate) fn float_to_pcm16` 定義: L453-461 (9 行)
+- `#[cfg(test)] mod tests` 内 `fn float_to_pcm16_handles_full_range_and_clamping`: L469
+- `#[cfg(test)] mod tests` 内 `fn float_to_pcm16_empty_input_yields_empty_output`: L487
+
+# 具体手順
+
+## 1. 新 file `src-tauri/src/realtime_audio_helpers.rs` を作成
+
+両 file の `mod ws_task` 内の以下 2 fn を **pub(crate) で** 配置:
+
+- `pub(crate) fn resample_block(resampler: &mut Option<SincFixedIn<f32>>, buffer: &mut Vec<f32>, input: &[f32]) -> Result<Vec<f32>, String>` (26 行、elevenlabs_realtime.rs L437-462 の中身を移植 = openai_realtime.rs L426-451 と完全同一)
+- `pub(crate) fn float_to_pcm16(input: &[f32]) -> Vec<u8>` (9 行、elevenlabs_realtime.rs L464-472 の中身を移植 = openai_realtime.rs L453-461 と完全同一)
+
+必要 imports:
+```rust
+use rubato::{Resampler, SincFixedIn};
+```
+
+`#[cfg(test)] mod tests` を作成し、以下 2 件の test を**統合配置**:
+
+- `float_to_pcm16_handles_full_range_and_clamping` (両 file の同名 test の中身を比較して機能カバレッジが多い方を採用、内容が同一ならどちらでも可)
+- `float_to_pcm16_empty_input_yields_empty_output` (openai_realtime.rs L487 から移植)
+
+`tests` mod 内では `use super::*;` を入れて `float_to_pcm16` を direct 呼び出し可能にする。
+
+## 2. `src-tauri/src/lib.rs` の mod 宣言更新
+
+`mod realtime_audio_command;` (L21) の直後に `mod realtime_audio_helpers;` を追加 (alphabetical: `c < h`)。
+
+## 3. `src-tauri/src/elevenlabs_realtime.rs` の変更
+
+- `mod ws_task {` 内 (L147-) の use 文セクション (L151-157 付近) に `use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};` を追加 (alphabetical 順、他 use 文と整合)
+- L437-462 の `fn resample_block(...)` を削除
+- L464-472 の `pub(crate) fn float_to_pcm16(...)` を削除
+- `#[cfg(test)] mod tests` 内 L1036 の `fn float_to_pcm16_handles_full_range_and_clamping` test を削除 (新 file 側で統合保持)
+- `use rubato::{Resampler, SincFixedIn};` の `Resampler` トレイト import が他で使われていなければ削除可、grep で要確認 (削除前に `grep -n "Resampler\b" src/elevenlabs_realtime.rs` で `SincFixedIn` 以外の `Resampler` 言及を確認 = `resampler.process` / `resampler.input_frames_next` 呼び出しが remaining なら `Resampler` trait import は維持必要)
+
+## 4. `src-tauri/src/openai_realtime.rs` の変更
+
+- `mod ws_task {` 内 (L179-) の use 文セクション (L183-189 付近) に `use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};` を追加 (alphabetical)
+- L426-451 の `fn resample_block(...)` を削除
+- L453-461 の `pub(crate) fn float_to_pcm16(...)` を削除
+- `#[cfg(test)] mod tests` 内 L469 の `fn float_to_pcm16_handles_full_range_and_clamping` test を削除
+- `#[cfg(test)] mod tests` 内 L487 の `fn float_to_pcm16_empty_input_yields_empty_output` test を削除
+- `use rubato::{Resampler, SincFixedIn};` の `Resampler` trait import は同様に grep で要確認
+
+## 5. 検証
+
+```bash
+cd src-tauri && cargo build --lib                           # エラーなし
+cd src-tauri && cargo test --lib                            # 704 passed / 0 failed (重複 test 1 件削減で -1)
+cd src-tauri && cargo clippy --lib --tests -- -D warnings   # 警告ゼロ
+cd src-tauri && cargo fmt --check                           # OK
+bash scripts/agent-verify.sh src-tauri/src/realtime_audio_helpers.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs src-tauri/src/lib.rs   # OK
+```
+
+trailing whitespace なし、unused import 警告なし。
+
+## 6. 2-commit pattern (precedent Loop 60-79、20 連続実証済)
+
+### Commit 1 (refactor)
+
+```
+git add src-tauri/src/realtime_audio_helpers.rs src-tauri/src/lib.rs src-tauri/src/elevenlabs_realtime.rs src-tauri/src/openai_realtime.rs
+git commit -m "refactor(realtime): resample_block と float_to_pcm16 を realtime_audio_helpers.rs に抽出 (mjc-main-20260505-40 Loop 80, 両 file 重複定義 ~35 行 + tests 統合, AGENTS.md priority 1 寄与, 大型 rust file 責務分離 8 file 目)"
+```
+
+Commit 1 後に commit hash を取得 (`git log -1 --format=%H`)。
+
+### AGENT_LOG.md SUMMARY 追記
+
+`tail -10 AGENT_LOG.md` で末尾を確認し、末尾 `---` 直後に追記:
+
+```markdown
+[mjc-main-20260505-40 Loop 80 / 2026-05-05 ~JST]
+
+## What
+- src-tauri/src/realtime_audio_helpers.rs (新規) を作成し、以下 2 fn を pub(crate) として配置:
+  - resample_block fn (26 行、両 file の `mod ws_task` 内重複定義から統合)
+  - float_to_pcm16 fn (9 行、両 file の `mod ws_task` 内重複定義から統合)
+- `#[cfg(test)] mod tests` 内に統合 test 2 件配置:
+  - float_to_pcm16_handles_full_range_and_clamping (両 file 同名 test を 1 件に統合)
+  - float_to_pcm16_empty_input_yields_empty_output (openai_realtime.rs から移植)
+- src-tauri/src/lib.rs に `mod realtime_audio_helpers;` を `mod realtime_audio_command;` の直後 (alphabetical) に追加
+- src-tauri/src/elevenlabs_realtime.rs:
+  - `mod ws_task` 内 use 文に `use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};` 追加
+  - L437-462 fn resample_block 削除
+  - L464-472 pub(crate) fn float_to_pcm16 削除
+  - mod tests 内 float_to_pcm16_handles_full_range_and_clamping test 削除
+- src-tauri/src/openai_realtime.rs:
+  - `mod ws_task` 内 use 文に同 use 追加
+  - L426-451 fn resample_block 削除
+  - L453-461 pub(crate) fn float_to_pcm16 削除
+  - mod tests 内 float_to_pcm16_handles_full_range_and_clamping test 削除
+  - mod tests 内 float_to_pcm16_empty_input_yields_empty_output test 削除
+
+## Why
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (重複コード削減 = single source of truth 化)
+- Loop 70 の `realtime_audio_command.rs` (12 行 AudioCommand 共通化) の自然な続編 = 同 helper module 群の段階的拡張
+- 大型 rust file 責務分離 8 file 目達成 (audio_traits / audio_sample_helpers / realtime_audio_command / session_store_types / session_store_parse / session_store_render / session_store_list / session_manager_types / session_manager_persist の 9 file に realtime_audio_helpers 加わり 10 file 達成)
+- 両 file の WS protocol 差異が大きい中、resample + PCM16 変換は protocol 非依存 = 共通化スコープとして適切
+
+## How (Tidy First, behavior-preserving)
+- 関数本体は両 file の `mod ws_task` 内の同一実装を grep + Read 精読で確認済 (mjc-main-20260505-40 が事前検証)
+- visibility: 両 file 内で `fn` (private) → 新 file で `pub(crate) fn` 昇格 (cross-mod use 可能化)
+- 振る舞い不変 = test 件数 705 → 704 は重複 test 1 件統合のためで動作は完全に同一
+- caller 側の use 文位置: 既存の `use base64::Engine;` `use rubato::...;` `use serde_json::...;` の use ブロック内に挿入 (alphabetical 順整合)
+
+## Verify
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (705 から重複 test 1 件統合により -1)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `fn resample_block` を grep: 0 件
+- openai_realtime.rs から `fn resample_block` を grep: 0 件
+- realtime_audio_helpers.rs から `pub(crate) fn resample_block` を grep: 1 件
+- realtime_audio_helpers.rs から `pub(crate) fn float_to_pcm16` を grep: 1 件
+- trailing whitespace: なし
+
+## commit
+- <ここに Commit 1 の hash を記入>
+
+---
+```
+
+### Commit 2 (chore hash)
+
+```
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): Loop 80 commit hash <Commit 1 abbrev hash> を AGENT_LOG.md に記入 (worker amend 時の hash 更新漏れ補正、Loop 60-79 precedent 適用 21 連続)"
+```
+
+# 想定 elapsed
+
+規模 SS-S = ~5-10 分。worker prompt 規模 ~135-150 行。
+
+# 検証制約 (継承)
+
+- cargo は `cd src-tauri` してから実行 (desktop 直下に Cargo.toml なし)
+- `--no-verify` 禁止
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、本タスクは抽出のみで実通信は発生しない)
+- 振る舞い不変 = test 件数 705 → 704 は意図的 (= 重複 test 統合分のみ -1)

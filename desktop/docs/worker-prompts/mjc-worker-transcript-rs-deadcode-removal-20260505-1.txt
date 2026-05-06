@@ -1,0 +1,89 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+## 必読 (順序厳守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. AGENT_LOG.md の **末尾 350 行のみ** (`tail -n 350 AGENT_LOG.md`)
+   - AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+   - 新規追記は必ずファイル末尾に行う。
+   - **先頭は絶対に触らない**。
+   - 全体読み込み禁止 (約 24,070 行で context を消費する)。
+
+## 担当範囲
+
+以下 2 ファイルのみ編集してよい:
+
+- `src-tauri/src/transcript.rs` (削除対象、現状 TODO コメント 1 行のみの dead module)
+- `src-tauri/src/lib.rs` (19 行目付近の `mod transcript;` 宣言のみ削除)
+
+その他のファイル編集は禁止 (test 追加も禁止、リファクタも禁止)。
+
+## タスク (Tidy First, 振る舞い不変)
+
+`src-tauri/src/transcript.rs` は内容が `// TODO: Phase 4 で実装予定` の 1 行のみで、他のコードから一切参照されていない dead module です。
+
+(参照状況の根拠: `crate::transcript_bridge` および `crate::transcription` は別モジュールで実体を持つ。`grep -rn 'crate::transcript[^_]\|::transcript::' src-tauri/src/` の結果として `transcript_bridge` / `transcription` の参照しかなく、`transcript` 単独モジュール直接参照はゼロ。)
+
+以下の 2 操作のみを実施してください:
+
+1. `src-tauri/src/transcript.rs` ファイルを削除 (`rm src-tauri/src/transcript.rs`)
+2. `src-tauri/src/lib.rs` の `mod transcript;` 行を削除 (周辺の他の `mod xxx;` 宣言は触らない)
+
+## 禁止事項
+
+- 担当範囲外の編集禁止
+- test 追加禁止 (これは dead code 削除であり振る舞い変更ではない)
+- 他のリファクタリング着手禁止
+- 行末の空白文字 (trailing whitespace) 禁止
+- `--no-verify` 禁止
+- 課金が発生する操作禁止
+
+## 検証 (順序厳守、すべて成功することを確認)
+
+このプロジェクトのルートで以下を順に実行:
+
+1. `cd src-tauri && cargo check --lib` で警告/エラーなしを確認
+2. `cargo fmt --check` で diff なし
+3. `cargo clippy --lib -- -D warnings` で警告ゼロ
+4. `cargo test --lib 2>&1 | tail -10` で全テスト pass + 件数を記録 (前回 mjc-main-39 終了時 = 637 passed)
+
+`cargo test` 件数は **637 のまま (テスト追加なし、削除もなし)** であることを確認してください。
+
+## AGENT_LOG.md 追記
+
+末尾追記の手順:
+
+1. `tail -n 5 AGENT_LOG.md` で末尾構造を確認 (最後の `---` 行の位置を把握)
+2. 末尾の `---` の **下** に新しいエントリーを追記 (Edit ツールで `---` 行の unique 性に注意)
+3. 末尾が unique にならない場合は、`/tmp/log-entry.md` に書いてから `cat /tmp/log-entry.md >> AGENT_LOG.md` で append
+
+追記内容のフォーマット (前任セッションのスタイル踏襲):
+
+```
+## 2026-05-05 JST mjc-worker-transcript-rs-deadcode-removal-20260505-1
+- 担当セッション: mjc-worker-transcript-rs-deadcode-removal-20260505-1 (作業担当, sonnet)
+- 役割: dead module `src-tauri/src/transcript.rs` (TODO コメント 1 行のみ) を Tidy First で除去
+- 作業範囲: src-tauri/src/transcript.rs 削除 + src-tauri/src/lib.rs の `mod transcript;` 行削除
+- 指示内容: 26 連続「Debug 軸補強」パターンからの戦略転換ループ 1 件目、振る舞い不変の純粋 Tidy First (構造改善のみ、test 追加なし)
+- 結果: <記入>
+- 変更ファイル: src-tauri/src/transcript.rs (削除), src-tauri/src/lib.rs (- 1 行)
+- 検証結果: cargo check OK / cargo fmt --check OK / cargo clippy --lib -- -D warnings 警告ゼロ / cargo test --lib 637 passed (件数不変)
+- 依存関係追加: なし
+- 失敗理由: なし
+- 次アクション: メイン (mjc-main) のレビュー → コミット → 次ループへ
+
+---
+```
+
+## 報告
+
+最後に **1 ターンで完結する形で**:
+- 変更内容
+- 変更ファイル一覧
+- 検証結果 (cargo check / fmt / clippy / test 件数)
+- 残リスク (あれば)
+
+を簡潔に報告してください。

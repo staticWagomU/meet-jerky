@@ -1,0 +1,128 @@
+# mjc-worker-loop157-calculate-rms-consolidate / 2026-05-06 / mjc-main-20260505-77 Loop 157
+
+あなたは meet-jerky の作業エージェントです。Loop 157 = R7'''' = 重複候補 grep 探索 paradigm 5 件目 = `audio_silence.rs::calculate_rms` 重複定義を `audio.rs::calculate_rms` から use 経由で参照することで DRY 違反を解消する作業を実施します。Loop 153 (frontend 軸 = utils 間集約軸 = re-export 戦略) の rust 版 = **既存 file 拡張軸 paradigm 5 件目達成 = 異 tier 同 entity 集約**。
+
+## 必読 (順序遵守)
+
+1. `tail -350 AGENT_LOG.md` で末尾だけ参照。**AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う。先頭は絶対に触らない。**
+2. `cat src/audio_silence.rs` (98 行 = full Read OK) で集約対象の全体構造把握
+3. `grep -nE "^(pub )?fn calculate_rms" src/audio.rs` で `audio.rs:504 pub fn calculate_rms(samples: &[f32]) -> f32` の定義を確認 (修正不要、参照先として使用)
+4. `grep -rn "calculate_rms" src/` で全参照箇所を確認 (audio_silence.rs 内 caller = L36 + tests 3 件)
+
+## 作業内容 (4 step)
+
+### Step 1: audio_silence.rs 編集 (集約)
+
+`src/audio_silence.rs` を以下のように修正:
+
+**変更前 (L20-L27)**:
+```rust
+/// `samples` の RMS (Root Mean Square) を計算する。空 slice では 0.0 を返す。
+pub(crate) fn calculate_rms(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+    let sum_sq: f32 = samples.iter().map(|s| s * s).sum();
+    (sum_sq / samples.len() as f32).sqrt()
+}
+```
+
+**変更後**: 関数定義を **削除** (空行も含めて削除し、L29 の `is_tail_silent` の doc コメントが直接続くように)
+
+そして冒頭 (`//! caller は ...` の doc コメント末尾の直後、`pub(crate) const WHISPER_SAMPLE_RATE` の直前) に **新規 use 句 1 行**:
+
+```rust
+use crate::audio::calculate_rms;
+```
+
+を追加。
+
+具体的には L5 の `//! caller は \`transcription_whisper_stream.rs\` のみ。` の直後 (L6 = 空行) に L7 として `use crate::audio::calculate_rms;` を追加。
+
+### Step 2: callsite 確認 (修正不要)
+
+audio_silence.rs 内の以下の callsite は **use により無変更維持**:
+- L36 `calculate_rms(tail) <= threshold` (is_tail_silent 内)
+- L45/L51/L61 (tests 内)
+
+すべて無変更で OK。確認のみ。
+
+### Step 3: 検証
+
+cd src-tauri してから以下を実行:
+
+```bash
+cargo build --lib 2>&1 | tail -10
+cargo test --lib 2>&1 | tail -20
+cargo clippy --lib --tests -- -D warnings 2>&1 | tail -10
+cargo fmt --check 2>&1 | tail -5
+```
+
+**期待結果**:
+- cargo build = エラーなし
+- cargo test = **704 passed / 0 failed** (件数完全不変、audio_silence.rs の 3 tests は呼び出し経路同じで全 pass + audio.rs の 7 tests + audio_sample_helpers の calculate_rms_from_sum tests は無変更)
+- cargo clippy = 警告ゼロ
+- cargo fmt = OK
+
+**重要な合理性確認**:
+- audio.rs::calculate_rms は `calculate_rms_from_sum` 経由で NaN/Inf/clamp ガード = audio_silence.rs 版より堅牢
+- 通常 PCM f32 入力 (-1.0〜1.0) では数学的に同じ結果 = audio_silence.rs の 3 tests (空 slice / silence -80dBFS / voice -20dBFS) は audio.rs 版でも全 pass
+- caller (L36 is_tail_silent) で NaN 入力リスクは sanitize 済 PCM のため低い = 集約安全
+
+cd /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop してから:
+
+```bash
+bash scripts/agent-verify.sh src-tauri/src/audio_silence.rs
+```
+
+= OK
+
+### Step 4: 2-commit pattern (worker 自律実行)
+
+#### Commit 1: refactor
+
+```bash
+git add src-tauri/src/audio_silence.rs
+git commit -m "refactor(rust): audio_silence の calculate_rms 重複定義を削除 + audio から use 経由で参照 (mjc-main-20260505-77 Loop 157, rust 軸 = 重複削除 + 既存 file 拡張軸 paradigm 5 件目 = 異 tier 同 entity 集約 = utils 間集約軸 rust 版, DRY 違反解消, audio.rs::calculate_rms (汎用 RMS tier = NaN/Inf clamp 経由で堅牢) に集約 + audio_silence.rs (Whisper 沈黙判定 tier) は use 経由参照, callsite 4 件 (L36 is_tail_silent + tests 3 件) 無変更で API 互換維持, audio_silence.rs -7/+1 純減 6 行, scope 37 軸維持, alternation 45 連続維持 (K(156) → rust(157)), Loop 153 frontend 版 utils 間集約軸 paradigm の rust 版実証, AGENTS.md priority 1 寄与)"
+```
+
+#### Commit 2: chore (AGENT_LOG.md 末尾追記)
+
+`tail -10 AGENT_LOG.md` で末尾を確認 → `---` 直後に Loop 157 entry を append (1 回のみ Edit/Write、複数回繰り返さない、append が成功したら直ちに次へ進む):
+
+```
+[mjc-main-20260505-77 Loop 157 / 2026-05-06]
+worker: mjc-worker-loop157-calculate-rms-consolidate (作業)
+範囲: src/audio_silence.rs (calculate_rms 関数定義 7 行削除 + use crate::audio::calculate_rms; 1 行追加 = -7/+1 純減 6 行)
+内容: audio_silence.rs L21-L27 の `pub(crate) fn calculate_rms` 重複定義を削除 + 冒頭 use 句に `use crate::audio::calculate_rms;` を追加。**rust 軸 = 重複削除 + 既存 file 拡張軸 paradigm 5 件目 = 異 tier 同 entity 集約 = utils 間集約軸 rust 版** (Loop 153 frontend 版 utils 間集約軸 paradigm の rust 版実証)。callsite 4 件 (L36 is_tail_silent 内 + tests 3 件 = test_calculate_rms_empty_slice_returns_zero / _silence_signal_below_threshold / _voice_signal_above_threshold) は use により **無変更維持**。**責務階層精査**: audio.rs = 汎用 RMS 計算 tier (NaN/Inf clamp 経由で堅牢 = calculate_rms_from_sum 経由) + audio_silence.rs = Whisper 沈黙判定 tier (内部 helper として calculate_rms を持つが汎用 tier に集約) = **異 tier 同 entity 集約** = DRY 違反解消 + 責務階層維持。**数学的合理性**: 通常 PCM f32 (-1.0〜1.0) で結果一致、NaN/Inf は audio.rs 版で 0.0/1.0 にガードされる方が安全側。tests 3 件は audio.rs 版でも全 pass = 件数完全不変保証。alternation pattern 45 連続維持 (K(156) → rust(157))。メイン批判判断 = handoff prompt 副推奨候補 R7'''' (重複候補 grep 探索 paradigm 5 件目) を独自検証 = `grep -rnE "^pub fn" src/ | uniq -d` で 4 候補発見 (calculate_rms / handle_event / start_system_audio / stop_system_audio) → 各精読で **handle_event = elevenlabs/openai 異 entity = 却下 / start/stop_system_audio = 同 file cfg(target_os) 別実装 = 却下 / calculate_rms = 真の重複** と判定 = メイン批判判断 連続 77 セッション目達成。
+検証: cargo test --lib = 704 passed / 0 failed (件数完全不変) + cargo clippy --lib --tests -- -D warnings = 警告ゼロ + cargo fmt --check = OK + cargo build --lib = エラーなし + agent-verify.sh = OK。
+意義: 既存 file 拡張軸 paradigm 5 件目達成 (Loop 145/147/149/153 の続編) + 重複候補 grep 探索 paradigm 5 件目達成 + Loop 153 frontend 版 utils 間集約軸 paradigm の rust 版確立 + DRY 違反解消 + 責務階層維持 (異 tier 同 entity 集約) + worker 自律 2-commit pattern 連続 13 ループ目達成 = 節目 13 件突破継続 + alternation pattern 45 連続維持 + scope 37 軸維持 (既存 file 拡張軸 = 新 file なし)。
+---
+```
+
+```bash
+git add AGENT_LOG.md
+git commit -m "chore(agent-log): mjc-main-20260505-77 Loop 157 = audio_silence の calculate_rms 重複定義を削除 + audio から use 経由で参照 (rust 軸, 重複削除 + 既存 file 拡張軸 paradigm 5 件目 = 異 tier 同 entity 集約 = utils 間集約軸 rust 版, DRY 違反解消, alternation 45 連続維持, Loop 153 frontend 版 paradigm の rust 版実証) のエントリ追記"
+```
+
+### 完了確認
+
+`git log --oneline -3` で 2 commit 作成を確認。`git status --short` で working tree clean を確認。
+
+## 制約 (重要)
+
+- **担当範囲外の編集禁止**: 上記 2 file (audio_silence.rs / AGENT_LOG.md) のみ編集
+- **テスト件数の上限**: cargo test 件数は **704 passed のまま完全不変** (新規 test 追加禁止 + 既存削除禁止)
+- **行末空白文字 (trailing whitespace) 禁止**
+- **AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む** (Loop 144 fault precedent から)
+- 大型 file は Read 全体禁止 = tail/head/grep で対象範囲のみ参照
+- **2-commit pattern を厳守**
+- `--no-verify` 禁止、Keychain 実通信禁止、課金禁止
+
+## 想定完走時間
+
+規模 SS = ~5-7 分完走見込み (rust 軸 = cargo test + clippy + fmt + build やや長め、ただし 1 file 変更で軽量)
+
+precedent: Loop 153 frontend 版 = ~3 分完走、rust 軸単 file 変更 + 検証フル実行 = ~5-7 分。
+
+以上、よろしくお願いします。

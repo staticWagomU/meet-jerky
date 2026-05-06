@@ -1,0 +1,190 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順序遵守)
+
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md の末尾 350 行のみを `tail -350 AGENT_LOG.md` で読む** (Read 全体禁止)
+5. precedent (cat 全体): `cat src-tauri/src/system_audio_pcm.rs` (Loop 91 抽出, ~204 行 = 同 paradigm = 純粋関数機能分離 + caller 修正 1 件)
+6. precedent (cat 全体): `cat src-tauri/src/secret_store_commands.rs` (Loop 93 直前抽出, ~107 行 = 直近 worker 自律学習 paradigm)
+
+# AGENT_LOG.md 取り扱い (絶対遵守)
+
+- AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。
+- 新規追記は **必ずファイル末尾** に行う。
+- **先頭は絶対に触らない**。
+- 具体手順:
+  1. `tail -10 AGENT_LOG.md` で末尾を確認
+  2. 末尾の `---` 直後に空行を 1 つ入れて新エントリ開始
+  3. エントリ末尾に区切りの `---` を 1 行追加
+- **行末の空白文字 (trailing whitespace) 禁止**
+
+# 担当範囲 (これ以外は編集禁止)
+
+- 新規作成: `src-tauri/src/audio_silence.rs` (~80-110 行)
+- 編集: `src-tauri/src/audio_utils.rs` (沈黙検知 section production ~35 行削除 + 関連 test 6 件削除)
+- 編集: `src-tauri/src/transcription_whisper_stream.rs` (use 文を 2 つに分割 = audio_silence + audio_utils)
+- 編集: `src-tauri/src/lib.rs` (mod 1 行追加)
+- 追記: `AGENT_LOG.md` (末尾エントリ追加のみ)
+
+担当範囲外の編集は厳禁です。
+
+# Loop 94 タスク内容 (構造分離 20 件目, 別 scope = audio_silence 軸 1 件目 = pivot, 純粋関数機能分離軸)
+
+## 背景
+
+- Loop 91/92 = system_audio 軸 2 連続抽出。Loop 93 = secret_store_commands 軸抽出 (機能分類軸 paradigm)。
+- Loop 94 では別 scope へ pivot = audio_utils.rs (325 行) の **沈黙検知軸 section** (L21-55) を新 module に抽出 = 構造分離 20 件目 = 新 scope = paradigm 切り替え (機能分類軸 → 純粋関数機能分離軸)。
+- audio_utils.rs は file 内で section divider により機能境界が self-documented: sanitize / 沈黙検知 / リサンプリング の 3 軸に明示分離されている。沈黙検知軸を独立 module 化することで、Whisper 仕様 const と RMS 計算/沈黙判定 helper の責務集約が図れる。AGENTS.md priority 1 寄与。
+- caller は transcription_whisper_stream.rs の 1 file のみ = 影響範囲最小。
+
+## 抽出対象 (audio_utils.rs から audio_silence.rs へ移動)
+
+**Production (audio_utils.rs L21-55, ~35 行)**:
+- L21-23: section divider コメント `// ─...` `// 沈黙検知ユーティリティ (純粋関数)` `// ─...`
+- L24-26: `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;` (Whisper 仕様 const)
+- L28-30: `pub(crate) const MIN_FLUSH_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize;` (1 秒)
+- L31-32: `pub(crate) const SILENCE_LOOKBACK_SAMPLES: usize = WHISPER_SAMPLE_RATE as usize / 2;` (0.5 秒)
+- L34-37: `pub(crate) const SILENCE_THRESHOLD_RMS: f32 = 0.01;` (-40dBFS, doc コメント付き)
+- L39-46: `pub(crate) fn calculate_rms(samples: &[f32]) -> f32` (RMS 計算純粋関数)
+- L49-55: `pub(crate) fn is_tail_silent(buffer: &[f32], lookback: usize, threshold: f32) -> bool` (末尾沈黙判定純粋関数)
+
+**Test (audio_utils.rs `mod tests` 内, 沈黙検知軸 6 件)**:
+- `test_calculate_rms_empty_slice_returns_zero`
+- `test_calculate_rms_silence_signal_below_threshold`
+- `test_calculate_rms_voice_signal_above_threshold`
+- `test_is_tail_silent_returns_false_when_buffer_too_short`
+- `test_is_tail_silent_detects_voice_then_silence_pattern`
+- `test_is_tail_silent_rejects_voice_then_voice`
+
+これ以外の test (sanitize 軸 7 件 + resample 軸 4 件 + subnormal 軸 2 件 = 計 13 件) は **絶対に触らない** (元 file 残留)。
+
+## 抽出方式 (Loop 91 system_audio_pcm.rs precedent 踏襲)
+
+### 1. 新規 file 作成 = `src-tauri/src/audio_silence.rs`
+
+ファイル冒頭 docstring 例:
+
+```
+//! Whisper の沈黙検知ユーティリティ (純粋関数)。
+//!
+//! `audio_utils.rs` から沈黙判定軸を切り出して機能境界で分離する。
+//! Whisper 仕様 const + RMS 計算 + 末尾沈黙判定の責務を集約する。
+//! caller は `transcription_whisper_stream.rs` のみ。
+```
+
+production 4 const + 2 fn をそのまま `pub(crate)` で移動。`mod tests` を新 file 内に追加し、test 6 件を移動。test 内では `use super::*;` で 6 symbol を使えるようにする。
+
+### 2. audio_utils.rs 編集
+
+- 該当 production section (L21-55) を削除 (沈黙検知軸の section divider + 4 const + 2 fn)
+- file 冒頭 docstring `//! 音声サンプル処理の共通ユーティリティ。` の文言は意味的に正しいので変更不要 (sanitize + resample 軸が残るため「共通ユーティリティ」のまま)
+- mod tests 内の関連 test 6 件を削除:
+  - `test_calculate_rms_empty_slice_returns_zero`
+  - `test_calculate_rms_silence_signal_below_threshold`
+  - `test_calculate_rms_voice_signal_above_threshold`
+  - `test_is_tail_silent_returns_false_when_buffer_too_short`
+  - `test_is_tail_silent_detects_voice_then_silence_pattern`
+  - `test_is_tail_silent_rejects_voice_then_voice`
+- それ以外の test (sanitize 系 + resample 系 + subnormal 系 = 13 件) は触らない
+- 削除後 audio_utils.rs は ~245 行になる想定
+
+### 3. transcription_whisper_stream.rs 編集 (use 文分割)
+
+L6-9 の現状 use 文:
+```rust
+use crate::audio_utils::{
+    is_tail_silent, sinc_params, MIN_FLUSH_SAMPLES, RESAMPLE_CHUNK_SIZE, SILENCE_LOOKBACK_SAMPLES,
+    SILENCE_THRESHOLD_RMS, WHISPER_SAMPLE_RATE,
+};
+```
+
+を以下に変更 (alphabetical 順 = audio_silence が audio_utils より先):
+```rust
+use crate::audio_silence::{
+    is_tail_silent, MIN_FLUSH_SAMPLES, SILENCE_LOOKBACK_SAMPLES, SILENCE_THRESHOLD_RMS,
+    WHISPER_SAMPLE_RATE,
+};
+use crate::audio_utils::{sinc_params, RESAMPLE_CHUNK_SIZE};
+```
+
+それ以外の transcription_whisper_stream.rs 修正は禁止 (他の use 文や fn body は不変)。
+
+### 4. lib.rs 編集 (alphabetical mod)
+
+- `mod audio_sample_helpers;` の **直後** に `mod audio_silence;` を 1 行追加 (alphabetical 順 = audio_sample_helpers < audio_silence < audio_traits < audio_utils)
+- 既存の `mod audio_utils;` は不変
+
+それ以外の lib.rs 修正は禁止 (invoke_handler は影響なし、tauri::command 含まないため)。
+
+## 規模超過防止 (重要)
+
+- **production 4 const + 2 fn / test 6 件以外は絶対に触らない**
+- **担当範囲外の修正は禁止**
+- **トータル test 件数は 704 = 完全不変** (移動のみ、削除/追加禁止)
+- 振る舞い不変 = caller path 変更は transcription_whisper_stream.rs use 文のみ
+- audio_utils.rs 内の `pub fn sanitize_audio_sample` / `pub(crate) fn sinc_params` / `pub(crate) const RESAMPLE_CHUNK_SIZE` / `pub(crate) fn resample_audio` は不変
+
+## 検証 (順序遵守)
+
+1. `cd src-tauri && cargo fmt`
+2. `cd src-tauri && cargo build --lib` → 不要 import の clippy warning や build error が出たら最小修正
+3. `cd src-tauri && cargo clippy --lib --tests -- -D warnings`
+4. `cd src-tauri && cargo test --lib` → **704 passed 不変** を確認
+5. `bash scripts/agent-verify.sh src-tauri/src/audio_utils.rs src-tauri/src/audio_silence.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/lib.rs`
+
+# コミット (2-commit pattern, Loop 80/85/86/87/88/89/90/91/92/93 precedent)
+
+## Commit 1: refactor
+
+ステージ: `git add src-tauri/src/audio_utils.rs src-tauri/src/audio_silence.rs src-tauri/src/transcription_whisper_stream.rs src-tauri/src/lib.rs`
+
+メッセージ:
+```
+refactor(audio): 沈黙検知 const + RMS 計算 + 末尾沈黙判定 helper を audio_silence.rs に抽出 (mjc-main-20260505-48 Loop 94, 機能分離軸 = audio_silence 軸 1 件目, 大型 rust file 責務分離 20 file 目, AGENTS.md priority 1 寄与)
+```
+
+`git commit -m "..."` 後、**hash を `git log -1 --format=%H` で取得**。
+
+## AGENT_LOG.md エントリ追記
+
+末尾 `---` 直後に以下フォーマットで追記 (refactor commit hash は **取得した実 hash を直接書く**、chore commit hash は **書かない**):
+
+```
+[mjc-main-20260505-48 Loop 94 / 2026-05-05]
+worker: mjc-worker-audio-silence-loop94 (作業)
+範囲: src-tauri/src/audio_utils.rs (沈黙検知 section production ~35 行削除 + test 6 件削除) + src-tauri/src/audio_silence.rs (新規 ~80-110 行) + src-tauri/src/transcription_whisper_stream.rs (use 文分割 = audio_silence + audio_utils 2 つに分離) + src-tauri/src/lib.rs (mod audio_silence; 1 行追加)
+内容: audio_utils.rs L21-55 の沈黙検知軸 (WHISPER_SAMPLE_RATE + MIN_FLUSH_SAMPLES + SILENCE_LOOKBACK_SAMPLES + SILENCE_THRESHOLD_RMS + calculate_rms + is_tail_silent) を新 module audio_silence.rs に抽出。tests 6 件 (test_calculate_rms_empty_slice_returns_zero + test_calculate_rms_silence_signal_below_threshold + test_calculate_rms_voice_signal_above_threshold + test_is_tail_silent_returns_false_when_buffer_too_short + test_is_tail_silent_detects_voice_then_silence_pattern + test_is_tail_silent_rejects_voice_then_voice) を新 file 内 #[cfg(test)] mod tests に移動。lib.rs に mod audio_silence; 追加 + transcription_whisper_stream.rs の use crate::audio_utils::{...} を audio_silence + audio_utils 2 つの use 文に分割 (sinc_params/RESAMPLE_CHUNK_SIZE のみ audio_utils 残留)。audio_utils.rs に残る sanitize_audio_sample + リサンプリング軸 + dead resample_audio + test 13 件は不変。大型 rust file 責務分離 20 file 目 = audio_silence 軸 1 件目 (新 scope) = secret_store 軸 (Loop 93) からの pivot 達成 = paradigm 切り替え (機能分類軸 → 純粋関数機能分離軸)。
+振る舞い: cargo test --lib 704 passed (件数完全不変)
+clippy: 警告ゼロ (-D warnings)
+fmt: OK
+verify: scripts/agent-verify.sh 全項目 OK
+commits:
+- <REFACTOR_HASH_HERE> refactor(audio): 沈黙検知軸を audio_silence.rs に抽出
+AGENTS.md priority: 1 (構造美の補強 = audio_utils 軸の機能境界分離 = sanitize/沈黙検知/resample の 3 軸を 2 module に明示分離)
+
+---
+```
+
+`<REFACTOR_HASH_HERE>` は実 hash で置換 (Loop 80/85/86/87/88/89/90/91/92/93 precedent)。
+
+## Commit 2: chore (AGENT_LOG.md 追記分)
+
+ステージ: `git add AGENT_LOG.md`
+
+メッセージ:
+```
+chore(agent-log): mjc-main-20260505-48 Loop 94 = audio_silence.rs 抽出 (構造分離 20 file 目, audio_silence 軸 1 件目 = 新 scope, secret_store 軸からの pivot 達成 = 純粋関数機能分離軸 paradigm) のエントリ追記
+```
+
+# 完走報告
+
+最終出力で以下を簡潔に報告:
+- 変更ファイル 5 件
+- cargo test 704 passed 確認
+- 2 commit hash
+- 残リスク (あれば)
+
+1 ターンで完結する形でまとめてください。

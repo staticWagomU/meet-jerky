@@ -1,0 +1,71 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness-claude.md を読んでください。
+AGENT_LOG.md は ~14900 行 / 1.5MB あるので末尾だけ参照する場合は `tail -300 AGENT_LOG.md` で十分です。
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+
+# 担当範囲
+- `src-tauri/src/openai_realtime.rs` の **テストコード内のみ**
+- `src-tauri/src/session_commands.rs` の **テストコード内のみ**
+- `src-tauri/src/session_manager.rs` の **テストコード内のみ**
+- `src-tauri/src/session_store.rs` の **テストコード内のみ**
+- AGENT_LOG.md 末尾追記
+
+# 背景
+直前のコミット 13b4b87 で本体コード側の `clippy::uninlined_format_args` 警告 4 件を Rust 2021 慣用形 (`{var_name}` 直接埋め込み) に統一した。しかしテストコード側にまだ 11 件残存しており、`cargo clippy -- -W clippy::uninlined_format_args` を有効化すると警告が出る。pedantic lint は default off だが、将来の有効化に備えて統一しておく。
+
+メッセージ文言・assertion 内容・テストロジックは **完全に保持** する。フォーマット文字列内の `"{}"` プレースホルダを `"{var_name}"` 直接埋め込みに置換するだけの機械的な変更。
+
+# 対象 11 箇所 (clippy 出力で確認済み)
+
+| # | ファイル | 行 |
+|---|--------|----|
+| 1 | `src-tauri/src/openai_realtime.rs` | 585 |
+| 2 | `src-tauri/src/session_commands.rs` | 193 |
+| 3 | `src-tauri/src/session_commands.rs` | 226 |
+| 4 | `src-tauri/src/session_manager.rs` | 214 |
+| 5 | `src-tauri/src/session_manager.rs` | 217 |
+| 6 | `src-tauri/src/session_manager.rs` | 246 |
+| 7 | `src-tauri/src/session_manager.rs` | 251 |
+| 8 | `src-tauri/src/session_store.rs` | 233 |
+| 9 | `src-tauri/src/session_store.rs` | 401 |
+| 10 | `src-tauri/src/session_store.rs` | 418 |
+| 11 | `src-tauri/src/session_store.rs` | 423 |
+
+# 実装手順
+1. 各箇所を読んで、`format!(...)` / `assert!(...)` / `assert_eq!(...)` / `panic!(...)` / `eprintln!(...)` などの format string で外出しされている変数を特定する。
+2. 以下のルールで置換する:
+   - 単純な変数名 `{}` + 引数 `var` → `{var}` 直接埋め込み (引数削除)
+   - `{:?}` + 引数 `var` → `{var:?}` 直接埋め込み (引数削除)
+   - `{:#?}` + 引数 `var` → `{var:#?}` 直接埋め込み
+   - `&var` のような借用渡しは、変数名だけ抜き出して `{var}` または `{var:?}` を使う (借用は埋め込み形式でも自動で適用される)
+3. 文字列リテラル全体の前後・改行・他の引数は **一切変更しない**。
+4. **assertion メッセージのコンテンツ・順序・他の format spec (`:.2`, `:>5` など) は変更しない**。
+5. cargo clippy --fix を使うのは **避ける** (他の lint に対する変更も巻き込む可能性があるため)。手動で 1 箇所ずつ Edit する。
+
+# 検証
+1. `git diff --check`
+2. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+3. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets --all-features -- -D warnings` (default lints はゼロ維持)
+4. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo clippy --manifest-path src-tauri/Cargo.toml --no-deps --all-targets -- -W clippy::uninlined_format_args 2>&1 | grep -c "uninlined_format_args"` (警告ゼロを確認、出力 0 が期待)
+5. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" cargo test --manifest-path src-tauri/Cargo.toml --no-fail-fast` (223 passed 維持)
+6. `PATH="/opt/homebrew/bin:/Users/wagomu/.cargo/bin:$PATH" scripts/agent-verify.sh src-tauri/src/openai_realtime.rs src-tauri/src/session_commands.rs src-tauri/src/session_manager.rs src-tauri/src/session_store.rs AGENT_LOG.md`
+
+# AGENT_LOG.md 追記
+末尾に新セクション: `### clippy uninlined_format_args 11 件をテストコードでも Rust 2021 慣用形に統一`。
+記載項目: 開始日時 (JST)、担当セッション (`mjc-worker-uninlined-tests-20260504-1`)、役割、作業範囲 (4 ファイル + AGENT_LOG.md)、指示内容、結果 (修正前後の警告数 11 → 0、test 223 件維持)、変更ファイル、検証結果、依存関係追加 (なし)、失敗理由 (なし)、次アクション。
+
+# 報告形式 (1 ターンで完結)
+- 修正した 11 箇所の前後 (旧 `"{}"` + 引数 vs 新 `"{var}"` 形式) を 1〜2 行ずつまとめる
+- cargo fmt / clippy default / clippy uninlined_format_args / cargo test の最終結果
+- 残リスク (もし行が clippy 出力と実際で 1〜2 ずれた場合の補正方針も明記)
+
+# 禁止事項
+- 本体コード (production code, `#[cfg(test)]` 外) の変更
+- 他のソースファイル変更
+- 他の lint への巻き込み修正
+- assertion 文言・メッセージの意味変更
+- `cargo clippy --fix` の使用
+- `git commit` の実行
+- `--no-verify`
+- 既存テストの削除・改変

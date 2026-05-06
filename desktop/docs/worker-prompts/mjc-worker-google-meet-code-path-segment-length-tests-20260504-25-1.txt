@@ -1,0 +1,102 @@
+あなたは作業担当エージェント (Claude Code, print mode) です。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+# 必読 (順番厳守)
+1. AGENTS.md
+2. docs/product-concept.md
+3. docs/agent-harness-claude.md
+4. **AGENT_LOG.md は 20800+ 行 / 1.7MB+ あるので絶対に Read 全体しないこと。`tail -350 AGENT_LOG.md` で末尾だけ参照すること。** 末尾には mjc-main-20260504-24 の SESSION SUMMARY (3 ループ実績 + 4 連続セッション「対称的補強の 3 軸構造」application 等) があり、本タスクの直前の状況復元に必須。
+
+# 重要: AGENT_LOG.md の追記ルール (絶対遵守)
+- AGENT_LOG.md は時系列順 = **最古ログが先頭、最新ログが末尾**。新規追記は必ずファイル末尾に行う。
+- **先頭は絶対に触らない**。先頭追記すると時系列が壊れる過去事故あり (mjc-main-20260504-21 で発生 → mjc-main-22 以降は worker prompt で末尾追記明示の継続適用で 4 連続セッション事故ゼロ達成中)。
+- 追記前に **必ず `tail -10 AGENT_LOG.md` で末尾を確認**してから、末尾の `---` 直後に追記する。
+- 大型ファイル (AGENT_LOG.md / app_detection.rs 等) は Read 全体禁止 = `tail` / `head` / `grep -n` で対象範囲のみ参照すること。
+
+# 担当範囲 (絶対遵守)
+- **`src-tauri/src/app_detection.rs` の `mod tests` 末尾に test 3 件追加のみ**。
+- **関数本体 (`classify_meeting_url` / `is_google_meet_code_path` / `has_ascii_lowercase_len` / 他全ての関数) は完全無変更**。
+- 他ファイルへの変更は禁止 (AGENT_LOG.md 末尾追記を除く)。
+- 担当範囲外の編集禁止。
+- 規模超過防止: **3 件のみ追加**、4 件以上は scope 超過扱い。
+- コミット禁止 (メインがコミットする)。
+
+# 挿入位置
+- `src-tauri/src/app_detection.rs` の現末尾は **l.2135 の `}` (mod tests 末尾)**。
+- 既存最終 test は **`classify_meeting_window_title_rejects_control_characters`** (l.2118-2133)。
+- 挿入位置は **l.2133 の `}` (上記 test 関数末尾) の直後 + l.2134 (空行) の後**、つまり l.2135 の `}` (mod tests 末尾) の直前。
+- 形式は既存 test と完全対称: `#[test]` + `fn xxx() { ... }` の Rust test 関数 3 つを上記位置に挿入。
+
+# 追加する test 3 件 (具体仕様)
+
+## 背景
+- `classify_meeting_url` は内部で `is_google_meet_code_path(path: &str) -> bool` を呼ぶ。
+- `is_google_meet_code_path` (l.719) は path から `/` prefix と `/` suffix を strip した後、`-` 区切り 3 セグメント (first / second / third) に分割し、それぞれ `has_ascii_lowercase_len(first, 3)` / `(second, 4)` / `(third, 3)` で桁数 (3-4-3) と ASCII 小文字を check する。
+- 既存 test では `/abc-defg-hij` (3-4-3 accept、l.1017-) / `/ABC-defg-hij` (大文字混入 reject、l.1346) / `/abc-defg` (区切り 1 つ短い reject、l.1342) はカバーされているが、**「区切り `-` は正しく 2 つあるが各セグメント桁数だけ違反する」境界 reject は完全未保護**。
+- Google Meet の公式 URL 形式は `xxx-yyyy-zzz` (3-4-3) で固定 = 桁数 1 つでも違えば偽 URL = 「会議検知の信頼性」(優先順位 #2) への直接寄与。
+
+## 追加 test 仕様 (mod tests 末尾、`classify_meeting_window_title_rejects_control_characters` の直後に追加)
+
+### T1: `classify_meeting_url_rejects_google_meet_code_path_with_short_first_segment`
+- 目的: first segment が 2 桁 (3 桁未満、左境界外側) の path を reject する現契約を CI 固定。`has_ascii_lowercase_len(first, 3)` の桁契約を保護。
+- 仕様: `classify_meeting_url("https://meet.google.com/ab-defg-hij")` が `None` を返すことを assert。
+- assert メッセージ (要 5 引数版): "Google Meet path code は first segment 3 桁が必須 (現契約: has_ascii_lowercase_len(first, 3)) = 2 桁 (左境界外側) は reject される必要がある"
+
+### T2: `classify_meeting_url_rejects_google_meet_code_path_with_long_second_segment`
+- 目的: second segment が 5 桁 (4 桁超過、右境界外側) の path を reject する現契約を CI 固定。`has_ascii_lowercase_len(second, 4)` の桁契約を保護。
+- 仕様: `classify_meeting_url("https://meet.google.com/abc-defgh-hij")` が `None` を返すことを assert。
+- assert メッセージ: "Google Meet path code は second segment 4 桁が必須 (現契約: has_ascii_lowercase_len(second, 4)) = 5 桁 (右境界外側) は reject される必要がある"
+
+### T3: `classify_meeting_url_rejects_google_meet_code_path_with_long_third_segment`
+- 目的: third segment が 4 桁 (3 桁超過、右境界外側) の path を reject する現契約を CI 固定。`has_ascii_lowercase_len(third, 3)` の桁契約を保護。
+- 仕様: `classify_meeting_url("https://meet.google.com/abc-defg-hijk")` が `None` を返すことを assert。
+- assert メッセージ: "Google Meet path code は third segment 3 桁が必須 (現契約: has_ascii_lowercase_len(third, 3)) = 4 桁 (右境界外側) は reject される必要がある"
+
+# 設計思想
+- 「対称的補強の 3 軸構造」パターン (前 mjc-main-22/23/24 で確立、4 連続セッション application) を application: 3 つの独立軸 (first / second / third 各セグメントの桁契約) を 1 軸ずつ別 test で保護。
+- 1 commit で「3-4-3 桁契約全部の executable specification 化」を完成。
+- 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与 = Google Meet URL 偽認識を遮断する装置。
+- Tidy First 厳守 = ユーザー観測可能な振る舞い不変 = 関数本体無変更 + test 追加のみ。
+
+# 実装手順
+1. `tail -10 src-tauri/src/app_detection.rs` で末尾構造を確認。
+2. `Edit` ツールで l.2133 の `}` (test 関数末尾) と l.2134 (空行) と l.2135 の `}` の関係を確認しつつ、l.2133 直後 + l.2135 の `}` 直前に test 3 件挿入。
+3. 既存 test の Rust スタイル (`#[test]` + `fn ...() { assert_eq!(..., None); }` の単発 assert) を踏襲。
+
+# 検証 (順番厳守、全段 OK 必須)
+1. `cargo test --lib classify_meeting_url_rejects_google_meet_code_path` で新規 3 件が PASS することを確認。
+2. `cargo test --lib` 全体で **518 passed** (515 → +3 件) になることを確認 (旧 mjc-main-24 で 515 件)。
+3. `cargo clippy --all-targets -- -D warnings` で警告ゼロ確認。
+4. `cargo fmt --check` で差分なし確認 (差分があれば `cargo fmt` を 1 回適用)。
+5. `bash scripts/agent-verify.sh src-tauri/src/app_detection.rs` で全段 OK 確認。
+
+# AGENT_LOG.md 追記 (検証成功後)
+1. `tail -10 AGENT_LOG.md` で末尾確認。
+2. 末尾の `---` 直後 (= ファイル一番下) に新規セクションを追記:
+
+```markdown
+## mjc-worker-google-meet-code-path-segment-length-tests-20260504-25-1 (Loop 1)
+
+- **開始日時**: 2026-05-04
+- **担当セッション**: mjc-main-20260504-25 Loop 1
+- **役割**: 作業担当エージェント (worker, sonnet)
+- **作業範囲**: `src-tauri/src/app_detection.rs` の mod tests 末尾に test 3 件追加のみ。関数本体完全無変更。他ファイル無変更。
+- **指示内容**: 既存最終 test `classify_meeting_window_title_rejects_control_characters` (l.2118-2133) の直後に、Google Meet path code segment 桁契約の境界 test 3 件追加 (T1: first 2 桁 reject / T2: second 5 桁 reject / T3: third 4 桁 reject)
+- **結果**: 全 test PASS (515 → 518 passed, +3 件)
+- **変更ファイル**: `src-tauri/src/app_detection.rs` のみ
+- **検証結果**: cargo test 518 passed / clippy -D warnings 警告ゼロ / cargo fmt 差分なし / agent-verify 全段 OK
+- **依存追加**: なし
+- **失敗理由**: なし
+- **設計判断 1**: 「対称的補強の 3 軸構造」パターンを 3 セグメントの桁契約 (first 3 桁 / second 4 桁 / third 3 桁) に完全対応で application = 1 commit で 3-4-3 桁契約全部の executable specification 化を完成
+- **設計判断 2**: 「区切り `-` は正しく 2 つあるが各セグメント桁数だけ違反する」境界 reject が既存 test では未保護 = 既存 reject test (`/abc-defg` 区切り不足、`/ABC-defg-hij` 大文字混入) と相補的なカバー
+- **設計判断 3**: 「会議検知の信頼性」軸 (優先順位 #2) への直接寄与 = Google Meet 公式 URL 形式 (3-4-3) を test で固定して偽認識を遮断する装置
+- **残リスク**: なし (関数本体無変更、test 追加のみ)
+- **次アクション**: メイン側でレビュー → コミット
+---
+```
+
+# 報告 (1 ターンで完結)
+- 変更ファイル: `src-tauri/src/app_detection.rs` のみ
+- 検証結果: cargo test 件数、clippy 警告数、fmt 差分、agent-verify 結果
+- 残リスク
+- 1 ターンで完結する形でまとめてください。
