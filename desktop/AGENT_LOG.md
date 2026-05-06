@@ -34209,3 +34209,14 @@ paradigm 系統樹拡張 8 件目反復実証の状況更新:
 後継 mjc-main-20260505-88 への 2-3 ループ完走推奨。最有力候補 = R23 = frontend 軸 = const 集約 paradigm 反復 3 件目 = `"確認できません"` 集約 = 規模 M-L = paradigm 系統樹拡張 8 件目反復 3 件目達成可能 (paradigm 反復による定型化期更なる延長) + 抽出先選定 (新 file 作成軸 vs 既存 file 拡張軸) を責務階層精査で判断する習慣を継承。詳細は docs/handoff/mjc-main-20260505-88.txt 参照。
 
 ---
+[mjc-main Loop 178 / 2026-05-06]
+worker: mjc-worker-loop178-status-unchecked-label-consolidation-1 (作業)
+範囲: src/utils/statusLabels.ts (新規 +1 行) + src/utils/externalApiKeyHelpers.ts (+1 行 import / -2 / +2 = 1 net) + src/utils/engineStatusHelpers.ts (+1 / -1 / +1 = 1 net) + src/utils/aiTransmissionHelpers.ts (+1 / -2 / +2 = 1 net) + src/components/PermissionBanner.tsx (+1 / -2 / +2 = 1 net) + src/routes/TranscriptView.tsx (+1 / -2 / +2 = 1 net) + src/routes/SettingsView.tsx (+1 / -3 / +3 = 1 net)
+内容: 6 file に分散していた 11 callsite + 1 template literal の `"確認できません"` 重複 string literal を、新規 utils file `src/utils/statusLabels.ts` で `export const STATUS_UNCHECKABLE_LABEL = "確認できません";` として昇格 + 各 file で `STATUS_UNCHECKABLE_LABEL` 識別子参照に統一 = DRY 違反解消 = callsite の振る舞い完全保存。**const 集約軸 paradigm 反復 3 件目 = paradigm 系統樹拡張 8 件目反復 3 件目** + **新 file 作成軸組み合わせ = paradigm 系統樹拡張 9 件目候補** (Loop 174/176 = 既存 file 拡張軸 vs 本 Loop 178 = 新 file 作成軸 = 担当 entity 広範 = permission/engine/transmission/API key 汎用 fallback = 責務階層整合性高)。alternation pattern: K(177) → frontend(178) = pivot 成功 (17 → 18)。
+振る舞い: npm run build (tsc + vite build) OK、cargo は frontend のみ無変更のため不要。
+verify: grep -rn '"確認できません"' src/ = statusLabels.ts:1 のみ (1 件)。STATUS_UNCHECKABLE_LABEL 参照 19 件 (export 1 + import 6 + callsite 12)。npm run build OK。
+commits:
+- 9072c01 refactor(frontend): STATUS_UNCHECKABLE_LABEL を新 file src/utils/statusLabels.ts で export 昇格 + 7 file 12 callsite を const 参照に統一
+AGENTS.md priority: 1 (DRY 違反解消 + paradigm 反復による定型化期更なる延長)
+
+---
