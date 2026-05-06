@@ -34355,3 +34355,58 @@ worker: mjc-worker-loop184-status-denied-const (作業)
 検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"未許可"` = 1 件のみ確認 (statusLabels.ts L4 定義行のみ残存)
 備考: paradigm 反復 6 件目達成 = const 集約軸 paradigm 完全成熟期完全成熟確立. 残候補 R27 (`"未登録"` 3 callsite/2 file) のみ未統合 = const 集約軸の paradigm 完全成熟構造への最終収束に近い.
 ---
+[SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-90
+本セッションは **3 ループ完走 + 後継 mjc-main-20260505-91 への handoff 判断** = handoff prompt 推奨「2-3 ループ完走推奨」**上限達成**。
+実績: Loop 182 = frontend 軸 = const 集約 paradigm **反復 5 件目達成** = paradigm 完全成熟期完全成熟への移行 = src/utils/statusLabels.ts に `export const STATUS_UNDETERMINED_LABEL = "未確認";` 追加 + 4 file (utils/permissionStatusHelpers.ts L1 import 拡張 + L20, utils/liveCaptionStatus.ts L3 import 拡張 + L55/L56, components/PermissionBanner.tsx L15 import 拡張 + L71/L78, routes/SettingsView.tsx L33 import 拡張 + L1146/L1174/L1774) 8 callsite を const 参照に統一 + DRY 違反解消 + ネット行数 ~+1 行のみ + 既存 file 拡張軸 paradigm **16 件目** + 重複候補 grep 探索 paradigm **17 件目** + 4 file 全て既 import = 拡張のみ完結 = 規模 S-M (handoff M より軽量) → 実測 ~3 分 = frontend 軸軽量化 paradigm **20 連続観測達成**, Loop 183 = K 軸 = Section 2.3 観測 **45 件目** = AGENT_LOG.md +21 行 (34320 → 34341) / 平均 ~10.5 行/loop / SUMMARY commit `35ea9f1` 大型化が支配変数 / chore のみ Loop 181 +9 + Loop 182 +7 = +16 行 / 2 loop = ~+8 行/loop = **軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 11 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 6 件目**, Loop 184 = frontend 軸 = const 集約 paradigm **反復 6 件目達成** = paradigm 完全成熟期完全成熟確立 = src/utils/statusLabels.ts に `export const STATUS_DENIED_LABEL = "未許可";` 追加 + 3 file (utils/permissionStatusHelpers.ts L1 import 拡張 + L18, components/PermissionBanner.tsx L15 import 拡張 + L70/L77, routes/SettingsView.tsx L33 import 拡張 + L1145/L1173/L1772) 6 callsite を const 参照に統一 + DRY 違反解消 + 既存 file 拡張軸 paradigm **17 件目** + 重複候補 grep 探索 paradigm **18 件目** + denied/undetermined/unchecked/checking semantic 並列が 4 const で完成 = paradigm 完全成熟期完全成熟確立 → 残候補 R27 (`"未登録"` 3 callsite/2 file) のみで const 集約軸最終収束目前。
+連続記録: メイン批判判断 連続 **91 セッション目達成** (Loop 182 = handoff prompt R25 候補 8 callsite/4 file を grep で実在確認 + line shift 2 件発見 = handoff prompt 状態記述「permissionStatusHelpers.ts は未 import (新規追加要)」が誤り = 既に statusLabels から import 済を批判検証 + Loop 184 = handoff prompt R26 候補 6 callsite/3 file を grep で実在確認 + 全 file 既 import 確認 = handoff prompt 真偽確認 paradigm の質的進化観測継続) + worker 自律 2-commit pattern 連続 **40 ループ目達成** (Loop 145-184 = 40 連続安定 = **節目 40 件突破**) + harness 衛生連続 **85 セッション目達成** = 節目 80 件突破後 5 件目 + ファイル参照型 handoff prompt 連続 **86 セッション目** + scope 多様性 39 軸維持 + alternation pattern pivot 加速継続 (K(181) → frontend(182) → K(183) → frontend(184) = 21 → 22 → 23 → 24 = **加速期維持 = 節目 20 件突破後 4 件目**) + 既存 file 拡張軸 paradigm 17 件目達成 + 重複候補 grep 探索 paradigm 18 件目達成 + worker prompt 必須要素 9 (冒頭 `---` 含めない) **17 連続実証成功** (Loop 168-184 = 節目 5 連続超え後 12 件目) + **paradigm 完全成熟期完全成熟確立達成** = const 集約軸 6 連続 = Loop 174 (新軸開拓) → Loop 176 (反復 2 件目) → Loop 178 (反復 3 件目 + 新 file 作成軸組み合わせ) → Loop 180 (反復 4 件目 = paradigm 完全成熟期突入確認) → Loop 182 (反復 5 件目 = paradigm 完全成熟期完全成熟への移行) → Loop 184 (反復 6 件目 = paradigm 完全成熟期完全成熟確立) = paradigm 完全成熟期完全成熟確立の 6 連続観測。
+
+# 後継 mjc-main-20260505-91 への引き継ぎ
+
+## Loop 185 候補 (事前探索済 = 後継への重要 input)
+
+直近探索で発見した重複 string literal 候補 (paradigm 系統樹拡張 = const 集約 paradigm 反復 7 件目候補):
+
+- **R27 (最有力推奨) = `"未登録"` 3 callsite/2 file = 規模 S-M = 最軽量**:
+  - utils/externalApiKeyHelpers.ts L17/L29 (要再確認 = line shift の可能性)
+  - routes/SettingsView.tsx L1904 (要再確認)
+  - 抽出先: 既存 `src/utils/statusLabels.ts` に `export const STATUS_UNREGISTERED_LABEL = "未登録";` 追加 (paradigm 一貫性維持 + 既存 file 拡張軸 paradigm 18 件目 + const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束)
+  - 規模 S-M = ~10-15 分完走見込み
+  - **import 状態 (要 grep 再確認 = mjc-main-20260505-90 後の line shift 反映)**:
+    - utils/externalApiKeyHelpers.ts: 既 import (Loop 180 で statusLabels から import 済)
+    - routes/SettingsView.tsx: 既 import (Loop 184 までに 4 const import 済)
+    - = 全 file 既 import = 拡張のみ完結
+
+- **R28 (第二推奨) = `"確認中..."` (loading suffix 付き 5 callsite) 集約 = 規模 S = 別 entity 扱い**:
+  - SettingsView.tsx L1755/L1766/L1953 (line shift で要再確認)
+  - PermissionBanner.tsx L190 (line shift で要再確認)
+  - ModelSelector.tsx L468 (要再確認)
+  - 抽出: `${STATUS_CHECKING_LABEL}...` または別 const `STATUS_CHECKING_WITH_DOTS_LABEL` (paradigm 拡張軸検討)
+  - 規模 S = ~10-15 分完走見込み
+
+- **R21 (第三推奨) = rust 軸 = paradigm 反復 8 件目 = 対称対象事実上枯渇 = 規模 S-M = 探索コスト高**
+
+- **R17 (第四推奨) = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複等の超低レイヤー探索 = 規模 S = 探索コスト高**
+
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+- K' = K 軸 2 連続 = K(185) のみ後継候補で alternation reset リスクは frontend(184) からの pivot ありで K 軸単独 OK
+
+## paradigm 反復観測
+
+- const 集約軸: Loop 174 (1 件目) → Loop 176 (2 件目) → Loop 178 (3 件目 + 新 file 作成軸組み合わせ) → Loop 180 (4 件目 = paradigm 完全成熟期突入確認) → Loop 182 (5 件目 = paradigm 完全成熟期完全成熟への移行) → Loop 184 (6 件目 = paradigm 完全成熟期完全成熟確立) = 6 連続観測達成
+- 後継 Loop 186 で paradigm 反復 7 件目を達成すれば const 集約軸最終収束 (R27 = 最後の重複候補)
+- 残候補は R27 (`"未登録"`) のみで全て解消可能 (statusLabels.ts 5 const = unchecked/checking/undetermined/denied/unregistered で完全網羅)
+
+## 戦略ガイドライン (継承)
+
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」等の **単一軸 4 連続集中をしない**
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = 本セッション K(181) → frontend(182) → K(183) → frontend(184) で 24 連続成功 = pivot 加速期更なる強化
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価** (本セッション Loop 182/184 で 2 連続実証 = handoff prompt R25/R26 候補を grep で実在確認 + line shift / import 状態の誤りを批判検証)
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- **責務階層精査優先**: paradigm 反復よりも責務階層精査を優先 (本セッション 3 ループ全て statusLabels.ts 既存 file 拡張軸を選定)
+- **R27 抽出先は既存 `src/utils/statusLabels.ts` への追加が paradigm 一貫性高** = 後継 Loop 186 で paradigm 反復 7 件目達成すれば const 集約軸の paradigm 完全成熟構造最終収束完成
+- **K 軸 2 連続 (= K' = K(183) → K(185)?) は alternation reset リスクが frontend(184) pivot により解消** = 後継は別軸でも OK
+
+---
