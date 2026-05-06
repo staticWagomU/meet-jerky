@@ -12,6 +12,9 @@ use crate::transcription_error_payload::{
 use crate::transcription_traits::TranscriptionStream;
 use crate::transcription_types::TranscriptionSource;
 
+const IDLE_NO_DATA_WAIT: Duration = Duration::from_millis(50);
+const ACTIVE_POLL_YIELD_WAIT: Duration = Duration::from_millis(5);
+
 pub(crate) struct TranscriptionLoopConfig {
     pub(crate) consumer: ringbuf::HeapCons<f32>,
     pub(crate) source: TranscriptionSource,
@@ -39,7 +42,7 @@ pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
     while running.load(Ordering::SeqCst) {
         let available = consumer.occupied_len();
         if available == 0 {
-            std::thread::sleep(Duration::from_millis(50));
+            std::thread::sleep(IDLE_NO_DATA_WAIT);
             continue;
         }
 
@@ -47,7 +50,7 @@ pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
         let read_count = consumer.pop_slice(&mut read_buffer[..to_read]);
 
         if read_count == 0 {
-            std::thread::sleep(Duration::from_millis(50));
+            std::thread::sleep(IDLE_NO_DATA_WAIT);
             continue;
         }
 
@@ -80,7 +83,7 @@ pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
         );
 
         // CPU spin 防止のための短い yield — データがある間も常時 polling しない
-        std::thread::sleep(Duration::from_millis(5));
+        std::thread::sleep(ACTIVE_POLL_YIELD_WAIT);
     }
 
     if feed_failed {
