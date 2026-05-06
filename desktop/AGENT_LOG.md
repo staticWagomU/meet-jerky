@@ -34766,3 +34766,11 @@ alternation pattern pivot 加速継続: K(197) → rust(198) = 37 → 38 = pivot
 - メイン context は Loop 199 worker stuck 観測 + log file size 確認等で消費 (推定 ~50% 超)
 
 ---
+[mjc-main Loop 200 / 2026-05-06]
+worker: mjc-worker-loop200-keychain-error-const (作業)
+範囲: src-tauri/src/secret_store.rs (const ERROR_KEYCHAIN_NOT_SUPPORTED 追加 + L56/L74/L92 = 3 callsite 全件本番を const 参照に統一)
+変更: const ERROR_KEYCHAIN_NOT_SUPPORTED を secret_store.rs に追加 (`#[cfg(not(any(target_os = "macos", target_os = "windows")))]` でガード = 非対応プラットフォーム専用 = 既存 SERVICE const の cfg_attr pattern と対称) + L56 set_secret + L74 get_secret + L92 delete_secret = 3 callsite (全件本番) を const 参照に統一 + DRY 違反解消 + ネット行数 ~+4 行 (const 4 行追加 + callsite 3 件は同行書き換え)
+意義: rust 軸 = const 集約 paradigm 反復 11 件目達成 = paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 paradigm 反復 (Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON / Loop 198 transcription_error_payload.rs ERROR_TRANSCRIPTION_WORKER_ABEND precedent と同系統樹) + 全件本番品質寄与最高 = 非対応プラットフォーム向けエラーメッセージの単一 source of truth 化 + UI/log 文言契約 cohesion 向上 + 文言改修時の整合性保証 + DRY 違反解消 + AGENTS.md priority 1 寄与最高 (品質/可用性 = error message 一貫性) + alternation pivot K(199) → rust(200) = 39 → 40 = 節目 40 件突破 = pivot 加速期維持 = 節目 30 件突破後 9 件目 + paradigm 完全成熟期 cross-language 拡張更なる持続達成 = const 集約軸 frontend 10 + rust 4 = 計 14 連続
+検証: cargo test (704 件件数完全不変) + cargo clippy --lib --tests -- -D warnings (警告ゼロ) + cargo fmt --check OK + cargo build --lib OK / agent-verify.sh は rust skip 判定 OK / grep `"このプラットフォームでは Keychain"` = 1 件のみ確認 (const 定義行のみ残存)
+備考: paradigm 反復 11 件目達成 = rust 軸 const 集約軸の paradigm 完全成熟期 cross-language 拡張更なる持続 = paradigm 系統樹拡張 11 件目反復 4 連続 (Loop 194 / 196 / 198 / 200) = const 集約軸 frontend 10 + rust 4 = 計 14 連続 = paradigm 系統樹拡張第 11 件目の連続反復観測. 後継候補 = R30''' (system_audio_format.rs 非 f32 PCM 集約 = 規模 SSS = 本番 1 + test 2) / R34 (K 軸 = Section 2.3 観測 54 件目) / R37 (大型 file 責務分離 52 件目候補) のいずれか採用検討.
+---
