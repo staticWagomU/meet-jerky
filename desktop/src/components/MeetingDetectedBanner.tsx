@@ -278,7 +278,11 @@ export function MeetingDetectedBanner() {
           setDetected(null);
         })
         .catch((e) => {
-          console.error("会議検知バナーの自動非表示に失敗しました:", toErrorMessage(e));
+          const msg = toErrorMessage(e);
+          console.error("会議検知バナーの自動非表示に失敗しました:", msg);
+          setListenerError(
+            `会議検知バナーの自動非表示に失敗しました: ${msg}`,
+          );
         });
     }, PROMPT_AUTO_HIDE_MS);
 
