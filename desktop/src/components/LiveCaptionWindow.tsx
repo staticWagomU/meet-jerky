@@ -97,6 +97,14 @@ export function LiveCaptionWindow() {
 
   useEffect(() => {
     let disposed = false;
+    const handleListenerStartError = (label: string, e: unknown) => {
+      const msg = toErrorMessage(e);
+      console.error(`${label}の受信開始に失敗しました:`, msg);
+      if (!disposed) {
+        setListenerError(`ライブ字幕の受信開始に失敗しました: ${label}: ${msg}`);
+      }
+      return null;
+    };
     const statusUnlistenPromise = listen<unknown>(
       LIVE_CAPTION_STATUS_EVENT,
       (event) => {
@@ -112,13 +120,13 @@ export function LiveCaptionWindow() {
         }
         setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
       },
-    );
+    ).catch((e) => handleListenerStartError("ライブ字幕ステータス", e));
     const resetUnlistenPromise = listen(LIVE_CAPTION_RESET_EVENT, () => {
       if (disposed) {
         return;
       }
       resetLiveCaptionState();
-    });
+    }).catch((e) => handleListenerStartError("ライブ字幕リセット", e));
     const resultUnlistenPromise = listen<unknown>(
       TRANSCRIPTION_RESULT_EVENT,
       (event) => {
@@ -140,7 +148,7 @@ export function LiveCaptionWindow() {
           }));
         }
       },
-    );
+    ).catch((e) => handleListenerStartError("ライブ字幕結果", e));
     const errorUnlistenPromise = listen<unknown>(
       TRANSCRIPTION_ERROR_EVENT,
       (event) => {
@@ -171,7 +179,7 @@ export function LiveCaptionWindow() {
           setLatestBySource(createEmptyLatestBySource());
         }
       },
-    );
+    ).catch((e) => handleListenerStartError("ライブ字幕エラー", e));
 
     Promise.all([
       statusUnlistenPromise,
@@ -179,9 +187,13 @@ export function LiveCaptionWindow() {
       resultUnlistenPromise,
       errorUnlistenPromise,
     ])
-      .then(() => {
-        if (!disposed) {
-          setListenerError(null);
+      .then((unlisteners) => {
+        if (!disposed && unlisteners.every((unlisten) => unlisten !== null)) {
+          setListenerError((current) =>
+            current?.startsWith("ライブ字幕の受信開始に失敗しました:")
+              ? null
+              : current,
+          );
         }
       })
       .catch((e) => {
@@ -195,22 +207,22 @@ export function LiveCaptionWindow() {
     return () => {
       disposed = true;
       resetUnlistenPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => unlisten?.())
         .catch((e) =>
           console.error("ライブ字幕リセットの受信解除に失敗しました:", toErrorMessage(e)),
         );
       resultUnlistenPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => unlisten?.())
         .catch((e) =>
           console.error("ライブ字幕結果の受信解除に失敗しました:", toErrorMessage(e)),
         );
       errorUnlistenPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => unlisten?.())
         .catch((e) =>
           console.error("ライブ字幕エラーの受信解除に失敗しました:", toErrorMessage(e)),
         );
       statusUnlistenPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => unlisten?.())
         .catch((e) =>
           console.error(
             "ライブ字幕ステータスの受信解除に失敗しました:",

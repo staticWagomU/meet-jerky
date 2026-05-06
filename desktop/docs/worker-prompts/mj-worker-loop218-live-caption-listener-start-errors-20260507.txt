@@ -1,0 +1,50 @@
+あなたは meet-jerky desktop の作業担当エージェントです。
+
+対象:
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ
+
+制約:
+- AGENTS.md、docs/product-concept.md、docs/agent-harness.md を読んでください。
+- AGENT_LOG.md は末尾 100 行だけ確認してください。全体読解で停滞しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他の agent も同じ codebase にいる可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。main agent が review/verify/commit します。
+
+Loop 218 目的:
+- `LiveCaptionWindow.tsx` の Tauri listener 開始失敗を cleanup の解除失敗と混同しないようにする。
+- 現状は `statusUnlistenPromise` / `resetUnlistenPromise` / `resultUnlistenPromise` / `errorUnlistenPromise` が reject した場合、`Promise.all(...).catch(...)` で開始失敗は表示される一方、cleanup 側でも `.then((unlisten) => unlisten())` の catch に流れて解除失敗として二重に見える可能性がある。
+- ライブ字幕は録音状態の透明性に直結するため、開始失敗の診断を明確にし、開始していない listener の解除を試みないようにする。
+
+担当範囲:
+- `src/components/LiveCaptionWindow.tsx`
+- `AGENT_LOG.md`
+
+実装要件:
+1. `src/components/LiveCaptionWindow.tsx`
+   - `LIVE_CAPTION_STATUS_EVENT` / `LIVE_CAPTION_RESET_EVENT` / `TRANSCRIPTION_RESULT_EVENT` / `TRANSCRIPTION_ERROR_EVENT` の各 `listen(...)` Promise に開始失敗用 `.catch(...)` を追加する。
+   - 開始失敗時は `console.error` し、`listenerError` に「ライブ字幕の受信開始に失敗しました: ...」またはイベント種別が分かる同等の既存トーンの文言を設定する。
+   - 開始失敗時は `null` を返す。
+   - `Promise.all` 後に開始失敗で設定した `listenerError` を誤って消さないようにする。全 listener が開始できた場合のみ clear するなど、既存より安全な形にする。
+   - cleanup では `null` の場合に何もしないようにする (`unlisten?.()` など)。
+   - 既存の payload validation、最新セグメント更新、reset、source fallback、UI 表示、event 名、import は挙動変更しない。
+2. `AGENT_LOG.md`
+   - 末尾に Loop 218 の記録を追加する。
+   - 調査 session `mj-research-loop218-next-value-slice-20260507` は最終報告前に停滞したため main が読解結果から最小スライスを選んだことを、必要なら簡潔に記録する。
+   - 検証結果、依存関係追加なし、Tauri 実機 event 配送は未確認であることを記録する。
+
+非目標:
+- ライブ字幕の UI デザイン変更
+- payload 型や表示ロジック変更
+- event 名の変更/移動
+- Rust 側変更
+- `TranscriptView.tsx` や他 listener の同時修正
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md`
+
+完了報告:
+- 変更ファイル一覧
+- 実装概要
+- 実行した検証コマンドと結果
+- 未解決リスクや意図的に触らなかった点
