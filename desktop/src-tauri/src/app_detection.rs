@@ -877,6 +877,10 @@ mod tests {
             None
         );
         assert_eq!(
+            classify_meeting_url("https://teams.microsoft.com/meet/free"),
+            None
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/meet/123/extra"),
             None
         );
@@ -894,12 +898,20 @@ mod tests {
             None
         );
         assert_eq!(
+            classify_meeting_url("https://teams.cloud.microsoft/meet/abcDEF"),
+            None
+        );
+        assert_eq!(
             classify_meeting_url("https://teams.cloud.microsoft/meet/123/extra"),
             None
         );
         assert_eq!(classify_meeting_url("https://teams.live.com/free"), None);
         assert_eq!(classify_meeting_url("https://teams.live.com/meet/"), None);
         assert_eq!(classify_meeting_url("https://teams.live.com/meet//"), None);
+        assert_eq!(
+            classify_meeting_url("https://teams.live.com/meet/abc-123"),
+            None
+        );
         assert_eq!(
             classify_meeting_url("https://teams.live.com/meet/1234567890123/extra"),
             None

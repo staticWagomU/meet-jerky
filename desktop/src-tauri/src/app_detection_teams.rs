@@ -2,8 +2,6 @@
 //!
 //! `app_detection.rs` から Loop 43 で抽出 (Webex/Whereby/GoToMeeting/Zoom precedent 同パターン)。
 
-use crate::app_detection_url_helpers::has_single_non_empty_segment;
-
 /// Microsoft Teams 会議 URL を判定する。
 ///
 /// 受理パターン (4 系統):
@@ -22,11 +20,11 @@ pub(crate) fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) 
         || (is_teams_work_or_school_host(host)
             && path
                 .strip_prefix("/meet/")
-                .is_some_and(has_single_non_empty_segment))
+                .is_some_and(has_single_numeric_meet_id_segment))
         || (host == "teams.live.com"
             && path
                 .strip_prefix("/meet/")
-                .is_some_and(has_single_non_empty_segment))
+                .is_some_and(has_single_numeric_meet_id_segment))
 }
 
 fn is_teams_work_or_school_host(host: &str) -> bool {
@@ -36,6 +34,11 @@ fn is_teams_work_or_school_host(host: &str) -> bool {
 fn has_non_empty_path_segments(value: &str) -> bool {
     let value = value.strip_suffix('/').unwrap_or(value);
     !value.is_empty() && value.split('/').all(|segment| !segment.is_empty())
+}
+
+fn has_single_numeric_meet_id_segment(value: &str) -> bool {
+    let value = value.strip_suffix('/').unwrap_or(value);
+    !value.is_empty() && !value.contains('/') && value.chars().all(|ch| ch.is_ascii_digit())
 }
 
 fn query_has_param(query: Option<&str>, key: &str, value: &str) -> bool {
