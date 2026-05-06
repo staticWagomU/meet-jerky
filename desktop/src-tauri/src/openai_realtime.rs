@@ -610,14 +610,10 @@ mod tests {
     fn engine_default_debug_format_contains_type_name_and_empty_model_field() {
         let engine = OpenAIRealtimeEngine::default();
         let formatted = format!("{engine:?}");
-        assert!(
-            formatted.contains("OpenAIRealtimeEngine"),
-            "型名: {formatted}"
-        );
-        assert!(formatted.contains("model"), "field 名: {formatted}");
-        assert!(
-            formatted.contains("\"\""),
-            "空 String を Debug 出力: {formatted}"
+        crate::realtime_audio_command::test_helpers::assert_engine_default_debug_format(
+            &formatted,
+            "OpenAIRealtimeEngine",
+            "model",
         );
     }
 
@@ -625,18 +621,24 @@ mod tests {
     fn engine_new_with_str_slice_debug_format_contains_provided_model_value() {
         let engine = OpenAIRealtimeEngine::new("gpt-4o-mini-transcribe");
         let formatted = format!("{engine:?}");
-        assert!(formatted.contains("OpenAIRealtimeEngine"));
-        assert!(formatted.contains("model"));
-        assert!(formatted.contains("\"gpt-4o-mini-transcribe\""));
+        crate::realtime_audio_command::test_helpers::assert_engine_with_model_value_debug_format(
+            &formatted,
+            "OpenAIRealtimeEngine",
+            "model",
+            "gpt-4o-mini-transcribe",
+        );
     }
 
     #[test]
     fn engine_new_with_owned_string_debug_format_contains_provided_model_value() {
         let engine = OpenAIRealtimeEngine::new(String::from("gpt-4o-transcribe"));
         let formatted = format!("{engine:?}");
-        assert!(formatted.contains("OpenAIRealtimeEngine"));
-        assert!(formatted.contains("model"));
-        assert!(formatted.contains("\"gpt-4o-transcribe\""));
+        crate::realtime_audio_command::test_helpers::assert_engine_with_model_value_debug_format(
+            &formatted,
+            "OpenAIRealtimeEngine",
+            "model",
+            "gpt-4o-transcribe",
+        );
     }
 
     #[test]

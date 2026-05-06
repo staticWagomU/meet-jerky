@@ -44,4 +44,37 @@ pub(crate) mod test_helpers {
             "tuple variant 形式: {formatted}"
         );
     }
+
+    /// Engine の Debug 出力が型名 + 指定 field 名 + 空文字列 (`""`) を含むことを検証する.
+    ///
+    /// `ElevenLabsRealtimeEngine::default()` / `OpenAIRealtimeEngine::default()` の test で共有.
+    pub fn assert_engine_default_debug_format(
+        formatted: &str,
+        expected_type_name: &str,
+        expected_field_name: &str,
+    ) {
+        assert!(formatted.contains(expected_type_name), "型名: {formatted}");
+        assert!(
+            formatted.contains(expected_field_name),
+            "field 名: {formatted}"
+        );
+        assert!(
+            formatted.contains("\"\""),
+            "空 String を Debug 出力: {formatted}"
+        );
+    }
+
+    /// Engine の Debug 出力が型名 + 指定 field 名 + 指定 model 値 (引用符込み) を含むことを検証する.
+    ///
+    /// `Engine::new(&str)` / `Engine::new(String)` の test で共有.
+    pub fn assert_engine_with_model_value_debug_format(
+        formatted: &str,
+        expected_type_name: &str,
+        expected_field_name: &str,
+        expected_model_value: &str,
+    ) {
+        assert!(formatted.contains(expected_type_name));
+        assert!(formatted.contains(expected_field_name));
+        assert!(formatted.contains(&format!("\"{expected_model_value}\"")));
+    }
 }
