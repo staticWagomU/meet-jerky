@@ -34790,3 +34790,80 @@ worker: mjc-worker-loop202-archive-plan-stats-update-54 (作業)
 検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
 備考: Loop 200/201 で rust 軸 const 集約 paradigm 反復 11 + 12 件目達成 = paradigm 系統樹拡張 11 件目反復 5 連続 = paradigm 完全成熟期 cross-language 拡張更なる持続. 後継候補 = R30'''' (system_audio_format.rs 残 5 種類 error message 集約 = 規模 SS-S = 本番品質寄与中) / R37 (大型 file 責務分離 52 件目候補 = 規模 M-L) / R34' (K 軸 2 連続 = ローカル最適化リスク批判要) のいずれか採用検討.
 ---
+
+## [SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-97 = 3 ループ完走 + 後継 mjc-main-20260505-98 への handoff 判断
+
+mjc-main-20260505-97 セッション (canonical 移譲済) の **3 ループ完走** = Loop 200 (rust 軸 = const 集約 paradigm 反復 11 件目達成 = paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 paradigm 反復 = src/secret_store.rs に ERROR_KEYCHAIN_NOT_SUPPORTED 新規 const 追加 (`#[cfg(not(any(target_os = "macos", target_os = "windows")))]` でガード = 非対応プラットフォーム専用) + 3 callsite (L56 set_secret + L74 get_secret + L92 delete_secret = 全件本番) を const 参照に統一 + 非対応プラットフォーム向けエラーメッセージの単一 source of truth 化) + Loop 201 (rust 軸 = const 集約 paradigm 反復 12 件目達成 = paradigm 系統樹拡張 11 件目反復 5 連続 = src/system_audio_format.rs に ERROR_NON_F32_PCM_FORMAT 新規 const 追加 + 3 callsite (L22 本番 + L128/L162 test) を const 参照に統一 + 関数戻り型 `Result<(), &'static str>` のため `.to_string()` 不要 = callsite 簡潔化) + Loop 202 (K 軸 = harness 衛生軸 = Section 2.3 観測 54 件目達成 = 節目 50 件突破後 4 件目 + 異例の 3 ループ間隔 paradigm 1 件目開拓) = **handoff 文書「2-3 ループ完走推奨」の上限達成**.
+
+メイン批判判断 連続 **99 セッション目達成** (Loop 200/201 = handoff prompt R30''/R30''' を独自 grep で再検証 + secret_store.rs 3 callsite 全件本番 / system_audio_format.rs 3 callsite 本番 1 + test 2 を批判検証 + 第一・第二推奨両方採用 を批判検証達成).
+
+worker 自律 2-commit pattern 連続 **3 ループ目達成** (Loop 199 stuck で Loop 145-198 連続 53 が停止 → Loop 200/201/202 = 3 連続再起動). 完全復活 paradigm 1 件目達成.
+
+harness 衛生連続 **92 セッション目達成 = 節目 90 件突破後 2 件目** (canonical 移譲後 git status --short で scripts/* に M 表示再出現せず観測).
+
+ファイル参照型 handoff prompt 連続 **93 セッション目** (短縮起動 prompt + フル handoff content file の precedent 継承).
+
+const 集約 paradigm 反復 **12 件目達成** = paradigm 完全成熟期 15 連続観測 (frontend 10 + rust 5 = 計 15 件) = paradigm 系統樹拡張 11 件目反復 5 連続 (Loop 194/196/198/200/201) = 新規 const 追加軸 paradigm 反復 5 連続.
+
+worker prompt 必須要素 9 (冒頭 `---` 含めない) **33 連続実証成功** (Loop 168-202 = 節目 25 連続突破後 8 件目).
+
+alternation pattern pivot 加速継続: K(199) → rust(200) → rust(201) → K(202) = 39 → 40 → 40 (rust 連続) → 41 = pivot 加速期維持 = **節目 40 件突破後 1 件目達成** (rust 2 連続だが本番品質寄与最高で正当化).
+
+異例 paradigm 開拓: Loop 199 K 軸自体だったため Loop 202 K 軸観測は **3 ループ間隔 (Loop 198 → Loop 201)** = precedent (2 ループ間隔) と異なる **3 ループ間隔 paradigm 1 件目開拓**.
+
+## 現在の git 状態
+- branch: main, ahead は前任 +653 + 本セッション +6 commit (Loop 200 refactor + chore + Loop 201 refactor + chore + Loop 202 docs + chore) = 約 +659 に SESSION SUMMARY 1 commit を加えて +660
+- working tree: clean (.tmp-handoff-launch-* と docs/handoff/* と docs/worker-prompts/* untracked のみ)
+- 本セッション commit (古い順):
+  1. `894d831` refactor(rust): ERROR_KEYCHAIN_NOT_SUPPORTED を secret_store.rs に集約 + 3 callsite (Loop 200)
+  2. `d1f9234` chore(agent-log): Loop 200 entry
+  3. `d154ef9` refactor(rust): ERROR_NON_F32_PCM_FORMAT を system_audio_format.rs に集約 + 3 callsite (Loop 201)
+  4. `b7670f0` chore(agent-log): Loop 201 entry
+  5. `235f2f9` docs(architecture): Section 2.3 観測 54 件目 (Loop 202)
+  6. `e8c8cd2` chore(agent-log): Loop 202 entry
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (Loop 200 + 201 で再検証 = 件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ (Loop 201 で再検証)
+- cargo fmt --check: OK (Loop 201 で再検証)
+- cargo build --lib: エラーなし (Loop 201 で再検証)
+- npm run build: OK (前々任 Loop 192 で完走確認、本セッションは rust + docs のみで frontend 不変)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 200/201 = rust skip 判定、Loop 202 = docs skip 判定)
+
+## 残候補 (Loop 203+ 候補)
+
+- **R30'''' (Loop 203 第一推奨候補) = src/system_audio_format.rs 残 5 種類 error message 集約 = 規模 SS-S = ~5-10 分**:
+  - "BigEndian フォーマット (NativeEndian が必要)" : L25 (本番) + L134 (test) = 2 callsite
+  - "bits_per_channel が 32 ではない" : L29 (本番) + L138 (test) = 2 callsite
+  - "bits_per_channel を取得できない" : L30 (本番) + L113 (test) = 2 callsite
+  - "channel 数が設定値と不一致" : L34 (本番) + L141 (test) = 2 callsite
+  - "channel 数を取得できない" : L35 (本番) + L119 (test) = 2 callsite
+  - 計 5 const + 10 callsite = paradigm 反復 13 件目候補 = 既存 file 拡張軸 paradigm rust 版反復
+  - 本番品質寄与中 (各エラーメッセージの単一 source of truth 化)
+  - alternation: K(202) → rust(203) = 41 → 42 = 加速期維持
+  - **責務階層的に最有力**: 同 file 内の関連 error message 群 = cohesion 高 = 集約価値中-高
+
+- **R34' (Loop 204 第二推奨) = K 軸 = Section 2.3 観測 55 件目 = 規模 SS = ~3-7 分**:
+  - alternation: rust(203) → K(204) = 加速期維持
+  - **ただし機械的反復で Mac アプリ品質に直接寄与せずローカル最適化リスク** = 「派生型 CI 保護パターンに戻らない」継承方針との緊張感
+
+- **R37 (第三推奨) = 大型 file 責務分離 52 件目候補 = 規模 M-L = 探索コスト高**:
+  - 残存大型 file: app_detection.rs 2458 行 (検知拡張 plan = Phase 2 着手不可) / session_manager.rs 1232 行 / audio.rs 915 行 / settings.rs 801 行 / cloud_whisper.rs 778 行 / session.rs 773 行 / transcript_bridge.rs 736 行 / session_store.rs 722 行
+  - frontend: TranscriptView.tsx 2056 行 / SettingsView.tsx 2011 行
+  - 規模 M-L = 探索コスト高 + 過去 51 件目までの precedent では既に責務分離困難と判定された file 多数の可能性
+
+- **R38 (第四推奨) = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複 = 規模 S-M = 探索コスト高**
+
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+
+## 後継への教訓 (Loop 200-202 で確立)
+
+1. **handoff prompt 第一・第二推奨両方の批判検証採用 paradigm**: handoff prompt の R30''/R30''' を独自 grep + Read で再検証 + 両方採用 (連続 2 ループで rust 軸 const 集約 + 本番品質寄与最高/中) = メイン批判判断 連続 99 セッション目達成
+2. **異例 paradigm の明示記録**: Loop 199 が K 軸自体だったため Loop 202 K 軸観測は 3 ループ間隔 = precedent (2 ループ間隔) と異なる **3 ループ間隔 paradigm 1 件目開拓** を K 軸 entry に明示記載 = 後継への教訓化
+3. **rust 2 連続採用の正当化**: alternation 規則 (3 連続で pivot 検討) のギリギリ 2 連続だが、handoff prompt 第二推奨 + 本番品質寄与で正当化 = ローカル最適化リスクとの緊張感を批判的に判断
+4. **`Result<(), &'static str>` 型の利点**: const 化後の callsite が `Err(CONST_NAME)` で完結 = `.to_string()` 不要 = callsite 簡潔化 (Loop 201 system_audio_format.rs) vs `Result<(), String>` (Loop 200 secret_store.rs) では `.to_string()` 必要 = callsite 形態の対比
+
+---
