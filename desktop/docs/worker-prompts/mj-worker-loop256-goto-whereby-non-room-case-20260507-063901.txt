@@ -1,0 +1,36 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection_whereby.rs
+- src-tauri/src/app_detection_goto.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+Whereby / GoToMeeting の URL 検知で、`/pricing` や `/help` などの非会議パスを大文字小文字違いでも誤って会議 room と扱わないようにしてください。会議検知の誤検知を下げる最小スライスです。
+
+実装条件:
+- `WHEREBY_NON_ROOM_PATHS` と `GOTO_NON_ROOM_PATHS` の除外比較を case-insensitive にしてください。
+- Rust 標準の `eq_ignore_ascii_case` で十分です。依存関係は追加しないでください。
+- room 名全体の lower-case 正規化、host 判定、legacy GoTo join、app.goto.com `/meet/` 判定、URL parser、UI、TypeScript は変更しないでください。
+- テストは `src-tauri/src/app_detection.rs` の既存 `classify_meeting_url_*_rejects_blacklist_*` 付近に、`https://whereby.com/Pricing`、`https://whereby.com/HELP`、`https://meet.goto.com/Pricing`、`https://meet.goto.com/HELP` が `None` になる negative test を追加してください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_whereby.rs src-tauri/src/app_detection_goto.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop256-goto-whereby-non-room-case-20260507-063901.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

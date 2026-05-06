@@ -2325,6 +2325,16 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_pricing_case_insensitive() {
+        assert_eq!(classify_meeting_url("https://whereby.com/Pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_whereby_rejects_blacklist_help_case_insensitive() {
+        assert_eq!(classify_meeting_url("https://whereby.com/HELP"), None);
+    }
+
+    #[test]
     fn classify_meeting_url_whereby_rejects_blacklist_download() {
         assert_eq!(classify_meeting_url("https://whereby.com/download"), None);
     }
@@ -2392,6 +2402,16 @@ mod tests {
     #[test]
     fn classify_meeting_url_goto_rejects_blacklist_pricing() {
         assert_eq!(classify_meeting_url("https://meet.goto.com/pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_blacklist_pricing_case_insensitive() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/Pricing"), None);
+    }
+
+    #[test]
+    fn classify_meeting_url_goto_rejects_blacklist_help_case_insensitive() {
+        assert_eq!(classify_meeting_url("https://meet.goto.com/HELP"), None);
     }
 
     #[test]

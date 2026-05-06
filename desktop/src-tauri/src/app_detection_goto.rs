@@ -30,7 +30,11 @@ pub(crate) fn is_goto_meeting_url(host: &str, path: &str) -> bool {
         return false;
     };
     let room = room.strip_suffix('/').unwrap_or(room);
-    !room.is_empty() && !room.contains('/') && !GOTO_NON_ROOM_PATHS.contains(&room)
+    !room.is_empty()
+        && !room.contains('/')
+        && !GOTO_NON_ROOM_PATHS
+            .iter()
+            .any(|non_room_path| non_room_path.eq_ignore_ascii_case(room))
 }
 
 pub(crate) fn is_goto_legacy_meeting_url(host: &str, path: &str) -> bool {

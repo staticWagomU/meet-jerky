@@ -47,5 +47,9 @@ pub(crate) fn is_whereby_meeting_url(host: &str, path: &str) -> bool {
         return false;
     };
     let room = room.strip_suffix('/').unwrap_or(room);
-    !room.is_empty() && !room.contains('/') && !WHEREBY_NON_ROOM_PATHS.contains(&room)
+    !room.is_empty()
+        && !room.contains('/')
+        && !WHEREBY_NON_ROOM_PATHS
+            .iter()
+            .any(|non_room_path| non_room_path.eq_ignore_ascii_case(room))
 }
