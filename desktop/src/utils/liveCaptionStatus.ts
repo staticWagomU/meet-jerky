@@ -1,4 +1,5 @@
 import type { TranscriptionEngineType } from "../types";
+import { CONTROL_CHARACTER_PATTERN } from "./transcriptSegment";
 
 export const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
 export const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
@@ -7,7 +8,6 @@ const EXTERNAL_TRANSMISSION_LABELS = new Set([
   "送信先 ElevenLabs",
 ]);
 const MAX_STATUS_LABEL_LENGTH = 80;
-const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
 
 function toValidStatusLabel(value: unknown): string | null {
   if (typeof value !== "string") {

@@ -27,7 +27,7 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
+export const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
 
 function isSafeTrimmedString(
   value: unknown,
