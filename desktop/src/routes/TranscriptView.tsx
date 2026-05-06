@@ -65,7 +65,7 @@ import {
   getExternalApiKeyStatusPillClass,
 } from "../utils/externalApiKeyHelpers";
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
-import { STATUS_CHECKING_LABEL, STATUS_RECORDING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_ENDING_LABEL, STATUS_RECORDING_LABEL, STATUS_STARTING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
   getAiTransmissionStatusAriaLabel,
@@ -1197,8 +1197,8 @@ export function TranscriptView() {
   );
   const meetingRecordingStatusLabel = isMeetingOperationPending
     ? isMeetingActive
-      ? "終了中"
-      : "開始中"
+      ? STATUS_ENDING_LABEL
+      : STATUS_STARTING_LABEL
     : isMeetingActive
       ? STATUS_RECORDING_LABEL
       : "未録音";
@@ -1210,7 +1210,7 @@ export function TranscriptView() {
   const transcriptionStatusLabel = isTranscriptionOperationPending
     ? isTranscribing
       ? "停止中"
-      : "開始中"
+      : STATUS_STARTING_LABEL
     : isTranscribing
       ? "文字起こし中"
       : "停止中";
@@ -1252,8 +1252,8 @@ export function TranscriptView() {
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const meetingPopoverTitle = isMeetingOperationPending
     ? isMeetingActive
-      ? "終了中"
-      : "開始中"
+      ? STATUS_ENDING_LABEL
+      : STATUS_STARTING_LABEL
     : isMeetingActive
       ? "記録中"
       : "待機中";
@@ -1269,8 +1269,8 @@ export function TranscriptView() {
     : "ブラウザ URL / アプリ検知に対応。録音は開始操作後のみ";
   const meetingPopoverRecordingLabel = isMeetingOperationPending
     ? isMeetingActive
-      ? "終了中"
-      : "開始中"
+      ? STATUS_ENDING_LABEL
+      : STATUS_STARTING_LABEL
     : meetingRecordingStatusLabel;
   const meetingFooterEndLabel = isMeetingActive
     ? meetingButtonLabel

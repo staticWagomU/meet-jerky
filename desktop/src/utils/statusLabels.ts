@@ -5,3 +5,5 @@ export const STATUS_DENIED_LABEL = "未許可";
 export const STATUS_UNREGISTERED_LABEL = "未登録";
 export const STATUS_CHECKING_WITH_DOTS_LABEL = "確認中...";
 export const STATUS_RECORDING_LABEL = "録音中";
+export const STATUS_STARTING_LABEL = "開始中";
+export const STATUS_ENDING_LABEL = "終了中";
