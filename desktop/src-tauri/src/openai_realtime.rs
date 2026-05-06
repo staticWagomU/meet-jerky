@@ -181,22 +181,13 @@ mod tests {
 
     #[test]
     fn error_events_are_queued_as_error_segments() {
-        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-        let speaker = Some("自分".to_string());
-
-        ws_task::handle_event(
+        crate::realtime_error_helpers::test_helpers::assert_handle_event_error_payload_creates_error_segment(
+            ws_task::handle_event,
             r#"{"type":"error","error":{"message":"connection closed"}}"#,
-            &pending,
-            &speaker,
-            Some(TranscriptionSource::Microphone),
+            "自分",
+            TranscriptionSource::Microphone,
+            "connection closed",
         );
-
-        let segments = pending.lock();
-        assert_eq!(segments.len(), 1);
-        assert!(segments[0].text.contains("connection closed"));
-        assert_eq!(segments[0].speaker, speaker);
-        assert_eq!(segments[0].source, Some(TranscriptionSource::Microphone));
-        assert_eq!(segments[0].is_error, Some(true));
     }
 
     #[test]

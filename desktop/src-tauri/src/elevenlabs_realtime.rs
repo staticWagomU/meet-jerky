@@ -171,22 +171,13 @@ mod tests {
 
     #[test]
     fn scribe_error_events_are_queued_as_error_segments() {
-        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-        let speaker = Some("相手側".to_string());
-
-        ws_task::handle_event(
+        crate::realtime_error_helpers::test_helpers::assert_handle_event_error_payload_creates_error_segment(
+            ws_task::handle_event,
             r#"{"message_type":"scribe_auth_error","message":"invalid api key"}"#,
-            &pending,
-            &speaker,
-            Some(TranscriptionSource::SystemAudio),
+            "相手側",
+            TranscriptionSource::SystemAudio,
+            "invalid api key",
         );
-
-        let segments = pending.lock();
-        assert_eq!(segments.len(), 1);
-        assert!(segments[0].text.contains("invalid api key"));
-        assert_eq!(segments[0].speaker, speaker);
-        assert_eq!(segments[0].source, Some(TranscriptionSource::SystemAudio));
-        assert_eq!(segments[0].is_error, Some(true));
     }
 
     #[test]

@@ -168,4 +168,30 @@ pub(crate) mod test_helpers {
             );
         }
     }
+
+    #[allow(clippy::type_complexity)]
+    pub(crate) fn assert_handle_event_error_payload_creates_error_segment(
+        handle_event: fn(
+            &str,
+            &Arc<Mutex<Vec<TranscriptionSegment>>>,
+            &Option<String>,
+            Option<TranscriptionSource>,
+        ),
+        error_payload: &str,
+        speaker_label: &str,
+        source: TranscriptionSource,
+        expected_message: &str,
+    ) {
+        let pending: Arc<Mutex<Vec<TranscriptionSegment>>> = Arc::new(Mutex::new(Vec::new()));
+        let speaker = Some(speaker_label.to_string());
+
+        handle_event(error_payload, &pending, &speaker, Some(source));
+
+        let segments = pending.lock();
+        assert_eq!(segments.len(), 1);
+        assert!(segments[0].text.contains(expected_message));
+        assert_eq!(segments[0].speaker, speaker);
+        assert_eq!(segments[0].source, Some(source));
+        assert_eq!(segments[0].is_error, Some(true));
+    }
 }
