@@ -1,0 +1,30 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md は巨大で NUL を含むため、全文読みを避け、`tail -n 70 AGENT_LOG.md` だけで直近文脈を確認してください。
+
+担当範囲:
+- src/utils/sessionListHelpers.tsx
+- AGENT_LOG.md
+
+目的:
+Loop 254 として、履歴一覧行に表示されている「文字起こし本文あり」/「文字起こし本文なし」を履歴検索対象にも含めてください。画面上の語である「本文なし」を検索して、本文なし履歴を絞り込めるようにする小さな UX 整合です。
+
+実装条件:
+1. `src/utils/sessionListHelpers.tsx`
+   - `sessionMatchesQuery` の `searchableText` に、`hasTranscriptBody(session.searchText)` に基づく検索用ラベルを追加してください。
+   - ラベルは既存 UI に合わせて `"文字起こし本文あり"` / `"文字起こし本文なし"` を含めてください。短い検索語 `"本文あり"` / `"本文なし"` でも一致するように、同じ文字列中に自然に含まれる形で十分です。
+   - `SessionList.tsx`、表示文言、保存済み Markdown 形式、CSS、Rust 側、依存関係は変更しないでください。
+   - 大きな抽象化は追加せず、既存 helper の近くに小さな helper を置く程度にしてください。
+2. `AGENT_LOG.md`
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/sessionListHelpers.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop254-session-search-body-labels-20260507-055852.txt`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。コミットは禁止です。

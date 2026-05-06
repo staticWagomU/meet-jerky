@@ -127,6 +127,12 @@ export function hasTranscriptBody(searchText: string): boolean {
   return searchText.trim().length > 0;
 }
 
+function getTranscriptBodySearchLabel(searchText: string): string {
+  return hasTranscriptBody(searchText)
+    ? "文字起こし本文あり"
+    : "文字起こし本文なし";
+}
+
 export function getTranscriptTrackCounts(
   searchText: string,
 ): TranscriptTrackCounts {
@@ -167,6 +173,7 @@ export function sessionMatchesQuery(
     getCompactSessionTitle(session.title),
     getFileName(session.path),
     startedAtLabel,
+    getTranscriptBodySearchLabel(session.searchText),
     ...getTranscriptTrackSearchLabels(
       getTranscriptTrackCounts(session.searchText),
     ),
