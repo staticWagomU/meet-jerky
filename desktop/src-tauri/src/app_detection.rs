@@ -1373,21 +1373,12 @@ mod tests {
 
     #[test]
     fn classify_meeting_window_title_handles_only_whitespace_after_meet_dash() {
-        // 現仕様: "Meet - " の rest が whitespace のみでも is_empty() == false → Some を返す
+        // URL 取得失敗時の fallback では、prefix 後が空白だけのタイトルを会議扱いしない。
+        assert_eq!(classify_meeting_window_title("Meet -  "), None);
+        assert_eq!(classify_meeting_window_title("Meet \u{2013} \t"), None);
         assert_eq!(
-            classify_meeting_window_title("Meet -  "),
-            Some(MeetingUrlClassification {
-                service: "Google Meet".to_string(),
-                host: String::new(),
-            })
-        );
-        // 現仕様: en-dash prefix の rest = "\t" は非空 → Some を返す
-        assert_eq!(
-            classify_meeting_window_title("Meet \u{2013} \t"),
-            Some(MeetingUrlClassification {
-                service: "Google Meet".to_string(),
-                host: String::new(),
-            })
+            classify_meeting_window_title("Meet \u{2014} \u{3000}"),
+            None
         );
     }
 

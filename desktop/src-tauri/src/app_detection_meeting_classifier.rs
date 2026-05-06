@@ -65,7 +65,7 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 /// # 分類ルール (厳格・誤検知防止を優先)
 ///
 /// - **Google Meet**: `"Meet - "` / `"Meet – "` (U+2013) / `"Meet — "` (U+2014) で始まり、
-///   続く会議コードまたは名前が非空のもの。Chrome/Safari/Edge のタブタイトルを想定。
+///   続く会議コードまたは名前が trim 後に非空のもの。Chrome/Safari/Edge のタブタイトルを想定。
 /// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` で始まるもの (prefix 一致)。
 ///   デスクトップアプリのウィンドウタイトルを想定。`starts_with` のみ使い
 ///   `"Zoom について - Wikipedia"` のような単語含みによる誤検知を防ぐ。
@@ -78,14 +78,14 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlClassification> {
     // Google Meet のタブタイトルは Chrome/Safari/Edge とも "Meet - <code or name>" 形式。
     // ASCII ハイフン・en-dash (U+2013)・em-dash (U+2014) の3種をカバーし、
-    // 続く名前が空 ("Meet - " のみ) の場合は会議ではないとして除外する。
+    // 続く名前が空白だけ ("Meet -  " 等) の場合は会議ではないとして除外する。
     let google_meet_detected =
         ["Meet - ", "Meet \u{2013} ", "Meet \u{2014} "]
             .iter()
             .any(|prefix| {
                 window_title
                     .strip_prefix(prefix)
-                    .is_some_and(|rest| !rest.is_empty())
+                    .is_some_and(|rest| !rest.trim().is_empty())
             });
     if google_meet_detected {
         return Some(MeetingUrlClassification {

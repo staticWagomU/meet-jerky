@@ -1,0 +1,54 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした作業担当エージェントです。
+
+目的:
+- Google Meet の window title fallback で、`"Meet -  "` や `"Meet – \t"` のように prefix 後が空白だけのタイトルを会議として誤検知しないようにする。
+- URL 取得失敗時の fallback 誤検知を減らし、会議検知の信頼性を上げる。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+- src-tauri/src/app_detection_meeting_classifier.rs の `classify_meeting_window_title`
+- src-tauri/src/app_detection.rs の `classify_meeting_window_title` テスト群
+
+担当範囲:
+- 変更可:
+  - src-tauri/src/app_detection_meeting_classifier.rs
+  - src-tauri/src/app_detection.rs
+  - AGENT_LOG.md
+- 変更禁止:
+  - src/** frontend
+  - package.json / lockfile / 依存関係
+  - docs/handoff/**
+  - この prompt 以外の docs/worker-prompts/**
+  - 担当範囲外のファイル
+
+実装要件:
+- `classify_meeting_window_title` の Google Meet 判定で、prefix 後の `rest` が空白だけの場合は `None` にする。
+- `rest.trim().is_empty()` など、既存の prefix 厳格性を壊さない最小変更にする。
+- `"Meet - abc-defg-hij"`, `"Meet – チームミーティング"`, `"Meet — Team Sync"` など既存の有効ケースは維持する。
+- 既存テスト `classify_meeting_window_title_handles_only_whitespace_after_meet_dash` は、現仕様 Some 固定から新仕様 None 固定へ更新する。
+- できれば ASCII space / tab / full-width space の空白だけケースをテストに含める。
+- `Meet - \nabc` は既存の control character reject テストがあるため、挙動を不用意に緩めない。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_window_title`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 末尾に作業ログを追記する。
+- 開始日時、担当セッション名 `mj-worker-loop210-google-meet-title-whitespace-reject-20260506`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加なし、残リスク、次アクションを簡潔に記録する。
+
+禁止:
+- コミットしない。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他エージェントやユーザーの変更を戻さない。
+
+完了報告:
+- 変更ファイル
+- 変更内容
+- 検証結果
+- 残リスク
