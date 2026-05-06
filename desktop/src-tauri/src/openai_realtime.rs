@@ -295,150 +295,31 @@ mod tests {
 
     #[test]
     fn push_error_format_prefix_and_suffix_are_fixed() {
-        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-        let speaker = Some("自分".to_string());
-
-        crate::realtime_error_helpers::push_error(
-            "OpenAI",
-            &pending,
-            &speaker,
-            Some(TranscriptionSource::Microphone),
-            "connection closed".to_string(),
-        );
-
-        let segments = pending.lock();
-        assert_eq!(segments.len(), 1);
-        // prefix と suffix を含む完全一致で文言契約を強制。
-        // prefix を削る・bracket を消すリファクタを CI で即座検知する。
-        assert_eq!(
-            segments[0].text,
-            "[OpenAI Realtime エラー: connection closed]"
-        );
+        crate::realtime_error_helpers::test_helpers::assert_push_error_format_prefix_and_suffix_are_fixed("OpenAI");
     }
 
     #[test]
     fn push_error_sets_zero_timestamps_and_is_error_true() {
-        let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-        let speaker = Some("自分".to_string());
-
-        crate::realtime_error_helpers::push_error(
-            "OpenAI",
-            &pending,
-            &speaker,
-            Some(TranscriptionSource::Microphone),
-            "rate limit".to_string(),
-        );
-
-        let segments = pending.lock();
-        assert_eq!(segments.len(), 1);
-        // エラーセグメントは時刻情報を持たない・is_error=Some(true) で UI 側 error 装飾を駆動。
-        // この 3 値同時が「エラーセグメント」の identity 契約。
-        assert_eq!(segments[0].start_ms, 0);
-        assert_eq!(segments[0].end_ms, 0);
-        assert_eq!(segments[0].is_error, Some(true));
+        crate::realtime_error_helpers::test_helpers::assert_push_error_sets_zero_timestamps_and_is_error_true("OpenAI");
     }
 
     #[test]
     fn push_error_passes_source_through() {
-        // ケース 1: Some(Microphone) は Some(Microphone) のまま渡る
-        {
-            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-            let speaker = Some("自分".to_string());
-            crate::realtime_error_helpers::push_error(
-                "OpenAI",
-                &pending,
-                &speaker,
-                Some(TranscriptionSource::Microphone),
-                "err".to_string(),
-            );
-            assert_eq!(
-                pending.lock()[0].source,
-                Some(TranscriptionSource::Microphone)
-            );
-        }
-
-        // ケース 2: None は None のまま渡る
-        {
-            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-            let speaker = Some("自分".to_string());
-            crate::realtime_error_helpers::push_error(
-                "OpenAI",
-                &pending,
-                &speaker,
-                None,
-                "err".to_string(),
-            );
-            assert_eq!(pending.lock()[0].source, None);
-        }
+        crate::realtime_error_helpers::test_helpers::assert_push_error_passes_source_through(
+            "OpenAI",
+        );
     }
 
     #[test]
     fn push_error_clones_speaker_field() {
-        // ケース 1: Some("自分") が clone されて渡る (元の所有権は保持される)
-        {
-            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-            let speaker = Some("自分".to_string());
-            crate::realtime_error_helpers::push_error(
-                "OpenAI",
-                &pending,
-                &speaker,
-                Some(TranscriptionSource::Microphone),
-                "err".to_string(),
-            );
-            assert_eq!(pending.lock()[0].speaker, Some("自分".to_string()));
-            // 元の speaker が clone 後も有効であることを確認 (move されていない)
-            assert_eq!(speaker, Some("自分".to_string()));
-        }
-
-        // ケース 2: None は None のまま渡る
-        {
-            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-            let speaker: Option<String> = None;
-            crate::realtime_error_helpers::push_error(
-                "OpenAI",
-                &pending,
-                &speaker,
-                Some(TranscriptionSource::Microphone),
-                "err".to_string(),
-            );
-            assert_eq!(pending.lock()[0].speaker, None);
-        }
+        crate::realtime_error_helpers::test_helpers::assert_push_error_clones_speaker_field(
+            "OpenAI",
+        );
     }
 
     #[test]
     fn push_error_with_empty_and_multibyte_messages_preserve_text_format() {
-        // ケース 1: 空 message でも prefix/suffix が残り "[OpenAI Realtime エラー: ]" になる
-        {
-            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-            let speaker = Some("自分".to_string());
-            crate::realtime_error_helpers::push_error(
-                "OpenAI",
-                &pending,
-                &speaker,
-                Some(TranscriptionSource::Microphone),
-                "".to_string(),
-            );
-            // 空 message でも UI 側でエラー判定できるよう bracket だけは残す現契約。
-            assert_eq!(pending.lock()[0].text, "[OpenAI Realtime エラー: ]");
-        }
-
-        // ケース 2: 日本語マルチバイト message が prefix/suffix の間にそのまま埋め込まれる
-        {
-            let pending = Arc::new(Mutex::new(Vec::<TranscriptionSegment>::new()));
-            let speaker = Some("自分".to_string());
-            crate::realtime_error_helpers::push_error(
-                "OpenAI",
-                &pending,
-                &speaker,
-                Some(TranscriptionSource::Microphone),
-                "認証エラーが発生しました".to_string(),
-            );
-            // multibyte の余分な escape/sanitize がないことを契約として固定。
-            assert_eq!(
-                pending.lock()[0].text,
-                "[OpenAI Realtime エラー: 認証エラーが発生しました]"
-            );
-        }
+        crate::realtime_error_helpers::test_helpers::assert_push_error_with_empty_and_multibyte_messages_preserve_text_format("OpenAI");
     }
 
     #[test]
