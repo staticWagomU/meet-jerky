@@ -7,6 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Autonomous loop temporary handoff prompts (literal .tmp- prefix marks throwaway)
+.tmp-handoff-launch-*.txt
+
 node_modules
 dist
 dist-ssr
