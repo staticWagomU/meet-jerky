@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+既に存在するリングライト window を、会議録音中または文字起こし中に自動表示し、終了時に非表示へ戻してください。録音・文字起こし状態の透明性を上げる最小の新機能スライスです。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` だけで完結してください。
+- `src/utils/ringLight.ts` から `RING_LIGHT_MODE_EVENT` を import してください。`emit` は既に import 済みです。
+- `isMeetingActive || isTranscribing` に連動する新しい `useEffect` を追加してください。
+- 表示する場合は先に `emit(RING_LIGHT_MODE_EVENT, { mode: "soft" })` を試み、その後 `invoke("set_ring_light_visible", { visible: true })` を呼んでください。
+- 非表示にする場合は `invoke("set_ring_light_visible", { visible: false })` を呼んでください。`off` mode の emit は不要です。
+- 失敗時は `toErrorMessage(e)` を `msg` に取り、console error と既存 `setMeetingError` の両方でユーザーに明示してください。
+- 表示失敗文言は `録音状態リングライトを表示できませんでした: ${msg}`、非表示失敗文言は `録音状態リングライトを隠せませんでした: ${msg}` としてください。
+- `set_live_caption_window_visible` の既存 useEffect、録音/文字起こし開始停止ロジック、RingLightWindow.tsx、ringLight.ts、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- リングライトは録音・文字起こし中であることを明示する表示です。ステルス録音や自動録音開始には関与させないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop263-ring-light-recording-state-20260507-083856.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。新機能追加なので、ユーザー価値、非目標、未実機確認範囲も明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

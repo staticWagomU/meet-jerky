@@ -1,0 +1,33 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+Loop 263 のリングライト状態連動 `useEffect` について、短時間に `isMeetingActive || isTranscribing` が切り替わった場合に古い非同期処理が後から完了して最終表示状態をずらすリスクを下げてください。
+
+実装条件:
+- 既存 Loop 263 差分を戻さず、最小補正してください。
+- `TranscriptView` 内に `useRef` ベースの request id / sequence guard を追加してください。`useRef` は既に import 済みです。
+- リングライト連動 effect のたびに request id を進め、`emit(RING_LIGHT_MODE_EVENT, { mode: "soft" })` 後と `invoke("set_ring_light_visible", ...)` 後に、現在の request id と一致するか確認してください。
+- 古い表示要求が後から `set_ring_light_visible(true)` を完了した場合、最新 request が変わっていれば `set_ring_light_visible(false)` で戻してください。ただしその rollback 失敗は console error のみにしてください。ユーザー向け `meetingError` は最新 request の失敗だけに出してください。
+- 古い非表示要求が後から失敗した場合も、最新 request でなければ `meetingError` は出さないでください。
+- `set_live_caption_window_visible` の既存 useEffect、録音/文字起こし開始停止ロジック、RingLightWindow.tsx、ringLight.ts、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop263-ring-light-race-guard-20260507-084214.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。Loop 263 の新機能補正なので、未実機確認範囲も明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

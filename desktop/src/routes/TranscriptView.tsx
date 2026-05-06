@@ -86,6 +86,7 @@ import {
   LIVE_CAPTION_STATUS_EVENT,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
+import { RING_LIGHT_MODE_EVENT } from "../utils/ringLight";
 import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
@@ -181,6 +182,8 @@ export function TranscriptView() {
   const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ringLightVisibilityRequestIdRef = useRef(0);
+  const ringLightDesiredVisibilityRef = useRef(false);
 
   // Session wiring state
   const [meetingError, setMeetingError] = useState<string | null>(null);
@@ -1285,6 +1288,51 @@ export function TranscriptView() {
       console.error(errorMessage);
       setMeetingError(errorMessage);
     });
+  }, [isMeetingActive, isTranscribing]);
+
+  useEffect(() => {
+    const shouldShowRingLight = isMeetingActive || isTranscribing;
+    ringLightDesiredVisibilityRef.current = shouldShowRingLight;
+    const requestId = ringLightVisibilityRequestIdRef.current + 1;
+    ringLightVisibilityRequestIdRef.current = requestId;
+    const isCurrentRequest = () =>
+      ringLightVisibilityRequestIdRef.current === requestId;
+    void (async () => {
+      try {
+        if (shouldShowRingLight) {
+          await emit(RING_LIGHT_MODE_EVENT, { mode: "soft" });
+          if (!isCurrentRequest()) {
+            return;
+          }
+          await invoke("set_ring_light_visible", { visible: true });
+          if (!isCurrentRequest() && !ringLightDesiredVisibilityRef.current) {
+            try {
+              await invoke("set_ring_light_visible", { visible: false });
+            } catch (rollbackError) {
+              console.error(
+                "古い録音状態リングライト表示要求の巻き戻しに失敗しました:",
+                toErrorMessage(rollbackError),
+              );
+            }
+          }
+          return;
+        }
+        await invoke("set_ring_light_visible", { visible: false });
+        if (!isCurrentRequest()) {
+          return;
+        }
+      } catch (e) {
+        const msg = toErrorMessage(e);
+        const errorMessage = shouldShowRingLight
+          ? `録音状態リングライトを表示できませんでした: ${msg}`
+          : `録音状態リングライトを隠せませんでした: ${msg}`;
+        console.error(errorMessage);
+        if (!isCurrentRequest()) {
+          return;
+        }
+        setMeetingError(errorMessage);
+      }
+    })();
   }, [isMeetingActive, isTranscribing]);
 
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
