@@ -2,6 +2,7 @@ use serde_json::json;
 
 pub(crate) const AUDIO_LEVEL_EVENT_NAME: &str = "audio-level";
 pub(crate) const AUDIO_DROP_EVENT_NAME: &str = "audio-drop-count";
+pub(crate) const SYSTEM_AUDIO_FORMAT_WARNING_EVENT_NAME: &str = "system-audio-format-warning";
 pub(crate) const AUDIO_SOURCE_MICROPHONE: &str = "microphone";
 pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
 
@@ -25,6 +26,14 @@ mod tests {
     #[test]
     fn audio_drop_event_name_is_audio_drop_count_kebab_case() {
         assert_eq!(AUDIO_DROP_EVENT_NAME, "audio-drop-count");
+    }
+
+    #[test]
+    fn system_audio_format_warning_event_name_is_system_audio_format_warning_kebab_case() {
+        assert_eq!(
+            SYSTEM_AUDIO_FORMAT_WARNING_EVENT_NAME,
+            "system-audio-format-warning"
+        );
     }
 
     #[test]

@@ -1,0 +1,53 @@
+あなたは meet-jerky desktop の作業担当エージェントです。
+
+対象:
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ
+
+制約:
+- AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他の agent も同じ codebase にいる可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。main agent が review/verify/commit します。
+
+Loop 216 目的:
+- 相手側音声の形式不一致を UI に通知する `system-audio-format-warning` event 名を Rust emit 側と React listen 側で定数化し、typo/drift による警告表示の沈黙リスクを下げる。
+- 文字列値、payload、UI 文言、警告条件、Once 制御、音声取得処理は変更しない。
+
+担当範囲:
+- `src-tauri/src/audio_event.rs`
+- `src-tauri/src/system_audio.rs`
+- `src/utils/audioEvents.ts`
+- `src/routes/TranscriptView.tsx`
+- `AGENT_LOG.md`
+
+実装要件:
+1. Rust:
+   - `src-tauri/src/audio_event.rs` に `SYSTEM_AUDIO_FORMAT_WARNING_EVENT_NAME = "system-audio-format-warning"` を追加する。
+   - 既存 event 名 test 群に固定値 test を追加する。
+   - `src-tauri/src/system_audio.rs` の `app_handle.emit("system-audio-format-warning", message)` を定数参照へ置換する。
+2. TypeScript:
+   - `src/utils/audioEvents.ts` に `SYSTEM_AUDIO_FORMAT_WARNING_EVENT = "system-audio-format-warning"` を export する。
+   - `src/routes/TranscriptView.tsx` の `listen<string>("system-audio-format-warning", ...)` を import した const へ置換する。
+3. `AGENT_LOG.md`:
+   - 末尾に Loop 216 の記録を追加する。
+   - 検証結果、依存関係追加なし、Tauri 実機 event 配送は未確認であることを記録する。
+
+非目標:
+- payload shape の変更
+- warning 文言や fallback 文言の変更
+- audio format validation の変更
+- ScreenCaptureKit / audio capture 処理の変更
+- Rust/frontend 自動共有や build script 追加
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/audio_event.rs src-tauri/src/system_audio.rs src/utils/audioEvents.ts src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+完了報告:
+- 変更ファイル一覧
+- 実装概要
+- 実行した検証コマンドと結果
+- 未解決リスクや意図的に触らなかった点

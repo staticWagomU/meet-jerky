@@ -50,6 +50,7 @@ import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
 import {
   AUDIO_DROP_COUNT_EVENT,
   AUDIO_LEVEL_EVENT,
+  SYSTEM_AUDIO_FORMAT_WARNING_EVENT,
 } from "../utils/audioEvents";
 import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import {
@@ -425,7 +426,7 @@ export function TranscriptView() {
   useEffect(() => {
     let disposed = false;
     const unlistenPromise = listen<string>(
-      "system-audio-format-warning",
+      SYSTEM_AUDIO_FORMAT_WARNING_EVENT,
       (event) => {
         if (disposed) {
           return;

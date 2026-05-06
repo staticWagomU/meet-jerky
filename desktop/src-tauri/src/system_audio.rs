@@ -39,7 +39,10 @@ fn warn_system_audio_format_once(app_handle: &tauri::AppHandle, message: &'stati
     let app_handle = app_handle.clone();
     FORMAT_WARN_ONCE.call_once(move || {
         eprintln!("[system_audio] 入力フォーマット検証失敗: {message}。バッファを破棄します。");
-        let _ = app_handle.emit("system-audio-format-warning", message);
+        let _ = app_handle.emit(
+            crate::audio_event::SYSTEM_AUDIO_FORMAT_WARNING_EVENT_NAME,
+            message,
+        );
     });
 }
 
