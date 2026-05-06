@@ -1,0 +1,36 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md の末尾付近
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+`audio-level` / `audio-drop-count` payload の `source` が `"microphone"` / `"system_audio"` 以外だった場合に、UI の listener error が単なる「形式が不正です」ではなく「未知の音声ソース」であることを示すようにしてください。録音・相手側音声取得の別トラック透明性を上げるための小さな診断改善です。
+
+現状:
+- `src/utils/audioLevelPayload.ts` と `src/utils/audioDropCountPayload.ts` の型ガードは未知 source を reject します。
+- `TranscriptView.tsx` は reject された payload を汎用の「形式が不正です」表示にしており、source drift と他の形式不正が区別できません。
+
+実装方針:
+- 既存の型ガード仕様は変更しないでください。未知 source を有効 payload として扱わないでください。
+- `TranscriptView.tsx` 側で、payload が object かつ `source` を持ち、その値が `"microphone"` / `"system_audio"` 以外なら、audio level/drop それぞれの listener error に「未知の音声ソース」を含む日本語メッセージを出してください。
+- 既存の mic/system audio level 更新、drop count 加算、console.warn、開始失敗/解除失敗処理、event 名、UI レイアウトは変更しないでください。
+- 可能なら小さな helper を `TranscriptView.tsx` 内に置いて重複を抑えてください。別ファイルのリファクタや依存関係追加は禁止です。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

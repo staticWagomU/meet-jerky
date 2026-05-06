@@ -1,0 +1,28 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+
+最初に必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md の末尾付近
+
+目的:
+Loop 221 の候補として、`audio-level` / `audio-drop-count` の payload source が `"microphone"` / `"system_audio"` 以外だった場合に UI が沈黙するリスクを調査してください。プロダクトコンセプト上の「自分」と「相手側全体」の別トラック透明性に関わる小さな改善として妥当かを判断する材料を出してください。
+
+確認対象:
+- src/routes/TranscriptView.tsx
+- src/utils/audioLevelPayload.ts
+- src/utils/audioDropCountPayload.ts
+- src-tauri/src/audio_event.rs
+- 必要な周辺ファイル
+
+報告内容:
+- 現状の型ガードと UI 更新処理が未知 source をどう扱うか
+- 最小実装案を1つ
+- 非目標、ユーザー価値、権限・課金・プライバシー上の制約
+- 検証方法
+- リスク
+
+推測は推測と明示してください。編集・コミットは禁止です。

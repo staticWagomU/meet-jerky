@@ -137,6 +137,18 @@ async function stopTranscriptionFromUiState(): Promise<
   }
 }
 
+function getUnknownAudioSourceLabel(value: unknown): string | null {
+  if (!value || typeof value !== "object" || !("source" in value)) {
+    return null;
+  }
+  const source = (value as { source: unknown }).source;
+  return source === "microphone" || source === "system_audio"
+    ? null
+    : typeof source === "string"
+      ? source
+      : String(source);
+}
+
 
 export function TranscriptView() {
   const queryClient = useQueryClient();
@@ -343,6 +355,13 @@ export function TranscriptView() {
       }
       const payload = event.payload;
       if (!isAudioLevelPayload(payload)) {
+        const unknownSourceLabel = getUnknownAudioSourceLabel(payload);
+        if (unknownSourceLabel !== null) {
+          setAudioLevelListenerError(
+            `音声レベル通知の未知の音声ソースです: ${unknownSourceLabel}`,
+          );
+          return;
+        }
         setAudioLevelListenerError("音声レベル通知の形式が不正です。");
         return;
       }
@@ -390,6 +409,13 @@ export function TranscriptView() {
       }
       const payload = event.payload;
       if (!isAudioDropCountPayload(payload)) {
+        const unknownSourceLabel = getUnknownAudioSourceLabel(payload);
+        if (unknownSourceLabel !== null) {
+          setAudioDropCountListenerError(
+            `音声 drop 通知の未知の音声ソースです: ${unknownSourceLabel}`,
+          );
+          return;
+        }
         setAudioDropCountListenerError("音声 drop 通知の形式が不正です。");
         return;
       }
