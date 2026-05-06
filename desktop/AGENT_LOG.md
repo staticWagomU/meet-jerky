@@ -34499,3 +34499,11 @@ worker: mjc-worker-loop189-archive-plan-stats-update-48 (作業)
 検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
 備考: Loop 188 で paradigm 完全成熟期完全成熟最終収束完成超越達成 + 新規 import 追加軸 paradigm 1 件目開拓. statusLabels.ts は 6 const で `"〜状態"` semantic + loading suffix 付き完全網羅 = const 集約軸の主要重複候補は事実上枯渇. 後継候補 = R30 (rust 軸 paradigm 反復 8 件目) / R31 (別 paradigm 開拓) / R32 (const 集約軸の minor 候補探索) のみ.
 ---
+[mjc-main Loop 190 / 2026-05-06]
+worker: mjc-worker-loop190-status-recording-const (作業)
+範囲: src/utils/statusLabels.ts (新規 const 追加 1 行) + src/utils/liveCaptionTrackHelpers.ts (新規 import 追加 + L58 callsite) + src/components/MicrophoneSection.tsx (新規 import 追加 + L45 callsite) + src/components/LiveCaptionWindow.tsx (新規 import 追加 + L294 template literal 化) + src/routes/TranscriptView.tsx (L68 既存 import 拡張 + L1119/L1203 callsite)
+変更: STATUS_RECORDING_LABEL = "録音中" を statusLabels.ts に集約 + 4 file 5 callsite を const 参照に統一 = DRY 違反解消, callsite 5 件無変更で API 互換維持, ネット行数 +1 行のみ, **const 集約 paradigm 反復 9 件目達成 = paradigm 完全成熟期完全成熟最終収束完成超越超越達成 (Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 = 9 連続 const 集約軸)** + **既存 file 拡張軸 paradigm 20 件目達成 (statusLabels.ts への 7 度目の拡張)** + **新規 import 追加軸 paradigm 反復 2 件目** (Loop 188 で 1 件目開拓 → Loop 190 で反復 2 件目 = 3 file = liveCaptionTrackHelpers.ts + MicrophoneSection.tsx + LiveCaptionWindow.tsx は statusLabels import 未存在で新規追加).
+意義: AGENTS.md priority 1 (DRY 違反解消) 寄与. statusLabels.ts は 7 const で `"〜状態"` semantic + loading suffix + recording status semantic 完全網羅. alternation pivot K(189) → frontend(190) = 29 → 30 = **節目 30 件突破** = pivot 加速期維持. メイン批判判断 連続 94 セッション目達成 (handoff prompt R32 「主要重複候補は事実上枯渇」評価との差異 = 5 callsite/4 file 残存を grep で批判検証達成).
+検証: npm run build (tsc + vite build) OK / agent-verify.sh で frontend のみ skip 判定 OK
+備考: LiveCaptionWindow.tsx L294 は連結 literal `"録音中 · 字幕を表示中"` で template literal 化が必要だったが完全網羅で実施. 後継候補 = R31 (別 paradigm 開拓 = trait/generic/lifetime 探索) / R32 (const 集約軸の minor 候補探索 = `"開始中"` / `"停止中"` 等の ellipsis 混在候補) / K' (K 軸 2 連続 = Section 2.3 観測 49 件目).
+---
