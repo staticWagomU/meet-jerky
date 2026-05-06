@@ -34,6 +34,7 @@ import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
+import { STATUS_RECORDING_LABEL } from "../utils/statusLabels";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
@@ -291,7 +292,7 @@ export function LiveCaptionWindow() {
         ? [latestSegment]
         : [];
   const isWaitingState = transcriptLines.length === 0 && !listenerError;
-  const compactCaptionLabel = "録音中 · 字幕を表示中";
+  const compactCaptionLabel = `${STATUS_RECORDING_LABEL} · 字幕を表示中`;
   const hideLiveCaptionWindow = () => {
     void hideLiveCaptionOverlayWindow()
       .catch((e) => {

@@ -6,6 +6,7 @@ import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "./audioTrackLabels";
+import { STATUS_RECORDING_LABEL } from "./statusLabels";
 
 export type AudioSource = NonNullable<TranscriptSegment["source"]>;
 
@@ -55,7 +56,7 @@ export function getTrackCaptureState(label: string): TrackCaptureState {
     return "switching";
   }
   if (
-    normalizedLabel.includes("録音中") ||
+    normalizedLabel.includes(STATUS_RECORDING_LABEL) ||
     normalizedLabel.includes("取得中")
   ) {
     return "active";

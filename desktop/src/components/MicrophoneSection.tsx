@@ -3,6 +3,7 @@ import { AudioLevelMeter } from "./AudioLevelMeter";
 import { sanitizeAudioLevel } from "../utils/audioLevelHelpers";
 import { SELF_TRACK_DEVICE_LABEL } from "../utils/audioTrackLabels";
 import { toErrorMessage } from "../utils/errorMessage";
+import { STATUS_RECORDING_LABEL } from "../utils/statusLabels";
 
 interface MicrophoneSectionProps {
   isMicRecording: boolean;
@@ -42,7 +43,7 @@ export function MicrophoneSection({
   const micStateText = isOperationPending
     ? "切替中"
     : isMicRecording
-      ? "録音中"
+      ? STATUS_RECORDING_LABEL
       : "未録音";
   const micStateClassName = isOperationPending
     ? "audio-source-state-badge-pending"

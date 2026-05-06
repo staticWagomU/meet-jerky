@@ -65,7 +65,7 @@ import {
   getExternalApiKeyStatusPillClass,
 } from "../utils/externalApiKeyHelpers";
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
-import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_RECORDING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
   getAiTransmissionStatusAriaLabel,
@@ -1116,7 +1116,7 @@ export function TranscriptView() {
     : isMicRecording
       ? isMicInputWaiting
         ? "録音中・入力待ち"
-        : "録音中"
+        : STATUS_RECORDING_LABEL
       : "未録音";
   const systemAudioTrackStatusLabel = isSystemAudioSourceOperationPending
     ? "切替中"
@@ -1200,7 +1200,7 @@ export function TranscriptView() {
       ? "終了中"
       : "開始中"
     : isMeetingActive
-      ? "録音中"
+      ? STATUS_RECORDING_LABEL
       : "未録音";
   const meetingRecordingStatusClass = isMeetingOperationPending
     ? "meeting-status-pill-neutral"
