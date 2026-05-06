@@ -66,6 +66,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 ///
 /// - **Google Meet**: `"Meet - "` / `"Meet – "` (U+2013) / `"Meet — "` (U+2014) で始まり、
 ///   続く会議コードまたは名前が trim 後に非空のもの。Chrome/Safari/Edge のタブタイトルを想定。
+///   `"Google Meet - "` / `"Google Meet – "` / `"Google Meet — "` は、続く文字列が
+///   `aaa-bbbb-ccc` 形式の会議コードと完全一致する場合だけ対象にする。
 /// - **Zoom**: `"Zoom Meeting"` または `"Zoom ミーティング"` と一致するか、その直後が
 ///   空白・括弧・改行等の区切り文字で始まるもの。
 ///   デスクトップアプリのウィンドウタイトルを想定。prefix の最小境界を見て
@@ -87,6 +89,17 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
                 window_title
                     .strip_prefix(prefix)
                     .is_some_and(|rest| !rest.trim().is_empty())
+            })
+            || [
+                "Google Meet - ",
+                "Google Meet \u{2013} ",
+                "Google Meet \u{2014} ",
+            ]
+            .iter()
+            .any(|prefix| {
+                window_title
+                    .strip_prefix(prefix)
+                    .is_some_and(is_google_meet_code_title_suffix)
             });
     if google_meet_detected {
         return Some(MeetingUrlClassification {
@@ -136,4 +149,21 @@ fn has_webex_meeting_title_prefix(window_title: &str, prefix: &str) -> bool {
     };
 
     rest.chars().next().is_none_or(|c| !c.is_alphanumeric())
+}
+
+fn is_google_meet_code_title_suffix(value: &str) -> bool {
+    let mut parts = value.split('-');
+    let (Some(first), Some(second), Some(third), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
+    else {
+        return false;
+    };
+
+    has_ascii_lowercase_len(first, 3)
+        && has_ascii_lowercase_len(second, 4)
+        && has_ascii_lowercase_len(third, 3)
+}
+
+fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {
+    value.len() == len && value.bytes().all(|byte| byte.is_ascii_lowercase())
 }

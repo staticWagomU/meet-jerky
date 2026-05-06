@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/app_detection_meeting_classifier.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+URL が取得できない場合の Google Meet window title fallback を少し強化します。既存は `"Meet - ..."` だけを許可していますが、コード付き `"Google Meet - abc-defg-hij"` / dash variants も Google Meet として分類できるようにしてください。
+
+実装条件:
+- `"Google Meet - "` / `"Google Meet – "` / `"Google Meet — "` の後続が Google Meet の会議コード形式 `aaa-bbbb-ccc` の場合だけ許可してください。
+- 会議コードは既存 `is_google_meet_code_path` と同じ 3-4-3 の ASCII lowercase pattern に揃えてください。必要なら classifier 内に private helper を追加して構いません。
+- `"Google Meet"` 単体、`"Google Meet - Google Workspace"`、`"Google Meet - abc-defg-hij - 追加情報"`、大文字混在、数字混在、空 suffix は reject してください。
+- 既存 `"Meet - <name or code>"` の緩い検知、Zoom/Webex/Teams の挙動、URL 分類、Rust emit、Tauri AppHandle 依存は変更しないでください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+テスト条件:
+- `classify_meeting_window_title` の既存テスト群に positive/negative を追加してください。
+- positive: `"Google Meet - abc-defg-hij"` と dash variant の少なくとも1つ。
+- negative: `"Google Meet"`、`"Google Meet - Google Workspace"`、`"Google Meet - abc-defg-hij - 追加情報"`、`"Google Meet - abc-defg-hi1"`。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_window_title`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+残リスクには実機 window title 未確認であることを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

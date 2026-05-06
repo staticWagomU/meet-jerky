@@ -1010,6 +1010,35 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_window_title_google_meet_brand_code_hyphen() {
+        assert_eq!(
+            classify_meeting_window_title("Google Meet - abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn classify_meeting_window_title_google_meet_brand_code_dash_variants() {
+        assert_eq!(
+            classify_meeting_window_title("Google Meet \u{2013} abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_window_title("Google Meet \u{2014} abc-defg-hij"),
+            Some(MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: String::new(),
+            })
+        );
+    }
+
+    #[test]
     fn classify_meeting_window_title_zoom_meeting_english() {
         assert_eq!(
             classify_meeting_window_title("Zoom Meeting"),
@@ -1082,6 +1111,27 @@ mod tests {
         // "Meet" 単独・空のコードは会議タブではない
         assert_eq!(classify_meeting_window_title("Meet"), None);
         assert_eq!(classify_meeting_window_title("Google Meet"), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_google_meet_brand_non_code_suffix() {
+        assert_eq!(
+            classify_meeting_window_title("Google Meet - Google Workspace"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_window_title("Google Meet - abc-defg-hij - 追加情報"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_window_title("Google Meet - abc-defg-hi1"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_window_title("Google Meet - Abc-defg-hij"),
+            None
+        );
+        assert_eq!(classify_meeting_window_title("Google Meet - "), None);
     }
 
     #[test]
