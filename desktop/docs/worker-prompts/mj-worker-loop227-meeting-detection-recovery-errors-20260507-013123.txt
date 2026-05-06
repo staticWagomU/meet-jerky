@@ -1,0 +1,30 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/components/MeetingDetectedBanner.tsx
+- AGENT_LOG.md
+
+目的:
+会議検知バナーの `take_latest_meeting_detection` 回収経路で、不正 payload や invoke 失敗が沈黙しないようにする。live event 側は不正 payload を `listenerError` に出しているため、recovery / consume 経路も同じ透明性に揃える。
+
+実装条件:
+- Rust 側、meeting detection payload schema、event 名、通知頻度、UI レイアウト、録音開始フローは変更しない。
+- `payload == null` は引き続き正常な「回収対象なし」として無視してください。
+- `recoverLatestMeetingDetection` で `payload != null` かつ `isMeetingAppDetectedPayload(payload)` が false の場合、既存 tone の日本語で `listenerError` に「会議検知通知の形式が不正です。」を表示してください。必要なら既存文言を定数化して live event 側と共有してよいです。
+- `consumeLatestMeetingDetection` で `payload != null` かつ payload が不正な場合も同じ error を表示してください。ただし delivered payload と同一/正常 payload の処理は変えないでください。
+- `recoverLatestMeetingDetection` / `consumeLatestMeetingDetection` の invoke 失敗 catch は既存 console.error を維持しつつ、`listenerError` に「最新の会議検知通知の回収に失敗しました: ...」または「受信済み会議検知通知の消費に失敗しました: ...」を表示してください。
+- listener 開始失敗時の既存表示、status listener の挙動、prompt auto-hide、pendingAction、localStorage、録音開始 request は変更しないでください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

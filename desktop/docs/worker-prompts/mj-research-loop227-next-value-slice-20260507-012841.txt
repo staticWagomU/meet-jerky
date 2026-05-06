@@ -1,0 +1,28 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。コミットも禁止です。課金が発生する操作、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+目的:
+次の自律改善ループとして、1コミットで完了でき、meet-jerky のプロダクト優先順位に沿う小さな改善候補を調査してください。
+
+直近で完了済みのため重複回避:
+- Zoom / Webex window title fallback の単語連結 reject
+- Webex 日本語 title fallback
+- `system-audio-format-warning` の listener 開始失敗表示と payload 型ガード
+- `transcription-error` 受信時の `isTranscribing` / `isTranscriptionOperationPending` 同期
+- `audio-level` / `audio-drop-count` の未知 source 診断
+
+優先して見てほしい観点:
+- クラッシュ修正または callback 例外防止
+- 会議検知の網羅性と信頼性
+- マイク音声とデスクトップ音声の別トラック取得の状態透明性
+- リアルタイム文字起こし失敗時の UI state 同期
+- 録音状態、権限、AI送信有無の透明性
+
+報告形式:
+- 推奨候補を最大3件、優先順に出してください。
+- 各候補について、根拠ファイル、ユーザー価値、最小変更範囲、非目標、リスク、検証方法を簡潔に書いてください。
+- そのうち最初に実装すべき1件を明示してください。
+- 推測は推測と明示してください。

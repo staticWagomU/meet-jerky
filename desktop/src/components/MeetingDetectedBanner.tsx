@@ -31,6 +31,8 @@ import { BOTH_TRACKS_DEVICE_LABEL } from "../utils/audioTrackLabels";
 const PROMPT_AUTO_HIDE_MS = 15000;
 const PROMPT_AUTO_HIDE_SECONDS = PROMPT_AUTO_HIDE_MS / 1000;
 const PROMPT_EMPTY_BOOT_HIDE_MS = 2000;
+const INVALID_MEETING_DETECTION_PAYLOAD_ERROR =
+  "会議検知通知の形式が不正です。";
 const INVALID_STATUS_PAYLOAD_ERROR =
   "会議検知プロンプトの状態通知の形式が不正です。";
 const PROMPT_OPERATION_LABEL =
@@ -91,6 +93,10 @@ export function MeetingDetectedBanner() {
         return;
       }
       if (!isMeetingAppDetectedPayload(payload)) {
+        hasReceivedPromptContentRef.current = true;
+        setDetected(null);
+        setPendingAction(null);
+        setListenerError(INVALID_MEETING_DETECTION_PAYLOAD_ERROR);
         return;
       }
       applyMeetingDetectionPayload(payload);
@@ -109,12 +115,15 @@ export function MeetingDetectedBanner() {
       deliveredPayload: MeetingAppDetectedPayload,
     ) => {
       const payload = await invoke<unknown>("take_latest_meeting_detection");
-      if (
-        disposed ||
-        payload == null ||
-        !isMeetingAppDetectedPayload(payload) ||
-        isSameMeetingDetectionPayload(payload, deliveredPayload)
-      ) {
+      if (disposed || payload == null) {
+        return;
+      }
+      if (!isMeetingAppDetectedPayload(payload)) {
+        setPendingAction(null);
+        setListenerError(INVALID_MEETING_DETECTION_PAYLOAD_ERROR);
+        return;
+      }
+      if (isSameMeetingDetectionPayload(payload, deliveredPayload)) {
         return;
       }
       applyMeetingDetectionPayload(payload);
@@ -129,15 +138,18 @@ export function MeetingDetectedBanner() {
           hasReceivedPromptContentRef.current = true;
           setDetected(null);
           setPendingAction(null);
-          setListenerError("会議検知通知の形式が不正です。");
+          setListenerError(INVALID_MEETING_DETECTION_PAYLOAD_ERROR);
           return;
         }
         applyMeetingDetectionPayload(e.payload);
         void consumeLatestMeetingDetection(e.payload).catch((e) => {
-          console.error(
-            "受信済み会議検知通知の消費に失敗しました:",
-            toErrorMessage(e),
-          );
+          const msg = toErrorMessage(e);
+          console.error("受信済み会議検知通知の消費に失敗しました:", msg);
+          if (!disposed) {
+            setListenerError(
+              `受信済み会議検知通知の消費に失敗しました: ${msg}`,
+            );
+          }
         });
       },
     )
@@ -149,10 +161,16 @@ export function MeetingDetectedBanner() {
               : current,
           );
           void recoverLatestMeetingDetection().catch((e) => {
-            console.error(
-              "最新の会議検知通知の回収に失敗しました:",
-              toErrorMessage(e),
-            );
+            const msg = toErrorMessage(e);
+            console.error("最新の会議検知通知の回収に失敗しました:", msg);
+            if (!disposed) {
+              hasReceivedPromptContentRef.current = true;
+              setDetected(null);
+              setPendingAction(null);
+              setListenerError(
+                `最新の会議検知通知の回収に失敗しました: ${msg}`,
+              );
+            }
           });
         }
         return unlisten;
