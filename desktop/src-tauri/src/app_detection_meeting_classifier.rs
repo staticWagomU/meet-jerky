@@ -88,7 +88,7 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
             .any(|prefix| {
                 window_title
                     .strip_prefix(prefix)
-                    .is_some_and(|rest| !rest.trim().is_empty())
+                    .is_some_and(is_non_empty_control_free_title_suffix)
             })
             || [
                 "Google Meet - ",
@@ -97,9 +97,9 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
             ]
             .iter()
             .any(|prefix| {
-                window_title
-                    .strip_prefix(prefix)
-                    .is_some_and(is_google_meet_code_title_suffix)
+                window_title.strip_prefix(prefix).is_some_and(|rest| {
+                    is_control_free_title_suffix(rest) && is_google_meet_code_title_suffix(rest)
+                })
             });
     if google_meet_detected {
         return Some(MeetingUrlClassification {
@@ -162,6 +162,16 @@ fn is_google_meet_code_title_suffix(value: &str) -> bool {
     has_ascii_lowercase_len(first, 3)
         && has_ascii_lowercase_len(second, 4)
         && has_ascii_lowercase_len(third, 3)
+}
+
+fn is_non_empty_control_free_title_suffix(value: &str) -> bool {
+    !value.trim().is_empty() && is_control_free_title_suffix(value)
+}
+
+fn is_control_free_title_suffix(value: &str) -> bool {
+    !value
+        .chars()
+        .any(|c| matches!(c, '\u{0000}'..='\u{001F}' | '\u{007F}'))
 }
 
 fn has_ascii_lowercase_len(value: &str, len: usize) -> bool {

@@ -1469,13 +1469,13 @@ mod tests {
             classify_meeting_window_title("\u{FEFF}Meet - abc-defg-hij"),
             None
         );
-        // 現仕様: rest に改行含むが is_empty() == false → Some を返す
+        // Google Meet title fallback は URL 取得不能時の補助経路なので、破損した
+        // 制御文字入り suffix は安全側に reject する。
+        assert_eq!(classify_meeting_window_title("Meet - \nabc"), None);
+        assert_eq!(classify_meeting_window_title("Meet \u{2013} \tabc"), None);
         assert_eq!(
-            classify_meeting_window_title("Meet - \nabc"),
-            Some(MeetingUrlClassification {
-                service: "Google Meet".to_string(),
-                host: String::new(),
-            })
+            classify_meeting_window_title("Google Meet - abc-defg-hij\u{007F}"),
+            None
         );
     }
 

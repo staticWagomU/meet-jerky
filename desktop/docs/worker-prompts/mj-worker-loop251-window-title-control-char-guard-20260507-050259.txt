@@ -1,0 +1,41 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md は巨大で NUL を含むため、全文読みを避け、`tail -n 120 AGENT_LOG.md` だけで直近文脈を確認してください。
+
+担当範囲:
+- src-tauri/src/app_detection_meeting_classifier.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+Loop 251 として、ブラウザ window title fallback の Google Meet 判定で、破損した制御文字入り suffix を会議タイトルとして受理しないようにしてください。
+
+背景:
+- `classify_meeting_window_title_rejects_control_characters` は現在 `Meet - \nabc` を `Some(Google Meet)` として期待しており、テスト名と挙動が不整合です。
+- Google Meet title fallback は URL が取れない時の補助経路なので、破損/制御文字入りタイトルは安全側に reject します。
+- Zoom/Webex title prefix helper は直後が非英数字なら許可する現仕様を今回変更しないでください。
+
+実装条件:
+1. `src-tauri/src/app_detection_meeting_classifier.rs`
+   - Google Meet title suffix 判定で、C0/DEL 制御文字を含む suffix を reject してください。
+   - 対象は `"Meet - "`, `"Meet – "`, `"Meet — "` の任意 suffix と、`"Google Meet - "`, `"Google Meet – "`, `"Google Meet — "` の会議コード suffix です。
+   - 既存の空白だけ reject、Google Meet brand prefix は会議コード完全一致のみ accept、Zoom/Webex の判定は維持してください。
+   - 依存関係、公開 API、event 名、UI、Rust の非対象モジュールは変更しないでください。
+2. `src-tauri/src/app_detection.rs`
+   - `classify_meeting_window_title_rejects_control_characters` を、新仕様に合わせて `Meet - \nabc` など制御文字入り suffix が `None` になる assertion に変更してください。
+   - 可能なら brand prefix の制御文字入り suffix も `None` で固定してください。
+3. `AGENT_LOG.md`
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_window_title`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_meeting_classifier.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop251-window-title-control-char-guard-20260507-050259.txt docs/worker-prompts/mj-research-loop251-next-value-slice-20260507-050259.txt`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。コミットは禁止です。
