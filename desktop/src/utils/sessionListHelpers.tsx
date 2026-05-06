@@ -1,6 +1,10 @@
 import { type ReactNode } from "react";
 import type { SessionSummary } from "../hooks/useSessionList";
-import { getCompactSessionTitle, getFileName } from "./transcriptViewFormatters";
+import {
+  getCompactSessionTitle,
+  getFileName,
+  SESSION_DATETIME_UNKNOWN_LABEL,
+} from "./transcriptViewFormatters";
 
 export const SEARCH_QUERY_LABEL_MAX_LENGTH = 40;
 export const SEARCH_EXCERPT_CONTEXT_LENGTH = 42;
@@ -21,11 +25,11 @@ export function getSessionStartedAtDisplay(
 ): SessionStartedAtDisplay {
   const startedAtMs = startedAtSecs * 1000;
   if (!Number.isFinite(startedAtMs)) {
-    return { label: "日時不明", iso: null };
+    return { label: SESSION_DATETIME_UNKNOWN_LABEL, iso: null };
   }
   const startedAtDate = new Date(startedAtMs);
   if (Number.isNaN(startedAtDate.getTime())) {
-    return { label: "日時不明", iso: null };
+    return { label: SESSION_DATETIME_UNKNOWN_LABEL, iso: null };
   }
   return {
     label: startedAtDate.toLocaleString(),

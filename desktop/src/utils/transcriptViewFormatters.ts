@@ -1,5 +1,7 @@
 import { toErrorMessage } from "./errorMessage";
 
+export const SESSION_DATETIME_UNKNOWN_LABEL = "日時不明";
+
 export function formatOperationError(prefix: string, e: unknown): string {
   return `${prefix} ${toErrorMessage(e)}`;
 }
@@ -18,11 +20,11 @@ export function getCompactSessionTitle(title: string): string {
 export function getRecentSessionMeta(startedAtSecs: number): string {
   const startedAtMs = startedAtSecs * 1000;
   if (!Number.isFinite(startedAtMs)) {
-    return "日時不明";
+    return SESSION_DATETIME_UNKNOWN_LABEL;
   }
   const startedAtDate = new Date(startedAtMs);
   if (Number.isNaN(startedAtDate.getTime())) {
-    return "日時不明";
+    return SESSION_DATETIME_UNKNOWN_LABEL;
   }
   return new Intl.DateTimeFormat("ja-JP", {
     month: "numeric",
