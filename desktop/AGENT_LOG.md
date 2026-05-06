@@ -34561,3 +34561,11 @@ worker: mjc-worker-loop193-archive-plan-stats-update-50 (作業)
 **重要**: statusLabels.ts は 9 const で `"〜状態"` semantic + loading suffix + recording status + transition pair 完全網羅 = **const 集約軸の主要重複候補は完全に枯渇** = 後継 Loop 194+ は別 paradigm 探索 (rust 軸 / 別 paradigm 開拓 / R34 K 軸) が責務階層的に正解。
 後継 mjc-main-20260505-94 への 2-3 ループ完走推奨. 最有力候補 = R31 = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複等の超低レイヤー探索 = 規模 S = paradigm 系統樹拡張 11 件目開拓価値高 / 第二推奨 = R30 = rust 軸 paradigm 反復 8 件目 = 規模 S-M = 探索コスト高 (本セッション事前探索なし = 後継再探索要) / 第三推奨 = R34 = K 軸 = Section 2.3 観測 51 件目 = 規模 SS = 機械的反復で Mac アプリ品質に直接寄与せずローカル最適化リスク. 詳細は docs/handoff/mjc-main-20260505-94.txt 参照.
 ---
+[mjc-main Loop 194 / 2026-05-06]
+worker: mjc-worker-loop194-verbose-json-const (作業)
+範囲: src/cloud_whisper.rs (use 宣言直後 L4 相当に const RESPONSE_FORMAT_VERBOSE_JSON: &str = "verbose_json"; 追加 + 15 callsite (L48/L94/L207/L222/L275/L298/L321/L344/L368/L523/L555/L597/L702/L729/L762) を const 参照に統一)
+変更: RESPONSE_FORMAT_VERBOSE_JSON を src/cloud_whisper.rs に新規 const として追加 + 15 callsite (struct field 9 + tuple 3 + String::from 3) を統一 + DRY 違反解消 + ネット行数 +1 行のみ (const 定義 +1 行、callsite 15 件は同行書き換え)
+意義: rust 軸 = const 集約 paradigm 反復 8 件目達成 = paradigm 完全成熟期 (frontend 軸 10 件 + rust 軸 8 件 = 計 18 件) + 新規 const 追加軸 paradigm 1 件目達成 = paradigm 系統樹拡張 11 件目 (cloud_whisper.rs は既存 const 0 件 = 新規 const block 追加 = 既存 file 拡張軸 paradigm 21 件目とは別系統樹位置) + 重複候補 grep 探索 paradigm 23 件目 + alternation pivot K(193) → rust(194) = 33 → 34 = 節目 30 件突破後 3 件目 + メイン批判判断 連続 96 セッション目達成 (handoff prompt R31 trait/generic 最有力推奨を grep で却下 + R30 修正版として "verbose_json" 15 件発見 = handoff 主張の批判検証達成) + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与
+検証: cargo test --lib (704 passed / 0 failed = 件数完全不変) / cargo clippy --lib --tests -- -D warnings (警告ゼロ) / cargo fmt --check OK / cargo build --lib OK / grep -c '"verbose_json"' src/cloud_whisper.rs = 1 (const 定義行のみ) 確認
+備考: paradigm 系統樹拡張 11 件目達成 = rust 軸 const 集約軸が新規 const 追加軸として正式 paradigm 確立. 後継 Loop 195+ 候補 = 別 rust file での const 集約継続 (例: openai_realtime.rs / elevenlabs_realtime.rs 等) または K 軸 (Section 2.3 観測 51 件目) または別 paradigm 開拓.
+---
