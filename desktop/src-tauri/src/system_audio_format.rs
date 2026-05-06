@@ -10,6 +10,11 @@
 use screencapturekit::CMFormatDescription;
 
 const ERROR_NON_F32_PCM_FORMAT: &str = "非 f32 PCM フォーマット (kAudioFormatFlagIsFloat 未設定)";
+const ERROR_BIG_ENDIAN_FORMAT: &str = "BigEndian フォーマット (NativeEndian が必要)";
+const ERROR_BITS_PER_CHANNEL_NOT_32: &str = "bits_per_channel が 32 ではない";
+const ERROR_BITS_PER_CHANNEL_UNKNOWN: &str = "bits_per_channel を取得できない";
+const ERROR_CHANNEL_COUNT_MISMATCH: &str = "channel 数が設定値と不一致";
+const ERROR_CHANNEL_COUNT_UNKNOWN: &str = "channel 数を取得できない";
 
 /// フォーマット検証の内部ロジック。純粋関数としてテスト可能。
 /// ScreenCaptureKit が配信する Float32 / NativeEndian / 設定チャンネル数を確認する。
@@ -24,17 +29,17 @@ fn validate_audio_format_properties(
         return Err(ERROR_NON_F32_PCM_FORMAT);
     }
     if is_big_endian {
-        return Err("BigEndian フォーマット (NativeEndian が必要)");
+        return Err(ERROR_BIG_ENDIAN_FORMAT);
     }
     match bits_per_channel {
         Some(32) => {}
-        Some(_) => return Err("bits_per_channel が 32 ではない"),
-        None => return Err("bits_per_channel を取得できない"),
+        Some(_) => return Err(ERROR_BITS_PER_CHANNEL_NOT_32),
+        None => return Err(ERROR_BITS_PER_CHANNEL_UNKNOWN),
     }
     match channel_count {
         Some(ch) if ch == expected_channels => {}
-        Some(_) => return Err("channel 数が設定値と不一致"),
-        None => return Err("channel 数を取得できない"),
+        Some(_) => return Err(ERROR_CHANNEL_COUNT_MISMATCH),
+        None => return Err(ERROR_CHANNEL_COUNT_UNKNOWN),
     }
     Ok(())
 }
@@ -112,13 +117,13 @@ mod tests {
     #[test]
     fn validate_audio_format_properties_rejects_when_bits_per_channel_unknown() {
         let result = validate_audio_format_properties(true, false, None, Some(1), 1);
-        assert_eq!(result.unwrap_err(), "bits_per_channel を取得できない");
+        assert_eq!(result.unwrap_err(), ERROR_BITS_PER_CHANNEL_UNKNOWN);
     }
 
     #[test]
     fn validate_audio_format_properties_rejects_when_channel_count_unknown() {
         let result = validate_audio_format_properties(true, false, Some(32), None, 1);
-        assert_eq!(result.unwrap_err(), "channel 数を取得できない");
+        assert_eq!(result.unwrap_err(), ERROR_CHANNEL_COUNT_UNKNOWN);
     }
 
     // 既存 5 件は is_err() のみでエラー文言未確認。本テストがそれを補強する。
@@ -128,16 +133,13 @@ mod tests {
         assert_eq!(non_float.unwrap_err(), ERROR_NON_F32_PCM_FORMAT);
 
         let big_endian = validate_audio_format_properties(true, true, Some(32), Some(1), 1);
-        assert_eq!(
-            big_endian.unwrap_err(),
-            "BigEndian フォーマット (NativeEndian が必要)"
-        );
+        assert_eq!(big_endian.unwrap_err(), ERROR_BIG_ENDIAN_FORMAT);
 
         let wrong_bits = validate_audio_format_properties(true, false, Some(16), Some(1), 1);
-        assert_eq!(wrong_bits.unwrap_err(), "bits_per_channel が 32 ではない");
+        assert_eq!(wrong_bits.unwrap_err(), ERROR_BITS_PER_CHANNEL_NOT_32);
 
         let channel_mismatch = validate_audio_format_properties(true, false, Some(32), Some(2), 1);
-        assert_eq!(channel_mismatch.unwrap_err(), "channel 数が設定値と不一致");
+        assert_eq!(channel_mismatch.unwrap_err(), ERROR_CHANNEL_COUNT_MISMATCH);
     }
 
     // ── validate_audio_format_properties short-circuit 順序契約 ──────────────
