@@ -74,6 +74,19 @@ mod tests {
     }
 
     #[test]
+    fn build_audio_drop_event_payload_with_system_audio_source_has_dropped_contract() {
+        let payload = build_audio_drop_event_payload(AUDIO_SOURCE_SYSTEM_AUDIO, 7);
+        let obj = payload.as_object().expect("payload は JSON object");
+
+        assert_eq!(obj.len(), 2);
+        assert_eq!(
+            payload.get("source").and_then(|v| v.as_str()),
+            Some("system_audio")
+        );
+        assert_eq!(payload.get("dropped").and_then(|v| v.as_u64()), Some(7));
+    }
+
+    #[test]
     fn build_audio_drop_event_payload_with_empty_source_passes_through_without_normalization() {
         let payload = build_audio_drop_event_payload("", 0);
         assert_eq!(payload["source"], "");
