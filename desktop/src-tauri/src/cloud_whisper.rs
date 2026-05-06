@@ -2,6 +2,8 @@ use serde::Deserialize;
 
 use crate::transcription_types::TranscriptionSegment;
 
+const RESPONSE_FORMAT_VERBOSE_JSON: &str = "verbose_json";
+
 #[derive(Debug, Deserialize)]
 struct VerboseResponse {
     segments: Vec<VerboseSegment>,
@@ -45,7 +47,7 @@ pub fn build_whisper_request_params(
     Ok(WhisperRequestParams {
         model: model.to_string(),
         language: language.map(|s| s.to_string()),
-        response_format: "verbose_json".to_string(),
+        response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
         temperature: 0.0,
     })
 }
@@ -91,7 +93,7 @@ pub fn build_whisper_multipart_text_fields(
 ) -> Vec<(&'static str, String)> {
     let mut fields: Vec<(&'static str, String)> = vec![
         ("model", descriptor.params.model.clone()),
-        ("response_format", "verbose_json".to_string()),
+        ("response_format", RESPONSE_FORMAT_VERBOSE_JSON.to_string()),
         ("temperature", "0".to_string()),
     ];
     if let Some(lang) = &descriptor.params.language {
@@ -204,7 +206,7 @@ mod tests {
             WhisperRequestParams {
                 model: "small".to_string(),
                 language: Some("ja".to_string()),
-                response_format: "verbose_json".to_string(),
+                response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
                 temperature: 0.0,
             }
         );
@@ -219,7 +221,7 @@ mod tests {
             WhisperRequestParams {
                 model: "tiny".to_string(),
                 language: Some("en".to_string()),
-                response_format: "verbose_json".to_string(),
+                response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
                 temperature: 0.0,
             }
         );
@@ -272,7 +274,7 @@ mod tests {
                 params: WhisperRequestParams {
                     model: "tiny".to_string(),
                     language: None,
-                    response_format: "verbose_json".to_string(),
+                    response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
                     temperature: 0.0,
                 },
             }
@@ -295,7 +297,7 @@ mod tests {
             fields,
             vec![
                 ("model", "small".to_string()),
-                ("response_format", "verbose_json".to_string()),
+                ("response_format", RESPONSE_FORMAT_VERBOSE_JSON.to_string()),
                 ("temperature", "0".to_string()),
                 ("language", "ja".to_string()),
             ]
@@ -318,7 +320,7 @@ mod tests {
             fields,
             vec![
                 ("model", "tiny".to_string()),
-                ("response_format", "verbose_json".to_string()),
+                ("response_format", RESPONSE_FORMAT_VERBOSE_JSON.to_string()),
                 ("temperature", "0".to_string()),
                 ("language", "en".to_string()),
             ]
@@ -341,7 +343,7 @@ mod tests {
             fields,
             vec![
                 ("model", "tiny".to_string()),
-                ("response_format", "verbose_json".to_string()),
+                ("response_format", RESPONSE_FORMAT_VERBOSE_JSON.to_string()),
                 ("temperature", "0".to_string()),
             ]
         );
@@ -365,7 +367,7 @@ mod tests {
                 params: WhisperRequestParams {
                     model: "small".to_string(),
                     language: Some("ja".to_string()),
-                    response_format: "verbose_json".to_string(),
+                    response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
                     temperature: 0.0,
                 },
             }
@@ -520,7 +522,7 @@ mod tests {
         let with_lang = WhisperRequestParams {
             model: "small".to_string(),
             language: Some("ja".to_string()),
-            response_format: "verbose_json".to_string(),
+            response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
             temperature: 0.0,
         };
         let without_lang = WhisperRequestParams {
@@ -552,7 +554,7 @@ mod tests {
         let base = WhisperRequestParams {
             model: "small".to_string(),
             language: Some("ja".to_string()),
-            response_format: "verbose_json".to_string(),
+            response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
             temperature: 0.0,
         };
 
@@ -594,7 +596,7 @@ mod tests {
         let original = WhisperRequestParams {
             model: "small".to_string(),
             language: Some("ja".to_string()),
-            response_format: "verbose_json".to_string(),
+            response_format: RESPONSE_FORMAT_VERBOSE_JSON.to_string(),
             temperature: 0.0,
         };
         let mut cloned = original.clone();
@@ -699,7 +701,7 @@ mod tests {
             params: WhisperRequestParams {
                 model: String::from("whisper-1"),
                 language: None,
-                response_format: String::from("verbose_json"),
+                response_format: String::from(RESPONSE_FORMAT_VERBOSE_JSON),
                 temperature: 0.0,
             },
         };
@@ -726,7 +728,7 @@ mod tests {
             params: WhisperRequestParams {
                 model: String::from("whisper-1"),
                 language: Some(String::from("ja")),
-                response_format: String::from("verbose_json"),
+                response_format: String::from(RESPONSE_FORMAT_VERBOSE_JSON),
                 temperature: 0.0,
             },
         };
@@ -759,7 +761,7 @@ mod tests {
             params: WhisperRequestParams {
                 model: String::from("whisper-1"),
                 language: Some(String::from("en")),
-                response_format: String::from("verbose_json"),
+                response_format: String::from(RESPONSE_FORMAT_VERBOSE_JSON),
                 temperature: 0.0,
             },
         };
