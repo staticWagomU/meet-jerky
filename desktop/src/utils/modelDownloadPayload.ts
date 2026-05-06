@@ -13,7 +13,9 @@ export function isDownloadProgressPayload(
   return (
     typeof candidate.model === "string" &&
     typeof candidate.progress === "number" &&
-    Number.isFinite(candidate.progress)
+    Number.isFinite(candidate.progress) &&
+    candidate.progress >= 0 &&
+    candidate.progress <= 1
   );
 }
 
