@@ -282,7 +282,9 @@ export function TranscriptView() {
         setIsTranscriptionOperationPending(false);
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
-          setMeetingError("文字起こしエラー通知の形式が不正です。");
+          setMeetingError(
+            "文字起こしは停止しましたが、エラー通知の形式が不正です。",
+          );
           return;
         }
         setMeetingError(`文字起こしが停止しました: ${payload.error}`);

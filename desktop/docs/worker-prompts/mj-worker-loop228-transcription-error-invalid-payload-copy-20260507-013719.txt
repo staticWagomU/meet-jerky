@@ -1,0 +1,26 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+`transcription-error` の payload が不正な場合、現在は「文字起こしエラー通知の形式が不正です。」だけを表示している。これは「文字起こしエラーそのもの」と「event contract / payload 破損」を区別しづらい。既存の停止 state 同期は維持したまま、ユーザーと開発者が原因を切り分けやすい文言にする。
+
+実装条件:
+- `TRANSCRIPTION_ERROR_EVENT` の event 名、payload 型ガード、正常 payload 時の文言、`setIsTranscribing(false)`、`setIsTranscriptionOperationPending(false)`、TranscriptDisplay / LiveCaptionWindow、Rust 側、録音 state、音声取得 state、start/stop/restart フローは変更しない。
+- invalid payload 時の `meetingError` 文言だけを、event contract / 通知形式の問題だと分かる日本語にしてください。例: `文字起こしは停止しましたが、エラー通知の形式が不正です。`
+- UI レイアウト、依存関係、担当範囲外ファイルは変更しない。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
