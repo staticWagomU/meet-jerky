@@ -45,3 +45,69 @@ mod tests {
         assert_eq!(payload["dropped"], usize::MAX);
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test_helpers {
+    use super::build_audio_drop_event_payload;
+
+    pub(crate) fn assert_drop_payload_includes_source_and_dropped_fields(
+        source: &str,
+        dropped: usize,
+    ) {
+        let payload = build_audio_drop_event_payload(source, dropped);
+        assert_eq!(
+            payload.get("source").and_then(|v| v.as_str()),
+            Some(source),
+            "source field が文字列で含まれる契約"
+        );
+        assert_eq!(
+            payload.get("dropped").and_then(|v| v.as_u64()),
+            Some(dropped as u64),
+            "dropped field が u64 として含まれる契約"
+        );
+    }
+
+    pub(crate) fn assert_drop_payload_serializes_zero_dropped_count_explicitly(source: &str) {
+        let payload = build_audio_drop_event_payload(source, 0);
+        assert_eq!(payload.get("dropped").and_then(|v| v.as_u64()), Some(0));
+    }
+
+    pub(crate) fn assert_drop_payload_handles_usize_max_boundary(source: &str) {
+        let payload = build_audio_drop_event_payload(source, usize::MAX);
+        assert_eq!(
+            payload.get("dropped").and_then(|v| v.as_u64()),
+            Some(usize::MAX as u64),
+            "usize::MAX が u64 として serde_json に渡せる契約"
+        );
+    }
+
+    pub(crate) fn assert_drop_payload_passes_through_arbitrary_source_labels(
+        label_a: &str,
+        label_b: &str,
+    ) {
+        let payload = build_audio_drop_event_payload(label_a, 1);
+        assert_eq!(
+            payload.get("source").and_then(|v| v.as_str()),
+            Some(label_a)
+        );
+        let payload2 = build_audio_drop_event_payload(label_b, 1);
+        assert_eq!(
+            payload2.get("source").and_then(|v| v.as_str()),
+            Some(label_b),
+            "source は arbitrary passthrough = source を判定する誤改修への検知装置"
+        );
+    }
+
+    pub(crate) fn assert_drop_payload_has_exactly_two_top_level_fields(source: &str) {
+        let payload = build_audio_drop_event_payload(source, 5);
+        let obj = payload.as_object().expect("payload は JSON object");
+        assert_eq!(
+            obj.len(),
+            2,
+            "top-level field は exactly 2 つ (source + dropped) の契約: 実際 = {:?}",
+            obj.keys().collect::<Vec<_>>()
+        );
+        assert!(obj.contains_key("source"));
+        assert!(obj.contains_key("dropped"));
+    }
+}

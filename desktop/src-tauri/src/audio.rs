@@ -522,7 +522,6 @@ pub fn stop_recording(state: tauri::State<'_, AudioStateHandle>) -> Result<(), S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::audio_event::build_audio_drop_event_payload;
     use crate::audio_sample_helpers::{
         calculate_rms_from_sum, for_each_mono_sample, normalize_sample_to_f32, sanitize_sample,
     };
@@ -794,67 +793,34 @@ mod tests {
 
     #[test]
     fn build_audio_drop_event_payload_includes_source_and_dropped_fields_with_microphone() {
-        // T1: source="microphone" + dropped=N で payload 構造を固定
-        let payload = build_audio_drop_event_payload("microphone", 42);
-        assert_eq!(
-            payload.get("source").and_then(|v| v.as_str()),
-            Some("microphone"),
-            "source field が文字列で含まれる契約"
-        );
-        assert_eq!(
-            payload.get("dropped").and_then(|v| v.as_u64()),
-            Some(42),
-            "dropped field が u64 として含まれる契約"
+        crate::audio_event::test_helpers::assert_drop_payload_includes_source_and_dropped_fields(
+            "microphone",
+            42,
         );
     }
 
     #[test]
     fn build_audio_drop_event_payload_serializes_zero_dropped_count_explicitly() {
-        // T2: dropped=0 でも payload 生成可能 (呼び出し側 if dropped > 0 で実際は呼ばれないが、関数自体は 0 を扱える純粋契約)
-        let payload = build_audio_drop_event_payload("microphone", 0);
-        assert_eq!(payload.get("dropped").and_then(|v| v.as_u64()), Some(0));
+        crate::audio_event::test_helpers::assert_drop_payload_serializes_zero_dropped_count_explicitly("microphone");
     }
 
     #[test]
     fn build_audio_drop_event_payload_handles_usize_max_boundary() {
-        // T3: dropped=usize::MAX で u64 オーバーフローや panic しない契約
-        let payload = build_audio_drop_event_payload("microphone", usize::MAX);
-        assert_eq!(
-            payload.get("dropped").and_then(|v| v.as_u64()),
-            Some(usize::MAX as u64),
-            "usize::MAX が u64 として serde_json に渡せる契約"
+        crate::audio_event::test_helpers::assert_drop_payload_handles_usize_max_boundary(
+            "microphone",
         );
     }
 
     #[test]
     fn build_audio_drop_event_payload_passes_through_arbitrary_source_label() {
-        // T4: source 文字列は arbitrary な値が passthrough される契約 (呼び出し側で "microphone"/"system_audio" を渡しているが、関数自体は source を判定しない)
-        let payload = build_audio_drop_event_payload("system_audio", 1);
-        assert_eq!(
-            payload.get("source").and_then(|v| v.as_str()),
-            Some("system_audio")
-        );
-        let payload2 = build_audio_drop_event_payload("any_other_label", 1);
-        assert_eq!(
-            payload2.get("source").and_then(|v| v.as_str()),
-            Some("any_other_label"),
-            "source は arbitrary passthrough = source を判定する誤改修への検知装置"
-        );
+        crate::audio_event::test_helpers::assert_drop_payload_passes_through_arbitrary_source_labels("system_audio", "any_other_label");
     }
 
     #[test]
     fn build_audio_drop_event_payload_has_exactly_two_top_level_fields() {
-        // T5: payload は source と dropped の 2 field のみ (将来 timestamp 等を追加する誤改修を field 数で検知)
-        let payload = build_audio_drop_event_payload("microphone", 5);
-        let obj = payload.as_object().expect("payload は JSON object");
-        assert_eq!(
-            obj.len(),
-            2,
-            "top-level field は exactly 2 つ (source + dropped) の契約: 実際 = {:?}",
-            obj.keys().collect::<Vec<_>>()
+        crate::audio_event::test_helpers::assert_drop_payload_has_exactly_two_top_level_fields(
+            "microphone",
         );
-        assert!(obj.contains_key("source"));
-        assert!(obj.contains_key("dropped"));
     }
 
     #[test]
