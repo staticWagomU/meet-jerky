@@ -1,0 +1,55 @@
+あなたは meet-jerky desktop の作業担当エージェントです。
+
+対象:
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ
+
+制約:
+- AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他の agent も同じ codebase にいる可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。main agent が review/verify/commit します。
+
+Loop 215 目的:
+- 設定画面の「プライバシー > システム権限」カードから macOS の該当プライバシー設定を直接開けるようにし、録音・相手側音声取得に必要な権限の透明性と復旧しやすさを上げる。
+- 現状 `SettingsView.tsx` には `permissionSettingsOpenError` state があるが setter がなく、設定を開く失敗を表示する導線も実質使われていない。これを小さく活かす。
+
+担当範囲:
+- `src/routes/SettingsView.tsx`
+- `AGENT_LOG.md`
+
+実装要件:
+1. `SettingsView.tsx` で `@tauri-apps/plugin-opener` の `openUrl` を使う。
+2. `src/utils/macosPrivacySettings.ts` の以下を import して再利用する。
+   - `MACOS_MICROPHONE_PRIVACY_URL`
+   - `MACOS_SCREEN_RECORDING_PRIVACY_URL`
+   - `MACOS_ACCESSIBILITY_PRIVACY_URL`
+   - `OPEN_MICROPHONE_PRIVACY_LABEL`
+   - `OPEN_SCREEN_RECORDING_PRIVACY_LABEL`
+   - `OPEN_ACCESSIBILITY_PRIVACY_LABEL`
+3. `permissionSettingsOpenError` に setter を追加し、macOS 設定を開く前に clear、失敗時は `toErrorMessage` で state に入れる。
+4. 「プライバシー > システム権限」カードのマイク、画面と音声収録、アクセシビリティ行に、既存スタイルに馴染む小さなボタンを追加する。
+   - マイク: マイク設定を開く
+   - 画面と音声収録: 画面収録設定を開く
+   - アクセシビリティ: アクセシビリティ設定を開く
+   - `aria-label` / `title` は import した label 定数を使う。
+5. `permissionSettingsOpenErrorLabel` がある場合、設定画面内に role="alert" で見えるエラー表示を出す。既存 CSS class を優先して使い、新しい大きな UI/CSS は足さない。
+6. 以下は変更しない。
+   - 権限チェックコマンド
+   - permission badge の判定
+   - 設定保存ロジック
+   - AI/API/課金/認証設定
+   - app code 以外のハーネス
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md`
+
+AGENT_LOG:
+- 末尾に Loop 215 の記録を追加してください。
+- ユーザー価値、非目標、検証結果、未実機確認範囲、依存関係追加なしを明記してください。
+
+完了報告:
+- 変更ファイル
+- 実装概要
+- 検証結果
+- 残リスク

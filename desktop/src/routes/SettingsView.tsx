@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -30,6 +31,14 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
+import {
+  MACOS_ACCESSIBILITY_PRIVACY_URL,
+  MACOS_MICROPHONE_PRIVACY_URL,
+  MACOS_SCREEN_RECORDING_PRIVACY_URL,
+  OPEN_ACCESSIBILITY_PRIVACY_LABEL,
+  OPEN_MICROPHONE_PRIVACY_LABEL,
+  OPEN_SCREEN_RECORDING_PRIVACY_LABEL,
+} from "../utils/macosPrivacySettings";
 import { STATUS_CHECKING_LABEL, STATUS_CHECKING_WITH_DOTS_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
 
 const WHISPER_MODELS = [
@@ -134,7 +143,8 @@ export function SettingsView() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AppSettings | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [permissionSettingsOpenError] = useState<string | null>(null);
+  const [permissionSettingsOpenError, setPermissionSettingsOpenError] =
+    useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
   const lastSyncedSettingsRef = useRef<AppSettings | null>(null);
@@ -401,6 +411,14 @@ export function SettingsView() {
     activeCategory === "general" ||
     activeCategory === "privacy";
   const shouldShowSettingsActions = isEditableCategory || hasChanges;
+  const openPrivacySettings = useCallback((url: string, label: string) => {
+    setPermissionSettingsOpenError(null);
+    void openUrl(url).catch((e) => {
+      const msg = toErrorMessage(e);
+      console.error(`${label}を開けませんでした:`, msg);
+      setPermissionSettingsOpenError(msg);
+    });
+  }, []);
 
   return (
     <div
@@ -1267,7 +1285,7 @@ export function SettingsView() {
                 <div className="settings-readonly-column">
                   <div className="settings-readonly-card">
                     <h3 className="settings-readonly-card-title">システム権限</h3>
-                    <p>macOS のシステム設定で付与済み。</p>
+                    <p>macOS のシステム設定で権限状態を確認できます。</p>
                     <div className="settings-permissions">
                       <div className="settings-permission-row">
                         <span className="settings-permission-label">マイク</span>
@@ -1277,6 +1295,20 @@ export function SettingsView() {
                           error={micPermissionError}
                           isChecking={isFetchingMicPermission}
                         />
+                        <button
+                          type="button"
+                          className="control-btn control-btn-clear"
+                          onClick={() =>
+                            openPrivacySettings(
+                              MACOS_MICROPHONE_PRIVACY_URL,
+                              "マイク権限設定",
+                            )
+                          }
+                          aria-label={OPEN_MICROPHONE_PRIVACY_LABEL}
+                          title={OPEN_MICROPHONE_PRIVACY_LABEL}
+                        >
+                          マイク設定を開く
+                        </button>
                       </div>
                       <div className="settings-permission-row">
                         <span className="settings-permission-label">
@@ -1288,6 +1320,20 @@ export function SettingsView() {
                           error={screenPermissionError}
                           isChecking={isFetchingScreenPermission}
                         />
+                        <button
+                          type="button"
+                          className="control-btn control-btn-clear"
+                          onClick={() =>
+                            openPrivacySettings(
+                              MACOS_SCREEN_RECORDING_PRIVACY_URL,
+                              "画面収録設定",
+                            )
+                          }
+                          aria-label={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
+                          title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
+                        >
+                          画面収録設定を開く
+                        </button>
                       </div>
                       <div className="settings-permission-row">
                         <span className="settings-permission-label">アクセシビリティ</span>
@@ -1303,8 +1349,32 @@ export function SettingsView() {
                           />
                           任意
                         </span>
+                        <button
+                          type="button"
+                          className="control-btn control-btn-clear"
+                          onClick={() =>
+                            openPrivacySettings(
+                              MACOS_ACCESSIBILITY_PRIVACY_URL,
+                              "アクセシビリティ権限設定",
+                            )
+                          }
+                          aria-label={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
+                          title={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
+                        >
+                          アクセシビリティ設定を開く
+                        </button>
                       </div>
                     </div>
+                    {permissionSettingsOpenErrorLabel && (
+                      <p
+                        className="permission-banner-inline-error"
+                        role="alert"
+                        aria-label={permissionSettingsOpenErrorLabel}
+                        title={permissionSettingsOpenErrorLabel}
+                      >
+                        {permissionSettingsOpenErrorLabel}
+                      </p>
+                    )}
                   </div>
                   <div className="settings-readonly-card">
                     <h3 className="settings-readonly-card-title">テレメトリー</h3>
