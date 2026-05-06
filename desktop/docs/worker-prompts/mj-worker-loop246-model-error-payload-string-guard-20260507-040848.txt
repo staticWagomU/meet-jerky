@@ -1,0 +1,35 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/utils/modelDownloadPayload.ts
+- AGENT_LOG.md
+
+目的:
+Whisper モデルダウンロードエラー event の frontend payload guard で、空文字や制御文字を含む破損した `model` / `message` を UI エラーとして扱わないようにしてください。Loop 245 の `model-download-progress` 範囲チェックとは別に、`model-download-error` 側の文字列契約を小さく固める改善です。
+
+実装条件:
+1. `src/utils/modelDownloadPayload.ts`
+   - `isDownloadErrorPayload` で `model` と `message` を、trim 後に非空で、制御文字を含まず、長すぎない文字列として受理してください。
+   - 既存の `isDownloadProgressPayload`、event 名、型定義、`ModelSelector.tsx`、Rust 側は変更しないでください。
+   - 既存 helper がなければ、このファイル内に小さな private helper を追加して構いません。最大長は `model` 80、`message` 4000 程度にしてください。
+   - `message` の通常の日本語エラーメッセージや HTTP エラーメッセージは引き続き通るようにしてください。
+2. AGENT_LOG.md
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+   - 変更ファイルには、この worker prompt と research prompt も含めてください。
+   - research は検索出力が長く最終出力が遅れたため、メイン側が `modelDownloadPayload.ts` と Loop 245 後の残り guard を確認してこの最小候補を選んだことを記録してください。
+
+禁止:
+- コミットは禁止です。
+- 依存追加は禁止です。
+- `src/components/ModelSelector.tsx`、Rust、型定義、event 名、UI 文言、テスト基盤、直近 Loop 240-245 の対象ファイルのうち担当外ファイルは変更しないでください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/modelDownloadPayload.ts AGENT_LOG.md docs/worker-prompts/mj-research-loop246-next-value-slice-20260507-040848.txt docs/worker-prompts/mj-worker-loop246-model-error-payload-string-guard-20260507-040848.txt`
+
+残リスクには、TS 単体テスト基盤がないため guard の入出力は build と diff review で確認すること、実機モデルダウンロード失敗経路は今回未確認であることを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
