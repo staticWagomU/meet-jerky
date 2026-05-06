@@ -16,12 +16,19 @@ export function RingLightWindow() {
         return;
       }
       setMode(event.payload.mode === "off" ? "soft" : event.payload.mode);
+    }).catch((e) => {
+      console.error("リングライト設定の受信開始に失敗しました:", e);
+      return null;
     });
 
     return () => {
       disposed = true;
       unlistenPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => {
+          if (unlisten) {
+            unlisten();
+          }
+        })
         .catch((e) => {
           console.error("リングライト設定の受信解除に失敗しました:", e);
         });

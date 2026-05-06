@@ -21,6 +21,9 @@ function App() {
       if (!disposed) {
         showMainTranscriptWindow();
       }
+    }).catch((e) => {
+      console.error("メイン表示要求の受信開始に失敗しました:", e);
+      return null;
     });
     const unlistenStartPromise = listen(MEETING_START_REQUEST_EVENT, () => {
       if (disposed) {
@@ -28,17 +31,28 @@ function App() {
       }
       markPendingMeetingStartRequest();
       showMainTranscriptWindow();
+    }).catch((e) => {
+      console.error("録音開始要求の受信開始に失敗しました:", e);
+      return null;
     });
 
     return () => {
       disposed = true;
       unlistenShowPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => {
+          if (unlisten) {
+            unlisten();
+          }
+        })
         .catch((e) => {
           console.error("メイン表示要求の受信解除に失敗しました:", e);
         });
       unlistenStartPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => {
+          if (unlisten) {
+            unlisten();
+          }
+        })
         .catch((e) => {
           console.error("録音開始要求の受信解除に失敗しました:", e);
         });

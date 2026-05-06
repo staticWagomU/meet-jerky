@@ -1,0 +1,51 @@
+あなたは meet-jerky desktop の作業担当エージェントです。
+
+対象:
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ
+
+制約:
+- AGENTS.md、docs/product-concept.md、docs/agent-harness.md を読んでください。
+- AGENT_LOG.md は末尾 80 行だけ確認してください。全体読解で停滞しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他の agent も同じ codebase にいる可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。main agent が review/verify/commit します。
+
+Loop 217 目的:
+- `App.tsx` と `RingLightWindow.tsx` の Tauri listener 開始失敗を、解除失敗と区別して明示ログにする。
+- 現状は `listen(...)` の Promise が reject した場合、cleanup の `.then((unlisten) => unlisten())` 側で「受信解除に失敗」として見える可能性がある。会議開始要求やリングライト設定の受信開始失敗を正しく診断できるようにする。
+
+担当範囲:
+- `src/App.tsx`
+- `src/components/RingLightWindow.tsx`
+- `AGENT_LOG.md`
+
+実装要件:
+1. `src/App.tsx`
+   - `listen(SHOW_MAIN_WINDOW_REQUEST_EVENT, ...)` と `listen(MEETING_START_REQUEST_EVENT, ...)` の開始失敗を `.catch(...)` で明示的に `console.error` する。
+   - cleanup では listener 開始に失敗して `null` になった場合に何もしないようにする。
+   - `disposed` guard、`markPendingMeetingStartRequest()`、`showMainTranscriptWindow()` の挙動は変えない。
+   - UI 文言、route、event 名、localStorage key は変更しない。
+2. `src/components/RingLightWindow.tsx`
+   - `listen(RING_LIGHT_MODE_EVENT, ...)` の開始失敗を `.catch(...)` で明示的に `console.error` する。
+   - cleanup では listener 開始に失敗して `null` になった場合に何もしないようにする。
+   - invalid payload を無視する既存挙動、mode fallback は変更しない。
+3. `AGENT_LOG.md`
+   - 末尾に Loop 217 の記録を追加する。
+   - 検証結果、依存関係追加なし、実機 event 配送は未確認であることを記録する。
+
+非目標:
+- event 名の変更/移動
+- UI 表示追加
+- ring light 表示仕様変更
+- meeting start request storage 変更
+- Rust 側変更
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/App.tsx src/components/RingLightWindow.tsx AGENT_LOG.md`
+
+完了報告:
+- 変更ファイル一覧
+- 実装概要
+- 実行した検証コマンドと結果
+- 未解決リスクや意図的に触らなかった点
