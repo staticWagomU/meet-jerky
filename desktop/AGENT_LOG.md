@@ -34121,3 +34121,17 @@ worker: mjc-worker-loop175-archive-plan-stats-update-41 (作業)
 
 後継 mjc-main-20260505-87 への 2-3 ループ完走推奨. 最有力候補 = **K 軸 = K' 軸 = 同 K 軸 2 連続 (= K(175) → K(176) = alternation reset 受容) は推奨せず = 必ず別軸 pivot へ**. 代替案 = **(a) 候補 R22 = frontend 軸 paradigm 反復 = const 集約 paradigm 反復 2 件目 = INVALID_STATUS_PAYLOAD_ERROR (LiveCaptionWindow.tsx + MeetingDetectedBanner.tsx の components 2 file 重複 const) を集約 = 規模 SS-S = 最有力推奨 (本セッション Loop 174 で同 paradigm 1 件目を確立 = 反復可能 = component 内部 helper 集約軸への paradigm 拡張余地あり = ただし components 間に直接共通 utils が無いので新 utils file 作成 = 規模 SS-S) / (b) 候補 R21 = rust 軸 = paradigm 反復 8 件目 = parameterized helper 化拡張 = 本セッション Loop 174 前検証で対称対象事実上枯渇判明 = 残候補は更に少ない可能性 = 規模 S-M = 第二推奨 / (c) 候補 R17 = rust 軸 = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複等の超低レイヤー探索 = 規模 S = 探索コスト高 = 第三推奨 / (d) X' resample_audio dead code 削除 = ユーザー直伝指示要 / (e) H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要**. **重要な後継教訓**: 本セッションで **handoff prompt R21 最有力推奨候補の対称対象が事実上枯渇** + **副推奨 R16 で真の DRY 違反 const を発見** + **paradigm 系統樹拡張 8 件目 (const 集約軸) を新規開拓** = **handoff prompt 鵜呑み禁止と独自検証の重要性が一層強化** + worker prompt 必須要素 9 (entry テンプレート冒頭に `---` を含めない設計) は本セッション Loop 174/175 で 2 連続実証成功 = 計 8 連続再発防止確認. **後継 R22 探索の実用ヒント**: components/ 配下の重複 const は LiveCaptionWindow.tsx と MeetingDetectedBanner.tsx の 2 file = INVALID_STATUS_PAYLOAD_ERROR (string literal). 抽出先候補は (a) 新 utils file 作成 (例: `src/utils/liveCaptionErrors.ts` = Loop 151/155 precedent = 新 file 作成軸) または (b) 既存 utils file (例: `src/utils/liveCaptionStatus.ts`) の中に統合 (= 既存 file 拡張軸 paradigm 14 件目). 詳細は docs/handoff/mjc-main-20260505-87.txt 参照.
 ---
+
+[Loop 176 @ 2026-05-06 ~JST] mjc-main / mjc-worker-loop176-session-datetime-unknown-label-consolidate
+タスク: '日時不明' 重複 string literal (transcriptViewFormatters.ts L21/L25 + sessionListHelpers.tsx L24/L28 = 2 file/4 箇所) を transcriptViewFormatters.ts で export const SESSION_DATETIME_UNKNOWN_LABEL に集約
+ファイル: src/utils/transcriptViewFormatters.ts (export const 追加 + L21/L25 の literal 置換) + src/utils/sessionListHelpers.tsx (import 追加 + L24/L28 の literal 置換)
+理由: DRY 違反解消 = 2 utils で同一意味 (session 開始時刻 invalid 時 fallback ラベル) の同一 literal 重複定義を 1 箇所に集約 + paradigm 系統樹拡張 8 件目 (Loop 174 const 集約軸) の反復実証 = paradigm 反復による定型化期入り
+影響: callsite 4 箇所は const 参照経由で API 互換維持 + ネット行数 ±0 + production binary 0 影響
+paradigm: 既存 file 拡張軸 paradigm 14 件目 = const 集約軸 paradigm 反復 2 件目 (Loop 174 = CONTROL_CHARACTER_PATTERN 集約に続く反復) = paradigm 系統樹拡張 8 件目反復実証
+検証: npm run build ✓ (tsc + vite build エラー 0), '日時不明' literal grep 0 件確認, agent-verify.sh OK
+commit: 0d23249 + <chore commit hash>
+依存関係追加: なし
+失敗理由: なし
+次アクション: なし (メイン側で次ループ判断)
+
+---
