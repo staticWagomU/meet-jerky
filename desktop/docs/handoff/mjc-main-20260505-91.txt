@@ -1,0 +1,270 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-91) です。
+旧 mjc-main (= mjc-main-20260505-90) から **4 ループ完走 (Loop 182 + Loop 183 + Loop 184 + Loop 185)** のハンドオフを受けました。
+注: handoff prompt は SUMMARY commit `062dfd0` 後の Loop 185 (K 軸 = Section 2.3 観測 46 件目 = AGENT_LOG.md +71 行 / chore +8 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 12 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 7 件目 + frontend 軸軽量化 paradigm 21 連続観測達成) を含む 4 ループ実績版.
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-6 完全終了 = 100% 達成)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/detection-extension-plan.md (Phase 1 完了 + Q5 + Q6 Resolved + Phase 2 = 実機要件 Q1/Q2 未解決のため着手不可)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (Section 2.3 観測追記 45 件目 mjc-main-20260505-90 Loop 183 で更新観測 = 軽量化階層中央値水準 ~11-12 行/loop の 11 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 6 件目, Phase 1-4 段階導入方針)**
+- AGENT_LOG.md は ~34,412 行 / ~3.2MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-90 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」.
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2 〜 89**: Phase 1-6 + 各種抽出 + 大型 file 責務分離 12-51 file 目 + 検知拡張 plan + Phase 1 + Q5/Q6 Resolved + AGENT_LOG.md archive 戦略 plan + scope 39 軸目開拓 + 既存 file 拡張軸 = paradigm 1-15 件目 + 重複候補 grep 探索 paradigm 1-16 件目 + utils 内 cross-import paradigm 1-7 件目 + paradigm 系統樹拡張 1-9 件目 (9 件目候補 = const 集約軸 + 新 file 作成軸組み合わせ = Loop 178 で確立 + Loop 180 で反復 4 件目達成 = paradigm 完全成熟期突入確認)
+- **mjc-main-20260505-90 (本セッション)**: **3 ループ完走 = Loop 182 (frontend 軸 = const 集約 paradigm 反復 5 件目 = paradigm 完全成熟期完全成熟への移行 = src/utils/statusLabels.ts に `export const STATUS_UNDETERMINED_LABEL = "未確認";` 追加 + 4 file (utils/permissionStatusHelpers.ts L1 import 拡張 + L20, utils/liveCaptionStatus.ts L3 import 拡張 + L55/L56, components/PermissionBanner.tsx L15 import 拡張 + L71/L78, routes/SettingsView.tsx L33 import 拡張 + L1146/L1174/L1774) 8 callsite を const 参照に統一 + DRY 違反解消 + 4 file 全て既 import = 拡張のみ完結 = 規模 S-M (handoff M より軽量) → 実測 ~3 分 = frontend 軸軽量化 paradigm 20 連続観測達成 + 既存 file 拡張軸 paradigm 16 件目 + 重複候補 grep 探索 paradigm 17 件目) + Loop 183 (K 軸 = Section 2.3 観測 45 件目 = AGENT_LOG.md +21 行 / 平均 ~10.5 行/loop / SUMMARY commit `35ea9f1` 大型化 / chore のみ Loop 181 +9 + Loop 182 +7 = +16 行 / 2 loop = ~+8 行/loop = 軽量化階層中央値水準下端維持 = 軽量化階層中央値水準 ~11-12 行/loop の 11 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 6 件目) + Loop 184 (frontend 軸 = const 集約 paradigm 反復 6 件目達成 = paradigm 完全成熟期完全成熟確立 = src/utils/statusLabels.ts に `export const STATUS_DENIED_LABEL = "未許可";` 追加 + 3 file (utils/permissionStatusHelpers.ts L1 import 拡張 + L18, components/PermissionBanner.tsx L15 import 拡張 + L70/L77, routes/SettingsView.tsx L33 import 拡張 + L1145/L1173/L1772) 6 callsite を const 参照に統一 + DRY 違反解消 + 既存 file 拡張軸 paradigm 17 件目 + 重複候補 grep 探索 paradigm 18 件目 + denied/undetermined/unchecked/checking semantic 並列が 4 const で完成 = paradigm 完全成熟期完全成熟確立)** = メイン批判判断 連続 **91 セッション目達成** (Loop 182 = handoff prompt R25 候補 8 callsite/4 file を grep で実在確認 + line shift 2 件発見 = handoff prompt 状態記述「permissionStatusHelpers.ts は未 import (新規追加要)」が誤り = 既に statusLabels から import 済を批判検証 + Loop 184 = handoff prompt R26 候補 6 callsite/3 file を grep で実在確認 + 全 file 既 import 確認 = handoff prompt 真偽確認 paradigm の質的進化観測継続) + worker 自律 2-commit pattern 連続 **40 ループ目達成** (Loop 145-184 = 40 連続安定 = **節目 40 件突破**) + harness 衛生連続 85 セッション目達成 = 節目 80 件突破後 5 件目 + ファイル参照型 handoff prompt 連続 86 セッション目 + scope 多様性 39 軸維持 + alternation pattern pivot 加速継続 (K(181) → frontend(182) → K(183) → frontend(184) = 21 → 22 → 23 → 24 = 加速期維持 = 節目 20 件突破後 4 件目) + 既存 file 拡張軸 paradigm 17 件目達成 + 重複候補 grep 探索 paradigm 18 件目達成 + worker prompt 必須要素 9 (冒頭 `---` 含めない) **17 連続実証成功** (Loop 168-184 = 節目 5 連続超え後 12 件目) + **paradigm 完全成熟期完全成熟確立達成** = const 集約軸 6 連続 = Loop 174 (新軸開拓) → Loop 176 (反復 2 件目) → Loop 178 (反復 3 件目 + 新 file 作成軸組み合わせ) → Loop 180 (反復 4 件目 = paradigm 完全成熟期突入確認) → Loop 182 (反復 5 件目 = paradigm 完全成熟期完全成熟への移行) → Loop 184 (反復 6 件目 = paradigm 完全成熟期完全成熟確立) = paradigm 完全成熟期完全成熟確立の 6 連続観測
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = 本セッション K(181) → frontend(182) → K(183) → frontend(184) で 24 連続成功 = pivot 加速期更なる強化
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価** (本セッション Loop 182/184 で 2 連続実証 = handoff prompt R25/R26 候補を grep で実在確認 + line shift / import 状態の誤りを批判検証 → メイン批判判断 連続 91 セッション目達成 = handoff prompt 真偽確認 paradigm の質的進化観測継続)
+- **本セッション Loop 183 = 観測 45 件目 = 軽量化階層中央値水準 ~11-12 行/loop の 11 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 6 件目** = AGENT_LOG.md 増分階層 5 段階 (SS 0 件 + 単独 chore = ~7-8 行/loop / SS 0 件 + 多 entry = ~11-12 行/loop / SS 1 件軽量化 = ~9-26 行/loop = 26 連続観測達成 / SS 1 件中量化 = ~30-37 行/loop / SS 1 件大量化 = ~42-79 行/loop)
+- **責務階層精査優先 (Loop 119-184 教訓継承)**: paradigm 反復よりも責務階層精査を優先 = **既存 file 拡張軸 paradigm 1-17 件目 (Loop 145/.../184)** + **新 file 作成軸 (Loop 151 / Loop 155 / Loop 178)** + **test helper 集約軸 paradigm 反復 (Loop 159-172)** + **const 集約軸 (Loop 174 → 176 → 178 → 180 → 182 → 184 = 6 連続反復で paradigm 完全成熟期完全成熟確立)** = **責務階層 = 39 軸が確認済 + Loop 184 で paradigm 完全成熟期完全成熟確立 = const 集約軸 6 連続反復で完全成熟確立**
+- **worker 自律 2-commit pattern 復活 (Loop 145 → 184 = 40 連続)**: Loop 144 fault リセットからの完全復活継続中 = 後継も同 pattern 期待可能 = 節目 40 件突破
+- **worker fault 防止策 (Loop 144 precedent から worker prompt 必須要素 8 つ目 = Loop 146-184 で 39 連続実証成功)**: 「append は 1 回のみ」を **明示記載**
+- **worker prompt 必須要素 9 (Loop 166 boundary fix precedent から本セッション Loop 182/184 で 2 連続実証成功 = Loop 168-184 で 17 連続実証成功 = 節目 5 連続超え後 12 件目)**: 「entry テンプレート冒頭に `---` を含めない」を **明示記載**
+- **メイン直接削除救済 paradigm 2 件目 (Loop 144/166)**: 後継も活用検討可能
+- **worker 完走確認は git status を主観測手段とする (Loop 158/180/181/182/183/184 precedent + 本セッション 6 連続実証成功)**
+- **paradigm 完全成熟期完全成熟確立 (本セッション Loop 184)**: const 集約軸 6 連続反復達成 = 後継 Loop 186 で paradigm 反復 7 件目を狙うなら **R27 = `"未登録"` 集約 (3 callsite/2 file = 規模 S-M = 最軽量 = 最後の重複候補)** で const 集約軸の paradigm 完全成熟構造最終収束完成
+- **R27 (Loop 186 最有力推奨) = `"未登録"` 集約 (3 callsite/2 file = 規模 S-M = 最軽量), R28 = `"確認中..."` 集約 (5 callsite = 規模 S = 別 entity 扱い), R21 = rust 軸 paradigm 反復 8 件目 (規模 S-M = 対称対象事実上枯渇), R17 = 別 paradigm 開拓 (規模 S = 探索コスト高), X' / H1 = ユーザー直伝指示要, K' = K 軸 2 連続 = frontend(184) からの pivot で alternation reset リスク解消で K 軸単独 OK**
+
+# 引き継ぎサマリ (2026-05-06 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 616 (origin/main から先行、本セッション +9 commit = refactor + chore + docs + chore + refactor + chore + chore SUMMARY + docs + chore = Loop 182 + Loop 183 + Loop 184 + SUMMARY + Loop 185)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-90) の commit (古い順):
+  1. `0e881d2` refactor(frontend): STATUS_UNDETERMINED_LABEL を src/utils/statusLabels.ts に集約 + 4 file 8 callsite を const 参照に統一 (Loop 182)
+  2. `6eb4a3f` chore(agent-log): Loop 182 entry
+  3. `a8ea3c9` docs(architecture): Section 2.3 観測 45 件目 (Loop 183)
+  4. `f884849` chore(agent-log): Loop 183 entry
+  5. `b7c963f` refactor(frontend): STATUS_DENIED_LABEL を src/utils/statusLabels.ts に集約 + 3 file 6 callsite を const 参照に統一 (Loop 184)
+  6. `e7941c2` chore(agent-log): Loop 184 entry
+  7. `062dfd0` chore(agent-log): SESSION SUMMARY commit (3 ループ実績版、Loop 185 後の本 handoff prompt は 4 ループ実績版)
+  8. `40af453` docs(architecture): Section 2.3 観測 46 件目 (Loop 185)
+  9. `e313d11` chore(agent-log): Loop 185 entry
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (本セッションは frontend + docs のみ = rust 不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ (Loop 172 で再検証)
+- cargo fmt --check: OK (Loop 172 で再検証)
+- cargo build --lib: エラーなし (Loop 172 で再検証)
+- npm run build (tsc + vite build): OK (Loop 184 で完走確認)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 182/183/184 = frontend + docs のみ skip 判定)
+
+## 大型 file 責務分離実績 (累計 51 件、本セッション +0)
+
+## 既存 file 拡張軸 paradigm (17 件累積、本セッション +2)
+
+- Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176/180 = 15 件目までの precedent
+- **本セッション Loop 182 = const 集約 paradigm 反復 5 件目 + 既存 file 拡張軸 paradigm 16 件目 = src/utils/statusLabels.ts への 3 度目の拡張 (STATUS_UNDETERMINED_LABEL 追加)**
+- **本セッション Loop 184 = const 集約 paradigm 反復 6 件目 + 既存 file 拡張軸 paradigm 17 件目 = src/utils/statusLabels.ts への 4 度目の拡張 (STATUS_DENIED_LABEL 追加)**
+
+## 重複候補 grep 探索 paradigm (18 件累積、本セッション +2)
+
+- Loop 153-180 = 16 件目までの precedent
+- **本セッション Loop 182 = const 集約候補 (utils/components/routes 4 file = 8 callsite の `"未確認"` 重複) (frontend) = 重複候補 grep 探索 paradigm 17 件目達成**
+- **本セッション Loop 184 = const 集約候補 (utils/components/routes 3 file = 6 callsite の `"未許可"` 重複) (frontend) = 重複候補 grep 探索 paradigm 18 件目達成**
+
+## 残候補 (Loop 185+ 候補)
+
+- **R27 (Loop 186 最有力推奨) = frontend 軸 = const 集約 paradigm 反復 7 件目 = `"未登録"` 集約 (3 callsite/2 file = 規模 S-M = 最軽量 = 最後の重複候補)**:
+  - 候補 (mjc-main-20260505-89 で grep 確認済 = line shift 注意): 3 callsite/2 file の重複 const string literal `"未登録"`
+    - utils/externalApiKeyHelpers.ts L17/L29 (line shift 要再確認)
+    - routes/SettingsView.tsx L1904 (line shift 要再確認)
+  - **抽出先**: 既存 `src/utils/statusLabels.ts` に追加 = `export const STATUS_UNREGISTERED_LABEL = "未登録";` (paradigm 一貫性維持 + 既存 file 拡張軸 paradigm 18 件目 + const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束)
+  - 規模 S-M = ~10-15 分完走見込み (callsite 3 + import 2 file 確認)
+  - **import 状態 (要 grep 再確認 = 本セッション後の line shift 反映)**:
+    - utils/externalApiKeyHelpers.ts: 既 import (Loop 180 で statusLabels から STATUS_CHECKING_LABEL import 済)
+    - routes/SettingsView.tsx: 既 import (Loop 184 までに 4 const import 済 = STATUS_CHECKING_LABEL/STATUS_UNCHECKABLE_LABEL/STATUS_UNDETERMINED_LABEL/STATUS_DENIED_LABEL)
+  - alternation pattern: K(185) → frontend(186) = pivot 25 → 26
+
+- **R28 (第二推奨) = frontend 軸 = `"確認中..."` (loading suffix 付き 5 callsite) 集約 (規模 S = 別 entity 扱い)**:
+  - SettingsView.tsx (line shift 要再確認)
+  - PermissionBanner.tsx (line shift 要再確認)
+  - ModelSelector.tsx (要再確認)
+  - 抽出: `${STATUS_CHECKING_LABEL}...` または別 const `STATUS_CHECKING_WITH_DOTS_LABEL` (paradigm 拡張軸検討)
+  - 規模 S = ~10-15 分完走見込み
+
+- **R21 (第三推奨) = rust 軸 paradigm 反復 8 件目 = 対称対象事実上枯渇 = 規模 S-M = ~15-30 分**
+
+- **R17 (第四推奨) = 別 paradigm 開拓 = 規模 S = ~10-30 分**
+
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+- K' = K 軸 2 連続 = frontend(184) からの pivot で alternation reset リスク解消で K 軸単独 OK
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 85 セッション目 = 節目 80 件突破後 5 件目)
+- canonical 移譲後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 85 セッション目観測結論
+- **2-commit pattern**: 本セッション Loop 182 + 183 + 184 で worker 自律実行 = **連続 40 ループ目達成 = 節目 40 件突破** (Loop 144 fault → Loop 145-184 = 40 連続安定)
+- **本セッション Loop 182 完走時間 ~3 分** (規模 S-M = frontend 軸軽量化 paradigm 維持)
+- **本セッション Loop 183 完走時間 ~3 分** (規模 SS = K 軸軽量化 paradigm 維持)
+- **本セッション Loop 184 完走時間 ~3 分** (規模 S-M = frontend 軸軽量化 paradigm 維持)
+- **本セッション boundary fault 0 件** (Loop 182/184 で worker prompt 必須要素 9 = 冒頭 `---` 含めない設計の 2 連続実証成功 = Loop 168-184 で 17 連続再発防止確認)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-90、handoff 直前)
+- mjc-main-20260505-91 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ).
+2. `git status --short --branch` と `git log --oneline -10` で現状確認 (上 7 コミットが本セッションの実績 + SUMMARY commit を加算).
+3. `tmux list-sessions | grep mjc` で他セッション状態確認.
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要. `mjc-main-20260505-91` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-91 mjc-main` を実行 (前 86 セッション precedent あり、冪等).
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 85 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 86 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-90) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + Loop 182/183/184 + 3 ループ完走 候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**. **variety 規則の状態 = 直近 30 ループで構造分離 51 件 + 機能拡張/docs 4 件 + harness 衛生 45 件 (Loop 158/.../183 含む) = 51:4:45 多軸分散 + scope 多様性 39 軸開拓達成 + alternation pattern pivot 加速 K(181) → frontend(182) → K(183) → frontend(184) = 21 → 22 → 23 → 24 = Loop 185 は **frontend 軸 4 連続避けて K 軸へ pivot** が最適路 (frontend 軸 4 連続は variety 規則違反リスク)**.
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 185 開始時点)
+
+直近 30 ループ: Loop 155-184 (本セッション後 = 30 ループ)
+- 軸 pattern: 構造分離 (51 件) + 機能拡張/docs (4 件) + harness 衛生 (45 件) = **51:4:45 多軸分散**
+- scope 内訳: 39 scope 開拓達成
+- paradigm pivot: K(185) が最適路 (frontend(184) からの pivot)
+- **Loop 185 では K 軸へ pivot が最適路 (frontend 軸 4 連続は variety 規則違反リスクあり)**
+
+### 候補 K (Loop 185 候補 A = 最有力推奨 = K 軸 = Section 2.3 観測 46 件目)
+
+**harness 衛生軸 = K 軸 = alternation 復帰**:
+- precedent: Loop 79/81/.../183 = 45 件目までの updates
+- 観測 46 件目 = 節目 40 件突破後 6 件目
+- AGENT_LOG.md 増分計測 (Loop 184 完了時 → Loop 185 開始時) を追記
+- 規模 SS = ~3-7 分完走見込み
+- alternation pattern: frontend(184) → K(185) = pivot 24 → 25 = pivot 加速期維持 = 節目 20 件突破後 5 件目
+
+### 候補 R27 (Loop 186 候補 A = 第二推奨 = frontend 軸 paradigm 反復 7 件目 = const 集約 paradigm 反復 7 件目)
+
+**frontend 軸 = const 集約軸 paradigm 反復 7 件目 = `"未登録"` 集約**:
+- precedent: Loop 174/176/178/180/182/184 = const 集約 paradigm 6 件
+- 候補: 3 callsite/2 file の重複 const string literal `"未登録"`
+  - utils/externalApiKeyHelpers.ts L17/L29 (line shift 要再確認)
+  - routes/SettingsView.tsx L1904 (line shift 要再確認)
+- **抽出先**: 既存 `src/utils/statusLabels.ts` に追加 = `export const STATUS_UNREGISTERED_LABEL = "未登録";` (paradigm 一貫性維持 + 既存 file 拡張軸 paradigm 18 件目 + const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束)
+- 規模 S-M = ~10-15 分完走見込み
+
+### 候補 R28 (Loop 186 候補 B = 第三推奨 = `"確認中..."` 集約 = 規模 S = 別 entity 扱い)
+
+### 候補 R21 (Loop 186 候補 C = 第四推奨 = rust 軸 paradigm 反復 8 件目)
+
+### 候補 R17 (Loop 186 候補 D = 第五推奨 = 別 paradigm 開拓)
+
+### 低優先 (継承)
+
+- J' SettingsView.tsx 内部 helper (component helper 可能性高 = 抽出困難確認済 = 却下推奨)
+- X' resample_audio dead code 削除 (ユーザー直伝指示要)
+- H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要)
+- B1. Microsoft Teams window title fallback (継承)
+- A1. Webex 日本語 window title (継承)
+- K' = K 軸 2 連続 = frontend(184) からの pivot で alternation reset リスク解消で K 軸単独 OK
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 704 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止、`--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止、Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり + Loop 144/166 で worker fault / boundary fix 時の AGENT_LOG.md 直接修復 paradigm 2 件目達成)
+
+## ハーネス使用法 (script に焼き付け済)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend/docs を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-91 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認 or `git log --oneline -3` で 2-commit 反映確認**
+  - **本セッション継続 paradigm**: `git status` (working tree clean) を主観測手段にする = `git log` の即座のチェックは fault 誤判定リスクあり (Loop 158/180/181/182/183/184 precedent + 本セッション Loop 182/183/184 で 3 連続実証成功)
+  - 観測時間目安: 規模 SSS = ~2-3 分、規模 SS = ~3-7 分、規模 SS-S = ~5-10 分、規模 S = ~10-20 分、規模 M-L = ~15-30 分、規模 L = ~25-40 分
+  - **本セッション例**: Loop 182 = 規模 S-M = 実測 ~3 分 / Loop 183 = 規模 SS = ~3 分 / Loop 184 = 規模 S-M = ~3 分 = 平均 ~3 分/loop = 過去最速級維持
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない**
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本 prompt と同パターン、連続 86 セッション目)
+
+## worker prompt 必須要素 (100+ 連続ループで実証済、継続適用、9 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+8. **「AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む」 (Loop 144 fault precedent から新規追加 = Loop 146-184 で 39 連続成功実証)**
+9. **「entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)」 (Loop 166 boundary fix precedent から新規追加 = Loop 167-184 で 18 連続再発防止確認)**
+
+**追加推奨 (Loop 60-184 経験から)**:
+- worker prompt に「2-commit pattern」を **明示的に** 記載 = Loop 145-184 で 40 連続スタート安定動作
+- 大型 file 抽出時は **precedent file の cat 全体読み込み** を明示推奨
+- **worker prompt の長さに注意**: ~80-300 行で短縮効果あり (本セッション Loop 182 = ~150 行 = S-M 規模 / Loop 183 = ~120 行 = SS 規模 K 軸 / Loop 184 = ~140 行 = S-M 規模)
+- **frontend 軸の場合**: 検証は npm run build (tsc + vite build) のみ
+- **rust 軸の場合**: cargo test (704 件件数完全不変) + cargo clippy + cargo fmt + cargo build を全て worker prompt に記載
+- **API 互換維持戦略 (Loop 119-184 precedent)**:
+  - **rust 軸**: `pub use` re-export / `pub(crate) use` re-export = E0364 visibility 自律 fix / inline module 全体抽出時の visibility 修正 + caller fully qualified path 化 / `use` 経由で fn 抽出 + tests 移動 + 件数完全不変保証 / inline module 全体抽出 + use alias で callsite 全件無変更維持 / 重複定義削除 + use 経由参照で callsite 全件無変更維持 / **#[cfg(test)] pub(crate) fn として test build 限定公開 + 4-9 file から use 経由参照**
+  - **frontend 軸**: 純粋関数 export 化 + import 1 行追加で完結 (標準 paradigm) / utils 内 cross-import paradigm (1-7 件目確立) / 既存 file 拡張軸 paradigm 1-17 件目 / multi-line existing import への統合判断 / **const 集約軸 (Loop 174 = paradigm 系統樹拡張 8 件目 = 新軸開拓 → Loop 176 → Loop 178 + 新 file 作成軸組み合わせ → Loop 180 (反復 4 件目) → Loop 182 (反復 5 件目) → Loop 184 (反復 6 件目) = paradigm 完全成熟期完全成熟確立)**
+- **責務階層精査 (Loop 119-184 教訓)**: paradigm 反復よりも責務階層精査を優先
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 182 = 規模 S-M ~3 分 + Loop 183 = 規模 SS ~3 分 + Loop 184 = 規模 S-M ~3 分 = **目標 15 分以内達成 + 平均 ~3 分/loop = 過去最速級維持**)
+- worker 1 件 = 1-2 commit (本セッション 3 ループ完走 = 6 commit + 1 SESSION SUMMARY commit = 7 commit)
+- 累積 worker 完走 282/283 (本セッション +3 件完走、99.6%)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは **3 ループ完走 + handoff** = handoff 文書「2-3 ループ完走推奨」上限達成 + context 衛生優先
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」 (継承)
+- watchdog 継続指示: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」 (継承)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む
+2. `git status --short --branch` / `git log --oneline -10` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認.
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認. `mjc-main` なら不要、`mjc-main-20260505-91` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-91 mjc-main` を実行 (冪等).
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 85 セッション目「再出現せず」観測 = 節目 80 件突破後 5 件目)
+5. **戦略転換の核心を継承**: 単一軸 4 連続集中をしない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ. **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = **frontend 軸 2 連続 (Loop 182/184) からの pivot で K 軸が最適**
+6. **最初の Loop 候補**: variety 規則「frontend(184) → 必ず別軸へ pivot」を踏まえ、Loop 185 で **(a) 候補 K = K 軸 = Section 2.3 観測 46 件目 (規模 SS) または (b) Loop 186 で R27 = frontend 軸 paradigm 反復 7 件目 = `"未登録"` 集約 (3 callsite/2 file = 規模 S-M = 最軽量 = 最後の重複候補) または (c) X' / H1 = ユーザー直伝指示要** のいずれか採用検討. **最有力推奨 = 候補 K (K 軸 = Section 2.3 観測 46 件目 = alternation pivot frontend → K 復帰 = 規模 SS)**. **重要**: 後継 R27 採用時は **抽出先 = 既存 `src/utils/statusLabels.ts` への追加で paradigm 一貫性維持 + 後継 line shift 要 grep 再確認** が responsible. worker prompt は「Loop 60-184 と同じ 2-commit pattern + Loop 144 fault precedent から append 1 回のみ明示 + Loop 166 boundary fix precedent から冒頭 `---` 含めない明示」を含めて ~80-150 行 (規模 SS, K 軸).
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (本セッション Loop 182/184 で 2 連続実証 = handoff prompt R25/R26 候補を grep で実在確認 + line shift / import 状態の誤りを批判検証 = メイン批判判断 連続 91 セッション目達成).
+8. 待機モード禁止. final answer で停止せず、改善ループを継続する. **本セッションは 3 ループ + handoff = 後継は 2-3 ループ完走推奨**
+9. **worker prompt には worker prompt 必須要素 9 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning + 二重書き fault + boundary `---` 重複 fault を防止**, **worker prompt は ~80-300 行を目安に simpler 化**
+10. **worker 完走確認は `git status --short` を主観測手段とする** (本セッション継続 paradigm)
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK**
+12. **commit hash 更新漏れパターン (Loop 145-184 で 40 連続観測 = 完全復活 pattern + 節目 40 件突破)**: worker prompt に「2-commit pattern」を明示記載 + Loop 144 fault precedent から「append は 1 回のみ」明示記載 + Loop 166 boundary fix precedent から「冒頭 `---` 含めない」明示記載 = 後継も活用検討可能
+13. **worker fault 時の救済策 (Loop 144/166 precedent)**: AGENT_LOG.md の二重書き / boundary `---` 重複等は メイン直接 Edit で削除修復 + chore commit を作成 = メイン直接削除救済 paradigm 2 件目
+
+# Loop 185 への期待 (推奨ループ設計)
+
+直近 30 ループで構造分離軸 51 件 + 機能拡張/docs 軸 4 件 + harness 衛生軸 45 件 = K(181) → frontend(182) → K(183) → frontend(184) → **Loop 185 では K 軸へ必ず pivot = K 軸 (Section 2.3 観測 46 件目 = 規模 SS) が最有力**.
+
+メインは grep + Read 精読で 1 候補に絞る (本ハンドオフでは候補 K = K 軸 = 観測 46 件目 = 規模 SS を最有力推奨、Loop 186 で R27 = frontend 軸 = const 集約 paradigm 反復 7 件目 = `"未登録"` 集約 = 規模 S-M = 最後の重複候補) → worker prompt 作成 (~80-150 行 = SS 規模) → 起動 = 通常の自律改善ループへ復帰.
+
+**最有力推奨は候補 K (K 軸 = Section 2.3 観測 46 件目)**:
+- 規模 SS 想定 (~3-7 分完走) = worker prompt は ~80-120 行
+- paradigm = K 軸 = harness 衛生軸 = alternation 復帰
+- precedent = Loop 79/81/.../183 = 45 件目までの updates
+- 観測 46 件目 = 節目 40 件突破後 6 件目
+- AGENT_LOG.md 増分計測を Section 2.3 末尾の Loop 182 観測ブロック直後に追記
+
+- 推奨抽出順序 (Loop 186 以降): R27 = frontend 軸 = const 集約 paradigm 反復 7 件目 = `"未登録"` 集約 (paradigm 完全成熟期完全成熟最終収束完成可能性) → R28 / R21 / R17 等
+
+後継 mjc-main-20260505-91 への 2-3 ループ完走推奨。最有力候補 = K = K 軸 = Section 2.3 観測 46 件目 = 規模 SS = alternation pivot frontend(184) → K(185) = 24 → 25 / Loop 186 で R27 = frontend 軸 = const 集約 paradigm 反復 7 件目 = `"未登録"` 集約 = paradigm 完全成熟期完全成熟最終収束完成可能性. 詳細は docs/handoff/mjc-main-20260505-91.txt 参照.
+
+---

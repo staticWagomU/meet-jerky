@@ -1,0 +1,71 @@
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-57
+
+## 本セッション実績 (2 ループ完走 + 通常 cadence handoff)
+
+### Loop 110 = TranscriptDisplay 純粋関数 7 件抽出 (構造分離 31 file 目, frontend 軸 3 件目, ~2.5 分)
+- 新規 file: src/utils/transcriptDisplayHelpers.ts (87 行)
+- 削除元: src/components/TranscriptDisplay.tsx (純粋関数 7 件 production ~76 行 + import 整理)
+- 7 純粋関数: getSpeakerKind + getSpeakerLabel + getSpeakerAriaLabel + isSourceLessError + getSegmentAriaLabel + getVisibleSpeakerLabel + getSegmentCounts
+- caller 影響: TranscriptDisplay.tsx 内 5 箇所 (L122/L291/L514/L515/L532) は import 1 行追加のみで無変更
+- 衝突回避設計: file 専用 namespace `transcriptDisplayHelpers.ts` 採用 = LiveCaptionWindow.tsx の getSpeakerLabel (signature `string`) と本 file の getSpeakerLabel (`string | null`) を file boundary で分離 (Loop 108 で確立した同 paradigm の継承)
+- TranscriptDisplay.tsx: 560 → 489 行 (-71 行 / -12.7%)
+- npm run build: ✓ built in 884ms / 1919 modules transformed (Loop 108 = 1918 → +1 module)
+- commits: fab415d (refactor) + fafeaa9 (chore-agent-log)
+- paradigm = 純粋関数機能分離軸 frontend 版 continuity (Loop 107/108 と同 paradigm = K 軸 (Loop 109) を挟んだので軸 reset 解釈可能 = 警告境界回避)
+- メイン批判判断: handoff 推奨候補 X1 を grep + Read 精査で「外部 caller ゼロ + 7 純粋関数 + import 共有」確認して採用 = 連続 52 セッション目達成
+
+### Loop 111 = K 軸復帰 = Section 2.3 観測表 9 件目追記 (~3 分)
+- 編集: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 +1 件 = 計 9 件累積)
+- 観測値: Loop 108 → Loop 110 で +85 行 (32,584 → 32,669) / 平均 ~42 行/loop / Loop 108 観測値 (~32 行/loop) 比 +31% 増
+- 主因 = mjc-main-20260505-56 SESSION SUMMARY 1 件 (~50-70 行) + Loop 109 K 軸 chore entry (~10-12 行) = paradigm pivot 多軸の軽量増分継続だが SUMMARY 寄与が支配的
+- 長期平均 (Loop 79-111 = +666 行) = ~21 行/loop = 短期 variance (32-75 行/loop) は paradigm pivot メトリクスとして機能
+- precedent 9 件目達成 (Loop 79/81/86/95/98/102/106/109)
+- AGENT_LOG.md: 32,669 → 32,680 (+11 行)
+- commits: 8f57a1e (docs) + af33bb1 (chore-agent-log)
+- paradigm = harness 衛生軸 = variety pivot (Loop 110 frontend → Loop 111 K = 3 連続防止 + alternation pattern 完成)
+
+## 累積実績
+
+- worker 完走 = 2/2 件 (累計 210/210 = 100% 維持)
+- worker 自律 2-commit pattern = 連続 51 ループ目達成 (Loop 60-111)
+- メイン批判判断 = 連続 52 セッション目達成
+- harness 衛生 (canonical 移譲後 scripts/* M 表示再出現せず) = 連続 52 セッション目観測
+- ファイル参照型 handoff prompt = 連続 53 セッション目継承
+- scope 多様性 = 19 軸到達 (frontend 軸 = TranscriptView + LiveCaptionWindow + TranscriptDisplay 3 件 + scope depth 軸 5 件 + その他 11 軸)
+- 大型 file 責務分離 = 31 件累積 (Rust 28 件 + Frontend 3 件)
+
+## 戦略転換の継承
+
+- 「Debug 軸補強」「Webex sweep」等の派生型 CI 保護パターンに戻らない (継承 52 セッション目)
+- 「同じパターン 3 ループ続いたら 4 ループ目に variety pivot」(継承)
+- 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価」(継承)
+- 「grep 結果は必ず Read で精読してから発見を主張する」(継承)
+- 「frontend 軸の同名関数衝突回避 = file 専用 namespace」(Loop 108 で確立、Loop 110 で再適用 = paradigm 強化)
+
+## 現在の品質状態
+
+- cargo test (lib): 704 passed / 0 failed (件数完全不変、本セッション rust 触れていない)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: ✓ built in 884ms (vite v7.3.2 = 1919 modules transformed = Loop 110 完走時点)
+- bash -n scripts/claude-agent-*.sh: OK
+
+## 後継 (mjc-main-20260505-58) への引き継ぎ要点
+
+- 2-3 ループ完走推奨 (本セッションは 2 ループ完走 = 下限達成)
+- variety 規則: Loop 110 frontend → Loop 111 K = pivot 一巡 = Loop 112 で **frontend 軸 4 件目 (continuity 異 file = K 軸挟みで境界 reset)** または **rust 軸復帰** を検討
+- frontend 軸 4 件目 候補:
+  - **TranscriptView.tsx 残 純粋関数 (permissionStatus + transcriptionSourceStatus)** = scope depth pattern 6 件目警告
+  - **ModelSelector.tsx (498 行) 純粋関数抽出** = scope 20 軸目開拓候補 = grep 精査要
+  - **SettingsView.tsx 内部 component helper 精査** = 抽出余地有無の確認
+- rust 軸復帰 候補:
+  - transcription_commands_stop 単独抽出 = scope depth 軸 6 件目警告
+  - resample_audio dead code 削除 = ユーザー直伝指示要
+
+## メイン批判判断の precedent (Loop 110 で確立)
+
+- 「外部 caller ゼロ + import 共有 + 既存呼び出し無変更」の 3 条件確認手順で X1 採用判定 = 後継継承推奨
+- 衝突回避設計 (file 専用 namespace) = Loop 108 + Loop 110 の 2 件 precedent = paradigm 確立
+
+---

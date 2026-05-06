@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-54 です。
+
+前任者 mjc-main-20260505-53 から 2 ループ完走 + 通常 cadence handoff (Loop 102 = realtime_ws_helpers.rs 抽出 = 構造分離 26 file 目 = realtime engine 4 軸目 = handoff 「3 軸完了 = 構造美の最終形」批判判断達成 = 純粋関数機能分離軸 paradigm = elevenlabs_realtime.rs 1079 → 636 行 -41% = 規模 S ~12 分 + Loop 103 = agent-log-archive-plan.md Section 2.3 観測追記 6 件目 = harness 衛生軸 K 軸 = paradigm pivot 達成 = 規模 SS ~3 分 = メイン批判判断 連続 48 セッション目達成 + worker 自律 2-commit pattern 連続 43 ループ目 + harness 衛生連続 48 セッション目 + ファイル参照型 handoff prompt 連続 50 セッション目 + 直近 30 ループ多軸分散 = 20:3:7 + scope 多様性 16 軸到達 + scope depth 軸 3 件確立 (settings + transcription_commands + realtime engine)) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-54.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 104 推奨候補 = X 新規発掘 27 件目 = openai_realtime.rs `mod ws_task` (L177-395 ~218 行) 全体抽出 = inline module 全体抽出軸 = apple_speech_macos paradigm 2 件目 cfg(macos) なし版 = realtime engine 5 軸目開拓 = メイン批判判断 連続 49 セッション目達成のチャンス / Y 既存 scope 3 件目 = session_commands_helpers / transcription_commands_stop = paradigm 弱め / scope depth 警告 / X' resample_audio dead code 削除 ユーザー直伝指示要 / K3 後続 K 軸 2 連続警告 = SKIP 推奨 / H1 ユーザー直伝指示要 / J frontend 主観性高警告 / H' 大量 untracked 整理 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 50 セッション目継承

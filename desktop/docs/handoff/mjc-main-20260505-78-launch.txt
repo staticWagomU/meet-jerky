@@ -1,0 +1,21 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-78 です。
+
+前任者 mjc-main-20260505-77 から **3 ループ完走** (Loop 155 = rust 軸 = inline module 抽出軸 rust 版 = scope 37 軸目開拓 = ElevenLabs WebSocket task tier = elevenlabs_realtime.rs の mod ws_task (~376 行) を新 file elevenlabs_realtime_ws_task.rs に抽出 + use alias で callsite 5 件無変更 + 大型 rust file 責務分離 33 file 目 + openai precedent と完全同形 = 鏡像対称化 + Loop 156 = K 軸 = Section 2.3 観測 31 件目 = +37 行 / 平均 ~18.5 行/loop = Loop 153 観測 -10% 減 = 軽量化階層下端 ~18 行に拡大 + rust 軸軽量化 paradigm 初観測 + paradigm 領域拡大 + Loop 157 = rust 軸 = 重複削除 + 既存 file 拡張軸 paradigm 5 件目 = 異 tier 同 entity 集約 = utils 間集約軸 rust 版 = audio_silence.rs::calculate_rms 重複定義削除 + audio.rs::calculate_rms から use 経由参照 + DRY 違反解消 + Loop 153 frontend 版 paradigm の rust 版実証 + 重複候補 grep 探索 paradigm 5 件目達成) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-78.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 158 推奨候補 K = Section 2.3 観測追記 32 件目 = 規模 SS = alternation 46 連続維持 = 最有力推奨 / R7''''' = 重複候補 grep 探索 paradigm 6 件目 = 同名 const / struct / enum / 内部 fn 等の網羅検索 = 規模 SS = 副推奨 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 73 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119-157 教訓継承** = 後継 Loop 158+ で paradigm 選択時に必ず責務階層精査を実施 + **handoff prompt の主張を鵜呑みにせず grep + Read で批判的検証する** (本セッション Loop 155 + 157 = 2 回連続 precedent = handoff prompt 主張の R8'' 候補列挙 + R7'''' 重複候補探索を独自網羅 grep で批判的に検証 → メイン批判判断 連続 77 セッション目達成 = handoff prompt 真偽確認の重要性を再実証)
+- **API 互換維持戦略 (Loop 119-157 precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / `use` 経由で fn 抽出 + tests 移動 + 件数完全不変保証 (Loop 151) / **inline module 全体抽出 + use alias で callsite 全件無変更維持 (Loop 155 = scope 37 軸目開拓 = ElevenLabs WebSocket task tier paradigm + openai precedent 鏡像対称化)** / **重複定義削除 + use 経由参照で callsite 全件無変更維持 (Loop 157 = 既存 file 拡張軸 paradigm 5 件目 = utils 間集約軸 rust 版 = Loop 153 frontend 版 paradigm の rust 版実証)** / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125-143 標準 paradigm) + utils 内 cross-import paradigm 7 件目に拡張完了 (Loop 147)** + **既存 file 拡張軸 paradigm 1 件目 (Loop 145 = AudioLevelMeter sanitize 重複削除) + 2 件目 (Loop 147 = LiveCaptionWindow TRACKS + AudioSource 統合) + 3 件目 (Loop 149 = MEETING_START_REQUEST_EVENT 3 file 重複削除) + 4 件目 (Loop 153 = getSpeakerLabel 重複削除 + re-export 戦略 = utils 間集約軸 = 影響範囲最小化 paradigm) + 5 件目 (Loop 157 = calculate_rms 重複削除 + use 経由参照 = 異 tier 同 entity 集約 = utils 間集約軸 rust 版)** = 後継も活用検討可能 = paradigm 反復可能
+- **worker 自律学習進化 paradigm 3 件目 (Loop 143/145/149 で確立発展)**: worker prompt 未指示事項を自律予測 + 対応 = 後継も worker prompt の grep 確認手順を明示すれば自律学習進化 paradigm 期待可能
+- **worker fault 防止策 (Loop 144 precedent から worker prompt 必須要素 8 つ目に追加 = Loop 146-157 で 12 連続実証成功)**: worker prompt の Step 4 (AGENT_LOG.md append) で「append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。」を **明示記載** = 二重書き防止
+- **メイン直接削除救済 paradigm 1 件目 (Loop 144)**: worker fault 時 (二重書き等) はメインで直接 AGENT_LOG.md を Edit で修復 + chore commit を作成可能 = AGENT_LOG.md SESSION SUMMARY と chore hash 修正の precedent 拡張
+- **階層化 paradigm 4 段階目維持 + 軽量化階層下端拡大 (Loop 156 = mjc-main-20260505-77)**: AGENT_LOG.md 増分階層 4 段階 (SS 0 件 ~11-12 / SS 1 件軽量化 **~18-26** / SS 1 件中量化 ~30-37 / SS 1 件大量化 ~42) が **paradigm 完全成熟期維持 + Loop 156 で軽量化階層下端 ~18 行/loop 観測 = 範囲拡大** = 後継も同階層化 paradigm を継続観測可能
+- **R7'''' 候補は paradigm 5 件目達成済 (Loop 157)**: 4 候補 (calculate_rms / handle_event / start/stop_system_audio) のうち calculate_rms のみ真の重複と判定 + 集約完了 = 後継 Loop 159+ で paradigm 6 件目を狙うなら更なる重複候補 grep 探索が必要 (handoff prompt 主張に頼らず独自精読 + 同名 fn 以外の探索手法を試す = 同名 const / 同名 struct / 同名 enum 等)
+- **frontend / rust top-level 純粋関数候補は枯渇域 (Loop 157 確認済)**: top-level / 内部 helper 双方で枯渇 = 後続候補は **(a) K = K 軸再度 = alternation 46 連続維持 = Loop 158 推奨 / (b) R7''''' = 重複候補 grep 探索 paradigm 6 件目 = 同名 const / struct / enum 等の探索 / (c) X' / H1 = ユーザー直伝指示要**

@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-49 です。
+
+前任者 mjc-main-20260505-48 から 2 ループ完走 + 通常 cadence handoff (Loop 93 = secret_store_commands.rs 抽出 = 構造分離 19 件目 = secret_store 軸 1 件目 = 新 scope = 機能分類軸 paradigm = 規模 SS ~3-4 分 + Loop 94 = audio_silence.rs 抽出 = 構造分離 20 件目 = audio_silence 軸 1 件目 = 新 scope = 純粋関数機能分離軸 paradigm = 規模 SS ~6 分 = paradigm 切り替え 2 連続 (機能分類軸 → 純粋関数機能分離軸) = handoff 警告「scope 払底気味」を 4 ループ連続 (Loop 89/90/91/93/94) grep + Read 精査 + 発掘で覆す = メイン批判判断 連続 43 セッション目達成 + worker 自律 2-commit pattern 連続 35 ループ目 + harness 衛生連続 43 セッション目 (canonical 移譲後 scripts/* M 表示再出現せず) + ファイル参照型 handoff prompt 連続 45 セッション目 + 直近 28 ループ多軸分散 = 構造分離 20 + 機能拡張/docs 5 + harness 衛生 3 = 20:5:3 重心構造分離 + scope 多様性 12 軸到達 + secret_store.rs 303 → 200 行 -34% + audio_utils.rs 325 → 227 行 -30%) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-49.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 95 推奨候補 = X 新規発掘 21 件目 = apple_speech.rs cfg(macos) 軸 (Loop 92 から 3 ループ離れて警告境界外) / X' audio_resample.rs 抽出 同 scope 連続注意 / X'' resample_audio dead code 削除 ユーザー直伝指示要 / K3 後続 機能拡張/docs 軸 1 連続復帰 主観性中要範囲限定 / H1 ユーザー直伝指示要 harness 衛生 4 件目 sweep 警告境界 / J frontend 主観性高警告 / H' 大量 untracked 整理 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 45 セッション目継承

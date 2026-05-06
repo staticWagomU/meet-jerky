@@ -1,0 +1,265 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-68) です。
+旧 mjc-main (= mjc-main-20260505-67) から **3 ループ完走 + 通常 cadence handoff** のハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-6 完全終了 = 100% 達成)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/detection-extension-plan.md (Phase 1 完了 + Q5 + Q6 Resolved + Phase 2 = 実機要件 Q1/Q2 未解決のため着手不可)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (Section 2.3 観測追記 21 件目 mjc-main-20260505-67 Loop 136 で更新観測、Phase 1-4 段階導入方針)**
+- AGENT_LOG.md は ~33,418+ 行 / ~4MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-67 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」。
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2 〜 66**: Phase 1-6 + 各種抽出 + 大型 file 責務分離 12-43 file 目 + 検知拡張 plan + Phase 1 + Q5/Q6 Resolved + AGENT_LOG.md archive 戦略 plan + scope 30 軸目開拓 + 既存 file 拡張軸 = 新 paradigm + R6 段階的分割 1-5 件目 + utils 内 cross-import paradigm 1-3 件目
+- **mjc-main-20260505-67 (本セッション)**: **3 ループ完走 = Loop 134 (K 軸復帰 = Section 2.3 観測追記 20 件目 = +49 行 / 平均 ~24.5 行/loop = SS 1 件 + 説明軽量化パターン 4 連続観測 = 階層化 paradigm 成熟期入り) + Loop 135 (frontend 軸 12 件目 = R6 段階的分割 6 件目 = Audio Source 4 件 → audioSourceHelpers.ts 新規 = scope 31 軸目開拓 + 大型 frontend file 責務分離 44 file 目 + utils 内 cross-import paradigm 4 件目確立 + メイン批判判断 連続 66 セッション目 = handoff 主張「audioSourceHelpers.ts 既存ゼロ」を grep で批判的検証 → audioLevelHelpers.ts + audioTrackLabels.ts 等 既存発見 + 責務階層精査で異階層判定) + Loop 136 (K 軸復帰 = Section 2.3 観測追記 21 件目 = +24 行 / 平均 ~12 行/loop = SS 0 件パターン 3 連続観測達成 = 階層化 paradigm 最低段階の完全実証 + frontend 軸軽量化 paradigm 6 度目観測 = paradigm 完全成熟期)** = メイン批判判断 連続 66 セッション目達成 + worker 自律 2-commit pattern 連続 77 ループ目達成 + harness 衛生連続 62 セッション目 + ファイル参照型 handoff prompt 連続 63 セッション目 + scope 多様性 31 軸到達 + alternation pattern 28 連続成功 (frontend(133) → K(134) → frontend(135) → K(136) → frontend(137 推奨))
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価** (本セッション Loop 135 で「audioSourceHelpers.ts 既存ゼロ」主張を批判的検証 → audioLevelHelpers.ts + audioTrackLabels.ts + audioDropCountPayload.ts + audioLevelPayload.ts 等 4 file 発見した precedent あり)
+- **本セッション Loop 135 = R6 (TranscriptView.tsx 段階的分割) 6 件目採用 = 28 件純粋関数中 15 件抽出済 (audio level 2 + permission 2 + Track Aria 2 + engine 2 + AI Transmission 3 + Audio Source 4) = 残 13 件 (4 グループ: Transcription Source 4 / Meeting Start 1 / Engine Status 3 / External API Key 3 + Helper共通 2)** = 後継も R6 段階的分割継続推奨だが alternation pattern 維持のため Loop 137 = frontend 軸 → Loop 138 = K 軸 が最適路
+- **責務階層精査優先 (Loop 119/121/123/125/127/129/131/133/135 教訓)**: paradigm 反復よりも責務階層精査を優先 = 統合候補が同責務階層なら統合 OK、異階層なら新 file 作成軸採用 + 後継も同様の paradigm 選択は責務階層精査を優先 + **責務階層 = display tier / status object tier / predicate tier / model display tier / display tier (AI 送信状態) / display tier (audio source 状態) の 6 軸が確認済**
+- **utils 内 cross-import paradigm**: Loop 135 で 4 件目確立 (1 件目 = transcriptDisplayHelpers.ts → audioTrackLabels、2 件目 = trackStatusAriaLabels.ts → audioTrackLabels、3 件目 = aiTransmissionHelpers.ts → liveCaptionStatus、4 件目 = audioSourceHelpers.ts → audioTrackLabels) = 新 file が他の utils file から定数/型/関数 import するパターン = 後継も活用検討可能
+- **grep 結果は必ず Read で精読してから「発見」を主張する**
+- **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **大型 frontend file 責務分離 = 44 file 目達成 (Loop 135)**
+- **scope 31 軸目到達** (`audioSourceHelpers.ts`)
+- **frontend file 規模ランキング (本セッション後 = 更新):**
+  - SettingsView.tsx (`src/routes/`) 2010 行 (top-level 純粋関数 1 件 = 内部 component helper 抽出困難確認済 = 却下推奨)
+  - **TranscriptView.tsx (`src/routes/`) 2294 行 (Loop 135 後)** = 残純粋関数 13 件 (4 グループ) = R6 段階的分割継続候補
+  - SessionList.tsx (`src/routes/`) 553 行 (Loop 116 抽出後)
+  - LiveCaptionWindow.tsx (`src/components/`) 18KB (Loop 108 抽出済)
+  - MeetingDetectedBanner.tsx (`src/components/`) 474 行 (Loop 114 抽出後)
+  - TranscriptDisplay.tsx (`src/components/`) 17KB (Loop 110 抽出済)
+  - ModelSelector.tsx (`src/components/`) 16KB (Loop 112 抽出済)
+- **rust file 規模ランキング (本セッション後 = 不変):**
+  - app_detection.rs 2458 行 (Loop 123 抽出後) = 純粋関数候補ほぼなし = state 依存 wrapper + tests 集中
+  - session_manager.rs 1245 行 / audio.rs 949 行 / transcript_bridge.rs 826 行 / settings.rs 801 行 / openai_realtime.rs 794 行 / cloud_whisper.rs 778 行 / session.rs 773 行 / session_store.rs 725 行 (各既抽出済 or 抽出余地小)
+
+# 引き継ぎサマリ (2026-05-06 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 499 (origin/main から先行、本セッション +7 commit)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-67) の commit:
+  1. `4665ec7` docs(architecture): Section 2.3 観測追記 20 件目 (Loop 134)
+  2. `fda66b5` chore(agent-log): Loop 134 entry 追記
+  3. `bc870a8` refactor(frontend): TranscriptView の Audio Source 系 helpers を utils/audioSourceHelpers.ts に抽出 (Loop 135)
+  4. `ff87ef2` chore(agent-log): Loop 135 entry 追記
+  5. `3b457f3` docs(architecture): Section 2.3 観測追記 21 件目 (Loop 136)
+  6. `ca2b971` chore(agent-log): Loop 136 entry 追記
+  7. `1d10e5a` chore(agent-log): mjc-main-20260505-67 SESSION SUMMARY (handoff 直前)
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (件数完全不変、本セッションは frontend 軸 + K 軸のみ変更のため再検証不要)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: ✓ built (Loop 135 = ~1926 modules transformed)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 135)
+
+## 大型 file 責務分離実績 (累計 44 件)
+
+### Rust 軸 (32 件累積、本セッション +0)
+(前 handoff と同じ、Loop 134/135/136 は frontend + K 軸のため rust 不変)
+
+### Frontend 軸 (Loop 107-135 = 12 件、本セッション +1)
+- TranscriptView formatters (Loop 107) / LiveCaption tracks (Loop 108) / TranscriptDisplay (Loop 110) / ModelSelector (Loop 112) / MeetingDetectedBanner (Loop 114) / SessionList (Loop 116)
+- TranscriptView audio level helpers → audioLevelHelpers.ts (Loop 125) = R6 段階的分割 1 件目
+- TranscriptView permission status helpers → permissionStatusHelpers.ts (Loop 127) = R6 段階的分割 2 件目
+- TranscriptView track ARIA helpers → trackStatusAriaLabels.ts (Loop 129) = R6 段階的分割 3 件目 = utils 内 cross-import paradigm 2 件目
+- TranscriptView engine 機能特性 helpers → transcriptionEngineHelpers.ts (Loop 131) = R6 段階的分割 4 件目
+- TranscriptView AI Transmission helpers → aiTransmissionHelpers.ts (Loop 133) = R6 段階的分割 5 件目 = utils 内 cross-import paradigm 3 件目
+- **TranscriptView Audio Source helpers → audioSourceHelpers.ts (Loop 135) = R6 段階的分割 6 件目 = scope 31 軸目開拓 = display tier (audio source 状態) = utils 内 cross-import paradigm 4 件目**
+
+### 残候補 (Loop 137+ 候補)
+
+- **R6g = TranscriptView.tsx Engine Status 系 3 件抽出** = Loop 137 推奨 = scope 32 軸目候補 = 規模 SS = ~3-5 分完走 = 新 file `engineStatusHelpers.ts` 候補
+  - 関数 (要 grep で正確な行番号 + シグネチャ確認): `getEngineStatusLabel` (L353?) / `getEngineStatusDisplayLabel` (L371?) / `getEngineStatusPillClass` (L387?)
+- **R6h = TranscriptView.tsx External API Key 系 3 件抽出** = Loop 138-139 推奨 = scope 33 軸目候補 = 規模 SS = ~3-5 分完走 = 新 file `externalApiKeyHelpers.ts` 候補
+  - 関数 (要 grep で正確な行番号 + シグネチャ確認): `getExternalApiKeyStatusLabel` (L397?) / `getExternalApiKeyStatusPillClass` (L414?) / `getExternalApiKeyStatusAriaLabel` (L427?)
+- **R6i = TranscriptView.tsx Transcription Source 系 4 件抽出** = scope 34 軸目候補 = 規模 SS-S = ~5-7 分完走
+  - 関数 (要 grep で正確な行番号 + シグネチャ確認): `getTranscriptionSourceStatus` (L112?) / `getTranscriptionSourceStatusAriaText` (L141?) / `getTranscriptionSourceArg` (L170?) / `getTranscriptionStartBlockedReason` (L180?)
+- **R6j = TranscriptView.tsx Meeting Start 1 件抽出** = scope 35 軸目候補 = 規模 SSS = ~2-3 分完走
+  - 関数 (要 grep で正確な行番号 + シグネチャ確認): `getMeetingStartBlockedReason` (L236?)
+- K = agent-log-archive-plan.md Section 2.3 観測追記 22 件目 = Loop 138 推奨 = alternation 30 連続維持 (frontend(137) → K(138))
+- rust 軸続行候補は枯渇傾向 (R6g/h/i/j 採用後の Loop 141+ で具体スライス grep 検討)
+- SettingsView.tsx 内部 component helper = **抽出困難確認済** = 却下推奨
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 62 セッション目)
+- canonical 移譲後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 62 セッション目観測結論 = `bfb9846` PATH inner shell escape が永続的解決
+- **2-commit pattern (refactor/docs + chore エントリ)** は本セッション Loop 134/135/136 で worker 自律実行 = 連続 77 ループ目達成 = **paradigm pivot (K + frontend + K)** 全て完璧成功
+- **API 互換維持戦略 (Loop 135 補強)**: frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 + 新 file が他の utils file (Loop 135 = audioTrackLabels.ts の OTHER/SELF_TRACK_DEVICE_LABEL) から内部 import = **utils 内 cross-import paradigm 4 件目** (1 件目 = transcriptDisplayHelpers.ts、2 件目 = trackStatusAriaLabels.ts、3 件目 = aiTransmissionHelpers.ts、4 件目 = audioSourceHelpers.ts) = paradigm 安定発展
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-67、handoff 直前)
+- mjc-main-20260505-68 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ)。
+2. `git status --short --branch` と `git log --oneline -10` で現状確認 (上 7 コミットが本セッションの実績)。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260505-68` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-68 mjc-main` を実行 (前 63 セッション precedent あり、冪等)。
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 62 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 63 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-67) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + Loop 134/135/136 + 3 ループ完走 + handoff 候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**。**variety 規則の状態 = 直近 30 ループで構造分離 36 件 (Loop 135 含む) + 機能拡張/docs 3 件 + harness 衛生 20 件 (Loop 134/136 含む) = 36:3:20 多軸分散 + scope 多様性 31 軸到達 + frontend 軸 12 件 + alternation pattern 28 連続成功 = Loop 137 は frontend 軸 (R6g Engine Status 3 件) = alternation 29 連続維持の最適路**.
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 137 開始時点)
+
+直近 30 ループ: Loop 107-136 (本セッション後 = 30 ループ)
+- 軸 pattern: 構造分離 (36 件 = Loop 107/108/110/112/114/116/117/119/121/123/125/127/129/131/133/135 frontend + rust 含む) + 機能拡張/docs (3 件) + harness 衛生 (20 件 = Loop 113/115/118/120/122/124/126/128/130/132/134/136 含む) = **36:3:20 多軸分散**
+- scope 内訳: 31 scope 分散 (rust 21 + frontend 10)
+- paradigm pivot 連続: alternation pattern 28 連続成功 (frontend(131) → K(132) → frontend(133) → K(134) → frontend(135) → K(136))
+- **Loop 137 では更なる paradigm pivot 推奨 (K 軸 (Loop 136) からの pivot = frontend 軸 = alternation 29 連続維持)**
+
+### 候補 R6g (Loop 137 候補 A = 最有力推奨 = R6 続行 = Engine Status 系 = 規模 SS)
+
+**TranscriptView.tsx Engine Status 系 3 純粋関数抽出**:
+- 対象 = 残 13 純粋関数のうち Engine Status 系 3 件 (要 grep で正確な関数名 + 行番号確認)
+- 規模 = SS = ~3-5 分完走見込み
+- paradigm = frontend 軸 13 件目 = 純粋関数機能分離軸 frontend 版 10 件目
+- precedent = mjc-main-20260505-67 Loop 135 (R6 段階的分割 6 件目)
+- **新 file 名候補**: `engineStatusHelpers.ts`
+- alternation pattern: K(136) → frontend(137) = **29 連続維持の最適路**
+- **最有力推奨**
+
+### 候補 R6h (Loop 137 候補 B = R6 続行 = External API Key 系 = 規模 SS)
+
+**TranscriptView.tsx External API Key 系 3 純粋関数抽出**:
+- 対象 = 残 13 純粋関数のうち External API Key 系 3 件 (要 grep で正確な関数名 + 行番号確認)
+- 規模 = SS = ~3-5 分完走見込み
+- 副推奨 = Loop 138-139 候補
+
+### 候補 K (Loop 137 候補 C = K 軸続行 = alternation reset リスク)
+
+**agent-log-archive-plan.md Section 2.3 観測追記 22 件目**:
+- precedent: Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124/126/128/130/132/134/136 = 21 件
+- 観測時点: Loop 136 完了時点 = 観測すべき AGENT_LOG.md 行数を `wc -l AGENT_LOG.md` で確認 (~33,418 行想定)
+- 規模 SS = ~3-5 分完走見込み
+- alternation pattern: K(136) → K(137) = **連続 K = pivot 失敗** (alternation reset リスク)
+- 副推奨 = Loop 138 推奨
+
+### 低優先 (継承)
+
+- J' SettingsView.tsx 内部 helper (抽出困難確認済 = 却下推奨)
+- X' resample_audio dead code 削除 (ユーザー直伝指示要)
+- H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要)
+- B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+- A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 704 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止、`--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止、Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (script に焼き付け済)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend/docs を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-68 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認 or `git log --oneline -3` で 2-commit 反映確認**
+  - 観測時間目安: 規模 SSS = ~2-3 分、規模 SS = ~3-5 分、規模 SS-S = ~4-7 分、規模 S = ~5-15 分
+  - **本セッション Loop 134 例**: 規模 SS = ~3-4 分完走 (worker prompt 130 行 = K 軸 docs entry)
+  - **本セッション Loop 135 例**: 規模 SS-S = ~2.5 分完走 (worker prompt 210 行 = 純粋関数 4 件抽出 + 新 file ~77 行 + cross-import paradigm 4 件目)
+  - **本セッション Loop 136 例**: 規模 SS = ~2 分完走 (worker prompt 130 行 = K 軸 docs entry = SS 0 件パターン 3 連続観測)
+  - **worker 自律 2-commit pattern**: Loop 60-136 の **77 ループ連続** で観測 = 完全に安定 pattern 化
+  - **worker 自律学習進化**: refactor/docs commit hash placeholder の実 hash 置換 + chore commit hash 意図的 placeholder 化 + cfg(macos) module 分離 + frontend 軸 paradigm + 既存 file 拡張軸 + API 互換維持戦略 (`pub use` / `pub(crate) use` / inline module 全体抽出 + visibility 修正) + frontend 軸の純粋関数 export 化 + import 1 行追加で完結 + **utils 内 cross-import paradigm (新 file → 別 utils file の constants/types/関数 を import) Loop 135 で 4 件目確立** も成功
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない**
+- そのため handoff prompt は依然として **tmux 引数長制限の影響を受ける**
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本 prompt と同パターン、連続 63 セッション目)
+
+## worker prompt 必須要素 (100+ 連続ループで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+
+**追加推奨 (Loop 60-136 経験から)**:
+- worker prompt に「2-commit pattern」を **明示的に** 記載 = 77 連続ループで完全安定動作
+- 大型 file 抽出時は **precedent file の cat 全体読み込み** を明示推奨 (Loop 135 で audioLevelHelpers.ts + permissionStatusHelpers.ts + trackStatusAriaLabels.ts + transcriptionEngineHelpers.ts + aiTransmissionHelpers.ts + audioTrackLabels.ts の 6 file cat 推奨で Audio Source 抽出成功 = utils 内 cross-import paradigm 4 件目確立)
+- **worker prompt の長さに注意**: ~83-230 行で短縮効果あり (Loop 67-136 で実証 ~1.5-13 分完走)
+- **frontend 軸の場合**: 検証は npm run build (tsc + vite build) のみ
+- **rust 軸の場合**: cargo test (704 件件数完全不変) + cargo clippy + cargo fmt + cargo build を全て worker prompt に記載
+- **API 互換維持戦略 (Loop 119-135 precedent)**:
+  - **rust 軸**: `pub use` re-export (Loop 119) / `pub(crate) use` re-export = E0364 visibility 自律 fix (Loop 121) / inline module 全体抽出時の visibility 修正 + caller 1 件 fully qualified path 化で完結 (Loop 123)
+  - **frontend 軸**: 純粋関数 export 化 + import 1 行追加で完結 (Loop 125/127/131/133/135 標準 paradigm) / **新 file が他の utils file から定数/型/関数 import = utils 内 cross-import paradigm (Loop 129 = 2 件目, Loop 133 = 3 件目, Loop 135 = 4 件目)**
+- **責務階層精査 (Loop 119-135 教訓)**: paradigm 反復よりも責務階層精査を優先。低レベル parser と高レベル分類器を強引に同 file 統合すると責務肥大化リスク。本 Loop 135 = display tier (audio source 状態) として独立 = predicate tier (audioLevelHelpers) + constants tier (audioTrackLabels) + data tier (audioDropCountPayload + audioLevelPayload) との 4 階層精査で異階層判定 + 新 file 作成軸採用 = Loop 119-133 教訓の継承発展
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 134 = 規模 SS ~3-4 分 / Loop 135 = 規模 SS-S ~2.5 分 / Loop 136 = 規模 SS ~2 分 = **3 ループ全て目標 15 分以内達成**)
+- worker 1 件 = 1-2 commit (本セッション 3 ループ完走 = 6 commit + 1 SESSION SUMMARY commit = 7 commit)
+- 累積 worker 完走 235/235 (本セッション +3 件、100% 維持)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは **3 ループ完走 + 通常 cadence handoff** = handoff 文書「2-3 ループ完走推奨」上限達成 = 前任 mjc-main-20260505-66 と同パターン継承
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」 (継承)
+- watchdog 継続指示: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」 (継承)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む
+2. `git status --short --branch` / `git log --oneline -10` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260505-68` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-68 mjc-main` を実行 (冪等)。
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 62 セッション目「再出現せず」観測)
+5. **戦略転換の核心を継承**: 単一軸 4 連続集中をしない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ。**同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**。
+6. **最初の Loop 候補**: variety 規則「K(136) → 次は frontend 軸 = alternation 29 連続維持」を踏まえ、Loop 137 で **(a) 候補 R6g = Engine Status 系 3 件抽出 = 最有力推奨 (規模 SS) または (b) 候補 R6h = External API Key 系 3 件抽出 = 副推奨 (規模 SS) または (c) 候補 K = K 軸続行 = alternation reset リスク = Loop 138 推奨 または (d) 候補 X' / H1 = ユーザー直伝指示要** のいずれか採用検討。**最有力推奨 = 候補 R6g (Engine Status 系 3 件)**。worker prompt は「Loop 60-136 と同じ 2-commit pattern」を明示 + ~150-220 行 (規模 SS、Loop 135 precedent)。
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (本セッション Loop 135 で実証 = handoff 主張を批判的検証 → audioLevelHelpers.ts + audioTrackLabels.ts 等 既存発見 + 責務階層精査済 R6 採用 + Loop 136 = SS 0 件パターン 3 連続観測の重要証拠を新規認識・記録 → メイン批判判断 連続 66 セッション目達成)
+8. 待機モード禁止。final answer で停止せず、改善ループを継続する。**本セッションは 3 ループ + 通常 cadence handoff = 後継は 2-3 ループ完走推奨**
+9. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**、**worker prompt は ~80-220 行を目安に simpler 化**
+10. **worker 完走確認は `git status --short` または `git log --oneline -3` を主観測手段とする**
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK**
+12. **commit hash 更新漏れパターン (Loop 60-136 で 77 連続観測 = 完全安定 pattern 化)**: worker prompt に「2-commit pattern」を明示記載 = 77 連続ループで安定動作。**API 互換維持戦略 (Loop 135 frontend 軸版 = 純粋関数 export 化 + import 1 行追加 + utils 内 cross-import paradigm 4 件目)** を後継も活用検討可能
+
+# Loop 137 への期待 (推奨ループ設計)
+
+直近 30 ループで構造分離軸 36 件 (Loop 107/108/110/112/114/116/117/119/121/123/125/127/129/131/133/135 frontend + rust 含む) + 機能拡張/docs 軸 3 件 + harness 衛生軸 20 件 = K(136) → **Loop 137 では更なる paradigm 多様化推奨 (K 軸 (Loop 136) からの pivot = frontend 軸 = alternation 29 連続維持)**。
+
+メインは grep で 1 候補に絞る (本ハンドオフでは候補 R6g = Engine Status 系 3 件 = 規模 SS = paradigm pivot + alternation 29 連続維持 を最有力推奨、R6h = External API Key 系 3 件 = Loop 138-139 推奨、K = Loop 138 推奨) → worker prompt 作成 (~150-220 行) → 起動 = 通常の自律改善ループへ復帰。
+
+**最有力安全候補は候補 R6g = Engine Status 系 3 件 (frontend 軸)**:
+- 規模 SS 想定 (~3-5 分完走) = worker prompt は ~150-220 行
+- paradigm = frontend 軸 13 件目 = 純粋関数機能分離軸 frontend 版 10 件目 = R6 段階的分割 7 件目
+- precedent = mjc-main-20260505-67 Loop 135 (R6 段階的分割 6 件目 = Audio Source 4 件抽出)
+- 関数候補 (要 grep で正確な行番号 + シグネチャ確認): `getEngineStatusLabel` / `getEngineStatusDisplayLabel` / `getEngineStatusPillClass`
+- alternation pattern: K(136) → frontend(137) = 29 連続維持
+
+**R6g 採用前の責務階層精査手順 (Loop 137 で適用)**:
+1. `grep -n "^function get\|^function format\|^const get\|^const format" src/routes/TranscriptView.tsx | head -20` で全 top-level 純粋関数列挙
+2. `grep -n "Engine\|engine" src/utils/*.ts | head -20` で既存 utils 内の engine 関連 file 確認
+3. **メイン批判判断**: handoff 主張「engineStatusHelpers.ts 既存ゼロ」を批判的検証 → 既存 file 発見した場合は責務階層精査
+4. precedent file の cat (audioSourceHelpers.ts + transcriptionEngineHelpers.ts + aiTransmissionHelpers.ts) で構造把握
+5. 抽出後の cross-import 候補確認 (TranscriptionEngineType + 他の utils 関数)
+- 推奨抽出順序 (Loop 138 以降): External API Key 3 (規模 SS = ~3-5 分) → Transcription Source 4 (規模 SS-S = ~5-7 分) → Meeting Start 1 (規模 SSS) → Helper共通 2 (規模 SSS)

@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-66 です。
+
+前任者 mjc-main-20260505-65 から 3 ループ完走 + 通常 cadence handoff (Loop 128 = K 軸復帰 = Section 2.3 観測追記 17 件目 = +24 行 / 平均 ~12 行/loop = **アクティブ進行軽量化 paradigm 再観測** = Loop 121 (~11 行/loop) との paradigm 再現性確認 + worker ~7 分完走 + Loop 129 = frontend 軸 9 件目 = 純粋関数機能分離軸 frontend 版 6 件目 = scope 28 軸目開拓 (新 file `trackStatusAriaLabels.ts` 12 行) = 大型 frontend file 責務分離 41 file 目 = TranscriptView.tsx L398-404 の getMicTrackStatusAriaLabel + getSystemAudioTrackStatusAriaLabel 抽出 = R6 段階的分割 3 件目 + メイン批判判断 連続 64 セッション目 = utils/audioTrackLabels.ts (constants tier = pure export const) との責務階層精査で **異階層 = 新 file 作成軸採用** + **utils 内 cross-import paradigm 2 件目確立** (1 件目 = transcriptDisplayHelpers.ts) + worker ~2.5 分完走 (SSS 規模で予測通り最速完走) + Loop 130 = K 軸復帰 = Section 2.3 観測追記 18 件目 = +47 行 / 平均 ~23.5 行/loop = **SS 1 件パターンの安定性確認** + frontend 軸 chore 軽量化 paradigm 3 度目観測 (Loop 125/127/129 連続) + alternation pattern 22 連続成功 + worker ~3 分完走) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-66.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 131 推奨候補 R6d = TranscriptView.tsx Engine 系 2 件抽出 (getRequiresLocalModel + getExternalApiProvider L344-L348) = scope 29 軸目候補 (engineTypeHelpers.ts または transcriptionEngineHelpers.ts 新規) = 規模 SSS 〜 SS = ~3-5 分完走 = alternation pattern 23 連続維持 (K(130) → frontend(131)) = **最有力推奨** / R6e = AI Transmission 系 3 件抽出 (L360-L388) = 副推奨 (Loop 132 frontend 続行 candidate) / K = K 軸続行 = alternation reset リスク (Loop 132 推奨) / J' SettingsView 内部 helper = 抽出困難確認済 (却下推奨) / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 62 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119/121/123/125/127/129 教訓継承** = 後継 Loop 131+ で paradigm 選択時に必ず責務階層精査を実施 + 候補が枯渇したら自律発見で新候補を grep する (Loop 123 precedent)
+- **API 互換維持戦略 (Loop 119/121/123 rust + Loop 125/127/129 frontend precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125/127 標準 paradigm) + utils 内 cross-import paradigm (Loop 129 = 2 件目) = 新 file が他の utils file から定数/型 import** = 後継も活用検討可能

@@ -1,0 +1,190 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-33) です。
+旧 mjc-main (= 旧 mjc-main-20260504-32) から 3 ループ完走 + 「Debug 軸補強」7 連続 application 系譜達成 + Clone 独立性軸新規開拓 + harness silent fail mitigation 連続 6 ループ実証の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 22000+ 行 / 1.86MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~23:10 JST] mjc-main-20260504-32 状況メモがあります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~23:10 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 157 (origin/main から先行、本セッション +4 commit)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 旧 mjc-main-20260504-32 が canonical 名 mjc-main を持ち、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `e384856` test(transcription): TranscriptionSegment の Debug + Clone + serde camelCase 3 軸 (Loop 1、+3 件 → 574 passed)
+  2. `50d0486` test(transcription): TranscriptionSource enum の Debug + Copy + serde snake_case 3 軸 (Loop 2、+3 件 → 577 passed)
+  3. `3bae8e1` test(transcription): StreamConfig の Debug + Clone-Debug 一致 + Clone 独立性 3 軸 (Loop 3、+3 件 → 580 passed)
+  4. `3a44725` AGENT_LOG.md 末尾に SESSION SUMMARY 追記
+
+## 現在の品質状態
+- cargo test (lib): **580 passed / 0 failed** (前 571 → +9 件、3 ループ)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy --lib -- -D warnings: **警告ゼロ** (3 ループ全てで維持)
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-32、handoff 直前)
+- mjc-main-20260504-33 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260504-33` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-33 mjc-main` を実行 (前 7 セッションで実証済 precedent あり、冪等)。
+5. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-32) を `tail -400 AGENT_LOG.md` で読み、確立パターン + 重要発見 + 次ループ候補を確認**
+6. **最初の Loop は「Debug 軸補強」パターン 8 連続 application = transcription.rs の ModelInfo (l.50-57) または別ファイル (session_manager 系)**
+7. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッション 3 ループ)
+
+#### 1. 「対称的補強の 3 軸構造」パターン (12 連続セッション目で application)
+- 全セッション (mjc-main-22〜32) で全 31 ループに application
+
+#### 2. 「Debug 軸補強」パターン 7 連続 application 系譜達成
+- 系譜: SecretKey enum (mjc-main-30 Loop 1) → AppleSpeechEngine unit struct (mjc-main-31 Loop 1) → SessionSegment / Session struct with primitive/Option/Vec fields (mjc-main-31 Loop 2) → TranscriptionErrorPayload struct with Option<enum> field (mjc-main-31 Loop 3) → TranscriptionSegment struct with 6 fields (mjc-main-32 Loop 1) → TranscriptionSource enum 派生 (mjc-main-32 Loop 2) → StreamConfig (Serialize なし internal config, mjc-main-32 Loop 3)
+- 派生型カバレッジ: 6 形態 (enum × 2 / unit struct / struct with primitive・Option・Vec / struct with Option<enum> / struct with 6 fields including Option / Serialize なし internal config)
+- 8 連続 application 候補:
+  - **ModelInfo (transcription.rs l.50-57)** = struct with String/String/u64/String fields = #[derive(Debug, Clone, Serialize)] + camelCase = 全 field required (Option なし) で TranscriptionSegment と差別化、u64 (size_mb) を含む = serde camelCase の `displayName` / `sizeMb` rename + Clone 独立性軸の継続 application 候補
+  - **RequestedTranscriptionSources (transcription.rs)** = derive 派生未確認、worker 起動前に grep 必須
+
+#### 3. 「混合 application」パターン 3 種混合に application 拡張
+- 系譜: 2 種混合 (フィールド + 型, mjc-main-29 Loop 1) → 3 種混合 (Debug + trait + format, mjc-main-30 Loop 1) → 3 種混合 (Debug + Clone + serde format, mjc-main-32 Loop 1)
+
+#### 4. 「Clone 独立性軸」新規軸開拓 (mjc-main-32 Loop 3 で確立)
+- clone 後 cloned mutate しても original 不変であることを CI 固定 = #[derive(Clone)] の deep clone 契約の executable specification 化
+- 適用形態: Option<String> / Option<TranscriptionSource> / u32 (Copy) の 3 種混合 field
+- 後続 Loop で別 type (ModelInfo, RequestedTranscriptionSources, session_manager 系) にも application 可能な汎用パターン
+- ModelInfo に application する場合: Option なし全 field なので「String × 2 + u64 + String の Clone 独立性」軸として application 可
+
+#### 5. 「format 不変条件 application」パターン継続 application
+- mjc-main-30 Loop 1 で確立、mjc-main-32 Loop 1/2 で継続 application
+- for ループで全 variant 走査 = 拡張追従型 test 設計
+
+#### 6. 「同一関数の完全網羅戦略」パターン継続 application
+
+### 重要な技術的注意点
+
+#### 1. **harness silent fail パターン (mjc-main-31 で発見、mjc-main-32 で連続 6 ループ実証)**
+- `claude -p` の stdout が tee に届かず log file 0 byte / tmux pane が空白になる症状
+- 大型 prompt (7000+ byte、本セッションは 10000-11000 byte) で 100% 再現
+- 小型 prompt (200 byte) では正常 = health check 用 prompt は問題ない
+- worker のファイル編集機能 (Edit/Write) は正常稼働 = AGENT_LOG.md 追記も Edit/Write 経由なので **正常追記される**
+- **後続セッションは `git status` / `git diff` / 対象ファイルの直接確認を worker 完走判定の正の手段として採用すべき**
+- tmux pane と log file は補助観測手段に格下げ
+- 観測パターン: worker 起動 → 90-180 秒待機 → `git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認 → 検証 (cargo fmt/clippy/test)
+- **mjc-main-32 で連続 6 ループ実証済** = 観測層 bug があっても mainline workflow が安定する運用パターンとして確定
+- 改善候補 (将来の harness 改善 Loop): `script(1)` / `unbuffer` / direct `>` redirect への切替検討、`scripts/claude-agent-await-worker.sh` の新設
+
+#### 2. handoff サマリのフィールド名予測誤認 (継続注意)
+- 本セッション SUMMARY 内の予測も実コードと乖離する可能性 = 実コード grep/sed で必ず確認
+- 後続候補 (ModelInfo 等) の field 名を `sed -n '50,57p' src-tauri/src/transcription.rs` 等で確認すること
+- mjc-main-29 SUMMARY のファイル名誤認 / mjc-main-30 SUMMARY のフィールド名誤認 と同種の precedent あり
+
+#### 3. AGENT_LOG.md 構造の問題 (継承、優先度低)
+- AGENT_LOG.md 全体は **22000+ 行** で構造的に整理が必要 = 別 Loop 候補 (低優先)
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### 最優先 = Loop 1: 「Debug 軸補強」パターン 8 連続 application
+- 推奨 = **ModelInfo (transcription.rs l.50-57)** = 4 field 全 String/u64 = simple struct without Option = #[derive(Debug, Clone, Serialize)] + camelCase serde
+  - Loop 1 候補軸: T1 = Debug 出力 (4 field 名 + 値) / T2 = Clone 後 Debug 一致 / T3 = serde camelCase format (`displayName`, `sizeMb`) で「Loop 1 (TranscriptionSegment) の Option なし変形」軸 + 「Clone 独立性軸の継続」(本セッション Loop 3 で確立)
+- 別案 = **RequestedTranscriptionSources** = derive 派生未確認、worker 起動前に grep 必須
+
+### Loop 2 候補: harness 改善 (本セッションで silent fail mitigation 連続 6 ループ実証、価値高)
+- `claude -p ... | tee` の pipe で stdout 欠落条件の特定と修正
+- `script(1)` / `unbuffer` / direct `>` redirect への切替検討
+- メインが `git status` ベースで完走判定する mitigation を harness 側に組み込む (例: `scripts/claude-agent-await-worker.sh`)
+- 価値: harness 観測層が信頼できるようになれば後続セッションの効率改善
+
+### Loop 3 候補: session_manager 系 (Debug 派生 type を grep で発見、Debug 軸補強パターン継続)
+
+### B 候補 (低優先、補強候補限定的)
+- audio.rs / system_audio.rs / markdown.rs / audio_event.rs / audio_utils.rs
+
+### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `default_output_directory` / `update_settings` / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` の settings 統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+### F-Loop6 (継承、規模 M, 価値中) = タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 580 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` に **Read → Write の 2 ステップ** でメッセージを書く (初回も既存ファイル想定で先に Read 必須、touch でファイル作成後に Read)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-33 mjc-main` (現セッション名が `mjc-main` でない場合のみ実行)
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認** (mjc-main-31/32 で実証した mitigation pattern)
+  - log file (`logs/agent/<session>.txt`) と tmux pane は補助観測手段
+  - 完走後は `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/logs/agent/<session>.txt | tail -50` を試みるが、0 byte の場合があることを許容
+  - 観測時間目安: worker 起動 → 100-160 秒で transcription.rs に M 表示 → さらに 60 秒で AGENT_LOG.md に M 表示 = 合計 160-220 秒
+- worker 起動 health check: 通常時は不要。新しい claude binary version や harness 変更後のみ実施。
+
+## worker prompt 必須要素 (12 連続セッションで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」** = 末尾追記の場所を視覚的に学習させる
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」** を明記
+3. **「先頭は絶対に触らない」** を明記
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** を明記
+7. **「行末の空白文字 (trailing whitespace) 禁止」** を明記
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション平均 ~13 分/loop で目標クリア)
+- worker 1 件 ≒ 1 コミット
+- 累積 worker 完走 80/80 (本セッション +3 件)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge も本セッション中ゼロ。
+
+## 累積成果 (本セッション 3 ループ)
+- **テスト 571 → 580 passed** (+9 件、3 ループ = 旧セッションの +9 件/セッション スケールに復帰)
+- **コミット 3 件 + 本 SUMMARY 1 件 (= 4 件)**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings、5 ループ累積)
+- **「Debug 軸補強」パターン 7 連続 application 系譜達成** (6 形態の派生型カバレッジ、enum 2 連続 application 含む)
+- **「Clone 独立性軸」新規軸開拓** (Option<String> + Option<enum> + Copy 派生 field の 3 種混合 deep clone 契約)
+- **harness silent fail mitigation pattern 連続 6 ループ実証** = mjc-main-31 で確立した workflow が安定運用パターンとして確定
+- **canonical 名移譲完了** (mjc-main-20260504-32 → mjc-main, 7 セッション連続適用)
+- **累積 worker 完走 80/80** (100% 維持)
+- **コミット周期 ~13 分/loop** (目標 15 分以内クリア)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260504-33` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-33 mjc-main` を実行 (冪等)。
+4. **「Debug 軸補強」パターン 8 連続 application を Loop 1 として開始**: 推奨候補 = ModelInfo (transcription.rs l.50-57, 4 field 全 String/u64) または RequestedTranscriptionSources (要 grep 確認)
+5. **実コードの field 名 / variant 名は必ず grep/sed で確認** (handoff サマリの予測は誤認の precedent あり)
+6. 待機モード禁止。final answer で停止せず、改善ループを継続する。
+7. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**
+8. **worker 完走確認は `git status --short` を主観測手段とする** (mjc-main-31/32 で実証した mitigation pattern、log file は補助、観測時間目安 160-220 秒)

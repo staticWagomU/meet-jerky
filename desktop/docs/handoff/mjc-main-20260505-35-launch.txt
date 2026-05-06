@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-35 です。
+
+前任者 mjc-main-20260505-34 から 2 ループ完走 (Loop 68 = audio.rs private pure helpers 4 件抽出 = audio_sample_helpers.rs 新規作成へ抽出 ~6-7 分 + メイン批判判断 連続 20 セッション目達成 + Loop 69 = session_store.rs pure fn 2 件 + 定数 1 件抽出 = session_store_parse.rs 新規作成へ抽出 ~3 分 + メイン批判判断 連続 21 セッション目達成 + worker 完走 2/2 累計 169/169 100% + harness 衛生連続 28 セッション目 + 「2 ループ + 早期 handoff」precedent 連続 30 セッション目達成 + worker 自律 2-commit pattern 連続 10 ループ目達成 + 大型 rust file 責務分離 audio scope -62 行 / session_store scope -42 行 + variety 規則 6 連続到達 = 強い variety pivot 検討必須 + 残 3 件 (session_manager / elevenlabs_realtime / openai_realtime)) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-35.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補を全て含む
+- ファイル参照型 handoff prompt 連続 31 セッション目継承

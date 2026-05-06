@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-63 です。
+
+前任者 mjc-main-20260505-62 から 3 ループ完走 + 通常 cadence handoff (Loop 120 = K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 13 件目 = +79 行 / 平均 ~40 行/loop = paradigm pivot 達成 + alternation 12 連続成功 + メイン批判判断 連続 59 セッション目達成 + worker ~2.5 分完走 + Loop 121 = rust 軸 = 純粋関数機能分離軸 rust 版 + 新 file 作成軸 = app_detection.rs の parse_throttle_key_to_display_name を新 file app_detection_throttle_key.rs に抽出 = -38 行 + scope 24 軸目開拓 + 大型 rust file 責務分離 37 file 目 + WATCHED_BUNDLE_IDS + MatchStrategy pub(crate) 化 + worker 自律発見 pub(crate) use re-export = E0364 visibility 自律 fix で API 互換維持 = caller + test (super::* import) 全て無変更 + メイン批判判断 連続 60 セッション目達成 = handoff 副推奨候補 R4 を責務階層精査済 (Loop 119 教訓継承) で採用 = throttle_key parser ≠ URL parser ≠ meeting classifier = 階層異なる = 新 file 作成軸が妥当 + worker ~5 分完走 + Loop 122 = K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 14 件目 = +22 行 / 平均 ~11 行/loop = SESSION SUMMARY 0 件 アクティブ進行軽量化 paradigm 確立 + paradigm pivot 達成 + alternation 14 連続成功 + worker ~3 分完走 + cargo test 704 件件数完全不変) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-63.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 123 推奨候補 R5 既存 file 拡張軸 2 件目 = app_detection_inactive_decision.rs/notification.rs 統合可能性 = 規模 SS-S = 要 grep 精査 + 責務階層精査必須 = alternation 維持 (rust 軸続行) = 最有力推奨 / K Section 2.3 観測追記 15 件目 = K 連続警告 (Loop 124 推奨) / X3 TranscriptView 残 純粋関数 27 件段階的分割 = scope depth 警告 6 件目 (Loop 124 推奨) / J' SettingsView 内部 helper 精査 = scope 22 軸目変種 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 59 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119/121 教訓継承** = 後継 Loop 123+ で paradigm 選択時に必ず責務階層精査を実施
+- **API 互換維持戦略の進化 (Loop 121): `pub use` は `pub(crate)` アイテムを再エクスポート不可 = E0364 → `pub(crate) use` で対応** = caller + test 全て無変更で関数を新 file に抽出可能 (worker 自律実装可能)

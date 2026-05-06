@@ -1,0 +1,154 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-19) です。
+旧 mjc-main (= 旧 mjc-main-20260504-18) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 19400+ 行 / 1.7MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~17:00 JST] mjc-main-20260504-18 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~17:00 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 103+ (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/` 増分、`docs/handoff/mjc-main-20260504-7/10/12/13/14/15/16/17/18/19.txt`)
+- 旧 mjc-main-20260504-18 が canonical 名 mjc-main を持っており、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `29e4a4a` test(transcription): error message と TRANSCRIPTION_SOURCE_* 整合性 test 1 件 (G5 消化, +1 件 → 469 passed)
+  2. `732d6aa` test(transcription): trim 動作対称性補強 (assert +2, 件数 469 維持)
+  3. `4b303bd` test(app_detection): should_warn_polling_stall 境界 test 2 件 (+2 件 → 471 passed)
+  4. (本 SUMMARY 追記の commit が次)
+
+## 現在の品質状態
+- cargo test (lib): **471 passed / 0 failed** (前 468 → +3 件、Loop 1 と Loop 3 で +1 + +2 = +3)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -D warnings: **警告ゼロ**
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし (前 mjc-main-16 時点で通過確認済 = bundle JS 486.47 KB / gzip 137.51 KB)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-18、handoff 直前)
+- mjc-main-20260504-19 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-19 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着)
+- **「Loop 1 G5 → Loop 2 trim 対称性 → Loop 3 別ファイル転換」の同心円拡張パターン**: Loop 1 で touch した範囲の自然な隣接補強を Loop 2 で実施し、Loop 3 で別ファイル転換でセッション後半の多様性を回復 = 認知負荷の局所化と知見の application 範囲拡張のバランス
+- **「2 つの対称な純粋関数の境界保護を揃える」application パターン** (Loop 3): 前 Loop 2 で確立した「設計判断を test で executable specification 化」パターンを 2 つ目の純粋関数 (`should_warn_polling_stall`) に展開
+- **「test 関数数を増やさず assert 数のみ増やす」テスト補強パターン** (Loop 2): 既存 test 関数内の補強余地を最大化、test カウント維持しつつカバレッジ密度を上げる
+
+### 累積パターン (前 mjc-main-7〜17 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### F-Loop3 アプリ統合は Loop 単独完結困難 (本セッションで発見)
+- `should_notify_meeting_inactive` の引数型 **u64 (epoch secs)** と `DetectionState.last_seen` の型 **Instant** の **設計乖離** あり
+- 型統一方針 (Instant 一本化 / u64 一本化 / 別 state 二重保持) の選択が前段で必要
+- 純粋単独ループに収まらない、規模 M 超過リスクが高い
+- **後継セッションで複数ループ構成での実装計画が必要**:
+  - 案 A 推奨: `last_seen_secs: Mutex<HashMap<String, u64>>` を別途追加して二重管理 (既存 throttle ロジックは Instant のまま無変更)
+  - Loop 1 = state 追加 (Tidy First, dead_code allow)
+  - Loop 2 = handle_detection で update (Tidy First, 振る舞い不変)
+  - Loop 3 = wrapper 関数 + 実機タイマー組み込み (アプリ統合)
+
+#### コミットメッセージ書き方の運用知見 (本セッションで重要発見)
+- **`/tmp/mjc-commit-msg-loopN.txt` に Write する前は必ず `Read` を先に実行する必要あり**
+- 初回 Loop で Read をスキップして Write した結果 "File has not been read yet" エラーで Write 失敗 → `&&` で続く git commit が **前セッションの古いメッセージ** で commit してしまった事故あり
+- 訂正方法: `git reset --soft HEAD~1` で訂正 + Read → Write → 再 commit で復旧 (--soft は CLAUDE.md の destructive list 外、未 push commit のメッセージ修正に安全)
+- **後継セッションも初回 commit 時は Read → Write → commit の 3 ステップを徹底**
+
+#### 既存 test との重複に注意
+- transcription.rs `test_parse_requested_transcription_sources_rejects_unknown_values` (line 1397-1412) は既に `contains("microphone") && contains("system_audio") && contains("both")` を assert 済 = Loop 1 G5 test と機能的に重複する部分があるが、違いは literal vs 定数値 = 整合性 (定数値変更時の同期) は新規 test だけが固定する → 違いを認識する必要
+
+#### transcript_bridge.rs `normalize_speaker` は完備済
+- 10 件の direct test で完全補強済 (Unicode 全角空白 / 0 バイト / 制御文字 / zero-width space まで網羅)
+- B カテゴリの典型タスクは消化済 = Loop 4+ で B 候補を選ぶ場合、別 fn ターゲットを探す必要
+
+#### 既存累積技術注意点 (前 mjc-main-7〜17 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### AGENT_LOG.md 構造の問題 (要整理、優先度低)
+- 本セッションの 3 worker は AGENT_LOG.md の **末尾** に正しく追記済 = 前 mjc-main-15/16/17 の先頭追記事故が再発しなかった
+- ただし AGENT_LOG.md 全体は 19400+ 行で構造的に整理が必要 = 後継セッションで余裕があれば検討 (低優先)
+
+## 次ループ候補 (優先順位順、本セッションで未着手 + 部分着手)
+
+### F-Loop3 (継承, 最有力). 会議終了検知のアプリ統合 (規模 M, 価値 8, 複数ループ構成必要)
+- 設計乖離: u64 vs Instant
+- 推奨: 案 A (二重管理) + 複数ループ構成 (上記参照)
+
+### W7-W10 (新, 本セッション Loop 3 残し). should_warn_polling_stall T7-T10 等価 application (規模 XS, 価値小)
+- W7 候補: `expected_interval_secs = 0` での挙動固定 (`should_notify_meeting_inactive` T7 zero_threshold と対称)
+- W8 候補: `throttle_secs = 0` での挙動固定
+- W10 候補: `now_secs = u64::MAX` 踏破 panic 化検知 (`should_notify_meeting_inactive` T10 と対称)
+- 1 ループ確実完走候補 = 後継 Loop 1 として安全
+
+### B (継承, 部分着手済み). transcript_bridge.rs / session_store.rs 周辺の test 補強残り (規模 S, 価値中)
+- transcript_bridge.rs `normalize_speaker` は完備済 = 別 fn ターゲット必要
+- 候補: `segment_to_append_args` / `build_append_args_for_emission` / `build_append_args_for_emission_at` の境界 test 補強
+
+### D (継承). transcription.rs error path 残り (規模 S〜M, 複数ループ)
+- 1900+ 行最大規模。`load_model` path 変換失敗、`feed`/`finalize` resampler state missing 周辺
+
+### S (継承). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 471 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` に **Read → Write の 2 ステップ** でメッセージを書く (初回も既存ファイル想定で先に Read 必須)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+  - 注意: `agent-commit.sh` 経由だと fish が複雑メッセージで parse error になる。`-F` 直接利用が安全
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-19 mjc-main`
+
+## コミット周期目標
+- 1 ループ 10-15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績: Loop 1 = ~5 分 / Loop 2 = ~5 分 / Loop 3 = ~5 分、平均 ~5 分/loop = 目標 15 分以内達成 (前 mjc-main-17 の ~11 分/loop より短縮)、累積 worker 完走 41/41 = 全完走率 100%。
+- worker prompt は **5 セクション構造** (背景/Why/担当範囲/実装上の注意/検証手順 + AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい。
+- Tidy First 系では「既存 precedent との完全対称構造を採用」を強調すると worker が設計判断に時間を使わず手筋を 1 つに固定できる。
+- **「Loop 1 → Loop 2 → Loop 3 で範囲を段階的に変化」同心円拡張パターン** (本セッション 18 で確立): 前ループの範囲を中心に隣接補強 → 別ファイル転換で多様性回復、認知負荷を均等化
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~50-65% で予防的ハンドオフ判断 (前 11 セッション (mjc-main-7〜17) と同じ 3 ループパターン継承で予測可能性優先)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は本セッション中 3 回受領、改善ループ進行で消化済み。
+
+## 累積成果 (本セッション)
+- **テスト 468 → 471 passed** (+3 件、全て rust test 追加)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **`should_notify_meeting_inactive` と `should_warn_polling_stall` の境界保護を完全対称に揃えた** (Loop 3) = 2 つの純粋関数の設計判断 (`<` vs `<=` の境界の向きの違い + saturating_sub 非 panic 契約) を test で executable specification 化
+- **`parse_requested_transcription_sources` の trim 動作対称性を 3 値全部に拡張** (Loop 2) = 既存 ` both ` 1 ケースのみだった trim 確認を 3 値全部対称化
+- **error message と const の整合性検知装置を追加** (Loop 1) = 「将来 const の値を変更したら error message も合わせる」契約をコード埋め込み
+- **累積 worker 完走 41/41** (100%)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-19 mjc-main` を実行 (冪等)。
+4. 候補 **W7-W10 (規模 XS, 1 ループ確実) または F-Loop3 Loop 1 (案 A 二重管理 state 追加, 規模 S)** を最有力として、まず安全な W7 (`should_warn_polling_stall` の `expected_interval_secs = 0` test 1 件追加) を Loop 1 に推奨 = 確実な 1 ループ完走 + 本セッション Loop 3 の自然な隣接補強。F-Loop3 を選ぶ場合は handoff サマリの「複数ループ構成」を意識して規模を抑える。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。

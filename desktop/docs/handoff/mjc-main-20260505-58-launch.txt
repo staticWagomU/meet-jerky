@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-58 です。
+
+前任者 mjc-main-20260505-57 から 2 ループ完走 + 通常 cadence handoff (Loop 110 = frontend 軸 3 件目 = TranscriptDisplay.tsx → utils/transcriptDisplayHelpers.ts = 7 純粋関数抽出 = -71 行 = 純粋関数機能分離軸 frontend 版 continuity = K 軸 (Loop 109) を挟んだので軸 reset = 警告境界回避 + 大型 frontend file 責務分離 31 file 目 + scope 19 軸目開拓 = handoff 推奨候補 X1 を grep + Read 精査で「外部 caller ゼロ + 7 純粋関数 + import 共有 + 既存呼び出し無変更」3 条件確認手順で採用 + メイン批判判断 連続 52 セッション目達成 + Loop 111 = K 軸復帰 = Section 2.3 観測追記 9 件目 = +85 行 / 平均 ~42 行/loop = paradigm pivot 達成 + variety 規則 alternation pattern 完成 = K → frontend → K → frontend → K) = メイン批判判断 連続 52 セッション目達成 + worker 自律 2-commit pattern 連続 51 ループ目 + harness 衛生連続 52 セッション目 + ファイル参照型 handoff prompt 連続 53 セッション目 + scope 多様性 19 軸到達 + frontend 軸 = 3 件目 = 異 file 拡張 paradigm 3 連続成熟 (TranscriptView → LiveCaptionWindow → TranscriptDisplay = 同 paradigm continuity + scope 多様性両立 + 衝突回避設計 paradigm 確立) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-58.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 112 推奨候補 = X1 ModelSelector.tsx (498 行) 純粋関数抽出 = frontend 軸 4 件目 scope 20 軸目開拓 = 最有力推奨 (K 軸 1 連続を Loop 111 で挟んだので軸 reset 解釈可能 + 異 file scope 多様性継続 + handoff 発掘成果直接活用、ただし grep + Read 精査必須) / X2 TranscriptView.tsx 残 純粋関数 utils/permissionStatus.ts + utils/transcriptionSourceStatus.ts 分割抽出 = scope depth 警告 6 件目 = 弱め / R rust 軸復帰 = transcription_commands_stop 単独抽出 = scope 3 件目警告 / K = K 軸 1 ループ間隔のみ = 2 連続境界 SKIP 推奨 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 ユーザー直伝指示要 / J' SettingsView.tsx 内部 component helper 精査) を全て含む
+- ファイル参照型 handoff prompt 連続 54 セッション目継承

@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-67 です。
+
+前任者 mjc-main-20260505-66 から 3 ループ完走 + 通常 cadence handoff (Loop 131 = frontend 軸 = R6 段階的分割 4 件目 = TranscriptView.tsx L345-L358 の getRequiresLocalModel + getExternalApiProvider を新 file `transcriptionEngineHelpers.ts` (~20 行) に抽出 = scope 29 軸目開拓 = 大型 frontend file 責務分離 42 file 目 = predicate/categorization tier 独立性確保 + メイン批判判断 連続 65 セッション目 = handoff 主張「engine 関連 utils 既存ゼロ」を grep で批判的検証 → liveCaptionStatus.ts + modelSelectorHelpers.ts 既存発見 + 責務階層精査で異階層判定 = display tier vs predicate tier vs model display tier の 3 階層精査 = 結論不変 (新 file 作成軸採用) + worker ~2.5 分完走 (SSS 規模で予測通り最速完走) + Loop 132 = K 軸復帰 = Section 2.3 観測追記 19 件目 = +49 行 / 平均 ~24.5 行/loop = **SS 1 件 + 説明軽量化パターンの 3 連続観測 (Loop 125 ~22.5 / Loop 129 ~23.5 / Loop 131 ~24.5) = 階層化 paradigm 強化証拠** + frontend 軸 chore 軽量化 paradigm 4 度目観測 (Loop 125/127/129/131 連続) + alternation pattern 24 連続成功 + worker ~3 分完走 + Loop 133 = frontend 軸 = R6 段階的分割 5 件目 = TranscriptView.tsx L349-L397 の getAiTransmissionStatusLabel + getAiTransmissionStatusPillClass + getAiTransmissionStatusAriaLabel を新 file `aiTransmissionHelpers.ts` (~40 行) に抽出 = scope 30 軸目開拓 = 大型 frontend file 責務分離 43 file 目 = display tier (AI 送信状態) として独立 + **utils 内 cross-import paradigm 3 件目確立** (aiTransmissionHelpers.ts → liveCaptionStatus.ts の isExternalTransmissionLabel) + worker ~3-4 分完走 + alternation pattern 25 連続成功) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-67.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 134 推奨候補 K = agent-log-archive-plan.md Section 2.3 観測追記 20 件目 = 規模 SS = ~3-5 分完走 = alternation pattern 26 連続維持 (frontend(133) → K(134)) = **最有力推奨** / R6f = TranscriptView.tsx Audio Source 系 4 件抽出 = scope 31 軸目候補 (audioSourceHelpers.ts 新規) = 規模 SS-S = Loop 135 推奨 / R6g = Engine Status 系 3 件抽出 = 規模 SS = Loop 135-137 候補 / J' SettingsView 内部 helper = 抽出困難確認済 (却下推奨) / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 63 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119/121/123/125/127/129/131/133 教訓継承** = 後継 Loop 134+ で paradigm 選択時に必ず責務階層精査を実施 + handoff prompt の主張を鵜呑みにせず grep で批判的検証する (Loop 131 precedent = handoff 主張「engine 関連 utils 既存ゼロ」を grep で批判的検証して既存 file 発見)
+- **API 互換維持戦略 (Loop 119-129 rust + Loop 125/127/129/131/133 frontend precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125/127/131/133 標準 paradigm) + utils 内 cross-import paradigm (Loop 129 = 2 件目, Loop 133 = 3 件目) = 新 file が他の utils file から定数/型/関数 import** = 後継も活用検討可能

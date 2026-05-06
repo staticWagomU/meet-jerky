@@ -1,0 +1,225 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-30) です。
+旧 mjc-main (= 旧 mjc-main-20260504-29) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 21800+ 行 / 1.86MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~20:30 JST] mjc-main-20260504-29 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~20:30 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 149 (origin/main から先行、本セッション +4 commits)
+- working tree: untracked は前と同じ docs/handoff/* と docs/worker-prompts/ + 本セッション分追加
+- 旧 mjc-main-20260504-29 が canonical 名 mjc-main を持ち、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `ae3890c` test(audio_event): build_audio_drop_event_payload の関数本体未保護を 3 軸 (Loop 1, +3 件 → 554 passed) — 「混合 application」パターン新規 application
+  2. `ba5dd31` test(audio_utils): sanitize_audio_sample の IEEE 754 特殊値 3 軸 (Loop 2, +3 件 → 557 passed) — 「型対称軸補強」パターン f32 application (第 3 application: i64 → usize → f32)
+  3. `a4c2802` test(cloud_whisper_errors): classify_cloud_whisper_error のメタ対称軸補強 3 軸 (Loop 3, +3 件 → 560 passed) — 「メタ対称軸補強」パターン新規確立 (5 つ目の特殊形)
+  4. `a0c658f` chore(agent-log): SESSION SUMMARY 追記
+
+## 現在の品質状態
+- cargo test (lib): **560 passed / 0 failed** (前 551 → +9 件)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy --lib -- -D warnings: **警告ゼロ** (Loop 全 3 で維持)
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-29、handoff 直前)
+- mjc-main-20260504-30 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260504-30` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-30 mjc-main` を実行 (前 mjc-main-25/26/27/28/29 でも初回確認が必要だった precedent あり、冪等)。
+5. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-29) を `tail -250 AGENT_LOG.md` で読み、確立パターン 7 つ + 重要発見 6 つ + 次ループ候補を確認**
+6. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで 2 パターン新規 + 過去パターン全継続)
+
+#### 1. 「対称的補強の 3 軸構造」パターン (9 連続セッション目で application)
+- 全セッション (mjc-main-22/23/24/25/26/27/28/29) で全 24 ループに application
+- 1 ループ = 3 軸 = 1 関数群の境界仕様の executable specification 化が標準形
+- 後続継続適用必要
+
+#### 2. 「同一関数の完全網羅戦略」パターン (mjc-main-26 で確立、本セッション全 3 ループで application)
+- 前回未保護軸を残らず埋め切る application
+- Loop 1: build_audio_drop_event_payload の 0 件 → 3 件で完全網羅
+- Loop 2: sanitize_audio_sample の 6 件 → 9 件で IEEE 754 特殊値網羅
+- Loop 3: classify_cloud_whisper_error の 19 件 → 22 件でメタ対称軸網羅
+- 後続継続適用候補: browser_detection.rs の関数群 / commands.rs の主要 Tauri commands
+
+#### 3. 「型対称軸補強」パターン (Loop 1 + Loop 2 で 2 ループ application)
+- 系譜: i64 (mjc-main-27) → usize (Loop 1) → f32 (Loop 2) で 3 段拡張
+- 後続候補: char (Unicode boundary) / String (heap allocation 境界) / NonZeroUsize 等
+
+#### 4. **新規パターン (本 Loop 1 で application)**: 「混合 application」(2 軸を 1 ループで)
+- フィールド対称軸 + 型対称軸を 1 関数で同時保護
+- 1 関数の境界仕様を最小ループ数で完全網羅できる効率パターン
+- application 候補: 小規模ファイル (< 100 行 / 関数 1-2 個) の関数完全未保護状態
+
+#### 5. **新規パターン (本 Loop 3 で確立)**: 「メタ対称軸補強」
+- 異なる種類の対称軸 (status / body / pure function 等の異なる抽象レベル) を 1 ループで一通り application する 3 軸構造
+- 過去 4 特殊形 (型/経路/フィールド/層) を「メタ的に統合」する 5 つ目の application 型
+- 高密度に補強された関数 (既存 test 多数) で残りの「異なる軸の薄い箇所」を 1 件ずつ補強する application
+- application 候補: 既存 test 15+ 件のファイル (transcript_bridge.rs / session_manager.rs 等)
+
+#### 6. 「責務分離の executable specification 化」パターン (累積)
+- 上位層が下位層の責務に干渉しない契約を test 化
+- mjc-main-24/26/27/28/29 系譜
+- 候補: tauri command (commands.rs / session_commands.rs) ↔ core impl (各種 service) の境界
+
+#### 7-8. 「worker prompt 末尾追記明示」+ 「trailing whitespace 禁止明示」パターン (9 連続セッション + 3 連続セッションで継続適用、警告/事故ゼロ達成)
+
+### 累積パターン (前 mjc-main-7〜28 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### 1. 対称軸補強パターンの 5 特殊形が出揃った
+- mjc-main-27 Loop 3: 「型対称軸補強」(i64::MAX/i64::MIN)
+- mjc-main-28 Loop 1: 「経路対称軸補強」(start / start_with_output)
+- mjc-main-28 Loop 2: 「フィールド対称軸補強」(title / speaker / text)
+- mjc-main-28 Loop 3: 「層対称軸補強」(commands 層 / SessionManager 層)
+- 本 Loop 3: 「メタ対称軸補強」(status / body / pure function = 異なる軸を統合)
+- これら 5 つの特殊形は「対称軸 = X 軸対称的補強」という共通パターンの具象化
+- 今後 application 候補:
+  - 「言語対称軸」(日本語 / 英語 / Unicode mix の transcript 表示)
+  - 「時刻対称軸」(UTC+14 Kiribati / UTC-12 Baker Island の datetime_fmt 境界)
+  - 「サービス対称軸」(Whisper / OpenAI / ElevenLabs の error category mapping)
+  - 「権限対称軸」(microphone / screen_recording の permission status check)
+
+#### 2. 関数完全未保護状態の効率発見手法 (Loop 1 で確立)
+- 検出手法: `wc -l <file>` + `grep -c '#\[test\]' <file>` + `grep -c 'pub fn' <file>` で「test/pub_fn 比率が 0」のファイルを優先
+- audio_event.rs で実証 (test 2 件は両方とも定数値の確認のみで関数完全未保護)
+- 後続候補: browser_detection.rs / commands.rs (規模未確認、要調査)
+
+#### 3. 3 ファイル横断補強の継続 (本セッション 3 連続セッション)
+- mjc-main-26 (app_detection / session_manager / settings)
+- mjc-main-27 (session_manager / settings / datetime_fmt)
+- mjc-main-28 (session_manager / markdown / session_commands)
+- mjc-main-29 (audio_event / audio_utils / cloud_whisper_errors) = 「audio 系 2 + transcribe 系 1」構造
+- 今後は markdown.rs / commands.rs / browser_detection.rs / session_commands.rs 等の保護密度を上げる時期
+
+#### 4. cadence 改善達成 (mjc-main-28 ~17 分/loop → 本セッション ~11 分/loop)
+- 改善要因: (a) メイン側の調査時間短縮 (大型 git status をスキップ / 必読ドキュメント既知扱い)、(b) 並列で次 Loop の下調べ (Loop 2 worker 完走待ち中に Loop 3 候補ファイル分析)、(c) worker 完走確認は cat <log_file> | tail -50 直接
+- 後続セッションも継続適用必要
+
+#### 5. trailing whitespace 警告ゼロ達成 (3 連続セッション目)
+- worker prompt 必須要素 7 つ目「行末空白禁止」明示を全 3 ループで適用 → 全 3 ループ警告ゼロ
+- 後続セッションも継続適用必要
+
+#### 6. canonical 名移譲が初回必要だった (handoff 直後の運用注意、4 セッション連続)
+- handoff 起動直後の tmux session 名は `mjc-main-20260504-30` で `mjc-main` ではない
+- `tmux display-message -p '#S'` で確認 → `mjc-main` でなければ `bash scripts/agent-adopt-main.sh mjc-main-20260504-30 mjc-main` を実行
+- 旧 `mjc-main` は kill され、新セッションが canonical 名 `mjc-main` を継承 (冪等処理)
+
+### AGENT_LOG.md 構造の問題 (継承、優先度低)
+- 本セッション中の全 worker は AGENT_LOG.md 末尾追記成功 (worker prompt 改善継続)
+- AGENT_LOG.md 全体は **21800+ 行** で構造的に整理が必要 = 別 Loop 候補 (低優先)
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### 別ファイル切替候補 (推奨、規模 S-M、密度未確認ファイル)
+- **browser_detection.rs (サイズ未確認、本セッションで未着手)** ← 高価値、密度未確認で要分析 ← **最有力**
+- **commands.rs (主要 Tauri commands、密度未確認)** ← 高価値、要分析
+- **markdown.rs / session_commands.rs** ← 残境界候補限定的 (mjc-main-28 で補強済)
+- session_store.rs / transcript_bridge.rs ← mjc-main-22 で集中強化済
+
+### B 候補継続 (commands 層の他関数、層対称軸補強パターン継続)
+- finalize_and_save_session_inner / discard_session_inner / list_session_summaries_inner の境界
+
+### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `default_output_directory` / `update_settings` / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+### audio_utils.rs / cloud_whisper_errors.rs 継続候補 (規模 S, 限定的)
+- audio_utils.rs: NaN の signaling/quiet variant 区別、`-f32::NAN` の sign bit 軸、subnormal の真の最小値 (1.4e-45) 軸
+- cloud_whisper_errors.rs: 3xx interior 一様性 (300/308 等)、NUL 以外の制御文字 (\v / \f / DEL = 0x7F) の passthrough 軸
+
+### F-Loop6 (継承、規模 M, 価値中)
+- タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+### Realtime/Whisper 系 (規模 S-M、複数ファイル候補)
+- cloud_whisper.rs, openai_realtime.rs, elevenlabs_realtime.rs の error path 残境界
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 560 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` に **Read → Write の 2 ステップ** でメッセージを書く (初回も既存ファイル想定で先に Read 必須、touch でファイル作成後に Read)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-30 mjc-main` (現セッション名が `mjc-main` でない場合のみ実行)
+- worker 完走確認: **agent-tail-output.sh より直接 cat の方が確実** (mjc-main-26 Loop 2 教訓)
+  - `cat /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/logs/agent/<session>.txt | tail -50`
+
+## worker prompt 必須要素 (本セッションで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」** = 末尾追記の場所を視覚的に学習させる
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」** を明記
+3. **「先頭は絶対に触らない」** を明記
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** を明記
+7. **「行末の空白文字 (trailing whitespace) 禁止」** を明記 (mjc-main-26 で発見、mjc-main-27/28/29 で標準化)
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション実績 ~11 分/loop で目標クリア)
+- worker 1 件 ≒ 1 コミット
+- 改善案 (継続適用): メイン側の調査時間短縮 + 並列で次 Loop の下調べ + worker 完走確認は cat 直接
+- 累積 worker 完走 74/74 = 全完走率 100%
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~70-80% で予防的ハンドオフ判断 (前 22 セッション (mjc-main-7〜28) と同じ 3 ループパターン継承で予測可能性優先)
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge も本セッション中ゼロ。
+
+## 累積成果 (本セッション)
+- **テスト 551 → 560 passed** (+9 件、**9 連続セッション「+9 件/セッション」記録更新**)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings)
+- **3 ファイル横断補強完成** (audio_event.rs / audio_utils.rs / cloud_whisper_errors.rs = audio 系 2 + transcribe 系 1)
+- **「同一関数の完全網羅戦略」パターン全 3 ループで application 確認**
+- **「型対称軸補強」パターン Loop 1 + Loop 2 で 2 ループ application** (i64 → usize → f32 で 3 段拡張)
+- **「混合 application」パターン Loop 1 で新規 application** (フィールド + 型を 1 ループで束ねる効率型)
+- **「メタ対称軸補強」パターン Loop 3 で新規確立** (5 つ目の特殊形)
+- **対称軸補強パターンの 5 特殊形が出揃った** (型/経路/フィールド/層 + メタ)
+- **「worker prompt 末尾追記明示」パターン継続適用** (9 連続セッション先頭追記事故ゼロ)
+- **「worker prompt trailing whitespace 禁止明示」パターン継続適用** (3 連続セッション、9 ループ警告ゼロ)
+- **累積 worker 完走 74/74** (100%)
+- **コミット周期 ~11 分/loop** (mjc-main-28 ~17 分/loop から大幅改善、目標 15 分以内クリア)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260504-30` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-30 mjc-main` を実行 (冪等)。
+4. 候補 **別ファイル切替候補 (browser_detection.rs, 規模未確認, 推奨)** または **commands.rs (主要 Tauri commands, 密度未確認)** を最有力として進める。
+   - browser_detection.rs は本セッション未着手で密度未確認 = 「関数完全未保護状態の効率発見手法」を application する好機
+   - メインで `wc -l src-tauri/src/<候補>.rs` + `grep -c '#\[test\]' src-tauri/src/<候補>.rs` + `grep -c 'pub fn' src-tauri/src/<候補>.rs` で密度を確認 → 「混合 application」または「対称軸補強の 3 軸構造」パターンで application
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
+6. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**
+7. **worker 完走確認は cat <log_file> | tail -50 を直接使う** (agent-tail-output.sh より確実)
+8. **cadence 改善案を継続適用**: メイン側の調査時間短縮 + 並列で次 Loop の下調べ + worker 完走確認は cat 直接

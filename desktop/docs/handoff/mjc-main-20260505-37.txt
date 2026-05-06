@@ -1,0 +1,241 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-37) です。
+旧 mjc-main (= mjc-main-20260505-36) から **2 ループ完走 + Loop 72 = 検知拡張 Phase 1 = MatchStrategy enum (2 variants: AppLaunch / WindowTitleContains(&'static str)) を新規定義 + WATCHED_BUNDLE_IDS の型を `&[(&str, &str)]` → `&[(&str, &str, MatchStrategy)]` に拡張 + 既存 4 アプリ全てに `MatchStrategy::AppLaunch` を付与 (振る舞い不変) + axis test 3 件追加 = 705 件 (702 + 3) ~4-5 分 + メイン批判判断 連続 24 セッション目達成 = handoff Y を採用 (priority 2 直接寄与 + Loop 71 plan の継続 = 価値の連鎖) + worker 発注前に grep で WATCHED_BUNDLE_IDS caller 10 件 (実コード変更 3 件 + tests/doc 7 件) を実態確認 → 規模 SS 妥当判定 + Loop 73 = session_manager.rs internal struct ActiveSession + ActiveOutput を session_manager_types.rs (新規 18 行) に抽出 + lib.rs mod 追加 + use 文追加 = ~13 行抽出 件数不変 705 件 ~3-4 分 + メイン批判判断 連続 25 セッション目達成 = scope 切替 (機能拡張軸 Loop 71-72 → 大型 rust file 責務分離 scope 拡大 Loop 73) で variety 維持 + session_store_types.rs Loop 67 precedent 直接展開 + worker 完走 2/2 累計 173/173 100% + harness 衛生連続 30 セッション目 = 永続的解決の根拠さらに強化 + 2 ループ + 早期 handoff precedent 連続 32 セッション目達成 + worker 自律 2-commit pattern 連続 14 ループ目達成 + 大型 rust file 責務分離 4 file 目に着手 (session_manager) + 検知拡張 Phase 1 完了 = Phase 2 への準備整った状態** の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-6 完全終了 = 100% 達成 = transcription.rs 削除済 = 該当軸は今後アクション不要)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/detection-extension-plan.md (Phase 1 完了 = 本セッション Loop 72 で実装済、Phase 2 = window title pattern matching 拡張 = 実機 window title 取得が前提、Open Questions Q1-Q4 が要検証)**
+- AGENT_LOG.md は ~29,900+ 行 / ~2.7MB あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-36 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」。
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2**: 「Webex sweep」の variety 規則 = 「同じパターン 3 ループ続いたら 4 ループ目に variety pivot を検討」確立
+- **mjc-main-20260505-3**: 「handoff prompt の主要候補を批判的に再評価する」precedent + 「grep 結果は Read で精読する」運用ルール強化
+- **mjc-main-20260505-4 〜 35**: Phase 1-6 + サービス別抽出シリーズ + 各種 test 移動 + struct 移動 + Phase 6 第 1-5 歩 + 最終 + app_detection scope シリーズ + 大型 rust file 責務分離 始動 (audio + session_store + realtime AudioCommand + 検知拡張 plan docs)
+- **mjc-main-20260505-36 (本セッション)**: **Loop 72 = 検知拡張 Phase 1 実装 (priority 2 直接寄与 + plan 継続) + Loop 73 = session_manager scope 始動 (大型 rust file 責務分離 4 file 目) + メイン批判判断 連続 24-25 セッション目達成 + variety 維持 (機能拡張軸 → 構造分離軸 を 1 ループずつ往復)**
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」「Teams sweep」「Whereby sweep」「Phase 2 sweep」「Phase 4 sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- 寄与が薄い場合は **その候補をスキップして次を探す**
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価。前任者の rustdoc 注記等の意図的判断を尊重**
+- **本セッション Loop 72-73 = 機能拡張軸 → 構造分離軸 の 1 ループずつ往復で variety 維持を実践**
+- **grep 結果は必ず Read で精読してから「発見」を主張する**
+- **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **「app_detection.rs サービス別抽出シリーズ 6 件完了」「transcription.rs リファクタ完全完遂」「大型 rust file 責務分離 = session_manager 着手 = 5 file 目」「テスト移動軸 sweep 化警告超過状態」「docs 軸 = detection-extension-plan.md 新規作成済 = sweep 化禁止」「検知拡張 Phase 1 完了 = Phase 2 は実機要件あり」**
+
+# 引き継ぎサマリ (2026-05-05 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead ~338 (origin/main から先行、本セッション +5 commit)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-36) の commit:
+  1. `e1c0560` refactor(app_detection): MatchStrategy enum 導入 + WATCHED_BUNDLE_IDS 3-tuple 化 (Loop 72, ~4-5 分)
+  2. `6f8d3ff` chore(agent-log): Loop 72 commit hash を AGENT_LOG.md に記入 (worker 自律 precedent 適用 13 連続)
+  3. `7f589a7` refactor(session_manager): ActiveSession + ActiveOutput → session_manager_types.rs 抽出 (Loop 73, ~3-4 分)
+  4. `260ee32` chore(agent-log): Loop 73 commit hash を AGENT_LOG.md に記入 (worker 自律 precedent 適用 14 連続)
+  5. `a39871c` chore(agent-log): SESSION SUMMARY commit (Loop 72-73 + handoff 判断)
+
+## 現在の品質状態
+- cargo test (lib): **705 passed / 0 failed** (Loop 72 で 702 → 705 へ 3 件増、Loop 73 は struct 移動で件数不変)
+- cargo clippy --lib --tests -- -D warnings: **警告ゼロ**
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: 本セッション frontend 触れていないため変更なし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## 大型 rust file 責務分離実績 (handoff 候補 X 始動以降の累計)
+
+- audio.rs: 1011 行 → 949 行 (-62 行) + audio_traits.rs (24 行) + audio_sample_helpers.rs (47 行)
+- session_store.rs: 1175 行 → 1133 行 (-42 行) + session_store_types.rs (19 行) + session_store_parse.rs (32 行)
+- elevenlabs_realtime.rs / openai_realtime.rs: 各 ~5 行ずつ削減 + realtime_audio_command.rs (新規 12 行) で AudioCommand 共通化 (DRY)
+- session_manager.rs: 1274 行 → ~1263 行 (-11 行) + session_manager_types.rs (新規 18 行) = **本セッションで scope 始動**
+- 残 (Loop 74+ 候補):
+  - elevenlabs+openai WS タスク本体共通化 (規模 M、shared module 設計判断)
+  - session_manager.rs persist_if_configured 抽出 (規模 XS、分離価値判断要)
+  - session_store.rs render_session_markdown 抽出 (規模 SS、依存多)
+  - audio.rs 残 helper (要 grep 確認)
+- transcription.rs リファクタ: **完全完遂** (mjc-main-20260505-31 Loop 63)
+- app_detection.rs サービス別抽出: **6 件完了**
+- 検知拡張: **Phase 1 完了 (本セッション Loop 72)**、Phase 2 は実機要件あり
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 30 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-36 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 30 セッション目観測結論 = `bfb9846` PATH inner shell escape が永続的解決
+- **2-commit pattern (refactor + chore hash 反映)** は本セッション Loop 72/73 とも worker 自律実行 = 連続 14 ループ目 = 「session 跨ぎの暗黙的 precedent 継承」が完全に安定動作
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-36、handoff 直前)
+- mjc-main-20260505-37 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ、**docs/architecture/transcription-refactor-plan.md は完全完遂済 = 該当軸は今後アクション不要**、**docs/architecture/detection-extension-plan.md は Phase 1 完了 = 本セッション Loop 72 で実装済、Phase 2 は実機要件あり**)。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認 (上 5 コミットが本セッションの実績、SESSION SUMMARY commit を含む)。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260505-37` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-37 mjc-main` を実行 (前 51 セッションで実証済 precedent あり、冪等)。
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 30 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 31 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-36) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + Loop 72-73 + 次ループ候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**。**variety 規則の状態 = カウンタリセット後で機能拡張軸 → 構造分離軸 を 1 ループずつ往復実績 = Loop 74 は同 pattern 続行も pivot も自由度高い**。
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 74 開始時点)
+
+直近 8 ループ: Loop 67 (session_store struct) → 68 (audio pure helper) → 69 (session_store pure fn) → 70 (realtime AudioCommand 共通化) → 71 (検知拡張 plan docs) → 72 (検知拡張 Phase 1 rust impl) → 73 (session_manager struct extract)。
+- 大型 rust file 責務分離 = カウンタリセット後 (Loop 71 完全 pivot 後) で Loop 73 が 1 連続のみ
+- pattern 内訳: struct (Loop 67/73) + pure helper (68/69) + enum 共通化 (70) + plan docs (71) + 機能拡張 rust impl (72) = 多様
+- scope 内訳: session_store (2) + audio (1) + realtime (1) + detection (2) + session_manager (1) = 多 scope 分散
+- **Loop 74 = 自由度高い、ただし「同じパターン 3 ループ続いたら 4 ループ目で variety pivot」規則は維持**
+
+### 候補 Y (Loop 74 推奨, 検知拡張 Phase 2 の準備系)
+
+#### Y1. 検知拡張 Open Questions 軽量調査 (規模 SS、コードのみ完結) ← 推奨度高
+- detection-extension-plan.md Section 6 の Open Questions のうち **Q5/Q7/Q8** はコード調査のみで進められる:
+  - Q5: `WATCHED_BUNDLE_IDS` が serde Serialize/Deserialize の対象か `grep -n serde src-tauri/src/app_detection.rs` で確認
+  - Q7: Discord bundle ID = `com.hnc.Discord` (既存 plan 仮定値) を確認
+  - Q8: Slack bundle ID = `com.tinyspeck.slackmacgap` (既存 plan 仮定値) を確認
+- 結果を detection-extension-plan.md に追記し、Q1-Q4 (実機要件) のみを残してから Phase 2 着手判断
+- 規模 SS = 1 ループ完結期待
+- AGENTS.md priority 2 寄与 + plan の継続 = 価値の連鎖
+
+#### Y2. 検知拡張 Phase 2 = window title pattern matching 実装 (規模 S-M、リスクあり)
+- WATCHED_BUNDLE_IDS に Slack/Discord 追加 + handle_detection 内で MatchStrategy::WindowTitleContains 経路を分岐実装
+- window title pattern (例: "Huddle"/"Stage") は plan.md の推測で書く = false negative/positive リスク
+- mitigation: false negative (検知漏れ) なら無害、false positive (誤検知) なら通知 spam = ユーザー邪魔
+- 推奨: Y1 の Open Questions 調査を先行 + 実機確認結果を docs に追記してから Phase 2 着手
+- メイン批判判断必須
+
+### 候補 X (Loop 74 alternative, 大型 rust file 責務分離続行)
+
+#### X1. session_manager.rs persist_if_configured 抽出 (規模 XS、分離価値判断要)
+- L164 の private free fn を session_manager_helpers.rs (新規) に抽出?
+- caller は L96/108/110 の 3 箇所 (session_manager.rs 内のみ) で外部影響なし
+- 規模 XS = ~10 行抽出
+- メイン批判判断: 分離価値が薄いと判定する可能性 (locality 集約効果小)
+
+#### X2. audio.rs 残 helper 抽出 (Loop 68 続編、要 grep 確認)
+- audio.rs (949 行) の残 private fn を grep で確認 → 抽出候補があれば採用
+- Loop 68 で audio_sample_helpers.rs に 4 件抽出済 = 残はあるか不明
+
+#### X3. session_store.rs render_session_markdown 抽出 (規模 SS、依存多)
+- session_store.rs L42-72 の ~30 行 pure fn
+- 依存多 (Session/markdown crate/FixedOffset) = use 文増加コスト
+- session_store_render.rs 等の新 file を作成
+
+#### X4. elevenlabs+openai WS タスク本体共通化 Phase 1 (規模 M、shared module 設計判断要)
+- WS タスク (`async move { ... while let Some(cmd) = audio_rx.recv().await { ... } }`) の共通 module 化
+- 規模 M = 1 ループ困難 = Phase 1 = task entry skeleton 抽出のみに絞れば可能
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ確認 = 主観性高警告
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注
+
+### 候補 H (継承、低優先): harness 衛生
+
+- 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 250+ untracked、ユーザー直伝指示があるまで保留)
+- AGENT_LOG.md ~29,900+ 行の archive 戦略 (未着手)
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 705 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (script に焼き付け済 + escape 化済 = tmux argv 制限完全回避)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend/docs を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append (Edit ツールでは末尾 `---` が unique にならない場合あり、Read 後 Edit 推奨)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-37 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認** (連続 96 ループで実証した mitigation pattern)
+  - 観測時間目安: worker 起動 → 90-180 秒で対象ファイル + AGENT_LOG.md 両方に M 表示 (規模極小なら ~30-90 秒、規模 SS なら ~3-8 分、規模 M なら ~210-380 秒)
+  - **claude -p print mode は最終出力一括方式**: stdout は処理完了まで空のまま、AGENT_LOG.md M 表示を主観測手段にする
+  - **本セッション Loop 72 例**: rust 1 ファイル + AGENT_LOG.md エントリ ~50 行 を ~4-5 分で完走 (規模 SS、worker prompt 197 行)
+  - **本セッション Loop 73 例**: rust 3 ファイル (新規 1 + 修正 2) + AGENT_LOG.md エントリ ~40 行 を ~3-4 分で完走 (規模 XS、worker prompt 153 行 simpler)
+  - **新規パターン 連続観測**: worker amend 時の hash 更新漏れに対し、worker 自身で chore commit を作成して補正する自律学習が Loop 60-73 の **14 ループ連続** で観測 = 完全に安定 pattern 化
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない** (line 39-41 rustdoc コメント = 引数渡しで TUI keep open が watchdog inspect 要件)
+- そのため handoff prompt は依然として **tmux 引数長制限の影響を受ける**
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本 prompt と同パターン、連続 33 セッション目)
+
+## worker prompt 必須要素 (96 連続ループで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+
+**追加推奨 (Loop 60-73 経験から)**:
+- worker prompt に「2-commit pattern (refactor/docs commit → hash 取得 → AGENT_LOG.md / plan.md 更新 → chore commit)」を **明示的に** 記載 = 14 連続ループで完全安定動作
+- 大型 file 抽出時は **precedent file (例: audio_traits.rs / audio_sample_helpers.rs / session_store_parse.rs / realtime_audio_command.rs / session_store_types.rs / session_manager_types.rs) の cat 全体読み込み** を明示推奨
+- **worker prompt の長さに注意**: ~150-220 行で短縮効果あり (Loop 67-73 で実証 ~3-7 分完走)、調査含む docs 作成は ~250-300 行も可
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 72 = ~4-5 分、Loop 73 = ~3-4 分、平均 ~4 分で **目標 15 分以内大幅達成**)
+- worker 1 件 = 1-2 commit (本セッション Loop 72/73 とも 2-commit pattern = refactor + chore hash 反映)
+- 累積 worker 完走 173/173 (本セッション +2 件、100% 維持)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは 2 ループで「2 ループ + 早期 handoff」precedent 連続 32 セッション目達成
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中ゼロ (Loop 72-73 とも適切タイミングで自走)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ、docs/architecture/transcription-refactor-plan.md は完全完遂済 = 該当軸は今後アクション不要、**docs/architecture/detection-extension-plan.md は Phase 1 完了 = 本セッション Loop 72 で実装済、Phase 2 は実機要件あり**)。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260505-37` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-37 mjc-main` を実行 (冪等)。
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 30 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 31 セッション目で更に強化)
+5. **戦略転換の核心を継承**: 26 連続「Debug 軸補強」 + 5 連続「Webex sweep」**両方** に戻らない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ。**同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**。**「transcription.rs リファクタ完全完遂 = 該当軸完全消滅」「app_detection.rs サービス別抽出シリーズ 6 件完了」「大型 rust file 責務分離 = session_manager 着手 = 5 file 目」「test 軸は別ファイル素材を慎重に検討」「docs 軸は detection-extension-plan.md 新規作成済 + Phase 1 実装済 = sweep 化注意」** (sweep 化しない約束を継承)。
+6. **最初の Loop 候補**: variety 規則「カウンタリセット後 + 直近 7 ループで多様な pattern 達成」を踏まえ、Loop 74 で **(a) 候補 Y1 = 検知拡張 Open Questions 軽量調査 (priority 2 直接寄与 + plan の継続 = 価値の連鎖、規模 SS = 1 ループ完結期待) または (b) 候補 X = 大型 rust file 責務分離続行 (X1-X4 のいずれか)** のいずれか。worker prompt は「Loop 60-73 と同じ 2-commit pattern」を明示 + ~150-220 行 (Loop 67-73 precedent) で短縮効果。
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (handoff サマリの予測は誤認の precedent あり、grep を Read で精読する重要性は継承、本セッション Loop 72-73 で実証 = handoff Y を grep で WATCHED_BUNDLE_IDS caller 10 件 (実コード変更 3 件) を実態確認 → 規模 SS 妥当判定 = メイン批判判断 連続 24-25 セッション目達成)
+8. 待機モード禁止。final answer で停止せず、改善ループを継続する。**本セッションは 2 ループで「2 ループ + 早期 handoff」precedent 連続 32 セッション目達成、後継は 2 ループ continued または 3 ループ exception 判断を文脈で行う**
+9. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**、**worker prompt は ~150-220 行を目安に simpler 化** (Loop 67-73 で短縮効果実証)
+10. **worker 完走確認は `git status --short` を主観測手段とする** (連続 96 ループで実証した mitigation pattern、log file は補助、観測時間目安 90-380 秒、規模 XS-SS なら ~3-8 分、claude -p の最終出力一括方式を理解)
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK** = 引数長制限は worker.sh / research.sh では完全解消済。**handoff-main.sh は interactive TUI のため stdin redirect なし** = handoff 起動 prompt は短縮 + ファイル参照型 (本 prompt と同パターン、連続 33 セッション目) で書く
+12. **commit hash 更新漏れパターン (Loop 60-73 で 14 連続観測 = 完全安定 pattern 化)**: worker prompt に「2-commit pattern (refactor/docs commit → hash 取得 → AGENT_LOG.md / plan.md 更新 → chore commit)」を明示記載 = 14 連続ループで安定動作
+
+# Loop 74 への期待 (推奨ループ設計)
+
+variety カウンタリセット後 + 直近 7 ループで多様な pattern を踏まえた **次ループ自由度高い設計**:
+
+- 候補 Y1 = 検知拡張 Open Questions 軽量調査 = priority 2 直接寄与 + plan の継続 = 価値の連鎖 + 規模 SS = 1 ループ完結期待
+- 候補 X = 大型 rust file 責務分離続行 = session_manager.rs persist_if_configured / audio.rs 残 helper / session_store.rs render_session_markdown / elevenlabs+openai WS タスク共通化 規模 M
+- 候補 J = frontend = 主観性高警告継承
+- 候補 H = harness 衛生 (untracked 整理判断、ユーザー直伝指示要)
+
+メインは grep で 1 候補に絞る → worker prompt 作成 (~150-220 行 simpler 目安) → 起動 = 通常の自律改善ループへ復帰。
+
+**最有力候補 Y1 (検知拡張 Open Questions 軽量調査) を採用する場合**: detection-extension-plan.md Section 6 の Q5/Q7/Q8 をコード調査 (grep) で完結 → docs に結果追記 → Phase 2 着手判断の基礎情報を整える。Q1-Q4 (実機要件) は引き続き Open のまま。

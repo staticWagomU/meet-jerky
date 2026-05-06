@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-62 です。
+
+前任者 mjc-main-20260505-61 から 2 ループ完走 + 通常 cadence handoff (Loop 118 = K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 12 件目 = +138 行 / 平均 ~46 行/loop = paradigm pivot 達成 + alternation 10 連続成功 + メイン批判判断 連続 57 セッション目達成 + worker ~3 分完走 + Loop 119 = rust 軸 = 純粋関数機能分離軸 rust 版 = app_detection.rs の classify_meeting_url + classify_meeting_window_title 2 関数を新 file app_detection_meeting_classifier.rs に抽出 = -104 行 + scope 23 軸目開拓 + 大型 rust file 責務分離 36 file 目 + MeetingUrlClassification 残置 + pub use re-export で API 互換維持 = caller + test (super::* import) 全て無変更 + メイン批判判断 連続 58 セッション目達成 = handoff 候補 R3 を批判的精査で改修 = 責務階層精査 (low-level URL parser vs high-level meeting service 分類 = 階層異なる) で url_helpers 統合却下 + 新 file 作成軸採用 + worker ~6 分完走 + cargo test 704 件件数完全不変) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-62.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 120 推奨候補 K Section 2.3 観測追記 13 件目 = paradigm pivot rust → K + alternation 12 連続維持 = 規模 SS = 最有力推奨 / R4 parse_throttle_key_to_display_name 抽出 = rust 軸 2 連続警告 + 責務階層精査要 / X3 TranscriptView 残 純粋関数 27 件段階的分割 = scope depth 警告 6 件目 / R5 既存 file 拡張軸 2 件目 app_detection_inactive_decision.rs/notification.rs 統合可能性 = 要 grep 精査 / J' SettingsView 内部 helper 精査 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 58 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119 教訓継承** = 後継 Loop 120+ で paradigm 選択時に必ず責務階層精査を実施
+- **API 互換維持戦略 (pub use re-export) の Loop 119 precedent 継承** = caller + test 全て無変更で関数を新 file に抽出可能

@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-48 です。
+
+前任者 mjc-main-20260505-47 から 2 ループ完走 + 通常 cadence handoff (Loop 91 = system_audio_pcm.rs 抽出 = 構造分離 17 件目 = system_audio 軸 1 件目 = 新 scope = 規模 SS-S ~6.5 分 + Loop 92 = system_audio_format.rs 抽出 = 構造分離 18 件目 = system_audio 軸 2 件目 = 機能分類軸 2 連続 (Loop 87/88 paradigm 同形) = 規模 SS ~5.5 分 = handoff 警告「scope 払底気味」を 3 ループ連続 (Loop 89/90/91) grep + Read 精査 + 発掘で覆す = メイン批判判断 連続 42 セッション目達成 + worker 自律 2-commit pattern 連続 33 ループ目 = Loop 80/85/86/87/88/89/90/91/92 進化 pattern (refactor hash 実 hash 直書き + chore hash 書かず) 完璧踏襲 + Loop 92 で worker 自律学習進化 (use super::* 不要 import 自律削除 = clippy -D warnings 対応) + harness 衛生連続 42 セッション目 (canonical 移譲後 scripts/* M 表示再出現せず) + ファイル参照型 handoff prompt 連続 44 セッション目 + 直近 26 ループ多軸分散 = 構造分離 18 + 機能拡張/docs 5 + harness 衛生 3 = 18:5:3 重心構造分離 + scope 多様性 10 軸到達 (session_store / audio / realtime / detection / session_manager / harness / app_detection 機能分類 / settings / transcription_commands / system_audio 機能分類) + system_audio.rs 778 → 438 行 -44%) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-48.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 93 推奨候補 X 新規発掘 19 件目 = transcription_types / apple_speech / transcription_traits / transcription_error_payload / markdown / audio_utils / secret_store のいずれか / X' system_audio 軸 3 件目 skip 推奨 3 連続警告境界 / K3 後続 機能拡張/docs 軸 1 連続復帰 主観性中要範囲限定 / H1 ユーザー直伝指示要 harness 衛生 4 件目 sweep 警告境界 / J frontend 主観性高警告 / H' 大量 untracked 整理 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 44 セッション目継承

@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-61 です。
+
+前任者 mjc-main-20260505-60 から 2 ループ完走 + 通常 cadence handoff (Loop 116 = frontend 軸 6 件目 = SessionList.tsx → utils/sessionListHelpers.tsx = 11 純粋関数抽出 + 重複 2 件 (getFileName + getSessionDisplayTitle = transcriptViewFormatters と完全同実装) は既存 transcriptViewFormatters から import 統合 = -147 行 = 純粋関数機能分離軸 + DRY 軸混合 paradigm = K 軸 (Loop 115) を挟んだので軸 reset 解釈可能 + 大型 frontend file 責務分離 34 file 目 + scope 22 軸目開拓 (`src/routes/` 配下) + 衝突回避設計 6 件目 + worker 自律 .tsx 拡張子修正 (JSX 構文サポートのため文法的に必須) + handoff 推奨候補 X1 を grep + Read 精査で「外部 caller ゼロ + 純粋関数 13 件 + 重複 2 件発見 = handoff 文書見落としの技術負債」精査手順で採用 + メイン批判判断 連続 55 セッション目達成 + worker ~5 分完走 + Loop 117 = rust 軸復帰 = app_detection.rs URL parser 6 純粋関数 + ParsedUrlParts struct を **既存 app_detection_url_helpers.rs に統合追加** = 「既存 file 拡張軸 = 新 paradigm」確立 = -105 行 + 大型 rust file 責務分離 35 file 目 + scope 22 軸目変種 + cloud_whisper.rs `#[allow(dead_code)]` 罠回避 + 既存 app_detection_url_helpers.rs 統合可能性発見 = メイン批判判断 連続 56 セッション目達成 + worker ~6 分完走 = cargo test 含む全検証通過 + variety 規則 alternation pattern 9 連続成功 = K(109) → frontend(110) → K(111) → frontend(112) → K(113) → frontend(114) → K(115) → frontend(116) → rust(117)) = メイン批判判断 連続 56 セッション目達成 + worker 自律 2-commit pattern 連続 57 ループ目 + harness 衛生連続 55 セッション目 + ファイル参照型 handoff prompt 連続 56 セッション目 + scope 多様性 22 軸到達 + frontend 軸 = 6 件目 + 既存 file 拡張軸 = 新 paradigm 1 件目確立 (新 file 作成ではなく既存 file 統合追加 = file 数不増 + 責務集約 + 保守性向上 = 後継継続適用検討可能) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-61.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 118 推奨候補 = K Section 2.3 観測追記 12 件目 = paradigm pivot (rust → K) + alternation 維持 = 規模 SS = 最有力推奨 / R2 既存 file 拡張軸 2 件目 = app_detection_inactive_decision.rs / app_detection_notification.rs 統合可能性精査 = 新 paradigm 継続適用 = 要 grep 精査 / R3 app_detection.rs 残 純粋関数 (parse_throttle_key_to_display_name + classify_meeting_url + classify_meeting_window_title) = 警告 (rust 軸 2 連続) / X3 TranscriptView.tsx 残 純粋関数 27 件 = scope depth 警告 6 件目 = K 軸挟まないと strict warning / J' SettingsView.tsx 内部 component 内 helper 精査 = scope 22 軸目変種 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 57 セッション目継承

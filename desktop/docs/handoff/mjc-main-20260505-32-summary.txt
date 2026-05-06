@@ -1,0 +1,116 @@
+
+---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-32
+
+## 達成実績 (2 ループ完走 = app_detection scope 始動 = 「2 ループ + 早期 handoff」precedent 連続 28 セッション目達成)
+
+### Loop 64 = URL helper 抽出 (commit `62d3e83` + chore `0acbbd7` = ~3 分)
+- src-tauri/src/app_detection_url_helpers.rs (新規 24 行) に 2 関数抽出
+  - `pub(crate) fn is_valid_dns_label` (RFC 1035/1123 DNS label 妥当性, 14 行)
+  - `pub(crate) fn has_single_non_empty_segment` (path segment 単一性, 4 行)
+- lib.rs に `mod app_detection_url_helpers;` 追加 (teams と webex の間)
+- 5 service module (goto/teams/webex/whereby/zoom) + app_detection.rs 本体の use 文書き換え (6 件)
+- tests は classify_meeting_url を主語にするため app_detection.rs 残置 (純粋ロジック抽出 pattern)
+- メイン批判判断 連続 16 セッション目達成 = handoff prompt 候補 K Phase 1 案 (データ型抽出) を grep で外部 caller ゼロ発見 → URL helper 抽出 (5 service module 依存 = locality メリット大) という新候補に転換
+- worker 自律 2-commit pattern (Loop 60-63 precedent 5 連続継承)
+
+### Loop 65 = Google Meet サービス抽出 (commit `af00d1c` + chore `762275f` = ~3.5 分)
+- src-tauri/src/app_detection_google_meet.rs (新規 31 行) に 3 関数抽出
+  - `pub(crate) fn is_google_meet_url` (~7 行)
+  - `pub(crate) fn is_google_meet_code_path` (~17 行)
+  - `fn has_ascii_lowercase_len` (~3 行 = Google Meet 専用 helper、private 維持)
+- lib.rs に `mod app_detection_google_meet;` 追加 (app_detection_goto の前)
+- app_detection.rs L517 caller = 完全修飾 path 書き換え (Webex/Zoom precedent 踏襲)
+- has_single_non_empty_segment use 文削除 (unused lint 回避、worker 自律 Tidy)
+- メイン批判判断 連続 17 セッション目達成 = handoff prompt の「サービス別抽出シリーズ完了」記述を grep で Google Meet 未抽出と訂正 + Webex/Whereby/GoToMeeting/Zoom/Teams precedent 完全踏襲
+- worker 自律 2-commit pattern (連続 6 ループ目)
+
+## app_detection.rs 縮小実績
+
+- 3109 行 (handoff 時 = mjc-main-20260505-31 終了時) → ~3060 行 (Loop 65 完了時) = **累計 -49 行 / 新 file 2 つ**
+- 新 file: app_detection_url_helpers.rs (24 行) + app_detection_google_meet.rs (31 行)
+- locality 集約効果: 5 service module (Webex/Whereby/GoToMeeting/Zoom/Teams) は本体ファイルから独立して helper file へ直接依存 = service 別 module の本体依存ゼロ化が完成 (Loop 64)
+
+## 戦略転換の継承 (連続 16-17 セッション目達成)
+
+- **メイン批判判断 連続 16+17 セッション目** = handoff の予測 / 状況記述を grep で実態確認 → 新候補発見 / 規模再見積 / 既存記述訂正
+- worker 完走 累計 165/165 (100% 維持、本セッション +2 件)
+- harness 衛生連続 26 セッション目 = canonical 移譲後 scripts/* M 表示再出現せず観測継続 = `bfb9846` PATH inner shell escape の永続的解決
+- 「2 ループ + 早期 handoff」precedent 連続 28 セッション目達成
+- ファイル参照型 handoff prompt precedent 連続 28 セッション目継承
+- コミット周期 平均 ~3.25 分/loop = 目標 15 分以内大幅達成
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 16-17 セッション目)
+
+- Loop 64: handoff prompt 候補 K の Phase 1 (データ型抽出 = MeetingAppDetectedPayload + MeetingUrlClassification) を grep で実態確認 → **外部 caller ゼロ** = locality メリット小と発見 → 代替の URL helper 抽出 (5 service module 依存 = locality メリット大) を新候補として発見 → メイン批判判断 連続 16 セッション目
+- Loop 65: handoff prompt の「app_detection.rs サービス別抽出シリーズ完了 (Webex/Whereby/GoToMeeting/Zoom/Teams 5 件全完了)」状況記述を grep で実態確認 → Google Meet が未抽出と判明 → Loop 65 で Webex/Whereby/GoToMeeting/Zoom/Teams precedent 完全踏襲で抽出 → メイン批判判断 連続 17 セッション目
+- precedent: 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず grep で実態確認 → 新候補発見 / 既存記述訂正 / 規模再見積」が **17 セッション連続で実証** (mjc-main-20260505-20 〜 -32)
+
+## 後継 (mjc-main-20260505-33) への引き継ぎ判断 (Loop 66 候補、優先順位順)
+
+### variety 規則の状態 (Loop 66 開始時点)
+
+直近 5 ループ: Loop 61 (struct/const + import refactor) → 62 (struct/const + import refactor) → 63 (struct/const + import refactor + docs 統合) → 64 (struct/const + import refactor、新 scope = app_detection) → 65 (struct/const + import refactor、app_detection scope)。
+- struct/const + import refactor 軸 = 5 連続だが scope は transcription.rs 完全消滅 → app_detection に転換 = 実質「app_detection scope 2 連続」
+- **Loop 66 で app_detection scope 続行は 3 連続到達 = sweep 警告 = variety pivot 検討必須**
+- 直近 docs 連続 = 0 (Loop 63 で plan.md 100% 達成記念のみ)。Loop 66 で docs 軸利用可能だが、別 docs 選択
+- 直近 test 連続 = 0 (transcription.rs 削除済 = 該当軸消滅)
+- 直近 service detection (新検知拡張) 連続 = 0
+
+### 候補 X (推奨 Loop 66, variety pivot 候補): 残る大型 rust file の責務分離 (別 scope への自然 pivot)
+
+- `audio.rs` (1011 行) / `session.rs` (773 行) / `session_manager.rs` (1274 行) / `session_store.rs` (1175 行) などが対象
+- transcription.rs precedent (60 セッション完結) + app_detection precedent (本セッション 2 ループ) を直接展開可能
+- 規模 grep で実態確認必須 (1000 行超のファイルは段階的 Phase 設計推奨)
+- variety 軸として app_detection scope と異なる新 scope = 3 連続 sweep 警告回避
+
+### 候補 Y (Loop 66+ 探索系): app_detection scope 続行 (exception 判断必要)
+
+- app_detection.rs 残存関数 (~3060 行) のうち URL parsing 系 (normalize_url_host / ParsedUrlParts / parse_url_host_and_path / extract_query / strip_port / validate_port) を `app_detection_url_parser.rs` に集約
+- 規模 M = 1 ループ完結不確実 = 段階的 Phase 設計推奨
+- 3 連続 sweep 警告 = variety pivot 検討推奨だが、grep 規模実測で XS と判明したら exception 判断可
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注 = 主観的探索を避ける
+- TODO/FIXME/any: 本セッションで grep ゼロ確認 = 現状 a11y も充実 = 起点が明確に見えず
+
+### 候補 I (継承、低優先): Discord stage / Slack Huddle 検知 (window title 経路)
+
+- priority 2 直接寄与
+- 本セッションで grep 確認 = `discord|slack` の言及完全ゼロ = 完全未実装
+- Bundle ID + window title 経路必要 = 規模 M = 1 ループ完結不確実 = 別 issue 推奨
+
+### 候補 L (継承、低優先): docs 軸
+
+- plan.md 100% 達成記念は Loop 63 で完了済 = 別 docs 選ぶ (AGENTS.md / agent-harness-claude.md / product-concept.md など)
+- 価値判断重要 (docs 単独 sweep にしない約束)
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (`Webex ミーティング`) (継承 = Loop 67+ 程度間隔推奨)
+
+### 低優先 (harness 衛生、未着手)
+
+#### H. 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 250+ untracked、ユーザー直伝指示があるまで保留)
+#### I. AGENT_LOG.md ~29,000+ 行の archive 戦略 (未着手)
+
+## 検証制約 (再掲)
+
+- cmake あり → cargo test 702 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 64/65 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 2 回 (Loop 64 起動後直後 / Loop 65 完走直後 = 完璧タイミング、improver による継続指示)
+

@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-60 です。
+
+前任者 mjc-main-20260505-59 から 2 ループ完走 + 通常 cadence handoff (Loop 114 = frontend 軸 5 件目 = MeetingDetectedBanner.tsx → utils/meetingDetectedBannerHelpers.ts = 4 純粋関数抽出 = -52 行 = 純粋関数機能分離軸 frontend 版 continuity = K 軸 (Loop 113) を挟んだので軸 reset = 警告境界回避 + 大型 frontend file 責務分離 33 file 目 + scope 21 軸目開拓 = handoff 推奨候補 X1 を grep + Read 精査で「外部 caller ゼロ + 純粋関数 4 件 (副作用ある readPromptLiveCaptionStatus L40 は除外) + 規模 SS + handoff サマリ X2 SessionList.tsx + J' SettingsView.tsx の path 誤認 (実は src/routes/ 配下) 発見」精査手順で採用 + メイン批判判断 連続 54 セッション目達成 + worker ~3-4 分完走 + Loop 115 = K 軸復帰 = Section 2.3 観測追記 11 件目 = +58 行 / 平均 ~29 行/loop = paradigm pivot 達成 + variety 規則 alternation pattern 完璧継続 = K(109) → frontend(110) → K(111) → frontend(112) → K(113) → frontend(114) → K(115)) = メイン批判判断 連続 54 セッション目達成 + worker 自律 2-commit pattern 連続 55 ループ目 + harness 衛生連続 54 セッション目 + ファイル参照型 handoff prompt 連続 55 セッション目 + scope 多様性 21 軸到達 + frontend 軸 = 5 件目 = 異 file 拡張 paradigm 5 連続成熟 (TranscriptView → LiveCaptionWindow → TranscriptDisplay → ModelSelector → MeetingDetectedBanner = 同 paradigm continuity + scope 多様性両立 + 衝突回避設計 paradigm 5 件目 = file 専用 namespace `meetingDetectedBannerHelpers.ts`) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-60.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 116 推奨候補 = X1 SessionList.tsx (`src/routes/`, 700 行) 純粋関数 13 件抽出 = frontend 軸 6 件目 scope 22 軸目開拓 = 最有力推奨だが 6 連続 strict warning 注意 (K 軸 1 連続を Loop 115 で挟んだので 1 ループ間隔軸 reset 解釈可能 + 異 directory `src/routes/` scope 多様性継続 + handoff 発掘成果直接活用、ただし grep + Read 精査必須) / R cloud_whisper.rs (778 行) 純粋関数 6 件抽出 = rust 軸復帰 = paradigm 大幅 pivot / X3 TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = scope depth 警告 6 件目 = 警告 / J' SettingsView.tsx (`src/routes/`, 2010 行) 内部 component 内 helper 精査 = scope 22 軸目変種 / K = K 軸 1 ループ間隔のみ = 2 連続境界 SKIP 推奨 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 56 セッション目継承

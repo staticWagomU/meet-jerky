@@ -1,0 +1,216 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-28) です。
+旧 mjc-main (= mjc-main-20260505-27) から **2 ループ完走 + Loop 54 = plan.md 再更新 (Loop 53 を 89.1% → 93.6% 反映, docs 軸 警告境界だが許容, ~5 分) + Loop 55 = tests mod 4 件 一括移動 = transcription.rs tests mod 完全削除 + use 文 2 件完全削除 + 互換 re-export + 1 const のみ 36 行最終形達成 = 元 2999 行から 98.8% 縮小 -2963 行 = 95% / 98% 里程標突破達成 + transcription.rs 責務分離プラン Phase 5 完了相当 + メイン批判判断 連続 8 セッション目達成 (handoff の「候補 P (3 tests, Loop 55+) と候補 Q (1 件, Loop 55+) を別ループで実施」案を grep 実態確認で 4 tests 全部 transcription.rs tests mod の唯一の構成要素 + use 文 2 件もこれらの tests のみで使用と判明 → 1 ループマージで完全削除最適と訂正) + worker 完走 2/2 (累計 155/155 100% 維持) + harness silent fail mitigation pattern 連続 79 ループ実証達成 + canonical 移譲後 scripts/* M 再出現せず観測 (連続 21 セッション目で結論超強化) + sonnet worker の Tidy First 質的高さ連続 24 セッション目で実証 + 「2 ループ + 早期 handoff」precedent 連続 23 セッション目達成 + コミット周期 平均 ~5 分/loop で目標 15 分以内大幅達成 + 1 セッション削減量 -157 行 (98.8% 最終形達成ループ)** の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-4 完了 + Phase 3-B 完全完了 + Webex/Whereby/GoToMeeting/Zoom/Teams 抽出 ✅ + transcription_types tests + transcription_error_payload tests + TranscriptionLoopConfig + 沈黙検知 tests + 沈黙検知定数 + WhisperStream tests + ModelManager tests + CHUNK 定数 + Mock impl + tests + TranscriptionManager tests + StreamConfig Debug/Clone tests = mjc-main-20260505-26 Loop 53 で 93.6% まで反映済 = mjc-main-20260505-27 Loop 54 で plan.md は 93.6% 反映完了、本セッション Loop 55 (tests mod 4 件 完全移動 -157 行 = 98.8% 最終形) は plan.md 未反映 = Loop 56+ で更新候補 (推奨))**
+- AGENT_LOG.md は ~28,200+ 行 / ~2.6MB あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-27 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」。
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2**: 「Webex sweep」の variety 規則 = 「同じパターン 3 ループ続いたら 4 ループ目に variety pivot を検討」確立
+- **mjc-main-20260505-3**: 「handoff prompt の主要候補を批判的に再評価する」precedent + 「grep 結果は Read で精読する」運用ルール強化
+- **mjc-main-20260505-4 〜 19**: Phase 1-4 + Phase 3-B + Webex/Whereby/GoToMeeting 抽出 + 各種 test 移動 + struct 移動を計 35 ループで完了
+- **mjc-main-20260505-20 〜 26**: Loop 39-53 でサービス別抽出シリーズ 5 件全完了 + plan.md 進捗更新シリーズ + ModelManager tests + CHUNK 定数 + WhisperStream tests + 沈黙検知三位一体 + Mock impl + TranscriptionManager tests + StreamConfig Debug/Clone tests
+- **mjc-main-20260505-27 (本セッション)**: **Loop 54 = plan.md 再更新 (Loop 53 反映 89.1% → 93.6%)** + **Loop 55 = tests mod 4 件 一括移動 = transcription.rs tests mod 完全削除 + 36 行最終形達成 = メイン批判判断 連続 8 セッション目** = transcription.rs 98.8% 縮小達成 + **95% / 98% 里程標突破 + Phase 5 完了相当**
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」「Teams sweep」「Whereby sweep」「Phase 2 sweep」「Phase 4 sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- 寄与が薄い場合は **その候補をスキップして次を探す**
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**
+- **handoff prompt の主要候補を鵜呑みにせず批判的再評価。前任者の rustdoc 注記等の意図的判断を尊重**
+- **本セッション Loop 55 = handoff 候補 P / Q を別ループ案 → grep で実態確認 → 1 ループマージで完全最終形と判断 = メイン批判判断 連続 8 セッション目達成**
+- **grep 結果は必ず Read で精読してから「発見」を主張する**
+- **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **「app_detection.rs サービス別抽出シリーズ完了」** (Webex/Whereby/GoToMeeting/Zoom/Teams 5 件全完了。Tidy First は別パターンを選ぶ)
+- **「テスト移動軸の sweep 化警告超過状態」** (Loop 32/35/38/42/45/47/50/51/53/55 で 10 件目、test 軸は transcription.rs 余地ゼロ = Loop 56 で test 続行は不可能)
+- **「docs 軸の sweep 化しない」** (Loop 30/34/37/39/41/46/49/52/54 で 9 件目、Loop 56 で docs 続行は 1 ループ pivot 後 = 警告境界手前)
+- **transcription.rs はもう「互換 re-export 5 行 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const = 36 行 = 最終形」** = 残る Tidy First 機会は (1) WHISPER_SAMPLE_RATE 移動最終判断 / (2) 互換層削除 Phase 6 / (3) docs / frontend / 検知拡張 の 4 軸が中心
+
+# 引き継ぎサマリ (2026-05-05 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead ~298 (origin/main から先行、本セッション +5 commit (worker 2 + chore 2 + SESSION SUMMARY 1))
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-27) の commit:
+  1. `032ca94` docs(transcription-refactor-plan): Loop 53 StreamConfig Debug/Clone tests 移動を反映 (Loop 54, ~5 分)
+  2. `66ce44d` chore(agent-log): Loop 54 commit hash 032ca94 を AGENT_LOG.md に記入
+  3. `93dcd18` refactor(transcription): tests mod 4 件 (should_emit 1 + RequestedTranscriptionSources 3) を transcription_error_payload.rs / transcription_commands.rs に移動 = 36 行最終形達成 (Loop 55, ~5 分)
+  4. `5ec01ee` chore(agent-log): Loop 55 commit hash 93dcd18 を AGENT_LOG.md に記入
+  5. `c46aa95` chore(agent-log): mjc-main (mjc-main-20260505-27) の 2 ループ実績 SESSION SUMMARY と後継 mjc-main-20260505-28 への予防的ハンドオフ判断
+
+## 現在の品質状態
+- cargo test (lib): **702 passed / 0 failed** (本セッション 2 ループ全て件数不変)
+- cargo clippy --lib --tests -- -D warnings: **警告ゼロ**
+- cargo fmt --check: OK
+- npm run build: 本セッション frontend 触れていないため変更なし
+- bash -n scripts/claude-agent-*.sh: OK (escape 済み形式、本セッションでは触れていない)
+
+## 累計 transcription.rs 削減 (本セッションで -157 行 = 36 行最終形達成)
+- 元 2999 行 → 現在 **36 行** = ~98.8% 縮小 (~2963 行削減) = **93.6% → +5.2pt 進展 = 95% / 98% 里程標突破達成**
+- transcription.rs 最終形 = 互換 re-export 5 行 + 区切りコメント + WHISPER_SAMPLE_RATE 1 const のみ
+- tests mod 完全削除済 (Loop 55 で 4 tests を 2 ファイルに分散 locality 集約)
+
+## 累計各 locality 集約先拡大 (本セッションで +136 行)
+- transcription_error_payload.rs: 343 → 360 行 (+17 行) = should_emit/is_already_stopped 関数 + 関連 tests 同居 locality 完成
+- transcription_commands.rs: 598 → 717 行 (+119 行) = RequestedTranscriptionSources struct + 3 tests 同居 locality 完成
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 21 セッション目)
+- canonical 移譲 (`bash scripts/agent-adopt-main.sh mjc-main-20260505-27 mjc-main`) 後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 21 セッション目観測結論 = `bfb9846` PATH inner shell escape が永続的解決
+- 後継観測ポイント: 新たな harness 動作変化があれば観測継続
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-27、handoff 直前)
+- mjc-main-20260505-28 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ、**docs/architecture/transcription-refactor-plan.md は完全読 = 93.6% まで反映済、本セッション Loop 55 (4 tests -157 行 = 98.8% 最終形) 未反映 = Loop 56+ で更新可 (推奨))**。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認 (上 5 コミットが本セッションの実績、SESSION SUMMARY commit を含む)。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260505-28` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-28 mjc-main` を実行 (前 42 セッションで実証済 precedent あり、冪等)。
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 21 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 22 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-27) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + Loop 54-55 + 次ループ候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**。**variety 規則の状態 = 直近 5 ループ Loop 51 (test) → 52 (docs) → 53 (test) → 54 (docs) → 55 (test)、直近 docs 連続 0 (Loop 54 のみ)、test 連続 1 (Loop 55、ただし transcription.rs 余地ゼロ)、struct/const 連続 0 (Loop 48 のみ = 8 ループ間隔)**。**Loop 56 で test 続行は transcription.rs 余地ゼロ = 不可能、docs 続行は 1 ループ pivot 後 = 警告境界手前、struct/const 続行は 8 ループ間隔 = 完全 OK**。
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 56 開始時点)
+
+直近 5 ループ: Loop 51 (test) → 52 (docs) → 53 (test) → 54 (docs) → 55 (test)。
+- 直近 docs 連続 = 0 (Loop 54 のみ)。**Loop 56 で docs 続行は 10 件目連続超過警告だが 1 ループ pivot 後 = 警告境界手前 = 慎重判断**
+- 直近 extraction 連続 = 0 (Loop 43 のみ、サービス別抽出シリーズ完了 = 続行不可能)
+- 直近 test 連続 = 1 (Loop 55)。**Loop 56 で test 続行は transcription.rs に test 移動余地ゼロ (tests mod 完全削除済) = 続行不可能**
+- 直近 struct/const 連続 = 0 (Loop 48 のみ = 8 ループ間隔)。**Loop 56 で続行は完全 OK、WHISPER_SAMPLE_RATE 移動が候補**
+
+### 候補 D'' (推奨 Loop 56): plan.md 再更新 (docs 軸 = Loop 54 から 2 ループ間隔 = 警告境界だが許容)
+- mjc-main-20260505-27 Loop 55 (tests mod 4 件 一括移動 = 36 行 98.8% 縮小最終形) を 1 ループで反映
+- 進捗サマリ更新 93.6% → **98.8%** (+5.2pt 進展、95% / 98% 里程標突破達成、transcription.rs 責務分離プラン Phase 5 完了相当)
+- 累計削減 193 → 36 行
+- 新サブセクション 1 件: tests mod 完全移動 + 4 tests 分散 locality ✅ (Loop 55) + Phase 5 完了相当の記載
+- 規模 SS = 1 ループ完結確実
+- variety pivot = docs 軸 = Loop 54 から 2 ループ間隔 = 警告境界だが許容、test 軸 = transcription.rs 余地なし = 続行不可能のため docs が最優先
+
+### 候補 N' (推奨 Loop 56+): WHISPER_SAMPLE_RATE 移動の最終判断 (struct/const 軸 = 8 ループ間隔 = 完全 OK)
+- transcription.rs L30 の `pub(crate) const WHISPER_SAMPLE_RATE: u32 = 16_000;`
+- 参照ファイル: audio_utils.rs / transcription_whisper_stream.rs (両方広域参照のため transcription.rs に残置)
+- 移動先候補: 新規 transcription_constants.rs か audio_utils.rs に再 locality 集約
+- 規模 SS = 1 ループ完結 (use 文 2 ファイル変更のみ)
+- 移動後 transcription.rs は **互換 re-export + 区切りコメント = ~25 行** = transcription.rs 真の最終形
+- struct/const 軸 = Loop 48 から 8 ループ間隔 = sweep 警告完全クリア
+- メイン批判判断ポイント: 移動先を audio_utils.rs (既存) と新規 transcription_constants.rs のどちらにするか = audio_utils.rs に既に SILENCE_LOOKBACK_SAMPLES 等の沈黙検知定数があるため統合先候補だが「whisper-specific」観点では新規 file がより明示的 = grep で他参照確認の上判断必要
+
+### 候補 R (Loop 57+): transcription.rs 互換層削除の検討 (Phase 6、規模 M、複数ループ計画)
+- transcription.rs の互換 re-export 5 件を呼び出し側で直接 import に変更し、transcription.rs を完全削除する判断
+- 規模 M = 全 caller の `use crate::transcription::...` を `use crate::transcription_types::...` 等に書き換え
+- 影響範囲広域 = 1 ループ不確実、複数ループ計画推奨
+- メリット: transcription.rs 完全削除 = ファイル数削減 + 互換層メンテ不要
+- デメリット: 全 caller 更新の migration cost 大、Phase 6 として別計画推奨
+
+### 候補 J (Loop 56+): frontend 軸 pivot
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行) は規模あり
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注、主観的探索は避ける
+- 候補としては低優先 (具体スライス特定困難)
+
+### 候補 I (Loop 56+): Discord stage / Slack Huddle 検知 (window title 経路)
+- priority 2 直接寄与
+- service detection 軸 = 直近 5 ループ全てと別軸
+- ただし URL 検知不可 = Bundle ID + window title 経路必要 = 規模 M 1 ループ完結不確実
+- 別 issue として深掘り推奨
+
+### 低優先 (継承、再考の価値限定的)
+
+#### B1. Microsoft Teams window title fallback
+- mjc-main-20260505-3 で批判的に却下済 (前任者 rustdoc 注記との矛盾)
+
+#### A1. Webex 日本語 window title (`Webex ミーティング`)
+- 規模: 極小 (3-4 行)
+- Webex sweep precedent 28 セッション維持を破る、Loop 58+ 程度まで間隔を空ける推奨
+
+### 低優先 (harness 衛生、未着手)
+
+#### H. 大量 untracked ファイル整理判断
+- `docs/handoff/`, `docs/worker-prompts/` に 235+ untracked
+- ユーザー直伝指示があるまで保留
+
+#### I. AGENT_LOG.md ~28,200+ 行の archive 戦略
+- 未着手、未消化
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 702 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (script に焼き付け済 + escape 化済 = tmux argv 制限完全回避)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append (Edit ツールでは末尾 `---` が unique にならない)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-28 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認** (連続 79 ループで実証した mitigation pattern)
+  - 観測時間目安: worker 起動 → 90-180 秒で対象ファイル + AGENT_LOG.md 両方に M 表示 (規模極小なら ~30-90 秒、規模 M なら ~210-380 秒、本セッション規模 SS は ~150-180 秒、規模 S は ~210-240 秒)
+  - **claude -p print mode は最終出力一括方式**: stdout は処理完了まで空のまま、AGENT_LOG.md M 表示を主観測手段にする
+  - 規模極小タスクの場合: worker が agent-commit.sh で自走 commit する場合あり (本セッション Loop 54/55 とも自走 commit)
+  - **本セッション Loop 54 例**: plan.md 5 箇所更新 + 新サブセクション 1 件 ~150 行を ~5 分で完走 (規模 SS)
+  - **本セッション Loop 55 例**: 4 tests + 区切りコメント + use 文 2 件削除 ~157 行 + 2 ファイル追加 ~136 行を ~5 分で完走 (規模 S)
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない** (line 39-41 rustdoc コメント = 引数渡しで TUI keep open が watchdog inspect 要件)
+- そのため handoff prompt は依然として **tmux 引数長制限の影響を受ける** (4209 bytes でも too long エラー precedent あり)
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本セッションの起動 prompt と同パターン、連続 24 セッション目)
+
+## worker prompt 必須要素 (79 連続ループで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 54 = ~5 分、Loop 55 = ~5 分、平均 ~5 分で **目標 15 分以内大幅達成**)
+- worker 1 件 ≒ 1 commit + commit hash 反映 chore commit 1 件 (本セッションは Loop 54/55 ともに worker 自走で 4 commit、SUMMARY chore で +1 commit = 計 5 commit)
+- 累積 worker 完走 155/155 (本セッション +2 件、100% 維持)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは 2 ループで「2 ループ + 早期 handoff」precedent 連続 23 セッション目達成
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中ゼロ (2 ループとも目標 15 分以内で worker 完走、平均 5 分)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ、docs/architecture/transcription-refactor-plan.md は完全読 = 93.6% まで反映済、本セッション Loop 55 (4 tests -157 行 = 98.8% 最終形) 未反映、Loop 56+ で更新可 (推奨))。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260505-28` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-28 mjc-main` を実行 (冪等)。
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 21 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 22 セッション目で更に強化)
+5. **戦略転換の核心を継承**: 26 連続「Debug 軸補強」 + 5 連続「Webex sweep」**両方** に戻らない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ。**同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**。**「app_detection.rs サービス別抽出シリーズ完了 = もう存在しない、Tidy First は別パターンを選ぶ」「test 軸 = transcription.rs 余地ゼロ = 続行不可能」「docs 軸 10 件目連続だが 1 ループ pivot 後 = 警告境界手前」「struct/const 軸 = 8 ループ間隔 = 完全 OK」** (sweep 化しない約束を継承)。
+6. **最初の Loop 候補**: variety 規則「直近 5 ループ test/docs/test/docs/test、test 軸 transcription.rs 余地ゼロ、docs 軸 10 件目連続だが 1 ループ pivot 後 = 警告境界手前、struct/const 軸 = 8 ループ間隔 = 完全 OK」を踏まえ、Loop 56 で **plan.md 再更新 (Loop 55 反映 93.6% → 98.8% + Phase 5 完了相当記載)** (候補 D''、docs 軸、規模 SS) が **最も妥当 = 強く推奨**。または候補 N' (WHISPER_SAMPLE_RATE 移動) も struct/const 軸 8 ループ間隔で完全 OK = 1 ループ並走可能。
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (handoff サマリの予測は誤認の precedent あり、grep を Read で精読する重要性は継承、本セッション Loop 55 で実証 = handoff 候補 P/Q を別ループ案 → grep で 4 tests 全部単一の構成要素 + use 文 2 件もこれらのみで使用と判明 → 1 ループマージで完全最終形と訂正 = メイン批判判断 連続 8 セッション目)
+8. 待機モード禁止。final answer で停止せず、改善ループを継続する。**本セッションは 2 ループで「2 ループ + 早期 handoff」precedent 連続 23 セッション目達成、後継は 2 ループ continued または 3 ループ exception 判断を文脈で行う**
+9. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**
+10. **worker 完走確認は `git status --short` を主観測手段とする** (連続 79 ループで実証した mitigation pattern、log file は補助、観測時間目安 90-380 秒、規模極小なら ~30-90 秒、規模 SS は ~150-180 秒、規模 S は ~210-240 秒、claude -p の最終出力一括方式を理解)
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK** = 引数長制限は worker.sh / research.sh では完全解消済。**handoff-main.sh は interactive TUI のため stdin redirect なし** = handoff 起動 prompt は短縮 + ファイル参照型 (本 prompt と同パターン、連続 24 セッション目) で書く

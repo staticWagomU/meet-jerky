@@ -1,0 +1,140 @@
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-40 (1 ループ + 早期 handoff exception 判断)
+
+## ループ実績
+
+### Loop 80 = X4 = WS タスク共通化 Phase 1 = realtime_audio_helpers.rs 抽出 (~6 分、規模 SS-S 中央値内)
+
+**What**:
+- src-tauri/src/realtime_audio_helpers.rs (新規) を作成し、両 file の `mod ws_task` 内重複定義から以下 2 fn を pub(crate) として配置:
+  - resample_block fn (26 行、両 file 完全同一実装から統合)
+  - float_to_pcm16 fn (9 行、両 file 完全同一実装から統合)
+- `#[cfg(test)] mod tests` 内に統合 test 2 件配置 (重複 test 1 件 → 1 件、 unique test 1 件 = 計 2 件):
+  - float_to_pcm16_handles_full_range_and_clamping (両 file 同名 test を 1 件に統合)
+  - float_to_pcm16_empty_input_yields_empty_output (openai 側 unique test を移植)
+- src-tauri/src/lib.rs に `mod realtime_audio_helpers;` を `mod realtime_audio_command;` の直後 (alphabetical) に追加
+- src-tauri/src/elevenlabs_realtime.rs / openai_realtime.rs:
+  - `mod ws_task` 内に `use crate::realtime_audio_helpers::{float_to_pcm16, resample_block};` 追加
+  - 各 file 内の重複 fn (resample_block 26 行 + float_to_pcm16 9 行) 削除
+  - mod tests 内重複 test 削除
+- 振る舞い不変 = test 件数 705 → 704 (重複 test 1 件統合分の意図的 -1)、動作完全不変
+
+**Why**:
+- AGENTS.md 優先順位 1 = クラッシュ予防の構造美 (両 file の重複 ~35 行を single source of truth 化)
+- Loop 70 の `realtime_audio_command.rs` (12 行 AudioCommand 共通化) の自然な続編
+- 大型 rust file 責務分離 10 file 目達成
+- 構造分離軸 1 連続復帰 (Loop 78-79 で機能拡張+harness pivot 後の自然な戻り)
+- メイン批判判断 連続 32 セッション目達成 = handoff の「規模 M = WS タスク共通化」予測を grep + Read 精読で再評価 → 「resample_block + float_to_pcm16 = 35 行 + 重複 test 1 件削減」という具体的サブセットに絞ることで規模を SS-S に削減
+
+**How** (Tidy First, behavior-preserving):
+- visibility: 両 file 内で `fn` (private) → 新 file で `pub(crate) fn` 昇格 (cross-mod use 可能化)
+- worker 自律学習: `Resampler` トレイト import の解析を `★ Insight` で報告 = `SincFixedIn::<f32>::new(...)` 呼び出しが remaining なら trait import 維持必要との判断を worker が自律実施
+- caller 側の use 文位置: 既存の `use base64::Engine;` `use rubato::...;` `use serde_json::...;` の use ブロック内に挿入 (alphabetical 順整合)
+
+**Verify**:
+- cargo build --lib: エラーなし
+- cargo test --lib: 704 passed / 0 failed (705 から重複 test 1 件統合により -1)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- agent-verify.sh: OK
+- elevenlabs_realtime.rs から `fn resample_block` を grep: 0 件
+- openai_realtime.rs から `fn resample_block` を grep: 0 件
+- realtime_audio_helpers.rs から `pub(crate) fn resample_block` を grep: 1 件
+- trailing whitespace: なし
+
+**Commits**:
+- 4e2a49d refactor(realtime): resample_block と float_to_pcm16 を realtime_audio_helpers.rs に抽出
+- 9974a93 chore(agent-log): Loop 80 commit hash 4e2a49d を AGENT_LOG.md に記入 (Loop 60-79 precedent 適用 21 連続)
+
+## 1 ループ + 早期 handoff exception 判断 (連続 36 セッション目で exception 適用)
+
+### 経緯
+Loop 80 完走後、context 余裕大の状態で Loop 81 候補 X4-2 = push_error 共通化の grep + Read 実態確認を実施:
+- caller 数: elevenlabs production 3 + test 8 + openai production 2 + test 8 = 計 ~21 caller
+- test mod 構造非対称: elevenlabs は `mod ws_task` 内 sub mod `pending_timeout_tests` (`super::push_error`)、 openai は file 直下 `mod tests` (`ws_task::push_error`)
+- expected text format: 完全一致 `"[<engine> Realtime エラー: <message>]"` を assert = engine_label 引数化で test 内 expected text 修正必要
+
+### 判断
+worker prompt を ~250 行で書くと「~135-220 行目安」を超える + caller ~21 件一気更新の規模 S 上限超え警告 → **Loop 81 を実施せず、後継メインに「Phase 1/2 分割」を明示する handoff** が品質高い。
+
+これは「2 ループ + 早期 handoff precedent 連続 35 セッション目」を更新する exception:
+- 通常: 2 ループ完走後 handoff
+- 本セッション: 1 ループ完走 + 早期 handoff = 規模リスク管理に応じた batch サイズ調整
+- AGENTS.md L46-L52 自律改善方針「ハーネスを自律的に整える」に直接寄与 = 「規模に応じた batch サイズ調整」も自律改善の一環
+
+### 副次効果
+- メイン批判判断 連続 32 セッション目達成 (handoff X4 規模 M 予測を grep で SS-S に修正 = Loop 80 で実施 / X4-2 規模 S 上限超え警告を本判断で後継に委ねる)
+- 後継メインが Phase 1/2 分割を実施することで、worker prompt の長さを ~150-200 行に収められる + 失敗リスク減
+
+## 現状 (Loop 80 完走後)
+
+- branch: main, ahead 358 (origin/main から先行)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- cargo test: **704 passed / 0 failed** (705 → 704 は重複 test 1 件統合分の意図的 -1)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- 大型 rust file 責務分離: 10 file 目達成 (realtime_audio_helpers.rs を加える)
+- harness 衛生連続 34 セッション目 (canonical 移譲後の scripts/* M 表示再出現せず)
+- worker 完走 1/1 累計 180/180 (100% 維持)
+- worker 自律 2-commit pattern 連続 21 ループ目達成
+
+## 後継 (mjc-main-20260505-41) への handoff 候補
+
+### Loop 81 推奨候補
+
+**X4-2 = push_error 共通化 Phase 1 (規模 S 上限、caller ~21 件)** ← 最有力
+- 新 file `src-tauri/src/realtime_error_helpers.rs` (~25 行) を作成
+- `pub(crate) fn push_error(engine_label: &str, pending: &Arc<Mutex<Vec<TranscriptionSegment>>>, speaker: &Option<String>, source: Option<TranscriptionSource>, message: String)` 配置
+- format!("[{engine_label} Realtime エラー: {message}]") で engine_label 引数化
+- caller 修正:
+  - elevenlabs production 3 caller: L235 / L355 / L360 を `push_error("ElevenLabs", ...)` に変更
+  - openai production 2 caller: L305 / L406 を `push_error("OpenAI", ...)` に変更
+  - elevenlabs test 8 caller (mod pending_timeout_tests 内): L594/615/637/654/666/682/699/713 を `super::push_error` → `crate::realtime_error_helpers::push_error("ElevenLabs", ...)` に変更
+  - openai test 8 caller (mod tests 内): L557/579/601/617/628/643/659/673 を `ws_task::push_error` → `crate::realtime_error_helpers::push_error("OpenAI", ...)` に変更
+  - elevenlabs test 内 expected text 4 件: `"[ElevenLabs Realtime エラー: ...]"` (現状) → 同 (engine_label "ElevenLabs" + format で同じ結果)
+  - openai test 内 expected text 4 件: 同上
+- 両 file の `fn push_error` (private/pub(crate)) を削除
+- worker prompt ~200-220 行で実現可能 (caller 行番号明示)
+- 規模 S 中位、構造分離軸 2 連続 = variety 警告境界 (3-4 連続) より遠い
+
+**X4-3 = reader_task entry 共通化 (規模 M、handle_event / push_error が固有 = trait 抽出必要)** ← 弱推奨
+- X4-2 完了後、push_error 共通化済の reader_task entry を共通 trait 化
+- 規模 M、Phase 1/2 分割推奨
+
+**H1 = agent-log-archive-plan.md Phase 1 着手 (規模 SS、ユーザー直伝指示要)**
+- plan 内に「実施は別途承認」明記 = 後継メインが grep 確認後に exception 判断要
+
+**K3 = 検知拡張 Phase 2 着手判定 plan 追記 (規模 SS、主観性高警告)**
+- Q1/Q2 実機要件未解決のため Phase 2 着手不可状態のまま据え置き
+
+**X5 = session_manager 内部抽出 (skip 推奨)**
+- 抽出メリット 0 grep 確認済 (mjc-main-20260505-37 Loop 75 で確認済 precedent)
+
+**J = frontend (主観性高警告継承)**
+
+### variety 規則 (Loop 81 開始時点)
+
+直近 14 ループ: Loop 67-77 (構造分離 8 + 機能拡張 3 = audio/realtime/session_store/detection-Phase1/Q5/session_manager) → 78 (検知拡張 Q6 docs Resolved 機能拡張軸) → 79 (AGENT_LOG.md archive plan harness 衛生軸) → 80 (realtime_audio_helpers 構造分離軸 1 連続復帰)。
+
+- 軸 pattern: 構造分離 (67-69, 73, 75-77, 80 = 9 件) + 機能拡張/docs (71, 72, 74, 78 = 4 件) + harness 衛生 (79 = 1 件) = 9:4:1 多軸分散
+- Loop 81 = X4-2 (構造分離軸 2 連続) は variety 警告境界より遠い (3-4 連続) = 自由度内
+- ただし Loop 82 で構造分離軸 3 連続到達なら Loop 83 で variety pivot を検討必要 (機能拡張/docs or harness 衛生に切り替え推奨)
+
+### あなた (mjc-main-20260505-41) が最初にすべきこと
+
+1. 必読ドキュメント (AGENT_LOG.md 末尾 400 行 = 本 SESSION SUMMARY を含む)
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` で現状確認
+3. canonical 移譲確認 (`tmux display-message -p '#S'` で `mjc-main-20260505-41` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-41 mjc-main` 実行)
+4. canonical 移譲後 `git status --short` で scripts/* に M 表示再出現せず観測 (連続 35 セッション目)
+5. **戦略転換の核心継承**: 26 連続「Debug 軸補強」 + 5 連続「Webex sweep」両方に戻らない。各ループで AGENTS.md 優先順位 1〜9 直接寄与を明示。同じパターン 3 ループ続いたら 4 ループ目に variety pivot 検討。
+6. **Loop 81 候補**: 上記 X4-2 (push_error 共通化 規模 S、caller ~21 件、worker prompt ~200-220 行) を最有力候補として批判的判断。worker prompt は caller 行番号 + test mod 構造非対称 + expected text 修正方針を全て明記。
+7. **実コードの構造 / 関数名 / field 名は必ず grep で確認** (handoff サマリの予測値を Read で精読する重要性継承)。
+8. 待機モード禁止。final answer で停止せず改善ループを継続。
+
+## 参考継承事項
+
+- `transcription-refactor-plan.md` Phase 1-6 完全完遂 (該当軸完全消滅)
+- `detection-extension-plan.md` Phase 1 + Q5 + Q6 Resolved (Q1-Q4/Q7/Q8 Open のまま、Phase 2 は実機要件 Q1/Q2 未解決のため着手不可)
+- `agent-log-archive-plan.md` Phase 1-4 段階導入方針 (実施は別途ユーザー直伝指示要)
+- `realtime_audio_helpers.rs` 大型 rust file 責務分離 10 file 目 (本セッション Loop 80 で新規作成)
+
+---

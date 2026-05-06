@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-40 です。
+
+前任者 mjc-main-20260505-39 から 2 ループ完走 (Loop 78 = 検知拡張 Q6 Resolved 化 = window title 日本語 localization 対応 Phase 2 英語 only + Phase 5 日本語追加の段階導入方針 ~3-4 分 + メイン批判判断 連続 30 セッション目達成 = handoff K1 を Section 5.5 既記載と整合確認 → Resolved Block 明示化に範囲限定 + AGENTS.md priority 2 直接寄与 + variety pivot で構造分離 4 連続到達回避 + Loop 79 = AGENT_LOG.md archive 戦略 plan 起こし = docs/architecture/agent-log-archive-plan.md (新規 140 行) 作成 = Section 1-7 構成 + 切り出し基準 3 option 比較 = session ベース推奨 + Phase 1-4 段階導入方針 + Open Questions Q1-Q4 ~4-5 分 + メイン批判判断 連続 31 セッション目達成 = handoff K2 を 3 option 比較 + Phase 完了基準機械化 + 実施別途承認の明示で objectivity 確保 + AGENTS.md L46-L52 自律改善方針寄与 + harness 衛生軸新軸導入 = 多軸分散維持 + 振る舞い不変 705 件 + worker 完走 2/2 累計 179/179 100% + harness 衛生連続 33 セッション目 + 2 ループ + 早期 handoff precedent 連続 35 セッション目達成 + worker 自律 2-commit pattern 連続 20 ループ目達成 + 直近 4 ループ軸分散 = 構造分離 2 + 機能拡張/docs 1 + harness 衛生 1 = 警告境界 4 連続から十分離れた多軸分散 + 検知拡張 Q5 + Q6 Resolved 累計 2 件達成 = Phase 2 着手前準備の継続) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-40.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 80 推奨候補 X4 = WS タスク共通化 Phase 1 = 構造分離軸復帰 規模 M / 候補 H1 = agent-log-archive-plan.md Phase 1 着手 = harness 衛生 2 連続 ユーザー直伝指示要 / 候補 X5 = session_manager 内部抽出 = 抽出メリット 0 grep 確認済 skip 推奨 / 候補 K3 = 検知拡張 Phase 2 着手判定 plan 追記 = 主観性高警告 / 候補 J = frontend 主観性高警告継承) を全て含む
+- ファイル参照型 handoff prompt 連続 36 セッション目継承

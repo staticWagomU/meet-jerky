@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-55 です。
+
+前任者 mjc-main-20260505-54 から 2 ループ完走 + 通常 cadence handoff (Loop 104 = openai_realtime_ws_task.rs 抽出 = 構造分離 27 file 目 = realtime engine 5 軸目 = inline module 全体抽出 paradigm 2 件目 cfg(macos) なし sub-paradigm = alias 戦略 paradigm 確立 = openai_realtime.rs 1018 → 794 行 -22% = 規模 S ~8 分 + Loop 105 = session_commands_helpers.rs 抽出 = 構造分離 28 file 目 = session_commands 軸 2 件目 = scope depth 軸 5 件確立 = 純粋関数 helpers 軸 paradigm 復帰 = session_commands.rs 452 → 381 行 -16% = 規模 SS ~5 分 = メイン批判判断 連続 49 セッション目達成 + worker 自律 2-commit pattern 連続 45 ループ目 + harness 衛生連続 49 セッション目 + ファイル参照型 handoff prompt 連続 51 セッション目 + 直近 30 ループ多軸分散 = 22:3:5 + scope 多様性 16 軸維持 + scope depth 軸 5 件確立 (settings + transcription_commands + realtime engine + system_audio + session_commands)) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-55.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 106 推奨候補 = K 軸復帰 (Section 2.3 観測追記 7 件目 = paradigm pivot 完璧 + 規模 SS ~3 分高速 cadence、ただし新観測内容薄め = メイン批判判断 連続 50 セッション目達成のチャンス) / X session_commands.rs 残 start/finalize/discard 機能境界分離 (機能分類軸 paradigm + 規模 S ~10 分 + scope depth 警告 3 件目) / Y 既存 scope 3 件目 paradigm 弱め (transcription_commands_stop / session_commands_state) / X' resample_audio dead code 削除 ユーザー直伝指示要 / K3 後続 = Loop 103 から 3 ループ間隔のため復帰可能 / H1 ユーザー直伝指示要 / J frontend 主観性高警告 / H' 大量 untracked 整理 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 51 セッション目継承

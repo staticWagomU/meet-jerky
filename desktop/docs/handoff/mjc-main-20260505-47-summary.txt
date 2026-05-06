@@ -1,0 +1,123 @@
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-47
+
+## 本セッション実績 (2 ループ完走 + 通常 cadence handoff)
+
+### Loop 91 = system_audio_pcm.rs 抽出 (構造分離 17 file 目, system_audio 軸 1 件目 = 新 scope, ~6.5 分)
+- 新規 file: src-tauri/src/system_audio_pcm.rs (204 行 = const + 3 fn + test 18 件)
+- 削除元: src-tauri/src/system_audio.rs (PCM helpers production ~45 行 + test 18 件 + import 整理)
+- lib.rs: mod system_audio_pcm; 1 行追加
+- production fn: F32_SAMPLE_BYTES const + read_f32_ne (private) + sanitize_pcm_sample (private) + f32_pcm_bytes_to_mono (pub(crate))
+- caller: ScreenCaptureKitCapture impl (cfg(macos)) で f32_pcm_bytes_to_mono 1 件 = use 文に cfg(target_os="macos") 付与で振る舞い不変
+- test 18 件 = f32_pcm_bytes_to_mono 8 + sanitize_pcm_sample 6 + read_f32_ne 4
+- commits: 8afd286 refactor + e3a4586 chore
+- 構造分離 17 file 目 = system_audio 軸 1 件目 (新 scope) = transcription_commands 軸 (Loop 90) からの pivot 達成
+- handoff 警告「scope 払底気味」を grep + Read 精査で覆して system_audio 軸を新規開拓 → メイン批判判断 連続 42 セッション目達成
+
+### Loop 92 = system_audio_format.rs 抽出 (構造分離 18 file 目, system_audio 軸 2 件目 = 機能分類軸 2 連続, ~5.5 分)
+- 新規 file: src-tauri/src/system_audio_format.rs (165 行 = 2 fn + test 9 件)
+- 削除元: src-tauri/src/system_audio.rs (audio format 検証 production 2 fn ~40 行 + test 9 件 + use CMFormatDescription 削除 + use 追加 + use super::* 削除)
+- lib.rs: mod system_audio_format; 1 行追加 (alphabetical = system_audio_pcm 直前)
+- production fn: validate_audio_format_properties (private 純粋関数 cfg なし) + validate_audio_format_description (pub(crate) cfg(macos) CMFormatDescription 依存)
+- caller: system_audio.rs L219 = ScreenCaptureKitCapture impl 内 (cfg(macos)) で validate_audio_format_description 1 件 = use 文に cfg(target_os="macos") 付与で振る舞い不変
+- test 9 件 = is_err 系 5 + unknown 系 2 + error message 1 + first violation 1
+- commits: 0c86f44 refactor + 3dce75f chore
+- 構造分離 18 file 目 = system_audio 軸 2 件目 = **機能分類軸 2 連続** (Loop 87/88 app_detection 機能分類軸 precedent と同 paradigm = 警告境界の解釈を批判的判断で許容範囲と判定)
+- screencapturekit::CMFormatDescription 依存を当軸に閉じ込めて構造美向上
+- worker 自律学習進化: `use super::*;` 削除を自律判断 (test 全部移動で不要 = clippy -D warnings 対応) = 連続 33 ループ目の 2-commit pattern + 不要 import 自律削除進化
+
+### system_audio scope 累計
+- system_audio.rs: 778 → 438 行 (-340 行 / -44%)
+- system_audio_pcm.rs: 204 行 (新規 Loop 91)
+- system_audio_format.rs: 165 行 (新規 Loop 92)
+- 合計: 778 → 807 行 (3 file 分散 = 機能境界明示化)
+
+## 継続 pattern
+
+- メイン批判判断 連続 42 セッション目達成 (handoff 警告「scope 払底気味」を 3 ループ連続 = Loop 89 settings + Loop 90 transcription_commands + Loop 91 system_audio で grep + Read 精査で覆す precedent)
+- worker 自律 2-commit pattern 連続 33 ループ目 (Loop 91 + Loop 92, refactor commit hash 実 hash 直書き + chore commit hash 書かず = Loop 80/85/86/87/88/89/90/91 進化 pattern 完璧踏襲、Loop 92 では use super::* 自律削除追加進化)
+- harness 衛生連続 42 セッション目観測達成 (canonical 移譲 = bash scripts/agent-adopt-main.sh mjc-main-20260505-47 mjc-main 実施後、git status --short で scripts/* M 表示再出現せず = 永続的解決の確信さらに強化)
+- ファイル参照型 handoff prompt 連続 44 セッション目 (本 SESSION SUMMARY の後継 mjc-main-20260505-48 へ)
+- 直近 26 ループ多軸分散 = 構造分離 (Loop 67-92 のうち 18 件) + 機能拡張/docs (5 件 = Loop 71/72/74/78/84) + harness 衛生 (3 件 = Loop 79/82/86) = **18:5:3** (Loop 92 で 17:5:3 → 18:5:3 に均衡向上)
+- scope 多様性: session_store (4) + audio (1) + realtime (5) + detection (5) + session_manager (2) + harness (3) + app_detection 機能分類 (2) + settings (1) + transcription_commands (1) + system_audio 機能分類 (2) = **10 scope 分散** (Loop 92 で 9 → 10 に拡張)
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (件数完全不変、Loop 91/92 = 移動のみ)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- bash -n scripts/claude-agent-*.sh: OK
+
+## 現在の git 状態
+- branch: main, ahead ~390 (origin/main から先行、本セッション +5 commit)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-47) の commit:
+  1. 8afd286 refactor(system-audio): PCM helpers を system_audio_pcm.rs に抽出 (Loop 91)
+  2. e3a4586 chore(agent-log): Loop 91 エントリ追記
+  3. 0c86f44 refactor(system-audio): audio format 検証を system_audio_format.rs に抽出 (Loop 92)
+  4. 3dce75f chore(agent-log): Loop 92 エントリ追記
+  5. (本 SESSION SUMMARY commit 予定)
+
+## 後継 mjc-main-20260505-48 への期待
+
+- 2-3 ループ完走推奨 (本セッションは 2 ループ完走 = 後継も同水準目指す)
+- Loop 93 候補は下記 6 つから選定:
+
+### 候補 X 新規発掘 (Loop 93 推奨, 構造分離 19 件目, 別 scope = system_audio 3 連続避ける)
+- system_audio scope = 2 連続 = Loop 93 で 3 連続は警告境界 = pivot 推奨
+- 中サイズ file 候補 (grep + Read 必要):
+  - **transcription_types.rs (471 行)**: 型定義中心、production スリム可能性高
+  - **apple_speech.rs (382 行)**: macos 限定、CFG mac 局所化候補
+  - **transcription_traits.rs (366 行)**: trait 定義、抽出余地不明
+  - **transcription_error_payload.rs (360 行)**: error payload 系、抽出余地不明
+  - **markdown.rs (336 行)**: format 系、機能分離可能性中
+  - **audio_utils.rs (325 行)**: PCM utils 系、Loop 91 で sanitize_audio_sample 経由で system_audio_pcm.rs に間接公開済 = 抽出余地中
+  - **secret_store.rs (303 行)**: keychain 系、抽出余地中
+
+### 候補 X' system_audio 軸 3 件目 (skip 推奨, 3 連続警告境界)
+- system_audio.rs 残 production = ScreenCaptureKitCapture impl + tauri::command 2 件 + warn_system_audio_format_once = state 直結 + cfg(macos) 限定
+- 抽出可能だが 3 連続 sweep 警告境界 = skip 推奨
+- 別 scope pivot 推奨
+
+### 候補 K3 後続 (Loop 93 弱推奨, 機能拡張/docs 軸 1 連続復帰)
+直近 7 セッション K 軸 5 件 = sweep 警告境界、ただし Loop 86/91/92 で構造分離復帰 = K 軸の連続性切れた = Loop 93 で K 軸 1 件目 (新シリーズ) は OK。
+- detection-extension-plan.md = Phase 状態不変 = 単純時点更新は内容実質変化なし (Loop 86 K3' 却下 paradigm 適用)
+- agent-log-archive-plan.md = Section 2.3 観測追記 = +6-7 ループの観測値で価値中
+- autonomous-main-prompt-claude.md = 数値カウンタ無し確認済
+- AGENTS.md / product-concept.md 整理 = 主観性高警告
+
+### 候補 H1 (Loop 93 alternative, harness 衛生軸 4 件目で sweep 警告境界 ユーザー直伝指示要)
+- agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header 追加 (規模 SS、~5-10 分)
+- plan 内に「実施は別途ユーザー直伝指示要」明示 = 後継メインが grep 確認後に exception 判断要
+- harness 衛生軸 4 件目 = 4 連続 sweep 警告境界 = pivot 推奨
+
+### 候補 J (継承、低優先): frontend 軸
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ = 主観性高警告
+- 浅 grep で具体的不足を 1 つ特定してから worker 発注
+
+### 候補 H' (継承、低優先): 大量 untracked 整理
+- docs/handoff/, docs/worker-prompts/ に 290+ untracked、ユーザー直伝指示があるまで保留
+
+## 最重要継承方針 (前任者から)
+
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」「Teams sweep」「Whereby sweep」「Phase 2 sweep」「Phase 4 sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- 寄与が薄い場合は **その候補をスキップして次を探す**
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価**
+- **本セッション Loop 91/92 = handoff 警告「scope 払底気味」を grep + Read 精査で覆して system_audio 軸を 2 連続新規開拓 + 機能分類軸 2 連続 paradigm を Loop 87/88 precedent から正当化 = 後継も同様の手法を継承**
+- **grep 結果は必ず Read で精読してから「発見」を主張する**
+- **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- 判断時の使用率: 観測手段なしのため Loop 92 完走後に保守的に handoff へ進む方針 (推定 60-70% = 中-高)
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 0 回 (2 ループで通常 handoff のため)
+
+## 引き継ぎ
+- 引き継ぎ先: mjc-main-20260505-48
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-48.txt (ファイル参照型 handoff prompt 連続 44 セッション目)
+- 旧メイン (mjc-main-20260505-47 = 本セッション = canonical mjc-main) は handoff 後終了
+
+---

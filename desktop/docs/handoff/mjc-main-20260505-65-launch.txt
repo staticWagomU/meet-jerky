@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-65 です。
+
+前任者 mjc-main-20260505-64 から 3 ループ完走 + 通常 cadence handoff (Loop 125 = frontend 軸 7 件目 = 純粋関数機能分離軸 frontend 版 4 件目 = scope 26 軸目開拓 (新 file `audioLevelHelpers.ts` 15 行) = 大型 frontend file 責務分離 39 file 目 = TranscriptView.tsx L520-534 の sanitizeAudioLevel + getPopoverLevelBars 抽出 = R6 段階的分割 1 件目 + メイン批判判断 連続 62 セッション目 = utils/transcriptViewFormatters.ts (string/time formatter) + utils/audioLevelPayload.ts (Tauri event payload) との責務階層精査で **異階層 = 新 file 作成軸採用** + worker ~4-5 分完走 + Loop 126 = K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 16 件目 = +45 行 / 平均 ~22.5 行/loop (Loop 124 観測値 ~42 行/loop からの ~46% 減 = **frontend 軸 = chore entry 軽量化 paradigm 観測**) + alternation pattern 18 連続成功 + worker ~3 分完走 + Loop 127 = frontend 軸 8 件目 = 純粋関数機能分離軸 frontend 版 5 件目 = scope 27 軸目開拓 (新 file `permissionStatusHelpers.ts` 28 行) = 大型 frontend file 責務分離 40 file 目 = TranscriptView.tsx L80-107 の getPermissionStatusLabel + getPermissionRowClassName 抽出 = R6 段階的分割 2 件目 + メイン批判判断 連続 63 セッション目 = utils/macosPrivacySettings.ts (OS settings paths) との責務階層精査で **異階層 = 新 file 作成軸採用** = Loop 119/121/123/125 教訓継承 (paradigm 反復 < 責務階層精査) + worker ~4 分完走) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-65.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 128 推奨候補 K = agent-log-archive-plan.md Section 2.3 観測追記 17 件目 = harness 衛生軸 = 規模 SS = ~3-5 分完走 = alternation pattern 20 連続維持 (frontend(127) → K(128)) = **最有力推奨** / R6c = TranscriptView.tsx 残 24 純粋関数 8 グループのうち 1 グループ抽出 = scope 28 軸目候補 = 規模 SS-S = alternation reset リスク (Loop 129 推奨) / X3 rust 軸 = 鈍重 (Loop 130+ 検討) / J' SettingsView 内部 helper = 抽出困難確認済 (却下推奨) / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 61 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119/121/123/125/127 教訓継承** = 後継 Loop 128+ で paradigm 選択時に必ず責務階層精査を実施 + 候補が枯渇したら自律発見で新候補を grep する (Loop 123 precedent)
+- **API 互換維持戦略 (Loop 119/121/123 rust + Loop 125/127 frontend precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 = re-export 不要 (Loop 125/127 標準 paradigm)** = 後継も活用検討可能

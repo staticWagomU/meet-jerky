@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-47 です。
+
+前任者 mjc-main-20260505-46 から 2 ループ完走 + 通常 cadence handoff (Loop 89 = settings_permission.rs 抽出 = 構造分離 15 件目 = settings 軸 1 件目 = 新 scope = 規模 S ~13 分 + Loop 90 = transcription_commands_model.rs 抽出 = 構造分離 16 件目 = transcription_commands 軸 1 件目 = 新 scope = 規模 SS-S ~6 分 = handoff 警告「scope 払底気味」を 2 ループ連続 grep + Read 精査 + 発掘で覆す = メイン批判判断 連続 41 セッション目達成 + worker 自律 2-commit pattern 連続 31 ループ目 = Loop 80/85/86/87/88/89/90 進化 pattern (refactor hash 実 hash 直書き + chore hash 書かず) 完璧踏襲 + harness 衛生連続 41 セッション目 (canonical 移譲後 scripts/* M 表示再出現せず) + ファイル参照型 handoff prompt 連続 43 セッション目 + 直近 24 ループ多軸分散 = 構造分離 16 + 機能拡張/docs 5 + harness 衛生 3 = 16:5:3 重心構造分離 + scope 多様性 9 軸到達 (session_store / audio / realtime / detection / session_manager / harness / app_detection 機能分類 / settings / transcription_commands)) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-47.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 91 推奨候補 X 新規発掘 17 件目 = system_audio / cloud_whisper / session_commands / cloud_whisper_errors のいずれか / X' transcription_commands 軸 2 件目 skip 推奨 / X'' app_detection 機能分類軸 3 件目 skip 推奨 / K3 後続 機能拡張/docs 軸 1 連続復帰 主観性中要範囲限定 / H1 ユーザー直伝指示要 harness 衛生 4 件目 sweep 警告境界 / J frontend 主観性高警告 / H' 大量 untracked 整理 ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 43 セッション目継承

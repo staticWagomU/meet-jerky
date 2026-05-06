@@ -1,0 +1,134 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-18) です。
+旧 mjc-main (= 旧 mjc-main-20260504-17) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 19000+ 行 / 1.7MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~16:30 JST] mjc-main-20260504-17 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~16:30 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 100+ (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/` 増分、`docs/handoff/mjc-main-20260504-7/10/12/13/14/15/16/17/18.txt`)
+- 旧 mjc-main-20260504-17 が canonical 名 mjc-main を持っており、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `e969943` test(app_detection): should_notify_meeting_inactive 純粋関数 + test 5 件 T1-T5 (rust 1 ファイル, +65 行)
+  2. `986caa6` test(app_detection): 境界条件 test 5 件 T6-T10 (rust 1 ファイル, +50 行)
+  3. `457a545` refactor(transcription): TRANSCRIPTION_SOURCE_* 定数化 + test 1 件 (Tidy First, rust 1 ファイル, +11 -2)
+  4. (本 SUMMARY 追記の commit が次)
+
+## 現在の品質状態
+- cargo test (lib): **468 passed / 0 failed** (前 457 → +11 件、3 ループ全てで rust test 追加)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -D warnings: **警告ゼロ**
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし (前 mjc-main-16 時点で通過確認済 = bundle JS 486.47 KB / gzip 137.51 KB)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-17、handoff 直前)
+- mjc-main-20260504-18 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-18 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着)
+- **「純粋関数 + test 5 件 (Loop 1) + 境界 test 5 件 (Loop 2)」の 2 段スライスパターン**: 機能追加を「実装 + 基本網羅 + 境界応用」の 3 段に分解、Loop 1/2 を test に集中、Loop 3 で別タスクへ転換 = 1 ループあたりの認知負荷を均等化
+- **「設計判断を test で executable specification 化」パターン** (Loop 2 T6): commit 説明だけでなく test として境界選択を固定 = 説明と異なる改修を CI 段で防止する仕組み
+- **「責務境界優先で同じ文字列値を 2 箇所定数定義」パターンの 2 件目 application** (Loop 3): audio_event.rs (event 出力) と transcription.rs (parse 処理) の責務分離を「2 箇所定数」で可視化 = DRY 違反だが責務境界優先
+
+### 累積パターン (前 mjc-main-7〜16 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+- **`should_notify_meeting_inactive` の境界**: `elapsed < threshold` (`<=` ではない) = 閾値ちょうどで発火する設計 / T6 で executable specification として固定済 = 改修時は test を見て改修方針を判断する
+- **`#[allow(dead_code)]` で全 platform 抑制中** (Loop 1): 次ループでアプリ統合時に attribute 削除または cfg_attr 化が必要 = 統合の trigger としても機能
+- **transcription.rs の TRANSCRIPTION_SOURCE_* と audio_event.rs の AUDIO_SOURCE_* は同じ文字列値だが別責務** (Loop 3): 流用や統合してはならない (= 共有すると一方の変更が他方に予期せず波及)
+- **transcription.rs の error message line 1069** (`"microphone、system_audio、both"`) と定数値の一致は手動管理 = 別ループで test 化検討対象 (低優先)
+- **既存累積技術注意点** (前 mjc-main-7〜16 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### AGENT_LOG.md 構造の問題 (要整理、優先度低)
+- 本セッション Loop 3 worker (mjc-worker-transcription-source-const) も AGENT_LOG.md の **先頭** に worker log を誤追記 (前 mjc-main-15/16 から続く問題)
+- 機能影響なし、可読性問題のみ
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### F-Loop3 (最有力, 継承). 会議終了検知のアプリ統合 (規模 M, 価値 8)
+- 本セッション Loop 1+2 で純粋関数 + test 10 件 完成済み = **安全網確立**
+- 残: DetectionState への `last_notified: HashMap<String, Instant>` 追加 (last_seen と完全対称) + handle_detection 内で should_notify_meeting_inactive 呼び出し + 通知発火 (eprintln + show_notification 別 body or 専用 body)
+- 実機タイマー追加が必要なら別ループ送り判断 (規模 M 超過リスク回避)
+- `#[allow(dead_code)]` を attribute 削除 or cfg_attr 化に切り替えるタイミング
+- **後続セッションは安心してアプリ統合に踏み込める段階** (純粋関数の振る舞いが test 10 件で完全固定済み)
+
+### B (継承). transcript_bridge.rs / session_store.rs 周辺の test 補強残り (規模 S, 価値中, 確実性高い)
+- 累積パターン (Option 3 状態 / unused field / ? Some(0) / OR 5 状態 / saturating 飽和) の application 続編
+
+### D (継承). transcription.rs error path 残り (規模 S〜M)
+- 1896 行最大規模。`load_model` path 変換失敗、`feed`/`finalize` resampler state missing 周辺
+- 複数ループ構成
+
+### S (継承). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+
+### G5 (新). transcription.rs error message と定数値の一致 test (規模 XS, 価値小)
+- error message line 1069 内の `"microphone、system_audio、both"` を含む文字列について、TRANSCRIPTION_SOURCE_MICROPHONE / TRANSCRIPTION_SOURCE_SYSTEM_AUDIO の値が含まれているか assert する test 1 件追加
+- 価値小だが Loop 3 で意図的に touch しなかった部分の Tidy After
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 468 件全 pass している (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` にメッセージを書く (Conventional Commits 日本語、空行や `<` `>` `(` `)` `=` を含めても OK)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+  - **注意**: `agent-commit.sh` 経由だと fish が複雑メッセージで parse error になる。`-F` 直接利用が安全
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-18 mjc-main`
+
+## コミット周期目標
+- 1 ループ 10-15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績: Loop 1 = ~12 分 / Loop 2 = ~10 分 / Loop 3 = ~12 分、平均 ~11 分/loop = 目標 15 分以内達成 (前 mjc-main-16 の ~13 分/loop よりも短縮)、累積 worker 完走 38/38 = 全完走率 100%。
+- worker prompt は **5 セクション構造** (背景/Why/担当範囲/実装上の注意/検証手順 + AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい。
+- Tidy First 系では「既存 precedent との完全対称構造を採用」を強調すると worker が設計判断に時間を使わず手筋を 1 つに固定できる。
+- **「Loop 1 で純粋関数 + 基本 test → Loop 2 で境界 test 拡張 → Loop 3 で別タスク」の 2 段スライス + 転換パターン** (本セッション 17 で確立): 機能追加の認知負荷を分散しつつ Loop 3 で UI / Tidy First 等にバランス良く転換できる
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~50-65% で予防的ハンドオフ判断 (前 10 セッション (mjc-main-7〜16) と同じ 3 ループパターン継承で予測可能性優先)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は本セッション中 2 回受領、改善ループ進行で消化済み。
+
+## 累積成果 (本セッション)
+- **テスト 457 → 468 passed** (+11 件、3 ループ全てで rust test 追加)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **product-concept 優先度 8 (会議サービス別最適化) と 9 (録音状態の透明性) chain 上の会議終了検知純粋関数仕様を完全固定** (Loop 1+2 で 10 件 test) = 後続セッションが安心してアプリ統合できる安全網
+- **「同じ文字列値だが責務境界優先で 2 箇所定数定義」パターンの 2 件目 application** = 知見定着 (Loop 3)
+- **累積 worker 完走 38/38** (100%)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-18 mjc-main` を実行 (冪等)。
+4. 候補 **F-Loop3 (会議終了検知のアプリ統合, 価値 8, 規模 M)** を最有力として、まず src-tauri/src/app_detection.rs の `DetectionState` (line 84) と `handle_detection` (line 115) を読んでスコープ確認 → 1 ループに収まる最小スライスに分解 → worker に発注。規模 M 超過リスクが高い場合は B (test 補強) または G5 (error message 一致 test) にフォールバック判断可。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。

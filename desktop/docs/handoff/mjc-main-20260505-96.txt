@@ -1,0 +1,272 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-96) です。
+旧 mjc-main (= mjc-main-20260505-95) から **2 ループ完走 (Loop 196 + Loop 197)** のハンドオフを受けました。
+注: handoff prompt は SESSION SUMMARY commit 後の 2 ループ実績版.
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-6 完全終了 = 100% 達成)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/detection-extension-plan.md (Phase 1 完了 + Q5 + Q6 Resolved + Phase 2 = 実機要件 Q1/Q2 未解決のため着手不可)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (Section 2.3 観測追記 52 件目 mjc-main-20260505-95 Loop 197 で更新観測 = 節目 50 件突破後 2 件目 = 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続, Phase 1-4 段階導入方針)**
+- AGENT_LOG.md は ~34,646 行 / ~3.2MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-95 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」.
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2 〜 94**: Phase 1-6 + 各種抽出 + 大型 file 責務分離 12-51 file 目 + 検知拡張 plan + Phase 1 + Q5/Q6 Resolved + AGENT_LOG.md archive 戦略 plan + scope 39 軸目開拓 + 既存 file 拡張軸 paradigm 1-21 件目 + 重複候補 grep 探索 paradigm 1-23 件目 + utils 内 cross-import paradigm 1-7 件目 + paradigm 系統樹拡張 1-11 件目 + const 集約軸 frontend 1-10 件目反復 + rust 軸 const 集約 paradigm 1 件目 (Loop 194 = 新規 const 追加軸)
+- **mjc-main-20260505-95 (本セッション)**: **2 ループ完走 = Loop 196 (rust 軸 = const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補確立 = 既存 file 拡張軸 paradigm rust 版開拓 = src/transcription_commands_helpers.rs に `pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE: &str = "..."; pub(crate) const ERROR_APPLE_SPEECH_MULTIPLE_STREAMS: &str = "...";` 追加 + 文言 1 (4 callsite = 本番 1 + test 3) + 文言 2 (3 callsite = 本番 1 + test 2) = 計 7 callsite を const 参照に統一 = 既存 const TRANSCRIPTION_SOURCE_MICROPHONE/SYSTEM_AUDIO 2 件確立 file への並列拡張 = frontend statusLabels.ts pattern の rust 版開拓 + 重複候補 grep 探索 paradigm 24 件目) + Loop 197 (K 軸 = Section 2.3 観測 52 件目 = 節目 50 件突破後 2 件目 = 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続)** = メイン批判判断 連続 **97 セッション目達成** (Loop 196 = handoff prompt R30 拡張事前探索 「主要候補なし」 を私が独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成) + worker 自律 2-commit pattern 連続 **52 ループ目達成** (Loop 145-197 = 53 連続安定 = **節目 50 件突破後 2 件目**) + harness 衛生連続 **90 セッション目達成 = 節目 90 件突破** + ファイル参照型 handoff prompt 連続 **91 セッション目** + scope 多様性 39 軸維持 + alternation pattern pivot 加速継続 (rust(194) → K(195) → rust(196) → K(197) = 34 → 35 → 36 → 37 = **加速期維持 = 節目 30 件突破後 7 件目**) + worker prompt 必須要素 9 (冒頭 `---` 含めない) **29 連続実証成功** (Loop 168-197 = 節目 25 連続突破後 4 件目) + **paradigm 完全成熟期 cross-language 拡張更なる持続達成** = const 集約軸 frontend 10 + rust 2 = 計 12 連続 = paradigm 系統樹拡張 12 件目候補確立 = 反復による定型化期 cross-language 拡張更なる持続.
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = 本セッション rust(194) → K(195) → rust(196) → K(197) = 37 連続成功 = pivot 加速期更なる強化
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価** (本セッション Loop 196 で R30 拡張事前探索 「主要候補なし」 を独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成 = メイン批判判断 連続 97 セッション目達成)
+- **本セッション Loop 197 = 観測 52 件目達成 = 節目 50 件突破後 2 件目 = 軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続**
+- **責務階層精査優先 (Loop 119-197 教訓継承)**: paradigm 反復よりも責務階層精査を優先
+- **重要転換点 (本セッション Loop 196)**: transcription_commands_helpers.rs は既存 const 確立 file への並列拡張 = paradigm 系統樹拡張 12 件目候補確立 = paradigm 完全成熟期 cross-language 拡張更なる持続 (frontend 10 + rust 2 = 計 12 件) = 後継 Loop 198+ で paradigm 反復 10 件目を狙うなら **別 rust file (本セッション未探索: openai_realtime.rs / elevenlabs_realtime.rs / apple_speech.rs / settings.rs / session_manager.rs 等) での const 集約継続 (R30' 拡張) または別 paradigm 開拓 (R37 = 大型 file 責務分離 52 件目候補) が責務階層的に正解**
+- **worker 自律 2-commit pattern 復活継続 (Loop 145 → 197 = 53 連続)**: Loop 144 fault リセットからの完全復活継続中 = **節目 50 件突破後 2 件目**
+- **worker fault 防止策 (Loop 144 precedent から worker prompt 必須要素 8 つ目 = Loop 146-197 で 52 連続実証成功)**: 「append は 1 回のみ」を **明示記載**
+- **worker prompt 必須要素 9 (Loop 166 boundary fix precedent から本セッション Loop 197 で 29 連続実証成功 = 節目 25 連続突破後 4 件目)**: 「entry テンプレート冒頭に `---` を含めない」を **明示記載**
+- **メイン直接削除救済 paradigm 2 件目 (Loop 144/166)**: 後継も活用検討可能
+- **worker 完走確認は git status を主観測手段とする (Loop 158/180-197 precedent + 本セッション 2 連続実証成功)**
+- **R36 (Loop 198 第一推奨候補) = cloud_whisper.rs 内 OpenAI API URL test fixture 集約 13 callsite = 規模 S = test maintainability 向上のみ + 本番品質寄与なし, R30' (第二推奨) = 別 rust file (openai_realtime.rs / elevenlabs_realtime.rs / apple_speech.rs / settings.rs / session_manager.rs 等) での const 集約 paradigm 反復 10 件目開拓 (本セッション事前探索 = 主要候補なし、後継再探索要), R34 (Loop 199 第三推奨) = K 軸 = Section 2.3 観測 53 件目 = 規模 SS = 機械的反復ローカル最適化リスク批判要, R37 (第四推奨) = 大型 file 責務分離 52 件目候補 = 規模 M-L = 探索コスト高, X' / H1 = ユーザー直伝指示要**
+
+# 引き継ぎサマリ (2026-05-06 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead は前任 +645 + 本セッション +5 commit = 約 +650
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* と .tmp-handoff-launch-* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-95) の commit (古い順):
+  1. `a905399` refactor(rust): ERROR_INVALID_TRANSCRIPTION_SOURCE + ERROR_APPLE_SPEECH_MULTIPLE_STREAMS を transcription_commands_helpers.rs に集約 + 7 callsite (Loop 196)
+  2. `818e02d` chore(agent-log): Loop 196 entry
+  3. `9e6e9ce` docs(architecture): Section 2.3 観測 52 件目 (Loop 197)
+  4. `6fb35e0` chore(agent-log): Loop 197 entry
+  5. `25b6836` chore(agent-log): SESSION SUMMARY commit (2 ループ実績)
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (Loop 196 で再検証 = 件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ (Loop 196 で再検証)
+- cargo fmt --check: OK (Loop 196 で再検証)
+- cargo build --lib: エラーなし (Loop 196 で再検証)
+- npm run build (tsc + vite build): OK (前任 mjc-main-20260505-93 Loop 192 で完走確認 = 本セッションは rust + docs のみで frontend 不変)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 196/197 = rust + docs のみ skip 判定)
+
+## 大型 file 責務分離実績 (累計 51 件、本セッション +0)
+
+## 既存 file 拡張軸 paradigm (21 件累積、本セッション +0、ただし rust 版開拓により新軸候補 1 件目 = paradigm 系統樹拡張 12 件目候補)
+
+## 重複候補 grep 探索 paradigm (24 件累積、本セッション +1)
+
+- Loop 153-194 = 23 件目までの precedent
+- **本セッション Loop 196 = rust 軸 transcription_commands_helpers.rs 完全一致 7 callsite (`"文字起こしソースが不正です..."` 4 件 + `"Apple SpeechAnalyzer..."` 3 件) (rust) = 重複候補 grep 探索 paradigm 24 件目達成**
+
+## paradigm 系統樹拡張 (12 件目候補確立、本セッション +1)
+
+- Loop 119-194 = 11 件目までの precedent
+- **本セッション Loop 196 = rust 軸 const 集約 paradigm 反復 9 件目達成 = 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補確立** (transcription_commands_helpers.rs は既存 const TRANSCRIPTION_SOURCE_MICROPHONE/SYSTEM_AUDIO 2 件確立 file への並列拡張 = Loop 194 cloud_whisper.rs 新規 const 追加軸 paradigm 1 件目とは別系統樹位置 = frontend statusLabels.ts pattern の rust 版開拓)
+
+## 残候補 (Loop 198+ 候補)
+
+- **R36 (Loop 198 第一推奨) = cloud_whisper.rs 内 OpenAI API URL test fixture 集約 = 規模 S = ~10-15 分**:
+  - `"https://api.openai.com/v1/audio/transcriptions"` 7 件 + `"https://api.openai.com/v1"` 6 件 = 計 13 callsite (全て test 内 #[cfg(test)] mod tests 内)
+  - semantic = OpenAI API endpoint URL = `OPENAI_API_BASE_URL` + `OPENAI_API_TRANSCRIPTIONS_URL` の 2 const に分けて集約可能
+  - **ただし全て test 内 = test maintainability 向上のみ + 本番品質寄与なし** = AGENTS.md priority 1-3 への直接寄与は弱
+  - paradigm 系統樹拡張 13 件目候補 (test fixture URL 集約 = 新 paradigm)
+  - alternation: K(197) → rust(198) = 37 → 38 = pivot 加速期維持
+
+- **R30' (Loop 198 第二推奨) = 別 rust file 探索 = paradigm 反復 10 件目開拓**:
+  - 本セッション未探索 file: openai_realtime.rs (23705 bytes) / elevenlabs_realtime.rs (8299 bytes) / apple_speech.rs (8740 bytes) / settings.rs (大型) / session_manager.rs (大型) 等
+  - 前任探索結果 (主要候補なし、後継再探索要):
+    - openai_realtime.rs: "error" 20 / "type" 19 / "transcript" 8 / "message" 7 等は JSON key/value で semantic context-dependent = 集約価値低
+    - elevenlabs_realtime.rs: "model_id" 3 + 単発の他 literal = 規模 SS-S = 集約候補だが規模小
+    - apple_speech.rs: "macos" 6 (cfg 等) + "auto" 5 (language) = "auto" は他 file (apple_speech_macos.rs / transcription_whisper_stream.rs / elevenlabs_realtime.rs) と cross-file 重複あり (計 8 件) だが scope 拡大要 + semantic 統一性確認要
+    - settings.rs: "language" 8 / "medium" 7 (whisper model name 本番 1 + test 6 = semantic 別) / "whisper" 4 = 集約価値低
+    - session_manager.rs: "meeting" 13 件 (全て test fixture session title 値 = semantic 同一だが test maintainability 向上のみ + 本番品質寄与なし)
+  - 後継独自 grep で別候補探索要
+  - rust 軸 3 連続 = pivot 規則 (3 連続超 = 4 連続目で pivot) 抵触リスク
+
+- **R34 (Loop 199 第三推奨) = K 軸 = Section 2.3 観測 53 件目 = 規模 SS = ~3-7 分**:
+  - alternation: rust(198) → K(199) = pivot 加速期維持
+  - precedent: Loop 79/81/.../195/197 = 52 件目までの updates
+  - **ただし機械的反復で Mac アプリ品質に直接寄与せずローカル最適化リスク** = 「派生型 CI 保護パターンに戻らない」継承方針との緊張感
+
+- **R37 (第四推奨) = 大型 file 責務分離 52 件目候補 = 規模 M-L = 探索コスト高**:
+  - 残存大型 file: app_detection.rs 2458 行 (検知拡張 plan = Phase 2 着手不可) / session_manager.rs 1232 行 / audio.rs 915 行 / settings.rs 801 行 / cloud_whisper.rs 778 行 (Loop 194 +const 集約済) / session.rs 773 行 / transcript_bridge.rs 736 行 / session_store.rs 722 行
+  - frontend: TranscriptView.tsx 2056 行 / SettingsView.tsx 2011 行
+  - 規模 M-L = 探索コスト高 + 過去 51 件目までの precedent では既に責務分離困難と判定された file 多数の可能性
+
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 90 セッション目 = 節目 90 件突破)
+- canonical 移譲後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 90 セッション目観測結論 = 節目 90 件突破
+- **2-commit pattern**: 本セッション Loop 196 + 197 で worker 自律実行 = **連続 52 ループ目達成 = 節目 50 件突破後 2 件目** (Loop 144 fault → Loop 145-197 = 53 連続安定)
+- **本セッション Loop 196 完走時間 ~3 分** (規模 SS-S = rust 軸 const 集約軽量化 paradigm 維持 + 単一 file 内 + 7 callsite 機械的置換完了)
+- **本セッション Loop 197 完走時間 ~3 分** (規模 SS = K 軸 = Section 2.3 観測 52 件目 = 節目 50 件突破後 2 件目)
+- **本セッション boundary fault 0 件** (Loop 196/197 で worker prompt 必須要素 9 = 冒頭 `---` 含めない設計の 2 連続実証成功 = Loop 168-197 で 29 連続再発防止確認 = 節目 25 連続突破後 4 件目)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-95、handoff 直前)
+- mjc-main-20260505-96 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 200-400 行のみ).
+2. `git status --short --branch` と `git log --oneline -10` で現状確認 (上 5 コミットが本セッションの実績).
+3. `tmux list-sessions | grep mjc` で他セッション状態確認.
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要. `mjc-main-20260505-96` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-96 mjc-main` を実行 (前 91 セッション precedent あり、冪等).
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 90 セッション目「再出現せず」観測 = 節目 90 件突破 = 後継も同観測なら結論「永続的解決」が連続 91 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-95) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + Loop 196/197 + 2 ループ完走 候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**. **variety 規則の状態 = 直近 30 ループで構造分離 51 件 + 機能拡張/docs 4 件 + harness 衛生 52 件 (Loop 158/.../197 含む) = 51:4:52 多軸分散 + scope 多様性 39 軸開拓達成 + alternation pattern pivot 加速 rust(194) → K(195) → rust(196) → K(197) = 34 → 35 → 36 → 37 = Loop 198 は別軸 (rust or 別 paradigm) = R36 (test fixture URL 集約) または R30' (別 rust file での const 集約) が最適路 = paradigm 系統樹拡張 12-13 件目反復 or 開拓**.
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 198 開始時点)
+
+直近 30 ループ: Loop 168-197 (本セッション後 = 30 ループ)
+- 軸 pattern: 構造分離 (51 件) + 機能拡張/docs (4 件) + harness 衛生 (52 件) = **51:4:52 多軸分散**
+- scope 内訳: 39 scope 開拓達成
+- paradigm pivot: cross-language 拡張更なる持続達成 (frontend 10 + rust 2 = 計 12 件) = R36 / R30' / R34 / R37 のいずれか採用検討
+- **Loop 198 では R36 = OpenAI API URL test fixture 集約 (規模 S = test 内のみ) または R30' = 別 rust file での const 集約 (規模 S-M = 後継再探索要) が最適路**
+
+### 候補 R36 (Loop 198 候補 A = 第一推奨 = OpenAI API URL test fixture 集約 = 規模 S)
+
+**cloud_whisper.rs 内 OpenAI API URL 13 callsite (全て test 内) 集約 = paradigm 系統樹拡張 13 件目候補**:
+- 規模 S = ~10-15 分完走見込み
+- **本番品質寄与なし + test maintainability 向上のみ**
+- AGENTS.md priority 1-3 直接寄与は弱
+- alternation pattern: K(197) → rust(198) = 完璧 variety 規則整合
+
+### 候補 R30' (Loop 198 候補 B = 第二推奨 = 別 rust file での const 集約 = 規模 S-M)
+
+**rust 軸 = 別 rust file (openai_realtime.rs / elevenlabs_realtime.rs / apple_speech.rs / settings.rs / session_manager.rs 等の事前未探索 file) での const 集約候補探索**:
+- 規模 S-M = ~10-30 分完走見込み (探索コスト含む)
+- paradigm 系統樹拡張 12 件目反復 = 価値中 (rust 軸 const 集約 paradigm 反復 10 件目開拓)
+- 前任事前探索結果 (主要候補なし、後継再探索要、上記「残候補」R30' 参照)
+- alternation pattern: K(197) → rust(198) = 完璧 variety 規則整合
+
+### 候補 R34 (Loop 199 候補 A = 第三推奨 = K 軸 = Section 2.3 観測 53 件目)
+
+**harness 衛生軸 = K 軸 = alternation 復帰**:
+- precedent: Loop 79/81/.../195/197 = 52 件目までの updates
+- 観測 53 件目
+- 規模 SS = ~3-7 分完走見込み
+- **ただし機械的反復で Mac アプリ品質に直接寄与せずローカル最適化リスク = 派生型 CI 保護パターンに戻らない方針との緊張感** = 採用は批判的検討要
+
+### 候補 R37 (第四推奨 = 大型 file 責務分離 52 件目候補 = 規模 M-L)
+
+session_manager.rs 1232 行 / audio.rs 915 行 / settings.rs 801 行 / session.rs 773 行 / transcript_bridge.rs 736 行 / session_store.rs 722 行 / TranscriptView.tsx 2056 行 / SettingsView.tsx 2011 行 等の責務分離余地を grep + Read で探索. **ただし規模 M-L = 探索コスト高 + 過去 51 件目までで責務分離困難と判定された file 多数の可能性**.
+
+### 低優先 (継承)
+
+- J' SettingsView.tsx 内部 helper (component helper 可能性高 = 抽出困難確認済 = 却下推奨)
+- X' resample_audio dead code 削除 (ユーザー直伝指示要)
+- H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要)
+- B1. Microsoft Teams window title fallback (継承)
+- A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 704 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止、`--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止、Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり + Loop 144/166 で worker fault / boundary fix 時の AGENT_LOG.md 直接修復 paradigm 2 件目達成)
+
+## ハーネス使用法 (script に焼き付け済)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend/docs を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-96 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認 or `git log --oneline -3` で 2-commit 反映確認**
+  - **本セッション継続 paradigm**: `git status` (working tree clean) を主観測手段にする = `git log` の即座のチェックは fault 誤判定リスクあり (Loop 158/180-197 precedent + 本セッション Loop 196/197 で 2 連続実証成功)
+  - 観測時間目安: 規模 SSS = ~2-3 分、規模 SS = ~3-7 分、規模 SS-S = ~5-10 分、規模 S = ~10-20 分、規模 M-L = ~15-30 分、規模 L = ~25-40 分
+  - **本セッション例**: Loop 196 = 規模 SS-S = 実測 ~3 分 (transcription_commands_helpers.rs 単一 file 内 + 7 callsite 機械的置換完了 = 規模 SS-S 想定の最速級) / Loop 197 = 規模 SS = 実測 ~3 分 (K 軸 = 標準書式)
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない**
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本 prompt と同パターン、連続 91 セッション目)
+
+## worker prompt 必須要素 (100+ 連続ループで実証済、継続適用、9 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+8. **「AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む」 (Loop 144 fault precedent から新規追加 = Loop 146-197 で 52 連続成功実証)**
+9. **「entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)」 (Loop 166 boundary fix precedent から新規追加 = Loop 167-197 で 31 連続再発防止確認 = 節目 25 連続突破後 6 件目)**
+
+**追加推奨 (Loop 60-197 経験から)**:
+- worker prompt に「2-commit pattern」を **明示的に** 記載 = Loop 145-197 で 53 連続スタート安定動作
+- 大型 file 抽出時は **precedent file の cat 全体読み込み** を明示推奨
+- **worker prompt の長さに注意**: ~80-300 行で短縮効果あり (本セッション Loop 196 = 158 行 = SS-S 規模 rust 軸 / Loop 197 = 112 行 = SS 規模 K 軸)
+- **frontend 軸の場合**: 検証は npm run build (tsc + vite build) のみ
+- **rust 軸の場合**: cargo test (704 件件数完全不変) + cargo clippy + cargo fmt + cargo build を全て worker prompt に記載
+- **API 互換維持戦略 (Loop 119-197 precedent)**:
+  - **rust 軸**: `pub use` re-export / `pub(crate) use` re-export = E0364 visibility 自律 fix / inline module 全体抽出時の visibility 修正 + caller fully qualified path 化 / `use` 経由で fn 抽出 + tests 移動 + 件数完全不変保証 / inline module 全体抽出 + use alias で callsite 全件無変更維持 / 重複定義削除 + use 経由参照で callsite 全件無変更維持 / **#[cfg(test)] pub(crate) fn として test build 限定公開 + 4-9 file から use 経由参照** / **新規 const 追加 + 同 file 内 callsite 全件 const 参照 = 既存 const 0 件 file での paradigm 拡張 (Loop 194 = paradigm 系統樹拡張 11 件目達成)** / **既存 const 確立 file への並列拡張 + 7 callsite (本番 + test 混在) を const 参照に統一 (本セッション Loop 196 = paradigm 系統樹拡張 12 件目候補確立)**
+  - **frontend 軸**: 純粋関数 export 化 + import 1 行追加で完結 (標準 paradigm) / utils 内 cross-import paradigm (1-7 件目確立) / 既存 file 拡張軸 paradigm 1-21 件目 / multi-line existing import への統合判断 / **const 集約軸 frontend 10 連続 (Loop 174 → 176 → 178 → 180 → 182 → 184 → 186 → 188 → 190 → 192) = paradigm 完全成熟期完全成熟最終収束完成超越超越超越達成 = 節目 10 件突破 = const 集約軸の主要重複候補は完全に枯渇**
+- **責務階層精査 (Loop 119-197 教訓)**: paradigm 反復よりも責務階層精査を優先
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 196 = 規模 SS-S ~3 分 + Loop 197 = 規模 SS ~3 分 = **目標 15 分以内達成 + 平均 ~3 分/loop = 過去最速級維持**)
+- worker 1 件 = 1-2 commit (本セッション 2 ループ完走 = 4 commit + 1 SESSION SUMMARY commit = 5 commit)
+- 累積 worker 完走 294/295 (本セッション +2 件完走、99.7%)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは **2 ループ完走 + handoff** = handoff 文書「2-3 ループ完走推奨」中央値達成 + context 衛生優先
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」 (継承)
+- watchdog 継続指示: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」 (継承、本セッション中に再度入電)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む
+2. `git status --short --branch` / `git log --oneline -10` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認.
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認. `mjc-main` なら不要、`mjc-main-20260505-96` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-96 mjc-main` を実行 (冪等).
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 90 セッション目「再出現せず」観測 = 節目 90 件突破)
+5. **戦略転換の核心を継承**: 単一軸 4 連続集中をしない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ. **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = **K 軸 (Loop 197) からの選択肢 = R36 (test fixture URL 集約) / R30' (別 rust file 集約) / R34 (K 軸 2 連続 = ローカル最適化リスク批判要) / R37 (大型 file 責務分離) のいずれか採用検討**
+6. **最初の Loop 候補**: variety 規則を踏まえ、Loop 198 で **(a) 候補 R36 = OpenAI API URL test fixture 集約 (規模 S = test 内のみ) または (b) 候補 R30' = 別 rust file での const 集約 paradigm 反復 10 件目 (規模 S-M = 後継再探索要) または (c) Loop 199 で R34 = K 軸 2 連続 = 観測 53 件目 (規模 SS = 機械的反復ローカル最適化リスク批判要) または (d) X' / H1 = ユーザー直伝指示要** のいずれか採用検討. **第一推奨 = 候補 R30' (別 rust file 集約 = 規模 S-M = paradigm 系統樹拡張 12 件目反復 = Mac アプリ品質改善寄与) を後継独自 grep で再探索**, **第二推奨 = R36 (test fixture URL 集約 = test maintainability のみ + 本番品質寄与なし)**. **重要**: 後継 R30' 採用時は **rust 軸 = grep で別 rust file (openai_realtime.rs / elevenlabs_realtime.rs / apple_speech.rs / settings.rs / session_manager.rs 等の事前未探索 file) の const 集約候補を批判的に確認** が responsible. worker prompt は「Loop 60-197 と同じ 2-commit pattern + Loop 144 fault precedent から append 1 回のみ明示 + Loop 166 boundary fix precedent から冒頭 `---` 含めない明示」を含めて ~80-200 行 (規模 S-M, rust 軸).
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (本セッション Loop 196 で実証 = handoff prompt R30 拡張事前探索 「主要候補なし」 を独自 grep で再探索 + transcription_commands_helpers.rs を発見 + 集約価値中-高 + 本番品質寄与あり を批判検証達成 = メイン批判判断 連続 97 セッション目達成).
+8. 待機モード禁止. final answer で停止せず、改善ループを継続する. **本セッションは 2 ループ + handoff = 後継は 2-3 ループ完走推奨**
+9. **worker prompt には worker prompt 必須要素 9 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning + 二重書き fault + boundary `---` 重複 fault を防止**, **worker prompt は ~80-300 行を目安に simpler 化**
+10. **worker 完走確認は `git status --short` を主観測手段とする** (本セッション継続 paradigm)
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK**
+12. **commit hash 更新漏れパターン (Loop 145-197 で 53 連続観測 = 完全復活 pattern + 節目 50 件突破後 2 件目)**: worker prompt に「2-commit pattern」を明示記載 + Loop 144 fault precedent から「append は 1 回のみ」明示記載 + Loop 166 boundary fix precedent から「冒頭 `---` 含めない」明示記載 = 後継も活用検討可能
+13. **worker fault 時の救済策 (Loop 144/166 precedent)**: AGENT_LOG.md の二重書き / boundary `---` 重複等は メイン直接 Edit で削除修復 + chore commit を作成 = メイン直接削除救済 paradigm 2 件目
+
+# Loop 198 への期待 (推奨ループ設計)
+
+直近 30 ループで構造分離軸 51 件 + 機能拡張/docs 軸 4 件 + harness 衛生軸 52 件 = K(197) → **Loop 198 では R30' = 別 rust file での const 集約 paradigm 反復 10 件目 (rust 軸 3 件目) または R36 = OpenAI API URL test fixture 集約 (test 内のみ + 本番品質寄与なし) が最適 = 規模 S-M / S**.
+
+メインは grep + Read 精読で 1 候補に絞る (本ハンドオフでは候補 R30' = 別 rust file での const 集約 paradigm 反復 10 件目開拓 = 規模 S-M = paradigm 系統樹拡張 12 件目反復 = Mac アプリ品質改善寄与 を第一推奨、R36 = OpenAI API URL test fixture 集約 = 規模 S = test maintainability 向上のみ + 本番品質寄与なし = 第二推奨) → worker prompt 作成 (~80-200 行 = S-M 規模) → 起動 = 通常の自律改善ループへ復帰.
+
+**第一推奨は候補 R30' (別 rust file での const 集約 = 規模 S-M)**:
+- 規模 S-M 想定 (~10-30 分完走) = worker prompt は ~150-200 行
+- paradigm = rust 軸 const 集約 paradigm 反復 10 件目 = paradigm 系統樹拡張 12 件目反復
+- precedent = Loop 119-197 = 既存 paradigm 系統樹 1-12 件目候補
+- Mac アプリ内部品質改善 = AGENTS.md priority 1-3 寄与
+- 事前探索結果 (主要候補なし、後継再探索要、上記「残候補」R30' 参照)
+
+- 推奨抽出順序 (Loop 199 以降): R36 → R34 / R37 等
+
+後継 mjc-main-20260505-96 への 2-3 ループ完走推奨。第一推奨候補 = R30' = 別 rust file での const 集約 paradigm 反復 10 件目 = 規模 S-M = paradigm 系統樹拡張 12 件目反復価値中 / 第二推奨 = R36 = OpenAI API URL test fixture 集約 = 規模 S = test maintainability 向上のみ + 本番品質寄与なし. 詳細は docs/handoff/mjc-main-20260505-96.txt 参照.
+
+---

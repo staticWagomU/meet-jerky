@@ -1,0 +1,187 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-24) です。
+旧 mjc-main (= 旧 mjc-main-20260504-23) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 20451 行 / 1.7MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~16:50 JST] mjc-main-20260504-23 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~16:50 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 122+ (origin/main から先行)
+- working tree: AGENT_LOG.md SUMMARY commit 済 (fff2335)、untracked は前と同じ docs/handoff/* と docs/worker-prompts/ + 本セッション分追加
+- 旧 mjc-main-20260504-23 が canonical 名 mjc-main を持ち、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `7b4db11` test(transcription): is_realtime_stream_already_stopped_error / should_emit_realtime_stream_error の境界 test 3 件 (Loop 1, +3 件 → 500 passed)
+  2. `e1dbf4c` test(transcription): build_transcription_error_payload / build_worker_panic_error_payload の対称性 test 3 件 (Loop 2, +3 件 → 503 passed)
+  3. `2172151` test(transcription): parse_requested_transcription_sources の入力空間境界 test 3 件 (Loop 3, +3 件 → 506 passed)
+  4. `fff2335` chore(agent-log): SESSION SUMMARY 追記
+
+## 現在の品質状態
+- cargo test (lib): **506 passed / 0 failed** (前 497 → +9 件)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -D warnings: **警告ゼロ** (Loop 全 3 で維持)
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-23、handoff 直前)
+- mjc-main-20260504-24 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `claude-agent-handoff-main.sh` で起動された場合、tmux 上では `mjc-main-20260504-24` という名前で起動するはずです。`tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260504-24` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-24 mjc-main` を実行 (本 mjc-main-23 でも初回確認が必要だった precedent あり、冪等)。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで application 確認)
+
+#### 1. 「対称的補強の 3 軸構造」パターン (本セッション全 3 ループで application、汎用 application 可能)
+- Loop 1: `contains()` の 3 つの逸脱方向 (case-insensitive 化 / startsWith 化 / lines() 化) で対称構造
+- Loop 2: 関数 × enum の 2x2 マトリクス + 別軸 (escape) で対称構造
+- Loop 3: 入力空間の 3 段階パイプライン (trim ASCII / trim Unicode / match exact) で対称構造
+- = **「N 軸の独立変数を 3 件で全カバー」** という設計思想が普遍的に application 可能
+
+#### 2. 「2x2 マトリクス充填」パターン (Loop 2 確立、後続 application 可能)
+- 関数 (A, B) × データ型 (X, Y) の 4 セルを既存 test の埋まり方で診断
+- 未充填セル 2 つを 1 commit で同時充填 = 関数 × 型の cross product 網羅を最小コストで完成
+- application 候補: settings.rs の TranscriptionEngineType × 関数 cross product, session_manager の append × source cross product
+
+#### 3. 「入力空間境界の 3 段階パイプライン保護」パターン (Loop 3 確立、後続 application 可能)
+- 入力 → trim → match → 結果 の各段階で 1 軸ずつ未保護境界を選定
+- application 候補: `parse_throttle_key_to_display_name` (app_detection.rs)、`build_meeting_link_from_url` (browser_detection.rs) 等の正規化系関数
+
+#### 4. 「worker prompt で末尾追記を明示するパターン」(継続 application、本セッション全 3 ループで先頭追記事故ゼロ)
+- 全 3 ループで「ファイル末尾追記必須 + 先頭は絶対に触らない + tail -10 で末尾確認」明示 → 事故ゼロ
+- mjc-main-21 (改善開始) → mjc-main-22 (3 ループ事故ゼロ) → mjc-main-23 (3 ループ事故ゼロ) で **3 連続セッション事故ゼロ** = 後続継続適用必要
+
+### 累積パターン (前 mjc-main-7〜22 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (本セッション分のみ抜粋)
+
+#### transcription.rs の test 件数密度バランス完成 (本セッションで達成)
+- 497 → 506 件 (+9 件)、本セッションで `is_realtime_stream_*` / `build_*_error_payload` / `parse_requested_transcription_sources` の 3 関数群に分散
+- 関数別の保護密度バランス改善 = 今後は別ファイルの保護密度を上げる時期 (B 候補へ = session_manager.rs 等)
+
+#### Rust `str::trim()` の Unicode White_Space 仕様の executable specification 化 (Loop 3 T2)
+- T2 で U+3000 trim を CI 固定 = `trim_ascii()` (Rust 1.80+ の ASCII 限定 trim) への変更で即座に検知できる装置
+- 日本語入力文脈 (全角空白が source 値に紛れ込む可能性) での安全性を test で明示
+- 同様の Unicode 仕様 executable specification 化は他の trim/正規化系関数にも application 可能
+
+#### serde rename_all = "snake_case" 契約の executable specification 化 (Loop 2 T1/T2)
+- 関数 × enum の 2x2 マトリクス全充填で serde の宣言契約を CI 固定
+- TranscriptionSource::Microphone を `TranscriptionSource::Mic` 等にリネームしたら test が壊れて気づける
+- 同様のパターンは settings.rs の TranscriptionEngineType (Whisper / OpenAIRealtime / ElevenLabsRealtime / AppleSpeech) cross product にも application 可能
+
+#### `contains()` の 3 つの逸脱方向検知 (Loop 1)
+- 1 関数 (`is_realtime_stream_already_stopped_error`) の `contains()` 仕様を 3 軸 (case / position / newline) で対称的に保護
+- 同様のパターンは他の文字列マッチ系関数 (`build_meeting_link_from_url`, normalize_speaker, classify_url 等) にも application 可能
+
+#### コミット周期 ~9 分/loop の達成要因 (本セッション、mjc-main-22 と同等)
+- AGENT_LOG.md 先頭追記事故ゼロ (worker prompt 改善継続 application)
+- worker prompt 精緻化 (test 3 件で scope 固定)
+- commit メッセージファイル運用安定化 (Read → Write → commit の 3 ステップ事故なし)
+- mjc-main-22 と同等の高速 cadence を 2 セッション連続維持 = **後続セッションも 10-15 分/loop を維持可能**
+
+#### 既存累積技術注意点 (前 mjc-main-7〜22 SUMMARY 参照、本セッションで触れていない領域は前 SUMMARY 必読)
+
+### AGENT_LOG.md 構造の問題 (継承、優先度低)
+- 本セッション中の全 worker は AGENT_LOG.md 末尾追記成功 (worker prompt 改善継続)
+- AGENT_LOG.md 全体は **20451 行** (本セッションで +197 行) で構造的に整理が必要 = 別 Loop 候補 (低優先)
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### B 候補 (推奨、別ファイル切り替えで認知文脈リセット)
+- session_manager.rs の append 系関数の境界補強 (本セッション未着手)
+- 別ファイル切り替えで認知文脈リセット可能 = 本セッション 9 件 transcription.rs に集中したため次セッションは他ファイルへ
+- session_manager.rs は本セッションで触れていない領域 = 累積 test 密度が偏っていない = 価値が出やすい
+- まずメイン側で `grep -n "fn " src-tauri/src/session_manager.rs | head -30` で関数 inventory 取得 + append 系関数 (例: append, current_started_at_secs 等) を特定して worker 発注
+
+### D 候補継続 (transcription.rs の更なる関数)
+- `validate_stream_count_for_engine` の更なる境界補強 (mjc-main-22 で 5 件追加済、追加余地は限定的)
+- `transcription_error_payload_to_value` の境界補強 (cfg(test) ヘルパだが panic 経路含めて確認価値あり)
+- `run_transcription_loop` / `run_transcription_worker_with_panic_guard` の test (Tauri AppHandle 必要 = mock 必要、規模 M-L)
+
+### S (継承, 統合候補あり). settings.rs Tidy First リファクタ (規模 M, 2 ループ構成)
+- 統合候補: `MEETING_INACTIVE_THRESHOLD = 600s` を const から settings 経由で変更可能にする (mjc-main-20 SUMMARY 既明示、未消化)
+
+### F-Loop6 (継承). タイマースレッド shutdown 対応 (規模 M, 価値中)
+- Arc<AtomicBool> flag + start_detection 終了時 notify
+- 既存 detection_callback / browser_url_callback の shutdown と整合性検討必要
+
+### B 別 fn 拡張 (本セッションで密度十分、価値小)
+- transcription.rs は 506 件 test で密度十分 = 拡張余地は小さく価値が低下傾向
+- transcription.rs から離れる時期
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 506 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` に **Read → Write の 2 ステップ** でメッセージを書く (初回も既存ファイル想定で先に Read 必須)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-24 mjc-main` (現セッション名が `mjc-main` でない場合のみ実行)
+
+## worker prompt 必須要素 (本セッションで実証済、継続適用)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」** = 末尾追記の場所を視覚的に学習させる
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」** を明記
+3. **「先頭は絶対に触らない」** を明記
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** を明記
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション実績 ~9 分/loop で mjc-main-22 と同等の高速 cadence を 2 セッション連続維持)
+- worker 1 件 ≒ 1 コミット
+- 本セッション実績: Loop 1 = ~8 分, Loop 2 = ~9 分, Loop 3 = ~9 分、平均 ~9 分/loop
+- 累積 worker 完走 56/56 = 全完走率 100%
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 推定 ~70-80% で予防的ハンドオフ判断 (前 16 セッション (mjc-main-7〜22) と同じ 3 ループパターン継承で予測可能性優先)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示 1 回受領も自然に消化済 (3 ループを通常テンポで進めたため)。
+
+## 累積成果 (本セッション)
+- **テスト 497 → 506 passed** (+9 件、mjc-main-22 と完全対称)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **clippy 警告ゼロ維持** (default + -D warnings)
+- **transcription.rs 3 関数群への密度分散完成** (`is_realtime_stream_*` / `build_*_error_payload` / `parse_requested_transcription_sources`)
+- **「対称的補強の 3 軸構造」パターン全 3 ループで application 確認**
+- **worker prompt 末尾追記明示の継続適用** (3 連続セッション先頭追記事故ゼロ)
+- **累積 worker 完走 56/56** (100%)
+- **コミット周期 ~9 分/loop** (mjc-main-22 と同等の高速 cadence を 2 セッション連続維持)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260504-24` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-24 mjc-main` を実行 (冪等)。
+4. 候補 **B (session_manager.rs append 系, 規模 S〜M, 推奨)** を最有力として進める。
+   - メインで `grep -n "fn " src-tauri/src/session_manager.rs | head -30` 等で関数 inventory を取得してから worker に発注
+   - append 系 (例: append, current_started_at_secs, finalize 等) を特定し境界 test 補強 or refactor を選定
+   - 別ファイル切り替えで認知文脈リセット (本セッション transcription.rs 集中の反動を活用)
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。
+6. **worker prompt には worker prompt 必須要素 (本ファイル上部) を含めて AGENT_LOG.md 先頭追記事故を防止**

@@ -1,0 +1,142 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-15) です。
+旧 mjc-main (= 旧 mjc-main-20260504-14) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 18800+ 行 / 1.7MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~13:30 JST] mjc-main-20260504-14 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~13:30 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 89+ (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/` 増分、`docs/handoff/mjc-main-20260504-7/10/12/13/14.txt`、本ハンドオフ用 `docs/handoff/mjc-main-20260504-15.txt`)
+- 旧 mjc-main-20260504-14 が canonical 名 mjc-main を持っており、本セッションで 3 ループ + 1 SESSION SUMMARY コミットを完了:
+  1. `97635dc` refactor(audio_event): build_audio_drop_event_payload を audio_event.rs (pub(crate)) に抽出 = Tidy First
+  2. `6b86d11` feat(transcript-view): audio-drop-count frontend listener と累積 state 追加
+  3. `2376738` feat(transcript-view): audio-drop-count UI 表示追加 + Tidy After で Loop 2 の tactical 妥協除去 = **product-concept 優先度 9 「録音状態の透明性」を user-visible にした最終ループ**
+  4. `f803a7b` (SESSION SUMMARY コミット)
+
+## 現在の品質状態
+- cargo test (lib): **450 passed / 0 failed** (本セッションでは数値変動なし、frontend 中心)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -D warnings: **警告ゼロ**
+- npm run build (tsc + vite build): **通過** (bundle 486 KB)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-14、handoff 直前)
+- mjc-main-20260504-15 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-15 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。**注意**: スクリプトが `successor session does not exist` を返した場合、既に rename 完了済みのサインなので OK。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着・累積)
+- **「Tidy First → Behavioral Change → Behavioral + Tidy After」の 3 段スライス分解パターン** (本セッション全体): 同一 feature を (A) 重複削減 (B) data flow 確立 (C) UI 露出 + tactical 妥協除去 の 3 ループに分解。各ループ単一 worker turn 完走。Kent Beck 教義との整合性高。**audio-drop-count feature がこのパターンの最初の完成例**。
+- **「frontend test framework 不在環境での tsc + vite build 主検証」パターン** (Loop 2-3): tsc strict mode (`noUnusedLocals: true`) + react-hooks/exhaustive-deps lint で frontend の型・参照整合性を保証。
+- **「state 値の `noUnusedLocals: true` 経由 read 強制を JSX 移譲で解消」2 段ループ運用知見** (Loop 2-3): tactical な console.warn 参照 → 本来の UI 露出への移行で「state 値が JSX で read される = 製品価値が user に届く」結合を確立。Loop 2 の tactical 妥協を Loop 3 で Tidy After として体系的に除去する 2 段ループ運用知見。
+- **「audio-level pattern 完全対称コピー」最小スライス完成パターン** (Loop 2-3): listen<unknown> + 型ガード + state 3 つ + JSX 表示の 4 要素を audio-level event の既存構造から完全対称コピー = 新パターン発明ゼロでの最小スライス完成。
+- **「両方 0 で conditional render hide」UI ノイズ最小化パターン** (Loop 3): 通常時 (drop=0) は UI 表示しない = 「見えること = 異常」原則で情報密度を最大化。
+- **「pub(crate) 最小スコープ」可視性選択パターン** (Loop 1)
+- **「`#[cfg]` ガードを呼び出し側コンテキストの責任とする」抽出パターン** (Loop 1): JSON 組み立てロジックは platform 非依存、cfg ガードは「呼び出し側のコンテキスト」に属する。
+
+### 累積パターン (前 mjc-main-7/8/9/10/11/12/13 SUMMARY 参照、変更なし)
+
+### 重要な技術的注意点 (踏みやすい罠) — 本セッション分のみ抜粋
+- **`audio_event.rs` (本セッション Loop 1)**: pub(crate) fn `build_audio_drop_event_payload`。cfg ガードなし platform-agnostic。テストは存在しないが audio.rs::tests と system_audio.rs::tests から import 経由で 10 件覆われる。
+- **`audio.rs` line 402**: `crate::audio_event::build_audio_drop_event_payload("microphone", dropped)` で fully-qualified path 使用。
+- **`system_audio.rs` line 334**: 同上 source="system_audio"。tests は cfg(target_os = "macos") ガード継続維持。
+- **`src/types/index.ts AudioDropCountPayload`**: `{ source: "microphone" | "system_audio", dropped: number }`。AudioLevelPayload と完全対称。union 拡張は rust 側 source 文字列と必ず同期する必要あり。
+- **`src/utils/audioDropCountPayload.ts isAudioDropCountPayload`**: 防御的 4 段チェック (isAudioDropCountSource + typeof number + Number.isFinite + dropped >= 0)。NaN/Infinity/負数を弾く。`>= 0` 比較は isFinite 通過後なので NaN による比較演算の罠なし。
+- **`TranscriptView.tsx audioDropCountListenerError` JSX 表示**: line 2358 直後、role="alert" で audio-level error 表示 (line 2348-2357) と完全対称。
+- **`TranscriptView.tsx 累積 drop count` JSX 表示**: `microphoneDropCountTotal > 0 || systemAudioDropCountTotal > 0` で conditional render。両者 0 なら非表示。role="status" + aria-live="polite" で screen reader 過度割込み回避。
+- **`useState<number>` の累積 functional update**: `setMicrophoneDropCountTotal((prev) => prev + payload.dropped)` で empty deps useEffect 環境でも closure stale 読みなしに累積整合。**非 functional な `setMicrophoneDropCountTotal(microphoneDropCountTotal + payload.dropped)` は誤改修パターン**。
+- **既存累積技術注意点** (前 mjc-main-7〜13 SUMMARY 参照、本セッションで触れていない領域は SUMMARY を必ず確認)
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### A3 (新、最有力). drop count reset 戦略実装 (規模 S、価値中)
+- 現状は累積永続 (アプリ起動中ずっと加算)。session start/stop 境界で reset する semantics を決めて実装。
+- 実装地点候補: `handleToggleMeeting` で `setMicLevel(0)` などをまとめている line ~910-920 付近。`setMicrophoneDropCountTotal(0)` / `setSystemAudioDropCountTotal(0)` を追加。
+- 戦略案 1: session start で reset。戦略案 2: session stop で reset。戦略案 3: 両方。**戦略案 1 が UX 的に妥当** (新セッションは fresh start 期待、stop 後の表示は履歴として有用)。
+- 1 ループ完結可能、worker prompt は line 番号と setter 呼び出し追加箇所を具体的に指定する形。**自然な続き = audio-drop-count chain の最終 polish**。
+
+### A4 (新). drop count を MicrophoneSection / SystemAudioSection に prop drill して per-source UI badge 化 (規模 M、価値中、2 ループ分割推奨)
+- 現状は TranscriptView 上部に 1 行表示 (mic/system 合算 1 ブロック)。これを各 source の UI section 内に「入力待ち」badge と並ぶ形で表示。
+- 規模 M (3 ファイル変更 = TranscriptView prop drill + MicrophoneSection 追加 + SystemAudioSection 追加 + 新規 css class)。1 ループでは scope ギリギリ、2 ループ分割推奨。
+
+### B3 (新, Tidy First). audio_event.rs に AUDIO_DROP_EVENT_NAME 定数追加 (規模 XS、価値小)
+- 現在 "audio-drop-count" 文字列リテラルが audio.rs line 401, system_audio.rs line 333, TranscriptView.tsx line 809 の 3 箇所に重複。rust 側 2 箇所を `audio_event::AUDIO_DROP_EVENT_NAME` 定数経由に集約。frontend 側は別言語なのでそのまま。1 ループ完結。
+
+### G2 (継承). session_store.rs render_session_markdown private fn の direct test (規模 XS、価値中)
+- 前 mjc-main-13 で write_session_markdown_to を補強済。残る render_session_markdown は private で write 経由でカバーされているが、internal helper の direct test で render エラー経路の独立検証可能。
+
+### D (継承). transcription.rs error path 残り (規模 S〜M)
+- 1896 行最大規模。`load_model` path 変換失敗、`feed`/`finalize` resampler state missing 周辺。複数ループ構成。
+
+### F (継承). 会議終了検知の遅延監視 (規模 S〜M、価値 8)
+
+### S (継承). settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L、非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 450 件全 pass している (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+  - **注意**: コミットメッセージに `||` (バックトィック内 OR) を含めると fish shell で parse error になる。`OR` 表記等で回避すること。
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-15 mjc-main`
+
+## コミット周期目標
+- 1 ループ 10-15 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~10-15 分/loop (Loop 1 = 9 分、Loop 2 = 12 分、Loop 3 = 13 分、累積 29/29 worker 完走 = 全完走率 100%)。
+- worker prompt は **5 セクション構造** (背景/Why/具体的 test 案 assertion レベル または 担当範囲/実装上の注意/検証手順/AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい (累積 29/29 完走実績)。
+- frontend 系の場合、既存 pattern (audio-level useEffect など) との「**完全対称コピー**」を強調すると、worker が設計判断に時間を使わず手筋を 1 つに固定できる (Loop 2/3 知見)。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 75-80% 推定で予防的ハンドオフ判断 (前 7 セッション (mjc-main-7〜13) と同じ 3 ループパターン)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は本セッション中受領なし、改善ループ自走で消化済み。
+
+## 累積成果 (本セッション)
+- **テスト 450 → 450 passed** (維持、frontend 中心のため数値変動なし)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **新規ファイル 2 個** (`src-tauri/src/audio_event.rs` / `src/utils/audioDropCountPayload.ts`)
+- **clippy 警告ゼロ維持** (default + -D warnings + uninlined_format_args)
+- **npm run build 通過維持** (tsc strict + vite build, bundle 485-486 KB)
+- **product-concept 優先度 9「録音状態の透明性」を rust → frontend → UI まで一気通貫で実装層に届けた = 本セッション最大の製品価値**
+- **「Tidy First → Behavioral → Behavioral + Tidy After」3 段スライス分解パターン確立**
+- **「frontend test framework 不在環境での tsc + vite build 主検証」パターン確立**
+- **「state 値の noUnusedLocals 経由 read 強制を JSX 移譲で解消」2 段ループ運用知見蓄積**
+- **「audio-level pattern 完全対称コピー」最小スライス完成パターン確立**
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-15 mjc-main` を実行 (冪等)。
+4. 候補 A3 (drop count reset 戦略、本セッション 3 段の自然な続きで polish、最有力)、A4 (per-source UI badge prop drill、2 ループ分割推奨)、B3 (AUDIO_DROP_EVENT_NAME 定数化、Tidy First XS)、G2 (render_session_markdown direct test) のいずれかを最小スライスとして worker に発注して 1 ループ目を始める。**A3 が最有力** (本セッション 3 段の自然な続き、規模 S、1 ループ完結、UX 直結)。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。

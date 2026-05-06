@@ -1,0 +1,49 @@
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-54
+
+## 本セッションの実績
+
+**2 ループ完走 + 通常 cadence handoff**:
+
+- **Loop 104**: openai_realtime.rs `mod ws_task` (RunParams + run + handle_event + REALTIME_SAMPLE_RATE) を openai_realtime_ws_task.rs に inline module 全体抽出 = 構造分離 27 file 目 = realtime engine 5 軸目 = inline module 全体抽出 paradigm 2 件目 (apple_speech_macos Loop 95 cfg(macos) 版に対し本 Loop は cfg なし sub-paradigm) = openai_realtime.rs 1018 → 794 行 (-22%) + 新 file 223 行 = alias 戦略 (use crate::openai_realtime_ws_task as ws_task;) で production caller 1 件 + tests 33 件 (handle_event 参照 22 箇所) 全て無変更達成 = 規模 S ~8 分完走 + worker prompt 189 行
+- **Loop 105**: session_commands.rs 純粋関数 helpers 3 件 (now_unix_secs + default_offset + resolve_output_directory) を session_commands_helpers.rs に抽出 = 構造分離 28 file 目 = session_commands 軸 2 件目 (Loop 97 session_commands_list 軸 1 件目との並立) = scope depth 軸 5 件確立 (settings + transcription_commands + realtime engine + system_audio + session_commands) = 純粋関数 helpers 軸 paradigm 復帰 (Loop 102/101 paradigm = 2 ループ間隔離れて警告境界外) = session_commands.rs 452 → 381 行 (-16%) + 新 file 89 行 = session_commands_list.rs use 文 1 行修正で外部 caller 吸収 = 規模 SS ~5 分完走 + worker prompt 204 行
+
+## 戦略転換の継承達成
+
+- メイン批判判断 連続 49 セッション目達成 (本セッション Loop 104 = handoff 推奨候補 X を grep + Read 精読で関数本体 4 つ + caller 23 箇所 + tests 33 件構造を批判的評価し採用 = paradigm 確立)
+- worker 自律 2-commit pattern 連続 45 ループ目 (Loop 60-105)
+- harness 衛生連続 49 セッション目 (`bfb9846` PATH inner shell escape の永続的解決を継続観測 = scripts/* M 表示再出現せず)
+- ファイル参照型 handoff prompt 連続 51 セッション目
+- 直近 30 ループ多軸分散 = 22:3:5 (構造分離 22 + 機能拡張/docs 3 + harness 衛生 5)
+- scope 多様性 16 軸維持 + scope depth 軸 5 件確立
+- alias 戦略の paradigm 確立 (本セッション Loop 104 で初確立) = 元 caller 名前空間維持 + 新 file への分離両立 = 後継 inline module 抽出時に再利用可能パターン
+
+## 数値実績 (本セッション)
+
+- 累計 commits ahead of origin/main: 419 → 423 (+4)
+- 大型 rust file 責務分離 file 数: 26 → 28 (+2)
+- 累計 worker 完走: 202 → 204 (+2 件、100% 維持)
+- openai_realtime.rs: 1018 → 794 行 (-22%, -224 行) **本セッション最大削減**
+- session_commands.rs: 452 → 381 行 (-16%, -71 行)
+- realtime engine scope: 4 → 5 軸 (openai_realtime_ws_task が 5 軸目)
+- session_commands scope depth: 1 → 2 軸 (session_commands_helpers が 2 件目 = scope depth pattern 5 件目)
+
+## 後継への引き継ぎ判断
+
+- handoff 文書: docs/handoff/mjc-main-20260505-55.txt (ファイル参照型、連続 51 セッション目)
+- Loop 106 推奨候補 = K 軸復帰 = Section 2.3 観測追記 7 件目 (paradigm pivot 完璧 + 規模 SS ~3 分高速 cadence、ただし新観測内容薄め) または X session_commands.rs 残 start/finalize/discard 機能境界分離 (機能分類軸 paradigm + 規模 S ~10 分 + scope depth 警告 3 件目)
+- Y 既存 scope 3 件目 = transcription_commands_stop / session_commands_state = scope depth 警告
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- K3 後続 K 軸 2 連続警告 = SKIP 推奨 (Loop 103 → 106 = 2 ループ間隔のため復帰可能だが本セッション 105 は K 軸ではないので Loop 106 K は連続警告ではない、復帰 OK)
+- H1 = ユーザー直伝指示要
+- J = frontend 主観性高警告
+- H' = 大量 untracked 整理ユーザー直伝指示要
+
+## 引き継ぎ
+
+- 引き継ぎ先: mjc-main-20260505-55
+- 引き継ぎファイル: docs/handoff/mjc-main-20260505-55.txt (ファイル参照型 handoff prompt 連続 51 セッション目)
+- 旧メイン (mjc-main-20260505-54 = 本セッション = canonical mjc-main) は handoff 後終了
+
+worker 完走 2/2 = 累計 204/204 100%。
+
+---

@@ -1,0 +1,21 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-75 です。
+
+前任者 mjc-main-20260505-74 から 1 ループ完走 + **早期 cadence handoff** (Loop 150 = K 軸 = Section 2.3 観測追記 28 件目 = +73 行 / 平均 ~36.5 行/loop = **新階層 = SS 1 件 + 説明中量化 (~30-37 行/loop) の初観測 = 階層化 paradigm 4 段階目の発見** = 直近 10 連続観測値域 ~22-26 行/loop からの逸脱で第 4 階層が初認識 + frontend 軸軽量化 paradigm 13 度目観測 + alternation pattern 39 連続成功 (frontend(149) → K(150)) + worker ~7-8 分完走 + worker 自律 2-commit pattern 連続 6 ループ目達成 (Loop 144 fault からの完全復活継続中)) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-75.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 151 推奨候補 R8 = rust 軸復帰 = 規模 SS-S = alternation 40 連続維持 (K(150) → rust(151)) = **最有力推奨** = audio.rs / transcript_bridge.rs / settings.rs 等で `grep -nE "^fn [a-z]"` で top-level 純粋関数 grep + Read で副作用なし確認 / R7'' = 内部 helper grep = TranscriptDisplay / SessionList / SettingsView 内 useCallback / useMemo grep = 副推奨 / R7''' = 新たな重複候補 grep 探索 = paradigm 4 件目を狙う (handoff 主張に頼らず独自精読必須) = 副推奨 / K' = K 軸再度 = alternation reset リスクで Loop 152 推奨 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 70 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119-150 教訓継承** = 後継 Loop 151+ で paradigm 選択時に必ず責務階層精査を実施 + **handoff prompt の主張を鵜呑みにせず grep + Read で批判的検証する** (Loop 150 precedent = 前 handoff prompt 主張の R7''' INVALID_STATUS_PAYLOAD_ERROR 重複候補を grep + Read 精読で「LiveCaptionWindow と MeetingDetectedBanner で固有メッセージ含む = 真の重複ではない」と判定 → paradigm 4 件目候補から除外 + **メイン批判判断 連続 73 セッション目達成** = handoff prompt 真偽確認の重要性を再実証)
+- **API 互換維持戦略 (Loop 119-150 precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125-143 標準 paradigm) + utils 内 cross-import paradigm 7 件目に拡張完了 (Loop 147)** + **既存 file 拡張軸 paradigm 1 件目 (Loop 145 = AudioLevelMeter sanitize 重複削除) + 2 件目 (Loop 147 = LiveCaptionWindow TRACKS + AudioSource 統合) + 3 件目 (Loop 149 = MEETING_START_REQUEST_EVENT 3 file 重複削除)** = 後継も活用検討可能 = paradigm 反復可能
+- **worker 自律学習進化 paradigm 3 件目 (Loop 143/145/149 で確立発展)**: worker prompt 未指示事項を自律予測 + 対応 = TranscriptionEngineType 不要 import 削除 (Loop 143) / MicrophoneSection / SystemAudioSection callsite 自律置換 (Loop 145) / multi-line existing import への統合判断 = 行数 ±0 最適化 (Loop 149) = 後継も worker prompt の grep 確認手順を明示すれば自律学習進化 paradigm 期待可能
+- **worker fault 防止策 (Loop 144 precedent から worker prompt 必須要素 8 つ目に追加 = Loop 146/147/148/149/150 で 5 連続実証成功)**: worker prompt の Step 4 (AGENT_LOG.md append) で「append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。」を **明示記載** = 二重書き防止
+- **メイン直接削除救済 paradigm 1 件目 (Loop 144)**: worker fault 時 (二重書き等) はメインで直接 AGENT_LOG.md を Edit で修復 + chore commit を作成可能 = AGENT_LOG.md SESSION SUMMARY と chore hash 修正の precedent 拡張
+- **階層化 paradigm 4 段階目発見 (Loop 150 = mjc-main-20260505-74 観測初出)**: AGENT_LOG.md 増分階層が当初 3 段階 (SS 0 件 ~11-12 / SS 1 件軽量化 ~22-26 / SS 1 件大量化 ~42) から **4 段階 (+ SS 1 件中量化 ~30-37)** へ発展 = 観測 paradigm 自体の進化記録 = 後継も同階層化 paradigm を継続観測可能
+- **R7''' INVALID_STATUS_PAYLOAD_ERROR 候補は誤同定 (Loop 150 確認済)**: 変数名は同じだが値は固有メッセージ (LiveCaptionWindow = 「ライブ字幕の状態通知の形式が不正です。」 / MeetingDetectedBanner = 「会議検知プロンプトの状態通知の形式が不正です。」) = 真の重複ではない = paradigm 4 件目候補から除外 = 後継 Loop 151+ で paradigm 4 件目を狙うなら更なる重複候補 grep 探索が必要 (handoff prompt 主張に頼らず独自精読)
+- **R6 完結 + AudioLevelMeter / LiveCaptionWindow / MEETING_START_REQUEST_EVENT 統合後の pivot 探索期 (Loop 151+)**: top-level 純粋関数候補は枯渇 (Loop 150 確認済 = ModelSelector / TranscriptDisplay / SessionList / MeetingDetectedBanner = 全て top-level 純粋関数 0 件) = 後続 frontend 軸候補は **内部 helper grep 探索 (= TranscriptDisplay / ModelSelector の useCallback / useMemo)** または **新たな重複候補 grep 探索 (paradigm 4 件目を狙う = handoff 主張に頼らず独自精読)** = scope 36 軸目開拓候補 or 既存 file 拡張軸 paradigm 4 件目候補

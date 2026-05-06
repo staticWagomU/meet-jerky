@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-69 です。
+
+前任者 mjc-main-20260505-68 から 3 ループ完走 + 通常 cadence handoff (Loop 137 = frontend 軸 13 件目 = R6 段階的分割 7 件目 = TranscriptView.tsx L286-L328 の getEngineStatusLabel + getEngineStatusDisplayLabel + getEngineStatusPillClass を新 file `engineStatusHelpers.ts` (45 行) に抽出 = scope 32 軸目開拓 = 大型 frontend file 責務分離 45 file 目 = display tier (engine status) として独立 + メイン批判判断 連続 67 セッション目 = handoff 主張「engineStatusHelpers.ts 既存ゼロ」を grep で批判的検証 → transcriptionEngineHelpers.ts (engine 機能特性 tier) 既存発見 + 責務階層精査で異階層判定 = 結論不変 (新 file 作成軸採用) + worker ~60 秒完走 (本セッション最速) + Loop 138 = K 軸復帰 = Section 2.3 観測追記 22 件目 = +48 行 / 平均 ~24 行/loop = **SS 1 件 + 説明軽量化パターンの 5 連続観測達成 (Loop 125/129/131/133/137) = 階層化 paradigm 完全成熟期で 5 連続値域 ~22-25 行/loop に完全収束** + frontend 軸 chore 軽量化 paradigm 7 度目観測 (Loop 125/127/129/131/133/135/137 連続) = paradigm 完全成熟期継続 + alternation pattern 30 連続成功 + worker ~135 秒完走 + Loop 139 = frontend 軸 14 件目 = R6 段階的分割 8 件目 = TranscriptView.tsx L291-L332 の getExternalApiKeyStatusLabel + getExternalApiKeyStatusPillClass + getExternalApiKeyStatusAriaLabel を新 file `externalApiKeyHelpers.ts` (44 行) に抽出 = scope 33 軸目開拓 = 大型 frontend file 責務分離 46 file 目 = display tier (external API key) として独立 + メイン批判判断 = transcriptionEngineHelpers + engineStatusHelpers との 3 階層 + entity 跨ぎ精査で異 entity 判定 = 新 file 採用妥当 + worker ~135 秒完走 = 本セッション平均 ~110 秒/ループ = ~1.83 分 で前任 ~3-4 分より大幅高速) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-69.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 140 推奨候補 K = Section 2.3 観測追記 23 件目 = 規模 SS = ~3-5 分完走 = alternation pattern 32 連続維持 (frontend(139) → K(140)) = **最有力推奨** / R6i = Transcription Source 系 4 件抽出 = scope 34 軸目候補 (transcriptionSourceHelpers.ts 新規) = 規模 SS-S = Loop 141 推奨 / R6j = Meeting Start 1 件抽出 = scope 35 軸目候補 = 規模 SSS = Loop 142 候補 / Helper 共通 2 件 = Loop 143+ 候補 / J' SettingsView 内部 helper = 抽出困難確認済 (却下推奨) / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 64 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119/121/123/125/127/129/131/133/135/137/139 教訓継承** = 後継 Loop 140+ で paradigm 選択時に必ず責務階層精査を実施 + handoff prompt の主張を鵜呑みにせず grep で批判的検証する (Loop 137 precedent = handoff 主張「engineStatusHelpers.ts 既存ゼロ」を grep で批判的検証して transcriptionEngineHelpers.ts 既存発見 + Loop 139 precedent = transcriptionEngineHelpers + engineStatusHelpers との責務階層精査で異 entity 判定)
+- **API 互換維持戦略 (Loop 119-129 rust + Loop 125/127/129/131/133/135/137/139 frontend precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125-139 標準 paradigm) + utils 内 cross-import paradigm 4 件で打ち止め継続 (Loop 137/139 = type/primitives only で完結)** = 後継も活用検討可能だが必要時のみ

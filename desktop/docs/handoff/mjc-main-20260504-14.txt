@@ -1,0 +1,136 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-14) です。
+旧 mjc-main (= 旧 mjc-main-20260504-13) から 3 ループ完了の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 18500+ 行 / 1.7MB+ あるので `tail -350 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~12:15 JST] mjc-main-20260504-13 状況メモ (ループ 1-3 詳細) があります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~12:15 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 84+ (origin/main から先行)
+- working tree: clean (untracked: `docs/worker-prompts/` 増分、`docs/handoff/mjc-main-20260504-7/10/12/13.txt`、本ハンドオフ用 `docs/handoff/mjc-main-20260504-14.txt`)
+- 旧 mjc-main-20260504-13 が canonical 名 mjc-main を持っており、本セッションで 3 ループ + 1 SESSION SUMMARY コミットを完了:
+  1. `b81a752` test(session_store): write_session_markdown_to の direct test ゼロ gap 5 件補強 (430→435)
+  2. `0094aa0` test(transcript_bridge): C-prime gap 5 件補強 (435→440)
+  3. `52a5439` **feat(audio): リングバッファ drop count を Tauri イベント audio-drop-count として emit + 純粋ヘルパー build_audio_drop_event_payload 抽出 + 各 mod tests に 5 件 test 追加 (440→450)** = 製品価値直結 (優先度 9 録音状態の透明性)
+  4. (SESSION SUMMARY コミット 1 件)
+
+## 現在の品質状態
+- cargo test (lib): **450 passed / 0 failed**
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy -D warnings: **警告ゼロ**
+- frontend build: 本セッション中は変更なし (codex 活動本セッション中ゼロ、~34 時間以上静か)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-13、handoff 直前)
+- mjc-main-20260504-14 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションがあれば触らないでください。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-14 mjc-main` を実行して、あなたが canonical mjc-main を引き継ぐ。これにより旧 mjc-main は自動で kill される。**注意**: スクリプトが `successor session does not exist` を返した場合、既に rename 完了済みのサインなので OK。
+5. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッションで定着・累積)
+- **「pub fn なのに direct test ゼロ」発見パターン継続** (Loop 1 = write_session_markdown_to): mjc-main-12 の path_for_session に続く 2 件目。session_store.rs の構成要素 2 つ (path 計算 + 書き出し) の分離検証完成。
+- **「accumulated pattern の application」を新規 5 件で集約する pattern** (Loop 2): 既存パターン (Option 3 状態 / unused field / `?` Some(0) / `||` 5 状態 / saturating 飽和) を 1 ファイルに同時 application。新規パターンより accumulated の application が密度高くなる成熟段階。
+- **「実装 + 純粋ヘルパー抽出 + ヘルパー test」の 1 ループ統合パターン** (Loop 3): AppHandle モックが難しい製品コードに対し、payload 構造化を純粋関数に抽出することで unit test 可能にする。test 5 件 / file × 2 file = 10 件 1 ループで完結。Tidy First + Behavioral Change 統合スライス。
+- **「prompt の数値矛盾を worker が自律検出・修正」運用知見** (Loop 2): expected_offset=0 ラベル「1s offset」矛盾を worker が計算式で再検証し expected_offset=1 に修正。**prompt は完璧でなくてよい、worker に矛盾検出余地を残す書き方が良い** (具体的な数値例 + ラベル + 計算式の 3 点セット)。
+- **「`#[cfg(target_os = "macos")]` をヘルパー fn と test 両方に対称適用」パターン** (Loop 3): macOS only 機能のヘルパーは test も macOS only であるべき = 非 macOS 環境で意味なし test を残さない。
+
+### 累積パターン (前 mjc-main-7/8/9/10/11/12 SUMMARY 参照、変更なし、本セッション分は SUMMARY 末尾参照)
+
+### 重要な技術的注意点 (踏みやすい罠) — 本セッション分のみ抜粋
+- **`session_store.rs write_session_markdown_to`** (本セッション Loop 1): `?` 演算子で render_session_markdown のエラーが素通り伝播。書き出し開始前 error 時はファイル未作成 (T4/T5)。`fs::write` は O_TRUNC で完全上書き。
+- **`transcript_bridge.rs source` field**: normalize/offset/text のどこでも参照されない (Loop 2 T1)。
+- **`transcript_bridge.rs is_error.unwrap_or(false)`**: None と Some(false) は等価扱い (Loop 2 T2)。
+- **`transcript_bridge.rs has_engine_timestamp` 判定**: line 36 `start_ms > 0 || end_ms > 0`、負の start_ms は > 0 で false (Loop 2 T4)。
+- **`transcript_bridge.rs start_ms saturating_add`**: `(start_ms.max(0) / 1000) as u64` + `saturating_add(stream_started_at_secs)` で u64::MAX 飽和 (Loop 2 T5)。
+- **`audio.rs` / `system_audio.rs` の dropped emit**: `audio-drop-count` イベントが Tauri から emit される。eprintln は debug log として並存 (Loop 3)。
+- **`audio.rs build_audio_drop_event_payload`**: payload は `{"source": str, "dropped": usize}` の 2 field exact。将来 timestamp 等を追加するときは T5 を更新する必要あり (Loop 3)。
+- **`system_audio.rs` の重複 build_audio_drop_event_payload**: audio.rs と同名同実装の private fn を別 module に置いている。共有モジュール抽出は別ループの Tidy First 候補 (B2)。
+- **既存累積技術注意点** (前 mjc-main-7〜12 SUMMARY 参照、本セッションで触れていない領域は SUMMARY を必ず確認)
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### A2 (新、最有力). audio drop event の frontend hookup (規模 S、価値 9)
+- **本セッション Loop 3 で rust 側基盤完成**。frontend で `appWindow.listen("audio-drop-count", ...)` を設置 → drop count を toast or status indicator に表示。
+- 1 ループ完結可能性高。Loop 3 の続きとして自然な動線。
+- リスク: codex 側の UI 系作業との衝突可能性。事前に `tmux list-sessions | grep mj-` 確認 + frontend ファイル変更状況チェック必要。frontend は React/Svelte/Vanilla? ディレクトリ構造を最初に確認すること。
+
+### B2 (新). audio drop event 統合のための共有モジュール抽出 (規模 S、価値 中)
+- 本セッション Loop 3 で audio.rs と system_audio.rs に重複 private fn 配置済。Tidy First で `audio_event.rs` 等の共有モジュールへ抽出。価値: 重複削減、event 名 `audio-drop-count` 定数化。1 ループ完結。
+
+### D (継承). transcription.rs error path 残り (規模 S〜M)
+- 1896 行最大規模。`load_model` path 変換失敗、`feed`/`finalize` resampler state missing 周辺。複数ループ構成。
+
+### F (継承). 会議終了検知の遅延監視 (規模 S〜M、価値 8)
+- handle_detection 内で watched bundle が起動 → アクティブから外れた経過時間 → N 分以上で会議終了通知。
+
+### G2 (新). session_store.rs render_session_markdown private fn の direct test (規模 XS、価値 中)
+- 本セッション Loop 1 で write_session_markdown_to を補強。残る render_session_markdown は private で write 経由でカバーされているが、internal helper の direct test で render エラー経路の独立検証可能。
+
+### S (継承). settings.rs Tidy First リファクタ (規模 M、2 ループ構成)
+- `load_from_path` 抽出 + テスト追加 の 2 ループ。価値中。
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L、非優先)。
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 450 件全 pass している (verify.sh OK)
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <ファイル群>` (Conventional Commits 日本語)
+  - **注意**: コミットメッセージに `||` (バックトィック内 OR) を含めると fish shell で parse error になる。`OR` 表記等で回避すること。
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。再起動不要。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-14 mjc-main`
+
+## コミット周期目標
+- 1 ループ 15-18 分前後を目標。worker 1 件 ≒ 1 コミット。
+- 本セッション実績平均 ~12-18 分/loop (Loop 3 は実装 + 10 件 test なので 18 分強、累積 26/26 worker 完走)。
+- trivial 変更は research 担当を立てずメインから直接 worker へ。
+- 担当範囲が衝突しない 2 件は worker 並列起動可。
+- worker prompt は **5 セクション構造** (背景/Why/具体的 test 案 assertion レベル/実装上の注意/検証手順/AGENT_LOG.md 記載項目) で書くと sonnet が 1 ターンで完走しやすい (本セッション 3/3 完走実績、累積 26/26 完走)。
+- **prompt の数値矛盾を worker が自律検出・修正できる書き方** (Loop 2 知見): 具体的な数値例 + ラベル + 計算式の 3 点セット。
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針。
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲。
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる。
+- 本セッションでは 3 ループ + SESSION SUMMARY を終え、context 75-80% 推定で予防的ハンドオフ判断 (前 6 セッション (mjc-main-7/8/9/10/11/12) と同じ 3 ループパターン)。
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog 継続指示は受領済み・自走中で消化済み (本セッション中 2 回受領)。
+
+## 累積成果 (本セッション)
+- **テスト 430 → 450 passed** (+20 件、3 ループ、うち test only 10 件 + 実装伴う test 10 件)
+- **コミット 3 件 + 本 SUMMARY 1 件**
+- **新規ファイル 0 個** (worker prompts は untracked のまま、handoff prompt も untracked)
+- **clippy 警告ゼロ維持** (default + -D warnings + uninlined_format_args)
+- **新規 Tauri イベント `audio-drop-count` 導入** (product-concept 優先度 9 直結 = 本セッション最大の製品価値)
+- **「実装 + 純粋ヘルパー抽出 + ヘルパー test」の 1 ループ統合パターン確立** (Loop 3)
+- **「prompt の数値矛盾を worker が自律検出・修正」運用知見蓄積** (Loop 2)
+- **「`#[cfg(target_os = "macos")]` をヘルパー fn と test 両方に対称適用」パターン確立** (Loop 3)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -350 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲**: `bash scripts/agent-adopt-main.sh mjc-main-20260504-14 mjc-main` を実行 (冪等、既に成功してたら "successor session does not exist" を返す)。
+4. 候補 A2 (audio-drop-count frontend hookup、本セッション Loop 3 の自然な続き、価値 9 で最有力)、B2 (共有モジュール抽出、Tidy First)、G2 (session_store.rs render_session_markdown direct test)、F (会議終了検知遅延監視) のいずれかを最小スライスとして worker に発注して 1 ループ目を始める。**A2 が最有力** (本セッション Loop 3 の rust 側基盤を活かして frontend 配線で価値 9 を実装層まで届ける動線)。**ただし frontend ディレクトリ構造を最初に Read で確認**してから worker 発注すること。
+5. 待機モード禁止。final answer で停止せず、改善ループを継続する。

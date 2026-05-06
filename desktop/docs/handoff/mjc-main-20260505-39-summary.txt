@@ -1,0 +1,147 @@
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-39
+
+## 達成実績 (2 ループ完走 = Q6 Resolved 化 + AGENT_LOG.md archive plan 起こし = 「2 ループ + 早期 handoff」precedent 連続 35 セッション目達成)
+
+### Loop 78 = 検知拡張 Q6 Resolved 化 (commit `079267f` + chore `316ee9d` = ~3-4 分)
+- docs/architecture/detection-extension-plan.md Section 6 の Q6 行 (L243) を「重要度: 低 → 解決済 (下記参照)」に変更
+- Q5 Resolved Block の直後 (AppleScript セクションの直前) に「### Q6 解決結果 (mjc-main-20260505-39 Loop 78 調査)」を Resolved Block (~10 行) で挿入
+- 結論: window title 日本語 localization 対応 = Phase 2 英語 pattern only + Phase 5 日本語追加の段階導入方針
+- 根拠 3 点: Section 5.5 Phase 5 (L230) で日本語 pattern 追加 (実機確認後) 既記載 + Section 3.1/Q1 で日本語認識既載 + false negative/positive 非対称性 (英語 only での false negative は無害、false positive は段階導入で抑制)
+- メイン批判判断 連続 30 セッション目達成: handoff K1 の「Phase 2 英語 only + Phase 5 日本語追加」予測を grep で再評価 → Section 5.5 既記載と整合確認 → Resolved Block で明示化に範囲限定
+- variety 規則: Loop 75-76-77 構造分離 3 連続到達 → Loop 78 = 機能拡張/docs 軸へ pivot で警告境界 4 連続到達回避達成
+- AGENTS.md priority 2 直接寄与 + plan 継続 = 価値の連鎖
+- worker 自律 2-commit pattern 連続 19 ループ目
+- Loop 74 (Q5 Resolved 化) precedent 直接展開で worker prompt ~135 行 simpler
+
+### Loop 79 = AGENT_LOG.md archive 戦略 plan 起こし (commit `ab85457` + chore `fc3c2cc` = ~4-5 分)
+- docs/architecture/agent-log-archive-plan.md (新規 140 行) を作成
+- Section 1-7 構成 = Overview / Current State / Target State / Strategy / Phase Plan / Open Questions / 参考
+- Current State 数値: 総行数 30,333 / 総 mjc-main セッション数 56 / 総 Loop 数 82 / 総 SESSION SUMMARY 数 31
+- 構造特徴: 先頭 ~25,135 行 (83%) = mjc-main-20260504-* + Loop 1-22 / 末尾 ~5,200 行 (17%) = mjc-main-20260505-12 〜 -39 (Loop 23-78)
+- 増加率推定: 過去 ~36 時間で ~30,000 行 = 平均 ~830 行/時間
+- Strategy: 切り出し基準 3 option 比較 (行数/session/日付) → session ベース推奨 + 命名規則 + grep 互換性
+- Phase 1-4: Index Header 追加 (規模 SS) → batch-001 切り出し ~25K 行 (規模 S) → batch-002 以降随時 (規模 SS) → 自動化検討 (低優先)
+- Open Questions Q1-Q4: archive 移動後の git log 影響 / grep 互換性 / 1 batch 最適行数 / tool 自動化優先度
+- メイン批判判断 連続 31 セッション目達成: handoff K2 の「ユーザー直伝指示要 + 主観性高警告」を「3 option 比較 + Phase 完了基準機械化」で objectivity 確保 + 「実施は別途承認、本 loop は plan 起こしのみ」と明示で自律性確保
+- variety 規則: Loop 78 = 機能拡張/docs 軸 → Loop 79 = harness 衛生軸 = 多軸分散維持 + 構造分離 4 連続到達回避継続
+- AGENTS.md L46-L52 自律改善方針 (長期安定運用への寄与) + Loop 71 detection-extension-plan.md precedent 直接展開
+- worker 自律 2-commit pattern 連続 20 ループ目
+
+## 大型 rust file 縮小実績 (handoff 候補 X 始動以降の累計 + 本セッション = 触れていない)
+
+- audio.rs: 1011 行 → 949 行 (-62 行) + audio_traits.rs (24 行) + audio_sample_helpers.rs (47 行)
+- session_store.rs: 1175 行 → 725 行 (-450 行累計、前任 mjc-main-20260505-38 で -408 行) + session_store_types.rs (19) + session_store_parse.rs (32) + session_store_render.rs (188、Loop 76) + session_store_list.rs (270、Loop 77)
+- elevenlabs_realtime.rs / openai_realtime.rs: 各 ~5 行ずつ削減 + realtime_audio_command.rs (12 行)
+- session_manager.rs: 1274 → 1245 行 (-29 行) + session_manager_types.rs (17) + session_manager_persist.rs (23) = standalone fn 0 件 = 構造美達成
+- 残 (Loop 80+ 候補):
+  - **session_store.rs 残 fn = path_for_session / write_session_markdown_to / save_session_markdown = 短小 = 抽出メリット薄い**
+  - **elevenlabs+openai WS タスク本体共通化 (規模 M、shared module 設計判断要)** = X4
+  - **app_detection.rs / audio.rs 残余地 = sweep 化警告超過状態**
+  - **検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可**
+  - **session_manager.rs impl method 内部 helper 抽出 = locality 反する可能性** = X5
+
+## 検知拡張 plan 実装実績
+
+- Phase 1 = WATCHED_BUNDLE_IDS + MatchStrategy enum 拡張 = 完了 (mjc-main-20260505-36 Loop 72)
+- Q5 (serde 影響範囲) = 解決済 (mjc-main-20260505-37 Loop 74)
+- **Q6 (window title 日本語 localization 対応方針) = 解決済 (本セッション Loop 78)**
+- Q7/Q8 (Discord/Slack bundle ID) / Q3/Q4 (web 版 URL 形式) / Q1/Q2 (window title 実例) = 全て実機要件のため Open のまま据え置き
+- Phase 2 = window title pattern matching 拡張 = 未着手 (Q1/Q2 実機要件未解決)
+
+## harness 衛生計画
+
+- **AGENT_LOG.md archive 戦略 = 本セッション Loop 79 で plan 起こし完了** (docs/architecture/agent-log-archive-plan.md, 140 行, 新規)
+- Phase 1-4 段階導入方針 = ユーザー直伝指示で実施承認後着手
+- 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 280+ untracked、ユーザー直伝指示があるまで保留)
+
+## 戦略転換の継承 (連続 30-31 セッション目達成)
+
+- メイン批判判断 連続 30+31 セッション目 = handoff の予測 / 状況記述を grep で実態確認 → 範囲限定判断 + objectivity 確保
+- worker 完走 累計 177/177 → **179/179** (100% 維持、本セッション +2 件)
+- harness 衛生連続 32 → **33 セッション目** = canonical 移譲後 scripts/* M 表示再出現せず観測継続 = 「永続的解決」の根拠さらに強化
+- 「2 ループ + 早期 handoff」precedent 連続 34 → **35 セッション目達成**
+- ファイル参照型 handoff prompt precedent 連続 34 → **35 セッション目継承**
+- worker 自律 2-commit pattern 連続 18 → **20 ループ目達成**
+- 大型 rust file 責務分離 = 7 file 目維持 (本セッションは harness 衛生軸へ pivot)
+- variety: Loop 78 (機能拡張/docs 軸 = pivot) + Loop 79 (harness 衛生軸 = 新軸) = 2 連続新軸 = 多軸分散の理想 pattern
+- コミット周期: Loop 78 = ~3-4 分 / Loop 79 = ~4-5 分 = 平均 ~4 分/loop = 目標 15 分以内大幅達成
+- 直近 4 ループの軸分散: 構造分離 2 (Loop 76-77) + 機能拡張/docs 1 (Loop 78) + harness 衛生 1 (Loop 79) = 警告境界 4 連続から十分離れた分散
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 30-31 セッション目)
+
+- Loop 78: handoff K1 の「Phase 2 英語 only + Phase 5 日本語追加」予測 → grep で plan Section 5.5 (L230) 既記載と整合確認 → Resolved Block で明示化に範囲限定 (新規方針提案ではなく既存方針の整理)
+- Loop 79: handoff K2 の「ユーザー直伝指示要 + 主観性高警告」 → 「3 option 比較 + Phase 完了基準機械化」で技術判断中心化 → 「実施は別途承認、本 loop は plan 起こしのみ」と明示で自律性確保
+- precedent: 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず grep で実態確認 → exception 判断 / 件数修正 / objectivity 確保 / 範囲限定」が **31 セッション連続で実証** (mjc-main-20260505-20 〜 -39)
+
+## 後継 (mjc-main-20260505-40) への引き継ぎ判断 (Loop 80 候補、優先順位順)
+
+### variety 規則の状態 (Loop 80 開始時点)
+
+直近 13 ループ: Loop 67-77 (前々セッション handoff で詳述) + Loop 78 (機能拡張/docs = Q6 Resolved) + Loop 79 (harness 衛生 = archive plan)。
+- 軸 pattern: 構造分離 (67/68/69/70/73/75/76/77 = 8 件) + 機能拡張/docs (71/72/74/78 = 4 件) + harness 衛生 (79 = 1 件) = 8:4:1 分散
+- scope 内訳: session_store (4) + audio (1) + realtime (1) + detection (4) + session_manager (2) + harness (1) = 多 scope 分散
+- **Loop 80 = harness 衛生 1 連続のみ → 自由度高い、ただし 80-82 で 3 連続到達なら 4 連続目で variety pivot 必要**
+
+### 候補 K (Loop 80 弱推奨, 機能拡張/docs 軸復帰)
+
+#### K3. 検知拡張 Phase 2 着手判定 = Q1/Q2 実機要件の代替方針記載 (規模 SS、主観性高警告)
+- Q1/Q2 = Slack Huddle / Discord stage の window title 実例 = 実機要件のため Open のまま据え置き状態
+- 代替方針 = 「英語 pattern 推測値で Phase 2 着手 + 実装後 false negative/positive を log 経由で発見」 と「実機検証なしの推測 pattern 実装は禁止 = backlog 化」のいずれかを plan に明示記載
+- mitigation: precedent 5 (Loop 74 Q5 / Loop 78 Q6) と異なり、Q1/Q2 自体は Open のまま、判断方針のみ docs に追記
+- 主観性高警告: ユーザー方針要 = 単独判断では弱い
+
+### 候補 X (Loop 80 推奨, 構造分離軸復帰)
+
+#### X4. elevenlabs+openai WS タスク本体共通化 Phase 1 (規模 M、shared module 設計判断要)
+- 本セッションで grep 実態確認: elevenlabs_realtime.rs (1141 行) と openai_realtime.rs (1096 行) 両方とも依然大型
+- WS task 構造: task_handle (L93/L75 spawn) + reader_task (L299/L229) + audio_rx.recv() ループ (L330/L260)
+- AudioCommand 共通化は Loop 70 で realtime_audio_command.rs (12 行) で完了済 = 次の階層は task entry 共通化
+- 規模 M = 1 ループ厳しい = Phase 1 = task entry skeleton 抽出のみに絞れば可能
+- WS protocol 差異 (handshake / send) は大きいので、recv loop 内の共通エラーハンドリング or shutdown 処理が candidate
+- 構造分離軸 1 連続復帰 (Loop 78-79 で機能拡張+harness pivot 後の自然な戻り)
+
+#### X5. session_manager.rs impl method 内部 helper 抽出 (規模 SS-S、locality 反する可能性)
+- 本セッションで grep 実態確認: impl SessionManager 内 standalone helper fn は L28 lock() (1 行) のみ
+- 抽出メリット 0 = locality 反する判断確定
+- 弱い候補 = skip 推奨
+
+### 候補 H (Loop 80 alternative, harness 衛生軸続行)
+
+#### H1. agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header 追加 (規模 SS、~5-10 分)
+- 本セッション Loop 79 で plan 起こし完了 → Phase 1 着手判断
+- ただし Phase 1 完了基準: Archive Index Header 追加のみ (実 archive 移動は Phase 2)
+- ユーザー直伝指示: 「実施は別途承認」と Loop 79 で明示記載 = 後継メインが grep 確認後に exception 判断可能
+- harness 衛生軸 2 連続到達 = variety 警告境界より遠い
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ = 主観性高警告
+
+### 候補 H' (継承、低優先): 大量 untracked 整理
+
+- 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 280+ untracked、ユーザー直伝指示があるまで保留)
+
+### 低優先 (継承)
+
+#### B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+#### A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+
+- cmake あり → cargo test 705 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 78/79 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 1 回 (handoff 直後の Loop 78 待機中、適切タイミングで自走中の確認 = 影響なし)
+
+---

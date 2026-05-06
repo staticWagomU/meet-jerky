@@ -1,0 +1,22 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-80 です。
+
+前任者 mjc-main-20260505-79 から **2 ループ完走** (Loop 160 = K 軸 = harness 衛生軸 = Section 2.3 観測追記 33 件目 = +20 行 / 平均 ~10 行/loop = Loop 157 観測値 +5% 微増 = ultra-light 階層維持 + **SUMMARY ultra-light 階層 ~5 行/件 2 連続観測達成** + **chore entry 動的軽量化 paradigm の発見** = 5 file 集約という規模大 paradigm に対応した中量化 = chore entry が paradigm 規模に応じて自動調整される観測 + Loop 161 = K' 軸 = Section 2.3 観測追記 34 件目 = +7 行 / 平均 ~7 行/loop = Loop 159 観測値 -30% 減 + Loop 121/127/135 (SS 0 件 = ~11-12 行/loop = 3 連続観測) -36% 減 = **SS 0 件 ultra-light 単独 chore サブ階層 ~7 行/loop の新発見** = 4 段階 → **5 段階階層化 paradigm への進化観測** + alternation reset 受容 (K(160) → K'(161) = 同 K 軸 2 連続 = 47 連続 → 1) + **R7'''''' 完全枯渇確認** = const expression / macro_rules! / type alias / impl method / frontend 重複が全て探索済) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-80.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 162 推奨候補 R8''' = rust 軸 inline module 抽出残候補 = 規模 SS-S = 最有力推奨 / R9 = frontend 軸 内部 helper 重複再探索 = 規模 SS-S = 副推奨 / R10 = 別 paradigm 開拓 = trait impl / generic type / lifetime 等の超低レイヤー探索 = 規模 S = 探索コスト高 = 第三推奨 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要 / **K'' = K 軸 3 連続は推奨せず = variety 規則違反リスク**) を全て含む
+- ファイル参照型 handoff prompt 連続 75 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119-161 教訓継承** = 後継 Loop 162+ で paradigm 選択時に必ず責務階層精査を実施 + **handoff prompt の主張を鵜呑みにせず grep + Read で批判的検証する** (本セッション Loop 161 = handoff prompt R7'''''' 候補を独自 grep で網羅検証 = const expression / macro_rules! / type alias / impl method / frontend 重複が全て探索済 = R7'''''' 完全枯渇確認 → メイン批判判断 連続 79 セッション目達成 = handoff prompt 真偽確認の重要性を再実証)
+- **API 互換維持戦略 (Loop 119-159 precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / `use` 経由で fn 抽出 + tests 移動 + 件数完全不変保証 (Loop 151) / inline module 全体抽出 + use alias で callsite 全件無変更維持 (Loop 155) / 重複定義削除 + use 経由参照で callsite 全件無変更維持 (Loop 157) / **#[cfg(test)] pub(crate) fn として test build 限定公開 + 4 file から use 経由参照 (Loop 159 = test helper 集約軸 = 多 file 同時集約軸 = paradigm 6 件目 = production binary 0 影響)** / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125-143 標準 paradigm) + utils 内 cross-import paradigm 7 件目 (Loop 147)** + **既存 file 拡張軸 paradigm 1-6 件目 (Loop 145/147/149/153/157/159)** = 後継も活用検討可能 = paradigm 反復可能
+- **worker 自律学習進化 paradigm 3 件目 (Loop 143/145/149 で確立発展)**: 後継も worker prompt の grep 確認手順を明示すれば自律学習進化 paradigm 期待可能
+- **worker fault 防止策 (Loop 144 precedent から worker prompt 必須要素 8 つ目 = Loop 146-161 で 16 連続実証成功)**: worker prompt の Step 4 (AGENT_LOG.md append) で「append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。」を **明示記載** = 二重書き防止
+- **メイン直接削除救済 paradigm 1 件目 (Loop 144)**: worker fault 時はメインで直接 AGENT_LOG.md を Edit で修復 + chore commit を作成可能
+- **worker 完走確認は git status を主観測手段とする (Loop 158 precedent + 本セッション Loop 160/161 で 2 連続実証成功)**: `git log --oneline -3` の即座のチェックは fault 誤判定リスクあり = `git status` (working tree clean) と AGENT_LOG.md 行数差分で確認 = 過剰救済発動を防ぐ
+- **5 段階階層化 paradigm への進化観測 (本セッション Loop 161 新規確立)**: AGENT_LOG.md 増分階層 5 段階 (**SS 0 件 + 単独 chore = ~7 行/loop 新発見** / SS 0 件 + 多 entry = ~11-12 行/loop / SS 1 件軽量化 = ~9-26 行/loop / SS 1 件中量化 = ~30-37 行/loop / SS 1 件大量化 = ~42 行/loop) + **SUMMARY ultra-light サブ階層 ~5 行/件 (2 連続観測達成)** + **chore entry 動的軽量化 paradigm** (規模大 paradigm に対応した中量化観測) = 後継も同階層化 paradigm を継続観測可能 + 6 段階目発見の可能性 (例: SUMMARY 含む単独 SS 階層 等)
+- **R7'''''' 完全枯渇確認 (本セッション Loop 161)**: 後継 Loop 162+ で paradigm 7 件目を狙うなら **新軸開拓** (例: trait impl 重複 / generic type 重複 / lifetime 重複等の超低レイヤー探索 = 規模 S = 探索コスト高) または **paradigm 反復 (既存 paradigm の更なる集約候補探索 = audioTrackLabels 周辺 / window label 周辺 等)** が必要
+- **frontend / rust top-level 純粋関数候補は枯渇域 (Loop 157 確認済) + 重複候補探索 paradigm 7 件目候補も完全枯渇 (本セッション Loop 161 確認)**: 後続候補は **(a) R8''' = rust 軸 inline module 抽出残候補 = 規模 SS-S = 最有力推奨 / (b) R9 = frontend 軸 内部 helper 重複再探索 = 規模 SS-S = 副推奨 / (c) R10 = 別 paradigm 開拓 = trait impl / generic type / lifetime 等 = 規模 S = 探索コスト高 = 第三推奨 / (d) X' / H1 = ユーザー直伝指示要 / (e) K'' = K 軸 3 連続は推奨せず**

@@ -1,0 +1,15 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-68 です。
+
+前任者 mjc-main-20260505-67 から 3 ループ完走 + 通常 cadence handoff (Loop 134 = K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 20 件目 = +49 行 / 平均 ~24.5 行/loop = **SS 1 件 + 説明軽量化パターンの 4 連続観測 (Loop 125/129/131/133) = 階層化 paradigm 成熟期入り = 4 連続値域 ~22-25 行/loop に完全収束** + frontend 軸 chore 軽量化 paradigm 5 度目観測 (Loop 125/127/129/131/133 連続) + alternation pattern 26 連続成功 + worker ~3-4 分完走 + Loop 135 = frontend 軸 = R6 段階的分割 6 件目 = TranscriptView.tsx L280-L351 の getAudioSourceStatusLabel + getAudioSourceStatusAriaText + getAudioSourceNotice + getAudioSourceStatusPillClass を新 file `audioSourceHelpers.ts` (~77 行) に抽出 = scope 31 軸目開拓 = 大型 frontend file 責務分離 44 file 目 = display tier (audio source 状態) として独立 + **utils 内 cross-import paradigm 4 件目確立** (audioSourceHelpers.ts → audioTrackLabels.ts の OTHER/SELF_TRACK_DEVICE_LABEL) + メイン批判判断 連続 66 セッション目 = handoff 主張「audioSourceHelpers.ts 既存ゼロ」を grep で批判的検証 → audioLevelHelpers.ts (predicate tier) + audioTrackLabels.ts (constants tier) + audioDropCountPayload.ts + audioLevelPayload.ts (data tier) 等 既存発見 + 責務階層精査で異階層判定 = 結論不変 (新 file 作成軸採用) + worker ~2.5 分完走 + Loop 136 = K 軸復帰 = Section 2.3 観測追記 21 件目 = +24 行 / 平均 ~12 行/loop = **SS 0 件パターン (Loop 121/127/135 = ~11-12 行/loop) の 3 連続観測達成 = 階層化 paradigm 最低段階の完全実証 (3 セッション跨ぎの再現 = mjc-main-20260505-62 / 65 / 67)** + frontend 軸 chore 軽量化 paradigm 6 度目観測 (Loop 125/127/129/131/133/135 連続) = paradigm 完全成熟期 + alternation pattern 28 連続成功 + worker ~2 分完走) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-68.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 137 推奨候補 R6g = TranscriptView.tsx Engine Status 系 3 件抽出 = scope 32 軸目候補 (engineStatusHelpers.ts 新規) = 規模 SS = ~3-5 分完走 = alternation pattern 29 連続維持 (K(136) → frontend(137)) = **最有力推奨** / R6h = External API Key 系 3 件抽出 = scope 33 軸目候補 = 規模 SS = Loop 138-139 候補 / R6i = Transcription Source 系 4 件抽出 = scope 34 軸目候補 = 規模 SS-S / R6j = Meeting Start 1 件抽出 = scope 35 軸目候補 = 規模 SSS / K = Section 2.3 観測追記 22 件目 = Loop 138 推奨 / J' SettingsView 内部 helper = 抽出困難確認済 (却下推奨) / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 63 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119/121/123/125/127/129/131/133/135 教訓継承** = 後継 Loop 137+ で paradigm 選択時に必ず責務階層精査を実施 + handoff prompt の主張を鵜呑みにせず grep で批判的検証する (Loop 135 precedent = handoff 主張「audioSourceHelpers.ts 既存ゼロ」を grep で批判的検証して既存 file 発見)
+- **API 互換維持戦略 (Loop 119-129 rust + Loop 125/127/129/131/133/135 frontend precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125/127/131/133/135 標準 paradigm) + utils 内 cross-import paradigm (Loop 129 = 2 件目, Loop 133 = 3 件目, Loop 135 = 4 件目) = 新 file が他の utils file から定数/型/関数 import** = 後継も活用検討可能

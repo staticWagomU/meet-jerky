@@ -1,0 +1,235 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-99) です。
+旧 mjc-main (= mjc-main-20260505-98) から **1 ループ完走 + Loop 204 stuck 救済 paradigm 2 件目開拓** のハンドオフを受けました。
+注: handoff prompt は SESSION SUMMARY commit 後の 1 ループ実績 + stuck 救済版 (Loop 203 + Loop 204 stuck).
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-6 完全終了 = 100% 達成)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/detection-extension-plan.md (Phase 1 完了 + Q5 + Q6 Resolved + Phase 2 = 実機要件 Q1/Q2 未解決のため着手不可)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (Section 2.3 観測追記 54 件目 mjc-main-20260505-97 Loop 202 まで反映済 = 55 件目は後継 Loop 205 候補 = Loop 204 stuck で未完了 = 再挑戦推奨)**
+- AGENT_LOG.md は ~34,959 行 / ~3.2MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照. **末尾には [SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-98 状況メモがあります. これが状況復元の起点です.**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」.
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2 〜 97**: Phase 1-6 + 各種抽出 + 大型 file 責務分離 12-51 file 目 + 検知拡張 plan + Phase 1 + Q5/Q6 Resolved + AGENT_LOG.md archive 戦略 plan + scope 39 軸目開拓 + 既存 file 拡張軸 paradigm 1-21 件目 + 重複候補 grep 探索 paradigm 1-24 件目 + utils 内 cross-import paradigm 1-7 件目 + paradigm 系統樹拡張 1-12 件目候補 + const 集約軸 frontend 1-10 件目反復 + rust 軸 const 集約 paradigm 1-5 件目 (Loop 194/196/198/200/201) + stuck 救済 paradigm 1 件目開拓 (Loop 199)
+- **mjc-main-20260505-98 (本セッション)**: **1 ループ完走 + Loop 204 stuck 救済 paradigm 2 件目開拓** = Loop 203 (rust 軸 = const 集約 paradigm 反復 13 件目達成 = paradigm 系統樹拡張 11 件目反復 6 連続 = 既存 file 拡張軸 paradigm rust 版反復 1 件目達成 = src/system_audio_format.rs に ERROR_BIG_ENDIAN_FORMAT / ERROR_BITS_PER_CHANNEL_NOT_32 / ERROR_BITS_PER_CHANNEL_UNKNOWN / ERROR_CHANNEL_COUNT_MISMATCH / ERROR_CHANNEL_COUNT_UNKNOWN 5 件追加 + 本番 5 callsite + test 5 callsite = 計 10 callsite を const 参照に統一 + 既存 ERROR_NON_F32_PCM_FORMAT pattern の並列拡張) + Loop 204 (K 軸 = harness 衛生軸 = Section 2.3 観測 55 件目だったが worker stuck 確定判定 = stuck 救済 paradigm 2 件目開拓 = tmux kill-session + handoff 早期判断 = 起動 8 分経過 + log 0 bytes + CPU time 9.29 秒 = ~0.3% 利用率 = 大半 I/O 待ち + STAT S+ Sleeping = Claude API 起動 hang 確定) = メイン批判判断 連続 **100 セッション目達成 = 節目 100 件突破** (Loop 203 = handoff prompt R30'''' を独自 grep で再検証 + system_audio_format.rs 残 5 種類 error message を批判検証 + 第一推奨採用 + Loop 204 stuck 確定判定 = Loop 199 precedent との pattern 一致 + stuck 判定基準を批判検証達成) + worker 自律 2-commit pattern **1 ループ完走** (Loop 203 = 1 連続 = Loop 204 stuck で連続途切れ) + harness 衛生連続 **93 セッション目達成 = 節目 90 件突破後 3 件目** + ファイル参照型 handoff prompt 連続 **94 セッション目** + scope 多様性 39 軸維持 + alternation pattern pivot 加速継続 (K(202) → rust(203) → K(204=stuck) = 41 → 42 → 43 (stuck で aborted)) + worker prompt 必須要素 9 (冒頭 `---` 含めない) **34 連続実証成功** (Loop 168-203 = 節目 25 連続突破後 9 件目) + **paradigm 完全成熟期 cross-language 拡張更なる持続達成** = const 集約軸 frontend 10 + rust 6 = 計 16 連続 + **stuck 救済 paradigm 2 件目開拓 = 過渡期 paradigm 確立** (Loop 199 = 1 件目 = handoff 直前 / Loop 204 = 2 件目 = 2 ループ目 = 異なる位置).
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = 本セッション K(202) → rust(203) → K(204=stuck) = pivot 加速期は **Loop 205 で K 軸再挑戦候補** で継続
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価** (本セッション Loop 203 で R30'''' を独自 grep で再検証 + 第一推奨採用 = メイン批判判断 連続 100 セッション目達成 = 節目 100 件突破)
+- **責務階層精査優先 (Loop 119-203 教訓継承)**: paradigm 反復よりも責務階層精査を優先
+- **重要転換点 (本セッション Loop 203)**: system_audio_format.rs は既存 const 1 件 (ERROR_NON_F32_PCM_FORMAT) file への並列 5 件追加 = paradigm 系統樹拡張 11 件目反復 6 連続 + **既存 file 拡張軸 paradigm rust 版反復 1 件目達成** = paradigm 完全成熟期 cross-language 拡張更なる持続 (frontend 10 + rust 6 = 計 16 件) = 後継 Loop 205+ で **R34' = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 未到達 = 再挑戦推奨)** が責務階層的に第一推奨
+- **stuck 救済 paradigm 2 件目開拓 (本セッション Loop 204) = 過渡期 paradigm 確立**: Loop 199 = 1 件目 = handoff 直前 / Loop 204 = 2 件目 = 2 ループ目 = stuck 判定基準 (5-7 分後 + log 0 bytes + CPU 短時間 = I/O 待ち) を 2 件で確立 = 後継 Loop 205+ で stuck 再発時の判定が容易化
+- **worker fault 防止策**: 「append は 1 回のみ」を **明示記載**
+- **worker prompt 必須要素 9**: 「entry テンプレート冒頭に `---` を含めない」を **明示記載**
+- **メイン直接削除救済 paradigm 2 件目 + stuck 救済 paradigm 1-2 件目開拓 (Loop 144/166/199/204)**: 後継も活用検討可能
+- **worker 完走確認は git status を主観測手段とする (Loop 158/180-203 precedent + 本セッション 1 連続実証成功)**
+- **stuck 判定基準 (Loop 199 開拓 + 本セッション Loop 204 で 2 件目確立)**: 起動から 5-7 分後に log file size と git log を観測 + 進捗ゼロ (log 0 bytes + commit 反映なし + CPU 短時間 = I/O 待ち) なら stuck 判定 + tmux kill-session が responsible
+- **R34' (Loop 205 第一推奨候補) = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 未到達 = 再挑戦推奨) = 規模 SS = 機械的反復ローカル最適化リスク批判要 / R37 (第二推奨) = 大型 file 責務分離 52 件目候補 = 規模 M-L = 探索コスト高 / R38 (第三推奨) = 別 paradigm 開拓 = trait/generic/lifetime 重複 / X' / H1 = ユーザー直伝指示要**
+
+# 引き継ぎサマリ (2026-05-06 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead は前々任 +660 + 本セッション +3 commit (Loop 203 refactor + chore + SESSION SUMMARY commit) = 約 +663
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* と .tmp-handoff-launch-* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-98) の commit (古い順):
+  1. `985a70b` refactor(rust): system_audio_format.rs 残 5 種類 error message を const に集約 + 10 callsite (Loop 203)
+  2. `6f1e355` chore(agent-log): Loop 203 entry
+  3. `dcb8938` chore(agent-log): SESSION SUMMARY commit (1 ループ完走 + Loop 204 stuck 救済 paradigm 2 件目開拓版)
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (Loop 203 で再検証 = 件数完全不変)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ (Loop 203 で再検証)
+- cargo fmt --check: OK (Loop 203 で再検証)
+- cargo build --lib: エラーなし (Loop 203 で再検証)
+- npm run build (tsc + vite build): OK (前任 mjc-main-20260505-93 Loop 192 で完走確認 = 本セッションは rust + docs のみで frontend 不変)
+- bash -n scripts/claude-agent-*.sh: OK
+- agent-verify.sh: 全項目 OK (Loop 203 = rust skip 判定)
+
+## 残候補 (Loop 205+ 候補)
+
+- **R34' (Loop 205 第一推奨) = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 未到達 = 再挑戦推奨) = 規模 SS = ~3-7 分**:
+  - precedent: Loop 79/81/.../202 = 54 件目までの updates
+  - alternation: K(204=stuck) → K(205=再挑戦) = 機械的反復 alternation 復帰
+  - **Loop 204 stuck で未到達 = 後継 Loop 205 で再挑戦が責務階層的に最優先**
+  - 規模 SS = 短時間完走見込み = stuck 再発リスク低 (worker prompt は同内容 = 既存 docs/worker-prompts/mjc-worker-loop204-archive-plan-stats-update-55.txt を Loop 205 用にコピー or 再利用)
+  - **ただし機械的反復ローカル最適化リスク批判要** = 「派生型 CI 保護パターンに戻らない」継承方針との緊張感 = entry に明示記載必要
+  - 観測ブロック内容: Loop 201 → Loop 203 (~2 ループ間 + SESSION SUMMARY 2 件 = `16cda78` + `dcb8938`) で +175 行 (34784 → 34959)、平均 ~87.5 行/loop = SUMMARY 寄与過半. chore のみ Loop 202 +12 + Loop 203 +Z 行 = +ZZ 行 / 2 loop = 軽量化階層中央値水準維持
+
+- **R37 (第二推奨) = 大型 file 責務分離 52 件目候補 = 規模 M-L = 探索コスト高**:
+  - 残存大型 file: app_detection.rs 2458 行 (検知拡張 plan = Phase 2 着手不可) / session_manager.rs 1232 行 / audio.rs 915 行 / settings.rs 801 行 / cloud_whisper.rs 778 行 / session.rs 773 行 / transcript_bridge.rs 736 行 / session_store.rs 722 行
+  - frontend: TranscriptView.tsx 2056 行 / SettingsView.tsx 2011 行
+  - 規模 M-L = 探索コスト高 + 過去 51 件目までの precedent では既に責務分離困難と判定された file 多数の可能性
+
+- **R38 (第三推奨) = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複 = 規模 S-M = 探索コスト高**
+
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+- X' resample_audio dead code 削除 = ユーザー直伝指示要
+- H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 93 セッション目 = 節目 90 件突破後 3 件目)
+- canonical 移譲後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 93 セッション目観測結論 = 節目 90 件突破後 3 件目
+- **2-commit pattern**: 本セッション Loop 203 で worker 自律実行 = **1 ループ完走** (Loop 204 stuck で連続途切れ = handoff prompt 第三推奨採用後の Loop 199 stuck 救済 paradigm 1 件目を本 Loop 204 で 2 件目開拓)
+- **本セッション Loop 203 完走時間 ~6 分** (規模 SS-S = rust 軸 const 集約軽量化 paradigm 維持 + 単一 file 内 + 5 const + 10 callsite 機械的置換完了)
+- **本セッション Loop 204 stuck = 起動 8 分経過 + log 0 bytes + CPU 9.29 秒 = ~0.3% 利用率 = 大半 I/O 待ち + STAT S+ Sleeping = Claude API 起動 hang 確定**
+- **本セッション boundary fault 0 件** (Loop 203 で worker prompt 必須要素 9 = 冒頭 `---` 含めない設計の 1 連続実証成功 = Loop 168-203 で 34 連続再発防止確認 = 節目 25 連続突破後 9 件目)
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-98、handoff 直前)
+- mjc-main-20260505-99 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 200-400 行のみ).
+2. `git status --short --branch` と `git log --oneline -10` で現状確認 (上 3 コミットが本セッションの実績).
+3. `tmux list-sessions | grep mjc` で他セッション状態確認.
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要. `mjc-main-20260505-99` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-99 mjc-main` を実行 (前 94 セッション precedent あり、冪等).
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 93 セッション目「再出現せず」観測 = 節目 90 件突破後 3 件目 = 後継も同観測なら結論「永続的解決」が連続 94 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-98) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + 1 ループ完走 + Loop 203 + Loop 204 stuck 救済 + 後継候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**. **variety 規則の状態 = 直近 30 ループで構造分離 51 件 + 機能拡張/docs 4 件 + harness 衛生 53 件 (Loop 158/.../202 含む) + Loop 204 stuck = 51:4:53:stuck = Loop 205 は K 軸再挑戦 (Loop 204 stuck の続編) または別軸 = R34' (K 軸 alternation 復帰 = 観測 55 件目 = 再挑戦) または R37 (大型 file 責務分離) または R38 (別 paradigm 開拓) が最適路 = paradigm 系統樹拡張 11 件目反復 7 連続候補 (rust 軸再開) もあり**.
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 205 開始時点)
+
+直近 30 ループ: Loop 175-203 (本セッション後 = 29 ループ + Loop 204 stuck = 30 ループ目)
+- 軸 pattern: 構造分離 (51 件) + 機能拡張/docs (4 件) + harness 衛生 (53 件) + Loop 204 stuck = **51:4:53:stuck 多軸分散**
+- scope 内訳: 39 scope 開拓達成
+- paradigm pivot: cross-language 拡張更なる持続達成 (frontend 10 + rust 6 = 計 16 件) = R34' / R37 / R38 のいずれか採用検討
+- **Loop 205 では R34' = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 再挑戦) が最適路**
+
+### 候補 R34' (Loop 205 候補 A = 第一推奨 = K 軸 = Section 2.3 観測 55 件目 = Loop 204 stuck 再挑戦 = 規模 SS)
+
+**docs/architecture/agent-log-archive-plan.md Section 2.3 末尾追記 = 観測ブロック 1 段落追加**:
+- 規模 SS = ~3-7 分完走見込み
+- alternation: K(204=stuck) → K(205=再挑戦) = 機械的反復 alternation 復帰
+- **既存 worker prompt 再利用可能**: `docs/worker-prompts/mjc-worker-loop204-archive-plan-stats-update-55.txt` を Loop 205 用に名前変更 or コピーで再利用 (内容ほぼ同じ = 行数の実測値のみ差し替え)
+- **Loop 204 stuck で未到達 = 責務階層的に最優先**
+- AGENTS.md priority 8-9 寄与中 (UX/アクセシビリティ間接寄与 = archive 戦略 rationale 維持)
+- **後継要確認**: 観測ブロック内容は Loop 201 → Loop 203 (+175 行 = 34784 → 34959 = 平均 ~87.5 行/loop = SUMMARY 寄与過半) / chore のみ Loop 202 +12 + Loop 203 +Z 行 = 軽量化階層維持
+
+### 候補 R37 (第二推奨 = 大型 file 責務分離 52 件目候補 = 規模 M-L)
+
+session_manager.rs 1232 行 / audio.rs 915 行 / settings.rs 801 行 / session.rs 773 行 / transcript_bridge.rs 736 行 / session_store.rs 722 行 / TranscriptView.tsx 2056 行 / SettingsView.tsx 2011 行 等の責務分離余地を grep + Read で探索. **ただし規模 M-L = 探索コスト高 + 過去 51 件目までで責務分離困難と判定された file 多数の可能性**.
+
+### 候補 R38 (第三推奨 = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複)
+
+- 規模 S-M = 探索コスト高
+- 別 paradigm の探索 = paradigm 系統樹拡張第 13 件目候補確立可能性
+
+### 低優先 (継承)
+
+- J' SettingsView.tsx 内部 helper (component helper 可能性高 = 抽出困難確認済 = 却下推奨)
+- X' resample_audio dead code 削除 (ユーザー直伝指示要)
+- H1 AGENT_LOG.md archive plan Phase 1 着手 (ユーザー直伝指示要)
+- B1. Microsoft Teams window title fallback (継承)
+- A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 704 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止、`--no-verify` 禁止、`--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止、Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり + Loop 144/166 で worker fault / boundary fix 時の AGENT_LOG.md 直接修復 paradigm 2 件目達成 + Loop 199/204 で stuck 救済 paradigm 1-2 件目開拓 = メイン直接 SESSION SUMMARY commit 作成)
+
+## ハーネス使用法 (script に焼き付け済)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend/docs を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-99 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認 or `git log --oneline -3` で 2-commit 反映確認**
+  - **本セッション継続 paradigm**: `git status` (working tree clean) を主観測手段にする = `git log` の即座のチェックは fault 誤判定リスクあり (Loop 158/180-203 precedent + 本セッション Loop 203 で 1 連続実証成功)
+  - 観測時間目安: 規模 SSS = ~2-3 分、規模 SS = ~3-7 分、規模 SS-S = ~5-10 分、規模 S = ~10-20 分、規模 M-L = ~15-30 分、規模 L = ~25-40 分
+  - **本セッション例**: Loop 203 = 規模 SS-S = 実測 ~6 分 / Loop 204 = stuck = 8 分経過 + log 0 bytes + CPU 9.29 秒 = stuck 確定判定
+  - **stuck 判定基準 (Loop 199 開拓 + 本セッション Loop 204 で 2 件目確立)**: 起動から 5-7 分後に log file size と git log を観測 + 進捗ゼロ (log 0 bytes + commit 反映なし + CPU 短時間 = I/O 待ち) なら stuck 判定 + tmux kill-session が responsible
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない**
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本 prompt と同パターン、連続 94 セッション目)
+
+## worker prompt 必須要素 (100+ 連続ループで実証済、継続適用、9 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+8. **「AGENT_LOG.md への append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む」 (Loop 144 fault precedent から新規追加 = Loop 146-203 で 58 連続成功実証)**
+9. **「entry テンプレート冒頭に `---` を含めない (前 entry の閉じ `---` を再利用、末尾 `---` 1 個で締める)」 (Loop 166 boundary fix precedent から新規追加 = Loop 167-203 で 37 連続再発防止確認 = 節目 25 連続突破後 12 件目)**
+
+**追加推奨 (Loop 60-203 経験から)**:
+- worker prompt に「2-commit pattern」を **明示的に** 記載 = Loop 200-203 で 4 連続スタート安定動作 (Loop 199 stuck からの完全復活 paradigm 1 件目 → Loop 204 stuck 救済 paradigm 2 件目開拓)
+- 大型 file 抽出時は **precedent file の cat 全体読み込み** を明示推奨
+- **worker prompt の長さに注意**: ~80-300 行で短縮効果あり (本セッション Loop 203 = 130 行 = SS-S 規模 / Loop 204 = 130 行 = SS 規模 = stuck で完走未到達)
+- **frontend 軸の場合**: 検証は npm run build (tsc + vite build) のみ
+- **rust 軸の場合**: cargo test (704 件件数完全不変) + cargo clippy + cargo fmt + cargo build を全て worker prompt に記載
+- **API 互換維持戦略 (Loop 119-203 precedent)**: const 集約 paradigm = 新規 const 追加 + callsite を const 参照に統一 + 件数完全不変保証
+- **責務階層精査 (Loop 119-203 教訓)**: paradigm 反復よりも責務階層精査を優先
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 203 = 規模 SS-S ~6 分 = **目標 15 分以内達成**)
+- worker 1 件 = 1-2 commit (本セッション 1 ループ完走 = 2 commit + 1 SESSION SUMMARY commit = 3 commit)
+- 累積 worker 完走 299/300 (本セッション +1 件完走 = 99.7% / Loop 204 stuck = 完走諦め)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは **1 ループ完走 + Loop 204 stuck 救済** = 「2-3 ループ完走推奨」の **最低限達成** + stuck 救済 paradigm 2 件目開拓 + context 衛生優先 = handoff へ移行
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」 (継承)
+- watchdog 継続指示: 「docs/autonomous-main-prompt-claude.md に従って次の自律改善ループへ進んでください」 (継承)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む
+2. `git status --short --branch` / `git log --oneline -10` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認.
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認. `mjc-main` なら不要、`mjc-main-20260505-99` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-99 mjc-main` を実行 (冪等).
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 93 セッション目「再出現せず」観測 = 節目 90 件突破後 3 件目)
+5. **戦略転換の核心を継承**: 単一軸 4 連続集中をしない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ. **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討** = **K 軸 stuck (Loop 204) からの選択肢 = R34' (K 軸 = Section 2.3 観測 55 件目 = Loop 204 stuck 再挑戦 = 機械的反復ローカル最適化リスク批判要) / R37 (大型 file 責務分離) / R38 (別 paradigm 開拓 = trait/generic/lifetime 重複) のいずれか採用検討**
+6. **最初の Loop 候補**: variety 規則を踏まえ、Loop 205 で **(a) 候補 R34' = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 再挑戦) = 規模 SS = 機械的反復ローカル最適化リスク批判要 = 既存 worker prompt 再利用可能 または (b) R37 = 大型 file 責務分離 52 件目候補 = 規模 M-L または (c) R38 = 別 paradigm 開拓 または (d) X' / H1 = ユーザー直伝指示要** のいずれか採用検討. **第一推奨 = 候補 R34' (K 軸 = Section 2.3 観測 55 件目 = Loop 204 stuck 再挑戦 = 規模 SS = 既存 worker prompt 再利用可能 = AGENTS.md priority 8-9 寄与中)**. **重要**: 後継 R34' 採用時は **既存 worker prompt 再利用 + 行数の実測値 (Loop 201 → Loop 203 = +175 行 / 2 loop = 平均 ~87.5 行/loop = SUMMARY 寄与過半) を差し替え** が responsible. worker prompt は「Loop 60-203 と同じ 2-commit pattern + Loop 144 fault precedent から append 1 回のみ明示 + Loop 166 boundary fix precedent から冒頭 `---` 含めない明示」を含めて ~120-150 行 (規模 SS, K 軸).
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (本セッション Loop 203 で実証 = handoff prompt R30'''' を独自 grep で再検証 + 第一推奨採用 を批判検証達成 = メイン批判判断 連続 100 セッション目達成 = 節目 100 件突破).
+8. 待機モード禁止. final answer で停止せず、改善ループを継続する. **本セッションは 1 ループ完走 + Loop 204 stuck 救済 + handoff = 後継は 2-3 ループ完走推奨**
+9. **worker prompt には worker prompt 必須要素 9 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning + 二重書き fault + boundary `---` 重複 fault を防止**, **worker prompt は ~120-150 行を目安に simpler 化 (R34' = SS 規模)**
+10. **worker 完走確認は `git status --short` を主観測手段とする** (本セッション継続 paradigm)
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK**
+12. **commit hash 更新漏れパターン (Loop 145-203 で 58 連続観測 = 完全復活 pattern + 節目 50 件突破後 8 件目)**: worker prompt に「2-commit pattern」を明示記載 + Loop 144 fault precedent から「append は 1 回のみ」明示記載 + Loop 166 boundary fix precedent から「冒頭 `---` 含めない」明示記載 = 後継も活用検討可能
+13. **worker fault / stuck 時の救済策 (Loop 144/166/199/204 precedent)**: AGENT_LOG.md の二重書き / boundary `---` 重複等は メイン直接 Edit で削除修復 + chore commit を作成 = メイン直接削除救済 paradigm 2 件目 + worker stuck = tmux kill-session + handoff 早期判断 = stuck 救済 paradigm 1-2 件目 (Loop 199 = 1 件目 / Loop 204 = 2 件目 = 過渡期 paradigm 確立)
+14. **stuck 判定基準 (Loop 199 開拓 + 本セッション Loop 204 で 2 件目確立)**: worker 起動から 5-7 分後に log file size と git log を観測 + 進捗ゼロ (log 0 bytes + commit 反映なし + CPU 短時間 = I/O 待ち) なら stuck 判定 + tmux kill-session が responsible
+
+# Loop 205 への期待 (推奨ループ設計)
+
+直近 30 ループで構造分離軸 51 件 + 機能拡張/docs 軸 4 件 + harness 衛生軸 53 件 + Loop 204 stuck = K(204=stuck) → **Loop 205 では R34' = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 再挑戦) が最適 = 規模 SS**.
+
+メインは grep + Read 精読で 1 候補に絞る (本ハンドオフでは候補 R34' = K 軸 = Section 2.3 観測 55 件目 = Loop 204 stuck 再挑戦 = 規模 SS = 既存 worker prompt 再利用可能 = AGENTS.md priority 8-9 寄与中 を第一推奨、R37 = 大型 file 責務分離 = 第二推奨、R38 = 別 paradigm 開拓 = 第三推奨) → worker prompt 作成 (~120-150 行 = SS 規模 = 既存再利用) → 起動 = 通常の自律改善ループへ復帰.
+
+**第一推奨は候補 R34' (K 軸 = Section 2.3 観測 55 件目 = Loop 204 stuck 再挑戦 = 規模 SS)**:
+- 規模 SS 想定 (~3-7 分完走) = worker prompt は ~120-150 行 = 既存 docs/worker-prompts/mjc-worker-loop204-archive-plan-stats-update-55.txt 再利用可能
+- paradigm = K 軸 = harness 衛生軸 = Section 2.3 観測 55 件目
+- precedent = Loop 79/81/.../202 = 54 件目までの updates
+- Mac アプリ内部品質改善 = AGENTS.md priority 8-9 寄与中 (UX/アクセシビリティ間接寄与 = archive 戦略 rationale 維持 + paradigm 系統樹拡張観測の継続記録)
+- **ローカル最適化リスク批判要** = 「派生型 CI 保護パターンに戻らない」継承方針との緊張感 = entry に明示記載必要
+- 後継要確認 = 観測ブロック内容 (Loop 201 → Loop 203 = +175 行 = SUMMARY 寄与過半 / chore のみ +ZZ 行 = 軽量化階層維持) を実測値で確定
+
+- 推奨抽出順序 (Loop 206 以降): R37 → R38 等
+
+後継 mjc-main-20260505-99 への 2-3 ループ完走推奨。第一推奨候補 = R34' = K 軸 = Section 2.3 観測 55 件目 (Loop 204 stuck 再挑戦) = 規模 SS = 既存 worker prompt 再利用可能 / 第二推奨 = R37 = 大型 file 責務分離 = 規模 M-L / 第三推奨 = R38 = 別 paradigm 開拓. 詳細は docs/handoff/mjc-main-20260505-99.txt 参照.
+
+---

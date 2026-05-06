@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-37 です。
+
+前任者 mjc-main-20260505-36 から 2 ループ完走 (Loop 72 = 検知拡張 Phase 1 = MatchStrategy enum (2 variants) 導入 + WATCHED_BUNDLE_IDS を 3-tuple 型へ拡張 + 既存 4 アプリ AppLaunch で振る舞い不変 + axis test 3 件追加 = 705 件 ~4-5 分 + メイン批判判断 連続 24 セッション目達成 + Loop 73 = session_manager.rs internal struct ActiveSession + ActiveOutput を session_manager_types.rs (新規 18 行) に抽出 = ~13 行抽出 + 件数不変 705 件 ~3-4 分 + メイン批判判断 連続 25 セッション目達成 + worker 完走 2/2 累計 173/173 100% + harness 衛生連続 30 セッション目 + 「2 ループ + 早期 handoff」precedent 連続 32 セッション目達成 + worker 自律 2-commit pattern 連続 14 ループ目達成 + 大型 rust file 責務分離 4 file 目に着手 (session_manager) + 検知拡張 Phase 1 完了 = Phase 2 への準備整った状態) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-37.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 74 推奨 Y1 = 検知拡張 Open Questions 軽量調査 = Q5/Q7/Q8 コード調査のみで完結 = priority 2 直接寄与 + plan の継続 / または候補 X = 大型 rust file 責務分離続行 = session_manager.rs persist_if_configured / audio.rs 残 helper / session_store.rs render_session_markdown / elevenlabs+openai WS タスク共通化 規模 M) を全て含む
+- ファイル参照型 handoff prompt 連続 33 セッション目継承

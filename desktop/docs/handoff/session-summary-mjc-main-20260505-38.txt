@@ -1,0 +1,118 @@
+
+---
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-38
+
+## 達成実績 (2 ループ完走 = session_store.rs 1133 → 725 行 = -408 行 / -36% 縮小 + 大型 rust file 責務分離 7 file 目 = 「2 ループ + 早期 handoff」precedent 連続 34 セッション目達成)
+
+### Loop 76 = render_session_markdown 抽出 (commit `f964acb` + chore `2085574` = ~7 分)
+- src-tauri/src/session_store_render.rs (新規 188 行) を作成し、session_store.rs から以下を移動:
+  - render_session_markdown fn (~31 行) を `pub(crate) fn` として配置
+  - unix_secs_i64 fn / io_invalid fn (各 4 行 / 3 行) を private fn として配置
+  - 関連 tests 9 件を mod tests 内に移動 (render 5 + unix_secs_i64 3 + io_invalid 1)
+- src-tauri/src/lib.rs に `mod session_store_render;` を session_store_parse と session_store_types の間に追加 (alphabetical)
+- session_store.rs: 1133 → 976 行 (-157 行) + use 文整理 + `use crate::session_store_render::render_session_markdown;` 追加
+- メイン批判判断 連続 28 セッション目達成: handoff X3 の Plan A (依存 fn を pub(crate) 化で残す) を grep で再評価 → 依存 fn 2 件は render 専用 (caller 0 in others) と判定 → Plan B' (全 3 fn + tests 9 件を新 file へ集約 + visibility 昇格 2→1 削減) に修正
+- worker 自律 2-commit pattern 連続 17 ループ目
+- worker prompt 229 行 simpler 化で worker elapsed ~7 分 = 規模 S 想定で安定圏内
+
+### Loop 77 = list_session_* 系抽出 (commit `a5168c9` + chore `ba4f1a6` = ~8 分)
+- src-tauri/src/session_store_list.rs (新規 270 行) を作成し、session_store.rs から以下を移動:
+  - list_session_summaries fn (~40 行) + list_session_files fn (~15 行) を `pub fn` として配置
+  - MAX_SESSION_SEARCH_TEXT_BYTES 定数を移動
+  - 関連 tests 11 件を mod tests 内に移動
+- src-tauri/src/lib.rs に `mod session_store_list;` を session_store と session_store_parse の間に追加 (alphabetical)
+- session_store.rs: 976 → 725 行 (-251 行) + use 文整理 + `pub use crate::session_store_list::list_session_summaries;` re-export で session_commands.rs:144 caller との互換性確保
+- メイン批判判断 連続 29 セッション目達成: handoff の test 8 件予測 → worker grep で 11 件と修正 + 後方互換性は re-export で最小変更維持
+- worker 自律 2-commit pattern 連続 18 ループ目
+- worker prompt 217 行 simpler 化で worker elapsed ~8 分 = 規模 M で予想下限完走
+
+## 大型 rust file 縮小実績 (handoff 候補 X 始動以降の累計 + 本セッション)
+
+- audio.rs: 1011 行 → 949 行 (-62 行) + audio_traits.rs (24 行) + audio_sample_helpers.rs (47 行)
+- session_store.rs: 1175 行 → 1133 → **725 行 (-450 行累計、本セッションで -408 行)** + session_store_types.rs (19) + session_store_parse.rs (32) + **session_store_render.rs (188、Loop 76)** + **session_store_list.rs (270、Loop 77)**
+- elevenlabs_realtime.rs / openai_realtime.rs: 各 ~5 行ずつ削減 + realtime_audio_command.rs (12 行)
+- session_manager.rs: 1274 → 1245 行 (-29 行) + session_manager_types.rs (17) + session_manager_persist.rs (23) = standalone fn 0 件 = 構造美達成
+- 残 (Loop 78+ 候補):
+  - session_store.rs 残 fn (path_for_session / write_session_markdown_to / save_session_markdown) は短小 = 抽出メリット薄い
+  - elevenlabs+openai WS タスク本体共通化 (規模 M、shared module 設計判断要)
+  - app_detection.rs / audio.rs 残余地調査 (sweep 化警告超過注意)
+  - 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+
+## 戦略転換の継承 (連続 28-29 セッション目達成)
+
+- メイン批判判断 連続 28+29 セッション目 = handoff の予測 / 状況記述を grep で実態確認 → 規模/件数誤りの修正 + visibility 戦略の最適化判断
+- worker 完走 累計 175/175 → **177/177** (100% 維持、本セッション +2 件)
+- harness 衛生連続 31 → **32 セッション目** = canonical 移譲後 scripts/* M 表示再出現せず観測継続
+- 「2 ループ + 早期 handoff」precedent 連続 33 → **34 セッション目達成**
+- ファイル参照型 handoff prompt precedent 連続 33 → **34 セッション目継承**
+- worker 自律 2-commit pattern 連続 16 → **18 ループ目達成**
+- 大型 rust file 責務分離 = **7 file 目達成** (audio / session_store_render / session_store_list / session_store_types / realtime / session_manager_types / session_manager_persist)
+- variety: Loop 76-77 とも構造分離軸 (2 連続、警告境界 4 連続より遠い、ただし Loop 78 で 3 連続到達するなら 4 連続目 pivot を後継要判断)
+- コミット周期: Loop 76 = ~7 分 / Loop 77 = ~8 分 = 平均 ~7.5 分/loop = 目標 15 分以内大幅達成
+
+## メインの批判的判断の意義 (本セッションでの実例 = 連続 28-29 セッション目)
+
+- Loop 76: handoff X3 の「依存 fn 2 件を pub(crate) 化で残す」予測 → grep で「2 件とも render 専用 (caller 0 in others)」と確認 → Plan B' (全 3 fn 移動 + tests 9 件移動 + visibility 昇格 2→1 削減) に修正
+- Loop 77: handoff の「tests 8 件」予測 → worker grep で「実際 11 件」と修正 + caller (session_commands.rs:144) との互換性は `pub use` re-export で最小変更維持
+- precedent: 「handoff prompt の主要候補 / 状況記述を鵜呑みにせず grep で実態確認 → exception 判断 / 件数修正 / visibility 戦略最適化」が **29 セッション連続で実証** (mjc-main-20260505-20 〜 -38)
+
+## 後継 (mjc-main-20260505-39) への引き継ぎ判断 (Loop 78 候補、優先順位順)
+
+### variety 規則の状態 (Loop 78 開始時点)
+
+直近 11 ループ: Loop 67-75 (handoff -37 セッションで詳述) + Loop 76 (構造分離 = render) + Loop 77 (構造分離 = list)。
+- 軸 pattern: 構造分離 (67/68/69/70/73/75/76/77) + 機能拡張/docs (71/72/74) = 8:3 分散 (構造分離が多めだが scope 多分散)
+- scope 内訳: session_store (4) + audio (1) + realtime (1) + detection (3) + session_manager (2) = 多 scope 分散
+- **Loop 78 = 構造分離軸続行は 3 連続到達 = 4 連続目で variety pivot 必須に近い警告境界**
+- **Loop 78 = pivot 候補 (機能拡張/docs 軸) を優先検討、それが弱候補なら exception 判断で構造分離続行 (X4 = WS タスク共通化など)**
+
+### 候補 K (Loop 78 推奨, 機能拡張/docs 軸 = pivot)
+
+#### K1. 検知拡張 plan Q6 方針記載 (規模 SS、主観性高警告に注意)
+- detection-extension-plan.md Q6 = window title 日本語 localization 対応方針
+- 「英語のみ」「英語+日本語両対応」のいずれかを plan に明示記載 = 後続 Phase 2/Phase 5 着手判断の前提準備
+- 主観性高警告: ユーザー方針要 = 単独判断では弱い候補
+- mitigation: plan に「Phase 2 では英語 pattern のみ + Phase 5 で日本語追加候補」と段階記載で objectivity 確保可能
+
+#### K2. AGENT_LOG.md archive 戦略の plan 起こし (規模 SS、harness 衛生)
+- AGENT_LOG.md ~30,500+ 行 = 巨大化 + tail 衛生は維持中
+- 「N セッションごとに古い entry を別 file に分離」等の archive 方針を docs に書き起こし = 後続 Loop での実施準備
+- ユーザー直伝指示要
+
+### 候補 X (Loop 78 alternative, 構造分離軸続行 = 3 連続到達リスク)
+
+#### X4. elevenlabs+openai WS タスク本体共通化 Phase 1 (規模 M、shared module 設計判断要)
+- WS タスク (`async move { ... while let Some(cmd) = audio_rx.recv().await { ... } }`) の共通 module 化
+- 規模 M = 1 ループ厳しい = Phase 1 = task entry skeleton 抽出のみに絞れば可能
+- 構造分離軸 3 連続到達 = variety 警告境界
+
+#### X5. session_manager.rs impl method 内部 helper 抽出 (規模 SS-S、locality 反する可能性)
+- impl SessionManager method 内部の private fn 候補を grep で確認 → 抽出メリットあれば採用
+- ただし「standalone fn 0 件 = impl method のみの構造美達成」を Loop 75 で達成済 = 内部抽出は局所的価値のみ
+
+### 候補 J (継承、低優先): frontend 軸
+
+- LiveCaptionWindow.tsx (580 行) / MeetingDetectedBanner.tsx (526 行)
+- TODO/FIXME/any: 直近セッションで grep ゼロ = 主観性高警告
+
+### 候補 H (継承、低優先): harness 衛生
+
+- 大量 untracked ファイル整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 250+ untracked)
+- AGENT_LOG.md ~30,500+ 行 = K2 candidate
+
+## 検証制約 (再掲)
+
+- cmake あり → cargo test 705 件全 pass = `cd src-tauri` してから実行
+- frontend test framework 未導入 → npm run build を主検証
+- 課金禁止 (elevenlabs/openai 系の実 API 厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止
+- Apple SpeechAnalyzer 実通信禁止
+- メインは原則アプリコード/ハーネスを直接編集しない (worker 経由、SESSION SUMMARY のみメイン直接編集の precedent、本セッションも Loop 76/77 完了後の SESSION SUMMARY commit のみメイン直接編集)
+
+## ユーザー直伝指示 (本セッション)
+
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+- watchdog からの nudge は本セッション中 1 回 (handoff 直後の Loop 76 待機中、適切タイミングで自走中の確認 = 影響なし)

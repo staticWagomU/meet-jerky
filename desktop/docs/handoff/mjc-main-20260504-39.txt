@@ -1,0 +1,198 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260504-39) です。
+旧 mjc-main (= 旧 mjc-main-20260504-38) から 3 ループ完走 + 「Debug 軸補強」25 連続 application 系譜達成 + 11 ファイル目展開 (cloud_whisper_errors.rs 初) + cloud_whisper.rs 内 2 形態目補強 (WhisperRequestParams + VerboseResponse/Segment) + 「双子達成」完成 (OpenAI/ElevenLabs Engine + AudioCommand 4 型対称形) + enum 形態 7 連続 application 達成 (CloudWhisperError 含む) + 「struct variant 形態 (`Other { status, message }`)」初対応 + 「private deserialization struct 形態」初対応 (serde Deserialize でのみ構築される production path の Debug 契約保護戦略) + harness silent fail mitigation pattern 連続 24 ループ実証達成 + 本セッション 3 ループ全て log file 正常出力 (root cause 仮説継続裏付け) の予防的ハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (これがメイン運用ルールの本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- AGENT_LOG.md は 23800+ 行 / 1.9MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-04 ~23:35 JST] mjc-main-20260504-38 状況メモがあります。これが状況復元の起点です。**
+
+# 引き継ぎサマリ (2026-05-04 ~23:35 JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 183 (origin/main から先行、本セッション +4 commit (Loop 1-3 + SESSION SUMMARY))
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 旧 mjc-main-20260504-38 が canonical 名 mjc-main を持ち、本セッションで 3 ループ + 1 SESSION SUMMARY を完了:
+  1. `8b85962` test(elevenlabs_realtime): AudioCommand (private enum) の Debug + Samples + Finalize + 空 Vec 軸 (Loop 1、+3 件 → 628 passed、**双子達成完成 = OpenAI/ElevenLabs 4 型対称形**)
+  2. `7a9ec49` test(cloud_whisper_errors): CloudWhisperError enum (struct variant `Other { status, message }`) の Debug 全 variants + Clone + PartialEq 軸 (Loop 2、+3 件 → 631 passed、**11 ファイル目展開 + struct variant 形態初対応**)
+  3. `fd2a8b7` test(cloud_whisper): VerboseResponse/Segment (private deserialization struct) の Debug 軸 (Loop 3、+3 件 → 634 passed、**private deserialization struct 形態初対応**)
+  4. `6b999c1` AGENT_LOG.md 末尾に SESSION SUMMARY 追記
+
+## 現在の品質状態
+- cargo test (lib): **634 passed / 0 failed** (前 625 → +9 件、3 ループ)
+- cargo clippy default lint: **警告ゼロ**
+- cargo clippy --lib -- -D warnings: **警告ゼロ** (3 ループ全てで維持)
+- npm run build (tsc + vite build): 本セッションで frontend 触れていないため変更なし
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260504-38、handoff 直前)
+- mjc-main-20260504-39 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, clear_cooldown=180s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ。
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` と `git log --oneline -15` で現状確認。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260504-39` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-39 mjc-main` を実行 (前 13 セッションで実証済 precedent あり、冪等)。
+5. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-38) を `tail -400 AGENT_LOG.md` で読み、確立パターン + 重要発見 + 次ループ候補を確認**
+6. **最初の Loop は「Debug 軸補強」26 連続 application 候補のうち最有力 = `cloud_whisper.rs:53` `WhisperHttpRequestDescriptor` 補強** (`#[derive(Clone, PartialEq)]` のみ = Debug derive 欠如形態 初対応 = Clone 軸 + PartialEq 軸 + format 不変条件軸 で 3 軸構成可能)。**ただし Debug 軸補強の系譜は維持できない** ので、もし「Debug 系譜継続」を優先するなら別の候補 (transcript_bridge.rs 内 inner type 等) を grep で再探索する判断もあり。
+7. 待機モード禁止。final answer で停止せず、即座に次の改善ループへ進む。
+
+## 直前のセッションでの判断履歴と注意点
+
+### 確立されたパターン (本セッション 3 ループ)
+
+#### 1. 「対称的補強の 3 軸構造」パターン (18 連続セッション目で application)
+- 全セッション (mjc-main-22〜38) で全 49 ループに application
+
+#### 2. 「Debug 軸補強」パターン 25 連続 application 系譜達成
+- 系譜: SecretKey enum (mjc-main-30 Loop 1) → AppleSpeechEngine (m-31 L1) → SessionSegment/Session (m-31 L2) → TranscriptionErrorPayload (m-31 L3) → TranscriptionSegment (m-32 L1) → TranscriptionSource enum (m-32 L2) → StreamConfig (m-32 L3) → ModelInfo (m-33 L1) → RequestedTranscriptionSources (m-33 L2) → SessionManagerError (m-33 L3) → Session 全体 (m-34 L1) → TranscriptionEngineType (m-34 L2) → SessionSummary (m-34 L3) → AppSettings (m-35 L1) → MeetingAppDetectedPayload (m-35 L2) → WhisperRequestParams (m-35 L3) → MeetingUrlClassification (m-36 L1) → AudioDevice (m-36 L2) → ParsedUrlParts (m-36 L3) → OpenAIRealtimeEngine (m-37 L1) → ElevenLabsRealtimeEngine (m-37 L2) → AudioCommand (OpenAI 側, m-37 L3) → AudioCommand (ElevenLabs 側, **m-38 L1**) → CloudWhisperError (**m-38 L2**) → VerboseResponse/Segment (**m-38 L3**)
+- 派生型カバレッジ: 24 形態
+- 11 ファイルに渡る統一的補強完成 (transcription / settings / session / session_manager / session_store / app_detection / cloud_whisper / audio / openai_realtime / elevenlabs_realtime / cloud_whisper_errors)
+
+#### 3. 「双子達成」完成 (本セッション Loop 1)
+- OpenAI/ElevenLabs の Engine + AudioCommand の **4 型対称形構築完成**
+- field 名のみ異なる対称 (`model` vs `model_id`、tuple variant `Samples(Vec<f32>)` + unit variant `Finalize` は完全同一)
+- 後続セッションで Realtime 系 API 変更時に対称破綻を CI で即検知可能
+
+#### 4. 「enum 形態 7 連続 application」達成
+- TranscriptionSource → SessionManagerError → TranscriptionEngineType → MeetingAppDetectedPayload → AudioCommand (OpenAI) → AudioCommand (ElevenLabs) → CloudWhisperError
+- enum 補強の decision matrix が 7 種網羅で更に安定
+
+#### 5. 「struct variant 形態 (`Other { status, message }`)」初対応 (本 Loop 2)
+- enum variant 形態の更なる多様性カバレッジ
+- 「private enum + tuple variant + unit variant 混合形態」(m-37 L3) に続く新形態
+
+#### 6. 「private deserialization struct 形態」初対応 (本 Loop 3)
+- VerboseResponse/Segment は production では serde Deserialize でのみ構築される private struct
+- 直接構築 → Debug 出力 contains 検証で deserialize path の内部状態 Debug 契約を CI 固定
+- 後続セッションで類似 private deserialization 型に汎用適用可能
+
+#### 7. 「同一ファイル内 2 形態目補強」継続 application
+- m-36 で app_detection.rs に 3 形態補強済
+- m-37 で openai_realtime.rs に 2 形態 (Engine + AudioCommand)
+- 本セッション m-38 で elevenlabs_realtime.rs に 2 形態 (Engine + AudioCommand) + cloud_whisper.rs に 2 形態 (WhisperRequestParams + VerboseResponse/Segment)
+
+### 重要な技術的注意点
+
+#### 1. **harness silent fail mitigation pattern 連続 24 ループ実証達成 + 本セッション 3 ループ全て log file 正常出力** (root cause 仮説継続裏付け)
+- 本セッション Loop 1 / Loop 2 / Loop 3 全てで log file が正常出力 (silent fail なし)
+- 観測時間目安: worker 起動 → **130-180 秒以内** (本セッション 3 ループ実測 ~150s)
+- root cause 仮説: 大型 prompt + 複雑探索条件下の pipe stdout 欠落
+- **`git status --short` で `M` 表示確認** workflow が連続 24 ループ安定動作
+
+#### 2. **cargo fmt の副作用** (本セッション Loop 1 で観測、低優先)
+- worker の `cargo fmt` 実行で過去ループ (m-36 L3 / m-37 L3) で line length を超えた `assert!()` マクロが整形される副作用 = 担当範囲外ファイル (`app_detection.rs` / `openai_realtime.rs`) が M 表示
+- 振る舞い不変 (line wrapping のみ) = Tidy First 範疇でコミット可
+- 後続セッションでも同様の現象が起きうる = diff 確認で振る舞い不変であれば許容
+
+#### 3. handoff サマリの予測精度
+- 本セッションで予測通り: AudioCommand 双子達成、CloudWhisperError enum 形態
+- 予測外: cloud_whisper.rs の VerboseResponse/Segment が候補として handoff サマリに明示されていなかった = handoff サマリは確定的 candidate のみ列挙し、後続セッションは grep で再探索する運用が機能した precedent
+
+#### 4. AGENT_LOG.md 末尾追記の Edit ツール問題 (運用継承)
+- 末尾の `---` は file 内 30+ 箇所存在 = Edit ツールでは unique にならない
+- 解決策: SUMMARY を `/tmp/mjc-summary-N.md` に Write してから `cat <file> >> AGENT_LOG.md` で append
+
+## 次ループ候補 (優先順位順、本セッションで未着手)
+
+### 最優先 = Loop 1: 「Debug 軸補強」26 連続 application 候補 (要 grep 再探索)
+- **Loop 1 第一候補 = `cloud_whisper.rs:53` `WhisperHttpRequestDescriptor`** (`#[derive(Clone, PartialEq)]` のみ = **Debug derive 欠如形態 初対応**) = Clone 軸 + PartialEq 軸 + format 不変条件軸 で 3 軸構成可能。Debug 軸補強系譜は維持できないが「derive 欠如形態の補強」新パターン precedent。
+- 注意: `WhisperHttpRequestDescriptor` の field は `url: String, auth_header: String, params: WhisperRequestParams`。**Debug derive がないため `format!("{descriptor:?}")` は使用不可** = 軸構成は assert_eq! / assert_ne! ベースの Clone 独立性 + PartialEq field 単位独立判定 + 文字列 format 不変条件 で 3 軸構築する判断。
+- **Loop 1 第二候補 (Debug 系譜継続したい場合)** = transcript_bridge.rs / session_commands.rs 内の inner mod / 内部 fn 内 derive 型 = grep で再探索必要。具体的には `grep -rn "^#\[derive\|^    #\[derive" src-tauri/src/` の結果から既補強済を除いた残りを抽出。
+- **Loop 1 第三候補** = 既補強ファイル内の追加 inner type (例: session_manager.rs / session_store.rs / settings.rs / transcription.rs 内の private struct/enum) = grep `^    pub struct\|^    struct\|^    pub enum\|^    enum\|^    #\[derive` で再探索。
+
+### Loop 2 候補: harness 改善 (連続 24 ループ実証、価値高、未着手)
+- 本セッションで 3 ループ全て log file 正常出力 = root cause 仮説 (大型 prompt 条件下) が更に裏付け
+- `claude -p ... | tee` の pipe で stdout 欠落条件の特定と修正
+- `script(1)` / `unbuffer` / direct `>` redirect への切替検討
+- メインが `git status` ベースで完走判定する mitigation を harness 側に組み込む (例: `scripts/claude-agent-await-worker.sh`)
+- 価値: harness 観測層が信頼できるようになれば後続セッションの効率改善
+
+### Loop 3 候補: B/S/Realtime 系の補強残境界
+
+### B 候補 (低優先、補強候補限定的)
+- system_audio.rs / markdown.rs / audio_event.rs / audio_utils.rs (派生型がない場合は Tidy First 原則で不採用、grep 確認必要)
+
+### S 候補継続 (settings.rs 残関数、規模 M, 統合候補あり)
+- `default_output_directory` / `update_settings` / `check_*_permission` の境界
+- `MEETING_INACTIVE_THRESHOLD = 600s` の settings 統合 (mjc-main-20 SUMMARY 既明示、未消化)
+
+### F-Loop6 (継承、規模 M, 価値中) = タイマースレッド shutdown 対応 (mjc-main-21 由来、未着手)
+
+### K (継承). clippy::pedantic の選択的有効化 (規模 L, 非優先)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 634 件全 pass (verify.sh OK)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (簡略、変更なし)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend を自動 skip 判定)
+- コミット: **コミットメッセージはファイル経由が安全** (fish shell parse error 回避):
+  - `/tmp/mjc-commit-msg-loopN.txt` に **touch → Read → Write の 2 ステップ** でメッセージを書く (touch でファイル作成後 Read 必須)
+  - `git add <files> && git commit -F /tmp/mjc-commit-msg-loopN.txt`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append (Edit ツールでは末尾 `---` が unique にならない、本セッションで再確認した運用)
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま。
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260504-39 mjc-main` (現セッション名が `mjc-main` でない場合のみ実行)
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認** (mjc-main-31〜38 で実証した mitigation pattern)
+  - log file (`logs/agent/<session>.txt`) と tmux pane は補助観測手段 (本セッション 3 ループ全てで正常出力した実例あり = 期待しても良い、ただし大型 prompt 時は silent fail 想定すべき)
+  - 観測時間目安: worker 起動 → 110-180 秒で対象ファイル + AGENT_LOG.md 両方に M 表示
+
+## worker prompt 必須要素 (18 連続セッションで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」** = 末尾追記の場所を視覚的に学習させる
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」** を明記
+3. **「先頭は絶対に触らない」** を明記
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照** を明記
+7. **「行末の空白文字 (trailing whitespace) 禁止」** を明記
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション平均 ~10 分/loop で目標クリア、3 ループ平均で更に高速化)
+- worker 1 件 ≒ 1 コミット
+- 累積 worker 完走 98/98 (本セッション +3 件、100% 維持)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- AGENT_LOG.md 末尾に SESSION SUMMARY を残しておけば、watchdog 自動 /clear 復活でも状況復元できる
+
+## ユーザー直伝指示 (未消化)
+- なし。watchdog からの nudge は本セッション中 2 件 (Loop 1 完了直後 + Loop 3 進行中) を「Loop 進行 + SUMMARY 作成」で消化済。
+
+## 累積成果 (本セッション 3 ループ)
+- **テスト 625 → 634 passed** (+9 件、3 ループ = 旧セッションの +9 件/セッション スケール継続)
+- **コミット 3 件 + 本 SUMMARY 1 件 (= 4 件)**
+- **clippy --lib -D warnings ゼロ維持** (default + -D warnings、3 ループ累積)
+- **「Debug 軸補強」パターン 25 連続 application 系譜達成** (24 形態の派生型カバレッジ、11 ファイルに渡る統一的補強完成)
+- **enum 形態 7 連続 application 達成** (CloudWhisperError 含む)
+- **「双子達成」完成** (OpenAI/ElevenLabs Engine + AudioCommand 4 型対称形)
+- **「struct variant 形態 (`Other { status, message }`)」初対応**
+- **「private deserialization struct 形態」初対応** (serde Deserialize でのみ構築される production path の Debug 契約保護戦略)
+- **同一ファイル内 2 形態目補強パターン継続適用** (cloud_whisper.rs = WhisperRequestParams + VerboseResponse/Segment)
+- **harness silent fail mitigation pattern 連続 24 ループ実証達成 + 本セッション 3 ループ全て log file 正常出力**
+- **canonical 名移譲完了** (mjc-main-20260504-37 → mjc-main, 13 セッション連続適用)
+- **累積 worker 完走 98/98** (100% 維持)
+- **コミット周期 ~10 分/loop** (目標 15 分以内クリア)
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む。
+2. `git status --short --branch` / `git log --oneline -15` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260504-39` なら `bash scripts/agent-adopt-main.sh mjc-main-20260504-39 mjc-main` を実行 (冪等)。
+4. **「Debug 軸補強」26 連続 application 候補を Loop 1 として開始**: 第一候補 = `cloud_whisper.rs:53` `WhisperHttpRequestDescriptor` (Debug derive 欠如形態 初対応 = Clone 軸 + PartialEq 軸 + format 不変条件軸 の 3 軸構成、Debug 軸補強系譜は途切れるが「derive 欠如形態の補強」新 precedent)。第二候補 (Debug 系譜継続したい場合) = grep で他ファイルの未補強 derive(Debug) 型を再探索。
+5. **実コードの derive / field 名 / variant 名 / PartialEq 派生有無 は必ず grep/sed で確認** (handoff サマリの予測は誤認の precedent あり)
+6. 待機モード禁止。final answer で停止せず、改善ループを継続する。
+7. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**
+8. **worker 完走確認は `git status --short` を主観測手段とする** (mjc-main-31〜38 で実証した mitigation pattern、log file は補助 = 本セッション 3 ループ全てで正常出力した precedent あり、観測時間目安 110-180 秒)

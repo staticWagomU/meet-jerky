@@ -1,0 +1,56 @@
+
+[SESSION SUMMARY @ 2026-05-05 ~JST] mjc-main-20260505-43
+
+## Overview
+
+Loop 85 = 1 ループ完走 + 早期 handoff exception 判断 (mjc-main-20260505-40 precedent 適用)。構造分離軸 1 件 = Loop 84 の機能拡張/docs 軸 pivot 後の自然な戻り。直近 19 ループ累計で 構造分離 12 + 機能拡張/docs 5 + harness 衛生 2 = 12:5:2 多軸分散維持。
+
+### Loop 85 = X4-3 Phase 1 = reader_task entry 共通化 (規模 S、~4 分、構造分離軸 1 連続復帰、関数渡し方式)
+
+- src-tauri/src/realtime_reader_task.rs (新規 ~54 行) を作成 = `pub(crate) async fn run_reader_task<F>` + `pub(crate) type WsReader` 配置
+- src-tauri/src/lib.rs L24 に `mod realtime_reader_task;` 追加 (alphabetical 順保持)
+- elevenlabs_realtime.rs L226-257 + openai_realtime.rs L294-326 の reader_task spawn block (各 ~30 行) を `crate::realtime_reader_task::run_reader_task(...)` caller (~8 行) に置換
+- engine_label 引数化 ("ElevenLabs" / "OpenAI") で両 file 共有 = push_error と同 design pattern
+- 関数渡し方式 = handle_event (free fn) を直接渡す (clippy redundant_closure 自律解消)
+- `let (mut ws_tx, mut ws_rx)` → `let (mut ws_tx, ws_rx)` で mut 削除 (clippy unused_mut 予防)
+- 振る舞い不変 = cargo test --lib 704 件全 pass
+- realtime engine 3 軸 single source of truth 化達成: 音声処理 (realtime_audio_helpers Loop 80) + エラー (realtime_error_helpers Loop 81) + WS reader (realtime_reader_task Loop 85)
+- 大型 rust file 責務分離 12 file 目達成
+- AGENTS.md priority 1 直接寄与 (クラッシュ予防の構造美)
+- メイン批判判断 連続 37 セッション目: handoff の X4-3「投機的抽象リスク要検討」を grep + Read で精査 = trait 方式は free function に対する trait impl 不可能 (struct なし) → 関数渡し inline closure 方式に絞り込み → worker 自律で fn pointer 直接渡しに更に改善
+
+**Commits**:
+- f0b7b0e refactor(realtime): reader_task entry を realtime_reader_task::run_reader_task に共通化
+- a198632 chore(agent-log): mjc-main-20260505-43 Loop 85 = reader_task entry 共通化のエントリ追記
+
+## 多軸分散と variety 規則 (Loop 85 完走時点)
+
+直近 19 ループ (Loop 67-85): 構造分離軸 12 件 + 機能拡張/docs 軸 5 件 + harness 衛生軸 2 件 = 12:5:2 多軸分散。Loop 84 = 機能拡張/docs pivot → Loop 85 = 構造分離 1 連続復帰 = 警告境界 (3-4 連続) より遠い。Loop 86 で構造分離継続 (新候補要発掘) または機能拡張/docs (K3 後続 sweep 警告境界) または harness 衛生 (H1 ユーザー直伝指示要) いずれも自由度内。
+
+## worker 完走実績
+- Loop 85 = 1/1 累計 185/185 (100% 維持)
+- worker 自律 2-commit pattern 連続 26 ループ目達成 (worker は実 hash f0b7b0e を AGENT_LOG.md に直接書き、chore hash a198632 は書かない = Loop 80 precedent の本来意図 = placeholder 残留問題予防を達成)
+- **worker 自律学習進化観測**: clippy redundant_closure 指摘を能動的に解消 + ws_rx mut 削除も自律判断 = worker prompt の指示範囲を超える品質改善を実施
+- harness 衛生連続 37 セッション目 (canonical 移譲後 scripts/* M 表示再出現せず = `bfb9846` PATH inner shell escape の永続的解決をさらに強化)
+
+## ファイル参照型 handoff prompt 連続 39 セッション目継承
+
+本セッション起動時 prompt はファイル参照型 (`docs/handoff/mjc-main-20260505-43.txt` を Read で完全に読む方式) で起動 = tmux 引数長制限を回避する precedent を継承。
+
+## 1 ループ + 早期 handoff exception 判断 (mjc-main-20260505-40 precedent 適用)
+
+context 残量管理 + Loop 85 = 規模 S = 1 ループで構造分離軸の到達点 (realtime engine 3 軸 single source of truth 化) を達成 = 区切りの良いタイミングで早期 handoff へ移行。後継への引き継ぎで Loop 86+ の候補選定を委ねる。
+
+## 後継 mjc-main-20260505-44 への引き継ぎ予告 (Loop 86 推奨候補)
+
+- **構造分離継続候補 (新規発掘要)**:
+  - audio.rs / app_detection.rs 残余地 (sweep 化警告超過状態 = 慎重な範囲限定要)
+  - session_store.rs / session_manager.rs 内部 helper (短小 = 抽出メリット薄い、X5 と同パターン skip 推奨)
+- **K3 後続** = detection-extension-plan.md 追加整理 (機能拡張/docs 2 連続境界判断要、Loop 78/84 連続を K 軸 sweep 化と判定するか境界判断要)
+- **H1** = agent-log-archive-plan.md Phase 1 着手 (規模 SS、ユーザー直伝指示要 = plan L99 明記、自律実施は exception 判断要)
+- **X5** = session_manager 内部抽出 = 抽出メリット 0 grep 確認済 = skip 推奨
+- **J** = frontend (LiveCaptionWindow.tsx 580 行 / MeetingDetectedBanner.tsx 526 行) = 主観性高警告継承
+- **H'** = 大量 untracked 整理判断 (`docs/handoff/`, `docs/worker-prompts/` に 290+ untracked、ユーザー直伝指示要)
+- **realtime engine 構造美の到達点**: realtime_reader_task / realtime_error_helpers / realtime_audio_helpers の 3 helper file = 3 軸 single source of truth 化達成 = realtime 軸の構造分離は完了状態。後続は別 scope (session_store, session_manager, app_detection, audio, frontend) または別軸 (機能拡張/docs, harness 衛生) で variety pivot を維持。
+
+---

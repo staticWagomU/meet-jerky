@@ -1,0 +1,22 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-79 です。
+
+前任者 mjc-main-20260505-78 から **2 ループ完走** (Loop 158 = K 軸 = harness 衛生軸 = Section 2.3 観測追記 32 件目 = +19 行 / 平均 ~9.5 行/loop = Loop 155 観測 -49% 大幅減少 = 軽量化階層下端の劇的拡大 ~18 → ~9 行 + SUMMARY ultra-light 階層 ~5 行/件の新発見 + rust 軸軽量化 paradigm 2 連続観測 = 完全実証期入り + Loop 159 = rust 軸 = **既存 file 拡張軸 paradigm 6 件目 = test helper 集約軸 = 多 file 重複集約軸 (5 file 同時集約)** = jst() 重複定義 5 件 (datetime_fmt + session_manager + session_commands + session_store_render + session_store の test module 内) を datetime_fmt.rs に `#[cfg(test)] pub(crate) fn` として集約 + 4 file から `use crate::datetime_fmt::jst` で参照 + DRY 違反解消 + Loop 157 calculate_rms 集約 paradigm の規模拡大版 + 重複候補 grep 探索 paradigm 6 件目達成 = struct/const/trait レベル枯渇後、**内部 fn 探索の新軸**で発見 = 探索手法のメタ進化 + cargo test 704 件件数完全不変) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-79.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 160 推奨候補 K = Section 2.3 観測追記 33 件目 = 規模 SS = alternation 48 連続維持 = 最有力推奨 / R7'''''' = 更なる重複候補探索 paradigm 7 件目 = macro / type alias / impl method / const expression 等の網羅検索 = 規模 SS-S = 副推奨 / X' resample_audio dead code 削除 = ユーザー直伝指示要 / H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要) を全て含む
+- ファイル参照型 handoff prompt 連続 74 セッション目継承
+- **paradigm 反復よりも責務階層精査を優先する Loop 119-159 教訓継承** = 後継 Loop 160+ で paradigm 選択時に必ず責務階層精査を実施 + **handoff prompt の主張を鵜呑みにせず grep + Read で批判的検証する** (本セッション Loop 159 = 1 回 precedent = handoff prompt 主張の R7''''' を struct/const/trait レベルで枯渇確認後、**内部 fn 探索の新軸 = 探索手法のメタ進化**で jst() x5 完全同一実装を発見 → メイン批判判断 連続 78 セッション目達成 = handoff prompt 真偽確認の重要性を再実証)
+- **API 互換維持戦略 (Loop 119-159 precedent)**: `pub use` / `pub(crate) use` re-export (rust) / inline module 全体抽出時の visibility 修正 + fully qualified path 化 (rust) / `use` 経由で fn 抽出 + tests 移動 + 件数完全不変保証 (Loop 151) / inline module 全体抽出 + use alias で callsite 全件無変更維持 (Loop 155) / 重複定義削除 + use 経由参照で callsite 全件無変更維持 (Loop 157) / **#[cfg(test)] pub(crate) fn として test build 限定公開 + 4 file から use 経由参照 (Loop 159 = test helper 集約軸 = 多 file 同時集約軸 = paradigm 6 件目 = production binary 0 影響)** / **frontend 軸 = 純粋関数 export 化 + import 1 行追加で完結 (Loop 125-143 標準 paradigm) + utils 内 cross-import paradigm 7 件目 (Loop 147)** + **既存 file 拡張軸 paradigm 1-6 件目 (Loop 145/147/149/153/157/159)** = 後継も活用検討可能 = paradigm 反復可能
+- **worker 自律学習進化 paradigm 3 件目 (Loop 143/145/149 で確立発展)**: 後継も worker prompt の grep 確認手順を明示すれば自律学習進化 paradigm 期待可能
+- **worker fault 防止策 (Loop 144 precedent から worker prompt 必須要素 8 つ目 = Loop 146-159 で 14 連続実証成功)**: worker prompt の Step 4 (AGENT_LOG.md append) で「append は 1 回のみ。Edit/Write を複数回繰り返さない。append が成功したら直ちに次へ進む。」を **明示記載** = 二重書き防止
+- **メイン直接削除救済 paradigm 1 件目 (Loop 144)**: worker fault 時はメインで直接 AGENT_LOG.md を Edit で修復 + chore commit を作成可能
+- **worker 完走確認は git status を主観測手段とする (本セッション Loop 158 新規確立 paradigm)**: `git log --oneline -3` の即座のチェックは fault 誤判定リスクあり = `git status` (working tree clean) と AGENT_LOG.md 行数差分で確認 = 過剰救済発動を防ぐ
+- **階層化 paradigm 4 段階目維持 + 軽量化階層下端劇的拡大 + SUMMARY ultra-light 階層新発見 (Loop 158)**: AGENT_LOG.md 増分階層 4 段階 (SS 0 件 ~11-12 / SS 1 件軽量化 **~9-26 (下端拡大)** / SS 1 件中量化 ~30-37 / SS 1 件大量化 ~42) + **SUMMARY ultra-light サブ階層 ~5 行/件 (本セッション初観測)** = 軽量化トレンド完全実証 + paradigm 領域更拡大 = 後継も同階層化 paradigm を継続観測可能
+- **R7''''' 候補は paradigm 6 件目達成済 (Loop 159)**: 内部 fn (private, test module 内) 探索で jst() x5 集約完了 = 後継 Loop 161+ で paradigm 7 件目を狙うなら更なる軸開拓が必要 (例: macro 重複 / type alias 重複 / impl method 重複 / const expression 重複)
+- **frontend / rust top-level 純粋関数候補は枯渇域 (Loop 157 確認済)** + **重複候補 grep 探索 paradigm 6 件目達成済 (Loop 159)**: 後続候補は **(a) K = K 軸再度 = alternation 48 連続維持 = Loop 160 推奨 / (b) R7'''''' = 更なる重複候補探索 (macro / type alias / impl method 等) = paradigm 7 件目候補 / (c) X' / H1 = ユーザー直伝指示要**

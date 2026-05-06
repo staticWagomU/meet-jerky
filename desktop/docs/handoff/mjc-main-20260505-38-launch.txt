@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-38 です。
+
+前任者 mjc-main-20260505-37 から 2 ループ完走 (Loop 74 = 検知拡張 Q5 を Resolved 化 = MatchStrategy 拡張による外部 API 影響なしと結論 + plan 継続 = 価値の連鎖 ~3.5 分 + メイン批判判断 連続 26 セッション目達成 = handoff Y1 の Q5/Q7/Q8 コード完結予測を grep で再評価 → Q7/Q8 は plan 自身が mdls 確認記載 = 実機要件と判定 → Q5 のみ Resolved 化に範囲限定 + Loop 75 = session_manager.rs 唯一の standalone fn persist_if_configured を session_manager_persist.rs (新規 23 行) に抽出 ~3.5 分 + メイン批判判断 連続 27 セッション目達成 = handoff X1 の caller 3 箇所 / 規模 10 行予測を grep で 実装 2 + tests 6 = 8 箇所 / 本体 14 行 + doc 3 行 に修正 + 「分離価値薄い」警告を構造美価値で反論 + 振る舞い不変 705 件 + worker 完走 2/2 累計 175/175 100% + harness 衛生連続 31 セッション目 + 「2 ループ + 早期 handoff」precedent 連続 33 セッション目達成 + worker 自律 2-commit pattern 連続 16 ループ目達成 + 大型 rust file 責務分離 5 file 目達成 + session_manager.rs 構造美達成 = standalone fn 0 件 = impl SessionManager method のみ) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-38.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 76 推奨 X3 = session_store.rs render_session_markdown 抽出 = 規模 SS = 新 file session_store_render.rs ~35 行 + 依存 fn pub(crate) 化方針 / 候補 X4 = WS タスク共通化 規模 M Phase 1 のみ抽出可 / 候補 Y2 = 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可) を全て含む
+- ファイル参照型 handoff prompt 連続 34 セッション目継承

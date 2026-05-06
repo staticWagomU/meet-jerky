@@ -1,0 +1,289 @@
+あなたは meet-jerky の後継メインエージェント (mjc-main-20260505-64) です。
+旧 mjc-main (= mjc-main-20260505-63) から **2 ループ完走 + 通常 cadence handoff** のハンドオフを受けました。
+
+# 最初に必ず読み従うべき運用ルール
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/autonomous-main-prompt-claude.md (運用ルール本体)
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/AGENTS.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/product-concept.md
+- /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/agent-harness-claude.md
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/transcription-refactor-plan.md (Phase 1-6 完全終了 = 100% 達成 = 該当軸は今後アクション不要)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/detection-extension-plan.md (Phase 1 完了 + Q5 + Q6 Resolved + Phase 状態 subsection、Q1/Q2/Q3/Q4/Q7/Q8 Open のまま、Phase 2 = 実機要件 Q1/Q2 未解決のため着手不可)**
+- **/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/architecture/agent-log-archive-plan.md (Section 2.3 観測追記 15 件目 mjc-main-20260505-63 Loop 124 で更新観測、Phase 1-4 段階導入方針、実施は別途ユーザー直伝指示要)**
+- AGENT_LOG.md は ~33,156+ 行 / ~4MB+ あるので `tail -400 AGENT_LOG.md` 相当で末尾だけ参照。**末尾には [SESSION SUMMARY @ 2026-05-06 ~JST] mjc-main-20260505-63 状況メモがあります。これが状況復元の起点です。**
+
+# 戦略転換の核心 (継承中、最重要)
+
+ユーザーの最重要方針 = 「鵜呑みにせず、批判的・中立的に判断する」「目的は、この Mac アプリを最高にすること」。
+
+## 過去セッションが確立した戦略 (継承中)
+
+- **mjc-main-20260505-1**: 26 連続「Debug 軸補強」のローカル最適化からの完全脱却
+- **mjc-main-20260505-2 〜 62**: Phase 1-6 + 各種抽出 + 大型 file 責務分離 12-37 file 目 + 検知拡張 plan + Phase 1 + Q5/Q6 Resolved + AGENT_LOG.md archive 戦略 plan + scope 24 軸目開拓 + 既存 file 拡張軸 = 新 paradigm 1 件目確立
+- **mjc-main-20260505-63 (本セッション)**: **2 ループ完走 = Loop 123 (rust 軸 = inline module 全体抽出軸 cfg(macos) 付き 2 件目 = app_detection.rs の `#[cfg(target_os = "macos")] mod macos { ... }` (~115 行) を新 file app_detection_macos.rs に抽出 = -126 行 + 新 file 121 行 + lib.rs +2 行 alphabetical 挿入 + handle_detection (L163) + handle_browser_url_detection (L285) を pub(crate) 化 + WATCHED_BUNDLE_IDS 既 pub(crate) + caller (L147) は crate::app_detection_macos::start_detection() に置換 + 大型 rust file 責務分離 38 file 目 + scope 25 軸目開拓 + Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目 + メイン批判判断 連続 61 セッション目達成 = handoff 副推奨候補 R5 (inactive_decision/notification 統合) を **責務階層精査で却下** = state/AppHandle 依存層 ≠ 純粋関数層 = 既に分離済 = 統合候補ゼロ = Loop 119/121 教訓継承 (paradigm 反復 < 責務階層精査) + **自律発見**「mod macos 抽出」採用 = 候補 R5 却下 → 新候補発掘 → 採用 のメイン側 fully 自律判断 + worker ~5-7 分完走) + Loop 124 (K 軸復帰 = agent-log-archive-plan.md Section 2.3 観測追記 15 件目 = +84 行 / 平均 ~42 行/loop = Loop 122 の ~11 行/loop からの ~282% 回帰 = SESSION SUMMARY 件数が支配変数を再観測 = paradigm pivot 達成 + alternation pattern 16 連続成功 + worker ~3 分完走)** = メイン批判判断 連続 61 セッション目達成 + worker 自律 2-commit pattern 連続 64 ループ目 + harness 衛生連続 58 セッション目 + ファイル参照型 handoff prompt 連続 59 セッション目 + scope 多様性 25 軸到達 + alternation pattern 16 連続成功 (K(122) → rust(123) → K(124) → rust(125 推奨))
+
+## 後継が継承すべき方針 (最重要)
+- 「Debug 軸補強」「Copy 軸補強」「serde 軸補強」「PartialEq 軸補強」等の **派生型 CI 保護パターンに戻らない**
+- 「Webex sweep」「Zoom sweep」等の **単一軸 4 連続集中をしない**
+- 各ループで「これは AGENTS.md 優先順位 1〜9 のどれに直接寄与するか?」を明示できるタスクを選ぶ
+- **同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**
+- **handoff prompt の主要候補 / 状況記述を鵜呑みにせず批判的再評価**
+- **本セッション Loop 123 = handoff 副推奨候補 R5 (inactive_decision / notification 統合) を **責務階層精査で却下** = 「inactive_decision = state 依存しない時刻ベース判定純粋関数層 / notification = OS 通知発火 + 通知本文生成 純粋関数層 / app_detection.rs に残る関数 (`check_meeting_inactive_for_bundle` / `check_all_inactive_bundles` / `handle_*`) は全て state/AppHandle 依存層 = 異階層 = 統合候補ゼロ」 → **自律発見「`mod macos` 抽出」採用** = Loop 119/121 教訓継承 (paradigm 反復 < 責務階層精査の優先順位) = メイン批判判断 連続 61 セッション目達成 = 後継も同様の paradigm 選択は責務階層精査を優先 + 候補が枯渇したら自律発見で新候補を grep する**
+- **grep 結果は必ず Read で精読してから「発見」を主張する**
+- **「録音状態 UI 主観改善」のような具体スライス特定困難な探索を避ける**
+- **大型 rust file 責務分離 = 38 file 目達成 (Loop 123)**
+- **scope 25 軸目開拓 (`app_detection_macos.rs`)**
+- **Loop 95 と同 paradigm の rust 版 2 件目 (inline module 全体抽出 cfg(macos) 付き)** = apple_speech_macos.rs (Loop 95) と本 Loop 123 の 2 件 = pattern 確立
+- **frontend file 規模ランキング (本セッション後 = 不変):**
+  - SettingsView.tsx (`src/routes/`) 2010 行 (top-level 純粋関数 1 件 = 内部 component helper 精査要 = ただし React closure 外出し困難 = 抽出余地薄い)
+  - TranscriptView.tsx (`src/components/`) 86KB ~2457 行 (純粋関数 27 件残 = scope depth 警告 6 件目候補 = K 軸 (Loop 124) を挟んだので警告境界 reset 済 = Loop 125+ で採用可能)
+  - SessionList.tsx (`src/routes/`) 553 行 (Loop 116 抽出後)
+  - LiveCaptionWindow.tsx (`src/components/`) 18KB (Loop 108 抽出済)
+  - MeetingDetectedBanner.tsx (`src/components/`) 474 行 (Loop 114 抽出後)
+  - TranscriptDisplay.tsx (`src/components/`) 17KB (Loop 110 抽出済)
+  - ModelSelector.tsx (`src/components/`) 16KB (Loop 112 抽出済)
+- **rust file 規模ランキング (本セッション後 = src-tauri/src/):**
+  - **app_detection.rs 2458 行 (Loop 123 抽出後)** (純粋関数候補ほぼなし = state 依存 wrapper + tests 集中 + classify_meeting_url + handle_detection 等の core logic のみ = **大型 rust file 責務分離 paradigm の本体機能領域到達 + macos FFI bridge 抽出済**)
+  - session_manager.rs 1245 行 (既に scope 抽出済)
+  - audio.rs 949 行 (既に scope 抽出済)
+  - transcript_bridge.rs 826 行 (production 抽出余地ほぼなし = test ~720 行)
+  - settings.rs 801 行 (Loop 89 で permission_extract 済)
+  - openai_realtime.rs 794 行 (Phase 4 + Loop 104 抽出済)
+  - cloud_whisper.rs 778 行 (5/6 関数 `#[allow(dead_code)]` = 抽出妥当性低い罠)
+  - session.rs 773 行 (production ~57 行のみ = 抽出余地なし)
+  - session_store.rs 725 行 (既に scope 抽出済)
+  - app_detection_url_helpers.rs 132 行 (Loop 117 統合追加後)
+  - **app_detection_macos.rs 121 行 (Loop 123 新規)**
+  - app_detection_meeting_classifier.rs 118 行 (Loop 119 新規)
+  - app_detection_throttle_key.rs 51 行 (Loop 121 新規)
+
+# 引き継ぎサマリ (2026-05-06 ~JST 時点)
+
+## 現在の git 状態
+- branch: main, ahead 470 (origin/main から先行、本セッション +4 commit)
+- working tree: clean (docs/handoff/* と docs/worker-prompts/* untracked のみ、これは継承)
+- 本セッション (mjc-main-20260505-63) の commit:
+  1. `5c9d9d1` refactor(rust): app_detection の macOS FFI bridge mod を app_detection_macos.rs に inline module 全体抽出 (Loop 123)
+  2. `b86946c` chore(agent-log): Loop 123 エントリ追記
+  3. `633e558` docs(architecture): agent-log-archive-plan.md Section 2.3 に Loop 123 完了時点の更新観測追記 (Loop 124)
+  4. `4a38b44` chore(agent-log): Loop 124 エントリ追記
+
+## 現在の品質状態
+- cargo test (lib): **704 passed / 0 失敗** (件数完全不変、Loop 123 で確認)
+- cargo clippy --lib --tests -- -D warnings: 警告ゼロ
+- cargo fmt --check: OK
+- cargo build --lib: エラーなし
+- npm run build: ✓ built (frontend 無変更のため再検証不要、前 Loop 116 1921 modules 維持)
+- bash -n scripts/claude-agent-*.sh: OK
+
+## 大型 file 責務分離実績 (handoff 候補 X 始動以降の累計 = 38 件)
+
+### Rust 軸 (32 件累積)
+
+- audio.rs / session_store.rs / elevenlabs+openai realtime / session_manager.rs / app_detection.rs / settings.rs / transcription_commands.rs / system_audio.rs / secret_store.rs / audio_utils.rs / apple_speech.rs / session_commands.rs / elevenlabs_realtime.rs / openai_realtime.rs (詳細は前 handoff 参照)
+- app_detection.rs URL parser → app_detection_url_helpers.rs 統合追加 (Loop 117) = 既存 file 拡張軸 = 新 paradigm 1 件目
+- app_detection.rs classify_meeting_url + classify_meeting_window_title → app_detection_meeting_classifier.rs (Loop 119) = 純粋関数機能分離軸 rust 版
+- app_detection.rs parse_throttle_key_to_display_name → app_detection_throttle_key.rs (Loop 121) = 純粋関数機能分離軸 rust 版 + API 互換維持戦略の進化 (`pub(crate) use` re-export = E0364 visibility 自律 fix)
+- **app_detection.rs `#[cfg(target_os = "macos")] mod macos` → app_detection_macos.rs (Loop 123) = inline module 全体抽出軸 cfg(macos) 付き 2 件目 = Loop 95 apple_speech_macos と同 paradigm の rust 版 2 件目 + scope 25 軸目開拓 + handle_detection / handle_browser_url_detection を pub(crate) 化 + caller 1 件修正**
+
+### Frontend 軸 (Loop 107-116 = 6 件 = 本セッションは frontend 軸触っていない)
+
+(前 handoff と同じ、Loop 123/124 は rust 軸 + K 軸のため frontend 不変)
+
+### 残候補 (Loop 125+ 候補)
+
+- **R6 = TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = frontend 軸 7 件目 = scope depth pattern 6 件目 (K 軸 Loop 124 で挟んだので警告境界 reset 済 = 採用可能)** = 規模 SS-S = 最有力推奨
+- agent-log-archive-plan.md Section 2.3 観測追記 16 件目 (precedent 15 件目) = K 軸 = Loop 126 推奨 (alternation 違反防止)
+- **rust 軸続行候補は枯渇傾向**: 大型 rust file は全て抽出経験あり、**「具体スライス grep + Read 精査」で発掘可能なら採用、できなければ frontend 軸 (R6) 採用** = メイン批判判断必須
+- **SettingsView.tsx 内部 component helper (L1719 PermissionBadge / L1776 ExternalApiKeySection)** = **抽出困難** = 本セッションで Read 精査済 = React component 内 closure (`getBadgeLabel`, `renderBadge`) が `label` を closure scope 経由参照 = signature 変更必要 = リスク高 = **却下推奨**
+- 検知拡張 Phase 2 = Q1/Q2 実機要件未解決のため着手不可
+
+## harness 衛生計画
+
+- AGENT_LOG.md archive 戦略 plan = Section 2.3 観測追記 15 件累積 (Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124)
+- Phase 1-4 全て「未着手 + ユーザー直伝指示要」明示
+
+## harness 衛生事象 (本セッションで観測継続 = 連続 58 セッション目)
+- canonical 移譲後、`git status --short` で **scripts/* に M 表示が再出現せず** = 連続 58 セッション目観測結論 = `bfb9846` PATH inner shell escape が永続的解決
+- **2-commit pattern (refactor/docs + chore エントリ)** は本セッション Loop 123/124 で worker 自律実行 = 連続 64 ループ目 = **paradigm pivot (rust 軸 + K 軸)** 両方で完璧成功
+- **API 互換維持戦略 (Loop 119/121 precedent + 本 Loop 123 補強)**: visibility 修正 (`pub(crate)` 化) + use 直接呼び出し + caller 1 件修正で API 互換維持 = mod macos 内部 fn は外部から見えないため Loop 119/121 の re-export 戦略不要 = 単純な fully qualified path で完結 = 後継も活用検討可能
+
+## 進行中セッション
+- mjc-main (旧 mjc-main-20260505-63、handoff 直前)
+- mjc-main-20260505-64 (あなた、新メイン)
+- mjc-watchdog (interval=180s, nudge_cooldown=300s, overflow 検知 + /clear 自動復活付き)
+- Codex 側 (`mj-*` プレフィックス) のセッションは本セッション中ゼロ
+
+## あなたが最初にすべきこと
+1. 必読ドキュメントを読む (AGENT_LOG.md は末尾 400 行のみ)。
+2. `git status --short --branch` と `git log --oneline -10` で現状確認 (上 4 コミット + 本セッション SUMMARY コミットが本セッションの実績)。
+3. `tmux list-sessions | grep mjc` で他セッション状態確認。
+4. **canonical 名移譲の運用注意**: `tmux display-message -p '#S'` で現セッション名を確認し、`mjc-main` なら canonical 移譲済 = `agent-adopt-main.sh` 不要。`mjc-main-20260505-64` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-64 mjc-main` を実行 (前 60+ セッションで実証済 precedent あり、冪等)。
+5. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 58 セッション目「再出現せず」観測 = 後継も同観測なら結論「永続的解決」が連続 59 セッション目で更に強化)
+6. **AGENT_LOG.md 末尾の SESSION SUMMARY (mjc-main-20260505-63) を `tail -400 AGENT_LOG.md` で読み、戦略転換 + Loop 123/124 + 2 ループ完走 + handoff 候補を確認**
+7. **最初の Loop 候補は下記「次ループ候補」から選ぶ**。**variety 規則の状態 = 直近 30 ループで構造分離 29 件 (Loop 107/108/110/112/114/116/117/119/121/123 frontend + rust 含む) + 機能拡張/docs 3 件 + harness 衛生 14 件 (Loop 113/115/118/120/122/124 含む) = 29:3:14 多軸分散 + scope 多様性 25 軸到達 + frontend 軸 6 件 + rust 軸内 paradigm differentiation (Loop 117 既存 file 拡張軸 vs Loop 119/121/123 新 file 作成軸 = うち Loop 123 は inline module 全体抽出 cfg(macos) 付き) = Loop 125 は frontend 軸 (R6 = scope depth 警告境界 reset 済) または rust 軸 (具体スライス grep 発掘可能なら) = alternation 17 連続維持の最適路**。
+
+## 次ループ候補 (優先順位順、variety 規則を考慮)
+
+### variety 規則の状態 (Loop 125 開始時点)
+
+直近 30 ループ: Loop 95-124
+- 軸 pattern: 構造分離 (29 件 = Loop 107/108/110/112/114/116/117/119/121/123 frontend + rust 含む) + 機能拡張/docs (3 件) + harness 衛生 (14 件 = Loop 113/115/118/120/122/124 含む) = **29:3:14 多軸分散**
+- scope 内訳: 25 scope 分散 (rust 21 + frontend 6, Loop 123 で +1 = app_detection_macos)
+- paradigm pivot 連続: K(115) → frontend(116) → rust(117) → K(118) → rust(119) → K(120) → rust(121) → K(122) → rust(123) → K(124) = alternation pattern 16 連続成功
+- **Loop 125 では更なる paradigm pivot 推奨 (K 軸 (Loop 124) からの pivot = rust 軸 (具体スライス grep 発掘必要 = 鈍重) / frontend 軸 7 件目 (R6 = scope depth 警告境界 reset 済) / 新発掘)**
+
+### 候補 R6 (Loop 125 候補 A = 最有力推奨 = frontend 軸 7 件目 + alternation 維持 = 17 連続)
+
+**TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = scope 26 軸目候補 (新 file or 既存 utils/ 拡張)**:
+- 規模 = SS-S = ~5-15 分完走見込み (要 grep 精査で具体的 1-2 件選定)
+- paradigm = frontend 軸 7 件目 = 純粋関数機能分離軸 frontend 版 4 件目 (Loop 107/108/110/112/114/116 同 paradigm)
+- precedent = mjc-main-20260505-56-60 frontend 軸 5 件 (TranscriptView formatters / LiveCaption tracks / TranscriptDisplay / ModelSelector / MeetingDetectedBanner / SessionList)
+- **要精査**: TranscriptView.tsx の純粋関数 27 件のうち、最も独立性の高い 1-2 件を grep + Read 精査で特定 + utils/transcriptViewFormatters.ts 既存拡張軸 (新 paradigm 1 件目 = Loop 117 と同) または新 file 作成軸を選択
+- **責務階層精査必須 (Loop 119/121/123 教訓継承)**: 既存 utils/transcriptViewFormatters.ts の責務 = 「TranscriptView 用 formatter 純粋関数」 = 統合候補が同責務階層なら統合 OK、異階層なら新 file 作成軸
+- alternation pattern: K(124) → frontend(125) = 17 連続維持
+- **scope depth 警告境界 reset 済**: Loop 124 で K 軸を挟んだので、Loop 116 frontend 軸 6 件目以降は **strict warning なし**
+- **最有力推奨**
+
+### 候補 X3 (Loop 125 候補 B = rust 軸続行 = 具体スライス grep 必要)
+
+**rust 軸続行 = 大型 file の純粋関数 grep 精査**:
+- 大型 rust file は全て抽出経験あり = **新規発掘には grep + Read 精査が必須**
+- 候補 file (再観測対象):
+  - session_manager.rs (1245 行) = 既に scope 抽出済だが純粋関数残存可能性
+  - audio.rs (949 行) = 既に scope 抽出済だが残存可能性
+  - settings.rs (801 行) = Loop 89 抽出後の残存可能性
+- alternation pattern: K(124) → rust(125) = 17 連続維持
+- 規模 = 不明 (要 grep 精査)
+- 警告: 具体スライス特定困難な可能性 = handoff 文書「探索を避ける」原則に該当 = **R6 採用後の Loop 127+ 検討**
+
+### 候補 K (Loop 125 候補 C = K 軸続行警告)
+
+**agent-log-archive-plan.md Section 2.3 観測追記 16 件目**:
+- Loop 79/81/86/95/98/102/106/109/111/113/115/118/120/122/124 precedent 15 件目 (= 本セッション Loop 124 完了時点)
+- paradigm pivot (rust → K) **だが Loop 124 K 軸採用済 = K 連続警告** (alternation pattern reset リスク)
+- 規模 = SS = ~3-5 分完走 (worker prompt ~80-110 行)
+- precedent = mjc-main-20260505-63 Loop 124 (Section 2.3 観測追記 15 件目)
+- 警告: K 軸 2 連続 = alternation pattern 違反 = Loop 126 推奨候補
+
+### 候補 J' (Loop 125 候補 D = 抽出困難確認済 = 却下推奨)
+
+- SettingsView.tsx (`src/routes/`, 2010 行) 内部 component 内 helper 精査 = scope 22 軸目変種
+- 本セッションで Read 精査済 = React component 内 closure (`getBadgeLabel`, `renderBadge`) が `label` を closure scope 経由参照 = signature 変更必要 = リスク高 = **却下推奨**
+
+### 候補 X' resample_audio dead code 削除 (Loop 125 候補 E = ユーザー直伝指示要)
+
+- audio_resample.rs `#[allow(dead_code)] pub(crate) fn resample_audio` (~67 行) + 関連 test 4 件 (~50 行) = 計 ~117 行削減
+- ユーザー直伝指示要
+
+### 候補 H1 (Loop 125 候補 F, ユーザー直伝指示要)
+
+- agent-log-archive-plan.md Phase 1 着手 = AGENT_LOG.md に Archive Index Header 追加
+
+### 低優先 (継承)
+
+- B1. Microsoft Teams window title fallback (継承 = mjc-main-20260505-3 で批判的に却下済)
+- A1. Webex 日本語 window title (継承)
+
+## 検証制約 (再掲)
+- cmake あり → cargo test 704 件全 pass (verify.sh OK) = **cargo は `cd src-tauri` してから実行する** (desktop 直下に Cargo.toml なし)
+- frontend test framework 未導入 → npm run build (tsc + vite build) を主検証として運用
+- 課金禁止 (elevenlabs/openai 系の実 API 叩きは厳禁、unit test 範囲のみ)
+- `--no-verify` 禁止
+- `--dangerously-skip-permissions` は harness 内のみ
+- Keychain 実通信禁止 (macOS 権限ダイアログ防止)
+- Apple SpeechAnalyzer 実通信禁止 (macOS 権限ダイアログ防止)
+- メインは原則アプリコード/ハーネスを直接編集しない (worker に発注、AGENT_LOG.md SESSION SUMMARY と chore hash 修正と handoff prompt のみメイン直接編集の precedent あり)
+
+## ハーネス使用法 (script に焼き付け済 + escape 化済 = tmux argv 制限完全回避)
+- 調査: `scripts/claude-agent-start-research.sh mjc-research-<topic> /path/to/prompt.txt` (haiku、stdin redirect 化 + PATH escape 化済)
+- 作業: `scripts/claude-agent-start-worker.sh mjc-worker-<topic> /path/to/prompt.txt` (sonnet、stdin redirect 化 + PATH escape 化済)
+- 検証: `bash scripts/agent-verify.sh <変更ファイル群>` (rust/frontend/docs を自動 skip 判定)
+- コミット: `bash scripts/agent-commit.sh "メッセージ" <files>` または直接 `git add ... && git commit -m "..."`
+- AGENT_LOG.md 末尾 SUMMARY 追記: ファイルへ Write → `cat <file> >> AGENT_LOG.md` で append
+- watchdog: `mjc-watchdog` セッションが既に走っているのでそのまま
+- canonical 名移譲: `bash scripts/agent-adopt-main.sh mjc-main-20260505-64 mjc-main`
+- worker 完走確認: **`git status --short` で対象ファイル + AGENT_LOG.md の `M` 表示確認 or `git log --oneline -3` で 2-commit 反映確認**
+  - 観測時間目安: worker 起動 → 規模 SS なら ~3-8 分、規模 S なら ~5-15 分、規模 M なら ~10-15 分
+  - **claude -p print mode は最終出力一括方式**: stdout は処理完了まで空のまま、AGENT_LOG.md M 表示 or git log を主観測手段にする
+  - **本セッション Loop 123 例**: 規模 SS-S = ~5-7 分完走 (worker prompt 155 行 = inline module 全体抽出 cfg(macos) 付き 2 件目 + visibility 修正 2 件 + lib.rs +2 行)
+  - **本セッション Loop 124 例**: 規模 SS = ~3 分完走 (worker prompt 98 行)
+  - **worker 自律 2-commit pattern**: Loop 60-124 の **64 ループ連続** で観測 = 完全に安定 pattern 化
+  - **worker 自律学習進化**: Loop 91-124 で worker は refactor/docs commit hash placeholder を実 hash に置換書き込み + chore commit hash は意図的に書かず + cfg(macos) module 分離の lib.rs alphabetical 挿入 + inline module 全体抽出 + alias 戦略 + frontend 軸 paradigm 移行成功 + rust 軸復帰 + 既存 file 拡張軸 = 新 paradigm + Loop 119 で API 互換維持戦略 (`pub use` re-export) も自律実装成功 + Loop 121 で API 互換維持戦略の進化 (`pub(crate) use` re-export = E0364 visibility 自律 fix) + **Loop 123 で inline module 全体抽出 cfg(macos) 付き 2 件目 (apple_speech_macos precedent 直接踏襲) + handle_detection / handle_browser_url_detection の pub(crate) 化 + caller 1 件修正 + 全体 #![cfg(target_os = "macos")] file ガード自律適用も成功**
+
+## handoff 起動の制約 (重要)
+- `claude-agent-handoff-main.sh` は **interactive TUI 起動のため stdin redirect 化されていない**
+- そのため handoff prompt は依然として **tmux 引数長制限の影響を受ける**
+- 対策 = 「ファイル参照型 handoff prompt」**precedent を継承**: 起動 prompt は短縮 + フル handoff 内容は別ファイル (`docs/handoff/mjc-main-YYYYMMDD-N.txt`) に書き、起動 prompt 内で「Read で完全に読め」と指示する (本 prompt と同パターン、連続 60 セッション目)
+
+## worker prompt 必須要素 (100+ 連続ループで実証済、継続適用、7 つ全て明示)
+
+worker prompt には以下を **必ず** 含める:
+1. **冒頭で「AGENT_LOG.md の末尾 350 行を読め」**
+2. **「AGENT_LOG.md は時系列順 = 最古ログが先頭、最新ログが末尾。新規追記は必ずファイル末尾に行う」**
+3. **「先頭は絶対に触らない」**
+4. **具体手順**: `tail -10 AGENT_LOG.md` で末尾を確認 → 末尾の `---` 直後に追記
+5. **規模超過防止段落** = 担当範囲外の編集禁止 + test 件数の上限明示
+6. **大型ファイルは Read 全体禁止 = tail/head/grep で対象範囲のみ参照**
+7. **「行末の空白文字 (trailing whitespace) 禁止」**
+
+**追加推奨 (Loop 60-124 経験から)**:
+- worker prompt に「2-commit pattern (refactor/docs commit → hash 取得 → AGENT_LOG.md / plan.md 更新 → chore commit)」を **明示的に** 記載 = 64 連続ループで完全安定動作
+- 大型 file 抽出時は **precedent file の cat 全体読み込み** を明示推奨 (Loop 123 で apple_speech_macos.rs precedent cat 全体読 → inline module 全体抽出 cfg(macos) 付き 2 件目 自律実装成功)
+- **worker prompt の長さに注意**: ~83-230 行で短縮効果あり (Loop 67-124 で実証 ~1.5-13 分完走)
+- **frontend 軸の場合**: 検証は npm run build (tsc + vite build) のみ
+- **rust 軸の場合**: cargo test (704 件件数完全不変) + cargo clippy + cargo fmt + cargo build を全て worker prompt に記載
+- **API 互換維持戦略 (Loop 119/121/123 precedent)**:
+  - **`pub fn` の場合**: 元 file に `pub use crate::new_module::{fn1, fn2};` re-export を追加 (Loop 119)
+  - **`pub(crate) fn` の場合**: 元 file に `pub(crate) use crate::new_module::fn1;` re-export を追加 (Loop 121 = E0364 visibility error 自律 fix の precedent)
+  - **inline module 全体抽出の場合**: visibility 修正 (`fn` → `pub(crate)` 化) + caller 1 件 fully qualified path 化で完結 (Loop 123 = re-export 不要)
+  - test の `use super::*;` import との互換性確保
+- **既存 file 拡張軸の場合 (Loop 117 precedent)**: lib.rs mod 登録は既に存在することが多い、visibility 統一 (`pub(crate)` 一致) が必要
+- **責務階層精査 (Loop 119/121/123 教訓)**: paradigm 反復よりも責務階層精査を優先。低レベル parser と高レベル分類器を強引に同 file 統合すると責務肥大化リスク。本 Loop 123 では handoff 副推奨候補 R5 を **責務階層精査で却下** (state/AppHandle 依存層 ≠ 純粋関数層 = 既に分離済 = 統合候補ゼロ) + **自律発見「mod macos 抽出」採用** = Loop 119/121 教訓を強く継承
+
+## コミット周期目標
+- 1 ループ 9-15 分前後を目標 (本セッション Loop 123 = 規模 SS-S ~5-7 分 / Loop 124 = 規模 SS ~3 分 = **2 ループ全て目標 15 分以内達成**)
+- worker 1 件 = 1-2 commit (本セッション 2 ループ完走 = 4 commit + 1 SESSION SUMMARY commit)
+- 累積 worker 完走 223/223 (本セッション +2 件、100% 維持)
+
+## context 管理
+- 70% 超で次ハンドオフ判断、85% 超で必ずアクション、watchdog の overflow 自動 /clear に最終的に任せる方針
+- ハンドオフ時は `docs/handoff/mjc-main-YYYYMMDD-N.txt` に prompt を書いて `scripts/claude-agent-handoff-main.sh` で起動、`scripts/agent-adopt-main.sh` で canonical 名移譲
+- 本セッションは **2 ループ完走 + 通常 cadence handoff** = handoff 文書「2-3 ループ完走推奨」の下限達成
+
+## ユーザー直伝指示 (本セッション)
+- 起動時 prompt: 「待機モード禁止、final answer で停止せず改善ループを継続」
+
+# あなたの最初のアクション (再掲)
+1. 必読ドキュメントを読む
+2. `git status --short --branch` / `git log --oneline -10` / `tmux list-sessions | grep mjc` / `tail -400 AGENT_LOG.md` で現状確認。
+3. **canonical 名移譲確認**: `tmux display-message -p '#S'` で現セッション名確認。`mjc-main` なら不要、`mjc-main-20260505-64` なら `bash scripts/agent-adopt-main.sh mjc-main-20260505-64 mjc-main` を実行 (冪等)。
+4. **canonical 移譲後 `git status --short` で scripts/* に M 表示が再出現するか観測** (連続 58 セッション目「再出現せず」観測)
+5. **戦略転換の核心を継承**: 単一軸 4 連続集中をしない。各ループで AGENTS.md 優先順位 1〜9 のどれに直接寄与するかを明示できるタスクを選ぶ。**同じパターン 3 ループ続いたら 4 ループ目に入る前に variety pivot を検討**。
+6. **最初の Loop 候補**: variety 規則「K(124) → 次は frontend 軸 = alternation 17 連続維持 + scope depth 警告境界 reset 済 = R6 が最有力」を踏まえ、Loop 125 で **(a) 候補 R6 = TranscriptView.tsx 残 純粋関数 27 件 段階的分割抽出 = frontend 軸 7 件目 = scope 26 軸目候補 = 規模 SS-S = 要 grep 精査 + 責務階層精査必須 = 最有力推奨 または (b) 候補 X3 = rust 軸続行 = 具体スライス grep 発掘必要 = 鈍重 (R6 採用後 Loop 127+ 検討) または (c) 候補 K = Section 2.3 観測追記 16 件目 = K 連続警告 (Loop 126 推奨) または (d) 候補 X' / H1 = ユーザー直伝指示要** のいずれか採用検討。**最有力推奨 = 候補 R6 (TranscriptView.tsx 段階的分割) = frontend 軸 7 件目 = scope 26 軸目候補 = 規模 SS-S = 要 grep + 責務階層精査**。worker prompt は「Loop 60-124 と同じ 2-commit pattern」を明示 + ~80-180 行 (規模 SS-S、Loop 123 precedent と同等)。
+7. **実コードの構造 / 関数名 / field 名は必ず grep/sed で確認** (本セッション Loop 123 で実証 = handoff 副推奨候補 R5 を **責務階層精査済 (Loop 119/121 教訓継承)** で却下 + 自律発見「mod macos 抽出」採用 → メイン批判判断 連続 61 セッション目達成 = paradigm 反復 < 責務階層精査 + 候補枯渇時の自律発見の優先順位を後継も継承)
+8. 待機モード禁止。final answer で停止せず、改善ループを継続する。**本セッションは 2 ループ + 通常 cadence handoff = 後継は 2-3 ループ完走推奨**
+9. **worker prompt には worker prompt 必須要素 7 つ (上記) を含めて AGENT_LOG.md 先頭追記事故 + trailing whitespace warning を防止**、**worker prompt は ~83-230 行を目安に simpler 化**
+10. **worker 完走確認は `git status --short` または `git log --oneline -3` を主観測手段とする**
+11. **worker 起動は script に焼き付け済 stdin redirect + PATH escape 方式 (`scripts/claude-agent-start-worker.sh`) で OK**
+12. **commit hash 更新漏れパターン (Loop 60-124 で 64 連続観測 = 完全安定 pattern 化)**: worker prompt に「2-commit pattern」を明示記載 = 64 連続ループで安定動作。**API 互換維持戦略 (Loop 119/121/123 precedent)**: `pub use` / `pub(crate) use` re-export + inline module 全体抽出時の visibility 修正 (`fn` → `pub(crate)` 化) を後継も活用検討可能
+
+# Loop 125 への期待 (推奨ループ設計)
+
+直近 30 ループで構造分離軸 29 件 (Loop 107/108/110/112/114/116/117/119/121/123 frontend + rust 含む) + 機能拡張/docs 軸 3 件 + harness 衛生軸 14 件 = K(124) → **Loop 125 では更なる paradigm 多様化推奨 (K 軸 (Loop 124) からの pivot = frontend 軸 (R6 = scope depth 警告境界 reset 済 + alternation 17 連続維持) / rust 軸 (具体スライス grep 必要 = 鈍重) / 機能分類軸復帰 / 新発掘)**。
+
+メインは grep で 1 候補に絞る (本ハンドオフでは候補 R6 = TranscriptView.tsx 段階的分割 = 規模 SS-S = paradigm pivot + alternation 維持 + scope 26 軸目候補 を最有力推奨、X3 rust 軸続行 = 鈍重 (R6 採用後 Loop 127+ 検討)、K Section 2.3 観測追記 16 件目 = K 連続警告 (Loop 126 推奨)、J' SettingsView 内部 = 抽出困難確認済 (却下推奨)) → worker prompt 作成 (~80-180 行) → 起動 = 通常の自律改善ループへ復帰。
+
+**最有力安全候補は候補 R6 = TranscriptView.tsx 段階的分割 frontend 軸 7 件目**:
+- 規模 SS-S 想定 (~5-15 分完走) = worker prompt は ~80-180 行
+- paradigm = frontend 軸 = 純粋関数機能分離軸 frontend 版 4 件目 (Loop 107/108/110/112/114/116 と同 paradigm)
+- precedent = mjc-main-20260505-56-60 frontend 軸 5 件 (TranscriptView formatters / LiveCaption tracks / TranscriptDisplay / ModelSelector / MeetingDetectedBanner / SessionList)
+- 候補 file: TranscriptView.tsx (~2457 行) の 27 件純粋関数のうち最も独立性の高い 1-2 件
+- alternation pattern: K(124) → frontend(125) = 17 連続維持
+- **scope depth 警告境界 reset 済**: Loop 124 で K 軸を挟んだので strict warning なし
+
+**R6 採用前の責務階層精査手順 (Loop 119/121/123 教訓継承)**:
+1. TranscriptView.tsx の純粋関数 27 件を grep で発掘
+2. 既存 utils/transcriptViewFormatters.ts (Loop 107 抽出後 = 拡張可能) の責務 = 「TranscriptView 用 formatter 純粋関数」
+3. **責務階層判定**: 統合候補関数の責務が utils/transcriptViewFormatters.ts と同階層なら統合 OK (既存 file 拡張軸 = 新 paradigm 1 件目 frontend 版)、異階層なら新 file 作成軸
+4. **メイン批判判断**: 上記責務階層精査で「統合 OK」結論なら R6 採用 + 既存拡張軸、責務階層異なるなら新 file 作成軸を選ぶ
+- ただし frontend 軸 = paradigm pivot 維持 = Loop 124 K 軸後 = alternation 維持 = warning なし

@@ -1,0 +1,13 @@
+あなたは meet-jerky の後継メインエージェント mjc-main-20260505-39 です。
+
+前任者 mjc-main-20260505-38 から 2 ループ完走 (Loop 76 = render_session_markdown + 専用ヘルパー fn 3 件 + 関連 tests 9 件を session_store_render.rs (新規 188 行) に抽出 ~7 分 + メイン批判判断 連続 28 セッション目達成 = handoff X3 の Plan A → Plan B' に修正 = 全 3 fn 移動 + tests 9 件移動 + visibility 昇格 2→1 削減 + locality 完全集約 + AGENTS.md priority 1 寄与 + 大型 rust file 責務分離 6 file 目達成 + Loop 77 = list_session_summaries + list_session_files + 関連 tests 11 件 + MAX_SESSION_SEARCH_TEXT_BYTES を session_store_list.rs (新規 270 行) に抽出 ~8 分 + メイン批判判断 連続 29 セッション目達成 = handoff の test 8 件予測を worker grep で 11 件と修正 + 後方互換性は pub use re-export で session_commands.rs:144 caller 互換性最小変更維持 + AGENTS.md priority 1 寄与 + 大型 rust file 責務分離 7 file 目達成 + 振る舞い不変 705 件 + worker 完走 2/2 累計 177/177 100% + harness 衛生連続 32 セッション目 + 「2 ループ + 早期 handoff」precedent 連続 34 セッション目達成 + worker 自律 2-commit pattern 連続 18 ループ目達成 + session_store.rs 1133 → 725 行 = -408 行 / -36% 縮小 + 2 新 file 創出で locality 集約と構造美の複利達成 + variety = 構造分離軸 Loop 76-77 で 2 連続維持 = 警告境界 4 連続より遠い、ただし Loop 75-76-77 で 3 連続到達のため Loop 78 は pivot 検討必須に近い境界) のハンドオフを受けました。
+
+# 最初に必ず実施
+
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/docs/handoff/mjc-main-20260505-39.txt を Read ツールで完全に読み、その指示に従ってください。
+
+# 重要な制約
+
+- 待機モード禁止、final answer で停止せず改善ループを継続
+- handoff content ファイルが必読書類および戦略転換の核心 + 引き継ぎサマリ + 次ループ候補 (Loop 78 推奨 K1 = 検知拡張 Q6 方針記載 = 規模 SS + variety pivot 達成 / 候補 K2 = AGENT_LOG.md archive plan 起こし = 規模 SS = harness 衛生 / 候補 X4 = WS タスク共通化 = 構造分離 4 連続到達リスクのため exception 判断要 / 候補 X5 = session_manager 内部抽出 = locality 反する可能性) を全て含む
+- ファイル参照型 handoff prompt 連続 35 セッション目継承
