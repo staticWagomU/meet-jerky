@@ -2529,6 +2529,14 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_rejects_goto_app_launcher_with_extra_path_segment() {
+        assert_eq!(
+            classify_meeting_url("https://app.goto.com/meet/123456789/extra"),
+            None
+        );
+    }
+
+    #[test]
     fn match_strategy_app_launch_equality_contract() {
         // AppLaunch 同士は等価
         assert_eq!(MatchStrategy::AppLaunch, MatchStrategy::AppLaunch);

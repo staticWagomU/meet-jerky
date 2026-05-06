@@ -1,0 +1,36 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+GoToMeeting `app.goto.com/meet/<9-digit-id>` app launcher URL の top-level classifier で、余分な path segment を会議 URL として誤検知しない契約をテストで固定してください。挙動変更は不要です。
+
+実装条件:
+1. `src-tauri/src/app_detection.rs`
+   - `classify_meeting_url_accepts_goto_app_launcher` 近くに、以下の単独テストを追加してください:
+     - test 名: `classify_meeting_url_rejects_goto_app_launcher_with_extra_path_segment`
+     - assertion: `classify_meeting_url("https://app.goto.com/meet/123456789/extra")` が `None`
+   - コード本体、`app_detection_goto.rs`、他サービスのテスト、既存 GoTo positive/negative tests は変更しないでください。
+2. AGENT_LOG.md
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+   - 変更ファイルには、この worker prompt と research prompt も含めてください。
+
+禁止:
+- コミットは禁止です。
+- 依存追加は禁止です。
+- Rust/Tauri 実機権限や外部サービス確認は不要です。
+- 担当範囲外ファイルを編集しないでください。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url_rejects_goto_app_launcher_with_extra_path_segment`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop241-next-value-slice-20260507-031649.txt docs/worker-prompts/mj-worker-loop241-goto-app-extra-segment-test-20260507-031649.txt`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

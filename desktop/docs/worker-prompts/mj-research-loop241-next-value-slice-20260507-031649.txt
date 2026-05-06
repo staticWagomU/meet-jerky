@@ -1,0 +1,43 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 241 で実装する、1コミットに収まる小さく価値の高い改善候補を1件だけ調査してください。
+
+直近の重複禁止:
+- Loop 236/237: Google Meet / Webex detection boundary tests
+- Loop 238: audio-level source passthrough payload test
+- Loop 239: live caption transcription status UI sync
+- Loop 240: Teams `/meet/<id>` numeric-only fallback
+
+優先して見る観点:
+1. クラッシュ修正に近い guard / payload validation の薄い箇所
+2. 会議検知の信頼性で、Loop 236/237/240 と重複しない Zoom / Teams / Google Meet / Webex / Whereby / GoTo の境界
+3. マイク音声とデスクトップ音声の別トラック取得に関する純粋関数・payload 契約テスト
+4. 録音状態の透明性 UI で、Loop 239 と重複せず build で検証できる小さな表示改善
+5. 文字起こしエラー payload / listener guard のテストや文言改善で、実機権限不要のもの
+
+調査条件:
+- 挙動変更なしのテスト追加を優先してください。挙動変更を推す場合は product value と誤検知・検知漏れリスクを明記してください。
+- 大きな抽象化、依存追加、Rust AppHandle/Tauri 実機権限、外部 API は避けてください。
+- 既存テストや直近ループと重複しないことを grep / 読解で確認してください。
+- 推測は推測と明示してください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補1件
+- 根拠ファイル/関数
+- 追加すべき具体的 assertion または最小実装内容
+- ユーザー価値
+- 非目標
+- 影響範囲
+- リスク/残リスク
+- worker へ渡す担当範囲と実装条件
+- 検証方法
