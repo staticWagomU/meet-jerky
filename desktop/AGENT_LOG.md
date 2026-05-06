@@ -34644,3 +34644,25 @@ rust 軸 const 集約 paradigm 反復 9 件目達成 = transcription_commands_he
 - X' resample_audio dead code 削除 = ユーザー直伝指示要
 - H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要
 ---
+
+## [TASK ENTRY @ 2026-05-06 ~JST] mjc-main Loop 198 = ERROR_TRANSCRIPTION_WORKER_ABEND を transcription_error_payload.rs に集約
+
+mjc-main-20260505-96 セッション (canonical 移譲済) Loop 198 = rust 軸 = const 集約 paradigm 反復 10 件目達成 = paradigm 系統樹拡張 11 件目反復 = 新規 const 追加軸 = Loop 194 cloud_whisper.rs RESPONSE_FORMAT_VERBOSE_JSON precedent と同系統樹.
+
+`src/transcription_error_payload.rs` に `pub(crate) const ERROR_TRANSCRIPTION_WORKER_ABEND: &str = "文字起こしワーカーが異常終了しました";` 追加 + 4 callsite (本番 1: L13 build_worker_panic_error_payload + test 3: L42/L104/L198) を const 参照に統一 = panic 文言の単一 source of truth 化 + typo 防止 + UI emit メッセージの改変リスク CI 固定.
+
+メイン批判判断 連続 98 セッション目達成 = 後継 mjc-main-20260505-96 が handoff prompt R30' 主張「主要候補なし」 (前任 mjc-main-20260505-95 の事前探索結果) を独自 grep で再探索 + transcription_error_payload.rs / secret_store.rs / system_audio_format.rs に有力候補発見 = 第一推奨 = transcription_error_payload.rs の 4 callsite を採用 = 批判検証達成.
+
+alternation pattern pivot 加速継続: rust(196) → K(197) → rust(198) = 36 → 37 → 38 = 加速期更なる強化 = 節目 30 件突破後 8 件目.
+
+worker prompt 必須要素 9 (冒頭 `---` 含めない) 30 連続実証成功 (Loop 168-198 = 節目 25 連続突破後 5 件目).
+
+worker 自律 2-commit pattern 連続 53 ループ目達成 (Loop 145-198 = 54 連続安定 = 節目 50 件突破後 3 件目).
+
+const 集約 paradigm 反復 10 件目達成 = frontend 10 + rust 3 = 計 13 連続 = paradigm 完全成熟期 cross-language 拡張更なる持続.
+
+AGENTS.md priority 1 寄与 = panic 文言固定 + UI emit 信頼性向上.
+
+検証: cargo test --lib 704 件完全不変 / cargo clippy --lib --tests -- -D warnings 警告ゼロ / cargo fmt --check OK / cargo build --lib エラーなし.
+
+---
