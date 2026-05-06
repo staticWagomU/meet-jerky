@@ -1,4 +1,5 @@
 import type { TranscriptionEngineType } from "../types";
+import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
 
 export function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
@@ -35,7 +36,7 @@ export function getEngineStatusDisplayLabel(statusLabel: string): string {
 }
 
 export function getEngineStatusPillClass(statusLabel: string): string {
-  if (statusLabel === "確認できません") {
+  if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "確認中") {

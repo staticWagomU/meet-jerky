@@ -12,6 +12,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
+import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 
 export function PermissionBanner() {
   const [settingsOpenError, setSettingsOpenError] = useState<string | null>(
@@ -64,14 +65,14 @@ export function PermissionBanner() {
   const micStatusLabel = isCheckingPermissions
     ? "確認中"
     : micPermissionError
-      ? "確認できません"
+      ? STATUS_UNCHECKABLE_LABEL
       : micPermission === "denied"
         ? "未許可"
         : "未確認";
   const screenStatusLabel = isCheckingPermissions
     ? "確認中"
     : screenPermissionError
-      ? "確認できません"
+      ? STATUS_UNCHECKABLE_LABEL
       : screenPermission === "denied"
         ? "未許可"
         : "未確認";

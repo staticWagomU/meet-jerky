@@ -65,6 +65,7 @@ import {
   getExternalApiKeyStatusPillClass,
 } from "../utils/externalApiKeyHelpers";
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
+import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
   getAiTransmissionStatusAriaLabel,
@@ -1137,10 +1138,10 @@ export function TranscriptView() {
       : null
     : null;
   const aiTransmissionStatusLabel = settingsError
-    ? "確認できません"
+    ? STATUS_UNCHECKABLE_LABEL
     : getAiTransmissionStatusLabel(settings?.transcriptionEngine);
   const engineStatusLabel = settingsError
-    ? "確認できません"
+    ? STATUS_UNCHECKABLE_LABEL
     : getEngineStatusLabel(settings?.transcriptionEngine);
   const engineStatusDisplayLabel =
     getEngineStatusDisplayLabel(engineStatusLabel);

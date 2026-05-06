@@ -1,3 +1,5 @@
+import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
+
 export function getExternalApiKeyStatusLabel(
   externalApiProvider: string | null,
   hasExternalApiKey: boolean | undefined,
@@ -7,7 +9,7 @@ export function getExternalApiKeyStatusLabel(
     return null;
   }
   if (externalApiKeyError) {
-    return "確認できません";
+    return STATUS_UNCHECKABLE_LABEL;
   }
   if (hasExternalApiKey === undefined) {
     return "確認中";
@@ -21,7 +23,7 @@ export function getExternalApiKeyStatusPillClass(
   if (statusLabel === "登録済み") {
     return "meeting-status-pill-active";
   }
-  if (statusLabel === "確認できません") {
+  if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "未登録") {

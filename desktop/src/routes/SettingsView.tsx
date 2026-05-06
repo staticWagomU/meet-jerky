@@ -30,6 +30,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
+import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -1756,9 +1757,9 @@ function PermissionBadge({
   if (error) {
     return renderBadge(
       "permission-denied",
-      "確認できません",
+      STATUS_UNCHECKABLE_LABEL,
       false,
-      `確認できません: ${toErrorMessage(error)}`,
+      `${STATUS_UNCHECKABLE_LABEL}: ${toErrorMessage(error)}`,
     );
   }
   if (!status) {
@@ -1895,7 +1896,7 @@ function ExternalApiKeySection({
   const apiKeyStatusText = isFetchingHasKey
     ? "確認中"
     : hasKeyError
-      ? "確認できません"
+      ? STATUS_UNCHECKABLE_LABEL
       : hasKey === undefined
         ? "確認中"
         : hasKey

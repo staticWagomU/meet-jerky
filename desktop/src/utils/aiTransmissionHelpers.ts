@@ -1,5 +1,6 @@
 import type { TranscriptionEngineType } from "../types";
 import { isExternalTransmissionLabel } from "./liveCaptionStatus";
+import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
 
 export function getAiTransmissionStatusLabel(
   engine: TranscriptionEngineType | undefined,
@@ -20,7 +21,7 @@ export function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (isExternalTransmissionLabel(statusLabel)) {
     return "meeting-status-pill-warning";
   }
-  if (statusLabel === "確認できません") {
+  if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "meeting-status-pill-error";
   }
   if (statusLabel === "なし") {
@@ -30,7 +31,7 @@ export function getAiTransmissionStatusPillClass(statusLabel: string): string {
 }
 
 export function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
-  if (statusLabel === "確認できません") {
+  if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "外部送信状態を確認できません";
   }
   if (statusLabel === "なし") {
