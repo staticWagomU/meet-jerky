@@ -1,0 +1,29 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+`system-audio-format-warning` listener は `listen<string>` を信じて `event.payload.trim()` している。壊れた payload が届いた場合に callback 例外で相手側音声の診断表示が壊れる余地を減らすため、payload の型を UI 側でも確認し、不正形式を notice として表示する。
+
+実装条件:
+- `SYSTEM_AUDIO_FORMAT_WARNING_EVENT` の event 名、Rust emit、warning 条件、音声取得処理、Once 制御、UI レイアウトは変更しない。
+- `listen<string>` を `listen<unknown>` にして、payload が string の場合だけ既存の trim / 空文字 fallback 挙動を維持してください。
+- payload が string でない場合は `setSystemAudioFormatWarning("音声形式警告通知の形式が不正です。")` のような既存 tone の日本語 notice を設定してください。
+- 不正 payload 時に throw しないでください。
+- listener 開始失敗時の表示と、開始成功時に開始失敗由来 notice だけを clear する既存挙動は維持してください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

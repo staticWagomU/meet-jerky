@@ -461,10 +461,14 @@ export function TranscriptView() {
 
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<string>(
+    const unlistenPromise = listen<unknown>(
       SYSTEM_AUDIO_FORMAT_WARNING_EVENT,
       (event) => {
         if (disposed) {
+          return;
+        }
+        if (typeof event.payload !== "string") {
+          setSystemAudioFormatWarning("音声形式警告通知の形式が不正です。");
           return;
         }
         const warning = event.payload.trim();
