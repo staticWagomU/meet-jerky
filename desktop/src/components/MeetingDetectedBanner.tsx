@@ -327,7 +327,9 @@ export function MeetingDetectedBanner() {
     } catch (e) {
       clearPendingMeetingStartRequest();
       setPendingAction(null);
-      console.error("録音開始要求または会議検知バナー非表示に失敗しました:", toErrorMessage(e));
+      const msg = toErrorMessage(e);
+      console.error("録音開始要求の送信に失敗しました:", msg);
+      setListenerError(`録音開始要求の送信に失敗しました: ${msg}`);
       return;
     }
     try {
