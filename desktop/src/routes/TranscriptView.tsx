@@ -1280,10 +1280,10 @@ export function TranscriptView() {
     void invoke("set_live_caption_window_visible", {
       visible: isMeetingActive || isTranscribing,
     }).catch((e) => {
-      console.error(
-        "ライブ字幕ウィンドウの表示切替に失敗しました:",
-        toErrorMessage(e),
-      );
+      const msg = toErrorMessage(e);
+      const errorMessage = `ライブ字幕ウィンドウの表示切替に失敗しました: ${msg}`;
+      console.error(errorMessage);
+      setMeetingError(errorMessage);
     });
   }, [isMeetingActive, isTranscribing]);
 

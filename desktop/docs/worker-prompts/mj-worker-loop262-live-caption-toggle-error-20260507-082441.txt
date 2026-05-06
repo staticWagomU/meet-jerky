@@ -1,0 +1,33 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+TranscriptView から `set_live_caption_window_visible` を呼ぶライブ字幕ウィンドウ表示切替が失敗したとき、console error だけで終わらせず、既存の `meetingError` / alert UI でユーザーに表示してください。録音状態の透明性を上げる最小スライスです。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` の `useEffect` 内、`invoke("set_live_caption_window_visible", { visible: isMeetingActive || isTranscribing }).catch(...)` だけを狭く変更してください。
+- `toErrorMessage(e)` を `msg` に取り、console error と `setMeetingError` の両方に同じ内容を使ってください。
+- 表示文言は `ライブ字幕ウィンドウの表示切替に失敗しました: ${msg}` としてください。
+- 録音開始/停止、文字起こし開始/停止、ライブ字幕ステータス保存/同期、他の `set_live_caption_window_visible` 呼び出し、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- この失敗はウィンドウ表示制御の失敗であり、録音停止や文字起こし停止とは断定しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop262-live-caption-toggle-error-20260507-082441.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
