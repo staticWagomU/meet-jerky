@@ -34310,3 +34310,11 @@ worker prompt 必須要素 9 (冒頭 `---` 含めない) 12 連続実証成功 (
 - **K 軸 2 連続 (= K' = K(179) → K(180)) は alternation reset リスクで推奨せず**
 
 ---
+[mjc-main Loop 180 / 2026-05-06]
+worker: mjc-worker-loop180-status-checking-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_CHECKING_LABEL 追加) + src/utils/externalApiKeyHelpers.ts (L1 import 拡張 + L15 callsite) + src/utils/engineStatusHelpers.ts (L2 import 拡張 + L8/L42 callsite) + src/utils/permissionStatusHelpers.ts (新規 import + L7 callsite) + src/utils/liveCaptionStatus.ts (新規 import + L51/L52 callsite) + src/utils/aiTransmissionHelpers.ts (L3 import 拡張 + L9 callsite) + src/components/PermissionBanner.tsx (L15 import 拡張 + L66/L73 callsite) + src/routes/TranscriptView.tsx (L68 import 拡張 + L1411 includes 引数) + src/routes/SettingsView.tsx (L33 import 拡張 + L1141/L1169/L1897/L1901 callsite)
+変更: STATUS_CHECKING_LABEL を src/utils/statusLabels.ts に export const 追加 (既存 STATUS_UNCHECKABLE_LABEL に並列) + 8 file 14 callsite (utils 5 + components 1 + routes 2) を const 参照に統一 = 完全一致 `"確認中"` 13 + L1411 の `.includes()` 引数 1 = 計 14 callsite を一括統合 + DRY 違反解消 + ネット行数 ~+1 行のみ (statusLabels.ts +1 行 + 既存 import 拡張 6 件はインライン書き換え + 新規 import 2 件は +2 行 + callsite 14 件は同行書き換え)
+意義: frontend 軸 = const 集約 paradigm 反復 4 件目 = paradigm 系統樹拡張 9 件目候補確立反復 = paradigm 完全成熟期突入候補 + 既存 file 拡張軸 paradigm 15 件目達成 (Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176 + Loop 180 = 15 件目) + 重複候補 grep 探索 paradigm 16 件目達成 + Loop 178 で確立済の statusLabels.ts への拡張 = paradigm 一貫性維持 + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与
+検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"確認中"` = 0 件確認 (statusLabels.ts 定義行のみ残存)
+備考: paradigm 反復 4 件目達成 = 完全成熟期突入. R25/R26/R27 を後継候補として handoff に記載済 (`"未確認"` 8 callsite/4 file = 規模 M, `"未許可"` 6 callsite/3 file = 規模 M, `"未登録"` 3 callsite/2 file = 規模 S-M). `"確認中..."` (loading suffix 付き 5 callsite) は別 entity 扱いで除外, Loop 181+ R28 候補.
+---
