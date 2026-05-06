@@ -11,6 +11,8 @@ import {
 import {
   isDownloadErrorPayload,
   isDownloadProgressPayload,
+  MODEL_DOWNLOAD_ERROR_EVENT,
+  MODEL_DOWNLOAD_PROGRESS_EVENT,
 } from "../utils/modelDownloadPayload";
 import { STATUS_CHECKING_WITH_DOTS_LABEL } from "../utils/statusLabels";
 
@@ -75,7 +77,7 @@ export function ModelSelector({
   useEffect(() => {
     let disposed = false;
     const unlistenPromise = listen<unknown>(
-      "model-download-progress",
+      MODEL_DOWNLOAD_PROGRESS_EVENT,
       (event) => {
         if (disposed) {
           return;
@@ -143,7 +145,7 @@ export function ModelSelector({
   useEffect(() => {
     let disposed = false;
     const unlistenPromise = listen<unknown>(
-      "model-download-error",
+      MODEL_DOWNLOAD_ERROR_EVENT,
       (event) => {
         if (disposed) {
           return;

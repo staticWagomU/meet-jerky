@@ -1,5 +1,8 @@
 import type { DownloadErrorPayload, DownloadProgressPayload } from "../types";
 
+export const MODEL_DOWNLOAD_PROGRESS_EVENT = "model-download-progress";
+export const MODEL_DOWNLOAD_ERROR_EVENT = "model-download-error";
+
 export function isDownloadProgressPayload(
   value: unknown,
 ): value is DownloadProgressPayload {

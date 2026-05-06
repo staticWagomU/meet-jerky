@@ -1,0 +1,41 @@
+あなたは meet-jerky desktop の worker です。Loop 214 の途中差分を引き継ぎ、Whisper モデルダウンロードのイベント名 contract 定数化を完了してください。
+
+前提:
+- 作業ディレクトリ: /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+- 対象はこのリポジトリのみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他の agent も同じ codebase にいる可能性があります。自分の担当外の差分を戻さず、衝突する場合は停止して報告してください。
+- main agent は最終 review/verify/commit を行います。あなたは実装と自己検証まで行い、コミットしないでください。
+
+現在の部分差分:
+- `src-tauri/src/transcription_commands_model.rs` には `MODEL_DOWNLOAD_PROGRESS_EVENT` / `MODEL_DOWNLOAD_ERROR_EVENT` と固定値 test が追加済み。
+- `src/utils/modelDownloadPayload.ts` には TypeScript 側 const export が追加済み。
+- `src/components/ModelSelector.tsx` と `AGENT_LOG.md` はまだ未完了の可能性があります。
+
+目的:
+- `model-download-progress` と `model-download-error` のイベント名 drift を防ぐため、Rust emit 側と React listen 側で定数を使う。
+- payload shape、UI 文言、進捗計算、ダウンロード処理、エラー処理フローは変更しない。
+
+変更範囲:
+- `src-tauri/src/transcription_commands_model.rs`
+- `src/utils/modelDownloadPayload.ts`
+- `src/components/ModelSelector.tsx`
+- `AGENT_LOG.md`
+
+実装:
+- 既存部分差分を確認し、重複や不要変更があれば最小修正する。
+- `src/components/ModelSelector.tsx` の `listen("model-download-progress", ...)` と `listen("model-download-error", ...)` を `src/utils/modelDownloadPayload.ts` から import した const に置き換える。
+- `AGENT_LOG.md` 末尾に Loop 214 の作業記録を追加する。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_commands_model`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_commands_model.rs src/components/ModelSelector.tsx src/utils/modelDownloadPayload.ts AGENT_LOG.md`
+
+完了報告:
+- 変更ファイル一覧
+- 実装概要
+- 実行した検証コマンドと結果
+- 未解決リスクや意図的に触らなかった点

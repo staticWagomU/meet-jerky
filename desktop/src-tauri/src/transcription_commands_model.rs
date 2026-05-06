@@ -9,6 +9,9 @@ use tauri::Emitter;
 use crate::transcription_model_manager::ModelManager;
 use crate::transcription_types::ModelInfo;
 
+pub(crate) const MODEL_DOWNLOAD_PROGRESS_EVENT: &str = "model-download-progress";
+pub(crate) const MODEL_DOWNLOAD_ERROR_EVENT: &str = "model-download-error";
+
 /// 利用可能なモデル一覧を返す
 #[tauri::command]
 pub fn list_models() -> Vec<ModelInfo> {
@@ -47,7 +50,7 @@ pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result
         let model_name_ref = model_name_for_progress.clone();
         manager.download_model(&model_name_for_progress, move |progress| {
             let _ = app_for_progress.emit(
-                "model-download-progress",
+                MODEL_DOWNLOAD_PROGRESS_EVENT,
                 build_download_progress_payload(progress, &model_name_ref),
             );
         })
@@ -59,14 +62,14 @@ pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result
         Ok(Ok(path)) => Ok(path.to_string_lossy().to_string()),
         Ok(Err(msg)) => {
             let _ = app.emit(
-                "model-download-error",
+                MODEL_DOWNLOAD_ERROR_EVENT,
                 build_download_error_payload(&model_name, &msg),
             );
             Err(msg)
         }
         Err(msg) => {
             let _ = app.emit(
-                "model-download-error",
+                MODEL_DOWNLOAD_ERROR_EVENT,
                 build_download_error_payload(&model_name, &msg),
             );
             Err(msg)
@@ -77,6 +80,12 @@ pub async fn download_model(model_name: String, app: tauri::AppHandle) -> Result
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_model_download_event_names_are_stable() {
+        assert_eq!(MODEL_DOWNLOAD_PROGRESS_EVENT, "model-download-progress");
+        assert_eq!(MODEL_DOWNLOAD_ERROR_EVENT, "model-download-error");
+    }
 
     #[test]
     fn test_download_progress_payload_serialization() {

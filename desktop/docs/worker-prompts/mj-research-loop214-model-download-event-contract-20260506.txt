@@ -1,0 +1,28 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+調査目的:
+- Whisper モデルダウンロードの `model-download-progress` / `model-download-error` Tauri event 名を、1コミットで安全に定数化できるか確認してください。
+
+重点確認:
+- src-tauri/src/transcription_commands_model.rs
+- src/components/ModelSelector.tsx
+- src/utils/modelDownloadPayload.ts
+- src/types/index.ts の DownloadProgressPayload / DownloadErrorPayload
+
+出力要件:
+- 推奨する最小実装スライスを1件。
+- 変更可能ファイル、変更内容、検証方法、ユーザー価値、非目標、リスクを簡潔に書く。
+- 定数化より同じ範囲で価値が高い小改善がある場合は代替候補として1件だけ挙げる。
+- 推測は推測と明示する。
+
+禁止:
+- 編集・コミット禁止。
+- 認証情報変更、課金操作、破壊的操作は禁止。
