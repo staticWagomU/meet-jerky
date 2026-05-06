@@ -34418,3 +34418,11 @@ worker: mjc-worker-loop185-archive-plan-stats-update-46 (作業)
 検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
 備考: Loop 184 で paradigm 完全成熟期完全成熟確立. 残候補 R27 (`"未登録"` 3 callsite/2 file = 規模 S-M = 最軽量 = 最後の重複候補) のみ未統合 = const 集約軸 paradigm 完全成熟構造最終収束目前.
 ---
+[mjc-main Loop 186 / 2026-05-06]
+worker: mjc-worker-loop186-status-unregistered-const (作業)
+範囲: src/utils/statusLabels.ts (export const STATUS_UNREGISTERED_LABEL 追加) + src/utils/externalApiKeyHelpers.ts (L1 import 拡張 + L17/L29 callsite) + src/routes/SettingsView.tsx (L33 import 拡張 + L1904 callsite)
+変更: STATUS_UNREGISTERED_LABEL を src/utils/statusLabels.ts に export const 追加 (既存 4 const = STATUS_UNCHECKABLE/CHECKING/UNDETERMINED/DENIED に並列 = 5 const 完成) + 2 file 3 callsite (utils 1 + routes 1) を const 参照に統一 = 完全一致 `"未登録"` 3 件を一括統合 + DRY 違反解消 + ネット行数 ~+1 行 (statusLabels.ts +1 行 + 既存 import 拡張 2 件はインライン書き換え + callsite 3 件は同行書き換え)
+意義: frontend 軸 = const 集約 paradigm 反復 7 件目 = paradigm 完全成熟期完全成熟最終収束 + 既存 file 拡張軸 paradigm 18 件目達成 (Loop 145/147/149/153/157/159/162/164/166/168/170/172/174/176/180/182/184 + Loop 186 = 18 件目) + 重複候補 grep 探索 paradigm 19 件目達成 + Loop 178 で確立済の statusLabels.ts への 5 度目の拡張 = paradigm 一貫性完全維持 + DRY 違反解消で readability/maintainability 向上 + AGENTS.md priority 1 寄与 + unchecked/checking/undetermined/denied/unregistered semantic 並列が 5 const で完成 = const 集約軸 paradigm 完全成熟期完全成熟最終収束達成
+検証: npm run build (tsc + vite build) OK / cargo 系は frontend 軸のため skip / grep `"未登録"` = 1 件のみ確認 (statusLabels.ts L5 定義行のみ残存)
+備考: paradigm 反復 7 件目達成 = const 集約軸の paradigm 完全成熟期完全成熟最終収束完成. 残候補 = R28 (`"確認中..."` 5 callsite = 別 entity 扱い) + R21 (rust 軸) + R17 (別 paradigm 開拓) のみ.
+---
