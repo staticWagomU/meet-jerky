@@ -53,6 +53,19 @@ mod tests {
     }
 
     #[test]
+    fn build_audio_level_event_payload_with_system_audio_source_has_level_contract() {
+        let payload = build_audio_level_event_payload(AUDIO_SOURCE_SYSTEM_AUDIO, 0.25);
+        let obj = payload.as_object().expect("payload は JSON object");
+
+        assert_eq!(obj.len(), 2);
+        assert_eq!(
+            payload.get("source").and_then(|v| v.as_str()),
+            Some("system_audio")
+        );
+        assert_eq!(payload.get("level").and_then(|v| v.as_f64()), Some(0.25));
+    }
+
+    #[test]
     fn build_audio_drop_event_payload_with_microphone_source_returns_json_with_source_and_dropped_fields(
     ) {
         let payload = build_audio_drop_event_payload(AUDIO_SOURCE_MICROPHONE, 5);

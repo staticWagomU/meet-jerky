@@ -1,0 +1,28 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/audio_event.rs
+- AGENT_LOG.md
+
+目的:
+別トラック診断の根元である `audio-level` payload について、`system_audio` source の schema 契約をテストで固定してください。現在は microphone の level payload と system_audio の drop payload はありますが、system_audio の level payload 契約が薄いです。
+
+実装条件:
+- `build_audio_level_event_payload(AUDIO_SOURCE_SYSTEM_AUDIO, ...)` が `source: "system_audio"` と `level` を持ち、top-level field が exactly 2 つであることをテストしてください。
+- `serde_json` の f32 表現に過度に依存しないよう、必要なら `as_f64()` 等で値を確認してください。
+- payload builder、event 名、source 定数、emit 側、audio/system_audio の実装は変更しないでください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `git diff --check -- src-tauri/src/audio_event.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
