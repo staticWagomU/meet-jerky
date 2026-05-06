@@ -1,0 +1,34 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/components/MeetingDetectedBanner.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+会議検知バナーで「開始」を押し、`MEETING_START_REQUEST_EVENT` の送信は成功したが `hideMeetingPromptWindow()` に失敗した場合、console error だけで終わらせず、既存の `listenerError` / alert UI でバナー非表示失敗を明示してください。録音開始要求自体は送信済みなので、録音失敗と誤解されない文言にしてください。
+
+実装条件:
+- `handleStartRecording` の成功後 `hideMeetingPromptWindow()` 失敗 catch だけを狭く変更してください。
+- 既存の `setPendingAction(null)` は維持してください。
+- `toErrorMessage(e)` を `msg` に取り、console error と `setListenerError` の両方に使ってください。
+- 表示文言は `会議検知バナーを隠せませんでした: ${msg}` の形にしてください。
+- `emit(MEETING_START_REQUEST_EVENT)` 失敗 catch、`MEETING_START_REQUEST_EVENT` 名、pending request storage、TranscriptView listener、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- `setDetected(null)` は hide 成功時だけのままにしてください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/MeetingDetectedBanner.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop257-meeting-banner-hide-error-20260507-065855.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
