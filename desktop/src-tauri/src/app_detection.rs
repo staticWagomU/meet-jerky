@@ -1120,6 +1120,15 @@ mod tests {
             None
         );
         assert_eq!(
+            classify_meeting_window_title("Google Meet \u{2013} Google Workspace"),
+            None
+        );
+        assert_eq!(classify_meeting_window_title("Google Meet \u{2014} "), None);
+        assert_eq!(
+            classify_meeting_window_title("Google Meet \u{2013} abc-defg-hij - extra"),
+            None
+        );
+        assert_eq!(
             classify_meeting_window_title("Google Meet - abc-defg-hij - 追加情報"),
             None
         );

@@ -1,0 +1,33 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+Google Meet window title fallback の `"Google Meet – "` / `"Google Meet — "` dash variant について、strict code suffix 以外は検知しない契約をテストで固定してください。Loop 232 で positive dash variants は追加済みですが、dash variant の negative が薄いです。
+
+実装条件:
+- `classify_meeting_window_title_rejects_google_meet_brand_non_code_suffix` の近くに assertion を追加してください。
+- 以下を `None` として固定してください:
+  - `"Google Meet \u{2013} Google Workspace"`
+  - `"Google Meet \u{2014} "`
+  - `"Google Meet \u{2013} abc-defg-hij - extra"`
+- classifier 実装、URL 判定、Zoom/Webex/Teams のテストや挙動は変更しないでください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_window_title`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+残リスクには、実機タイトルが `"Google Meet – 会議名"` のようなコード以外で安全に分類可能な表記を返す場合は現仕様では検知漏れのままであることを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
