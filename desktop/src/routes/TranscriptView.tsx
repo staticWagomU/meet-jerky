@@ -112,6 +112,8 @@ import { getMeetingStartBlockedReason } from "../utils/meetingStartHelpers";
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
+const TRANSCRIPTION_START_ATTEMPTED_TRACK_STATUS_NOTICE =
+  "録音トラックの状態は上部の自分/相手側ステータスで確認してください。";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 const SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX =
@@ -977,6 +979,7 @@ export function TranscriptView() {
     );
     let micRestartPending = false;
     let systemAudioRestartPending = false;
+    let transcriptionStartAttempted = false;
     try {
       if (isTranscribing) {
         await stopTranscriptionFromUiState();
@@ -1012,6 +1015,7 @@ export function TranscriptView() {
         if (!transcriptionSource) {
           throw new Error("文字起こしに利用できる音声ソースがありません");
         }
+        transcriptionStartAttempted = true;
         await invoke("start_transcription", {
           modelName: selectedModel,
           source: transcriptionSource,
@@ -1032,7 +1036,11 @@ export function TranscriptView() {
       }
       const msg = formatOperationError(TRANSCRIPTION_ERROR_PREFIX, e);
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
-      setMeetingError(msg);
+      setMeetingError(
+        transcriptionStartAttempted
+          ? `${msg} ${TRANSCRIPTION_START_ATTEMPTED_TRACK_STATUS_NOTICE}`
+          : msg,
+      );
     } finally {
       audioOperationPendingRef.current = false;
       setIsTranscriptionOperationPending(false);

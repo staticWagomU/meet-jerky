@@ -1,0 +1,30 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+手動で文字起こしを開始したとき、`start_transcription` まで到達した後に失敗すると、ユーザーは録音トラックが継続しているか停止したか判断しづらいです。録音継続/停止を断定せず、上部の自分/相手側トラック状態を確認するよう促す限定 UI 診断を追加してください。
+
+実装条件:
+- `handleToggleTranscription` の開始側で、`start_transcription` invoke に到達した後の失敗だけを判別してください。例: `transcriptionStartAttempted` のようなローカル boolean。
+- その場合だけ `meetingError` に「録音トラックの状態は上部の自分/相手側ステータスで確認してください。」という趣旨の文を追加してください。
+- 録音が継続している/停止したとは断定しないでください。
+- `stop_transcription` 失敗、Apple Speech dual-source block、`getTranscriptionSourceArg` null、mic/system audio restart 失敗にはこの追加文を出さないでください。
+- `start_recording` / `start_system_audio` / `start_transcription` の順序、state 更新、Rust 側、event 名、UI レイアウト、録音 start/stop/restart フローは変更しないでください。
+- 依存関係追加は禁止です。担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+残リスクには、この UI 診断は実機での `start_transcription` 失敗注入未確認であることを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
