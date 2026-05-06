@@ -2,6 +2,10 @@ import type { MeetingAppDetectedPayload } from "../types";
 
 export const MEETING_APP_DETECTED_EVENT = "meeting-app-detected";
 
+const MAX_MEETING_DETECTION_BUNDLE_ID_LENGTH = 256;
+const MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH = 120;
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
+
 function isMeetingDetectionSource(
   value: unknown,
 ): value is MeetingAppDetectedPayload["source"] {
@@ -10,6 +14,16 @@ function isMeetingDetectionSource(
 
 function isNonEmptyTrimmedString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isBoundedDisplayString(
+  value: unknown,
+  maxTrimmedLength: number,
+): value is string {
+  if (!isNonEmptyTrimmedString(value) || CONTROL_CHARACTER_PATTERN.test(value)) {
+    return false;
+  }
+  return value.trim().length <= maxTrimmedLength;
 }
 
 const disallowedUrlHostCharacters = /[\s/?#@:]/u;
@@ -49,8 +63,14 @@ function isMeetingAppDetectedAppPayload(
   candidate: Record<string, unknown>,
 ): boolean {
   return (
-    isNonEmptyTrimmedString(candidate.bundleId) &&
-    isNonEmptyTrimmedString(candidate.appName) &&
+    isBoundedDisplayString(
+      candidate.bundleId,
+      MAX_MEETING_DETECTION_BUNDLE_ID_LENGTH,
+    ) &&
+    isBoundedDisplayString(
+      candidate.appName,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    ) &&
     candidate.source === "app" &&
     !hasProperty(candidate, "service") &&
     !hasProperty(candidate, "urlHost") &&
@@ -63,12 +83,24 @@ function isMeetingAppDetectedBrowserPayload(
   candidate: Record<string, unknown>,
 ): boolean {
   return (
-    isNonEmptyTrimmedString(candidate.bundleId) &&
-    isNonEmptyTrimmedString(candidate.appName) &&
+    isBoundedDisplayString(
+      candidate.bundleId,
+      MAX_MEETING_DETECTION_BUNDLE_ID_LENGTH,
+    ) &&
+    isBoundedDisplayString(
+      candidate.appName,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    ) &&
     candidate.source === "browser" &&
-    isNonEmptyTrimmedString(candidate.service) &&
+    isBoundedDisplayString(
+      candidate.service,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    ) &&
     isHostOnlyStringOrEmpty(candidate.urlHost) &&
-    isNonEmptyTrimmedString(candidate.browserName) &&
+    isBoundedDisplayString(
+      candidate.browserName,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    ) &&
     !hasDisallowedPrivacyField(candidate)
   );
 }
