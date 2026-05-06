@@ -27,7 +27,7 @@ export function isDownloadProgressPayload(
   }
   const candidate = value as Partial<DownloadProgressPayload>;
   return (
-    typeof candidate.model === "string" &&
+    isBoundedDisplayString(candidate.model, MODEL_NAME_MAX_LENGTH) &&
     typeof candidate.progress === "number" &&
     Number.isFinite(candidate.progress) &&
     candidate.progress >= 0 &&

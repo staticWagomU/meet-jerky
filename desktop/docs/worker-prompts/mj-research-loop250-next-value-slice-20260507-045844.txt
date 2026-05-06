@@ -1,0 +1,45 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md は巨大なので `tail -n 180 AGENT_LOG.md` のみ確認してください。
+
+目的:
+Loop 250 で実装する、1コミットに収まる小さく価値の高い改善候補を1件だけ調査してください。
+
+直近の重複禁止:
+- Loop 245: `model-download-progress` の `progress` 範囲チェック
+- Loop 246: `model-download-error` の `model` / `message` 文字列契約強化
+- Loop 247: `transcription-result` timestamp integer check
+- Loop 248: `meeting-app-detected` 表示文字列契約強化
+- Loop 249: `audio-level` の `level` 範囲チェック
+
+優先して見る観点:
+1. 会議検知の明確な誤検知/検知漏れを減らす純粋関数テストまたは小修正
+2. 文字起こし worker error 後の UI state 同期で、build または既存の純粋関数で検証できるもの
+3. 録音状態の透明性に関わる小さな診断改善
+4. frontend runtime guard の残り契約。ただし直近と同じフィールド・同じ event は避ける
+5. 履歴、検索、保存済み transcript の閲覧性に関する Loop 244 と重複しない小さな改善
+
+調査条件:
+- 実装は小さく、1コミットでレビュー・検証できる範囲に限定してください。
+- 挙動変更なしのテスト追加を優先。ただし、明確な product value があり build で検証できる小さな UI/検索改善は提案可です。
+- 大きな抽象化、依存追加、Rust AppHandle/Tauri 実機権限、外部 API は避けてください。
+- 既存テストや直近ループと重複しないことを grep / 読解で確認してください。
+- 推測は推測と明示してください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補1件
+- 根拠ファイル/関数
+- 追加すべき具体的 assertion または最小実装内容
+- ユーザー価値
+- 非目標
+- 影響範囲
+- リスク/残リスク
+- worker へ渡す担当範囲と実装条件
+- 検証方法
