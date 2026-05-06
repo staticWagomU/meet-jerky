@@ -1,0 +1,34 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 237 で実装する、Webex URL fallback 境界に限定した小さなテスト追加候補を1件だけ調査してください。
+
+調査対象:
+- src-tauri/src/app_detection.rs の `classify_meeting_url` テスト群
+- src-tauri/src/app_detection_meeting_classifier.rs
+- src-tauri/src/app_detection_webex.rs
+- src-tauri/src/app_detection_url_helpers.rs
+
+調査条件:
+- Loop 232-236 と重複しないこと。
+- 挙動変更なしのテスト追加を優先してください。
+- 既存の Webex URL acceptance/rejection の穴を1件だけ選んでください。
+- 実装担当 worker に渡せる assertion、担当ファイル、検証コマンドを具体化してください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補1件
+- 根拠ファイル/関数
+- 追加すべき具体的 assertion
+- 影響範囲
+- リスク/残リスク
+- worker へ渡す実装条件
+- 検証方法

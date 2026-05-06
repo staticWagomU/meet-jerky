@@ -1,0 +1,42 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+次の自律改善ループで実装する、1コミットに収まる小さく価値の高い改善候補を調査してください。
+
+直近の完了ループ:
+- Loop 232: Google Meet title dash positive variants
+- Loop 233: system_audio audio-level payload contract test
+- Loop 234: transcription start failure UI notice
+- Loop 235: system_audio audio-drop-count payload contract test
+- Loop 236: Google Meet brand dash negative title tests
+
+優先して見る観点:
+1. 会議検知の誤検知・検知漏れリスクを下げる純粋関数テストまたは小さな分類改善
+2. Google Meet / Zoom / Webex / Teams の URL fallback 境界テスト
+3. 音声取得・別トラック payload 契約で Loop 233/235 と重複しないテスト
+4. 録音状態の透明性 UI で、実状態を断定せず安全に改善できるもの
+
+調査条件:
+- Loop 232-236 の変更と重複しない候補を優先してください。
+- 大きな抽象化、依存追加、Tauri AppHandle 依存、実機権限が必要な変更は避けてください。
+- テスト追加の場合は、挙動変更なしで何の契約を固定するか明記してください。
+- 挙動変更候補の場合は、誤検知リスクと既存テストへの影響を明記してください。
+- 既存仕様が実機未確認なら、そのリスクを残リスクとして明記してください。
+- 推測は推測と明示してください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補を優先順位付きで 2-4 件
+- 各候補の根拠ファイル/関数
+- 影響範囲
+- リスク
+- worker へ渡せる担当範囲と実装条件
+- 検証方法

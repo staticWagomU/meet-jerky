@@ -2044,6 +2044,17 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_returns_webex_for_personal_room_on_trailing_dot_subdomain_host() {
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com./meet/jane"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "acme.webex.com".to_string(),
+            })
+        );
+    }
+
+    #[test]
     fn classify_meeting_url_returns_none_for_webex_host_without_meet_path() {
         assert_eq!(classify_meeting_url("https://webex.com/about"), None);
     }
