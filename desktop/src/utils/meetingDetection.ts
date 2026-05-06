@@ -1,5 +1,7 @@
 import type { MeetingAppDetectedPayload } from "../types";
 
+export const MEETING_APP_DETECTED_EVENT = "meeting-app-detected";
+
 function isMeetingDetectionSource(
   value: unknown,
 ): value is MeetingAppDetectedPayload["source"] {

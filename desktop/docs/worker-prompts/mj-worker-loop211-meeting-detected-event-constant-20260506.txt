@@ -1,0 +1,60 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした作業担当エージェントです。
+
+目的:
+- 会議検知バナーの Tauri event 名 `meeting-app-detected` を Rust と frontend で定数化し、emit/listen の typo や drift で検知通知が沈黙するリスクを下げる。
+- 挙動変更はしない。文字列値は既存と完全に同じにする。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+- src-tauri/src/app_detection.rs の `meeting-app-detected` emit 周辺
+- src/components/MeetingDetectedBanner.tsx の `meeting-app-detected` listen 周辺
+- src/utils/meetingDetection.ts
+
+担当範囲:
+- 変更可:
+  - src-tauri/src/app_detection.rs
+  - src/components/MeetingDetectedBanner.tsx
+  - src/utils/meetingDetection.ts
+  - AGENT_LOG.md
+- 変更禁止:
+  - package.json / lockfile / 依存関係
+  - docs/handoff/**
+  - この prompt 以外の docs/worker-prompts/**
+  - 担当範囲外のファイル
+
+実装要件:
+- Rust 側:
+  - `src-tauri/src/app_detection.rs` に `const MEETING_APP_DETECTED_EVENT: &str = "meeting-app-detected";` を追加する。
+  - app 経路と browser 経路の `state.app_handle.emit("meeting-app-detected", &payload)` を定数参照へ置換する。
+  - 定数値を固定する小さな unit test を既存 tests mod に追加する。
+- Frontend 側:
+  - `src/utils/meetingDetection.ts` に `export const MEETING_APP_DETECTED_EVENT = "meeting-app-detected";` を追加する。
+  - `MeetingDetectedBanner.tsx` の `listen<unknown>("meeting-app-detected", ...)` を定数参照へ置換する。
+- payload 型、バリデーション、UI 文言、条件分岐、ロジックは変えない。
+- 既存の `MEETING_START_REQUEST_EVENT` など別イベントは触らない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib meeting_app_detected_event`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib app_detection`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs src/components/MeetingDetectedBanner.tsx src/utils/meetingDetection.ts AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 末尾に作業ログを追記する。
+- 開始日時、担当セッション名 `mj-worker-loop211-meeting-detected-event-constant-20260506`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加なし、残リスク、次アクションを簡潔に記録する。
+
+禁止:
+- コミットしない。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他エージェントやユーザーの変更を戻さない。
+
+完了報告:
+- 変更ファイル
+- 変更内容
+- 検証結果
+- 残リスク

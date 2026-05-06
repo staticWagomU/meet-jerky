@@ -13,7 +13,10 @@ import {
   getMeetingDetectedDisplayName,
   getMeetingDetectedSourceLabel,
 } from "../utils/meetingDetectedBannerHelpers";
-import { isMeetingAppDetectedPayload } from "../utils/meetingDetection";
+import {
+  isMeetingAppDetectedPayload,
+  MEETING_APP_DETECTED_EVENT,
+} from "../utils/meetingDetection";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
@@ -117,7 +120,7 @@ export function MeetingDetectedBanner() {
       applyMeetingDetectionPayload(payload);
     };
     const detectedUnlistenPromise = listen<unknown>(
-      "meeting-app-detected",
+      MEETING_APP_DETECTED_EVENT,
       (e) => {
         if (disposed) {
           return;

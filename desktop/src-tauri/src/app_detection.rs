@@ -126,6 +126,8 @@ struct DetectionState {
 
 static STATE: OnceLock<DetectionState> = OnceLock::new();
 
+const MEETING_APP_DETECTED_EVENT: &str = "meeting-app-detected";
+
 /// 検知を開始する。アプリ起動時に 1 度だけ呼ぶ。
 ///
 /// macOS 以外では何もしない (静かに無視)。
@@ -200,7 +202,7 @@ pub(crate) fn handle_detection(bundle_id: &str, app_name: &str) {
         app_name: app_name.to_string(),
     };
     *state.latest_payload.lock() = Some(payload.clone());
-    match state.app_handle.emit("meeting-app-detected", &payload) {
+    match state.app_handle.emit(MEETING_APP_DETECTED_EVENT, &payload) {
         Ok(()) => {}
         Err(e) => {
             eprintln!("[app_detection] emit failed: {e}");
@@ -378,7 +380,7 @@ pub(crate) fn handle_browser_url_detection(
         browser_name: browser_name.to_string(),
     };
     *state.latest_payload.lock() = Some(payload.clone());
-    match state.app_handle.emit("meeting-app-detected", &payload) {
+    match state.app_handle.emit(MEETING_APP_DETECTED_EVENT, &payload) {
         Ok(()) => {}
         Err(e) => {
             eprintln!("[app_detection] browser emit failed: {e}");
@@ -2445,5 +2447,10 @@ mod tests {
                 "Phase 1 は全て AppLaunch のはず"
             );
         }
+    }
+
+    #[test]
+    fn meeting_app_detected_event_name_is_stable() {
+        assert_eq!(MEETING_APP_DETECTED_EVENT, "meeting-app-detected");
     }
 }
