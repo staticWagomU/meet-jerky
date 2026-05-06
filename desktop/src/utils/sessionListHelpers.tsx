@@ -1,6 +1,10 @@
 import { type ReactNode } from "react";
 import type { SessionSummary } from "../hooks/useSessionList";
 import {
+  OTHER_TRACK_DEVICE_LABEL,
+  SELF_TRACK_DEVICE_LABEL,
+} from "./audioTrackLabels";
+import {
   getCompactSessionTitle,
   getFileName,
   SESSION_DATETIME_UNKNOWN_LABEL,
@@ -140,6 +144,16 @@ export function getTranscriptTrackCounts(
   return counts;
 }
 
+function getTranscriptTrackSearchLabels(
+  counts: TranscriptTrackCounts,
+): string[] {
+  return [
+    ...(counts.self > 0 ? ["自分", SELF_TRACK_DEVICE_LABEL] : []),
+    ...(counts.other > 0 ? ["相手側", OTHER_TRACK_DEVICE_LABEL] : []),
+    ...(counts.unknown > 0 ? ["音声ソース不明"] : []),
+  ];
+}
+
 export function sessionMatchesQuery(
   session: SessionSummary,
   startedAtLabel: string,
@@ -153,6 +167,9 @@ export function sessionMatchesQuery(
     getCompactSessionTitle(session.title),
     getFileName(session.path),
     startedAtLabel,
+    ...getTranscriptTrackSearchLabels(
+      getTranscriptTrackCounts(session.searchText),
+    ),
     unescapeInlineMarkdownText(session.searchText),
   ]
     .join(" ")
