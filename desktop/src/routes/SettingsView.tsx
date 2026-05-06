@@ -30,7 +30,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -1142,7 +1142,7 @@ export function SettingsView() {
                             : micPermission === "granted"
                               ? "許可済み"
                               : micPermission === "denied"
-                                ? "未許可"
+                                ? STATUS_DENIED_LABEL
                                 : STATUS_UNDETERMINED_LABEL}
                         </span>
                       </div>
@@ -1170,7 +1170,7 @@ export function SettingsView() {
                             : screenPermission === "granted"
                               ? "許可済み"
                               : screenPermission === "denied"
-                                ? "未許可"
+                                ? STATUS_DENIED_LABEL
                                 : STATUS_UNDETERMINED_LABEL}
                         </span>
                       </div>
@@ -1769,7 +1769,7 @@ function PermissionBadge({
     return renderBadge("permission-granted", "許可済み");
   }
   if (status === "denied") {
-    return renderBadge("permission-denied", "未許可");
+    return renderBadge("permission-denied", STATUS_DENIED_LABEL);
   }
   return renderBadge("permission-undetermined", STATUS_UNDETERMINED_LABEL);
 }
