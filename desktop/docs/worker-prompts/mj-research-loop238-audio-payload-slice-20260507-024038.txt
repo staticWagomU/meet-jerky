@@ -1,0 +1,37 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 238 で実装する、音声取得・別トラック payload 契約に限定した小さなテスト追加候補を1件だけ調査してください。
+
+直近の重複禁止:
+- Loop 233: system_audio audio-level payload contract test
+- Loop 235: system_audio audio-drop-count payload contract test
+
+調査対象:
+- src-tauri/src/audio_event.rs
+- audio-level / audio-drop-count / mic と system_audio の payload builder 周辺
+- 既存テストの未カバー matrix
+
+調査条件:
+- Loop 233/235 と重複しないこと。
+- 挙動変更なしの純粋関数テスト追加を優先してください。
+- product concept の「マイク音声とデスクトップ音声の別トラック取得」に関係する契約を選んでください。
+- 大きな抽象化、Tauri AppHandle 依存、実機権限、依存追加は避けてください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補1件
+- 根拠ファイル/関数
+- 追加すべき具体的 assertion
+- 影響範囲
+- リスク/残リスク
+- worker へ渡す実装条件
+- 検証方法

@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/audio_event.rs
+- AGENT_LOG.md
+
+目的:
+`audio-level` payload builder が `source` を正規化せずそのまま JSON payload に載せる契約を、純粋関数テストで固定してください。Loop 233 の system_audio audio-level 契約、Loop 235 の system_audio audio-drop-count 契約とは重複させないでください。
+
+実装条件:
+- `src-tauri/src/audio_event.rs` の `#[cfg(test)] mod tests` に単独テストを1件追加してください。
+- test 名は `build_audio_level_event_payload_with_empty_source_passes_through_without_normalization` としてください。
+- 以下を assertion してください:
+  - `let payload = build_audio_level_event_payload("", 0.0);`
+  - payload は JSON object
+  - top-level fields は exactly 2
+  - `"source"` は `Some("")`
+  - `"level"` は `Some(0.0)` として取得できる
+- `build_audio_level_event_payload` 本体は変更しないでください。
+- `audio-drop-count` 系テスト、`audio.rs`、`system_audio.rs`、Tauri AppHandle 依存箇所、実機音声経路は変更しないでください。
+- 依存関係追加は禁止です。
+- 担当範囲外ファイルを編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `git diff --check -- src-tauri/src/audio_event.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+残リスクには、このテストは builder payload 形だけを固定し、実際の emitter が正しい source 定数を渡していることまでは新たに検証しないことを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
