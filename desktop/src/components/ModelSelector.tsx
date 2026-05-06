@@ -12,6 +12,7 @@ import {
   isDownloadErrorPayload,
   isDownloadProgressPayload,
 } from "../utils/modelDownloadPayload";
+import { STATUS_CHECKING_WITH_DOTS_LABEL } from "../utils/statusLabels";
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -442,7 +443,7 @@ function DownloadStatus({
           onClick={() => refetchDownloaded()}
           disabled={isFetchingDownloaded}
         >
-          {isFetchingDownloaded ? "確認中..." : "状態を再確認"}
+          {isFetchingDownloaded ? STATUS_CHECKING_WITH_DOTS_LABEL : "状態を再確認"}
         </button>
       </div>
     );
@@ -465,7 +466,7 @@ function DownloadStatus({
         disabled={disabled || downloadingModel !== null || isFetchingDownloaded}
       >
         {isFetchingDownloaded
-          ? "確認中..."
+          ? STATUS_CHECKING_WITH_DOTS_LABEL
           : downloadingModel
             ? "ダウンロード待ち"
             : "ダウンロード"}

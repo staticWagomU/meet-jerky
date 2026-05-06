@@ -12,7 +12,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_CHECKING_WITH_DOTS_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
 
 export function PermissionBanner() {
   const [settingsOpenError, setSettingsOpenError] = useState<string | null>(
@@ -187,7 +187,7 @@ export function PermissionBanner() {
           aria-label={permissionRetryLabel}
           title={permissionRetryLabel}
         >
-          {isCheckingPermissions ? "確認中..." : "権限を再チェック"}
+          {isCheckingPermissions ? STATUS_CHECKING_WITH_DOTS_LABEL : "権限を再チェック"}
         </button>
         {micNeedsAttention && (
           <button

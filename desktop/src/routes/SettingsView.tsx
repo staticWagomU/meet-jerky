@@ -30,7 +30,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_CHECKING_WITH_DOTS_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -1752,7 +1752,7 @@ function PermissionBadge({
   };
 
   if (isChecking) {
-    return renderBadge("", "確認中...", true);
+    return renderBadge("", STATUS_CHECKING_WITH_DOTS_LABEL, true);
   }
   if (error) {
     return renderBadge(
@@ -1763,7 +1763,7 @@ function PermissionBadge({
     );
   }
   if (!status) {
-    return renderBadge("", "確認中...", true);
+    return renderBadge("", STATUS_CHECKING_WITH_DOTS_LABEL, true);
   }
   if (status === "granted") {
     return renderBadge("permission-granted", "許可済み");
@@ -1950,7 +1950,7 @@ function ExternalApiKeySection({
               aria-label={refetchApiKeyStatusLabel}
               title={refetchApiKeyStatusLabel}
             >
-              {isFetchingHasKey ? "確認中..." : "状態を再確認"}
+              {isFetchingHasKey ? STATUS_CHECKING_WITH_DOTS_LABEL : "状態を再確認"}
             </button>
           </div>
         )}
