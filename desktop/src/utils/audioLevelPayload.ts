@@ -12,6 +12,8 @@ export function isAudioLevelPayload(value: unknown): value is AudioLevelPayload 
   return (
     isAudioLevelSource(candidate.source) &&
     typeof candidate.level === "number" &&
-    Number.isFinite(candidate.level)
+    Number.isFinite(candidate.level) &&
+    candidate.level >= 0 &&
+    candidate.level <= 1
   );
 }

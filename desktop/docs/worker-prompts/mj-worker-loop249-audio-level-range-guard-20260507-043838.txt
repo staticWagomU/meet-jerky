@@ -1,0 +1,35 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md を読んでください。
+AGENT_LOG.md は巨大なので、`tail -n 220 AGENT_LOG.md` で直近の流れだけ確認してください。
+
+担当範囲:
+- src/utils/audioLevelPayload.ts
+- AGENT_LOG.md
+
+目的:
+`audio-level` の frontend payload guard で、破損した範囲外 `level` を正常な音声レベル通知として扱わないようにしてください。UI 表示側には `sanitizeAudioLevel` の clamp がありますが、payload guard では正規イベント契約として `0 <= level <= 1` の有限数だけを受理し、範囲外値は listener error として診断できるようにします。
+
+実装条件:
+1. `src/utils/audioLevelPayload.ts`
+   - 既存の `source` 許可値、`typeof candidate.level === "number"`、`Number.isFinite(candidate.level)` を維持してください。
+   - `candidate.level >= 0` と `candidate.level <= 1` を追加してください。
+   - `sanitizeAudioLevel`、`TranscriptView.tsx`、Rust 側、event 名、型定義、UI 文言、依存関係、テスト基盤は変更しないでください。
+2. AGENT_LOG.md
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+   - 変更ファイルには、この worker prompt と research prompt も含めてください。
+   - research は最終候補が遅れたため、メイン側が `audioLevelPayload.ts` と `sanitizeAudioLevel` の関係を確認してこの最小候補を選んだことを記録してください。
+
+禁止:
+- コミットは禁止です。
+- 依存追加は禁止です。
+- `TranscriptView.tsx`、`audioLevelHelpers.ts`、`audioDropCountPayload.ts`、Rust、型定義、UI 文言、テスト基盤、直近 Loop 244-248 の対象ファイルのうち担当外ファイルは変更しないでください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/audioLevelPayload.ts AGENT_LOG.md docs/worker-prompts/mj-research-loop249-next-value-slice-20260507-043838.txt docs/worker-prompts/mj-worker-loop249-audio-level-range-guard-20260507-043838.txt`
+
+残リスクには、TS 単体テスト基盤がないため guard の入出力は build と diff review で確認すること、実機 `audio-level` emit 経路は今回未確認であることを明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
