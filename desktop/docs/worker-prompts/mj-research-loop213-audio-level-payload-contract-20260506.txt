@@ -1,0 +1,28 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+調査目的:
+- `audio-level` Tauri event payload `{ source, level }` を Rust 側で builder 化して契約固定する小改善が安全か確認してください。
+
+重点確認:
+- src-tauri/src/audio_event.rs
+- src-tauri/src/audio.rs の `AUDIO_LEVEL_EVENT_NAME` emit 周辺
+- src-tauri/src/system_audio.rs の `AUDIO_LEVEL_EVENT_NAME` emit 周辺
+- src/utils/audioLevelPayload.ts の frontend payload validator
+
+出力要件:
+- 推奨する最小実装スライスを1件。
+- 変更可能ファイル、変更内容、検証方法、ユーザー価値、非目標、リスクを簡潔に書く。
+- 実装すべきでないと判断する場合は理由を明記する。
+- 推測は推測と明示する。
+
+禁止:
+- 編集・コミット禁止。
+- 認証情報変更、課金操作、破壊的操作は禁止。

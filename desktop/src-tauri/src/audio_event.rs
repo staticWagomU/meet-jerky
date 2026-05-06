@@ -5,6 +5,10 @@ pub(crate) const AUDIO_DROP_EVENT_NAME: &str = "audio-drop-count";
 pub(crate) const AUDIO_SOURCE_MICROPHONE: &str = "microphone";
 pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
 
+pub(crate) fn build_audio_level_event_payload(source: &str, level: f32) -> serde_json::Value {
+    json!({ "level": level, "source": source })
+}
+
 pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
     json!({ "source": source, "dropped": dropped })
 }
@@ -27,6 +31,16 @@ mod tests {
     fn audio_source_constants_are_snake_case_lowercase() {
         assert_eq!(AUDIO_SOURCE_MICROPHONE, "microphone");
         assert_eq!(AUDIO_SOURCE_SYSTEM_AUDIO, "system_audio");
+    }
+
+    #[test]
+    fn build_audio_level_event_payload_has_source_level_and_exactly_two_top_level_fields() {
+        let payload = build_audio_level_event_payload(AUDIO_SOURCE_MICROPHONE, 0.5);
+        let obj = payload.as_object().expect("payload は JSON object");
+
+        assert_eq!(obj.len(), 2);
+        assert_eq!(payload["source"], "microphone");
+        assert_eq!(payload["level"], json!(0.5_f32));
     }
 
     #[test]

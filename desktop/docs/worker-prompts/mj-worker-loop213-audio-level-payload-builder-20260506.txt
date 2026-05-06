@@ -1,0 +1,56 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした作業担当エージェントです。
+
+目的:
+- `audio-level` Tauri event payload `{ source, level }` を Rust 側の builder に集約し、マイク/相手側音声レベル表示の payload shape drift を防ぐ。
+- 挙動変更はしない。payload の値、source、level の正規化や丸めは変えない。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+- src-tauri/src/audio_event.rs
+- src-tauri/src/audio.rs の `AUDIO_LEVEL_EVENT_NAME` emit 周辺
+- src-tauri/src/system_audio.rs の `AUDIO_LEVEL_EVENT_NAME` emit 周辺
+
+担当範囲:
+- 変更可:
+  - src-tauri/src/audio_event.rs
+  - src-tauri/src/audio.rs
+  - src-tauri/src/system_audio.rs
+  - AGENT_LOG.md
+- 変更禁止:
+  - src/** frontend
+  - package.json / lockfile / 依存関係
+  - docs/handoff/**
+  - この prompt 以外の docs/worker-prompts/**
+  - 担当範囲外のファイル
+
+実装要件:
+- `src-tauri/src/audio_event.rs` に `build_audio_level_event_payload(source: &str, level: f32) -> serde_json::Value` を追加する。
+- payload は既存と同じ `source` と `level` の2フィールドにする。
+- `audio.rs` と `system_audio.rs` の `json!({ "level": level_value, "source": ... })` を builder 呼び出しへ置換する。
+- 既存 `AUDIO_SOURCE_MICROPHONE` / `AUDIO_SOURCE_SYSTEM_AUDIO` はそのまま使う。
+- `audio_event.rs` に unit test を追加し、`source` と `level` が含まれること、top-level field が exactly 2 つであることを固定する。
+- `level` の validation、clamp、NaN/Infinity sanitize、source の enum 化や拒否はしない。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/audio_event.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 末尾に作業ログを追記する。
+- 開始日時、担当セッション名 `mj-worker-loop213-audio-level-payload-builder-20260506`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加なし、残リスク、次アクションを簡潔に記録する。
+
+禁止:
+- コミットしない。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他エージェントやユーザーの変更を戻さない。
+
+完了報告:
+- 変更ファイル
+- 変更内容
+- 検証結果
+- 残リスク

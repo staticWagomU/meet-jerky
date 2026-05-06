@@ -11,7 +11,6 @@ use ringbuf::{
     traits::{Producer, Split},
     HeapRb,
 };
-use serde_json::json;
 use tauri::Emitter;
 
 /// フロントエンドに返すオーディオデバイス情報
@@ -327,7 +326,10 @@ impl AudioCapture for CpalMicCapture {
                 let level_value = f32::from_bits(bits);
                 let _ = app_handle.emit(
                     crate::audio_event::AUDIO_LEVEL_EVENT_NAME,
-                    json!({ "level": level_value, "source": crate::audio_event::AUDIO_SOURCE_MICROPHONE }),
+                    crate::audio_event::build_audio_level_event_payload(
+                        crate::audio_event::AUDIO_SOURCE_MICROPHONE,
+                        level_value,
+                    ),
                 );
                 let dropped = dropped_for_emitter.swap(0, Ordering::Relaxed);
                 if dropped > 0 {
