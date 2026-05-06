@@ -1229,12 +1229,20 @@ export function TranscriptView() {
     : getEngineStatusLabel(settings?.transcriptionEngine);
   const engineStatusDisplayLabel =
     getEngineStatusDisplayLabel(engineStatusLabel);
+  const transcriptionStatusLabel = isTranscriptionOperationPending
+    ? isTranscribing
+      ? "停止中"
+      : STATUS_STARTING_LABEL
+    : isTranscribing
+      ? "文字起こし中"
+      : "停止中";
 
   useEffect(() => {
     const liveCaptionStatus = buildLiveCaptionStatusFromLabels(
       engineStatusDisplayLabel,
       aiTransmissionStatusLabel,
       {
+        transcriptionStatusLabel,
         microphoneTrackLabel: micTrackStatusLabel,
         systemAudioTrackLabel: systemAudioTrackStatusLabel,
       },
@@ -1250,6 +1258,7 @@ export function TranscriptView() {
     engineStatusDisplayLabel,
     micTrackStatusLabel,
     systemAudioTrackStatusLabel,
+    transcriptionStatusLabel,
   ]);
 
   useEffect(() => {
@@ -1291,13 +1300,6 @@ export function TranscriptView() {
     : isMeetingActive
       ? "meeting-status-pill-active"
       : "meeting-status-pill-idle";
-  const transcriptionStatusLabel = isTranscriptionOperationPending
-    ? isTranscribing
-      ? "停止中"
-      : STATUS_STARTING_LABEL
-    : isTranscribing
-      ? "文字起こし中"
-      : "停止中";
   const transcriptionStatusClass = isTranscriptionOperationPending
     ? "meeting-status-pill-neutral"
     : isTranscribing

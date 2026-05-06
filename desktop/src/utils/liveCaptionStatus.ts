@@ -33,18 +33,21 @@ export interface LiveCaptionStatusPayload {
   engineLabel: string;
   aiTransmissionLabel: string;
   isExternalTransmission: boolean;
+  transcriptionStatusLabel: string;
   microphoneTrackLabel: string;
   systemAudioTrackLabel: string;
 }
 
 type StoredLiveCaptionStatusPayload = Omit<
   LiveCaptionStatusPayload,
-  "microphoneTrackLabel" | "systemAudioTrackLabel"
+  "transcriptionStatusLabel" | "microphoneTrackLabel" | "systemAudioTrackLabel"
 > &
   Partial<
     Pick<
       LiveCaptionStatusPayload,
-      "microphoneTrackLabel" | "systemAudioTrackLabel"
+      | "transcriptionStatusLabel"
+      | "microphoneTrackLabel"
+      | "systemAudioTrackLabel"
     >
   >;
 
@@ -52,6 +55,7 @@ export const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
   engineLabel: STATUS_CHECKING_LABEL,
   aiTransmissionLabel: STATUS_CHECKING_LABEL,
   isExternalTransmission: false,
+  transcriptionStatusLabel: "停止中",
   microphoneTrackLabel: STATUS_UNDETERMINED_LABEL,
   systemAudioTrackLabel: STATUS_UNDETERMINED_LABEL,
 };
@@ -67,6 +71,8 @@ export function isLiveCaptionStatusPayload(
     toValidStatusLabel(candidate.engineLabel) !== null &&
     toValidStatusLabel(candidate.aiTransmissionLabel) !== null &&
     typeof candidate.isExternalTransmission === "boolean" &&
+    (candidate.transcriptionStatusLabel === undefined ||
+      toValidStatusLabel(candidate.transcriptionStatusLabel) !== null) &&
     (candidate.microphoneTrackLabel === undefined ||
       toValidStatusLabel(candidate.microphoneTrackLabel) !== null) &&
     (candidate.systemAudioTrackLabel === undefined ||
@@ -91,6 +97,10 @@ export function normalizeLiveCaptionStatusPayload(
     isExternalTransmission:
       status.isExternalTransmission ||
       isExternalTransmissionLabel(aiTransmissionLabel),
+    transcriptionStatusLabel: statusLabelOrDefault(
+      status.transcriptionStatusLabel,
+      DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
+    ),
     microphoneTrackLabel: statusLabelOrDefault(
       status.microphoneTrackLabel,
       DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
@@ -166,6 +176,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "OpenAI",
       aiTransmissionLabel: "送信先 OpenAI",
       isExternalTransmission: true,
+      transcriptionStatusLabel:
+        DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
       microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
       systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
@@ -175,6 +187,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "ElevenLabs",
       aiTransmissionLabel: "送信先 ElevenLabs",
       isExternalTransmission: true,
+      transcriptionStatusLabel:
+        DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
       microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
       systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
@@ -184,6 +198,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "Apple Speech",
       aiTransmissionLabel: "なし",
       isExternalTransmission: false,
+      transcriptionStatusLabel:
+        DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
       microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
       systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
@@ -193,6 +209,8 @@ export function buildLiveCaptionStatusFromEngine(
       engineLabel: "Whisper",
       aiTransmissionLabel: "なし",
       isExternalTransmission: false,
+      transcriptionStatusLabel:
+        DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
       microphoneTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.microphoneTrackLabel,
       systemAudioTrackLabel: DEFAULT_LIVE_CAPTION_STATUS.systemAudioTrackLabel,
     };
@@ -204,6 +222,7 @@ export function buildLiveCaptionStatusFromLabels(
   engineLabel: string,
   aiTransmissionLabel: string,
   trackLabels?: {
+    transcriptionStatusLabel?: string;
     microphoneTrackLabel: string;
     systemAudioTrackLabel: string;
   },
@@ -220,6 +239,10 @@ export function buildLiveCaptionStatusFromLabels(
     aiTransmissionLabel: normalizedAiTransmissionLabel,
     isExternalTransmission: isExternalTransmissionLabel(
       normalizedAiTransmissionLabel,
+    ),
+    transcriptionStatusLabel: statusLabelOrDefault(
+      trackLabels?.transcriptionStatusLabel,
+      DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
     ),
     microphoneTrackLabel: statusLabelOrDefault(
       trackLabels?.microphoneTrackLabel,

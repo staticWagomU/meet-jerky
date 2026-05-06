@@ -1,0 +1,39 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+最初に以下を読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 239 で実装する、録音状態の透明性または文字起こしエラー状態同期に関する小さく価値の高い改善候補を1件だけ調査してください。
+
+直近の重複禁止:
+- Loop 234: start_transcription invoke 到達後の失敗時に、録音トラック状態確認を促す UI 診断を追加
+- Loop 233/235/238: audio_event payload contract tests
+- Loop 236/237: meeting detection boundary tests
+
+優先して見る観点:
+1. `transcription-error` / worker panic 後の UI state が、録音状態や文字起こし状態を過度に断定せずにユーザーへ伝わるか
+2. `TranscriptView.tsx` の既存 event listener / cleanup / meetingError / recording/transcription status 周辺
+3. 実機権限・Tauri AppHandle 抽象化が不要で、frontend build で検証できる最小 UI 改善
+
+調査条件:
+- 挙動変更は UI 診断や状態表示の最小スライスに限定してください。
+- 録音継続/停止、AI送信、権限状態を断定する文言は禁止です。
+- 大きな抽象化、依存追加、Rust 側変更、実機権限が必要な変更は避けてください。
+- テスト追加だけがよい場合は、その契約と product value を明記してください。
+- 編集・コミットは禁止です。
+
+報告形式:
+- 推奨候補1件
+- 根拠ファイル/関数/状態
+- ユーザー価値
+- 非目標
+- 影響範囲
+- リスク/残リスク
+- worker へ渡す担当範囲と実装条件
+- 検証方法

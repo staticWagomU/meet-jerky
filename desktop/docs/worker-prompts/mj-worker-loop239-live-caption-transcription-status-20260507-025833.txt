@@ -1,0 +1,53 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/utils/liveCaptionStatus.ts
+- src/routes/TranscriptView.tsx
+- src/components/LiveCaptionWindow.tsx
+- AGENT_LOG.md
+
+目的:
+ライブ字幕ウィンドウへ文字起こし状態を同期し、`transcription-error` / worker panic 後も「録音トラック表示」と「文字起こし状態」を混同せず見えるようにしてください。録音継続/停止、AI送信停止、権限状態は断定しないでください。
+
+ユーザー価値:
+ライブ字幕側でも、文字起こしが「文字起こし中」「停止中」「開始中/停止中」など UI state に基づく状態として見え、エラー後にユーザーが録音トラック状態と文字起こし状態を切り分けて判断しやすくなる。
+
+非目標:
+- Rust 側変更なし。
+- `transcription-error` payload schema 変更なし。
+- event 名変更なし。
+- 録音が継続している/停止した、AI送信が止まった、権限が有効/無効、などの断定なし。
+- 依存関係追加なし。
+- 実機権限確認や Tauri AppHandle 抽象化なし。
+
+実装条件:
+1. `src/utils/liveCaptionStatus.ts`
+   - `LiveCaptionStatusPayload` に `transcriptionStatusLabel: string` を追加してください。
+   - `DEFAULT_LIVE_CAPTION_STATUS` の default は `"停止中"` としてください。
+   - 旧 localStorage payload 互換のため、`StoredLiveCaptionStatusPayload` では `transcriptionStatusLabel` を optional 扱いにしてください。
+   - `isLiveCaptionStatusPayload` は、`transcriptionStatusLabel` が undefined か valid label なら受けるようにしてください。
+   - `normalizeLiveCaptionStatusPayload` は missing/invalid の場合 default に fallback してください。
+   - `buildLiveCaptionStatusFromEngine` と `buildLiveCaptionStatusFromLabels` が新 field を必ず返すようにしてください。
+   - `buildLiveCaptionStatusFromLabels` は optional third argument に `transcriptionStatusLabel?: string` を受けられる形にしてください。既存 SettingsView 呼び出しを壊さないこと。
+2. `src/routes/TranscriptView.tsx`
+   - 既存算出済みの `transcriptionStatusLabel` を live caption status payload に渡してください。
+   - そのために必要なら `transcriptionStatusLabel` の定義位置を、live caption status sync effect より前へ移動してください。
+   - 既存の録音/文字起こし start/stop/restart フロー、`meetingError` 文言、event listener は変更しないでください。
+3. `src/components/LiveCaptionWindow.tsx`
+   - compact 表示の固定 `録音中 · 字幕を表示中` を、録音を断定しない表示にしてください。例: `文字起こし ${statusPayload.transcriptionStatusLabel}`。
+   - 通常表示の `ライブ文字起こし {captionTimestamp ?? "待機中"}` にも、timestamp がない場合は `statusPayload.transcriptionStatusLabel` を反映してください。
+   - aria label / title にも `文字起こし状態: ${statusPayload.transcriptionStatusLabel}` を含めてください。
+   - `LIVE_CAPTION_CLOSE_LABEL` と `LIVE_CAPTION_WINDOW_OPERATION_LABEL` の「閉じても録音と文字起こしは継続します」という断定文は変更候補です。今回の範囲で安全に直せるなら「閉じても記録操作は変更されません」など、操作の副作用だけを述べる文へ置換してください。
+   - トラック状態、engine、AI transmission 表示は維持してください。
+4. AGENT_LOG.md
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+   - 残リスクには、実機 overlay 表示と `transcription-error` 注入は未確認で、UI state 同期のみを build で確認することを明記してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/liveCaptionStatus.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。コミットは禁止です。

@@ -39,7 +39,6 @@ import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_RECORDING_LABEL } from "../utils/statusLabels";
 
 const WAITING_CAPTION_TEXT =
   "自分/相手側トラックの発話が確定するとここに表示されます。";
@@ -48,9 +47,9 @@ const WAITING_CAPTION_ARIA_TEXT =
 const INVALID_STATUS_PAYLOAD_ERROR =
   "ライブ字幕の状態通知の形式が不正です。";
 const LIVE_CAPTION_CLOSE_LABEL =
-  "ライブ文字起こしウィンドウを閉じる。Escape キーでも閉じられます。録音と文字起こしは継続します";
+  "ライブ文字起こしウィンドウを閉じる。Escape キーでも閉じられます。閉じても記録操作は変更されません";
 const LIVE_CAPTION_WINDOW_OPERATION_LABEL =
-  "このウィンドウはドラッグで移動できます。閉じても録音と文字起こしは継続します";
+  "このウィンドウはドラッグで移動できます。閉じても記録操作は変更されません";
 
 async function hideLiveCaptionOverlayWindow(): Promise<void> {
   await invoke("set_live_caption_window_visible", { visible: false });
@@ -262,15 +261,17 @@ export function LiveCaptionWindow() {
     `表示中の音声取得状態: ${visibleTrackSummary}`,
     ...trackStatusLabels.map((track) => track.ariaLabel),
   ].join("、");
+  const transcriptionStatusAriaLabel = `文字起こし状態: ${statusPayload.transcriptionStatusLabel}`;
   const transmissionStatusAriaLabel =
     getTransmissionStatusAriaLabel(statusPayload);
   const label = listenerError
-    ? listenerError
+    ? `${listenerError}: ${transcriptionStatusAriaLabel}`
     : latestSegment
       ? [
           "ライブ文字起こし",
           LIVE_CAPTION_WINDOW_OPERATION_LABEL,
           getSpeakerLabel(latestSegment),
+          transcriptionStatusAriaLabel,
           captionTimestamp ? `発話時刻 ${captionTimestamp}` : null,
           ...trackStatusLabels.map(
             (track) => `${track.ariaPrefix} ${track.state}`,
@@ -284,6 +285,7 @@ export function LiveCaptionWindow() {
       : [
           "ライブ文字起こし 待機中",
           LIVE_CAPTION_WINDOW_OPERATION_LABEL,
+          transcriptionStatusAriaLabel,
           ...trackStatusLabels.map(
             (track) => `${track.ariaPrefix} ${track.state}`,
           ),
@@ -309,7 +311,12 @@ export function LiveCaptionWindow() {
         ? [latestSegment]
         : [];
   const isWaitingState = transcriptLines.length === 0 && !listenerError;
-  const compactCaptionLabel = `${STATUS_RECORDING_LABEL} · 字幕を表示中`;
+  const compactCaptionLabel =
+    statusPayload.transcriptionStatusLabel === "文字起こし中"
+      ? "文字起こし中"
+      : `文字起こし ${statusPayload.transcriptionStatusLabel}`;
+  const liveCaptionHeadingStatusLabel =
+    captionTimestamp ?? statusPayload.transcriptionStatusLabel;
   const hideLiveCaptionWindow = () => {
     void hideLiveCaptionOverlayWindow()
       .catch((e) => {
@@ -343,8 +350,8 @@ export function LiveCaptionWindow() {
         <div
           className="live-caption-compact-pill"
           data-tauri-drag-region
-          aria-label={`${compactCaptionLabel}。${trackRowLabel}`}
-          title={`${compactCaptionLabel}。${trackRowLabel}`}
+          aria-label={`${compactCaptionLabel}。${transcriptionStatusAriaLabel}。${trackRowLabel}`}
+          title={`${compactCaptionLabel}。${transcriptionStatusAriaLabel}。${trackRowLabel}`}
         >
           <span className="live-caption-compact-dot" aria-hidden="true" />
           <span className="live-caption-compact-text" data-tauri-drag-region>
@@ -369,10 +376,10 @@ export function LiveCaptionWindow() {
         <div className="live-transcript-status-row" data-tauri-drag-region>
           <span className="live-transcript-rec-pill" data-tauri-drag-region>
             <span aria-hidden="true" />
-            録音中
+            文字起こし
           </span>
           <strong className="live-transcript-meeting-title" data-tauri-drag-region>
-            ライブ文字起こし {captionTimestamp ?? "待機中"}
+            ライブ文字起こし {liveCaptionHeadingStatusLabel}
           </strong>
           <span
             className="live-transcript-health-pill"
@@ -386,9 +393,9 @@ export function LiveCaptionWindow() {
           <button
             type="button"
             className="live-transcript-minimize-btn"
-            aria-label={LIVE_CAPTION_CLOSE_LABEL}
+            aria-label={`${LIVE_CAPTION_CLOSE_LABEL}。${transcriptionStatusAriaLabel}`}
             aria-keyshortcuts="Escape"
-            title={LIVE_CAPTION_CLOSE_LABEL}
+            title={`${LIVE_CAPTION_CLOSE_LABEL}。${transcriptionStatusAriaLabel}`}
             onClick={hideLiveCaptionWindow}
           >
             <Minus aria-hidden="true" size={18} strokeWidth={2} />
@@ -396,8 +403,8 @@ export function LiveCaptionWindow() {
           <button
             type="button"
             className="live-transcript-end-preview-btn"
-            aria-label={`${LIVE_CAPTION_CLOSE_LABEL}。録音停止ではありません`}
-            title={`${LIVE_CAPTION_CLOSE_LABEL}。録音停止ではありません。`}
+            aria-label={`${LIVE_CAPTION_CLOSE_LABEL}。${transcriptionStatusAriaLabel}`}
+            title={`${LIVE_CAPTION_CLOSE_LABEL}。${transcriptionStatusAriaLabel}`}
             onClick={hideLiveCaptionWindow}
           >
             閉じる

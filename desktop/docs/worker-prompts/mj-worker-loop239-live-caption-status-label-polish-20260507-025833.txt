@@ -1,0 +1,28 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/components/LiveCaptionWindow.tsx
+- AGENT_LOG.md
+
+目的:
+Loop 239 のライブ字幕文字起こし状態同期の差分について、compact 表示が `文字起こし 文字起こし中` のように重複し得る表示を避ける小さな文言調整をしてください。
+
+実装条件:
+- `src/components/LiveCaptionWindow.tsx` の visible compact label 周辺だけを変更してください。
+- `statusPayload.transcriptionStatusLabel` が `"文字起こし中"` のときは visible label も `"文字起こし中"` とし、それ以外は `"文字起こし ${statusPayload.transcriptionStatusLabel}"` のままでよいです。
+- aria label / title にある `文字起こし状態: ...` は維持してください。
+- `src/utils/liveCaptionStatus.ts`、`src/routes/TranscriptView.tsx`、payload schema、event listener、Rust 側、依存関係は変更しないでください。
+- 録音継続/停止、AI送信停止、権限状態を断定する文言は禁止です。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+既存 Loop 239 の直後に、今回の文言 polish を別エントリとして追記してください。開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを記録してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
