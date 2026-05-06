@@ -1,0 +1,32 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- AGENT_LOG.md のみ
+
+目的:
+- 直近で作成された以下3コミットについて、AGENT_LOG.md に運用ログを追記してください。
+  - `2345813` chore(gitignore): autonomous loop の一時 handoff prompt (.tmp-handoff-launch-*.txt) を除外
+  - `6a0ebd2` chore(handoff): autonomous loop の handoff prompt 212 件をバックログ整理
+  - `9ebd0e5` chore(worker-prompts): autonomous loop の worker prompt 323 件をバックログ整理
+- これらはアプリ挙動変更ではなく、自律運用ハーネスの backlog/tracking 整理です。
+- コードや .gitignore、docs/handoff、docs/worker-prompts は編集しないでください。
+- 旧 `mjc-main` セッションは衝突防止のためメイン側で kill 済み、canonical は `mj-main` であることも記録してください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+- 課金が発生する操作は禁止です。
+- 3コミットの内容は `git show --stat` 程度で確認し、推測は推測と明示してください。
+
+検証:
+- `git diff --check -- AGENT_LOG.md`
+- `git diff -- AGENT_LOG.md` を確認
+
+AGENT_LOG.md:
+- 開始日時、担当セッション `mj-worker-loop207-agent-log-backlog-commits-20260506-220725`、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+- 依存関係追加なし、アプリ挙動変更なし、検証は docs/log のみで build 不要、という判断を明記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

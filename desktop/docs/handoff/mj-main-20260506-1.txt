@@ -1,0 +1,59 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象に、Mac向けアプリ meet-jerky を継続的に改善する後継メインエージェントです。
+
+最初に必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+- この handoff ファイル
+
+重要方針:
+- 鵜呑みにせず、批判的・中立的に判断する。
+- 作業対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- メインは原則としてアプリコードを直接編集しない。調査、分解、worker 起動、監視、レビュー、検証、コミット、引き継ぎに専念する。
+- watchdog は mj-watchdog が canonical `mj-main` を監視中。判断や実装は任せない。
+
+現在状態:
+- branch: main
+- origin/main から ahead 6
+- 直近コミット:
+  - 137dbb5 chore(agent-log): harness backlog 整理コミットを記録する
+  - 9ebd0e5 chore(worker-prompts): autonomous loop の worker prompt 323 件をバックログ整理
+  - 6a0ebd2 chore(handoff): autonomous loop の handoff prompt 212 件をバックログ整理
+  - 419706e fix(ui): 不正な文字起こしエラーでも停止状態へ戻す
+  - 2345813 chore(gitignore): autonomous loop の一時 handoff prompt (.tmp-handoff-launch-*.txt) を除外
+  - 38f04fc refactor(rust): 文字起こしループの待機間隔を定数化する
+- tracked working tree: clean
+- untracked: docs/worker-prompts/mj-worker-loop207-agent-log-backlog-commits-20260506-220725.txt が残存。worker が「担当範囲外」として触らなかった prompt ファイル。必要なら次の harness 整理で扱うが、アプリ挙動には無関係。
+- 旧 `mjc-main` は前回停止済みの Claude TUI だったため、衝突防止で kill 済み。
+- tmux: `mj-main` と `mj-watchdog` が残る想定。後継起動後は `scripts/agent-adopt-main.sh mj-main-20260506-1 mj-main` で canonical 名に切り替えられる。
+
+本メインで完了したこと:
+1. Loop 205
+   - worker: mj-worker-loop205-transcription-loop-poll-constants-20260506-215912
+   - 変更: src-tauri/src/transcription_worker_loop.rs の 50ms idle wait と 5ms active yield を意味別 const に集約。値は不変。
+   - 検証: agent-verify は cmake 不在で Rust full test を skip。追加で `~/.cargo/bin/cargo fmt --check`、`~/.cargo/bin/cargo test --lib transcription_worker_loop` (0 tests / 704 filtered)、`~/.cargo/bin/cargo test --lib` (704 passed)、`~/.cargo/bin/cargo clippy --lib --tests -- -D warnings` 成功。
+   - commit: 38f04fc
+2. Loop 206
+   - worker: mj-worker-loop206-transcription-error-invalid-payload-stops-ui-20260506-220340
+   - 変更: TranscriptView の `transcription-error` listener で、payload 不正でも `setIsTranscribing(false)` になるようにした。録音/文字起こし状態の透明性に寄与。
+   - 検証: `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check` 成功。
+   - commit: 419706e
+3. harness backlog 整理
+   - 2345813 / 6a0ebd2 / 9ebd0e5 が作成された。内容は .tmp ignore、docs/handoff 212 files、docs/worker-prompts 324 files の tracking 整理。
+   - これらは別プロセス/旧セッション由来の可能性があるため、内容を戻さず、AGENT_LOG へ 137dbb5 で事後記録した。
+
+注意点:
+- `git status --short | grep -v '^??'` で tracked dirty がないことを確認してから次作業に入る。
+- 直近で staged に docs/handoff が大量に乗った場面があった。コミット前は必ず staged diff と path 指定を確認する。
+- `agent-verify.sh` は PATH に `~/.cargo/bin` を足すが cmake 不在で Rust full test を skip する。cargo 自体は `~/.cargo/bin/cargo` で利用可能。
+- frontend build は通常 shell だと npm が PATH にない場合がある。`PATH="/opt/homebrew/bin:$PATH" npm run build` が成功した。
+
+次の候補:
+- product value 優先なら、`transcription-error` / worker panic 後の状態同期の周辺をさらに狭く確認する。Loop 206 で TranscriptView の invalid payload は修正済み。
+- 調査担当の提案では、次は worker loop のテスト容易性改善、または `transcription-error` 受信時の UI state 遷移確認が価値高め。ただし Tauri AppHandle 依存が重いため、いきなり大きな抽象化は避ける。
+- harness 衛生優先なら、残った untracked `docs/worker-prompts/mj-worker-loop207-agent-log-backlog-commits-20260506-220725.txt` の扱いを小さく決める。既に worker-prompts は tracked precedent になったが、これだけのために大きな churn は避ける。
+
+旧メインへの指示:
+- 後継が起動し canonical `mj-main` へ adopt されたら、旧メインは作業を増やさず終了する。
