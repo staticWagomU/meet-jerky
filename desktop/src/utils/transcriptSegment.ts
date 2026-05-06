@@ -23,8 +23,12 @@ function isTranscriptAudioSource(
   return value === "microphone" || value === "system_audio";
 }
 
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
+function isFiniteInteger(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    Number.isInteger(value)
+  );
 }
 
 export const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
@@ -49,9 +53,9 @@ export function isTranscriptSegmentPayload(
   const candidate = value as Partial<TranscriptSegment>;
   return (
     isSafeTrimmedString(candidate.text, 4000) &&
-    isFiniteNumber(candidate.startMs) &&
+    isFiniteInteger(candidate.startMs) &&
     candidate.startMs >= 0 &&
-    isFiniteNumber(candidate.endMs) &&
+    isFiniteInteger(candidate.endMs) &&
     candidate.endMs >= candidate.startMs &&
     (candidate.source === undefined ||
       isTranscriptAudioSource(candidate.source)) &&
