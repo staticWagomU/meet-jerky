@@ -20,6 +20,10 @@ import {
   getSpeakerLabel,
   getVisibleSpeakerLabel,
 } from "../utils/transcriptDisplayHelpers";
+import {
+  TRANSCRIPTION_ERROR_EVENT,
+  TRANSCRIPTION_RESULT_EVENT,
+} from "../utils/transcriptionEvents";
 
 interface TranscriptDisplayProps {
   segments: TranscriptSegment[];
@@ -56,7 +60,7 @@ export function TranscriptDisplay({
   useEffect(() => {
     let disposed = false;
     const unlistenPromise = listen<unknown>(
-      "transcription-result",
+      TRANSCRIPTION_RESULT_EVENT,
       (event) => {
         if (disposed) {
           return;
@@ -101,7 +105,7 @@ export function TranscriptDisplay({
   useEffect(() => {
     let disposed = false;
     const unlistenPromise = listen<unknown>(
-      "transcription-error",
+      TRANSCRIPTION_ERROR_EVENT,
       (event) => {
         if (disposed) {
           return;

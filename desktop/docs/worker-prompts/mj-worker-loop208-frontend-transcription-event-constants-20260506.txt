@@ -1,0 +1,57 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした作業担当エージェントです。
+
+目的:
+- フロントエンド側の Tauri transcription event 名を定数化し、`transcription-error` の状態同期修正を typo やイベント名 drift で壊しにくくする。
+- 挙動変更はしない。文字列値は既存と完全に同じにする。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- src/routes/TranscriptView.tsx の `transcription-error` listener 周辺
+- src/components/TranscriptDisplay.tsx の transcription event listener 周辺
+- src/components/LiveCaptionWindow.tsx の transcription event listener 周辺
+
+担当範囲:
+- 変更可:
+  - src/utils/transcriptionEvents.ts (新規作成可)
+  - src/routes/TranscriptView.tsx
+  - src/components/TranscriptDisplay.tsx
+  - src/components/LiveCaptionWindow.tsx
+  - AGENT_LOG.md
+- 変更禁止:
+  - Rust 側 (`src-tauri/**`)
+  - package.json / lockfile / 依存関係
+  - docs/handoff/**
+  - この prompt 以外の docs/worker-prompts/**
+  - 担当範囲外のファイル
+
+実装要件:
+- `src/utils/transcriptionEvents.ts` に以下の定数を追加する。
+  - `TRANSCRIPTION_ERROR_EVENT = "transcription-error"`
+  - `TRANSCRIPTION_RESULT_EVENT = "transcription-result"`
+  - `LIVE_CAPTION_RESET_EVENT = "live-caption-reset"`
+- 上記 3 イベント名のフロントエンド側 listen 呼び出しで、該当する直書き文字列を定数参照へ置換する。
+- 既存の `MEETING_START_REQUEST_EVENT` や `LIVE_CAPTION_STATUS_EVENT` など別領域の定数は触らない。
+- import は既存スタイルに合わせる。
+- UI 文言、ロジック、条件分岐、イベント payload 型は変えない。
+- コメントを増やす必要はない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/transcriptionEvents.ts src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 末尾に作業ログを追記する。
+- 開始日時、担当セッション名、作業範囲、結果、変更ファイル、検証結果、依存関係追加なし、残リスクを簡潔に記録する。
+
+禁止:
+- コミットしない。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他エージェントやユーザーの変更を戻さない。
+
+完了報告:
+- 変更ファイル
+- 変更内容
+- 検証結果
+- 残リスク

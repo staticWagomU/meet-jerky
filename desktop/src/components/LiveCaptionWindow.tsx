@@ -31,6 +31,11 @@ import {
   isTranscriptionErrorPayload,
 } from "../utils/transcriptSegment";
 import {
+  LIVE_CAPTION_RESET_EVENT,
+  TRANSCRIPTION_ERROR_EVENT,
+  TRANSCRIPTION_RESULT_EVENT,
+} from "../utils/transcriptionEvents";
+import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
@@ -108,14 +113,14 @@ export function LiveCaptionWindow() {
         setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
       },
     );
-    const resetUnlistenPromise = listen("live-caption-reset", () => {
+    const resetUnlistenPromise = listen(LIVE_CAPTION_RESET_EVENT, () => {
       if (disposed) {
         return;
       }
       resetLiveCaptionState();
     });
     const resultUnlistenPromise = listen<unknown>(
-      "transcription-result",
+      TRANSCRIPTION_RESULT_EVENT,
       (event) => {
         if (disposed) {
           return;
@@ -137,7 +142,7 @@ export function LiveCaptionWindow() {
       },
     );
     const errorUnlistenPromise = listen<unknown>(
-      "transcription-error",
+      TRANSCRIPTION_ERROR_EVENT,
       (event) => {
         if (disposed) {
           return;

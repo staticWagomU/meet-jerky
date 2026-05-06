@@ -86,6 +86,7 @@ import {
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
 import { isTranscriptionErrorPayload } from "../utils/transcriptSegment";
+import { TRANSCRIPTION_ERROR_EVENT } from "../utils/transcriptionEvents";
 import {
   MACOS_ACCESSIBILITY_PRIVACY_URL,
   MACOS_MICROPHONE_PRIVACY_URL,
@@ -245,18 +246,21 @@ export function TranscriptView() {
 
   useEffect(() => {
     let disposed = false;
-    const unlistenPromise = listen<unknown>("transcription-error", (event) => {
-      if (disposed) {
-        return;
-      }
-      setIsTranscribing(false);
-      const payload = event.payload;
-      if (!isTranscriptionErrorPayload(payload)) {
-        setMeetingError("文字起こしエラー通知の形式が不正です。");
-        return;
-      }
-      setMeetingError(`文字起こしが停止しました: ${payload.error}`);
-    })
+    const unlistenPromise = listen<unknown>(
+      TRANSCRIPTION_ERROR_EVENT,
+      (event) => {
+        if (disposed) {
+          return;
+        }
+        setIsTranscribing(false);
+        const payload = event.payload;
+        if (!isTranscriptionErrorPayload(payload)) {
+          setMeetingError("文字起こしエラー通知の形式が不正です。");
+          return;
+        }
+        setMeetingError(`文字起こしが停止しました: ${payload.error}`);
+      },
+    )
       .then((unlisten) => unlisten)
       .catch((e) => {
         if (!disposed) {
