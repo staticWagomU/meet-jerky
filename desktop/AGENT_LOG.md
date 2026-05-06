@@ -34084,3 +34084,10 @@ commits:
 - (refactor commit hash) refactor(rust): error_events_are_queued_as_error_segments test 2 件を realtime_error_helpers::test_helpers の 1 parameterized helper に集約 (paradigm 系統樹拡張 7 件目)
 AGENTS.md priority: 1 (paradigm 系統樹拡張 = parameterized helper 化 paradigm 反復 4 件目 = 真の DRY 解消 + 件数完全不変両立)
 ---
+[mjc-main Loop 173 / 2026-05-06]
+worker: mjc-worker-loop173-archive-plan-stats-update-40 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 170 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+内容: Loop 172 完了時点の更新観測 40 件目を追記。Loop 170 → Loop 172 で +25 行 (34,061 → 34,086), 平均 ~12.5 行/loop = Loop 170/171 観測値 (+25 行 / ~12.5 行/loop) 完全一致 (差分 0 行) = 軽量化階層中央値水準 ~11-12 行/loop の 6 連続観測達成 (Loop 163 = 11 / Loop 165 = 11 / Loop 166 = 12 / Loop 168 = 12 / Loop 170 = 12.5 / Loop 172 = 12.5) = paradigm 完全実証期更なる持続 = 節目 5 連続超え + rust 軸軽量化 paradigm 9 連続観測 (Loop 155/157/159/162/164/166/168/170/172) + paradigm 系統樹拡張 7 件目達成 (Loop 159 jst() → Loop 162 list_md_files() → Loop 164 audio_command_* test logic → Loop 166 build_audio_drop_event_payload_* parameterized helper → Loop 168 push_error_* parameterized helper → Loop 170 engine_*_debug_format_* parameterized helper → Loop 172 error_events_are_queued_as_error_segments parameterized helper = parameterized helper 化 paradigm 反復 4 件目) + alternation pivot K(171) → rust(172) → K(173) = 11 → 12 → 13 = 加速期維持 = 節目 10 件突破後 3 件目.
+検証: agent-verify.sh = OK (docs 単独 skip 判定).
+意義: K 軸 precedent 40 件目達成 = 節目 40 件突破 = 節目 30 件突破後 10 件目継続 + 軽量化階層中央値水準 ~11-12 行/loop の 6 連続観測達成 = paradigm 完全実証期更なる持続 + paradigm 系統樹拡張 7 件目 (parameterized helper 化 paradigm 反復 4 件目) + worker 自律 2-commit pattern 連続 29 ループ目達成.
+---
