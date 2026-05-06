@@ -12,16 +12,17 @@ pub(crate) struct RequestedTranscriptionSources {
 
 pub(crate) const TRANSCRIPTION_SOURCE_MICROPHONE: &str = "microphone";
 pub(crate) const TRANSCRIPTION_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
+pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE: &str =
+    "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。";
+pub(crate) const ERROR_APPLE_SPEECH_MULTIPLE_STREAMS: &str =
+    "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
 
 pub(crate) fn validate_stream_count_for_engine(
     engine_type: &TranscriptionEngineType,
     stream_count: usize,
 ) -> Result<(), String> {
     if matches!(engine_type, TranscriptionEngineType::AppleSpeech) && stream_count > 1 {
-        return Err(
-            "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。"
-                .to_string(),
-        );
+        return Err(ERROR_APPLE_SPEECH_MULTIPLE_STREAMS.to_string());
     }
     Ok(())
 }
@@ -43,10 +44,7 @@ pub(crate) fn parse_requested_transcription_sources(
             use_mic: true,
             use_system: true,
         }),
-        _ => Err(
-            "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
-                .to_string(),
-        ),
+        _ => Err(ERROR_INVALID_TRANSCRIPTION_SOURCE.to_string()),
     }
 }
 
@@ -157,10 +155,7 @@ mod tests {
     fn parse_requested_transcription_sources_returns_exact_error_message_for_unknown_value() {
         let err = parse_requested_transcription_sources(Some("xyz"))
             .expect_err("unknown source should be rejected");
-        assert_eq!(
-            err,
-            "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。"
-        );
+        assert_eq!(err, ERROR_INVALID_TRANSCRIPTION_SOURCE);
     }
 
     #[test]
@@ -169,8 +164,7 @@ mod tests {
             let err = parse_requested_transcription_sources(Some(source))
                 .expect_err("uppercase source should be rejected");
             assert_eq!(
-                err,
-                "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。",
+                err, ERROR_INVALID_TRANSCRIPTION_SOURCE,
                 "unexpected error for {source:?}"
             );
         }
@@ -201,8 +195,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            err,
-            "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。",
+            err, ERROR_APPLE_SPEECH_MULTIPLE_STREAMS,
             "クラッシュ防止の UI 文言を完全一致で固定 (UI/log 文言契約)"
         );
     }
@@ -218,7 +211,7 @@ mod tests {
         .unwrap_err();
         assert_eq!(
             err,
-            "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。",
+            ERROR_APPLE_SPEECH_MULTIPLE_STREAMS,
             "stream_count=3 でも 2 と同じエラー文言で reject される (`stream_count > 1` の boundary 挙動)"
         );
     }
@@ -324,8 +317,7 @@ mod tests {
             let err = parse_requested_transcription_sources(Some(source))
                 .expect_err("prefix 一致のみの拡張入力は reject されるべき");
             assert_eq!(
-                err,
-                "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。",
+                err, ERROR_INVALID_TRANSCRIPTION_SOURCE,
                 "prefix 拡張入力 {source:?} は完全一致 match を通らず reject される現契約"
             );
         }
