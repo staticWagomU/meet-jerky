@@ -1,0 +1,56 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象に、Mac向けアプリ meet-jerky を継続的に改善する後継メインエージェントです。
+
+最初に必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+- この handoff ファイル
+
+重要方針:
+- 鵜呑みにせず、批判的・中立的に判断する。
+- 作業対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- メインは原則としてアプリコードを直接編集しない。調査、分解、worker 起動、監視、レビュー、検証、コミット、引き継ぎに専念する。
+- watchdog は mj-watchdog が canonical `mj-main` を監視中。判断や実装は任せない。
+
+現在状態:
+- branch: main
+- origin/main から ahead 23
+- tracked working tree: clean
+- tmux: `mj-main` と `mj-watchdog` が残る想定。後継起動後は `scripts/agent-adopt-main.sh mj-main-20260507-2 mj-main` で canonical 名に切り替えられる。
+- frontend build は `PATH="/opt/homebrew/bin:$PATH" npm run build` が有効。
+- Rust cargo は `~/.cargo/bin/cargo` が有効。`scripts/agent-verify.sh` は cmake 不在で Rust full test を skip する可能性あり。
+
+このメインで完了したこと:
+1. Loop 219
+   - commit: `77c58a1 feat(detection): Webex日本語タイトル検知を追加する`
+   - Webex window title fallback に `"Webex ミーティング"` prefix を追加。
+   - 検証: cargo fmt check / `cargo test --lib classify_meeting_window_title` / clippy / diff check 成功。
+2. Loop 220
+   - commit: `6fb19ce fix(ui): 録音開始要求の受信開始失敗を明示する`
+   - `TranscriptView.tsx` の `MEETING_START_REQUEST_EVENT` listener 開始失敗を `meetingError` と console に明示し、未開始 listener を cleanup で解除しないようにした。
+   - 検証: `PATH="/opt/homebrew/bin:$PATH" npm run build` / diff check 成功。
+3. Loop 221
+   - commit: `b484a03 fix(ui): 未知の音声ソース通知を明示する`
+   - `audio-level` / `audio-drop-count` の未知 `source` を、既存型ガード reject のまま UI 診断だけ「未知の音声ソース」として細分化。
+   - 検証: `PATH="/opt/homebrew/bin:$PATH" npm run build` / diff check 成功。
+4. Loop 222
+   - commit: `383fbe7 fix(detection): Zoomタイトル検知の単語連結を除外する`
+   - Zoom window title fallback で `"Zoom Meetings Help"` / `"Zoom MeetingTools"` のような `"Zoom Meeting"` への単語連結を reject。既存 exact/括弧/ハイフン/改行 suffix positive は維持。
+   - 検証: cargo fmt check / `cargo test --lib classify_meeting_window_title` (25 passed) / clippy / diff check 成功。
+
+注意点:
+- Loop 222 は実機 Zoom window title 未確認。prefix 直後が `char::is_alphanumeric()` の未知実機 suffix は reject されるため、実機表記が分かれば調整候補。
+- Loop 221 は `TranscriptView.tsx` に `getUnknownAudioSourceLabel` helper を追加した。型を広げる案は調査で出たが、今回は downstream 型安全性を優先して採用していない。
+- 直近で worker final output が保存されない場面があったが、pane / AGENT_LOG / メイン再検証で確認済み。
+- コミット前は必ず staged path を明示確認すること。過去に docs/handoff や docs/worker-prompts が大量 staging されたことがある。
+
+次の候補:
+- product value 優先なら、会議検知の実機未確認リスクを下げる純粋関数テスト追加や、録音状態の透明性に関わる小さな UI 診断改善を探す。
+- 調査担当の候補では、audio event emit interval の意味定数化は安全だが product value は低め。
+- 文字起こし周辺では、worker panic / `transcription-error` 後の UI state 同期の残りを狭く確認する価値がある。ただし Tauri AppHandle 依存が重いため大きな抽象化は避ける。
+
+旧メインへの指示:
+- 後継が起動し canonical `mj-main` へ adopt されたら、旧メインは作業を増やさず終了する。
