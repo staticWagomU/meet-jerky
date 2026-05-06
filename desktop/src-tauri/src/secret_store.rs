@@ -13,6 +13,11 @@
 #[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
 const SERVICE: &str = "com.wagomu.meet-jerky";
 
+/// 非対応プラットフォーム (Linux 等) のスタブ実装が返す共通エラーメッセージ。
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+const ERROR_KEYCHAIN_NOT_SUPPORTED: &str =
+    "このプラットフォームでは Keychain がサポートされていません";
+
 /// Keychain に保存するアカウント名 (キー識別子)。
 #[derive(Debug, Clone, Copy)]
 pub enum SecretKey {
@@ -53,7 +58,7 @@ pub fn set_secret(key: SecretKey, value: &str) -> Result<(), String> {
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let _ = (key, value);
-        Err("このプラットフォームでは Keychain がサポートされていません".to_string())
+        Err(ERROR_KEYCHAIN_NOT_SUPPORTED.to_string())
     }
 }
 
@@ -71,7 +76,7 @@ pub fn get_secret(key: SecretKey) -> Result<Option<String>, String> {
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let _ = key;
-        Err("このプラットフォームでは Keychain がサポートされていません".to_string())
+        Err(ERROR_KEYCHAIN_NOT_SUPPORTED.to_string())
     }
 }
 
@@ -89,7 +94,7 @@ pub fn delete_secret(key: SecretKey) -> Result<(), String> {
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let _ = key;
-        Err("このプラットフォームでは Keychain がサポートされていません".to_string())
+        Err(ERROR_KEYCHAIN_NOT_SUPPORTED.to_string())
     }
 }
 
