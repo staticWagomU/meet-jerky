@@ -1,12 +1,12 @@
 import type { TranscriptionEngineType } from "../types";
 import { isExternalTransmissionLabel } from "./liveCaptionStatus";
-import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
 
 export function getAiTransmissionStatusLabel(
   engine: TranscriptionEngineType | undefined,
 ): string {
   if (!engine) {
-    return "確認中";
+    return STATUS_CHECKING_LABEL;
   }
   if (engine === "openAIRealtime") {
     return "送信先 OpenAI";

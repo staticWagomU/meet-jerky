@@ -1,11 +1,11 @@
 import type { TranscriptionEngineType } from "../types";
-import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
 
 export function getEngineStatusLabel(
   engine: TranscriptionEngineType | undefined,
 ): string {
   if (!engine) {
-    return "確認中";
+    return STATUS_CHECKING_LABEL;
   }
   if (engine === "appleSpeech") {
     return "Apple Speech（端末内）";
@@ -39,7 +39,7 @@ export function getEngineStatusPillClass(statusLabel: string): string {
   if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "確認中") {
+  if (statusLabel === STATUS_CHECKING_LABEL) {
     return "meeting-status-pill-neutral";
   }
   return "meeting-status-pill-active";

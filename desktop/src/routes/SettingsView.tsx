@@ -30,7 +30,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -1138,7 +1138,7 @@ export function SettingsView() {
                             aria-hidden="true"
                           />
                           {isCheckingPermissions
-                            ? "確認中"
+                            ? STATUS_CHECKING_LABEL
                             : micPermission === "granted"
                               ? "許可済み"
                               : micPermission === "denied"
@@ -1166,7 +1166,7 @@ export function SettingsView() {
                             aria-hidden="true"
                           />
                           {isCheckingPermissions
-                            ? "確認中"
+                            ? STATUS_CHECKING_LABEL
                             : screenPermission === "granted"
                               ? "許可済み"
                               : screenPermission === "denied"
@@ -1894,11 +1894,11 @@ function ExternalApiKeySection({
           ? `${providerName} API キーを削除`
           : `削除できる ${providerName} API キーはありません`;
   const apiKeyStatusText = isFetchingHasKey
-    ? "確認中"
+    ? STATUS_CHECKING_LABEL
     : hasKeyError
       ? STATUS_UNCHECKABLE_LABEL
       : hasKey === undefined
-        ? "確認中"
+        ? STATUS_CHECKING_LABEL
         : hasKey
           ? "登録済み"
           : "未登録";

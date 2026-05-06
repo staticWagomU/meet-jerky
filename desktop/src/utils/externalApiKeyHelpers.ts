@@ -1,4 +1,4 @@
-import { STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
 
 export function getExternalApiKeyStatusLabel(
   externalApiProvider: string | null,
@@ -12,7 +12,7 @@ export function getExternalApiKeyStatusLabel(
     return STATUS_UNCHECKABLE_LABEL;
   }
   if (hasExternalApiKey === undefined) {
-    return "確認中";
+    return STATUS_CHECKING_LABEL;
   }
   return hasExternalApiKey ? "登録済み" : "未登録";
 }

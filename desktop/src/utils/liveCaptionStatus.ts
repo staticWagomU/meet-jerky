@@ -1,5 +1,6 @@
 import type { TranscriptionEngineType } from "../types";
 import { CONTROL_CHARACTER_PATTERN } from "./transcriptSegment";
+import { STATUS_CHECKING_LABEL } from "./statusLabels";
 
 export const LIVE_CAPTION_STATUS_EVENT = "live-caption-status";
 export const LIVE_CAPTION_STATUS_STORAGE_KEY = "meet-jerky-live-caption-status";
@@ -48,8 +49,8 @@ type StoredLiveCaptionStatusPayload = Omit<
   >;
 
 export const DEFAULT_LIVE_CAPTION_STATUS: LiveCaptionStatusPayload = {
-  engineLabel: "確認中",
-  aiTransmissionLabel: "確認中",
+  engineLabel: STATUS_CHECKING_LABEL,
+  aiTransmissionLabel: STATUS_CHECKING_LABEL,
   isExternalTransmission: false,
   microphoneTrackLabel: "未確認",
   systemAudioTrackLabel: "未確認",

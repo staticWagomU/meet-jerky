@@ -1,10 +1,12 @@
+import { STATUS_CHECKING_LABEL } from "./statusLabels";
+
 export function getPermissionStatusLabel(
   status: string | undefined,
   error: unknown,
   isChecking: boolean,
 ): string {
   if (isChecking) {
-    return "確認中";
+    return STATUS_CHECKING_LABEL;
   }
   if (error) {
     return "確認不可";

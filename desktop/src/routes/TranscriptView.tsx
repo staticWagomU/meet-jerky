@@ -65,7 +65,7 @@ import {
   getExternalApiKeyStatusPillClass,
 } from "../utils/externalApiKeyHelpers";
 import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
-import { STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
 import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
 import {
   getAiTransmissionStatusAriaLabel,
@@ -1408,7 +1408,7 @@ export function TranscriptView() {
     if (
       isMeetingOperationPending ||
       (settings === undefined && !settingsError) ||
-      meetingStartBlockedReason?.includes("確認中")
+      meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)
     ) {
       return;
     }
