@@ -1,4 +1,4 @@
-import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNREGISTERED_LABEL } from "./statusLabels";
 
 export function getExternalApiKeyStatusLabel(
   externalApiProvider: string | null,
@@ -14,7 +14,7 @@ export function getExternalApiKeyStatusLabel(
   if (hasExternalApiKey === undefined) {
     return STATUS_CHECKING_LABEL;
   }
-  return hasExternalApiKey ? "登録済み" : "未登録";
+  return hasExternalApiKey ? "登録済み" : STATUS_UNREGISTERED_LABEL;
 }
 
 export function getExternalApiKeyStatusPillClass(
@@ -26,7 +26,7 @@ export function getExternalApiKeyStatusPillClass(
   if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "未登録") {
+  if (statusLabel === STATUS_UNREGISTERED_LABEL) {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";

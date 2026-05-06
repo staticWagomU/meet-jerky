@@ -30,7 +30,7 @@ import {
   OTHER_TRACK_PERMISSION_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL } from "../utils/statusLabels";
+import { STATUS_CHECKING_LABEL, STATUS_DENIED_LABEL, STATUS_UNCHECKABLE_LABEL, STATUS_UNDETERMINED_LABEL, STATUS_UNREGISTERED_LABEL } from "../utils/statusLabels";
 
 const WHISPER_MODELS = [
   { value: "tiny", label: "Tiny" },
@@ -1901,7 +1901,7 @@ function ExternalApiKeySection({
         ? STATUS_CHECKING_LABEL
         : hasKey
           ? "登録済み"
-          : "未登録";
+          : STATUS_UNREGISTERED_LABEL;
   const apiKeyStatusClassName = hasKeyError
     ? "settings-api-key-status settings-api-key-status-error"
     : isFetchingHasKey || hasKey === undefined
