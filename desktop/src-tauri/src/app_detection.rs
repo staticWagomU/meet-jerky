@@ -1433,6 +1433,13 @@ mod tests {
     #[test]
     fn classify_meeting_window_title_returns_webex_for_webex_meeting_japanese_prefix() {
         assert_eq!(
+            classify_meeting_window_title("Webex ミーティング"),
+            Some(MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: String::new(),
+            })
+        );
+        assert_eq!(
             classify_meeting_window_title("Webex ミーティング | Acme Inc"),
             Some(MeetingUrlClassification {
                 service: "Webex".to_string(),
@@ -1452,6 +1459,16 @@ mod tests {
     #[test]
     fn classify_meeting_window_title_returns_none_for_cisco_webex_without_meeting_keyword() {
         assert_eq!(classify_meeting_window_title("Cisco Webex"), None);
+    }
+
+    #[test]
+    fn classify_meeting_window_title_rejects_webex_meeting_word_concatenation() {
+        assert_eq!(classify_meeting_window_title("Webex Meetings Help"), None);
+        assert_eq!(classify_meeting_window_title("Webex MeetingTools"), None);
+        assert_eq!(
+            classify_meeting_window_title("Webex ミーティング資料"),
+            None
+        );
     }
 
     #[test]

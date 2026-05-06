@@ -70,8 +70,8 @@ pub fn classify_meeting_url(url: &str) -> Option<MeetingUrlClassification> {
 ///   空白・括弧・改行等の区切り文字で始まるもの。
 ///   デスクトップアプリのウィンドウタイトルを想定。prefix の最小境界を見て
 ///   `"Zoom について - Wikipedia"` のような単語含みによる誤検知を防ぐ。
-/// - **Webex**: `"Webex Meeting"` または `"Webex ミーティング"` で始まるもの
-///   (prefix 一致、Zoom と同型)。ブラウザタブタイトルを想定。
+/// - **Webex**: `"Webex Meeting"` または `"Webex ミーティング"` と一致するか、その直後が
+///   空白・パイプ等の区切り文字で始まるもの。ブラウザタブタイトルを想定。
 /// - **Microsoft Teams**: ブラウザ版のタイトルパターン (`"Microsoft Teams"` suffix 等) は
 ///   外部チュートリアルや解説ページと区別できないため今回は fallback 対象外とする。
 ///   Teams はデスクトップアプリ (Bundle ID: `com.microsoft.teams2`) 経由で検知される。
@@ -108,8 +108,10 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
     }
 
     // Webex のブラウザタブタイトルは "Webex Meeting" / "Webex ミーティング"
-    // で始まるものだけを拾う (prefix 一致)。
-    if window_title.starts_with("Webex Meeting") || window_title.starts_with("Webex ミーティング")
+    // で始まる。会社名などは区切り文字つき suffix として許可するが、
+    // "Webex Meetings Help" や "Webex MeetingTools" のような単語連結は誤検知として除外する。
+    if has_webex_meeting_title_prefix(window_title, "Webex Meeting")
+        || has_webex_meeting_title_prefix(window_title, "Webex ミーティング")
     {
         return Some(MeetingUrlClassification {
             service: "Webex".to_string(),
@@ -121,6 +123,14 @@ pub fn classify_meeting_window_title(window_title: &str) -> Option<MeetingUrlCla
 }
 
 fn has_zoom_meeting_title_prefix(window_title: &str, prefix: &str) -> bool {
+    let Some(rest) = window_title.strip_prefix(prefix) else {
+        return false;
+    };
+
+    rest.chars().next().is_none_or(|c| !c.is_alphanumeric())
+}
+
+fn has_webex_meeting_title_prefix(window_title: &str, prefix: &str) -> bool {
     let Some(rest) = window_title.strip_prefix(prefix) else {
         return false;
     };
