@@ -34048,3 +34048,14 @@ worker: mjc-worker-loop169-archive-plan-stats-update-38 (作業)
 
 後継 mjc-main-20260505-84 への 2-3 ループ完走推奨. 最有力候補 = **K 軸 = K' 軸 = 同 K 軸 2 連続 (= K(169) → K(170) = alternation reset 受容) は推奨せず = 必ず別軸 pivot へ**. 代替案 = **(a) 候補 R19 = rust 軸 = paradigm 反復 6 件目 = parameterized helper 化を別 file の対称仕様 test に拡張 (paradigm 反復 3 件目 = 定型化期の更なる延長) = 探索: src-tauri 内に対称仕様 test がまだ残っているか grep 精査 (例: transcript_bridge 系の symmetry test、session 系列、その他 enum/Debug 系列 test) = 規模 S-M = ~15-30 分 = 最有力推奨 / (b) 候補 R16 = frontend 軸 = 内部 helper 重複再探索 = utils 統合候補の独自精読 = 規模 SS-S = 副推奨 / (c) 候補 R17 = rust 軸 = 別 paradigm 開拓 = trait impl 重複 / generic type 重複 / lifetime 重複等の超低レイヤー探索 = 規模 S = 探索コスト高 = 第三推奨 / (d) X' resample_audio dead code 削除 = ユーザー直伝指示要 / (e) H1 AGENT_LOG.md archive plan Phase 1 着手 = ユーザー直伝指示要**. **重要な後継教訓**: 本セッションで **handoff prompt 主張 R18 候補の評価逆転を独自検証で発見** = handoff prompt は「engine 構造違いで複雑度高」と評価していたが実体は engine 非依存 = 完全対称仕様 = メイン批判判断による独自 grep + Read 精読で発見 = **後継も handoff prompt の主張を必ず独自検証する習慣を継承する** + worker prompt 必須要素 9 (entry テンプレート冒頭に `---` を含めない設計) は本セッション Loop 168/169 で 2 連続実証成功 = boundary `---` 重複 fault 完全防止確認. 詳細は docs/handoff/mjc-main-20260505-84.txt 参照.
 ---
+[Loop 170 @ 2026-05-06 ~JST] mjc-main Loop 170
+- 軸: rust 軸
+- 寄与: AGENTS.md priority 1 (パフォーマンス + 保守性 + 品質)
+- paradigm: 既存 file 拡張軸 paradigm 11 件目 = test helper 集約軸 paradigm 反復 6 件目 = paradigm 系統樹拡張 6 件目 = parameterized helper 化 paradigm 反復 3 件目 = paradigm 反復による定型化期更なる延長
+- 内容: engine_*_debug_format_* test 6 件 (elevenlabs_realtime.rs L193-222 + openai_realtime.rs L609-640) を realtime_audio_command::test_helpers の 2 parameterized helper (assert_engine_default_debug_format / assert_engine_with_model_value_debug_format) に集約
+- 件数: cargo test 704 件件数完全不変
+- alternation pivot: K(169) → rust(170) = 9 → 10 = pivot 加速継続
+- precedent: Loop 159 jst() fn 集約 / Loop 162 list_md_files() fn 集約 / Loop 164 audio_command_* test logic 集約 / Loop 166 build_audio_drop_event_payload_* parameterized helper / Loop 168 push_error_* parameterized helper = paradigm 1-5 件目 → 本 Loop 170 = paradigm 6 件目達成
+- 完走時間: 約 5-10 分
+- commit: refactor + chore (= 2-commit pattern)
+---
