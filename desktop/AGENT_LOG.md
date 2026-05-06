@@ -34599,3 +34599,11 @@ worker: mjc-worker-loop196-error-message-consolidation (作業)
 検証: cargo test (704 件件数完全不変) + cargo clippy --lib --tests -- -D warnings (警告ゼロ) + cargo fmt --check OK + cargo build --lib OK / agent-verify.sh は rust skip 判定 OK / grep `"文字起こしソースが不正です。microphone"` = 1 件のみ確認 (const 定義行のみ残存) + grep `"Apple SpeechAnalyzer は現在"` = 1 件のみ確認 (const 定義行のみ残存)
 備考: paradigm 反復 9 件目達成 = rust 軸 const 集約軸の paradigm 完全成熟期 cross-language 拡張更なる持続 = 既存 file 拡張軸 paradigm rust 版開拓 = paradigm 系統樹拡張 12 件目候補 = const 集約軸 frontend 10 + rust 2 = 計 12 連続 = paradigm 系統樹拡張第 12 件目開拓. 後継候補 = R36 (test fixture URL 集約 = test maintainability 向上のみ) / R34 (K 軸 2 連続) / R37 (大型 file 責務分離 52 件目候補) のいずれか採用検討.
 ---
+[mjc-main Loop 197 / 2026-05-06]
+worker: mjc-worker-loop197-archive-plan-stats-update-52 (作業)
+範囲: docs/architecture/agent-log-archive-plan.md (Section 2.3 末尾 Loop 194 観測ブロックの直後に新観測ブロック追加 = +1 段落)
+変更: Loop 196 完了時点の更新観測ブロック追加 = AGENT_LOG.md +30 行 (34571 → 34601) / 平均 ~15 行/loop / SUMMARY commit `411db2d` 中量化階層下端 +14 行 / chore のみ Loop 195 +8 + Loop 196 +8 = +16 行 / 2 loop = +8 行/loop = 軽量化階層中央値水準下端維持 = **軽量化階層中央値水準 ~11-12 行/loop の 18 連続観測達成 = paradigm 完全実証期更なる持続 = 節目 5 連続超え後 13 件目** + frontend 軸軽量化 paradigm 27 連続観測達成 + **rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補 = paradigm 完全成熟期 cross-language 拡張更なる持続** (Loop 174-192 frontend 10 + Loop 194/196 rust 2 = 計 12 連続)
+意義: harness 衛生軸 = K 軸 = alternation 復帰 = K(195) → rust(196) → K(197) = 35 → 36 → 37 = 加速期維持 = 節目 30 件突破後 7 件目. Loop 79/81/.../194 precedent 52 件目 = 節目 50 件突破後 2 件目. plan 現状把握更新で archive plan rationale 維持 + paradigm 系統樹拡張観測の継続記録.
+検証: agent-verify.sh で docs のみ skip 判定 OK / cargo 系不要 / npm 系不要
+備考: Loop 196 で rust 軸 const 集約 paradigm 反復 9 件目達成 = paradigm 系統樹拡張 12 件目候補確立 = 既存 file 拡張軸 paradigm rust 版開拓 (transcription_commands_helpers.rs は既存 const 確立 file への並列拡張). 後継候補 = R36 (cloud_whisper.rs OpenAI API URL test fixture 集約 = test 内のみ + 規模 S) / R37 (大型 file 責務分離 52 件目候補 = 規模 M-L) / R34 (K 軸 2 連続 = ローカル最適化リスク批判要) のいずれか採用検討.
+---
