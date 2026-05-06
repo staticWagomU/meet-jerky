@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md は巨大で NUL を含むため、全文読みを避け、`tail -n 100 AGENT_LOG.md` だけで直近文脈を確認してください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+Loop 252 として、文字起こし worker / stream error 後に UI とライブ字幕ステータスが単なる「停止中」に戻って正常停止に見えないよう、エラー停止状態を明示してください。
+
+背景:
+- `TRANSCRIPTION_ERROR_EVENT` 受信時は `setIsTranscribing(false)` と `setMeetingError(...)` は行われています。
+- しかし `transcriptionStatusLabel` は `isTranscribing` / pending だけから決まり、エラー後は「停止中」になります。
+- この label は `LIVE_CAPTION_STATUS_EVENT` にも同期されるため、ライブ字幕側も正常停止のように見える可能性があります。
+
+実装条件:
+1. `src/routes/TranscriptView.tsx`
+   - `hasTranscriptionErrorStopped` のような state を追加してください。
+   - `TRANSCRIPTION_ERROR_EVENT` 受信時は、payload の形式が正しくても不正でも、文字起こしが停止した状態として `true` にしてください。
+   - 文字起こし開始成功時、ユーザー操作による文字起こし停止成功時、会議記録開始前/開始成功時、会議記録停止処理で正常に止めた時は `false` に戻してください。
+   - `transcriptionStatusLabel` は `hasTranscriptionErrorStopped` のとき `"エラー停止"` を返してください。ただし operation pending 中は既存の pending 表示を優先してください。
+   - `transcriptionStatusClass` は `hasTranscriptionErrorStopped` のとき既存 CSS の `meeting-status-pill-error` を使ってください。ただし operation pending 中は既存の neutral を優先してください。
+   - `meetingError` 文言、payload guard、event 名、CSS、Rust 側、依存関係は変更しないでください。
+2. `AGENT_LOG.md`
+   - 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop252-transcription-error-status-20260507-051840.txt docs/worker-prompts/mj-research-loop252-next-value-slice-20260507-051840.txt`
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。コミットは禁止です。

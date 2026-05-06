@@ -159,6 +159,8 @@ export function TranscriptView() {
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [hasTranscriptionErrorStopped, setHasTranscriptionErrorStopped] =
+    useState(false);
   const [isMicOperationPending, setIsMicOperationPending] = useState(false);
   const [isSystemAudioOperationPending, setIsSystemAudioOperationPending] =
     useState(false);
@@ -282,6 +284,7 @@ export function TranscriptView() {
         }
         setIsTranscribing(false);
         setIsTranscriptionOperationPending(false);
+        setHasTranscriptionErrorStopped(true);
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
           setMeetingError(
@@ -598,6 +601,7 @@ export function TranscriptView() {
           if (isTranscribing) {
             await stopTranscriptionFromUiState();
             setIsTranscribing(false);
+            setHasTranscriptionErrorStopped(false);
           }
           if (isMicRecording) {
             await invoke("stop_recording");
@@ -643,6 +647,7 @@ export function TranscriptView() {
       setLastSavedPath(null);
       setSavedFileActionError(null);
       setMeetingError(null);
+      setHasTranscriptionErrorStopped(false);
       setMicrophoneDropCountTotal(0);
       setSystemAudioDropCountTotal(0);
       const title = `会議 ${new Date().toLocaleString("ja-JP")}`;
@@ -688,6 +693,7 @@ export function TranscriptView() {
         });
         transcriptionStarted = true;
         setIsTranscribing(true);
+        setHasTranscriptionErrorStopped(false);
 
         const now = Date.now();
         setMeetingStartTime(now);
@@ -772,6 +778,7 @@ export function TranscriptView() {
       if (!transcriptionSource) {
         await stopTranscriptionFromUiState();
         setIsTranscribing(false);
+        setHasTranscriptionErrorStopped(false);
         return;
       }
       if (
@@ -784,6 +791,7 @@ export function TranscriptView() {
 
       await stopTranscriptionFromUiState();
       setIsTranscribing(false);
+      setHasTranscriptionErrorStopped(false);
 
       // Rust start_transcription takes each audio consumer, so restart capture to recreate consumers.
       if (nextMicRecording) {
@@ -819,6 +827,7 @@ export function TranscriptView() {
           source: transcriptionSource,
         });
         setIsTranscribing(true);
+        setHasTranscriptionErrorStopped(false);
       } catch (e) {
         setIsTranscribing(false);
         throw e;
@@ -854,6 +863,7 @@ export function TranscriptView() {
           } else {
             await stopTranscriptionFromUiState();
             setIsTranscribing(false);
+            setHasTranscriptionErrorStopped(false);
           }
         }
       } else {
@@ -922,6 +932,7 @@ export function TranscriptView() {
           } else {
             await stopTranscriptionFromUiState();
             setIsTranscribing(false);
+            setHasTranscriptionErrorStopped(false);
           }
         }
       } else {
@@ -984,6 +995,7 @@ export function TranscriptView() {
       if (isTranscribing) {
         await stopTranscriptionFromUiState();
         setIsTranscribing(false);
+        setHasTranscriptionErrorStopped(false);
       } else {
         if (
           settings?.transcriptionEngine === "appleSpeech" &&
@@ -1021,6 +1033,7 @@ export function TranscriptView() {
           source: transcriptionSource,
         });
         setIsTranscribing(true);
+        setHasTranscriptionErrorStopped(false);
       }
       setMeetingError((currentError) =>
         clearRelatedMeetingError(currentError, TRANSCRIPTION_ERROR_PREFIX),
@@ -1235,6 +1248,8 @@ export function TranscriptView() {
       : STATUS_STARTING_LABEL
     : isTranscribing
       ? "文字起こし中"
+      : hasTranscriptionErrorStopped
+        ? "エラー停止"
       : "停止中";
 
   useEffect(() => {
@@ -1304,6 +1319,8 @@ export function TranscriptView() {
     ? "meeting-status-pill-neutral"
     : isTranscribing
       ? "meeting-status-pill-active"
+      : hasTranscriptionErrorStopped
+        ? "meeting-status-pill-error"
       : "meeting-status-pill-idle";
   const canShowLiveCaptionWindow = isMeetingActive || isTranscribing;
   const showLiveCaptionWindowLabel = canShowLiveCaptionWindow

@@ -1,0 +1,33 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。コミットは禁止です。課金、認証情報変更、破壊的操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md は巨大で NUL を含むため、全文検索や全読みを避け、`tail -n 100 AGENT_LOG.md` だけで直近文脈を確認してください。
+
+目的:
+Loop 252 の候補として、直近の payload guard / window title guard 連続から離れ、プロダクト価値に近い小さな改善または新機能スライスを1つ提案してください。
+
+優先して見る観点:
+- 録音状態の透明性、文字起こしエラー後の UI state 同期、履歴検索/閲覧の小さな改善
+- 会議検知の実機未確認リスクを下げる純粋関数テスト追加
+- 権限、課金、認証、実機外部サービスに依存せず検証できること
+
+避けること:
+- `modelDownloadPayload.ts` / `audioLevelPayload.ts` / `transcriptSegment.ts` の追加 guard 焼き直し
+- `classify_meeting_window_title` の制御文字 guard 追加と同じ作業
+- 大きな UI 改修や Tauri AppHandle 依存の大規模抽象化
+- AGENT_LOG.md の長時間読み込み
+
+報告内容:
+- 推奨候補を1つ
+- 根拠となるファイル/関数
+- 最小変更範囲
+- 検証方法
+- リスクと非目標
+
+推測は推測と明示してください。
