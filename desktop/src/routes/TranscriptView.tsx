@@ -237,12 +237,19 @@ export function TranscriptView() {
       if (!disposed) {
         setHasPendingMeetingStartRequest(true);
       }
+    }).catch((e) => {
+      if (!disposed) {
+        const msg = toErrorMessage(e);
+        console.error("録音開始要求の受信開始に失敗しました:", msg);
+        setMeetingError(`録音開始要求の受信開始に失敗しました: ${msg}`);
+      }
+      return null;
     });
 
     return () => {
       disposed = true;
       unlistenPromise
-        .then((unlisten) => unlisten())
+        .then((unlisten) => unlisten?.())
         .catch((e) => {
           console.error("録音開始要求の受信解除に失敗しました:", toErrorMessage(e));
         });

@@ -1,0 +1,38 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md の末尾付近
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+TranscriptView の `MEETING_START_REQUEST_EVENT` listener 開始失敗を、cleanup の解除失敗と区別して明示的に UI/console へ出し、開始していない listener を cleanup で解除しないようにしてください。
+
+背景:
+- Loop 217/218 で App / RingLightWindow / LiveCaptionWindow の listener 開始失敗は明示化済みです。
+- `src/routes/TranscriptView.tsx` の会議開始要求 listener はまだ `listen(...).then(unlisten => unlisten()).catch(...)` cleanup 形で、listen 開始そのものが失敗した場合に「受信解除に失敗」として見える可能性があります。
+- 会議検知からの録音開始要求が受け取れない状態は、録音状態の透明性と復旧性に関わります。
+
+実装方針:
+- `MEETING_START_REQUEST_EVENT` の `listen` に開始失敗用 `.catch(...)` を追加してください。
+- 開始失敗時は `toErrorMessage(e)` で console.error し、`setMeetingError` にユーザーが分かる日本語エラーを入れてください。
+- `.catch(...)` は `null` を返し、cleanup は `unlisten?.()` などで未開始 listener を解除しないようにしてください。
+- `disposed` guard と `readPendingMeetingStartRequest()` / `setHasPendingMeetingStartRequest(true)` の既存挙動は維持してください。
+- event 名、localStorage key、録音開始ロジック、UI 文言の大きな変更、他 listener、別ファイルのリファクタ、依存関係追加は禁止です。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`
+
+AGENT_LOG.md:
+開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
