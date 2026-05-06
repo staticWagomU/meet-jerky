@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tauri::Emitter;
 
 use crate::session_manager::SessionManager;
+use crate::transcription_events::TRANSCRIPTION_RESULT_EVENT;
 use crate::transcription_types::TranscriptionSegment;
 
 /// セグメントを Tauri イベントとして emit し、セッションが開始済みであれば
@@ -17,7 +18,7 @@ pub(crate) fn emit_segments(
         if segment.text.is_empty() {
             continue;
         }
-        let _ = app.emit("transcription-result", &segment);
+        let _ = app.emit(TRANSCRIPTION_RESULT_EVENT, &segment);
 
         let session_started_at_secs = session_manager.current_started_at_secs();
         let observed_at_secs = std::time::SystemTime::now()

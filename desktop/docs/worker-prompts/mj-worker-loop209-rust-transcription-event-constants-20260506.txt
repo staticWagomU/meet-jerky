@@ -1,0 +1,67 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした作業担当エージェントです。
+
+目的:
+- Rust 側の Tauri transcription event 名を定数化し、フロント側 `src/utils/transcriptionEvents.ts` と同じイベント契約を typo や drift で壊しにくくする。
+- 挙動変更はしない。文字列値は既存と完全に同じにする。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- src-tauri/src/transcription_worker_loop.rs
+- src-tauri/src/transcription_panic_guard.rs
+- src-tauri/src/transcription_emission.rs
+- src-tauri/src/lib.rs の `live-caption-reset` emit 周辺
+- src/utils/transcriptionEvents.ts
+
+現在の注意:
+- 作業開始時点で harness/autonomous prompt docs に担当外の tracked dirty が残っている可能性がある。絶対に戻さず、触らず、stage しない。
+
+担当範囲:
+- 変更可:
+  - src-tauri/src/transcription_events.rs (新規作成可)
+  - src-tauri/src/lib.rs
+  - src-tauri/src/transcription_worker_loop.rs
+  - src-tauri/src/transcription_panic_guard.rs
+  - src-tauri/src/transcription_emission.rs
+  - AGENT_LOG.md
+- 変更禁止:
+  - src/** (フロントエンド側)
+  - package.json / lockfile / 依存関係
+  - docs/handoff/**
+  - この prompt 以外の docs/worker-prompts/**
+  - docs/agent-harness*.md / docs/autonomous-main-prompt*.md
+  - 担当範囲外のファイル
+
+実装要件:
+- `src-tauri/src/transcription_events.rs` に以下の `pub(crate) const` を追加する。
+  - `TRANSCRIPTION_ERROR_EVENT = "transcription-error"`
+  - `TRANSCRIPTION_RESULT_EVENT = "transcription-result"`
+  - `LIVE_CAPTION_RESET_EVENT = "live-caption-reset"`
+- `src-tauri/src/lib.rs` で module を登録する。
+- Rust 側の該当 emit 呼び出しで、上記 3 イベント名の直書き文字列を定数参照へ置換する。
+- 既存の `audio_event::AUDIO_DROP_EVENT_NAME` など別領域の定数は触らない。
+- event payload、エラー文言、ロジック、条件分岐は変えない。
+- `transcription_events.rs` に、3 定数の値を固定する小さな unit test を追加する。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_events`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_error_payload`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_events.rs src-tauri/src/lib.rs src-tauri/src/transcription_worker_loop.rs src-tauri/src/transcription_panic_guard.rs src-tauri/src/transcription_emission.rs AGENT_LOG.md`
+
+AGENT_LOG.md:
+- 末尾に作業ログを追記する。
+- 開始日時、担当セッション名、作業範囲、結果、変更ファイル、検証結果、依存関係追加なし、残リスクを簡潔に記録する。
+
+禁止:
+- コミットしない。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- 他エージェントやユーザーの変更を戻さない。
+
+完了報告:
+- 変更ファイル
+- 変更内容
+- 検証結果
+- 残リスク

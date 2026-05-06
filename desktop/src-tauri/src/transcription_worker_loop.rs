@@ -9,6 +9,7 @@ use crate::transcription_emission::emit_segments;
 use crate::transcription_error_payload::{
     build_transcription_error_payload, should_emit_realtime_stream_error,
 };
+use crate::transcription_events::TRANSCRIPTION_ERROR_EVENT;
 use crate::transcription_traits::TranscriptionStream;
 use crate::transcription_types::TranscriptionSource;
 
@@ -60,7 +61,7 @@ pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
             if should_emit_realtime_stream_error(&e) {
                 eprintln!("文字起こしエラー: {e}");
                 let _ = app.emit(
-                    "transcription-error",
+                    TRANSCRIPTION_ERROR_EVENT,
                     build_transcription_error_payload(e, Some(source)),
                 );
             }
@@ -99,7 +100,7 @@ pub(crate) fn run_transcription_loop(cfg: TranscriptionLoopConfig) {
             if should_emit_realtime_stream_error(&e) {
                 eprintln!("文字起こしの finalize に失敗しました: {e}");
                 let _ = app.emit(
-                    "transcription-error",
+                    TRANSCRIPTION_ERROR_EVENT,
                     build_transcription_error_payload(e, Some(source)),
                 );
             }

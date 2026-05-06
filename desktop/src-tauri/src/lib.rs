@@ -62,6 +62,7 @@ mod transcription_commands_helpers;
 mod transcription_commands_model;
 mod transcription_emission;
 mod transcription_error_payload;
+mod transcription_events;
 mod transcription_manager;
 mod transcription_model_manager;
 mod transcription_panic_guard;
@@ -328,7 +329,7 @@ fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) -> Resu
             .is_visible()
             .map_err(|e| format!("ライブ文字起こしウィンドウの表示状態を確認できません: {e}"))?;
         if !was_visible {
-            let _ = window.emit("live-caption-reset", ());
+            let _ = window.emit(crate::transcription_events::LIVE_CAPTION_RESET_EVENT, ());
         }
         window
             .show()

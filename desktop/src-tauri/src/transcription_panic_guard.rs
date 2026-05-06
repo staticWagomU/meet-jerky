@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tauri::Emitter;
 
 use crate::transcription_error_payload::build_worker_panic_error_payload;
+use crate::transcription_events::TRANSCRIPTION_ERROR_EVENT;
 use crate::transcription_worker_loop::run_transcription_loop;
 use crate::transcription_worker_loop::TranscriptionLoopConfig;
 
@@ -20,7 +21,7 @@ pub(crate) fn run_transcription_worker_with_panic_guard(worker: TranscriptionLoo
         running.store(false, Ordering::SeqCst);
         eprintln!("[transcription] worker panic");
         let _ = app.emit(
-            "transcription-error",
+            TRANSCRIPTION_ERROR_EVENT,
             build_worker_panic_error_payload(Some(source)),
         );
     }
