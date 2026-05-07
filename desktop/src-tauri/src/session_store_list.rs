@@ -4,7 +4,7 @@
 //! 一覧系 (list) は本 module に分離。
 
 use std::fs;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, ErrorKind, Read};
 use std::path::{Path, PathBuf};
 
 use crate::session_store_parse::{parse_session_started_at_secs, unescape_inline_markdown_text};
@@ -18,45 +18,56 @@ const MAX_SESSION_SEARCH_TEXT_BYTES: u64 = 64 * 1024;
 pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>> {
     let mut out = Vec::new();
     for path in list_session_files(dir)? {
-        let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+        let Some(summary) = read_session_summary(path)? else {
             continue;
         };
-        let Some(started_at_secs) = parse_session_started_at_secs(stem) else {
-            continue;
-        };
-
-        let file = fs::File::open(&path)?;
-        let mut reader = BufReader::new(file);
-        let mut first_line = Vec::new();
-        reader.read_until(b'\n', &mut first_line)?;
-        if first_line.last() == Some(&b'\n') {
-            first_line.pop();
-        }
-        if first_line.last() == Some(&b'\r') {
-            first_line.pop();
-        }
-        let first_line = String::from_utf8_lossy(&first_line);
-        let title = first_line.strip_prefix("# ").unwrap_or(&first_line);
-        let title = if title.trim().is_empty() {
-            stem.to_string()
-        } else {
-            unescape_inline_markdown_text(title)
-        };
-        let mut search_bytes = Vec::new();
-        reader
-            .take(MAX_SESSION_SEARCH_TEXT_BYTES)
-            .read_to_end(&mut search_bytes)?;
-        let search_text = String::from_utf8_lossy(&search_bytes).to_string();
-
-        out.push(SessionSummary {
-            path,
-            started_at_secs,
-            title,
-            search_text,
-        });
+        out.push(summary);
     }
     out.sort_by_key(|b| std::cmp::Reverse(b.started_at_secs));
     Ok(out)
+}
+
+fn read_session_summary(path: PathBuf) -> std::io::Result<Option<SessionSummary>> {
+    let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+        return Ok(None);
+    };
+    let Some(started_at_secs) = parse_session_started_at_secs(stem) else {
+        return Ok(None);
+    };
+
+    let file = match fs::File::open(&path) {
+        Ok(file) => file,
+        Err(err) if err.kind() == ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(err),
+    };
+    let mut reader = BufReader::new(file);
+    let mut first_line = Vec::new();
+    reader.read_until(b'\n', &mut first_line)?;
+    if first_line.last() == Some(&b'\n') {
+        first_line.pop();
+    }
+    if first_line.last() == Some(&b'\r') {
+        first_line.pop();
+    }
+    let first_line = String::from_utf8_lossy(&first_line);
+    let title = first_line.strip_prefix("# ").unwrap_or(&first_line);
+    let title = if title.trim().is_empty() {
+        stem.to_string()
+    } else {
+        unescape_inline_markdown_text(title)
+    };
+    let mut search_bytes = Vec::new();
+    reader
+        .take(MAX_SESSION_SEARCH_TEXT_BYTES)
+        .read_to_end(&mut search_bytes)?;
+    let search_text = String::from_utf8_lossy(&search_bytes).to_string();
+
+    Ok(Some(SessionSummary {
+        path,
+        started_at_secs,
+        title,
+        search_text,
+    }))
 }
 
 /// `dir` 配下の `.md` 拡張子ファイルを一覧する。
@@ -217,6 +228,19 @@ mod tests {
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].started_at_secs, 100);
         assert_eq!(summaries[0].title, "会議メモ - 2024-04-17 14:50");
+    }
+
+    #[test]
+    fn list_session_summaries_helper_returns_none_when_parseable_path_disappeared() {
+        let dir = tempdir().unwrap();
+        let missing = dir.path().join("100-0.md");
+
+        let summary = read_session_summary(missing).unwrap();
+
+        assert!(
+            summary.is_none(),
+            "列挙後に消えた parseable stem の履歴ファイルは skip 扱いにする"
+        );
     }
 
     #[test]

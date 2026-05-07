@@ -1,0 +1,41 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- Loop 271 で履歴一覧の title 行不正 UTF-8 耐性を追加済みです。
+- `src-tauri/src/session_store_list.rs` の `list_session_summaries` は `list_session_files(dir)?` で `.md` ファイル一覧を作った後、各ファイルを `fs::File::open(&path)?` しています。
+- read_dir 後に履歴ファイルが削除/移動された場合、1ファイルの `NotFound` で履歴一覧全体がエラーになり得ます。
+- 一方で、権限エラーや実際の I/O エラーまで黙殺すると問題が隠れるため、skip するのは race と見なせる `ErrorKind::NotFound` に限定してください。
+
+目的:
+- `list_session_summaries` で、列挙後に消えた個別 `.md` ファイルは skip し、残りの履歴サマリーを返す。
+- 出力ディレクトリ自体が存在しない場合の `list_session_summaries` の Err 契約、`list_session_summaries_inner` の空配列契約、権限/その他 I/O エラーの伝播は維持する。
+
+担当範囲:
+- 原則 `src-tauri/src/session_store_list.rs`
+- AGENT_LOG.md
+
+実装指示:
+- `fs::File::open(&path)?` を `NotFound` のみ `continue` する形に変更する。
+- 読み取り中の `read_until` / `read_to_end` エラーは従来通り伝播する。
+- `.md` ファイル走査、sort、unparsable prefix skip、title lossy UTF-8、search_text 読み取り契約は変更しない。
+- 単体テストを追加する。可能なら private helper を切って `parseable stem の存在しない path は Ok(None) / skip` を直接テストし、`list_session_summaries` の既存 missing dir Err 契約と区別してください。
+- 見た目、TypeScript、Tauri command、保存フォーマット、依存関係は変更しない。
+- コミットは禁止。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib list_session_summaries`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/session_store_list.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop272-session-list-skip-notfound-race-20260507-114954.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
