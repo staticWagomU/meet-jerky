@@ -464,6 +464,43 @@ body[data-window="ring-light"] .overlay-window {
   overflow-wrap: anywhere;
 }
 
+.app-shell-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--transcript-error-color) 28%, transparent);
+  border-radius: 10px;
+  color: var(--transcript-error-color);
+  background-color: var(--transcript-error-bg);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.app-shell-alert p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.app-shell-alert-close {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--transcript-error-color) 28%, transparent);
+  border-radius: 999px;
+  padding: 0.16rem 0.42rem;
+  color: var(--transcript-error-color);
+  background-color: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
 .app-content {
   flex: 1;
   min-height: 0;

@@ -1,0 +1,33 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/App.tsx
+- src/App.css
+- AGENT_LOG.md
+
+目的:
+Loop 309 で `show_main_window` が失敗を返すようになったため、main window 側でもメイン表示要求や録音開始要求 listener の開始失敗、`show_main_window` invoke 失敗を console だけで終わらせず、メニューバーウィンドウ内の alert として表示してください。録音状態の透明性と開始導線の失敗可視化を高めることが目的です。
+
+実装条件:
+- `App.tsx` に小さな shell error state を追加し、`show_main_window` invoke 失敗、`SHOW_MAIN_WINDOW_REQUEST_EVENT` listen 開始失敗、`MEETING_START_REQUEST_EVENT` listen 開始失敗を日本語文言で表示してください。
+- 成功時またはユーザーの閉じる操作で shell error を消せるようにしてください。
+- 既存の `markPendingMeetingStartRequest()`、`MEETING_START_REQUEST_EVENT` event 名、pending localStorage helper、router 構成、Rust command、MeetingDetectedBanner、TranscriptView は変更しないでください。
+- CSS は `App.css` に最小追加し、既存の色変数と小さな macOS メニューバーウィンドウ幅に収まる形にしてください。大きなレイアウト変更は禁止です。
+- 録音自動開始や課金・認証変更・外部通信は禁止です。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/App.tsx src/App.css AGENT_LOG.md docs/worker-prompts/mj-worker-loop310-app-shell-visible-window-error-20260508-003953.txt`
+
+AGENT_LOG.md には Loop 310 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を簡潔に追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
