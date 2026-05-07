@@ -10,6 +10,7 @@ import {
   getTransmissionStatusAriaLabel,
   getVisibleTransmissionLabel,
   isLiveCaptionStatusPayload,
+  markLiveCaptionStatusOnError,
   normalizeLiveCaptionStatusPayload,
   readStoredLiveCaptionStatus,
   recoverLiveCaptionStatusOnValidResult,
@@ -172,6 +173,7 @@ export function LiveCaptionWindow() {
           return;
         }
         setListenerError(null);
+        setStatusPayload(markLiveCaptionStatusOnError);
         const errorSegment: TranscriptSegment = {
           text: `エラー: ${payload.error}`,
           startMs: 0,

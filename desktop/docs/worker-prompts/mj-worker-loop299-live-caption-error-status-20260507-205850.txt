@@ -1,0 +1,41 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/utils/liveCaptionStatus.ts
+- src/components/LiveCaptionWindow.tsx
+- AGENT_LOG.md の Loop 299 記録
+
+目的:
+ライブ字幕ウィンドウが `transcription-error` event を直接受けたとき、正式な `live-caption-status` event が遅延または欠落してもローカル表示の文字起こし状態が `エラー停止` へ寄るようにしてください。
+
+根拠:
+- `src/routes/TranscriptView.tsx` は `transcription-error` 受信時に `setHasTranscriptionErrorStopped(true)` し、その後 status effect で `エラー停止` を emit する構造です。
+- `src/components/LiveCaptionWindow.tsx` は `transcription-error` 受信時にエラー segment は表示しますが、現状その branch では `statusPayload` を直接更新していません。
+- 既存の `recoverLiveCaptionStatusOnValidResult` は、valid result が来た場合に `エラー停止` を `文字起こし中` へ戻す同種のローカル補正 helper です。
+
+実装方針:
+- `src/utils/liveCaptionStatus.ts` に `markLiveCaptionStatusOnError` のような小さな helper を追加してください。
+  - 入力: `LiveCaptionStatusPayload`
+  - 既に `transcriptionStatusLabel === "エラー停止"` なら同じ object を返す。
+  - それ以外なら spread して `transcriptionStatusLabel: "エラー停止"` にした object を返す。
+- `src/components/LiveCaptionWindow.tsx` の valid `TRANSCRIPTION_ERROR_EVENT` branch で、`setStatusPayload(markLiveCaptionStatusOnError)` を呼んでください。
+- invalid error payload branch、valid result branch、reset branch、正式な `LIVE_CAPTION_STATUS_EVENT` branch、storage、TranscriptView、Rust、CSS、依存関係は変更しないでください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop299-live-caption-error-status-20260507-205850.txt`
+
+AGENT_LOG.md には、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

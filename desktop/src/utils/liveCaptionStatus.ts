@@ -159,6 +159,18 @@ export function recoverLiveCaptionStatusOnValidResult(
   };
 }
 
+export function markLiveCaptionStatusOnError(
+  status: LiveCaptionStatusPayload,
+): LiveCaptionStatusPayload {
+  if (status.transcriptionStatusLabel === "エラー停止") {
+    return status;
+  }
+  return {
+    ...status,
+    transcriptionStatusLabel: "エラー停止",
+  };
+}
+
 export function readStoredLiveCaptionStatus(
   onError?: (error: unknown) => void,
 ): LiveCaptionStatusPayload {

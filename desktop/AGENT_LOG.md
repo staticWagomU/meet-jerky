@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 299 / 2026-05-07 20:58 JST]
+役割: メインエージェント
+作業範囲: Loop 299 の候補調査、research/worker 起動、hook failure 確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、ライブ字幕ウィンドウが `transcription-error` event を直接受けたときのローカル文字起こし状態同期を改善する。
+調査結果: `src/routes/TranscriptView.tsx:302-304` は `transcription-error` 受信時に `setIsTranscribing(false)`、`setIsTranscriptionOperationPending(false)`、`setHasTranscriptionErrorStopped(true)` を設定し、`src/routes/TranscriptView.tsx:1315-1352` の status effect で `エラー停止` を保存・emit する。一方、`src/components/LiveCaptionWindow.tsx:160-183` は同じ error event からエラー segment を表示するが、ローカル `statusPayload` は更新していなかった。正式な `live-caption-status` event が遅延または欠落した場合、本文はエラーなのに状態表示が旧状態に残る可能性があると判断した。
+実装経緯: `mj-research-loop299-next-value-slice-20260507` は hook failure により有効な調査結果を生成できなかったため session を閉じた。`mj-worker-loop299-live-caption-error-status-20260507` も `hook: UserPromptSubmit Failed` で実装に入れなかった。変更範囲が `liveCaptionStatus.ts` と `LiveCaptionWindow.tsx` の valid error branch に限定できたため、メイン側で最小実装した。
+結果: `src/utils/liveCaptionStatus.ts` に `markLiveCaptionStatusOnError` を追加し、`transcriptionStatusLabel` が既に `エラー停止` の場合は同じ object を返し、それ以外は `エラー停止` へ更新した object を返すようにした。`src/components/LiveCaptionWindow.tsx` の valid `TRANSCRIPTION_ERROR_EVENT` branch で同 helper を functional state update として呼ぶようにした。invalid error payload branch、valid result branch、reset branch、正式な `LIVE_CAPTION_STATUS_EVENT` branch、storage、TranscriptView、Rust、CSS、依存関係は変更していない。
+ユーザー価値: worker panic や文字起こしエラー後に live caption status event が遅延・欠落しても、ライブ字幕ウィンドウ単体で「エラー本文が出ているのに状態は文字起こし中」のような矛盾が残りにくくなる。
+非目標: 自動再開、録音・文字起こし本体の状態変更、Tauri event 契約、エラー payload 表示内容、storage 書き込み、TranscriptView、Rust、CSS、依存関係追加は行わない。
+未実機確認範囲: macOS 実機アプリ上での `transcription-error` / `live-caption-status` event 欠落・遅延順序、ライブ字幕ウィンドウ実表示、VoiceOver 読み上げは未確認。
+変更ファイル: src/utils/liveCaptionStatus.ts / src/components/LiveCaptionWindow.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop299-next-value-slice-20260507-205850.txt / docs/worker-prompts/mj-worker-loop299-live-caption-error-status-20260507-205850.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop299-next-value-slice-20260507-205850.txt docs/worker-prompts/mj-worker-loop299-live-caption-error-status-20260507-205850.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: research/worker 起動は hook failure で有効な調査・実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: build と静的差分確認では、実 Tauri event の順序や status event 欠落は再現できない。ローカル表示だけの補正であり、録音・文字起こし本体の状態は変更しない。
+次アクション: 検証後、staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 298 / 2026-05-07 20:40 JST]
 役割: メインエージェント
 作業範囲: Loop 298 の候補選定、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
