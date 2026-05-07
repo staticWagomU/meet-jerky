@@ -1,0 +1,23 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作、認証情報変更、破壊的操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+調査テーマ:
+Loop 311 の調査で、`TranscriptView` の pending 録音開始要求 effect が `isMeetingOperationPending` だけを待つ一方、実際の `handleToggleMeeting` は `audioOperationPendingRef.current` が true の場合に即 return するため、音声操作中の開始要求が消費だけされる可能性が指摘された。この候補が妥当か、最小修正範囲を確認してください。
+
+重点観点:
+- `src/routes/TranscriptView.tsx` の `handleToggleMeeting`
+- `hasPendingMeetingStartRequest` を処理する effect
+- `isAudioSourceOperationPending` / `isMicOperationPending` / `isSystemAudioOperationPending` / `isTranscriptionOperationPending`
+
+報告要件:
+- 根拠となる file:line を示す。
+- 推奨修正を 1 つに絞り、担当ファイル範囲、ユーザー価値、非目標、検証方法、残リスクを簡潔に示す。
+- 推測は推測と明示する。
+- 編集・コミットは禁止です。

@@ -1,0 +1,42 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+最初に必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+基本方針:
+- 鵜呑みにせず、批判的・中立的に判断してください。
+- 他エージェントも同じリポジトリで作業している可能性があります。他者の変更を戻さないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+背景:
+- Loop 312 の先行 worker は pending meeting start request effect の待機条件を `isMeetingOperationPending` から `isAudioSourceOperationPending` に広げました。
+- ただし調査担当は、`handleToggleMeeting` が `audioOperationPendingRef.current` を見て即 return するため、state pending だけでなく ref の同期的なロック状態も `clearPendingMeetingStartRequest()` より前に待つのがより堅いと指摘しています。
+- `audioOperationPendingRef.current` は state 更新より先に true になるため、短い競合窓を閉じる価値があります。
+
+実装してほしいこと:
+- `src/routes/TranscriptView.tsx` の pending meeting start request effect で、`clearPendingMeetingStartRequest()` より前の待機条件に `audioOperationPendingRef.current` を追加してください。
+- Loop 311/312 の pending start notice 表示条件にも、必要なら `audioOperationPendingRef.current` を含めて、操作中に request 受信済み表示が出るようにしてください。
+- 依存配列に ref の `.current` を入れる必要はありません。ref は render trigger ではないため、既存の state pending boolean で再評価される設計を維持してください。
+- `clearPendingMeetingStartRequest()`、`setHasPendingMeetingStartRequest(false)`、開始不可時の error 表示、`handleToggleMeeting()` 呼び出し位置、録音開始処理本体は変更しないでください。
+- event 名、localStorage key、MeetingDetectedBanner、App.tsx、Rust、CSS、依存関係は変更しないでください。
+- 既存の worker prompt 2件も今回コミット対象になる予定なので、AGENT_LOG の変更ファイル/検証結果には以下の prompt も含めてください:
+  - docs/worker-prompts/mj-research-loop312-pending-start-operation-guard-20260508-011903.txt
+  - docs/worker-prompts/mj-worker-loop312-pending-start-operation-guard-20260508-011903.txt
+  - docs/worker-prompts/mj-worker-loop312-pending-start-ref-guard-20260508-012357.txt
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop312-pending-start-operation-guard-20260508-011903.txt docs/worker-prompts/mj-worker-loop312-pending-start-operation-guard-20260508-011903.txt docs/worker-prompts/mj-worker-loop312-pending-start-ref-guard-20260508-012357.txt`
+
+AGENT_LOG.md には、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

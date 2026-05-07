@@ -1219,16 +1219,19 @@ export function TranscriptView() {
     hasExternalApiKey,
     externalApiKeyErrorForUi,
   );
-  const shouldShowPendingMeetingStartNotice =
-    hasPendingMeetingStartRequest &&
-    !isMeetingActive &&
-    ((settings === undefined && !settingsError) ||
-      Boolean(meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)));
   const isAudioSourceOperationPending =
     isMicOperationPending ||
     isSystemAudioOperationPending ||
     isMeetingOperationPending ||
     isTranscriptionOperationPending;
+  const isAudioSourceOperationLocked =
+    isAudioSourceOperationPending || audioOperationPendingRef.current;
+  const shouldShowPendingMeetingStartNotice =
+    hasPendingMeetingStartRequest &&
+    !isMeetingActive &&
+    (isAudioSourceOperationLocked ||
+      (settings === undefined && !settingsError) ||
+      Boolean(meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)));
   const isAudioCaptureOperationPending =
     isMicOperationPending ||
     isSystemAudioOperationPending ||
@@ -1673,7 +1676,8 @@ export function TranscriptView() {
       return;
     }
     if (
-      isMeetingOperationPending ||
+      isAudioSourceOperationPending ||
+      audioOperationPendingRef.current ||
       (settings === undefined && !settingsError) ||
       meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)
     ) {
@@ -1694,8 +1698,8 @@ export function TranscriptView() {
     canStartMeeting,
     handleToggleMeeting,
     hasPendingMeetingStartRequest,
+    isAudioSourceOperationPending,
     isMeetingActive,
-    isMeetingOperationPending,
     meetingStartBlockedReason,
     settings,
     settingsError,

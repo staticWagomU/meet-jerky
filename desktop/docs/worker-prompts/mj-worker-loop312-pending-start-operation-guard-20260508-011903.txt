@@ -1,0 +1,32 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+会議検知プロンプトからの pending 録音開始要求を、別の音声操作中に消費だけして落とさないようにしてください。`handleToggleMeeting` は `audioOperationPendingRef.current` が true の場合に即 return する一方、pending request effect は現状 `isMeetingOperationPending` 等だけを待ってから request を clear して `handleToggleMeeting()` を呼ぶため、音声操作 pending 中の開始要求が開始されないまま消える可能性があります。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` の pending request effect で、`isMeetingOperationPending` だけでなく、マイク録音操作中、相手側音声操作中、文字起こし操作中も request を clear せず待機するようにしてください。
+- 既存の `isAudioSourceOperationPending` などの派生 boolean を使えるなら使い、重複条件を増やしすぎないでください。
+- `clearPendingMeetingStartRequest()` の位置、`setHasPendingMeetingStartRequest(false)` の位置、`canStartMeeting` が false の場合の error 表示、`handleToggleMeeting()` の開始処理本体は変更しないでください。
+- Loop 311 で追加した pending start notice は、音声操作 pending 中も「受信済み」と分かる表示が出るように、必要なら表示条件を同じ待機条件へ広げてください。ただし文言や CSS の大幅変更は禁止です。
+- MeetingDetectedBanner、App.tsx、meetingStartRequest helper、Rust、event 名、localStorage key、録音自動開始仕様、依存関係は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop312-pending-start-operation-guard-20260508-011903.txt`
+
+AGENT_LOG.md には Loop 312 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を簡潔に追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
