@@ -1,0 +1,32 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+Loop 286 で実装可能な小さな改善候補を調査してください。
+
+優先観点:
+- クラッシュ修正
+- 会議検知の網羅性と信頼性
+- マイク音声とデスクトップ音声の別トラック取得
+- リアルタイム文字起こしの状態同期
+- Whisper / Apple Speech / OpenAI / ElevenLabs の文字起こし開始準備の透明性
+- 録音状態の透明性、UX、アクセシビリティ
+
+直近では、Whisper のモデル確認中・未ダウンロード・確認不可を engine status 表示へ同期しました。
+
+特に以下を確認してください。
+- engine status helper の model state 表示に追加できる狭いテストや型安全性補強
+- 会議検知 Webex / Teams / Zoom の URL または window title fallback の未固定エッジケース
+- transcription-error / worker panic 後の UI state 同期に関する小さな改善余地
+- 音声ソース別トラック取得の透明性に関わる小さな UI 診断改善
+
+候補は2つ以上挙げてください。各候補について、ユーザー価値、非目標、権限・課金・プライバシー制約、影響範囲、推奨検証コマンド、残リスクを明記してください。
+1ループでレビュー・検証・コミットできる最小スライスにしてください。
+推測は推測と明示してください。編集・コミットは禁止です。

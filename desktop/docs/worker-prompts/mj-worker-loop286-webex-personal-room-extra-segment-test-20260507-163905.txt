@@ -1,0 +1,42 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- Webex personal room URL は `/meet/<id>` だけを会議として受け入れる。
+- 実装は `src-tauri/src/app_detection_webex.rs` の `is_webex_meeting_url` で `has_single_non_empty_segment` を使っているため、`/meet/john/extra` や `/meet/john//` は reject される想定。
+- ただし `src-tauri/src/app_detection.rs` の Webex integration tests には、空 segment や非 Webex host の negative test はある一方、personal room の余分な path segment reject が明示されていない。
+
+目的:
+- Webex personal room fallback の誤検知防止契約として、`/meet/<id>` 直後に余分な path segment がある URL を会議として扱わないことをテストで固定する。
+
+担当範囲:
+- `src-tauri/src/app_detection.rs`
+- `AGENT_LOG.md`
+
+実装指示:
+- `classify_meeting_url_returns_none_for_webex_with_empty_meet_segment` 付近、または Webex personal room negative tests 付近に、以下のような小さな Rust test を追加してください。
+  - `https://webex.com/meet/john/extra` は `None`
+  - `https://acme.webex.com/meet/jane/extra` は `None`
+  - `https://webex.com/meet/john//` は `None`
+- 既存の Webex accept tests は変更しないでください。
+- `src-tauri/src/app_detection_webex.rs` の判定ロジックは変更しないでください。
+- URL parser、host normalization、他サービス、TypeScript、UI、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url_returns_none_for_webex_personal_room_with_extra_segment`
+- 必要に応じて test 名に合わせて cargo test filter を調整してください。
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop286-webex-personal-room-extra-segment-test-20260507-163905.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

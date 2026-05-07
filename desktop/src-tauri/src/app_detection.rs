@@ -2159,6 +2159,19 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_returns_none_for_webex_personal_room_with_extra_segment() {
+        assert_eq!(
+            classify_meeting_url("https://webex.com/meet/john/extra"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://acme.webex.com/meet/jane/extra"),
+            None
+        );
+        assert_eq!(classify_meeting_url("https://webex.com/meet/john//"), None);
+    }
+
+    #[test]
     fn classify_meeting_url_returns_webex_for_jphp_on_subdomain() {
         assert_eq!(
             classify_meeting_url("https://acme.webex.com/acme/j.php?MTID=mabc123"),
