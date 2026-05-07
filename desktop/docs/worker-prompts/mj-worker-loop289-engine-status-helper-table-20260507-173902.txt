@@ -1,0 +1,50 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/utils/engineStatusHelpers.ts` は `getEngineStatusLabel` が返す固定文言を、`getEngineStatusDisplayLabel` と `getEngineStatusPillClass` でも個別の string literal 比較として持っている。
+- 直近で Whisper の「モデル確認中」「未ダウンロード」「確認不可」が追加され、将来の表示漏れや pill class 追従漏れが起きやすい。
+- この変更はユーザー向け文言や UI 表示を変えず、録音・文字起こし状態の透明性を保ちやすくする内部整理に限定する。
+
+目的:
+- engine status の label / display label / pill class の対応を `engineStatusHelpers.ts` 内の型付きテーブルへ寄せ、同じ固定文言を複数箇所で比較しないようにする。
+- 既存の公開関数シグネチャと返り値は維持する。
+
+担当範囲:
+- `src/utils/engineStatusHelpers.ts`
+- `AGENT_LOG.md`
+
+実装指示:
+- `getEngineStatusLabel` の返す文言は変更しないでください。
+  - `Apple Speech（端末内）`
+  - `OpenAI Realtime`
+  - `ElevenLabs Realtime`
+  - `Whisper（モデル確認不可）`
+  - `Whisper（モデル確認中）`
+  - `Whisper（未ダウンロード）`
+  - `Whisper（端末内）`
+- `getEngineStatusDisplayLabel` の返す文言は変更しないでください。
+  - `Apple Speech`, `OpenAI`, `ElevenLabs`, `Whisper`, `Whisper 確認中`, `Whisper 未DL`, `Whisper 確認不可`
+- `getEngineStatusPillClass` の返す class は変更しないでください。
+  - `STATUS_UNCHECKABLE_LABEL` は `meeting-status-pill-error`
+  - `STATUS_CHECKING_LABEL` と `Whisper（モデル確認中）` は `meeting-status-pill-neutral`
+  - `Whisper（未ダウンロード）` と `Whisper（モデル確認不可）` は `meeting-status-pill-error`
+  - その他は `meeting-status-pill-active`
+- `Record<...>` や `as const` などで、known engine status label から display/class への対応が型でまとまる形にしてください。
+- `TranscriptView.tsx`、settings、Tauri command、React Query、CSS、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/engineStatusHelpers.ts AGENT_LOG.md docs/worker-prompts/mj-worker-loop289-engine-status-helper-table-20260507-173902.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
