@@ -1,0 +1,40 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/components/LiveCaptionWindow.tsx` は `transcription-error` を受けると error segment を表示する。
+- `src/routes/TranscriptView.tsx` 側は `live-caption-status` で `エラー停止` を送るが、再開後に何らかの理由で status event が欠落し、valid `transcription-result` だけが届いた場合、字幕本文は正常に流れているのにステータス表示が `エラー停止` のまま残る可能性がある。
+- これは推測を含むが、valid result が届いている局面ではライブ字幕ウィンドウのローカル表示だけを `文字起こし中` に戻すのが、録音・文字起こし状態の透明性として安全。
+
+目的:
+- `LiveCaptionWindow` が valid `transcription-result` を受けたとき、現在の `statusPayload.transcriptionStatusLabel` が `エラー停止` の場合だけ、ローカル状態を `文字起こし中` へ回復する。
+- 正式な `live-caption-status` event が届く場合は従来どおりそれを優先する。
+
+担当範囲:
+- `src/components/LiveCaptionWindow.tsx`
+- 必要なら `src/utils/liveCaptionStatus.ts`
+- `AGENT_LOG.md`
+
+実装指示:
+- 録音・文字起こし開始/停止処理、Tauri command、event 名、storage key、`TranscriptView.tsx`、Rust、CSS、依存関係は変更しないでください。
+- invalid payload branch、`transcription-error` branch、reset branch の挙動は変更しないでください。
+- valid `transcription-result` branch でのみ、現在の status が `エラー停止` なら `文字起こし中` にする処理を追加してください。
+- 可能なら `src/utils/liveCaptionStatus.ts` に小さな純粋 helper を追加し、`LiveCaptionWindow` から使ってください。公開型は既存の `LiveCaptionStatusPayload` を使ってください。
+- `エラー停止` 以外の status label は変更しないでください。未知 label や `停止中`、`開始中`、`文字起こし中` はそのままにしてください。
+- payload 生値、エラー詳細、会議本文、音声データ、デバイス名、URL は新規表示しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/LiveCaptionWindow.tsx src/utils/liveCaptionStatus.ts AGENT_LOG.md docs/worker-prompts/mj-worker-loop290-live-caption-error-recovery-20260507-175859.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中ではなく、現在のログ末尾に追記してください。

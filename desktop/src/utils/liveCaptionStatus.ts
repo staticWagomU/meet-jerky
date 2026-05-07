@@ -147,6 +147,18 @@ export function normalizeLiveCaptionStatusPayload(
   };
 }
 
+export function recoverLiveCaptionStatusOnValidResult(
+  status: LiveCaptionStatusPayload,
+): LiveCaptionStatusPayload {
+  if (status.transcriptionStatusLabel !== "エラー停止") {
+    return status;
+  }
+  return {
+    ...status,
+    transcriptionStatusLabel: "文字起こし中",
+  };
+}
+
 export function readStoredLiveCaptionStatus(
   onError?: (error: unknown) => void,
 ): LiveCaptionStatusPayload {

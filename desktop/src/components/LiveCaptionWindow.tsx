@@ -12,6 +12,7 @@ import {
   isLiveCaptionStatusPayload,
   normalizeLiveCaptionStatusPayload,
   readStoredLiveCaptionStatus,
+  recoverLiveCaptionStatusOnValidResult,
   type LiveCaptionStatusPayload,
 } from "../utils/liveCaptionStatus";
 import {
@@ -145,6 +146,7 @@ export function LiveCaptionWindow() {
           return;
         }
         setListenerError(null);
+        setStatusPayload(recoverLiveCaptionStatusOnValidResult);
         setLatestSegment(payload);
         setRecentSegments((prev) => [...prev, payload].slice(-2));
         if (payload.source) {
