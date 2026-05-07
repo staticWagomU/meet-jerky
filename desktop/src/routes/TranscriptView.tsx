@@ -113,6 +113,10 @@ import { getMeetingStartBlockedReason } from "../utils/meetingStartHelpers";
 const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
 const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
 const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
+const LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX =
+  "ライブ字幕ステータスの保存に失敗しました:";
+const LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX =
+  "ライブ字幕ステータスの同期に失敗しました:";
 const TRANSCRIPTION_START_ATTEMPTED_TRACK_STATUS_NOTICE =
   "録音トラックの状態は上部の自分/相手側ステータスで確認してください。";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
@@ -1265,12 +1269,38 @@ export function TranscriptView() {
         systemAudioTrackLabel: systemAudioTrackStatusLabel,
       },
     );
-    writeStoredLiveCaptionStatus(liveCaptionStatus, (e) => {
-      console.error("ライブ字幕ステータスの保存に失敗しました:", toErrorMessage(e));
-    });
-    void emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus).catch((e) => {
-      console.error("ライブ字幕ステータスの同期に失敗しました:", toErrorMessage(e));
-    });
+    const didStoreLiveCaptionStatus = writeStoredLiveCaptionStatus(
+      liveCaptionStatus,
+      (e) => {
+        const msg = toErrorMessage(e);
+        const errorMessage = `${LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX} ${msg}`;
+        console.error(errorMessage);
+        setMeetingError(errorMessage);
+      },
+    );
+    if (didStoreLiveCaptionStatus) {
+      setMeetingError((currentError) =>
+        clearRelatedMeetingError(
+          currentError,
+          LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX,
+        ),
+      );
+    }
+    void emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus)
+      .then(() => {
+        setMeetingError((currentError) =>
+          clearRelatedMeetingError(
+            currentError,
+            LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX,
+          ),
+        );
+      })
+      .catch((e) => {
+        const msg = toErrorMessage(e);
+        const errorMessage = `${LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX} ${msg}`;
+        console.error(errorMessage);
+        setMeetingError(errorMessage);
+      });
   }, [
     aiTransmissionStatusLabel,
     engineStatusDisplayLabel,

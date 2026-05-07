@@ -1,0 +1,39 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+ライブ字幕ステータスの保存または `LIVE_CAPTION_STATUS_EVENT` 同期に失敗した場合、console error だけで終わらせず、既存の `meetingError` / alert UI に表示してください。ライブ字幕は文字起こし状態・音声トラック状態・AI送信有無を表示するため、録音状態の透明性を上げる最小スライスです。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` の `writeStoredLiveCaptionStatus(...)` / `emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus).catch(...)` がある `useEffect` だけを狭く変更してください。
+- 既存の `clearRelatedMeetingError(currentError, prefix)` helper を使って、成功時に同 prefix の古い error だけ clear してください。
+- prefix 定数を2つ追加してください:
+  - `LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX = "ライブ字幕ステータスの保存に失敗しました:"`
+  - `LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX = "ライブ字幕ステータスの同期に失敗しました:"`
+- 保存失敗時は `toErrorMessage(e)` を `msg` に取り、console error と `setMeetingError(`${LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX} ${msg}`)` に同じ内容を反映してください。
+- 保存成功時は `setMeetingError((currentError) => clearRelatedMeetingError(currentError, LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX))` を実行してください。
+- 同期失敗時は `toErrorMessage(e)` を `msg` に取り、console error と `setMeetingError(`${LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX} ${msg}`)` に同じ内容を反映してください。
+- 同期成功時は `setMeetingError((currentError) => clearRelatedMeetingError(currentError, LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX))` を実行してください。
+- 録音/文字起こし開始停止、ライブ字幕 window 表示制御、リングライト、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- この失敗はステータス表示の保存/同期失敗であり、録音停止や文字起こし停止とは断定しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop264-live-caption-status-sync-error-20260507-085901.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
