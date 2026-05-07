@@ -3,17 +3,50 @@ use crate::transcription_types::{TranscriptionErrorPayload, TranscriptionSource}
 pub(crate) const ERROR_TRANSCRIPTION_WORKER_ABEND: &str = "文字起こしワーカーが異常終了しました";
 pub(crate) const ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE: &str =
     "文字起こしエラーが発生しました。詳細は取得できませんでした。";
+const TRANSCRIPTION_ERROR_MAX_UTF16_CODE_UNITS: usize = 4000;
 
 pub(crate) fn build_transcription_error_payload(
     error: String,
     source: Option<TranscriptionSource>,
 ) -> TranscriptionErrorPayload {
-    let error = if error.trim().is_empty() {
+    let error = normalize_transcription_error_message(&error);
+    TranscriptionErrorPayload { error, source }
+}
+
+fn normalize_transcription_error_message(error: &str) -> String {
+    let mut normalized = String::with_capacity(error.len());
+    let mut utf16_len = 0;
+
+    for ch in error.chars() {
+        let safe_ch = if is_transcription_error_rejected_control_character(ch) {
+            ' '
+        } else {
+            ch
+        };
+        let char_utf16_len = safe_ch.len_utf16();
+        if utf16_len + char_utf16_len > TRANSCRIPTION_ERROR_MAX_UTF16_CODE_UNITS {
+            break;
+        }
+        normalized.push(safe_ch);
+        utf16_len += char_utf16_len;
+    }
+
+    if normalized.trim().is_empty() {
         ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE.to_string()
     } else {
-        error
-    };
-    TranscriptionErrorPayload { error, source }
+        normalized
+    }
+}
+
+fn is_transcription_error_rejected_control_character(ch: char) -> bool {
+    matches!(
+        ch,
+        '\u{0000}'..='\u{0008}'
+            | '\u{000B}'
+            | '\u{000C}'
+            | '\u{000E}'..='\u{001F}'
+            | '\u{007F}'
+    )
 }
 
 pub(crate) fn build_worker_panic_error_payload(
@@ -139,6 +172,70 @@ mod tests {
         assert_eq!(
             v.get("source").and_then(|value| value.as_str()),
             Some("system_audio")
+        );
+    }
+
+    #[test]
+    fn build_transcription_error_payload_preserves_lf_cr_and_tab_in_error_string() {
+        let payload =
+            build_transcription_error_payload("line1\nline2\r\n\tindented".to_string(), None);
+        let v = transcription_error_payload_to_value(&payload);
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some("line1\nline2\r\n\tindented")
+        );
+    }
+
+    #[test]
+    fn build_transcription_error_payload_replaces_frontend_rejected_control_characters_with_spaces()
+    {
+        let payload = build_transcription_error_payload(
+            "pre\u{0000}\u{000B}\u{000C}\u{007F}post".to_string(),
+            None,
+        );
+        let v = transcription_error_payload_to_value(&payload);
+        let error = v.get("error").and_then(|x| x.as_str()).unwrap();
+        assert_eq!(error, "pre    post");
+        assert!(!error.contains('\u{0000}'));
+        assert!(!error.contains('\u{000B}'));
+        assert!(!error.contains('\u{000C}'));
+        assert!(!error.contains('\u{007F}'));
+    }
+
+    #[test]
+    fn build_transcription_error_payload_truncates_to_frontend_utf16_limit() {
+        let input = format!("{}{}", "a".repeat(3999), "🙂tail");
+        let payload = build_transcription_error_payload(input, None);
+        let v = transcription_error_payload_to_value(&payload);
+        let error = v.get("error").and_then(|x| x.as_str()).unwrap();
+
+        assert_eq!(
+            error.chars().map(char::len_utf16).sum::<usize>(),
+            TRANSCRIPTION_ERROR_MAX_UTF16_CODE_UNITS - 1
+        );
+        assert!(!error.contains('🙂'));
+
+        let emoji_payload = build_transcription_error_payload("🙂".repeat(2001), None);
+        let emoji_v = transcription_error_payload_to_value(&emoji_payload);
+        let emoji_error = emoji_v.get("error").and_then(|x| x.as_str()).unwrap();
+        assert_eq!(
+            emoji_error.chars().map(char::len_utf16).sum::<usize>(),
+            TRANSCRIPTION_ERROR_MAX_UTF16_CODE_UNITS
+        );
+        assert_eq!(emoji_error.chars().count(), 2000);
+    }
+
+    #[test]
+    fn build_transcription_error_payload_uses_fallback_when_controls_and_spaces_normalize_to_empty()
+    {
+        let payload = build_transcription_error_payload(
+            " \u{0000}\u{000B}\u{000C}\u{007F} \t\n\r ".to_string(),
+            None,
+        );
+        let v = transcription_error_payload_to_value(&payload);
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some(ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE)
         );
     }
 

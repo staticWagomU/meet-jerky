@@ -1,0 +1,43 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず AGENTS.md、docs/product-concept.md、docs/agent-harness.md、docs/autonomous-main-prompt.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/transcription_error_payload.rs
+- AGENT_LOG.md
+
+目的:
+- Rust 側で emit する `transcription-error` payload の `error` 文字列を、frontend の `isTranscriptionErrorPayload` 契約に収まる形へ正規化してください。
+- 現状、Rust の `build_transcription_error_payload` は空白だけの fallback は行う一方、4000 UTF-16 code units 超過や NUL/VT/FF/DEL 等の制御文字をそのまま payload に入れ得ます。frontend は `src/utils/transcriptSegment.ts` で `error` を 4000 長以下、trim 後 non-empty、LF/CR/TAB 以外の制御文字なしとして検証するため、実エラーが UI で「形式が不正」に潰れる可能性があります。
+
+実装指示:
+- `build_transcription_error_payload` の `error` だけを正規化してください。
+- LF、CR、TAB は維持してください。
+- NUL、VT、FF、その他 C0 制御文字、DEL は UI 表示用に安全な空白へ置換してください。
+- trim 後 empty になる場合は既存 fallback `ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE` を使ってください。
+- frontend の 4000 長制限と合わせるため、Rust の `char::len_utf16()` で最大 4000 UTF-16 code units に収まるように切り詰めてください。UTF-8 の途中切断や panic を起こさないこと。
+- `source` の扱い、payload shape、event 名、panic payload 固定文言、`should_emit_realtime_stream_error`、frontend、worker loop、依存関係は変更しないでください。
+
+テスト指示:
+- 既存 tests を維持してください。
+- 以下の unit test を追加または更新してください。
+  - LF/CR/TAB は error に残る。
+  - NUL/VT/FF/DEL など frontend が拒否する制御文字は payload から消える、または空白へ置換される。
+  - 4000 UTF-16 code units を超える error は 4000 以下に切り詰められる。絵文字など `len_utf16() == 2` の文字でも上限を超えない。
+  - 制御文字と空白だけになった error は fallback になる。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_error_payload`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_error_payload.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop329-next-value-slice-20260508-070859.txt docs/worker-prompts/mj-worker-loop329-transcription-error-payload-sanitize-20260508-070859.txt`
+
+AGENT_LOG.md:
+- Loop 329 として追記してください。
+- 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を記録してください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さないでください。
+- 担当範囲外を編集しないでください。
+- コミットは禁止です。
