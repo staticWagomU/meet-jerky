@@ -1,0 +1,56 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/session_store.rs
+- AGENT_LOG.md
+
+背景:
+`write_session_markdown_to` は現在 `render_session_markdown` 後に `fs::write(path, body)` で既存 Markdown を全文上書きしています。これは途中でプロセス停止や書き込み失敗が起きた場合に、既存の履歴 Markdown が truncate 済みの中途半端な内容になるリスクがあります。会議履歴の保存信頼性を上げるため、同一ディレクトリ内の temp file に書いてから `std::fs::rename` で置き換える最小改善を実装してください。
+
+実装内容:
+- `write_session_markdown_to(path, session, offset)` を atomic replace 方式に変更してください。
+  - 先に `render_session_markdown(session, offset)?` を評価する既存契約は維持する。
+  - temp file は target と同じディレクトリに作る。
+  - temp file 名は target filename を元にしつつ、process id と時刻などで通常衝突しにくい名前にする。
+  - temp file へ全文を書いた後、`std::fs::rename(temp_path, path)` で置き換える。
+  - temp write / rename が失敗した場合は可能な範囲で temp file を削除し、元の error を返す。
+- macOS/Unix 前提の同一ディレクトリ rename で十分です。Windows 対応や fsync 追加へ広げないでください。
+- `save_session_markdown`、`path_for_session`、Markdown format、render 処理、session manager / command 側、依存関係は変更しないでください。
+- 既存の missing parent、render error、完全上書き、direct/save content 一致の契約を維持してください。
+
+テスト:
+- 既存 `write_session_markdown_to_truncates_and_overwrites_existing_file_completely` は新実装でも通るよう維持してください。
+- 可能なら次の unit test を `session_store.rs` に追加してください。
+  - render error の場合は既存 target file が変更されない。
+  - rename が失敗するケースでも temp file が残らない、または少なくとも target に不完全な Markdown を作らないことを固定する。無理に複雑な fault injection は入れず、既存コード構造に合う範囲でよい。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib session_store`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib session_manager`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib session_commands`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/session_store.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop327-session-store-atomic-write-20260508-062910.txt docs/worker-prompts/mj-worker-loop327-session-store-atomic-write-20260508-062910.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

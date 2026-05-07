@@ -5,6 +5,7 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use chrono::FixedOffset;
 
@@ -30,7 +31,37 @@ pub fn write_session_markdown_to(
     offset: FixedOffset,
 ) -> std::io::Result<()> {
     let body = render_session_markdown(session, offset)?;
-    fs::write(path, body)
+    write_session_markdown_atomically(path, body)
+}
+
+fn write_session_markdown_atomically(path: &Path, body: String) -> std::io::Result<()> {
+    let temp_path = temporary_markdown_write_path(path);
+
+    if let Err(err) = fs::write(&temp_path, body) {
+        let _ = fs::remove_file(&temp_path);
+        return Err(err);
+    }
+
+    if let Err(err) = fs::rename(&temp_path, path) {
+        let _ = fs::remove_file(&temp_path);
+        return Err(err);
+    }
+
+    Ok(())
+}
+
+fn temporary_markdown_write_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .map(|name| name.to_string_lossy())
+        .unwrap_or_else(|| "session.md".into());
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    let temp_name = format!(".{file_name}.{}.{}.tmp", std::process::id(), nanos);
+
+    path.with_file_name(temp_name)
 }
 
 /// 完了済みセッションを `<session_id>.md` として `dir` に書き出す。
@@ -467,7 +498,7 @@ mod tests {
 
     #[test]
     fn write_session_markdown_to_truncates_and_overwrites_existing_file_completely() {
-        // T2: 既存ファイルの完全上書き (truncate) 契約 = fs::write の truncate 挙動 = OpenOptions::append への誤改修検知装置
+        // T2: 既存ファイルの完全上書き契約 = append への誤改修検知装置
         let session = Session::start("新内容".to_string(), 1_713_333_000);
         let dir = tempdir().unwrap();
         let path = dir.path().join("target.md");
@@ -495,6 +526,48 @@ mod tests {
             !after.contains("xxxxxxxxxx"),
             "旧 body の長い x 列が残らない契約"
         );
+    }
+
+    #[test]
+    fn write_session_markdown_to_keeps_existing_file_when_render_fails() {
+        let session = Session::start("会議メモ".to_string(), i64::MAX as u64 + 1);
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("target.md");
+        let pre_existing = "# 既存内容\n\nまだ有効な履歴";
+        fs::write(&path, pre_existing).unwrap();
+
+        let err = write_session_markdown_to(&path, &session, jst()).unwrap_err();
+
+        assert_eq!(err.kind(), ErrorKind::InvalidInput);
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            pre_existing,
+            "render error は temp 書き込み前に返り、既存履歴を変更しない契約"
+        );
+        assert_no_temp_markdown_files(dir.path(), "target.md");
+    }
+
+    #[test]
+    fn write_session_markdown_to_removes_temp_file_when_rename_fails() {
+        let session = Session::start("会議メモ".to_string(), 1_713_333_000);
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("target.md");
+        fs::create_dir(&path).unwrap();
+
+        let err = write_session_markdown_to(&path, &session, jst()).unwrap_err();
+
+        assert!(
+            path.is_dir(),
+            "rename 失敗後も target directory は不完全な Markdown file へ置換されない"
+        );
+        assert!(
+            matches!(
+                err.kind(),
+                ErrorKind::AlreadyExists | ErrorKind::IsADirectory | ErrorKind::Other
+            ),
+            "platform rename error kind should be a target-conflict error: {err}"
+        );
+        assert_no_temp_markdown_files(dir.path(), "target.md");
     }
 
     #[test]
@@ -561,6 +634,25 @@ mod tests {
         assert!(
             !path.exists(),
             "render error は書き出し前なのでファイル未作成 = T4 と同じ ? 早期 return 契約の別経路確認"
+        );
+    }
+
+    fn assert_no_temp_markdown_files(dir: &Path, target_file_name: &str) {
+        let temp_prefix = format!(".{target_file_name}.");
+        let temp_files: Vec<PathBuf> = fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.starts_with(&temp_prefix) && name.ends_with(".tmp"))
+                    .unwrap_or(false)
+            })
+            .collect();
+
+        assert!(
+            temp_files.is_empty(),
+            "atomic write temp files should be cleaned up: {temp_files:?}"
         );
     }
 

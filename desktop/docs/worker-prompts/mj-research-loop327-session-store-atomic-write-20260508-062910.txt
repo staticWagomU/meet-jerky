@@ -1,0 +1,31 @@
+あなたは調査担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作、認証情報変更、破壊的操作は禁止です。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 327 で実装する候補として、履歴 Markdown 保存の信頼性を上げる atomic write 化が、1コミットで安全に完了できる最小改善スライスか調査してください。
+
+確認観点:
+- `src-tauri/src/session_store.rs` の `write_session_markdown_to` / `save_session_markdown`
+- `src-tauri/src/session_manager_persist.rs` からの incremental rewrite 影響
+- 既存テストの保存契約、missing parent、render error、overwrite 契約
+- temp file 作成、write、rename の失敗時に既存ファイルを壊さない契約を unit test で固定できるか
+- macOS/Unix 前提で `std::fs::rename` の同一ディレクトリ内 atomic replace を使う範囲に閉じられるか
+
+報告形式:
+1. 推奨可否を明確にする
+2. 根拠となるコード位置を file:line で提示
+3. 具体的な変更範囲
+4. ユーザー価値
+5. 非目標
+6. 検証方法
+7. リスクと未実機確認範囲
+
+編集・コミットは禁止です。推測は推測と明示してください。
