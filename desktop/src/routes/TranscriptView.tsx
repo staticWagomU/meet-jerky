@@ -582,6 +582,8 @@ export function TranscriptView() {
   }, [isMeetingActive, meetingStartTime]);
 
   const isAnySourceRecording = isMicRecording || isSystemAudioRecording;
+  const isRecordingOrTranscriptionVisible =
+    isMeetingActive || isTranscribing || isAnySourceRecording;
 
   const handleOpenLastSavedFile = useCallback(async () => {
     if (!lastSavedPath || savedFileActionPending) {
@@ -1307,7 +1309,7 @@ export function TranscriptView() {
         : "取得中"
       : "未取得";
   const audioSourceNotice = getAudioSourceNotice(
-    isMeetingActive || isTranscribing,
+    isRecordingOrTranscriptionVisible,
     isAudioCaptureOperationPending,
     isMicRecording,
     isSystemAudioRecording,
@@ -1391,17 +1393,17 @@ export function TranscriptView() {
 
   useEffect(() => {
     void invoke("set_live_caption_window_visible", {
-      visible: isMeetingActive || isTranscribing,
+      visible: isRecordingOrTranscriptionVisible,
     }).catch((e) => {
       const msg = toErrorMessage(e);
       const errorMessage = `ライブ字幕ウィンドウの表示切替に失敗しました: ${msg}`;
       console.error(errorMessage);
       setMeetingError(errorMessage);
     });
-  }, [isMeetingActive, isTranscribing]);
+  }, [isRecordingOrTranscriptionVisible]);
 
   useEffect(() => {
-    const shouldShowRingLight = isMeetingActive || isTranscribing;
+    const shouldShowRingLight = isRecordingOrTranscriptionVisible;
     ringLightDesiredVisibilityRef.current = shouldShowRingLight;
     const requestId = ringLightVisibilityRequestIdRef.current + 1;
     ringLightVisibilityRequestIdRef.current = requestId;
@@ -1452,7 +1454,7 @@ export function TranscriptView() {
         setMeetingError(errorMessage);
       }
     })();
-  }, [isMeetingActive, isTranscribing]);
+  }, [isRecordingOrTranscriptionVisible]);
 
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,
@@ -1489,7 +1491,7 @@ export function TranscriptView() {
       : hasTranscriptionErrorStopped
         ? "meeting-status-pill-error"
       : "meeting-status-pill-idle";
-  const canShowLiveCaptionWindow = isMeetingActive || isTranscribing;
+  const canShowLiveCaptionWindow = isRecordingOrTranscriptionVisible;
   const showLiveCaptionWindowLabel = canShowLiveCaptionWindow
     ? "ライブ文字起こしウィンドウを表示または前面に戻す"
     : "録音または文字起こし中だけライブ文字起こしウィンドウを表示できます";
@@ -1970,7 +1972,7 @@ export function TranscriptView() {
 
             <div
               className="menu-live-tracks"
-              hidden={!isMeetingActive && !isTranscribing}
+              hidden={!isRecordingOrTranscriptionVisible}
             >
               <div
                 className="meeting-popover-track-row"
@@ -2280,7 +2282,7 @@ export function TranscriptView() {
 
       <div
         className="menu-advanced-controls"
-        hidden={!isMeetingActive && !isTranscribing}
+        hidden={!isRecordingOrTranscriptionVisible}
       >
         <div className="section-divider" />
 
@@ -2294,7 +2296,7 @@ export function TranscriptView() {
           isReloadingAudioDevices={isFetchingDevices}
           isOperationPending={isMicSourceOperationPending}
           isControlDisabled={isAudioSourceOperationPending}
-          isCompact={isMeetingActive || isTranscribing}
+          isCompact={isRecordingOrTranscriptionVisible}
           onDeviceChange={setSelectedDeviceId}
           onRetryDevices={() => refetchDevices()}
           onToggleRecording={handleToggleMicRecording}
@@ -2306,7 +2308,7 @@ export function TranscriptView() {
           systemAudioDropCountTotal={systemAudioDropCountTotal}
           isOperationPending={isSystemAudioSourceOperationPending}
           isControlDisabled={isAudioSourceOperationPending}
-          isCompact={isMeetingActive || isTranscribing}
+          isCompact={isRecordingOrTranscriptionVisible}
           onToggleSystemAudio={handleToggleSystemAudio}
         />
 

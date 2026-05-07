@@ -1,0 +1,25 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作、認証情報変更、破壊的操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+調査テーマ:
+文字起こし worker panic / `transcription-error` 後の UI state 同期に、ユーザー価値のある小さな改善余地があるか確認してください。特に、`TranscriptView` が `transcription-error` を受けたあと `isTranscribing` / `hasTranscriptionErrorStopped` / mic/system audio recording state / live caption 表示状態をどう扱っているかを追ってください。
+
+重点観点:
+- `src/routes/TranscriptView.tsx` の `transcription-error` listener と `setIsTranscribing(false)` 周辺
+- `src/components/TranscriptionControls.tsx`
+- `src/components/TranscriptDisplay.tsx`
+- Rust 側の `src-tauri/src/transcription_worker_loop.rs` / `src-tauri/src/transcription_panic_guard.rs` / `src-tauri/src/transcription_commands.rs`
+
+報告要件:
+- 根拠となる file:line を示す。
+- 実装すべきなら、最小修正範囲を 1 つに絞り、担当ファイル、ユーザー価値、非目標、検証方法、残リスクを簡潔に示す。
+- 実装すべきでないなら、理由と次候補を示す。
+- 推測は推測と明示する。
+- 編集・コミットは禁止です。

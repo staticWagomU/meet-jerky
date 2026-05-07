@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+基本方針:
+- 鵜呑みにせず、批判的・中立的に判断してください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+調査担当の結果を受け、単体の音声取得 + 文字起こし中に worker panic / `transcription-error` が起きた場合でも、録音が続いている間は詳細操作と live caption window の表示状態を隠さないようにしてください。現状は `transcription-error` listener が `isTranscribing` を false にする一方、mic/system audio recording state は維持します。そのため `isMeetingActive || isTranscribing` だけを表示条件にしている UI が、録音継続中でも隠れる可能性があります。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` だけで、既存の `isAnySourceRecording` を使って表示条件を最小修正してください。
+- `set_live_caption_window_visible` effect、ring light desired visibility、`canShowLiveCaptionWindow`、音声トラック詳細セクションの `hidden`、音声トラック card の compact 判定など、同じ「録音または文字起こしの活動中」を表す `isMeetingActive || isTranscribing` を、必要な範囲で `isMeetingActive || isTranscribing || isAnySourceRecording` に揃えてください。
+- 重複式を増やしすぎないため、必要なら `isRecordingOrTranscriptionVisible` のような派生 boolean を `isAnySourceRecording` 定義後に追加してください。
+- 録音開始/停止、文字起こし開始/停止、`transcription-error` listener、event 名、Rust、TranscriptionControls、TranscriptDisplay、CSS、依存関係は変更しないでください。
+- 自動停止、自動再開、backend 実状態問い合わせ、payload 変更はしないでください。
+- 旧候補だった `TranscriptionControls` のボタン文言変更は今回実装しないでください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop313-transcription-error-state-20260508-014855.txt docs/worker-prompts/mj-worker-loop313-transcription-error-restart-label-20260508-015017.txt`
+
+AGENT_LOG.md には Loop 313 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を追記してください。変更ファイルには research prompt と worker prompt も含めてください。worker prompt のファイル名は旧候補名を含みますが、内容はこの指示を正としてください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
