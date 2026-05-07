@@ -1,0 +1,45 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `TranscriptView` は Whisper 利用時に `is_model_downloaded` を query し、未確認/未ダウンロード/確認失敗では開始不可理由を出します。
+- 一方で status strip と live caption status に使う `engineStatusLabel` は `Whisper（端末内）` のままで、モデル状態確認中・未ダウンロード・確認不可がエンジン状態には同期されません。
+- 録音・文字起こし開始準備の透明性を上げるには、開始不可理由だけでなく status 側にもモデル準備状態を安全に反映するのが小さく有効です。
+
+目的:
+- Whisper のモデル状態を `engineStatusLabel` に反映し、status strip / live caption status のエンジン表示でも「確認中」「未ダウンロード」「確認不可」が分かるようにする。
+- モデル名、エラー本文、パス、URL、payload 生値、会議本文、音声データは追加表示しない。
+
+担当範囲:
+- `src/utils/engineStatusHelpers.ts`
+- `src/routes/TranscriptView.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `getEngineStatusLabel` にオプション引数を追加するなど、既存呼び出し互換を保ちながら Whisper のモデル状態を反映してください。
+- `settingsError` 側の `STATUS_UNCHECKABLE_LABEL` 分岐は `TranscriptView` 側で維持してください。
+- engine が未取得のときは従来通り `STATUS_CHECKING_LABEL` にしてください。
+- Apple Speech / OpenAI Realtime / ElevenLabs Realtime の表示は変更しないでください。
+- Whisper で `modelDownloadedErrorForUi` がある場合は固定文言 `Whisper（モデル確認不可）` のように、エラー本文を含まない表示にしてください。
+- Whisper で `isModelDownloaded === undefined` の場合は `Whisper（モデル確認中）` のように表示してください。
+- Whisper で `isModelDownloaded === false` の場合は `Whisper（未ダウンロード）` のように表示してください。
+- Whisper で `isModelDownloaded === true` の場合は従来の `Whisper（端末内）` を維持してください。
+- `getEngineStatusDisplayLabel` と `getEngineStatusPillClass` も必要に応じて、上記の固定文言を自然に短縮/色分けできるよう更新してください。CSS は変更しないでください。
+- status strip / live caption status 以外の録音、文字起こし、モデルダウンロード、React Query、Tauri command、event 名、正常/エラー alert 表示、依存関係は変更しないでください。
+- 実機モデルダウンロード、ネットワーク検証、VoiceOver 実機確認は実行しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/engineStatusHelpers.ts src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop285-whisper-model-status-label-20260507-161857.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

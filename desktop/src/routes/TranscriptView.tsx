@@ -1292,7 +1292,10 @@ export function TranscriptView() {
     : getAiTransmissionStatusLabel(settings?.transcriptionEngine);
   const engineStatusLabel = settingsError
     ? STATUS_UNCHECKABLE_LABEL
-    : getEngineStatusLabel(settings?.transcriptionEngine);
+    : getEngineStatusLabel(settings?.transcriptionEngine, {
+        isModelDownloaded,
+        modelDownloadedError: modelDownloadedErrorForUi,
+      });
   const engineStatusDisplayLabel =
     getEngineStatusDisplayLabel(engineStatusLabel);
   const transcriptionStatusLabel = isTranscriptionOperationPending

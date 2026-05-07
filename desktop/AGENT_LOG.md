@@ -14,6 +14,38 @@
 
 ---
 
+[mj-main / Loop 285 / 2026-05-07 16:24 JST]
+役割: メインエージェント
+作業範囲: Loop 285 の候補調査、worker 起動、差分レビュー、主担当検証、コミット準備
+指示内容: `docs/autonomous-main-prompt.md` に従い、録音・文字起こし開始準備の透明性に関わる小さな改善を1件選び、tmux worker に実装させて検証する。
+調査結果: `mj-research-loop285` は Webex URL helper の純粋関数テスト、ModelSelector のモデル確認中表示、開始不可理由 helper tests を候補として提示した。
+採用判断: Webex URL は `app_detection.rs` 側に既に複数の統合的な URL 検知テストがあり、今回の1ループではユーザーに見える準備状態のずれを減らす方が価値が高いと判断した。Whisper はローカル文字起こし開始可否に直結するため、開始不可理由だけでなく status strip / live caption status のエンジン表示にもモデル状態を反映する改善を採用した。
+結果: `mj-worker-loop285-whisper-model-status-label-20260507` が `getEngineStatusLabel` に既存呼び出し互換のオプション引数を追加し、Whisper のモデル確認不可、確認中、未ダウンロード、ダウンロード済みを固定ラベルに分岐させた。`TranscriptView` は settingsError 分岐を維持したまま、既存の `isModelDownloaded` と `modelDownloadedErrorForUi` だけを helper に渡す。`getEngineStatusDisplayLabel` は status strip / live caption status 向けに短縮表示し、`getEngineStatusPillClass` は確認中を neutral、未ダウンロードと確認不可を error にした。モデル名、エラー本文、パス、URL、payload 生値、会議本文、音声データは新規表示していない。
+ユーザー価値: Whisper モデル未準備時に開始不可理由だけでなく常時見える status 側にも準備状態が出るため、ローカル文字起こしが開始できない理由を把握しやすくなる。
+非目標: 録音・文字起こし開始処理、モデルダウンロード処理、React Query key、Tauri command、event 名、既存 alert 表示、CSS、依存関係、Apple Speech / OpenAI Realtime / ElevenLabs Realtime 表示は変更しない。
+未実機確認範囲: macOS 実機アプリ上での status strip 表示、ライブ字幕ウィンドウ status 同期、Whisper モデル未ダウンロード状態、モデル確認失敗状態、実機モデルダウンロード、ネットワーク検証、VoiceOver 読み上げは未確認。実機モデルダウンロードとネットワーク検証は実行していない。
+変更ファイル: src/utils/engineStatusHelpers.ts / src/routes/TranscriptView.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop285-next-value-slice-20260507-161857.txt / docs/worker-prompts/mj-worker-loop285-whisper-model-status-label-20260507-161857.txt
+検証結果: worker pane で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/utils/engineStatusHelpers.ts src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop285-whisper-model-status-label-20260507-161857.txt` 成功を確認済み。主担当でも `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、research prompt を含む `git diff --check -- src/utils/engineStatusHelpers.ts src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop285-next-value-slice-20260507-161857.txt docs/worker-prompts/mj-worker-loop285-whisper-model-status-label-20260507-161857.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: なし
+残リスク: build と静的差分確認では React 上の実表示、ライブ字幕ウィンドウへの実 event 反映、実機でのモデル確認失敗タイミング、支援技術読み上げは確認できない。既存の開始不可 alert と status 表示が同じ状態を重複して伝える可能性はあるが、常時 status と操作時理由の役割分担として許容する。
+次アクション: 主担当で検証し、staged path と staged diff を確認してコミットする。
+---
+
+[mj-worker-loop285-whisper-model-status-label-20260507 / 2026-05-07 16:22:13 JST]
+役割: 作業担当エージェント
+作業範囲: src/utils/engineStatusHelpers.ts / src/routes/TranscriptView.tsx / AGENT_LOG.md / docs/worker-prompts/mj-worker-loop285-whisper-model-status-label-20260507-161857.txt
+指示内容: Whisper のモデル状態を `engineStatusLabel` に反映し、status strip / live caption status のエンジン表示でも「確認中」「未ダウンロード」「確認不可」が分かるようにする。モデル名、エラー本文、パス、URL、payload 生値、会議本文、音声データは追加表示しない。settingsError 側の `STATUS_UNCHECKABLE_LABEL` 分岐、録音・文字起こし開始、モデルダウンロード、React Query、Tauri command、event 名、alert 表示、CSS、依存関係は変更しない。コミットは禁止。
+結果: `getEngineStatusLabel` に既存呼び出し互換のオプション引数を追加し、Whisper でモデル確認エラー、確認中、未ダウンロード、ダウンロード済みを固定文言に分岐するようにした。`getEngineStatusDisplayLabel` は status strip / live caption status 用に Whisper のモデル状態を短縮表示し、`getEngineStatusPillClass` は確認中を neutral、未ダウンロードと確認不可を error にした。TranscriptView では settingsError 分岐を維持したまま、既存の `isModelDownloaded` と `modelDownloadedErrorForUi` だけを helper に渡した。
+変更ファイル: src/utils/engineStatusHelpers.ts / src/routes/TranscriptView.tsx / AGENT_LOG.md
+検証結果: `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功。`git diff --check -- src/utils/engineStatusHelpers.ts src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop285-whisper-model-status-label-20260507-161857.txt` 成功。
+未実機確認範囲: macOS 実機アプリ上での status strip 表示、ライブ字幕ウィンドウ status 同期、Whisper モデル未ダウンロード状態、モデル確認失敗状態、実機モデルダウンロード、ネットワーク検証、VoiceOver 読み上げは未確認。実機モデルダウンロード、ネットワーク検証、VoiceOver 実機確認は指示どおり実行しない。
+依存関係追加の有無: なし
+失敗理由: なし
+残リスク: build と静的差分確認では React 上の実表示、ライブ字幕ウィンドウへの実 event 反映、実機でのモデル確認失敗タイミング、支援技術読み上げは確認できない。
+次アクション: コミット禁止指示のため未コミットで報告する。
+---
+
 [mj-main / Loop 284 / 2026-05-07 16:08 JST]
 役割: メインエージェント
 作業範囲: Loop 284 の候補調査、worker 起動、差分レビュー、主担当検証、コミット準備
