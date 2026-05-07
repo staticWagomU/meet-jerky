@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 301 / 2026-05-07 21:39 JST]
+役割: メインエージェント
+作業範囲: Loop 301 の候補選定、worker 起動、worker 停滞確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、ZoomGov web client の `/wc/<meeting_id>/join` URL が `classify_meeting_url` 経由で Zoom として検知される positive contract を固定する。
+採用判断: `src-tauri/src/app_detection_zoom.rs` は `zoomgov.com` host と `/wc/<meeting_id>/join` 形式を実装上受理しているが、既存の `classify_meeting_url_returns_service_and_host_only` は ZoomGov の `/j/<id>` と `/wc/join/<id>` を固定する一方、`/wc/<id>/join` の ZoomGov 統合テストは薄かった。会議検知の網羅性と信頼性に関わり、production code 変更なしで純粋関数テストにより固定できるため採用した。
+実装経緯: `mj-worker-loop301-zoomgov-web-client-contract-20260507` を起動したが、hook failure 後に読み取りの途中で停滞し、対象ファイルに変更が入らなかったため session を閉じた。production code なしのテスト追加に限定できたため、メイン側で最小実装した。
+結果: `classify_meeting_url_accepts_zoomgov_web_client_meeting_id_join_url` を追加し、`https://agency.zoomgov.com/wc/1600991835/join` と trailing slash variant が `Some(MeetingUrlClassification { service: "Zoom", host: "agency.zoomgov.com" })` になることを固定した。ZoomGov `/j/<id>`、`/wc/join/<id>`、Zoom commercial、他サービス、UI、依存関係は変更していない。
+ユーザー価値: ZoomGov の web client 参加 URL をブラウザから取得した場合も、自動会議検知が拾える契約を regression test で固定し、会議検知の網羅性を上げる。
+非目標: Zoom/ZoomGov 検知ロジック変更、新しい URL 形式追加、ブラウザ取得、通知 UI、依存関係追加は行わない。
+未実機確認範囲: macOS 実機でのブラウザ URL 取得、ZoomGov 実サイトの最新 URL 変種、AppleScript 経由の統合挙動は未確認。
+変更ファイル: src-tauri/src/app_detection.rs / AGENT_LOG.md / docs/worker-prompts/mj-worker-loop301-zoomgov-web-client-contract-20260507-213924.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib zoomgov` 成功（1 passed / 0 failed / 747 filtered out）、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings` 成功、`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop301-zoomgov-web-client-contract-20260507-213924.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure と停滞により実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: 純粋関数テストに限定しており、実ブラウザや ZoomGov 実サイトの URL 変種は確認していない。
+次アクション: 検証後、staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 300 / 2026-05-07 21:19 JST]
 役割: メインエージェント
 作業範囲: Loop 300 の候補選定、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証

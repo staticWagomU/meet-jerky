@@ -1677,6 +1677,23 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_accepts_zoomgov_web_client_meeting_id_join_url() {
+        for url in [
+            "https://agency.zoomgov.com/wc/1600991835/join",
+            "https://agency.zoomgov.com/wc/1600991835/join/",
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "Zoom".to_string(),
+                    host: "agency.zoomgov.com".to_string(),
+                }),
+                "ZoomGov web client の /wc/<meeting_id>/join 形式は Zoom 会議として検知される必要がある: {url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_max_length_63_bytes() {
         let label = "a".repeat(63);
         let url = format!("https://{}.zoom.us/j/123456789", label);
