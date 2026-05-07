@@ -165,6 +165,27 @@ function getTranscriptTrackSearchLabels(
   ];
 }
 
+function getTranscriptTrackSearchMatchTargets(
+  counts: TranscriptTrackCounts,
+): Array<{ label: string; text: string }> {
+  return [
+    ...(counts.self > 0
+      ? [{ label: "トラック（自分）", text: `自分 ${SELF_TRACK_DEVICE_LABEL}` }]
+      : []),
+    ...(counts.other > 0
+      ? [
+          {
+            label: "トラック（相手側）",
+            text: `相手側 ${OTHER_TRACK_DEVICE_LABEL}`,
+          },
+        ]
+      : []),
+    ...(counts.unknown > 0
+      ? [{ label: "トラック（音声ソース不明）", text: "音声ソース不明" }]
+      : []),
+  ];
+}
+
 export function getSessionSearchMatchLabels(
   session: SessionSummary,
   startedAtLabel: string,
@@ -175,17 +196,13 @@ export function getSessionSearchMatchLabels(
     return [];
   }
 
-  const transcriptTrackSearchText = [
-    getTranscriptBodySearchLabel(session.searchText),
-    ...getTranscriptTrackSearchLabels(
-      getTranscriptTrackCounts(session.searchText),
-    ),
-  ].join(" ");
+  const transcriptTrackCounts = getTranscriptTrackCounts(session.searchText);
   const matchTargets = [
     { label: "タイトル", text: getCompactSessionTitle(session.title) },
     { label: "日時", text: startedAtLabel },
     { label: "ファイル名", text: getFileName(session.path) },
-    { label: "トラック", text: transcriptTrackSearchText },
+    { label: "本文状態", text: getTranscriptBodySearchLabel(session.searchText) },
+    ...getTranscriptTrackSearchMatchTargets(transcriptTrackCounts),
     { label: "本文", text: unescapeInlineMarkdownText(session.searchText) },
   ];
 

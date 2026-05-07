@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 296 / 2026-05-07 20:03 JST]
+役割: メインエージェント
+作業範囲: Loop 296 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、履歴検索でトラック条件に一致した場合の一致理由を具体化する。
+調査結果: Loop 295 の残候補として、履歴検索は `自分` / `相手側` / track label を検索対象に含むが、一覧の一致理由が `一致: トラック` に丸められ、どのトラック条件に一致したか分かりにくいことを確認した。
+実装経緯: `mj-worker-loop296-session-search-track-match-reasons-20260507` を起動したが、`hook: UserPromptSubmit Failed` 後に実装へ進まなかったため session を閉じた。変更範囲が `sessionListHelpers.tsx` の一致理由生成に限定できたため、メイン側で最小実装した。
+結果: `getTranscriptTrackSearchMatchTargets` を追加し、検索語が `自分` / `自分トラック マイク` に一致した場合は `トラック（自分）`、`相手側` / `相手側トラック システム音声` に一致した場合は `トラック（相手側）`、`音声ソース不明` に一致した場合は `トラック（音声ソース不明）` を返すようにした。検索対象の本文・タイトル・日時・ファイル名・track label、履歴行の件数表示、placeholder、CSS、Rust、依存関係は変更していない。
+ユーザー価値: 履歴検索で自分側/相手側/不明トラックを条件にしたとき、どのトラック条件で該当した履歴かを一覧上で確認しやすくなる。
+非目標: 検索構文追加、トラック filter UI 追加、保存形式変更、履歴読み込み、CSS、Rust、依存関係は変更しない。
+未実機確認範囲: macOS 実機での履歴画面表示、長い一致理由の視覚表示、VoiceOver 読み上げは未確認。
+変更ファイル: src/utils/sessionListHelpers.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop296-next-value-slice-20260507-195845.txt / docs/worker-prompts/mj-worker-loop296-session-search-track-match-reasons-20260507-195845.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/utils/sessionListHelpers.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop296-next-value-slice-20260507-195845.txt docs/worker-prompts/mj-worker-loop296-session-search-track-match-reasons-20260507-195845.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: build と静的差分確認では、実際の履歴データでの一覧表示幅や支援技術読み上げは確認できない。
+次アクション: staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 295 / 2026-05-07 19:43 JST]
 役割: メインエージェント
 作業範囲: Loop 295 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証

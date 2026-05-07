@@ -1,0 +1,48 @@
+あなたは meet-jerky desktop の Loop 296 作業担当エージェントです。
+
+対象 repo:
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+制約:
+- 作業対象はこの repo のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- main branch 上で作業するが、コミットは禁止。
+- 他者の変更を戻さず、担当範囲外を編集しない。
+
+担当範囲:
+- `src/utils/sessionListHelpers.tsx`
+- `src/routes/SessionList.tsx` は必要な場合のみ
+- `AGENT_LOG.md`
+
+目的:
+履歴検索で `自分` / `相手側` / `音声ソース不明` などのトラック条件に一致した場合、一覧の一致理由が現在は `一致: トラック` だけで、どのトラック条件に一致したか分かりにくい。検索ロジックを変えず、一致理由だけを `トラック（自分）` / `トラック（相手側）` / `トラック（音声ソース不明）` のように具体化する。
+
+実装方針:
+1. `sessionMatchesQuery` の検索対象は維持する。
+2. `getSessionSearchMatchLabels` の match reason だけを具体化する。
+3. track count 表示、検索 placeholder、保存形式、Rust、CSS、依存関係は変更しない。
+4. `自分` / `SELF_TRACK_DEVICE_LABEL` が検索語に一致したら `トラック（自分）`。
+5. `相手側` / `OTHER_TRACK_DEVICE_LABEL` が検索語に一致したら `トラック（相手側）`。
+6. `音声ソース不明` が検索語に一致したら `トラック（音声ソース不明）`。
+7. 同じ検索で本文にも一致する場合、既存どおり本文一致も残してよい。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/sessionListHelpers.tsx src/routes/SessionList.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop296-session-search-track-match-reasons-20260507-195845.txt`
+
+AGENT_LOG.md:
+- Loop 296 worker として、変更内容、検証結果、依存関係追加なし、残リスクを追記してください。
+
+完了時:
+- 変更内容
+- 変更ファイル
+- 検証結果
+- 残リスク
+を簡潔に報告してください。
