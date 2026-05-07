@@ -311,11 +311,17 @@ fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Re
 }
 
 #[tauri::command]
-fn show_main_window(app: tauri::AppHandle) {
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
+fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
+        return Err("メインウィンドウが見つかりません".to_string());
+    };
+    window
+        .show()
+        .map_err(|e| format!("メインウィンドウを表示できません: {e}"))?;
+    window
+        .set_focus()
+        .map_err(|e| format!("メインウィンドウにフォーカスできません: {e}"))?;
+    Ok(())
 }
 
 #[tauri::command]

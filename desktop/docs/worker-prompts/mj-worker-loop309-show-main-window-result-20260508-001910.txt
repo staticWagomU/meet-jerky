@@ -1,0 +1,34 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/lib.rs
+- AGENT_LOG.md
+
+目的:
+Loop 308 で会議検知プロンプト側から `show_main_window` を呼ぶフォールバックを追加したが、Rust command 側が失敗を返さないと UI 側の `.catch(...)` と listenerError が機能しない。`show_main_window` を `Result<(), String>` に変更し、main window が見つからない場合や show/focus に失敗した場合に呼び出し元へ日本語エラーを返してください。
+
+実装条件:
+- 変更は `src-tauri/src/lib.rs` の `show_main_window` command と `AGENT_LOG.md` に限定してください。
+- `show_main_window` は main window がない場合に `Err("メインウィンドウが見つかりません")` 相当を返してください。
+- `window.show()` と `window.set_focus()` の失敗を握りつぶさず、既存の他 window command と同じように `map_err` で日本語エラー化してください。
+- コマンド名、invoke handler 登録名、フロントエンド呼び出し、MeetingDetectedBanner、App.tsx、TranscriptView、CSS、依存関係は変更しないでください。
+- 録音自動開始や pending request helper の変更は禁止です。
+- 課金、認証変更、外部通信、破壊的操作は禁止です。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/lib.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop309-show-main-window-result-20260508-001910.txt`
+
+AGENT_LOG.md には Loop 309 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を簡潔に追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
