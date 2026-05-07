@@ -1,0 +1,57 @@
+あなたは meet-jerky desktop の Loop 293 実装 worker です。
+
+対象 repo:
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+制約:
+- 作業対象はこの repo のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- main branch 上で作業するが、コミットはしない。
+- 既存の未関係変更を戻さない。
+- 変更は最小にする。Rust event shape、Rust warning 文言、CSS/UI レイアウト、FORMAT_WARN_ONCE 挙動は変更しない。
+
+目的:
+`system-audio-format-warning` の frontend listener が payload の文字列を直接 UI state に入れているため、将来の event 境界破損や未知 payload に対して、巨大文字列・制御文字・非文字列を安全な固定表示に倒す。
+
+調査済み事実:
+- Rust 側は `system-audio-format-warning` に primitive string を emit する。
+- 現行 Rust 文言は短い静的文字列。
+- allowlist 方式は Rust 文言変更との同期漏れが起きやすいため採用しない。
+- 今回守る境界は「既知文言だけ許可」ではなく「UI に出してよい表示文字列だけ許可」。
+
+実装方針:
+1. 新規 `src/utils/systemAudioFormatWarningPayload.ts` を追加する。
+2. `src/routes/TranscriptView.tsx` の `SYSTEM_AUDIO_FORMAT_WARNING_EVENT` listener で、その helper を使う。
+3. 安全な短い非空 string だけ trim 済みで表示する。
+4. string でない payload、制御文字を含む payload、長すぎる payload は raw payload を表示せず固定文言へ倒す。
+5. 空文字・空白のみは既存挙動の `相手側音声入力の形式を確認できません。` を維持する。
+6. Rust 文言の exact allowlist は作らない。
+
+推奨 helper 仕様:
+- 最大長は 400 文字程度。
+- 制御文字は `[\u0000-\u001F\u007F]` を reject。
+- 返却は扱いやすい形なら任せるが、TranscriptView 側で raw invalid payload が表示されないこと。
+- invalid 固定文言例:
+  `音声形式警告通知の形式が不正です。`
+- empty 固定文言:
+  `相手側音声入力の形式を確認できません。`
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx src/utils/systemAudioFormatWarningPayload.ts AGENT_LOG.md docs/worker-prompts/mj-worker-loop293-system-audio-format-warning-payload-safety-20260507-185903.txt`
+
+記録:
+- `AGENT_LOG.md` に Loop 293 worker として、変更内容、検証結果、残リスクを短く追記する。
+
+完了時:
+- 変更ファイル一覧
+- 実行した検証コマンドと結果
+- 残リスク
+を final にまとめる。

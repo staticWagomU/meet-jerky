@@ -101,6 +101,7 @@ import {
   getTranscriptionErrorPayloadIssue,
   isTranscriptionErrorPayload,
 } from "../utils/transcriptSegment";
+import { normalizeSystemAudioFormatWarningPayload } from "../utils/systemAudioFormatWarningPayload";
 import { TRANSCRIPTION_ERROR_EVENT } from "../utils/transcriptionEvents";
 import {
   MACOS_ACCESSIBILITY_PRIVACY_URL,
@@ -505,15 +506,8 @@ export function TranscriptView() {
         if (disposed) {
           return;
         }
-        if (typeof event.payload !== "string") {
-          setSystemAudioFormatWarning("音声形式警告通知の形式が不正です。");
-          return;
-        }
-        const warning = event.payload.trim();
         setSystemAudioFormatWarning(
-          warning.length > 0
-            ? warning
-            : "相手側音声入力の形式を確認できません。",
+          normalizeSystemAudioFormatWarningPayload(event.payload),
         );
       },
     )

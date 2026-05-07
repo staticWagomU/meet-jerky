@@ -1,0 +1,28 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+目的:
+Loop 293 候補として、`system-audio-format-warning` payload を UI に安全に表示する最小スライスを調査してください。
+
+重点:
+- Rust 側で emit される warning payload の型・文言・制約
+- `TranscriptView.tsx` の listener が現在どのように payload を扱うか
+- payload 生値、巨大文字列、制御文字、未知文字列を UI に出すリスク
+- frontend 側 allowlist を持つ場合の Rust 文言変更との同期リスク
+
+報告:
+- 推奨する最小スライス
+- 影響ファイル
+- 非目標
+- 検証方法
+- 残リスク
+
+編集・コミットは禁止です。

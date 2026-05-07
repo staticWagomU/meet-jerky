@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 293 / 2026-05-07 19:08 JST]
+役割: メインエージェント
+作業範囲: Loop 293 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、相手側音声形式警告の payload 表示境界を安全化する。
+調査結果: `mj-research-loop293` は Rust 側の `system-audio-format-warning` が primitive string の短い静的文言だけを emit している一方、frontend listener は任意の string payload をそのまま UI state に入れるため、巨大文字列・制御文字・非文字列を固定文言へ倒す validator/normalizer を推奨した。Rust 文言 allowlist は同期漏れリスクがあるため採用しない判断。
+実装経緯: `mj-worker-loop293-system-audio-format-warning-payload-safety-20260507` を起動したが、`hook: UserPromptSubmit Failed` 後に Codex が終了して shell に戻り、ログも生成されなかったため、session を閉じた。変更が小さく境界が明確だったため、メイン側で直接最小実装した。
+結果: `src/utils/systemAudioFormatWarningPayload.ts` を追加し、`normalizeSystemAudioFormatWarningPayload` で string 以外、制御文字を含む文字列、400 文字超の文字列を `音声形式警告通知の形式が不正です。` に倒すようにした。空文字・空白のみは既存どおり `相手側音声入力の形式を確認できません。` を返す。`TranscriptView.tsx` の `SYSTEM_AUDIO_FORMAT_WARNING_EVENT` listener は helper 経由で state を更新するように変更し、invalid payload の raw 値を UI に出さない。
+ユーザー価値: 相手側音声入力の形式警告 event 境界が壊れた場合でも、録音状態表示に巨大文字列や制御文字入り文字列が流れ込むリスクを下げ、現在状態の透明性を保つ。
+非目標: Rust emit shape、Rust warning 文言、exact allowlist、`FORMAT_WARN_ONCE`、警告 clear 挙動、CSS/UI レイアウト、依存関係は変更していない。
+未実機確認範囲: macOS 実機での ScreenCaptureKit format warning 発火、Tauri event の実 payload 受信、UI の実表示は未確認。
+変更ファイル: src/utils/systemAudioFormatWarningPayload.ts / src/routes/TranscriptView.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop293-warning-payload-safety-20260507-185903.txt / docs/worker-prompts/mj-worker-loop293-system-audio-format-warning-payload-safety-20260507-185903.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/routes/TranscriptView.tsx src/utils/systemAudioFormatWarningPayload.ts AGENT_LOG.md docs/worker-prompts/mj-research-loop293-warning-payload-safety-20260507-185903.txt docs/worker-prompts/mj-worker-loop293-system-audio-format-warning-payload-safety-20260507-185903.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: build と静的差分確認では実 Tauri event 順序や macOS 実機の warning 発火は確認できない。短く制御文字を含まない未知文字列は、Rust 文言変更への耐性を優先して表示を許容する。
+次アクション: build / diff check 後、staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 292 / 2026-05-07 18:44 JST]
 役割: メインエージェント
 作業範囲: Loop 292 の候補調査、worker 起動、差分レビュー、主担当検証、コミット準備
