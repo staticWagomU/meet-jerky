@@ -2464,6 +2464,22 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_whereby_rejects_reserved_paths_with_url_suffixes() {
+        for url in [
+            "https://whereby.com/app/",
+            "https://whereby.com/developers?utm=campaign",
+            "https://whereby.com/status#main",
+            "https://team.whereby.com/app/",
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                None,
+                "Whereby reserved path must not be classified as a meeting URL: {url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_whereby_rejects_extra_segment() {
         assert_eq!(
             classify_meeting_url("https://whereby.com/team-room/extra"),

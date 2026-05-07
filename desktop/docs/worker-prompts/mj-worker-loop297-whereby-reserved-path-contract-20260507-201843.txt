@@ -1,0 +1,50 @@
+あなたは meet-jerky desktop の Loop 297 作業担当エージェントです。
+
+対象 repo:
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+制約:
+- 作業対象はこの repo のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- main branch 上で作業するが、コミットは禁止。
+- 他者の変更を戻さず、担当範囲外を編集しない。
+
+担当範囲:
+- `src-tauri/src/app_detection.rs`
+- `AGENT_LOG.md`
+
+目的:
+Whereby の予約 path (`app` / `developers` / `status` など) が query / fragment / trailing slash 付きでも会議 URL と誤検知されないことを、`classify_meeting_url` 経由の negative contract として固定する。
+
+実装方針:
+1. production code は変更しない。Rust test の追加のみを基本とする。
+2. 既存 Whereby tests の近くに、予約 path + trailing slash / query / fragment の negative test を追加する。
+3. 例:
+   - `https://whereby.com/app/`
+   - `https://whereby.com/developers?utm=x`
+   - `https://whereby.com/status#main`
+   - 必要なら subdomain variant も1件。
+4. Whereby の room accept、他サービス、URL parser、通知、UI、依存関係は変更しない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib whereby`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop297-whereby-reserved-path-contract-20260507-201843.txt`
+
+AGENT_LOG.md:
+- Loop 297 worker として、変更内容、検証結果、依存関係追加なし、残リスクを追記してください。
+
+完了時:
+- 変更内容
+- 変更ファイル
+- 検証結果
+- 残リスク
+を簡潔に報告してください。

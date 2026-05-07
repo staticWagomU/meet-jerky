@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 297 / 2026-05-07 20:22 JST]
+役割: メインエージェント
+作業範囲: Loop 297 の候補選定、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、Whereby 予約 path が URL suffix 付きでも会議 URL と誤検知されない negative contract を固定する。
+採用判断: Loop 296 調査で残った会議検知 negative URL contract のうち、Whereby の予約 path (`app` / `developers` / `status`) は production 実装上 blacklist されているが、trailing slash / query / fragment / subdomain variant を `classify_meeting_url` 経由で固定するテストが薄かった。会議検知の偽陽性防止に直結し、Rust targeted test で検証できるため採用した。
+実装経緯: `mj-worker-loop297-whereby-reserved-path-contract-20260507` を起動したが、`hook: UserPromptSubmit Failed` 後に実装へ進まなかったため session を閉じた。production code なしのテスト追加に限定できたため、メイン側で最小実装した。
+結果: `classify_meeting_url_whereby_rejects_reserved_paths_with_url_suffixes` を追加し、`https://whereby.com/app/`、`https://whereby.com/developers?utm=campaign`、`https://whereby.com/status#main`、`https://team.whereby.com/app/` がすべて `None` になることを固定した。Whereby room accept、URL parser、他サービス、通知、UI、依存関係は変更していない。
+ユーザー価値: Whereby の一般ページやアプリ導線を会議として誤検知するリスクを regression test で抑え、自動会議検知の信頼性を上げる。
+非目標: Whereby 検知ロジック変更、新しい URL 形式追加、ブラウザ取得、通知 UI、依存関係追加は行わない。
+未実機確認範囲: macOS 実機でのブラウザ URL 取得、Whereby 実サイトの最新 URL 変種、AppleScript 経由の統合挙動は未確認。
+変更ファイル: src-tauri/src/app_detection.rs / AGENT_LOG.md / docs/worker-prompts/mj-worker-loop297-whereby-reserved-path-contract-20260507-201843.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib whereby` 成功（14 passed / 0 failed / 732 filtered out）、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings` 成功、`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop297-whereby-reserved-path-contract-20260507-201843.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: 純粋関数テストに限定しており、実ブラウザや Whereby 実サイトの URL 変種は確認していない。
+次アクション: staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 296 / 2026-05-07 20:03 JST]
 役割: メインエージェント
 作業範囲: Loop 296 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
