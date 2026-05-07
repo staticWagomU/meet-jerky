@@ -1,0 +1,40 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md の Loop 302 記録
+
+目的:
+`audio-level` / `audio-drop-count` event の unknown `source` を UI 診断へ表示するとき、巨大文字列や制御文字をそのまま出さないようにしてください。
+
+根拠:
+- 現在の `getUnknownAudioSourceLabel` は `source` が string の場合そのまま返し、string 以外は `String(source)` を返します。
+- この値は `音声レベル通知の未知の音声ソースです: ...` / `音声 drop 通知の未知の音声ソースです: ...` に入ります。
+- payload validation は reject のままでよいですが、診断表示境界は `systemAudioFormatWarningPayload` や `liveCaptionStatus` と同様に制御文字・長大文字列を避けるべきです。
+
+実装方針:
+- `src/routes/TranscriptView.tsx` 内の `getUnknownAudioSourceLabel` だけを小さく変更してください。
+- `source === "microphone" || source === "system_audio"` は従来どおり `null`。
+- unknown source は string なら trim して使い、string 以外なら `String(source)` の結果を trim して使ってください。
+- 空/空白のみ、制御文字を含む値、長すぎる値は固定文言（例: `表示できない値`）へ倒してください。
+- 最大長は 80 文字程度にしてください。長いが安全な値を切り詰めるより、固定文言へ倒す方針で構いません。
+- audio payload 型、event 名、listener error 文言の prefix、Rust、CSS、依存関係は変更しないでください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop302-unknown-audio-source-label-safety-20260507-215923.txt`
+
+AGENT_LOG.md には、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

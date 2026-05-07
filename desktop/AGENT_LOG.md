@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 302 / 2026-05-07 21:59 JST]
+役割: メインエージェント
+作業範囲: Loop 302 の候補選定、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、`audio-level` / `audio-drop-count` event の unknown `source` を UI 診断へ表示するときの境界を安全化する。
+採用判断: `TranscriptView.tsx` の `getUnknownAudioSourceLabel` は unknown `source` が string の場合そのまま、string 以外は `String(source)` を UI エラー文言へ入れていた。payload 型ガードは reject のままで良いが、診断表示に巨大文字列や制御文字が流れ込むと録音状態の透明性を損なうため、表示用ラベルだけを安全化する小変更を採用した。
+実装経緯: `mj-worker-loop302-unknown-audio-source-label-safety-20260507` を起動したが、hook failure 後に過去ログ出力へ流れ、対象ファイルに変更が入らなかったため session を閉じた。変更範囲が `TranscriptView.tsx` の helper に限定できたため、メイン側で最小実装した。
+結果: `getUnknownAudioSourceLabel` で unknown source を trim し、空/空白のみ、80 文字超、制御文字を含む値は `表示できない値` に倒すようにした。`microphone` / `system_audio` は従来どおり `null`、audio payload 型、event 名、listener error prefix、Rust、CSS、依存関係は変更していない。
+ユーザー価値: audio event 境界が壊れた場合でも、録音状態の診断表示に制御文字や長大な source 文字列が出るリスクを下げ、現在状態の説明を読み取りやすく保つ。
+非目標: audio payload 型の拡張、unknown source の受理、event 名、Rust emit、UI レイアウト、CSS、依存関係追加は行わない。
+未実機確認範囲: macOS 実機アプリ上での malformed audio event 受信、実 UI 表示、VoiceOver 読み上げは未確認。
+変更ファイル: src/routes/TranscriptView.tsx / AGENT_LOG.md / docs/worker-prompts/mj-worker-loop302-unknown-audio-source-label-safety-20260507-215923.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop302-unknown-audio-source-label-safety-20260507-215923.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: build と静的差分確認では、実 Tauri event の malformed payload や UI 表示幅は再現できない。短く制御文字を含まない unknown source は診断価値を優先して表示する。
+次アクション: 検証後、staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 301 / 2026-05-07 21:39 JST]
 役割: メインエージェント
 作業範囲: Loop 301 の候補選定、worker 起動、worker 停滞確認、最小実装、差分レビュー、検証
