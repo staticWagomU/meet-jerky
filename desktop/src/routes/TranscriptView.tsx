@@ -1740,7 +1740,7 @@ export function TranscriptView() {
               <span>{permissionSetupLabel}</span>
               <strong>セットアップを完了しましょう</strong>
               <p>
-                3つの権限を許可すると、Google Meet を開いたときに自動で録音が始まります。
+                3つの権限を許可すると、会議検知後に通知やバナーから記録開始を確認・操作できます。
               </p>
             </section>
 
@@ -1903,7 +1903,7 @@ export function TranscriptView() {
               <p>
                 {isMeetingActive
                   ? meetingDetectionCardDetail
-                  : "Google Meet を開くと自動で録音が始まります"}
+                  : "検知後に通知・バナーから記録開始できます"}
               </p>
             </section>
 

@@ -1,0 +1,34 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず AGENTS.md、docs/product-concept.md、docs/agent-harness.md、docs/autonomous-main-prompt.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+- UI 文言から「Google Meet を開くと自動で録音が始まる」と読める表現を削除し、実装どおり「会議検知後にユーザーが開始操作する」表現へ揃えてください。
+- ステルス録音禁止・録音状態の透明性の方針に合わせるための文言修正です。
+
+実装指示:
+- `src/routes/TranscriptView.tsx` の次の2箇所だけを変更してください。
+  - 初回セットアップ hero の「3つの権限を許可すると、Google Meet を開いたときに自動で録音が始まります。」
+  - idle 状態カードの「Google Meet を開くと自動で録音が始まります」
+- 実際の挙動に合わせて、会議を検知したら通知/バナーから記録開始を確認・操作できる、という意味にしてください。
+- ロジック、イベント、権限処理、CSS、MeetingDetectedBanner、他の文言、依存関係は変更しないでください。
+- 文字が長すぎて既存 UI の短いカード内で詰まりそうな表現は避けてください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `rg "自動で録音が始まります" src/routes/TranscriptView.tsx` がヒットしないこと
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop330-next-value-slice-20260508-072901.txt docs/worker-prompts/mj-worker-loop330-recording-start-copy-20260508-072901.txt`
+
+AGENT_LOG.md:
+- Loop 330 として追記してください。
+- 開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を記録してください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さないでください。
+- 担当範囲外を編集しないでください。
+- コミットは禁止です。
