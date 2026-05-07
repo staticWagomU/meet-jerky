@@ -1,0 +1,47 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/transcription_emission.rs
+- AGENT_LOG.md
+
+背景:
+frontend の `isTranscriptSegmentPayload` は `text.trim().length > 0` を要求するため、空白だけの transcription segment payload は UI 側で不正 payload として扱われます。一方、Rust 側 `emit_segments` は現在 `segment.text.is_empty()` だけで skip しており、`"   "` や `"\n\t"` のような空白だけの segment を Tauri event と session append へ通し得ます。
+
+実装内容:
+- `emit_segments` で空文字だけでなく、trim 後 empty になる空白だけの segment も emit / append しないようにしてください。
+- 可能なら小さな private helper を追加し、unit test で以下を固定してください。
+  - `""` は emit candidate ではない
+  - ASCII whitespace だけは emit candidate ではない
+  - 全角スペースなど Unicode whitespace だけは emit candidate ではない
+  - 前後空白を含む非空 text は emit candidate
+- `app.emit` の event 名、payload shape、`SessionManager`、`transcript_bridge`、frontend、文字起こし engine、依存関係は変更しないでください。
+- `transcript_bridge::segment_to_append_args` が text を trim する既存契約は変更しないでください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_emission`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_emission.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop326-next-value-slice-20260508-060905.txt docs/worker-prompts/mj-worker-loop326-transcription-whitespace-emission-20260508-060905.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
