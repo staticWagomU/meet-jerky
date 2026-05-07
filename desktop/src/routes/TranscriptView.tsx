@@ -2007,8 +2007,7 @@ export function TranscriptView() {
           </div>
         )}
         <div
-          className="meeting-status-strip meeting-popover-status-strip"
-          hidden
+          className="sr-only meeting-status-strip meeting-popover-status-strip"
           role="status"
           aria-busy={isMeetingStatusBusy}
           aria-live="polite"

@@ -14,6 +14,22 @@
 
 ---
 
+[mj-main / Loop 283 / 2026-05-07 15:39 JST]
+役割: メインエージェント
+作業範囲: Loop 283 の候補調査、worker 起動試行、アクセシビリティ最小修正、検証、コミット準備
+指示内容: `docs/autonomous-main-prompt.md` に従い、録音状態の透明性に関わる小さな改善を1件選び、通常は tmux worker に実装させる。
+調査/worker 状況: `mj-research-loop283` と `mj-worker-loop283-status-strip-a11y-20260507` を起動したが、どちらも Codex 起動直後に skill YAML / hook エラー後停止し、実装・報告へ進まなかった。自律運用を止めないため、`docs/autonomous-main-prompt.md` の例外規定に基づき、主担当が最小差分だけ直接適用した。停止した tmux セッションは終了済み。
+採用判断: `TranscriptView` の `meeting-status-strip meeting-popover-status-strip` は `role="status"` / `aria-live="polite"` / `aria-atomic="true"` と `aria-label={meetingStatusAriaLabel}` を持つ一方で `hidden` が付いており、通常はアクセシビリティツリーから除外される。録音・文字起こし・音声ソース・AI送信状態の透明性に反するため、表示 UI を増やさず screen-reader 向けに有効化する改善を採用した。
+結果: `hidden` を外し、既存 `.sr-only` クラスを `meeting-status-strip meeting-popover-status-strip` に追加した。既存の `role="status"`、`aria-busy`、`aria-live="polite"`、`aria-atomic="true"`、`aria-label={meetingStatusAriaLabel}`、`title={meetingStatusAriaLabel}`、内部 status pill 文言は維持した。録音/文字起こし/音声取得/AI送信/モデル状態/backend event ロジック、CSS、依存関係は変更していない。
+変更ファイル: src/routes/TranscriptView.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop283-next-value-slice-20260507-153440.txt / docs/worker-prompts/mj-worker-loop283-status-strip-a11y-20260507-153440.txt
+検証結果: `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md docs/worker-prompts/mj-research-loop283-next-value-slice-20260507-153440.txt docs/worker-prompts/mj-worker-loop283-status-strip-a11y-20260507-153440.txt` 成功。
+依存関係追加の有無: なし
+未実機確認範囲: VoiceOver 実機読み上げ、macOS 実機アプリ上での live region 更新頻度、視覚レイアウトの実機確認は未確認。
+失敗理由: worker/research の Codex セッションが hook エラー後に進行せず、通常の worker 編集フローを完遂できなかった。
+残リスク: `meetingStatusAriaLabel` は既存の状態粒度をそのまま使うため、VoiceOver で状態変化が頻繁に読まれる可能性がある。実機確認後に読み上げ粒度の調整が必要になる可能性がある。
+次アクション: staged path と staged diff を明示確認し、問題がなければ `fix(a11y): 録音状態statusを読み上げ対象に戻す` でコミットする。
+---
+
 [mj-main / Loop 282 / 2026-05-07 15:36 JST]
 役割: メインエージェント
 作業範囲: Loop 282 の候補調査、worker 起動、差分レビュー、主担当検証、コミット準備

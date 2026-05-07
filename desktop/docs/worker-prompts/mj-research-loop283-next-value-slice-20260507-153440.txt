@@ -1,0 +1,36 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+Loop 283 で実装可能な小さな改善候補を調査してください。
+
+優先観点:
+- クラッシュ修正
+- 会議検知の網羅性と信頼性
+- マイク音声とデスクトップ音声の別トラック取得
+- リアルタイム文字起こしの状態同期
+- 文字起こし開始準備の透明性
+- 録音状態の透明性、UX、アクセシビリティ
+
+直近では各種 Tauri event payload の不正理由表示を追加済みです:
+- `transcription-error`
+- `transcription-result`
+- `live-caption-status`
+- `meeting-app-detected`
+- `audio-level`
+- `audio-drop-count`
+- `model-download-progress`
+- `model-download-error`
+
+特に、録音状態 strip のアクセシビリティ、Whisper モデル準備中の状態同期、または文字起こし/録音開始に関する UI state と backend event のズレを確認してください。
+
+候補は2つ以上挙げてください。各候補について、ユーザー価値、非目標、権限・課金・プライバシー制約、影響範囲、推奨検証コマンド、残リスクを明記してください。
+1ループでレビュー・検証・コミットできる最小スライスにしてください。
+推測は推測と明示してください。編集・コミットは禁止です。

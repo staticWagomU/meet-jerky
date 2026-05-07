@@ -1,0 +1,40 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/routes/TranscriptView.tsx` には `meeting-status-strip meeting-popover-status-strip` の status region があります。
+- この要素は `role="status"` / `aria-live="polite"` / `aria-atomic="true"` と `aria-label={meetingStatusAriaLabel}` を持っていますが、同時に `hidden` が付いています。
+- HTML の `hidden` は通常アクセシビリティツリーからも除外されるため、録音・文字起こし・音声ソース・AI送信状態の透明性を支援技術へ伝える目的と矛盾する可能性が高いです。
+- `src/App.css` には既存の `.sr-only` クラスがあります。
+
+目的:
+- 表示 UI は増やさず、既存の録音状態 live region を screen-reader 向けに有効化する。
+- 会議本文、音声内容、payload 生値、認証情報、保存先パスなどの機微情報は追加表示しない。
+
+担当範囲:
+- `src/routes/TranscriptView.tsx`
+- 必要な場合のみ `src/App.css`
+- `AGENT_LOG.md`
+
+実装指示:
+- `meeting-status-strip meeting-popover-status-strip` の `hidden` を外し、既存 `.sr-only` を使うなど、視覚表示を増やさずアクセシビリティツリーに残る実装にしてください。
+- 既存の `role="status"`、`aria-busy`、`aria-live="polite"`、`aria-atomic="true"`、`aria-label={meetingStatusAriaLabel}`、`title={meetingStatusAriaLabel}`、内部の status pill 文言は維持してください。
+- 録音/文字起こし/音声取得/AI送信/モデル状態/バックエンド event のロジックは変更しないでください。
+- 見た目の大改造、ポップオーバー構造変更、CSS 追加の大幅変更、依存関係追加は禁止です。
+- VoiceOver 実機確認は実行しなくてよいです。未実機確認として AGENT_LOG に残してください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md docs/worker-prompts/mj-worker-loop283-status-strip-a11y-20260507-153440.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
