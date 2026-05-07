@@ -26,6 +26,7 @@ import {
 } from "../utils/liveCaptionTrackHelpers";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
 import {
+  getTranscriptionErrorPayloadIssue,
   isTranscriptErrorSegment,
   isTranscriptSegmentPayload,
   isTranscriptionErrorPayload,
@@ -156,7 +157,10 @@ export function LiveCaptionWindow() {
         }
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
-          setListenerError("ライブ字幕の文字起こしエラー通知の形式が不正です。");
+          const issue = getTranscriptionErrorPayloadIssue(payload);
+          setListenerError(
+            `ライブ字幕の文字起こしエラー通知の形式が不正です。（理由: ${issue}）`,
+          );
           return;
         }
         setListenerError(null);

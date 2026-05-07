@@ -77,3 +77,20 @@ export function isTranscriptionErrorPayload(
     (candidate.source === undefined || isTranscriptAudioSource(candidate.source))
   );
 }
+
+export function getTranscriptionErrorPayloadIssue(value: unknown): string {
+  if (!value || typeof value !== "object") {
+    return "payload がオブジェクトではありません";
+  }
+  const candidate = value as Partial<TranscriptionErrorPayload>;
+  if (!isSafeTrimmedString(candidate.error, 4000)) {
+    return "error が空、長すぎる、または制御文字を含みます";
+  }
+  if (
+    candidate.source !== undefined &&
+    !isTranscriptAudioSource(candidate.source)
+  ) {
+    return "source が不明です";
+  }
+  return "形式が不正です";
+}

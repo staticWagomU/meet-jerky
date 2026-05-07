@@ -1,0 +1,46 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `isTranscriptionErrorPayload` は `src/utils/transcriptSegment.ts` で `transcription-error` payload を型ガードしています。
+- 不正 payload の場合、`TranscriptView` / `TranscriptDisplay` / `LiveCaptionWindow` は現在「形式が不正です」とだけ表示します。
+- payload 生値や `error` 本文を不正時の診断に出すと、機微情報や音声由来テキストが混ざるリスクがあります。
+
+目的:
+- 型ガードの reject 条件を変えずに、不正 payload の安全な診断理由だけを UI 表示へ追加する。
+- payload 生値、`error` 本文、未知の文字列値は表示しない。
+
+担当範囲:
+- `src/utils/transcriptSegment.ts`
+- `src/routes/TranscriptView.tsx`
+- `src/components/TranscriptDisplay.tsx`
+- `src/components/LiveCaptionWindow.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src/utils/transcriptSegment.ts` に `getTranscriptionErrorPayloadIssue(value: unknown): string` のような helper を追加してください。
+- helper は既存の `isTranscriptionErrorPayload` と同じ validation 契約に沿って、以下のような安全な理由だけを返してください。
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `error` が安全な文字列ではない: `error が空、長すぎる、または制御文字を含みます`
+  - `source` が許可されていない: `source が不明です`
+  - その他: `形式が不正です`
+- 既存の `isTranscriptionErrorPayload` の挙動は変えないでください。必要なら helper から同じ private utility を再利用してください。
+- `TranscriptView` / `TranscriptDisplay` / `LiveCaptionWindow` の不正 payload branch で、既存文の後ろに `（理由: ...）` を付けて表示してください。
+- payload 生値、`candidate.error` の中身、未知 `source` の値は表示しないでください。
+- Rust、Tauri command、正常 payload 表示、`transcription-error` event 名、CSS、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/transcriptSegment.ts src/routes/TranscriptView.tsx src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop276-transcription-error-diagnostics-20260507-130858.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

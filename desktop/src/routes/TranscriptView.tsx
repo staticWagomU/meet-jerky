@@ -91,7 +91,10 @@ import {
   OTHER_TRACK_DEVICE_LABEL,
   SELF_TRACK_DEVICE_LABEL,
 } from "../utils/audioTrackLabels";
-import { isTranscriptionErrorPayload } from "../utils/transcriptSegment";
+import {
+  getTranscriptionErrorPayloadIssue,
+  isTranscriptionErrorPayload,
+} from "../utils/transcriptSegment";
 import { TRANSCRIPTION_ERROR_EVENT } from "../utils/transcriptionEvents";
 import {
   MACOS_ACCESSIBILITY_PRIVACY_URL,
@@ -294,8 +297,9 @@ export function TranscriptView() {
         setHasTranscriptionErrorStopped(true);
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
+          const issue = getTranscriptionErrorPayloadIssue(payload);
           setMeetingError(
-            "文字起こしは停止しましたが、エラー通知の形式が不正です。",
+            `文字起こしは停止しましたが、エラー通知の形式が不正です。（理由: ${issue}）`,
           );
           return;
         }
