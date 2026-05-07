@@ -59,7 +59,11 @@ pub(crate) fn is_webex_wbxmjs_meeting_url(host: &str, path: &str) -> bool {
 }
 
 pub(crate) fn is_webappng_path(path: &str) -> bool {
-    let path = path.strip_suffix('/').unwrap_or(path);
+    let path = if path.ends_with("//") {
+        path
+    } else {
+        path.strip_suffix('/').unwrap_or(path)
+    };
     let Some(rest) = path.strip_prefix("/webappng/sites/") else {
         return false;
     };
@@ -75,7 +79,7 @@ pub(crate) fn is_webappng_path(path: &str) -> bool {
     let Some((action, token)) = after_meeting.split_once('/') else {
         return false;
     };
-    action == "info" && !token.is_empty()
+    action == "info" && has_single_non_empty_segment(token)
 }
 
 pub(crate) fn is_webex_webappng_meeting_url(host: &str, path: &str) -> bool {

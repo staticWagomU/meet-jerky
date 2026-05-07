@@ -2336,6 +2336,28 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_returns_none_for_webappng_with_extra_token_segment() {
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc/extra"
+            ),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url(
+                "https://webex.com/webappng/sites/webex/meeting/info/m123abc/extra"
+            ),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url(
+                "https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc//"
+            ),
+            None
+        );
+    }
+
+    #[test]
     fn classify_meeting_url_returns_none_for_webappng_without_token() {
         assert_eq!(
             classify_meeting_url("https://acme.webex.com/webappng/sites/acme/meeting/info"),

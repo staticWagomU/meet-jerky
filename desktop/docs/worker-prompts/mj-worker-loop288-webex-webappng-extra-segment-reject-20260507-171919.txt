@@ -1,0 +1,44 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- meet-jerky は会議 URL の自動検知信頼性を重視している。
+- Webex webappng URL は `/webappng/sites/<site>/meeting/info/<token>` と末尾 slash を会議 URL として扱っている。
+- 現在の `is_webappng_path` は `meeting/info/<token>` の token 部分を `split_once('/')` の残り文字列として扱うため、推測上 `/webappng/sites/<site>/meeting/info/<token>/extra` のような余分な path segment も token として受け入れる可能性がある。
+- Personal Room と j.php には余分な path segment を reject する契約テストがあるため、webappng も誤検知防止の境界を明示してください。
+
+目的:
+- Webex webappng info URL で token 後に余分な path segment がある場合は会議 URL として検知しない契約を固定する。
+- 既存の正例 `/webappng/sites/<site>/meeting/info/<token>` と末尾 slash 正例は維持する。
+
+担当範囲:
+- `src-tauri/src/app_detection_webex.rs`
+- `src-tauri/src/app_detection.rs`
+- `AGENT_LOG.md`
+
+実装指示:
+- `classify_meeting_url` 経由の Rust test を追加し、少なくとも以下を `None` として固定してください。
+  - `https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc/extra`
+  - `https://webex.com/webappng/sites/webex/meeting/info/m123abc/extra`
+  - `https://acme.webex.com/webappng/sites/acme/meeting/info/m123abc//`
+- `is_webappng_path` のみを最小修正し、token が単一の non-empty segment であることを既存 helper `has_single_non_empty_segment` で判定してください。
+- `is_webex_host`、Personal Room、j.php、wbxmjs、Zoom、Teams、GoToMeeting、Whereby、window title fallback、通知、UI、依存関係は変更しないでください。
+- 末尾 slash だけの既存正例は維持してください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib webappng`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_webex.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop288-webex-webappng-extra-segment-reject-20260507-171919.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
