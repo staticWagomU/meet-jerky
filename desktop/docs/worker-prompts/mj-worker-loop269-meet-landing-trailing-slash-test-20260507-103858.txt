@@ -1,0 +1,34 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+Loop 267 で追加した Google Meet `/landing/<code>` 検知について、既存実装が `/landing/<code>/` の末尾 slash も accept する契約を純粋関数テストで明確化してください。会議検知の信頼性と将来改修時の回帰防止が目的です。
+
+実装条件:
+- `classify_meeting_url_returns_service_and_host_only` に `https://meet.google.com/landing/abc-defg-hij/` の positive test を1件追加してください。
+- 既存の `/landing/`、`/landing/not-a-code`、`/landing/abc-defg-hij/extra` negative は維持してください。
+- 実装コード (`src-tauri/src/app_detection_google_meet.rs`) は変更しないでください。今回は契約をテストで固定するだけです。
+- Zoom / Teams / Webex / GoTo / window title fallback / UI / CSS / TypeScript / 依存関係は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop269-meet-landing-trailing-slash-test-20260507-103858.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、ユーザー価値、非目標、未実機確認範囲、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
