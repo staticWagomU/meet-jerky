@@ -1,0 +1,31 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+Loop 279 で実装可能な小さな改善候補を調査してください。
+
+優先観点:
+- クラッシュ修正
+- 会議検知の網羅性と信頼性
+- マイク音声とデスクトップ音声の別トラック取得
+- リアルタイム文字起こしの状態同期
+- 録音状態の透明性、UX、アクセシビリティ
+- 履歴・検索・AI議事録に進む前の安全な小改善
+
+直近では以下を改善済みです:
+- `transcription-error` 不正 payload の安全な理由表示
+- `transcription-result` 不正 payload の安全な理由表示
+- `live-caption-status` 不正 payload の安全な理由表示
+- Teams URL 判定の module-local contract test
+- 履歴一覧・検索の小さな信頼性/透明性改善
+
+候補は2つ以上挙げてください。各候補について、ユーザー価値、非目標、権限・課金・プライバシー制約、影響範囲、推奨検証コマンド、残リスクを明記してください。
+1ループでレビュー・検証・コミットできる最小スライスにしてください。
+推測は推測と明示してください。編集・コミットは禁止です。

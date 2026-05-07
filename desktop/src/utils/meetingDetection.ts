@@ -120,3 +120,62 @@ export function isMeetingAppDetectedPayload(
   }
   return isMeetingAppDetectedBrowserPayload(candidate);
 }
+
+export function getMeetingAppDetectedPayloadIssue(value: unknown): string {
+  if (!value || typeof value !== "object") {
+    return "payload がオブジェクトではありません";
+  }
+  const candidate = value as Record<string, unknown>;
+  if (!isMeetingDetectionSource(candidate.source)) {
+    return "source が app/browser ではありません";
+  }
+  if (hasDisallowedPrivacyField(candidate)) {
+    return "会議URLまたはウィンドウタイトルを含むため拒否しました";
+  }
+  if (
+    !isBoundedDisplayString(
+      candidate.bundleId,
+      MAX_MEETING_DETECTION_BUNDLE_ID_LENGTH,
+    )
+  ) {
+    return "bundleId が空、長すぎる、または制御文字を含みます";
+  }
+  if (
+    !isBoundedDisplayString(
+      candidate.appName,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    )
+  ) {
+    return "appName が空、長すぎる、または制御文字を含みます";
+  }
+  if (candidate.source === "app") {
+    if (
+      hasProperty(candidate, "service") ||
+      hasProperty(candidate, "urlHost") ||
+      hasProperty(candidate, "browserName")
+    ) {
+      return "app payload に browser 専用フィールドが含まれます";
+    }
+    return "形式が不正です";
+  }
+  if (
+    !isBoundedDisplayString(
+      candidate.service,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    )
+  ) {
+    return "service が空、長すぎる、または制御文字を含みます";
+  }
+  if (!isHostOnlyStringOrEmpty(candidate.urlHost)) {
+    return "urlHost が host だけの文字列ではありません";
+  }
+  if (
+    !isBoundedDisplayString(
+      candidate.browserName,
+      MAX_MEETING_DETECTION_DISPLAY_STRING_LENGTH,
+    )
+  ) {
+    return "browserName が空、長すぎる、または制御文字を含みます";
+  }
+  return "形式が不正です";
+}

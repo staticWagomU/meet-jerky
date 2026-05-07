@@ -1,0 +1,53 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/utils/meetingDetection.ts` の `isMeetingAppDetectedPayload` は `meeting-app-detected` payload を型ガードしています。
+- `src/components/MeetingDetectedBanner.tsx` は不正 payload のとき「会議検知通知の形式が不正です。」だけを表示します。
+- meeting detection payload では `url` / `fullUrl` / `windowTitle` を拒否しており、これは会議 URL や会議名の露出を避ける重要な契約です。
+
+目的:
+- `isMeetingAppDetectedPayload` の reject 条件を変えずに、不正な `meeting-app-detected` payload の安全な診断理由だけを MeetingDetectedBanner の UI 表示へ追加する。
+- payload 生値、URL、full URL、window title、未知の文字列値は表示しない。
+
+担当範囲:
+- `src/utils/meetingDetection.ts`
+- `src/components/MeetingDetectedBanner.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src/utils/meetingDetection.ts` に `getMeetingAppDetectedPayloadIssue(value: unknown): string` のような helper を追加してください。
+- helper は既存の `isMeetingAppDetectedPayload` と同じ validation 契約に沿って、安全な固定理由だけを返してください。例:
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `source` が `"app"` / `"browser"` ではない: `source が app/browser ではありません`
+  - `url` / `fullUrl` / `windowTitle` を含む: `会議URLまたはウィンドウタイトルを含むため拒否しました`
+  - `bundleId` が安全な文字列ではない: `bundleId が空、長すぎる、または制御文字を含みます`
+  - `appName` が安全な文字列ではない: `appName が空、長すぎる、または制御文字を含みます`
+  - app payload が browser 専用 field を含む: `app payload に browser 専用フィールドが含まれます`
+  - browser payload の `service` / `browserName` が安全な文字列ではない: 固定文言
+  - browser payload の `urlHost` が host だけの文字列または空文字列ではない: `urlHost が host だけの文字列ではありません`
+  - その他: `形式が不正です`
+- 既存の private helper (`isBoundedDisplayString` / `isHostOnlyStringOrEmpty` / `hasDisallowedPrivacyField` など) を再利用して、guard との判定ずれを増やさないでください。
+- `MeetingDetectedBanner.tsx` の不正 meeting detection payload branch 3箇所に、既存文の後ろへ `（理由: ...）` を付けてください。
+  - `recoverLatestMeetingDetection`
+  - `consumeLatestMeetingDetection`
+  - `MEETING_APP_DETECTED_EVENT` listener
+- `INVALID_MEETING_DETECTION_PAYLOAD_ERROR` 定数自体を変更しても構いませんが、既存の `startsWith(INVALID_MEETING_DETECTION_PAYLOAD_ERROR)` による error clear が壊れない形にしてください。
+- payload 生値、URL、full URL、window title、未知文字列値は表示しないでください。
+- `live-caption-status` / `transcription-result` / `transcription-error` の挙動、Rust、Tauri command、正常 payload 表示、event 名、CSS、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/meetingDetection.ts src/components/MeetingDetectedBanner.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop279-meeting-detection-diagnostics-20260507-141842.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

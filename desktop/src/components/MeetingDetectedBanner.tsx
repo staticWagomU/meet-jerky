@@ -14,6 +14,7 @@ import {
   getMeetingDetectedSourceLabel,
 } from "../utils/meetingDetectedBannerHelpers";
 import {
+  getMeetingAppDetectedPayloadIssue,
   isMeetingAppDetectedPayload,
   MEETING_APP_DETECTED_EVENT,
 } from "../utils/meetingDetection";
@@ -39,6 +40,11 @@ const INVALID_STATUS_PAYLOAD_ERROR =
 const PROMPT_OPERATION_LABEL =
   "「記録を開始」を選ぶまで録音は開始しません。バナーはドラッグで移動でき、Escape キーで閉じられます";
 type PendingPromptAction = "start" | null;
+
+function getInvalidMeetingDetectionPayloadError(payload: unknown): string {
+  const issue = getMeetingAppDetectedPayloadIssue(payload);
+  return `${INVALID_MEETING_DETECTION_PAYLOAD_ERROR}（理由: ${issue}）`;
+}
 
 async function hideMeetingPromptWindow(): Promise<void> {
   await invoke("set_meeting_prompt_window_visible", { visible: false });
@@ -97,7 +103,7 @@ export function MeetingDetectedBanner() {
         hasReceivedPromptContentRef.current = true;
         setDetected(null);
         setPendingAction(null);
-        setListenerError(INVALID_MEETING_DETECTION_PAYLOAD_ERROR);
+        setListenerError(getInvalidMeetingDetectionPayloadError(payload));
         return;
       }
       applyMeetingDetectionPayload(payload);
@@ -121,7 +127,7 @@ export function MeetingDetectedBanner() {
       }
       if (!isMeetingAppDetectedPayload(payload)) {
         setPendingAction(null);
-        setListenerError(INVALID_MEETING_DETECTION_PAYLOAD_ERROR);
+        setListenerError(getInvalidMeetingDetectionPayloadError(payload));
         return;
       }
       if (isSameMeetingDetectionPayload(payload, deliveredPayload)) {
@@ -139,7 +145,9 @@ export function MeetingDetectedBanner() {
           hasReceivedPromptContentRef.current = true;
           setDetected(null);
           setPendingAction(null);
-          setListenerError(INVALID_MEETING_DETECTION_PAYLOAD_ERROR);
+          setListenerError(
+            getInvalidMeetingDetectionPayloadError(e.payload),
+          );
           return;
         }
         applyMeetingDetectionPayload(e.payload);
