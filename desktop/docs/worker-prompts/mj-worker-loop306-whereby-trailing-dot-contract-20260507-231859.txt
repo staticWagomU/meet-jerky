@@ -1,0 +1,36 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+Whereby の apex room と subdomain room について、trailing dot 付き host (`whereby.com.` / `mycompany.whereby.com.`) が `classify_meeting_url` 経由で Whereby として検知され、返却 host が trailing dot なしに正規化される contract を純粋関数テストで固定してください。
+
+実装条件:
+- production code は変更しないでください。必要な変更は Rust test 追加だけです。
+- 既存の Whereby positive/negative contract を壊さないでください。
+- 新しい URL 形式を勝手に追加しないでください。
+- 課金、認証変更、外部通信、破壊的操作は禁止です。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+推奨テスト名:
+- `classify_meeting_url_whereby_accepts_trailing_dot_hosts`
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib whereby_accepts_trailing_dot_hosts`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop306-whereby-trailing-dot-contract-20260507-231859.txt`
+
+AGENT_LOG.md には Loop 306 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を簡潔に追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

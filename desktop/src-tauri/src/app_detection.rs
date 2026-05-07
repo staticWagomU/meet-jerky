@@ -2498,6 +2498,26 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_whereby_accepts_trailing_dot_hosts() {
+        for (url, expected_host) in [
+            ("https://whereby.com./team-meeting", "whereby.com"),
+            (
+                "https://mycompany.whereby.com./quick-call",
+                "mycompany.whereby.com",
+            ),
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "Whereby".to_string(),
+                    host: expected_host.to_string(),
+                }),
+                "{url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_whereby_rejects_blacklist_about() {
         assert_eq!(classify_meeting_url("https://whereby.com/about"), None);
     }
