@@ -45,7 +45,10 @@ import {
   getRecentSessionMeta,
   formatElapsedTime,
 } from "../utils/transcriptViewFormatters";
-import { isAudioLevelPayload } from "../utils/audioLevelPayload";
+import {
+  getAudioLevelPayloadIssue,
+  isAudioLevelPayload,
+} from "../utils/audioLevelPayload";
 import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
 import {
   AUDIO_DROP_COUNT_EVENT,
@@ -393,7 +396,9 @@ export function TranscriptView() {
           );
           return;
         }
-        setAudioLevelListenerError("音声レベル通知の形式が不正です。");
+        setAudioLevelListenerError(
+          `音声レベル通知の形式が不正です。（理由: ${getAudioLevelPayloadIssue(payload)}）`,
+        );
         return;
       }
       setAudioLevelListenerError(null);
