@@ -94,8 +94,8 @@ export function SystemAudioSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`システム音声: ${systemAudioDropCountTotal} サンプル破棄`}
-            title={`システム音声: ${systemAudioDropCountTotal} サンプル破棄`}
+            aria-label={`${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioDropCountTotal} サンプル破棄`}
+            title={`${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioDropCountTotal} サンプル破棄`}
           >
             破棄 {systemAudioDropCountTotal}
           </span>

@@ -1,0 +1,41 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- meet-jerky はマイク音声を「自分トラック」、デスクトップ/アプリ音声を「相手側トラック」として別トラック取得することを重視している。
+- `MicrophoneSection` と `SystemAudioSection` の drop badge は表示本文を `破棄 N` に留めているが、aria-label / title は現在 `マイク: ...` と `システム音声: ...` で、既存の `SELF_TRACK_DEVICE_LABEL` / `OTHER_TRACK_DEVICE_LABEL` より別トラック文脈が弱い。
+- 両 component は既に該当 track label 定数を import 済みです。
+
+目的:
+- 音声 drop badge の aria-label / title に既存 track label を使い、どちらのトラックで sample drop が起きたかを支援技術・tooltip 上で明確にする。
+- 表示本文 `破棄 N` は変更しない。
+
+担当範囲:
+- `src/components/MicrophoneSection.tsx`
+- `src/components/SystemAudioSection.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `MicrophoneSection` の drop badge `aria-label` / `title` を `SELF_TRACK_DEVICE_LABEL` ベースにしてください。
+  - 例: `${SELF_TRACK_DEVICE_LABEL}: ${micDropCountTotal} サンプル破棄`
+- `SystemAudioSection` の drop badge `aria-label` / `title` を `OTHER_TRACK_DEVICE_LABEL` ベースにしてください。
+  - 例: `${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioDropCountTotal} サンプル破棄`
+- visible text `破棄 {count}` は変更しないでください。
+- drop count 集計、audio event listener、payload guard、録音/取得ボタン、レベル表示、CSS、依存関係は変更しないでください。
+- device name、音声内容、payload 生値、会議本文は追加表示しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop287-audio-drop-badge-track-labels-20260507-165916.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

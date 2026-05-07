@@ -120,8 +120,8 @@ export function MicrophoneSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`マイク: ${micDropCountTotal} サンプル破棄`}
-            title={`マイク: ${micDropCountTotal} サンプル破棄`}
+            aria-label={`${SELF_TRACK_DEVICE_LABEL}: ${micDropCountTotal} サンプル破棄`}
+            title={`${SELF_TRACK_DEVICE_LABEL}: ${micDropCountTotal} サンプル破棄`}
           >
             破棄 {micDropCountTotal}
           </span>
