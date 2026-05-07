@@ -743,6 +743,23 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_accepts_google_meet_alternate_paths_with_trailing_dot_host() {
+        for url in [
+            "https://meet.google.com./landing/abc-defg-hij",
+            "https://meet.google.com./lookup/abcdefg",
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "Google Meet".to_string(),
+                    host: "meet.google.com".to_string(),
+                }),
+                "{url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_rejects_non_meeting_or_non_join_urls() {
         assert_eq!(classify_meeting_url("https://zoom.us/profile"), None);
         assert_eq!(classify_meeting_url("https://zoom.us/j/"), None);
