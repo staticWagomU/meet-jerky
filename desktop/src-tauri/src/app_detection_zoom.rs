@@ -40,5 +40,5 @@ fn is_zoom_web_client_meeting_url(path: &str) -> bool {
     let Some((meeting_id, action)) = value.split_once('/') else {
         return false;
     };
-    action == "join" && is_zoom_meeting_id(meeting_id)
+    matches!(action, "join" | "start") && is_zoom_meeting_id(meeting_id)
 }

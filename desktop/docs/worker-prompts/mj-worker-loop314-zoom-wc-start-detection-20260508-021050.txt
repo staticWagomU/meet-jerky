@@ -1,0 +1,45 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+基本方針:
+- 鵜呑みにせず、批判的・中立的に判断してください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+担当範囲:
+- src-tauri/src/app_detection_zoom.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+Zoom Web Client の `/wc/<meeting_id>/start` URL を Zoom 会議 URL として検知対象に追加してください。既存では `/wc/<meeting_id>/join` は受理されますが、`/wc/<meeting_id>/start` は reject test に入っています。Zoom 公式ヘルプでは Zoom Web App からミーティングを start/join できる導線が説明されており、ホスト側の開始ページも会議文脈として検知する価値があります。ただし URL 形そのものは外部確認ではなく既存 `/wc/<id>/join` 実装との対称性に基づくため、範囲は `/wc/<meeting_id>/start` だけに限定してください。
+
+実装条件:
+- `is_zoom_web_client_meeting_url` で `join` に加えて `start` を許可する。
+- `/wc/join/<meeting_id>` 形式、`/j/<meeting_id>`、`/my/<room>`、ZoomGov、host validation、meeting id 桁数 9..=11 は変更しない。
+- `/wc/<meeting_id>/start/extra`、短すぎる/長すぎる/非数字 meeting id、未知 action は reject のままにする。
+- Zoom 以外の会議サービス、window title fallback、UI、通知、録音開始処理、音声取得、文字起こし、依存関係は変更しない。
+- production code の変更は必要最小限にする。
+
+テスト要件:
+- `src-tauri/src/app_detection.rs` の既存 positive/reject contract を更新し、`https://zoom.us/wc/123456789/start` と trailing slash 付きが `Zoom` / `zoom.us` として検知されることを固定する。
+- `https://company.zoom.us/wc/12345678901/start` など subdomain でも検知されることを既存 pattern と整合する形で固定する。
+- reject 側には `/wc/123456789/start/extra` と `/wc/12345678/start` または `/wc/123456789012/start` を残してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib zoom`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_zoom.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop314-next-value-slice-20260508-020600.txt docs/worker-prompts/mj-worker-loop314-zoom-wc-start-detection-20260508-021050.txt`
+
+AGENT_LOG.md には Loop 314 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を追記してください。変更ファイルには research prompt と worker prompt も含めてください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

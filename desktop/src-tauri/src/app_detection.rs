@@ -599,6 +599,27 @@ mod tests {
             })
         );
         assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789/start"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789/start/"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
+            classify_meeting_url("https://company.zoom.us/wc/12345678901/start"),
+            Some(MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "company.zoom.us".to_string(),
+            })
+        );
+        assert_eq!(
             classify_meeting_url("https://us02web.zoom.us/j/12345678901#success"),
             Some(MeetingUrlClassification {
                 service: "Zoom".to_string(),
@@ -777,7 +798,7 @@ mod tests {
         );
         assert_eq!(classify_meeting_url("https://zoom.us/wc/123456789"), None);
         assert_eq!(
-            classify_meeting_url("https://zoom.us/wc/123456789/start"),
+            classify_meeting_url("https://zoom.us/wc/123456789/start/extra"),
             None
         );
         assert_eq!(
@@ -790,6 +811,22 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://zoom.us/wc/123456789012/join"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/12345678/start"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789012/start"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789abc/start"),
+            None
+        );
+        assert_eq!(
+            classify_meeting_url("https://zoom.us/wc/123456789/launch"),
             None
         );
         assert_eq!(classify_meeting_url("https://zoom.us/my/"), None);
