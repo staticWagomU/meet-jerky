@@ -1,0 +1,43 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- 履歴一覧は `src-tauri/src/session_commands_list.rs` の `list_session_summaries_inner` 経由で保存済み `.md` を列挙する。
+- 現在は `output_dir.exists()` が false の場合は空配列を返すため、初回起動などで履歴ディレクトリが未作成でも UI エラーにならない。
+- ただし `exists()` の直後に外部削除や同期フォルダの一時消失でディレクトリが消えた場合、`session_store::list_session_summaries(output_dir)` の `read_dir` 由来 `NotFound` がエラー文字列になり、履歴画面に不要なエラーが出る可能性がある。
+
+目的:
+- `list_session_summaries_inner` で `session_store::list_session_summaries(output_dir)` が `std::io::ErrorKind::NotFound` を返した場合だけ、空配列として扱う。
+- `PermissionDenied`、path がファイル、その他 I/O error は従来どおり日本語エラーとして返す。
+
+担当範囲:
+- `src-tauri/src/session_commands_list.rs`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src-tauri/src/session_store_list.rs` の契約は変更しないでください。store 層は存在しない dir を `NotFound` のまま返す既存 test を維持します。
+- `list_session_summaries_inner` に `NotFound` だけ空配列へ変換する処理を追加してください。
+- `list_session_summaries_inner_returns_empty_when_dir_disappears_between_exists_and_read_dir` のようなテストを追加してください。
+  - `tempdir` 内に一度ディレクトリを作成して `exists()` が true になり得る path を作る。
+  - そのディレクトリを削除してから `list_session_summaries_inner(&path)` を呼び、空配列になることを確認する。
+  - このテストは完全な TOCTOU 再現ではなく、`NotFound` fallback の契約固定で十分です。
+- 既存の `list_session_summaries_inner_returns_error_when_path_is_a_file` は引き続きエラーであることを維持してください。
+- UI、TypeScript、Tauri command signature、settings、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib list_session_summaries_inner`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/session_commands_list.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop291-session-list-notfound-race-20260507-181902.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中ではなく、現在のログ末尾に追記してください。

@@ -4,6 +4,7 @@
 //! 機能境界が独立しているため別 module に分離。`resolve_output_directory` のみ
 //! `session_commands` から `pub(crate)` で借用する。
 
+use std::io::ErrorKind;
 use std::path::Path;
 
 use crate::session_commands_helpers::resolve_output_directory;
@@ -18,8 +19,17 @@ pub fn list_session_summaries_inner(output_dir: &Path) -> Result<Vec<SessionSumm
     if !output_dir.exists() {
         return Ok(Vec::new());
     }
-    session_store::list_session_summaries(output_dir)
-        .map_err(|e| format!("セッション一覧の取得に失敗しました: {e}"))
+    map_list_session_summaries_result(session_store::list_session_summaries(output_dir))
+}
+
+fn map_list_session_summaries_result(
+    result: std::io::Result<Vec<SessionSummary>>,
+) -> Result<Vec<SessionSummary>, String> {
+    match result {
+        Ok(summaries) => Ok(summaries),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(Vec::new()),
+        Err(err) => Err(format!("セッション一覧の取得に失敗しました: {err}")),
+    }
 }
 
 #[tauri::command]
@@ -75,6 +85,28 @@ mod tests {
 
         let err = list_session_summaries_inner(&blocking_file)
             .expect_err("should error when path is a file not a directory");
+
+        assert!(
+            err.starts_with("セッション一覧の取得に失敗しました"),
+            "unexpected error message: {err}"
+        );
+    }
+
+    #[test]
+    fn map_list_session_summaries_result_returns_empty_for_not_found() {
+        let summaries =
+            map_list_session_summaries_result(Err(std::io::Error::from(ErrorKind::NotFound)))
+                .expect("not found should not error");
+
+        assert!(summaries.is_empty());
+    }
+
+    #[test]
+    fn map_list_session_summaries_result_keeps_permission_denied_as_japanese_error() {
+        let err = map_list_session_summaries_result(Err(std::io::Error::from(
+            ErrorKind::PermissionDenied,
+        )))
+        .expect_err("permission denied should remain an error");
 
         assert!(
             err.starts_with("セッション一覧の取得に失敗しました"),

@@ -1,0 +1,21 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+Loop 291 の候補として、履歴一覧で保存先ディレクトリが `exists()` 確認後に消える race を調査してください。
+
+確認したい点:
+- `src-tauri/src/session_commands_list.rs` の `list_session_summaries_inner` が現在、最初から存在しないディレクトリを空配列扱いにしていること。
+- `src-tauri/src/session_store_list.rs` の `list_session_summaries` / `list_session_files` が `read_dir` の `NotFound` をどう扱うか。
+- `NotFound` だけを空配列にし、`PermissionDenied` や path がファイルのケースは従来どおりエラーにする最小スライスが妥当か。
+- 既存テスト名と追加すべきテスト名、推奨検証コマンド。
+
+候補として妥当なら、ユーザー価値、非目標、権限・課金・プライバシー制約、影響範囲、推奨検証コマンド、残リスクを簡潔に報告してください。
+推測は推測と明示してください。編集・コミットは禁止です。

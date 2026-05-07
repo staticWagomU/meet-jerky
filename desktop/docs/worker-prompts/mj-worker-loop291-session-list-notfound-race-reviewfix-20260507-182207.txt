@@ -1,0 +1,37 @@
+あなたは /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop を対象にした修正 worker です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+
+背景:
+- Loop 291 の worker 実装で `src-tauri/src/session_commands_list.rs` は `session_store::list_session_summaries(output_dir)` の `ErrorKind::NotFound` だけを `Ok(Vec::new())` に変換するようになった。
+- ただし追加テスト `list_session_summaries_inner_returns_empty_when_dir_disappears_between_exists_and_read_dir` は、実際には `list_session_summaries_inner` 冒頭の `!output_dir.exists()` 早期 return を通るだけで、新しい store 呼び出し後の `NotFound` 変換分岐を検証できていない。
+
+修正依頼:
+- アプリコード編集は `src-tauri/src/session_commands_list.rs` と `AGENT_LOG.md` のみに限定する。
+- `src-tauri/src/session_store_list.rs`、UI、TypeScript、Tauri command signature、settings、依存関係は変更しない。
+- `list_session_summaries_inner` の挙動は維持する:
+  - 最初から `output_dir` が存在しなければ `Ok(Vec::new())`
+  - store 呼び出し結果が `ErrorKind::NotFound` なら `Ok(Vec::new())`
+  - `PermissionDenied`、path がファイル、その他 I/O error は従来どおり日本語エラー
+- 新しい `NotFound` 変換分岐を単体テストで直接固定できるよう、同一 module 内に小さな private helper を切ってよい。
+  - 例: `fn map_list_session_summaries_result(result: std::io::Result<Vec<SessionSummary>>) -> Result<Vec<SessionSummary>, String>`
+  - `list_session_summaries_inner` は `map_list_session_summaries_result(session_store::list_session_summaries(output_dir))` を使う。
+  - test は `std::io::Error::from(ErrorKind::NotFound)` が空配列になることを直接確認する。
+  - 可能なら `PermissionDenied` が日本語エラーのまま残ることも helper test で確認する。
+- 早期 return しか検証しない既存追加テストは、削除するか意味が通る名前・位置に調整する。重複して価値の低いテストは残さない。
+- `AGENT_LOG.md` に修正 worker の記録を追記する。
+
+検証:
+```sh
+PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib list_session_summaries_inner
+PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib map_list_session_summaries_result
+PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings
+git diff --check -- src-tauri/src/session_commands_list.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop291-session-list-notfound-race-reviewfix-20260507-182207.txt
+```
+
+コミットは禁止。完了時は変更ファイル、テスト名、検証結果、残リスクを報告してください。
