@@ -2540,6 +2540,22 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_goto_rejects_reserved_paths_with_url_suffixes() {
+        for url in [
+            "https://meet.goto.com/app/",
+            "https://meet.goto.com/status?utm=campaign",
+            "https://meet.goto.com/security#main",
+            "https://team.meet.goto.com/app/",
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                None,
+                "GoToMeeting reserved path must not be classified as a meeting URL: {url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_goto_rejects_extra_segment() {
         assert_eq!(
             classify_meeting_url("https://meet.goto.com/team-room/extra"),

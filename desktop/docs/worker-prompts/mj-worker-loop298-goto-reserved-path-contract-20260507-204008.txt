@@ -1,0 +1,39 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection.rs の GoToMeeting URL classification tests
+- AGENT_LOG.md の Loop 298 記録
+
+目的:
+GoToMeeting の reserved path が trailing slash / query / fragment / subdomain variant 付きでも会議 URL と誤検知されない negative contract を固定してください。
+
+実装方針:
+- production code は原則変更しないでください。既存実装が満たしている契約を Rust の純粋関数テストで固定する作業です。
+- `classify_meeting_url_goto_rejects_blacklist_*` 付近に、`classify_meeting_url_goto_rejects_reserved_paths_with_url_suffixes` のようなテストを追加してください。
+- 例として以下が `None` になることを確認してください:
+  - `https://meet.goto.com/app/`
+  - `https://meet.goto.com/status?utm=campaign`
+  - `https://meet.goto.com/security#main`
+  - `https://team.meet.goto.com/app/`
+- GoTo の meeting room accept、legacy join、app goto meet、他サービス、UI、依存関係は変更しないでください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib goto`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop298-goto-reserved-path-contract-20260507-204008.txt`
+
+AGENT_LOG.md には、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
