@@ -1343,7 +1343,16 @@ export function TranscriptView() {
     void (async () => {
       try {
         if (shouldShowRingLight) {
-          await emit(RING_LIGHT_MODE_EVENT, { mode: "soft" });
+          try {
+            await emit(RING_LIGHT_MODE_EVENT, { mode: "soft" });
+          } catch (modeSyncError) {
+            const msg = toErrorMessage(modeSyncError);
+            const errorMessage = `録音状態リングライトの表示モード同期に失敗しました: ${msg}`;
+            console.error(errorMessage);
+            if (isCurrentRequest()) {
+              setMeetingError(errorMessage);
+            }
+          }
           if (!isCurrentRequest()) {
             return;
           }

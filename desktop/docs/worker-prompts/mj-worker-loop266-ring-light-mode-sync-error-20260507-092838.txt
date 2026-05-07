@@ -1,0 +1,35 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+録音状態リングライトの表示要求では `emit(RING_LIGHT_MODE_EVENT, { mode: "soft" })` と `invoke("set_ring_light_visible", { visible: true })` を順に実行しています。現状は mode event 同期失敗も window 表示失敗も同じ「録音状態リングライトを表示できませんでした」に丸められ、診断粒度が低いです。録音状態の透明性 UI が壊れたとき原因を区別できるよう、mode 同期失敗を明示してください。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` だけをアプリコード変更対象にしてください。
+- リングライト状態連動 `useEffect` の `shouldShowRingLight` が true の分岐だけを狭く変更してください。
+- `emit(RING_LIGHT_MODE_EVENT, { mode: "soft" })` の失敗は `録音状態リングライトの表示モード同期に失敗しました: ${msg}` として `console.error` と `setMeetingError` に出してください。
+- mode 同期に失敗しても、RingLightWindow の初期 mode は soft なので、最新 request であれば window 表示自体は続行してください。
+- mode 同期失敗の `setMeetingError` は、既存 race guard と同じく最新 request の場合だけ実行してください。
+- `set_ring_light_visible(true)` の失敗は既存通り「録音状態リングライトを表示できませんでした: ...」として扱ってください。
+- 非表示分岐、unmount cleanup、rollback、ライブ字幕 window 表示制御、録音/文字起こし開始停止、RingLightWindow.tsx、ringLight.ts、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop266-ring-light-mode-sync-error-20260507-092838.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、ユーザー価値、非目標、未実機確認範囲、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
