@@ -167,6 +167,7 @@ export function LiveCaptionWindow() {
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
           const issue = getTranscriptionErrorPayloadIssue(payload);
+          setStatusPayload(markLiveCaptionStatusOnError);
           setListenerError(
             `ライブ字幕の文字起こしエラー通知の形式が不正です。（理由: ${issue}）`,
           );

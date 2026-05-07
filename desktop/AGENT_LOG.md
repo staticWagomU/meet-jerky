@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 300 / 2026-05-07 21:19 JST]
+役割: メインエージェント
+作業範囲: Loop 300 の候補選定、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、ライブ字幕ウィンドウが不正 payload の `transcription-error` event を受けた場合もローカル文字起こし状態を `エラー停止` へ寄せる。
+採用判断: Loop 299 の隣接リスクとして、`src/routes/TranscriptView.tsx:302-304` は payload validation 前に `setHasTranscriptionErrorStopped(true)` を設定している一方、`src/components/LiveCaptionWindow.tsx:168-173` の invalid error payload branch は listener error 表示だけで status を更新していなかった。event 名自体は `transcription-error` であり、payload の raw 値を信用・表示せず状態だけ安全側へ倒す改善は、リアルタイム文字起こし状態の透明性に直結すると判断した。
+実装経緯: `mj-worker-loop300-live-caption-invalid-error-status-20260507` を起動したが、hook failure が繰り返され、対象ファイルに変更が入らなかったため session を閉じた。変更範囲が `LiveCaptionWindow.tsx` の invalid error payload branch 1 箇所に限定できたため、メイン側で最小実装した。
+結果: invalid `TRANSCRIPTION_ERROR_EVENT` payload branch で、payload の中身を使う前に `getTranscriptionErrorPayloadIssue` の理由表示だけを作り、`setStatusPayload(markLiveCaptionStatusOnError)` でローカル status を `エラー停止` へ寄せるようにした。valid error branch、valid result branch、reset branch、正式な `LIVE_CAPTION_STATUS_EVENT` branch、storage helper、TranscriptView、Rust、CSS、依存関係は変更していない。
+ユーザー価値: 文字起こしエラー通知の payload が壊れていても、ライブ字幕ウィンドウの状態表示が旧状態のまま残りにくくなり、「通知形式が不正」かつ「文字起こしはエラー停止」という状況をより一貫して伝えられる。
+非目標: payload raw 値の表示、エラー segment 生成、自動再開、録音・文字起こし本体の状態変更、Tauri event 契約、storage 書き込み、Rust、CSS、依存関係追加は行わない。
+未実機確認範囲: macOS 実機アプリ上での malformed `transcription-error` event、ライブ字幕ウィンドウ実表示、VoiceOver 読み上げは未確認。
+変更ファイル: src/components/LiveCaptionWindow.tsx / AGENT_LOG.md / docs/worker-prompts/mj-worker-loop300-live-caption-invalid-error-status-20260507-211901.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop300-live-caption-invalid-error-status-20260507-211901.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: build と静的差分確認では、実 Tauri event の順序や malformed payload 受信は再現できない。ローカル表示だけの補正であり、録音・文字起こし本体の状態は変更しない。
+次アクション: 検証後、staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 299 / 2026-05-07 20:58 JST]
 役割: メインエージェント
 作業範囲: Loop 299 の候補調査、research/worker 起動、hook failure 確認、最小実装、差分レビュー、検証

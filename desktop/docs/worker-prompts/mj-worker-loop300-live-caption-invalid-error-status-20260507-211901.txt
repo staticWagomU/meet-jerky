@@ -1,0 +1,37 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/components/LiveCaptionWindow.tsx
+- AGENT_LOG.md の Loop 300 記録
+
+目的:
+ライブ字幕ウィンドウが `transcription-error` event を受けたが payload 形式が不正だった場合も、raw payload を信用せずにローカルの文字起こし状態だけは `エラー停止` へ寄せてください。
+
+根拠:
+- `src/routes/TranscriptView.tsx` は `transcription-error` event 受信直後、payload validation 前に `setHasTranscriptionErrorStopped(true)` を設定しています。
+- `src/components/LiveCaptionWindow.tsx` は invalid error payload branch では listener error を表示するだけで、Loop 299 で追加した `markLiveCaptionStatusOnError` を呼んでいません。
+- event 名自体が文字起こしエラー通知であるため、payload の中身を表示・利用しなくても、状態表示だけ `エラー停止` へ寄せるのは安全側です。
+
+実装方針:
+- `src/components/LiveCaptionWindow.tsx` の invalid `TRANSCRIPTION_ERROR_EVENT` payload branch で、`setListenerError(...)` の前後どちらかに `setStatusPayload(markLiveCaptionStatusOnError)` を追加してください。
+- payload の raw 値、payload.error、payload.source は invalid branch で使わないでください。
+- valid error branch、valid result branch、reset branch、正式な `LIVE_CAPTION_STATUS_EVENT` branch、storage helper、TranscriptView、Rust、CSS、依存関係は変更しないでください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop300-live-caption-invalid-error-status-20260507-211901.txt`
+
+AGENT_LOG.md には、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
