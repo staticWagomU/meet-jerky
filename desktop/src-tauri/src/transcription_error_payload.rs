@@ -1,11 +1,18 @@
 use crate::transcription_types::{TranscriptionErrorPayload, TranscriptionSource};
 
 pub(crate) const ERROR_TRANSCRIPTION_WORKER_ABEND: &str = "文字起こしワーカーが異常終了しました";
+pub(crate) const ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE: &str =
+    "文字起こしエラーが発生しました。詳細は取得できませんでした。";
 
 pub(crate) fn build_transcription_error_payload(
     error: String,
     source: Option<TranscriptionSource>,
 ) -> TranscriptionErrorPayload {
+    let error = if error.trim().is_empty() {
+        ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE.to_string()
+    } else {
+        error
+    };
     TranscriptionErrorPayload { error, source }
 }
 
@@ -108,11 +115,31 @@ mod tests {
     }
 
     #[test]
-    fn build_transcription_error_payload_preserves_empty_error_string() {
+    fn build_transcription_error_payload_uses_fallback_for_empty_error_string() {
         let payload =
             build_transcription_error_payload(String::new(), Some(TranscriptionSource::Microphone));
         let v = transcription_error_payload_to_value(&payload);
-        assert_eq!(v.get("error").and_then(|x| x.as_str()), Some(""));
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some(ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE)
+        );
+    }
+
+    #[test]
+    fn build_transcription_error_payload_uses_fallback_for_whitespace_only_error_string() {
+        let payload = build_transcription_error_payload(
+            " \n\t\r ".to_string(),
+            Some(TranscriptionSource::SystemAudio),
+        );
+        let v = transcription_error_payload_to_value(&payload);
+        assert_eq!(
+            v.get("error").and_then(|x| x.as_str()),
+            Some(ERROR_TRANSCRIPTION_DETAIL_UNAVAILABLE)
+        );
+        assert_eq!(
+            v.get("source").and_then(|value| value.as_str()),
+            Some("system_audio")
+        );
     }
 
     #[test]

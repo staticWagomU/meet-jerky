@@ -1,0 +1,45 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/transcription_error_payload.rs
+- AGENT_LOG.md
+
+背景:
+frontend の `isTranscriptionErrorPayload` は `error.trim()` が空の `transcription-error` payload を不正形式として拒否します。一方 Rust 側 `build_transcription_error_payload` は現在、空文字 error をそのまま payload 化する契約テストを持っています。文字起こし backend が空または空白だけの error を返した場合、UI は本来の文字起こしエラーではなく「payload 形式が不正」と表示する可能性があります。
+
+実装内容:
+- `build_transcription_error_payload(error, source)` で、`error.trim().is_empty()` の場合だけ、ユーザーに出せる汎用エラー文へ置き換えてください。
+- fallback 文は既存の panic 文言 `ERROR_TRANSCRIPTION_WORKER_ABEND` とは別にし、panic details 漏洩防止契約と混同しない名前・文言にしてください。
+- 空白だけの error も同じ fallback にしてください。
+- non-empty error、複数行 error、source serialization、source omitted、worker panic payload の既存契約は維持してください。
+- frontend、event 名、payload field 名、transcription loop、realtime stop error 抑止、依存関係は変更しないでください。
+- 既存の `build_transcription_error_payload_preserves_empty_error_string` は fallback 契約へ更新してください。空白だけ error の test も追加してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib transcription_error_payload`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_error_payload.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop322-next-value-slice-20260508-045358.txt docs/worker-prompts/mj-worker-loop322-transcription-error-empty-fallback-20260508-050038.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
