@@ -38,7 +38,11 @@ pub(crate) fn is_webex_jphp_meeting_url(host: &str, path: &str, query: Option<&s
 }
 
 pub(crate) fn is_wbxmjs_path(path: &str) -> bool {
-    let path = path.strip_suffix('/').unwrap_or(path);
+    let path = if path.ends_with("//") {
+        path
+    } else {
+        path.strip_suffix('/').unwrap_or(path)
+    };
     let Some(rest) = path.strip_prefix("/wbxmjs/joinservice/sites/") else {
         return false;
     };
@@ -48,10 +52,10 @@ pub(crate) fn is_wbxmjs_path(path: &str) -> bool {
     if site.is_empty() {
         return false;
     }
-    let meeting_segment = after_site
-        .split_once('/')
-        .map_or(after_site, |(head, _)| head);
-    meeting_segment == "meeting"
+    let Some(after_meeting) = after_site.strip_prefix("meeting/") else {
+        return false;
+    };
+    !after_meeting.is_empty() && after_meeting.split('/').all(|segment| !segment.is_empty())
 }
 
 pub(crate) fn is_webex_wbxmjs_meeting_url(host: &str, path: &str) -> bool {

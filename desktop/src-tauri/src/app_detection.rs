@@ -2392,6 +2392,18 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_returns_none_for_wbxmjs_without_token_after_meeting() {
+        for url in [
+            "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting",
+            "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting/",
+            "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting//",
+            "https://acme.webex.com/wbxmjs/joinservice/sites/acme/meeting//m123abc",
+        ] {
+            assert_eq!(classify_meeting_url(url), None, "{url}");
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_returns_none_for_wbxmjs_wrong_path_prefix() {
         assert_eq!(
             classify_meeting_url("https://acme.webex.com/wbxmjs/foo/bar"),

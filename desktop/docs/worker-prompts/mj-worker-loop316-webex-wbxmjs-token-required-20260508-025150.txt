@@ -1,0 +1,45 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+基本方針:
+- 鵜呑みにせず、批判的・中立的に判断してください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+担当範囲:
+- src-tauri/src/app_detection_webex.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+Webex wbxmjs Meeting Join Service URL の検知を、コメント通り `/wbxmjs/joinservice/sites/<site>/meeting/...` の実会議らしい形に絞ってください。現状の `is_wbxmjs_path` は `/wbxmjs/joinservice/sites/<site>/meeting` や trailing slash だけでも `meeting_segment == "meeting"` で true になり得るため、`meeting/` の後ろに少なくとも 1 つの非空 segment がある場合だけ Webex 会議 URL として扱うようにします。
+
+実装条件:
+- `is_wbxmjs_path` だけを必要最小限で変更する。
+- `/wbxmjs/joinservice/sites/acme/meeting/m123abc` と `/meeting/download/m123abc` は引き続き accept。
+- 末尾 slash 1 つは既存 positive の通り許容する。
+- `/wbxmjs/joinservice/sites/acme/meeting`、`/meeting/`、`/meeting//`、`/meeting//m123abc` は reject。
+- `j.php`、`webappng`、personal room、Webex host 判定、URL parser、他会議サービス、window title fallback、UI、通知、録音開始処理、音声取得、文字起こし、依存関係は変更しない。
+
+テスト要件:
+- `src-tauri/src/app_detection.rs` の Webex wbxmjs tests に、`meeting` だけ、`meeting/`、`meeting//`、途中空 segment の reject contract を追加する。
+- 既存 positive tests は維持する。
+- 可能なら `src-tauri/src/app_detection_webex.rs` に `is_wbxmjs_path` の小さな module test を追加してもよいが、過度に重複させない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib webex`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_webex.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop316-next-value-slice-20260508-024908.txt docs/worker-prompts/mj-worker-loop316-webex-wbxmjs-token-required-20260508-025150.txt`
+
+AGENT_LOG.md には Loop 316 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を追記してください。変更ファイルには research prompt と worker prompt も含めてください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
