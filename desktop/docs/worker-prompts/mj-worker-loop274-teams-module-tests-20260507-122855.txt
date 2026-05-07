@@ -1,0 +1,44 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src-tauri/src/app_detection_teams.rs` は Microsoft Teams URL 判定を module として分離しています。
+- classifier 経由の Teams URL テストは `src-tauri/src/app_detection.rs` に多数ありますが、`app_detection_teams.rs` module 内で private helper を直接固定するテストがありません。
+- Loop 274 では会議検知の信頼性補強として、実装変更なしの module-local 純粋関数テストだけを追加します。
+
+目的:
+- `is_teams_meeting_url` と private helper の局所契約を `#[cfg(test)]` module で固定する。
+- 実装ロジックは変更しない。
+
+担当範囲:
+- `src-tauri/src/app_detection_teams.rs`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src-tauri/src/app_detection_teams.rs` に `#[cfg(test)] mod tests` を追加してください。
+- 実装関数本体は変更しないでください。
+- テスト観点は以下を最小セットで固定してください。
+  - work/school host (`teams.microsoft.com`, `teams.cloud.microsoft`) の `/l/meetup-join/<segments>` は non-empty segments なら true、空 segment や double slash は false。
+  - work/school host の `/v2` と `/v2/` は `meetingjoin=true` を query に含む場合 true。順序違い・重複 key・ASCII percent-encoded key/value は true。
+  - invalid percent escape、encoded `=` separator、`meetingjoin=false`、key only は false。
+  - work/school host と `teams.live.com` の `/meet/<numeric>` は true、非 numeric・extra segment・empty id は false。
+  - `teams.live.com` は `/l/meetup-join/...` と `/v2?meetingjoin=true` を false にする。
+- 既存 classifier tests、他 service、URL parser、window title fallback、UI、TypeScript、依存関係は変更しない。
+- コミットは禁止。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib app_detection_teams`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_teams.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop274-teams-module-tests-20260507-122855.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

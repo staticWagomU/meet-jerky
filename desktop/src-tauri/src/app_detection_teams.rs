@@ -95,3 +95,127 @@ fn hex_value(byte: u8) -> Option<u8> {
         _ => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn work_or_school_meetup_join_requires_non_empty_segments() {
+        for host in ["teams.microsoft.com", "teams.cloud.microsoft"] {
+            assert!(is_teams_meeting_url(
+                host,
+                "/l/meetup-join/19:meeting_thread/thread.v2/0",
+                None,
+            ));
+            assert!(is_teams_meeting_url(
+                host,
+                "/l/meetup-join/19:meeting_thread/",
+                None,
+            ));
+
+            assert!(!is_teams_meeting_url(host, "/l/meetup-join/", None));
+            assert!(!is_teams_meeting_url(
+                host,
+                "/l/meetup-join/19:meeting_thread//0",
+                None,
+            ));
+        }
+
+        assert!(has_non_empty_path_segments("19:meeting_thread/thread.v2"));
+        assert!(has_non_empty_path_segments("19:meeting_thread/"));
+        assert!(!has_non_empty_path_segments(""));
+        assert!(!has_non_empty_path_segments("19:meeting_thread//thread.v2"));
+    }
+
+    #[test]
+    fn work_or_school_v2_accepts_meetingjoin_true_query_variants() {
+        for host in ["teams.microsoft.com", "teams.cloud.microsoft"] {
+            assert!(is_teams_meeting_url(host, "/v2", Some("meetingjoin=true"),));
+            assert!(is_teams_meeting_url(
+                host,
+                "/v2/",
+                Some("context=abc&meetingjoin=true"),
+            ));
+            assert!(is_teams_meeting_url(
+                host,
+                "/v2",
+                Some("meetingjoin=false&meetingjoin=true"),
+            ));
+            assert!(is_teams_meeting_url(
+                host,
+                "/v2",
+                Some("%6d%65%65%74%69%6e%67%6a%6f%69%6e=%74%72%75%65"),
+            ));
+        }
+
+        assert!(query_has_param(
+            Some("context=abc&meetingjoin=true"),
+            "meetingjoin",
+            "true",
+        ));
+        assert!(query_has_param(
+            Some("meetingjoin=false&meetingjoin=true"),
+            "meetingjoin",
+            "true",
+        ));
+        assert!(query_has_param(
+            Some("%6d%65%65%74%69%6e%67%6a%6f%69%6e=%74%72%75%65"),
+            "meetingjoin",
+            "true",
+        ));
+    }
+
+    #[test]
+    fn work_or_school_v2_rejects_invalid_meetingjoin_query_variants() {
+        for query in [
+            "meetingjoin=tr%ZZue",
+            "meetingjoin%3Dtrue",
+            "meetingjoin=false",
+            "meetingjoin",
+        ] {
+            assert!(!is_teams_meeting_url(
+                "teams.microsoft.com",
+                "/v2",
+                Some(query),
+            ));
+            assert!(!query_has_param(Some(query), "meetingjoin", "true"));
+        }
+    }
+
+    #[test]
+    fn meet_path_requires_single_numeric_id_for_work_school_and_live_hosts() {
+        for host in [
+            "teams.microsoft.com",
+            "teams.cloud.microsoft",
+            "teams.live.com",
+        ] {
+            assert!(is_teams_meeting_url(host, "/meet/123456789", None));
+            assert!(is_teams_meeting_url(host, "/meet/123456789/", None));
+
+            assert!(!is_teams_meeting_url(host, "/meet/not-numeric", None));
+            assert!(!is_teams_meeting_url(host, "/meet/123456789/extra", None));
+            assert!(!is_teams_meeting_url(host, "/meet/", None));
+        }
+
+        assert!(has_single_numeric_meet_id_segment("123456789"));
+        assert!(has_single_numeric_meet_id_segment("123456789/"));
+        assert!(!has_single_numeric_meet_id_segment("not-numeric"));
+        assert!(!has_single_numeric_meet_id_segment("123456789/extra"));
+        assert!(!has_single_numeric_meet_id_segment(""));
+    }
+
+    #[test]
+    fn live_host_rejects_work_or_school_only_paths() {
+        assert!(!is_teams_meeting_url(
+            "teams.live.com",
+            "/l/meetup-join/19:meeting_thread/thread.v2",
+            None,
+        ));
+        assert!(!is_teams_meeting_url(
+            "teams.live.com",
+            "/v2",
+            Some("meetingjoin=true"),
+        ));
+    }
+}
