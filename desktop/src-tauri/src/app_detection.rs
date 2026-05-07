@@ -1711,6 +1711,29 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_accepts_zoomgov_with_trailing_dot_host() {
+        for (url, host) in [
+            (
+                "https://zoomgov.com./j/1600991835?pwd=secret",
+                "zoomgov.com",
+            ),
+            (
+                "https://agency.zoomgov.com./wc/1600991835/join",
+                "agency.zoomgov.com",
+            ),
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "Zoom".to_string(),
+                    host: host.to_string(),
+                }),
+                "ZoomGov host の trailing dot は正規化され、Zoom 会議 URL として検知される必要がある: {url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_accepts_zoom_subdomain_label_at_dns_label_max_length_63_bytes() {
         let label = "a".repeat(63);
         let url = format!("https://{}.zoom.us/j/123456789", label);

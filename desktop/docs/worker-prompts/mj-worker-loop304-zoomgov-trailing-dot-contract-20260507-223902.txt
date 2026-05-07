@@ -1,0 +1,42 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection.rs の ZoomGov URL classification tests
+- AGENT_LOG.md の Loop 304 記録
+
+目的:
+ZoomGov host に trailing dot が付いていても `classify_meeting_url` 経由で Zoom として検知され、返却 host が正規化される positive contract を固定してください。
+
+根拠:
+- `classify_meeting_url` は `normalize_url_host` 後に Zoom 判定へ渡すため、trailing dot host を正規化する上位契約があります。
+- 既存 test には `company.zoom.us.` の commercial Zoom 例がありますが、ZoomGov (`zoomgov.com` / `agency.zoomgov.com`) の trailing dot 正規化 test は薄いです。
+- 会議検知の網羅性と信頼性に関わる純粋関数テストで、production code 変更なしに固定できます。
+
+実装方針:
+- production code は原則変更しないでください。
+- `src-tauri/src/app_detection.rs` の Zoom/ZoomGov tests 付近に、`classify_meeting_url_accepts_zoomgov_with_trailing_dot_host` のようなテストを追加してください。
+- 以下を固定してください:
+  - `https://zoomgov.com./j/1600991835?pwd=secret` => service `Zoom`, host `zoomgov.com`
+  - `https://agency.zoomgov.com./wc/1600991835/join` => service `Zoom`, host `agency.zoomgov.com`
+- Zoom commercial、Teams、他サービス、UI、依存関係は変更しないでください。
+
+制約:
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib zoomgov_with_trailing_dot_host`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop304-zoomgov-trailing-dot-contract-20260507-223902.txt`
+
+AGENT_LOG.md には、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクションを追記してください。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
