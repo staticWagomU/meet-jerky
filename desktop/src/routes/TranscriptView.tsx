@@ -614,11 +614,13 @@ export function TranscriptView() {
             await invoke("stop_recording");
             setIsMicRecording(false);
             setMicLevel(0);
+            setMicrophoneDropCountTotal(0);
           }
           if (isSystemAudioRecording) {
             await invoke("stop_system_audio");
             setIsSystemAudioRecording(false);
             setSystemAudioLevel(0);
+            setSystemAudioDropCountTotal(0);
           }
           setIsMeetingActive(false);
           setMeetingStartTime(null);
@@ -719,20 +721,28 @@ export function TranscriptView() {
           });
         }
         if (systemAudioStarted) {
-          await invoke("stop_system_audio").catch((rollbackError) => {
-            console.error(
-              "システム音声ロールバックに失敗しました:",
-              toErrorMessage(rollbackError),
-            );
-          });
+          await invoke("stop_system_audio")
+            .then(() => {
+              setSystemAudioDropCountTotal(0);
+            })
+            .catch((rollbackError) => {
+              console.error(
+                "システム音声ロールバックに失敗しました:",
+                toErrorMessage(rollbackError),
+              );
+            });
         }
         if (micStarted) {
-          await invoke("stop_recording").catch((rollbackError) => {
-            console.error(
-              "マイク録音ロールバックに失敗しました:",
-              toErrorMessage(rollbackError),
-            );
-          });
+          await invoke("stop_recording")
+            .then(() => {
+              setMicrophoneDropCountTotal(0);
+            })
+            .catch((rollbackError) => {
+              console.error(
+                "マイク録音ロールバックに失敗しました:",
+                toErrorMessage(rollbackError),
+              );
+            });
         }
         if (sessionStarted) {
           await discardSession().catch((rollbackError) => {
@@ -747,6 +757,8 @@ export function TranscriptView() {
         setIsMicRecording(false);
         setSystemAudioLevel(0);
         setMicLevel(0);
+        setSystemAudioDropCountTotal(0);
+        setMicrophoneDropCountTotal(0);
         setIsMeetingActive(false);
         setMeetingStartTime(null);
         setElapsedTime(0);
@@ -810,6 +822,7 @@ export function TranscriptView() {
           // start_recording is stop-first; do not assume failed sources still have live capture.
           setIsMicRecording(false);
           setMicLevel(0);
+          setMicrophoneDropCountTotal(0);
           setIsTranscribing(false);
           throw e;
         }
@@ -823,6 +836,7 @@ export function TranscriptView() {
           // start_system_audio is stop-first; do not assume failed sources still have live capture.
           setIsSystemAudioRecording(false);
           setSystemAudioLevel(0);
+          setSystemAudioDropCountTotal(0);
           setIsTranscribing(false);
           throw e;
         }
@@ -863,6 +877,7 @@ export function TranscriptView() {
         await invoke("stop_recording");
         setIsMicRecording(false);
         setMicLevel(0);
+        setMicrophoneDropCountTotal(0);
         // Keep transcription workers aligned with the remaining audio sources.
         if (isTranscribing) {
           if (isSystemAudioRecording) {
@@ -932,6 +947,7 @@ export function TranscriptView() {
         await invoke("stop_system_audio");
         setIsSystemAudioRecording(false);
         setSystemAudioLevel(0);
+        setSystemAudioDropCountTotal(0);
         // Keep transcription workers aligned with the remaining audio sources.
         if (isTranscribing) {
           if (isMicRecording) {
@@ -1049,10 +1065,12 @@ export function TranscriptView() {
       if (micRestartPending) {
         setIsMicRecording(false);
         setMicLevel(0);
+        setMicrophoneDropCountTotal(0);
       }
       if (systemAudioRestartPending) {
         setIsSystemAudioRecording(false);
         setSystemAudioLevel(0);
+        setSystemAudioDropCountTotal(0);
       }
       const msg = formatOperationError(TRANSCRIPTION_ERROR_PREFIX, e);
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));

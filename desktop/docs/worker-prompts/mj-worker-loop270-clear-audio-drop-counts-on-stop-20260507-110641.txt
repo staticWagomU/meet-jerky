@@ -1,0 +1,35 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- Loop 221 で audio-level / audio-drop-count の未知 source 診断は改善済みです。
+- 現在 `TranscriptView.tsx` は `microphoneDropCountTotal` / `systemAudioDropCountTotal` を記録開始時に 0 へ戻します。
+- 一方、個別トラック停止や会議停止後は drop count が残り、録音・取得していないトラックにも古い「破棄 N」バッジが残り得ます。これは録音状態の透明性を下げます。
+
+目的:
+- 停止済みトラックに過去セッション/過去取得中の drop count が残って見えないよう、停止成功時と開始失敗 rollback 時に該当 drop count を 0 へ戻してください。
+- 変更は `src/routes/TranscriptView.tsx` に限定するのが望ましいです。
+
+実装指示:
+- マイク録音停止成功時は `microphoneDropCountTotal` を 0 に戻す。
+- システム音声停止成功時は `systemAudioDropCountTotal` を 0 に戻す。
+- 会議停止で両トラックを停止した場合は、停止した各トラックの drop count も 0 に戻す。
+- 記録開始失敗の rollback でトラックを false / level 0 に戻す経路でも drop count を 0 に戻す。
+- `restartTranscriptionForAudioSources` の stop-first restart 経路については、再開するトラックの drop count を不用意に消すと運用中の累積診断を失う可能性があるため、基本は触らない。停止したままになる失敗経路だけ必要なら 0 に戻す。
+- 見た目、CSS、Rust、イベント payload、音声取得ロジック、文字起こし invoke、依存関係は変更しない。
+- コミットは禁止。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop270-clear-audio-drop-counts-on-stop-20260507-110641.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
