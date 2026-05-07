@@ -27,10 +27,16 @@ pub fn list_session_summaries(dir: &Path) -> std::io::Result<Vec<SessionSummary>
 
         let file = fs::File::open(&path)?;
         let mut reader = BufReader::new(file);
-        let mut first_line = String::new();
-        reader.read_line(&mut first_line)?;
-        let trimmed = first_line.trim_end_matches(['\n', '\r']);
-        let title = trimmed.strip_prefix("# ").unwrap_or(trimmed);
+        let mut first_line = Vec::new();
+        reader.read_until(b'\n', &mut first_line)?;
+        if first_line.last() == Some(&b'\n') {
+            first_line.pop();
+        }
+        if first_line.last() == Some(&b'\r') {
+            first_line.pop();
+        }
+        let first_line = String::from_utf8_lossy(&first_line);
+        let title = first_line.strip_prefix("# ").unwrap_or(&first_line);
         let title = if title.trim().is_empty() {
             stem.to_string()
         } else {
@@ -238,6 +244,35 @@ mod tests {
 
         assert_eq!(summaries.len(), 1);
         assert_eq!(summaries[0].title, "会議 *重要* [メモ] - 2024-04-17 14:50");
+    }
+
+    #[test]
+    fn list_session_summaries_uses_lossy_utf8_for_invalid_title_line() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("100-0.md"),
+            [
+                b"# Invalid ".as_slice(),
+                &[0xff, 0xfe],
+                b" title\r\nbody remains searchable".as_slice(),
+            ]
+            .concat(),
+        )
+        .unwrap();
+        fs::write(dir.path().join("200-0.md"), "# Valid title\nvalid body").unwrap();
+
+        let summaries = list_session_summaries(dir.path()).unwrap();
+
+        assert_eq!(summaries.len(), 2);
+        let invalid = summaries
+            .iter()
+            .find(|summary| summary.started_at_secs == 100)
+            .unwrap();
+        assert_eq!(invalid.title, "Invalid \u{fffd}\u{fffd} title");
+        assert!(
+            invalid.search_text.contains("body remains searchable"),
+            "search_text should still start after the lossy title line"
+        );
     }
 
     #[test]

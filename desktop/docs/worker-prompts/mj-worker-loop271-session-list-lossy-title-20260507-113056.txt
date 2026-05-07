@@ -1,0 +1,45 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- 保存済み履歴一覧は `src-tauri/src/session_store_list.rs` の `list_session_summaries` で `.md` ファイルを読む。
+- 本文 `search_text` は `String::from_utf8_lossy` で壊れた UTF-8 に耐えるが、タイトル行だけ `BufRead::read_line(&mut String)` のため、先頭行に不正 UTF-8 があるファイルが1つあると履歴一覧全体がエラーになり得る。
+- 履歴は会議後の検索・閲覧の中核機能なので、一部ファイル破損で一覧全体が落ちる挙動は価値を下げる。
+
+目的:
+- タイトル行も bytes として読み、既存本文と同じく lossy UTF-8 で表示用 title を作る。
+- 不正 UTF-8 の履歴ファイルが混ざっても `list_session_summaries` が一覧全体を失敗させず、該当ファイルの title に replacement char を含めて返せるようにする。
+
+担当範囲:
+- 原則 `src-tauri/src/session_store_list.rs`
+- AGENT_LOG.md
+
+実装指示:
+- `read_line(&mut String)` を使う title 読み取りを、`read_until(b'\n', &mut Vec<u8>)` など bytes ベースに変更する。
+- 既存仕様は維持する:
+  - 先頭行末の `\n` / `\r` は除去する。
+  - `# ` prefix があれば除去する。
+  - 空 title は stem fallback。
+  - markdown inline escape の unescape は維持する。
+  - search_text は先頭行の後続本文を `MAX_SESSION_SEARCH_TEXT_BYTES` まで読む既存契約を維持する。
+  - `.md` ファイル走査、sort、unparsable prefix skip は変更しない。
+- 不正 UTF-8 の title 行でも summary を返す単体テストを追加する。
+- 見た目、TypeScript、Tauri command、保存フォーマット、依存関係は変更しない。
+- コミットは禁止。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib list_session_summaries`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/session_store_list.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop271-session-list-lossy-title-20260507-113056.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
