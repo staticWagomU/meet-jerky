@@ -1,0 +1,46 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/audio_event.rs
+- AGENT_LOG.md
+
+背景:
+Loop 320 で frontend の `audio-drop-count` payload guard は `dropped` を JavaScript の安全整数範囲に限定しました。一方 Rust 側 `build_audio_drop_event_payload(source, dropped: usize)` は `usize::MAX` をそのまま JSON 化する既存契約で、極端な値が Tauri 経由で届くと frontend で不正 payload として扱われます。通常運用の drop count がその範囲に達することは現実的ではありませんが、payload 境界の一貫性として Rust 側で safe integer 上限に飽和させる方が録音状態診断として信頼できます。
+
+実装内容:
+- `src-tauri/src/audio_event.rs` に JavaScript `Number.MAX_SAFE_INTEGER` 相当の上限 `9_007_199_254_740_991` を定義してください。可視性は必要最小限で構いません。
+- `build_audio_drop_event_payload` で JSON 化前に `dropped` をこの上限以下に飽和させてください。
+- `source` は既存通り passthrough のままにしてください。
+- event 名、payload field 名、audio.rs/system_audio.rs の emit 呼び出し、frontend、RMS 計算、依存関係は変更しないでください。
+- 既存の `usize::MAX` そのまま serialize 契約テスト/helper は、「safe integer 上限へ saturate する」契約へ更新してください。
+- 通常値、0、empty source、arbitrary source、top-level field 数の既存契約は維持してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/audio_event.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop321-next-value-slice-20260508-042359.txt docs/worker-prompts/mj-worker-loop321-audio-drop-rust-safe-integer-20260508-042932.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

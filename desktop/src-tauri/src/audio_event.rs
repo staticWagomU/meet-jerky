@@ -5,6 +5,7 @@ pub(crate) const AUDIO_DROP_EVENT_NAME: &str = "audio-drop-count";
 pub(crate) const SYSTEM_AUDIO_FORMAT_WARNING_EVENT_NAME: &str = "system-audio-format-warning";
 pub(crate) const AUDIO_SOURCE_MICROPHONE: &str = "microphone";
 pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
+const AUDIO_DROP_COUNT_MAX_SAFE_INTEGER: u64 = 9_007_199_254_740_991;
 
 pub(crate) fn build_audio_level_event_payload(source: &str, level: f32) -> serde_json::Value {
     let level = normalize_audio_level_for_event(level);
@@ -20,6 +21,7 @@ fn normalize_audio_level_for_event(level: f32) -> f32 {
 }
 
 pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
+    let dropped = (dropped as u64).min(AUDIO_DROP_COUNT_MAX_SAFE_INTEGER);
     json!({ "source": source, "dropped": dropped })
 }
 
@@ -142,16 +144,16 @@ mod tests {
     }
 
     #[test]
-    fn build_audio_drop_event_payload_with_usize_max_dropped_serializes_without_overflow() {
+    fn build_audio_drop_event_payload_with_usize_max_dropped_saturates_to_safe_integer_limit() {
         let payload = build_audio_drop_event_payload(AUDIO_SOURCE_SYSTEM_AUDIO, usize::MAX);
         assert_eq!(payload["source"], "system_audio");
-        assert_eq!(payload["dropped"], usize::MAX);
+        assert_eq!(payload["dropped"], AUDIO_DROP_COUNT_MAX_SAFE_INTEGER);
     }
 }
 
 #[cfg(test)]
 pub(crate) mod test_helpers {
-    use super::build_audio_drop_event_payload;
+    use super::{build_audio_drop_event_payload, AUDIO_DROP_COUNT_MAX_SAFE_INTEGER};
 
     pub(crate) fn assert_drop_payload_includes_source_and_dropped_fields(
         source: &str,
@@ -179,8 +181,8 @@ pub(crate) mod test_helpers {
         let payload = build_audio_drop_event_payload(source, usize::MAX);
         assert_eq!(
             payload.get("dropped").and_then(|v| v.as_u64()),
-            Some(usize::MAX as u64),
-            "usize::MAX が u64 として serde_json に渡せる契約"
+            Some(AUDIO_DROP_COUNT_MAX_SAFE_INTEGER),
+            "usize::MAX は JavaScript safe integer 上限へ saturate する契約"
         );
     }
 
