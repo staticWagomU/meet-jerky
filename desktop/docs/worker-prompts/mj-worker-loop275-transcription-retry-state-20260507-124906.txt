@@ -1,0 +1,37 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/routes/TranscriptView.tsx` は `transcription-error` event を受けると `hasTranscriptionErrorStopped` を true にして、UI に「エラー停止」「エラー停止後に文字起こしを再開」を表示します。
+- 手動で文字起こしを再開して成功した場合は `setHasTranscriptionErrorStopped(false)` されます。
+- 一方、再開操作を試みたが `start_transcription` またはその前段の音声再取得で失敗した場合、catch で `hasTranscriptionErrorStopped` を明示的に false へ戻していません。
+
+目的:
+- ユーザーがエラー停止後に再開を試みた場合、再開失敗後も「エラー停止後に再開」という古い状態表示が残らないようにする。
+- エラー内容は既存の `meetingError` 表示を維持し、操作失敗として明示する。
+
+担当範囲:
+- `src/routes/TranscriptView.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `handleToggleTranscription` の「停止中から開始する」分岐で、実際に再開/開始操作へ入る時点に `setHasTranscriptionErrorStopped(false)` を追加してください。
+- 既存の成功時 `setHasTranscriptionErrorStopped(false)` は残してよいです。
+- 停止操作分岐、`transcription-error` listener、meeting start flow、audio restart helper、Rust、Tauri command、CSS、依存関係は変更しないでください。
+- `meetingError` の文言や `TRANSCRIPTION_START_ATTEMPTED_TRACK_STATUS_NOTICE` の挙動は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop275-transcription-retry-state-20260507-124906.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

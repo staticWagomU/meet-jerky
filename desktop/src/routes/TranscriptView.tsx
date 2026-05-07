@@ -1020,6 +1020,7 @@ export function TranscriptView() {
         setIsTranscribing(false);
         setHasTranscriptionErrorStopped(false);
       } else {
+        setHasTranscriptionErrorStopped(false);
         if (
           settings?.transcriptionEngine === "appleSpeech" &&
           isMicRecording &&
