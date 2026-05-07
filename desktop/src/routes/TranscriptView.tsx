@@ -551,6 +551,13 @@ export function TranscriptView() {
     };
   }, []);
 
+  const clearSystemAudioCaptureState = useCallback(() => {
+    setIsSystemAudioRecording(false);
+    setSystemAudioLevel(0);
+    setSystemAudioDropCountTotal(0);
+    setSystemAudioFormatWarning(null);
+  }, []);
+
   // Elapsed time timer
   useEffect(() => {
     if (isMeetingActive && meetingStartTime) {
@@ -632,9 +639,7 @@ export function TranscriptView() {
           }
           if (isSystemAudioRecording) {
             await invoke("stop_system_audio");
-            setIsSystemAudioRecording(false);
-            setSystemAudioLevel(0);
-            setSystemAudioDropCountTotal(0);
+            clearSystemAudioCaptureState();
           }
           setIsMeetingActive(false);
           setMeetingStartTime(null);
@@ -737,7 +742,7 @@ export function TranscriptView() {
         if (systemAudioStarted) {
           await invoke("stop_system_audio")
             .then(() => {
-              setSystemAudioDropCountTotal(0);
+              clearSystemAudioCaptureState();
             })
             .catch((rollbackError) => {
               console.error(
@@ -767,11 +772,9 @@ export function TranscriptView() {
           });
         }
         setIsTranscribing(false);
-        setIsSystemAudioRecording(false);
+        clearSystemAudioCaptureState();
         setIsMicRecording(false);
-        setSystemAudioLevel(0);
         setMicLevel(0);
-        setSystemAudioDropCountTotal(0);
         setMicrophoneDropCountTotal(0);
         setIsMeetingActive(false);
         setMeetingStartTime(null);
@@ -792,6 +795,7 @@ export function TranscriptView() {
     selectedDeviceId,
     selectedModel,
     settings?.transcriptionEngine,
+    clearSystemAudioCaptureState,
   ]);
 
   const startMicCapture = useCallback(async () => {
@@ -848,9 +852,7 @@ export function TranscriptView() {
           setSystemAudioLevel(0);
         } catch (e) {
           // start_system_audio is stop-first; do not assume failed sources still have live capture.
-          setIsSystemAudioRecording(false);
-          setSystemAudioLevel(0);
-          setSystemAudioDropCountTotal(0);
+          clearSystemAudioCaptureState();
           setIsTranscribing(false);
           throw e;
         }
@@ -868,7 +870,12 @@ export function TranscriptView() {
         throw e;
       }
     },
-    [selectedModel, settings?.transcriptionEngine, startMicCapture],
+    [
+      selectedModel,
+      settings?.transcriptionEngine,
+      startMicCapture,
+      clearSystemAudioCaptureState,
+    ],
   );
 
   const handleToggleMicRecording = useCallback(async () => {
@@ -959,9 +966,7 @@ export function TranscriptView() {
     try {
       if (isSystemAudioRecording) {
         await invoke("stop_system_audio");
-        setIsSystemAudioRecording(false);
-        setSystemAudioLevel(0);
-        setSystemAudioDropCountTotal(0);
+        clearSystemAudioCaptureState();
         // Keep transcription workers aligned with the remaining audio sources.
         if (isTranscribing) {
           if (isMicRecording) {
@@ -1008,6 +1013,7 @@ export function TranscriptView() {
     isTranscribing,
     settings?.transcriptionEngine,
     restartTranscriptionForAudioSources,
+    clearSystemAudioCaptureState,
   ]);
 
   const handleToggleTranscription = useCallback(async () => {
@@ -1083,9 +1089,7 @@ export function TranscriptView() {
         setMicrophoneDropCountTotal(0);
       }
       if (systemAudioRestartPending) {
-        setIsSystemAudioRecording(false);
-        setSystemAudioLevel(0);
-        setSystemAudioDropCountTotal(0);
+        clearSystemAudioCaptureState();
       }
       const msg = formatOperationError(TRANSCRIPTION_ERROR_PREFIX, e);
       console.error("文字起こし操作に失敗しました:", toErrorMessage(e));
@@ -1109,6 +1113,7 @@ export function TranscriptView() {
     selectedDeviceId,
     selectedModel,
     settings?.transcriptionEngine,
+    clearSystemAudioCaptureState,
   ]);
 
   const handleNewSegment = useCallback((segment: TranscriptSegment) => {

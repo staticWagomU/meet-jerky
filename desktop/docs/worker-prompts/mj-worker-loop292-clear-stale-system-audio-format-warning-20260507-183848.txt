@@ -1,0 +1,51 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+背景:
+- `system-audio-format-warning` を受信すると `systemAudioFormatWarning` が設定され、`getAudioSourceNotice` 経由で相手側音声入力の形式問題として表示される。
+- しかし `stop_system_audio` 成功後にこの warning state が明示的にクリアされないため、会議継続中に相手側音声だけ停止した場合などに、古い形式警告が現在の状態として残る可能性がある。
+
+目的:
+相手側音声の取得が停止済みになった時点で、相手側音声入力フォーマット警告を stale 表示しないようにする。
+
+実装方針:
+- `stop_system_audio` が成功して UI state を `setIsSystemAudioRecording(false)` / `setSystemAudioLevel(0)` / `setSystemAudioDropCountTotal(0)` に戻す箇所で、`setSystemAudioFormatWarning(null)` も行う。
+- 重複を抑えるため、`TranscriptView.tsx` 内に小さな helper/callback を作ってよい。
+  - 例: `clearSystemAudioCaptureState()` が `setIsSystemAudioRecording(false)`, `setSystemAudioLevel(0)`, `setSystemAudioDropCountTotal(0)`, `setSystemAudioFormatWarning(null)` をまとめる。
+- `system-audio-format-warning` listener の受信処理、event 名、Rust、CSS、他コンポーネント、依存関係は変更しない。
+- 相手側音声を開始する直前に warning を消す変更はしない。Rust 側 warning は process 中 1 回だけ emit されるため、開始時に消すと同じ実問題を隠す可能性がある。
+- mic 側 state、文字起こし worker、保存処理、meeting start/stop の順序は変えない。
+
+検証:
+```sh
+PATH="/opt/homebrew/bin:$PATH" npm run build
+git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop292-clear-stale-system-audio-format-warning-20260507-183848.txt
+```
+
+AGENT_LOG.md に以下を追記:
+- 開始日時
+- 担当セッション名 `mj-worker-loop292-clear-stale-system-audio-format-warning-20260507`
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 未実機確認範囲
+- 残リスク
+- 次アクション
+
+コミットは禁止。完了時は変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
