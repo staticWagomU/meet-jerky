@@ -1,0 +1,43 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src/utils/transcriptSegment.ts
+- 必要なら、上記 helper の呼び出しに直接関係する frontend ファイル
+- AGENT_LOG.md
+
+背景:
+Rust 側の `src-tauri/src/transcription_error_payload.rs` には、`build_transcription_error_payload` が改行入り error 文字列を JSON として安全に運べる契約を固定する test があります。一方 frontend の `src/utils/transcriptSegment.ts` は `isTranscriptionErrorPayload` で `error` 文字列に `CONTROL_CHARACTER_PATTERN` を適用しているため、改行入り error payload を不正扱いし、実際の文字起こしエラー内容が UI で「形式が不正」に置き換わる可能性があります。
+
+実装内容:
+- `TranscriptionErrorPayload.error` だけ、改行とタブ程度の一般的な空白を含む複数行 error message を受け入れられるようにしてください。
+- `TranscriptSegment.text` と `speaker` の既存 validation は緩めないでください。
+- `error` は trim 後 non-empty、最大長 4000、NUL など危険な制御文字は拒否する契約を維持してください。
+- 既存の `source` validation、payload shape、event 名、React component の表示構造、Rust、依存関係は変更しないでください。
+- 可能なら helper を小さく分け、`getTranscriptionErrorPayloadIssue` の理由文も「改行入り error は許容されるが NUL 等は拒否」と整合するようにしてください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/transcriptSegment.ts AGENT_LOG.md docs/worker-prompts/mj-research-loop318-next-value-slice-20260508-032950.txt docs/worker-prompts/mj-worker-loop318-transcription-error-newline-payload-20260508-033149.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

@@ -32,12 +32,28 @@ function isFiniteInteger(value: unknown): value is number {
 }
 
 export const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/u;
+const TRANSCRIPTION_ERROR_CONTROL_CHARACTER_PATTERN =
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 
 function isSafeTrimmedString(
   value: unknown,
   maxTrimmedLength: number,
 ): value is string {
   if (typeof value !== "string" || CONTROL_CHARACTER_PATTERN.test(value)) {
+    return false;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 && trimmed.length <= maxTrimmedLength;
+}
+
+function isSafeTrimmedTranscriptionErrorMessage(
+  value: unknown,
+  maxTrimmedLength: number,
+): value is string {
+  if (
+    typeof value !== "string" ||
+    TRANSCRIPTION_ERROR_CONTROL_CHARACTER_PATTERN.test(value)
+  ) {
     return false;
   }
   const trimmed = value.trim();
@@ -73,7 +89,7 @@ export function isTranscriptionErrorPayload(
   }
   const candidate = value as Partial<TranscriptionErrorPayload>;
   return (
-    isSafeTrimmedString(candidate.error, 4000) &&
+    isSafeTrimmedTranscriptionErrorMessage(candidate.error, 4000) &&
     (candidate.source === undefined || isTranscriptAudioSource(candidate.source))
   );
 }
@@ -121,8 +137,8 @@ export function getTranscriptionErrorPayloadIssue(value: unknown): string {
     return "payload がオブジェクトではありません";
   }
   const candidate = value as Partial<TranscriptionErrorPayload>;
-  if (!isSafeTrimmedString(candidate.error, 4000)) {
-    return "error が空、長すぎる、または制御文字を含みます";
+  if (!isSafeTrimmedTranscriptionErrorMessage(candidate.error, 4000)) {
+    return "error が空、長すぎる、または改行・タブ以外の制御文字を含みます";
   }
   if (
     candidate.source !== undefined &&
