@@ -1,0 +1,70 @@
+あなたは meet-jerky desktop の Loop 294 作業担当エージェントです。
+
+対象 repo:
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+制約:
+- 作業対象はこの repo のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- main branch 上で作業するが、コミットは禁止。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+
+担当範囲:
+- `src-tauri/src/transcription_commands_helpers.rs`
+- `src-tauri/src/transcription_commands.rs`
+- `AGENT_LOG.md`
+
+目的:
+`start_transcription` で UI/呼び出し側が要求した transcription source と、実際に利用可能な audio capture がずれた場合に、片側だけで黙って開始しないようにする。特に `source: "both"` なのに mic または system_audio の sample rate が欠けた場合、別トラック文字起こしが片側だけ開始される可能性を避け、明示的なエラーにする。
+
+現状:
+- `parse_requested_transcription_sources` は `microphone` / `system_audio` / `both` を bool へ変換する。
+- `start_transcription` は requested source ごとに `audio_state.get_sample_rate()` / `get_system_audio_sample_rate()` を読む。
+- その後、存在する sample rate だけで stream を作るため、`both` 要求でも片側 missing なら available stream だけで進み得る。
+- 最後の `workers.is_empty()` は「全部 missing」だけを検出する。
+
+実装方針:
+1. `transcription_commands_helpers.rs` に、要求 source と available source の整合性を検証する純粋関数を追加する。
+   - 例: `validate_requested_sources_available(requested: RequestedTranscriptionSources, mic_available: bool, system_available: bool) -> Result<(), String>`
+   - `requested.use_mic && !mic_available` ならエラー。
+   - `requested.use_system && !system_available` ならエラー。
+   - 両方 missing なら既存の「音声ソースが利用可能ではありません。録音を先に開始してください。」に近い文言でもよいが、片側 missing の場合はどちらが欠けたか分かる文言にする。
+2. `start_transcription` で sample rate 取得直後、`validate_stream_count_for_engine` より前にその helper を呼ぶ。
+3. 既存の `workers.is_empty()` は defensive guard として残してよい。
+4. Apple Speech の dual-source reject 文言や `parse_requested_transcription_sources` の契約は変えない。
+5. UI、TypeScript、audio capture、worker loop、engine 実装、依存関係は変更しない。
+
+テスト:
+- `transcription_commands_helpers.rs` に helper の unit tests を追加。
+- 少なくとも以下を固定:
+  - mic only requested + mic available -> Ok
+  - system only requested + system available -> Ok
+  - both requested + both available -> Ok
+  - mic only requested + mic missing -> Err に「マイク」または `microphone` が含まれる
+  - system only requested + system missing -> Err に「相手側」または `system_audio` が含まれる
+  - both requested + mic missing -> Err
+  - both requested + system missing -> Err
+  - both requested + both missing -> Err
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib validate_requested_sources_available`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/transcription_commands_helpers.rs src-tauri/src/transcription_commands.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop294-transcription-requested-source-availability-20260507-191859.txt`
+
+AGENT_LOG.md:
+- Loop 294 worker として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加なし、残リスクを追記してください。
+
+完了時:
+- 変更内容
+- 変更ファイル
+- 検証結果
+- 残リスク
+を簡潔に報告してください。

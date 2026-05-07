@@ -2,7 +2,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use crate::transcription_commands_helpers::{
-    parse_requested_transcription_sources, validate_stream_count_for_engine,
+    parse_requested_transcription_sources, validate_requested_sources_available,
+    validate_stream_count_for_engine, ERROR_TRANSCRIPTION_AUDIO_SOURCE_UNAVAILABLE,
 };
 use crate::transcription_manager::TranscriptionStateHandle;
 use crate::transcription_panic_guard::run_transcription_worker_with_panic_guard;
@@ -87,6 +88,11 @@ pub fn start_transcription(
     } else {
         None
     };
+    validate_requested_sources_available(
+        requested_sources,
+        mic_sample_rate.is_some() && audio_state.has_consumer(),
+        system_sample_rate.is_some() && audio_state.has_system_audio_consumer(),
+    )?;
     let available_stream_count = [mic_sample_rate, system_sample_rate]
         .into_iter()
         .filter(Option::is_some)
@@ -162,7 +168,7 @@ pub fn start_transcription(
     }
 
     if workers.is_empty() {
-        return Err("音声ソースが利用可能ではありません。録音を先に開始してください。".to_string());
+        return Err(ERROR_TRANSCRIPTION_AUDIO_SOURCE_UNAVAILABLE.to_string());
     }
 
     running.store(true, Ordering::SeqCst);

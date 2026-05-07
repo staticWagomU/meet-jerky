@@ -374,6 +374,10 @@ impl AudioCapture for CpalMicCapture {
         self.consumer.take()
     }
 
+    fn has_consumer(&self) -> bool {
+        self.consumer.is_some()
+    }
+
     fn sample_rate(&self) -> Option<u32> {
         self.sample_rate
     }
@@ -434,6 +438,15 @@ impl AudioStateHandle {
             .and_then(|mic| mic.take_consumer())
     }
 
+    /// マイクのリングバッファのコンシューマが未取得で残っているか
+    pub fn has_consumer(&self) -> bool {
+        let inner = self.0.lock();
+        inner
+            .microphone
+            .as_ref()
+            .is_some_and(|mic| mic.has_consumer())
+    }
+
     /// システム音声のサンプルレートを取得する
     pub fn get_system_audio_sample_rate(&self) -> Option<u32> {
         let inner = self.0.lock();
@@ -450,6 +463,15 @@ impl AudioStateHandle {
             .system_audio
             .as_mut()
             .and_then(|sys| sys.take_consumer())
+    }
+
+    /// システム音声のリングバッファのコンシューマが未取得で残っているか
+    pub fn has_system_audio_consumer(&self) -> bool {
+        let inner = self.0.lock();
+        inner
+            .system_audio
+            .as_ref()
+            .is_some_and(|sys| sys.has_consumer())
     }
 }
 

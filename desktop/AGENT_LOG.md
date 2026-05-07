@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 294 / 2026-05-07 19:30 JST]
+役割: メインエージェント
+作業範囲: Loop 294 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、別トラック文字起こし開始時の requested source と実際の audio consumer の不一致を明示エラー化する。
+調査結果: `mj-research-loop294` は `start_transcription` の requested source と consumer 不一致検出を最推奨した。`source: "both"` なのに片側 consumer が既に消費済み、または capture が揃っていない場合、片側だけで黙って開始する不透明さが別トラック取得とリアルタイム文字起こしの信頼性に影響するため。
+実装経緯: `mj-worker-loop294-transcription-requested-source-availability-20260507` を起動したが、`hook: UserPromptSubmit Failed` 後に実装へ進まなかったため session を閉じた。自律運用を止めないため、メイン側で最小実装した。実装中、consumer を `take` した後に不一致判定するとエラー時に別 source の consumer を失うため、所有権を移す前に確認できる `has_consumer` を audio capture trait に追加する形に修正した。
+結果: `transcription_commands_helpers.rs` に `validate_requested_sources_available` とエラー文言を追加し、要求されたマイク/相手側音声が利用できない場合は開始前にエラーを返すようにした。`AudioCapture` に `has_consumer` を追加し、マイクと system audio の実装および `AudioStateHandle` から未取得 consumer の有無を確認できるようにした。`start_transcription` は sample rate と consumer の両方が揃った requested source だけを available とみなし、stream 初期化前に検証する。
+ユーザー価値: UI が両トラック文字起こしを要求しているのに、内部では片側だけ worker が起動する状態を防ぎ、別トラック取得状態と文字起こし開始結果を一致させやすくする。
+非目標: 録音再起動設計、ring buffer 実装、文字起こし engine、worker loop、TypeScript UI、依存関係は変更しない。
+未実機確認範囲: macOS 実機での capture consumer 消費済み race、Tauri invoke 競合、実会議中の再構成操作は未確認。
+変更ファイル: src-tauri/src/transcription_commands_helpers.rs / src-tauri/src/transcription_commands.rs / src-tauri/src/audio_traits.rs / src-tauri/src/audio.rs / src-tauri/src/system_audio.rs / AGENT_LOG.md / docs/worker-prompts/mj-research-loop294-next-value-slice-20260507-191859.txt / docs/worker-prompts/mj-worker-loop294-transcription-requested-source-availability-20260507-191859.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib validate_requested_sources_available` 成功（5 passed / 0 failed / 740 filtered out）、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings` 成功、`git diff --check -- src-tauri/src/transcription_commands_helpers.rs src-tauri/src/transcription_commands.rs src-tauri/src/audio_traits.rs src-tauri/src/audio.rs src-tauri/src/system_audio.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop294-next-value-slice-20260507-191859.txt docs/worker-prompts/mj-worker-loop294-transcription-requested-source-availability-20260507-191859.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: `has_consumer` は開始前の状態確認であり、確認後から `take_consumer` までの極小 race は統合環境なしでは確認できない。既存 defensive guard は残している。
+次アクション: staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 293 / 2026-05-07 19:08 JST]
 役割: メインエージェント
 作業範囲: Loop 293 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証

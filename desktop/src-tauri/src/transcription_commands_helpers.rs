@@ -16,6 +16,12 @@ pub(crate) const ERROR_INVALID_TRANSCRIPTION_SOURCE: &str =
     "文字起こしソースが不正です。microphone、system_audio、both のいずれかを指定してください。";
 pub(crate) const ERROR_APPLE_SPEECH_MULTIPLE_STREAMS: &str =
     "Apple SpeechAnalyzer は現在、マイクと相手側音声の同時文字起こしを安全に処理できません。クラッシュを防ぐため、どちらか片方の音声ソースだけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
+pub(crate) const ERROR_TRANSCRIPTION_AUDIO_SOURCE_UNAVAILABLE: &str =
+    "音声ソースが利用可能ではありません。録音を先に開始してください。";
+const ERROR_TRANSCRIPTION_MIC_UNAVAILABLE: &str =
+    "要求されたマイク音声の文字起こし入力が利用できません。録音を先に開始してください。";
+const ERROR_TRANSCRIPTION_SYSTEM_AUDIO_UNAVAILABLE: &str =
+    "要求された相手側音声の文字起こし入力が利用できません。相手側音声の取得を先に開始してください。";
 
 pub(crate) fn validate_stream_count_for_engine(
     engine_type: &TranscriptionEngineType,
@@ -25,6 +31,21 @@ pub(crate) fn validate_stream_count_for_engine(
         return Err(ERROR_APPLE_SPEECH_MULTIPLE_STREAMS.to_string());
     }
     Ok(())
+}
+
+pub(crate) fn validate_requested_sources_available(
+    requested: RequestedTranscriptionSources,
+    mic_available: bool,
+    system_available: bool,
+) -> Result<(), String> {
+    let mic_missing = requested.use_mic && !mic_available;
+    let system_missing = requested.use_system && !system_available;
+    match (mic_missing, system_missing) {
+        (false, false) => Ok(()),
+        (true, true) => Err(ERROR_TRANSCRIPTION_AUDIO_SOURCE_UNAVAILABLE.to_string()),
+        (true, false) => Err(ERROR_TRANSCRIPTION_MIC_UNAVAILABLE.to_string()),
+        (false, true) => Err(ERROR_TRANSCRIPTION_SYSTEM_AUDIO_UNAVAILABLE.to_string()),
+    }
 }
 
 pub(crate) fn parse_requested_transcription_sources(
@@ -149,6 +170,116 @@ mod tests {
             validate_stream_count_for_engine(&engine, 2)
                 .expect("non Apple Speech engines should keep dual stream support");
         }
+    }
+
+    #[test]
+    fn validate_requested_sources_available_accepts_requested_sources() {
+        validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            },
+            true,
+            false,
+        )
+        .expect("mic-only request should pass when mic is available");
+        validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: false,
+                use_system: true,
+            },
+            false,
+            true,
+        )
+        .expect("system-only request should pass when system audio is available");
+        validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            },
+            true,
+            true,
+        )
+        .expect("both request should pass when both sources are available");
+    }
+
+    #[test]
+    fn validate_requested_sources_available_rejects_missing_microphone() {
+        let err = validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: false,
+            },
+            false,
+            true,
+        )
+        .expect_err("mic-only request should fail when mic is unavailable");
+        assert!(
+            err.contains("マイク"),
+            "error should identify missing microphone source: {err}"
+        );
+    }
+
+    #[test]
+    fn validate_requested_sources_available_rejects_missing_system_audio() {
+        let err = validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: false,
+                use_system: true,
+            },
+            true,
+            false,
+        )
+        .expect_err("system-only request should fail when system audio is unavailable");
+        assert!(
+            err.contains("相手側音声"),
+            "error should identify missing system audio source: {err}"
+        );
+    }
+
+    #[test]
+    fn validate_requested_sources_available_rejects_partial_both_requests() {
+        let missing_mic = validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            },
+            false,
+            true,
+        )
+        .expect_err("both request should fail when mic is unavailable");
+        assert!(
+            missing_mic.contains("マイク"),
+            "error should identify missing microphone source: {missing_mic}"
+        );
+
+        let missing_system = validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            },
+            true,
+            false,
+        )
+        .expect_err("both request should fail when system audio is unavailable");
+        assert!(
+            missing_system.contains("相手側音声"),
+            "error should identify missing system audio source: {missing_system}"
+        );
+    }
+
+    #[test]
+    fn validate_requested_sources_available_rejects_all_missing_sources() {
+        let err = validate_requested_sources_available(
+            RequestedTranscriptionSources {
+                use_mic: true,
+                use_system: true,
+            },
+            false,
+            false,
+        )
+        .expect_err("both request should fail when no requested source is available");
+        assert_eq!(err, ERROR_TRANSCRIPTION_AUDIO_SOURCE_UNAVAILABLE);
     }
 
     #[test]

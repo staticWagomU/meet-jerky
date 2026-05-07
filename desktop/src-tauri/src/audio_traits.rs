@@ -13,6 +13,8 @@ pub trait AudioCapture: Send {
     fn stop(&mut self) -> Result<(), String>;
     /// リングバッファの消費者を取得
     fn take_consumer(&mut self) -> Option<ringbuf::HeapCons<f32>>;
+    /// リングバッファの消費者が未取得で残っているか
+    fn has_consumer(&self) -> bool;
     /// サンプルレート取得
     fn sample_rate(&self) -> Option<u32>;
     /// ソース名 ("microphone" or "system_audio")

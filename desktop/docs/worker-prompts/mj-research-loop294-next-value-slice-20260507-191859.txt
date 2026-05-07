@@ -1,0 +1,27 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+目的:
+Loop 294 として、クラッシュ修正、会議検知の信頼性、別トラック音声取得、リアルタイム文字起こし状態同期、録音状態の透明性、履歴検索の観点から、1ループで実装・検証・コミットできる価値の高い最小改善候補を調査してください。
+
+重点:
+- 直近 Loop 286-293 と重複しないこと。
+- 実機権限、認証、課金、外部APIなしで検証できること。
+- TypeScript 側は test runner がないため、build と静的確認で価値が説明できる範囲を優先すること。
+- Rust 側は cmake 不在でも targeted cargo test / fmt / clippy で検証できる純粋関数や契約テストを優先すること。
+- 既存ログに候補として残っていた `start_transcription` の requested source と consumer 不一致検出、会議検知 negative URL contract、履歴検索のトラック条件明示、会議開始失敗時 rollback 失敗の集約表示も再評価してください。
+
+報告:
+- 候補を3件程度、優先順位付きで提示
+- 各候補の根拠ファイル、ユーザー価値、最小スライス、非目標、検証方法、残リスク
+- もっとも推奨する候補と理由
+
+編集・コミットは禁止です。

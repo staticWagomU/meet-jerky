@@ -288,6 +288,10 @@ impl AudioCapture for ScreenCaptureKitCapture {
         self.consumer.take()
     }
 
+    fn has_consumer(&self) -> bool {
+        self.consumer.is_some()
+    }
+
     fn sample_rate(&self) -> Option<u32> {
         self.sample_rate
     }
