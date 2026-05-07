@@ -1,0 +1,46 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- 履歴一覧検索は `src/utils/sessionListHelpers.tsx` の `sessionMatchesQuery` で、タイトル、ファイル名、開始日時、本文有無、トラック種別、自分/相手側ラベル、文字起こし本文を横断検索しています。
+- しかし `src/routes/SessionList.tsx` では本文一致時の excerpt だけが見えるため、タイトル/日時/ファイル名/トラック種別だけで一致した結果では「なぜ一致したか」がユーザーに伝わりにくいです。
+- Loop 273 では履歴検索・閲覧の納得感を上げる最小 UI スライスとして、一致理由を短く表示します。
+
+目的:
+- 検索中の各履歴行に、既存検索対象のどれに一致したかを短いラベルで表示する。
+- 例: `一致: タイトル、本文` / `一致: 日時` / `一致: ファイル名、トラック`
+- 検索条件が空のときは表示しない。
+
+担当範囲:
+- `src/utils/sessionListHelpers.tsx`
+- `src/routes/SessionList.tsx`
+- 必要最小限なら `src/App.css`
+- `AGENT_LOG.md`
+
+実装指示:
+- TypeScript/React の既存スタイルに合わせる。
+- `sessionMatchesQuery` の検索対象と矛盾しない helper を `sessionListHelpers.tsx` に追加してください。
+  - helper 名は任意ですが、`SessionSummary`, `startedAtLabel`, `query` から一致理由 label 配列を返す形を推奨します。
+  - 検索語が複数ある場合は、「そのカテゴリに少なくとも1語が含まれる」なら label に含めてよいです。検索の AND 条件自体は `sessionMatchesQuery` のまま変更しないでください。
+  - title は `getCompactSessionTitle(session.title)`、file は `getFileName(session.path)`、date は `startedAtLabel`、body は `unescapeInlineMarkdownText(session.searchText)`、track は既存 `getTranscriptBodySearchLabel` と `getTranscriptTrackSearchLabels(getTranscriptTrackCounts(...))` と同じ内容で判定してください。
+- `SessionRow` で検索中だけ一致理由を meta または excerpt 付近に表示してください。
+  - 既存の本文 excerpt は維持してください。
+  - aria-label / title にも一致理由を含めてください。
+  - 表示が増えすぎないよう、短い pill または短い補助テキストにしてください。
+- 検索ロジック、Tauri command、Rust、保存フォーマット、依存関係、ファイル操作 invoke は変更しない。
+- コミットは禁止。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/sessionListHelpers.tsx src/routes/SessionList.tsx src/App.css AGENT_LOG.md docs/worker-prompts/mj-worker-loop273-session-search-match-reason-20260507-121012.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

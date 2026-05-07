@@ -56,6 +56,11 @@ export function getSearchTerms(query: string): string[] {
     .filter(Boolean);
 }
 
+function hasAnySearchTerm(text: string, searchTerms: string[]): boolean {
+  const normalizedText = text.toLocaleLowerCase();
+  return searchTerms.some((term) => normalizedText.includes(term));
+}
+
 export function unescapeInlineMarkdownText(text: string): string {
   return text.replace(/\\([\\`*_[\]])/g, "$1");
 }
@@ -158,6 +163,35 @@ function getTranscriptTrackSearchLabels(
     ...(counts.other > 0 ? ["相手側", OTHER_TRACK_DEVICE_LABEL] : []),
     ...(counts.unknown > 0 ? ["音声ソース不明"] : []),
   ];
+}
+
+export function getSessionSearchMatchLabels(
+  session: SessionSummary,
+  startedAtLabel: string,
+  query: string,
+): string[] {
+  const searchTerms = getSearchTerms(query);
+  if (searchTerms.length === 0) {
+    return [];
+  }
+
+  const transcriptTrackSearchText = [
+    getTranscriptBodySearchLabel(session.searchText),
+    ...getTranscriptTrackSearchLabels(
+      getTranscriptTrackCounts(session.searchText),
+    ),
+  ].join(" ");
+  const matchTargets = [
+    { label: "タイトル", text: getCompactSessionTitle(session.title) },
+    { label: "日時", text: startedAtLabel },
+    { label: "ファイル名", text: getFileName(session.path) },
+    { label: "トラック", text: transcriptTrackSearchText },
+    { label: "本文", text: unescapeInlineMarkdownText(session.searchText) },
+  ];
+
+  return matchTargets
+    .filter(({ text }) => hasAnySearchTerm(text, searchTerms))
+    .map(({ label }) => label);
 }
 
 export function sessionMatchesQuery(

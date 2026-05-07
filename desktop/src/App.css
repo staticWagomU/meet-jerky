@@ -4708,6 +4708,18 @@ body[data-window="ring-light"] .overlay-window {
   background-color: color-mix(in srgb, var(--color-surface) 74%, transparent);
 }
 
+.session-list-item-match-reason {
+  border-radius: 999px;
+  padding: 0.1rem 0.42rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  font-weight: 720;
+  color: var(--meeting-status-active-color);
+  background-color: var(--meeting-status-active-bg);
+  border: 1px solid color-mix(in srgb, var(--meeting-status-active-color) 20%, transparent);
+  white-space: nowrap;
+}
+
 .session-list-item-body-state {
   border-radius: 999px;
   padding: 0.1rem 0.38rem;

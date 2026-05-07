@@ -16,6 +16,7 @@ import { toErrorMessage } from "../utils/errorMessage";
 import {
   formatSearchQueryForLabel,
   getSearchMatchExcerpt,
+  getSessionSearchMatchLabels,
   getSessionStartedAtDisplay,
   getTranscriptTrackCounts,
   hasTranscriptBody,
@@ -375,6 +376,13 @@ function SessionRow({
   const displayTitle = getCompactSessionTitle(session.title);
   const fileName = getFileName(session.path);
   const searchExcerpt = getSearchMatchExcerpt(session.searchText, searchQuery);
+  const searchMatchLabels = getSessionSearchMatchLabels(
+    session,
+    startedAtLabel,
+    searchQuery,
+  );
+  const searchMatchLabelText =
+    searchMatchLabels.length > 0 ? `一致: ${searchMatchLabels.join("、")}` : null;
   const hasBody = hasTranscriptBody(session.searchText);
   const trackCounts = getTranscriptTrackCounts(session.searchText);
   const transcriptBodyLabel = hasBody ? "文字起こし本文あり" : "文字起こし本文なし";
@@ -435,6 +443,7 @@ function SessionRow({
         transcriptBodyLabel,
         trackCountsLabel,
         `ファイル ${fileName}`,
+        searchMatchLabelText,
         searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
       ]
         .filter(Boolean)
@@ -445,6 +454,7 @@ function SessionRow({
         transcriptBodyLabel,
         trackCountsLabel,
         `ファイル ${fileName}`,
+        searchMatchLabelText,
         searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
       ]
         .filter(Boolean)
@@ -501,6 +511,15 @@ function SessionRow({
           >
             {fileName}
           </span>
+          {searchMatchLabelText && (
+            <span
+              className="session-list-item-match-reason"
+              aria-label={searchMatchLabelText}
+              title={searchMatchLabelText}
+            >
+              {searchMatchLabelText}
+            </span>
+          )}
         </div>
         {searchExcerpt && (
           <div
