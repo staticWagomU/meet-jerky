@@ -1,0 +1,40 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src-tauri/src/app_detection_google_meet.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+Google Meet の会議 URL として、既存の `https://meet.google.com/abc-defg-hij` と `/lookup/<segment>` に加え、`/landing/<aaa-bbbb-ccc>` 形式を狭く検知してください。会議検知の網羅性向上が目的です。
+
+実装条件:
+- `/landing/<code>` は既存 `is_google_meet_code_path` と同じ 3-4-3 lowercase ASCII code 形式だけを accept してください。
+- `/landing/`, `/landing/not-a-code`, `/landing/abc-defg-hij/extra` は reject してください。
+- host は既存通り `meet.google.com` だけにしてください。
+- `lookup` の広い single segment 判定は変更しないでください。
+- Zoom / Teams / Webex / GoTo / window title fallback / payload serialization / UI / CSS / 依存関係は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+推奨実装:
+- `src-tauri/src/app_detection_google_meet.rs` に `/landing/` 用の小さな helper を追加し、leading slash を補って既存 `is_google_meet_code_path` を再利用するなど、コード形式判定を重複させないでください。
+- `src-tauri/src/app_detection.rs` の `#[cfg(test)] mod tests` に classify_meeting_url の positive / negative tests を追加してください。
+
+検証:
+- `~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml --check`
+- `~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_google_meet.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop267-google-meet-landing-url-20260507-094842.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、ユーザー価値、非目標、未実機確認範囲、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
