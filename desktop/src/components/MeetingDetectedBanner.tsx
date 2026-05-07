@@ -20,6 +20,7 @@ import {
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
+  getLiveCaptionStatusPayloadIssue,
   getTransmissionStatusAriaLabel,
   isLiveCaptionStatusPayload,
   normalizeLiveCaptionStatusPayload,
@@ -189,7 +190,9 @@ export function MeetingDetectedBanner() {
         if (!disposed) {
           if (isLiveCaptionStatusPayload(event.payload)) {
             setListenerError((current) =>
-              current === INVALID_STATUS_PAYLOAD_ERROR ? null : current,
+              current?.startsWith(INVALID_STATUS_PAYLOAD_ERROR)
+                ? null
+                : current,
             );
             setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
             return;
@@ -204,7 +207,8 @@ export function MeetingDetectedBanner() {
             });
             return;
           }
-          setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
+          const issue = getLiveCaptionStatusPayloadIssue(event.payload);
+          setListenerError(`${INVALID_STATUS_PAYLOAD_ERROR}（理由: ${issue}）`);
         }
       },
     ).catch((e) => {

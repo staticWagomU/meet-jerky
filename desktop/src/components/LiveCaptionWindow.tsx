@@ -6,6 +6,7 @@ import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   LIVE_CAPTION_STATUS_EVENT,
+  getLiveCaptionStatusPayloadIssue,
   getTransmissionStatusAriaLabel,
   getVisibleTransmissionLabel,
   isLiveCaptionStatusPayload,
@@ -114,12 +115,13 @@ export function LiveCaptionWindow() {
         }
         if (isLiveCaptionStatusPayload(event.payload)) {
           setListenerError((current) =>
-            current === INVALID_STATUS_PAYLOAD_ERROR ? null : current,
+            current?.startsWith(INVALID_STATUS_PAYLOAD_ERROR) ? null : current,
           );
           setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
           return;
         }
-        setListenerError(INVALID_STATUS_PAYLOAD_ERROR);
+        const issue = getLiveCaptionStatusPayloadIssue(event.payload);
+        setListenerError(`${INVALID_STATUS_PAYLOAD_ERROR}（理由: ${issue}）`);
       },
     ).catch((e) => handleListenerStartError("ライブ字幕ステータス", e));
     const resetUnlistenPromise = listen(LIVE_CAPTION_RESET_EVENT, () => {

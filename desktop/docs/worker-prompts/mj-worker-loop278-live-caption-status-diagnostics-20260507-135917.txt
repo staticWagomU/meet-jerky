@@ -1,0 +1,51 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `isLiveCaptionStatusPayload` は `src/utils/liveCaptionStatus.ts` で `live-caption-status` payload を型ガードしています。
+- 不正 payload の場合、`LiveCaptionWindow` は「ライブ字幕の状態通知の形式が不正です。」だけを表示します。
+- `MeetingDetectedBanner` も会議検知後の status payload 不正時に「会議検知プロンプトの状態通知の形式が不正です。」だけを表示します。
+- status payload には engine/AI送信/文字起こし状態/各トラック状態の label が含まれ得るため、不正時の診断に label 生値を出すとユーザー設定や状態文字列が混ざるリスクがあります。
+
+目的:
+- 型ガードの reject 条件を変えずに、不正な `live-caption-status` payload の安全な診断理由だけを UI 表示へ追加する。
+- payload 生値、label 本文、未知の文字列値は表示しない。
+
+担当範囲:
+- `src/utils/liveCaptionStatus.ts`
+- `src/components/LiveCaptionWindow.tsx`
+- `src/components/MeetingDetectedBanner.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src/utils/liveCaptionStatus.ts` に `getLiveCaptionStatusPayloadIssue(value: unknown): string` のような helper を追加してください。
+- helper は既存の `isLiveCaptionStatusPayload` と同じ validation 契約に沿って、以下のような安全な理由だけを返してください。
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `engineLabel` が安全な文字列ではない: `engineLabel が空、長すぎる、または制御文字を含みます`
+  - `aiTransmissionLabel` が安全な文字列ではない: `aiTransmissionLabel が空、長すぎる、または制御文字を含みます`
+  - `isExternalTransmission` が boolean ではない: `isExternalTransmission が boolean ではありません`
+  - `transcriptionStatusLabel` が安全な文字列ではない: `transcriptionStatusLabel が空、長すぎる、または制御文字を含みます`
+  - `microphoneTrackLabel` が安全な文字列ではない: `microphoneTrackLabel が空、長すぎる、または制御文字を含みます`
+  - `systemAudioTrackLabel` が安全な文字列ではない: `systemAudioTrackLabel が空、長すぎる、または制御文字を含みます`
+  - その他: `形式が不正です`
+- 既存の `isLiveCaptionStatusPayload` の挙動は変えないでください。必要なら helper から同じ private utility を再利用してください。
+- `LiveCaptionWindow` の不正 status payload branch で、既存文の後ろに `（理由: ...）` を付けて表示してください。
+- `MeetingDetectedBanner` では、会議検知後に既存どおり `INVALID_STATUS_PAYLOAD_ERROR` を表示する分岐だけに理由を追加してください。会議検知前の不正 status で `setListenerError(null)` して prompt window を隠す既存挙動は変更しないでください。
+- payload 生値、各 label の中身、未知文字列値は表示しないでください。
+- `transcription-result` / `transcription-error` の挙動、Rust、Tauri command、正常 status 表示、event 名、CSS、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop278-live-caption-status-diagnostics-20260507-135917.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

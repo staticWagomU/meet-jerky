@@ -80,6 +80,41 @@ export function isLiveCaptionStatusPayload(
   );
 }
 
+export function getLiveCaptionStatusPayloadIssue(value: unknown): string {
+  if (!value || typeof value !== "object") {
+    return "payload がオブジェクトではありません";
+  }
+  const candidate = value as Partial<LiveCaptionStatusPayload>;
+  if (toValidStatusLabel(candidate.engineLabel) === null) {
+    return "engineLabel が空、長すぎる、または制御文字を含みます";
+  }
+  if (toValidStatusLabel(candidate.aiTransmissionLabel) === null) {
+    return "aiTransmissionLabel が空、長すぎる、または制御文字を含みます";
+  }
+  if (typeof candidate.isExternalTransmission !== "boolean") {
+    return "isExternalTransmission が boolean ではありません";
+  }
+  if (
+    candidate.transcriptionStatusLabel !== undefined &&
+    toValidStatusLabel(candidate.transcriptionStatusLabel) === null
+  ) {
+    return "transcriptionStatusLabel が空、長すぎる、または制御文字を含みます";
+  }
+  if (
+    candidate.microphoneTrackLabel !== undefined &&
+    toValidStatusLabel(candidate.microphoneTrackLabel) === null
+  ) {
+    return "microphoneTrackLabel が空、長すぎる、または制御文字を含みます";
+  }
+  if (
+    candidate.systemAudioTrackLabel !== undefined &&
+    toValidStatusLabel(candidate.systemAudioTrackLabel) === null
+  ) {
+    return "systemAudioTrackLabel が空、長すぎる、または制御文字を含みます";
+  }
+  return "形式が不正です";
+}
+
 export function normalizeLiveCaptionStatusPayload(
   status: StoredLiveCaptionStatusPayload,
 ): LiveCaptionStatusPayload {
