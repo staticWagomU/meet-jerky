@@ -7,7 +7,7 @@ use std::borrow::Cow;
 /// Microsoft Teams 会議 URL を判定する。
 ///
 /// 受理パターン (4 系統):
-/// - work-or-school host (`teams.microsoft.com` / `teams.cloud.microsoft`) + `/l/meetup-join/<segments>`
+/// - work-or-school host (`teams.microsoft.com` / `teams.cloud.microsoft`) + `/l/meetup-join/<segment>/<segment...>`
 /// - work-or-school host + path `/v2` または `/v2/` + query に `meetingjoin=true`
 /// - work-or-school host + `/meet/<id>`
 /// - `teams.live.com` + `/meet/<id>` (個人版)
@@ -15,7 +15,7 @@ pub(crate) fn is_teams_meeting_url(host: &str, path: &str, query: Option<&str>) 
     (is_teams_work_or_school_host(host)
         && path
             .strip_prefix("/l/meetup-join/")
-            .is_some_and(has_non_empty_path_segments))
+            .is_some_and(has_at_least_two_non_empty_path_segments))
         || (is_teams_work_or_school_host(host)
             && (path == "/v2" || path == "/v2/")
             && query_has_param(query, "meetingjoin", "true"))
@@ -33,9 +33,18 @@ fn is_teams_work_or_school_host(host: &str) -> bool {
     host == "teams.microsoft.com" || host == "teams.cloud.microsoft"
 }
 
-fn has_non_empty_path_segments(value: &str) -> bool {
+fn has_at_least_two_non_empty_path_segments(value: &str) -> bool {
     let value = value.strip_suffix('/').unwrap_or(value);
-    !value.is_empty() && value.split('/').all(|segment| !segment.is_empty())
+    let mut segment_count = 0;
+
+    for segment in value.split('/') {
+        if segment.is_empty() {
+            return false;
+        }
+        segment_count += 1;
+    }
+
+    segment_count >= 2
 }
 
 fn has_single_numeric_meet_id_segment(value: &str) -> bool {
@@ -101,20 +110,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn work_or_school_meetup_join_requires_non_empty_segments() {
+    fn work_or_school_meetup_join_requires_at_least_two_non_empty_segments() {
         for host in ["teams.microsoft.com", "teams.cloud.microsoft"] {
             assert!(is_teams_meeting_url(
                 host,
-                "/l/meetup-join/19:meeting_thread/thread.v2/0",
+                "/l/meetup-join/19:meeting_thread/0",
                 None,
             ));
             assert!(is_teams_meeting_url(
                 host,
-                "/l/meetup-join/19:meeting_thread/",
+                "/l/meetup-join/19:meeting_thread/0/",
                 None,
             ));
 
             assert!(!is_teams_meeting_url(host, "/l/meetup-join/", None));
+            assert!(!is_teams_meeting_url(host, "/l/meetup-join/secret", None,));
             assert!(!is_teams_meeting_url(
                 host,
                 "/l/meetup-join/19:meeting_thread//0",
@@ -122,10 +132,19 @@ mod tests {
             ));
         }
 
-        assert!(has_non_empty_path_segments("19:meeting_thread/thread.v2"));
-        assert!(has_non_empty_path_segments("19:meeting_thread/"));
-        assert!(!has_non_empty_path_segments(""));
-        assert!(!has_non_empty_path_segments("19:meeting_thread//thread.v2"));
+        assert!(has_at_least_two_non_empty_path_segments(
+            "19:meeting_thread/0"
+        ));
+        assert!(has_at_least_two_non_empty_path_segments(
+            "19:meeting_thread/0/"
+        ));
+        assert!(!has_at_least_two_non_empty_path_segments(""));
+        assert!(!has_at_least_two_non_empty_path_segments(
+            "19:meeting_thread"
+        ));
+        assert!(!has_at_least_two_non_empty_path_segments(
+            "19:meeting_thread//0"
+        ));
     }
 
     #[test]

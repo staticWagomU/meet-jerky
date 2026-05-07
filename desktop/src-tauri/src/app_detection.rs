@@ -670,10 +670,7 @@ mod tests {
         );
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/secret"),
-            Some(MeetingUrlClassification {
-                service: "Microsoft Teams".to_string(),
-                host: "teams.microsoft.com".to_string(),
-            })
+            None
         );
         assert_eq!(
             classify_meeting_url("https://teams.microsoft.com/l/meetup-join/19%3ameeting_abc/0?context=secret#meeting"),

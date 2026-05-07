@@ -1,0 +1,45 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+基本方針:
+- 鵜呑みにせず、批判的・中立的に判断してください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+担当範囲:
+- src-tauri/src/app_detection_teams.rs
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+目的:
+Microsoft Teams work/school の `/l/meetup-join/` URL 検知について、1 segment だけの URL まで会議扱いする現行契約を狭め、少なくとも 2 つの非空 path segment がある場合だけ会議 URL として扱ってください。既存の実用的な正例は `/l/meetup-join/19%3ameeting_abc/0` の 2 segment 形式で、Microsoft 公式資料にも `joinWebUrl` の例として `/l/meetup-join/19%3ameeting_...` 形式が示されています。1 segment の `secret` は広すぎる誤検知リスクとして reject に変えます。
+
+実装条件:
+- `/l/meetup-join/` 専用の判定で、末尾 slash 1 つは許容し、途中の空 segment は拒否し、segment 数は 2 以上必須にする。
+- `teams.microsoft.com` と `teams.cloud.microsoft` の両方に同じ契約を適用する。
+- `/v2?meetingjoin=true`、`/meet/<numeric>`、`teams.live.com`、query percent decode、host 判定、URL parser、UI、通知、録音開始処理、音声取得、文字起こし、依存関係は変更しない。
+- production code の変更は必要最小限にする。既存 helper 名を変える場合は、影響範囲をこのファイル内に閉じてください。
+
+テスト要件:
+- `src-tauri/src/app_detection_teams.rs` の module test で、1 segment の `/l/meetup-join/secret` を reject する。
+- `src-tauri/src/app_detection_teams.rs` の module test で、`/l/meetup-join/19:meeting_thread/0` と trailing slash 付きは accept する。
+- `src-tauri/src/app_detection.rs` の top-level test で、`https://teams.microsoft.com/l/meetup-join/secret` を `None` に更新する。
+- `src-tauri/src/app_detection.rs` の top-level test で、`teams.cloud.microsoft` の 2 segment meetup-join URL も positive contract として固定する。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib app_detection_teams`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection_teams.rs src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop315-next-value-slice-20260508-023000.txt docs/worker-prompts/mj-worker-loop315-teams-meetup-join-two-segments-20260508-023150.txt`
+
+AGENT_LOG.md には Loop 315 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を追記してください。変更ファイルには research prompt と worker prompt も含めてください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
