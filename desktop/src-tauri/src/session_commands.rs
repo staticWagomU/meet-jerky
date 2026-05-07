@@ -63,11 +63,11 @@ pub fn finalize_and_save_session_inner(
     now_secs: u64,
     offset: FixedOffset,
 ) -> Result<PathBuf, String> {
-    let session = manager.finalize(now_secs).map_err(|e| e.to_string())?;
-
     // 出力先ディレクトリが無い場合は作成する。
     std::fs::create_dir_all(output_dir)
         .map_err(|e| format!("出力ディレクトリの作成に失敗しました: {e}"))?;
+
+    let session = manager.finalize(now_secs).map_err(|e| e.to_string())?;
 
     session_store::save_session_markdown(output_dir, &session, offset)
         .map_err(|e| format!("セッションファイルの書き込みに失敗しました: {e}"))
@@ -219,7 +219,7 @@ mod tests {
     }
 
     // Cycle 5a: output_dir がファイルの場合 create_dir_all が失敗し日本語エラーを返す
-    // finalize は create_dir_all より先に呼ばれるため manager はアイドルに戻っている
+    // finalize より先に create_dir_all が失敗するため active session は保持される
     #[test]
     fn finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file() {
         let manager = SessionManager::new();
@@ -240,8 +240,9 @@ mod tests {
             err.starts_with("出力ディレクトリの作成に失敗しました"),
             "unexpected error message: {err}"
         );
-        // finalize() は create_dir_all より先に呼ばれるため manager はアイドルに戻っている
-        assert!(!manager.is_active());
+        // create_dir_all 失敗のため finalize() は呼ばれず active session は保持される
+        assert!(manager.is_active());
+        assert_eq!(manager.current_title(), Some("会議".into()));
     }
 
     // Cycle 6a: start_session_inner が output_dir がファイルの場合に日本語エラーを返す

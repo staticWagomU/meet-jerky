@@ -1,0 +1,46 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/session_commands.rs
+- AGENT_LOG.md
+
+背景:
+`finalize_and_save_session_inner` は現在、`manager.finalize(now_secs)` で active session を閉じた後に `std::fs::create_dir_all(output_dir)` を呼びます。そのため、保存先ディレクトリがファイルに置き換わっている場合など、出力先作成の preflight で失敗すべきケースでも session が idle になり、会議内容を失いやすい契約になっています。
+
+実装内容:
+- `finalize_and_save_session_inner` で `std::fs::create_dir_all(output_dir)` を `manager.finalize(now_secs)` より前に移動してください。
+- 出力ディレクトリ作成に失敗した場合は、`manager.finalize` を呼ばず active session を保持する契約にしてください。
+- エラー文言 prefix `出力ディレクトリの作成に失敗しました` は維持してください。
+- 既存テスト `finalize_and_save_session_inner_returns_error_when_output_dir_path_is_a_file` の期待を、失敗後も `manager.is_active()` が true のままになるよう更新してください。コメントも新契約に合わせてください。
+- 必要なら同テスト内で `manager.current_title()` も確認し、active session が同じ会議として残っていることを固定してください。
+- `save_session_markdown` 失敗時の契約は変更しないでください。`finalize` 済みになって idle になる既存テストは維持してください。
+- `start_session_inner`、`discard_session_inner`、保存形式、UI/TypeScript、依存関係は変更しないでください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib session_commands`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/session_commands.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop325-next-value-slice-20260508-054907.txt docs/worker-prompts/mj-worker-loop325-finalize-output-preflight-20260508-054907.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
