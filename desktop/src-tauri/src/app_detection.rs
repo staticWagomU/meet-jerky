@@ -278,6 +278,27 @@ fn check_all_inactive_bundles() {
     }
 }
 
+fn record_browser_meeting_seen_and_should_throttle(
+    last_seen: &Mutex<HashMap<String, Instant>>,
+    last_seen_secs: &Mutex<HashMap<String, u64>>,
+    throttle_key: &str,
+    now: Instant,
+    now_secs: u64,
+) -> bool {
+    last_seen_secs
+        .lock()
+        .insert(throttle_key.to_string(), now_secs);
+
+    let mut last_seen = last_seen.lock();
+    if let Some(prev) = last_seen.get(throttle_key) {
+        if now.duration_since(*prev) < NOTIFICATION_THROTTLE {
+            return true;
+        }
+    }
+    last_seen.insert(throttle_key.to_string(), now);
+    false
+}
+
 /// Swift 側からブラウザのアクティブタブ URL が上がってきたときのハンドラ。
 ///
 /// URL 全文はここで分類にのみ使い、payload / 通知 / log には出さない。
@@ -349,25 +370,17 @@ pub(crate) fn handle_browser_url_detection(
         None => return,
     };
 
-    {
-        let mut last_seen = state.last_seen.lock();
-        let now = Instant::now();
-        if let Some(prev) = last_seen.get(&throttle_key) {
-            if now.duration_since(*prev) < NOTIFICATION_THROTTLE {
-                return;
-            }
-        }
-        last_seen.insert(throttle_key.clone(), now);
-    }
-
     // `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
     // (案 A 二重管理: 既存 Instant ベース throttle と並走)。
-    {
-        let now_secs = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        state.last_seen_secs.lock().insert(throttle_key, now_secs);
+    // 通知スロットリングで return する場合も inactive 判定用の最終検知時刻は更新する。
+    if record_browser_meeting_seen_and_should_throttle(
+        &state.last_seen,
+        &state.last_seen_secs,
+        &throttle_key,
+        Instant::now(),
+        now_secs,
+    ) {
+        return;
     }
 
     show_notification(&state.app_handle, &classification.service);
@@ -475,6 +488,41 @@ mod tests {
         assert!(!json.contains("abc-defg-hij"));
         assert!(!json.contains("authuser=0"));
         assert!(!json.contains("windowTitle"));
+    }
+
+    #[test]
+    fn browser_seen_updates_inactive_timestamp_before_notification_throttle() {
+        let last_seen = Mutex::new(HashMap::new());
+        let last_seen_secs = Mutex::new(HashMap::new());
+        let throttle_key = "browser:com.apple.Safari:Google Meet:meet.google.com";
+        let first_instant = Instant::now();
+        let first_seen_secs = 100;
+        let second_seen_secs = first_seen_secs + 10;
+
+        assert!(!record_browser_meeting_seen_and_should_throttle(
+            &last_seen,
+            &last_seen_secs,
+            throttle_key,
+            first_instant,
+            first_seen_secs,
+        ));
+
+        assert!(record_browser_meeting_seen_and_should_throttle(
+            &last_seen,
+            &last_seen_secs,
+            throttle_key,
+            first_instant + Duration::from_secs(10),
+            second_seen_secs,
+        ));
+
+        assert_eq!(
+            last_seen_secs.lock().get(throttle_key).copied(),
+            Some(second_seen_secs)
+        );
+        assert_eq!(
+            last_seen.lock().get(throttle_key).copied(),
+            Some(first_instant)
+        );
     }
 
     #[test]
