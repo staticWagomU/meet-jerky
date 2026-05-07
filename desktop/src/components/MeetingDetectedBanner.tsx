@@ -54,6 +54,10 @@ async function showMeetingPromptWindow(): Promise<void> {
   await invoke("set_meeting_prompt_window_visible", { visible: true });
 }
 
+async function showMainWindowForMeetingStartRequest(): Promise<void> {
+  await invoke("show_main_window");
+}
+
 function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
   return readStoredLiveCaptionStatus((e) => {
     console.error(
@@ -346,6 +350,15 @@ export function MeetingDetectedBanner() {
       const msg = toErrorMessage(e);
       console.error("録音開始要求の送信に失敗しました:", msg);
       setListenerError(`録音開始要求の送信に失敗しました: ${msg}`);
+      return;
+    }
+    try {
+      await showMainWindowForMeetingStartRequest();
+    } catch (e) {
+      setPendingAction(null);
+      const msg = toErrorMessage(e);
+      console.error("メインウィンドウの表示に失敗しました:", msg);
+      setListenerError(`メインウィンドウの表示に失敗しました: ${msg}`);
       return;
     }
     try {
