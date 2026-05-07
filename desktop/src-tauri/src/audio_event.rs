@@ -7,7 +7,16 @@ pub(crate) const AUDIO_SOURCE_MICROPHONE: &str = "microphone";
 pub(crate) const AUDIO_SOURCE_SYSTEM_AUDIO: &str = "system_audio";
 
 pub(crate) fn build_audio_level_event_payload(source: &str, level: f32) -> serde_json::Value {
+    let level = normalize_audio_level_for_event(level);
     json!({ "level": level, "source": source })
+}
+
+fn normalize_audio_level_for_event(level: f32) -> f32 {
+    if level.is_nan() {
+        0.0
+    } else {
+        level.clamp(0.0, 1.0)
+    }
 }
 
 pub(crate) fn build_audio_drop_event_payload(source: &str, dropped: usize) -> serde_json::Value {
@@ -73,6 +82,35 @@ mod tests {
         assert_eq!(obj.len(), 2);
         assert_eq!(payload.get("source").and_then(|v| v.as_str()), Some(""));
         assert_eq!(payload.get("level").and_then(|v| v.as_f64()), Some(0.0));
+    }
+
+    #[test]
+    fn build_audio_level_event_payload_normalizes_level_to_finite_unit_range() {
+        let cases = [
+            (f32::NAN, 0.0),
+            (f32::NEG_INFINITY, 0.0),
+            (-0.25, 0.0),
+            (0.0, 0.0),
+            (0.75, 0.75),
+            (1.0, 1.0),
+            (1.25, 1.0),
+            (f32::INFINITY, 1.0),
+        ];
+
+        for (level, expected) in cases {
+            let payload = build_audio_level_event_payload("custom_source", level);
+
+            assert_eq!(
+                payload.get("source").and_then(|v| v.as_str()),
+                Some("custom_source"),
+                "source は level 正規化時も passthrough"
+            );
+            assert_eq!(
+                payload.get("level").and_then(|v| v.as_f64()),
+                Some(expected),
+                "level={level:?} should normalize to {expected}"
+            );
+        }
     }
 
     #[test]

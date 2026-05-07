@@ -1,0 +1,44 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/audio_event.rs
+- AGENT_LOG.md
+
+背景:
+frontend の `src/utils/audioLevelPayload.ts` は `audio-level` payload の `level` を有限数かつ `0.0..=1.0` の場合だけ受理します。一方 Rust 側の `src-tauri/src/audio_event.rs` の `build_audio_level_event_payload(source, level)` は現在 `level` をそのまま JSON 化しています。通常の RMS 経路は `calculate_rms_from_sum` などで clamp されていますが、event 境界でも防御的に正規化しておくと、異常値が混入した場合に UI が音声レベル通知を不正扱いして状態更新を落とすリスクを減らせます。
+
+実装内容:
+- `build_audio_level_event_payload` で JSON 化する前に `level` を有限な `0.0..=1.0` に正規化してください。
+- `NaN` は `0.0`、負値と `-Infinity` は `0.0`、`1.0` 超過と `+Infinity` は `1.0` に丸めてください。
+- `source` は既存通り正規化せず passthrough してください。既存の empty source passthrough test は維持してください。
+- `build_audio_drop_event_payload`、event 名、payload field 名、audio.rs/system_audio.rs の emit 呼び出し、frontend、RMS 計算、依存関係は変更しないでください。
+- 既存 tests に加え、正規化境界を固定する unit test を追加してください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib audio_event`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/audio_event.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop319-next-value-slice-20260508-034906.txt docs/worker-prompts/mj-worker-loop319-audio-level-payload-normalize-20260508-035006.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

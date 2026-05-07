@@ -1,0 +1,31 @@
+あなたは調査担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作、認証情報変更、破壊的操作は禁止です。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 319 で実装する、1コミットで完了できる高価値な最小改善スライスを1つ提案してください。
+
+優先判断:
+- AGENTS.md / docs/product-concept.md の優先順位を重視してください。
+- 直近 Loop 311-318 と重なる修正は避けてください。特に、pending meeting start request、transcription-error 後の表示維持、Zoom/Teams/Webex URL 境界、履歴 searchText UTF-8 境界、複数行 transcription-error payload validation の続きに安易に寄せないでください。
+- 可能なら、録音状態の透明性、音声レベル/ドロップ通知、マイク/相手側別トラック取得の信頼性、リアルタイム文字起こし状態に関わる小さな改善を優先してください。
+- 前回調査で候補に出た `audio-level` event payload の Rust 側 finite `0.0..=1.0` 正規化も、現在コードと既存テストを確認したうえで妥当なら再評価してください。ただし、より高価値な候補があればそちらを優先してください。
+- 実機、外部サービス、課金、認証変更が必要なものは避け、自動テスト、静的検証、TypeScript build、Rust unit test で検証できる範囲を選んでください。
+
+報告形式:
+1. 推奨タスクを1つだけ提示
+2. 根拠となるコード位置を file:line で提示
+3. 具体的な変更範囲
+4. ユーザー価値
+5. 非目標
+6. 検証方法
+7. リスクと未実機確認範囲
+
+編集・コミットは禁止です。推測は推測と明示してください。
