@@ -60,7 +60,7 @@ fn read_session_summary(path: PathBuf) -> std::io::Result<Option<SessionSummary>
     reader
         .take(MAX_SESSION_SEARCH_TEXT_BYTES)
         .read_to_end(&mut search_bytes)?;
-    let search_text = String::from_utf8_lossy(&search_bytes).to_string();
+    let search_text = session_search_text_from_limited_bytes(&search_bytes);
 
     Ok(Some(SessionSummary {
         path,
@@ -68,6 +68,48 @@ fn read_session_summary(path: PathBuf) -> std::io::Result<Option<SessionSummary>
         title,
         search_text,
     }))
+}
+
+fn session_search_text_from_limited_bytes(bytes: &[u8]) -> String {
+    String::from_utf8_lossy(trim_incomplete_utf8_suffix(bytes)).to_string()
+}
+
+fn trim_incomplete_utf8_suffix(bytes: &[u8]) -> &[u8] {
+    if bytes.len() < MAX_SESSION_SEARCH_TEXT_BYTES as usize {
+        return bytes;
+    }
+
+    let suffix_start = bytes.len().saturating_sub(4);
+    let suffix = &bytes[suffix_start..];
+    let Some(start_offset) = suffix
+        .iter()
+        .rposition(|byte| !is_utf8_continuation_byte(*byte))
+    else {
+        return bytes;
+    };
+    let start = suffix_start + start_offset;
+    let Some(width) = utf8_sequence_width(bytes[start]) else {
+        return bytes;
+    };
+    if bytes.len() - start < width {
+        &bytes[..start]
+    } else {
+        bytes
+    }
+}
+
+fn is_utf8_continuation_byte(byte: u8) -> bool {
+    byte & 0b1100_0000 == 0b1000_0000
+}
+
+fn utf8_sequence_width(byte: u8) -> Option<usize> {
+    match byte {
+        0x00..=0x7f => Some(1),
+        0xc2..=0xdf => Some(2),
+        0xe0..=0xef => Some(3),
+        0xf0..=0xf4 => Some(4),
+        _ => None,
+    }
 }
 
 /// `dir` 配下の `.md` 拡張子ファイルを一覧する。
@@ -165,6 +207,23 @@ mod tests {
         assert_eq!(
             summaries[0].search_text.len(),
             MAX_SESSION_SEARCH_TEXT_BYTES as usize
+        );
+    }
+
+    #[test]
+    fn session_search_text_trims_incomplete_utf8_suffix_at_byte_limit() {
+        let mut bytes = "x"
+            .repeat(MAX_SESSION_SEARCH_TEXT_BYTES as usize - 1)
+            .into_bytes();
+        bytes.extend_from_slice(&"あ".as_bytes()[..1]);
+
+        let search_text = session_search_text_from_limited_bytes(&bytes);
+
+        assert!(!search_text.contains('\u{fffd}'));
+        assert!(search_text.len() <= MAX_SESSION_SEARCH_TEXT_BYTES as usize);
+        assert_eq!(
+            search_text.len(),
+            MAX_SESSION_SEARCH_TEXT_BYTES as usize - 1
         );
     }
 

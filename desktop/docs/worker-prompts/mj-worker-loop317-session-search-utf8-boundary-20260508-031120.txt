@@ -1,0 +1,43 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+基本方針:
+- 鵜呑みにせず、批判的・中立的に判断してください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止です。
+- コミットは禁止です。
+
+担当範囲:
+- src-tauri/src/session_store_list.rs
+- AGENT_LOG.md
+
+目的:
+履歴一覧の `searchText` は本文 bytes を `MAX_SESSION_SEARCH_TEXT_BYTES` まで読むため、日本語などの UTF-8 multi-byte 文字の途中で切れると `String::from_utf8_lossy` により末尾へ `�` が混入し得ます。アプリが生成する Markdown は UTF-8 なので、検索本文の切り詰め末尾だけ UTF-8 境界へ丸め、履歴一覧・検索抜粋に壊れた文字が出にくいようにしてください。
+
+実装条件:
+- `read_session_summary` の検索本文変換を小 helper に切り出す。
+- `MAX_SESSION_SEARCH_TEXT_BYTES`、ファイル列挙、タイトル行の `String::from_utf8_lossy`、invalid title line の既存契約、`NotFound` skip、一覧 sort、UI/TypeScript、保存形式、依存関係は変更しない。
+- invalid UTF-8 を含む外部編集 Markdown 全体の正規化には広げない。今回の主対象は「上限 byte で切った末尾が UTF-8 境界でない場合」だけ。
+- 上限内の valid UTF-8 はこれまで通り同じ文字列にする。
+- 上限末尾が UTF-8 境界でない場合は、末尾の不完全 bytes だけを落として文字列化する。replacement char を新たに作らない。
+
+テスト要件:
+- `src-tauri/src/session_store_list.rs` に、search text が 64KiB 境界で日本語文字の途中に切れても `�` を含まず、panic せず、`MAX_SESSION_SEARCH_TEXT_BYTES` 以下になるテストを追加する。
+- 既存 `list_session_summaries_limits_search_text_size` と invalid title line test は維持する。
+- 可能なら helper 直接 test と list 経由 test のどちらか小さい方に留め、過度に重複させない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib session_store_list`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/session_store_list.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop317-next-value-slice-20260508-030906.txt docs/worker-prompts/mj-worker-loop317-session-search-utf8-boundary-20260508-031120.txt`
+
+AGENT_LOG.md には Loop 317 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を追記してください。変更ファイルには research prompt と worker prompt も含めてください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
