@@ -1219,6 +1219,11 @@ export function TranscriptView() {
     hasExternalApiKey,
     externalApiKeyErrorForUi,
   );
+  const shouldShowPendingMeetingStartNotice =
+    hasPendingMeetingStartRequest &&
+    !isMeetingActive &&
+    ((settings === undefined && !settingsError) ||
+      Boolean(meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)));
   const isAudioSourceOperationPending =
     isMicOperationPending ||
     isSystemAudioOperationPending ||
@@ -2105,6 +2110,18 @@ export function TranscriptView() {
             title={`外部 Realtime 注意: ${externalRealtimeRiskNotice}`}
           >
             {externalRealtimeRiskNotice}
+          </p>
+        )}
+        {shouldShowPendingMeetingStartNotice && (
+          <p
+            className="meeting-source-notice"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="録音開始要求を受信済みです。設定と権限状態を確認中です。"
+            title="録音開始要求を受信済みです。設定と権限状態を確認中です。"
+          >
+            録音開始要求を受信済みです。設定と権限状態を確認中です。
           </p>
         )}
         {meetingError && (

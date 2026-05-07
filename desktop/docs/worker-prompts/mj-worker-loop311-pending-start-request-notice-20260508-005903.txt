@@ -1,0 +1,35 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+
+目的:
+会議検知プロンプトから録音開始要求を受け取った後、TranscriptView が設定や権限状態を確認していて開始処理をまだ実行できない間に、ユーザーへ「開始要求は受信済みで確認中」と分かる status 表示を出してください。録音状態の透明性を高める小さな UI 改善です。
+
+根拠:
+- `src/routes/TranscriptView.tsx` の pending request effect は、`hasPendingMeetingStartRequest` が true のとき、`settings === undefined && !settingsError` や `meetingStartBlockedReason` が確認中の場合に return して待機します。
+- 同ファイルには既存の `meeting-source-notice` status 表示があり、注意・状態メッセージを小さく出す既存パターンがあります。
+
+実装条件:
+- `hasPendingMeetingStartRequest` が true、かつ会議がまだ active ではなく、設定読み込み中または権限/モデル等の状態確認中で pending request effect が待機する状態に限って、`role="status"` / `aria-live="polite"` / `aria-atomic="true"` の短い日本語メッセージを表示してください。
+- 既存の pending request 消費・clear・自動開始条件・エラー化条件は変更しないでください。
+- 既存の `meeting-source-notice` スタイルを使い、CSS 追加は原則不要です。
+- MeetingDetectedBanner、App.tsx、meetingStartRequest helper、Rust、event 名、localStorage key、録音自動開始の仕様、依存関係は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop311-pending-start-request-notice-20260508-005903.txt`
+
+AGENT_LOG.md には Loop 311 として、開始日時、担当セッション、役割、作業範囲、指示内容、結果、変更ファイル、検証結果、依存関係追加の有無、失敗理由、次アクション、ユーザー価値、非目標、未実機確認範囲を簡潔に追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
