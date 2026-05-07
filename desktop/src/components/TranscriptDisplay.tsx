@@ -5,6 +5,7 @@ import type { TranscriptSegment } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import { formatSegmentTimestamp } from "../utils/timeFormat";
 import {
+  getTranscriptSegmentPayloadIssue,
   getTranscriptionErrorPayloadIssue,
   isTranscriptErrorSegment,
   isTranscriptSegmentPayload,
@@ -68,7 +69,10 @@ export function TranscriptDisplay({
         }
         const payload = event.payload;
         if (!isTranscriptSegmentPayload(payload)) {
-          setResultListenerError("文字起こし結果の形式が不正です。");
+          const issue = getTranscriptSegmentPayloadIssue(payload);
+          setResultListenerError(
+            `文字起こし結果の形式が不正です。（理由: ${issue}）`,
+          );
           return;
         }
         setResultListenerError(null);

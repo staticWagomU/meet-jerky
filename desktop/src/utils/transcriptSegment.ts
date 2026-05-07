@@ -78,6 +78,44 @@ export function isTranscriptionErrorPayload(
   );
 }
 
+export function getTranscriptSegmentPayloadIssue(value: unknown): string {
+  if (!value || typeof value !== "object") {
+    return "payload がオブジェクトではありません";
+  }
+  const candidate = value as Partial<TranscriptSegment>;
+  if (!isSafeTrimmedString(candidate.text, 4000)) {
+    return "text が空、長すぎる、または制御文字を含みます";
+  }
+  if (!isFiniteInteger(candidate.startMs) || candidate.startMs < 0) {
+    return "startMs が非負の整数ではありません";
+  }
+  if (
+    !isFiniteInteger(candidate.endMs) ||
+    candidate.endMs < candidate.startMs
+  ) {
+    return "endMs が startMs 以降の整数ではありません";
+  }
+  if (
+    candidate.source !== undefined &&
+    !isTranscriptAudioSource(candidate.source)
+  ) {
+    return "source が不明です";
+  }
+  if (
+    candidate.speaker !== undefined &&
+    !isSafeTrimmedString(candidate.speaker, 80)
+  ) {
+    return "speaker が空、長すぎる、または制御文字を含みます";
+  }
+  if (
+    candidate.isError !== undefined &&
+    typeof candidate.isError !== "boolean"
+  ) {
+    return "isError が boolean ではありません";
+  }
+  return "形式が不正です";
+}
+
 export function getTranscriptionErrorPayloadIssue(value: unknown): string {
   if (!value || typeof value !== "object") {
     return "payload がオブジェクトではありません";

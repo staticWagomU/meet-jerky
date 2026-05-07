@@ -1,0 +1,50 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `isTranscriptSegmentPayload` は `src/utils/transcriptSegment.ts` で `transcription-result` payload を型ガードしています。
+- 不正 payload の場合、`TranscriptDisplay` / `LiveCaptionWindow` は現在「文字起こし結果の形式が不正です」とだけ表示します。
+- result payload には会議由来の `text` や `speaker` が含まれ得るため、不正時の診断に payload 生値や文字列本文を出すと機微情報が混ざるリスクがあります。
+- 直前の Loop 276 では `transcription-error` 不正 payload に、安全な固定理由だけを表示する helper を追加済みです。
+
+目的:
+- 型ガードの reject 条件を変えずに、不正な `transcription-result` payload の安全な診断理由だけを UI 表示へ追加する。
+- payload 生値、`text` 本文、`speaker` 本文、未知の文字列値は表示しない。
+
+担当範囲:
+- `src/utils/transcriptSegment.ts`
+- `src/components/TranscriptDisplay.tsx`
+- `src/components/LiveCaptionWindow.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src/utils/transcriptSegment.ts` に `getTranscriptSegmentPayloadIssue(value: unknown): string` のような helper を追加してください。
+- helper は既存の `isTranscriptSegmentPayload` と同じ validation 契約に沿って、以下のような安全な理由だけを返してください。
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `text` が安全な文字列ではない: `text が空、長すぎる、または制御文字を含みます`
+  - `startMs` が非負の整数ではない: `startMs が非負の整数ではありません`
+  - `endMs` が整数ではない、または `startMs` より前: `endMs が startMs 以降の整数ではありません`
+  - `source` が許可されていない: `source が不明です`
+  - `speaker` が安全な文字列ではない: `speaker が空、長すぎる、または制御文字を含みます`
+  - `isError` が boolean ではない: `isError が boolean ではありません`
+  - その他: `形式が不正です`
+- 既存の `isTranscriptSegmentPayload` の挙動は変えないでください。必要なら helper から同じ private utility を再利用してください。
+- `TranscriptDisplay` / `LiveCaptionWindow` の不正 result payload branch で、既存文の後ろに `（理由: ...）` を付けて表示してください。
+- payload 生値、`candidate.text` の中身、`candidate.speaker` の中身、未知 `source` の値は表示しないでください。
+- `transcription-error` の挙動、Rust、Tauri command、正常 result 表示、event 名、CSS、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/transcriptSegment.ts src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop277-transcription-result-diagnostics-20260507-133922.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
