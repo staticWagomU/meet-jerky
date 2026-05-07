@@ -2614,6 +2614,31 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_goto_accepts_trailing_dot_hosts() {
+        for (url, expected_host) in [
+            ("https://meet.goto.com./team-standup", "meet.goto.com"),
+            (
+                "https://acme.meet.goto.com./quick-call",
+                "acme.meet.goto.com",
+            ),
+            (
+                "https://global.gotomeeting.com./join/123456789",
+                "global.gotomeeting.com",
+            ),
+            ("https://app.goto.com./meet/123456789", "app.goto.com"),
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "GoToMeeting".to_string(),
+                    host: expected_host.to_string(),
+                }),
+                "{url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_goto_rejects_blacklist_about() {
         assert_eq!(classify_meeting_url("https://meet.goto.com/about"), None);
     }
