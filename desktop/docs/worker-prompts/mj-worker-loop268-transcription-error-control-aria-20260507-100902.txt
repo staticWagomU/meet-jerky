@@ -1,0 +1,33 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- src/components/TranscriptionControls.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+文字起こし worker panic / `transcription-error` 後、上部ステータス pill は「エラー停止」になりますが、文字起こし操作部の aria-label / title は通常の「停止中」文脈のままです。録音状態の透明性とアクセシビリティを上げるため、操作部にも「エラー停止」文脈を伝えてください。
+
+実装条件:
+- `TranscriptionControls` に `hasTranscriptionErrorStopped` または同等の状態を渡し、group `aria-label` / `title` 内の状態を「エラー停止」にできるようにしてください。
+- 文字起こしが停止中かつ `hasTranscriptionErrorStopped` の場合、開始ボタンの `aria-label` / `title` は通常の「文字起こしを開始」ではなく、「エラー停止後に文字起こしを再開」相当の文脈にしてください。
+- ボタンの可視ラベルは大きく変えないでください。アクセシビリティと title の診断性改善に限定します。
+- 録音開始/停止、文字起こし start/stop invoke、`transcription-error` listener、ライブ字幕 window、リングライト、Rust、CSS、依存関係、テスト基盤は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop268-transcription-error-control-aria-20260507-100902.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、ユーザー価値、非目標、未実機確認範囲、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

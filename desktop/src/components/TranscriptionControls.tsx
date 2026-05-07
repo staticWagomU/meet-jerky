@@ -5,6 +5,7 @@ const TRANSCRIPTION_START_BLOCKED_REASON_ID =
 
 interface TranscriptionControlsProps {
   isTranscribing: boolean;
+  hasTranscriptionErrorStopped: boolean;
   selectedModel: string;
   onModelChange: (model: string) => void;
   showModelSelector: boolean;
@@ -21,6 +22,7 @@ interface TranscriptionControlsProps {
 
 export function TranscriptionControls({
   isTranscribing,
+  hasTranscriptionErrorStopped,
   selectedModel,
   onModelChange,
   showModelSelector,
@@ -41,10 +43,19 @@ export function TranscriptionControls({
   const pendingTranscriptionLabel = isTranscribing
     ? "文字起こしを停止中"
     : "文字起こしを開始中";
+  const isErrorStopped =
+    !isTranscribing &&
+    !isTranscriptionOperationPending &&
+    hasTranscriptionErrorStopped;
+  const stoppedTranscriptionStateLabel = isErrorStopped
+    ? "エラー停止"
+    : "停止中";
   const transcriptionButtonLabel = isTranscriptionOperationPending
     ? pendingTranscriptionLabel
     : isTranscribing
       ? "文字起こしを停止"
+      : isErrorStopped
+        ? "エラー停止後に文字起こしを再開"
       : !canStartTranscription && startBlockedReason
         ? `文字起こしを開始できません: ${startBlockedReason}`
       : "文字起こしを開始";
@@ -54,7 +65,7 @@ export function TranscriptionControls({
   const transcriptionControlsLabel = [
     "文字起こし操作",
     isTranscriptionOperationPending ? pendingTranscriptionLabel : null,
-    isTranscribing ? "文字起こし中" : "停止中",
+    isTranscribing ? "文字起こし中" : stoppedTranscriptionStateLabel,
     sourceStatusAriaText ?? sourceStatusText,
     startBlockedReason ? `開始不可: ${startBlockedReason}` : null,
     `ログ ${segmentsCount} 件`,

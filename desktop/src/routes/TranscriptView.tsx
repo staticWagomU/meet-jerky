@@ -2235,6 +2235,7 @@ export function TranscriptView() {
 
         <TranscriptionControls
           isTranscribing={isTranscribing}
+          hasTranscriptionErrorStopped={hasTranscriptionErrorStopped}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
           showModelSelector={requiresLocalModel}
