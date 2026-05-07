@@ -14,6 +14,24 @@
 
 ---
 
+[mj-main / Loop 295 / 2026-05-07 19:43 JST]
+役割: メインエージェント
+作業範囲: Loop 295 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証
+指示内容: `docs/autonomous-main-prompt.md` に従い、会議/記録開始失敗時の rollback 失敗を UI エラーへ集約表示する。
+調査結果: Loop 294 から残っていた候補として、記録開始失敗時の rollback 失敗が console のみに出る問題を再確認した。`TranscriptView.tsx` の `handleStartMeeting` catch block では、`stop_transcription` / `stop_system_audio` / `stop_recording` / `discardSession` の rollback 失敗を console に出すだけで、最終 `meetingError` は開始失敗本体だけを表示していた。
+実装経緯: `mj-worker-loop295-meeting-start-rollback-error-summary-20260507` を起動したが、`hook: UserPromptSubmit Failed` 後に実装へ進まなかったため session を閉じた。変更範囲が `handleStartMeeting` の catch block に限定できたため、メイン側で最小実装した。
+結果: 記録開始 catch block に `rollbackErrors` を追加し、各 rollback catch で `toErrorMessage` 済みの `文字起こし停止` / `相手側音声停止` / `マイク録音停止` / `セッション破棄` の失敗項目を集めるようにした。既存の `console.error`、rollback 順序、state reset、`clearSystemAudioCaptureState()` は維持した。rollback 失敗がある場合だけ、最終 `meetingError` に `後片付けにも失敗しました: ...` を追記する。
+ユーザー価値: 記録開始失敗後に後片付けも失敗した場合、ユーザーが UI 上で録音/文字起こし状態の不確実さを把握しやすくなり、透明性とトラブル調査性が上がる。
+非目標: rollback 順序、録音/停止 API、Tauri command、Rust、CSS/UI レイアウト、依存関係は変更しない。
+未実機確認範囲: macOS 実機での invoke 失敗と rollback 失敗の組み合わせ、実 UI 表示幅、支援技術読み上げは未確認。
+変更ファイル: src/routes/TranscriptView.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop295-next-value-slice-20260507-193859.txt / docs/worker-prompts/mj-worker-loop295-meeting-start-rollback-error-summary-20260507-193859.txt
+検証結果: メイン側で `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop295-next-value-slice-20260507-193859.txt docs/worker-prompts/mj-worker-loop295-meeting-start-rollback-error-summary-20260507-193859.txt` 成功。
+依存関係追加の有無: なし
+失敗理由: worker 起動は hook failure で実装に入れなかった。repo 変更としての失敗はなし。
+残リスク: build と静的差分確認では実際の rollback 失敗パターンや表示幅は確認できない。長い backend error message は従来どおり `meetingError` に含まれる。
+次アクション: staged path と staged diff を確認してコミットする。
+---
+
 [mj-main / Loop 294 / 2026-05-07 19:30 JST]
 役割: メインエージェント
 作業範囲: Loop 294 の候補調査、worker 起動、worker 起動失敗確認、最小実装、差分レビュー、検証

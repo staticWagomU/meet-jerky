@@ -724,12 +724,15 @@ export function TranscriptView() {
         setLastSavedPath(null);
       } catch (e) {
         const msg = toErrorMessage(e);
+        const rollbackErrors: string[] = [];
         console.error("記録開始に失敗しました:", msg);
         if (transcriptionStarted) {
           await invoke("stop_transcription").catch((rollbackError) => {
+            const rollbackMsg = toErrorMessage(rollbackError);
+            rollbackErrors.push(`文字起こし停止: ${rollbackMsg}`);
             console.error(
               "文字起こしロールバックに失敗しました:",
-              toErrorMessage(rollbackError),
+              rollbackMsg,
             );
           });
         }
@@ -739,9 +742,11 @@ export function TranscriptView() {
               clearSystemAudioCaptureState();
             })
             .catch((rollbackError) => {
+              const rollbackMsg = toErrorMessage(rollbackError);
+              rollbackErrors.push(`相手側音声停止: ${rollbackMsg}`);
               console.error(
                 "システム音声ロールバックに失敗しました:",
-                toErrorMessage(rollbackError),
+                rollbackMsg,
               );
             });
         }
@@ -751,17 +756,21 @@ export function TranscriptView() {
               setMicrophoneDropCountTotal(0);
             })
             .catch((rollbackError) => {
+              const rollbackMsg = toErrorMessage(rollbackError);
+              rollbackErrors.push(`マイク録音停止: ${rollbackMsg}`);
               console.error(
                 "マイク録音ロールバックに失敗しました:",
-                toErrorMessage(rollbackError),
+                rollbackMsg,
               );
             });
         }
         if (sessionStarted) {
           await discardSession().catch((rollbackError) => {
+            const rollbackMsg = toErrorMessage(rollbackError);
+            rollbackErrors.push(`セッション破棄: ${rollbackMsg}`);
             console.error(
               "セッション破棄に失敗しました:",
-              toErrorMessage(rollbackError),
+              rollbackMsg,
             );
           });
         }
@@ -773,7 +782,13 @@ export function TranscriptView() {
         setIsMeetingActive(false);
         setMeetingStartTime(null);
         setElapsedTime(0);
-        setMeetingError(`記録開始に失敗しました: ${msg}`);
+        const rollbackErrorSummary =
+          rollbackErrors.length > 0
+            ? `。後片付けにも失敗しました: ${rollbackErrors.join(" / ")}`
+            : "";
+        setMeetingError(
+          `記録開始に失敗しました: ${msg}${rollbackErrorSummary}`,
+        );
       }
     } finally {
       audioOperationPendingRef.current = false;

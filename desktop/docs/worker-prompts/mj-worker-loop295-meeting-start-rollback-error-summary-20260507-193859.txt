@@ -1,0 +1,49 @@
+あなたは meet-jerky desktop の Loop 295 作業担当エージェントです。
+
+対象 repo:
+/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+制約:
+- 作業対象はこの repo のみ。
+- 課金、認証情報変更、破壊的操作、git reset --hard、未確認削除は禁止。
+- main branch 上で作業するが、コミットは禁止。
+- 他者の変更を戻さず、担当範囲外を編集しない。
+
+担当範囲:
+- `src/routes/TranscriptView.tsx`
+- `AGENT_LOG.md`
+
+目的:
+会議/記録開始中に失敗した場合の rollback で、`stop_transcription` / `stop_system_audio` / `stop_recording` / `discardSession` の失敗が現在は console のみに出る。録音状態の透明性を上げるため、開始失敗の UI エラーに「後片付け失敗」も短く集約表示する。
+
+実装方針:
+1. `handleStartMeeting` の記録開始 catch block に限定する。
+2. rollback error message を `string[]` などに集める。
+3. 既存の `console.error(...)` は維持する。
+4. 既存の rollback 順序、state reset、`clearSystemAudioCaptureState()` の呼び出しは維持する。
+5. 最終 `setMeetingError` は、rollback 失敗がなければ既存どおり `記録開始に失敗しました: ${msg}`。
+6. rollback 失敗がある場合だけ、例:
+   `記録開始に失敗しました: ${msg}。後片付けにも失敗しました: 文字起こし停止: ... / 相手側音声停止: ...`
+   のように raw object ではなく `toErrorMessage` 済み文字列を表示する。
+7. CSS/UI レイアウト、Tauri command、録音/停止ロジック、Rust、依存関係は変更しない。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop295-meeting-start-rollback-error-summary-20260507-193859.txt`
+
+AGENT_LOG.md:
+- Loop 295 worker として、変更内容、検証結果、依存関係追加なし、残リスクを追記してください。
+
+完了時:
+- 変更内容
+- 変更ファイル
+- 検証結果
+- 残リスク
+を簡潔に報告してください。

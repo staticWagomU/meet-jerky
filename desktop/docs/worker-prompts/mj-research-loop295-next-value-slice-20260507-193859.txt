@@ -1,0 +1,29 @@
+あなたは調査担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作は禁止です。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+目的:
+Loop 295 として、直近 Loop 294 と重複しない、1ループで実装・検証・コミットできる価値の高い最小改善候補を調査してください。
+
+重点:
+- 会議開始失敗時 rollback 失敗の UI 集約表示
+- 履歴検索のトラック条件明示
+- 会議検知 negative URL contract
+- 録音状態の透明性、別トラック取得、リアルタイム文字起こし状態同期に関わる小改善
+- 実機権限、認証、課金、外部APIなしで検証できること
+- TypeScript 側は `npm run build` と静的確認で完結する範囲を優先
+- Rust 側は targeted cargo test / fmt / clippy で検証できる範囲を優先
+
+報告:
+- 候補を3件程度、優先順位付きで提示
+- 各候補の根拠ファイル、ユーザー価値、最小スライス、非目標、検証方法、残リスク
+- 最推奨候補と理由
+
+編集・コミットは禁止です。
