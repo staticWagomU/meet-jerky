@@ -1,0 +1,33 @@
+あなたは作業担当エージェントです。
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+担当範囲:
+- src/routes/TranscriptView.tsx
+- AGENT_LOG.md
+- この worker prompt ファイル
+
+目的:
+Loop 263 で追加された録音状態リングライトは、`TranscriptView` の状態に連動して表示/非表示になります。ただし `TranscriptView` が unmount される場合、既存ライブ字幕 window は cleanup で非表示へ戻している一方、リングライト window には同等の cleanup がありません。録音状態透明性を担う表示が画面遷移や unmount 後に残るリスクを下げるため、unmount 時にリングライト window を非表示へ戻してください。
+
+実装条件:
+- `src/routes/TranscriptView.tsx` だけをアプリコード変更対象にしてください。
+- 既存の `useEffect(() => { return () => { ... set_live_caption_window_visible false ... } }, [])` 近くに、リングライト用の unmount cleanup を追加してください。
+- cleanup では、古い状態連動 request が後からユーザー向け error を出さないように、`ringLightDesiredVisibilityRef.current = false` と `ringLightVisibilityRequestIdRef.current += 1` 相当で最新 request を進めてから `invoke("set_ring_light_visible", { visible: false })` を fire-and-forget してください。
+- cleanup の失敗は unmount 中なので `setMeetingError` は使わず、`console.error("録音状態リングライトの終了時非表示に失敗しました:", toErrorMessage(e))` に限定してください。
+- 既存の状態連動 effect、race guard、ライブ字幕 window 表示制御、録音/文字起こし開始停止、RingLightWindow.tsx、ringLight.ts、CSS、Rust、依存関係、テスト基盤は変更しないでください。
+- 他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop265-ring-light-unmount-cleanup-20260507-091209.txt`
+
+AGENT_LOG.md に、開始日時、担当セッション、役割、作業範囲、指示内容、結果、ユーザー価値、非目標、未実機確認範囲、変更ファイル、検証結果、依存関係追加の有無、失敗理由、残リスク、次アクションを追記してください。
+
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。

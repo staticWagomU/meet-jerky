@@ -1099,6 +1099,19 @@ export function TranscriptView() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      ringLightDesiredVisibilityRef.current = false;
+      ringLightVisibilityRequestIdRef.current += 1;
+      void invoke("set_ring_light_visible", { visible: false }).catch((e) => {
+        console.error(
+          "録音状態リングライトの終了時非表示に失敗しました:",
+          toErrorMessage(e),
+        );
+      });
+    };
+  }, []);
+
   const modelDownloadedErrorForUi = requiresLocalModel
     ? modelDownloadedError
     : null;
