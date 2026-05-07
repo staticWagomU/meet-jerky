@@ -168,29 +168,19 @@ pub(crate) fn handle_detection(bundle_id: &str, app_name: &str) {
         None => return,
     };
 
-    // スロットリングチェック (同一 bundle が連続で起動するシナリオで通知を絞る)
-    {
-        let mut last_seen = state.last_seen.lock();
-        let now = Instant::now();
-        if let Some(prev) = last_seen.get(bundle_id) {
-            if now.duration_since(*prev) < NOTIFICATION_THROTTLE {
-                return;
-            }
-        }
-        last_seen.insert(bundle_id.to_string(), now);
-    }
-
-    // `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
-    // (案 A 二重管理: 既存 Instant ベース throttle と並走、Loop 3 で wrapper 関数が読み取る予定)。
-    {
-        let now_secs = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        state
-            .last_seen_secs
-            .lock()
-            .insert(bundle_id.to_string(), now_secs);
+    let now = Instant::now();
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    if record_app_meeting_seen_and_should_throttle(
+        &state.last_seen,
+        &state.last_seen_secs,
+        bundle_id,
+        now,
+        now_secs,
+    ) {
+        return;
     }
 
     // 通知センターに通知を出す
@@ -208,6 +198,27 @@ pub(crate) fn handle_detection(bundle_id: &str, app_name: &str) {
             eprintln!("[app_detection] emit failed: {e}");
         }
     }
+}
+
+fn record_app_meeting_seen_and_should_throttle(
+    last_seen: &Mutex<HashMap<String, Instant>>,
+    last_seen_secs: &Mutex<HashMap<String, u64>>,
+    bundle_id: &str,
+    now: Instant,
+    now_secs: u64,
+) -> bool {
+    last_seen_secs
+        .lock()
+        .insert(bundle_id.to_string(), now_secs);
+
+    let mut last_seen = last_seen.lock();
+    if let Some(prev) = last_seen.get(bundle_id) {
+        if now.duration_since(*prev) < NOTIFICATION_THROTTLE {
+            return true;
+        }
+    }
+    last_seen.insert(bundle_id.to_string(), now);
+    false
 }
 
 /// `last_seen_secs` HashMap の key (throttle_key) が会議 inactive 通知の発火対象かを判定する wrapper。
@@ -521,6 +532,41 @@ mod tests {
         );
         assert_eq!(
             last_seen.lock().get(throttle_key).copied(),
+            Some(first_instant)
+        );
+    }
+
+    #[test]
+    fn app_seen_updates_inactive_timestamp_before_notification_throttle() {
+        let last_seen = Mutex::new(HashMap::new());
+        let last_seen_secs = Mutex::new(HashMap::new());
+        let bundle_id = "us.zoom.xos";
+        let first_instant = Instant::now();
+        let first_seen_secs = 100;
+        let second_seen_secs = first_seen_secs + 10;
+
+        assert!(!record_app_meeting_seen_and_should_throttle(
+            &last_seen,
+            &last_seen_secs,
+            bundle_id,
+            first_instant,
+            first_seen_secs,
+        ));
+
+        assert!(record_app_meeting_seen_and_should_throttle(
+            &last_seen,
+            &last_seen_secs,
+            bundle_id,
+            first_instant + Duration::from_secs(10),
+            second_seen_secs,
+        ));
+
+        assert_eq!(
+            last_seen_secs.lock().get(bundle_id).copied(),
+            Some(second_seen_secs)
+        );
+        assert_eq!(
+            last_seen.lock().get(bundle_id).copied(),
             Some(first_instant)
         );
     }

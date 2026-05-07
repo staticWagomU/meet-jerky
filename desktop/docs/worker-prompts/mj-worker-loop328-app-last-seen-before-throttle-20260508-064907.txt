@@ -1,0 +1,47 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+背景:
+Loop 323 では browser URL / window title 検知経路で、通知スロットリング中でも inactive 判定用 `last_seen_secs` を更新するようにしました。一方、アプリ起動検知経路 `handle_detection(bundle_id, app_name)` は、Instant ベースの通知スロットリング判定で return した後に `last_seen_secs` を更新しているため、Zoom / Teams などのアプリ経路で継続 callback が来ても inactive 判定用の最終検知時刻が古いまま残り得ます。
+
+実装内容:
+- `handle_detection` で `STATE` が取得できた後、通知スロットリング判定で return する前に inactive 判定用 `state.last_seen_secs` を `bundle_id` / 関数内で取得した `now_secs` で更新してください。
+- 通知表示、`meeting-app-detected` emit、`latest_payload` 更新、`last_seen` の Instant ベース通知スロットリング挙動は維持してください。
+- browser URL 経路、URL/window title 分類ルール、event 名、payload field 名、UI/TypeScript、Swift bridge、依存関係は変更しないでください。
+- 可能なら browser helper と同型の小さな private helper を追加してください。Tauri `AppHandle` が必要な統合テストへ広げないでください。
+
+テスト:
+- `app_detection.rs` に unit test を追加し、2回目の app launch 検知が `NOTIFICATION_THROTTLE` 内で throttle されても、`last_seen_secs` だけは2回目の epoch 秒へ更新され、Instant ベース `last_seen` は初回のまま維持されることを固定してください。
+- 既存 `browser_seen_updates_inactive_timestamp_before_notification_throttle` と対になる名前にしてください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib app_detection`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop328-next-value-slice-20260508-064907.txt docs/worker-prompts/mj-worker-loop328-app-last-seen-before-throttle-20260508-064907.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
