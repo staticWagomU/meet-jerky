@@ -18,7 +18,8 @@ export function isAudioDropCountPayload(
     typeof candidate.dropped === "number" &&
     Number.isFinite(candidate.dropped) &&
     Number.isInteger(candidate.dropped) &&
-    candidate.dropped >= 0
+    candidate.dropped >= 0 &&
+    Number.isSafeInteger(candidate.dropped)
   );
 }
 
@@ -45,6 +46,10 @@ export function getAudioDropCountPayloadIssue(value: unknown): string {
 
   if (candidate.dropped < 0) {
     return "dropped が 0 以上ではありません";
+  }
+
+  if (!Number.isSafeInteger(candidate.dropped)) {
+    return "dropped が安全整数範囲内ではありません";
   }
 
   return "形式が不正です";
