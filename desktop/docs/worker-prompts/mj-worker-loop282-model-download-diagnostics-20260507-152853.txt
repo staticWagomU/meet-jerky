@@ -1,0 +1,52 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/utils/modelDownloadPayload.ts` の `isDownloadProgressPayload` / `isDownloadErrorPayload` は Whisper モデルダウンロード通知 payload を型ガードしています。
+- `src/components/ModelSelector.tsx` は不正 payload のとき、進捗通知/エラー通知とも「形式が不正です。」だけを表示します。
+- Whisper モデルの準備状態は、ローカル文字起こしを開始できるかどうかの透明性に関わります。
+
+目的:
+- `isDownloadProgressPayload` / `isDownloadErrorPayload` の reject 条件を変えずに、不正な model download payload の安全な診断理由だけを ModelSelector の UI 表示へ追加する。
+- payload 生値、model 名、progress 値、error message 本文は表示しない。
+
+担当範囲:
+- `src/utils/modelDownloadPayload.ts`
+- `src/components/ModelSelector.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src/utils/modelDownloadPayload.ts` に `getDownloadProgressPayloadIssue(value: unknown): string` と `getDownloadErrorPayloadIssue(value: unknown): string` のような helper を追加してください。
+- helper は既存 guard と同じ validation 契約に沿って、安全な固定理由だけを返してください。
+- progress helper:
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `model` が `isBoundedDisplayString(..., MODEL_NAME_MAX_LENGTH)` を満たさない: `model が安全な表示文字列ではありません`
+  - `progress` が finite number ではない: `progress が有限数ではありません`
+  - `progress` が 0..1 の範囲外: `progress が 0 以上 1 以下ではありません`
+  - その他: `形式が不正です`
+- error helper:
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `model` が `isBoundedDisplayString(..., MODEL_NAME_MAX_LENGTH)` を満たさない: `model が安全な表示文字列ではありません`
+  - `message` が `isBoundedDisplayString(..., DOWNLOAD_ERROR_MESSAGE_MAX_LENGTH)` を満たさない: `message が安全な表示文字列ではありません`
+  - その他: `形式が不正です`
+- `isDownloadProgressPayload` / `isDownloadErrorPayload` の判定本体は変更しないでください。
+- `ModelSelector.tsx` の invalid branch 2箇所で、既存文の後ろへ `（理由: ...）` を付けてください。
+- payload 生値、model 名、progress 値、error message 本文、会議本文、音声データは表示しないでください。
+- ダウンロード処理、モデル一覧、正常 progress/error 表示、event 名、Rust、Tauri command、CSS、依存関係は変更しないでください。
+- 実ダウンロードやネットワーク検証は実行しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/modelDownloadPayload.ts src/components/ModelSelector.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop282-model-download-diagnostics-20260507-152853.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なし、実ダウンロード未実行を明記してください。
+- 既存ログの途中に挿入しないでください。

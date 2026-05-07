@@ -35,6 +35,26 @@ export function isDownloadProgressPayload(
   );
 }
 
+export function getDownloadProgressPayloadIssue(value: unknown): string {
+  if (!value || typeof value !== "object") {
+    return "payload がオブジェクトではありません";
+  }
+  const candidate = value as Partial<DownloadProgressPayload>;
+  if (!isBoundedDisplayString(candidate.model, MODEL_NAME_MAX_LENGTH)) {
+    return "model が安全な表示文字列ではありません";
+  }
+  if (
+    typeof candidate.progress !== "number" ||
+    !Number.isFinite(candidate.progress)
+  ) {
+    return "progress が有限数ではありません";
+  }
+  if (candidate.progress < 0 || candidate.progress > 1) {
+    return "progress が 0 以上 1 以下ではありません";
+  }
+  return "形式が不正です";
+}
+
 export function isDownloadErrorPayload(
   value: unknown,
 ): value is DownloadErrorPayload {
@@ -49,4 +69,23 @@ export function isDownloadErrorPayload(
       DOWNLOAD_ERROR_MESSAGE_MAX_LENGTH,
     )
   );
+}
+
+export function getDownloadErrorPayloadIssue(value: unknown): string {
+  if (!value || typeof value !== "object") {
+    return "payload がオブジェクトではありません";
+  }
+  const candidate = value as Partial<DownloadErrorPayload>;
+  if (!isBoundedDisplayString(candidate.model, MODEL_NAME_MAX_LENGTH)) {
+    return "model が安全な表示文字列ではありません";
+  }
+  if (
+    !isBoundedDisplayString(
+      candidate.message,
+      DOWNLOAD_ERROR_MESSAGE_MAX_LENGTH,
+    )
+  ) {
+    return "message が安全な表示文字列ではありません";
+  }
+  return "形式が不正です";
 }

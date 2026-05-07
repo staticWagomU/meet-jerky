@@ -9,6 +9,8 @@ import {
   sanitizeProgress,
 } from "../utils/modelSelectorHelpers";
 import {
+  getDownloadErrorPayloadIssue,
+  getDownloadProgressPayloadIssue,
   isDownloadErrorPayload,
   isDownloadProgressPayload,
   MODEL_DOWNLOAD_ERROR_EVENT,
@@ -84,7 +86,9 @@ export function ModelSelector({
         }
         const payload = event.payload;
         if (!isDownloadProgressPayload(payload)) {
-          setProgressListenerError("Whisper モデルのダウンロード進捗通知の形式が不正です。");
+          setProgressListenerError(
+            `Whisper モデルのダウンロード進捗通知の形式が不正です。（理由: ${getDownloadProgressPayloadIssue(payload)}）`,
+          );
           return;
         }
         setProgressListenerError(null);
@@ -152,7 +156,9 @@ export function ModelSelector({
         }
         const payload = event.payload;
         if (!isDownloadErrorPayload(payload)) {
-          setDownloadErrorListenerError("Whisper モデルのダウンロードエラー通知の形式が不正です。");
+          setDownloadErrorListenerError(
+            `Whisper モデルのダウンロードエラー通知の形式が不正です。（理由: ${getDownloadErrorPayloadIssue(payload)}）`,
+          );
           return;
         }
         setDownloadErrorListenerError(null);

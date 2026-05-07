@@ -14,6 +14,37 @@
 
 ---
 
+[mj-main / Loop 282 / 2026-05-07 15:36 JST]
+役割: メインエージェント
+作業範囲: Loop 282 の候補調査、worker 起動、差分レビュー、主担当検証、コミット準備
+指示内容: `docs/autonomous-main-prompt.md` に従い、録音・文字起こし開始準備の透明性に関わる小さな改善を1件選び、tmux worker に実装させて検証する。
+調査結果: `mj-research-loop282` は model download progress/error payload の不正理由表示、Whisper モデル準備中の TranscriptView 状態同期、hidden の録音状態 strip アクセシビリティ改善を候補として提示した。
+採用判断: Whisper モデルの準備状態はローカル文字起こし開始可否に直結するため、まず `ModelSelector` の model download progress/error payload 不正理由表示を採用した。TranscriptView への状態同期や VoiceOver 向け status 変更は UX/状態責務や実機確認リスクが少し広がるため次候補に残した。
+結果: `mj-worker-loop282-model-download-diagnostics-20260507` が `isDownloadProgressPayload` / `isDownloadErrorPayload` の判定契約を変えずに、invalid payload の固定診断理由 helper と UI 表示を追加した。主担当レビューで、payload 生値、model 名、progress 値、error message 本文、会議本文、音声データを invalid branch に表示していないこと、正常 progress/error 表示、event 名、Rust/Tauri command、CSS、依存関係に変更がないことを確認した。
+変更ファイル: src/utils/modelDownloadPayload.ts / src/components/ModelSelector.tsx / AGENT_LOG.md / docs/worker-prompts/mj-research-loop282-next-value-slice-20260507-152853.txt / docs/worker-prompts/mj-worker-loop282-model-download-diagnostics-20260507-152853.txt
+検証結果: worker 側 `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、worker 側 `git diff --check -- src/utils/modelDownloadPayload.ts src/components/ModelSelector.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop282-model-download-diagnostics-20260507-152853.txt` 成功。主担当側でも `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功、`git diff --check -- src/utils/modelDownloadPayload.ts src/components/ModelSelector.tsx AGENT_LOG.md docs/worker-prompts/mj-research-loop282-next-value-slice-20260507-152853.txt docs/worker-prompts/mj-worker-loop282-model-download-diagnostics-20260507-152853.txt` 成功。
+依存関係追加の有無: なし
+未実機確認範囲: macOS 実機アプリ上での model download 不正 payload 受信時表示、実 Tauri event 注入、VoiceOver 読み上げ、実ダウンロード中の表示は未確認。実ダウンロードとネットワーク検証は課金・外部環境リスクを避けるため実行していない。
+失敗理由: なし
+残リスク: 将来 `isDownloadProgressPayload` / `isDownloadErrorPayload` の validation 契約を変更する場合、診断 helper の理由分岐も同時更新が必要。
+次アクション: staged path と staged diff を明示確認し、問題がなければ `fix(ui): モデルダウンロード通知の不正理由を表示する` でコミットする。
+---
+
+[mj-worker-loop282-model-download-diagnostics-20260507 / 2026-05-07 15:30:30 JST]
+役割: 作業担当エージェント
+作業範囲: src/utils/modelDownloadPayload.ts / src/components/ModelSelector.tsx / AGENT_LOG.md / docs/worker-prompts/mj-worker-loop282-model-download-diagnostics-20260507-152853.txt
+指示内容: `isDownloadProgressPayload` / `isDownloadErrorPayload` の reject 条件を変えずに、不正な model download payload の安全な診断理由だけを ModelSelector の UI 表示へ追加する。payload 生値、model 名、progress 値、error message 本文、会議本文、音声データは表示しない。ダウンロード処理、モデル一覧、正常 progress/error 表示、event 名、Rust、Tauri command、CSS、依存関係は変更しない。実ダウンロードやネットワーク検証は実行しない。コミットは禁止。
+結果: `src/utils/modelDownloadPayload.ts` に `getDownloadProgressPayloadIssue(value: unknown): string` と `getDownloadErrorPayloadIssue(value: unknown): string` を追加し、既存 guard と同じ validation 契約に沿って object でない payload、unsafe な `model` / `message`、finite number でない `progress`、0..1 範囲外の `progress` を固定文言で返すようにした。`isDownloadProgressPayload` / `isDownloadErrorPayload` の判定本体は変更していない。`ModelSelector.tsx` の進捗通知/エラー通知 invalid branch 2箇所で、既存文の後ろに `（理由: ...）` を付けた。表示する理由は固定文言のみで、payload 生値、model 名、progress 値、error message 本文、会議本文、音声データは表示していない。
+変更ファイル: src/utils/modelDownloadPayload.ts / src/components/ModelSelector.tsx / AGENT_LOG.md
+検証結果: `PATH="/opt/homebrew/bin:$PATH" npm run build` 成功。`git diff --check -- src/utils/modelDownloadPayload.ts src/components/ModelSelector.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop282-model-download-diagnostics-20260507-152853.txt` 成功。
+未実機確認範囲: macOS 実機アプリ上での model download 不正 payload 受信時の ModelSelector 表示、実 Tauri event 注入、VoiceOver 読み上げ、実ダウンロード処理中の見え方は未確認。
+依存関係追加の有無: なし
+実ダウンロード/ネットワーク検証: 実行なし
+失敗理由: なし
+残リスク: 自動ビルドと静的差分確認での検証に留まり、実際の Tauri event 注入や支援技術読み上げは確認していない。helper は guard と同じ validation 契約に沿うが、将来 `isDownloadProgressPayload` / `isDownloadErrorPayload` の契約を変える場合は診断理由も同時に更新する必要がある。
+次アクション: コミット禁止指示のため未コミットで報告する。
+---
+
 ## セッション: mjc-worker-transcription-source-const
 
 - **開始日時 (JST)**: 2026-05-04
