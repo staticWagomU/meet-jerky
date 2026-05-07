@@ -1,0 +1,39 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `classify_meeting_window_title` は URL 取得不能時の会議検知 fallback です。
+- 直近の Zoom fallback は `"Zoom Meetings Help"` / `"Zoom MeetingTools"` のような英語単語連結を reject するテストを持っています。
+- Webex 側には日本語単語連結 `"Webex ミーティング資料"` の reject テストがありますが、Zoom 側には同等の日本語連結 reject テストがありません。
+- `has_zoom_meeting_title_prefix` は Unicode `char::is_alphanumeric()` で prefix 直後の単語連結を reject する契約なので、日本語連結も回帰固定できます。
+
+目的:
+- Zoom 日本語タイトル fallback が `"Zoom ミーティング資料"` のような単語連結を会議扱いしない契約を、純粋関数テストで固定する。
+- 実装変更は不要です。テスト追加のみを基本にしてください。
+
+担当範囲:
+- `src-tauri/src/app_detection.rs`
+- `AGENT_LOG.md`
+
+実装指示:
+- 既存の `classify_meeting_window_title_rejects_zoom_meeting_word_concatenation` テストへ、日本語連結ケースを追加してください。
+- 追加ケースは `classify_meeting_window_title("Zoom ミーティング資料")` が `None` であることを検証してください。
+- 分類ロジック、プロダクトコード、他サービスの挙動、Cargo.toml、依存関係は変更しないでください。
+- 実機 Zoom 起動、AppleScript、ネットワーク検証は実行しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml classify_meeting_window_title`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-worker-loop284-zoom-title-japanese-concat-test-20260507-155955.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。

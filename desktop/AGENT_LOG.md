@@ -14,6 +14,22 @@
 
 ---
 
+[mj-main / Loop 284 / 2026-05-07 16:08 JST]
+役割: メインエージェント
+作業範囲: Loop 284 の候補調査、worker 起動、差分レビュー、主担当検証、コミット準備
+指示内容: `docs/autonomous-main-prompt.md` に従い、会議検知の実機未確認リスクを下げる小さなテスト補強を1件選び、tmux worker に実装させて検証する。
+調査結果: `mj-research-loop284` は Whisper モデル状態の status 同期、モデル状態表示の共通化、会議検知 window title fallback の純粋関数テスト追加、Webex URL helper の pure tests を候補として提示した。
+採用判断: 会議検知はプロダクト優先順位が高く、Zoom window title fallback は直近で単語連結誤検知を抑制した領域である。既存 Webex には日本語単語連結 reject テストがある一方、Zoom には `"Zoom ミーティング資料"` の明示テストがなかったため、実装変更なしの回帰テスト追加を採用した。
+結果: `mj-worker-loop284-zoom-title-japanese-concat-test-20260507` が `classify_meeting_window_title_rejects_zoom_meeting_word_concatenation` に `classify_meeting_window_title("Zoom ミーティング資料") == None` の assertion を追加した。分類ロジック、プロダクトコード、Cargo.toml、依存関係は変更していない。worker は AGENT_LOG の挿入位置修正で停滞したため、差分増殖を避けるためセッションを終了し、主担当が検証とログ記録を完了した。
+変更ファイル: src-tauri/src/app_detection.rs / AGENT_LOG.md / docs/worker-prompts/mj-research-loop284-next-value-slice-20260507-155955.txt / docs/worker-prompts/mj-worker-loop284-zoom-title-japanese-concat-test-20260507-155955.txt
+検証結果: worker 側で初回 `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` は assertion 折り返し整形差分のみで失敗し、`cargo fmt` 適用後に `cargo fmt -- --check` 成功を確認。主担当側で `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` 成功、`PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml classify_meeting_window_title` 成功（29 passed; 0 failed; 707 filtered out）、`git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop284-next-value-slice-20260507-155955.txt docs/worker-prompts/mj-worker-loop284-zoom-title-japanese-concat-test-20260507-155955.txt` 成功。
+依存関係追加の有無: なし
+未実機確認範囲: macOS 実機での Zoom 起動、AppleScript による window title 取得、実ブラウザ/Zoom/ネットワーク経由の検知挙動は未確認。
+失敗理由: なし
+残リスク: 純粋関数テストでの契約固定に限定しており、実アプリで対象タイトルがどの形式で取得されるかは未確認。実機タイトルが prefix 直後に英数字・日本語文字を続ける正当な形式だった場合は、現在の誤検知防止契約と衝突する可能性がある。
+次アクション: staged path と staged diff を明示確認し、問題がなければ `test(detection): Zoom日本語タイトル連結の除外を固定する` でコミットする。
+---
+
 [mj-main / Loop 283 / 2026-05-07 15:39 JST]
 役割: メインエージェント
 作業範囲: Loop 283 の候補調査、worker 起動試行、アクセシビリティ最小修正、検証、コミット準備

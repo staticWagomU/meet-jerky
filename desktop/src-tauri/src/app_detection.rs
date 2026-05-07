@@ -1146,6 +1146,7 @@ mod tests {
     fn classify_meeting_window_title_rejects_zoom_meeting_word_concatenation() {
         assert_eq!(classify_meeting_window_title("Zoom Meetings Help"), None);
         assert_eq!(classify_meeting_window_title("Zoom MeetingTools"), None);
+        assert_eq!(classify_meeting_window_title("Zoom ミーティング資料"), None);
     }
 
     #[test]
