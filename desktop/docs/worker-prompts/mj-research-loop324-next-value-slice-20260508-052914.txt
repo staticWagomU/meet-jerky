@@ -1,0 +1,31 @@
+あなたは調査担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+コード変更は禁止です。課金が発生する操作、認証情報変更、破壊的操作は禁止です。
+
+必ず読んでください:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- AGENT_LOG.md
+
+目的:
+Loop 324 で実装する、1コミットで完了できる高価値な最小改善スライスを1つ提案してください。
+
+優先判断:
+- AGENTS.md / docs/product-concept.md の優先順位を重視してください。
+- 直近 Loop 318-323 と重なる修正は避けてください。特に transcription-error、audio event payload、ブラウザ会議 inactive 判定には寄せないでください。
+- 可能なら、会議検知の網羅性と信頼性、マイク/相手側別トラック取得、リアルタイム文字起こし状態、履歴保存/検索の信頼性、録音状態の透明性に関わる小さな改善を優先してください。
+- 前回調査の Teams trailing-dot host テスト案は、既存テストが追加済みかを確認し、重複なら別候補を出してください。
+- 実機、外部サービス、課金、認証変更が必要なものは避け、自動テスト、静的検証、TypeScript build、Rust unit test で検証できる範囲を選んでください。
+
+報告形式:
+1. 推奨タスクを1つだけ提示
+2. 根拠となるコード位置を file:line で提示
+3. 具体的な変更範囲
+4. ユーザー価値
+5. 非目標
+6. 検証方法
+7. リスクと未実機確認範囲
+
+編集・コミットは禁止です。推測は推測と明示してください。

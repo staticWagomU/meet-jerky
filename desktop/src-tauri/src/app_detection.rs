@@ -1793,6 +1793,33 @@ mod tests {
     }
 
     #[test]
+    fn classify_meeting_url_accepts_teams_trailing_dot_meetup_join_and_personal_meet() {
+        for (url, expected_host) in [
+            (
+                "https://teams.microsoft.com./l/meetup-join/19%3ameeting_abc/0?context=secret",
+                "teams.microsoft.com",
+            ),
+            (
+                "https://teams.cloud.microsoft./l/meetup-join/19%3ameeting_abc/0?context=secret",
+                "teams.cloud.microsoft",
+            ),
+            (
+                "https://teams.live.com./meet/1234567890123",
+                "teams.live.com",
+            ),
+        ] {
+            assert_eq!(
+                classify_meeting_url(url),
+                Some(MeetingUrlClassification {
+                    service: "Microsoft Teams".to_string(),
+                    host: expected_host.to_string(),
+                }),
+                "Teams host の trailing dot は正規化され、会議 URL として検知される必要がある: {url}"
+            );
+        }
+    }
+
+    #[test]
     fn classify_meeting_url_accepts_zoomgov_web_client_meeting_id_join_url() {
         for url in [
             "https://agency.zoomgov.com/wc/1600991835/join",

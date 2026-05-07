@@ -1,0 +1,47 @@
+あなたは作業担当エージェントです。
+
+対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+AGENTS.md、docs/product-concept.md、docs/agent-harness.md、AGENT_LOG.md を読んでください。
+
+担当範囲:
+- src-tauri/src/app_detection.rs
+- AGENT_LOG.md
+
+背景:
+`normalize_url_host` は host の trailing dot を 1 つ落として会議 URL 分類へ渡します。Teams では `teams.microsoft.com.` の `/v2`、`teams.cloud.microsoft.` の `/v2` と `/meet` は既に contract test がありますが、以下の trailing-dot host 版は `classify_meeting_url` 経由の contract が不足しています。
+- work/school: `teams.microsoft.com.` の `/l/meetup-join/...`
+- work/school: `teams.cloud.microsoft.` の `/l/meetup-join/...`
+- personal: `teams.live.com.` の `/meet/<id>`
+
+実装内容:
+- `src-tauri/src/app_detection.rs` の test module に、上記3種類の positive contract を追加してください。
+- 期待値は service `"Microsoft Teams"`、host は trailing dot を除去した正規化済み host にしてください。
+- production code は変更しないでください。Teams URL 判定ロジック、URL helper、event 名、payload field 名、UI/TypeScript、Swift bridge、依存関係は変更しないでください。
+- 既存の `classify_meeting_url_accepts_teams_cloud_v2_with_trailing_dot_host` があるため、重複する `teams.cloud.microsoft.` の `/v2` と `/meet` は追加しないでください。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib teams_trailing_dot`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo test --manifest-path src-tauri/Cargo.toml --lib classify_meeting_url`
+- `PATH="/opt/homebrew/bin:$PATH" ~/.cargo/bin/cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings`
+- `git diff --check -- src-tauri/src/app_detection.rs AGENT_LOG.md docs/worker-prompts/mj-research-loop324-next-value-slice-20260508-052914.txt docs/worker-prompts/mj-worker-loop324-teams-trailing-dot-coverage-20260508-052914.txt`
+
+ログ:
+AGENT_LOG.md に以下を追記してください。
+- 開始日時
+- 担当セッション
+- 役割
+- 作業範囲
+- 指示内容
+- 結果
+- 変更ファイル
+- 検証結果
+- 依存関係追加の有無
+- 失敗理由
+- 次アクション
+- ユーザー価値
+- 非目標
+- 未実機確認範囲
+
+他エージェントも同時に作業している可能性があります。他者の変更を戻さず、担当範囲外を編集しないでください。コミットは禁止です。
+最後に、変更内容、変更ファイル、検証結果、残リスクを簡潔に報告してください。
