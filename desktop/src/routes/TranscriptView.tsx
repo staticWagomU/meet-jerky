@@ -49,7 +49,10 @@ import {
   getAudioLevelPayloadIssue,
   isAudioLevelPayload,
 } from "../utils/audioLevelPayload";
-import { isAudioDropCountPayload } from "../utils/audioDropCountPayload";
+import {
+  getAudioDropCountPayloadIssue,
+  isAudioDropCountPayload,
+} from "../utils/audioDropCountPayload";
 import {
   AUDIO_DROP_COUNT_EVENT,
   AUDIO_LEVEL_EVENT,
@@ -452,7 +455,9 @@ export function TranscriptView() {
           );
           return;
         }
-        setAudioDropCountListenerError("音声 drop 通知の形式が不正です。");
+        setAudioDropCountListenerError(
+          `音声 drop 通知の形式が不正です。（理由: ${getAudioDropCountPayloadIssue(payload)}）`,
+        );
         return;
       }
       setAudioDropCountListenerError(null);

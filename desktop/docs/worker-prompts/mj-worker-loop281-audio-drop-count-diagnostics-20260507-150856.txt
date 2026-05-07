@@ -1,0 +1,47 @@
+あなたは meet-jerky desktop の作業担当 worker です。対象は /Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop のみです。
+
+必ず読む:
+- AGENTS.md
+- docs/product-concept.md
+- docs/agent-harness.md
+- docs/autonomous-main-prompt.md
+- AGENT_LOG.md
+
+背景:
+- `src/utils/audioDropCountPayload.ts` の `isAudioDropCountPayload` は `audio-drop-count` payload を型ガードしています。
+- `src/routes/TranscriptView.tsx` は不正 payload のとき、未知 source は既存の専用文言、それ以外は「音声 drop 通知の形式が不正です。」だけを表示します。
+- audio-drop-count はマイク/システム音声の別トラック取得で sample 破棄を把握する透明性に関わります。
+
+目的:
+- `isAudioDropCountPayload` の reject 条件を変えずに、不正な `audio-drop-count` payload の安全な診断理由だけを TranscriptView の UI 表示へ追加する。
+- payload 生値や `dropped` 値は表示しない。
+
+担当範囲:
+- `src/utils/audioDropCountPayload.ts`
+- `src/routes/TranscriptView.tsx`
+- `AGENT_LOG.md`
+
+実装指示:
+- `src/utils/audioDropCountPayload.ts` に `getAudioDropCountPayloadIssue(value: unknown): string` のような helper を追加してください。
+- helper は既存の `isAudioDropCountPayload` と同じ validation 契約に沿って、安全な固定理由だけを返してください。
+  - payload が object でない: `payload がオブジェクトではありません`
+  - `source` が microphone/system_audio ではない: `source が microphone/system_audio ではありません`
+  - `dropped` が finite number ではない: `dropped が有限数ではありません`
+  - `dropped` が整数ではない: `dropped が整数ではありません`
+  - `dropped` が 0 未満: `dropped が 0 以上ではありません`
+  - その他: `形式が不正です`
+- `isAudioDropCountPayload` の判定本体は変更しないでください。
+- `TranscriptView.tsx` の `audio-drop-count` invalid branch で、既存の未知 source 専用分岐はそのまま維持してください。
+- 未知 source 専用分岐に入らない不正 payload だけ、既存文の後ろへ `（理由: ...）` を付けてください。
+- payload 生値、`dropped` 値、音声データ、会議本文は表示しないでください。
+- `audio-level`、`transcription-*`、`meeting-app-detected`、model download、Rust、Tauri command、正常 payload 表示、event 名、CSS、依存関係は変更しないでください。
+- コミットは禁止です。
+
+検証:
+- `PATH="/opt/homebrew/bin:$PATH" npm run build`
+- `git diff --check -- src/utils/audioDropCountPayload.ts src/routes/TranscriptView.tsx AGENT_LOG.md docs/worker-prompts/mj-worker-loop281-audio-drop-count-diagnostics-20260507-150856.txt`
+
+AGENT_LOG:
+- 作業後、AGENT_LOG.md 末尾に worker として記録してください。
+- 変更ファイル、検証結果、未実機確認範囲、残リスク、依存関係追加なしを明記してください。
+- 既存ログの途中に挿入しないでください。
