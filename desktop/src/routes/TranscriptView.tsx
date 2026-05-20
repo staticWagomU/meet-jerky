@@ -1913,9 +1913,11 @@ export function TranscriptView() {
                 {sortedRecentSessions.map((session) => (
                   <Link
                     key={session.path}
-                    to="/sessions"
+                    to="/sessions/$encodedPath"
+                    params={{ encodedPath: encodeURIComponent(session.path) }}
                     className="menu-history-row"
                     title={getFileName(session.path)}
+                    aria-label={`録音詳細を開く: ${getCompactSessionTitle(session.title)}`}
                   >
                     <span aria-hidden="true" />
                     <strong>{getCompactSessionTitle(session.title)}</strong>

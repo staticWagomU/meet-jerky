@@ -3,6 +3,7 @@ import App from "./App";
 import { TranscriptView } from "./routes/TranscriptView";
 import { SettingsView } from "./routes/SettingsView";
 import { SessionList } from "./routes/SessionList";
+import { SessionDetail } from "./routes/SessionDetail";
 
 const rootRoute = createRootRoute({
   component: App,
@@ -26,7 +27,18 @@ const sessionsRoute = createRoute({
   component: SessionList,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, settingsRoute, sessionsRoute]);
+const sessionDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sessions/$encodedPath",
+  component: SessionDetail,
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  settingsRoute,
+  sessionsRoute,
+  sessionDetailRoute,
+]);
 
 export const router = createRouter({ routeTree });
 

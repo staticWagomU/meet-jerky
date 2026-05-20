@@ -6,6 +6,7 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
+import { Link } from "@tanstack/react-router";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 import {
@@ -538,9 +539,18 @@ function SessionRow({
         aria-label={sessionActionsLabel}
         title={sessionActionsLabel}
       >
+        <Link
+          to="/sessions/$encodedPath"
+          params={{ encodedPath: encodeURIComponent(session.path) }}
+          className="control-btn control-btn-transcribe control-btn-detail"
+          aria-label={`録音詳細を開く: ${displayTitle}`}
+          title={`録音詳細を開く: ${displayTitle}`}
+        >
+          詳細を開く
+        </Link>
         <button
           type="button"
-          className="control-btn control-btn-transcribe"
+          className="control-btn control-btn-clear"
           aria-label={openFileLabel}
           title={openFileLabel}
           onClick={() => onOpenFile(session.path)}
@@ -550,7 +560,7 @@ function SessionRow({
             ? "開いています..."
             : isWaitingForOtherAction
               ? otherActionButtonText
-              : "履歴を開く"}
+              : "既定アプリで開く"}
         </button>
         <button
           type="button"
