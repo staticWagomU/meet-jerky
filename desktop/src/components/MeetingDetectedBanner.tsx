@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
 import { Captions, Video } from "lucide-react";
@@ -41,6 +41,115 @@ const PROMPT_OPERATION_LABEL =
   "「記録を開始」を選ぶまで録音は開始しません。バナーはドラッグで移動でき、Escape キーで閉じられます";
 type PendingPromptAction = "start" | null;
 
+interface PromptState {
+  detected: MeetingAppDetectedPayload | null;
+  statusPayload: LiveCaptionStatusPayload;
+  listenerError: string | null;
+  pendingAction: PendingPromptAction;
+  showsRecordingPill: boolean;
+}
+
+type PromptAction =
+  | {
+      type: "meeting-detected";
+      payload: MeetingAppDetectedPayload;
+      statusPayload: LiveCaptionStatusPayload;
+    }
+  | { type: "invalid-detection"; error: string }
+  | { type: "set-status"; statusPayload: LiveCaptionStatusPayload }
+  | { type: "clear-error-prefix"; prefix: string }
+  | { type: "set-error"; error: string }
+  | { type: "set-pending-action"; pendingAction: PendingPromptAction }
+  | { type: "show-recording-pill" }
+  | { type: "hide-recording-pill" }
+  | { type: "clear-all" };
+
+function createInitialPromptState(): PromptState {
+  return {
+    detected: null,
+    statusPayload: readPromptLiveCaptionStatus(),
+    listenerError: null,
+    pendingAction: null,
+    showsRecordingPill: false,
+  };
+}
+
+function promptReducer(state: PromptState, action: PromptAction): PromptState {
+  switch (action.type) {
+    case "meeting-detected":
+      return {
+        detected: action.payload,
+        statusPayload: action.statusPayload,
+        listenerError: null,
+        pendingAction: null,
+        showsRecordingPill: false,
+      };
+    case "invalid-detection":
+      return {
+        ...state,
+        detected: null,
+        listenerError: action.error,
+        pendingAction: null,
+        showsRecordingPill: false,
+      };
+    case "set-status":
+      return {
+        ...state,
+        statusPayload: action.statusPayload,
+      };
+    case "clear-error-prefix":
+      return {
+        ...state,
+        listenerError: state.listenerError?.startsWith(action.prefix)
+          ? null
+          : state.listenerError,
+      };
+    case "set-error":
+      return {
+        ...state,
+        listenerError: action.error,
+        pendingAction: null,
+      };
+    case "set-pending-action":
+      return {
+        ...state,
+        pendingAction: action.pendingAction,
+      };
+    case "show-recording-pill":
+      return {
+        ...state,
+        detected: null,
+        listenerError: null,
+        pendingAction: null,
+        showsRecordingPill: true,
+      };
+    case "hide-recording-pill":
+      return {
+        ...state,
+        showsRecordingPill: false,
+      };
+    case "clear-all":
+      return {
+        ...state,
+        detected: null,
+        listenerError: null,
+        pendingAction: null,
+        showsRecordingPill: false,
+      };
+  }
+}
+
+function isRecordingStatusVisible(status: LiveCaptionStatusPayload): boolean {
+  return (
+    status.transcriptionStatusLabel === "開始中" ||
+    status.transcriptionStatusLabel === "文字起こし中" ||
+    status.microphoneTrackLabel.includes("録音中") ||
+    status.microphoneTrackLabel === "切替中" ||
+    status.systemAudioTrackLabel.includes("取得中") ||
+    status.systemAudioTrackLabel === "切替中"
+  );
+}
+
 function getInvalidMeetingDetectionPayloadError(payload: unknown): string {
   const issue = getMeetingAppDetectedPayloadIssue(payload);
   return `${INVALID_MEETING_DETECTION_PAYLOAD_ERROR}（理由: ${issue}）`;
@@ -77,15 +186,20 @@ function readPromptLiveCaptionStatus(): LiveCaptionStatusPayload {
 ///   押してもらう。今後 TranscriptView 側に「auto-start ready」状態を持たせる
 ///   形で発展させやすいよう、検知元の最小情報をペイロードとして保持する。
 export function MeetingDetectedBanner() {
-  const [detected, setDetected] = useState<MeetingAppDetectedPayload | null>(
-    null,
+  const [state, dispatch] = useReducer(
+    promptReducer,
+    undefined,
+    createInitialPromptState,
   );
-  const [statusPayload, setStatusPayload] =
-    useState<LiveCaptionStatusPayload>(readPromptLiveCaptionStatus);
-  const [listenerError, setListenerError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] =
-    useState<PendingPromptAction>(null);
+  const {
+    detected,
+    statusPayload,
+    listenerError,
+    pendingAction,
+    showsRecordingPill,
+  } = state;
   const hasReceivedPromptContentRef = useRef(false);
+  const hasSeenRecordingStatusRef = useRef(false);
 
   useEffect(() => {
     let disposed = false;
@@ -93,10 +207,12 @@ export function MeetingDetectedBanner() {
       payload: MeetingAppDetectedPayload,
     ) => {
       hasReceivedPromptContentRef.current = true;
-      setListenerError(null);
-      setPendingAction(null);
-      setStatusPayload(readPromptLiveCaptionStatus());
-      setDetected(payload);
+      hasSeenRecordingStatusRef.current = false;
+      dispatch({
+        type: "meeting-detected",
+        payload,
+        statusPayload: readPromptLiveCaptionStatus(),
+      });
     };
     const recoverLatestMeetingDetection = async () => {
       const payload = await invoke<unknown>("take_latest_meeting_detection");
@@ -105,9 +221,11 @@ export function MeetingDetectedBanner() {
       }
       if (!isMeetingAppDetectedPayload(payload)) {
         hasReceivedPromptContentRef.current = true;
-        setDetected(null);
-        setPendingAction(null);
-        setListenerError(getInvalidMeetingDetectionPayloadError(payload));
+        hasSeenRecordingStatusRef.current = false;
+        dispatch({
+          type: "invalid-detection",
+          error: getInvalidMeetingDetectionPayloadError(payload),
+        });
         return;
       }
       applyMeetingDetectionPayload(payload);
@@ -130,8 +248,10 @@ export function MeetingDetectedBanner() {
         return;
       }
       if (!isMeetingAppDetectedPayload(payload)) {
-        setPendingAction(null);
-        setListenerError(getInvalidMeetingDetectionPayloadError(payload));
+        dispatch({
+          type: "invalid-detection",
+          error: getInvalidMeetingDetectionPayloadError(payload),
+        });
         return;
       }
       if (isSameMeetingDetectionPayload(payload, deliveredPayload)) {
@@ -147,11 +267,11 @@ export function MeetingDetectedBanner() {
         }
         if (!isMeetingAppDetectedPayload(e.payload)) {
           hasReceivedPromptContentRef.current = true;
-          setDetected(null);
-          setPendingAction(null);
-          setListenerError(
-            getInvalidMeetingDetectionPayloadError(e.payload),
-          );
+          hasSeenRecordingStatusRef.current = false;
+          dispatch({
+            type: "invalid-detection",
+            error: getInvalidMeetingDetectionPayloadError(e.payload),
+          });
           return;
         }
         applyMeetingDetectionPayload(e.payload);
@@ -159,30 +279,30 @@ export function MeetingDetectedBanner() {
           const msg = toErrorMessage(e);
           console.error("受信済み会議検知通知の消費に失敗しました:", msg);
           if (!disposed) {
-            setListenerError(
-              `受信済み会議検知通知の消費に失敗しました: ${msg}`,
-            );
+            dispatch({
+              type: "set-error",
+              error: `受信済み会議検知通知の消費に失敗しました: ${msg}`,
+            });
           }
         });
       },
     )
       .then((unlisten) => {
         if (!disposed) {
-          setListenerError((current) =>
-            current?.startsWith("会議検知通知の受信開始に失敗しました:")
-              ? null
-              : current,
-          );
+          dispatch({
+            type: "clear-error-prefix",
+            prefix: "会議検知通知の受信開始に失敗しました:",
+          });
           void recoverLatestMeetingDetection().catch((e) => {
             const msg = toErrorMessage(e);
             console.error("最新の会議検知通知の回収に失敗しました:", msg);
             if (!disposed) {
               hasReceivedPromptContentRef.current = true;
-              setDetected(null);
-              setPendingAction(null);
-              setListenerError(
-                `最新の会議検知通知の回収に失敗しました: ${msg}`,
-              );
+              hasSeenRecordingStatusRef.current = false;
+              dispatch({
+                type: "invalid-detection",
+                error: `最新の会議検知通知の回収に失敗しました: ${msg}`,
+              });
             }
           });
         }
@@ -192,7 +312,10 @@ export function MeetingDetectedBanner() {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("会議検知通知の受信開始に失敗しました:", msg);
-          setListenerError(`会議検知通知の受信開始に失敗しました: ${msg}`);
+          dispatch({
+            type: "set-error",
+            error: `会議検知通知の受信開始に失敗しました: ${msg}`,
+          });
         }
         return null;
       });
@@ -201,16 +324,21 @@ export function MeetingDetectedBanner() {
       (event) => {
         if (!disposed) {
           if (isLiveCaptionStatusPayload(event.payload)) {
-            setListenerError((current) =>
-              current?.startsWith(INVALID_STATUS_PAYLOAD_ERROR)
-                ? null
-                : current,
-            );
-            setStatusPayload(normalizeLiveCaptionStatusPayload(event.payload));
+            dispatch({
+              type: "clear-error-prefix",
+              prefix: INVALID_STATUS_PAYLOAD_ERROR,
+            });
+            dispatch({
+              type: "set-status",
+              statusPayload: normalizeLiveCaptionStatusPayload(event.payload),
+            });
             return;
           }
           if (!hasReceivedPromptContentRef.current) {
-            setListenerError(null);
+            dispatch({
+              type: "clear-error-prefix",
+              prefix: INVALID_STATUS_PAYLOAD_ERROR,
+            });
             void hideMeetingPromptWindow().catch((e) => {
               console.error(
                 "会議検知前の不正な文字起こしステータス通知によるプロンプト非表示に失敗しました:",
@@ -220,7 +348,10 @@ export function MeetingDetectedBanner() {
             return;
           }
           const issue = getLiveCaptionStatusPayloadIssue(event.payload);
-          setListenerError(`${INVALID_STATUS_PAYLOAD_ERROR}（理由: ${issue}）`);
+          dispatch({
+            type: "set-error",
+            error: `${INVALID_STATUS_PAYLOAD_ERROR}（理由: ${issue}）`,
+          });
         }
       },
     ).catch((e) => {
@@ -230,9 +361,10 @@ export function MeetingDetectedBanner() {
           "会議検知プロンプトの文字起こしステータス受信開始に失敗しました:",
           msg,
         );
-        setListenerError(
-          `会議検知プロンプトの文字起こしステータス受信開始に失敗しました: ${msg}`,
-        );
+        dispatch({
+          type: "set-error",
+          error: `会議検知プロンプトの文字起こしステータス受信開始に失敗しました: ${msg}`,
+        });
       }
       return null;
     });
@@ -274,13 +406,44 @@ export function MeetingDetectedBanner() {
   }, []);
 
   useEffect(() => {
-    if (!detected && !(listenerError && hasReceivedPromptContentRef.current)) {
+    if (
+      !detected &&
+      !showsRecordingPill &&
+      !(listenerError && hasReceivedPromptContentRef.current)
+    ) {
       return;
     }
     void showMeetingPromptWindow().catch((e) => {
       console.error("会議検知プロンプトの表示に失敗しました:", toErrorMessage(e));
     });
-  }, [detected, listenerError]);
+  }, [detected, listenerError, showsRecordingPill]);
+
+  useEffect(() => {
+    if (!showsRecordingPill) {
+      hasSeenRecordingStatusRef.current = false;
+      return;
+    }
+    if (isRecordingStatusVisible(statusPayload)) {
+      hasSeenRecordingStatusRef.current = true;
+      return;
+    }
+    if (!hasSeenRecordingStatusRef.current) {
+      return;
+    }
+    void hideMeetingPromptWindow()
+      .then(() => {
+        clearPendingMeetingStartRequest();
+        dispatch({ type: "hide-recording-pill" });
+      })
+      .catch((e) => {
+        const msg = toErrorMessage(e);
+        console.error("記録状態pillの自動非表示に失敗しました:", msg);
+        dispatch({
+          type: "set-error",
+          error: `記録状態pillの自動非表示に失敗しました: ${msg}`,
+        });
+      });
+  }, [showsRecordingPill, statusPayload]);
 
   useEffect(() => {
     if (!detected || listenerError || pendingAction) {
@@ -290,15 +453,16 @@ export function MeetingDetectedBanner() {
       void hideMeetingPromptWindow()
         .then(() => {
           clearPendingMeetingStartRequest();
-          setPendingAction(null);
-          setDetected(null);
+          hasSeenRecordingStatusRef.current = false;
+          dispatch({ type: "clear-all" });
         })
         .catch((e) => {
           const msg = toErrorMessage(e);
           console.error("会議検知バナーの自動非表示に失敗しました:", msg);
-          setListenerError(
-            `会議検知バナーの自動非表示に失敗しました: ${msg}`,
-          );
+          dispatch({
+            type: "set-error",
+            error: `会議検知バナーの自動非表示に失敗しました: ${msg}`,
+          });
         });
     }, PROMPT_AUTO_HIDE_MS);
 
@@ -340,48 +504,47 @@ export function MeetingDetectedBanner() {
     if (pendingAction) {
       return;
     }
-    setPendingAction("start");
+    dispatch({ type: "set-pending-action", pendingAction: "start" });
     markPendingMeetingStartRequest();
     try {
       await emit(MEETING_START_REQUEST_EVENT);
     } catch (e) {
       clearPendingMeetingStartRequest();
-      setPendingAction(null);
       const msg = toErrorMessage(e);
       console.error("録音開始要求の送信に失敗しました:", msg);
-      setListenerError(`録音開始要求の送信に失敗しました: ${msg}`);
+      dispatch({
+        type: "set-error",
+        error: `録音開始要求の送信に失敗しました: ${msg}`,
+      });
       return;
     }
     try {
       await showMainWindowForMeetingStartRequest();
     } catch (e) {
-      setPendingAction(null);
       const msg = toErrorMessage(e);
       console.error("メインウィンドウの表示に失敗しました:", msg);
-      setListenerError(`メインウィンドウの表示に失敗しました: ${msg}`);
+      dispatch({
+        type: "set-error",
+        error: `メインウィンドウの表示に失敗しました: ${msg}`,
+      });
       return;
     }
-    try {
-      await hideMeetingPromptWindow();
-      setDetected(null);
-    } catch (e) {
-      setPendingAction(null);
-      const msg = toErrorMessage(e);
-      console.error("会議検知バナーを隠せませんでした:", msg);
-      setListenerError(`会議検知バナーを隠せませんでした: ${msg}`);
-    }
+    hasSeenRecordingStatusRef.current = false;
+    dispatch({ type: "show-recording-pill" });
   };
   const handleDismissBanner = async () => {
     try {
       await hideMeetingPromptWindow();
       clearPendingMeetingStartRequest();
-      setDetected(null);
-      setListenerError(null);
-      setPendingAction(null);
+      hasSeenRecordingStatusRef.current = false;
+      dispatch({ type: "clear-all" });
     } catch (e) {
       const msg = toErrorMessage(e);
       console.error("会議検知バナーを閉じられませんでした:", msg);
-      setListenerError(`会議検知バナーを閉じられませんでした: ${msg}`);
+      dispatch({
+        type: "set-error",
+        error: `会議検知バナーを閉じられませんでした: ${msg}`,
+      });
     }
   };
 
@@ -397,19 +560,34 @@ export function MeetingDetectedBanner() {
     };
   }, [pendingAction]);
 
-  if (!detected && !listenerError) return null;
+  if (!detected && !listenerError && !showsRecordingPill) return null;
+
+  if (showsRecordingPill && !detected && !listenerError) {
+    return (
+      <div
+        className="meeting-detected-status-pill"
+        data-tauri-drag-region
+        role="status"
+        aria-live="polite"
+        aria-label="記録状態を表示中"
+        title="記録状態を表示中"
+      >
+        <span aria-hidden="true" />
+        記録状態を表示中
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div
-        className={bannerClassName}
-        data-tauri-drag-region
-        role={bannerRole}
-        aria-live={bannerRole === "alert" ? "assertive" : "polite"}
-        aria-atomic="true"
-        aria-label={bannerAriaLabel}
-        title={bannerAriaLabel}
-      >
+    <div
+      className={bannerClassName}
+      data-tauri-drag-region
+      role={bannerRole}
+      aria-live={bannerRole === "alert" ? "assertive" : "polite"}
+      aria-atomic="true"
+      aria-label={bannerAriaLabel}
+      title={bannerAriaLabel}
+    >
       <span className="meeting-detected-ribbon" aria-hidden="true" />
       {!listenerError && (
         <span className="meeting-detected-banner-top" data-tauri-drag-region>
@@ -454,52 +632,48 @@ export function MeetingDetectedBanner() {
         </span>
       )}
       {!listenerError && (
-        <>
-          <span className="meeting-detected-track-grid" data-tauri-drag-region>
-            <span
-              className="meeting-detected-track-chip"
-              data-tauri-drag-region
-              aria-label="録音対象: Mic 自分"
-              title="録音対象: Mic 自分"
-            >
-              <span className="meeting-detected-track-dot" aria-hidden="true" />
-              Mic: 自分
-            </span>
-            <span
-              className="meeting-detected-track-chip"
-              data-tauri-drag-region
-              aria-label="録音対象: System 相手側"
-              title="録音対象: System 相手側"
-            >
-              <span className="meeting-detected-track-dot" aria-hidden="true" />
-              System: 相手側
-            </span>
+        <span className="meeting-detected-track-grid" data-tauri-drag-region>
+          <span
+            className="meeting-detected-track-chip"
+            data-tauri-drag-region
+            aria-label="録音対象: Mic 自分"
+            title="録音対象: Mic 自分"
+          >
+            <span className="meeting-detected-track-dot" aria-hidden="true" />
+            Mic: 自分
           </span>
-        </>
+          <span
+            className="meeting-detected-track-chip"
+            data-tauri-drag-region
+            aria-label="録音対象: System 相手側"
+            title="録音対象: System 相手側"
+          >
+            <span className="meeting-detected-track-dot" aria-hidden="true" />
+            System: 相手側
+          </span>
+        </span>
       )}
       {(detected || listenerError) && (
         <div className="meeting-detected-banner-actions">
           {detected && (
-            <>
-              <button
-                type="button"
-                className="control-btn control-btn-transcribe"
-                disabled={Boolean(pendingAction)}
-                aria-label={startRecordingLabel}
-                title={startRecordingLabel}
-                onClick={() => {
-                  void handleStartRecording();
-                }}
-              >
-                <Captions
-                  className="meeting-detected-start-icon"
-                  aria-hidden="true"
-                  size={15}
-                  strokeWidth={2.4}
-                />
-                {pendingAction === "start" ? "開始要求中..." : "開始"}
-              </button>
-            </>
+            <button
+              type="button"
+              className="control-btn control-btn-transcribe"
+              disabled={Boolean(pendingAction)}
+              aria-label={startRecordingLabel}
+              title={startRecordingLabel}
+              onClick={() => {
+                void handleStartRecording();
+              }}
+            >
+              <Captions
+                className="meeting-detected-start-icon"
+                aria-hidden="true"
+                size={15}
+                strokeWidth={2.4}
+              />
+              {pendingAction === "start" ? "開始要求中..." : "開始"}
+            </button>
           )}
           <button
             type="button"
@@ -516,15 +690,6 @@ export function MeetingDetectedBanner() {
           </button>
         </div>
       )}
-      </div>
-      <div
-        className="meeting-detected-status-pill"
-        data-tauri-drag-region
-        aria-hidden="true"
-      >
-        <span aria-hidden="true" />
-        記録状態を表示中
-      </div>
-    </>
+    </div>
   );
 }

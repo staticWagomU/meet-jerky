@@ -16,10 +16,10 @@
         "label": "main",
         "title": "meet-jerky",
         "width": 328,
-        "height": 516,
+        "height": 560,
         "visible": false,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "shadow": false,
         "alwaysOnTop": true,
         "resizable": false,
@@ -28,10 +28,6 @@
     ],
     "security": {
       "csp": null
-    },
-    "trayIcon": {
-      "iconPath": "icons/32x32.png",
-      "iconAsTemplate": true
     }
   },
   "bundle": {
