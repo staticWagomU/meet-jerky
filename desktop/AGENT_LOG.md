@@ -1,3 +1,16 @@
+## Design update: collapsed recording pill state intent labels
+
+- 日時: 2026-05-21 JST
+- 作業範囲: `meet-jerky-desktop.pen` の `D61Alv`（Agent Note - State Model Intent）内のみ
+- 指示内容: Web App guide を使用し、選択 UI 部品 `Collapsed recording pill preview` について、録音開始後の折りたたみ状態、クリック時の詳細展開、マイク/システム音声取得中の表示維持を日本語の短いラベルで説明する。既存モック画面は変更しない。
+- 採用判断: 会議中に邪魔にならない最小表示と録音状態の透明性を説明する注釈であり、`docs/product-concept.md` の「会議中の邪魔にならないウィンドウ」「安心感」「録音状態の透明性」に沿う。既存モック画面は変更せず、空の注釈コンテナに限定した。
+- 結果: `D61Alv` に「状態モデル意図」「録音中の折りたたみ状態」と、状態/操作/持続の3ラベルを追加。既存 variables（surface / foreground / accent / border / font / rounded）を使用し、既存スタイルに合わせた。
+- 検証結果: Pencil schema validation は `batch_design` 実行時に通過。`snapshot_layout` で `D61Alv` の layout problems なしを確認。`get_screenshot(D61Alv)` で表示の重なり、はみ出し、不可視テキストがないことを確認。
+- 依存関係追加: なし
+- 残リスク: Pencil エディタ上では変更が反映されているが、最終的なファイル保存状態は `git status` で確認する。
+
+---
+
 ## Design update: caption window relationship labels
 
 - 日時: 2026-05-20 21:28 JST

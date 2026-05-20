@@ -20993,6 +20993,614 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "PG1ol",
+      "x": 2531,
+      "y": 779,
+      "name": "Intent Notes - Collapsed Recording Pill",
+      "width": 920,
+      "height": 410,
+      "fill": "$surface.muted",
+      "cornerRadius": 14,
+      "stroke": {
+        "thickness": 1,
+        "fill": "$border.subtle"
+      },
+      "layout": "vertical",
+      "gap": 14,
+      "padding": 18,
+      "children": [
+        {
+          "type": "frame",
+          "id": "F6xT8",
+          "name": "Intent notes header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 4,
+          "children": [
+            {
+              "type": "text",
+              "id": "m55q2s",
+              "name": "title",
+              "fill": "$foreground.primary",
+              "content": "Selected part: Collapsed recording pill",
+              "fontFamily": "$font.heading",
+              "fontSize": 18,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "bbFyS",
+              "name": "sub",
+              "fill": "$foreground.secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "『記録状態を表示中』ピルが何のためにあるかを、ユーザー視点・状態視点・操作視点で分解する。",
+              "lineHeight": 1.4,
+              "fontFamily": "$font.body",
+              "fontSize": 12,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "y5h1N",
+          "name": "Intent note columns",
+          "width": "fill_container",
+          "height": "fill_container",
+          "gap": 12,
+          "children": [
+            {
+              "type": "frame",
+              "id": "KHu7W",
+              "name": "Agent Note - User Trust Intent",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": 10,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vw7Ya",
+                  "name": "Intent Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 3,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Q9Tvcy",
+                      "name": "Intent Title",
+                      "fill": "$foreground.primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "録音ピルの信頼設計",
+                      "lineHeight": 1.15,
+                      "fontFamily": "$font.heading",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "LWakP",
+                      "name": "Intent Summary",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "録音中を隠さず、会議の邪魔はしない。",
+                      "lineHeight": 1.25,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XgQZW",
+                  "name": "Intent Label - Always Visible",
+                  "width": "fill_container",
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    7
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "p8pmO",
+                      "name": "Trust Dot",
+                      "fill": "$status.good",
+                      "width": 7,
+                      "height": 7
+                    },
+                    {
+                      "type": "text",
+                      "id": "NZB45",
+                      "name": "Intent Copy",
+                      "fill": "$foreground.primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "常時見える安心：録音状態を一目で確認",
+                      "lineHeight": 1.2,
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p2ZeqQ",
+                  "name": "Intent Label - No Stealth",
+                  "width": "fill_container",
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    7
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "tUPmu",
+                      "name": "Trust Dot",
+                      "fill": "$accent.primary",
+                      "width": 7,
+                      "height": 7
+                    },
+                    {
+                      "type": "text",
+                      "id": "a7EeT1",
+                      "name": "Intent Copy",
+                      "fill": "$foreground.primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "ステルス不安を防ぐ：自動開始でも明示",
+                      "lineHeight": 1.2,
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TAVhf",
+                  "name": "Intent Label - Unobtrusive",
+                  "width": "fill_container",
+                  "fill": "$surface.primary",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    7
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "ZLgKS",
+                      "name": "Trust Dot",
+                      "fill": "$foreground.secondary",
+                      "width": 7,
+                      "height": 7
+                    },
+                    {
+                      "type": "text",
+                      "id": "Lwhex",
+                      "name": "Intent Copy",
+                      "fill": "$foreground.primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "控えめに残す：作業領域を奪わない",
+                      "lineHeight": 1.2,
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "D61Alv",
+              "name": "Agent Note - State Model Intent",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": "$rounded.lg",
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 6,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "dsegg",
+                  "name": "Intent header",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "Tuz7Y",
+                      "name": "Recording state dot",
+                      "fill": "$accent.primary",
+                      "width": 8,
+                      "height": 8
+                    },
+                    {
+                      "type": "text",
+                      "id": "SpjdB",
+                      "name": "Intent label",
+                      "fill": "$foreground.secondary",
+                      "content": "状態モデル意図",
+                      "fontFamily": "$font.caption",
+                      "fontSize": 10,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "e2N2Le",
+                  "name": "Collapsed pill state title",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "録音中の折りたたみ状態",
+                  "lineHeight": 1.15,
+                  "fontFamily": "$font.heading",
+                  "fontSize": 14,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "frame",
+                  "id": "p6lb30",
+                  "name": "State model labels",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "DqvwW",
+                      "name": "State label row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ixkVY",
+                          "name": "State badge",
+                          "width": 52,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "padding": [
+                            5,
+                            2
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "i4xrc",
+                              "name": "badge1Text",
+                              "fill": "$accent.deep",
+                              "content": "状態",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "H2AUc",
+                          "name": "row1Text",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "録音開始後のCollapsed表示",
+                          "lineHeight": 1.3,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Cl7bq",
+                      "name": "Interaction label row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "avPKG",
+                          "name": "Interaction badge",
+                          "width": 52,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "padding": [
+                            5,
+                            2
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GLyUc",
+                              "name": "badge2Text",
+                              "fill": "$accent.deep",
+                              "content": "操作",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "IUvB2",
+                          "name": "row2Text",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "クリックで詳細を展開",
+                          "lineHeight": 1.3,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "L9jOJp",
+                      "name": "Persistence label row",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "MCPSb",
+                          "name": "Persistence badge",
+                          "width": 52,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "padding": [
+                            5,
+                            2
+                          ],
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "yhhds",
+                              "name": "badge3Text",
+                              "fill": "$accent.deep",
+                              "content": "持続",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "EfoeZ",
+                          "name": "row3Text",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "マイク/システム音声取得中は表示維持",
+                          "lineHeight": 1.3,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "TF5Hh",
+              "name": "Current Note - Final Intent Summary",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": 10,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$accent.tertiary"
+              },
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bKUBq",
+                  "name": "sTitle",
+                  "fill": "$foreground.primary",
+                  "content": "意図の結論",
+                  "fontFamily": "$font.heading",
+                  "fontSize": 14,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "tMrzj",
+                  "name": "sLead",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "このピルは装飾ではなく、録音中である事実を最小面積で残す安全表示。",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font.body",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "l10b2H",
+                  "name": "point1",
+                  "width": "fill_container",
+                  "fill": "$surface.muted",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 3,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "H3uz4",
+                      "name": "point1a",
+                      "fill": "$accent.deep",
+                      "content": "なぜ必要?",
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "NIG9V",
+                      "name": "point1b",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "字幕ウィンドウや通知を閉じても、ユーザーが『まだ記録中か』を即座に確認できるようにするため。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w896W",
+                  "name": "point2",
+                  "width": "fill_container",
+                  "fill": "$surface.muted",
+                  "cornerRadius": 8,
+                  "layout": "vertical",
+                  "gap": 3,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KSMel",
+                      "name": "point2a",
+                      "fill": "$accent.deep",
+                      "content": "クリック時の期待",
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "oHjQH",
+                      "name": "point2b",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "クリックで録音状態の詳細または字幕ウィンドウを再展開。停止や履歴へ進む入口にもなる。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SkMI8",
+                  "name": "point3",
+                  "width": "fill_container",
+                  "fill": "#FFF7F0FF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$accent.tertiary"
+                  },
+                  "layout": "vertical",
+                  "gap": 3,
+                  "padding": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FvOQ5",
+                      "name": "point3a",
+                      "fill": "$accent.deep",
+                      "content": "守るべき条件",
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XQpO7",
+                      "name": "point3b",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "録音していない時に表示しない。表示中はマイク/システム音声の取得状態と矛盾させない。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
