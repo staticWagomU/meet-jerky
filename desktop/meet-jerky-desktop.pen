@@ -4,8 +4,8 @@
     {
       "type": "frame",
       "id": "D0qo1",
-      "x": 1892,
-      "y": 755,
+      "x": 1891,
+      "y": 779,
       "name": "Mock 2 - Notch Notification",
       "width": 560,
       "height": 280,
@@ -11161,6 +11161,7 @@
           "type": "frame",
           "id": "UMPLA",
           "name": "Mock 1B - First Launch",
+          "height": 528,
           "fill": "#00000000",
           "cornerRadius": 12,
           "layout": "vertical",
@@ -11171,6 +11172,7 @@
               "name": "Menu Bar Popover - First Launch",
               "clip": true,
               "width": 312,
+              "height": 528,
               "fill": "#FAFAFAE8",
               "cornerRadius": 14,
               "stroke": {
@@ -11780,6 +11782,35 @@
                       "fontWeight": "700"
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JjETu",
+                  "name": "Back Link",
+                  "width": 80,
+                  "height": 28,
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "bSJRb",
+                      "name": "back1Text",
+                      "fill": "$foreground.secondary",
+                      "content": "← 戻る",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
                 }
               ]
             }
@@ -11789,6 +11820,7 @@
           "type": "frame",
           "id": "JcDVs",
           "name": "Mock 1A - Idle (Monitoring)",
+          "height": 534,
           "fill": "#00000000",
           "cornerRadius": 12,
           "layout": "vertical",
@@ -11799,7 +11831,7 @@
               "name": "Menu Bar Popover Idle",
               "clip": true,
               "width": 312,
-              "height": 500,
+              "height": 534,
               "fill": "#FAFAFAE8",
               "cornerRadius": 14,
               "stroke": {
@@ -12331,6 +12363,35 @@
                       "fontWeight": "700"
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "J3SYGf",
+                  "name": "Back Link",
+                  "width": 80,
+                  "height": 28,
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cTkYa",
+                      "name": "back2Text",
+                      "fill": "$foreground.secondary",
+                      "content": "← 戻る",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
                 }
               ]
             }
@@ -12340,7 +12401,7 @@
           "type": "frame",
           "id": "lYS5J",
           "name": "Mock 1D - Recording",
-          "height": 500,
+          "height": 534,
           "fill": "#00000000",
           "cornerRadius": 12,
           "layout": "vertical",
@@ -12351,7 +12412,7 @@
               "name": "Menu Bar Popover",
               "clip": true,
               "width": 312,
-              "height": 500,
+              "height": 534,
               "fill": "#FAFAFAE8",
               "cornerRadius": 14,
               "stroke": {
@@ -12953,6 +13014,35 @@
                       "fontWeight": "700"
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "exQdi",
+                  "name": "Back Link",
+                  "width": 80,
+                  "height": 28,
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DmH95",
+                      "name": "back3Text",
+                      "fill": "$foreground.secondary",
+                      "content": "← 戻る",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
                 }
               ]
             }
@@ -12962,6 +13052,7 @@
           "type": "frame",
           "id": "Y5te0",
           "name": "Mock 1C - Meeting Finished",
+          "height": 581,
           "fill": "#00000000",
           "cornerRadius": 12,
           "layout": "vertical",
@@ -12972,6 +13063,7 @@
               "name": "Menu Bar Popover - Meeting Finished",
               "clip": true,
               "width": 312,
+              "height": 581,
               "fill": "#FAFAFAE8",
               "cornerRadius": 14,
               "stroke": {
@@ -13839,6 +13931,35 @@
                       "fontFamily": "$font.body",
                       "fontSize": 12,
                       "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bxzR9",
+                  "name": "Back Link",
+                  "width": 80,
+                  "height": 28,
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 6,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WPCBm",
+                      "name": "back4Text",
+                      "fill": "$foreground.secondary",
+                      "content": "← 戻る",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "600"
                     }
                   ]
                 }
@@ -15782,6 +15903,2525 @@
                       "fontFamily": "Inter",
                       "fontSize": 11,
                       "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zvNf8",
+      "x": 1547,
+      "y": 100,
+      "name": "Mock 2 - History Interaction Outcomes",
+      "width": 1080,
+      "height": 660,
+      "fill": "#00000000",
+      "gap": 40,
+      "children": [
+        {
+          "type": "frame",
+          "id": "m4ewM",
+          "name": "Mock 2A - Recent Recording Card Opens",
+          "width": 320,
+          "height": 620,
+          "fill": "$surface.muted",
+          "cornerRadius": "$rounded.lg",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": [
+            12,
+            14
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "WCu42",
+              "name": "Mac window titlebar",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "b1ad8",
+                  "name": "Traffic lights",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "CBQap",
+                      "name": "dotClose",
+                      "fill": "#FF5F57FF",
+                      "width": 10,
+                      "height": 10
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "MVRj2",
+                      "name": "dotMin",
+                      "fill": "#FFBD2EFF",
+                      "width": 10,
+                      "height": 10
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "TAvH2",
+                      "name": "dotZoom",
+                      "fill": "#28C840FF",
+                      "width": 10,
+                      "height": 10
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "bZZFQ",
+                  "name": "appTitle",
+                  "fill": "$foreground.secondary",
+                  "content": "meet-jerky",
+                  "fontFamily": "$font.caption",
+                  "fontSize": 11,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "UVkzn",
+                  "name": "titleSpacer",
+                  "width": 56,
+                  "height": 1,
+                  "fill": "#00000000"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "HyCoZ",
+              "name": "Recent recording card - opens detail",
+              "width": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": "$rounded.lg",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$accent.tertiary"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#B83B0024",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18,
+                "spread": -8
+              },
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XxC0p",
+                  "name": "cardTop",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "J0I4s5",
+                      "name": "recIcon",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "$surface.muted",
+                      "cornerRadius": "$rounded.lg",
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "R8l3gS",
+                          "name": "recDot",
+                          "fill": "$accent.primary",
+                          "width": 12,
+                          "height": 12
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "RtkFY",
+                      "name": "cardText",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qMEdf",
+                          "name": "meetingName",
+                          "fill": "$foreground.primary",
+                          "content": "プロダクト定例",
+                          "fontFamily": "$font.heading",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "d0swrv",
+                          "name": "meetingMeta",
+                          "fill": "$foreground.secondary",
+                          "content": "今日 10:00・42分・Google Meet",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "Unx9m",
+                      "name": "chevron",
+                      "width": 18,
+                      "height": 18,
+                      "iconFontName": "chevron-right",
+                      "iconFontFamily": "lucide",
+                      "fill": "$accent.deep"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "G0siR",
+                  "name": "cardBottom",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "VdJl7",
+                      "name": "statusPill",
+                      "fill": "#FFF1E8FF",
+                      "cornerRadius": "$rounded.lg",
+                      "gap": 6,
+                      "padding": [
+                        5,
+                        8
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "Iviaz",
+                          "name": "statusIcon",
+                          "width": 12,
+                          "height": 12,
+                          "iconFontName": "sparkles",
+                          "iconFontFamily": "lucide",
+                          "fill": "$accent.deep"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Y8r4R",
+                          "name": "statusText",
+                          "fill": "$accent.deep",
+                          "content": "クリックで録音詳細",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "D8KwzI",
+                      "name": "trackMini",
+                      "width": "fill_container",
+                      "gap": 4,
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "LXLGz",
+                          "name": "micMini",
+                          "width": 38,
+                          "height": 8,
+                          "fill": "$accent.primary",
+                          "cornerRadius": "$rounded.sm"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "duXIC",
+                          "name": "sysMini",
+                          "width": 54,
+                          "height": 8,
+                          "fill": "$border.subtle",
+                          "cornerRadius": "$rounded.sm"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "EcfTZ",
+              "name": "Recording detail popover",
+              "clip": true,
+              "width": "fill_container",
+              "fill": "#FFFFFFE6",
+              "cornerRadius": "$rounded.lg",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "effect": [
+                {
+                  "type": "background_blur",
+                  "radius": 18
+                },
+                {
+                  "type": "shadow",
+                  "shadowType": "outer",
+                  "color": "#B83B0026",
+                  "offset": {
+                    "x": 0,
+                    "y": 18
+                  },
+                  "blur": 34,
+                  "spread": -12
+                }
+              ],
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "JZqiu",
+                  "name": "popHeader",
+                  "width": "fill_container",
+                  "fill": "#FFFFFFCC",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "gap": 7,
+                  "padding": [
+                    12,
+                    12,
+                    10,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "V91lM",
+                      "name": "headerRow",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ptAe9",
+                          "name": "headerCopy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "meufA",
+                              "name": "finished",
+                              "fill": "$foreground.primary",
+                              "content": "録音詳細",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 17,
+                              "fontWeight": "750"
+                            },
+                            {
+                              "type": "text",
+                              "id": "CbcAK",
+                              "name": "finishedMeta",
+                              "fill": "$foreground.secondary",
+                              "content": "プロダクト定例を開きました",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "V60hnb",
+                          "name": "closeBtn",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.lg",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "layout": "vertical",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "eomoJ",
+                              "name": "closeIcon",
+                              "width": 13,
+                              "height": 13,
+                              "iconFontName": "x",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "X4qsRE",
+                      "name": "summaryStrip",
+                      "width": "fill_container",
+                      "fill": "#FFF7F2FF",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FFB38080"
+                      },
+                      "gap": 1,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "wNGPv",
+                          "name": "statOne",
+                          "width": "fill_container",
+                          "fill": "#FFF1E8FF",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Kvm7J",
+                              "name": "statOneNum",
+                              "fill": "$accent.deep",
+                              "content": "42:18",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 17,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "xa8Ys",
+                              "name": "statOneLabel",
+                              "fill": "$foreground.secondary",
+                              "content": "録音時間",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "woqMh",
+                          "name": "statTwo",
+                          "width": "fill_container",
+                          "fill": "#FFFFFFFF",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "t2AFQ",
+                              "name": "statTwoNum",
+                              "fill": "$foreground.primary",
+                              "content": "2",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 17,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "bJcCE",
+                              "name": "statTwoLabel",
+                              "fill": "$foreground.secondary",
+                              "content": "音声分離",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "I0QYfK",
+                          "name": "statThree",
+                          "width": "fill_container",
+                          "fill": "#FFFFFFFF",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "fSzFX",
+                              "name": "statThreeNum",
+                              "fill": "$foreground.primary",
+                              "content": "68%",
+                              "fontFamily": "Geist Mono",
+                              "fontSize": 17,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "D1BLE",
+                              "name": "statThreeLabel",
+                              "fill": "$foreground.secondary",
+                              "content": "要約進行",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "w1SSdv",
+                  "name": "body",
+                  "width": "fill_container",
+                  "fill": "$surface.primary",
+                  "layout": "vertical",
+                  "gap": 9,
+                  "padding": [
+                    10,
+                    12,
+                    12,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ZTlAX",
+                      "name": "tracks",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ycADl",
+                          "name": "trackTitle",
+                          "fill": "$foreground.secondary",
+                          "content": "この録音の音声",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Dqpvv",
+                          "name": "trackSelf",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "I0OWq",
+                              "name": "selfBadge",
+                              "width": 58,
+                              "height": 22,
+                              "fill": "#FFF1E8FF",
+                              "cornerRadius": "$rounded.sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "oIz55",
+                                  "name": "selfLabel",
+                                  "fill": "$accent.deep",
+                                  "content": "自分",
+                                  "fontFamily": "$font.caption",
+                                  "fontSize": 10,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "y0gHG",
+                              "name": "selfWave",
+                              "width": "fill_container",
+                              "height": 22,
+                              "gap": 3,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "PxNIn",
+                                  "name": "selfBar1",
+                                  "width": "fill_container",
+                                  "height": 8,
+                                  "fill": "$accent.tertiary",
+                                  "cornerRadius": "$rounded.sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "nucjG",
+                                  "name": "selfBar2",
+                                  "width": "fill_container",
+                                  "height": 15,
+                                  "fill": "$accent.secondary",
+                                  "cornerRadius": "$rounded.sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "lmzIv",
+                                  "name": "selfBar3",
+                                  "width": "fill_container",
+                                  "height": 11,
+                                  "fill": "$accent.primary",
+                                  "cornerRadius": "$rounded.sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "SBL1U",
+                                  "name": "selfBar4",
+                                  "width": "fill_container",
+                                  "height": 18,
+                                  "fill": "$accent.secondary",
+                                  "cornerRadius": "$rounded.sm"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "hTpot",
+                          "name": "trackOther",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "bJPYe",
+                              "name": "otherBadge",
+                              "width": 58,
+                              "height": 22,
+                              "fill": "$surface.muted",
+                              "cornerRadius": "$rounded.sm",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "dCTZU",
+                                  "name": "otherLabel",
+                                  "fill": "$foreground.secondary",
+                                  "content": "相手側",
+                                  "fontFamily": "$font.caption",
+                                  "fontSize": 10,
+                                  "fontWeight": "700"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "mU2Pf",
+                              "name": "otherWave",
+                              "width": "fill_container",
+                              "height": 22,
+                              "gap": 3,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "nXeGg",
+                                  "name": "otherBar1",
+                                  "width": "fill_container",
+                                  "height": 15,
+                                  "fill": "$border.subtle",
+                                  "cornerRadius": "$rounded.sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "J98G4",
+                                  "name": "otherBar2",
+                                  "width": "fill_container",
+                                  "height": 10,
+                                  "fill": "$border.subtle",
+                                  "cornerRadius": "$rounded.sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "L5h2i",
+                                  "name": "otherBar3",
+                                  "width": "fill_container",
+                                  "height": 18,
+                                  "fill": "$border.subtle",
+                                  "cornerRadius": "$rounded.sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "mNJFy",
+                                  "name": "otherBar4",
+                                  "width": "fill_container",
+                                  "height": 13,
+                                  "fill": "$border.subtle",
+                                  "cornerRadius": "$rounded.sm"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ewW1n",
+                      "name": "transcript",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Su3mU",
+                          "name": "transcriptHead",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "yxFxp",
+                              "name": "transcriptTitle",
+                              "fill": "$foreground.secondary",
+                              "content": "この録音の文字起こし",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "M84rZ",
+                              "name": "transcriptLive",
+                              "fill": "$status.good",
+                              "content": "保存済み",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "O12Q9",
+                          "name": "lineOne",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "10:04 自分  次回は検知精度の検証から始めます。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "O5IJm",
+                          "name": "lineTwo",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "10:05 相手側  Zoom と Meet の差分も見たいです。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "DbMvi",
+                          "name": "lineThree",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "10:07 自分  ToDo はこの録音に保存します。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XtLFy",
+                      "name": "aiStatus",
+                      "width": "fill_container",
+                      "fill": "#FFF7F2FF",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#FFB38080"
+                      },
+                      "gap": 8,
+                      "padding": [
+                        8,
+                        9
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "xn0k9",
+                          "name": "aiIconWrap",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "$accent.primary",
+                          "cornerRadius": "$rounded.lg",
+                          "layout": "vertical",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "p79zD",
+                              "name": "aiIcon",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "file-text",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.inverse"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "E1LjA9",
+                          "name": "aiCopy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "kcMrQ",
+                              "name": "aiTitle",
+                              "fill": "$foreground.primary",
+                              "content": "この録音のAI議事録",
+                              "fontFamily": "$font.body",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "gT9De",
+                              "name": "aiMeta",
+                              "fill": "$foreground.secondary",
+                              "content": "決定事項 3件・ToDo 5件を抽出中",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lEEBd",
+                      "name": "actions",
+                      "width": "fill_container",
+                      "gap": 7,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "nXJbj",
+                          "name": "primary",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$accent.primary",
+                          "cornerRadius": "$rounded.lg",
+                          "gap": 6,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "YG4Gx",
+                              "name": "primaryIcon",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "file-text",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.inverse"
+                            },
+                            {
+                              "type": "text",
+                              "id": "F8rYj",
+                              "name": "primaryText",
+                              "fill": "$foreground.inverse",
+                              "content": "この録音を開く",
+                              "fontFamily": "$font.body",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Vm50a",
+                          "name": "secondary",
+                          "width": 42,
+                          "height": 34,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.lg",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "AEqDu",
+                              "name": "secondaryIcon",
+                              "width": 15,
+                              "height": 15,
+                              "iconFontName": "list-tree",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rKaHD",
+                          "name": "more",
+                          "width": 42,
+                          "height": 34,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.lg",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "D2WeQ",
+                              "name": "moreIcon",
+                              "width": 15,
+                              "height": 15,
+                              "iconFontName": "ellipsis",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "buSPX",
+          "name": "Mock 2B - Open History",
+          "clip": true,
+          "width": 320,
+          "height": 620,
+          "fill": "$surface.primary",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 10,
+          "children": [
+            {
+              "type": "frame",
+              "id": "Tertl",
+              "name": "History Titlebar",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "g6i7Sv",
+                  "name": "Window Controls",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "IqBQc",
+                      "name": "closeDot",
+                      "fill": "#FF5F57FF",
+                      "width": 10,
+                      "height": 10
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "z86k7",
+                      "name": "minDot",
+                      "fill": "#FFBD2EFF",
+                      "width": 10,
+                      "height": 10
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "ZkcCj",
+                      "name": "zoomDot",
+                      "fill": "#28C840FF",
+                      "width": 10,
+                      "height": 10
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "b15Xg",
+                  "name": "appTitle",
+                  "fill": "$foreground.secondary",
+                  "content": "履歴ライブラリ",
+                  "fontFamily": "$font.caption",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "qKaHz",
+                  "name": "Detect Status Pill",
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.sm",
+                  "gap": 5,
+                  "padding": [
+                    8,
+                    4
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "RNJMO",
+                      "name": "statusDot",
+                      "fill": "$status.good",
+                      "width": 6,
+                      "height": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "FOP5A",
+                      "name": "statusText",
+                      "fill": "$foreground.secondary",
+                      "content": "検知中",
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "UoRiW",
+              "name": "History Search Hero",
+              "width": "fill_container",
+              "fill": "$surface.muted",
+              "cornerRadius": "$rounded.lg",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 8,
+              "padding": [
+                12,
+                10
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "P7dJB",
+                  "name": "heroKicker",
+                  "fill": "$accent.deep",
+                  "content": "履歴を開く → 検索ライブラリ",
+                  "fontFamily": "$font.caption",
+                  "fontSize": 11,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "jlXlw",
+                  "name": "heroTitle",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "録音を選ぶと文字起こしとAI状態をプレビュー",
+                  "lineHeight": 1.12,
+                  "fontFamily": "$font.heading",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "frame",
+                  "id": "aPn76",
+                  "name": "Search Field",
+                  "width": "fill_container",
+                  "height": 32,
+                  "fill": "$surface.primary",
+                  "cornerRadius": "$rounded.sm",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 7,
+                  "padding": [
+                    10,
+                    0
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "Mz7wI",
+                      "name": "searchIcon",
+                      "width": 14,
+                      "height": 14,
+                      "iconFontName": "search",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "$foreground.secondary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "l0lylH",
+                      "name": "searchText",
+                      "fill": "$foreground.secondary",
+                      "content": "会議名・参加者・ToDoを検索",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YoU41",
+                  "name": "History Filters",
+                  "width": "fill_container",
+                  "gap": 5,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "TupRI",
+                      "name": "filterAll",
+                      "fill": "$accent.primary",
+                      "cornerRadius": "$rounded.sm",
+                      "padding": [
+                        8,
+                        5
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Vb3yS",
+                          "name": "filterAllText",
+                          "fill": "$foreground.inverse",
+                          "content": "すべて",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "r1PvqV",
+                      "name": "filterAi",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.sm",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "padding": [
+                        8,
+                        5
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "UvlOk",
+                          "name": "filterAiText",
+                          "fill": "$foreground.secondary",
+                          "content": "AI未作成",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gtaf6",
+                      "name": "filterTodo",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.sm",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "padding": [
+                        8,
+                        5
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "v6L9j4",
+                          "name": "filterTodoText",
+                          "fill": "$foreground.secondary",
+                          "content": "ToDoあり",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cr4k9",
+              "name": "Processing Transparency",
+              "width": "fill_container",
+              "fill": "#FFF7F0FF",
+              "cornerRadius": "$rounded.sm",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$accent.tertiary"
+              },
+              "gap": 7,
+              "padding": [
+                9,
+                7
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "wYSh0",
+                  "name": "shield",
+                  "width": 16,
+                  "height": 16,
+                  "iconFontName": "verified_user",
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "$accent.deep"
+                },
+                {
+                  "type": "text",
+                  "id": "N5Mfjn",
+                  "name": "transparencyText",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "履歴を開くと保存済み録音だけを表示。AI送信は実行時に確認。",
+                  "lineHeight": 1.25,
+                  "fontFamily": "$font.body",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "NpELt",
+              "name": "Recent Meetings List",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "K5F6o",
+                  "name": "listHead",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "F7uOp",
+                      "name": "recentLabel",
+                      "fill": "$foreground.primary",
+                      "content": "検索できる履歴",
+                      "fontFamily": "$font.caption",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hQeDF",
+                      "name": "countLabel",
+                      "fill": "$foreground.secondary",
+                      "content": "24件 / 選択中",
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "fxOP6",
+                  "name": "Meeting Row Active",
+                  "width": "fill_container",
+                  "fill": "#FFF7F0FF",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$accent.secondary"
+                  },
+                  "layout": "vertical",
+                  "gap": 5,
+                  "padding": [
+                    8,
+                    7
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GsGza",
+                      "name": "meeting1Top",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "BeLNE",
+                          "name": "meetIcon1",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "$accent.primary",
+                          "cornerRadius": "$rounded.sm",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "z43BEt",
+                              "name": "meetIconText1",
+                              "fill": "$foreground.inverse",
+                              "content": "定",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "KTJjL",
+                          "name": "meeting1Title",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "MVkWs",
+                              "name": "meeting1Name",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "定例プロダクトレビュー",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "RzM6V",
+                              "name": "meeting1Meta",
+                              "fill": "$foreground.secondary",
+                              "content": "今日 10:00 · 48分 · Zoom · 文字起こし完了",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "l4Zb5",
+                          "name": "meeting1Badge",
+                          "fill": "#FFF0E6FF",
+                          "cornerRadius": "$rounded.sm",
+                          "padding": [
+                            6,
+                            3
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "k1A50",
+                              "name": "meeting1BadgeText",
+                              "fill": "$accent.deep",
+                              "content": "選択中",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "H7c8xe",
+                  "name": "Meeting Row Processing",
+                  "width": "fill_container",
+                  "fill": "$surface.primary",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "padding": [
+                    8,
+                    6
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Zj6Si",
+                      "name": "meeting2Top",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "xTejS",
+                          "name": "meetIcon2",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "inDrN",
+                              "name": "meetIconText2",
+                              "fill": "$accent.deep",
+                              "content": "採",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gQtv7",
+                          "name": "meeting2Title",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "H81M25",
+                              "name": "meeting2Name",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "採用面談 / 山田さん",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "a8UjJL",
+                              "name": "meeting2Meta",
+                              "fill": "$foreground.secondary",
+                              "content": "今日 09:05 · 31分 · Meet · AI作成中",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "H668E6",
+                          "name": "meeting2Badge",
+                          "fill": "#FFF7E6FF",
+                          "cornerRadius": "$rounded.sm",
+                          "padding": [
+                            6,
+                            3
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "I8G8y4",
+                              "name": "meeting2BadgeText",
+                              "fill": "$status.warn",
+                              "content": "AI処理中",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Alweh",
+                  "name": "Meeting Row Needs AI",
+                  "width": "fill_container",
+                  "fill": "$surface.primary",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "padding": [
+                    8,
+                    6
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Dqbrj",
+                      "name": "meeting3Top",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ZLoj5",
+                          "name": "meetIcon3",
+                          "width": 28,
+                          "height": 28,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "u5zwS",
+                              "name": "meetIconText3",
+                              "fill": "$foreground.secondary",
+                              "content": "設",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "XggiP",
+                          "name": "meeting3Title",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wmpK5",
+                              "name": "meeting3Name",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "設計相談: 音声分離",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "sJfOO",
+                              "name": "meeting3Meta",
+                              "fill": "$foreground.secondary",
+                              "content": "昨日 16:30 · 58分 · Teams · 未要約",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "r3wm18",
+                          "name": "meeting3Badge",
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "padding": [
+                            6,
+                            3
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "hcRvx",
+                              "name": "meeting3BadgeText",
+                              "fill": "$foreground.secondary",
+                              "content": "AI未作成",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZvaYK",
+              "name": "Selected Recording Preview",
+              "width": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": "$rounded.lg",
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 7,
+              "padding": [
+                10,
+                8
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rqeqM",
+                  "name": "minutesTop",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Vpay6",
+                      "name": "minutesLabel",
+                      "fill": "$foreground.primary",
+                      "content": "選択中の録音",
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aGcPI",
+                      "name": "minutesState",
+                      "fill": "#FFF0E6FF",
+                      "cornerRadius": "$rounded.sm",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$accent.tertiary"
+                      },
+                      "padding": [
+                        7,
+                        4
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "W1Py2H",
+                          "name": "minutesStateText",
+                          "fill": "$accent.deep",
+                          "content": "AI議事録 完了",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "K3OGl5",
+                  "name": "minutesCopy",
+                  "fill": "$foreground.primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "定例プロダクトレビューのプレビュー。文字起こし、決定事項、ToDoをこのウィンドウで確認できます。",
+                  "lineHeight": 1.25,
+                  "fontFamily": "$font.body",
+                  "fontSize": 10,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "zSJq2",
+                  "name": "minutesActions",
+                  "width": "fill_container",
+                  "gap": 7,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "JebXa",
+                      "name": "primaryAction",
+                      "width": "fill_container",
+                      "height": 28,
+                      "fill": "$accent.primary",
+                      "cornerRadius": "$rounded.sm",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FjZnN",
+                          "name": "primaryActionText",
+                          "fill": "$foreground.inverse",
+                          "content": "履歴を開く",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LqBJ7",
+                      "name": "secondaryAction",
+                      "height": 28,
+                      "fill": "#FFF7F0FF",
+                      "cornerRadius": "$rounded.sm",
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "$accent.tertiary"
+                      },
+                      "padding": [
+                        10,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JsulN",
+                          "name": "secondaryActionText",
+                          "fill": "$accent.deep",
+                          "content": "議事録を見る",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "F8BHsv",
+          "name": "Mock 2C - Recording Detail",
+          "width": 320,
+          "height": 620,
+          "layout": "vertical",
+          "children": [
+            {
+              "type": "frame",
+              "id": "tqrld",
+              "name": "Recording Detail Popover",
+              "clip": true,
+              "width": 312,
+              "height": 620,
+              "fill": "#FAFAFAE8",
+              "cornerRadius": 14,
+              "stroke": {
+                "thickness": 1,
+                "fill": "#D7D7D9AA"
+              },
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#00000020",
+                "offset": {
+                  "x": 0,
+                  "y": 18
+                },
+                "blur": 42
+              },
+              "layout": "vertical",
+              "gap": 10,
+              "padding": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "jZpHw",
+                  "name": "Detail header",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Yfrto",
+                      "name": "Back to history",
+                      "width": 30,
+                      "height": 30,
+                      "fill": "$surface.muted",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "W7BSk",
+                          "name": "backIcon",
+                          "width": 15,
+                          "height": 15,
+                          "iconFontName": "chevron-left",
+                          "iconFontFamily": "lucide",
+                          "fill": "$foreground.secondary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "N7w2D",
+                      "name": "Detail title group",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "B7VSz",
+                          "name": "Detail title",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Design review",
+                          "fontFamily": "$font.heading",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ephHZ",
+                          "name": "Detail subtitle",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "直近カード → 録音詳細 ・ 議事録 → AIタブ",
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eyMCX",
+                      "name": "Local status pill",
+                      "height": 24,
+                      "fill": "#EEF6F0",
+                      "cornerRadius": 10,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#CDE6D5"
+                      },
+                      "gap": 5,
+                      "padding": [
+                        4,
+                        7
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "Rsbhf",
+                          "name": "statusIcon",
+                          "width": 11,
+                          "height": 11,
+                          "iconFontName": "hard-drive",
+                          "iconFontFamily": "lucide",
+                          "fill": "$status.good"
+                        },
+                        {
+                          "type": "text",
+                          "id": "WrsZx",
+                          "name": "statusText",
+                          "fill": "$status.good",
+                          "content": "保存済",
+                          "fontFamily": "$font.body",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UvVfM",
+                  "name": "Detail tabs",
+                  "width": "fill_container",
+                  "height": 34,
+                  "fill": "$surface.muted",
+                  "cornerRadius": 9,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 4,
+                  "padding": 3,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "fWtFc",
+                      "name": "Tab transcript active",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": 7,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000012",
+                        "offset": {
+                          "x": 0,
+                          "y": 1
+                        },
+                        "blur": 3
+                      },
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZWL95",
+                          "name": "tab1Text",
+                          "fill": "$foreground.primary",
+                          "content": "文字起こし",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zJWR3",
+                      "name": "Tab AI minutes",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "cornerRadius": 7,
+                      "layout": "vertical",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "gdsgY",
+                          "name": "tab2Text",
+                          "fill": "$foreground.secondary",
+                          "content": "AI議事録",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "S5zD9",
+                  "name": "Separated audio track summary",
+                  "width": "fill_container",
+                  "fill": "$surface.primary",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "m6x4lr",
+                      "name": "Track summary header",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "GNPrx",
+                          "name": "trackIcon",
+                          "width": 13,
+                          "height": 13,
+                          "iconFontName": "split",
+                          "iconFontFamily": "lucide",
+                          "fill": "$accent.primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lN8dv",
+                          "name": "trackTitle",
+                          "fill": "$foreground.primary",
+                          "content": "同じ録音詳細へ遷移",
+                          "fontFamily": "$font.heading",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "zffgK",
+                          "name": "trackSpacer",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "#FFFFFF00"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Tq9Rq",
+                          "name": "aiState",
+                          "fill": "$foreground.secondary",
+                          "content": "AI議事録あり",
+                          "fontFamily": "$font.body",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ybva7",
+                      "name": "Track rows",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "X7aJDl",
+                          "name": "Own track",
+                          "width": "fill_container",
+                          "fill": "#FFF5EE",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "#FFD6BD"
+                          },
+                          "layout": "vertical",
+                          "gap": 4,
+                          "padding": 8,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "pzZqB",
+                              "name": "ownLabel",
+                              "fill": "$accent.deep",
+                              "content": "自分 / Mic",
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "KeV6D",
+                              "name": "ownMeta",
+                              "fill": "$foreground.secondary",
+                              "content": "声量 92%",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "jfkIE",
+                          "name": "Other track",
+                          "width": "fill_container",
+                          "fill": "$surface.muted",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "layout": "vertical",
+                          "gap": 4,
+                          "padding": 8,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "kr2U2",
+                              "name": "otherLabel",
+                              "fill": "$foreground.primary",
+                              "content": "相手側 / App",
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "t2TaJ",
+                              "name": "otherMeta",
+                              "fill": "$foreground.secondary",
+                              "content": "声量 88%",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kso5T",
+                  "name": "Transcript timeline",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$surface.primary",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "RKVF4",
+                      "name": "Transcript header",
+                      "width": "fill_container",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "JoWac",
+                          "name": "transIcon",
+                          "width": 13,
+                          "height": 13,
+                          "iconFontName": "captions",
+                          "iconFontFamily": "lucide",
+                          "fill": "$accent.primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lIXHF",
+                          "name": "transTitle",
+                          "fill": "$foreground.primary",
+                          "content": "録音詳細 / 文字起こし",
+                          "fontFamily": "$font.heading",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "hu3jI",
+                          "name": "transSpace",
+                          "width": "fill_container",
+                          "height": 1,
+                          "fill": "#FFFFFF00"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Xq9GP",
+                          "name": "transCount",
+                          "fill": "$foreground.secondary",
+                          "content": "根拠128行",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Q63qIZ",
+                      "name": "Transcript line 1",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "T1Ax6Y",
+                          "name": "time1",
+                          "fill": "$foreground.secondary",
+                          "content": "14:32",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "v9NLWu",
+                          "name": "Line body 1",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "iPHqI",
+                              "name": "speaker1",
+                              "fill": "$accent.deep",
+                              "content": "自分",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "ZKlWL",
+                              "name": "text1",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "オンボーディングの初回体験は録音状態が一目で分かる形にしましょう。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "moynv",
+                      "name": "Transcript line 2",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "jjm68",
+                          "name": "time2",
+                          "fill": "$foreground.secondary",
+                          "content": "14:35",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "mw2wD",
+                          "name": "Line body 2",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Is934",
+                              "name": "speaker2",
+                              "fill": "$foreground.primary",
+                              "content": "相手側",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "y2kP6e",
+                              "name": "text2",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "履歴から開いた時は、要約だけでなく根拠の発話へ戻れると安心です。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ZQk8D",
+                      "name": "Transcript line 3",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "w923T",
+                          "name": "time3",
+                          "fill": "$foreground.secondary",
+                          "content": "14:41",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "tWFVV",
+                          "name": "Line body 3",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "rjFuf",
+                              "name": "speaker3",
+                              "fill": "$status.warn",
+                              "content": "AI補正",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "MWDTl",
+                              "name": "text3",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "専門用語候補: ScreenCaptureKit, 辞書に追加できます。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Vlmsc",
+                  "name": "Detail actions",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "UNSIW",
+                      "name": "Generate minutes action",
+                      "width": "fill_container",
+                      "height": 38,
+                      "fill": "$accent.primary",
+                      "cornerRadius": 8,
+                      "gap": 7,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "kMEIX",
+                          "name": "primaryIcon",
+                          "width": 15,
+                          "height": 15,
+                          "iconFontName": "sparkles",
+                          "iconFontFamily": "lucide",
+                          "fill": "$foreground.inverse"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Cc0iE",
+                          "name": "primaryText",
+                          "fill": "$foreground.inverse",
+                          "content": "AI議事録を開く",
+                          "fontFamily": "$font.body",
+                          "fontSize": 13,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "omTo6",
+                      "name": "Export transcript action",
+                      "height": 38,
+                      "fill": "$surface.primary",
+                      "cornerRadius": 8,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#DADADD"
+                      },
+                      "gap": 7,
+                      "padding": [
+                        0,
+                        12
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "M7mYiY",
+                          "name": "secondaryIcon",
+                          "width": 14,
+                          "height": 14,
+                          "iconFontName": "download",
+                          "iconFontFamily": "lucide",
+                          "fill": "$foreground.primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Xl7Eh",
+                          "name": "secondaryText",
+                          "fill": "$foreground.primary",
+                          "content": "書き出し",
+                          "fontFamily": "$font.body",
+                          "fontSize": 13,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "aYwy7",
+                  "name": "Detail footer",
+                  "width": "fill_container",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "STm04",
+                      "name": "footerIcon",
+                      "width": 13,
+                      "height": 13,
+                      "iconFontName": "shield-check",
+                      "iconFontFamily": "lucide",
+                      "fill": "$foreground.secondary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "B4ZtZ",
+                      "name": "footerText",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "白基調のまま、AI送信は開く前に確認。",
+                      "fontFamily": "$font.body",
+                      "fontSize": 10,
+                      "fontWeight": "normal"
                     }
                   ]
                 }
