@@ -10,8 +10,13 @@ use std::ffi::{c_char, c_void, CStr, CString};
 
 use crate::app_detection::{handle_browser_url_detection, handle_detection, WATCHED_BUNDLE_IDS};
 
-type DetectionCallback =
-    extern "C" fn(bundle_id: *const c_char, app_name: *const c_char, user_data: *mut c_void);
+type DetectionCallback = extern "C" fn(
+    bundle_id: *const c_char,
+    app_name: *const c_char,
+    window_center_x: f64,
+    window_center_y: f64,
+    user_data: *mut c_void,
+);
 
 extern "C" {
     fn meet_jerky_app_detection_start(
@@ -30,12 +35,24 @@ type BrowserUrlCallback = extern "C" fn(
     browser_name: *const c_char,
     url: *const c_char,
     window_title: *const c_char,
+    window_center_x: f64,
+    window_center_y: f64,
     user_data: *mut c_void,
 );
+
+fn window_center_from_callback(x: f64, y: f64) -> Option<(f64, f64)> {
+    if x.is_finite() && y.is_finite() && x >= 0.0 && y >= 0.0 {
+        Some((x, y))
+    } else {
+        None
+    }
+}
 
 extern "C" fn detection_callback(
     bundle_id: *const c_char,
     app_name: *const c_char,
+    window_center_x: f64,
+    window_center_y: f64,
     _user_data: *mut c_void,
 ) {
     if bundle_id.is_null() || app_name.is_null() {
@@ -49,13 +66,14 @@ extern "C" fn detection_callback(
     let name = unsafe { CStr::from_ptr(app_name) }
         .to_string_lossy()
         .into_owned();
+    let window_center = window_center_from_callback(window_center_x, window_center_y);
 
     // 通知発火・イベント emit は別スレッドで実行する。
     // NSWorkspace コールバックは main thread で呼ばれるので、
     // tauri-plugin-notification 等の重い処理を直接呼ぶと UI 描画を
     // ブロックする可能性がある。
     std::thread::spawn(move || {
-        handle_detection(&bundle, &name);
+        handle_detection(&bundle, &name, window_center);
     });
 }
 
@@ -64,6 +82,8 @@ extern "C" fn browser_url_callback(
     browser_name: *const c_char,
     url: *const c_char,
     window_title: *const c_char,
+    window_center_x: f64,
+    window_center_y: f64,
     _user_data: *mut c_void,
 ) {
     if bundle_id.is_null() || browser_name.is_null() || url.is_null() {
@@ -88,9 +108,10 @@ extern "C" fn browser_url_callback(
             .to_string_lossy()
             .into_owned()
     };
+    let window_center = window_center_from_callback(window_center_x, window_center_y);
 
     std::thread::spawn(move || {
-        handle_browser_url_detection(&bundle, &name, &active_url, &title);
+        handle_browser_url_detection(&bundle, &name, &active_url, &title, window_center);
     });
 }
 

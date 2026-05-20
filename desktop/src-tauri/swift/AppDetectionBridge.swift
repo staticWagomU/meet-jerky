@@ -23,6 +23,8 @@ import Foundation
 public typealias MeetJerkyAppDetectionCallback = @convention(c) (
     UnsafePointer<CChar>?,
     UnsafePointer<CChar>?,
+    Double,
+    Double,
     UnsafeMutableRawPointer?
 ) -> Void
 
@@ -34,6 +36,8 @@ public typealias MeetJerkyBrowserUrlCallback = @convention(c) (
     UnsafePointer<CChar>?,
     UnsafePointer<CChar>?,
     UnsafePointer<CChar>?,
+    Double,
+    Double,
     UnsafeMutableRawPointer?
 ) -> Void
 
@@ -232,10 +236,13 @@ public final class AppDetector: @unchecked Sendable {
         let name = app.localizedName ?? bundleId
         let cb = callback
         let ud = userData
+        let windowCenter = frontWindowCenter(for: app)
+        let centerX = windowCenter?.x ?? -1.0
+        let centerY = windowCenter?.y ?? -1.0
 
         bundleId.withCString { bundleCstr in
             name.withCString { nameCstr in
-                cb(bundleCstr, nameCstr, ud)
+                cb(bundleCstr, nameCstr, centerX, centerY, ud)
             }
         }
     }
@@ -278,15 +285,57 @@ public final class AppDetector: @unchecked Sendable {
 
         let cb = browserUrlCallback
         let ud = userData
+        let windowCenter = frontWindowCenter(for: frontmost)
+        let centerX = windowCenter?.x ?? -1.0
+        let centerY = windowCenter?.y ?? -1.0
         bundleId.withCString { bundleCstr in
             browser.displayName.withCString { nameCstr in
                 normalizedUrl.withCString { urlCstr in
                     tab.title.withCString { titleCstr in
-                        cb(bundleCstr, nameCstr, urlCstr, titleCstr, ud)
+                        cb(bundleCstr, nameCstr, urlCstr, titleCstr, centerX, centerY, ud)
                     }
                 }
             }
         }
+    }
+
+    private func frontWindowCenter(for app: NSRunningApplication) -> CGPoint? {
+        guard
+            let windows = CGWindowListCopyWindowInfo(
+                [.optionOnScreenOnly, .excludeDesktopElements],
+                kCGNullWindowID
+            ) as? [[String: Any]]
+        else {
+            return nil
+        }
+
+        let pid = app.processIdentifier
+        var bestBounds: CGRect?
+        var bestArea: CGFloat = 0
+
+        for window in windows {
+            guard
+                let ownerPid = window[kCGWindowOwnerPID as String] as? pid_t,
+                ownerPid == pid,
+                let layer = window[kCGWindowLayer as String] as? Int,
+                layer == 0,
+                let boundsDict = window[kCGWindowBounds as String] as? [String: Any],
+                let bounds = CGRect(dictionaryRepresentation: boundsDict as CFDictionary)
+            else {
+                continue
+            }
+
+            let area = bounds.width * bounds.height
+            if area > bestArea {
+                bestArea = area
+                bestBounds = bounds
+            }
+        }
+
+        guard let bounds = bestBounds, bounds.width > 0, bounds.height > 0 else {
+            return nil
+        }
+        return CGPoint(x: bounds.midX, y: bounds.midY)
     }
 
     private func activeTabSnapshot(

@@ -117,6 +117,7 @@ struct DetectionState {
     app_handle: AppHandle,
     last_seen: Mutex<HashMap<String, Instant>>,
     latest_payload: Mutex<Option<MeetingAppDetectedPayload>>,
+    latest_window_center: Mutex<Option<(f64, f64)>>,
     /// `should_notify_meeting_inactive` 用の epoch secs ベースの最終検知時刻 (案 A 二重管理)。
     last_seen_secs: Mutex<HashMap<String, u64>>,
     /// `should_notify_meeting_inactive` 用の最終 inactive 通知時刻 (epoch secs)。
@@ -138,6 +139,7 @@ pub fn start(app_handle: AppHandle) {
             app_handle,
             last_seen: Mutex::new(HashMap::new()),
             latest_payload: Mutex::new(None),
+            latest_window_center: Mutex::new(None),
             last_seen_secs: Mutex::new(HashMap::new()),
             last_notified_secs: Mutex::new(HashMap::new()),
         })
@@ -162,11 +164,12 @@ pub fn start(app_handle: AppHandle) {
 ///
 /// スロットリング → 通知表示 → Tauri イベント emit の順に処理する。
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-pub(crate) fn handle_detection(bundle_id: &str, app_name: &str) {
+pub(crate) fn handle_detection(bundle_id: &str, app_name: &str, window_center: Option<(f64, f64)>) {
     let state = match STATE.get() {
         Some(s) => s,
         None => return,
     };
+    *state.latest_window_center.lock() = window_center;
 
     let now = Instant::now();
     let now_secs = std::time::SystemTime::now()
@@ -321,6 +324,7 @@ pub(crate) fn handle_browser_url_detection(
     browser_name: &str,
     url: &str,
     window_title: &str,
+    window_center: Option<(f64, f64)>,
 ) {
     static LAST_BROWSER_CALLBACK_SEEN_SECS: AtomicU64 = AtomicU64::new(0);
     static LAST_BROWSER_CALLBACK_WARN_SECS: AtomicU64 = AtomicU64::new(0);
@@ -380,6 +384,7 @@ pub(crate) fn handle_browser_url_detection(
         Some(s) => s,
         None => return,
     };
+    *state.latest_window_center.lock() = window_center;
 
     // `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
     // (案 A 二重管理: 既存 Instant ベース throttle と並走)。
@@ -417,6 +422,12 @@ pub fn take_latest_meeting_detection() -> Option<MeetingAppDetectedPayload> {
     STATE
         .get()
         .and_then(|state| state.latest_payload.lock().take())
+}
+
+pub(crate) fn latest_meeting_window_center() -> Option<(f64, f64)> {
+    STATE
+        .get()
+        .and_then(|state| *state.latest_window_center.lock())
 }
 
 // parse_throttle_key_to_display_name は app_detection_throttle_key に移動。
