@@ -1,3 +1,29 @@
+## Design update: caption window relationship labels
+
+- 日時: 2026-05-20 21:28 JST
+- 作業範囲: `meet-jerky-desktop.pen` の `KkRiD`（Agent Section - Caption Window Flow）内のみ
+- 指示内容: Web App guide を使用し、既存モック画面を変更せず、meet-jerky の展開キャプション、最小ピル、折りたたみ/展開、一時停止/再開、履歴を開く、録音終了の関係を日本語の短いラベルで説明する。操作遷移は `button/action -> destination/result` 形式で表現する。
+- 採用判断: 会議中 UI の状態関係を明示する説明であり、`docs/product-concept.md` の「会議中の邪魔にならないウィンドウ」「録音状態の透明性」「履歴化」に沿う。既存モック画面は変更せず、空の説明セクションに限定した。
+- 結果: `KkRiD` 内に展開キャプション/最小ピルの状態カード、操作遷移リスト、録音状態透明性の注記を追加。既存 variables（surface / foreground / accent / border / font / rounded / status）を使用し、文書の白地・淡いボーダー・オレンジアクセントのスタイルへ合わせた。
+- 検証結果: Pencil schema validation は `batch_design` 実行時に通過。初回は icon 名の解決警告が出たため lucide の kebab-case 名へ修正し、再実行で警告なし。`snapshot_layout` で `KkRiD` の layout problems なしを確認。`get_screenshot(KkRiD)` で表示の重なり、はみ出し、視認性に問題がないことを確認。
+- 依存関係追加: なし
+- 残リスク: Pencil エディタ上では変更が反映されているが、最終的なファイル保存状態は `git status` で確認する。
+
+---
+
+## Design update: meet-jerky state and recording flow labels
+
+- 日時: 2026-05-20 21:26 JST
+- 作業範囲: `meet-jerky-desktop.pen` の `K0CsG`（Agent Section - State and Recording Flow）内のみ
+- 指示内容: Web App guide を使用し、既存モック画面を変更せず、meet-jerky の初回起動、待機監視、会議検知通知、録音開始、録音中、停止/完了、折りたたみ録音インジケータを日本語の短いラベルで説明する。ボタン遷移は `button/action -> destination/result` 形式で表現する。
+- 採用判断: 録音状態の透明性と会議検知から履歴化までの理解を補助する説明であり、`docs/product-concept.md` の「安心感」「自動化」「Mac らしさ」に沿う。既存モック画面は変更せず、空の説明セクションに限定した。
+- 結果: `K0CsG` 内に状態フローのカード 6 件と折りたたみインジケータを追加。既存 variables（surface / foreground / accent / border / font / rounded）を中心に使用し、既存文書の白地・淡いボーダー・オレンジアクセントのスタイルへ合わせた。
+- 検証結果: Pencil schema validation は `batch_design` 実行時に通過。`snapshot_layout` で `K0CsG` の layout problems なしを確認。`get_screenshot(K0CsG)` で表示の重なり、はみ出し、視認性に問題がないことを確認。
+- 依存関係追加: なし
+- 残リスク: Pencil エディタ上では変更が反映されているが、作業直後の `git status` では `.pen` 差分が表示されなかったため、保存反映の扱いは Pencil 側のエディタ状態に依存する。
+
+---
+
 ## worker: mjc-worker-handle-detection-update-last-seen-secs
 
 - 開始日時: 2026-05-04 14:40 JST
@@ -37563,3 +37589,35 @@ event: ユーザー停止依頼により自律改善ループを停止。新し�
 ユーザー価値: 既存モックの関係性を、画面単体の見た目ではなく、実際の操作導線として読めるようになり、設計レビュー時にボタン遷移の混乱を減らせる。
 非目標: 実アプリのクリックハンドラ、React UI 実装、Tauri command、履歴保存ロジック、AI議事録生成ロジック、課金が発生する外部 API 連携、依存関係追加は行わない。
 未実機確認範囲: macOS 実アプリでのメニューバー操作、通知クリック、履歴ウィンドウ起動、設定タブ遷移、AI議事録生成状態、VoiceOver 読み上げは未確認。今回は Pencil 上の構造・担当範囲スクリーンショット確認に限定した。
+
+---
+
+[mj-design / settings-navigation-flow-labels / 2026-05-20 21:28:01 JST]
+役割: デザイン整理担当エージェント
+作業範囲: meet-jerky-desktop.pen / AGENT_LOG.md
+指示内容: `W93qj`（Agent Section - Settings Navigation Flow）内に、Web App guide を使って、meet-jerky の設定サイドバー項目 General / Detection / Audio / Transcription / AI Minutes / Privacy と、各項目クリック後に開く設定タブおよび設定内容を簡潔な日本語ラベルで整理する。既存モック画面は変更しない。
+結果: `W93qj` に `設定ナビゲーション` 見出し、`sidebar item click -> settings tab` の表記ルール、6件の横並び遷移行、会議中に邪魔にならない設定導線を優先する補足を追加した。各行は `General click -> 一般タブ` のように、サイドバー項目、クリック遷移、タブ名、設定範囲を対応づけて表示した。
+変更ファイル: meet-jerky-desktop.pen / AGENT_LOG.md
+検証結果: Pencil `batch_design` の schema validation は成功。初回生成後に lucide icon 名不一致の警告が出たため、アイコン名を kebab-case に修正し、再実行で警告なしを確認した。Pencil `snapshot_layout` の `problemsOnly` で `No layout problems.` を確認。Pencil `get_screenshot` で、6件の設定ナビゲーションラベルが `W93qj` 内に収まり、既存スタイルの白基調・warm muted・オレンジアクセントに合っていることを確認した。TypeScript/Rust のビルドやテストはデザインファイル変更のため未実行。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装に移す場合は、設定サイドバーのクリックハンドラをこの対応表に合わせ、各タブの設定範囲が UI 文言と実装でずれないよう確認する。
+ユーザー価値: 設定画面のサイドバー項目がどのタブへ遷移し、何を設定する場所なのかをデザイン内で一目で確認でき、設定ナビゲーションのレビューと実装時の認識合わせがしやすくなる。
+非目標: 既存モック画面の変更、実アプリのクリックハンドラ、React UI 実装、Tauri command、設定永続化、依存関係追加、課金が発生する外部 API 連携は行わない。
+未実機確認範囲: macOS 実アプリでの設定ウィンドウ表示、実クリックによるタブ切り替え、権限状態との同期、VoiceOver 読み上げは未確認。今回は Pencil 上の構造・スクリーンショット確認に限定した。
+
+---
+
+[mj-design / collapsed-recording-pill-intent-note / 2026-05-21 03:48:22 JST]
+役割: デザイン整理担当エージェント
+作業範囲: meet-jerky-desktop.pen / AGENT_LOG.md
+指示内容: 選択中の `Collapsed recording pill preview` がどんな意図で作られた UI パーツかを整理する。最大3 extra designer agents に分割し、現在セッションは最後の担当範囲を継続する。
+結果: 選択中パーツの右側に `Intent Notes - Collapsed Recording Pill` を追加し、意図をユーザー信頼・状態モデル・最終サマリーの3観点で読める構成にした。Pencil `spawn_agents` で「ユーザー信頼」と「状態モデル」の説明欄を2つの追加デザイナーへ委譲し、現在セッションでは `Current Note - Final Intent Summary` に、このピルが録音中である事実を最小面積で残す安全表示であること、クリック時は録音詳細/字幕ウィンドウ再展開/停止や履歴への入口になること、録音していない時に表示してはいけないことを整理した。
+変更ファイル: meet-jerky-desktop.pen / AGENT_LOG.md
+検証結果: Pencil `batch_design` の schema validation は成功。担当範囲 `TF5Hh` は初回確認で下部が clipping したため、親パネル `PG1ol` の高さを 410 に調整し、Pencil `snapshot_layout` の `problemsOnly` で `No layout problems.` を確認。Pencil `get_screenshot` で、最終サマリーの3カードが読みやすく収まることを確認した。追加デザイナー担当の2領域は Pencil spawn_agents の指示に従い、このセッションでは目視検証していない。TypeScript/Rust のビルドやテストはデザインファイル変更のため未実行。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装に移す場合は、録音中だけ表示する条件、クリック時の展開先、マイク/システム音声取得状態との同期を明確に状態管理へ落とし込む。
+ユーザー価値: 小さな録音状態ピルが単なる装飾ではなく、録音透明性と再展開導線のための安全表示だと理解でき、以後のレビューで削除・変更すべきか判断しやすくなる。
+非目標: 実アプリのクリックハンドラ、React UI 実装、Tauri command、録音状態管理、履歴保存ロジック、課金が発生する外部 API 連携、依存関係追加は行わない。
+未実機確認範囲: macOS 実アプリでの録音状態同期、ピルクリック時の再展開、VoiceOver 読み上げ、実録音中の表示位置は未確認。今回は Pencil 上の構造・担当範囲スクリーンショット確認に限定した。

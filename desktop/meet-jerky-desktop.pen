@@ -18430,6 +18430,2569 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "kpkur",
+      "x": 20,
+      "y": 2446,
+      "name": "UI Flow Map - Navigation Relationships",
+      "width": 2200,
+      "height": 760,
+      "fill": "$surface.muted",
+      "cornerRadius": 16,
+      "stroke": {
+        "thickness": 1,
+        "fill": "$border.subtle"
+      },
+      "layout": "vertical",
+      "gap": 18,
+      "padding": 24,
+      "children": [
+        {
+          "type": "frame",
+          "id": "HZaj8",
+          "name": "Flow map header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "DZCRv",
+              "name": "title",
+              "fill": "$foreground.primary",
+              "content": "UI Flow Map / 画面関係とボタン遷移",
+              "fontFamily": "$font.heading",
+              "fontSize": 24,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "DjoXj",
+              "name": "desc",
+              "fill": "$foreground.secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "既存モックの関係性を、状態遷移・操作ボタン・設定タブ・履歴導線に分けて整理。ラベルは『操作 → 遷移先 / 結果』で読む。",
+              "lineHeight": 1.45,
+              "fontFamily": "$font.body",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "IWe5z",
+          "name": "Flow map body",
+          "width": "fill_container",
+          "height": "fill_container",
+          "gap": 18,
+          "children": [
+            {
+              "type": "frame",
+              "id": "K0CsG",
+              "name": "Agent Section - State and Recording Flow",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": 12,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "EOwSf",
+                  "name": "State Flow Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "RJaWm",
+                      "name": "title",
+                      "fill": "$foreground.primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "状態と録音フロー",
+                      "fontFamily": "$font.heading",
+                      "fontSize": 16,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "AcO4F",
+                      "name": "lead",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "検知、通知、録音、保存までをユーザーが迷わない短いラベルで整理。",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Nq6j7",
+                  "name": "Recording State Stack",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pnMR0",
+                      "name": "First Launch",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 10,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ECkW3",
+                          "name": "Step Badge",
+                          "width": 30,
+                          "height": 30,
+                          "fill": "$surface.primary",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "uJIvM",
+                              "name": "badgeText1",
+                              "fill": "$accent.primary",
+                              "content": "01",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "TX2Fv",
+                          "name": "Step Copy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "xUMdb",
+                              "name": "label1",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "初回起動: 権限の準備",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Bt4Rl",
+                              "name": "desc1",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "マイク、画面収録、通知を順に確認し、未許可なら設定画面へ案内。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "i0pQap",
+                              "name": "flow1",
+                              "fill": "$accent.deep",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "権限を許可 -> 待機監視へ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hxPEC",
+                      "name": "Idle Monitoring",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 10,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "b73Yj",
+                          "name": "Step Badge",
+                          "width": 30,
+                          "height": 30,
+                          "fill": "$surface.muted",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "buE6u",
+                              "name": "badgeText2",
+                              "fill": "$foreground.secondary",
+                              "content": "02",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n3qMyK",
+                          "name": "Step Copy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "SxKJD",
+                              "name": "label2",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "待機中: 会議を監視",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "g3cSz",
+                              "name": "desc2",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "URL、アプリ名、ウィンドウ、音声状態を軽量にチェック。録音はまだ開始しない。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "i3XZV",
+                              "name": "flow2",
+                              "fill": "$accent.deep",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "会議を検知 -> 通知を表示",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "S8X5tG",
+                      "name": "Detected Notification",
+                      "width": "fill_container",
+                      "fill": "#FFF3EA",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#FFD8C2"
+                      },
+                      "gap": 10,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "UGApA",
+                          "name": "Step Badge",
+                          "width": 30,
+                          "height": 30,
+                          "fill": "$accent.primary",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "qRCRr",
+                              "name": "badgeText3",
+                              "fill": "$foreground.inverse",
+                              "content": "03",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "CfnQ2",
+                          "name": "Step Copy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Fk1Vm",
+                              "name": "label3",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "会議検知: 開始通知",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "teZLY",
+                              "name": "desc3",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "候補サービス名と録音対象を明示。ユーザーが開始、スキップ、設定変更を選べる。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "O7BJtW",
+                              "name": "flow3",
+                              "fill": "$accent.deep",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "録音を開始 -> 収録準備へ / スキップ -> 待機へ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vy8I4",
+                      "name": "Start Recording",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 10,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "BEBAw",
+                          "name": "Step Badge",
+                          "width": 30,
+                          "height": 30,
+                          "fill": "$surface.muted",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "VZryV",
+                              "name": "badgeText4",
+                              "fill": "$accent.primary",
+                              "content": "04",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "FjSOr",
+                          "name": "Step Copy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "NmiB9",
+                              "name": "label4",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "録音開始: 2トラック確保",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "fC2v8",
+                              "name": "desc4",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "マイクを自分、デスクトップ音声を相手側として分離。失敗時は原因を表示。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "ze8po",
+                              "name": "flow4",
+                              "fill": "$accent.deep",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "準備完了 -> 録音中へ / 取得失敗 -> 権限確認へ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "R34c2",
+                      "name": "Recording",
+                      "width": "fill_container",
+                      "fill": "#EEF6F0",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#CDE6D5"
+                      },
+                      "gap": 10,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "aLCE1",
+                          "name": "Step Badge",
+                          "width": 30,
+                          "height": 30,
+                          "fill": "$status.good",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "mrRKu",
+                              "name": "badgeText5",
+                              "fill": "$foreground.inverse",
+                              "content": "05",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "vgj5X",
+                          "name": "Step Copy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wltcL",
+                              "name": "label5",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "録音中: 文字起こし表示",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "C6Kuf",
+                              "name": "desc5",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "経過時間、保存状態、自分/相手側トラック、低遅延テキストを常時見せる。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Q6rQw4",
+                              "name": "flow5",
+                              "fill": "#1F7A47",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "停止 -> 仕上げへ / 最小化 -> 折りたたみ表示へ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zIWSK",
+                      "name": "Stop Finish",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 10,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "CUYiR",
+                          "name": "Step Badge",
+                          "width": 30,
+                          "height": 30,
+                          "fill": "$surface.muted",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "GsMRa",
+                              "name": "badgeText6",
+                              "fill": "$foreground.secondary",
+                              "content": "06",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "dm6Dh",
+                          "name": "Step Copy",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 3,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "O5PS7",
+                              "name": "label6",
+                              "fill": "$foreground.primary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "停止/完了: 履歴に保存",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Didgo",
+                              "name": "desc6",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "録音を閉じ、文字起こしを履歴化。AI議事録、決定事項、ToDo生成に進める。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "text",
+                              "id": "lyp9L",
+                              "name": "flow6",
+                              "fill": "$accent.deep",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "履歴を見る -> 会議詳細へ / 要約生成 -> AI議事録へ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LSXOy",
+                  "name": "Collapsed Recording Indicator",
+                  "width": "fill_container",
+                  "fill": "$foreground.primary",
+                  "cornerRadius": 12,
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    10
+                  ],
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "LcYwk",
+                      "name": "pulse",
+                      "fill": "$accent.primary",
+                      "width": 9,
+                      "height": 9
+                    },
+                    {
+                      "type": "text",
+                      "id": "v3voP",
+                      "name": "compactText",
+                      "fill": "$foreground.inverse",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "折りたたみ: REC 12:34  自分/相手側を保存中",
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "UJTVW",
+                      "name": "compactFlow",
+                      "fill": "$accent.tertiary",
+                      "content": "開く -> 録音中へ",
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KkRiD",
+              "name": "Agent Section - Caption Window Flow",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": 12,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "k6Q1LY",
+                  "name": "Caption Flow Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WbLeP",
+                      "name": "title",
+                      "fill": "$foreground.primary",
+                      "content": "キャプション表示の関係",
+                      "fontFamily": "$font.heading",
+                      "fontSize": 18,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "sWagj",
+                      "name": "desc",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "会議中の表示状態と操作先を、実装時に迷わない最小ラベルで整理。",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "F0egxi",
+                  "name": "Window States",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "lrikC",
+                      "name": "Expanded Caption Window",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "uUyVg",
+                          "name": "expandedHead",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "xrI29",
+                              "name": "expandedIcon",
+                              "width": 18,
+                              "height": 18,
+                              "iconFontName": "panel-top-open",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent.primary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "gjVHd",
+                              "name": "expandedTitle",
+                              "fill": "$foreground.primary",
+                              "content": "展開キャプション",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "PDQ5A",
+                          "name": "expandedCopy",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "発話ログ、話者種別、録音状態、主要操作を同時に確認する会議中の標準表示。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "C96YR",
+                          "name": "expandedMeta",
+                          "fill": "$surface.primary",
+                          "cornerRadius": "$rounded.sm",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "dURnn",
+                              "name": "expandedDot",
+                              "fill": "$status.good",
+                              "width": 6,
+                              "height": 6
+                            },
+                            {
+                              "type": "text",
+                              "id": "qYpNI",
+                              "name": "expandedStatus",
+                              "fill": "$foreground.secondary",
+                              "content": "録音中・文字起こし中",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EhV4s",
+                      "name": "Minimal Caption Pill",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "VLmuG",
+                          "name": "minimalHead",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "reIth",
+                              "name": "minimalIcon",
+                              "width": 18,
+                              "height": 18,
+                              "iconFontName": "badge",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent.deep"
+                            },
+                            {
+                              "type": "text",
+                              "id": "I3DK4",
+                              "name": "minimalTitle",
+                              "fill": "$foreground.primary",
+                              "content": "最小ピル",
+                              "fontFamily": "$font.heading",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "jBVMS",
+                          "name": "minimalCopy",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "画面端で録音状態だけを残す省スペース表示。邪魔にならず、必要時に展開へ戻る。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "vdlDJ",
+                          "name": "minimalMeta",
+                          "fill": "$surface.primary",
+                          "cornerRadius": "$rounded.sm",
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "bkVFr",
+                              "name": "minimalDot",
+                              "fill": "$accent.primary",
+                              "width": 6,
+                              "height": 6
+                            },
+                            {
+                              "type": "text",
+                              "id": "dBsa2",
+                              "name": "minimalStatus",
+                              "fill": "$foreground.secondary",
+                              "content": "小さく表示・状態保持",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Z8d4O",
+                  "name": "Control Transitions",
+                  "width": "fill_container",
+                  "fill": "$surface.primary",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ilJJB",
+                      "name": "flowTitle",
+                      "fill": "$foreground.primary",
+                      "content": "操作 -> 結果",
+                      "fontFamily": "$font.heading",
+                      "fontSize": 13,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "TaAoO",
+                      "name": "row1",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ZjnvJ",
+                          "name": "action1",
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "E9sp7d",
+                              "name": "icon1",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "minimize-2",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent.primary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "mGDnA",
+                              "name": "label1",
+                              "fill": "$foreground.primary",
+                              "content": "折りたたむ",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "a0trJ",
+                          "name": "arrow1",
+                          "fill": "$foreground.secondary",
+                          "content": "->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "RvL8r",
+                          "name": "result1",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "展開キャプションから最小ピルへ",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "R58o6F",
+                      "name": "row2",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "H68yNn",
+                          "name": "action2",
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "C6d9Nm",
+                              "name": "icon2",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "maximize-2",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent.primary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "sv6Oj",
+                              "name": "label2",
+                              "fill": "$foreground.primary",
+                              "content": "展開",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "ehXWT",
+                          "name": "arrow2",
+                          "fill": "$foreground.secondary",
+                          "content": "->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Hsb0q",
+                          "name": "result2",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "最小ピルから展開キャプションへ復帰",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "r9tPEi",
+                      "name": "row3",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "d61qtj",
+                          "name": "action3",
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "qNCeV",
+                              "name": "icon3",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "pause",
+                              "iconFontFamily": "lucide",
+                              "fill": "$status.warn"
+                            },
+                            {
+                              "type": "text",
+                              "id": "deUeb",
+                              "name": "label3",
+                              "fill": "$foreground.primary",
+                              "content": "一時停止",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "t3I9iK",
+                          "name": "arrow3",
+                          "fill": "$foreground.secondary",
+                          "content": "->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lrEqx",
+                          "name": "result3",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "録音と文字起こしを停止し、同じ履歴内で待機",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "I42or",
+                      "name": "row4",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "B2jCe",
+                          "name": "action4",
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "M7Khq",
+                              "name": "icon4",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "play",
+                              "iconFontFamily": "lucide",
+                              "fill": "$status.good"
+                            },
+                            {
+                              "type": "text",
+                              "id": "FeN9t",
+                              "name": "label4",
+                              "fill": "$foreground.primary",
+                              "content": "再開",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "X3gCb",
+                          "name": "arrow4",
+                          "fill": "$foreground.secondary",
+                          "content": "->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "SjZ5v",
+                          "name": "result4",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "待機状態から録音とリアルタイム文字起こしを再開",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "q71JWa",
+                      "name": "row5",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "BSAmx",
+                          "name": "action5",
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "YRmoQ",
+                              "name": "icon5",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "history",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent.deep"
+                            },
+                            {
+                              "type": "text",
+                              "id": "PF1YR",
+                              "name": "label5",
+                              "fill": "$foreground.primary",
+                              "content": "履歴を開く",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "TBevn",
+                          "name": "arrow5",
+                          "fill": "$foreground.secondary",
+                          "content": "->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Wy8z1",
+                          "name": "result5",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "現在の会議履歴へ移動し、記録済みログを確認",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Jw9tV",
+                      "name": "row6",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "T3bL9",
+                          "name": "action6",
+                          "fill": "$accent.deep",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            8,
+                            5
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "HYjqx",
+                              "name": "icon6",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "square",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.inverse"
+                            },
+                            {
+                              "type": "text",
+                              "id": "nto2k",
+                              "name": "label6",
+                              "fill": "$foreground.inverse",
+                              "content": "録音終了",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "AXMG6",
+                          "name": "arrow6",
+                          "fill": "$foreground.secondary",
+                          "content": "->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "evQSw",
+                          "name": "result6",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "保存完了後に履歴詳細へ。AI議事録生成の入口を表示",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "myN9U",
+                  "name": "State Transparency Note",
+                  "width": "fill_container",
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.sm",
+                  "gap": 8,
+                  "padding": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "LKga1",
+                      "name": "noteIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "info",
+                      "iconFontFamily": "lucide",
+                      "fill": "$foreground.secondary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Y7zEC",
+                      "name": "noteText",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "録音中・一時停止・終了は常に表示し、ステルス動作に見えない関係にする。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "W93qj",
+              "name": "Agent Section - Settings Navigation Flow",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": 12,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$border.subtle"
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "FLZh8",
+                  "name": "Header",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Cm8I3",
+                      "name": "title",
+                      "fill": "$foreground.primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "設定ナビゲーション",
+                      "lineHeight": 1.2,
+                      "fontFamily": "$font.heading",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "q8Nuw",
+                      "name": "lead",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "サイドバー項目をクリックすると、対応する設定タブに切り替わる。各タブは会議検知から録音、文字起こし、AI議事録、プライバシーまでを分けて扱う。",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kXBop",
+                  "name": "Navigation Rule",
+                  "width": "fill_container",
+                  "fill": "$surface.muted",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "APyrq",
+                      "name": "ruleIcon",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "mouse-pointer-click",
+                      "iconFontFamily": "lucide",
+                      "fill": "$accent.primary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Exbea",
+                      "name": "ruleText",
+                      "fill": "$foreground.primary",
+                      "content": "表記ルール: sidebar item click -> settings tab",
+                      "fontFamily": "$font.caption",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cktOU",
+                  "name": "Settings Tabs List",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "un8A0",
+                      "name": "General Row",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 8,
+                      "padding": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "p6ld6O",
+                          "name": "Sidebar Item",
+                          "width": 116,
+                          "fill": "#FFF2EAFF",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            6,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "mia5X",
+                              "name": "icon1",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "settings",
+                              "iconFontFamily": "lucide",
+                              "fill": "$accent.deep"
+                            },
+                            {
+                              "type": "text",
+                              "id": "kOuNa",
+                              "name": "label1",
+                              "fill": "$accent.deep",
+                              "content": "General",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "DFOTb",
+                          "name": "arrow1",
+                          "fill": "$foreground.secondary",
+                          "content": "click ->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "nbHtS",
+                          "name": "Tab Detail",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Nga2v",
+                              "name": "tab1",
+                              "fill": "$foreground.primary",
+                              "content": "一般タブ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "PZqHS",
+                              "name": "desc1",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "起動、表示、履歴保存などアプリ全体の基本設定。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "RXlx2",
+                      "name": "Detection Row",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 8,
+                      "padding": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ZHFgb",
+                          "name": "Sidebar Item",
+                          "width": 116,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            6,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "jbZO5",
+                              "name": "icon2",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "radar",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "ApBE4",
+                              "name": "label2",
+                              "fill": "$foreground.primary",
+                              "content": "Detection",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "gayJF",
+                          "name": "arrow2",
+                          "fill": "$foreground.secondary",
+                          "content": "click ->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "s4YgQ",
+                          "name": "Tab Detail",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "FwoGl",
+                              "name": "tab2",
+                              "fill": "$foreground.primary",
+                              "content": "会議検知タブ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "S7Agk9",
+                              "name": "desc2",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Meet / Zoom / Teams のURL、アプリ名、ウィンドウ情報、音声状態の検知条件。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "r9ET1",
+                      "name": "Audio Row",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 8,
+                      "padding": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "bSMyt",
+                          "name": "Sidebar Item",
+                          "width": 116,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            6,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "AqIeQ",
+                              "name": "icon3",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "audio-lines",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "o03T5",
+                              "name": "label3",
+                              "fill": "$foreground.primary",
+                              "content": "Audio",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "FBsRy",
+                          "name": "arrow3",
+                          "fill": "$foreground.secondary",
+                          "content": "click ->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "T6fMu",
+                          "name": "Tab Detail",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "OLUbC",
+                              "name": "tab3",
+                              "fill": "$foreground.primary",
+                              "content": "音声タブ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "RhOgu",
+                              "name": "desc3",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "マイク入力とデスクトップ音声を別トラックで取得するデバイス、権限、レベル調整。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "X1Wod9",
+                      "name": "Transcription Row",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 8,
+                      "padding": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ztSA1",
+                          "name": "Sidebar Item",
+                          "width": 116,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            6,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "VZnIw",
+                              "name": "icon4",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "captions",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Z1zKz3",
+                              "name": "label4",
+                              "fill": "$foreground.primary",
+                              "content": "Transcription",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "EhKb0",
+                          "name": "arrow4",
+                          "fill": "$foreground.secondary",
+                          "content": "click ->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wmTlh",
+                          "name": "Tab Detail",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "fak4i",
+                              "name": "tab4",
+                              "fill": "$foreground.primary",
+                              "content": "文字起こしタブ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "sQI4a",
+                              "name": "desc4",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "リアルタイム変換、言語、辞書登録、低遅延表示、後処理補正の設定。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VKgP6",
+                      "name": "AI Minutes Row",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 8,
+                      "padding": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "rrURD",
+                          "name": "Sidebar Item",
+                          "width": 116,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            6,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "UKWHp",
+                              "name": "icon5",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "sparkles",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "rD2T5",
+                              "name": "label5",
+                              "fill": "$foreground.primary",
+                              "content": "AI Minutes",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "YQ8Pb",
+                          "name": "arrow5",
+                          "fill": "$foreground.secondary",
+                          "content": "click ->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "HXQec",
+                          "name": "Tab Detail",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "UDOar",
+                              "name": "tab5",
+                              "fill": "$foreground.primary",
+                              "content": "AI議事録タブ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "T1RYt",
+                              "name": "desc5",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "要約、決定事項、ToDo、話者別整理、テンプレート、AI連携先の設定。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Cx00B",
+                      "name": "Privacy Row",
+                      "width": "fill_container",
+                      "fill": "$surface.primary",
+                      "cornerRadius": "$rounded.lg",
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "$border.subtle"
+                      },
+                      "gap": 8,
+                      "padding": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "bChig",
+                          "name": "Sidebar Item",
+                          "width": 116,
+                          "fill": "$surface.muted",
+                          "cornerRadius": "$rounded.sm",
+                          "gap": 6,
+                          "padding": [
+                            6,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "V408Rw",
+                              "name": "icon6",
+                              "width": 14,
+                              "height": 14,
+                              "iconFontName": "shield-check",
+                              "iconFontFamily": "lucide",
+                              "fill": "$foreground.secondary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "b0Ha6",
+                              "name": "label6",
+                              "fill": "$foreground.primary",
+                              "content": "Privacy",
+                              "fontFamily": "$font.caption",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "U4Lde",
+                          "name": "arrow6",
+                          "fill": "$foreground.secondary",
+                          "content": "click ->",
+                          "fontFamily": "$font.caption",
+                          "fontSize": 10,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "QUTtA",
+                          "name": "Tab Detail",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "MWt5H",
+                              "name": "tab6",
+                              "fill": "$foreground.primary",
+                              "content": "プライバシータブ",
+                              "fontFamily": "$font.body",
+                              "fontSize": 13,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Q0uMBk",
+                              "name": "desc6",
+                              "fill": "$foreground.secondary",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "録音通知、保存期間、ローカル保持、削除、外部送信前の確認を管理。",
+                              "lineHeight": 1.35,
+                              "fontFamily": "$font.body",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ll0dv",
+                  "name": "Footer Note",
+                  "width": "fill_container",
+                  "fill": "#FFF8F3FF",
+                  "cornerRadius": "$rounded.lg",
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#F3D4C2FF"
+                  },
+                  "gap": 8,
+                  "padding": [
+                    8,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "Q8hy82",
+                      "name": "noteIcon",
+                      "width": 15,
+                      "height": 15,
+                      "iconFontName": "info",
+                      "iconFontFamily": "lucide",
+                      "fill": "$accent.primary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wD2ko",
+                      "name": "noteText",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "会議中に邪魔にならない導線を優先し、詳細設定はタブ内で段階的に見せる。",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c4kpDa",
+              "name": "Current Section - History and Global Map",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$surface.primary",
+              "cornerRadius": 12,
+              "stroke": {
+                "thickness": 1,
+                "fill": "$accent.tertiary"
+              },
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "e1A9h",
+                  "name": "hTitle",
+                  "fill": "$foreground.primary",
+                  "content": "4. 履歴 / 全体導線",
+                  "fontFamily": "$font.heading",
+                  "fontSize": 17,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "mH7HC",
+                  "name": "hLead",
+                  "fill": "$foreground.secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "会議終了後の入口と、主要ボタンの遷移先をまとめる。履歴は『一覧 → 詳細 → AI議事録/ToDo』が主導線。",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$font.body",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "H6ekWb",
+                  "name": "Primary flow card",
+                  "width": "fill_container",
+                  "fill": "#FFF7F0FF",
+                  "cornerRadius": 10,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$accent.tertiary"
+                  },
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "U4s6WC",
+                      "name": "flowHead",
+                      "fill": "$accent.deep",
+                      "content": "主な状態遷移",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "T3xej",
+                      "name": "row1",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "shRBq",
+                          "name": "chip1",
+                          "width": 96,
+                          "height": 28,
+                          "fill": "$surface.primary",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Q3uCi",
+                              "name": "chip1t",
+                              "fill": "$foreground.primary",
+                              "content": "検知",
+                              "fontFamily": "$font.body",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "qwcAq",
+                          "name": "arrow1",
+                          "fill": "$foreground.secondary",
+                          "content": "→ 通知で開始確認 →",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "dYBWo",
+                          "name": "chip2",
+                          "width": 104,
+                          "height": 28,
+                          "fill": "$accent.primary",
+                          "cornerRadius": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "YRoxw",
+                              "name": "chip2t",
+                              "fill": "$foreground.inverse",
+                              "content": "記録中",
+                              "fontFamily": "$font.body",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "c8DSX",
+                      "name": "row2",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "C6WCB",
+                          "name": "chip3",
+                          "width": 96,
+                          "height": 28,
+                          "fill": "$surface.primary",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "tepxn",
+                              "name": "chip3t",
+                              "fill": "$foreground.primary",
+                              "content": "終了",
+                              "fontFamily": "$font.body",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "G4aBff",
+                          "name": "arrow2",
+                          "fill": "$foreground.secondary",
+                          "content": "→ 履歴へ保存 →",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DmZPz",
+                          "name": "chip4",
+                          "width": 104,
+                          "height": 28,
+                          "fill": "$surface.primary",
+                          "cornerRadius": 8,
+                          "stroke": {
+                            "thickness": 1,
+                            "fill": "$border.subtle"
+                          },
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "z3v6X",
+                              "name": "chip4t",
+                              "fill": "$foreground.primary",
+                              "content": "詳細",
+                              "fontFamily": "$font.body",
+                              "fontSize": 12,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gjmUn",
+                  "name": "Button transition list",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "CTjKi",
+                      "name": "listHead",
+                      "fill": "$foreground.primary",
+                      "content": "ボタン / 操作 → 遷移先",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "z9s2wD",
+                      "name": "item1",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 3,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Sggrx",
+                          "name": "item1a",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "履歴を開く / Open History → Mock 2B - Open History",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "hYtFA",
+                          "name": "item1b",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "記録後・メニューバー・字幕ウィンドウから入る共通入口。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bEt3f",
+                      "name": "item2",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 3,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "aFIVx",
+                          "name": "item2a",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "最近の記録カードをクリック → Recording Detail",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dcVX6",
+                          "name": "item2b",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "一覧の選択状態または詳細ポップオーバーへ遷移。文字起こし全文・要約・ToDoを確認。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "KEm50",
+                      "name": "item3",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 3,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "XLE8b",
+                          "name": "item3a",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "AI議事録を生成 → 詳細内の処理中/完了状態",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "cmV2x",
+                          "name": "item3b",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "課金APIを勝手に使わない前提。設定でAI連携が有効な場合だけ実行可能にする。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "k4QgG",
+                      "name": "item4",
+                      "width": "fill_container",
+                      "fill": "$surface.muted",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "gap": 3,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "yRSnP",
+                          "name": "item4a",
+                          "fill": "$foreground.primary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "設定を開く → Mock 4 Settings Window",
+                          "fontFamily": "$font.body",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "RMwpY",
+                          "name": "item4b",
+                          "fill": "$foreground.secondary",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "検知・音声・文字起こし・AI・プライバシーの調整へ分岐。",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$font.body",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "naEtO",
+                  "name": "note",
+                  "width": "fill_container",
+                  "fill": "#FFFFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "$border.subtle"
+                  },
+                  "layout": "vertical",
+                  "gap": 5,
+                  "padding": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p2O14",
+                      "name": "noteT",
+                      "fill": "$foreground.primary",
+                      "content": "設計メモ",
+                      "fontFamily": "$font.body",
+                      "fontSize": 12,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "GvXy0",
+                      "name": "noteB",
+                      "fill": "$foreground.secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "曖昧になりやすい箇所は『同じボタン名で別結果』を避ける。特に『終了』は保存完了・履歴追加・詳細表示のどこまで自動で行うかを実装時に固定する。",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$font.body",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
