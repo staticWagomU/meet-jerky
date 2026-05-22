@@ -21100,7 +21100,8 @@
                       "content": "録音中を隠さず、会議の邪魔はしない。",
                       "lineHeight": 1.25,
                       "fontFamily": "$font.body",
-                      "fontSize": 11
+                      "fontSize": 11,
+                      "fontWeight": "normal"
                     }
                   ]
                 },
