@@ -69,9 +69,10 @@
           # Rust ツールチェイン
           rustToolchain
 
-          # Node.js（Chrome 拡張 + Tauri フロントエンドで使用）
-          nodejs_22
-          # npm は nodejs_22 に含まれている
+          # JavaScript ツールチェイン
+          # （Chrome 拡張 + Tauri フロントエンドで使用）
+          nodejs_22 # node / npm（wxt・vite が内部で呼ぶ場面の保険）
+          bun # 高速なパッケージマネージャ兼ランタイム
 
           # ビルドツール
           pkg-config # ネイティブ依存関係の検出
@@ -117,6 +118,7 @@
             echo "  Cargo:   $(cargo --version)"
             echo "  Node.js: $(node --version)"
             echo "  npm:     $(npm --version)"
+            echo "  Bun:     $(bun --version)"
             echo "──────────────────────────────────────"
           '';
         };

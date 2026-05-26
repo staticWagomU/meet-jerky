@@ -43,12 +43,12 @@ Google Meetの字幕を自動的に記録・保存するChrome拡張機能です
 ## セットアップ
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 ## ビルド
 
 ```bash
-npm run build
+bun run build
 ```
