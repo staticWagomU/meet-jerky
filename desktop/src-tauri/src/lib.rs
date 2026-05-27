@@ -78,8 +78,8 @@ use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     utils::config::Color,
-    Emitter, Manager, Monitor, PhysicalPosition, PhysicalSize, Position, Size, WebviewUrl,
-    WebviewWindowBuilder, WindowEvent,
+    Emitter, LogicalPosition, LogicalSize, Manager, Monitor, PhysicalPosition, PhysicalSize,
+    WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -88,6 +88,10 @@ const LIVE_CAPTION_WINDOW_LABEL: &str = "live-caption";
 const RING_LIGHT_WINDOW_LABEL: &str = "ring-light";
 const MEETING_PROMPT_WIDTH: f64 = 560.0;
 const MEETING_PROMPT_HEIGHT: f64 = 280.0;
+const MAIN_WINDOW_WIDTH: f64 = 328.0;
+const MAIN_WINDOW_HEIGHT: f64 = 560.0;
+const MAIN_WINDOW_MENU_BAR_FALLBACK_Y_OFFSET: f64 = 28.0;
+const MAIN_WINDOW_FALLBACK_RIGHT_INSET: f64 = 12.0;
 const LIVE_CAPTION_WIDTH: f64 = 900.0;
 const LIVE_CAPTION_HEIGHT: f64 = 360.0;
 const RING_LIGHT_FALLBACK_WIDTH: f64 = 1280.0;
@@ -117,6 +121,7 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(|app_handle, event| match event.id.as_ref() {
             "show" => {
                 if let Some(window) = app_handle.get_webview_window("main") {
+                    position_main_window_under_menu_bar(app_handle, &window);
                     let _ = window.show();
                     let _ = window.set_focus();
                 }
@@ -130,7 +135,6 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             if let tauri::tray::TrayIconEvent::Click {
                 button: tauri::tray::MouseButton::Left,
                 button_state: tauri::tray::MouseButtonState::Up,
-                rect,
                 ..
             } = event
             {
@@ -139,23 +143,7 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     if window.is_visible().unwrap_or(false) {
                         let _ = window.hide();
                     } else {
-                        // Extract physical position from the tray icon rect
-                        let (tray_x, tray_y) = match rect.position {
-                            Position::Physical(pos) => (pos.x as f64, pos.y as f64),
-                            Position::Logical(pos) => (pos.x, pos.y),
-                        };
-                        let (tray_w, tray_h) = match rect.size {
-                            Size::Physical(size) => (size.width as f64, size.height as f64),
-                            Size::Logical(size) => (size.width, size.height),
-                        };
-                        let window_width =
-                            window.outer_size().map(|s| s.width as f64).unwrap_or(400.0);
-
-                        // Position the window centered below the tray icon
-                        let x = tray_x + (tray_w / 2.0) - (window_width / 2.0);
-                        let y = tray_y + tray_h;
-
-                        let _ = window.set_position(PhysicalPosition::new(x as i32, y as i32));
+                        position_main_window_under_menu_bar(app_handle, &window);
                         let _ = window.show();
                         let _ = window.set_focus();
                     }
@@ -246,87 +234,151 @@ fn meeting_monitor_or_current_or_primary(app: &tauri::AppHandle) -> tauri::Resul
     current_monitor_or_primary(app)
 }
 
-fn meeting_window_center_and_monitor(
-    app: &tauri::AppHandle,
-) -> tauri::Result<Option<((f64, f64), Monitor)>> {
-    let Some(center) = app_detection::latest_meeting_window_center() else {
-        return Ok(None);
-    };
-    let Some(monitor) = app.monitor_from_point(center.0, center.1)? else {
-        return Ok(None);
-    };
-    Ok(Some((center, monitor)))
+/// モニタの論理(ポイント)フレーム (x, y, width, height) を返す。
+/// macOS のグローバル座標は論理で統一されており、混在DPIマルチモニタでも一貫する。
+/// Tauri は物理を `論理 * そのモニタの scale` で構成するため、物理を scale で割れば論理に戻せる。
+fn monitor_logical_frame(monitor: &Monitor) -> (f64, f64, f64, f64) {
+    let scale = monitor.scale_factor();
+    let position = monitor.position();
+    let size = monitor.size();
+    (
+        position.x as f64 / scale,
+        position.y as f64 / scale,
+        size.width as f64 / scale,
+        size.height as f64 / scale,
+    )
 }
 
-fn centered_window_x_within_monitor(
-    center_x: f64,
-    window_width: u32,
-    monitor_position_x: i32,
-    monitor_width: u32,
-) -> i32 {
-    let min_x = monitor_position_x;
-    let max_x = min_x + monitor_width.saturating_sub(window_width) as i32;
-    let centered_x = (center_x - (window_width as f64 / 2.0)).round() as i32;
-    centered_x.clamp(min_x, max_x)
-}
+#[cfg(target_os = "macos")]
+mod macos_status_window {
+    extern "C" {
+        fn meet_jerky_status_anchor_position(
+            window_width: f64,
+            window_height: f64,
+            right_inset: f64,
+            top_offset: f64,
+            out_x: *mut f64,
+            out_y: *mut f64,
+        ) -> bool;
+    }
 
-fn position_window_top_center(app: &tauri::AppHandle, label: &str) {
-    let Some(window) = app.get_webview_window(label) else {
-        return;
-    };
-    let Ok(center_and_monitor) = meeting_window_center_and_monitor(app) else {
-        return;
-    };
-    let (meeting_center, monitor) = if let Some((center, monitor)) = center_and_monitor {
-        (Some(center), monitor)
-    } else {
-        let Ok(Some(fallback_monitor)) = current_monitor_or_primary(app) else {
-            return;
+    pub fn anchor_position(
+        window_width: f64,
+        window_height: f64,
+        right_inset: f64,
+        top_offset: f64,
+    ) -> Option<(f64, f64)> {
+        let mut x = 0.0;
+        let mut y = 0.0;
+        let ok = unsafe {
+            meet_jerky_status_anchor_position(
+                window_width,
+                window_height,
+                right_inset,
+                top_offset,
+                &mut x,
+                &mut y,
+            )
         };
-        (None, fallback_monitor)
-    };
-    let Ok(window_size) = window.outer_size() else {
+        ok.then_some((x, y))
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn native_status_anchor_position(window_width: f64, window_height: f64) -> Option<(f64, f64)> {
+    macos_status_window::anchor_position(
+        window_width,
+        window_height,
+        MAIN_WINDOW_FALLBACK_RIGHT_INSET,
+        MAIN_WINDOW_MENU_BAR_FALLBACK_Y_OFFSET,
+    )
+}
+
+#[cfg(not(target_os = "macos"))]
+fn native_status_anchor_position(_window_width: f64, _window_height: f64) -> Option<(f64, f64)> {
+    None
+}
+
+fn position_main_window_under_menu_bar(app: &tauri::AppHandle, window: &tauri::WebviewWindow) {
+    let window_size = window.outer_size().ok();
+    let fallback_monitor = current_monitor_or_primary(app).ok().flatten();
+    let fallback_scale = fallback_monitor
+        .as_ref()
+        .map(|monitor| monitor.scale_factor())
+        .unwrap_or(1.0);
+    let window_width = window_size
+        .map(|s| s.width as f64)
+        .unwrap_or(MAIN_WINDOW_WIDTH * fallback_scale);
+    let window_height = window_size
+        .map(|s| s.height as f64)
+        .unwrap_or(MAIN_WINDOW_HEIGHT * fallback_scale);
+
+    if let Some((x, y)) = native_status_anchor_position(window_width, window_height) {
+        let _ = window.set_position(PhysicalPosition::new(x.round() as i32, y.round() as i32));
+        return;
+    }
+
+    let Some(monitor) = fallback_monitor else {
         return;
     };
-
+    let scale = monitor.scale_factor();
     let monitor_position = monitor.position();
     let monitor_size = monitor.size();
-    let x = meeting_center
-        .map(|(center_x, _)| {
-            centered_window_x_within_monitor(
-                center_x,
-                window_size.width,
-                monitor_position.x,
-                monitor_size.width,
-            )
-        })
-        .unwrap_or_else(|| {
-            monitor_position.x + ((monitor_size.width.saturating_sub(window_size.width)) / 2) as i32
-        });
-    let _ = window.set_position(PhysicalPosition::new(x, monitor_position.y));
+    let window_width = window_width.min(monitor_size.width as f64).max(1.0);
+    let window_height = window_height.min(monitor_size.height as f64).max(1.0);
+    let mx = monitor_position.x as f64;
+    let my = monitor_position.y as f64;
+    let mw = monitor_size.width as f64;
+    let mh = monitor_size.height as f64;
+    let target_x = mx + mw - window_width - (MAIN_WINDOW_FALLBACK_RIGHT_INSET * scale);
+    let target_y = my + (MAIN_WINDOW_MENU_BAR_FALLBACK_Y_OFFSET * scale);
+    let x = target_x.clamp(mx, mx + (mw - window_width).max(0.0));
+    let y = target_y.clamp(my, my + (mh - window_height).max(0.0));
+
+    let _ = window.set_position(PhysicalPosition::new(x.round() as i32, y.round() as i32));
 }
 
-fn position_window_bottom_center(app: &tauri::AppHandle, label: &str, bottom_offset: u32) {
+fn position_window_top_center(
+    app: &tauri::AppHandle,
+    label: &str,
+    logical_width: f64,
+    logical_height: f64,
+) {
     let Some(window) = app.get_webview_window(label) else {
         return;
     };
     let Ok(Some(monitor)) = meeting_monitor_or_current_or_primary(app) else {
         return;
     };
-    let Ok(window_size) = window.outer_size() else {
+    let (mx, my, mw, mh) = monitor_logical_frame(&monitor);
+    let visible_width = logical_width.min(mw).max(1.0);
+    let visible_height = logical_height.min(mh).max(1.0);
+    let x = (mx + (mw - visible_width) / 2.0).clamp(mx, mx + (mw - visible_width).max(0.0));
+    let _ = window.set_size(LogicalSize::new(visible_width, visible_height));
+    let _ = window.set_position(LogicalPosition::new(x, my));
+}
+
+fn position_window_bottom_center(
+    app: &tauri::AppHandle,
+    label: &str,
+    logical_width: f64,
+    logical_height: f64,
+    bottom_offset: u32,
+) {
+    let Some(window) = app.get_webview_window(label) else {
         return;
     };
-
-    let monitor_position = monitor.position();
-    let monitor_size = monitor.size();
-    let x =
-        monitor_position.x + ((monitor_size.width.saturating_sub(window_size.width)) / 2) as i32;
-    let y = monitor_position.y
-        + monitor_size
-            .height
-            .saturating_sub(window_size.height)
-            .saturating_sub(bottom_offset) as i32;
-    let _ = window.set_position(PhysicalPosition::new(x, y));
+    let Ok(Some(monitor)) = meeting_monitor_or_current_or_primary(app) else {
+        return;
+    };
+    let (mx, my, mw, mh) = monitor_logical_frame(&monitor);
+    let visible_width = logical_width.min(mw).max(1.0);
+    let visible_height = logical_height.min(mh).max(1.0);
+    let x = (mx + (mw - visible_width) / 2.0).clamp(mx, mx + (mw - visible_width).max(0.0));
+    let target_y = my + mh - visible_height - bottom_offset as f64;
+    let y = target_y.clamp(my, my + (mh - visible_height).max(0.0));
+    let _ = window.set_size(LogicalSize::new(visible_width, visible_height));
+    let _ = window.set_position(LogicalPosition::new(x, y));
 }
 
 #[tauri::command]
@@ -335,7 +387,12 @@ fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Re
         return Err("会議検知通知ウィンドウが見つかりません".to_string());
     };
     if visible {
-        position_window_top_center(&app, MEETING_PROMPT_WINDOW_LABEL);
+        position_window_top_center(
+            &app,
+            MEETING_PROMPT_WINDOW_LABEL,
+            MEETING_PROMPT_WIDTH,
+            MEETING_PROMPT_HEIGHT,
+        );
         window
             .show()
             .map_err(|e| format!("会議検知通知ウィンドウを表示できません: {e}"))?;
@@ -352,6 +409,7 @@ fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
     let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) else {
         return Err("メインウィンドウが見つかりません".to_string());
     };
+    position_main_window_under_menu_bar(&app, &window);
     window
         .show()
         .map_err(|e| format!("メインウィンドウを表示できません: {e}"))?;
@@ -367,7 +425,13 @@ fn set_live_caption_window_visible(app: tauri::AppHandle, visible: bool) -> Resu
         return Err("ライブ文字起こしウィンドウが見つかりません".to_string());
     };
     if visible {
-        position_window_bottom_center(&app, LIVE_CAPTION_WINDOW_LABEL, 0);
+        position_window_bottom_center(
+            &app,
+            LIVE_CAPTION_WINDOW_LABEL,
+            LIVE_CAPTION_WIDTH,
+            LIVE_CAPTION_HEIGHT,
+            0,
+        );
         let was_visible = window
             .is_visible()
             .map_err(|e| format!("ライブ文字起こしウィンドウの表示状態を確認できません: {e}"))?;
