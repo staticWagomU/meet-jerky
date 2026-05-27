@@ -122,10 +122,7 @@ mod tests {
         let err = read_session_content_inner(dir.path(), &not_md)
             .expect_err("non .md extension should be rejected");
 
-        assert!(
-            err.contains(".md"),
-            "unexpected error message: {err}"
-        );
+        assert!(err.contains(".md"), "unexpected error message: {err}");
     }
 
     #[test]
