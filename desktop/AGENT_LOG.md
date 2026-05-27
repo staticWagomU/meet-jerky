@@ -37634,3 +37634,86 @@ event: ユーザー停止依頼により自律改善ループを停止。新し�
 ユーザー価値: 小さな録音状態ピルが単なる装飾ではなく、録音透明性と再展開導線のための安全表示だと理解でき、以後のレビューで削除・変更すべきか判断しやすくなる。
 非目標: 実アプリのクリックハンドラ、React UI 実装、Tauri command、録音状態管理、履歴保存ロジック、課金が発生する外部 API 連携、依存関係追加は行わない。
 未実機確認範囲: macOS 実アプリでの録音状態同期、ピルクリック時の再展開、VoiceOver 読み上げ、実録音中の表示位置は未確認。今回は Pencil 上の構造・担当範囲スクリーンショット確認に限定した。
+---
+
+[mjc / live-caption-window-clamp / 2026-05-27 20:39:02 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/lib.rs / src/App.css / AGENT_LOG.md
+指示内容: 字幕ウィンドウが画面上で見切れている原因を調査し、必要なら修正する。
+結果: ライブ字幕ウィンドウの表示位置計算が固定 900x360 論理ポイントを前提に下中央配置しており、検出モニタ幅・高さより大きい場合や座標系がずれた場合に画面外へ出るリスクがあることを確認した。Tauri 側で表示サイズをモニタ論理フレーム内に収め、x/y をクランプするよう修正した。CSS 側でも字幕パネルを固定 788x306px から `100vw/100vh` に収まる `min()` 指定へ変更した。
+検証結果: `npm run build` 成功。`nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。直接 `cargo` は PATH に無かったため失敗。`nix develop --command cargo fmt --manifest-path src-tauri/Cargo.toml --check` は実行できたが、今回未変更の `src-tauri/src/session_commands_read.rs:122` の既存フォーマット差分で失敗した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実機でライブ字幕ウィンドウを狭い表示領域・Retina/外部ディスプレイ・会議ウィンドウ検出ありの各条件で開き、見切れが再発しないことを確認する。
+ユーザー価値: 会議中の字幕ウィンドウが画面外へはみ出すリスクを下げ、録音・文字起こし状態を安定して確認できる。
+非目標: 字幕UIの全面再設計、会議検知ロジック、音声取得、文字起こしエンジン、課金が発生する外部API連携は変更しない。
+
+[mjc / live-caption-window-css-reset / 2026-05-27 20:50:28 JST]
+役割: 実装担当エージェント
+作業範囲: src/App.css / AGENT_LOG.md
+指示内容: 修正後も字幕ウィンドウ内コンテンツが右側で見切れている状態を追加調査する。
+結果: `.live-transcript-panel-window` が旧コンパクト字幕用の `.live-transcript-panel` と同時適用されており、`left: 50%` / `bottom` / `align-items: center` / `flex-direction: column` が残ってパネル内部を右方向へ押し出していた。オーバーレイ窓用に `left` / `bottom` / `z-index` をリセットし、`align-items: stretch` と `flex-direction: row` を明示した。ステータス行とタブ列にも `min-width: 0` と overflow 制約を追加した。
+検証結果: `npm run build` 成功。Rust 変更は追加していないため cargo check は再実行していない。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実機の字幕ウィンドウで右端の `Whisper` ピル、閉じるボタン、音声入力カードが全て見えることを確認する。
+
+[mjc / main-window-menu-bar-position / 2026-05-27 20:53:14 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/lib.rs / AGENT_LOG.md
+指示内容: メイン窓がメニューバーの下に表示されない問題を修正する。
+結果: トレイ左クリック時だけメイン窓を位置決めしており、右クリックメニューの「表示」や `show_main_window` コマンドでは前回位置のまま `show()` していた。メイン窓をメニューバー直下に配置する `position_main_window_under_menu_bar` を追加し、トレイ左クリック、メニュー表示、`show_main_window` の全経路で共通利用するよう修正した。トレイ矩形がある場合はトレイアイコン直下、ない場合は主モニタ右上のメニューバー直下へ寄せる。
+検証結果: `nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。`nix develop --command cargo fmt --manifest-path src-tauri/Cargo.toml --check` は今回未変更の `src-tauri/src/session_commands_read.rs:122` の既存フォーマット差分で失敗した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実機でトレイ左クリック、トレイメニュー「表示」、会議検知バナー経由の `show_main_window` を確認し、全経路でメイン窓がメニューバー直下に出ることを確認する。
+
+[mjc / main-window-stable-menu-bar-anchor / 2026-05-27 21:00:50 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/lib.rs / AGENT_LOG.md
+指示内容: 実際のメニューバーアイコンをクリックする度にメイン窓の位置が変わる理由を説明し、修正する。
+結果: トレイイベントの `rect` をメイン窓アンカーに使っていたため、macOS/Tauri のクリック位置・物理/論理座標・スケール差による揺れが表示位置へ反映されていた。`rect` 依存を削除し、メイン窓は常に主モニタ右上のメニューバー直下へ固定配置するよう変更した。これにより同じアイコンをクリックするたびに位置が変わる原因を除去した。
+検証結果: `nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実機でメニューバーアイコンを複数回クリックし、表示位置が毎回同一であることを確認する。
+
+[mjc / main-window-clicked-monitor-anchor / 2026-05-27 21:02:08 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/lib.rs / AGENT_LOG.md
+指示内容: 上のモニターのメニューバーアイコンをクリックしているのに、下のモニター側にメイン窓が表示される問題を修正する。
+結果: 前回の主モニタ固定はクリックごとの揺れを止める一方、複数モニタ環境ではクリックしたモニタを無視していた。メイン窓の表示先モニタを `current_monitor_or_primary` に変更し、カーソル位置はモニタ選択にだけ使い、窓の座標は選ばれたモニタ右上のメニューバー直下へ固定するよう調整した。
+検証結果: `nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 上下モニタそれぞれのメニューバーアイコンをクリックし、クリックした側のモニタ右上にメイン窓が表示され、同一モニタ内では位置が揺れないことを確認する。
+
+[mjc / main-window-tray-rect-monitor-only / 2026-05-27 21:05:42 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/lib.rs / AGENT_LOG.md
+指示内容: メイン窓を必ずクリックしたモニタに表示する。クリックしたモニタではない場所に出る挙動は直感的でない。
+結果: トレイ `rect` を完全に無視するとクリックモニタを取り違えるため、トレイ `rect` は「クリックされたメニューバーが属するモニタ」の判定にだけ使うよう変更した。窓の表示座標は `rect` のクリック位置ではなく、そのモニタ右上のメニューバー直下固定値にして、クリックごとの位置揺れは再発させない。
+検証結果: `nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 上下モニタのメニューバーアイコンをそれぞれ複数回クリックし、クリックしたモニタに表示され、同一モニタ内では位置が揺れないことを確認する。
+
+[mjc / main-window-physical-coordinate-positioning / 2026-05-27 21:08:46 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/lib.rs / AGENT_LOG.md
+指示内容: メイン窓の表示位置が安定しない問題を根本的に改善する。他の macOS アプリのように安定した表示を目指す。
+結果: 直前実装はトレイ `rect` をモニタ判定だけに使っていたが、`rect` の物理/論理座標を主モニタ scale で補正しており、混在DPI・上下モニタ環境では判定や配置が揺れる余地が残っていた。メイン窓の配置経路を物理座標に統一し、トレイ `rect` は物理値としてモニタ判定に使い、モニタ position/size と window outer_size も物理座標のまま `PhysicalPosition` で配置するよう変更した。
+検証結果: `nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実機で上下モニタ・Retina/非Retina混在・同一アイコン複数回クリックを確認する。まだ揺れる場合は Tauri tray + 独自 WebviewWindow 配置をやめ、macOS ネイティブの NSStatusItem/NSPopover または Tauri positioner 導入へ切り替える。
+
+[mjc / native-status-window-anchor / 2026-05-27 21:13:11 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/swift/StatusWindowBridge.swift / src-tauri/src/lib.rs / AGENT_LOG.md
+指示内容: macOS 専用前提なので、メニューバーアイコン由来のメイン窓表示をネイティブ機能に寄せて安定させる。他にもネイティブ機能で安定化できる箇所があればそちらに寄せる。
+結果: Tauri tray `rect` 依存をメイン窓配置から外し、AppKit/Quartz 側で `NSEvent.mouseLocation` から現在の `NSScreen` を特定し、`CGDisplayBounds` と `backingScaleFactor` から Tauri `PhysicalPosition` 用のアンカー座標を計算する Swift ブリッジ `meet_jerky_status_anchor_position` を追加した。Rust 側はこのネイティブアンカーを優先し、失敗時だけ従来の Tauri monitor fallback を使うよう変更した。これによりメイン窓の表示先はクリック時の macOS ネイティブ画面判定へ寄り、独自の tray rect 補正・混在DPI補正に依存しない。
+検証結果: `nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。`nix develop --command cargo fmt --manifest-path src-tauri/Cargo.toml --check` は今回未変更の `src-tauri/src/session_commands_read.rs:122` の既存フォーマット差分で失敗した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実機で上下モニタ・Retina/非Retina混在・メニューバーアイコン複数回クリックを確認する。さらに安定化する場合は Tauri tray 生成自体も NSStatusItem/NSPopover に移行し、メイン窓ではなくネイティブ popover として表示する。
