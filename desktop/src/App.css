@@ -1338,8 +1338,11 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-transcript-panel-window {
   position: relative;
-  width: 788px;
-  height: 306px;
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+  width: min(788px, calc(100vw - 32px));
+  height: min(306px, calc(100vh - 32px));
   min-height: 0;
   box-sizing: border-box;
   border-radius: 18px;
@@ -1348,10 +1351,11 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-transcript-panel-window {
   display: flex;
+  align-items: stretch;
   flex-direction: column;
   gap: 10px;
-  width: 788px;
-  height: 306px;
+  width: min(788px, calc(100vw - 32px));
+  height: min(306px, calc(100vh - 32px));
   min-height: 0;
   box-sizing: border-box;
   padding: 12px;
@@ -1365,6 +1369,8 @@ body[data-window="ring-light"] .overlay-window {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  min-width: 0;
   min-height: 28px;
 }
 
@@ -1462,8 +1468,10 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-transcript-content {
   display: flex;
+  flex-direction: row;
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
   gap: 12px;
   padding-right: 0;
 }
@@ -1480,7 +1488,9 @@ body[data-window="ring-light"] .overlay-window {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   min-height: 28px;
+  overflow: hidden;
 }
 
 .live-transcript-tab {
