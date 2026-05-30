@@ -1698,6 +1698,33 @@ export function TranscriptView() {
   const menuStartBoundaryLabel = isMeetingActive
     ? "録音中はREC表示、ライブ文字起こし、翻訳切替、AIノートと質問準備を確認できます。質問はここでは未送信です。"
     : "メニューバー録音の開始後はREC表示、ライブ文字起こし、翻訳切替、AIノートと質問準備を表示します。質問はここでは未送信です。";
+  const menuBarRecordingFlow = [
+    {
+      label: isMeetingActive ? "REC" : "開始",
+      value: isMeetingActive ? "常時表示" : "メニュー録音",
+      tone: "accent",
+    },
+    {
+      label: "文字起こし",
+      value: isMeetingActive ? transcriptionStatusLabel : "ライブ表示",
+      tone: isTranscribing ? "safe" : "neutral",
+    },
+    {
+      label: "翻訳",
+      value: "切替",
+      tone: "neutral",
+    },
+    {
+      label: "AIノート",
+      value: "オン/オフ",
+      tone: isLocalAudioTransmission ? "safe" : "warn",
+    },
+    {
+      label: "質問",
+      value: "未送信",
+      tone: "neutral",
+    },
+  ];
   const menuRecordingDetail = isMeetingActive
     ? `${micTrackStatusLabel} / ${systemAudioTrackStatusLabel}`
     : pendingMeetingStartRequest
@@ -2126,11 +2153,15 @@ export function TranscriptView() {
               aria-label={menuStartBoundaryLabel}
               title={menuStartBoundaryLabel}
             >
-              <span>開始後</span>
-              <strong>REC常時表示</strong>
-              <strong>ライブ文字起こし</strong>
-              <strong>翻訳切替</strong>
-              <strong>AIノート・質問未送信</strong>
+              {menuBarRecordingFlow.map((step) => (
+                <span
+                  key={`${step.label}-${step.value}`}
+                  className={`menu-start-boundary-step menu-start-boundary-step-${step.tone}`}
+                >
+                  <span>{step.label}</span>
+                  <strong>{step.value}</strong>
+                </span>
+              ))}
             </section>
 
             <section

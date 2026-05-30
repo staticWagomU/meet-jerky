@@ -1,3 +1,12 @@
+## 2026-05-30 23:24:39 JST
+
+- 作業: `v2-menu-bar-recording-flow-chips`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow に合わせ、メニューバー録音の開始前/録音中に、REC常時表示、ライブ文字起こし、翻訳切替、AIノートのオン/オフ、質問未送信の境界を小さく確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen の実変数は `font.caption Funnel Sans`、`rounded.lg 8`、`rounded.sm 4`、`accent.primary #FF5C00`、`status.good #229C5A`。
+- 変更: `src/routes/TranscriptView.tsx` のメニューバー録音境界を固定文言から `開始/REC`、`文字起こし`、`翻訳`、`AIノート`、`質問` の5チップへ変更した。`src/App.css` でv2角丸、v2境界色、Funnel Sansキャプション、状態色を使ったコンパクトなグリッド表示にした。
+- 判断: メニューバー録音は既に実行可能だったため、新しい操作を増やすのではなく、開始後に何が常時表示され、AI質問が未送信であることを認知できる境界表示へ寄せた。これにより録音透明性とAIオン/オフ確認の要件を、312pxのメニューバーウィンドウ内で過剰に説明せず示せる。
+- 検証: `rg -n 'v2-menu-bar-recording-flow-chips|menuBarRecordingFlow|menu-start-boundary-step|AIノート|質問.*未送信|grid-template-columns: repeat\(5' AGENT_LOG.md src/routes/TranscriptView.tsx src/App.css` でメニューバー録音フロー、v2スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:20:57 JST
 
 - 作業: `v2-meeting-detected-ai-toggle-flow`

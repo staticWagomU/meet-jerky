@@ -4724,41 +4724,64 @@ body[data-window="ring-light"] .overlay-window {
 }
 
 .menu-start-boundary {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--es-blue) 18%, var(--es-line));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--es-blue) 6%, #ffffff);
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-subtle) 78%, transparent);
+  border-radius: var(--v2-rounded-lg);
+  background: color-mix(in srgb, var(--v2-surface-muted) 76%, #ffffff);
 }
 
-.menu-start-boundary span,
-.menu-start-boundary strong {
+.menu-start-boundary-step {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 6px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-subtle) 72%, transparent);
+  border-radius: var(--v2-rounded-sm);
+  background: color-mix(in srgb, var(--v2-surface-primary) 82%, transparent);
+}
+
+.menu-start-boundary-step span,
+.menu-start-boundary-step strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.menu-start-boundary span {
-  flex: 0 0 auto;
-  color: color-mix(in srgb, var(--es-blue) 72%, var(--es-ink));
-  font-family: var(--font-mono);
+.menu-start-boundary-step span {
+  color: color-mix(in srgb, var(--v2-foreground-secondary) 82%, var(--v2-accent-deep));
+  font-family: var(--font-caption);
   font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 760;
+  letter-spacing: 0.02em;
   line-height: 1;
-  text-transform: uppercase;
 }
 
-.menu-start-boundary strong {
-  flex: 1 1 0;
+.menu-start-boundary-step strong {
   min-width: 0;
-  color: var(--es-ink);
+  color: var(--v2-foreground-primary);
   font-size: 10px;
   font-weight: 720;
   line-height: 1.15;
+}
+
+.menu-start-boundary-step-accent {
+  border-color: color-mix(in srgb, var(--v2-accent-primary) 30%, var(--v2-border-subtle));
+  background: color-mix(in srgb, var(--v2-accent-primary) 9%, #ffffff);
+}
+
+.menu-start-boundary-step-safe {
+  border-color: color-mix(in srgb, var(--v2-status-good) 24%, var(--v2-border-subtle));
+  background: color-mix(in srgb, var(--v2-status-good) 8%, #ffffff);
+}
+
+.menu-start-boundary-step-warn {
+  border-color: color-mix(in srgb, var(--v2-status-warn) 28%, var(--v2-border-subtle));
+  background: color-mix(in srgb, var(--v2-status-warn) 8%, #ffffff);
 }
 
 .menu-history-section {
