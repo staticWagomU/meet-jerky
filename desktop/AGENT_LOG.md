@@ -1,3 +1,12 @@
+## 2026-05-30 23:32:10 JST
+
+- 作業: `v2-ai-minutes-audio-exclusion-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の Settings Overview / History and Minutes 方針に合わせ、AI議事録設定の素材フローでも音声トラックが送信対象外であることを可視チップとして示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。プロダクト方針では音声トラックを別保存し、AI議事録では文字起こしと手書きメモを扱う。
+- 変更: `src/routes/SettingsView.tsx` の `aiMinutesMaterialSteps` に `音声: 送信なし` を追加した。`src/App.css` でAI議事録素材フローを5列にし、既存のsafeトーンで音声除外を表示するようにした。
+- 判断: 説明文やariaには音声非送信が入っていたが、素材フローの可視チップには音声の扱いがなかった。設定画面では送信境界を見落としやすいため、フロー内に音声除外を追加する方がv2の透明性に合う。
+- 検証: `rg` で対象表示の追加を確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:30:36 JST
 
 - 作業: `v2-settings-start-route-ai-note-chip`

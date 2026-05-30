@@ -589,6 +589,7 @@ export function SettingsView({
     { label: "文字起こし", value: "履歴から", tone: "accent" },
     { label: "手書きメモ", value: "任意追加", tone: "neutral" },
     { label: "テンプレート", value: "録音後選択", tone: "neutral" },
+    { label: "音声", value: "送信なし", tone: "safe" },
     {
       label: "送信",
       value: aiMinutesTransparencyLabel,
