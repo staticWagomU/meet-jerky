@@ -6873,7 +6873,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .settings-start-route-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   margin-top: 10px;
 }
@@ -6948,6 +6948,21 @@ body[data-window="settings"] .settings-main-pane {
 
 .settings-start-route-chip-safe strong {
   color: color-mix(in srgb, var(--es-blue) 72%, var(--es-ink));
+}
+
+.settings-start-route-chip-warn {
+  border-color: color-mix(in srgb, var(--v2-status-warn) 28%, var(--v2-border-subtle));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-status-warn) 10%, #ffffff),
+      rgba(255, 255, 255, 0.9)
+    ),
+    var(--color-surface);
+}
+
+.settings-start-route-chip-warn strong {
+  color: color-mix(in srgb, var(--v2-status-warn) 78%, var(--es-ink));
 }
 
 .settings-detection-rule-tabs {

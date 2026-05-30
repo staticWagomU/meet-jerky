@@ -1,3 +1,12 @@
+## 2026-05-30 23:30:36 JST
+
+- 作業: `v2-settings-start-route-ai-note-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の Settings Overview / Recording Flow に合わせ、設定概要の開始導線でも、検知通知/メニューバー録音の開始後にAIノートをオン/オフ確認する流れを可視化する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen は録音開始後にREC、ライブ文字起こし、AIノート確認、保存の境界を分ける。
+- 変更: `src/routes/SettingsView.tsx` の `recordingStartRoutes` に `AIノート: オン/オフ` チップを追加した。`src/App.css` で開始導線を5列にし、v2の警告色トークンを使った控えめなAIノートチップを追加した。
+- 判断: 補助ラベルにはAIノート確認が入っていたが、可視チップでは抜けていた。設定概要は録音開始経路の認知に使われるため、AIが勝手に送信されるのではなくオン/オフ確認を経ることを短く見せる方が、ユーザー要件の透明性に合う。
+- 検証: `rg -n 'v2-settings-start-route-ai-note-chip|AIノート|recordingStartRoutes|settings-start-route-chip-warn|repeat\(5' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` で設定概要のAIノート開始導線、5列スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:28:57 JST
 
 - 作業: `v2-minutes-template-chip-state`

@@ -457,6 +457,7 @@ export function SettingsView({
     { label: "検知通知", value: detectionStatusLabel, tone: "accent" },
     { label: "メニューバー", value: "手動録音", tone: "neutral" },
     { label: "開始後", value: "REC / 文字起こし", tone: "accent" },
+    { label: "AIノート", value: "オン/オフ", tone: "warn" },
     { label: "保存", value: "このMac", tone: "safe" },
   ] as const;
   const detectionSignalRuntimeNote =
