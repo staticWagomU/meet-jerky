@@ -9647,6 +9647,23 @@ body[data-window="settings"] .settings-main-pane {
   background: color-mix(in srgb, var(--es-paper) 68%, #ffffff);
 }
 
+.session-detail-playback-flow-chip-selected {
+  border-color: color-mix(in srgb, var(--v2-accent-primary) 42%, var(--v2-border-subtle));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-accent-primary) 10%, #ffffff),
+      color-mix(in srgb, var(--v2-surface-primary) 92%, transparent)
+    ),
+    var(--v2-surface-primary);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--v2-accent-primary) 64%, transparent);
+}
+
+.session-detail-playback-flow-chip-selected small {
+  color: var(--v2-accent-deep);
+  font-weight: 760;
+}
+
 .session-detail-play-button {
   display: inline-flex;
   align-items: center;

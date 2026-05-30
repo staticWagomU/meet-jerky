@@ -650,26 +650,39 @@ export function SessionDetail() {
     {
       label: "両方",
       value: trackTabs[0]?.state ?? "確認中",
-      detail: `${trackTabs[0]?.count ?? 0} 発話`,
+      detail:
+        playbackTrack === "both"
+          ? `選択中 / ${trackTabs[0]?.count ?? 0} 発話`
+          : `${trackTabs[0]?.count ?? 0} 発話`,
       tone: sessionAudioAssets.data?.mix?.exists ? "accent" : "muted",
+      selected: playbackTrack === "both",
     },
     {
       label: "マイク",
       value: trackTabs[1]?.state ?? "確認中",
-      detail: `${transcriptTrackCounts.self} 発話`,
+      detail:
+        playbackTrack === "self"
+          ? `選択中 / ${transcriptTrackCounts.self} 発話`
+          : `${transcriptTrackCounts.self} 発話`,
       tone: sessionAudioAssets.data?.microphone?.exists ? "safe" : "muted",
+      selected: playbackTrack === "self",
     },
     {
       label: "スピーカー",
       value: trackTabs[2]?.state ?? "確認中",
-      detail: `${transcriptTrackCounts.other} 発話`,
+      detail:
+        playbackTrack === "other"
+          ? `選択中 / ${transcriptTrackCounts.other} 発話`
+          : `${transcriptTrackCounts.other} 発話`,
       tone: sessionAudioAssets.data?.speaker?.exists ? "warn" : "muted",
+      selected: playbackTrack === "other",
     },
     {
       label: "送信",
       value: "外部送信なし",
       detail: "再生のみ",
       tone: "safe",
+      selected: false,
     },
   ] as const;
   const playbackModeFlowLabel = [
@@ -1180,10 +1193,10 @@ export function SessionDetail() {
         aria-label={`音声トラック再生。マイク ${transcriptTrackCounts.self} 件、スピーカー ${transcriptTrackCounts.other} 件。マイクのみ、スピーカーのみ、両方を切り替えられます。`}
         title={`音声トラック再生: マイク ${transcriptTrackCounts.self} 件、スピーカー ${transcriptTrackCounts.other} 件`}
       >
-	        <div className="session-detail-card-head">
-	          <div>
-	            <h2>音声トラック</h2>
-	          </div>
+        <div className="session-detail-card-head">
+          <div>
+            <h2>音声トラック</h2>
+          </div>
           <div className="session-detail-track-head-actions">
             <span
               className={
@@ -1220,29 +1233,37 @@ export function SessionDetail() {
                   <small>{tab.state}</small>
                 </button>
               ))}
-	            </div>
-	          </div>
-	        </div>
-	        <div
-	          className="session-detail-playback-flow"
-	          role="status"
-	          aria-label={playbackModeFlowLabel}
-	          title={playbackModeFlowLabel}
-	        >
-	          {playbackModeFlow.map((item) => (
-	            <span
-	              key={`${item.label}-${item.value}`}
-	              className={`session-detail-playback-flow-chip session-detail-playback-flow-chip-${item.tone}`}
-	            >
-	              <span>{item.label}</span>
-	              <strong>{item.value}</strong>
-	              <small>{item.detail}</small>
-	            </span>
-	          ))}
-	        </div>
-	        {selectedAudioSrc && selectedAudioAsset ? (
-	          <div
-	            className="session-detail-audio-player"
+            </div>
+          </div>
+        </div>
+        <div
+          className="session-detail-playback-flow"
+          role="status"
+          aria-label={playbackModeFlowLabel}
+          title={playbackModeFlowLabel}
+        >
+          {playbackModeFlow.map((item) => (
+            <span
+              key={`${item.label}-${item.value}`}
+              className={[
+                "session-detail-playback-flow-chip",
+                `session-detail-playback-flow-chip-${item.tone}`,
+                item.selected
+                  ? "session-detail-playback-flow-chip-selected"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </span>
+          ))}
+        </div>
+        {selectedAudioSrc && selectedAudioAsset ? (
+          <div
+            className="session-detail-audio-player"
             aria-label={`${selectedTrackLabel}の音声トラックを再生`}
             title={`${selectedTrackLabel}: ${getFileName(selectedAudioAsset.path)}`}
           >

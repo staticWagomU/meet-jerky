@@ -1,3 +1,12 @@
+## 2026-05-30 23:26:42 JST
+
+- 作業: `v2-session-detail-playback-selected-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes 方針に合わせ、録音詳細の音声トラック再生で、両方/マイクのみ/スピーカーのみのうち現在どれを再生対象にしているかをフロー内でも直感的に確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen の録音後UIは履歴・検索・音声トラック・議事録素材の境界をミニマルに分ける。
+- 変更: `src/routes/SessionDetail.tsx` の音声再生フローで選択中の `両方` / `マイク` / `スピーカー` チップに `選択中` を表示し、専用クラスを付与した。`src/App.css` でv2オレンジの控えめな下線と背景を追加し、選択状態がタブだけでなくフローチップにも出るようにした。
+- 判断: 既存UIはタブで再生対象を切り替えられるが、下のフローは保存有無と発話数だけを示していて、録音後レビュー中にどのトラックを再生・コピー対象にしているかが一目で分かりにくかった。操作追加ではなく状態表示の強化に留めることで、v2のミニマルさを保つ。
+- 検証: `rg -n 'v2-session-detail-playback-selected-chip|selected: playbackTrack|session-detail-playback-flow-chip-selected|選択中 /' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` で選択中表示、専用スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:24:39 JST
 
 - 作業: `v2-menu-bar-recording-flow-chips`
