@@ -32,6 +32,9 @@
   --v2-border-subtle: #e8ddd6;
   --v2-foreground-primary: #1a1a1a;
   --v2-foreground-secondary: #666666;
+  --v2-rounded-lg: 8px;
+  --v2-rounded-sm: 4px;
+  --v2-rounded-pill: 999px;
   --v2-status-good: #229c5a;
   --v2-status-warn: #d97706;
   --v2-surface-muted: #f7f3f0;
@@ -8039,7 +8042,7 @@ body[data-window="settings"] .settings-main-pane {
   flex-wrap: wrap;
   padding: 0.78rem;
   border: 1px solid color-mix(in srgb, var(--jerky-border) 88%, transparent);
-  border-radius: 16px;
+  border-radius: var(--v2-rounded-lg);
   background-color: color-mix(in srgb, var(--color-surface) 92%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent);
 }
@@ -8054,7 +8057,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-list-kicker {
   color: var(--jerky-accent-deep);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -8076,7 +8079,7 @@ body[data-window="settings"] .settings-main-pane {
 }
 
 .session-list-count {
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.16rem 0.46rem;
   font-size: 0.72rem;
   line-height: 1.3;
@@ -8096,9 +8099,9 @@ body[data-window="settings"] .settings-main-pane {
 }
 
 .session-list-header-chip {
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.15rem 0.42rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.66rem;
   line-height: 1.35;
   font-weight: 700;
@@ -8159,7 +8162,7 @@ body[data-window="settings"] .settings-main-pane {
   min-width: 0;
   min-height: 2.24rem;
   border: 1px solid color-mix(in srgb, var(--es-line) 78%, transparent);
-  border-radius: 12px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0 0.62rem;
   color: var(--es-muted);
   background:
@@ -8183,7 +8186,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-list-action-chip span {
   color: color-mix(in srgb, currentColor 68%, var(--es-muted));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.58rem;
   font-weight: 780;
   letter-spacing: 0.06em;
@@ -8226,7 +8229,7 @@ body[data-window="settings"] .settings-main-pane {
   gap: 0.42rem;
   padding: 0.66rem;
   border: 1px solid color-mix(in srgb, var(--jerky-border) 88%, transparent);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   font-size: 0.75rem;
   line-height: 1.35;
   font-weight: 650;
@@ -8247,7 +8250,7 @@ body[data-window="settings"] .settings-main-pane {
   width: 100%;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--jerky-border) 88%, transparent);
-  border-radius: 11px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.5rem 0.64rem;
   font: inherit;
   font-weight: 500;
@@ -8279,7 +8282,7 @@ body[data-window="settings"] .settings-main-pane {
   text-align: center;
   padding: 1.4rem 1rem;
   border: 1px dashed color-mix(in srgb, var(--color-border) 78%, transparent);
-  border-radius: 16px;
+  border-radius: var(--v2-rounded-lg);
   background-color: color-mix(
     in srgb,
     var(--color-surface-glass) 76%,
@@ -8322,11 +8325,11 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-list-empty-routes span {
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.24rem 0.54rem;
   color: var(--jerky-accent-deep);
   background: var(--jerky-accent-soft);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.62rem;
   font-weight: 780;
   letter-spacing: 0.04em;
@@ -8351,7 +8354,7 @@ body[data-window="settings"] .settings-main-pane {
   background-color: var(--transcript-error-bg);
   border: 1px solid
     color-mix(in srgb, var(--transcript-error-color) 26%, transparent);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.66rem 0.72rem;
   font-size: 0.85rem;
   overflow-wrap: anywhere;
@@ -8378,7 +8381,7 @@ body[data-window="settings"] .settings-main-pane {
   flex-wrap: wrap;
   padding: 0.68rem;
   border: 1px solid color-mix(in srgb, var(--jerky-border) 64%, transparent);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   background-color: color-mix(in srgb, var(--color-surface) 82%, transparent);
   box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent);
   content-visibility: auto;
@@ -8441,7 +8444,7 @@ body[data-window="settings"] .settings-main-pane {
   gap: 0.1rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, transparent);
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.3rem 0.42rem;
   color: var(--es-muted);
   background: color-mix(in srgb, var(--es-paper) 66%, #ffffff);
@@ -8458,7 +8461,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-list-item-flow-chip span {
   color: color-mix(in srgb, currentColor 68%, var(--es-muted));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.55rem;
   font-weight: 780;
   letter-spacing: 0.055em;
@@ -8504,13 +8507,13 @@ body[data-window="settings"] .settings-main-pane {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   padding: 0.45rem 0.52rem;
-  border-radius: 11px;
+  border-radius: var(--v2-rounded-lg);
   background-color: color-mix(in srgb, var(--color-surface) 76%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-border) 58%, transparent);
 }
 
 .session-list-item-excerpt mark {
-  border-radius: 3px;
+  border-radius: var(--v2-rounded-sm);
   padding: 0.02rem 0.16rem;
   color: var(--color-text);
   background-color: color-mix(
@@ -8521,7 +8524,7 @@ body[data-window="settings"] .settings-main-pane {
 }
 
 .session-list-item-match-reason {
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.1rem 0.42rem;
   font-size: 0.7rem;
   line-height: 1.35;
@@ -8533,7 +8536,7 @@ body[data-window="settings"] .settings-main-pane {
 }
 
 .session-list-item-body-state {
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.1rem 0.38rem;
   font-size: 0.7rem;
   line-height: 1.35;
@@ -8546,7 +8549,7 @@ body[data-window="settings"] .settings-main-pane {
 }
 
 .session-list-item-track-count {
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.1rem 0.38rem;
   font-size: 0.7rem;
   line-height: 1.35;
@@ -8945,7 +8948,7 @@ body[data-window="settings"] .settings-main-pane {
   gap: 0.32rem;
   padding: 0.7rem 0.78rem;
   border: 1px solid color-mix(in srgb, var(--color-border) 66%, transparent);
-  border-radius: 16px;
+  border-radius: var(--v2-rounded-lg);
   background-color: color-mix(
     in srgb,
     var(--color-surface-glass) 90%,
@@ -8962,7 +8965,7 @@ body[data-window="settings"] .settings-main-pane {
   font-weight: 650;
   color: var(--color-muted);
   text-decoration: none;
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0.2rem 0.5rem 0.2rem 0.32rem;
   width: fit-content;
   transition: background-color 120ms ease;
@@ -9008,7 +9011,7 @@ body[data-window="settings"] .settings-main-pane {
   gap: 0.18rem;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--es-line) 78%, transparent);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.62rem 0.72rem;
   color: var(--es-muted);
   background:
@@ -9033,7 +9036,7 @@ body[data-window="settings"] .settings-main-pane {
 }
 
 .session-detail-review-item span {
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.55rem;
   font-weight: 820;
   letter-spacing: 0.08em;
@@ -9104,7 +9107,7 @@ body[data-window="settings"] .settings-main-pane {
   gap: 0.68rem;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, transparent);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.52rem 0.64rem;
   background:
     linear-gradient(
@@ -9119,7 +9122,7 @@ body[data-window="settings"] .settings-main-pane {
 .session-detail-action-flow-kicker {
   flex: 0 0 auto;
   color: var(--jerky-accent-deep);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.58rem;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -9143,7 +9146,7 @@ body[data-window="settings"] .settings-main-pane {
   min-width: 0;
   min-height: 2.8rem;
   border: 1px solid color-mix(in srgb, var(--es-line) 76%, #ffffff);
-  border-radius: 11px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.42rem 0.5rem;
   background: rgba(255, 255, 255, 0.72);
 }
@@ -9219,7 +9222,7 @@ body[data-window="settings"] .settings-main-pane {
 .session-detail-transcript-panel,
 .session-detail-minutes-panel {
   border: 1px solid color-mix(in srgb, var(--jerky-border) 88%, transparent);
-  border-radius: 16px;
+  border-radius: var(--v2-rounded-lg);
   background: color-mix(in srgb, var(--color-surface) 94%, transparent);
   box-shadow:
     0 8px 22px color-mix(in srgb, var(--es-dark) 4%, transparent),
@@ -9267,7 +9270,7 @@ body[data-window="settings"] .settings-main-pane {
   gap: 0.18rem;
   padding: 0.18rem;
   border: 1px solid var(--jerky-border);
-  border-radius: 12px;
+  border-radius: var(--v2-rounded-lg);
   background: var(--jerky-surface-muted);
 }
 
@@ -9287,11 +9290,11 @@ body[data-window="settings"] .settings-main-pane {
   max-width: 9.5rem;
   overflow: hidden;
   border: 1px solid var(--jerky-border);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.56rem;
   color: color-mix(in srgb, var(--es-muted) 82%, var(--jerky-accent-deep));
   background: var(--color-surface);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.58rem;
   font-weight: 780;
   letter-spacing: 0.04em;
@@ -9311,7 +9314,7 @@ body[data-window="settings"] .settings-main-pane {
 .session-detail-template-chip {
   min-height: 1.82rem;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.28rem 0.62rem;
   color: var(--es-muted);
   background: transparent;
@@ -9489,7 +9492,7 @@ body[data-window="settings"] .settings-main-pane {
   min-width: 0;
   min-height: 1.9rem;
   border: 1px solid color-mix(in srgb, var(--es-line) 78%, transparent);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.58rem;
   color: color-mix(in srgb, var(--es-muted) 88%, var(--es-ink));
   background: color-mix(in srgb, var(--color-surface) 86%, transparent);
@@ -9506,7 +9509,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-detail-minutes-boundary-chip span {
   color: color-mix(in srgb, currentColor 68%, var(--es-muted));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.56rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -9558,7 +9561,7 @@ body[data-window="settings"] .settings-main-pane {
   min-width: 0;
   min-height: 3rem;
   border: 1px solid color-mix(in srgb, var(--es-line) 78%, transparent);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.48rem 0.56rem;
   color: color-mix(in srgb, var(--es-muted) 88%, var(--es-ink));
   background: color-mix(in srgb, var(--color-surface) 86%, transparent);
@@ -9576,7 +9579,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-detail-playback-flow-chip span {
   color: color-mix(in srgb, currentColor 68%, var(--es-muted));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.54rem;
   font-weight: 820;
   letter-spacing: 0.06em;

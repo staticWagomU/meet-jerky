@@ -1,3 +1,12 @@
+## 2026-05-30 23:15:16 JST
+
+- 作業: `v2-history-minutes-token-tightening`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes 方針に合わせ、履歴一覧と録音詳細のカード/チップを `rounded.lg 8` と `font.caption Funnel Sans` に寄せ、録音後レビューUIの装飾感を抑えてミニマルにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen の `V2 - History and Minutes` は履歴/詳細を2ゾーンで見せ、実変数は `rounded.lg 8`、`rounded.sm 4`、`font.caption Funnel Sans`。
+- 変更: `src/App.css` に `--v2-rounded-sm`、`--v2-rounded-lg`、`--v2-rounded-pill` を追加し、履歴一覧と録音詳細の主要カード、検索、録音後アクション、音声トラック、議事録境界チップの角丸をv2変数へ寄せた。録音後レビューの小さなラベル書体を `var(--font-mono)` から `var(--font-caption)` に切り替えた。
+- 判断: 機能フローはすでに実装されているため、新しい要素を増やすよりも、v2.pen の実トークンで既存UIを締める方が、Macアプリらしい控えめな履歴/議事録体験に近づく。
+- 検証: `rg -n 'v2-history-minutes-token-tightening|--v2-rounded-sm|--v2-rounded-lg|--v2-rounded-pill|session-list-kicker|session-list-action-chip span|session-detail-action-flow-kicker|session-detail-playback-flow-chip span|font-caption|rounded.lg 8' AGENT_LOG.md src/App.css` でv2角丸トークン、履歴/詳細のキャプション書体適用、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:11:26 JST
 
 - 作業: `v2-settings-window-standalone-boundary-flow`
