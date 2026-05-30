@@ -89,7 +89,7 @@ export function RingLightWindow() {
   const ringLightStorageLabel =
     "このMacに保存。録音履歴、文字起こし、音声トラックをローカル保存";
   const ringLightNotesLabel =
-    "AIノートと質問はライブ文字起こしウィンドウで確認。質問はここでは未送信";
+    "翻訳切替、AIノート、質問はライブ文字起こしウィンドウで確認。質問はここでは未送信";
   const persistentRecordingIndicatorLabel =
     "録音中であることを忘れないための常駐RECインジケーター";
   const ringLightStatusLabel = `${persistentRecordingIndicatorLabel}。${ringLightTrackLabel}。${ringLightStorageLabel}。${ringLightNotesLabel}。文字起こし ${status.transcriptionStatusLabel}。${ringLightTransmissionAriaLabel}。`;
@@ -156,7 +156,7 @@ export function RingLightWindow() {
           aria-label={ringLightNotesLabel}
           title={ringLightNotesLabel}
         >
-          AIノート: ライブ内
+          翻訳/AI: ライブ内
         </span>
         <button
           type="button"

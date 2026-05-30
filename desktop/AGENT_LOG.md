@@ -1,3 +1,12 @@
+## 2026-05-30 23:57:36 JST
+
+- 作業: `v2-ring-light-live-tools-pill`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、常駐RECインジケーターからライブ文字起こし内の翻訳切替とAIノート確認に進めることを短く示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の録音中UIは常駐RECを邪魔にせず、必要な機能はライブ文字起こしウィンドウに集約する。
+- 変更: `src/components/RingLightWindow.tsx` のライブ内機能ピルを `AIノート: ライブ内` から `翻訳/AI: ライブ内` に変更し、補助ラベルにも翻訳切替を含めた。ピル数や録音処理は変更していない。
+- 判断: 常駐RECは録音忘れ防止の最小UIなので、要素を増やすより既存ピルの意味を拡張する方がv2のミニマルさに合う。翻訳、AIノート、質問はライブ文字起こしウィンドウ側に集約する方針も維持できる。
+- 検証: `rg` で常駐RECのライブ内機能ピル、補助ラベル、旧表示の解消、ログを確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:55:50 JST
 
 - 作業: `v2-meeting-detected-translation-label-sync`
