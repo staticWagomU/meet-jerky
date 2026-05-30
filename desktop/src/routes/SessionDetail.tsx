@@ -1573,8 +1573,8 @@ export function SessionDetail() {
                     : "session-detail-template-chip"
                 }
                 aria-pressed={minutesTemplate === template}
-                aria-label={`${template} テンプレートを選択`}
-                title={minutesTemplateSpecs[template].goal}
+                aria-label={`${template} テンプレートを選択。${minutesTemplateSpecs[template].goal}。出力: ${minutesTemplateSpecs[template].sections.join("、")}。文字起こしと手書きメモから作成し、音声トラックは含めません。`}
+                title={`${minutesTemplateSpecs[template].goal}。出力: ${minutesTemplateSpecs[template].sections.join("、")}。音声トラックは含めません。`}
                 onClick={() => setMinutesTemplate(template)}
               >
                 <span>{template}</span>

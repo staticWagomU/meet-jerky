@@ -1,3 +1,12 @@
+## 2026-05-30 23:59:29 JST
+
+- 作業: `v2-minutes-template-output-label`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes 方針に合わせ、議事録テンプレート選択時に、決定事項やタスクなどの出力セクションと音声トラック除外が分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。録音後UIでは文字起こし、手書きメモ、テンプレートから議事録を作り、音声トラックを送信しない。
+- 変更: `src/routes/SessionDetail.tsx` の議事録テンプレート選択ボタンの `aria-label` / `title` に、テンプレートの目的、出力セクション、文字起こし+手書きメモ素材、音声トラック除外を含めた。可視レイアウトと生成処理は変更していない。
+- 判断: テンプレートチップの可視表示はミニマルに保てているが、補助ラベルがテンプレート名だけだと、ユーザー要件の決定事項/ToDo抽出や音声非送信境界が読み取れない。見た目を増やさず、選択操作の説明だけを強めるのが適切。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-30 23:57:36 JST
 
 - 作業: `v2-ring-light-live-tools-pill`
