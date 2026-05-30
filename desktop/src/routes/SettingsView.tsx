@@ -810,6 +810,18 @@ export function SettingsView({
     "履歴詳細で検索、コピー、音声トラック確認、議事録素材化ができます",
     "音声トラックはAI議事録へ送信しません",
   ].join("。");
+  const translationRuntimeFlow = [
+    { label: "原文", value: "自動検出", tone: "accent" },
+    { label: "翻訳先", value: "未選択", tone: "muted" },
+    { label: "エンジン", value: "未接続", tone: "warn" },
+    { label: "送信", value: "外部送信なし", tone: "safe" },
+  ] as const;
+  const translationRuntimeFlowLabel = [
+    "リアルタイム翻訳の設定状態",
+    "現在は原文のみ表示します",
+    "翻訳エンジンは未接続です",
+    "翻訳外部送信はありません",
+  ].join("。");
   const unsavedSettingsLabel = "未保存の変更があります";
   const saveSettingsLabel = updateMutation.isPending
     ? "設定を保存中"
@@ -1531,8 +1543,8 @@ export function SettingsView({
 
                   <div
                     className="settings-readonly-card settings-transcription-translation-card"
-                    aria-label="リアルタイム翻訳。現在は原文のみ保持、端末内。"
-                    title="リアルタイム翻訳。現在は原文のみ保持、端末内。"
+                    aria-label={translationRuntimeFlowLabel}
+                    title={translationRuntimeFlowLabel}
                   >
                     <div className="settings-detection-head">
                       <div
@@ -1557,23 +1569,21 @@ export function SettingsView({
                         原文のみ
                       </span>
                     </div>
-                    <div className="settings-transcription-translation-grid">
-                      <span>
-                        <strong>原文</strong>
-                        自動検出を保持
-                      </span>
-                      <span>
-                        <strong>翻訳先</strong>
-                        原文のみ
-                      </span>
-                      <span>
-                        <strong>エンジン</strong>
-                        翻訳未接続
-                      </span>
-                      <span>
-                        <strong>翻訳外部送信</strong>
-                        翻訳外部送信なし
-                      </span>
+                    <div
+                      className="settings-transcription-translation-flow"
+                      role="status"
+                      aria-label={translationRuntimeFlowLabel}
+                      title={translationRuntimeFlowLabel}
+                    >
+                      {translationRuntimeFlow.map((step) => (
+                        <span
+                          key={`${step.label}-${step.value}`}
+                          className={`settings-transcription-translation-flow-step settings-transcription-translation-flow-step-${step.tone}`}
+                        >
+                          <span>{step.label}</span>
+                          <strong>{step.value}</strong>
+                        </span>
+                      ))}
                     </div>
                     <p
                       className="settings-translation-runtime-note"

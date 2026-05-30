@@ -6621,33 +6621,89 @@ body[data-window="settings"] .settings-main-pane {
   color: var(--jerky-accent-deep);
 }
 
-.settings-transcription-translation-grid {
+.settings-transcription-translation-flow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   min-width: 0;
 }
 
-.settings-transcription-translation-grid span {
-  display: flex;
+.settings-transcription-translation-flow-step {
+  display: inline-flex;
   flex-direction: column;
-  gap: 3px;
+  justify-content: center;
   min-width: 0;
-  border: 1px solid var(--jerky-border);
+  min-height: 42px;
+  border: 1px solid color-mix(in srgb, var(--es-line) 76%, #ffffff);
   border-radius: 10px;
-  padding: 8px;
+  padding: 7px 8px;
   color: var(--es-muted);
-  background: var(--color-surface);
-  font-size: 9px;
-  font-weight: 650;
-  line-height: 1.25;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--es-paper) 72%, #ffffff),
+      rgba(255, 255, 255, 0.88)
+    ),
+    var(--color-surface);
 }
 
-.settings-transcription-translation-grid strong {
+.settings-transcription-translation-flow-step span,
+.settings-transcription-translation-flow-step strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-transcription-translation-flow-step span {
+  color: color-mix(in srgb, var(--es-muted) 82%, var(--es-ink));
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 820;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.settings-transcription-translation-flow-step strong {
+  margin-top: 4px;
+  color: var(--es-ink);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 780;
+  line-height: 1.12;
+}
+
+.settings-transcription-translation-flow-step-accent {
+  border-color: color-mix(in srgb, var(--es-amber) 28%, var(--es-line));
+  background: color-mix(in srgb, var(--es-amber) 10%, #ffffff);
+}
+
+.settings-transcription-translation-flow-step-accent span {
   color: var(--jerky-accent-deep);
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1.2;
+}
+
+.settings-transcription-translation-flow-step-safe {
+  border-color: color-mix(in srgb, var(--es-blue) 24%, var(--es-line));
+  background: color-mix(in srgb, var(--es-blue) 7%, #ffffff);
+}
+
+.settings-transcription-translation-flow-step-safe span {
+  color: color-mix(in srgb, var(--es-blue) 72%, var(--es-ink));
+}
+
+.settings-transcription-translation-flow-step-warn {
+  border-color: var(--jerky-accent-line);
+  background: color-mix(in srgb, var(--es-amber) 11%, #ffffff);
+}
+
+.settings-transcription-translation-flow-step-warn span {
+  color: var(--jerky-accent-deep);
+}
+
+.settings-transcription-translation-flow-step-muted {
+  color: color-mix(in srgb, var(--es-muted) 86%, var(--es-ink));
+  background: color-mix(in srgb, var(--es-paper) 78%, #ffffff);
 }
 
 .settings-translation-runtime-note {
@@ -7989,7 +8045,7 @@ body[data-window="settings"] .settings-main-pane {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .settings-transcription-translation-grid {
+  .settings-transcription-translation-flow {
     grid-template-columns: 1fr;
   }
 

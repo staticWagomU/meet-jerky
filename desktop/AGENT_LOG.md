@@ -1,3 +1,12 @@
+## 2026-05-30 23:46:06 JST
+
+- 作業: `v2-settings-translation-runtime-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow / Settings Overview 方針に合わせ、設定画面のリアルタイム翻訳も原文、翻訳先、エンジン、送信境界の流れとして読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の録音中UIは翻訳切替時も未接続状態と外部送信なしを明示する。
+- 変更: `src/routes/SettingsView.tsx` に `translationRuntimeFlow` と `translationRuntimeFlowLabel` を追加し、翻訳カードを4チップのフロー表示へ変更した。`src/App.css` に翻訳フローチップのv2トークン準拠スタイルと狭幅時1列表示を追加した。
+- 判断: 既存の翻訳カードはグリッドで状態を表示していたが、録音中UIの翻訳フローと視覚言語が揃っていなかった。設定でも「原文のみ、翻訳未接続、外部送信なし」を短い状態チップで読める方がv2のミニマルな透明性に合う。
+- 検証: `rg` で対象表示の追加を確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:44:08 JST
 
 - 作業: `v2-settings-preflight-rec-indicator-step`
