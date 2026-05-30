@@ -1,3 +1,12 @@
+## 2026-05-30 23:20:57 JST
+
+- 作業: `v2-meeting-detected-ai-toggle-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow に合わせ、会議検知通知から録音開始する前に、開始後はREC/ライブ文字起こしだけでなくAIノートのオン/オフ確認にも進むことを短く示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen の録音フローは検知通知、録音開始、REC常駐、ライブ文字起こし、AIノートの状態確認を分けて見せる。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の検知通知開始フローに `AI: オン/オフ` チップを追加し、aria/title でもライブ文字起こし内でAIノートをオン/オフ確認できることを明記した。`src/App.css` で開始フローを5チップ表示にし、v2の8px角丸と `font.caption` に合わせた。
+- 判断: 通知は録音忘れを防ぐ最初の画面なので、AIノートが自動送信ではなく録音後に確認・切替できることをここで見せる方が、ユーザー要件の「AIを利用するためオンオフできる」と録音透明性に直接効く。
+- 検証: `rg -n 'v2-meeting-detected-ai-toggle-flow|label: "AI"|AIノートはライブ文字起こし内でオン/オフ確認|meeting-detected-start-flow|repeat\(5|font-caption|--v2-rounded-lg' AGENT_LOG.md src/components/MeetingDetectedBanner.tsx src/App.css` で通知開始フローのAIチップ、aria/title、v2スタイルを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:17:54 JST
 
 - 作業: `v2-recording-live-token-tightening`

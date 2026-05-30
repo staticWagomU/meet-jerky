@@ -596,6 +596,11 @@ export function MeetingDetectedBanner() {
       tone: "safe",
     },
     {
+      label: "AI",
+      value: "オン/オフ",
+      tone: "accent",
+    },
+    {
       label: "保存",
       value: promptAudioTransmissionLabel,
       tone: statusPayload.isExternalTransmission ? "warn" : "safe",
@@ -606,6 +611,7 @@ export function MeetingDetectedBanner() {
     `検知 ${promptStartFlow[0].value}`,
     `開始 ${promptStartFlow[1].value}`,
     "開始後はREC表示とライブ文字起こしを開きます",
+    "AIノートはライブ文字起こし内でオン/オフ確認できます",
     `保存 ${promptAudioTransmissionLabel}`,
   ].join("。");
   const handleStartRecording = async () => {

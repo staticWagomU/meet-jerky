@@ -8686,9 +8686,9 @@ body[data-window="settings"] .settings-main-pane {
 
 .meeting-detected-start-flow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
   width: 100%;
 }
@@ -8700,8 +8700,8 @@ body[data-window="settings"] .settings-main-pane {
   min-width: 0;
   min-height: 34px;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, transparent);
-  border-radius: 10px;
-  padding: 5px 6px;
+  border-radius: var(--v2-rounded-lg);
+  padding: 5px;
   overflow: hidden;
   background: color-mix(in srgb, var(--es-paper) 64%, #ffffff);
 }
@@ -8717,7 +8717,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .meeting-detected-start-flow-chip span {
   color: color-mix(in srgb, var(--es-muted) 80%, var(--es-ink));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 8px;
   font-weight: 820;
   letter-spacing: 0.04em;
