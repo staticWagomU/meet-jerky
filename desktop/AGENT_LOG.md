@@ -1,3 +1,12 @@
+## 2026-05-30 23:55:50 JST
+
+- 作業: `v2-meeting-detected-translation-label-sync`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、会議検知通知の補助ラベルでも録音開始後に翻訳切替へ進めることを示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の録音開始導線はREC、ライブ文字起こし、翻訳切替、AIノート確認を同じ流れで読ませる。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の通知全体ラベル、録音開始ボタンラベル、録音中ピルからライブ文字起こしを開くラベルに翻訳切替を追加した。可視レイアウトと録音処理は変更していない。
+- 判断: 検知通知のチップ列には翻訳を追加済みだったが、`aria-label` / `title` で読む経路では翻訳切替が抜けていた。見た目を増やさず補助ラベルを同期する方が、v2のミニマルさとアクセシビリティの両方に合う。
+- 検証: `rg` で会議検知通知の通知全体ラベル、録音開始ボタンラベル、ライブ文字起こしを開くラベル、旧ラベルの解消、ログを確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:54:00 JST
 
 - 作業: `v2-detection-start-flow-label-sync`

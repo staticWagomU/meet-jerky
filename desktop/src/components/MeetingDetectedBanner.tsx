@@ -542,13 +542,13 @@ export function MeetingDetectedBanner() {
   const bannerAriaLabel = listenerError
     ? listenerError
     : displayName
-      ? `${displayName} を検知。録音前確認。自分 + 相手側を別トラックでこのMacに保存し、REC表示、ライブ文字起こし、AIノートのオン/オフ確認へ進みます。`
-      : "会議を検知。録音前確認。自分 + 相手側を別トラックでこのMacに保存し、REC表示、ライブ文字起こし、AIノートのオン/オフ確認へ進みます。";
+      ? `${displayName} を検知。録音前確認。自分 + 相手側を別トラックでこのMacに保存し、REC表示、ライブ文字起こし、翻訳切替、AIノートのオン/オフ確認へ進みます。`
+      : "会議を検知。録音前確認。自分 + 相手側を別トラックでこのMacに保存し、REC表示、ライブ文字起こし、翻訳切替、AIノートのオン/オフ確認へ進みます。";
   const startRecordingLabel = detected
     ? pendingAction === "start"
-      ? "録音開始を要求中。REC表示、ライブ文字起こし、AIノートのオン/オフ確認を準備します。"
-      : `${displayName} の録音を開始し、自分 + 相手側を別トラックでこのMacに保存してREC表示、ライブ文字起こし、AIノートのオン/オフ確認を開きます。`
-    : "録音を開始し、自分 + 相手側を別トラックでこのMacに保存してREC表示、ライブ文字起こし、AIノートのオン/オフ確認を開きます。";
+      ? "録音開始を要求中。REC表示、ライブ文字起こし、翻訳切替、AIノートのオン/オフ確認を準備します。"
+      : `${displayName} の録音を開始し、自分 + 相手側を別トラックでこのMacに保存してREC表示、ライブ文字起こし、翻訳切替、AIノートのオン/オフ確認を開きます。`
+    : "録音を開始し、自分 + 相手側を別トラックでこのMacに保存してREC表示、ライブ文字起こし、翻訳切替、AIノートのオン/オフ確認を開きます。";
   const dismissBannerLabel = pendingAction ? "録音操作中" : "録音せず閉じる";
   const errorRecoveryLabel =
     "録音開始前に、macOS権限、会議検出設定、メニューバー録音を確認してください。";
@@ -570,7 +570,7 @@ export function MeetingDetectedBanner() {
     getVisibleTransmissionLabel(statusPayload);
   const recordingPillTransmissionAriaLabel =
     getTransmissionStatusAriaLabel(statusPayload);
-  const openLiveCaptionLabel = `ライブ文字起こしを開く。REC表示中、${recordingPillTrackLabel}、${recordingPillTransmissionAriaLabel}。`;
+  const openLiveCaptionLabel = `ライブ文字起こしを開く。REC表示中、${recordingPillTrackLabel}、翻訳切替とAIノート確認を表示、${recordingPillTransmissionAriaLabel}。`;
   const recordingPillAiClassName = !statusPayload.isExternalTransmission
     ? "meeting-detected-status-ai meeting-detected-status-ai-safe"
     : "meeting-detected-status-ai meeting-detected-status-ai-warning";
