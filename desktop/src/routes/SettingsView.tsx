@@ -452,11 +452,12 @@ export function SettingsView({
   const detectionNotificationToggleLabel = `会議検出通知: ${detectionStatusLabel}。オンのときは検知通知から録音開始し、REC表示とライブ文字起こしへ進みます。`;
   const detectionRulePreviewLabel = `検出ルール: ${detectionSignalRequirementLabel}。条件一致時は通知ウィンドウを出し、通知から録音開始、REC表示、ライブ文字起こしへ進みます。`;
   const recordingStartRoutesLabel =
-    "開始導線: 検知通知またはメニューバー録音から開始。開始後はREC表示、ライブ文字起こし、AIノート確認、このMac保存へ進みます。";
+    "開始導線: 検知通知またはメニューバー録音から開始。開始後はREC表示、ライブ文字起こし、翻訳切替、AIノート確認、このMac保存へ進みます。";
   const recordingStartRoutes = [
     { label: "検知通知", value: detectionStatusLabel, tone: "accent" },
     { label: "メニューバー", value: "手動録音", tone: "neutral" },
     { label: "開始後", value: "REC / 文字起こし", tone: "accent" },
+    { label: "翻訳", value: "切替可", tone: "accent" },
     { label: "AIノート", value: "オン/オフ", tone: "warn" },
     { label: "保存", value: "このMac", tone: "safe" },
   ] as const;

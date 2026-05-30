@@ -1,3 +1,12 @@
+## 2026-05-30 23:52:42 JST
+
+- 作業: `v2-settings-start-route-translation-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow / Settings Overview 方針に合わせ、設定画面の録音開始導線でも開始後にライブ文字起こしから翻訳へ切り替えられることを示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の録音フローは検知通知、メニューバー開始、REC常駐、ライブ文字起こし、翻訳切替、AIノート確認を分けて読ませる。
+- 変更: `src/routes/SettingsView.tsx` の `recordingStartRoutes` に `翻訳: 切替可` を追加し、開始導線ラベルにも翻訳切替を含めた。`src/App.css` で設定開始導線を6列へ調整した。
+- 判断: 会議検知通知には翻訳切替導線を追加済みだが、設定の開始導線には同じ情報がなく、入口ごとの期待値がずれていた。設定概要では操作追加よりも短いチップで録音後に起きることを揃える方がv2のミニマルな情報設計に合う。
+- 検証: `rg` で設定開始導線の翻訳チップ、aria/title、6列スタイル、ログを確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:50:37 JST
 
 - 作業: `v2-session-detail-handwritten-entry-chip`

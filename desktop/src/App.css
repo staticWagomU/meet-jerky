@@ -6929,7 +6929,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .settings-start-route-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
   margin-top: 10px;
 }
