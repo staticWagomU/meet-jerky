@@ -16,8 +16,10 @@ function readInitialSettingsCategory(): SettingsCategoryKey {
 }
 
 const settingsWindowBoundaryFlow = [
-  { label: "録音", value: "別トラック" },
+  { label: "検知", value: "通知開始" },
+  { label: "入力", value: "別トラック" },
   { label: "文字起こし", value: "ライブ / 履歴" },
+  { label: "翻訳", value: "必要時切替" },
   { label: "AI議事録", value: "手動確認" },
   { label: "保存", value: "このMac" },
 ] as const;
@@ -63,7 +65,9 @@ export function SettingsWindowRoot() {
           <div className="settings-window-standalone-copy">
             <span className="settings-window-standalone-kicker">Settings</span>
             <h1>Meet Jerky 設定</h1>
-            <p>録音、文字起こし、AI議事録、保存範囲をここで整えます。</p>
+            <p>
+              検知、録音入力、文字起こし、翻訳、AI議事録、保存範囲をここで整えます。
+            </p>
           </div>
           <div
             className="settings-window-standalone-flow"

@@ -5419,10 +5419,10 @@ body[data-window="settings"] .settings-main-pane {
 
 .settings-window-standalone-flow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
-  flex: 0 1 480px;
-  min-width: min(480px, 56vw);
+  flex: 0 1 650px;
+  min-width: min(650px, 62vw);
 }
 
 .settings-window-standalone-flow-step {

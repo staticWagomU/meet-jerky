@@ -1,3 +1,12 @@
+## 2026-05-31 00:02:19 JST
+
+- 作業: `v2-settings-window-boundary-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の Settings Overview 方針に合わせ、独立設定ウィンドウ上部で検知、入力、文字起こし、翻訳、AI議事録、保存範囲の境界を小さく把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`batch_get`、`get_guidelines`。v2設定画面は日常設定を静かな一画面で扱い、状態を小さく明示する。
+- 変更: `src/components/SettingsWindowRoot.tsx` のヘッダー説明と境界フローを、検知、入力、文字起こし、翻訳、AI議事録、保存の6項目へ更新。`src/App.css` の独立設定ウィンドウ上部グリッドを6列に広げた。
+- 判断: 設定本体には詳細カテゴリが存在するが、独立ウィンドウの入口が4項目のままだと、v2で重視する検知開始、別トラック入力、翻訳切替が一目で伝わらない。ヘッダーの小さなチップだけを増やし、カード密度は増やさない。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-30 23:59:29 JST
 
 - 作業: `v2-minutes-template-output-label`
