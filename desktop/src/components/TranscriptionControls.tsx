@@ -69,6 +69,7 @@ export function TranscriptionControls({
       : "音声入力要確認",
     isTranscriptionOperationPending ? pendingTranscriptionLabel : null,
     isTranscribing ? "文字起こし中" : stoppedTranscriptionStateLabel,
+    isTranscribing ? "翻訳はライブ画面で切替" : "翻訳は開始後",
     isTranscribing ? "ノートと質問準備を表示" : "ノートは開始後",
     "このMacに保存",
     "音声外部送信なし",
@@ -98,6 +99,12 @@ export function TranscriptionControls({
       label: "ノート",
       value: isTranscribing ? "質問準備" : "開始後",
       detail: isTranscribing ? "ノート/質問準備" : "ノート待機",
+      tone: isTranscribing ? "hot" : "muted",
+    },
+    {
+      label: "翻訳",
+      value: isTranscribing ? "切替可" : "開始後",
+      detail: isTranscribing ? "ライブ画面" : "原文待機",
       tone: isTranscribing ? "hot" : "muted",
     },
     {

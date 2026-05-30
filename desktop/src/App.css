@@ -1440,7 +1440,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .transcription-state-rail {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.34rem;
   min-width: 0;
   padding: 0.34rem;

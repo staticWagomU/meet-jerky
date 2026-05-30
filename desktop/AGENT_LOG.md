@@ -1,3 +1,12 @@
+## 2026-05-31 00:05:10 JST
+
+- 作業: `v2-transcription-controls-translation-state`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、録音中の主操作パネルでも文字起こし、翻訳、ノート、保存の状態境界を小さく把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2録音中UIはライブ文字起こしと翻訳切替、AIノートを必要時だけ開く。
+- 変更: `src/components/TranscriptionControls.tsx` の状態レールに翻訳チップを追加し、録音中はライブ画面で切替可能、停止中は開始後として表示。`src/App.css` の状態レールを5列に更新した。
+- 判断: LiveCaptionWindow には翻訳タブがあるが、録音中の主操作パネルでは翻訳だけ見えず、v2の録音中UIの要件が入口で伝わらない。操作機能は増やさず、状態レールの小さなチップだけで導線を補強する。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-31 00:03:19 JST
 
 - 作業: `v2-controller-translation-flow`
