@@ -361,6 +361,73 @@ function formatTrackTranscript(
   ].join("\n");
 }
 
+function formatReviewExport({
+  title,
+  startedAtLabel,
+  selectedTrackLabel,
+  audioAssetStatusDetail,
+  transcriptTrackCounts,
+  transcriptSegmentCount,
+  templateName,
+  templateSpec,
+  handwrittenMemo,
+  templateInstruction,
+  generatedMinutesDraft,
+  aiMinutesTransmissionLabel,
+  parsed,
+}: {
+  title: string;
+  startedAtLabel: string | null;
+  selectedTrackLabel: string;
+  audioAssetStatusDetail: string;
+  transcriptTrackCounts: { self: number; other: number; unknown: number };
+  transcriptSegmentCount: number;
+  templateName: MinutesTemplateName;
+  templateSpec: MinutesTemplateSpec;
+  handwrittenMemo: string;
+  templateInstruction: string;
+  generatedMinutesDraft: string;
+  aiMinutesTransmissionLabel: string;
+  parsed: ReturnType<typeof parseSessionMarkdown> | null;
+}): string {
+  const transcriptLines = getTranscriptLinesForDraft(parsed);
+  const trimmedMemo = handwrittenMemo.trim();
+  const trimmedInstruction = templateInstruction.trim();
+  const trimmedDraft = generatedMinutesDraft.trim();
+
+  return [
+    `# ${title} レビュー素材`,
+    "",
+    "## 録音",
+    `- 開始: ${startedAtLabel ?? "不明"}`,
+    `- 選択中の音声トラック: ${selectedTrackLabel}`,
+    `- 音声状態: ${audioAssetStatusDetail}`,
+    "- 音声トラックはこのコピー内容に含めません。",
+    "",
+    "## 文字起こし",
+    `- 合計: ${transcriptSegmentCount} 件`,
+    `- 自分: ${transcriptTrackCounts.self} 件`,
+    `- 相手側: ${transcriptTrackCounts.other} 件`,
+    `- 不明: ${transcriptTrackCounts.unknown} 件`,
+    transcriptLines.length > 0 ? transcriptLines.join("\n") : "文字起こしなし",
+    "",
+    "## 議事録テンプレート",
+    `- テンプレート: ${templateName}`,
+    `- 目的: ${templateSpec.goal}`,
+    `- 出力: ${templateSpec.sections.join(" / ")}`,
+    `- 送信境界: ${aiMinutesTransmissionLabel}`,
+    "",
+    "## 手書きメモ",
+    trimmedMemo || "手書きメモ未入力",
+    "",
+    "## 補足指示",
+    trimmedInstruction || "補足指示未入力",
+    "",
+    "## 議事録下書き/プロンプト",
+    trimmedDraft || "未生成",
+  ].join("\n");
+}
+
 function getSelectedAudioAsset(
   playbackTrack: PlaybackTrack,
   audioAssets: ReturnType<typeof useSessionAudioAssets>["data"] | undefined,
@@ -982,6 +1049,14 @@ export function SessionDetail() {
   }, [parsed?.segments, playbackTrack]);
   const playbackActionLabel = `${selectedTrackLabel}の音声トラックを外部アプリで開く`;
   const selectedTrackCopyLabel = `${selectedTrackLabel}の文字起こしをコピー`;
+  const reviewExportActionLabel = [
+    "レビュー素材をコピー",
+    `文字起こし ${transcriptSegmentCount} 件`,
+    `テンプレート ${minutesTemplate}`,
+    `手書きメモ ${handwrittenMemoSummary}`,
+    aiMinutesTransmissionLabel,
+    "音声トラックは含めません",
+  ].join("。");
   const handleCopyMinutesPrompt = useCallback(async () => {
     setActionError(null);
     setCopyStatus(null);
@@ -1014,6 +1089,47 @@ export function SessionDetail() {
     parsed,
     selectedTemplateSpec,
     templateInstruction,
+  ]);
+  const handleCopyReviewExport = useCallback(async () => {
+    setActionError(null);
+    setCopyStatus(null);
+    try {
+      await writeClipboardText(
+        formatReviewExport({
+          title: displayTitle,
+          startedAtLabel: startedAtDisplay?.label ?? null,
+          selectedTrackLabel,
+          audioAssetStatusDetail,
+          transcriptTrackCounts,
+          transcriptSegmentCount,
+          templateName: minutesTemplate,
+          templateSpec: selectedTemplateSpec,
+          handwrittenMemo,
+          templateInstruction,
+          generatedMinutesDraft,
+          aiMinutesTransmissionLabel,
+          parsed,
+        }),
+      );
+      setCopyStatus("レビュー素材をコピーしました");
+    } catch (e) {
+      console.error("レビュー素材をコピーできませんでした:", toErrorMessage(e));
+      setActionError("レビュー素材をコピーできませんでした");
+    }
+  }, [
+    aiMinutesTransmissionLabel,
+    audioAssetStatusDetail,
+    displayTitle,
+    generatedMinutesDraft,
+    handwrittenMemo,
+    minutesTemplate,
+    parsed,
+    selectedTemplateSpec,
+    selectedTrackLabel,
+    startedAtDisplay?.label,
+    templateInstruction,
+    transcriptSegmentCount,
+    transcriptTrackCounts,
   ]);
   const handleGenerateLocalMinutesDraft = useCallback(() => {
     setActionError(null);
@@ -1198,6 +1314,16 @@ export function SessionDetail() {
             </span>
           ))}
         </div>
+        <button
+          type="button"
+          className="session-detail-review-export-button"
+          onClick={handleCopyReviewExport}
+          aria-label={reviewExportActionLabel}
+          title={reviewExportActionLabel}
+        >
+          <Clipboard size={14} aria-hidden="true" />
+          レビュー素材コピー
+        </button>
       </section>
 
       <section

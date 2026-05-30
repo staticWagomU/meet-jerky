@@ -1,3 +1,12 @@
+## 2026-05-31 00:12:03 JST
+
+- 作業: `v2-session-review-export-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes にある Export 導線に合わせ、録音後レビューで文字起こし、テンプレート、手書きメモ、生成済み議事録素材をまとめて取り出せるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2履歴詳細は上部にExport導線、音声トラックレビュー、左右の作業面を持つ。
+- 変更: `src/routes/SessionDetail.tsx` にレビュー素材コピー生成を追加し、録音後アクション列へ `レビュー素材コピー` ボタンを追加。`src/App.css` にv2のオレンジ系パレットを使ったミニマルなExportボタンを追加した。
+- 判断: 個別コピーは既にあるが、履歴詳細のレビュー後に外部活用する素材を一括で取り出す導線が弱い。音声トラックをコピー内容に含めない境界を明記したテキストExportにすることで、v2のExport意図を小さく実装できる。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-31 00:08:49 JST
 
 - 作業: `v2-history-filter-segments`
