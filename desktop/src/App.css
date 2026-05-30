@@ -9349,6 +9349,30 @@ body[data-window="settings"] .settings-main-pane {
   cursor: pointer;
 }
 
+.session-detail-template-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  line-height: 1;
+}
+
+.session-detail-template-chip span,
+.session-detail-template-chip small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-detail-template-chip small {
+  color: color-mix(in srgb, var(--es-muted) 76%, #ffffff);
+  font-family: var(--font-caption);
+  font-size: 0.5rem;
+  font-weight: 780;
+  letter-spacing: 0.03em;
+}
+
 .session-detail-track-tab {
   display: inline-flex;
   flex-direction: column;
@@ -9377,6 +9401,10 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-detail-track-tab-active small {
   color: var(--jerky-accent-deep);
+}
+
+.session-detail-template-chip-active small {
+  color: var(--v2-accent-deep);
 }
 
 .session-detail-template-summary {

@@ -1565,7 +1565,12 @@ export function SessionDetail() {
                 title={minutesTemplateSpecs[template].goal}
                 onClick={() => setMinutesTemplate(template)}
               >
-                {template}
+                <span>{template}</span>
+                <small>
+                  {minutesTemplate === template
+                    ? "選択中"
+                    : `${minutesTemplateSpecs[template].sections.length}項目`}
+                </small>
               </button>
             ))}
           </div>

@@ -1,3 +1,12 @@
+## 2026-05-30 23:28:57 JST
+
+- 作業: `v2-minutes-template-chip-state`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes 方針に合わせ、録音後の議事録テンプレート選択で、現在のテンプレートと出力セクション数をボタン上でも直感的に確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。ユーザー要件では、文字起こしと手書きメモから議事録を作るためのプロンプトテンプレート選択が重要。
+- 変更: `src/routes/SessionDetail.tsx` の議事録テンプレートボタンに `選択中` または `n項目` の小ラベルを追加した。`src/App.css` でテンプレートチップを2段表示にし、v2の `font.caption` とオレンジアクセントで選択状態を示すようにした。
+- 判断: 既存UIはテンプレート切替と要約説明を持つが、ボタン単体では選択状態と出力構造が読み取りにくかった。説明文を増やさずボタン内に短い状態を足すことで、録音後の議事録生成導線をミニマルに明確化できる。
+- 検証: `rg -n 'v2-minutes-template-chip-state|選択中|sections.length|session-detail-template-chip small|session-detail-template-chip-active small' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` でテンプレートチップの状態表示、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:26:42 JST
 
 - 作業: `v2-session-detail-playback-selected-chip`
