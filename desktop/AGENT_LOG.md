@@ -1,3 +1,12 @@
+## 2026-05-31 00:08:49 JST
+
+- 作業: `v2-history-filter-segments`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes にある Filter Segments 方針に合わせ、録音履歴を全件、文字起こしあり、マイク+スピーカー別トラックありで絞り込めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2履歴画面は検索、フィルタ、一覧、録音レビューを静かな一面で扱う。
+- 変更: `src/routes/SessionList.tsx` に履歴フィルタ状態を追加し、検索結果に対して全件/文字起こし/別トラックの絞り込みを適用。`src/App.css` にフィルタセグメントのv2風スタイルとモバイル1列表示を追加した。
+- 判断: 検索とステータスチップだけでは、録音後に「文字起こし済み」「別トラックあり」の履歴へ直感的に絞り込めない。v2のサイドバーFilter Segmentsに合わせ、3択の小さなセグメントだけを追加するのが最小で効果がある。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-31 00:06:54 JST
 
 - 作業: `v2-menu-stop-boundary-flow`

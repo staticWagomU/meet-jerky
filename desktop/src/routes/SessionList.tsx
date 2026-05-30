@@ -36,6 +36,8 @@ type SessionAction =
   | { kind: "copy"; path: string }
   | null;
 
+type SessionListFilter = "all" | "transcript" | "separatedTracks";
+
 const EMPTY_SESSIONS: SessionSummary[] = [];
 
 /**
@@ -50,6 +52,7 @@ export function SessionList() {
     null,
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<SessionListFilter>("all");
   const pendingActionRef = useRef<SessionAction>(null);
   const isMountedRef = useRef(true);
 
@@ -167,14 +170,25 @@ export function SessionList() {
   }, [sessions]);
   const filteredSessions = useMemo(
     () =>
-      sessions.filter((session) =>
-        sessionMatchesQuery(
-          session,
-          getSessionStartedAtDisplay(session.startedAtSecs).label,
-          trimmedSearchQuery,
-        ),
-      ),
-    [sessions, trimmedSearchQuery],
+      sessions
+        .filter((session) =>
+          sessionMatchesQuery(
+            session,
+            getSessionStartedAtDisplay(session.startedAtSecs).label,
+            trimmedSearchQuery,
+          ),
+        )
+        .filter((session) => {
+          if (activeFilter === "all") {
+            return true;
+          }
+          if (activeFilter === "transcript") {
+            return hasTranscriptBody(session.searchText);
+          }
+          const trackCounts = getTranscriptTrackCounts(session.searchText);
+          return trackCounts.self > 0 && trackCounts.other > 0;
+        }),
+    [activeFilter, sessions, trimmedSearchQuery],
   );
   if (isLoading) {
     const loadingLabel = "文字起こし履歴一覧を読み込み中";
@@ -230,7 +244,7 @@ export function SessionList() {
     : "文字起こし履歴一覧を再読み込み";
   const sessionCountLabel = isFetching
     ? `保存済み ${sessions.length} 件、更新中`
-    : trimmedSearchQuery
+    : trimmedSearchQuery || activeFilter !== "all"
       ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
       : `保存済み ${sessions.length} 件`;
   const libraryBodyCountLabel = `文字起こしあり ${libraryStats.sessionsWithBody} 件`;
@@ -278,6 +292,36 @@ export function SessionList() {
     "音声トラックはAI送信しません",
     ...libraryActionFlow.map((item) => `${item.label}: ${item.value}`),
   ].join("。");
+  const sessionListFilters = [
+    {
+      key: "all",
+      label: "すべて",
+      count: sessions.length,
+      description: "保存済み履歴をすべて表示",
+    },
+    {
+      key: "transcript",
+      label: "文字起こし",
+      count: libraryStats.sessionsWithBody,
+      description: "文字起こしが保存されている履歴だけを表示",
+    },
+    {
+      key: "separatedTracks",
+      label: "別トラック",
+      count: libraryStats.sessionsWithSeparatedTracks,
+      description:
+        "マイクとスピーカーの文字起こしが両方ある履歴だけを表示",
+    },
+  ] as const satisfies ReadonlyArray<{
+    key: SessionListFilter;
+    label: string;
+    count: number;
+    description: string;
+  }>;
+  const activeFilterLabel =
+    sessionListFilters.find((filter) => filter.key === activeFilter)?.label ??
+    "すべて";
+  const sessionFilterGroupLabel = `履歴フィルタ。現在は ${activeFilterLabel}。v2の録音後ワークスペースに合わせ、全件、文字起こしあり、マイク+スピーカー別トラックありで絞り込みます。`;
   const sessionSearchLabel = "履歴を検索";
   const sessionSearchInputLabel = trimmedSearchQuery
     ? `${sessionSearchLabel}: ${searchQueryLabel}`
@@ -295,6 +339,7 @@ export function SessionList() {
     libraryCopyScopeLabel,
     libraryReviewScopeLabel,
     libraryAiScopeLabel,
+    `フィルタ ${activeFilterLabel}`,
     trimmedSearchQuery ? `検索語 ${searchQueryLabel}` : null,
     pendingAction ? "履歴操作中" : null,
   ]
@@ -402,6 +447,34 @@ export function SessionList() {
               <span>{item.label}</span>
               <strong>{item.value}</strong>
             </span>
+          ))}
+        </div>
+      )}
+
+      {sessions.length > 0 && (
+        <div
+          className="session-list-filter-segments"
+          role="group"
+          aria-label={sessionFilterGroupLabel}
+          title={sessionFilterGroupLabel}
+        >
+          {sessionListFilters.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              className={
+                activeFilter === filter.key
+                  ? "session-list-filter-chip session-list-filter-chip-active"
+                  : "session-list-filter-chip"
+              }
+              aria-pressed={activeFilter === filter.key}
+              aria-label={`${filter.label} フィルタ。${filter.description}。${filter.count} 件。`}
+              title={`${filter.description}。${filter.count} 件。`}
+              onClick={() => setActiveFilter(filter.key)}
+            >
+              <span>{filter.label}</span>
+              <strong>{filter.count}</strong>
+            </button>
           ))}
         </div>
       )}
