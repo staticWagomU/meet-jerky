@@ -1,3 +1,12 @@
+## 2026-05-30 23:44:08 JST
+
+- 作業: `v2-settings-preflight-rec-indicator-step`
+- 目的: `meet-jerky-desktop-v2.pen` の Settings Overview / Recording Flow 方針に合わせ、設定概要の録音前チェックでも録音開始後にREC表示が継続することを明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。プロダクト方針では録音状態の透明性を犠牲にしない。
+- 変更: `src/routes/SettingsView.tsx` の `recordingPreflightSteps` に `表示: REC常時` を追加した。
+- 判断: 設定概要には入力、検出、文字起こし、議事録の確認はあったが、録音中インジケーターの常時表示がpreflightの可視項目にはなかった。録音忘れやステルス誤解を避けるため、設定入口にもREC常時表示を短く出す。
+- 検証: `rg` で対象表示の追加を確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:42:20 JST
 
 - 作業: `v2-history-handwritten-memo-route-chip`

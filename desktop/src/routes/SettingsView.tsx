@@ -782,6 +782,10 @@ export function SettingsView({
       value: transcriptionTransmissionSummary,
     },
     {
+      label: "表示",
+      value: "REC常時",
+    },
+    {
       label: "議事録",
       value: aiMinutesProviderDetail,
     },
