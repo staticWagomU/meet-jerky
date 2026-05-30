@@ -1,3 +1,12 @@
+## 2026-05-30 23:11:26 JST
+
+- 作業: `v2-settings-window-standalone-boundary-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の Settings Overview に合わせ、独立設定ウィンドウを開いた瞬間に録音、文字起こし、AI議事録、保存範囲の主要境界を短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen は `V2 - Settings Overview` を含み、変数は `font.body Geist`、`font.heading Inter`、`accent.primary #FF5C00`、`border.subtle #E8DDD6`、`surface.muted #F7F3F0`、`rounded.lg 8`。
+- 変更: `src/components/SettingsWindowRoot.tsx` の独立ウィンドウ外枠に `録音`、`文字起こし`、`AI議事録`、`保存` の4チップを持つヘッダーを追加した。`src/App.css` で v2 変数に沿った紙面背景、Geist/Inter前提の見出し、8px角丸の境界チップ、狭幅時2列表示を追加した。
+- 判断: 設定本体にはすでに各カテゴリの詳細フローがあるため、ここでは新しい設定項目を増やさず、独立設定ウィンドウの入口に全体境界だけを置いた。録音とAI送信の透明性を補強しつつ、v2のミニマルな概要画面として機能させる。
+- 検証: `rg -n 'v2-settings-window-standalone-boundary-flow|settingsWindowBoundaryFlow|settingsWindowBoundaryFlowLabel|settings-window-standalone|録音、文字起こし、AI議事録、保存範囲|録音.*文字起こし.*AI議事録.*保存' AGENT_LOG.md src/components/SettingsWindowRoot.tsx src/App.css` で独立設定ウィンドウの境界フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:06:34 JST
 
 - 作業: `v2-design-token-sync`

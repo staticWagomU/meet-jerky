@@ -5316,16 +5316,26 @@ body[data-window="ring-light"] .overlay-window {
 
 .settings-window-shell {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
   width: 100vw;
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
   overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 8% 0%,
+      color-mix(in srgb, var(--v2-accent-tertiary) 20%, transparent),
+      transparent 32%
+    ),
+    var(--v2-surface-muted);
 }
 
 body[data-window="settings"] .settings-view {
   width: 100%;
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 body[data-window="settings"] .settings-window {
@@ -5336,11 +5346,99 @@ body[data-window="settings"] .settings-main-pane {
   max-height: none;
 }
 
+.settings-window-standalone-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex: 0 0 auto;
+  min-height: 74px;
+  padding: 6px 4px 4px;
+  color: var(--v2-foreground-primary);
+}
+
+.settings-window-standalone-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settings-window-standalone-kicker {
+  color: var(--v2-accent-deep);
+  font-family: var(--font-caption);
+  font-size: 0.68rem;
+  font-weight: 760;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.settings-window-standalone-copy h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.12rem, 2.2vw, 1.48rem);
+  font-weight: 760;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.settings-window-standalone-copy p {
+  margin: 0;
+  color: var(--v2-foreground-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.settings-window-standalone-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  flex: 0 1 480px;
+  min-width: min(480px, 56vw);
+}
+
+.settings-window-standalone-flow-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--v2-border-subtle) 76%, #ffffff);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--v2-surface-primary) 84%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.settings-window-standalone-flow-step span {
+  overflow: hidden;
+  color: var(--v2-foreground-secondary);
+  font-family: var(--font-caption);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.settings-window-standalone-flow-step strong {
+  overflow: hidden;
+  color: var(--v2-foreground-primary);
+  font-size: 0.74rem;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .settings-window {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: min(560px, calc(100vh - 7.4rem));
+  min-height: min(560px, calc(100vh - 8.7rem));
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, transparent);
   border-radius: 12px;
@@ -7776,6 +7874,21 @@ body[data-window="settings"] .settings-main-pane {
   .settings-view,
   .settings-window {
     min-height: auto;
+  }
+
+  .settings-window-shell {
+    overflow: auto;
+  }
+
+  .settings-window-standalone-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .settings-window-standalone-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+    width: 100%;
   }
 
   .settings-window-body {
