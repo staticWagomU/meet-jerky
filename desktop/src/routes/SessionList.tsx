@@ -237,7 +237,7 @@ export function SessionList() {
   const librarySeparatedTracksLabel = `マイク+スピーカートラック ${libraryStats.sessionsWithSeparatedTracks} 件`;
   const libraryCopyScopeLabel = "コピー対象は文字起こし";
   const libraryReviewScopeLabel =
-    "録音レビューでマイク/スピーカー音声、チャット文字起こし、議事録を確認";
+    "録音レビューでマイク/スピーカー音声、チャット文字起こし、手書きメモ、議事録を確認";
   const libraryAiScopeLabel =
     "AI議事録は録音レビュー内で確認。音声トラックはAI送信しません";
   const libraryActionFlow = [
@@ -262,6 +262,11 @@ export function SessionList() {
       tone: libraryStats.sessionsWithSeparatedTracks > 0 ? "safe" : "neutral",
     },
     {
+      label: "メモ",
+      value: "レビュー内",
+      tone: "neutral",
+    },
+    {
       label: "議事録",
       value: "レビュー内",
       tone: "warn",
@@ -269,7 +274,7 @@ export function SessionList() {
   ] as const;
   const libraryActionFlowLabel = [
     "録音後アクション",
-    "履歴検索、文字起こしコピー、音声トラック確認、議事録ワークスペースへ進めます",
+    "履歴検索、文字起こしコピー、音声トラック確認、手書きメモ、議事録ワークスペースへ進めます",
     "音声トラックはAI送信しません",
     ...libraryActionFlow.map((item) => `${item.label}: ${item.value}`),
   ].join("。");
@@ -356,7 +361,7 @@ export function SessionList() {
                 aria-label={libraryReviewScopeLabel}
                 title={libraryReviewScopeLabel}
               >
-                レビュー: 音声 / チャット / 議事録
+                レビュー: 音声 / チャット / メモ / 議事録
               </span>
             )}
             {sessions.length > 0 && (
@@ -584,6 +589,11 @@ function SessionRow({
       tone: "accent",
     },
     {
+      label: "メモ",
+      value: "追記可",
+      tone: "neutral",
+    },
+    {
       label: "送信",
       value: "音声なし",
       tone: "safe",
@@ -595,7 +605,7 @@ function SessionRow({
     hasSeparatedTracks
       ? "マイクとスピーカーの文字起こしがあります"
       : "トラック分離は詳細で確認します",
-    "録音レビューで音声トラック、チャット文字起こし、議事録ワークスペースを開きます",
+    "録音レビューで音声トラック、チャット文字起こし、手書きメモ、議事録ワークスペースを開きます",
     "音声トラックはAI送信しません",
   ].join("。");
   const isAnyActionPending = pendingAction !== null;
@@ -636,6 +646,7 @@ function SessionRow({
     "マイク/スピーカー音声",
     "チャット文字起こし",
     "文字起こしコピー",
+    "手書きメモ",
     "議事録ワークスペース",
     "AI議事録はレビュー内で確認",
     "音声トラックはAI送信しません",

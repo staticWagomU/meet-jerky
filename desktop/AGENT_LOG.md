@@ -1,3 +1,12 @@
+## 2026-05-30 23:42:20 JST
+
+- 作業: `v2-history-handwritten-memo-route-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes 方針に合わせ、履歴一覧から録音レビューへ入る前に、手書きメモを議事録素材として扱える導線を明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_screenshot`、`get_guidelines`。v2の録音後UIは履歴検索、チャット文字起こし、音声トラック、手書きメモ、議事録ワークスペースを一体で扱う。
+- 変更: `src/routes/SessionList.tsx` の履歴ライブラリ全体フローと各録音行フローにメモ導線を追加し、レビュー説明にも手書きメモを含めた。`src/App.css` で該当フローを5列にした。
+- 判断: 詳細画面には手書きメモを使った議事録生成があるが、履歴一覧ではレビュー内の到達先として見えづらかった。録音後UIの直感性を高めるため、一覧段階でメモ導線を表示する方がv2の情報設計に合う。
+- 検証: `rg` で対象表示の追加を確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:40:24 JST
 
 - 作業: `v2-live-question-audio-exclusion-chip`

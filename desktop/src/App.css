@@ -8189,7 +8189,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-list-action-flow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.42rem;
 }
 
@@ -8468,7 +8468,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-list-item-flow {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.32rem;
   max-width: 38rem;
   min-width: 0;
