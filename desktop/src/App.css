@@ -2218,7 +2218,7 @@ body[data-window="ring-light"] .overlay-window {
   box-sizing: border-box;
   padding: 0 9px;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, transparent);
-  border-radius: 15px;
+  border-radius: var(--v2-rounded-lg);
   color: var(--es-ink);
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   box-shadow: 0 7px 18px
@@ -2233,7 +2233,7 @@ body[data-window="ring-light"] .overlay-window {
   flex: 0 0 auto;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   background: var(--jerky-accent);
 }
 
@@ -2252,9 +2252,9 @@ body[data-window="ring-light"] .overlay-window {
   align-items: center;
   flex: 0 0 auto;
   height: 20px;
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 7px;
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -2310,7 +2310,7 @@ body[data-window="ring-light"] .overlay-window {
   left: auto;
   bottom: auto;
   z-index: auto;
-  border-radius: 18px;
+  border-radius: var(--v2-rounded-lg);
   transform: none;
 }
 
@@ -2361,7 +2361,7 @@ body[data-window="ring-light"] .overlay-window {
   height: 28px;
   padding: 0 10px;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   color: var(--jerky-accent-deep);
   background: var(--jerky-accent-soft);
   font-size: 11px;
@@ -2371,7 +2371,7 @@ body[data-window="ring-light"] .overlay-window {
 .live-transcript-rec-pill span {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   background: var(--jerky-accent);
 }
 
@@ -2389,7 +2389,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 6px;
   height: 26px;
   padding: 0 9px;
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   color: var(--es-ink);
   background: color-mix(in srgb, var(--es-paper) 72%, #ffffff);
   font-size: 10px;
@@ -2400,7 +2400,7 @@ body[data-window="ring-light"] .overlay-window {
   content: "";
   width: 14px;
   height: 14px;
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   background: var(--es-green);
 }
 
@@ -2409,7 +2409,7 @@ body[data-window="ring-light"] .overlay-window {
   height: 26px;
   padding: 0 9px;
   border: 1px solid color-mix(in srgb, var(--es-line) 74%, transparent);
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   font-size: 10px;
   font-weight: 760;
   line-height: 1;
@@ -2509,7 +2509,7 @@ body[data-window="ring-light"] .overlay-window {
   flex: 0 0 auto;
   height: 22px;
   border: 1px solid color-mix(in srgb, var(--es-green) 28%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 7px;
   color: color-mix(in srgb, var(--es-green) 72%, var(--es-ink));
   background: color-mix(in srgb, var(--es-green) 10%, #ffffff);
@@ -2541,7 +2541,7 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
   min-height: 28px;
   border: 1px solid color-mix(in srgb, var(--es-line) 78%, transparent);
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0 8px;
   color: var(--es-muted);
   background: color-mix(in srgb, var(--color-surface) 82%, transparent);
@@ -2559,6 +2559,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-caption-mode-chip small {
   color: color-mix(in srgb, currentColor 66%, var(--es-muted));
+  font-family: var(--font-caption);
   font-size: 9px;
   font-weight: 760;
 }
@@ -2602,7 +2603,7 @@ body[data-window="ring-light"] .overlay-window {
   flex-wrap: wrap;
   gap: 6px;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 7px 8px;
   color: var(--jerky-accent-deep);
   background: color-mix(in srgb, var(--es-amber) 10%, #ffffff);
@@ -2636,7 +2637,7 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
   min-height: 34px;
   border: 1px solid color-mix(in srgb, var(--jerky-accent-line) 72%, transparent);
-  border-radius: 9px;
+  border-radius: var(--v2-rounded-lg);
   padding: 5px 6px;
   color: color-mix(in srgb, var(--jerky-accent-deep) 82%, var(--es-muted));
   background: rgba(255, 255, 255, 0.58);
@@ -2653,7 +2654,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-transcript-translation-flow-chip span {
   color: color-mix(in srgb, currentColor 68%, var(--es-muted));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 8px;
   font-weight: 820;
   letter-spacing: 0.06em;
@@ -2703,7 +2704,7 @@ body[data-window="ring-light"] .overlay-window {
   min-height: 22px;
   min-width: 2.1rem;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 8px;
   color: var(--jerky-accent-deep);
   background: rgba(255, 255, 255, 0.62);
@@ -2745,7 +2746,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 4px;
   min-height: 22px;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 8px;
   color: var(--jerky-accent-deep);
   background: rgba(255, 255, 255, 0.72);
@@ -2804,7 +2805,7 @@ body[data-window="ring-light"] .overlay-window {
   align-items: center;
   justify-content: center;
   height: 20px;
-  border-radius: 8px;
+  border-radius: var(--v2-rounded-lg);
   font-size: 10px;
   font-weight: 700;
 }
@@ -2844,7 +2845,7 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
   padding: 12px;
   border: 1px solid var(--jerky-border);
-  border-radius: 14px;
+  border-radius: var(--v2-rounded-lg);
   background: var(--color-surface);
 }
 
@@ -2871,7 +2872,7 @@ body[data-window="ring-light"] .overlay-window {
   margin-left: auto;
   height: 24px;
   border: 1px solid var(--jerky-border);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 8px;
   color: var(--es-muted);
   background: color-mix(in srgb, var(--es-paper) 78%, #ffffff);
@@ -2893,7 +2894,7 @@ body[data-window="ring-light"] .overlay-window {
   max-width: 138px;
   height: 20px;
   border: 1px solid var(--jerky-border);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 7px;
   overflow: hidden;
   color: color-mix(in srgb, var(--es-muted) 78%, var(--jerky-accent-deep));
@@ -2920,7 +2921,7 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
   min-height: 34px;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, #ffffff);
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 5px 6px;
   overflow: hidden;
   background: color-mix(in srgb, var(--es-paper) 70%, #ffffff);
@@ -2937,7 +2938,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-notes-runtime-chip span {
   color: color-mix(in srgb, var(--es-muted) 82%, var(--es-ink));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 7.5px;
   font-weight: 820;
   letter-spacing: 0.05em;
@@ -2986,7 +2987,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-notes-preference-error {
   border: 1px solid color-mix(in srgb, var(--es-red) 34%, var(--es-line));
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 7px 8px;
   color: color-mix(in srgb, var(--es-red) 78%, var(--es-ink));
   background: color-mix(in srgb, var(--es-red) 9%, #ffffff);
@@ -3000,7 +3001,7 @@ body[data-window="ring-light"] .overlay-window {
   flex-direction: column;
   gap: 4px;
   border: 1px solid color-mix(in srgb, var(--es-line) 74%, #ffffff);
-  border-radius: 12px;
+  border-radius: var(--v2-rounded-lg);
   padding: 10px;
   color: var(--es-muted);
   background: color-mix(in srgb, var(--es-paper) 72%, #ffffff);
@@ -3024,7 +3025,7 @@ body[data-window="ring-light"] .overlay-window {
   flex-direction: column;
   gap: 6px;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 12px;
+  border-radius: var(--v2-rounded-lg);
   padding: 10px;
   background: var(--jerky-accent-soft);
 }
@@ -3034,7 +3035,7 @@ body[data-window="ring-light"] .overlay-window {
   flex-direction: column;
   gap: 7px;
   border: 1px solid color-mix(in srgb, var(--es-line) 74%, #ffffff);
-  border-radius: 12px;
+  border-radius: var(--v2-rounded-lg);
   padding: 9px;
   background:
     linear-gradient(
@@ -3056,7 +3057,7 @@ body[data-window="ring-light"] .overlay-window {
 .live-notes-local-preview-head span {
   overflow: hidden;
   color: var(--es-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -3086,7 +3087,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 4px;
   flex: 0 0 auto;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 4px 7px;
   color: var(--jerky-accent-deep);
   background: var(--jerky-accent-soft);
@@ -3113,7 +3114,7 @@ body[data-window="ring-light"] .overlay-window {
 .live-notes-local-preview-section > span {
   overflow: hidden;
   color: color-mix(in srgb, var(--es-muted) 86%, var(--es-ink));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -3150,7 +3151,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 8px;
   min-height: 0;
   border: 1px solid var(--jerky-border);
-  border-radius: 12px;
+  border-radius: var(--v2-rounded-lg);
   padding: 10px;
   color: color-mix(in srgb, var(--es-muted) 78%, var(--jerky-accent-deep));
   background: var(--color-surface);
@@ -3172,11 +3173,11 @@ body[data-window="ring-light"] .overlay-window {
 .live-notes-question-head small {
   margin-left: auto;
   border: 1px solid color-mix(in srgb, var(--es-green) 28%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 2px 6px;
   color: color-mix(in srgb, var(--es-green) 66%, var(--es-ink));
   background: color-mix(in srgb, var(--es-green) 9%, #ffffff);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 7.5px;
   font-weight: 760;
   letter-spacing: 0.04em;
@@ -3186,11 +3187,11 @@ body[data-window="ring-light"] .overlay-window {
 .live-notes-question-boundary {
   margin: -2px 0 0;
   border: 1px solid color-mix(in srgb, var(--es-green) 24%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 5px 8px;
   color: color-mix(in srgb, var(--es-green) 68%, var(--es-ink));
   background: color-mix(in srgb, var(--es-green) 7%, #ffffff);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 7.5px;
   font-weight: 780;
   letter-spacing: 0.04em;
@@ -3217,7 +3218,7 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 0;
   min-height: 34px;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, #ffffff);
-  border-radius: 9px;
+  border-radius: var(--v2-rounded-lg);
   padding: 5px 6px;
   background: color-mix(in srgb, var(--es-paper) 54%, #ffffff);
 }
@@ -3232,7 +3233,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-notes-question-material-chip span {
   color: color-mix(in srgb, var(--es-muted) 82%, var(--es-ink));
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 7px;
   font-weight: 820;
   letter-spacing: 0.06em;
@@ -3292,7 +3293,7 @@ body[data-window="ring-light"] .overlay-window {
   align-items: center;
   min-height: 22px;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 7px;
   color: var(--jerky-accent-deep);
   background: var(--jerky-accent-soft);
@@ -3314,7 +3315,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 6px;
   align-items: center;
   border: 1px solid color-mix(in srgb, var(--es-green) 28%, var(--es-line));
-  border-radius: 10px;
+  border-radius: var(--v2-rounded-lg);
   padding: 7px 8px;
   color: color-mix(in srgb, var(--es-green) 70%, var(--es-ink));
   background: color-mix(in srgb, var(--es-green) 10%, #ffffff);
@@ -3324,7 +3325,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .live-notes-question-queued strong {
   color: var(--es-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 8px;
   font-weight: 780;
   letter-spacing: 0.08em;
@@ -3344,7 +3345,7 @@ body[data-window="ring-light"] .overlay-window {
   gap: 3px;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--es-green) 28%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 3px 6px;
   color: color-mix(in srgb, var(--es-green) 72%, var(--es-ink));
   background: rgba(255, 255, 255, 0.68);
@@ -3366,7 +3367,7 @@ body[data-window="ring-light"] .overlay-window {
   height: 28px;
   box-sizing: border-box;
   border: 1px solid var(--jerky-border);
-  border-radius: 9px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0 9px;
   color: color-mix(in srgb, var(--es-muted) 78%, var(--jerky-accent-deep));
   background: var(--color-surface);
@@ -3389,7 +3390,7 @@ body[data-window="ring-light"] .overlay-window {
   min-width: 28px;
   height: 28px;
   border: 1px solid var(--jerky-accent-line);
-  border-radius: 9px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0 8px;
   color: var(--jerky-accent-deep);
   background: var(--jerky-accent-soft);
@@ -3486,7 +3487,7 @@ body[data-window="ring-light"] .overlay-window {
   box-sizing: border-box;
   border: 1px solid
     color-mix(in srgb, var(--jerky-accent-line) 72%, transparent);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-lg);
   padding: 0.42rem 0.78rem 0.42rem 0.55rem;
   color: var(--es-ink);
   background:
@@ -3508,7 +3509,7 @@ body[data-window="ring-light"] .overlay-window {
   flex: 0 0 auto;
   width: 0.58rem;
   height: 0.58rem;
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   background: var(--jerky-accent);
   box-shadow:
     0 0 0 0.34rem color-mix(in srgb, var(--es-amber) 18%, transparent),
@@ -3524,7 +3525,7 @@ body[data-window="ring-light"] .overlay-window {
 
 .ring-light-badge-copy strong {
   color: var(--es-ink);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.62rem;
   font-weight: 760;
   letter-spacing: 0.08em;
@@ -3553,11 +3554,11 @@ body[data-window="ring-light"] .overlay-window {
   min-height: 1.46rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--es-line) 72%, transparent);
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.5rem;
   color: color-mix(in srgb, var(--es-muted) 82%, var(--jerky-accent-deep));
   background: color-mix(in srgb, var(--es-paper) 68%, #ffffff);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.54rem;
   font-weight: 760;
   letter-spacing: 0.06em;
@@ -3577,7 +3578,7 @@ body[data-window="ring-light"] .overlay-window {
   min-height: 1.46rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--es-green) 28%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.54rem;
   color: color-mix(in srgb, var(--es-green) 42%, var(--es-ink));
   background: color-mix(in srgb, var(--es-green) 8%, #ffffff);
@@ -3598,11 +3599,11 @@ body[data-window="ring-light"] .overlay-window {
   min-height: 1.46rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--es-blue) 22%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.54rem;
   color: color-mix(in srgb, var(--es-blue) 70%, var(--es-ink));
   background: color-mix(in srgb, var(--es-blue) 7%, #ffffff);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.54rem;
   font-weight: 780;
   letter-spacing: 0.04em;
@@ -3621,11 +3622,11 @@ body[data-window="ring-light"] .overlay-window {
   min-height: 1.46rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--es-amber) 26%, var(--es-line));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.54rem;
   color: var(--jerky-accent-deep);
   background: color-mix(in srgb, var(--es-amber) 10%, #ffffff);
-  font-family: var(--font-mono);
+  font-family: var(--font-caption);
   font-size: 0.54rem;
   font-weight: 780;
   letter-spacing: 0.04em;
@@ -3642,7 +3643,7 @@ body[data-window="ring-light"] .overlay-window {
   flex: 0 0 auto;
   min-height: 1.52rem;
   border: 1px solid color-mix(in srgb, var(--es-blue) 24%, var(--jerky-border));
-  border-radius: 999px;
+  border-radius: var(--v2-rounded-pill);
   padding: 0 0.58rem;
   color: color-mix(in srgb, var(--es-blue) 72%, var(--es-ink));
   background:
@@ -3718,7 +3719,7 @@ body[data-window="ring-light"] .overlay-window {
     left: 0.5rem;
     flex-wrap: wrap;
     max-width: none;
-    border-radius: 1.1rem;
+    border-radius: var(--v2-rounded-lg);
   }
 }
 

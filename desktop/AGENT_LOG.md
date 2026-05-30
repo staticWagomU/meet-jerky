@@ -1,3 +1,12 @@
+## 2026-05-30 23:17:54 JST
+
+- 作業: `v2-recording-live-token-tightening`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、ライブ文字起こし、AIノート、常駐RECインジケーターの小ラベルと角丸をv2トークンへ寄せ、録音中UIの存在感を抑えながら状態の透明性を保つ。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen の `V2 - Recording Flow` は検知通知、常駐REC、ライブ文字起こし、AIノートを分けて表示し、実変数は `font.caption Funnel Sans`、`rounded.lg 8`、`rounded.sm 4`。
+- 変更: `src/App.css` でライブ字幕ウィンドウ、翻訳フロー、AIノート、質問準備、リングライト常駐RECの主要カード/チップを `--v2-rounded-lg` / `--v2-rounded-pill` に寄せた。小さな状態ラベルを `var(--font-mono)` から `var(--font-caption)` へ切り替え、録音中UIの見た目を履歴/設定側のv2トークン整理と揃えた。
+- 判断: 録音中機能はすでに検知・REC・ライブ文字起こし・翻訳切替・AIノート/質問を持つため、要素追加よりも設計トークンの不一致を減らす方が、Macアプリらしいミニマルな常駐UIに近づく。
+- 検証: `rg -n 'v2-recording-live-token-tightening|live-caption-compact-pill|live-transcript-panel-window|live-notes-runtime-chip span|live-notes-question-material-chip span|ring-light-badge-copy strong|ring-light-ai-pill|--v2-rounded-lg|font-caption' AGENT_LOG.md src/App.css` で録音中UIのv2角丸/キャプション書体適用、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
 ## 2026-05-30 23:15:16 JST
 
 - 作業: `v2-history-minutes-token-tightening`
