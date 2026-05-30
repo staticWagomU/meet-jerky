@@ -1,3 +1,12 @@
+## 2026-05-31 00:06:54 JST
+
+- 作業: `v2-menu-stop-boundary-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow にある停止確認マイクロシートの方針に合わせ、メニューバー録音中の終了操作で、停止後に保存・履歴レビュー・別トラック確認へ進むことを小さく明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2では録音状態を透明にし、停止後は履歴と音声トラック確認へつなげる。
+- 変更: `src/routes/TranscriptView.tsx` の録音中メニューバーポップオーバーに、停止、保存、履歴、音声の停止後フローを追加。`src/App.css` に4列の `menu-stop-boundary` を追加した。
+- 判断: 録音終了ボタンだけでは、停止後に文字起こし履歴へ保存され、録音レビューでマイク/スピーカー/両方の音声トラックを確認できる境界が見えにくい。録音中だけ出る小さなチップ列で、v2の停止確認を再現するのが適切。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-31 00:05:10 JST
 
 - 作業: `v2-transcription-controls-translation-state`

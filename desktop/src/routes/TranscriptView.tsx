@@ -1725,6 +1725,14 @@ export function TranscriptView() {
       tone: "neutral",
     },
   ];
+  const menuStopBoundaryFlow = [
+    { label: "停止", value: "確認操作", tone: "warn" },
+    { label: "保存", value: "このMac", tone: "safe" },
+    { label: "履歴", value: "録音レビュー", tone: "accent" },
+    { label: "音声", value: "別トラック", tone: "safe" },
+  ] as const;
+  const menuStopBoundaryLabel =
+    "録音終了後は文字起こし履歴としてこのMacに保存し、録音レビューでマイクのみ、スピーカーのみ、両方の音声トラックと議事録素材を確認できます。音声トラックはAI送信しません。";
   const menuRecordingDetail = isMeetingActive
     ? `${micTrackStatusLabel} / ${systemAudioTrackStatusLabel}`
     : pendingMeetingStartRequest
@@ -2221,6 +2229,24 @@ export function TranscriptView() {
                   ? "録音終了"
                   : "録音開始"}
             </button>
+
+            {isMeetingActive && (
+              <section
+                className="menu-start-boundary menu-stop-boundary"
+                aria-label={menuStopBoundaryLabel}
+                title={menuStopBoundaryLabel}
+              >
+                {menuStopBoundaryFlow.map((step) => (
+                  <span
+                    key={`${step.label}-${step.value}`}
+                    className={`menu-start-boundary-step menu-start-boundary-step-${step.tone}`}
+                  >
+                    <span>{step.label}</span>
+                    <strong>{step.value}</strong>
+                  </span>
+                ))}
+              </section>
+            )}
 
             <div className="menu-secondary-links">
               <Link to="/sessions">
