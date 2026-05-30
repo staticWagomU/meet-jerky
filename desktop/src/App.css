@@ -10801,7 +10801,7 @@ body[data-window="controller"] #root {
 
 .controller-recording-flow {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.38rem;
   margin-top: 0.34rem;
   min-width: 0;

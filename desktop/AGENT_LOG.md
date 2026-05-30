@@ -1,3 +1,12 @@
+## 2026-05-31 00:03:19 JST
+
+- 作業: `v2-controller-translation-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、検証用コントローラーでも通知録音/メニューバー録音からライブ文字起こし、翻訳切替、AIノート確認へ進む流れを明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`batch_get`、`get_guidelines`。v2録音中UIは字幕/翻訳/ノートを必要時だけ開く構成。
+- 変更: `src/components/ControllerWindow.tsx` の録音導線、シナリオ説明、透明性ストリップ、ARIAラベルに翻訳切替を追加。`src/App.css` のコントローラー録音フローを6列へ更新した。
+- 判断: 実ユーザー向けUIだけでなく検証導線にも翻訳切替がないと、通知録音・メニューバー録音からv2録音中UIへ進む受け入れ確認で見落としが起きる。検証UI内の小さなチップとラベルだけを更新し、実録音処理には触れない。
+- 検証: `git diff --check` 成功。`npm run build` 成功（Vite の 500kB 超チャンク警告のみ）。
+
 ## 2026-05-31 00:02:19 JST
 
 - 作業: `v2-settings-window-boundary-flow`

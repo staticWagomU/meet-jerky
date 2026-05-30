@@ -105,7 +105,7 @@ const SCENARIOS: Scenario[] = [
   {
     title: "検知通知",
     label: "通知開始",
-    detail: "通知から録音・別トラック・REC・文字起こし・AIノート確認",
+    detail: "通知から録音・別トラック・REC・文字起こし・翻訳切替・AIノート確認",
     tone: "ready",
     run: async () => {
       await actions.triggerMeetingDetection("browser");
@@ -120,7 +120,7 @@ const SCENARIOS: Scenario[] = [
   {
     title: "メニューバー",
     label: "手動開始",
-    detail: "メニュー録音・REC・文字起こし・AIノート確認",
+    detail: "メニュー録音・REC・文字起こし・翻訳切替・AIノート確認",
     tone: "hot",
     run: async () => {
       await actions.showMainWindow();
@@ -134,7 +134,7 @@ const SCENARIOS: Scenario[] = [
   {
     title: "録音中",
     label: "ライブノート",
-    detail: "文字起こし・端末内ノート・未送信の質問準備",
+    detail: "文字起こし・翻訳切替・端末内ノート・未送信の質問準備",
     tone: "safe",
     run: async () => {
       await actions.setLiveCaptionVisible(true);
@@ -168,7 +168,13 @@ const CONTROLLER_RECORDING_FLOW = [
   {
     label: "ライブ",
     value: "文字起こし",
-    detail: "AIノート確認",
+    detail: "原文表示",
+    tone: "accent",
+  },
+  {
+    label: "翻訳",
+    value: "切替可",
+    detail: "必要時だけ",
     tone: "accent",
   },
   {
@@ -185,7 +191,7 @@ export function ControllerWindow() {
     "録音導線の検証フロー",
     "会議検知通知またはメニューバー録音から開始",
     "開始後はRECを常時表示",
-    "ライブ文字起こしとAIノート確認を開きます",
+    "ライブ文字起こし、翻訳切替、AIノート確認を開きます",
     "録音履歴はこのMacに保存し、ネットワーク送信と課金操作は行いません",
   ].join("。");
 
@@ -206,16 +212,17 @@ export function ControllerWindow() {
       <header className="controller-header" data-tauri-drag-region>
         <h1 className="controller-title">Meet Jerky 検証</h1>
         <p className="controller-subtitle">
-          通知録音、メニューバー録音、常駐REC、文字起こし、ノートの導線検証。
+          通知録音、メニューバー録音、常駐REC、文字起こし、翻訳、ノートの導線検証。
         </p>
         <div
           className="controller-transparency-strip"
           role="status"
-          aria-label="録音導線の検証モードです。通知録音とメニューバー録音を確認します。REC表示、ライブ文字起こし、AIノート確認、未送信の質問準備を開きます。ネットワーク送信なし。課金操作なし。"
-          title="録音導線の検証モードです。通知録音とメニューバー録音を確認します。REC表示、ライブ文字起こし、AIノート確認、未送信の質問準備を開きます。ネットワーク送信なし。課金操作なし。"
+          aria-label="録音導線の検証モードです。通知録音とメニューバー録音を確認します。REC表示、ライブ文字起こし、翻訳切替、AIノート確認、未送信の質問準備を開きます。ネットワーク送信なし。課金操作なし。"
+          title="録音導線の検証モードです。通知録音とメニューバー録音を確認します。REC表示、ライブ文字起こし、翻訳切替、AIノート確認、未送信の質問準備を開きます。ネットワーク送信なし。課金操作なし。"
         >
           <span>検証モード</span>
           <span>通知 / メニューバー録音</span>
+          <span>翻訳切替</span>
           <span>AI質問未送信</span>
           <span>ネットワーク送信なし</span>
           <span>課金操作なし</span>
@@ -240,8 +247,8 @@ export function ControllerWindow() {
       </header>
       <section
         className="controller-scenario-rail"
-        aria-label="録音導線シナリオ。通知録音、メニューバー録音、録音中ライブノートを確認します。"
-        title="録音導線シナリオ。通知録音、メニューバー録音、録音中ライブノートを確認します。"
+        aria-label="録音導線シナリオ。通知録音、メニューバー録音、録音中の翻訳切替とライブノートを確認します。"
+        title="録音導線シナリオ。通知録音、メニューバー録音、録音中の翻訳切替とライブノートを確認します。"
       >
         <div className="controller-scenario-head">
           <span>録音導線</span>
