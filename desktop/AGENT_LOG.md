@@ -1,3 +1,12 @@
+## 2026-05-30 23:50:37 JST
+
+- 作業: `v2-session-detail-handwritten-entry-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の History and Minutes 方針に合わせ、履歴詳細へ入った直後に手書きメモを議事録素材として扱えることを見えるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の録音後UIは履歴、音声トラック、チャット文字起こし、手書きメモ、議事録生成を一体のレビュー導線として扱う。
+- 変更: `src/routes/SessionDetail.tsx` の履歴詳細レビューrailに `手書きメモ` チップを追加し、録音後アクションフローにも `メモ` を追加した。`src/App.css` で該当フローを5列へ調整した。
+- 判断: 詳細下部には手書きメモ入力があるが、画面入口では音声、文字起こし、議事録、送信境界が中心で、手書きメモが議事録素材になることが見えづらかった。録音後レビューの認知負荷を下げるため、入口にも任意素材として短く表示する。
+- 検証: `rg` で履歴詳細入口の手書きメモチップ、アクションフロー、5列スタイル、ログを確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:48:58 JST
 
 - 作業: `v2-meeting-detected-translation-route-chip`

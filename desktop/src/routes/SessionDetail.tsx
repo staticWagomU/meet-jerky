@@ -915,6 +915,12 @@ export function SessionDetail() {
       tone: isExternalAiMinutesProvider ? "warn" : "ready",
     },
     {
+      label: "手書きメモ",
+      value: hasHandwrittenMemo ? `${handwrittenMemoLineCount}行` : "任意",
+      detail: "議事録素材 / ローカル保存",
+      tone: hasHandwrittenMemo ? "ready" : "muted",
+    },
+    {
       label: "送信境界",
       value: isExternalAiMinutesProvider ? "手動コピー確認" : "外部送信なし",
       detail: "音声トラックは送信しません",
@@ -944,6 +950,12 @@ export function SessionDetail() {
       tone: canPlaySelectedAudio ? "safe" : "muted",
     },
     {
+      label: "メモ",
+      value: hasHandwrittenMemo ? `${handwrittenMemoLineCount}行` : "任意",
+      detail: "議事録素材",
+      tone: hasHandwrittenMemo ? "safe" : "muted",
+    },
+    {
       label: "議事録",
       value: minutesFlowReviewLabel,
       detail: aiMinutesConnectionLabel,
@@ -952,7 +964,7 @@ export function SessionDetail() {
   ] as const;
   const sessionReviewActionFlowLabel = [
     "録音後アクション",
-    "検索、コピー、音声トラック確認、議事録生成をこの画面で行えます",
+    "検索、コピー、音声トラック確認、手書きメモ、議事録生成をこの画面で行えます",
     "音声トラックはAI外部送信しません",
     ...sessionReviewActionFlow.map(
       (item) => `${item.label}: ${item.value}。${item.detail}`,

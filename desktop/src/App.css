@@ -9095,7 +9095,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-detail-review-rail {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5rem;
   min-width: 0;
 }
@@ -9228,7 +9228,7 @@ body[data-window="settings"] .settings-main-pane {
 
 .session-detail-action-flow-steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.36rem;
   min-width: 0;
   flex: 1 1 auto;
