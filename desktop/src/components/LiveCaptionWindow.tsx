@@ -890,6 +890,11 @@ export function LiveCaptionWindow() {
       tone: queuedAiQuestion ? "safe" : "neutral",
     },
     {
+      label: "音声",
+      value: "送信なし",
+      tone: "safe",
+    },
+    {
       label: "送信",
       value: isExternalAiMinutesProvider ? "手動確認" : "外部送信なし",
       tone: isExternalAiMinutesProvider ? "warn" : "safe",
@@ -900,6 +905,7 @@ export function LiveCaptionWindow() {
     `表示中の文字起こし ${copyableTranscriptLineCount} 発話`,
     `会議ノート ${localMeetingNoteItemCount} 項目`,
     "質問はここでは未送信",
+    "音声トラックは送信しません",
     aiProviderTransmissionLabel,
   ].join("。");
   const aiQuestionStateLabel = queuedAiQuestion

@@ -1,3 +1,12 @@
+## 2026-05-30 23:40:24 JST
+
+- 作業: `v2-live-question-audio-exclusion-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、録音中のAI質問準備でも音声トラックが質問素材として送信されないことを可視チップで示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_screenshot`、`get_guidelines`。v2の録音中UIは邪魔にならない状態表示と送信境界の透明性を重視している。
+- 変更: `src/components/LiveCaptionWindow.tsx` の `aiQuestionMaterialFlow` に `音声: 送信なし` を追加し、aria/title用ラベルにも音声トラック非送信を含めた。`src/App.css` で質問素材フローを5列に調整した。
+- 判断: 既存UIは境界文で音声非送信を示していたが、素材フローの一目で読むチップには音声の扱いがなかった。録音中は認知負荷を下げる必要があるため、送信境界をチップ列にも重複して表示する。
+- 検証: `rg` で対象表示の追加を確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:32:10 JST
 
 - 作業: `v2-ai-minutes-audio-exclusion-chip`
