@@ -596,6 +596,11 @@ export function MeetingDetectedBanner() {
       tone: "safe",
     },
     {
+      label: "翻訳",
+      value: "切替可",
+      tone: "accent",
+    },
+    {
       label: "AI",
       value: "オン/オフ",
       tone: "accent",
@@ -611,6 +616,7 @@ export function MeetingDetectedBanner() {
     `検知 ${promptStartFlow[0].value}`,
     `開始 ${promptStartFlow[1].value}`,
     "開始後はREC表示とライブ文字起こしを開きます",
+    "翻訳はライブ文字起こし内で必要時に切り替えます",
     "AIノートはライブ文字起こし内でオン/オフ確認できます",
     `保存 ${promptAudioTransmissionLabel}`,
   ].join("。");

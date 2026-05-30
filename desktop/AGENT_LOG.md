@@ -1,3 +1,12 @@
+## 2026-05-30 23:48:58 JST
+
+- 作業: `v2-meeting-detected-translation-route-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow 方針に合わせ、会議検知通知から録音開始した後にライブ文字起こし内で翻訳へ切り替えられることを開始前に短く示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の録音中UIはREC常駐、ライブ文字起こし、翻訳切替、AIノート確認を分けて読める構成だった。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の検知通知開始フローに `翻訳: 切替可` チップを追加し、aria/title用の流れにもライブ文字起こし内で必要時に翻訳へ切り替える説明を追加した。`src/App.css` で通知開始フローを6列へ調整した。
+- 判断: 検知通知は録音開始前の最初の意思決定画面なので、翻訳機能を詳細説明に埋めず、REC/文字起こし/AI/保存と同じ粒度のチップにする方がv2の直感性に合う。新しい操作を増やさず、既存のライブ文字起こし内切替として示す。
+- 検証: `rg` で検知通知の翻訳チップ、aria/title、6列スタイル、ログを確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:46:06 JST
 
 - 作業: `v2-settings-translation-runtime-flow`
