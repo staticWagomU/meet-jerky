@@ -1,3 +1,12 @@
+## 2026-05-30 23:54:00 JST
+
+- 作業: `v2-detection-start-flow-label-sync`
+- 目的: `meet-jerky-desktop-v2.pen` の Recording Flow / Settings Overview 方針に合わせ、設定の検出通知トグルと検出ルールプレビューの補助ラベルでも、録音開始後の翻訳切替とAIノート確認を説明する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`snapshot_layout`、`get_guidelines`。v2の検出導線は通知から録音、REC常駐、ライブ文字起こし、翻訳切替、AIノート確認へ進む。
+- 変更: `src/routes/SettingsView.tsx` の `detectionNotificationToggleLabel` と `detectionRulePreviewLabel` に、ライブ文字起こし後の翻訳切替とAIノート確認を追加した。可視レイアウトと録音ロジックは変更していない。
+- 判断: 設定開始導線のチップは更新済みだが、同じ検出カード内の補助ラベルがREC/文字起こし止まりだと、支援技術やtitleで読む情報がv2フローとずれる。見た目を増やさずラベルだけ揃えるのが最小で安全。
+- 検証: `rg` で検出通知トグルと検出ルールプレビューの補助ラベル、旧ラベルの解消、ログを確認した。`git diff --check` 成功。`npm run build` 成功（Viteの500kB超チャンク警告のみ）。
+
 ## 2026-05-30 23:52:42 JST
 
 - 作業: `v2-settings-start-route-translation-chip`

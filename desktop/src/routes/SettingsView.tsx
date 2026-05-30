@@ -449,8 +449,8 @@ export function SettingsView({
     "URL・アプリ・音声状態で検出し、通知から録音開始できます。";
   const detectionServiceGroupLabel = `会議検出対象。${enabledDetectionServiceLabels.length}件が有効。検知した会議は通知から録音開始できます。`;
   const detectionRuleGroupLabel = `会議検出ルールの種類。現在は${detectionSignalRequirementLabel}で通知し、通知から録音開始できます。`;
-  const detectionNotificationToggleLabel = `会議検出通知: ${detectionStatusLabel}。オンのときは検知通知から録音開始し、REC表示とライブ文字起こしへ進みます。`;
-  const detectionRulePreviewLabel = `検出ルール: ${detectionSignalRequirementLabel}。条件一致時は通知ウィンドウを出し、通知から録音開始、REC表示、ライブ文字起こしへ進みます。`;
+  const detectionNotificationToggleLabel = `会議検出通知: ${detectionStatusLabel}。オンのときは検知通知から録音開始し、REC表示、ライブ文字起こし、翻訳切替、AIノート確認へ進みます。`;
+  const detectionRulePreviewLabel = `検出ルール: ${detectionSignalRequirementLabel}。条件一致時は通知ウィンドウを出し、通知から録音開始、REC表示、ライブ文字起こし、翻訳切替、AIノート確認へ進みます。`;
   const recordingStartRoutesLabel =
     "開始導線: 検知通知またはメニューバー録音から開始。開始後はREC表示、ライブ文字起こし、翻訳切替、AIノート確認、このMac保存へ進みます。";
   const recordingStartRoutes = [
