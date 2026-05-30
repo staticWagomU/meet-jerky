@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useQuery } from "@tanstack/react-query";
+import { isTauriRuntime } from "../utils/browserRuntime";
+import { previewSessionSummaries } from "../utils/previewSessionData";
 
 /// バックエンドが camelCase でシリアライズする SessionSummary の型定義。
 /// 参照: desktop/src-tauri/src/session_store.rs
@@ -16,9 +18,13 @@ export interface SessionSummary {
  * 初回起動時でもエラーにならない。
  */
 export function useSessionList() {
+  const shouldUsePreviewData = !isTauriRuntime();
   const query = useQuery<SessionSummary[]>({
-    queryKey: ["sessionList"],
-    queryFn: () => invoke<SessionSummary[]>("list_session_summaries_cmd"),
+    queryKey: ["sessionList", shouldUsePreviewData ? "browser-preview" : "tauri"],
+    queryFn: () =>
+      shouldUsePreviewData
+        ? Promise.resolve(previewSessionSummaries)
+        : invoke<SessionSummary[]>("list_session_summaries_cmd"),
   });
 
   return {

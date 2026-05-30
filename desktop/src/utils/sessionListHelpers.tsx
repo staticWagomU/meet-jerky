@@ -49,11 +49,7 @@ export function formatSearchQueryForLabel(query: string): string {
 }
 
 export function getSearchTerms(query: string): string[] {
-  return query
-    .trim()
-    .toLocaleLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
+  return query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
 }
 
 function hasAnySearchTerm(text: string, searchTerms: string[]): boolean {
@@ -119,13 +115,15 @@ export function renderHighlightedSearchExcerpt(
 
   const matcher = new RegExp(`(${searchTerms.join("|")})`, "gi");
   const exactMatcher = new RegExp(`^(${searchTerms.join("|")})$`, "i");
-  return text.split(matcher).map((part, index) =>
-    exactMatcher.test(part) ? (
-      <mark key={`${part}-${index}`}>{part}</mark>
-    ) : (
-      part
-    ),
-  );
+  return text
+    .split(matcher)
+    .map((part, index) =>
+      exactMatcher.test(part) ? (
+        <mark key={`${part}-${index}`}>{part}</mark>
+      ) : (
+        part
+      ),
+    );
 }
 
 export function hasTranscriptBody(searchText: string): boolean {
@@ -134,8 +132,8 @@ export function hasTranscriptBody(searchText: string): boolean {
 
 function getTranscriptBodySearchLabel(searchText: string): string {
   return hasTranscriptBody(searchText)
-    ? "文字起こし本文あり"
-    : "文字起こし本文なし";
+    ? "文字起こしあり"
+    : "文字起こしなし";
 }
 
 export function getTranscriptTrackCounts(
@@ -200,10 +198,16 @@ export function getSessionSearchMatchLabels(
   const matchTargets = [
     { label: "タイトル", text: getCompactSessionTitle(session.title) },
     { label: "日時", text: startedAtLabel },
-    { label: "ファイル名", text: getFileName(session.path) },
-    { label: "本文状態", text: getTranscriptBodySearchLabel(session.searchText) },
+    { label: "保存名", text: getFileName(session.path) },
+    {
+      label: "文字起こし状態",
+      text: getTranscriptBodySearchLabel(session.searchText),
+    },
     ...getTranscriptTrackSearchMatchTargets(transcriptTrackCounts),
-    { label: "本文", text: unescapeInlineMarkdownText(session.searchText) },
+    {
+      label: "文字起こし",
+      text: unescapeInlineMarkdownText(session.searchText),
+    },
   ];
 
   return matchTargets

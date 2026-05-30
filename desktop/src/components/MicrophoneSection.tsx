@@ -36,9 +36,7 @@ export function MicrophoneSection({
   onRetryDevices,
   onToggleRecording,
 }: MicrophoneSectionProps) {
-  const micLevelPercent = Math.round(
-    sanitizeAudioLevel(micLevel) * 100,
-  );
+  const micLevelPercent = Math.round(sanitizeAudioLevel(micLevel) * 100);
   const isMicInputWaiting = isMicRecording && micLevelPercent === 0;
   const micStateText = isOperationPending
     ? "切替中"
@@ -53,27 +51,52 @@ export function MicrophoneSection({
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const micStateDescription = `${SELF_TRACK_DEVICE_LABEL}: ${micStateText}`;
   const micButtonLabel = isOperationPending
-    ? `${SELF_TRACK_DEVICE_LABEL}録音を切替中`
+    ? `${SELF_TRACK_DEVICE_LABEL}を切替中`
     : isControlDisabled
-      ? "他の音声または文字起こし操作を待機中"
-    : isMicRecording
-      ? `${SELF_TRACK_DEVICE_LABEL}録音を停止。停止すると自分の発話は文字起こしされません`
-      : `${SELF_TRACK_DEVICE_LABEL}録音を開始。自分の発話を文字起こしします`;
+      ? "他の操作を待機中"
+      : isMicRecording
+        ? `${SELF_TRACK_DEVICE_LABEL}を停止`
+        : `${SELF_TRACK_DEVICE_LABEL}を録音`;
   const deviceSelectLabel =
     isMicRecording || isOperationPending
-      ? "マイクデバイス: 録音中または切替中は変更できません"
+      ? "マイク: 録音中は変更不可"
       : isControlDisabled
-        ? "マイクデバイス: 他の音声または文字起こし操作を待機中は変更できません"
-      : "マイクデバイス: 自分トラックの入力を選択";
+        ? "マイク: 他の操作を待機中"
+        : "マイク入力を選択";
   const retryDevicesLabel = isReloadingAudioDevices
     ? `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を取得中`
     : `${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を再取得`;
   const audioDevicesErrorMessage = audioDevicesError
     ? toErrorMessage(audioDevicesError)
     : "";
-  const micInputWaitingLabel =
-    `${SELF_TRACK_DEVICE_LABEL}: 入力待ち。音量 0%。マイクのミュート、入力デバイス、macOS のマイク権限を確認してください`;
+  const micInputWaitingLabel = `${SELF_TRACK_DEVICE_LABEL}: 入力待ち。マイクと権限を確認`;
   const micSectionLabel = `${micStateDescription}${isMicInputWaiting ? `、${micInputWaitingLabel}` : ""}、音量 ${micLevelPercent}%`;
+  const micBoundaryItems = [
+    {
+      label: "トラック",
+      value: "自分",
+      detail: SELF_TRACK_DEVICE_LABEL,
+      tone: "ready",
+    },
+    {
+      label: "入力",
+      value: `${micLevelPercent}%`,
+      detail: isMicInputWaiting ? "入力待ち" : "レベル",
+      tone: isMicInputWaiting ? "warn" : isMicRecording ? "ready" : "muted",
+    },
+    {
+      label: "自分音声",
+      value: isMicRecording ? "録音中" : "録音待機",
+      detail: "文字起こし対象",
+      tone: isMicRecording ? "ready" : "muted",
+    },
+    {
+      label: "音声外部送信",
+      value: "外部送信なし",
+      detail: "音声トラック",
+      tone: "ready",
+    },
+  ] as const;
 
   return (
     <div
@@ -120,12 +143,28 @@ export function MicrophoneSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`${SELF_TRACK_DEVICE_LABEL}: ${micDropCountTotal} サンプル破棄`}
-            title={`${SELF_TRACK_DEVICE_LABEL}: ${micDropCountTotal} サンプル破棄`}
+            aria-label={`${SELF_TRACK_DEVICE_LABEL}: 音声欠落 ${micDropCountTotal} 件`}
+            title={`${SELF_TRACK_DEVICE_LABEL}: 音声欠落 ${micDropCountTotal} 件`}
           >
-            破棄 {micDropCountTotal}
+            欠落 {micDropCountTotal}
           </span>
         )}
+      </div>
+      <div
+        className="audio-source-boundary-grid"
+        aria-label={`${SELF_TRACK_DEVICE_LABEL}: ${isMicRecording ? "録音中" : "未録音"}、音量 ${micLevelPercent}%、音声は外部送信しません`}
+        title={`${SELF_TRACK_DEVICE_LABEL}の取得境界`}
+      >
+        {micBoundaryItems.map((item) => (
+          <span
+            key={item.label}
+            className={`audio-source-boundary-item audio-source-boundary-item-${item.tone}`}
+          >
+            <strong>{item.label}</strong>
+            <small>{item.value}</small>
+            <em>{item.detail}</em>
+          </span>
+        ))}
       </div>
       <div className="controls-row">
         <div className="device-selector">
@@ -159,25 +198,22 @@ export function MicrophoneSection({
             aria-hidden="true"
           />
           {isOperationPending
-            ? "録音を切替中..."
+            ? "録音を切替中…"
             : isWaitingForOtherOperation
               ? "他操作待ち"
-            : isMicRecording
-              ? "自分の録音を停止"
-              : "自分の録音を開始"}
+              : isMicRecording
+                ? "自分の録音を停止"
+                : "自分の録音を開始"}
         </button>
       </div>
       {Boolean(audioDevicesError) && (
         <div
           className="settings-inline-error"
           role="alert"
-          aria-label={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${audioDevicesErrorMessage}`}
-          title={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧エラー: ${audioDevicesErrorMessage}`}
+          aria-label={`${SELF_TRACK_DEVICE_LABEL}のデバイス一覧を取得できません`}
+          title={audioDevicesErrorMessage}
         >
-          <span>
-            自分トラックのマイクデバイス一覧の取得に失敗しました:{" "}
-            {audioDevicesErrorMessage}
-          </span>
+          <span>マイク一覧を取得できません。</span>
           <button
             type="button"
             className="control-btn control-btn-clear"
@@ -186,7 +222,9 @@ export function MicrophoneSection({
             aria-label={retryDevicesLabel}
             title={retryDevicesLabel}
           >
-            {isReloadingAudioDevices ? "取得中..." : "デバイスを再取得"}
+            {isReloadingAudioDevices
+              ? "マイク一覧取得中…"
+              : "マイク一覧を再取得"}
           </button>
         </div>
       )}
@@ -202,8 +240,7 @@ export function MicrophoneSection({
       </div>
       {!isCompact && (
         <div className="audio-source-note">
-          マイク音声は{SELF_TRACK_DEVICE_LABEL}
-          として文字起こしされます。マイクが未許可の場合、自分の発話は記録されません。
+          マイク音声は{SELF_TRACK_DEVICE_LABEL}として記録します。
         </div>
       )}
     </div>

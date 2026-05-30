@@ -5,7 +5,7 @@ import {
 } from "./audioTrackLabels";
 
 export const APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON =
-  "Apple Speech は現在、自分トラックと相手側トラックの同時文字起こしを安全に開始できません。どちらか片方だけで開始するか、Whisper / OpenAI Realtime / ElevenLabs Realtime を選択してください。";
+  "Apple Speech は片側トラック向けです。自分または相手側だけで開始してください。";
 
 export function getTranscriptionSourceStatus(
   isTranscribing: boolean,
@@ -92,16 +92,16 @@ export function getTranscriptionStartBlockedReason(
 ): string | null {
   if (isTranscribing) return null;
   if (settingsError) {
-    return "文字起こし設定を取得できません。設定画面または再読み込みで状態を確認してください。";
+    return "文字起こし設定を確認できません。";
   }
   if (isSettingsLoading) {
     return "文字起こし設定を確認中です。";
   }
   if (modelDownloadedError) {
-    return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
+    return "Whisper モデルを確認できません。";
   }
   if (externalApiKeyError && externalApiProvider) {
-    return `${externalApiProvider} API キーの状態を確認できません。設定画面で API キー状態を再確認してください。`;
+    return `${externalApiProvider} API キーを確認できません。`;
   }
   if (!isAnySourceRecording) {
     return `文字起こしを開始するには、${SELF_TRACK_DEVICE_LABEL}の録音または${OTHER_TRACK_DEVICE_LABEL}の取得を開始してください。`;
@@ -117,7 +117,7 @@ export function getTranscriptionStartBlockedReason(
     return `${externalApiProvider} API キーの状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
-    return `${externalApiProvider} Realtime の利用には、設定画面で API キーを登録してください。`;
+    return `${externalApiProvider} API キーを登録してください。`;
   }
   if (!requiresLocalModel) {
     return null;

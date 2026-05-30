@@ -1,3 +1,5442 @@
+## 2026-05-30 23:06:34 JST
+
+- 作業: `v2-design-token-sync`
+- 目的: `meet-jerky-desktop-v2.pen` の実変数に合わせ、コード側の基礎フォント、アクセント色、境界線、紙面色、本文色を揃え、録音中/録音後/設定UI全体の見た目の基盤をv2に近づける。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP `get_editor_state`、`get_variables`、`get_guidelines`、`snapshot_layout`。v2.pen の実変数は `accent.primary #FF5C00`、`accent.secondary #FF8533`、`border.subtle #E8DDD6`、`surface.muted #F7F3F0`、`font.body Geist`、`font.heading Inter`、`font.caption Funnel Sans`。
+- 変更: `@fontsource/geist` と `@fontsource/inter` を追加し、未使用になった `@fontsource/anton` を外した。`src/main.tsx` で Geist / Inter を読み込み、`src/App.css` の `:root` に v2 変数エイリアスを追加して既存の `--es-*` トークンを v2 のオレンジ系アクセント、白/ミュート紙面、実境界色へマッピングした。
+- 判断: これまでのUI改善は短い状態フローを多く追加していたが、基礎トークンが旧想定の青/Anton寄りで、Pencil上の現在のv2変数とずれていた。個別コンポーネントをさらに増やす前に、全画面に効くトークン層を合わせる方が、現行MeetJarkeyのエッセンスを保ちながらMacアプリらしいミニマルさへ近づく。
+- 依存関係: `@fontsource/geist`、`@fontsource/inter` を追加。UIフォントをローカル同梱してネットワーク取得を避けるため。`@fontsource/anton` はv2実変数で使わなくなったため削除。
+- 検証: `rg -n 'v2-design-token-sync|@fontsource/geist|@fontsource/inter|@fontsource/anton|--v2-accent-primary|--font-display: \"Inter\"|--font-sans:|#ff5c00|#e8ddd6|#f7f3f0' AGENT_LOG.md package.json package-lock.json src/main.tsx src/App.css` で依存、フォント読み込み、v2トークン、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 23:03:15 JST
+
+- 作業: `v2-controller-recording-route-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始UI方針に合わせ、検証用コントローラでも会議検知通知、メニューバー録音、常駐REC、ライブ文字起こし、ローカル保存までの流れを短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/ControllerWindow.tsx` に `CONTROLLER_RECORDING_FLOW` と `controllerRecordingFlowLabel` を追加し、ヘッダー直下へ `検知`、`開始`、`REC`、`ライブ`、`保存` の5チップを表示した。`src/App.css` に v2 パレットの blue / green / amber を使ったコントローラ録音導線チップと狭幅時2列表示を追加した。
+- 判断: 検証用UIは直接のユーザー画面ではないが、通知録音・メニューバー録音・REC・ライブ文字起こし・AIノート確認をまとめて操作する入口であり、v2 UIの動作確認に使う。開始後の流れを同じ語彙で見せることで、検証時に録音透明性と開始導線の抜けを見つけやすくする。
+- 検証: `rg -n 'v2-controller-recording-route-flow|CONTROLLER_RECORDING_FLOW|controllerRecordingFlowLabel|controller-recording-flow|controller-recording-flow-step|検知.*開始.*REC.*ライブ.*保存|録音導線の検証フロー' AGENT_LOG.md src/components/ControllerWindow.tsx src/App.css` でコントローラ録音導線フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:55:32 JST
+
+- 作業: `v2-session-detail-transcript-review-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴詳細のチャット文字起こしで、表示形式、検索状態、コピー対象、議事録素材化を録音ごとの状態として短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `transcriptReviewFlow` と `transcriptReviewFlowLabel` を追加し、文字起こしパネルの固定ピルを `表示`、`検索`、`コピー`、`議事録` の4チップへ置き換えた。`src/App.css` に v2 パレットの blue / green / amber / neutral / muted を使ったチャット文字起こしフローチップと狭幅時2列表示を追加した。
+- 判断: 既存UIはLINE風の左右チャット表示を持っていたが、上部の状態ピルは固定文言で、検索件数、コピー対象、議事録素材として使われることが録音ごとの状態として読み取りにくかった。文字起こしパネル内に動的フローを置くことで、説明文を増やさず録音後レビューの直感性を上げる。
+- 検証: `rg -n 'v2-session-detail-transcript-review-flow|transcriptReviewFlow|transcriptReviewFlowLabel|session-detail-transcript-flow|session-detail-transcript-flow-chip|表示.*検索.*コピー.*議事録|チャット文字起こしの状態' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` でチャット文字起こしフロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:52:50 JST
+
+- 作業: `v2-settings-transcription-correction-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こし言語、辞書補正の未接続状態、後処理補正予定、議事録生成前の補正候補という関係を、文字起こし設定内で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `transcriptionCorrectionFlow` と `transcriptionCorrectionFlowLabel` を追加し、文字起こし言語カードへ `言語`、`辞書`、`補正`、`議事録` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った補正状態チップと狭幅時2列表示を追加した。
+- 判断: 既存UIは辞書補正と後処理補正の未接続状態を個別の文章で示していたが、言語設定、将来の辞書補正、履歴後処理、議事録生成前補正の流れは読み取りにくかった。未実装機能を実装済みのように見せず、短い状態フローで現在の保存範囲と将来接続先を区別する。
+- 検証: `rg -n 'v2-settings-transcription-correction-flow|transcriptionCorrectionFlow|transcriptionCorrectionFlowLabel|settings-transcription-correction-flow|settings-transcription-correction-flow-step|言語.*辞書.*補正.*議事録|文字起こし補正の状態' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` で補正状態フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:49:54 JST
+
+- 作業: `v2-session-list-item-review-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴一覧の各録音カードで、文字起こしコピー可否、音声トラック状態、録音レビュー導線、AI送信境界を短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionList.tsx` に `sessionReviewFlow` と `sessionReviewFlowLabel` を追加し、履歴カード本文へ `文字起こし`、`トラック`、`レビュー`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使ったカード内レビュー導線チップと狭幅時2列表示を追加した。
+- 判断: 既存UIは一覧上部に録音後アクション全体を表示していたが、各録音カードではコピー可否、トラック分離、レビュー内で確認できる内容、音声をAI送信しない境界がメタ情報とボタンに分散していた。カード単位の短いフローにまとめることで、履歴一覧から録音後レビューへ進む前の判断をミニマルにする。
+- 検証: `rg -n 'v2-session-list-item-review-flow|sessionReviewFlow|sessionReviewFlowLabel|session-list-item-flow|session-list-item-flow-chip|文字起こし.*トラック.*レビュー.*送信|録音後レビュー導線' AGENT_LOG.md src/routes/SessionList.tsx src/App.css` でカード内レビュー導線、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:44:57 JST
+
+- 作業: `v2-settings-recording-track-input-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、マイク入力と相手側システム音声が録音時に別トラックとして保存され、音声トラックを外部送信しないことを録音トラックカード内で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `recordingTrackInputFlow` と `recordingTrackInputFlowLabel` を追加し、録音トラックカードへ `自分`、`相手側`、`保存`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber を使った録音トラック入力チップと狭幅時2列表示を追加した。
+- 判断: 既存UIはマイク権限と画面収録権限を個別に表示していたが、ユーザーが録音前に「自分/相手側がどう分離され、保存され、送信されないか」をまとめて確認する場所が弱かった。録音トラックカード内の短いフローで、ユーザー要件の別トラック取得と透明性を説明過多にせず補強する。
+- 検証: `rg -n 'v2-settings-recording-track-input-flow|recordingTrackInputFlow|recordingTrackInputFlowLabel|settings-recording-track-flow|settings-recording-track-flow-step|自分.*相手側.*保存.*送信|録音トラックの入力と保存範囲' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` で録音トラック入力フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:41:32 JST
+
+- 作業: `v2-settings-transcription-engine-runtime-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こしエンジン選択が録音中の2トラック入力、ライブ表示、音声外部送信境界へどう影響するかをエンジンカード内で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `transcriptionEngineRuntimeFlow` と `transcriptionEngineRuntimeFlowLabel` を追加し、文字起こしエンジンカードへ `入力`、`エンジン`、`表示`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使ったエンジン実行範囲チップと狭幅時2列表示を追加した。
+- 判断: 既存UIは各エンジンの説明と外部Realtimeのリスク表示を持っていたが、選択中エンジンの実行範囲がラジオ一覧の説明に分散していた。設定カード内に入力/エンジン/表示/送信をまとめることで、端末内優先と音声外部送信の違いをミニマルに確認できる。
+- 検証: `rg -n 'v2-settings-transcription-engine-runtime-flow|transcriptionEngineRuntimeFlow|transcriptionEngineRuntimeFlowLabel|settings-transcription-engine-flow|settings-transcription-engine-flow-step|入力.*エンジン.*表示.*送信|文字起こしエンジンの実行範囲' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` でエンジン実行範囲フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:38:16 JST
+
+- 作業: `v2-live-notes-runtime-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートのオン/オフ状態、表示中の文字起こし素材、質問準備、AI送信境界をライブ文字起こしウィンドウのAIノート欄で常時確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `liveNotesRuntimeFlow` と `liveNotesRuntimeFlowLabel` を追加し、AIノート欄のヘッダー直下へ `入力`、`ノート`、`質問`、`送信` の4チップを常時表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使ったランタイムフローチップと狭幅時2列表示を追加した。
+- 判断: 既存UIはAIノートのオン/オフ、会議ノート、質問準備、送信境界を個別に持っていたが、AIノート欄を開いた瞬間に現在の状態を俯瞰する場所がなかった。ヘッダー直下に短いフローを置くことで、ユーザー要件の「AI利用はオンオフでき、質問チャット付きリアルタイム会議ノートを表示する」を説明過多にせず補強する。
+- 検証: `rg -n 'v2-live-notes-runtime-flow|liveNotesRuntimeFlow|liveNotesRuntimeFlowLabel|live-notes-runtime-flow|live-notes-runtime-chip|入力.*ノート.*質問.*送信|AIノートの状態' AGENT_LOG.md src/components/LiveCaptionWindow.tsx src/App.css` でAIノート状態フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:35:22 JST
+
+- 作業: `v2-meeting-detected-start-flow-chips`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始UI方針に合わせ、会議検知通知から録音開始した後に何が起きるかを、検知通知ウィンドウ内で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/MeetingDetectedBanner.tsx` に `promptStartFlow` と `promptStartFlowLabel` を追加し、検知通知のメタ情報を `検知`、`開始`、`表示`、`保存` の4チップへ置き換えた。`src/App.css` に v2 パレットの blue / green / amber を使った通知開始フローチップ、狭幅時2列表示、通知ウィンドウ内の高さ調整を追加した。
+- 判断: 既存UIは通知録音、別トラック保存、REC表示、ライブ文字起こしを文章として伝えていたが、録音開始後の流れが一目で追いにくかった。検知通知はユーザーが録音開始を判断する最初の画面なので、ここに開始後の表示・保存・送信境界を短いチップで置く方が、ミニマルさと録音透明性の両方に合う。
+- 検証: `rg -n 'v2-meeting-detected-start-flow-chips|promptStartFlow|promptStartFlowLabel|meeting-detected-start-flow|検知.*開始.*表示.*保存|会議検知から録音開始' AGENT_LOG.md src/components/MeetingDetectedBanner.tsx src/App.css` で通知開始フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:25:24 JST
+
+- 作業: `v2-session-detail-handwritten-material-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録UI方針に合わせ、手書きメモがこの録音の議事録ワークスペースに保存され、文字起こしと合わせて議事録下書き/送信用プロンプトへ反映され、音声トラックを含めないことを手書きメモ欄内で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `handwrittenMemoMaterialFlow` と `handwrittenMemoMaterialFlowLabel` を追加し、手書きメモカードへ `保存`、`素材`、`反映`、`除外` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った手書きメモ素材チップと狭幅時2列表示を追加した。
+- 判断: 既存UIは手書きメモの入力欄と入力済みステータスを持っていたが、メモが議事録素材としてどう使われ、何を含めないかは上部の素材行と説明に分散していた。手書きメモ欄内に保存/素材/反映/除外をまとめることで、説明を増やさずユーザー要件の「自分の手書きメモをもとに議事録生成」を明確にする。
+- 検証: `rg -n 'v2-session-detail-handwritten-material-flow|handwrittenMemoMaterialFlow|handwrittenMemoMaterialFlowLabel|session-detail-handwritten-flow|session-detail-handwritten-flow-chip|保存.*素材.*反映.*除外|手書きメモ.*議事録ワークスペース' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` で手書きメモ素材フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 22:22:39 JST
+
+- 作業: `v2-settings-detection-signal-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の検出設定UI方針に合わせ、検出対象、必要シグナル数、音声シグナルの扱い、通知から録音確認へ進む状態を検出ルールカード内で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `detectionSignalFlow` と `detectionSignalFlowLabel` を追加し、検出ルールプレビュー内へ `対象`、`一致`、`音声`、`通知` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った検出信号チップと狭幅時2列表示を追加した。
+- 判断: 既存UIは検出サービス、シグナル数、音声必須、通知開始導線を個別に持っていたが、検出判定から通知録音へ進む流れは複数箇所に分散していた。信号フローを検出ルールカード内に置くことで、説明文を増やさず会議検知の信頼性と録音開始導線を読みやすくする。
+- 検証: `rg -n 'v2-settings-detection-signal-flow|detectionSignalFlow|detectionSignalFlowLabel|settings-detection-signal-flow|settings-detection-signal-chip|検出対象 .* 件|通知判定' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` で検出信号フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 20:30:04 JST
+
+- 作業: `v2-live-translation-boundary-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム翻訳タブで、表示中の原文、翻訳先、現在の出力状態、翻訳外部送信なしの境界を短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `translationBoundaryFlow` と `translationBoundaryFlowLabel` を追加し、翻訳ビューへ `原文`、`翻訳先`、`出力`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った翻訳フローチップと狭幅時2列表示を追加した。
+- 判断: 既存UIは翻訳タブ、翻訳先ボタン、未接続状態、原文コピーを持っていたが、翻訳が未接続で原文プレビューのみであることと外部送信境界が複数箇所に分散していた。短いフローで入力/対象/出力/送信をまとめることで、ミニマルさを維持しながら「必要に応じて翻訳に切り替える」体験の誤解を減らす。
+- 検証: `rg -n 'v2-live-translation-boundary-flow|translationBoundaryFlow|translationBoundaryFlowLabel|live-transcript-translation-flow|live-transcript-translation-flow-chip|原文プレビュー|翻訳外部送信' AGENT_LOG.md src/components/LiveCaptionWindow.tsx src/App.css` で翻訳境界フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 19:44:36 JST
+
+- 作業: `v2-permission-preflight-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始前UI方針に合わせ、権限確認が必要な状態でも、権限確認後に会議検知通知またはメニューバー録音から開始し、録音中はREC常時表示、録音履歴/文字起こし/音声トラックはこのMacに保存される流れを短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/PermissionBanner.tsx` に `permissionPreflightFlow` と `permissionPreflightFlowLabel` を追加し、権限バナーへ `権限`、`開始`、`録音中`、`保存` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber を使った preflight チップと狭幅時2列表示を追加した。
+- 判断: 既存バナーは不足権限と影響を説明していたが、権限を直した後の録音開始経路と録音中/保存状態が分散していた。権限バナーは録音開始前の最初の障害表示なので、ここに開始までの流れを置くことで、説明文を増やさず通知録音・メニューバー録音・REC透明性をつなげられる。
+- 検証: `rg -n 'v2-permission-preflight-flow|permissionPreflightFlow|permissionPreflightFlowLabel|permission-banner-preflight-flow|permission-banner-preflight-chip|REC常時表示|通知 / メニュー' AGENT_LOG.md src/components/PermissionBanner.tsx src/App.css` で権限 preflight フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 19:05:11 JST
+
+- 作業: `v2-session-detail-playback-mode-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴詳細でマイクのみ、スピーカーのみ、両方の音声トラック再生モードと、音声トラックをAI外部送信しない境界をタブ操作前に短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `playbackModeFlow` と `playbackModeFlowLabel` を追加し、音声トラックカード内へ `両方`、`マイク`、`スピーカー`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った再生モードチップと狭幅時2列表示を追加した。
+- 判断: 既存UIは3つの再生タブを持っていたが、録音後レビューで「どの音声を確認でき、音声がAI送信されないか」はタブ内の状態文を読む必要があった。タブ前に再生モードと送信境界を並べることで、説明を増やさずユーザー要件のスピーカー/マイク/両方再生を直感的に見せる。
+- 検証: `rg -n 'v2-session-detail-playback-mode-flow|playbackModeFlow|playbackModeFlowLabel|session-detail-playback-flow|session-detail-playback-flow-chip|音声トラックはAI外部送信' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` で再生モードフロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 19:02:27 JST
+
+- 作業: `v2-privacy-local-data-boundary-flow`
+- 目的: `meet-jerky-desktop-v2.pen` のプライバシー設定UI方針に合わせ、録音履歴、文字起こし、音声トラックがこのMacに保存され、AI議事録の送信境界は手動コピー/端末内/オフで変わり、音声トラックは送信しないことをローカルデータ欄で短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `privacyLocalDataBoundarySteps` と `privacyLocalDataBoundaryLabel` を追加し、プライバシーのローカルデータカードへ `保存`、`音声`、`議事録`、`除外` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使ったローカル境界チップと狭幅時2列表示を追加した。
+- 判断: 既存UIは保存先、AI外部送信、ディスク使用量を個別行で示していたが、録音データとAI送信境界が別々に読めた。ローカルデータ欄に保存/音声/議事録/除外をまとめることで、説明を増やさず録音透明性を上げる。
+- 検証: `rg -n 'v2-privacy-local-data-boundary-flow|privacyLocalDataBoundarySteps|privacyLocalDataBoundaryLabel|settings-privacy-local-flow|settings-privacy-local-chip|音声トラックは送信しません' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` でローカル境界フロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:57:22 JST
+
+- 作業: `v2-menu-start-translation-route-chip`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、メニューバー録音開始後にREC常時表示、ライブ文字起こし、翻訳切替、AIノート/質問準備へ進むことを開始前から確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/TranscriptView.tsx` の `menuStartBoundaryLabel` と `menu-start-boundary` 表示に `翻訳切替` を追加した。CSSは既存のストリップスタイルを再利用し、録音ロジックは変更していない。
+- 判断: 録音中ライブウィンドウには翻訳タブがあるが、メニューバー録音開始前のサマリーでは翻訳が見えず、ユーザー要件の「必要に応じてリアルタイム翻訳に切り替える」が入口で弱かった。短いチップを1つ足すだけなら、v2のミニマルさを崩さず録音中UIへの期待を揃えられる。
+- 検証: `rg -n 'v2-menu-start-translation-route-chip|menuStartBoundaryLabel|menu-start-boundary|翻訳切替|REC常時表示.*ライブ文字起こし' AGENT_LOG.md src/routes/TranscriptView.tsx src/App.css` でメニューバー開始後ストリップ、ラベル、既存スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:55:18 JST
+
+- 作業: `v2-session-detail-minutes-input-boundary-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録UI方針に合わせ、議事録生成で使う入力、生成される出力、含めない音声トラックを短い状態表示で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `minutesInputBoundaryFlow` と `minutesInputBoundaryFlowLabel` を追加し、議事録フロー直下へ `入力`、`出力`、`除外` の3チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った境界チップと狭幅時の1列表示を追加した。
+- 判断: 既存UIは素材行と4ステップフローで素材の存在は分かるが、AI議事録に「何を入れ、何を出し、何を含めないか」は複数箇所に分散していた。入力/出力/除外を同じ列に並べることで、説明文を増やさず録音後の送信境界を明確にした。
+- 検証: `rg -n 'v2-session-detail-minutes-input-boundary-flow|minutesInputBoundaryFlow|minutesInputBoundaryFlowLabel|session-detail-minutes-boundary-flow|session-detail-minutes-boundary-chip|入力.*出力.*除外|音声トラック' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` で入力/出力/除外チップ、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:52:56 JST
+
+- 作業: `v2-ring-light-ai-notes-boundary-pill`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中インジケーター方針に合わせ、常駐REC表示でもAIノート/質問がライブ文字起こし内で確認でき、質問はここでは未送信であることを短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/RingLightWindow.tsx` に `ringLightNotesLabel` と `AIノート: ライブ内` pill を追加し、常駐RECインジケーターの `aria-label` / `title` / ライブ文字起こし表示ボタンの説明にもAIノートと未送信質問の境界を含めた。`src/App.css` に v2 amber 系の `ring-light-notes-pill` を追加した。
+- 判断: 既存の常駐RECインジケーターはREC、文字起こし、トラック、保存、音声送信境界を示していたが、ユーザー要件のAIノート/質問はライブウィンドウを開くまで見えにくかった。小さなpillでライブ内確認と未送信境界を示し、録音中に何が動いているか忘れにくくした。
+- 検証: `rg -n 'v2-ring-light-ai-notes-boundary-pill|ringLightNotesLabel|ring-light-notes-pill|AIノート: ライブ内|質問はここでは未送信' AGENT_LOG.md src/components/RingLightWindow.tsx src/App.css` でAIノート境界pill、補助ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:50:38 JST
+
+- 作業: `v2-session-list-post-recording-action-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴一覧で検索、文字起こしコピー、音声トラック確認、議事録ワークスペースへ進めることを一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionList.tsx` に `libraryActionFlow` と `libraryActionFlowLabel` を追加し、履歴ヘッダー直下へ `検索`、`コピー`、`音声`、`議事録` の4チップを表示した。`src/App.css` に v2 パレットの blue / green / amber / muted を使った録音後アクションチップと狭幅時2列表示を追加した。
+- 判断: 既存UIは各行の `録音レビュー` や `文字起こしコピー` で機能に到達できたが、履歴一覧全体として録音後に何ができるかはヘッダーchipに分散していた。短いアクションフローにまとめることで、検索・コピー・音声・議事録の導線を説明文に頼らず把握できる。
+- 検証: `rg -n 'v2-session-list-post-recording-action-flow|libraryActionFlow|libraryActionFlowLabel|session-list-action-flow|session-list-action-chip|検索.*コピー.*音声.*議事録' AGENT_LOG.md src/routes/SessionList.tsx src/App.css` で録音後アクションフロー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:48:08 JST
+
+- 作業: `v2-detection-start-route-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の検知/開始UI方針に合わせ、検出設定タブでも `検知通知` と `メニューバー録音` の両方から録音開始でき、開始後はREC表示・ライブ文字起こし・このMac保存へ進むことを一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の検出カテゴリの通知トグル直下に `settings-start-route-strip` を追加し、`検知通知`、`メニューバー`、`開始後`、`保存` の4チップを表示した。既存の v2 パレット対応CSSを再利用し、機能ロジックは変更していない。
+- 判断: 一般タブには開始導線の要約があったが、実際に検出ルールを調整する検出タブでは通知条件とルールが主で、録音開始後の体験が分離して見えた。検出設定の直下に同じ開始経路を置くことで、会議検知通知から録音できるというユーザー要件を設定文脈でも明確にした。
+- 検証: `rg -n 'v2-detection-start-route-flow|recordingStartRoutesLabel|settings-start-route-strip|検知通知.*メニューバー|検知通知|メニューバー' AGENT_LOG.md src/routes/SettingsView.tsx src/App.css` で検出タブ側の開始導線、既存スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:46:04 JST
+
+- 作業: `v2-live-caption-mode-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、録音中に `文字起こし`、`翻訳`、`AIノート`、`質問` の状態を1行で確認できるようにし、必要な機能へ迷わず到達できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `liveCaptionModeFlow` と `liveCaptionModeFlowLabel` を追加し、ライブ文字起こしタブ直下に4チップのモードサマリーを表示した。`src/App.css` に v2 パレットの blue / green / muted を使ったチップスタイルと狭幅時2列表示を追加した。
+- 判断: 既存UIは録音中の文字起こし、翻訳、AIノート、質問準備を個別に持っていたが、録音中に「何が動いていて何が待機/オフか」を俯瞰する面が弱かった。録音中の邪魔にならない小さなサマリーへ集約し、Macアプリらしい控えめな状態透明性を高めた。
+- 検証: `rg -n 'v2-live-caption-mode-flow|liveCaptionModeFlow|liveCaptionModeFlowLabel|live-caption-mode-flow|live-caption-mode-chip|文字起こし.*翻訳.*AIノート.*質問' AGENT_LOG.md src/components/LiveCaptionWindow.tsx src/App.css` でモードサマリー、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:43:34 JST
+
+- 作業: `v2-session-detail-minutes-four-step-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ワークスペース方針に合わせ、議事録生成で使う素材を `文字起こし`、`テンプレート`、`手書きメモ`、`下書き/プロンプト` の順に明示し、録音後に何をもとに生成するかを直感的に把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` の議事録フローを3ステップから4ステップへ変更し、先頭に `文字起こし` を追加した。`src/App.css` の `.session-detail-minutes-flow` を4列化し、狭幅時は2列に落とすよう調整した。
+- 判断: 既存UIはソースチップで文字起こし件数を示していたが、番号付き生成フローには文字起こしが含まれておらず、ユーザー要件の「文字起こしされた内容と手書きメモをもとに議事録生成」が一目で伝わりにくかった。フローへ文字起こしを入れることで、説明文を増やさず生成素材の主従を明確にした。
+- 検証: `rg -n 'v2-session-detail-minutes-four-step-flow|文字起こし.*テンプレート.*手書きメモ|session-detail-minutes-flow|<strong>4</strong>' AGENT_LOG.md src/routes/SessionDetail.tsx src/App.css` で4ステップ表示、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:40:11 JST
+
+- 作業: `v2-settings-ai-minutes-material-flow`
+- 目的: `meet-jerky-desktop-v2.pen` のAI議事録設定UI方針に合わせ、録音後に文字起こし、手書きメモ、テンプレートを素材にし、送信は選択中プロバイダーの境界に従うことを一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `aiMinutesMaterialSteps` と `aiMinutesMaterialFlowLabel` を追加し、AIプロバイダーカードへ `文字起こし`、`手書きメモ`、`テンプレート`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの amber / blue を使った素材フローチップと狭幅時の2列表示を追加した。
+- 判断: 既存UIはプロバイダー選択と送信範囲の説明を持っていたが、録音後ワークスペースで何が議事録素材になるかは文章に寄っていた。素材と送信境界を同じ列に並べることで、説明を増やさず v2 のミニマルで直感的な議事録設定に近づく。
+- 検証: `rg -n 'v2-settings-ai-minutes-material-flow|aiMinutesMaterialSteps|aiMinutesMaterialFlowLabel|settings-ai-material-flow|settings-ai-material-step|文字起こし.*履歴から|テンプレート.*録音後選択' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:36:57 JST
+
+- 作業: `v2-settings-transcription-lifecycle-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こし設定の入口で、録音中ライブ表示から停止後の履歴保存、検索/コピー、議事録素材化までの流れを短く確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `transcriptionLifecycleSteps` と `transcriptionLifecycleLabel` を追加し、文字起こしの「出力とタイミング」カードへ `録音中`、`停止後`、`再利用`、`議事録` の4チップを表示した。`src/App.css` に v2 パレットの amber / blue を使ったライフサイクルチップと狭幅時の2列表示を追加した。
+- 判断: 既存UIはライブ表示、自動保存、音声トラック再生、書き出し形式を個別に示していたが、録音中UIと録音後レビューのつながりは読み取りにくかった。設定入口で流れを一列にまとめることで、説明を増やさずv2の直感性と透明性を補強できる。
+- 検証: `rg -n 'v2-settings-transcription-lifecycle-flow|transcriptionLifecycleSteps|transcriptionLifecycleLabel|settings-transcription-lifecycle|録音中|停止後|再利用' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:33:41 JST
+
+- 作業: `v2-live-ai-question-material-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートの質問準備欄で、質問が表示中の文字起こしと端末内会議ノートを素材にし、ここでは未送信であることを一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `copyableTranscriptLineCount`、`localMeetingNoteItemCount`、`aiQuestionMaterialFlow` を追加し、質問準備欄へ `素材`、`ノート`、`質問`、`送信` の4チップを表示した。`src/App.css` に v2 パレットの amber / blue を使ったミニマルな素材チップスタイルを追加した。
+- 判断: 既存UIはAIノートのオン/オフ、会議ノート、質問準備、未送信境界を持っていたが、質問が何を素材にしているかは会議ノート欄と入力欄に分散していた。録音中の小さなサイドパネルでは説明文より短い状態チップの方が、v2のミニマルで直感的な「質問できるノート」に近づく。
+- 検証: `rg -n 'v2-live-ai-question-material-flow|aiQuestionMaterialFlow|copyableTranscriptLineCount|localMeetingNoteItemCount|live-notes-question-material-flow|live-notes-question-material-chip|質問の素材' src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:30:52 JST
+
+- 作業: `v2-session-detail-post-recording-action-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴詳細の入口で検索、コピー、音声トラック確認、議事録生成の次アクションを一列で把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `sessionReviewActionFlow` と録音後アクションストリップを追加し、`検索`、`コピー`、`音声`、`議事録` の状態を表示した。`src/App.css` に v2 パレットの amber / blue を使ったミニマルなチップスタイルと狭幅時の縦並びを追加した。
+- 判断: 既存のレビュー概要は音声トラック、文字起こし、議事録、送信境界の状態確認には有効だが、録音後に行う操作が下部パネルへ分散していた。ユーザー要件の履歴検索、内容コピー、音声トラック確認、議事録作成を入口で見せることで、説明を増やさず録音後UIの直感性を上げられる。
+- 検証: `rg -n 'v2-session-detail-post-recording-action-flow|sessionReviewActionFlow|session-detail-action-flow|録音後アクション|検索、コピー、音声トラック確認、議事録生成' src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` で新ストリップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:27:19 JST
+
+- 作業: `v2-settings-start-route-strip`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、一般設定で検知通知からの録音とメニューバー録音の2系統を同列に確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の一般タブ「会議の検出」カードへ開始導線ストリップを追加し、`検知通知`、`メニューバー`、`REC / 文字起こし`、`このMac` を表示した。`src/App.css` に v2 パレットの amber / blue を使ったミニマルなチップスタイルと狭幅時の2列表示を追加した。
+- 判断: 既存UIは検知通知から録音できることは分かるが、メニューバー録音との並列関係と開始後の常時REC・ライブ文字起こし・保存先が設定入口で分散していた。短いチップ列に限定することで、説明を増やさず録音開始前の透明性を上げられる。
+- 検証: `rg -n 'v2-settings-start-route-strip|recordingStartRoutesLabel|settings-start-route-strip|settings-start-route-chip|検知通知|メニューバー録音|REC / 文字起こし|このMac' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` で新ストリップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:21:16 JST
+
+- 作業: `v2-main-transcription-storage-state-card`
+- 目的: `meet-jerky-desktop-v2.pen` のメイン録音UI方針に合わせ、メイン画面の状態レールでも録音/文字起こし/ノートだけでなく、このMac保存と音声外部送信なしを一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/TranscriptionControls.tsx` の状態レールに `保存` カードを追加し、`このMac` / `音声送信なし` を表示した。`src/App.css` で状態レールを4列化し、v2 blue 系の `transcription-state-item-safe` を追加した。
+- 判断: メイン録音画面では音声カードや文字起こし領域に送信境界はあるが、状態レール自体は `REC`、`文字起こし`、`ノート` の3要素だった。録音中に見返すレールへ保存境界を足すことで、説明文を増やさず透明性を上げられる。
+- 検証: `rg -n 'v2-main-transcription-storage-state-card|label: "保存"|value: "このMac"|音声送信なし|transcription-state-item-safe|repeat\\(4, minmax\\(0, 1fr\\)\\)' src/components/TranscriptionControls.tsx src/App.css AGENT_LOG.md` で新カード、4列化、安全境界スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:18:31 JST
+
+- 作業: `v2-meeting-detected-storage-meta-grid`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知UI方針に合わせ、通知から録音開始する前に、自分+相手側、REC/文字起こし、このMac保存、音声送信状態を一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の検知通知メタ情報を、長い文から `自分 + 相手側`、`REC / 文字起こし`、`このMacに保存`、音声送信状態の4要素へ整理した。`aria-label` / `title` でも別トラックでこのMacに保存することを明示した。`src/App.css` ではメタ行を2列グリッドにして、保存範囲だけ v2 blue 系で軽く強調した。
+- 判断: 以前は別トラックとREC/文字起こしは見える一方、保存範囲は補助ラベルに寄っていた。会議検知通知は録音開始前の最終確認なので、説明文を増やすより4つの短い状態語に整理する方が v2 のミニマルで直感的な開始体験に合う。
+- 検証: `rg -n 'v2-meeting-detected-storage-meta-grid|このMacに保存|自分 \\+ 相手側|REC / 文字起こし|別トラックでこのMacに保存|meeting-detected-banner-meta' src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` で新メタ表示、保存範囲ラベル、2列グリッド、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:15:36 JST
+
+- 作業: `v2-live-header-storage-transmission-pills`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こし通常ウィンドウのヘッダーだけで、REC、録音トラック、音声送信状態、このMac保存を確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` の通常表示ヘッダーに音声送信状態ピルと `このMacに保存` ピルを追加した。`src/App.css` に `live-transcript-boundary-pill` と `live-transcript-storage-pill` を追加し、通常時は v2 blue 系、外部送信時は amber 系で控えめに状態を出すようにした。
+- 判断: コンパクト表示では送信状態が見える一方、通常表示のヘッダーはRECとトラック中心で、送信/保存境界はサイド情報や補助属性に分散していた。録音中に一番視認されるヘッダーへ小さなピルを足す方が、説明を増やさず透明性を上げられる。
+- 検証: `rg -n 'v2-live-header-storage-transmission-pills|liveCaptionStorageLabel|live-transcript-boundary-pill|live-transcript-storage-pill|このMacに保存|compactTransmissionLabel' src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` で新ピル、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:13:04 JST
+
+- 作業: `v2-session-detail-transmission-review-card`
+- 目的: `meet-jerky-desktop-v2.pen` に合わせた録音後レビューUIで、履歴詳細の最上段から保存済み音声トラックとAI議事録の送信境界を確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` のレビュー概要レールに `送信境界` カードを追加し、外部AI設定時は `手動コピー確認`、それ以外は `外部送信なし` と表示した。`src/App.css` で概要レールを4列化し、v2 パレットの blue 系で安全境界カードを控えめに強調した。
+- 判断: 議事録パネル内には送信境界があるが、録音後レビューの入口では音声・文字起こし・議事録の状態だけが見えていた。最上段に境界カードを置くことで、詳細を読む前に「音声トラックは送信しない」ことが分かり、v2 のミニマルな安心感に近づく。
+- 検証: `rg -n 'v2-session-detail-transmission-review-card|送信境界|session-detail-review-item-safe|repeat\\(4, minmax\\(0, 1fr\\)\\)|手動コピー確認|音声トラックは送信しません' src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` で新カード、4列化、安全境界スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:10:13 JST
+
+- 作業: `v2-menu-start-boundary-strip`
+- 目的: `meet-jerky-desktop-v2.pen` に合わせたメニューバー録音導線で、録音開始前に「開始後に何が常時表示されるか」が弱かった。通知録音だけでなくメニューバー録音でも、REC表示、ライブ文字起こし、AIノート/質問未送信の境界を小さく明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既知の v2 方針と現行UIを根拠にした。
+- 変更: `src/routes/TranscriptView.tsx` に `menuStartBoundaryLabel` と `menu-start-boundary` セクションを追加し、開始後の `REC常時表示`、`ライブ文字起こし`、`AIノート・質問未送信` を録音ボタン前に表示した。`src/App.css` に v2 パレットの blue 系を薄く使ったミニマルな境界ストリップを追加した。
+- 判断: 既存の4枚カードにさらに説明を詰めると密度が上がりすぎるため、ボタン直前の1行ストリップに限定した。AI質問は送信済みと誤解されやすいので、UI文言と `aria-label` の両方で未送信を明示した。
+- 検証: `rg -n 'v2-menu-start-boundary-strip|menuStartBoundaryLabel|menu-start-boundary|REC常時表示|AIノート・質問未送信' src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` でラベル、表示、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:05:53 JST
+
+- 作業: `v2-meeting-detected-error-recovery-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知UI方針に合わせ、検知通知で録音開始前の確認に失敗した場合でも、次に確認すべき権限・検出設定・メニューバー録音の導線を最小表示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/MeetingDetectedBanner.tsx` に `errorRecoveryLabel` とエラー時の回復チップを追加した。`src/App.css` に `meeting-detected-banner-recovery` の控えめな赤系ピルスタイルを追加した。
+- 判断: 正常時は録音範囲、REC、ライブ文字起こし、AIノート確認が分かる一方、エラー時は「何を直せば録音開始できるか」が弱かった。v2ではミニマルでも直感的であることが重要なため、説明文を増やさず確認先を3語で示すのが適切。
+- 検証: `rg -n 'v2-meeting-detected-error-recovery-chip|errorRecoveryLabel|meeting-detected-banner-recovery|権限・検出設定・メニューバー録音' src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:02:49 JST
+
+- 作業: `v2-session-minutes-template-source-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録ワークスペースの素材行だけで、文字起こし、テンプレート、手書きメモ、補足指示、AI状態、音声非送信の関係を把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` の議事録素材行へ選択中テンプレートのチップを追加し、素材行の `aria-label` / `title` にもテンプレート名を含めた。`src/App.css` ではテンプレート/手書きメモのチップ色を明示クラスで制御するようにした。
+- 判断: 既存UIではテンプレート選択は直下にあるが、素材行だけを見ると議事録生成に使うテンプレートが抜けていた。素材の一体感を高めることで、v2の「少ないUIで直感的に状態が分かる」方向に近づく。
+- 検証: `rg -n 'v2-session-minutes-template-source-chip|session-detail-source-template|session-detail-source-memo|テンプレート \\$\\{minutesTemplate\\}|テンプレート \\{minutesTemplate\\}' src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 18:00:04 JST
+
+- 作業: `v2-settings-transcription-post-correction-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こし設定で辞書補正だけでなく、履歴・議事録生成前の後処理補正スコープも確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の文字起こし言語カードで、辞書補正の補助ラベルに将来の履歴後処理反映を明記し、`後処理補正` 状態チップを追加した。`src/App.css` に後処理補正チップの控えめな青系スタイルを追加した。
+- 判断: プロダクトコンセプトでは文字起こし精度、辞書登録、後処理補正が明示されている。現状は辞書未接続だけが表示され、履歴や議事録生成前に補正する流れが見えにくかったため、未実装機能を過剰に見せず、スコープだけを小さく表示するのが v2 のミニマルな設定体験に合う。
+- 検証: `rg -n 'v2-settings-transcription-post-correction-chip|settings-transcription-correction-state|後処理補正|履歴・議事録前' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:56:44 JST
+
+- 作業: `v2-ring-light-local-storage-pill`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常駐RECインディケーターで録音中であることだけでなく、録音履歴・文字起こし・音声トラックがこのMacに保存されることを常時確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/RingLightWindow.tsx` に `ringLightStorageLabel` と `このMacに保存` ピルを追加し、常駐REC全体とライブ文字起こし表示ボタンの補助ラベルにもローカル保存範囲を含めた。`src/App.css` に `ring-light-storage-pill` のミニマルな青系スタイルを追加した。
+- 判断: ユーザー要件では録音を忘れないために録音中インジケーターが常時必要で、プロダクト方針では保存範囲と送信有無の透明性が重要。常駐RECは最も視認頻度が高いため、トラック/送信状態に加えてローカル保存を示す小さなピルを置くのが v2 の安心感に合う。
+- 検証: `rg -n 'v2-ring-light-local-storage-pill|ringLightStorageLabel|ring-light-storage-pill|このMacに保存' src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md` で新ピル、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:54:11 JST
+
+- 作業: `v2-controller-manual-record-ai-note-route-label`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、手動録音開始後にREC表示、ライブ文字起こし、AIノート確認、未送信の質問準備へ進むことをコントローラーの検証導線でも分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/ControllerWindow.tsx` の通知開始、メニューバー手動開始、録音中ライブノートのシナリオ説明を、REC、ライブ文字起こし、AIノート確認、未送信質問準備まで含む表現に更新した。検証モードの透明性ストリップにも `AI質問未送信` を追加した。
+- 判断: ユーザー要件ではメニューバーから録音できることと、録音中UIでAIノートをオン/オフでき質問準備できることが重要。検証用コントローラーでも同じ流れを明示しておくことで、実装確認時に通知録音と手動録音の体験差が見落とされにくくなる。
+- 検証: `rg -n 'v2-controller-manual-record-ai-note-route-label|AI質問未送信|AIノート確認|未送信の質問準備|メニュー録音・REC' src/components/ControllerWindow.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:51:46 JST
+
+- 作業: `v2-session-list-ai-review-boundary-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴UI方針に合わせ、録音後レビューへ入る前からAI議事録はレビュー内で確認し、音声トラックをAI送信しないことが分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionList.tsx` の履歴ヘッダーにAIレビュー境界チップを追加し、録音レビューボタンの補助ラベルにもAI議事録確認と音声トラック非送信を含めた。`src/App.css` にAI境界チップの控えめなアンバー系スタイルを追加した。
+- 判断: 履歴一覧は検索・コピー・音声/チャット/議事録レビューの導線がある一方、AI議事録の送信境界は詳細画面に入るまで見えにくかった。ヘッダーの小さなチップで境界を明示する方が、v2のミニマルで安心できる録音後体験に合う。
+- 検証: `rg -n 'v2-session-list-ai-review-boundary-chip|libraryAiScopeLabel|session-list-header-chip-ai|AI: レビュー内確認|音声トラックはAI送信しません' src/routes/SessionList.tsx src/App.css AGENT_LOG.md` で新チップ、ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:49:06 JST
+
+- 作業: `v2-settings-recording-scope-overview-card`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、設定入口でマイク+スピーカーの別トラック録音、ローカル保存、音声非送信の境界をすぐ確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の主要設定カードへ `録音範囲` を追加し、クリック時にプライバシー設定へ移動するようにした。`src/App.css` の設定概要グリッドを5列に調整した。
+- 判断: 設定画面はマイク、検出、文字起こし、AIプロバイダーを個別に扱えているが、ユーザー要件の中心である「自分/相手側の別トラック録音」と「音声トラックは送らない」が概要では弱かった。新しいカードで録音範囲を入口に出す方が、v2のミニマルで直感的な設定体験に合う。
+- 検証: `rg -n 'v2-settings-recording-scope-overview-card|録音範囲|repeat\\(5, minmax\\(0, 1fr\\)\\)' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` で新カード、遷移、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:46:15 JST
+
+- 作業: `v2-live-ai-question-boundary-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートの質問準備で、質問が未送信であり、外部AIは手動コピー時に確認し、音声トラックは送信しないことを入力欄の近くで常時確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `aiQuestionBoundaryLabel` を追加し、AIノートの質問カード内に未送信/外部AI確認/音声非送信を示す境界チップを表示した。`src/App.css` に通常状態と外部AI警告状態のミニマルなチップスタイルを追加した。
+- 判断: 録音中UIは邪魔にならないことが重要だが、AI質問は誤送信不安が起きやすい。ヘッダー直下の小さなチップで境界を明示すれば、情報量を増やしすぎず、v2の安心感とミニマルさを両立できる。
+- 検証: `rg -n 'v2-live-ai-question-boundary-chip|aiQuestionBoundaryLabel|live-notes-question-boundary' src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` で新ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:43:58 JST
+
+- 作業: `v2-session-minutes-ai-source-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録ワークスペース上部でAIプロバイダー状態と外部送信境界をすぐ確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` にAI議事録プロバイダー表示ヘルパーと `aiMinutesSourceScopeLabel` を追加し、議事録素材チップへAI状態を表示するようにした。`src/App.css` に端末内/オフ系と外部AI系の控えめなチップ色を追加した。
+- 判断: 録音後UIでは文字起こし、手書きメモ、テンプレートだけでなく、AIがオフ/端末内/外部コピー確認のどれかを同じ視線上で確認できる必要がある。詳細カード内だけに置くより、素材チップに置く方がミニマルで誤送信不安を下げられる。
+- 検証: `rg -n 'v2-session-minutes-ai-source-chip|aiMinutesSourceScopeLabel|getAiMinutesProviderDisplayName|session-detail-source-ai' src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` で新ラベル、スタイル、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:40:24 JST
+
+- 作業: `v2-meeting-detected-ai-notes-route-label`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知UI方針に合わせ、通知から録音開始した後に別トラック保存、REC表示、ライブ文字起こしだけでなく、AIノートのオン/オフ確認へ進むことを開始前に分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の `bannerAriaLabel` と `startRecordingLabel` を、録音開始後に自分/相手側の別トラック保存、REC表示、ライブ文字起こし、AIノートのオン/オフ確認へ進むことが分かる内容へ更新した。
+- 判断: ユーザー要件では会議検知通知から録音開始でき、録音中UIでAIノートをオン/オフできることが重要。通知ウィンドウの可視コピーは短く保ちつつ、補助ラベルで開始後に開く録音中UIの構成を明示する方が v2 のミニマルで安心できる開始体験に合う。
+- 検証: `rg -n 'AIノートのオン/オフ確認|v2-meeting-detected-ai-notes-route-label|bannerAriaLabel|startRecordingLabel' src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:37:45 JST
+
+- 作業: `v2-live-compact-rec-ai-note-boundary-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、コンパクトな常駐REC表示でも、録音状態、トラック状態、AIノート状態、質問未送信、音声外部送信境界が分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` の `compactStatusLabel` を配列構成に変更し、AIノートがオンの場合は表示中の文字起こし由来で質問は未送信、オフの場合はAIノートオフだと分かる文言と、音声外部送信状態を含めるよう更新した。
+- 判断: ユーザー要件では録音中であることを忘れない常駐インディケーターが重要で、同時にAIノート/質問のオンオフと送信境界も明確であるべき。小さなREC UIの可視密度は維持し、補助ラベルで状態をまとめる方が v2 のミニマルな録音中UIに合う。
+- 検証: `rg -n 'compactStatusLabel|AIノートは表示中の文字起こしから作成|質問はここでは未送信|v2-live-compact-rec-ai-note-boundary-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:35:17 JST
+
+- 作業: `v2-live-ai-notes-toggle-material-boundary-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートのオン/オフ操作が、表示中の文字起こしを素材にした会議ノートと未送信の質問準備を表示/非表示にする操作であり、AI送信境界に従うことをボタン単位で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `aiNotesToggleLabel` を追加し、AIノート切替ボタンの `aria-label` / `title` を、文字起こし素材、会議ノート、未送信の質問準備、AI送信境界が分かる内容へ更新した。
+- 判断: ユーザー要件では録音中にリアルタイム会議ノートと質問チャットを表示し、AI利用をオン/オフできることが重要。可視ボタンは `AIオン/AIオフ` のまま保ち、補助ラベルで切替後の表示内容と送信境界を明示する方が v2 のミニマルな録音中UIに合う。
+- 検証: `rg -n 'aiNotesToggleLabel|表示中の文字起こしから会議ノートと未送信の質問準備|v2-live-ai-notes-toggle-material-boundary-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:32:58 JST
+
+- 作業: `v2-settings-audio-track-playback-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、音声設定で選ぶマイクと録音トラックが、録音時の自分/相手側別トラック保存と、録音後のマイクのみ/スピーカーのみ/両方再生につながることを分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の `microphoneDeviceLabel` を、自分トラック保存と履歴詳細でのマイク/スピーカー/両方再生が分かる内容へ更新した。あわせて `recordingTracksCardLabel` を追加し、録音トラックカードの `aria-label` / `title` を、別トラック保存、録音後3モード再生、音声トラック非送信が分かる内容へ更新した。
+- 判断: ユーザー要件では設定でマイク入力を切り替えられること、録音後にスピーカーのみ/マイクのみ/両方を再生できることが重要。音声設定の可視UIはミニマルなまま、補助ラベルで設定と録音後レビューの関係を明確にする方が v2 の直感的なMacアプリUIに合う。
+- 検証: `rg -n 'recordingTracksCardLabel|履歴詳細でマイクのみ/スピーカーのみ/両方|履歴詳細でマイクのみ、スピーカーのみ、両方|v2-settings-audio-track-playback-scope-label' src/routes/SettingsView.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:30:48 JST
+
+- 作業: `v2-session-list-review-full-recording-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後履歴UI方針に合わせ、履歴検索中に録音レビューを開く操作が検索結果だけではなく録音全体の詳細を開き、マイク/スピーカー音声、チャット文字起こし、コピー、議事録ワークスペースへ進めることを分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionList.tsx` に `reviewSessionLabel` を追加し、録音レビューボタンの `aria-label` / `title` を、検索中でも録音全体を開くこと、音声トラック、チャット文字起こし、文字起こしコピー、議事録ワークスペースが対象であることを示す内容へ更新した。
+- 判断: ユーザー要件では録音後に履歴検索、内容コピー、音声トラック確認、議事録生成へ直感的に進めることが重要。履歴一覧の可視ボタンは短く維持し、補助ラベルでレビュー対象範囲を明確にする方が v2 のミニマルな録音後UIに合う。
+- 検証: `rg -n 'reviewSessionLabel|検索結果ではなく録音全体を開きます|議事録ワークスペース|v2-session-list-review-full-recording-scope-label' src/routes/SessionList.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:28:48 JST
+
+- 作業: `v2-controller-start-recording-live-rec-route`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始UI方針に合わせ、検証コントローラの通知録音/メニューバー録音シナリオが、録音開始要求だけでなく常駐RECとライブ文字起こし表示まで進むことを実際の操作フローとして確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/ControllerWindow.tsx` の `SCENARIOS` で、検知通知シナリオとメニューバー手動開始シナリオの `detail` を常駐REC/ライブ文字起こし込みの文言へ更新し、各 `run` に `setRingLightVisible(true)`、`emitRingLightMode("soft")`、`setLiveCaptionVisible(true)`、`emitLiveCaptionStatus()` を追加した。
+- 判断: ユーザー要件では通知ウィンドウ録音とメニューバー録音の両方で、録音していることが分かるインディケーターとリアルタイム文字起こしが続く必要がある。検証UIのシナリオがこの連鎖を再現できることは、v2 の最小で直感的な録音開始体験を実装側で崩さないために必要。
+- 検証: `rg -n '常駐REC・ライブ文字起こし|setLiveCaptionVisible\\(true\\)|emitLiveCaptionStatus\\(\\)|v2-controller-start-recording-live-rec-route' src/components/ControllerWindow.tsx AGENT_LOG.md` でシナリオ文言と実行フロー、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:26:51 JST
+
+- 作業: `v2-live-translation-target-send-boundary-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム翻訳ビューの翻訳先選択が現在は設定保存のみで、表示中の原文と音声トラックを翻訳外部送信しないことを操作単位で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `translationTargetGroupLabel` を追加し、翻訳先選択グループと各翻訳先ボタンの `aria-label` / `title` を、翻訳エンジン未接続、原文のみ表示、翻訳外部送信なし、音声トラック非送信が分かる内容へ更新した。
+- 判断: ユーザー要件では録音中にリアルタイム文字起こしから必要に応じて翻訳へ切り替えられることが重要。一方で現実装は翻訳未接続のため、可視UIは簡潔な状態表示のまま、補助ラベルで「設定保存のみ」と送信境界を明確にする方が v2 のミニマルで安心できる録音中UIに合う。
+- 検証: `rg -n 'translationTargetGroupLabel|翻訳先を .* に設定。現在は|表示中の原文と音声トラックは翻訳外部送信しません|v2-live-translation-target-send-boundary-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:24:40 JST
+
+- 作業: `v2-session-handwritten-memo-material-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、手書きメモ欄が文字起こしと合わせて議事録下書き/AI議事録プロンプトに使われ、音声トラックは含めない補助素材だと入力欄単位で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` の `handwrittenMemoInputLabel` を、録音単位の議事録ワークスペース保存、文字起こし件数、テンプレート、AI送信境界、音声トラック非包含が分かる内容へ拡張し、入力済みステータスにも同じラベルを適用した。あわせて `handwrittenMemoClearLabel` を追加し、メモクリアが文字起こしや音声トラックを消さない操作だと明示した。
+- 判断: ユーザー要件では録音後に手書きメモをもとに議事録生成できることが重要。可視UIは短いまま、補助ラベルで素材範囲と送信境界を明確化する方が v2 のミニマルで誤解の少ない録音後レビューUIに合う。
+- 検証: `rg -n 'handwrittenMemoInputLabel|handwrittenMemoClearLabel|この録音の議事録ワークスペース|文字起こし .* 件と音声トラックは残します|v2-session-handwritten-memo-material-scope-label' src/routes/SessionDetail.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:21:57 JST
+
+- 作業: `v2-settings-detection-notification-rec-route-label`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、会議検出設定が単なる通知条件ではなく、検知通知から録音開始、REC表示、ライブ文字起こしへつながる導線だと分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `detectionCardSubtitle`、`detectionNotificationToggleLabel`、`detectionRulePreviewLabel` を追加し、検出カテゴリ説明、会議検出カード、通知トグル、検出ルールプレビューの `aria-label` / `title` を通知録音導線が分かる内容へ更新した。
+- 判断: ユーザー要件では会議検知通知から録音できることと、録音中にREC表示・ライブ文字起こしが継続することが重要。設定画面でこの連鎖を明示することで、v2 のミニマルなUIを崩さずに録音開始経路の理解を補強できる。
+- 検証: `rg -n 'detectionCardSubtitle|detectionNotificationToggleLabel|detectionRulePreviewLabel|URL・アプリ・音声状態で検出し、通知から録音開始できます|REC表示とライブ文字起こし|v2-settings-detection-notification-rec-route-label' src/routes/SettingsView.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:19:51 JST
+
+- 作業: `v2-settings-privacy-output-directory-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、ローカル保存先が録音履歴、文字起こし、音声トラックのこのMac上の保存場所であり、AI外部送信とは別の境界であることを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `outputDirectoryScopeLabel` と `revealOutputDirectoryLabel` を追加し、保存先バッジと保存場所表示ボタンの `aria-label` / `title` を、ローカル保存対象とAI外部送信との非連動が分かる内容へ更新した。
+- 判断: ユーザー要件では録音後の履歴、検索、文字起こし、音声トラック確認が重要で、同時に録音状態と送信範囲の透明性も品質基準。可視UIは短く保ち、補助ラベルで保存範囲を明確にする方が v2 のミニマルな設定UIに合う。
+- 検証: `rg -n 'outputDirectoryScopeLabel|revealOutputDirectoryLabel|保存場所をFinderで表示|v2-settings-privacy-output-directory-scope-label' src/routes/SettingsView.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:15:51 JST
+
+- 作業: `v2-session-transcript-full-copy-search-boundary-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、文字起こし検索中でも上部のコピー操作が検索結果コピーではなく全文コピーで、音声トラックは含めないことを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `transcriptCopyActionLabel` を追加し、文字起こしコピー操作の `aria-label` / `title` を、検索中の件数、全文コピー対象、音声トラック非コピーが分かる内容へ更新した。
+- 判断: ユーザー要件では録音後に検索と内容コピーができることが重要。検索結果表示と全文コピーが同じパネルにあるため、可視ラベルは短く維持しつつ、補助ラベルでコピー対象を明示する方が v2 のミニマルで誤操作の少ないUIに合う。
+- 検証: `rg -n 'transcriptCopyActionLabel|コピー対象は検索結果ではなく全文|音声トラックはコピーしません|v2-session-transcript-full-copy-search-boundary-label' src/routes/SessionDetail.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:13:37 JST
+
+- 作業: `v2-session-minutes-template-material-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録テンプレート選択が文字起こし、手書きメモ、出力セクション、音声トラック非送信と結びつく操作だと補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `minutesTemplateSelectionLabel` を追加し、議事録テンプレート選択グループとテンプレート概要の `aria-label` / `title` を、選択テンプレート、目的、出力セクション、文字起こし件数、手書きメモ状態、音声トラック非送信が分かる内容へ更新した。
+- 判断: ユーザー要件では録音後にプロンプトテンプレートを選び、文字起こしと手書きメモから議事録を作ることが重要。可視チップは短く維持し、補助ラベルで素材と送信境界をまとめる方が v2 のミニマルで直感的な録音後UIに合う。
+- 検証: `rg -n 'minutesTemplateSelectionLabel|議事録テンプレート選択|音声トラックは送信しません|v2-session-minutes-template-material-scope-label' src/routes/SessionDetail.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:11:01 JST
+
+- 作業: `v2-settings-general-mic-recording-route-label`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、一般設定のマイク入力欄が会議検知通知とメニューバー録音で使う自分トラックの入力だと短い表示と補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `generalMicrophoneInputLabel` を追加し、一般設定のマイク入力 `select` の `aria-label` / `title` と小見出し下の可視文言を、通知録音/メニューバー録音で使う自分トラック入力だと分かる内容へ更新した。
+- 判断: ユーザー要件では通知ウィンドウ録音とメニューバー録音を残すこと、設定画面でマイク入力を切り替えられることが重要。詳細説明を増やすより、一般設定の入口に短い関係ラベルを置く方が v2 のミニマルで直感的な設定UIに合う。
+- 検証: `rg -n 'generalMicrophoneInputLabel|自分トラック · 通知/メニュー録音|自分の声の入力デバイス|v2-settings-general-mic-recording-route-label' src/routes/SettingsView.tsx AGENT_LOG.md` で新ラベルと新しい可視文言を確認し、旧い一般設定側の `自分の声の入力デバイス` が残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:08:39 JST
+
+- 作業: `v2-live-ai-question-unsent-copy-chip`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノート内の質問準備欄が会議内容への質問をここでは送信せず、手動コピーするための未送信ワークスペースだと可視状態から分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `aiQuestionSurfaceLabel` と `aiQuestionStateLabel` を追加し、質問準備欄の `aria-label` / `title` と見出し横の可視チップを未送信・手動コピー前提の表現へ更新した。`src/App.css` に小さな未送信チップのスタイルを追加した。
+- 判断: ユーザー要件では録音中に会議内容へ質問できるノートが必要だが、AI利用はオンオフ可能で送信境界も明確であるべき。外部AI設定時でもこの欄自体は送信しないため、説明文を増やすより見出し横の小さなチップで状態を固定表示する方が v2 のミニマルで安心できるUIに合う。
+- 検証: `rg -n 'aiQuestionSurfaceLabel|aiQuestionStateLabel|未送信 · コピー準備|未送信の質問あり|v2-live-ai-question-unsent-copy-chip|live-notes-question-head small' src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` で新ラベル、可視チップ、CSS、ログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:06:31 JST
+
+- 作業: `v2-session-audio-track-tabs-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、音声トラックのタブ群がマイクのみ、スピーカーのみ、両方の再生対象を切り替える操作だと補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `playbackTrackTabsLabel` を追加し、音声トラック切替タブの `role="group"` に `aria-label` / `title` を付与した。
+- 判断: ユーザー要件では録音後にスピーカーのみ、マイクのみ、両方の音声を再生できることが重要。可視UIは増やさず、タブ群の操作意図を補助ラベルに寄せる方が v2 のミニマルで直感的なレビューUIに合う。
+- 検証: `rg -n 'playbackTrackTabsLabel|音声再生対象の切り替え|v2-session-audio-track-tabs-scope-label|検証: 未実行' src/routes/SessionDetail.tsx AGENT_LOG.md` で新ラベルとログを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 17:02:33 JST
+
+- 作業: `v2-settings-transcription-engine-live-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こしエンジン設定が録音中のライブ文字起こしと自分/相手側トラック表示に使われ、音声外部送信状態にも関係することをカード単位で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `transcriptionEngineCardLabel` を追加し、文字起こしエンジンカードの `aria-label` / `title` と見出し下説明を、録音中ライブ文字起こし、自分/相手側トラック、送信境界が分かる内容へ更新した。
+- 判断: ユーザー要件では設定画面で文字起こしエンジンを選び、録音中にリアルタイム文字起こしを見る。エンジン選択を単なる設定値ではなく録音中UIと送信境界につながるものとして示す方が、v2 のミニマルで直感的な設定UIに合う。
+- 検証: `rg -n 'transcriptionEngineCardLabel|録音中のライブ文字起こしに使います。端末内優先|端末内優先。外部は選択時のみ|v2-settings-transcription-engine-live-scope-label' src/routes/SettingsView.tsx AGENT_LOG.md` で新ラベルと新説明を確認し、旧説明が `src/routes/SettingsView.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:59:51 JST
+
+- 作業: `v2-session-list-review-audio-scope-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後履歴UI方針に合わせ、履歴一覧から開く録音レビューで確認できる音声が、マイク/スピーカー音声の確認であることを短い表示と補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionList.tsx` の履歴一覧レビュー範囲ラベルと各行の録音レビューボタン `aria-label` / `title` を、マイク/スピーカー音声、チャット文字起こし、議事録を確認できる内容へ更新した。
+- 判断: ユーザー要件では録音後にスピーカーのみ、マイクのみ、両方の音声確認が重要。一覧では可視チップを短く保ち、補助ラベルで音声レビューの対象を明確にする方が v2 のミニマルな履歴UIに合う。
+- 検証: `rg -n 'マイク/スピーカー音声|レビュー: 音声 / チャット / 議事録|音声トラック、チャット文字起こし、議事録|v2-session-list-review-audio-scope-copy' src/routes/SessionList.tsx AGENT_LOG.md` で履歴一覧、空履歴、各行レビュー導線の新表示を確認し、旧い `音声トラック、チャット文字起こし、議事録` 表現が `src/routes/SessionList.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:57:30 JST
+
+- 作業: `v2-meeting-detected-start-rec-caption-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知UI方針に合わせ、検知通知から録音開始すると別トラック保存だけでなく、REC表示とライブ文字起こしへ進むことを開始前に分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の会議検知バナー `aria-label`、録音開始ボタンの `aria-label` / `title`、可視メタ行を、別トラック保存、REC表示、ライブ文字起こし表示が分かる内容へ更新した。
+- 判断: ユーザー要件では「会議の検知による通知ウィンドウから録音できること」と「録音していることがUI上で表示され続けること」が連続した体験。開始前の通知で次に何が表示されるかを短く示す方が、v2 のミニマルで安心できる録音開始UIに合う。
+- 検証: `rg -n 'REC表示とライブ文字起こし|RECとライブ文字起こしを表示|録音画面を開きます|v2-meeting-detected-start-rec-caption-copy' src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` で新しい通知コピーを確認し、旧い `録音画面を開きます` 単独表現が `src/components/MeetingDetectedBanner.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:55:30 JST
+
+- 作業: `v2-ring-light-persistent-rec-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常駐RECインジケーターが録音中であることを忘れないための表示だと可視文言と補助ラベルで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/RingLightWindow.tsx` に `persistentRecordingIndicatorLabel` を追加し、常駐REC全体の `aria-label` / `title` とREC下の小文言を、録音中であることを忘れないための常駐表示だと分かる内容へ更新した。
+- 判断: ユーザー要件では録音中インディケーターが表示され続けることが重要。RECの大きな視覚表現は維持しつつ、短い `常駐表示` と補助ラベルで意図を明示する方が、v2 のミニマルで透明な録音中UIに合う。
+- 検証: `rg -n 'persistentRecordingIndicatorLabel|録音中であることを忘れないため|常駐表示 · 文字起こし|ライブ文字起こしを表示。常駐REC表示中|v2-ring-light-persistent-rec-copy' src/components/RingLightWindow.tsx AGENT_LOG.md` で新しい常駐REC文言を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:53:27 JST
+
+- 作業: `v2-controller-recording-route-scenario-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始UI方針に合わせ、検証用コントローラーでも通知録音、メニューバー録音、常駐REC、ライブ文字起こし/ノートの導線が短い表示で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/ControllerWindow.tsx` のシナリオカード詳細、ヘッダー説明、透明性strip、録音導線シナリオの `aria-label` / `title` を、通知録音とメニューバー録音、別トラック、REC表示、ライブ文字起こし/ノートの関係が分かる内容へ更新した。
+- 判断: ユーザー要件では「通知ウィンドウから録音」「メニューバーから録音」「録音中インジケーター」が中核。検証UIでもこの導線を同じ言葉で確認できる方が、v2 のミニマルで直感的な実装確認に合う。
+- 検証: `rg -n '通知から録音・別トラック・REC表示|メニューバー録音・文字起こし・REC表示|通知録音、メニューバー録音、常駐REC|通知 / メニューバー録音|録音導線シナリオ。通知録音|v2-controller-recording-route-scenario-copy' src/components/ControllerWindow.tsx AGENT_LOG.md` で新しい録音導線コピーを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:51:18 JST
+
+- 作業: `v2-settings-ai-provider-workspace-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、AI議事録プロバイダー設定が録音後の議事録ワークスペースで文字起こしと手書きメモに使われ、選択だけでは送信せず音声トラックも送信しないことをカード単位で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `aiMinutesProviderCardLabel` を追加し、AIプロバイダーカードの `aria-label` / `title` と見出し下説明を、録音後ワークスペース、文字起こし+手書きメモ、選択だけでは未送信、音声トラック非送信が分かる内容へ更新した。
+- 判断: ユーザー要件では設定画面でAIプロバイダーを決めつつ、録音後に議事録を生成する。設定だけで送信される誤解を避け、録音後レビューとの関係を短く示す方が、v2 のMacらしいミニマルで安心できる設定UIに合う。
+- 検証: `rg -n 'aiMinutesProviderCardLabel|録音後に文字起こしと手書きメモから議事録を作ります|AI議事録: \\\$\\{aiMinutesProviderValue\\}|v2-settings-ai-provider-workspace-scope-label' src/routes/SettingsView.tsx AGENT_LOG.md` で新ラベルと新説明を確認し、旧カードラベルが `src/routes/SettingsView.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:49:16 JST
+
+- 作業: `v2-session-minutes-panel-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録パネル全体がテンプレート、文字起こし、手書きメモを使い、AI送信境界と音声トラック非送信を持つワークスペースだと分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `minutesPanelLabel` を追加し、議事録パネルの `aria-label` / `title` と見出し下説明を、テンプレート、文字起こし、手書きメモ、AI送信境界、音声トラック非送信が分かる内容へ更新した。
+- 判断: ユーザー要件では録音後にテンプレートを選び、文字起こしと手書きメモから議事録を作ることが重要。個別UIのラベルだけでなく、パネル単位で入力元と送信境界を示す方が、v2 のミニマルで直感的な録音後UIに合う。
+- 検証: `rg -n 'minutesPanelLabel|テンプレート、文字起こし、手書きメモから作成|文字起こしと手書きメモから作成。音声トラックは送信しません|v2-session-minutes-panel-scope-label' src/routes/SessionDetail.tsx AGENT_LOG.md` で新ラベルと新説明を確認し、旧説明が `src/routes/SessionDetail.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:47:13 JST
+
+- 作業: `v2-live-translation-state-target-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム翻訳ビューが現在は原文プレビューで、翻訳先設定を保存し、翻訳外部送信がないことを可視状態と補助ラベルで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `translationTabLabel` と `translationViewStateLabel` を追加し、翻訳タブと翻訳ビュー状態表示の `aria-label` / `title` / 可視文言を、原文プレビュー、翻訳先設定保存、外部送信なしが分かる内容へ更新した。
+- 判断: ユーザー要件では文字起こしウィンドウを必要に応じてリアルタイム翻訳へ切り替えられることが重要。現時点で翻訳エンジン未接続なら、その制約と保存される設定を短く明示する方が、v2 のミニマルで誤解の少ない録音中UIに合う。
+- 検証: `rg -n 'translationTabLabel|translationViewStateLabel|設定保存|翻訳未接続 · 原文のみ · 外部送信なし|v2-live-translation-state-target-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で新ラベルと実装ファイル側の置換を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:44:57 JST
+
+- 作業: `v2-session-chat-mode-track-copy-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、LINEのようなチャット表示がマイク/スピーカー由来の別トラック文字起こしで、検索とコピー対象であることを短い表示と補助ラベルで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `transcriptChatModeLabel` を追加し、録音後の文字起こしチャット表示チップの `aria-label` / `title` と可視チップを、マイク/スピーカー対応、検索・コピー可、音声トラック外部送信なしが分かる内容へ更新した。
+- 判断: ユーザー要件では録音後にチャットUIで文字起こしを見られ、検索・コピー・音声トラック確認ができることが重要。説明文を増やすより、短いチップと補助ラベルで関係を明示する方が v2 のミニマルなレビューUIに合う。
+- 検証: `rg -n 'transcriptChatModeLabel|自分 右 / マイク|相手側 左 / スピーカー|検索・コピー可|チャット表示。自分は右、相手側は左|v2-session-chat-mode-track-copy-label' src/routes/SessionDetail.tsx AGENT_LOG.md` で新ラベルと可視チップを確認し、旧チャット説明が `src/routes/SessionDetail.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:42:42 JST
+
+- 作業: `v2-live-ai-notes-off-state-visible-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートがオフのときの可視文言でも、表示中の文字起こしから会議ノートと質問準備を作る機能だと分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` の AIノート off-state 可視文言を、端末内抽出ノートという実装寄りの表現から、表示中の文字起こしを元に会議ノートと質問準備を作る説明へ変更した。
+- 判断: ユーザー要件は「リアルタイムの会議ノート」と「会議内容について質問できるノート」。実装詳細よりもユーザーが得る結果を短く示す方が、v2 のミニマルで直感的な録音中UIに合う。
+- 検証: `rg -n 'オンにすると表示中の文字起こしから会議ノートと質問準備を作ります|オンにすると端末内抽出ノートと質問準備を表示します|v2-live-ai-notes-off-state-visible-copy' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で新文言と作業記録を確認し、旧文言が `src/components/LiveCaptionWindow.tsx` に残っていないことを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:38:05 JST
+
+- 作業: `v2-live-ai-notes-panel-context-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノート/質問準備領域全体でも、AIノートのオンオフ状態、会議ノートの生成元、質問が未送信であることを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `liveNotesPanelLabel` を追加し、AIノート/質問準備 aside の `aria-label` / `title` を、ノート接続状態、表示中の文字起こしからの会議ノート生成、質問未送信の境界が分かる説明へ変更した。
+- 判断: 録音中UIでAIノートはオン/オフ可能な補助機能で、質問は現状アプリ内で未送信の準備操作。領域全体の可視見出しは短く維持しつつ、補助属性で状態と送信境界を明示する方が v2 のミニマルで安心できるUIに合う。
+- 検証: `rg -n 'trackRowLabel|liveNotesPanelLabel|AIノートと質問準備。|aria-label="AIノートと質問準備"|v2-live-ai-notes-panel-context-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消、不要になった `trackRowLabel` の削除を確認。`git diff --check` を実行し成功。初回 `npm run build` は `trackRowLabel` 未使用で失敗したため削除し、再実行して成功。再実行時の `npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:35:37 JST
+
+- 作業: `v2-settings-local-data-storage-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、ローカルデータ設定のディスク使用量と一括削除なしの状態が、録音履歴・文字起こし・音声トラックの保存範囲と手動削除方針に関係することを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `localDataDiskUsageLabel` と `localDataBulkDeleteLabel` を追加し、ディスク使用量と一括削除なしの状態badge `aria-label` / `title` を、録音履歴、文字起こし、音声トラックの確認範囲と手動削除方針が分かる説明へ変更した。
+- 判断: v2要件では録音後に履歴、文字起こし、音声トラックを確認できることが重要。設定画面のローカルデータ表示も、可視文言は短く維持しつつ、補助属性で保存範囲と削除境界を明示する方がミニマルで安心できるUIに合う。
+- 検証: `rg -n 'localDataDiskUsageLabel|localDataBulkDeleteLabel|ディスク使用量: 履歴画面で録音履歴|アプリ内一括削除なし。録音履歴|aria-label="ディスク使用量: 履歴画面で確認"|aria-label="アプリ内一括削除なし"|v2-settings-local-data-storage-labels' src/routes/SettingsView.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:32:53 JST
+
+- 作業: `v2-settings-detection-group-context-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、会議検出対象と検出ルールのグループが、通知から録音開始できる導線と検出条件に関係することを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` に `detectionServiceGroupLabel` と `detectionRuleGroupLabel` を追加し、一般設定と検出設定の検出対象グループ、検出ルールタブグループの `aria-label` / `title` を、検出対象数、現在の検出条件、通知から録音開始できる導線が分かる説明へ変更した。
+- 判断: v2要件では「会議の検知による通知ウィンドウから録音できること」が中核。設定画面ではチップやタブの可視名を短く保ちつつ、補助属性で通知録音へつながる意味を補う方がミニマルで直感的なUIに合う。
+- 検証: `rg -n 'detectionServiceGroupLabel|detectionRuleGroupLabel|会議検出対象。|会議検出ルールの種類。|aria-label="検出対象"|aria-label="検出ルールの種類"|v2-settings-detection-group-context-labels' src/routes/SettingsView.tsx AGENT_LOG.md` で対象の新表示と旧グループラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:30:24 JST
+
+- 作業: `v2-live-copy-action-scope-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こしの原文コピーと会議ノートコピーが、何をコピーし、翻訳/AI外部送信がどう扱われるかを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `copyVisibleSourceLabel` と `copyLocalMeetingNotesLabel` を追加し、原文コピーと会議ノートコピーの `aria-label` / `title` を、コピー対象、端末内抽出、翻訳外部送信なし、AI送信境界が分かる説明へ変更した。
+- 判断: 録音中UIではコピー操作が外部AIや翻訳送信と混同されやすい。可視ラベルは短く維持し、補助属性で「コピーするだけ」「端末内抽出」「外部送信境界」を明示する方が v2 のミニマルで安心できるUIに合う。
+- 検証: `rg -n 'copyVisibleSourceLabel|copyLocalMeetingNotesLabel|表示中の原文をコピー。|端末内会議ノートをコピー。|aria-label="表示中の原文をコピー"|aria-label="端末内会議ノートをコピー"|v2-live-copy-action-scope-labels' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:28:04 JST
+
+- 作業: `v2-session-minutes-input-context-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録ワークスペースの補足指示と手書きメモ入力が、文字起こしと組み合わせて議事録プロンプト/下書きに使われることを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` に `templateInstructionInputLabel` と `handwrittenMemoInputLabel` を追加し、補足指示カード/textarea と手書きメモ textarea の `aria-label` / `title` を、テンプレート、文字起こし、議事録プロンプト/下書き、音声トラック除外が分かる説明へ変更した。
+- 判断: ユーザー要件では録音後に文字起こしだけでなく手書きメモも使って議事録を作る。入力欄の可視名は短く保ち、補助属性で「何に使われるか」と「音声は含めない」を示す方が、v2 のミニマルで安心できる録音後UIに合う。
+- 検証: `rg -n 'templateInstructionInputLabel|handwrittenMemoInputLabel|この録音だけの補足指示|手書きメモ入力。文字起こし|aria-label="補足指示"|aria-label="手書きメモ"|v2-session-minutes-input-context-labels' src/routes/SessionDetail.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:26:10 JST
+
+- 作業: `v2-live-transcript-tab-state-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブウィンドウの文字起こしタブでもリアルタイム表示、自分/相手側トラック、音声送信境界を補助ラベルから読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `transcriptTabLabel` を追加し、`文字起こし` タブの `aria-label` / `title` を、リアルタイム文字起こし、自分/相手側の表示対象、音声外部送信状態が分かる説明へ変更した。
+- 判断: 録音中ウィンドウのタブは、文字起こしと翻訳を切り替える主要導線。可視ラベルは短く保ち、補助属性で録音中の表示範囲と送信境界を明確にする方が、v2 のミニマルで直感的なUIに合う。
+- 検証: `rg -n 'transcriptTabLabel|リアルタイム文字起こしを表示|aria-label="文字起こしを表示"|v2-live-transcript-tab-state-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:24:17 JST
+
+- 作業: `v2-meeting-detected-open-caption-state-label`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知/録音中インジケーター方針に合わせ、通知から録音開始後に表示される録音中pillのライブ文字起こし導線でも、REC表示中・別トラック・音声送信境界を補助ラベルから読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の録音中pillにある `文字起こしを表示` ボタンの `aria-label` / `title` を、REC表示中、自分/相手側トラック状態、音声外部送信状態が分かる説明へ変更した。
+- 判断: 会議検知通知は「通知ウィンドウから録音できること」と「録音していることがUI上で表示され続けること」の接点になる。可視ラベルは短く維持し、補助属性で録音中の状態境界を明確にする方が v2 のミニマルで透明なUIに合う。
+- 検証: `rg -n 'openLiveCaptionLabel|ライブ文字起こしを開く。REC表示中|aria-label=\{openLiveCaptionLabel\}|title=\{openLiveCaptionLabel\}|v2-meeting-detected-open-caption-state-label' src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` で対象の新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:21:06 JST
+
+- 作業: `v2-settings-output-status-badge-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、出力とタイミング設定の状態badgeだけでも録音中表示、トラック分離、自動保存、録音後音声トラック再生の意味が分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の `ライブ文字起こし表示`、`話者分離`、`自動保存`、`音声トラック再生` の状態badge `aria-label` / `title` を、録音中フローティング表示、自分/相手側トラック分離、履歴保存、マイク/スピーカー/両方の再生確認が読める説明へ変更した。
+- 判断: 設定画面の状態badgeは短く見せるべきだが、`オン` だけでは v2 の主要要件との対応が分かりにくい。可視密度は増やさず、補助属性で録音中UIと録音後レビューの意味を補う方がミニマルで直感的な設定UIに合う。
+- 検証: `rg -n 'ライブ文字起こし表示: オン。録音中|話者分離: オン。自分トラック|自動保存: オン。録音停止時|音声トラック再生: 履歴詳細でマイクのみ|aria-label="ライブ文字起こし表示: オン"|aria-label="話者分離: オン"|aria-label="自動保存: オン"|aria-label="音声トラック再生: 履歴詳細で再生"|v2-settings-output-status-badge-labels' src/routes/SettingsView.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:18:56 JST
+
+- 作業: `v2-transcript-autoscroll-pause-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中文字起こしUI方針に合わせ、最新追従の一時停止状態が録音中の文字起こし自動スクロール停止であり、最新発話へ戻れることを補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/TranscriptDisplay.tsx` の最新追従一時停止pillと再開ボタンの `aria-label` / `title` を、録音中の文字起こし追従停止と最新発話へ戻る操作が分かる説明へ変更した。
+- 判断: 録音中UIでは「録音されていること」と同じくらい、表示が最新に追従しているかが重要になる。可視文言は短く維持しつつ、補助属性で状態と復帰操作を明確にする方が v2 の直感性に合う。
+- 検証: `rg -n '録音中の文字起こし最新追従|最新の文字起こしへ戻る|aria-label="最新追従は一時停止中"|aria-label="最新へ戻る"|v2-transcript-autoscroll-pause-label' src/components/TranscriptDisplay.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:16:41 JST
+
+- 作業: `v2-menu-permission-scope-label`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音/通知導線方針に合わせ、初回セットアップの権限リストで各権限がどの録音トラックや会議検知に関係するか補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/TranscriptView.tsx` の初回セットアップ権限リスト `aria-label` を、通知とメニューバー録音に必要な権限、自分トラック、相手側トラック、会議検知の関係が分かる説明へ変更した。
+- 判断: v2の録音開始導線では、通知ウィンドウとメニューバー録音の両方を残しつつ、別トラック取得の透明性を保つ必要がある。権限リストはその前提を説明する場所なので、短い見出しだけでなく補助属性で録音ソースとの対応を明確にした。
+- 検証: `rg -n '通知とメニューバー録音に必要な権限|aria-label="必要な権限"|v2-menu-permission-scope-label' src/routes/TranscriptView.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:09:13 JST
+
+- 作業: `v2-ring-light-open-caption-state-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常駐RECリングからライブ文字起こしへ戻るボタンでも録音中・トラック状態・音声外部送信状態を補助ラベルから読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/RingLightWindow.tsx` に `openLiveCaptionLabel` を追加し、常駐RECリングの `文字起こしを表示` ボタンの `aria-label` / `title` に REC表示中、自分/相手側トラック状態、音声外部送信状態を含めた。
+- 判断: このリングは録音を忘れないための常駐インジケーターであり、ライブ文字起こしへ戻る主導線でもある。可視文言は短く維持しつつ、補助ラベルで現在の録音境界を読めるようにする方が v2 の透明性要件に合う。
+- 検証: `rg -n 'openLiveCaptionLabel|ライブ文字起こしを表示。REC表示中|aria-label="ライブ文字起こしを表示"|title="ライブ文字起こしを表示"|v2-ring-light-open-caption-state-label' src/components/RingLightWindow.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:07:10 JST
+
+- 作業: `v2-session-list-empty-recording-route-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後履歴UI方針に合わせ、履歴が空の状態でも会議検知通知とメニューバー録音の開始導線、録音後レビューで確認できる範囲が補助ラベルから分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionList.tsx` の空履歴カードと録音開始経路リストの `aria-label` / `title` を、会議検知通知、メニューバー録音、録音後レビュー対象が分かる説明へ変更した。
+- 判断: 空履歴は単なる未作成状態ではなく、ユーザー要件の「通知ウィンドウから録音」「メニューバーから録音」への入口になる。可視文言は短く維持し、補助ラベルで開始経路と録音後レビューの価値を明示する方が v2 の直感性に合う。
+- 検証: `rg -n '履歴はまだありません。会議検知通知|録音開始経路。会議検知通知|v2-session-list-empty-recording-route-label|aria-label="履歴はまだありません"|aria-label="録音開始経路"|title="履歴はまだありません"' src/routes/SessionList.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:05:18 JST
+
+- 作業: `v2-live-question-manual-copy-boundary-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中AIノート/質問UI方針に合わせ、質問準備が即時AI送信ではなく未送信の手動コピー対象であることを補助ラベルで明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/LiveCaptionWindow.tsx` の質問入力、質問準備ボタン、質問コピー操作の `aria-label` / `title` を、未送信・手動コピー・AI外部送信なしが分かる説明へ変更した。
+- 判断: ユーザー要件は「会議内容について質問できるノート」だが、現状実装はAIへ自動送信せず質問を準備・コピーする。可視ラベルはミニマルに維持し、補助ラベルで送信境界を明示する方が、録音中UIの安心感と実装実態の整合に合う。
+- 検証: `rg -n '未送信の質問を手動コピー|会議内容について質問を準備|未送信の質問を準備|aria-label="質問をコピー"|aria-label="会議内容について質問"|aria-label="質問を準備"|v2-live-question-manual-copy-boundary-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:03:16 JST
+
+- 作業: `v2-settings-scope-label-specificity`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、録音トラック、保存と送信範囲、AI議事録プロバイダーの補助ラベルで保存先・送信境界・トラック分離を具体化する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の録音トラックカード、保存と送信範囲カード、AI議事録プロバイダー radiogroup の `aria-label` / `title` を、自分/相手側トラック分離、このMac保存、手動コピー確認、音声トラック送信なしが分かる説明へ変更した。
+- 判断: 設定画面は常時表示UIではないが、録音前にユーザーが送信範囲を確認する基準点になる。見出しは短く保ち、補助属性で状態と境界を明確にする方が、v2のミニマルで直感的なUIに合う。
+- 検証: `rg -n '録音トラック。自分はマイク|保存と送信範囲。録音、文字起こし、議事録|AI議事録プロバイダー選択|v2-settings-scope-label-specificity|aria-label="AI議事録"|title="保存と送信範囲"|title="録音トラック"' src/routes/SettingsView.tsx AGENT_LOG.md` で対象の新表示と旧補助ラベルの解消を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 16:00:42 JST
+
+- 作業: `v2-transcript-track-rail-title-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中/録音後UI方針に合わせ、文字起こしのトラック別領域でも自分/相手側の件数と音声外部送信なしを補助ラベルから読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/TranscriptDisplay.tsx` のトラック別レールの `title` を単独の `トラック別` から、自分/相手側件数と `音声トラック外部送信なし` を含む説明へ変更した。
+- 判断: トラック別レールは録音中の文字起こしと録音後レビューの入口になる。短い見出しは維持しつつ、補助ラベルでは別トラック化と送信境界を明示する方が、v2の透明性方針に合う。
+- 検証: `rg -n 'トラック別: 自分|title="トラック別"|v2-transcript-track-rail-title-scope' src/components/TranscriptDisplay.tsx AGENT_LOG.md` で対象の新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:58:31 JST
+
+- 作業: `v2-session-audio-track-region-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、音声トラック領域の補助ラベルでもマイク/スピーカー/両方の再生対象が分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` の音声トラックカード `aria-label` / `title` を、単独の `音声トラック` から `音声トラック再生` と `マイク` / `スピーカー` 件数、切替可能な再生対象を含む説明へ変更した。
+- 判断: ユーザー要件は録音後に「スピーカーのみ、マイクのみ、両方」の音声再生確認を行えること。見出しは短く維持しつつ、補助ラベルでは入力源と切替範囲を明示する方が、v2のミニマルで直感的な録音後レビューに合う。
+- 検証: `rg -n '音声トラック再生|マイク \${transcriptTrackCounts\.self}|スピーカー \${transcriptTrackCounts\.other}|aria-label="音声トラック"|v2-session-audio-track-region-label-scope' src/routes/SessionDetail.tsx AGENT_LOG.md` で対象の新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:56:00 JST
+
+- 作業: `v2-session-detail-action-error-close-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、セッション詳細の操作エラーを閉じるボタンを対象付きで読めるラベルへ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionDetail.tsx` のセッション操作エラーを閉じるボタンを `エラーを閉じる` から `セッション操作エラーを閉じる` に変更し、`title` も追加した。
+- 判断: セッション詳細には音声トラック、文字起こしコピー、議事録プロンプト作成など複数のエラー発生源がある。可視ラベルと補助属性で操作対象を明示する方が、v2のミニマルで直感的なUI方針に合う。
+- 検証: `rg -n 'セッション操作エラーを閉じる|v2-session-detail-action-error-close-label-scope|aria-label="エラーを閉じる"|>\s*エラーを閉じる\s*<' src/routes/SessionDetail.tsx AGENT_LOG.md` で対象の新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:53:52 JST
+
+- 作業: `v2-session-list-error-close-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー/履歴UI方針に合わせ、履歴一覧のエラー閉じる操作をボタン単体でも対象が分かるラベルへ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/routes/SessionList.tsx` の履歴一覧エラーを閉じるボタンを `閉じる` / `エラーを閉じる` から `履歴エラーを閉じる` に変更した。
+- 判断: 履歴画面には検索、コピー、録音レビュー遷移など複数操作が並ぶ。エラーを閉じる操作も対象を履歴画面のエラーとして明示する方が、v2のミニマルだが直感的な操作方針に合う。
+- 検証: `rg -n '履歴エラーを閉じる|v2-session-list-error-close-label-scope|aria-label="エラーを閉じる"|>\s*閉じる\s*<' src/routes/SessionList.tsx AGENT_LOG.md` で対象の新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:51:48 JST
+
+- 作業: `v2-transcript-copy-error-close-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルだが直感的な操作方針に合わせ、文字起こしコピーエラーの閉じる操作をボタン単体でも対象が分かるラベルへ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 方針と実装状態を根拠にした。
+- 変更: `src/components/TranscriptDisplay.tsx` のコピーエラーを閉じるボタンの可視ラベルを `閉じる` から `コピーエラーを閉じる` に変更した。
+- 判断: 文字起こし画面にはコピー、最新追従、トラック別コピー、受信エラーなど複数の状態が並ぶ。aria/title だけでなく可視ラベルも対象付きにする方が、アイコンや配置に頼らず直感的に操作できる。
+- 検証: `rg -n 'コピーエラーを閉じる|v2-transcript-copy-error-close-label-scope|>\s*閉じる\s*<' src/components/TranscriptDisplay.tsx AGENT_LOG.md` で対象の新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:48:58 JST
+
+- 作業: `v2-ai-minutes-manual-copy-transmission-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後/設定UI方針に合わせ、外部AI議事録がアプリ内で自動送信されるように見える `利用時に確認` 表現を、実装実態である手動コピー確認へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル。Pencil MCP は desktop transport 未接続で `get_editor_state` / `get_variables` / `get_guidelines` / `snapshot_layout` が失敗したため、`.pen` は直接読まず、既存の v2 トークン方針と実装状態を根拠にした。
+- 変更: `src/routes/SettingsView.tsx` の外部AI議事録プロバイダー、保存と送信範囲、AI議事録送信範囲ノートを `手動コピー確認` / `手動コピー時に確認` へ変更。`src/components/LiveCaptionWindow.tsx`、`src/routes/SessionDetail.tsx`、`src/routes/TranscriptView.tsx` の外部AI議事録状態も同じ語彙へ揃えた。
+- 判断: 現在の実装は外部AIへ直接送らず、文字起こしと手書きメモから送信用プロンプトを生成してコピーする。`利用時に確認` だと自動送信前の確認にも読めるため、v2の透明性要件では送信境界を `手動コピー` と明示する方が安全。
+- 検証: `rg -n 'AI利用時確認|AI外部送信は利用時に確認|外部送信は利用時に確認|利用時に確認|文字起こし\+手書きメモを利用時確認|手動コピー確認|手動コピー時に確認' src/components src/routes src/utils --glob '!*.test.*'` で対象の旧表示なしと新表示を確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:46:16 JST
+
+- 作業: `v2-audio-ai-local-transmission-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音透明性方針に合わせ、音声・AI・翻訳の未送信状態を対象付きで読める短いラベルへ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/MicrophoneSection.tsx`、`src/components/SystemAudioSection.tsx`、`src/components/ModelSelector.tsx` の音声外部送信値を `外部送信なし` に変更。`src/components/PermissionBanner.tsx` のAI議事録値を `AI外部送信なし`、`src/routes/SettingsView.tsx` の翻訳値を `翻訳外部送信なし` に変更した。
+- 判断: `送信なし` 単独や `選択だけ送信なし` は短いが、何が送信されないのかをユーザーが補完する必要がある。v2のミニマルUIでは説明文を増やすより、状態ラベル自体に対象を含める方が録音・AI送信の透明性を保ちやすい。
+- 検証: `rg -n 'value: "送信なし"|選択だけ送信なし|翻訳送信なし' src/components src/routes src/utils --glob '!*.test.*'` で対象の旧表示なしを確認。`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:37:52 JST
+
+- 作業: `v2-controller-preview-question-prep-language-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、検証コントローラーとプレビュー履歴に残る `質問下書き` 表現を実UIの `質問準備` に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/ControllerWindow.tsx` の録音中シナリオ詳細を `質問準備` に変更し、`src/utils/previewSessionData.ts` のプレビュー会話文も `会議ノートと質問準備` に変更した。
+- 判断: ライブウィンドウと録音中コントロールは `質問準備` へ統一済み。検証用ウィンドウやプレビュー履歴に旧語彙が残ると、同じ機能が別フェーズに見えるため、v2のミニマルで直感的な語彙へ統一した。
+- 検証: `rg -n 'v2-controller-preview-question-prep-language-scope|質問下書き|質問準備|会議ノートと質問準備|端末内ノート・質問準備' src/components/ControllerWindow.tsx src/utils/previewSessionData.ts src/components src/routes src/utils AGENT_LOG.md --glob '!*.test.*'`、`git diff --check`、`npm run build` を実行し成功。旧表示は過去ログにのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:35:10 JST
+
+- 作業: `v2-transcription-controls-question-prep-language-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、録音中コントロールのAIノート/質問導線をライブウィンドウ側の `質問準備` 語彙へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/TranscriptionControls.tsx` の状態レールで `ノートと質問下書きを表示` / `質問下書き` / `ノート/下書き` を `ノートと質問準備を表示` / `質問準備` / `ノート/質問準備` に変更。併せて同ファイル内の文字起こしクリアボタンの属性インデント崩れを整えた。
+- 判断: 現状の質問導線はAIへ即時送信せず、質問を準備・コピーする段階。ライブウィンドウ側だけ `質問準備` にして録音中コントロール側が `下書き` のままだと、同じ機能が別状態に見えるため、可視語彙を統一した。
+- 検証: `rg -n 'v2-transcription-controls-question-prep-language-scope|質問下書き|ノート/下書き|ノートと質問下書き|質問準備|ノート/質問準備|ノートと質問準備' src/components/TranscriptionControls.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。旧表示は過去ログにのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:33:26 JST
+
+- 作業: `v2-session-minutes-save-status-artifact-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録ワークスペースの保存状態が外部AI時にも `議事録下書き` と表示される不整合をなくす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` の保存状態ラベルを、外部AIプロバイダー時は `AI議事録プロンプト保存` / `AI議事録プロンプト保存済み` / `AI議事録プロンプトなし`、端末内時は `議事録下書き保存` 系になるよう分岐した。
+- 判断: 直前の変更で外部AI時の生成物は送信用プロンプトになったが、保存状態だけが `議事録下書き` のままだと、何が保存されているのか推測が必要になる。v2のミニマルUIでは短い状態表示ほど対象名を正確に揃える必要がある。
+- 検証: `rg -n 'v2-session-minutes-save-status-artifact-label-scope|minutesWorkspaceArtifactLabel|AI議事録プロンプト保存|AI議事録プロンプトなし|議事録下書き保存|minutesDraftStatusLabel' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:31:15 JST
+
+- 作業: `v2-session-minutes-external-prompt-generation-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、外部AI議事録設定時の「プロンプト作成」導線が、実際にも送信用プロンプトを生成・コピーする状態に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` で外部AI議事録プロバイダー選択時は、議事録カードの生成ボタンから `buildMinutesPrompt` の送信用プロンプトをプレビューへ生成するよう変更。コピー成功/失敗/空状態メッセージとコピーボタンの aria/title/可視文言も `AI議事録プロンプト` と `端末内議事録下書き` で出し分けた。
+- 判断: 以前は外部AI設定時に見出しとボタンだけ `プロンプト` と表示しながら、生成内容は端末内下書きだった。これは「何が外部AIへ渡るか」をUI上で確認できるという安心感要件に反するため、外部AI時は音声を含まない文字起こし+手書きメモの送信用プロンプトそのものを生成対象にした。
+- 検証: `rg -n 'v2-session-minutes-external-prompt-generation-scope|AI議事録プロンプト|議事録プロンプト|議事録指示|buildMinutesPrompt|buildLocalMinutesDraft|コピーできるAI議事録プロンプト|コピーボタン' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`議事録指示` は過去ログにのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:26:59 JST
+
+- 作業: `v2-live-ai-question-prep-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノート横の質問導線を「質問できる入口」として見せつつ、現実の動作である未送信・コピー準備も明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/LiveCaptionWindow.tsx` の `質問チャット下書き` / `質問下書き保存` / `質問下書きコピー` を、可視文言では `質問準備` / `質問を準備` / `質問コピー` に変更。aria/title では `ここでは未送信` を明示し、保存/コピー失敗メッセージも同語彙へ揃えた。
+- 判断: ユーザー要件は「会議内容について質問できるノート」だが、現状実装は外部送信せず質問を準備・コピーする段階。`下書き` だけだと機能の目的が弱く、`質問` だけだと即時送信に見えるため、可視は `質問準備`、補足は `未送信` とした。
+- 検証: `rg -n '質問チャット下書き|質問下書き|質問準備|質問を準備|質問コピー|ここでは未送信|v2-live-ai-question-prep-label-scope' src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。旧表示は過去ログにのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:25:11 JST
+
+- 作業: `v2-session-list-audio-track-source-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴一覧でも音声トラックを `マイク` / `スピーカー` のソース名で把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionList.tsx` の履歴一覧ヘッダーのトラック集計を `自分+相手側` から `マイク+スピーカー` に変更し、各履歴行のトラック件数表示も `自分` / `相手側` から `マイク` / `スピーカー` に変更した。
+- 判断: チャット表示では `自分` / `相手側` が自然だが、履歴一覧の集計は録音後レビューの音声トラック入口であり、ユーザー要件は「マイクのみ / スピーカーのみ / 両方」の確認。入口ラベルもソース名へ揃えた方が、録音後レビューの再生モードと対応しやすい。
+- 検証: `rg -n 'マイク\+スピーカー|マイク \{trackCounts\.self\}|スピーカー \{trackCounts\.other\}|自分\+相手側|v2-session-list-audio-track-source-label-scope' src/routes/SessionList.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。旧表示は過去ログにのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:23:18 JST
+
+- 作業: `v2-settings-overview-detail-visibility-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、設定画面上部の主要設定カードだけでマイク、検出、文字起こしエンジン、AI議事録プロバイダーの意味が読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SettingsView.tsx` の主要設定カードに `detail` を可視表示し、文字起こし外部エンジンは `音声外部送信あり`、外部AI議事録は `文字起こし+手書きメモを利用時確認` と表示するように変更。`src/App.css` に概要カードの短い詳細行スタイルを追加した。
+- 判断: 既存カードは詳細を `aria-label` と `title` に持っていたが、視覚的にはカテゴリ名と値だけで、設定対象を推測する必要があった。v2のミニマルUIでは情報量を増やしすぎず、1行の補足で「入力」「検出」「音声送信」「AI送信対象」を常時見せる方が直感的。
+- 検証: `rg -n 'card\.detail|settings-overview-copy small|音声外部送信あり|文字起こし\+手書きメモを利用時確認|v2-settings-overview-detail-visibility-scope' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:21:20 JST
+
+- 作業: `v2-session-minutes-ai-prompt-clarity-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録生成で外部AIに渡す対象と端末内生成の違いを推測せず読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` の議事録カードで、外部AI利用時の説明を「文字起こしと手書きメモのプロンプトを手動コピー」「音声トラックは含めない」と明示。操作ラベルを `AI議事録プロンプトコピー` / `送信用プロンプト` / `文字起こし+手書きメモでプロンプト作成` に整理した。
+- 判断: 既存の `AI用下書き` は短いが、ユーザー要件の「プロンプトテンプレート選択」と「音声トラック確認」を同じ画面で扱う文脈では、何を外部AIに送るのかが曖昧だった。v2のミニマルUIでは説明量を増やすより、主操作の名詞を `プロンプト` に寄せた方が安全性と直感性を両立できる。
+- 検証: `rg -n 'AI用下書き|AI用プロンプトコピー|議事録準備|送信用プロンプト|AI議事録プロンプトコピー|文字起こし\+手書きメモでプロンプト作成|音声トラックは含めません' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。旧表示は過去ログにのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:19:05 JST
+
+- 作業: `v2-session-audio-track-mode-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針とユーザー要件に合わせ、音声トラック再生モードを `マイクのみ` / `スピーカーのみ` / `マイク + スピーカー` として可視ラベルで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` の録音後レビュー音声トラックタブを `両方の音声` / `自分のみ` / `相手側のみ` から `マイク + スピーカー` / `マイクのみ` / `スピーカーのみ` へ変更。選択中トラック名と未保存メッセージも同語彙へ追従。
+- 判断: ユーザー要件は「スピーカーのみ、マイクのみ、両方の再生」であり、従来の `自分` / `相手側` は文字起こしの話者表示としては自然だが、音声トラック再生モードとしては入力源が伝わりにくい。音声再生UIでは録音ソース名へ寄せ、チャット文字起こし側の `自分` / `相手側` 表示は維持した。
+- 検証: `rg -n 'マイク \+ スピーカー|マイクのみ|スピーカーのみ|マイクとスピーカーの音声トラック|selectedTrackLabel|trackTabs' src/routes/SessionDetail.tsx`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:17:35 JST
+
+- 作業: `v2-live-ai-notes-off-state-clarity-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こしウィンドウのAIノートでオン/オフ状態とAI外部送信なしをヘッダーだけで判断できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/LiveCaptionWindow.tsx` でAIノートがオフのとき、接続pillを `AIオフ · 外部送信なし` と表示する派生ラベルに変更し、aria/title も `AI外部送信なし` を明示。オン時は従来の provider/送信範囲表示を維持。`src/App.css` の接続pill幅を少し広げ、文言が詰まりにくいよう調整。
+- 判断: オフ状態のカード本文には説明があったが、ヘッダーpillは `端末内抽出 · AI外部送信なし` のままで、AI機能がオフか端末内処理中かが一目で分かりにくかった。v2の録音中UIでは録音・文字起こし・AI状態を常時明確にする必要があるため、最上段の状態表示からオフ状態を読めるようにした。
+- 検証: `rg -n 'aiNotesConnectionDisplayLabel|aiNotesTransmissionDisplayLabel|ノート接続: AIオフ|AIオフ|外部送信なし|live-notes-connection-pill' src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:15:53 JST
+
+- 作業: `v2-live-translation-state-clarity-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こしウィンドウで翻訳切替時の状態と翻訳外部送信なしを明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/LiveCaptionWindow.tsx` の原文タブを `文字起こし` に変更し、翻訳タブは短い操作名 `翻訳 {target}` に整理。翻訳ビュー内と aria/title で `翻訳未接続`、`原文のみ`、`翻訳外部送信なし` を明示した。
+- 判断: ユーザー要件は「リアルタイム文字起こしのウィンドウ」と「必要に応じてリアルタイム翻訳に切り替え」であり、`原文` だけでは主機能が薄くなる。翻訳機能が未接続の現状態では、翻訳先設定と外部送信なしを同じ面で示すことで、未実装状態と安全性を混同しにくくした。
+- 検証: `rg -n '文字起こしを表示|>\s*文字起こし\s*<|翻訳 \{translationTargetOption\.shortLabel\}|翻訳未接続 · 原文のみ · 外部送信なし|原文のみ表示、翻訳外部送信なし' src/components/LiveCaptionWindow.tsx`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:14:03 JST
+
+- 作業: `v2-session-minutes-source-clarity-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、録音詳細の議事録導線で「文字起こし + 手書きメモ」から作成し、音声トラックは送信しないことを明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` の議事録パネルに補助説明を追加し、主操作/空状態/プロンプトコピー文言を `文字起こし+手書きメモ` と `端末内議事録下書き` が分かる語彙へ変更。`src/App.css` に議事録パネル補助文の控えめなスタイルを追加。
+- 判断: 既存実装はテンプレート、手書きメモ、AI送信範囲を備えていたが、主操作の文言だけでは入力ソースと非送信範囲が即時に伝わりにくい。v2のミニマルUIでは説明を増やしすぎず、パネル見出し直下と主ボタンに要点を置く方が認知負荷を下げられる。
+- 検証: `rg -n '文字起こし\+手書きメモ|文字起こしと手書きメモ|音声トラックは送信しません|AI用プロンプトコピー|議事録プロンプトコピー|端末内議事録下書き|session-detail-panel-head p' src/routes/SessionDetail.tsx src/App.css`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:12:04 JST
+
+- 作業: `v2-audio-transmission-state-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音状態透明性に合わせ、音声外部送信状態を `なし` の短縮表現ではなく `外部送信なし` と明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/utils/liveCaptionStatus.ts` に `LOCAL_AUDIO_TRANSMISSION_LABEL` を追加し、ローカル音声処理の新規状態値を `外部送信なし` に変更。`src/utils/aiTransmissionHelpers.ts`、`src/components/MeetingDetectedBanner.tsx`、`src/routes/TranscriptView.tsx`、`src/utils/previewAppData.ts`、`src/utils/controllerActions.ts` を同ラベルに追従し、保存済み旧値 `なし` は互換判定として残した。`src/components/PermissionBanner.tsx` の短縮状態 `確認中` は `権限確認中` に変更。
+- 判断: v2の録音中UIでは、録音・文字起こし・AI/外部送信の状態が一目で分かる必要がある。`なし` は単独表示だと何がないのか曖昧なため、音声外部送信なしを明示する方が録音の透明性に合う。
+- 検証: `rg -n 'aiTransmissionLabel === "なし"|aiTransmissionStatusLabel === "なし"|aiTransmissionLabel: "なし"|return "なし"|statusLabel === "なし"|"確認中"' src/components/MeetingDetectedBanner.tsx src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx src/utils/aiTransmissionHelpers.ts src/utils/liveCaptionStatus.ts src/utils/previewAppData.ts src/utils/controllerActions.ts`、`git diff --check`、`npm run build` を実行し成功。`なし` は旧保存値互換の判定にのみ残存。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:06:26 JST
+
+- 作業: `v2-remaining-caption-term-cleanup-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のリアルタイム文字起こしUI方針に合わせ、設定・録音中カード・検証文に残る `字幕` 表現を `文字起こし` へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SettingsView.tsx`、`src/components/TranscriptionControls.tsx`、`src/components/ControllerWindow.tsx`、`src/utils/controllerActions.ts` のユーザー可視文言を `文字起こし` 基準へ変更。
+- 判断: `字幕` は表示形式としては短いが、v2で扱う主機能はリアルタイム文字起こし、翻訳切替、AIノート連携である。設定や検証の語彙も `文字起こし` に揃えることで、機能の所在がぶれにくくなる。
+- 検証: `rg -n '字幕|ライブ字幕|字幕表示|字幕を表示|字幕を隠す|字幕エラー|字幕リセット|テスト文字起こし|v2-remaining-caption-term-cleanup-scope' src/routes/SettingsView.tsx src/components/TranscriptionControls.tsx src/components/ControllerWindow.tsx src/utils/controllerActions.ts AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。実装対象ファイルの旧表示なしを確認（旧語は過去ログにのみ残存）。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:04:26 JST
+
+- 作業: `v2-live-transcription-settings-controller-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、設定画面・検証コントローラー・プレビュー文に残る `ライブ字幕` 表記を `ライブ文字起こし` へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SettingsView.tsx`、`src/components/ControllerWindow.tsx`、`src/utils/previewAppData.ts` のユーザー可視ラベルを `ライブ文字起こし` / `文字起こしを表示` / `文字起こしエラー` へ変更。
+- 判断: v2では録音中の主要面をリアルタイム文字起こしとして見せる。`字幕` は出力形式に寄るため、設定と検証用UIでも同じ語彙に揃えた方が、機能の所在が分かりやすい。
+- 検証: `rg -n 'ライブ字幕|字幕を表示|字幕を隠す|字幕エラー|字幕リセット|ライブ文字起こし|文字起こしを表示|文字起こしエラー|v2-live-transcription-settings-controller-label-scope' src/routes/SettingsView.tsx src/components/ControllerWindow.tsx src/utils/previewAppData.ts AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。実装対象ファイルの旧表示なしを確認（旧語は過去ログにのみ残存）。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:02:06 JST
+
+- 作業: `v2-live-caption-naming-consistency-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こし周辺の表示名を `字幕` から `文字起こし` へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/LiveCaptionWindow.tsx` と `src/routes/TranscriptView.tsx` のユーザー向けエラー/状態文に残る `ライブ字幕` を `ライブ文字起こし` に変更。
+- 判断: v2では録音中の主要機能をリアルタイム文字起こしとして見せる。内部イベント名は維持しつつ、ユーザーが見る文言は `ライブ文字起こし` に揃えた方が、翻訳切替やAIノートとの関係も読み取りやすい。
+- 検証: `rg -n 'ライブ字幕|ライブ文字起こしの文字起こし|ライブ文字起こしを表示できませんでした|v2-live-caption-naming-consistency-scope' src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。実装対象ファイルの旧表示なしを確認（旧語は過去ログにのみ残存）。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 15:00:33 JST
+
+- 作業: `v2-live-transcription-visible-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常時表示インジケーターとメニューバーでリアルタイム文字起こしを `字幕` だけに縮めず表示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/RingLightWindow.tsx`、`src/components/MeetingDetectedBanner.tsx`、`src/routes/TranscriptView.tsx` の可視ラベルを `字幕` / `字幕を表示` から `文字起こし` / `文字起こしを表示` に変更。
+- 判断: ユーザー要件はリアルタイム文字起こしと必要時の翻訳切替であり、`字幕` は表示形式に寄りすぎる。録音状態の透明性と機能認識を優先し、短い可視ラベルでも文字起こし機能だと分かる語彙へ揃える。
+- 検証: `rg -n '字幕を表示|<span>字幕</span>|字幕 \{status\.transcriptionStatusLabel\}|文字起こしを表示|<span>文字起こし</span>|文字起こし \{status\.transcriptionStatusLabel\}|v2-live-transcription-visible-label-scope' src/components/RingLightWindow.tsx src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:58:28 JST
+
+- 作業: `v2-menu-audio-transmission-card-value-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー開始UI方針に合わせ、録音開始前/録音中の音声外部送信状態カードを見出しから直接理解できる値にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/TranscriptView.tsx` の音声外部送信状態カード値を、端末内処理時は `端末内` ではなく `外部送信なし`、外部送信時は `送信先 OpenAI` ではなく `OpenAI` のように表示する。
+- 判断: カード見出しが `音声外部送信` なので、値が `端末内` だと否定状態の読み取りに一段変換が必要になる。録音状態の透明性を優先し、同じカード内で「外部送信なし」と直接示す。
+- 検証: `rg -n 'aiTransmissionStatusDisplayLabel|audioTransmissionStatusPillLabel|端末内|外部送信なし|送信先\s+|v2-menu-audio-transmission-card-value-scope' src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:56:26 JST
+
+- 作業: `v2-recording-indicator-transmission-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音状態透明性に合わせ、常時表示される録音インジケーターで音声外部送信の有無を省略せず読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/utils/liveCaptionStatus.ts` と `src/components/LiveCaptionWindow.tsx` の端末内音声処理ラベルを `音声端末内` から `音声外部送信なし` に変更。
+- 判断: 「端末内」は短いが、録音中の透明性という品質基準では外部送信の有無を直接示す方が安全。既存の aria label と通知ウィンドウ表現にも合わせる。
+- 検証: `rg -n '音声端末内|音声外部送信なし|v2-recording-indicator-transmission-label-scope' src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx src/components/RingLightWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:52:49 JST
+
+- 作業: `v2-settings-permission-track-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、録音トラック権限の行ラベルでも自分/相手側の音声トラック対応を明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SettingsView.tsx` の録音トラック権限行ラベルを `自分` / `相手側` から `自分音声` / `相手側音声` に変更。
+- 判断: 設定画面にはマイク、画面収録、文字起こし、AI議事録が並ぶ。短い `自分` / `相手側` だけでは権限がどの録音対象に効くかが薄くなるため、録音中UIと同じ語彙へ揃える。
+- 検証: `rg -n '自分音声|相手側音声|v2-settings-permission-track-label-scope|>自分<|>相手側<' src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:51:01 JST
+
+- 作業: `v2-settings-audio-meter-track-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、設定画面の音声メーターでも自分/相手側の別トラックが一目で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SettingsView.tsx` の音声メーターラベルを `自分` / `相手` から `自分音声` / `相手側音声` に変更。
+- 判断: プロダクトコンセプトでは「自分」と「相手側全体」の別トラック化が中核。設定画面だけ短縮ラベルにすると、マイク/システム音声の対応が曖昧になるため、録音中UIの表現と揃える。
+- 検証: `rg -n '自分音声|相手側音声|v2-settings-audio-meter-track-label-scope|>自分<|>相手<' src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。権限リスト側の `自分` は今回のメーター文脈外として維持。
+
+## 2026-05-30 14:49:33 JST
+
+- 作業: `v2-audio-level-color-token-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のカラーパレット方針に合わせ、音声レベルメーターの動的色を固定RGBではなく v2 トークン由来にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-green` / `es-amber` / `es-red` など）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/utils/audioLevelHelpers.ts` の `getLevelColor` を、ハードコードRGB補間から `var(--es-green)` / `var(--es-amber)` / `var(--es-red)` を使う `color-mix()` 補間へ変更。
+- 判断: 音声メーターは録音中UIと設定UIの状態理解に直結する。緑・黄・赤の意味は維持しつつ、色相を v2 パレットへ寄せることで UI の統一感を上げる。
+- 検証: `rg -n 'rgb\\(|color-mix\\(in srgb, var\\(--es-green\\)|color-mix\\(in srgb, var\\(--es-amber\\)|v2-audio-level-color-token-scope' src/utils/audioLevelHelpers.ts AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:47:49 JST
+
+- 作業: `v2-session-detail-error-close-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、操作エラー表示のボタンを単体でも意味が通るラベルにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` の操作エラーを閉じるボタンの可視ラベルを `閉じる` から `エラーを閉じる` に変更。
+- 判断: v2方針では、アイコンや配置に依存せず操作対象がラベルだけで分かる必要がある。録音後レビューにはコピー、音声再生、議事録生成など複数の操作が並ぶため、単なる `閉じる` は対象が曖昧。
+- 検証: `rg -n 'エラーを閉じる|v2-session-detail-error-close-label-scope|>閉じる<' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:45:48 JST
+
+- 作業: `v2-first-launch-permission-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の初回セットアップ方針に合わせ、権限確認の操作ラベルを短く保ちつつ、何の設定・確認か分かる表現にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/TranscriptView.tsx` の初回権限セットアップで、`済み` / `許可` / `許可を開く` / `後で` / `再確認` を対象付きの `マイク許可済み`、`マイク設定`、`画面収録許可済み`、`画面収録設定`、`監視設定`、`権限設定を開く`、`後で設定`、`権限再確認` に変更。
+- 判断: 録音アプリの初回権限UIでは、操作対象が曖昧だと録音透明性と安心感が落ちる。アイコンや行見出しに依存せず、ボタン単体でも対象が分かるようにする。
+- 検証: `rg -n 'マイク許可済み|マイク設定|画面収録許可済み|画面収録設定|監視設定|権限設定を開く|後で設定|権限再確認|v2-first-launch-permission-action-label-scope|>済み<|>許可<|>許可を開く<|>後で<|>再確認<' src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:44:30 JST
+
+- 作業: `v2-recording-idle-state-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルだが状態が明確なUI方針に合わせ、録音開始前の短い待機ラベルを対象が分かる表現へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/TranscriptionControls.tsx` のノート状態 detail を `待機` から `ノート待機` に変更。
+- 変更: `src/routes/TranscriptView.tsx` のメニューバーポップオーバー開始前表示を `待機中` から `記録待機` に変更。
+- 判断: v2方針では短い状態チップでも、録音なのかノートなのかの対象が分かる必要がある。`待機` だけでは録音待機、発話待機、AI待機が混同されるため、対象を明示する。
+- 検証: `rg -n 'ノート待機|記録待機|v2-recording-idle-state-label-scope|\"待機\"|>待機中<' src/components/TranscriptionControls.tsx src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:41:31 JST
+
+- 作業: `v2-live-caption-waiting-speaker-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こしの空状態で何を待っているかを可視ラベルだけで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/LiveCaptionWindow.tsx` の文字起こし未表示時の話者欄を `待機` から `発話待ち` に変更。
+- 判断: 録音中UIでは、録音中なのか、文字起こし待ちなのか、発話待ちなのかが混同されると透明性が落ちる。既存の本文 `発話が入るとここに表示されます。` と合わせ、短い話者欄でも発話待ちであることを示す。
+- 検証: `rg -n '発話待ち|v2-live-caption-waiting-speaker-label-scope|>待機<' src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` を実行し成功。`npm run build` は既存の Vite chunk size warning のみ。
+
+## 2026-05-30 14:39:39 JST
+
+- 作業: `v2-minutes-source-state-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、議事録生成素材の有無を `あり` / `なし` だけにせず、何が未入力・未保存か分かる表現へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SessionDetail.tsx` の議事録プロンプト素材で、`なし` を `補足指示未入力` / `手書きメモ未入力` / `保存済みノートなし` / `文字起こしなし` に変更。
+- 変更: 端末内議事録下書きの source summary で、`手書きメモ: なし` と `補足指示: あり|なし` を `手書きメモ: メモ未入力` と `補足指示: 指示入力あり|指示未入力` に変更。
+- 変更: 議事録ワークスペースのヘッダー chip を `補足指示入力あり` / `補足指示未入力` に変更。
+- 判断: 議事録生成では文字起こし、手書きメモ、保存済みノート、補足指示が混在する。短い `なし` / `あり` は対象を読み返すと曖昧なため、コピー後のプロンプトや下書きでも素材状態が明確に残るようにした。
+- 検証: `rg -n '補足指示未入力|手書きメモ未入力|保存済みノートなし|文字起こしなし|メモ未入力|指示入力あり|指示未入力|補足指示入力あり|v2-minutes-source-state-label-scope' src/routes/SessionDetail.tsx AGENT_LOG.md` で対象文言を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+
+## 2026-05-30 14:37:36 JST
+
+- 作業: `v2-loading-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な方針に合わせ、設定・履歴・録音レビューの読み込み状態を可視ラベル単体で理解できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/SettingsView.tsx` の `読み込み中…` を `設定読み込み中…` に変更。
+- 変更: `src/routes/SessionList.tsx` の `読み込み中…` を `履歴読み込み中…` に変更。
+- 変更: `src/routes/SessionDetail.tsx` の `読み込み中…` を `録音レビュー読み込み中…` に変更。
+- 判断: 既存の aria-label/title は具体的だが、v2 の録音後・設定 UI では画面上に複数の更新/読み込み操作が並ぶ。可視ラベルでも対象を示すことで、低密度のまま状態理解を補強する。
+- 検証: `rg -n '読み込み中…|設定読み込み中…|履歴読み込み中…|録音レビュー読み込み中…|v2-loading-label-scope' src/routes/SettingsView.tsx src/routes/SessionList.tsx src/routes/SessionDetail.tsx AGENT_LOG.md` で対象文言を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+
+## 2026-05-30 14:35:54 JST
+
+- 作業: `v2-model-download-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音前準備UI方針に合わせ、Whisperモデル選択の短すぎるダウンロード操作ラベルを文脈付きにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/ModelSelector.tsx` のモデルダウンロードボタン可視ラベルを `確認中…` / `待機` / `ダウンロード` から `モデル確認中…` / `モデル待機` / `モデルダウンロード` に変更。
+- 変更: 可視ラベルで不要になった `STATUS_CHECKING_WITH_DOTS_LABEL` import を削除。
+- 判断: 録音前画面ではマイク、権限、録音、文字起こし、モデル操作が同居する。短いラベルは対象を推測させるため、ボタン単体でモデル操作だと分かるようにした。モデル取得・確認処理は変更していない。
+- 検証: `rg -n 'STATUS_CHECKING_WITH_DOTS_LABEL|モデル確認中…|モデル待機|モデルダウンロード|v2-model-download-action-label-scope' src/components/ModelSelector.tsx AGENT_LOG.md` で対象文言と不要 import 削除を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+
+## 2026-05-30 14:34:14 JST
+
+- 作業: `v2-meeting-detected-recording-pill-track-summary-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、会議検知通知から録音開始した後の常時表示 pill で、録音対象トラックが正しく短く読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の録音中 pill のトラック要約判定を、個別文字列比較から `getVisibleTrackSummary` に変更。
+- 変更: プレビュー用の相手側トラック状態を `録音中` から `取得中`、待機状態を `録音待機` / `取得待機` に変更し、自分=録音、相手側=取得の語彙へ揃えた。
+- 判断: 既存ロジックは相手側トラックにも `録音中` を期待していたため、実状態が `取得中` の場合に `自分 + 相手側` へ畳めない。既存 helper は `録音中` と `取得中` の両方を active と扱うため、v2 のミニマルな常時表示に適している。
+- 検証: `rg -n 'getVisibleTrackSummary|録音待機|取得待機|systemAudioTrackLabel: "取得中"|v2-meeting-detected-recording-pill-track-summary-scope' src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` で対象実装を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+
+## 2026-05-30 14:32:27 JST
+
+- 作業: `v2-history-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、履歴・検索・外部アプリ操作が同居する画面で短すぎる可視ラベルを推測不要にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/routes/TranscriptView.tsx` の保存済み履歴ボタンを `外部アプリ` / `起動中…` から `履歴を外部アプリで開く` / `外部アプリ起動中…` に変更。
+- 変更: `src/routes/SessionList.tsx` の履歴検索クリアボタンを `クリア` から `検索クリア` に変更。
+- 変更: `src/routes/SessionDetail.tsx` の文字起こし検索クリアボタンを `クリア` から `文字起こし検索クリア` に変更。
+- 判断: 既存の aria-label/title は十分に具体的だが、v2 では可視ラベル単体でも操作対象を認識できる必要がある。検索、コピー、保存場所、外部起動が近接する録音後 UI で、短いラベルを文脈付きにした。
+- 検証: `rg -n '履歴を外部アプリで開く|外部アプリ起動中…|検索クリア|文字起こし検索クリア|v2-history-action-label-scope' src/routes/TranscriptView.tsx src/routes/SessionList.tsx src/routes/SessionDetail.tsx AGENT_LOG.md` で対象文言を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+
+## 2026-05-30 14:30:31 JST
+
+- 作業: `v2-audio-source-boundary-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な方針に合わせ、録音ソース境界の状態表示を推測不要にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` スキル、Pencil MCP の `meet-jerky-desktop-v2.pen` 変数（`es-*`）とガイド（Code/Web App）、layout problems なし。
+- 変更: `src/components/MicrophoneSection.tsx` の境界グリッドで `字幕` / `接続|待機` / `文字起こし` を `自分音声` / `録音中|録音待機` / `文字起こし対象` に変更。
+- 変更: `src/components/SystemAudioSection.tsx` の境界グリッドで `字幕` / `接続|待機` / `文字起こし` を `相手側音声` / `取得中|取得待機` / `文字起こし対象` に変更。
+- 判断: 既存の録音/取得状態ロジックは変えず、表示文言のみを明確化。録音中であること、別トラックであること、文字起こし対象であることを低密度表示のまま伝える。
+- 検証: `rg -n '自分音声|相手側音声|録音待機|取得待機|文字起こし対象|v2-audio-source-boundary-label-scope' src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md` で対象文言を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+
+## 2026-05-30 14:27:19 JST
+
+- 作業: `v2-permission-banner-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで状態が明確なUI方針に合わせ、録音開始前の権限バナーに残る短すぎる可視ラベルを操作対象が分かる表現へ揃える。
+- 変更: 権限影響グリッドの `開始` を `録音開始` に変更。
+- 変更: 権限再確認ボタンを `確認中…` / `再確認` から `権限確認中…` / `権限再確認` に変更。
+- 変更: macOS設定を開くボタンの可視ラベルを `マイク設定` / `画面収録設定` に変更。既存の aria/title は維持。
+- 検証: 未実行。これから `rg`、`git diff --check`、`npm run build` で確認する。
+
+## 2026-05-30 14:25:43 JST
+
+- 作業: `v2-session-detail-audio-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な録音後レビュー方針に合わせ、音声トラック欄と文字起こし欄で重複して見える操作ラベルを区別する。
+- 変更: 音声トラック欄の外部起動ボタンを `外部アプリで開く` から `音声を外部アプリで開く` に変更。
+- 変更: 音声トラック欄のコピー操作を `文字起こしコピー` から `トラック文字起こしコピー` に変更。全文コピー側の `文字起こしコピー` は維持。
+- 検証: 未実行。これから `rg`、`git diff --check`、`npm run build` で確認する。
+
+## 2026-05-30 14:21:55 JST
+
+- 作業: `v2-live-caption-compact-track-indicator-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで状態が明確な録音中UI方針に合わせ、ライブ字幕のコンパクト表示でも録音対象トラックが見えるようにする。
+- 変更: `LiveCaptionWindow` のコンパクトピルへ `自分 + 相手側` / `自分のみ` / `相手側のみ` / `切替中` / `未取得` のトラックサマリーを可視表示する pill を追加。
+- 変更: コンパクトピル幅を 360px から 420px に広げ、v2の `es-blue` 系トーンでトラック pill を追加。既存の REC / 文字起こし / AI / 音声外部送信表示は維持。
+- 検証: 未実行。これから `rg`、`git diff --check`、`npm run build` で確認する。
+
+## 2026-05-30 14:19:52 JST
+
+- 作業: `v2-preflight-retry-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的なUI方針に合わせ、録音開始前のモデル/マイク準備エラー時に残る短すぎる再取得ラベルを、対象が分かる可視文言へ揃える。
+- 変更: `ModelSelector` のモデル一覧再取得ボタンを `モデル一覧取得中…` / `モデル一覧再取得` に変更。
+- 変更: `ModelSelector` のモデル状態確認失敗時の再確認ボタンを `モデル確認中…` / `モデル再確認` に変更。
+- 変更: `MicrophoneSection` のマイクデバイス再取得ボタンを `マイク一覧取得中…` / `マイク一覧を再取得` に変更。
+- 検証: 未実行。これから `rg`、`git diff --check`、`npm run build` で確認する。
+
+## 2026-05-30 14:18:18 JST
+
+- 作業: `v2-recording-entry-action-label-scope`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的なUI方針に合わせ、会議検知バナーとメイン録音画面に残る短すぎる操作ラベルを、録音状態の透明性を損なわず明確化する。
+- 変更: 会議検知バナーの開始中ラベルを `録音開始中…` に変更し、pending中の閉じる操作の aria/title を `録音操作中` に変更。
+- 変更: メイン録音ボタンの開始 pending 表示を `録音開始中…` に変更。
+- 変更: 保存済みファイルの場所表示ボタンを `保存場所表示` / `保存場所表示中…` に変更。
+- 検証: 未実行。これから `rg`、`git diff --check`、`npm run build` で確認する。
+
+## 2026-05-30 14:15:07 JST
+
+- 作業: `v2-transcription-controls-action-label-scope`
+- 目的: 録音/文字起こし操作の可視ボタンが `開始` / `停止` / `開始中…` / `停止中…` / `クリア` だけになり、録音・文字起こし・履歴操作のどれを指すかを推測させる表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptionControls` の主操作ボタンを `文字起こし開始` / `文字起こし停止` / `文字起こし開始中…` / `文字起こし停止中…` に変更。
+- 変更: 文字起こしログの消去ボタンを `文字起こしクリア` に変更。
+- 判断: v2の録音中UIでは録音インジケーター、文字起こし、AIノート、履歴保存が同時に見える。短い操作ラベルは誤読されやすいため、ボタン単体で対象が読めるようにした。録音/文字起こし処理自体は変更していない。
+- 検証: これから `rg`、`git diff --check`、`npm run build` を実行する。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:13:22 JST
+
+- 作業: `v2-settings-action-label-scope`
+- 目的: 設定画面で、可視操作ラベルが `取得中…` / `保存中…` / `削除中…` / `保存場所` / `利用時確認` だけになり、マイク一覧・アプリ設定・APIキー・AI外部送信・保存場所のどれを指すかを推測させる表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: マイクデバイス再取得ボタンを `マイク一覧取得中…` / `マイク一覧を再取得` に変更。
+- 変更: プライバシー画面のAI外部送信バッジを `AI利用時確認` に変更。
+- 変更: 保存先を開くボタンを `保存場所表示` に変更。
+- 変更: アプリ設定保存ボタンを `設定保存中…` に変更。
+- 変更: APIキー操作の可視ラベルを `APIキー状態を再確認` / `APIキーを保存` / `APIキーを削除` と、処理中はプロバイダー名つきの保存中/削除中/確認中に変更。
+- 判断: v2の設定画面はマイク入力、検出ルール、文字起こしエンジン、AIプロバイダー、保存先が同居する。短い操作ラベルは画面文脈に依存しすぎるため、主要操作の対象を可視文言に含めた。設定値、保存処理、APIキーの扱いは変更していない。
+- 検証: これから `rg`、`git diff --check`、`npm run build` を実行する。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:11:41 JST
+
+- 作業: `v2-live-caption-ai-notes-action-label-scope`
+- 目的: 録音中UIのAIノート/質問チャット領域で、可視ラベルが `保存失敗` / `ノートコピー` / `下書き保存` だけになり、表示設定・会議ノート・質問下書きのどれを指すかを推測させる表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ文字起こしの設定保存エラー表示を `設定保存失敗` に変更。
+- 変更: 端末内会議ノートのコピー操作を `会議ノートコピー` に変更。
+- 変更: 質問チャットの下書き保存操作を `質問下書き保存` に変更。
+- 判断: v2の録音中UIは文字起こし、翻訳、AIノート、質問下書きが同時に見える。短いラベルのままでも対象が分かるよう、操作対象を可視文言に含めた。音声/AI外部送信状態や保存処理自体は変更していない。
+- 検証: これから `rg`、`git diff --check`、`npm run build` を実行する。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:09:58 JST
+
+- 作業: `v2-session-detail-minutes-action-label-scope`
+- 目的: 録音後レビューの議事録ワークスペースで、可視操作ラベルが `指示をコピー` / `指示編集` / `クリア` だけになり、議事録・補足指示・手書きメモのどれを操作するかを推測させる表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 外部AI利用時の議事録プロンプトコピー表示を `AIプロンプトコピー` に変更し、説明文も同じ表記へ揃えた。
+- 変更: 端末内利用時の `指示をコピー` を `議事録指示コピー` に変更。
+- 変更: 補足指示の開閉/消去ボタンを `補足指示編集` / `補足指示を閉じる` / `補足指示クリア` に変更。
+- 変更: 手書きメモ消去ボタンを `メモクリア` に変更。
+- 判断: v2のミニマルUIでは、短いボタンでも操作対象を明示する必要がある。録音後画面では文字起こしコピー、議事録下書きコピー、AIプロンプトコピー、手書きメモ編集が同居するため、可視ラベルを対象つきに揃えた。
+- 検証: これから `rg`、`git diff --check`、`npm run build` を実行する。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:08:28 JST
+
+- 作業: `v2-session-list-reveal-location-label-scope`
+- 目的: 履歴一覧の保存場所表示ボタンで、可視ラベルが `保存場所` / `表示中…` だけになり、録音レビューや文字起こしコピーと並んだときに操作内容を推測させる表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` の保存場所ボタン表示を `保存場所表示` / `保存場所表示中…` に変更。
+- 変更: 他行の保存場所表示中に出る待機ラベルを `別履歴を表示中` から `別保存場所を表示中` に変更。
+- 判断: ARIA/titleは既に `保存場所を表示` と具体的だったが、v2のミニマルUIでは可視ボタン単体でも対象と動作が読める必要がある。履歴行には `録音レビュー`、`文字起こしコピー`、保存場所操作が並ぶため、保存場所操作も動詞まで含めて揃えた。
+- 検証: これから `rg`、`git diff --check`、`npm run build` を実行する。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:06:45 JST
+
+- 作業: `v2-transcript-copy-feedback-label-scope`
+- 目的: 履歴一覧とリアルタイム文字起こしで、コピー操作後の視覚フィードバックが単独の `コピー済み` になり、何をコピーしたかを推測させる表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` のコピー中/コピー済み表示を `文字起こしコピー中…` / `文字起こしコピー済み` に変更。
+- 変更: `TranscriptDisplay` の全件コピーとトラック別コピーの成功表示を `文字起こしコピー済み` に変更し、全件コピー中表示も `文字起こしコピー中…` に揃えた。
+- 判断: ARIA/titleは既に具体的だったが、v2のミニマルUIでは短いボタン表示自体も対象が読める必要がある。対象を `文字起こし` に限定して明示し、音声トラック操作や保存場所表示との混同を避ける。
+- 検証: これから `rg`、`git diff --check`、`npm run build` を実行する。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:03:39 JST
+
+- 作業: `v2-audio-transmission-boundary-chip-value`
+- 目的: マイク、相手側音声、Whisperモデル選択の境界チップで、`音声外部送信` の値が単独の `なし` になり、送信状態として読み切れない表示を直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `MicrophoneSection`、`SystemAudioSection`、`ModelSelector` の `音声外部送信` チップ値を `なし` から `送信なし` に変更する。
+- 判断: v2のミニマルUIではチップ単体で状態が読める必要がある。`音声外部送信: なし` より `音声外部送信: 送信なし` の方が、音声が外部へ送られないことを短く明示できる。
+- 検証: `rg -n 'label: "音声外部送信"|value: "なし"|value: "送信なし"|v2-audio-transmission-boundary-chip-value' src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/ModelSelector.tsx AGENT_LOG.md` で対象実装の新表示を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 14:02:02 JST
+
+- 作業: `v2-transcript-view-audio-transmission-label-scope`
+- 目的: 録音メイン画面のステータスピルとメニューバーカードで、Realtime文字起こしの音声外部送信をAI議事録の外部送信と混同しない表示にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `TranscriptView` の `外部送信 端末内` 表示を `音声外部送信なし` にし、メニューカード見出しも `AI外部送信` から `音声外部送信` へ変更する。aria ラベルも音声外部送信へ揃える。
+- 判断: v2では音声文字起こしの外部送信とAI議事録の外部送信が別概念として同時に出る。`外部送信 端末内` は意味が矛盾し、`AI外部送信` はRealtime音声送信を議事録AI送信と誤読させるため、対象を音声に限定して明示する。
+- 検証: `rg -n '外部送信 \\{|外部送信 \\{aiTransmissionStatusDisplayLabel\\}|<span>AI外部送信</span>|AI外部送信状態を確認できません|AI外部送信なし、端末内で処理|AI外部送信:|音声外部送信なし|音声外部送信|audioTransmissionStatusPillLabel|v2-transcript-view-audio-transmission-label-scope' src/routes/TranscriptView.tsx src/utils/aiTransmissionHelpers.ts AGENT_LOG.md` で対象実装の旧表示なしと新表示を確認（ログには旧語が記録として残存）。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:59:39 JST
+
+- 作業: `v2-settings-system-audio-permission-label-scope`
+- 目的: 設定画面の相手側システム音声カードで、画面収録権限確認と相手側音声取得状態が単独の `確認中` / `確認失敗` として表示されないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `SettingsView` の `systemAudioCaptureStateLabel` を `画面収録確認中` / `画面収録確認失敗` / `相手側音声取得可` / `画面収録権限確認` に変更する。
+- 判断: v2では設定画面にマイク、画面収録、文字起こし、AI議事録が並ぶ。単独の `確認中` は何の状態か推測させるため、相手側音声取得の前提である画面収録権限を短く明示する。
+- 検証: `rg -n 'systemAudioCaptureStateLabel|\\? "確認中"|\\? "確認失敗"|\\? "取得可能"|: "権限確認"|画面収録確認中|画面収録確認失敗|相手側音声取得可|画面収録権限確認|v2-settings-system-audio-permission-label-scope' src/routes/SettingsView.tsx AGENT_LOG.md` で対象実装の旧表示なしと新表示を確認（ログには旧語が記録として残存）。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:58:15 JST
+
+- 作業: `v2-settings-ai-provider-label-scope`
+- 目的: 設定画面のAI議事録プロバイダー選択で、外部送信確認と端末内AIの状態を音声処理と混同しない表示にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `SettingsView` のAI議事録プロバイダーバッジとサマリの `利用時確認` / `端末内` を `AI利用時確認` / `端末内AI` へ変更する。
+- 判断: 設定画面には文字起こしエンジンの `音声外部送信` とAI議事録の送信範囲が並ぶ。単独の `利用時確認` や `端末内` は音声経路にも読めるため、短いバッジのままAI議事録対象であることを明示する。
+- 検証: `rg -n 'badge: "利用時確認"|badge: "端末内"|\\? "利用時確認"|\\? "端末内"|AI利用時確認|端末内AI|v2-settings-ai-provider-label-scope' src/routes/SettingsView.tsx AGENT_LOG.md` で対象実装の旧表示なしと新表示を確認（ログには旧語が記録として残存）。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:56:28 JST
+
+- 作業: `v2-live-ai-notes-label-scope`
+- 目的: 録音中UIのAIノート/質問まわりで、AI議事録設定の確認・端末内AI・AI外部送信確認を、音声文字起こし経路と混同しない表示にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `LiveCaptionWindow` の `確認中` / `確認失敗` / `端末内` / `利用時確認` / `外部送信は利用時に確認` を AI ノート/議事録対象の表示へ変更し、`SessionDetail` の音声トラックタブの `確認中` も `音声確認中` へ合わせる。
+- 判断: v2では録音中に「音声外部送信」「AIノート」「質問下書き」が同時に見える。単独の `端末内` や `利用時確認` は、音声処理なのかAI議事録なのかを判別しにくいため、短いまま `AI` を含めて対象を明示する。
+- 検証: `rg -n 'AI設定確認中|AI設定確認失敗|AI確認失敗|AI利用時確認|AI外部送信は利用時に確認|端末内AI|端末内抽出・AI利用時確認|\\? "確認中"|\\? "確認失敗"|\\? "利用時確認"|\\? "端末内"|外部送信は利用時に確認|v2-live-ai-notes-label-scope' src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx AGENT_LOG.md` で対象実装の旧表示なしと新表示を確認（ログには旧語が記録として残存）。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:54:20 JST
+
+- 作業: `v2-session-detail-ai-minutes-label-scope`
+- 目的: 録音後レビューUIで、音声トラック確認・AI議事録設定・AI外部送信の状態が短縮ラベルだけでも混同されないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `SessionDetail` の `確認中` / `確認失敗` / `外部送信は利用時に確認` / `送信用下書き` などを、音声またはAI議事録の対象が分かる表示へ変更する。
+- 判断: v2では録音後画面に音声トラック再生、チャット型文字起こし、議事録下書き、AI送信用プロンプトが同居する。単独の確認・外部送信・送信用表示は、音声ファイル確認なのかAI議事録送信なのかをユーザーに推測させるため、ラベルに対象を含める。
+- 検証: `rg -n "外部送信は利用時に確認|外部プロバイダー|送信用下書き|AI外部送信は利用時に確認|AI外部プロバイダー|AI送信用下書き|議事録設定確認中|議事録設定確認失敗|端末内AI|AI利用時確認|音声確認中|音声確認失敗|v2-session-detail-ai-minutes-label-scope" src/routes/SessionDetail.tsx AGENT_LOG.md` で `SessionDetail` の旧表示なしと新表示を確認（過去ログには旧語が記録として残存）。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:50:04 JST
+
+- 作業: `v2-live-audio-transmission-label-scope`
+- 目的: 録音中UIの外部送信表示で、Realtime文字起こしの音声外部送信とAI議事録の外部送信を混同しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `liveCaptionStatus`、`LiveCaptionWindow`、`MeetingDetectedBanner` の録音中/REC表示に出る `外部送信` / `AI外部送信` を、文字起こし音声経路として `音声外部送信` / `音声外部送信なし` へ変更する。
+- 判断: v2では録音、リアルタイム文字起こし、AIノート/議事録が同時に表示される。文字起こしエンジンの外部送信を `AI外部送信` と出すと議事録AIプロバイダーの送信状態と混同するため、対象を音声に限定して明示する。
+- 検証: `rg -n 'AI外部送信:|AI外部送信なし、端末内で処理|>\\s*外部送信\\s*<|\\? "外部送信"|return "外部送信"|音声外部送信|音声端末内|v2-live-audio-transmission-label-scope' src/utils/liveCaptionStatus.ts src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx src/components/RingLightWindow.tsx AGENT_LOG.md` で対象ファイルの旧表示なしと新表示を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:47:44 JST
+
+- 作業: `v2-font-token-fallback-cleanup`
+- 目的: v2 の `es-font-body` / `es-font-display` / `es-font-mono` 方針に合わせ、コンポーネント側に残る局所フォントフォールバック指定をCSS変数参照へ一本化する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `App.css` の `font-family: var(--font-display, "Anton", sans-serif)` と `font-family: var(--font-mono, "IBM Plex Mono", monospace)` を `var(--font-display)` / `var(--font-mono)` に置換する。
+- 判断: ルートの `--font-*` がv2フォントとフォールバックを定義済みのため、各コンポーネントで再度フォールバックを持つ必要はない。参照元を一本化するとv2フォント変更への追従性が上がる。
+- 検証: `rg -n 'font-family: var\\(--font-(display|mono),|"Anton", sans-serif|"IBM Plex Mono", monospace|v2-font-token-fallback-cleanup' src/App.css AGENT_LOG.md` で実装CSS側の局所フォールバックなしを確認。`rg -n 'font-family: var\\(--font-(display|mono)\\)' src/App.css` でCSS変数参照への統一を確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:45:30 JST
+
+- 作業: `v2-dark-shadow-token-cleanup`
+- 目的: v2 の `es-dark` / `es-ink` / `es-red` と同じ意味を持つ影・録音インジケーター色の直値を CSS 変数参照へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `App.css` の `rgba(8, 17, 31, ...)` / `rgba(16, 19, 26, ...)` / `#ef4444` 対象箇所を `color-mix(... var(--es-dark|--es-ink|--es-red) ...)` と `var(--es-red)` に置換する。
+- 判断: 影と録音ドットはv2の暗色・赤色トークンと一致する。直値のままだとv2パレット変更に追従せず、Macらしい抑制されたUIの統一性が弱くなるため、見た目の強度を維持したままトークン参照へ集約する。
+- 検証: `rg -n "#10131a|#10131A|16, 19, 26|#697080|105, 112, 128|#08111f|#08111F|8, 17, 31|#D8D2C4|#d8d2c4|216, 210, 196|#10B981|#10b981|16, 185, 129|#EF4444|#ef4444|239, 68, 68|#F59E0B|#f59e0b|245, 158, 11|v2-dark-shadow-token-cleanup" src/App.css AGENT_LOG.md` で `App.css` は `--es-*` 定義以外の対象直値なしを確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:41:21 JST
+
+- 作業: `v2-paper-token-direct-color-cleanup`
+- 目的: v2 の `es-paper` / surface 相当の紙色を `rgba(247, 241, 229, ...)` や `rgba(255, 253, 248, ...)` 直値で持つ箇所を CSS 変数参照へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `App.css` の紙色グラデーション/背景直値を `color-mix(... var(--es-paper) ...)` と `color-mix(... var(--color-surface) ...)` に置換する。
+- 判断: 直値は v2 の紙色パレットと一致しているが、直接 `rgba(...)` のままだとパレット変更に追従しない。見た目をほぼ保ちながらトークンへ集約する。
+- 検証: `rg -n "247, 241, 229|#f7f1e5|#F7F1E5|255, 253, 248|#fffdf8|#FFFDF8|v2-paper-token-direct-color-cleanup|transcript-pause-pill-bg" src/App.css AGENT_LOG.md` で `App.css` はトークン定義以外の紙色/surface直値がないことを確認。`git diff --check` 成功。`npm run build` 成功（既存の 500kB 超チャンク警告のみ）。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:39:05 JST
+
+- 作業: `v2-blue-token-direct-color-cleanup`
+- 目的: v2 の `es-blue` と同じ青を `rgba(17, 103, 255, ...)` 直値で持つ箇所を CSS 変数参照へ寄せ、v2.pen のカラーパレット追従性を上げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `App.css` の青い影/グラデーション直値を `color-mix(in srgb, var(--es-blue) ..., transparent)` に変更する。
+- 判断: 直値の色は v2 の `es-blue` と一致しているが、直接 `rgba(...)` のままだとデザイントークン変更に追従しない。見た目をほぼ保ったまま変数参照に寄せるのが安全。
+- 検証: `rg -n "17, 103, 255|#1167ff|#1167FF|v2-blue-token-direct-color-cleanup|color-mix\\(in srgb, var\\(--es-blue\\) 8%, transparent\\)" src/App.css AGENT_LOG.md` で `--es-blue` 定義以外の青直値なしと新参照を確認。`git diff --check`、`npm run build` 成功。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:37:27 JST
+
+- 作業: `v2-settings-audio-meter-waiting-label`
+- 目的: 設定画面の自分/相手側メーターに残る単独の `待機` を、設定画面では実測していない状態として読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `SettingsView` の音声メーター状態を `待機` から `設定待機` に変更する。
+- 判断: 録音中UIでは `待機` が録音/字幕開始待ちとして使われる。設定画面のレベルメーターは録音していないだけで入力機器自体の待機状態ではないため、短い対象名を足して誤読を避ける。
+- 検証: `rg -n "settings-general-meter-state|>\\s*待機\\s*<|設定待機|v2-settings-audio-meter-waiting-label" src/routes/SettingsView.tsx AGENT_LOG.md` で `SettingsView` の単独 `待機` なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:35:32 JST
+
+- 作業: `v2-external-send-chip-targets`
+- 目的: 録音前/録音中の状態チップに残る単独の `外部送信` ラベルを、音声トラックまたはAI送信のどちらを指すか分かる表示へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: マイク・相手側音声・モデル選択の境界チップは `音声外部送信`、メニューバー状態カードは `AI外部送信` に変更する。
+- 判断: v2では録音状態、音声トラック保存、AI議事録、翻訳が同時に出るため、単独の `外部送信` は対象を推測させる。`音声送信` も文字起こし入力と混ざるため、外部送信有無として読める `音声外部送信` にする。
+- 検証: `rg -n "label: \"外部送信\"|<span>外部送信</span>|>\\s*外部送信\\s*<|label: \"音声送信\"|<span>音声送信</span>|>\\s*音声送信\\s*<|音声外部送信|AI外部送信|v2-external-send-chip-targets" src/components src/routes src/utils AGENT_LOG.md --glob '!*.test.*'` で実装側の単独 `外部送信` / ラベル単体の `音声送信` なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:34:01 JST
+
+- 作業: `v2-permission-ai-send-scope-label`
+- 目的: 権限バナーの AI 議事録欄で、`選択時のみ・AI外部送信なし` という圧縮表示を、プロバイダー選択だけでは送信しない状態として読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `PermissionBanner` の AI 議事録状態を `選択だけ送信なし` に変更し、詳細の `利用時に確認` と役割を分ける。
+- 判断: 録音前の権限バナーは安心感を作る場所であり、`選択時のみ` は「選択時に送信する」とも読める。設定画面と同じく、選択だけでは送信せず利用時に確認する境界を短く明示する。
+- 検証: `rg -n "選択時のみ・AI外部送信なし|選択だけ送信なし|v2-permission-ai-send-scope-label" src/components/PermissionBanner.tsx AGENT_LOG.md` で実装側の旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:31:57 JST
+
+- 作業: `v2-live-question-copy-target-label`
+- 目的: ライブ字幕の質問チャット下書き欄で、コピー対象が送信済み質問ではなく下書きであることをボタンラベルと aria/title でも読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `LiveCaptionWindow` の `質問をコピー` / `質問コピー` を `質問下書きをコピー` / `質問下書きコピー` に変更する。
+- 判断: 見出しは `質問チャット下書き` へ揃っているが、ボタンだけ `質問コピー` のままだと、実際にAIへ投げた質問履歴のコピーとも読める。機能実体を誇張せず下書きコピーとして明示する。
+- 検証: `rg -n "質問をコピー|質問コピー|質問下書きをコピー|質問下書きコピー|質問下書きをコピーできません|v2-live-question-copy-target-label" src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で実装側の旧ボタン表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:30:22 JST
+
+- 作業: `v2-question-draft-language-alignment`
+- 目的: 録音中UIとプレビュー文に残る `質問保留` を、v2の「AIノート + 質問チャット下書き」導線として読める短い表現へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `ControllerWindow`、`TranscriptionControls`、`previewSessionData` の `質問保留` / `ノート/保留` を `質問下書き` / `ノート/下書き` 系へ変更する。
+- 判断: 現時点の質問欄は送信済みチャットではなく保存・コピーできる下書きである。`保留` は状態理由が曖昧なので、機能を誇張せず `下書き` と明示する方が録音中UIの透明性に合う。
+- 検証: `rg -n "質問保留" src/components src/routes src/utils --glob '!*.test.*'` で実装側の旧表示なしを確認。`rg -n "質問下書き|質問チャット下書き|ノート/保留|ノート/下書き|v2-question-draft-language-alignment" src/components src/routes src/utils AGENT_LOG.md` で新表示と `ノート/下書き` を確認。`git diff --check`、`npm run build` 成功。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:27:18 JST
+
+- 作業: `v2-settings-disconnected-label-targets`
+- 目的: 設定画面に残る単独の `未接続` 表示を、辞書補正・翻訳エンジン・翻訳外部送信のどの状態か可視ラベルだけで読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: 辞書補正は `辞書未接続`、翻訳エンジンは `翻訳未接続`、翻訳外部送信は `翻訳送信なし` に変更する。
+- 判断: v2では文字起こし、辞書補正、翻訳、AI議事録が設定画面に並ぶため、単独の `未接続` は対象が曖昧になる。説明を増やすのではなく短い対象名を足す方がミニマルな状態表示に合う。
+- 検証: `rg -n "<span>未接続</span>|>\\s*未接続\\s*<|辞書未接続|翻訳未接続|翻訳送信なし|v2-settings-disconnected-label-targets" src/routes/SettingsView.tsx AGENT_LOG.md` で実装側の単独 `未接続` 表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:24:42 JST
+
+- 作業: `v2-session-detail-minutes-label-clarity`
+- 目的: 録音後レビューの議事録ワークスペースで、`反映中` / `メモ保存済み` / `下書きをコピー` の対象が曖昧に読める箇所を、補足指示・手書きメモ・議事録下書きとして明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: 補足指示の状態を `指示反映中`、手書きメモの状態を `メモ入力あり`、議事録下書きコピーの aria/title を `議事録下書き` 起点へ変更する。
+- 判断: v2では録音後レビューの主要対象が文字起こし、音声トラック、手書きメモ、議事録下書きに分かれる。短い表示でも対象名を含める方が、Macらしいミニマルさを保ったまま誤認を減らせる。
+- 検証: `rg -n "反映中|未入力|指示反映中|指示未入力|メモ保存済み|メモ入力あり|メモ未入力|下書きを保存|議事録下書きを保存|下書き保存|議事録下書き保存|下書きをコピー|議事録下書きをコピー|下書きコピー|議事録下書きコピー|v2-session-detail-minutes-label-clarity" src/routes/SessionDetail.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:22:17 JST
+
+- 作業: `v2-live-question-chat-draft-labels`
+- 目的: 録音中ライブ字幕の右ペインで、会議ノートと質問欄が「質問チャット付きノート」の導線として読めるようにしつつ、現時点では外部送信しない下書きであることを明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `AIノートと質問` / `質問保留` 周辺を `AIノートと質問チャット下書き`、`質問チャット下書き` に寄せ、AIノートOFF時の `外部送信なし` は `AI外部送信なし` へ対象を明示する。
+- 判断: ユーザー要望では録音中に「質問するチャットがついているリアルタイムの会議ノート」が必要。現在実装は質問の保留・コピーであり、送信チャットではないため、機能を誇張せず `下書き` として表示するのが透明性に合う。
+- 検証: `rg -n "質問保留|質問下書き|質問チャット下書き|AIノートと質問|外部送信はありません|外部送信はしません|外部送信はしていません|v2-live-question-chat-draft-labels" src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:20:17 JST
+
+- 作業: `v2-amber-surface-token-cleanup`
+- 目的: 録音状態・音声境界・REC可視性に近いCSSに残る薄い旧アンバー背景直値を、Pencil MCP `meet-jerky-desktop-v2.pen` の `es-amber` / `es-paper` 系へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `app-shell-status`、`model-boundary`、`transcription-state`、`audio-source-boundary`、`ring-light-edge`、`settings-audio-system-chip-muted` の薄いアンバー背景を `color-mix(... var(--es-amber) ...)` へ置き換える。
+- 判断: 白ガラスやmacOS信号ボタンまで一括置換するとUI意図を壊す。録音状態に関係するアンバー面だけを対象にし、v2パレットとの一貫性を上げる。
+- 検証: `rg -n "255, 244, 214|255, 248, 226|255, 247, 237|v2-amber-surface-token-cleanup|ring-light-edge|transcription-state-item-warn|audio-source-boundary-item-warn|model-boundary-item-warn|settings-audio-system-chip-muted|app-shell-status-item:first-child" src/App.css AGENT_LOG.md` で対象旧色直値なしと対象セレクタを確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:18:54 JST
+
+- 作業: `v2-controller-network-transparency-label`
+- 目的: 検証コントローラーに残る単独の `外部送信なし` を、AI/音声/翻訳の送信範囲と混同しない表現にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `ControllerWindow` の透明性ストリップを `ネットワーク送信なし` にし、検証操作全体が外部通信しない状態として読む文にする。
+- 判断: v2では `AI外部送信なし`、`音声外部送信なし`、`翻訳外部送信なし` を使い分けている。検証コントローラーの単独 `外部送信なし` は送信対象が曖昧なので、検証モード全体のネットワーク送信有無として明示する。
+- 検証: `rg -n "外部送信なし|ネットワーク送信なし|v2-controller-network-transparency-label" src/components/ControllerWindow.tsx src/components src/routes src/utils AGENT_LOG.md` で検証コントローラーの対象旧表示なしと対象別送信表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:17:42 JST
+
+- 作業: `v2-transcription-control-readiness-labels`
+- 目的: 録音開始コントロールの状態表示で、`準備OK` / `音声OK` のような抽象語を避け、録音可否と音声入力状態を短く読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `TranscriptionControls` の aria/title と REC 状態チップを `音声入力OK` / `音声入力要確認`、`録音可` / `録音前確認` へ寄せる。
+- 判断: v2では録音中 UI の最重要情報が「録音されているか」「開始できるか」「どの音声を扱うか」。`準備OK` は何の準備か曖昧なので、録音に直結する語へ置き換える。
+- 検証: `rg -n "準備OK|音声OK|音声要確認|録音可|録音前確認|音声入力OK|音声入力要確認|v2-transcription-control-readiness-labels" src/components/TranscriptionControls.tsx AGENT_LOG.md` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:14:31 JST
+
+- 作業: `v2-settings-send-scope-labels`
+- 目的: 設定画面とプレビュー文の `外部送信なし` が、音声文字起こし・AI議事録・翻訳のどの送信範囲を指すか読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: Whisper は `音声外部送信なし`、Ollama/端末内議事録は `AI外部送信なし`、翻訳未接続は `翻訳外部送信なし`、ローカルデータ欄は `AI外部送信` に対象を分けて表示する。
+- 判断: v2では録音、文字起こし、翻訳、AI議事録が並ぶため、単独の `外部送信なし` は誤読しやすい。設定画面では短いラベルでも対象範囲を明示する方が、録音状態の透明性に合う。
+- 検証: `rg -n "端末内生成、外部送信なし|Whisper: 端末内、外部送信なし|端末内のみ、外部送信なし|<strong>外部送信</strong>|外部送信: 設定だけでは送信せず|生成方式: 端末内下書き（外部送信なし）|ライブ字幕、外部送信なし|音声外部送信なし|AI外部送信なし|翻訳外部送信|v2-settings-send-scope-labels" src/routes/SettingsView.tsx src/routes/SessionDetail.tsx src/utils/previewAppData.ts AGENT_LOG.md` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:12:10 JST
+
+- 作業: `v2-ai-external-send-label-scope`
+- 目的: 録音中ライブノート、録音後議事録、権限バナーの `外部送信なし` が、音声トラックではなくAI処理の送信範囲だと分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: AI議事録/ライブノートの状態語を `AI外部送信なし` / `端末内・AI外部送信なし` へ寄せ、録音ステータスの aria もAI送信範囲として読む文にする。
+- 判断: v2では録音状態、音声トラック保存、AI送信範囲を同時に見せる。単独の `外部送信なし` は何の送信を指すか曖昧なので、AI関連セクションでは対象を明示する。音声トラックの `外部送信なし` は対象明示済みのため維持する。
+- 検証: `rg -n "端末内・外部送信なし|AI議事録オフ・外部送信なし|選択時のみ・外部送信なし|外部送信状態を確認できません|外部送信なし、端末内で処理|AI外部送信なし|端末内・AI外部送信なし|v2-ai-external-send-label-scope" src/components src/routes src/utils AGENT_LOG.md` でAI関連の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:10:26 JST
+
+- 作業: `v2-ai-draft-transmission-language`
+- 目的: 録音検知UIと録音後レビューで、AI外部送信の状態と外部プロバイダーへ渡す下書きの目的を短く明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: 検知通知の `外部送信なし` を `AI外部送信なし` にし、録音後レビューの外部プロバイダー向け `確認下書き` を `送信用下書き` に置き換える。
+- 判断: v2では録音状態とAI送信状態を同時に見せるため、単独の `外部送信なし` は音声録音やトラック保存と混ざる。`確認下書き` も何を確認するのか曖昧なので、外部プロバイダーへ渡す前の下書きであることを示す。
+- 検証: `rg -n "確認下書き|送信用下書き|AI外部送信なし|AI外部送信 |v2-ai-draft-transmission-language" src/components/MeetingDetectedBanner.tsx src/routes/SessionDetail.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:08:33 JST
+
+- 作業: `v2-session-detail-paper-token-cleanup`
+- 目的: 録音後レビューの議事録テンプレート入力欄とローカル議事録プレビューに残る紙色/罫線色の直値を、v2.pen の `es-paper` / `es-line` 系へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `rgba(216, 210, 196, ...)`、`rgba(247, 241, 229, ...)`、`#fffaf0` の対象箇所を CSS 変数ベースの `color-mix` と `var(--es-paper)` に置き換える。
+- 判断: 録音後レビューはv2の履歴・議事録生成の中心画面なので、紙面のニュアンスもPencil変数に従わせる。全白系を一括置換せず、議事録入力/プレビューの2箇所だけに限定する。
+- 検証: `rg -n "#fffaf0|216, 210, 196|8171|8312|v2-session-detail-paper-token-cleanup" src/App.css AGENT_LOG.md` で実装側の対象旧色直値なしとログを確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:06:44 JST
+
+- 作業: `v2-accent-token-cleanup`
+- 目的: 録音/検知インジケーター周辺に残る旧オレンジ直値を、Pencil MCP `meet-jerky-desktop-v2.pen` の `es-amber` 系トークンへ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: 検知通知ピル、常駐録音インジケーター、設定内録音CTA、セッション詳細エラー色の旧フォールバックを CSS 変数と `color-mix` に置き換える。
+- 判断: v2のUIエッセンスは既存パレット維持が前提。`rgba(255, 92, 0, ...)` と `#b94e2b` は視覚的には近いがPencil変数から外れており、今後の調整でズレやすいため、実装トークンへ集約する。
+- 検証: `rg -n "#b94e2b|255, 92, 0|v2-accent-token-cleanup|meeting-status-warn-color|jerky-accent-deep|meeting-detected-status-pill|ring-light-badge-dot|control-btn-transcribe" src/App.css AGENT_LOG.md` で実装側の旧色直値なしと新トークン参照を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:03:48 JST
+
+- 作業: `v2-local-data-bulk-delete-state`
+- 目的: 設定のローカルデータ欄で、使えない `一括削除は準備中` ボタンを前面に出さず、現在の管理範囲を短く示す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: disabled ボタンを状態チップへ変え、保存場所で確認できることとアプリ内一括削除がないことを説明する。
+- 判断: v2のWeb Appガイドでは使えない操作を主要アクションとして置かない。現在実装に履歴一括削除コマンドはなく、`準備中` はロードマップ語で現在状態が分かりにくいため、状態表示に落とす。
+- 検証: `rg -n "一括削除は準備中|一括削除なし|アプリ内一括削除|v2-local-data-bulk-delete-state" src/routes/SettingsView.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:02:38 JST
+
+- 作業: `v2-realtime-api-key-transmission-disclosure`
+- 目的: Realtime 文字起こし用 API キー設定で、キー保存だけの非送信状態と録音中の音声外部送信を混同しない説明へ直す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `ExternalApiKeySection` の補足文から `音声トラックも送信しません` という過度に広い否定を外し、Realtime 利用時は音声を外部送信することを明示する。
+- 判断: v2の透明性方針では、設定保存時と録音中の送信範囲を分けて示す必要がある。現在の文言は Realtime エンジンの `音声外部送信` 表示と矛盾して読めるため、安心感より正確性を優先する。
+- 検証: `rg -n "音声トラックも送信しません|設定保存だけでは送信しません|Realtime 利用時は音声を外部送信|v2-realtime-api-key-transmission-disclosure" src/routes/SettingsView.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:00:53 JST
+
+- 作業: `v2-session-detail-copy-error-target`
+- 目的: 録音後レビューの文字起こしコピー失敗時に、対象が `内容` ではなく `文字起こし` と分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: `SessionDetail` のコピー失敗ログと画面エラーを `文字起こしをコピーできませんでした` に統一する。
+- 判断: v2では録音後レビューの主要対象を音声トラック、チャット文字起こし、議事録に分ける。抽象的な `内容` は、議事録下書きやメモとの区別を弱めるため、対象名を明示する。
+- 検証: `rg -n "内容をコピーできませんでした|文字起こしをコピーできませんでした|v2-session-detail-copy-error-target" src/routes/SessionDetail.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 13:00:04 JST
+
+- 作業: `v2-live-translation-tab-state-label`
+- 目的: 録音中ライブ文字起こしの翻訳タブに残る `翻訳準備` を、現在の実装状態である未接続/原文表示に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: ライブ文字起こしの翻訳タブ表示と aria/title を `翻訳未接続` / `原文のみ表示` に統一する。
+- 判断: v2のミニマルUIでは、未接続機能を `準備` と表示すると利用可能になる直前の状態に見える。現在ユーザーが判断すべきことは「翻訳は未接続で原文表示のみ」なので、タブ段階で明示する。
+- 検証: `rg -n "翻訳準備|翻訳未接続|原文のみ表示|原文のみ。" src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:58:29 JST
+
+- 作業: `v2-detected-meeting-track-copy-alignment`
+- 目的: 会議検知通知とメニューバー待機表示で、自分/相手側の扱いが単なる保存や分離ではなく、v2要件の別トラック保存として読めるように揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: 会議検知バナーの aria/title とメニューバー待機中の録音説明を `自分 + 相手側を別トラック保存` 起点にする。
+- 判断: 可視ラベルでは別トラック保存を示しているが、支援技術向け説明と待機時説明が `保存` / `分離` だけだと録音対象が曖昧になる。v2の透明性方針では、短いラベルでも保存範囲を明示する方が安全。
+- 検証: `rg -n "自分と相手側を保存|自分と相手側を分離|自分 \\+ 相手側を別トラック保存|自分 \\+ 相手側を別トラック" src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:56:49 JST
+
+- 作業: `v2-residual-label-cleanup`
+- 目的: v2のミニマルな語彙に合わせ、検証用UIとプレビュー/解析周辺に残る `確認` / `本文` / `送信なし` の曖昧さを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更予定: 検証コントローラーのタイトルと説明、ブラウザプレビューエラー、保存済みセッション解析コメント、権限バナーのAI議事録状態を、`検証` / `文字起こし` / `外部送信なし` に寄せる。
+- 判断: これらは機能差分ではなく、録音・文字起こし・AI送信状態の透明性に関わるラベル調整。v2のUIでは短い状態語でも対象が分かることを優先する。
+- 検証: `rg -n "Meet Jerky 確認|Meet Jerky 検証|経路確認|導線検証|セッション本文|ブラウザプレビュー用の文字起こし|Mock 2C|保存済みセッション Markdown の本文|保存済みセッション Markdown の文字起こし|選択のみ・送信なし|選択時のみ・外部送信なし" src AGENT_LOG.md` で実装側の対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:53:25 JST
+
+- 作業: `v2-session-audio-track-state-labels`
+- 目的: 録音後レビューの音声タブと再生欄で、`音声あり` / `再生可` / `未保存` だけでは対象が曖昧な状態語を、v2の `音声トラック` として読める表現へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 音声トラックの有無、アプリ内再生可否、未保存説明を `音声トラック` 起点の文言へ統一する。
+- 判断: v2の録音後UIは音声トラック、チャット文字起こし、議事録を明確に分ける必要がある。短い `音声あり` / `未保存` では文字起こしやセッション保存状態と混ざるため、音声トラック状態として明示する。
+- 検証: `rg -n "音声あり|再生可|音声トラックあり|アプリ内再生可|音声トラック未保存|このトラックの音声ファイル|下の履歴|チャット表示" src/routes/SessionDetail.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:51:10 JST
+
+- 作業: `v2-export-and-controller-source-labels`
+- 目的: 設定の書き出し形式、録音開始要求元、権限バナーに残る `本文` / `確認パネル` / `確認待ち` を、v2の `文字起こし` / `検証パネル` / `録音前確認` へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 書き出し対象を `履歴の文字起こし` として表示し、検証コントローラー経由の録音開始要求ラベルを `検証パネル` に統一する。権限バナーの開始状態は `録音前確認` にする。
+- 判断: v2では録音後の主要対象を `文字起こし` として扱うため、`本文` は避ける。`確認パネル` / `確認待ち` は送信前確認や権限確認と混ざりやすいため、検証と録音前確認に分ける。
+- 検証: `rg -n "履歴本文|履歴の文字起こし|確認パネル|検証パネル|確認待ち|録音前確認|今後 TranscriptView|auto-start ready" src/routes/SettingsView.tsx src/utils/meetingStartRequest.ts src/components/PermissionBanner.tsx src/components/MeetingDetectedBanner.tsx` で対象旧表示なしと新表示を確認。`rg -n "本文|確認パネル|確認待ち|今後対応|今後 TranscriptView" ...` で対象旧表示なしを確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:48:09 JST
+
+- 作業: `v2-live-question-hold-language`
+- 目的: 録音中ライブ字幕のAIノート/質問欄で、`確認待ち` と `質問保留` が混在している状態語を、v2の送信しない質問保留導線へ統一する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 質問の保存失敗、AIノートオフ時の説明、質問欄の aria/title/見出し、検証コントローラーのノート導線を `質問保留` / `ライブノート` / `検証` の語彙へ寄せる。
+- 判断: v2では質問欄が外部送信ではなく、会議内容への質問を保留・コピーするUIであることが重要。`確認待ち` は送信前確認と混ざりやすいため、状態名を `質問保留` に統一する。
+- 検証: `rg -n "確認待ち|ノート確認|確認パネル|質問保留|ライブノート|検証パネル|質問を保留" src/components/LiveCaptionWindow.tsx src/components/ControllerWindow.tsx src/utils/controllerActions.ts` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:45:20 JST
+
+- 作業: `v2-transcript-body-label-unification`
+- 目的: ライブ文字起こし、録音後レビュー、履歴一覧に残る `本文` ベースの可視語彙を、v2の `文字起こし` / `チャット文字起こし` の語彙へ統一する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: コピー、検索、履歴メタ、検索一致理由、エラー文言の `本文` 表示を `文字起こし` に寄せる。
+- 判断: v2の録音後UIはLINE風の文字起こしチャットを中心にするため、抽象的な `本文` は対象が曖昧。音声トラック、チャット、議事録の3領域を崩さないように `文字起こし` を可視ラベルの基準にする。
+- 検証: `rg -n "本文|文字起こしあり|文字起こしなし|文字起こしコピー|文字起こし一致|文字起こしをコピー|文字起こし・話者・時刻|文字起こし状態|コピー対象は文字起こし" src/components/TranscriptDisplay.tsx src/routes/SessionDetail.tsx src/utils/sessionListHelpers.tsx src/routes/SessionList.tsx src/routes/TranscriptView.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:42:59 JST
+
+- 作業: `v2-remaining-state-language-unification`
+- 目的: 設定、権限バナー、ライブ文字起こしに残る曖昧な状態語を、v2の `文字起こし` / `保存場所` / `利用時確認` の語彙へ統一する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `確認制` / `個別確認` / `送信前に確認` / `Finder` / `本文コピー` / `選択だけ送信なし` を、対象が分かる短い表現へ修正する。
+- 判断: v2のミニマルUIでは状態語を短くするだけでなく、録音・AI送信・保存場所の対象が読める必要がある。抽象語やOS依存語を減らすことで、透明性とMacアプリらしい控えめな表現を両立する。
+- 検証: `rg -n "確認制|確認あり|送信前に確認|個別確認|Finder|本文コピー|選択だけ送信なし|利用時確認|文字起こしコピー|保存場所を開きました|選択のみ・送信なし" src/routes/SettingsView.tsx src/components/TranscriptDisplay.tsx src/components/PermissionBanner.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:38:43 JST
+
+- 作業: `v2-session-review-copy-and-storage-labels`
+- 目的: 録音後レビューとメニューバー保存済み履歴の操作語彙を、v2の `音声トラック` / `文字起こし` / `保存場所` に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `本文コピー` / `全文コピー` を録音後レビュー文脈で `文字起こしコピー` へ寄せ、議事録欄の音声非送信説明と保存場所 aria/title から別語彙を削る。
+- 判断: v2では録音後に「音声トラック」「チャット文字起こし」「議事録」を扱うため、抽象的な `本文` や OS 依存の `Finder` より、ユーザーが確認する対象そのものを表示する方が分かりやすい。
+- 検証: `rg -n "本文コピー|全文コピー|音声ファイルは議事録下書きに含めません|保存場所を Finder|Finder で表示|Finder 表示|既定アプリ|文字起こしコピー|音声トラック外部送信なし" src/routes/SessionDetail.tsx src/routes/SessionList.tsx src/routes/TranscriptView.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:36:54 JST
+
+- 作業: `v2-settings-unavailable-state-language`
+- 目的: 設定画面に残る `今後対応` 表記を、v2のミニマルで状態が分かる語彙へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 辞書補正、書き出し形式、一括削除の未接続/準備状態を、ロードマップ語ではなく現在の利用可能範囲として示す。
+- 判断: `今後対応` は実装予定の説明としては便利だが、設定UI上では「今使えるか」「何が保存/送信されるか」が読み取りにくい。v2方針では現在状態を短く示す方が直感的。
+- 検証: `rg -n "今後対応|辞書補正|VTT / SRT / JSON|一括削除|未接続" src/routes/SettingsView.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:33:49 JST
+
+- 作業: `v2-local-fontsource-brand-fonts`
+- 目的: `meet-jerky-desktop-v2.pen` の Funnel Sans / Anton / IBM Plex Mono 指定を、実アプリでも fallback ではなく同梱フォントとして反映する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `@fontsource/funnel-sans`、`@fontsource/anton`、`@fontsource/ibm-plex-mono` を追加し、起動時にローカルバンドルの latin subset から読み込む。
+- 判断: Google Fonts を直接読み込むとアプリ起動時の外部リクエストが発生し、録音・AI送信範囲の透明性方針と衝突する。fontsource で同梱する方が、v2の視覚再現とプロダクトの安心感を両立できる。
+- 依存関係: `@fontsource/funnel-sans`、`@fontsource/anton`、`@fontsource/ibm-plex-mono`。ランタイムの外部通信は追加しない想定。
+- 検証: `npm install @fontsource/funnel-sans@5.2.8 @fontsource/anton@5.2.7 @fontsource/ibm-plex-mono@5.2.7` 成功、脆弱性 0 件。`rg -n 'fontsource|Funnel Sans|Anton|IBM Plex Mono' package.json package-lock.json src/main.tsx src/App.css` で依存と読み込みを確認。`rg -n --pcre2 'fontsource/(funnel-sans|anton|ibm-plex-mono)/(?!latin)' src/main.tsx` で非 latin import なし。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作なし。コミットなし。
+
+## 2026-05-30 12:31:55 JST
+
+- 作業: `v2-settings-save-location-and-controller-mode-labels`
+- 目的: 設定画面と録音導線コントローラーで、v2のミニマルな状態語彙に合わせつつ、録音状態と検証状態を誤読しにくくする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定画面の保存先表示アクションを `保存場所` に寄せ、コントローラーの `確認モード` を `検証モード` に変える。
+- 判断: `Finderで表示` は操作先が強く出すぎるため、録音後レビュー画面と同じ「保存場所」がより直感的。コントローラーは実録音UIではなく導線検証なので、`確認` より `検証` の方が安全な非本番状態を示しやすい。
+- 検証: `rg -n "AI生成なし|\\b生成なし\\b|\\b送信なし\\b|使わない|外部確認制|コピー確認|送信前確認|確認あり|音声送信|既定アプリ|Finderで表示|確認モード" src -g '*.tsx' -g '*.ts'` で対象旧表示なし。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:16:42 JST
+
+- 作業: `v2-menu-transmission-scope-labels`
+- 目的: メニューバー録音カードの外部送信説明で、Realtime文字起こし送信とAI議事録の利用時確認が混ざって読まれる余地を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 録音中は文字起こし音声送信、待機中はAI議事録の利用時確認として短い説明を分けた。
+- 判断: v2の透明性方針では、録音中の音声送信と録音後の議事録用送信を同じ `外部送信` カード内でも区別して読める必要がある。
+- 検証: `rg -n "議事録生成は実行時確認|文字起こし送信を表示|Realtime 音声送信中|AI議事録は利用時確認|文字起こしは端末内" src/routes/TranscriptView.tsx` で旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:15:07 JST
+
+- 作業: `v2-live-caption-compact-transmission-label`
+- 目的: ライブ字幕のコンパクト表示で、Realtime 文字起こし利用時にも `外部送信なし` と読める固定ラベルを避ける。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: コンパクト表示の aria/title を、保存済み `LiveCaptionStatusPayload` の実際の外部送信状態に合わせた。
+- 判断: v2の透明性方針では、録音中に外部送信有無を誤表示しないことが優先。見た目は最小のまま、支援技術とツールチップの状態説明を正確化する。
+- 検証: `rg -n "compactStatusLabel|ノート \\$\\{compactNotesLabel\\}。外部送信なし|transmissionStatusAriaLabel" src/components/LiveCaptionWindow.tsx` で固定旧表示なしと新しい状態ラベル参照を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:13:23 JST
+
+- 作業: `v2-ai-minutes-use-time-confirm-labels`
+- 目的: 外部AI議事録の送信確認を `生成時` / `実行時` と断定せず、ユーザー操作時の確認として全体の短い説明を揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 権限バナー、設定、メニューバー保存済み履歴の送信範囲説明を `利用時に確認` へ寄せた。
+- 判断: v2の透明性方針では、外部送信がいつ発生するかを断定しすぎない方が安全。録音後レビューはコピー確認導線であり、設定や履歴ラベルは「選択だけでは送信しない」「利用時に確認」に統一する。
+- 検証: `rg -n "生成時に確認|実行時に確認|利用時に確認|AI議事録の外部送信|議事録生成の外部送信" src/components/PermissionBanner.tsx src/routes/SettingsView.tsx src/routes/TranscriptView.tsx` で対象旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:11:52 JST
+
+- 作業: `v2-session-minutes-external-copy-confirm-label`
+- 目的: 録音後の議事録ワークスペースで、外部AI設定時にこの画面内で送信/生成が起きるように読める文言を避ける。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 外部AI設定時の送信状態と下書き導線を、画面内送信ではなくコピー後確認の語彙へ寄せた。
+- 判断: v2の透明性方針では、外部送信の発生箇所を曖昧にしないことが重要。この画面は音声トラックを送らず、文字起こし/メモからプロンプトや下書きを作るだけなので、送信前確認の主体をユーザー操作として示す。
+- 検証: `rg -n "外部送信は生成時に確認|外部送信はコピー後に確認|確認用下書き|送信前下書き|議事録準備" src/routes/SessionDetail.tsx` で旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:09:52 JST
+
+- 作業: `v2-live-ai-notes-provider-state-label`
+- 目的: 録音中のライブ字幕ウィンドウで、AIノートのユーザートグルとAIプロバイダー未設定状態が混ざって見える問題を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: AIプロバイダー未設定時の接続ピルを `ノートオフ` ではなく端末内抽出として表示し、ユーザー操作のオン/オフ表示と分けた。
+- 判断: v2要件では録音中のAIノートはオン/オフ可能で、送信範囲が分かる必要がある。プロバイダー状態で `ノートオフ` と表示すると、オンにしたノート欄と矛盾して見える。
+- 検証: `rg -n "ノートオフ|AIオフ|AIオン|AIノート|端末内抽出|ノート接続" src/components/LiveCaptionWindow.tsx` で旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:08:14 JST
+
+- 作業: `v2-session-audio-open-action-label`
+- 目的: 録音後レビューの音声トラック欄で、アプリ内再生と外部アプリで開く操作が混ざって読まれる余地を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 音声トラックの外部起動ボタンを、再生ではなく外部アプリ操作として短く明示した。
+- 判断: v2要件では録音後にマイク/スピーカー/両方の音声を確認できることが重要。`audio` 再生UIと外部起動を明確に分ける方が、ミニマルでも直感的。
+- 検証: `rg -n "音声トラックを開く|外部アプリで開く|ExternalLink|Play" src/routes/SessionDetail.tsx` で旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:06:51 JST
+
+- 作業: `v2-settings-realtime-external-transmission-labels`
+- 目的: 設定画面の Realtime 文字起こしで、`確認あり` が送信前確認まで保証するように読める曖昧さを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: OpenAI / ElevenLabs Realtime の短い説明を、実装で確認できる API キー扱いと音声外部送信リスクに合わせて言い換えた。
+- 判断: v2の透明性方針では「外部送信する音声」と「APIキー管理」を明示し、存在確認できない送信前確認を断定しない方が安全。
+- 検証: `rg -n "外部送信、確認あり|音声を外部送信、確認あり|音声外部送信、APIキー確認|OpenAI Realtime:|ElevenLabs Realtime:" src/routes/SettingsView.tsx` で旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:03:42 JST
+
+- 作業: `v2-settings-local-data-transmission-confirm-label`
+- 目的: 設定画面のローカルデータ欄で、固定の `ローカル限定モード: オフ` が外部送信されるように誤読される余地を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: プライバシー設定の固定表示を、実態に合わせて `外部送信` / `個別確認` へ寄せた。
+- 判断: 現状はローカル限定モードの実トグルではなく、AI/Realtime利用時に送信確認を挟む設計。`オフ` だけでは安心感を損ねるため、v2の透明性方針では確認制を明示する方がよい。
+- 検証: `rg -n "ローカル限定モード|外部送信: 設定だけでは送信せず|個別確認|設定だけでは送信" src/routes/SettingsView.tsx AGENT_LOG.md` で実装ファイルの新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:01:57 JST
+
+- 作業: `v2-session-list-review-scope-labels`
+- 目的: 履歴一覧から録音後レビューへ進む導線で、確認できる対象を短いラベルでも誤解なく読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴一覧の `2トラック` / `レビュー: 音声 / 本文 / 議事録` / `レビュー` を、v2要件に近い `自分+相手側` / `音声トラック / チャット / 議事録` / `録音レビュー` へ寄せた。
+- 判断: v2では録音後に音声トラック、LINE風チャット文字起こし、議事録生成へ進めることが重要。抽象語を避け、一覧段階でレビュー対象が認識できる方が安全。
+- 検証: `rg -n "2トラック|レビュー: 音声 / 本文 / 議事録|>\\s*レビュー\\s*<|録音レビュー|自分\\+相手側|音声トラック / チャット / 議事録" src/routes/SessionList.tsx AGENT_LOG.md` で実装ファイルの新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 12:00:27 JST
+
+- 作業: `v2-session-review-audio-external-boundary-labels`
+- 目的: 録音後レビューの文字起こし/議事録導線で、音声トラックが外部送信されないことを録音中UIと同じ語彙で明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴詳細の `音声トラック送信なし` を `音声トラック外部送信なし` に揃えた。
+- 判断: `送信なし` だけでは保存済み音声トラックの再生/コピー導線と混ざりやすい。v2の透明性方針では、禁止されるのが外部送信であることを明示する方が安全。
+- 検証: `rg -n "音声トラック送信なし|音声トラック外部送信なし|音声ファイルは議事録下書きに含めません" src/routes/SessionDetail.tsx AGENT_LOG.md` で実装ファイルの旧語なしと新語を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 11:58:47 JST
+
+- 作業: `v2-live-translation-unconnected-labels`
+- 目的: ライブ字幕の翻訳タブが、未接続状態でも翻訳済み表示のように読める問題を避ける。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ字幕の翻訳タブを `翻訳準備` に変更し、翻訳ビューの状態表示と行内プレビューを `翻訳未接続` / `原文のみ` の語彙へ揃えた。
+- 判断: ユーザー要件では必要に応じて翻訳へ切り替えられるUIが欲しいが、現状は翻訳エンジン未接続。v2の透明性方針では、未接続であることをタブ時点で明示すべき。
+- 検証: `rg -n "翻訳 EN|翻訳 JA|翻訳 KO|翻訳 ZH|原文表示中|翻訳未接続 · 原文表示|翻訳準備|翻訳未接続 · 原文のみ|翻訳未接続 · 原文" src/components/LiveCaptionWindow.tsx src/routes/SettingsView.tsx` で旧表示なしと新表示を確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 11:55:52 JST
+
+- 作業: `v2-audio-track-transmission-boundary-labels`
+- 目的: 録音中UIのトラック境界表示で、`音声送信` という曖昧な短縮語を避け、音声トラックの外部送信有無をv2方針どおり明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: マイク、相手側音声、Whisperモデル、ライブ文字起こし、会議検知通知、権限バナー、メニューバー状態カードの `音声送信` 表記を `外部送信` / `音声トラック` へ分けた。
+- 判断: `音声送信` は「音声トラックを外部送信する」のか「文字起こしへ入力する」のかが曖昧。録音透明性のUIでは、送信対象と非送信対象を局所的にも読める必要がある。
+- 検証: `rg -n "音声送信" src/components src/routes src/utils -g '*.tsx' -g '*.ts'` で実装ファイルの対象旧語なしを確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 11:53:22 JST
+
+- 作業: `v2-dark-token-tailwind-cleanup`
+- 目的: `meet-jerky-desktop-v2.pen` の `es-*` パレットへ実装の基礎色を寄せるため、CSSのダークモードに残った旧Tailwind系の直値を削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `src/App.css` の toast、permission、meeting-detected、copy button、transcript pause pill 周辺の旧Tailwind系直値を `es-dark` / `es-paper` / `es-line` / `es-amber` / `es-muted` ベースの `color-mix` へ置換した。
+- 判断: UI構造や機能には触れず、v2の色温度を崩している基礎トークンだけを置換するのが安全。
+- 検証: `rg -n -e '#ca8a04|#fbbf24|#374151|#f9fafb|#4b5563|#9ca3af|#a1a1aa|#fdba74|rgba\\(234, 179, 8|rgba\\(31, 41, 55|rgba\\(49, 49, 52|rgba\\(251, 146, 60' src/App.css` で対象の旧トークンなしを確認。`git diff --check`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 11:48:42 JST
+
+- 作業: `v2-live-question-copy-confirmation-labels`
+- 目的: ライブ字幕ウィンドウのAIノート/質問欄で、外部送信がアプリ内で即時実行されるように読める `送信確認` / `質問送信時` を、質問コピー後の確認へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 外部AI設定時の説明を `外部送信は質問コピー後に確認`、コンパクト状態を `コピー確認` に変更し、質問欄見出しを `質問保留` に統一した。
+- 判断: 現状の質問欄は送信処理ではなく確認待ちに保存し、必要に応じてコピーする導線。`送信確認` は短いが、アプリ内送信が発生するように読めるため、v2の透明性方針ではコピー後確認の語彙が適切。
+- 検証: `rg -n '外部送信は質問コピー後に確認|外部送信は質問送信時に確認|コピー確認|送信確認|質問保留|質問を保留|v2-live-question-copy-confirmation-labels' src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。`AGENT_LOG.md` の過去ログには旧語が残るが、実装ファイルでは対象旧語なしを確認した。
+
+## 2026-05-30 11:46:51 JST
+
+- 作業: `v2-settings-ai-provider-transmission-labels`
+- 目的: AI議事録プロバイダーとAPIキー欄で、外部送信の対象が文字起こしと手書きメモであり、音声トラックは送信しないことを可視ラベルとして補強する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: Anthropic/OpenAI の説明を `文字起こしと手書きメモだけ送信前確認` に変更し、APIキー欄の注記に `設定だけでは送信せず、音声トラックも送信しません` を追加した。
+- 判断: 設定画面は外部AI導入の入口なので、プロバイダー選択やキー保存だけで送信が発生しないこと、送信対象が音声ではないことを各局所でも読める必要がある。
+- 検証: `rg -n '文字起こしと手書きメモだけ送信前確認|設定だけでは送信せず、音声トラックも送信しません|議事録生成時に送信前確認|キーは安全に保存され|v2-settings-ai-provider-transmission-labels' src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:44:05 JST
+
+- 作業: `v2-session-minutes-transparency-labels`
+- 目的: 履歴詳細の議事録パネルで、音声トラック非送信、手書きメモ保存、下書き生成方式が可視ラベルだけで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 議事録カード内の `音声送信なし` を `音声トラック送信なし` に変更し、Ollama説明も `音声トラックを送らず` に明確化した。手書きメモ状態は `メモ保存済み`、下書き生成ボタンは `確認用下書きを作成` / `端末内下書きを作成` の動的ラベルにした。
+- 判断: ユーザー要件では録音後に音声トラック再生と、文字起こし/手書きメモをもとにした議事録生成を扱う。`音声送信なし` だけだと音声トラックの扱いが弱く、`下書き作成` だけだと外部確認制/端末内生成の違いが見えにくい。
+- 検証: `rg -n '音声トラックを送らず|音声を送らず|音声トラック送信なし|音声送信なし|メモ保存済み|メモ保存|確認用下書きを作成|端末内下書きを作成|>\\s*下書き作成\\s*<' src/routes/SessionDetail.tsx`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。`AGENT_LOG.md` の過去ログには旧語が残るが、実装ファイルでは対象旧語なしを確認した。
+
+## 2026-05-30 11:42:00 JST
+
+- 作業: `v2-menubar-recording-intent-labels`
+- 目的: メニューバー録音導線の待機文言と主ボタンを、v2方針に合わせて「何を開始/終了するか」が分かるラベルへ整える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバーの待機説明を `通知またはメニューバーで録音開始`、状態カードを `メニューバー開始可`、主ボタンを `録音開始` / `録音終了` / `録音終了中…` に変更した。確認用コントローラーは `メイン表示要求`、`録音開始要求`、`メニューバー録音・REC表示`、`録音導線` に揃えた。
+- 判断: v2の最小UIでは短さだけでなく対象の明確さが必要。`録音` / `終了` / `表示要求を送信` は文脈なしだと操作対象が曖昧になるため、語数を増やしすぎず録音導線であることを明示した。
+- 検証: `rg -n '通知またはメニューバーで録音開始|メニューバー開始可|録音終了中|録音終了|録音開始|手動開始可|表示要求を送信|録音開始要求|メイン表示要求|メニューバー録音・REC表示|録音導線|v2-menubar-recording-intent-labels' src/routes/TranscriptView.tsx src/components/ControllerWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。`AGENT_LOG.md` の過去ログには旧語が残るが、実装ファイルでは対象旧語なしを確認した。
+
+## 2026-05-30 11:40:25 JST
+
+- 作業: `v2-meeting-detection-transparency-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の透明性方針に合わせ、会議検知通知と設定画面で「何を録るか」「検知後は通知で確認すること」「何を送信しないか」をより明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 会議検知バナーの保存表示を `録音: 自分 + 相手側を別トラック保存` に変更し、設定画面の検知状態を `通知オン/通知オフ`、検知導線を `検出した会議を通知で確認` / `会議検出通知` に統一した。AI議事録の disclosure は `音声トラックは送らず` と明示した。
+- 判断: v2のWeb Appガイドでは状態と送信範囲を明示する必要がある。旧文言は「保存」「動作中」「会議検出」が抽象的で、通知確認と自動録音開始の境界が読み取りづらい。
+- 検証: `rg -n '録音: 自分 \\+ 相手側を別トラック保存|通知オン|通知オフ|会議検出通知|検出した会議を通知で確認|音声トラックは送らず|会議検出時の録音開始|会議を検出したら通知で確認|v2-meeting-detection-transparency-labels' src/components/MeetingDetectedBanner.tsx src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:37:16 JST
+
+- 作業: `v2-session-audio-open-feedback`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、音声トラックを外部アプリで開く操作にも成功フィードバックを返し、議事録指示コピーの説明語を可視ボタン名と揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の音声トラック外部表示成功時に `音声トラックを開きました` ステータスを出し、外部AI向け説明の `指示` を `指示コピー` に変更した。
+- 判断: v2のWeb Appガイドでは操作後の沈黙を避ける必要がある。コピー/生成は成功表示がある一方、音声トラックを開く操作だけ成功表示がなく、ユーザーが操作結果をOS側の反応だけに依存する。
+- 検証: `rg -n '「指示」で|指示コピー|音声トラックを開きました|v2-session-audio-open-feedback' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:34:22 JST
+
+- 作業: `v2-dark-palette-token-alignment`
+- 目的: `meet-jerky-desktop-v2.pen` のカラーパレットを崩さない方針に合わせ、ダークモードの基礎色も v2 の `es-dark` / `es-paper` / `es-line` / `es-green` / `es-blue` を起点にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `src/App.css` のダークモード基礎トークンから汎用グレー/青緑系の直接指定を減らし、背景、面、境界、音声ソース、話者、会議状態、検知エラー系を v2 変数の `color-mix` に置き換えた。
+- 判断: ライト側はv2変数が入っているが、ダーク側は `#2f2f2f` / `#3a3a3a` / Tailwind系の青緑が残り、ブランドの色温度が変わる。機能や構造は変えず、基礎トークンだけを揃えるのが安全。
+- 検証: `rg -n -e '#2f2f2f|#3a3a3a|#14b8a6|#ea8a32|#93c5fd|#86efac|rgba\\(96, 165, 250|rgba\\(34, 197, 94|rgba\\(156, 163, 175|rgba\\(220, 38, 38|rgba\\(248, 113, 113' src/App.css` で対象の旧トークンなしを確認。`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:32:19 JST
+
+- 作業: `v2-settings-recording-on-language`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、録音・保存セクションの固定有効状態を日本語の状態語へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定画面の録音・保存セクションにある `ON` バッジを `オン` に変更し、ライブ字幕表示と話者分離の固定有効状態にも aria/title で対象が分かる説明を追加した。
+- 判断: `ON` は短いが、メニューバーとライブノートを `オン/オフ` に揃えた後では設定画面だけ表記が浮く。録音中表示、話者分離、自動保存はいずれも録音の透明性に関わるため、状態語を一貫させる。
+- 検証: `rg -n '>\\s*ON\\s*<|>\\s*OFF\\s*<|ライブ字幕表示: オン|話者分離: オン|自動保存: オン|v2-settings-recording-on-language' src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:31:10 JST
+
+- 作業: `v2-live-notes-on-off-language`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ノートUI方針に合わせ、AIノートのオン/オフ状態を日本語UI内で一貫した表記にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ文字起こしウィンドウのAIノート切替表示を `ノートON/OFF` から `ノートオン/ノートオフ` に変更した。REC は録音インジケーターとして維持した。
+- 判断: 録音中UIはREC、字幕、翻訳、ノート、質問が密集するため、状態語の表記ゆれは認知負荷になる。メニューバーで `オン/オフ` に揃えたため、ライブノートも同じ語彙へ寄せる。
+- 検証: `rg -n 'ノートON|ノートOFF|>\\s*ON\\s*<|>\\s*OFF\\s*<|ノートオン|ノートオフ|v2-live-notes-on-off-language' src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:29:08 JST
+
+- 作業: `v2-menu-detection-on-off-language`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、自動検知の状態語を日本語UI内で浮かない表現へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバー状態の `自動検知 ON/OFF` を `自動検知 オン/オフ` に変更した。REC は録音インジケーターとして意味が明確なため維持した。
+- 判断: `ON/OFF` は短いが、日本語中心のv2 UIでは視線を止める。設定画面でもオン/オフ系の語彙を日本語化しているため、メニューバー状態も揃える。
+- 検証: `rg -n '自動検知 (ON|OFF)|自動検知 オン|自動検知 オフ|v2-menu-detection-on-off-language' src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:27:50 JST
+
+- 作業: `v2-minutes-prompt-copy-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー/議事録生成方針に合わせ、議事録プロンプト操作がコピーであることを可視ラベルだけで理解できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴詳細の議事録パネルで、端末内プロバイダー時に単独表示される `指示` ラベルを `指示をコピー` に変更した。外部AI時の `指示コピー` は既存の外部確認制ラベルとして維持した。
+- 判断: 外部AI時は `指示コピー` なのに端末内時だけ `指示` だと、押した結果が編集なのかコピーなのか推測させる。v2 の最小UI方針では、短くても動詞を含むラベルの方が適切。
+- 検証: `rg -n 'minutesPromptActionLabel|>\\s*指示\\s*<|指示をコピー|指示コピー|v2-minutes-prompt-copy-label' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:24:56 JST
+
+- 作業: `v2-live-question-hold-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ノート/質問UI方針に合わせ、質問を送信せず確認待ちに置く操作を可視ラベルだけで理解できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ字幕ウィンドウの質問入力ボタンに残っていた単独ラベル `保留` を `質問保留` に変更した。
+- 判断: `保留` は短いが、録音中UIではノート、質問、送信確認が近接しており、何を保留するのかを推測させる。外部送信しないことを明確にする導線として、ボタン自体に `質問` を含める方が v2 の透明性に合う。
+- 検証: `rg -n '>\\s*保留\\s*<|質問保留|v2-live-question-hold-label' src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:23:06 JST
+
+- 作業: `v2-settings-privacy-visible-off-state`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、プライバシー/診断送信の無効状態を視覚的にも確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ローカル限定モード、匿名利用統計、クラッシュレポートのスイッチ横に控えめな `オフ` 可視状態ラベルを追加した。
+- 判断: 現状は `オフ` が aria/title のみにあり、視覚的にはノブ位置を読ませている。録音状態の透明性と外部送信の安心感を優先するなら、控えめな `オフ` ラベルを可視化したほうが v2 の「推測させない」方針に合う。
+- 検証: `rg -n 'settings-privacy-state-label|匿名利用統計: オフ|クラッシュレポート: オフ|ローカル限定モード: オフ|v2-settings-privacy-visible-off-state' src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:20:54 JST
+
+- 作業: `v2-session-audio-track-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、音声トラック再生と文字起こしコピーの操作対象を短い可視ラベルだけで判別できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴詳細の音声トラックタブを `両方の音声` / `自分のみ` / `相手側のみ` に変更し、レビュー要約レールの `音声` を `音声トラック` に変更した。音声ステータスは `音声トラック 再生可/未保存`、外部アプリで開くボタンは `音声トラックを開く` に変更した。
+- 判断: `両方` / `自分` / `相手側` は文字起こし表示では許容できるが、音声再生・本文コピー・議事録作成が近接する録音後画面では、何の切替かを推測させる。情報量を増やしすぎず `音声` / `トラック` を足す方が v2 の直感性に合う。
+- 検証: `rg -n 'label: "音声"|label: "両方"|label: "自分"|label: "相手側"|音声 \\{audioAssetStatusLabel\\}|音声を開く' src/routes/SessionDetail.tsx` で旧ラベルなしを確認。`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:19:08 JST
+
+- 作業: `v2-meeting-start-intent-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知/メニューバー録音方針に合わせ、録音開始と録音しない終了の意図が可視ラベルだけで分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 検知通知の可視ボタンを `録音せず閉じる` に変更し、確認用コントローラーの `Zoom` / `Meet` を `Zoom検知` / `Meet検知` にした。シナリオ詳細は `検知・通知・REC表示`、`メイン表示・REC表示`、`字幕・端末内ノート・質問保留` に変更した。
+- 判断: 会議検知通知は録音開始忘れを防ぐ入口なので、`閉じる` だけでは「録音せず閉じる」操作だと認識しづらい。確認用コントローラーも v2 の語彙と揃えて、導線検証時の認知負荷を下げる。
+- 検証: `rg -n 'label: "Zoom"|label: "Meet"|ローカルノート|検知 -> 通知 -> REC|メイン -> REC|>\\s*閉じる\\s*<' src/components/MeetingDetectedBanner.tsx src/components/ControllerWindow.tsx` で旧ラベルなしを確認。`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:16:36 JST
+
+- 作業: `v2-local-state-language-unification`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ノート/録音後議事録/設定UI方針に合わせ、外部送信の有無を示す状態語を `端末内` / `生成なし` に統一する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 録音中AIノートの抽出状態、会議ノートコピー、録音後議事録の下書き状態、Whisper設定ラベルに残っていた `ローカル` / `生成オフ` の可視ラベルを、意味が変わらない範囲で `端末内` / `生成なし` へ変更した。コピーされる下書き本文の生成方式も `端末内` に揃えた。
+- 判断: `ローカル` は保存場所、処理場所、AI接続状態のいずれにも読める。録音状態の透明性と外部送信の理解を優先し、ユーザーにとって送信境界が分かる語彙へ寄せる。
+- 検証: `rg -n 'ローカル \\(Whisper\\)|生成オフ|\\? "ローカル"|: "ローカル"|ローカル抽出|ローカル会議ノート|ローカル下書き|ローカル生成|端末内 \\(Whisper\\)|生成なし|端末内抽出|端末内会議ノート|端末内下書き|端末内生成' src/routes/SettingsView.tsx src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: `ローカルデータ` / `ローカル限定モード` はプライバシー設定の機能名として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:13:33 JST
+
+- 作業: `v2-menu-storage-state-label`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、保存状態と初回権限確認の短いラベルを単体で意味が分かる表現へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバー状態カードの `保存` を `保存先` に変更し、初回権限確認の `Setup` を `権限設定`、サブコピーの `Mac meeting recorder` を `会議録音を忘れない` に変更した。
+- 判断: `保存` だけでは保存済み状態か保存先かが曖昧。録音状態の透明性では「このMacに保存される」ことを最短で読めるほうがよい。英語の `Setup` も日本語UIの中で浮くため、機能名ではなく状態名へ寄せる。
+- 検証: `rg -n 'Setup|Mac meeting recorder|会議録音を忘れない|<span>保存</span>|保存先|権限設定|v2-menu-storage-state-label' src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:11:31 JST
+
+- 作業: `v2-ai-minutes-provider-state-language`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後/設定UI方針に合わせ、AI議事録プロバイダーの送信境界表示を他画面の `端末内` / `生成なし` 語彙へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: AI議事録のOllama表示を `端末内・Ollama`、バッジを `端末内` に変更した。プロバイダー詳細は `AI生成なし`、透明性ラベルは `端末内` / `生成なし` へ変更し、AI議事録を使わない状態のバッジも `生成なし` に変更した。
+- 判断: `ローカル` / `オフ` は短いが、録音・議事録の文脈では保存先なのか送信境界なのかが曖昧。ユーザー要件のAIオンオフと外部送信透明性を両立するため、状態語だけを具体化する。
+- 検証: `rg -n 'ローカル・Ollama|badge: "ローカル"|badge: "オフ"|AI生成オフ|aiMinutesTransparencyLabel|端末内・Ollama|badge: "端末内"|badge: "生成なし"|AI生成なし|v2-ai-minutes-provider-state-language' src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: `ローカルデータ` / `ローカル限定モード` はプライバシー設定の概念名として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:09:40 JST
+
+- 作業: `v2-minutes-instruction-action-label`
+- 目的: `meet-jerky-desktop-v2.pen` の段階開示と直感的な操作ラベル方針に合わせ、録音後の議事録ワークスペースに残る `補足` ボタンを具体化する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 議事録ヘッダーの補足指示トグルの可視ラベルを `補足` / `閉じる` から `指示編集` / `指示を閉じる` に変更した。aria/title の `補足指示` は対象説明として明確なため維持した。
+- 判断: 議事録テンプレート、手書きメモ、下書き作成が近接するため、`補足` だけでは何を補足するのか曖昧。パネルや状態は増やさず、操作対象を短く明示する。
+- 検証: `rg -n '>\\s*(補足|閉じる)\\s*<|指示編集|指示を閉じる|v2-minutes-instruction-action-label' src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: `補足指示を閉じる` は aria/title の明確な対象説明として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:07:48 JST
+
+- 作業: `v2-history-contextual-state-labels`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な録音後UI方針に合わせ、履歴・文字起こし・議事録メモ周辺に残る単独ラベルを対象付きにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴一覧の `更新` を `履歴更新`、検索ラベルを `履歴検索` に変更した。ライブ文字起こし発話の保存ピルは `保存済み`、議事録用手書きメモの状態ピルは `メモ保存` に変更した。
+- 判断: 録音後レビューでは検索、コピー、音声、議事録が近接するため、`更新` / `検索` / `保存` のような単独語は短いが対象が曖昧。機能は変えず、対象語だけを足す。
+- 検証: `rg -n '>\\s*(更新|検索|保存)\\s*<|履歴更新|履歴検索|保存済み|メモ保存|v2-history-contextual-state-labels' src/routes/SessionList.tsx src/components/TranscriptDisplay.tsx src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: `保存済み` は履歴件数や保存済みノートなど状態説明として妥当な箇所にも残る。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:05:50 JST
+
+- 作業: `v2-contextual-live-caption-labels`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的なUI方針に合わせ、録音中の字幕・ノート・権限表示に残る短縮ラベルを、単体で意味が分かる表現へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: コントローラーとメニューバー内の `字幕表示` を `字幕を表示` に変更した。ライブ字幕ウィンドウのAIノート切替は `ノートON` / `ノートOFF` に変更し、aria/title で切替方向を明示した。権限バナーの `表示` は `REC表示` に変更した。
+- 判断: v2の「状態が明確で邪魔にならない」方針では、短いだけの `表示` / `オン` / `オフ` よりも、対象が分かる短い文言の方が認知負荷が低い。機能変更や外部送信は行わない。
+- 検証: `rg -n '字幕表示|>\\s*表示\\s*<|>\\s*(オン|オフ)\\s*<|\\? "(表示|オン|オフ)"|: "(表示|オン|オフ)"' src/App.tsx src/routes src/components -g '!*.test.*'`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 残る `オフ` はAI議事録プロバイダー設定の状態値で、周囲の `AI議事録を使わない` とセットで読めるため維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 12:52:00 JST
+
+- 作業: `v2-progress-ellipsis`
+- 目的: `meet-jerky-desktop-v2.pen` のMacらしく控えめなUI方針に合わせ、操作中ラベルの `...` 表記ゆれを `…` に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 録音/相手側音声/文字起こし/会議検知/設定/履歴/モデル取得/コピー/外部表示の操作中ラベルを `開始中…`、`保存中…`、`取得中…` などの三点リーダ表記へ統一した。
+- 判断: `sk-...` / `xi-...` はAPIキー入力例として意味があるため維持し、ユーザー可視の進行中状態だけを対象にした。機能や状態判定は変更していない。
+- 検証: `rg -n "\\\"[^\\\"]*\\.\\.\\.\\\"|>[^<]*\\.\\.\\.[^<]*<|開始中…|停止中…|保存中…|取得中…|コピー中…|表示中…|起動中…|切替中…|v2-progress-ellipsis" src/App.tsx src/routes src/components AGENT_LOG.md -g '!*.test.*'`、`rg -n "\\\"[^\\\"]*\\.\\.\\.\\\"|>[^<]*\\.\\.\\.[^<]*<" src/App.tsx src/routes src/components -g '!*.test.*'`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 残る `sk-...` / `xi-...` はAPIキー入力例として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 12:40:00 JST
+
+- 作業: `v2-live-notes-task-label`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な日本語UI方針に合わせ、録音中の会議ノート/質問候補に残る `ToDo` 表記を `タスク` に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のAI質問候補 `次のToDo`、ローカル会議ノートのエクスポート見出し `ToDo`、ノートセクションラベル `ToDo` を `タスク` に変更した。プレビュー履歴本文の `ToDo` も `タスク` に変更した。
+- 判断: 録音後レビューの議事録テンプレートを `タスク` に寄せたため、録音中ノートだけ `ToDo` のままだと同じ概念が別名で見える。検出ロジックは既存メモ互換のため `TODO` / `ToDo` を読めるまま維持した。
+- 検証: `rg -n "ToDo|TODO|次のタスク|section\\(\\\"タスク\\\"|label: \\\"タスク\\\"|v2-live-notes-task-label" src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx src/utils/previewSessionData.ts AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 12:27:00 JST
+
+- 作業: `v2-minutes-task-label`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な日本語UI方針に合わせ、録音後レビューの議事録テンプレートに残る `ToDo` 表記をUI文脈に合う語へ整理する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `src/routes/SessionDetail.tsx` の週次定例テンプレート出力セクションを `ToDo` から `タスク` に変更し、議事録生成プロンプトの制約文も `決定事項とタスク` に変更した。
+- 判断: ユーザー要件ではToDo抽出が必要だが、画面上の表記は他の日本語UIと揃えて `タスク` の方が読みやすい。既存メモや文字起こし内の `TODO` / `ToDo` 検出は互換性のため維持した。
+- 検証: `rg -n "sections: \\[\\\"要点\\\"|決定事項と(ToDo|タスク)|section\\.includes\\(\\\"ToDo\\\"\\)|v2-minutes-task-label|\\\"ToDo\\\"" src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 12:15:00 JST
+
+- 作業: `v2-intuitive-menu-bar-labels`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的なUI方針に合わせ、メニューバー導線とトレイメニューの曖昧な表示語を短く具体的にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `src/App.tsx` のメニューバーシェル導線を `Detect / Start / Notes / History` から `検知 / 録音 / ノート / 履歴` に変更し、見出し `quiet flow` を `録音を忘れない` に変更した。`src-tauri/src/lib.rs` のトレイメニュー `表示` を `録音パネルを表示`、`ライブ文字起こしを開く` を `ライブ文字起こしを表示`、`環境設定を開く` を `設定を開く` に変更した。
+- 判断: v2では見た目の装飾より認知負荷の低さが重要。英語の抽象ラベルや単独の `表示` は操作対象が曖昧なので、録音導線・ライブ字幕・設定の対象が分かる語に寄せた。
+- 検証: `rg -n "Detect|Start|Notes|History|quiet flow|録音を忘れない|検知|録音パネルを表示|ライブ文字起こしを表示|設定を開く|v2-intuitive-menu-bar-labels" src/App.tsx src-tauri/src/lib.rs AGENT_LOG.md`、`git diff --check`、`nix develop .. -c cargo check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 12:01:00 JST
+
+- 作業: `v2-tauri-window-visible-titles`
+- 目的: `meet-jerky-desktop-v2.pen` のMacネイティブで洗練されたUI方針に合わせ、Tauri側に残る小文字ブランド表記をユーザー可視タイトルから取り除く。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: トレイツールチップを `Meet Jerky`、録音通知/ライブ文字起こし/録音インジケーター/設定/デバッグコントローラーのウィンドウタイトルを `Meet Jerky ...` 表記へ変更した。
+- 判断: window label、イベント名、bundle identifier、保存キーは内部互換性に関わるため維持し、macOS上で見えるタイトルだけを整えた。
+- 検証: `rg -n "tooltip\\(|title\\(\\\"meet-jerky|meet-jerky recording|meet-jerky live|meet-jerky ring|meet-jerky settings|meet-jerky controller|Meet Jerky|v2-tauri-window-visible-titles" src-tauri/src/lib.rs src-tauri/tauri.conf.json AGENT_LOG.md`、`git diff --check`、`nix develop .. -c cargo check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:49:00 JST
+
+- 作業: `v2-visible-brand-casing`
+- 目的: `meet-jerky-desktop-v2.pen` のブランド方針に合わせ、ユーザー可視の小文字ブランド表記を `Meet Jerky` に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `src/App.tsx` のメニューバーウィンドウ aria/title とブランドキッカー、`src/routes/SettingsView.tsx` の設定サイドバー aria とブランド名を `Meet Jerky` に変更した。
+- 判断: 内部ストレージキー、bundle identifier、ファイルパス由来の `meet-jerky` は互換性維持のため変更せず、ユーザーに見える表記だけを整えた。
+- 検証予定: 対象文字列検索、`git diff --check`、`npm run build`。
+- 注意: 課金操作・依存追加なし。コミットなし。
+
+## 2026-05-30 11:42:00 JST
+
+- 作業: `v2-settings-future-state-language`
+- 目的: `meet-jerky-desktop-v2.pen` の最小で直感的な設定UI方針に合わせ、設定画面の未実装状態を `準備中` の反復から、現在使えるものと今後対応に分けて読める表現へ整理する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の単語登録、VTT/SRT/JSON書き出し、一括削除の表示を `準備中` から `今後対応` に変更した。一括削除の補足は `保存先はFinderで確認できます。一括削除は今後対応です。` に短縮した。
+- 判断: 未接続機能を隠すべきではないが、`準備中です` が複数箇所で繰り返されると設定画面の主目的がぼやける。現在使える `履歴本文` / `Finderで表示` を先に見せ、未対応範囲は `今後対応` に集約する方が v2 の認知負荷低減に合う。
+- 検証: `rg -n "単語登録（今後対応）|VTT / SRT / JSON は今後対応|一括削除は今後対応|保存先はFinderで確認できます|v2-settings-future-state-language|一括削除は準備中|単語登録（準備中）" src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:35:00 JST
+
+- 作業: `v2-tauri-app-display-name`
+- 目的: `meet-jerky-desktop-v2.pen` のブランド方針に合わせ、macOSアプリとして表示される製品名も画面上の `Meet Jerky` 表記へ揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `src-tauri/tauri.conf.json` の `productName` とメインウィンドウ `title` を `meet-jerky` から `Meet Jerky` に変更した。bundle identifier は `com.wagomu.meet-jerky` のまま維持した。
+- 判断: HTML title とアプリ内見出しはすでに `Meet Jerky` だが、Tauri の製品名が小文字のままだと macOS のアプリ表示・ウィンドウ表示でブランドが分断される。識別子や機能設定に触れず、表示名だけを揃えるのが安全。
+- 検証: `rg -n "\\\"productName\\\"|\\\"title\\\": \\\"Meet Jerky\\\"|\\\"title\\\": \\\"meet-jerky\\\"|v2-tauri-app-display-name" src-tauri/tauri.conf.json AGENT_LOG.md`、`node -e "JSON.parse(require('fs').readFileSync('src-tauri/tauri.conf.json','utf8')); console.log('tauri config json ok')"`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:27:00 JST
+
+- 作業: `v2-translation-local-state-language`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな状態表示方針に合わせ、翻訳準備中とメニューバーの送信境界を否定説明ではなく短い状態語にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバーの録音中送信補足を `録音中の外部送信なし` から `録音中は端末内` に変更した。設定のリアルタイム翻訳カードは `外部送信 現在なし` を `外部送信 端末内` に変更し、準備中ノートを `翻訳準備中。録音中は原文のみ表示します。` に短縮した。ライブ字幕の翻訳ビュー aria/title も `端末内` と設定保存だけの説明に揃えた。
+- 判断: `外部送信なし` は正確だが、録音中に繰り返し見える状態としては否定文が多くなる。v2 の直感性では `端末内` / `原文のみ` のような短い状態語の方が、保存・送信境界を保ったまま視認負荷を下げられる。
+- 検証: `rg -n "録音中は端末内|外部送信</strong>|端末内|翻訳準備中。録音中は原文のみ表示します|翻訳ビュー: .*端末内|v2-translation-local-state-language" src/routes/TranscriptView.tsx src/routes/SettingsView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:19:00 JST
+
+- 作業: `v2-html-shell-branding`
+- 目的: `meet-jerky-desktop-v2.pen` のブランド/パレット方針に合わせ、ブラウザプレビューやHTMLメタで見える初期シェルが Vite のままにならないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `index.html` の `lang` を `ja` に変更し、Vite favicon 参照を v2 パレット（紙色、濃紺、アンバー、ブルー）のインラインSVG faviconへ置き換えた。HTML title は `Meet Jerky` に変更した。
+- 判断: Tauri 側の window title は `meet-jerky` だが、HTMLシェルに `Tauri + React + Typescript` と `/vite.svg` が残ると、ブラウザ確認や初期ロード時にプロダクトらしさが崩れる。機能や外部依存を増やさず、見えるブランド面だけを v2 の色に寄せるのが安全。
+- 検証: `rg -n "Tauri \\+ React|vite.svg|Meet Jerky|lang=\\\"ja\\\"|v2-html-shell-branding" index.html AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:11:00 JST
+
+- 作業: `v2-minutes-provider-language`
+- 目的: `meet-jerky-desktop-v2.pen` の直感的なUI方針に合わせ、議事録まわりの `議事録AI` という曖昧な説明を生成操作とプロバイダー選択に分ける。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定のAI議事録カテゴリ説明を `生成プロバイダーを選びます。` に変更。メニューバーと保存済み履歴の補足は `議事録生成は実行時確認` / `議事録生成の外部送信は実行時に確認` に変更した。プレビュー本文も `議事録生成` に揃え、ローカル会議ノート注記は `端末内で抽出` を先に読める文にした。
+- 判断: `議事録AI` は短いが、設定ではプロバイダー、履歴では生成実行、録音中ノートでは端末内抽出を指しており文脈が混ざる。画面構造は増やさず、用途ごとの名詞へ分ける方が v2 のミニマルさと透明性に合う。
+- 検証: `rg -n "議事録AIを選びます|議事録AIは生成時確認|議事録AIの外部送信|議事録生成|生成プロバイダー|端末内で抽出|v2-minutes-provider-language" src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/utils/previewSessionData.ts src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 11:03:00 JST
+
+- 作業: `v2-contextual-copy-and-send-labels`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的なUI方針に合わせ、コピー操作と音声送信状態の短い可視ラベルを文脈付きにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: トラック別文字起こしのボタンを `コピー` から `本文コピー` に変更し、議事録下書きのボタンを `下書きコピー` に変更した。メニューバー状態では `外部送信 なし` / `なし` の代わりに `音声送信 端末内` を表示するようにした。
+- 判断: v2方針では状態と操作対象を推測させないことが重要。汎用的な `コピー` や `外部送信 なし` は短いが対象が曖昧なため、密度をほぼ増やさず `本文`、`下書き`、`端末内` を明示した。
+- 検証: `rg -n "本文コピー|下書きコピー|aiTransmissionStatusDisplayLabel|音声送信 \\{aiTransmissionStatusDisplayLabel\\}|v2-contextual-copy-and-send-labels" src/components/TranscriptDisplay.tsx src/routes/SessionDetail.tsx src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:55:00 JST
+
+- 作業: `v2-live-notes-compact-transmission-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ノートUI方針に合わせ、ノート接続ピルの送信状態を省略しすぎない表現にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のノート接続ピルで、AI議事録プロバイダーがオフの場合のコンパクト送信表示を `外部なし` から `送信なし` に変更した。
+- 判断: `外部なし` は短いが、外部プロバイダー未設定なのか外部送信がないのかが曖昧。`送信なし` ならピル内に収まる短さを維持しつつ、録音中の透明性として必要な送信有無を直接読める。
+- 検証: `rg -n "外部なし|送信なし|v2-live-notes-compact-transmission-label" src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。`外部なし` は過去ログにのみ残存。コミットなし。
+
+## 2026-05-30 10:49:00 JST
+
+- 作業: `v2-controller-action-label-specificity`
+- 目的: `meet-jerky-desktop-v2.pen` の操作対象を推測させないUI方針に合わせ、確認コントローラーの短すぎる操作ラベルを具体化する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` の `表示` / `隠す` / `状態` / `発話` / `エラー` / `リセット` / `メイン` / `表示要求` を、`通知表示`、`通知を隠す`、`字幕表示`、`字幕を隠す`、`状態同期`、`発話追加`、`字幕エラー`、`字幕リセット`、`RECを隠す`、`メイン表示`、`表示要求を送信` に変更した。
+- 判断: コントローラーは検知通知、ライブ字幕、REC表示、メニューバー録音の導線確認に使うため、短い動詞だけでは対象が分かりにくい。ボタン数や動作は変えず、対象名だけを足す方が v2 のミニマルで直感的なUIに合う。
+- 検証: `rg -n "通知表示|通知を隠す|字幕表示|字幕を隠す|状態同期|発話追加|字幕エラー|字幕リセット|RECを隠す|メイン表示|表示要求を送信|v2-controller-action-label-specificity|label: \\"(表示|隠す|状態|発話|エラー|リセット|メイン|表示要求)\\"" src/components/ControllerWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:42:00 JST
+
+- 作業: `v2-live-caption-compact-audio-transmission-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中インディケーター方針に合わせ、待機中ライブ字幕の音声送信境界を他画面と同じ語彙に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のコンパクト待機表示で、`aria-label` / `title` の `音声トラック未送信` を `音声送信なし` に変更した。
+- 判断: 録音後詳細、権限、モデル、入力設定では既に `音声送信なし` を使っている。録音中インディケーターだけ `音声トラック未送信` が残ると同じ状態を別概念に見せるため、短く一貫した語彙へ統一した。
+- 検証: `rg -n "音声送信なし|音声トラック未送信|v2-live-caption-compact-audio-transmission-label" src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。`音声トラック未送信` は過去ログにのみ残存。コミットなし。
+
+## 2026-05-30 10:36:00 JST
+
+- 作業: `v2-preview-session-notes-language`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ノート/質問保留と録音後レビュー方針に合わせ、ブラウザプレビュー用の会議本文も実画面の語彙と矛盾しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `previewSessionData` の `AIノート` を `会議ノートと質問保留` に変更し、`AI を使う前` を `議事録AIを使う前` に具体化した。手書きメモは `議事録生成時` の追加コンテキストとして表現し、音声トラック再生の補足も保存済みトラックがある場合に履歴詳細で切り替える説明へ更新した。
+- 判断: プレビュー本文はデモ/ブラウザ表示でユーザー可視になり得るため、実画面で整理した `ノート`、`質問保留`、`音声送信なし`、`履歴詳細で再生` の語彙と揃える必要がある。内部的なAI機能名を減らす方が v2 の直感性に合う。
+- 検証: `rg -n "AIノート|AI を使う前|会議ノートと質問保留|議事録AIを使う前|履歴詳細で自分/相手側/両方|v2-preview-session-notes-language" src/utils/previewSessionData.ts AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。`AIノート` は過去ログにのみ残存。コミットなし。
+
+## 2026-05-30 10:29:00 JST
+
+- 作業: `v2-controller-confirmation-mode-language`
+- 目的: `meet-jerky-desktop-v2.pen` の録音導線確認方針に合わせ、コントローラー画面の内部向け語彙をユーザーが理解しやすい確認モード表現へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` のタイトルを `Meet Jerky Control` から `Meet Jerky 確認` に変更し、透明性チップの `UIプレビュー` を `確認モード` に変更した。REC表示の `Soft` / `Bright` / `Off` も `控えめ` / `明るい` / `消灯` に変更した。
+- 判断: コントローラーは録音前通知、メニューバー開始、RECインディケーター、字幕/ノートの導線確認に使う面であり、`UIプレビュー` や英語のモード名は内部実装寄りに見える。機能を変えず、操作対象が自然に読める語彙へ寄せる方が v2 のミニマルで直感的なMac UIに合う。
+- 検証: `rg -n "Meet Jerky 確認|確認モード|UIプレビュー|控えめ|明るい|消灯|v2-controller-confirmation-mode-language" src/components/ControllerWindow.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:22:00 JST
+
+- 作業: `v2-settings-bulk-delete-preparing-state`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな設定UI方針に合わせ、未実装の一括削除が障害状態のように読まれないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の一括削除補足文を `未接続` から `準備中` に変更し、disabled ボタン、可視テキスト、`aria-label`、`title` の状態語を統一した。
+- 判断: 一括削除は保存先確認の補助機能であり、現在は意図的に無効化されている。`未接続` は外部サービス接続や障害を連想させるため、v2 の状態表示では `準備中` として控えめに示す方が直感的。
+- 検証: `rg -n "一括削除は準備中|一括削除は未接続|v2-settings-bulk-delete-preparing-state" src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:17:21 JST
+
+- 作業: `v2-transcript-saved-file-open-label`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音/履歴導線方針に合わせ、保存済み履歴の操作ボタンが何を開くのか可視ラベルでも分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptView` の保存済み履歴操作ボタンを `開く` から `外部で開く` に変更した。aria/title は既に macOS の既定アプリで開く説明を持っているため、可視ラベルを録音後詳細の音声トラック操作と同じ語彙に揃えた。
+- 判断: `開く` は短いが、履歴確認、Finder表示、外部アプリ起動が近接する場所では対象が曖昧になる。ボタンを増やさず、短いラベルだけ具体化する方が v2 のミニマルで直感的な導線に合う。
+- 検証: `rg -n "外部で開く|起動中|v2-transcript-saved-file-open-label" src/routes/TranscriptView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:13:42 JST
+
+- 作業: `v2-translation-preparing-language`
+- 目的: `meet-jerky-desktop-v2.pen` のリアルタイム翻訳UI方針に合わせ、録音中ウィンドウと設定画面で翻訳未提供状態の語彙を揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` の翻訳エンジン表示を `翻訳エンジン未接続` から `翻訳エンジン準備中` に変更した。`SettingsView` の翻訳カードも `未接続` から `準備中` に寄せ、補助ラベルと説明文を `リアルタイム翻訳は準備中です。録音中は原文を保持します。` に揃えた。
+- 判断: 翻訳ビューの可視状態は既に `翻訳準備中` であり、設定だけ `未接続` と表示すると別の障害状態に見える。実装済みに見せないため `準備中` は維持しつつ、録音中/設定の状態語を統一した。
+- 検証: `rg -n "翻訳エンジン準備中|翻訳エンジン未接続|翻訳は準備中|翻訳は未接続|リアルタイム翻訳は準備中|v2-translation-preparing-language" src/components/LiveCaptionWindow.tsx src/routes/SettingsView.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:09:58 JST
+
+- 作業: `v2-permission-transcript-audio-transmission-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音前/録音中UI方針に合わせ、権限バナーとライブ文字起こしの音声送信境界を同じ語彙に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `PermissionBanner` の議事録影響チップを `音声未送信` から `音声送信なし` に変更し、`TranscriptDisplay` のトラック別 aria ラベルも `音声送信なし` に揃えた。
+- 判断: 権限確認とライブ文字起こしは録音状態の透明性を担う面であり、録音後レビューやモデル選択と同じ送信境界語彙にしておく方が、短い表示でも意味がぶれにくい。
+- 検証: `rg -n "音声送信なし|音声未送信|v2-permission-transcript-audio-transmission-label" src/components/PermissionBanner.tsx src/components/TranscriptDisplay.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:05:36 JST
+
+- 作業: `v2-session-detail-audio-transmission-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、文字起こしチャットと議事録ソースの音声送信境界を録音中UIと同じ語彙に揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の文字起こしチップと議事録ソースチップを `音声未送信` から `音声送信なし` に変更し、チャット表示の補助ラベルも `音声トラックは外部送信しません` にした。議事録下書きカードの aria ラベルも `音声送信なし` に揃えた。
+- 判断: 録音中UIでは `音声送信なし` として境界を明確にしているため、録音後レビューだけ `音声未送信` を残すと同じ状態が別概念に見える。可視チップを同じ短い語彙に揃える方が、v2 の認識しやすいミニマルUIに合う。
+- 検証: `rg -n "音声送信なし|音声未送信|音声トラックは外部送信しません|v2-session-detail-audio-transmission-label" src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 10:01:44 JST
+
+- 作業: `v2-model-selector-transmission-boundary`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、Whisperモデル選択でも音声送信境界を自分/相手側音声カードと同じ語彙で読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ModelSelector` の境界レールで `送信` を `音声送信`、詳細を `音声未送信` から `端末内` に変更した。補助ラベルも `音声は外部送信しません` に揃えた。
+- 判断: モデル選択は文字起こし処理の設定だが、録音中UIでは音声カードと近接して表示される。送信境界の語彙が揺れると外部送信有無の理解に余計な負荷がかかるため、同じ短い表現へ統一した。
+- 検証: `rg -n "音声送信|音声は外部送信しません|音声未送信|v2-model-selector-transmission-boundary" src/components/ModelSelector.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:57:31 JST
+
+- 作業: `v2-audio-source-transmission-boundary`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、自分/相手側音声カードの送信境界を短く、かつ誤解なく表示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MicrophoneSection` と `SystemAudioSection` の境界レールで `送信` を `音声送信`、詳細を `音声未送信` から `端末内` に変更した。補助ラベルは `音声は外部送信しません` として、音声トラックが外部に出ないことを明確にした。
+- 判断: `送信 なし` はミニマルだが、文字起こしや議事録の送信確認と近接すると何の送信か曖昧になる。可視ラベルは1語だけ増やし、補助属性で外部送信なしを明示する方が録音状態の透明性に合う。
+- 検証: `rg -n "音声送信|音声は外部送信しません|音声未送信|v2-audio-source-transmission-boundary" src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:52:18 JST
+
+- 作業: `v2-transcription-controls-note-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、録音中コントロールの状態表示を内部語ではなく利用者が判断できる言葉にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptionControls` の aria/title から `録音中UI` を外して `録音中の表示` に変更し、ノート欄は即時質問回答ではなく `質問保留` / `ノート/保留` と表示するようにした。録音入力の既定説明も `2トラック` から `自分+相手側` に変更した。
+- 判断: `質問可` は機能が即時回答まで提供される印象を与えるが、現状はノートと質問の確認待ち/コピー導線が中心である。v2 のミニマルUIでは説明を増やすより、短い状態ラベルで実態を正確に伝える方が誤認が少ない。
+- 検証: `rg -n "録音中の表示|質問保留|ノート/保留|自分\\+相手側|録音中UI|質問可|ノート/質問" src/components/TranscriptionControls.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:47:02 JST
+
+- 作業: `v2-ring-light-open-action-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中インディケーター方針に合わせ、常時REC表示からライブ文字起こしを開く操作を可視ラベルでも分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `RingLightWindow` の常時RECインディケーター内ボタンを `開く` から `字幕表示` に変更し、`aria-label` / `title` も `ライブ文字起こしを表示` に揃えた。
+- 判断: `開く` は最小だが、常時表示されるREC UIでは何を開くかを推測させる。検知後RECピルと同じ `字幕表示` に揃える方が、v2 のミニマルさを保ちつつ操作対象が明確になる。
+- 検証: `rg -n "字幕表示|ライブ文字起こしを表示|v2-ring-light-open-action-label|録音中ウィンドウを表示" src/components/RingLightWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:45:21 JST
+
+- 作業: `v2-settings-language-glossary-state`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、実操作できる文字起こし言語設定と、準備中の単語登録を混同しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` のカード見出しを `言語と単語登録` から `文字起こし言語` に変更し、説明も主言語選択に限定した。単語登録は `単語登録（準備中）` として状態表示へ分離した。併せて `SessionDetail` の音声トラック操作行のインデント崩れを直した。
+- 判断: `言語と単語登録` はコンパクトだが、単語登録まで設定できるように見える。v2 の設定画面では、できる操作を主役にし、未接続機能は準備中状態として控えめに出す方が誤認が少ない。
+- 検証: `rg -n "文字起こし言語|文字起こしの主言語|単語登録（準備中）|言語と単語登録|v2-settings-language-glossary-state" src/routes/SettingsView.tsx src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:43:10 JST
+
+- 作業: `v2-session-detail-action-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、音声、文字起こし、議事録の主操作をアイコンや文脈に頼らず読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の音声トラック操作を `開く` から `外部で開く` に変更し、`aria-label` も外部アプリで開く操作だと分かるようにした。選択トラックのコピー操作は `本文コピー` に変更し、議事録カードの主操作は `下書き` から `下書き作成` に変更した。
+- 判断: 既存の短いラベルはミニマルだが、録音後レビューでは音声再生、本文コピー、議事録生成が近接しており、`開く` / `コピー` / `下書き` だけでは操作対象が曖昧になる。構造は増やさず、可視ラベルだけを少し具体化する方が v2 の直感性に合う。
+- 検証: `rg -n "外部で開く|外部アプリで開く|本文コピー|下書き作成|v2-session-detail-action-labels" src/routes/SessionDetail.tsx AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:40:52 JST
+
+- 作業: `v2-menu-start-source-language`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音/検知通知導線に合わせ、録音開始要求の発生元とライブ字幕操作をユーザー向けの短い語彙にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 録音開始要求の `controller` 表示を `v2確認パネル` から `確認パネル` に変更した。メニューバーの状態デッキは録音中/開始前で aria ラベルを分け、ライブ文字起こしを開く可視ボタンを `字幕表示` にした。検知後のRECピルとコントローラーのシナリオ見出しも、v2 という内部呼称を避けて録音導線として読める表現に寄せた。
+- 判断: `v2` は設計バージョンであり、利用者が録音開始要求の発生元として見る情報ではない。ボタンや状態カードを増やさず、短いラベルだけを直す方がミニマルなUI方針に合う。
+- 検証: `rg -n "v2確認パネル|字幕表示|録音導線シナリオ|録音中の状態|確認パネル" src AGENT_LOG.md`、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:38:47 JST
+
+- 作業: `v2-live-note-question-language`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ノートUI方針に合わせ、会議ノートと質問保留が即時AI送信ではなく、確認待ち/コピー導線であることを短い語彙で伝える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のローカル会議ノートコピー文面を `外部送信なし` に統一し、質問保留のエラー、aria、title から `AI質問` を外して `質問` にした。外部プロバイダーへ渡す場合の説明も、質問コピー後に確認する表現へ変更した。`SessionDetail` のローカル下書き生成方式と外部プロバイダー説明、`TranscriptionControls` の録音中UIラベルも同じ語彙に合わせた。
+- 判断: `AI質問` や `AI外部送信なし` は短いが、録音中に自動送信されるような印象を与えやすい。v2 のミニマルUIでは説明を増やすより、操作名を `質問`、状態を `外部送信なし` / `送信前確認` に寄せる方が直感的。
+- 検証: `rg -n "AI質問|AI外部|外部AI|AI送信" src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx src/components/TranscriptionControls.tsx src` で該当なし、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:36:23 JST
+
+- 作業: `v2-minutes-prompt-action-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ワークスペース方針に合わせ、外部AI議事録プロバイダー設定時に「指示」ボタンがプロンプトコピーと送信前確認の導線であることを短く読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` に `minutesPromptActionLabel` を追加し、外部AI設定時は議事録ヘッダーの主操作を `指示コピー` と表示するようにした。`aria-label` / `title` には選択テンプレートと `aiMinutesTransmissionLabel` を含め、外部送信は生成時確認であることを保持した。
+- 判断: 既存の `指示` は短いが、外部AIに渡すプロンプトをコピーする操作だと初見で分かりにくい。ボタンを増やさず語彙だけを切り替える方が、v2 のミニマルな録音後UIに合う。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:34:28 JST
+
+- 作業: `v2-ring-light-track-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中インディケーター方針に合わせ、常時表示されるREC UIで自分トラックと相手側トラックの録音状態まで確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `RingLightWindow` のステータス文言に `自分 ... / 相手側 ...` を含め、可視UIにもトラック状態ピルを追加した。`App.css` では v2 の緑アクセントを使った薄いピルを追加し、既存の `REC / 字幕 / 送信 / 開く` 構造を崩さず録音透明性を補強した。
+- 判断: 既存リングライトは録音中であることは伝わるが、マイクと相手側音声のどちらが実際に取れているかはライブ字幕ウィンドウを開くまで分かりにくい。常時表示UIに短いトラック状態だけ追加する方が、ミニマルさを保ちつつ「録音されていることを忘れる」問題と取得漏れの不安に効く。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:32:29 JST
+
+- 作業: `v2-send-scope-language-sweep`
+- 目的: `meet-jerky-desktop-v2.pen` の透明性重視のUI方針に合わせ、録音中の文字起こし送信と録音後の議事録AI送信が `AI送信` という曖昧な語彙で混同されないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の一般カテゴリ説明を `送信範囲` に変更し、リアルタイム翻訳カードの `AI送信` を `外部送信` に変更した。`TranscriptView` のメニューバー録音状態と保存済み履歴操作の aria 文言も、録音中の外部送信と議事録AIの生成時確認を分けて読めるようにした。`ControllerWindow` とプレビューデータの表示も `外部送信なし` に統一した。
+- 判断: `AI送信` は短いが、リアルタイム文字起こし、翻訳、録音後の議事録生成を同じ状態に見せるリスクがある。v2 のミニマルな見た目を保つには説明を増やすより、ラベル自体を `外部送信` / `議事録AIの生成時確認` に分ける方が適切。
+- 検証: `rg -n "AI送信|外部AI送信|録音中のAI外部送信" src` で該当なし、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:29:45 JST
+
+- 作業: `v2-session-detail-ai-send-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の透明性重視の録音後UIに合わせ、外部AI議事録プロバイダー設定時に「外部送信なし」と誤読される議事録カード表現を避ける。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の議事録下書きカードに、外部AI設定時は `議事録準備` / `確認用下書き` と表示するラベルを追加した。カード、ボタン、空状態の `aria-label` / `title` も `aiMinutesTransmissionLabel` を使い、生成時確認が必要な状態を正確に読めるようにした。
+- 判断: 既存の見た目はミニマルだが、外部AI設定時にもカードが `ローカル下書き` / `外部送信なし` と固定表示され、設定状態と矛盾していた。カード構造や装飾を増やさず、短い語彙の差し替えで誤認リスクを下げる方が v2 のUI方針に合う。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:24:45 JST
+
+- 作業: `v2-menu-recording-save-state`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音方針に合わせ、手動録音入口で録音、字幕、音声送信に加えて保存範囲も同じ状態デッキ内で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptView` のメニューバー録音ポップオーバーの状態デッキを `録音 / 字幕 / 音声送信 / 保存` の4項目にし、保存は `このMac` と直近保存または履歴確認を表示するようにした。`App.css` では状態デッキを4カラムにし、保存カードを v2 の緑系トーンで控えめに区別した。
+- 判断: 当初は開始前確認行を追加したが、過去ログに重複プリフライトを削除した判断が残っていたため撤回した。新しい行を増やすのではなく既存の状態デッキへ保存範囲を統合する方が、ミニマルなメニューバー録音UIに合う。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:22:18 JST
+
+- 作業: `v2-session-detail-review-rail`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ワークスペース方針に合わせ、音声トラック、チャット文字起こし、議事録生成の3つを録音詳細の主導線として一目で把握できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` のヘッダー直下に `録音レビュー概要` レールを追加し、音声、文字起こし、議事録の現在状態を3項目で表示した。音声は選択トラックと再生可否、文字起こしは件数と検索/コピー導線、議事録はテンプレートと生成/AI接続状態を短く示す。`App.css` には v2 の紙色、緑、琥珀を使った薄い3カラムカードとモバイル時の1カラム化を追加した。
+- 判断: 既存ビューは機能ごとのカードは揃っているが、初見で「この録音で何をレビューできるか」が分散している。大きな説明を増やさず、ヘッダー直下の薄い状態レールで録音後の主要作業を統合する方が v2 のミニマルなMac UIに合う。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:19:37 JST
+
+- 作業: `v2-recording-status-language`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常時表示インディケーターとライブ文字起こしウィンドウで録音状態、ノート状態、外部送信範囲を短く正確に読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `RingLightWindow` の `AI送信` 表現を `外部送信` / `送信` に変更し、録音中リングの aria/title でも送信範囲を明確化した。`LiveCaptionWindow` のコンパクト表示は `AI` ではなく `ノート` 状態として表示し、外部AI利用時は `送信確認` とした。展開時の見出しも `Transcript` から `録音中` に変更した。短い日本語ラベルが欠けにくいようコンパクトノートピルの最大幅を少し広げた。
+- 判断: 録音中UIでは `AI` という単語だけだと、リアルタイム文字起こしの音声送信、会議ノート、録音後のAI議事録が混ざって見える。v2 のミニマルな見た目を保ちながら、ユーザーが録音中であることと送信範囲を誤解しない語彙に寄せた。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:17:32 JST
+
+- 作業: `v2-settings-recording-preflight`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、マイク入力、会議検出、文字起こしエンジン、AI議事録の判断材料を録音前チェックとして一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の主要設定カード直下に `録音前チェック` ラインを追加し、入力、自分/相手側トラック状態、検出対象数、文字起こし送信範囲、議事録生成範囲を短いチップで表示した。`App.css` には v2 の紙色、琥珀、インク系トーンを使った控えめな横並びスタイルとモバイル時の縦積みを追加した。
+- 判断: 概要カードだけではカテゴリ移動はしやすいが、録音前に何を確認すべきかが分散して見える。新しい大きなカードを増やすより、既存カード下に薄いチェックラインを置く方が、ミニマルでMac設定画面らしい。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:14:05 JST
+
+- 作業: `v2-session-list-review-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、履歴一覧から音声トラック、チャット文字起こし、議事録へ進めることを一目で分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` のヘッダーに `レビュー: 音声 / 議事録` チップを追加し、履歴全体の `aria-label` にレビュー範囲を含めた。各履歴行の主ボタンを `開く` から `レビュー` に変更し、`aria-label` / `title` で音声トラック、チャット文字起こし、議事録を確認できることを明示した。`App.css` には v2 の青アクセントを使った控えめなレビュー範囲チップを追加した。
+- 判断: 既存の履歴一覧は検索、本文コピー、Finder表示は分かるが、主導線の `開く` だけでは録音後レビューの価値が伝わりにくい。説明文を増やさず、チップとボタン語彙で機能範囲を明確にする方が v2 のミニマルなMac UIに合う。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:12:05 JST
+
+- 作業: `v2-meeting-detection-send-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の通知から録音できる導線に合わせ、会議検知通知と録音中ピルで外部送信の意味がAI議事録と混同されないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MeetingDetectedBanner` の検知通知 `aria-label` を録音前確認として明確化し、自分と相手側を保存することを含めた。検知通知の `AI送信なし` を `音声送信なし` に、録音中ピルの `AIなし` を `送信なし` に変更し、外部送信の `aria-label` / `title` も `外部送信` に統一した。長めの送信ラベルが読めるよう、録音中ピルの送信バッジ幅を少し広げた。
+- 判断: 会議検知通知は録音開始の最初の意思決定点であり、ここで `AI` とだけ表示すると、リアルタイム文字起こしの音声送信と録音後の議事録AIが混ざって見える。v2 のミニマルな通知表現は維持しつつ、送信範囲を正確にした。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:10:19 JST
+
+- 作業: `v2-session-detail-minutes-flow`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ワークスペース方針に合わせ、議事録生成の流れをテンプレート、手書きメモ、下書き/指示コピーの順で直感的に読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の議事録テンプレート要約の直下に、`1 テンプレート`、`2 手書きメモ`、`3 ローカル下書き` または `3 指示コピー` の生成フローチップを追加した。外部AI設定時は指示コピー、ローカル/AIオフ時はローカル下書きとして表示し、`aria-label` / `title` には選択テンプレート、手書きメモ状態、送信範囲を含めた。`App.css` には v2 の青・琥珀・緑を使った控えめな3ステップチップを追加した。
+- 判断: 既存UIにはテンプレート、手書きメモ、下書き作成が揃っているが、初見ではどの順で使うかが分かりにくい。説明文を増やさず、状態チップで作業順を示す方がミニマルでMacアプリらしい。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:08:01 JST
+
+- 作業: `v2-ai-provider-send-scope`
+- 目的: `meet-jerky-desktop-v2.pen` の透明性重視のUI方針に合わせ、録音中の音声/文字起こし送信と、録音後のAI議事録送信が混同されないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバーの状態カードを `AI送信` から `音声送信` に変更し、詳細文を文字起こし送信と議事録AIの生成時確認に分離した。AI議事録設定では各プロバイダーに短い送信説明を追加し、選択だけでは送信しないこと、音声トラックは送らず文字起こしと手書きメモを生成時に確認することを disclosure として表示した。
+- 判断: `AI送信` という単一ラベルは、リアルタイム文字起こしエンジン由来の外部送信と議事録AIプロバイダーを同じものに見せるリスクがある。v2 のミニマルな状態表示を保ちつつ、送信範囲と確認タイミングを画面内で明確にした。
+- 検証: `git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:04:00 JST
+
+- 作業: `v2-session-detail-chat-mode-cues`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針とユーザー要件のLINE風トランスクリプト表示に合わせ、吹き出し配置の意味を画面上で直感的に読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の文字起こしパネルに `チャット表示` / `自分 右` / `相手側 左` / `音声未送信` の小さな表示モードチップを追加し、`aria-label` / `title` にも同じ意味を付与した。`App.css` には v2 の紙色・線色・青アクセント・モノスペースに合わせた控えめなチップスタイルを追加した。
+- 判断: 既存の発話行は左右寄せの吹き出しでLINE風の土台があるが、初見では左右の意味と音声送信範囲が読み取りにくい。説明文を増やすより、検索欄の手前に短いチップを置く方がミニマルで認識しやすい。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css`、チャット表示チップの実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:02:00 JST
+
+- 作業: `v2-app-shell-flow-not-status`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバーUI方針に合わせ、固定の上部レールが実際の録音ステータスに見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `App` の `APP_SHELL_STATUS_ITEMS` を `APP_SHELL_FLOW_ITEMS` に変更し、上部レールの `aria-label` を `録音ステータス` / `主要状態` から `録音までの導線` / `主要導線` に変更。ブランド横の `quiet rec` は録音中の実状態と誤読されない `quiet flow` に変更し、レール項目も `DET` / `REC` / `NOTE` / `LOG` と `Detect` / `Start` / `Notes` / `History` に整理した。
+- 判断: このレールは現在値を購読していない固定表示であり、`録音ステータス` と読ませるのは透明性に反する。v2 のミニマルな導線表現は維持しつつ、状態ではなくフローであることを明確化した。
+- 検証: `git diff --check -- src/App.tsx`、アプリシェル導線ラベルの実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 09:00:22 JST
+
+- 作業: `v2-controller-transparency-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI確認方針に合わせ、コントローラー操作が外部AI送信や課金操作を伴うように見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` の録音中シナリオを `字幕 + AI` から `ノート確認` に変更し、詳細を `字幕 / ローカルノート / 質問保留` に更新。ヘッダー下に `UIプレビュー`、`外部AI送信なし`、`課金操作なし` のステータスチップを追加し、シナリオボタンには説明付きの `aria-label` / `title` を追加した。`App.css` には v2 の紙色・線色・モノスペースに合わせた控えめな透明性チップスタイルを追加した。
+- 判断: コントローラーはv2 UIを確認する入口で、ここで `AI` とだけ表示すると、実際より強い外部AI実行に見える。ユーザー要件と非目標ではAI送信有無と課金操作の透明性が重要なため、デバッグ/確認UIでも同じ語彙に揃えた。
+- 検証: `git diff --check -- src/components/ControllerWindow.tsx src/App.css`、コントローラー透明性表示の実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:53:04 JST
+
+- 作業: `v2-settings-system-audio-permission-state`
+- 目的: `meet-jerky-desktop-v2.pen` の音声トラック分離方針に合わせ、相手側システム音声が画面収録権限なしでも取得済みに見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` で相手側システム音声の状態ラベルを画面収録権限に連動させ、`取得可能` / `権限なし` / `確認中` / `確認失敗` を表示するようにした。一般設定のシステム音声セレクトと音声設定カードの `aria-label` / `title` も同じ状態文に統一し、未許可時は音源を `権限許可後に取得`、トラックを `未取得` と表示するようにした。
+- 判断: 既存UIは未許可でも `会議アプリ音声` / `相手側` と表示され、実際より録音可能に見える余地があった。録音状態の透明性を優先し、v2 のミニマルな状態チップのまま、取得前と取得可能を正確に分けた。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx`、システム音声状態ラベルの実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:50:31 JST
+
+- 作業: `v2-session-detail-local-minutes-label`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、議事録カードの主操作が外部AI送信ではなくローカル下書き作成だと即座に分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の議事録下書きカードを `下書き作成` から `ローカル下書き` に変更し、カードと作成ボタンの `aria-label` / `title` に `外部送信なし` を明示した。ボタン表示は `作成` から `下書き` に短縮し、空状態も `ローカル下書きがここに表示` に変更した。
+- 判断: 設定で外部AIプロバイダーを選んでいても、この画面の実処理は文字起こしと手書きメモからローカル下書きを組み立てるもの。v2 のミニマル方針では説明を増やすより、見出しと主ボタンの語彙を正確にする方が誤読を減らせる。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx`、ローカル下書き/外部送信なし文言の実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:48:05 JST
+
+- 作業: `v2-session-list-empty-routes`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴UI方針に合わせ、履歴ゼロ状態でも録音開始経路が直感的に分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` の空状態に `会議検知通知` と `メニューバー録音` の2つの開始経路チップを追加。操作ボタンではなく状態チップとして表示し、未接続/別画面操作をこの画面で実行できるようには見せない。`App.css` に v2 のアンバー/紙色/モノスペースを使った控えめなチップスタイルを追加した。
+- 判断: ユーザー要件では録音開始経路として会議検知通知とメニューバー録音が明示されている。履歴ゼロ状態で一文だけだと開始経路の認識が弱いため、ミニマルなチップで示すのが v2 の「理解できるが過密でない」方針に合う。
+- 検証: `git diff --check -- src/routes/SessionList.tsx src/App.css`、空状態チップの実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:46:35 JST
+
+- 作業: `v2-session-detail-audio-tab-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、音声トラックの再生可否と文字起こし有無を選択前に判断できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の音声トラックタブに、各トラックごとの `音声あり` / `本文のみ` / `未保存` / `確認中` / `音声確認失敗` を表示。`aria-label` / `title` には文字起こし件数も含めた。`App.css` ではタブを二段表示にし、状態ラベルを小さなモノスペース表示として追加した。
+- 判断: 既存UIは選択中トラックの音声状態だけを表示しており、ユーザーが `両方` / `自分` / `相手側` のどれを再生できるかを切り替えながら確認する必要があった。v2 の認識優先・ミニマル方針では、タブ内に短い状態を持たせる方が直感的で、録音後の音声トラック確認要件にも合う。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css`、音声タブ状態表示の実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:44:29 JST
+
+- 作業: `v2-live-notes-truthful-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、会議ノートと質問欄が実際より強いAI実行/外部送信に見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のサイド領域見出しを `AIノート` から `ノート` に整理し、オフ状態も `ノートはオフ` に変更。会議ノートには `ローカル抽出` / `ローカル抽出・送信前確認` / `ローカル抽出・端末内AI` の状態表示を追加し、質問欄は `質問を保留` として、ここでは送信しないことを `title` / 操作ラベルに明示した。`App.css` にはローカル抽出バッジと保留ボタンの最小スタイルを追加した。
+- 判断: 現時点の録音中ノートは表示中の文字起こしからのローカル抽出で、質問は確認待ちに保存/コピーする導線。`AIノート` や送信アイコンだけの操作は、AI回答や外部送信が即時実行されるように見えるため、v2 のミニマルさを保ちながら状態を正直にした。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、ノート/質問/ローカル抽出表示の実装検索、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:41:57 JST
+
+- 作業: `v2-settings-privacy-storage-truthful-state`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針とプロダクトコンセプトの「安心感」に合わせ、保存先・削除・AI送信範囲が実装状態と矛盾しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` のプライバシー画面で保存先を表示し、`Finderで表示` を実際に保存先またはデフォルト保存先を開く操作に接続した。未接続の一括削除は無効化し、準備中であることを短い状態ノートとして表示した。`保存と送信範囲` では、議事録生成時に手書きメモもプロンプト材料になり得るため `送信前に確認` 側へ移し、`送信しない` は音声トラックに限定した。
+- 判断: 既存UIは `すべて削除` が押せる見た目だが処理がなく、手書きメモを「送信しない」と表示しつつ議事録プロンプトには含めていた。録音・AI連携の透明性を優先し、実装済み操作だけを強調して未接続部分は控えめに明示した。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css`、保存先/送信範囲/一括削除表示の実装検索、`npm run build` 成功。`npm run format` は script 未定義、ローカル `prettier` も未導入のため未実行。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:32:30 JST
+
+- 作業: `v2-settings-export-format-truthful-state`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、未接続の書き出し形式が選択可能/実装済みのように見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の文字起こし出力カードで、`VTT` / `SRT` / `JSON` を通常の形式チップとして並べる表示をやめ、現在利用できる `履歴本文` と `VTT / SRT / JSON は準備中` の補助表示に分けた。`App.css` に `settings-output-format-state` の軽い整列スタイルを追加した。
+- 判断: 録音後UIではコピーや履歴詳細が主導線として実装済みだが、VTT/SRT/JSON の書き出し処理は未確認。実装済みに見せるより、現時点の提供範囲を明確にした方が v2 のミニマルで透明な設定UIに合う。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、書き出し形式表示の実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:30:31 JST
+
+- 作業: `v2-settings-translation-truthful-state`
+- 目的: `meet-jerky-desktop-v2.pen` の文字起こし/翻訳UI方針に合わせ、未接続のリアルタイム翻訳が設定済み英訳のように見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` のリアルタイム翻訳カードで、固定の `翻訳先: 英語` と `設定待ち` 表示を `未選択` / `未接続` に変更し、翻訳エンジン接続後に切り替える説明へ更新。録音中は原文保持であることを短い状態ノートとして追加し、`App.css` に未接続バッジとノートの控えめなスタイルを追加した。
+- 判断: ユーザー要件にはリアルタイム翻訳があるが、現時点では翻訳エンジン未接続。固定の英語表示は実装済みと誤認させるため、未接続状態を正直に表示しつつ、録音中UIの原文/翻訳切替導線と矛盾しない表現にした。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、翻訳未接続表示の実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 実翻訳エンジン接続は未実装。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:29:18 JST
+
+- 作業: `v2-settings-glossary-truthful-state`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、未接続の単語登録が実装済み辞書のように見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の文字起こし設定で固定サンプルの `FY26 OKR` / `ロードマップ` / `四半期レビュー` 表示を廃止し、`単語登録` を `準備中` として表示。`App.css` に v2 の紙色・アンバー・線色で控えめな準備中ステートを追加した。
+- 判断: プロダクトコンセプトには辞書補正があるが、現時点で辞書保存UIは未接続。固定サンプルを出すとユーザーが登録済み辞書と誤認するため、現状を正直に示しつつ将来の後処理補正導線を残す方が透明性に合う。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、単語登録準備中表示の実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:27:15 JST
+
+- 作業: `v2-minutes-source-summary`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、議事録作成前に下書きへ使われる入力ソースを一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の議事録パネルに、文字起こし件数、手書きメモ量、補足指示有無、音声未送信を示す `session-detail-source-row` を追加。既存の未使用スタイルを活かしつつ、文字起こしと手書きメモのチップだけ v2 カラーパレットで軽く強調した。
+- 判断: テンプレート、手書きメモ、補足指示は既にあるが、作成前に何が材料になるかが分散していた。MacらしいミニマルUIでは説明文を増やすより、入力ソースを小さな状態チップとしてまとめる方が理解しやすい。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、ソースサマリー実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:26:01 JST
+
+- 作業: `v2-session-list-library-transparency`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後履歴UI方針に合わせ、履歴一覧で保存済み件数だけでなく本文有無、2トラック成立、コピー対象を一目で確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` で履歴全体の本文あり件数と自分/相手側の2トラックが揃った件数を算出し、ヘッダーの小さなチップとして表示。コピー操作が文字起こし本文を対象にすることも同じメタ領域に明示した。`App.css` に v2 の紙色・線色・ミュート文字を使った控えめなヘッダーチップを追加した。
+- 判断: 行単位の検索・コピーは既にあるが、録音後ライブラリの状態が保存数だけだと、ユーザー要求の「音声トラック確認」「内容コピー」に対する全体把握が弱い。新しい大型カードを増やすより、ヘッダーの補助メタとして短く出す方がミニマルでMacアプリらしい。
+- 検証: `npx --no-install prettier --check src/routes/SessionList.tsx src/App.css`、履歴透明性チップ実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:23:10 JST
+
+- 作業: `v2-live-ai-notes-off-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AI会議ノートをオフにしている状態でも理由と次の操作が分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のAIノートがオフのとき、`AIノートはオフ` と「オンにすると会議ノートと質問欄を表示」「外部送信はしない」を示す最小の状態カードを表示。`App.css` に v2 の紙色/線色/ミュート文字で控えめな `live-notes-off-state` スタイルを追加した。
+- 判断: AIノートON/OFFはユーザー要件の明示項目。オフ時にヘッダーだけ残ると機能が壊れているように見えるため、状態と安全性を短く表示する方が録音中の透明性に合う。大きな説明は録音中UIを邪魔するので1カードに留めた。
+- 検証: `npm exec prettier -- --check src/components/LiveCaptionWindow.tsx src/App.css`、AIノートOFF状態実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:21:27 JST
+
+- 作業: `v2-minutes-ai-provider-transparency`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、議事録作成カードでAIプロバイダー設定と外部送信有無を誤解なく読めるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の議事録下書きカードに、AIオフ/Ollama/外部AI確認制ごとの短い説明を追加。外部AIプロバイダー選択時は状態ピルをアンバー系、設定確認失敗時は赤系に切り替え、`aria-label`/`title` に外部送信説明を付与した。`App.css` に説明文と状態ピルの最小スタイルを追加した。
+- 判断: 既に手書きメモ・テンプレート・ローカル下書きはあるが、外部AI設定時にもボタン名が `作成` のままだと送信有無が曖昧になる。課金や外部送信を勝手に行わない前提を守るため、生成はローカル下書き、外部AIは指示コピーで明示確認という関係をカード内に表示するのが適切。
+- 検証: `npm exec prettier -- --check src/routes/SessionDetail.tsx src/App.css`、AIプロバイダー透明性表示の実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:19:39 JST
+
+- 作業: `v2-menu-recording-state-truth`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音方針に合わせ、メニュー内の録音開始前状態が実設定と開始要求元に連動するようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptView` のメニューバーポップオーバーで、録音カードの詳細にメニューバー/通知からの開始要求元を表示。フッターの固定 `自動検知 ON` 表示を、設定読み込み中/設定エラー/検出OFF/必要シグナル数/音声必須条件に連動する `menuDetectionFooterLabel` に置き換えた。
+- 判断: メニューバー録音はユーザー要求の主要導線であり、固定の検出ON表示は設定状態と矛盾すると録音透明性を損なう。v2 のミニマルUIでは新しいカードを増やすより、既存の録音カードとフッターへ実状態を短く出す方が適切。
+- 検証: `npm exec prettier -- --check src/routes/TranscriptView.tsx`、メニュー状態表示実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:17:41 JST
+
+- 作業: `v2-meeting-detection-transparency-row`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知方針に合わせ、録音開始前に保存対象とAI送信有無を小さく明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MeetingDetectedBanner` に検知時のみ表示されるメタ行を追加し、`保存: 自分 + 相手側` と `AI送信なし` または選択中のAI送信ラベルを表示。`App.css` では会議検知プロンプトの高さを調整し、v2 の紙色・線色・ミュート文字で控えめに見えるスタイルを追加した。
+- 判断: 会議検知通知は録音開始の入口なので、開始ボタンだけでなく「何が保存されるか」「AIへ送るか」を明示する必要がある。一方で通知ウィンドウは邪魔にならないことが重要なため、詳細説明ではなく1行の透明性メタ情報に留めた。
+- 検証: `npm exec prettier -- --check src/components/MeetingDetectedBanner.tsx src/App.css`、透明性メタ行の実装検索、`git diff --check`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:14:33 JST
+
+- 作業: `v2-ring-light-ai-transparency`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常駐RECインジケーター上でもAI送信状態を視認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `RingLightWindow` のバッジ内に `AI {status.aiTransmissionLabel}` の小さなピルを追加し、これまで `aria-label` にしか出ていなかったAI送信状態を可視化した。`App.css` に v2 カラーパレットに沿った控えめな `ring-light-ai-pill` スタイルを追加した。
+- 判断: 録音中の常駐表示は「録音していることを忘れない」だけでなく、AI外部送信の透明性も支えるべき。大きなUIを増やすと邪魔になるため、RECバッジ内の補助ピルとして最小限に表示するのが適切。
+- 検証: `npx --no-install prettier --check src/components/RingLightWindow.tsx src/App.css`、AI送信ピル実装検索、`git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:12:44 JST
+
+- 作業: `v2-session-detail-audio-empty-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、履歴詳細で音声トラックが再生できない理由を小さく明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の音声トラックカードで、選択中トラックの音声ファイルが未保存または確認失敗の場合に説明文を表示。未保存時は文字起こしを下の履歴で確認できること、確認失敗時は文字起こし/議事録作成は利用できることを明示した。古い実装コメントも、保存済みトラックが存在する場合だけ音声再生する現在の挙動に合わせて更新した。`App.css` に未保存/エラー用の控えめな音声ノート表示を追加した。
+- 判断: これまではステータスピルの `未保存` / `確認失敗` だけで、録音後レビューとして次に何ができるかが弱かった。v2 のミニマルUIでは大きな空状態を増やすより、音声カード内に短い説明を置く方が視線を乱さず透明性を高められる。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、音声ノート実装検索、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:10:38 JST
+
+- 作業: `v2-settings-audio-truthful-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音透明性方針に合わせ、設定画面の音声状態が実際より録音可能/入力中に見えないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の音声カテゴリに残っていた固定の `許可済み` バッジを `PermissionBadge` に置換し、マイク/画面収録権限の実状態とエラー/確認中状態に連動。一般カテゴリの音声メーターは固定の疑似レベルをやめ、0% と `待機` ラベルで設定画面では入力監視していないことを示すようにした。`App.css` に待機ラベルの最小スタイルを追加した。
+- 判断: 設定画面で固定の音量レベルや固定の許可済み表示を出すと、録音状態の透明性を損なう。v2 のMacらしい控えめなUIでは、派手なプレビューよりも現在状態を正直に短く出す方が適切。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、権限/待機表示実装検索、`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:09:18 JST
+
+- 作業: `v2-settings-general-state-alignment`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、一般設定のサマリーが実際の検出/音声/AI設定と矛盾しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の一般カテゴリで、会議検出ステータス、検出対象サービス、通知スイッチ表示を `localSettings.detectionRules` に連動。検出チップは詳細な検出カテゴリへ移動する入口にした。マイク入力のデフォルト表示を固定の `MacBook Pro Microphone` から `デフォルト` に変更し、AI議事録の透明性表示も選択中プロバイダーに応じて `確認制` / `ローカル` / `オフ` に連動させた。
+- 判断: 一般カテゴリは設定全体の入口であり、固定のプレビュー値が混ざると録音状態の透明性と信頼性を損なう。v2 のミニマルUIでは説明を増やすより、実状態に同期した短いラベルと詳細カテゴリへの導線にする方が直感的。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx`、状態連動実装検索、`git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:06:51 JST
+
+- 作業: `v2-minutes-template-summary`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、議事録テンプレート選択の意味を画面上で直感的に確認できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` で選択中テンプレートの出力セクションラベルを算出し、テンプレートチップ直下に目的と出力セクションのミニマルなサマリーを表示。`App.css` に v2 カラーパレットに沿った控えめなサマリー枠を追加した。
+- 判断: テンプレート自体は既に選択できたが、目的が `title` に隠れており、ユーザーが生成前に選択の妥当性を判断しづらかった。常時見える1行サマリーに留めることで、UIを重くせず認知負荷を下げられる。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、テンプレートサマリー実装検索、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:05:25 JST
+
+- 作業: `v2-live-notes-sections-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートのローカル抽出結果を要点だけでなく決定/ToDoまで直感的に見えるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` にローカル会議ノートの表示セクション定義を追加し、AIノートカード内で `会議ノート` 配下に `要点` / `決定` / `ToDo` を表示する構造へ変更。コピー表示条件も3セクション全体の有無で判定するようにした。`App.css` にセクション見出しと縦積み用の軽いスタイルを追加した。
+- 判断: 既に決定事項とToDoの抽出ロジックは存在していたが、UIが要点だけを表示していたため、ユーザー要求の「リアルタイム会議ノート」として不足していた。カードを増やすより、同じ面内で情報階層を薄く分ける方が v2 のミニマルな録音中UIに合う。
+- 検証: `npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、会議ノートセクション実装検索、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 決定/ToDo は現時点では表示中文字起こしからのローカル正規表現抽出であり、AI要約エンジン連携は未実装。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 08:01:58 JST
+
+- 作業: `v2-live-caption-translation-state`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム翻訳タブが未接続状態でも誤解なく使えるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` の翻訳ビューで `翻訳エンジン未接続` を明示し、翻訳タブ内に `翻訳準備中 · 原文保持` を表示。翻訳モードの発話行は翻訳済みテキストに見せず、`翻訳準備中` と原文を分けて表示する構造にした。`App.css` に翻訳状態/プレビュー用の軽いスタイルを追加した。
+- 判断: 翻訳タブが原文をそのまま表示すると、ユーザーは翻訳が動作していると誤解する。現段階では外部送信なし・エンジン未接続を正直に示し、後から翻訳エンジンを接続しても差し替えやすいUI構造にする方が、v2の録音透明性とミニマルさに合う。
+- 検証: `npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、翻訳状態/プレビュー実装検索、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 実翻訳エンジン接続は未実装。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:59:58 JST
+
+- 作業: `v2-session-detail-inline-audio-playback`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、履歴詳細でマイク/相手側/両方の音声トラックを画面内で確認できる導線を強化する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` に `convertFileSrc` を使ったインライン `<audio controls>` を追加。選択中の `両方` / `自分` / `相手側` タブに対応する音声ファイルが存在する場合、その場で再生できるようにした。外部アプリで開く既存導線は残した。`App.css` に軽い音声プレイヤー枠を追加した。
+- 判断: これまでの `開く` は音声ファイル確認としては有効だが、ユーザー要求の「音声トラックの確認/再生」には間接的だった。v2 の録音後レビュー画面では、履歴詳細の中でトラックを切り替えて再生できる方が直感的で、Macアプリらしい最小導線になる。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`convertFileSrc` / `<audio>` 実装検索、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 実音声ファイルの存在と再生可否は `get_session_audio_assets_cmd` の結果に依存する。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:57:49 JST
+
+- 作業: `v2-surface-density-css-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の控えめなMac常駐UI方針に合わせ、状態グリッドとカード表面の視覚密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `model-boundary-grid` と `transcription-state-rail` を実際の3項目に合わせて3列化。アプリシェル、モデル境界、文字起こし状態、メニュー状態、設定カード、履歴行の枠線・影・背景を弱めた。
+- 判断: v2の方向性では「状態は常に見えるが、カード装飾が主役にならない」ことが重要。3項目を4列に置く空白は情報構造としても不自然だったため、実データに合わせて列数を修正し、装飾は境界認識に必要な最小限へ抑えた。
+- 検証: `npx --no-install prettier --check src/App.css`、3項目状態グリッドの4列指定検索、`git diff --check -- src/App.css AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 4列指定の残存は権限インパクト、設定概要、翻訳グリッドで、いずれも4項目UIとして妥当。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:55:09 JST
+
+- 作業: `v2-controls-settings-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中/設定UI方針に合わせ、録音中コントロール、モデル選択、設定、議事録メモの可視文言を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptionControls` の操作表示を `開始` / `停止` / `クリア`、録音状態 detail を `2トラック` に短縮。`ModelSelector` の再取得表示、`SessionDetail` の手書きメモ例、`SettingsView` の字幕/AI/プライバシー/検出/翻訳/透明性説明を短縮した。
+- 判断: 録音中UIと設定画面では、ユーザーが常時読むべき情報は状態と操作だけでよい。長い説明は補助属性・画面構造・設定カテゴリで補えるため、v2 のMacらしい軽量な情報密度へ寄せた。
+- 検証: `npx --no-install prettier --check src/components/TranscriptionControls.tsx src/components/ModelSelector.tsx src/routes/SessionDetail.tsx src/routes/SettingsView.tsx`、旧表示文言検索、`git diff --check -- src/components/TranscriptionControls.tsx src/components/ModelSelector.tsx src/routes/SessionDetail.tsx src/routes/SettingsView.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧表示文言検索の残存は補助属性/内部状態ラベルのみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:53:04 JST
+
+- 作業: `v2-history-detection-action-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴/検知導線に合わせ、録音後履歴一覧と会議検知バナーの可視操作ラベルを短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` の再読み込み、検索 placeholder、空状態、検索クリア、レビュー、コピー、Finder 表示の可視文言を短縮。`MeetingDetectedBanner` の録音開始ボタンを `録音` / `開始中...` に短縮した。
+- 判断: 履歴一覧の主目的は「探す、開く、コピー、場所を確認する」であり、操作名が長いと一覧のスキャン性を落とす。詳細な対象説明は `aria-label` / `title` に残し、v2 の録音後ライブラリらしい小さな操作語へ寄せた。
+- 検証: `npx --no-install prettier --check src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx`、旧表示文言検索、`git diff --check -- src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧表示文言検索の残存は内部ログ/補助属性の説明文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:51:59 JST
+
+- 作業: `v2-app-shell-save-banner-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の小さなMacウィンドウ方針に合わせ、アプリシェルと保存完了バナーの可視文言を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `App` のステータスレールを `Meet / Rec / Note / Log`、ブランド補助文言を `quiet rec` に短縮。`TranscriptView` の保存完了表示を `保存しました`、操作ボタンを `開く` / `Finder` に短縮した。
+- 判断: メニューバーUIと保存通知は状態確認が主目的で、長い説明は v2 の控えめな常駐感と衝突する。詳細な操作対象やFinder表示の説明は `aria-label` / `title` と内部ログに残し、可視文言は短い名詞/動詞へ寄せた。
+- 検証: `npx --no-install prettier --check src/App.tsx src/routes/TranscriptView.tsx`、旧表示文言検索、`git diff --check -- src/App.tsx src/routes/TranscriptView.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧表示文言検索の残存は内部ログ/補助属性の説明文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:49:52 JST
+
+- 作業: `v2-menubar-popover-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音/初回セットアップ方針に合わせ、メインポップオーバーの可視文言を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptView` の初回セットアップ見出し、権限説明、保存説明、待機中見出し、検知空状態、録音開始/終了、履歴/設定/字幕導線を短縮。録音状態、トラック分離、AI送信、権限詳細は既存の状態表示と `aria-label` / `title` に残した。
+- 判断: メニューバーUIでは、ユーザーが見るべき情報は「録音できるか」「どの経路で開始するか」「保存/送信状態が安全か」。長い導入説明は v2 の小さなMacポップオーバーには重いため、短い状態語と操作語へ寄せた。
+- 検証: `npx --no-install prettier --check src/routes/TranscriptView.tsx`、旧表示文言検索、`git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧表示文言検索の残存は内部エラー/console 文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:48:00 JST
+
+- 作業: `v2-permission-banner-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の起動前/権限チェック方針に合わせ、録音透明性を保ったまま権限バナーの可視文言を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `PermissionBanner` の見出し、マイク/画面収録本文、summary pill、再確認/設定ボタン、許可案内を短縮。詳細な権限名・状態・エラー内容は `aria-label` / `title` と既存ログに残した。
+- 判断: 権限バナーは録音透明性に必要だが、起動前の主目的は「何がブロックしているか」と「どこを開くか」を即座に判断できること。長い説明文は v2 のMacらしい軽量さを損なうため、可視文言を短い状態/操作へ寄せた。
+- 検証: `npx --no-install prettier --check src/components/PermissionBanner.tsx`、旧表示文言検索、`git diff --check -- src/components/PermissionBanner.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:46:09 JST
+
+- 作業: `v2-controller-ring-label-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の検証導線に合わせ、v2確認パネルと常時RECインジケーターの可視文言を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` のシナリオ、グループ、操作ボタンを短いラベルへ整理。`RingLightWindow` の録音中ウィンドウ表示ボタンを `開く` に短縮し、詳細は `aria-label` / `title` に残した。
+- 判断: 確認パネルは本体UIではないが、v2の通知・メニューバー録音・録音中UIを検証する入口である。説明文が多いとシナリオの主操作が埋もれるため、確認経路だけを短いラベルで読めるようにした。
+- 検証: `npx --no-install prettier --check src/components/ControllerWindow.tsx src/components/RingLightWindow.tsx`、旧表示文言検索、`git diff --check -- src/components/ControllerWindow.tsx src/components/RingLightWindow.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:44:19 JST
+
+- 作業: `v2-live-caption-visible-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ワークスペース方針に合わせ、ライブ字幕/翻訳/AI質問の可視文言を会議中に読める密度へ下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ字幕の待機文、見出し、原文/翻訳タブ、原文コピー、AIノート空状態、質問見出し、質問入力 placeholder を短縮。意味説明は `aria-label` / `title` に残し、表示は短い名詞/動詞へ寄せた。
+- 判断: 録音中UIでは主役がリアルタイム発話であり、操作説明が長いと視線を奪う。録音状態、トラック状態、AI送信確認は維持しつつ、可視文言だけを v2 のミニマルなフローティングUIに合わせた。
+- 検証: `npx --no-install prettier --check src/components/LiveCaptionWindow.tsx`、旧表示文言検索、`git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:42:40 JST
+
+- 作業: `v2-session-detail-action-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴詳細/議事録ワークスペース方針に合わせ、録音後レビュー画面の操作ラベルと入力例を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 音声トラック、全文コピー、議事録指示、補足指示、手書きメモ、下書き作成/コピーの表示ラベルを短縮。詳細な意味は `aria-label` / `title` に残し、補足指示と手書きメモの placeholder も短くした。
+- 判断: 履歴詳細の主役は文字起こし本文と議事録下書きであり、操作ボタンの説明が長いと v2 の軽いMacワークスペース感を損なう。機能発見性とアクセシビリティは補助属性に残し、可視文言は短い動詞へ寄せた。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx`、旧表示文言検索、`git diff --check -- src/routes/SessionDetail.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:40:06 JST
+
+- 作業: `v2-settings-transmission-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定パネル方針に合わせ、AI議事録プロバイダーと外部リアルタイム文字起こしの送信/費用/キー説明を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: AI議事録プロバイダーの説明を `送信前確認` / `端末内生成` へ短縮。文字起こしエンジンの title/note、外部Realtimeの注意文、APIキー非再表示文、AI議事録 radiogroup aria を短縮した。
+- 判断: 設定画面では外部送信・費用可能性・APIキー非再表示が分かれば判断できる。長い説明文を繰り返すと v2 のMac設定パネルらしい軽さを損なうため、判断材料だけを残した。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx`、旧文言検索、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:36:41 JST
+
+- 作業: `v2-transcript-log-copy-label-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中ログUI方針に合わせ、文字起こしログのカウント、コピー、トラック別、空状態の文言密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptDisplay` のログ/件数/コピー/トラック別/エラー/空状態の aria/title と表示文言を短縮。本文コピーの長い副作用説明、`ソース不明`、`文字起こしログ` などの重いラベルを小さな状態表示へ寄せた。
+- 判断: 録音中の主役は流れてくる発話本文であり、カウントやコピーの説明が長いと会議中の視線負荷が上がる。自分/相手側件数、コピー可否、音声未送信の透明性は残し、詳細説明は削る方がv2のミニマルなログ面に合う。
+- 検証: `npx --no-install prettier --check src/components/TranscriptDisplay.tsx`、旧文言検索、`git diff --check -- src/components/TranscriptDisplay.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:34:23 JST
+
+- 作業: `v2-audio-track-card-boundary-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、マイク/相手側音声カードの常時表示情報を分離トラックと録音透明性に必要な最小項目へ絞る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MicrophoneSection` と `SystemAudioSection` の境界グリッドを `トラック / 入力 / 字幕 / 送信` の4項目に整理。REC/保存/履歴/音声/指示/メモ/議事録など重複項目を常時表示から外し、録音/取得ボタン、デバイス選択、入力待ち、音声欠落、補足ノートの文言を短縮した。
+- 判断: ユーザーが録音中に確認すべきことは「自分/相手側のどちらか」「音が入っているか」「字幕へ接続しているか」「音声が外部送信されていないか」。保存や議事録導線は別画面で確認できるため、v2 のミニマルな録音サーフェスでは重複させない。
+- 検証: `npx --no-install prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx`、旧文言検索、`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:31:50 JST
+
+- 作業: `v2-model-selector-boundary-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定/録音準備UI方針に合わせ、Whisperモデル選択の常時表示情報と支援ラベルを短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: モデル境界グリッドを `モデル / 処理 / 送信` の3項目に整理し、変更可否の重複項目を外した。モデル選択、一覧取得、準備完了、確認、ダウンロード待機の aria/title と表示文言を短縮した。
+- 判断: Whisperモデル選択で常時必要なのは、選択中モデル、端末内処理、音声未送信の3点。変更可否や取得状態はselect/ボタン/進捗で表現できるため、v2 の小さな設定サーフェスでは重複表示しない方が理解しやすい。
+- 検証: `npx --no-install prettier --check src/components/ModelSelector.tsx`、旧文言検索、`git diff --check -- src/components/ModelSelector.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧文言検索の残存は `console.error` の診断文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:27:34 JST
+
+- 作業: `v2-transcription-control-rail-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、文字起こし操作面の状態レールと支援ラベルを必要最小限にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptionControls` の状態レールを REC / 字幕 / AI の3項目に整理し、保存・開始可否などの重複項目を常時表示から外した。文字起こし開始/再開、クリア、音声ソース、開始不可理由の aria/title も短くした。
+- 判断: 録音中の主要判断は「録音できるか」「字幕が動いているか」「AIノート/質問が使えるか」で足りる。保存やログ件数は別導線で確認できるため、v2 の小さな録音中サーフェスでは常時レールに並べない方が視認性が高い。
+- 検証: `npx --no-install prettier --check src/components/TranscriptionControls.tsx`、旧文言検索、`git diff --check -- src/components/TranscriptionControls.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:23:55 JST
+
+- 作業: `v2-meeting-prompt-label-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知UI方針に合わせ、会議検知バナーと録音中pillに残る長い aria/title を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 会議検知バナーの aria/title から検知元・内部エンジン・外部送信詳細・自動非表示説明を外し、`会議名を検知。録音を開始できます。` に整理。開始/閉じるラベル、録音中pill、AI送信pillの aria/title も短縮し、未使用 import を削除した。
+- 判断: 通知ウィンドウでは、ユーザーが必要とする判断は「この会議を録音するか」「録音せず閉じるか」だけ。詳細な検知元や状態説明は録音画面/設定で確認できるため、v2 の小さな通知UIでは削る方が自然。
+- 検証: `npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx`、旧文言検索、`git diff --check -- src/components/MeetingDetectedBanner.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:21:28 JST
+
+- 作業: `v2-settings-panel-copy-density`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、設定カテゴリ/文字起こし/音声/検出/AI議事録に残る説明過多な可視文言と aria/title を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定カテゴリ subtitle、一般/検出/音声カードの説明文、リアルタイム翻訳/録音トラック/検出ルール/AI議事録プロバイダーカードの aria/title、AI議事録オフ説明を短縮。AIプロバイダー選択の aria は説明文ではなくバッジ中心にした。
+- 判断: 設定画面では、選択対象・現在値・外部送信有無が分かれば十分で、プロダクト説明文を繰り返すと v2 の Mac 設定パネルらしい軽さを損なう。詳細説明は必要箇所の title や個別ノートに残し、常時表示/読み上げは短くした。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx`、旧文言検索、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:18:58 JST
+
+- 作業: `v2-session-list-library-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴ライブラリ方針に合わせ、履歴一覧に残る長い検索/エラー/行操作ラベルを短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴一覧取得エラーの本文から例外詳細を外し、詳細は `title` と `console.error` に寄せた。検索ラベル、空状態、検索一致なし表示、行ごとのコピー/Finder/レビュー操作の aria/title を短縮し、操作エラー本文も `保存場所を表示できませんでした` / `本文をコピーできませんでした` に統一した。
+- 判断: 履歴一覧は録音後レビューへの入口であり、ここでは「検索できる」「レビューを開く」「本文をコピー」「保存場所を表示」が即座に分かればよい。例外文字列や長い機能説明は v2 のミニマルなライブラリUIでは密度を上げるため抑えた。
+- 検証: `npx --no-install prettier --check src/routes/SessionList.tsx`、旧文言検索、`git diff --check -- src/routes/SessionList.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:16:24 JST
+
+- 作業: `v2-session-detail-minutes-label-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、履歴詳細の音声トラック/議事録作成領域に残る説明的な見出し・aria/title を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `分離トラック再生` を `音声トラック`、`議事録ワークスペース` を `議事録` に短縮。選択トラックコピー、補足指示、手書きメモ、下書き作成、テンプレート hover/aria、検索 aria の文言を短くし、主操作が「再生/コピー/下書き作成」だと分かる密度へ整理した。
+- 判断: 録音後UIでは、ユーザーは「音声を確認する」「文字起こしを探す」「議事録下書きを作る」を直列に行う。機能説明や実装寄りの文言を常時見せるより、見出しと操作を短く保った方が v2 の Mac ネイティブな最小サーフェスに近い。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx`、旧文言検索、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧文言検索の残存は生成プロンプト本文とコードコメントのみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:13:32 JST
+
+- 作業: `v2-recording-error-detail-suppression`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな録音中UI方針に合わせ、通知/録音/ライブ字幕周辺に残る低レベル例外詳細の画面露出を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 録音開始・相手側音声取得・文字起こし開始・ライブ字幕状態保存/同期・リングライト表示/非表示・会議検知バナー終了失敗のユーザー可視文言を短い状態表示へ変更。詳細な例外は `console.error` に残し、画面上の診断文を抑えた。
+- 判断: v2 の録音中UIでは、ユーザーに必要なのは「何ができなかったか」と「録音状態がどうなっているか」であり、例外文字列をそのまま出すと小さなMacサーフェスの密度が上がる。診断性はログで維持し、表示は操作判断に必要な情報に絞った。
+- 検証: `npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/utils/transcriptViewFormatters.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx`、可視エラー候補検索、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/utils/transcriptViewFormatters.ts src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:08:55 JST
+
+- 作業: `v2-live-history-settings-label-density`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな常駐/履歴/設定UI方針に合わせ、残っていた長い aria/title と画面上の例外詳細をさらに減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定の自動保存/音声トラック説明、録音中AIノート/質問欄の aria/title、履歴一覧の Finder 表示/文字起こしコピー失敗、録音画面の文字起こし設定取得失敗を短い状態表示へ変更。診断詳細は `console.error` または `title` に寄せた。
+- 判断: v2 の録音中/録音後UIでは、操作対象と状態が分かれば十分で、例外詳細や「どこで何に利用できるか」の長文は密度を上げる。必要な診断情報は残しながら、画面と支援技術向けラベルを短くした。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx src/routes/SessionList.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/routes/SettingsView.tsx src/routes/SessionList.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:06:13 JST
+
+- 作業: `v2-session-detail-review-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、履歴詳細の音声トラック/文字起こし/議事録ワークスペースに残る長い補助文と例外詳細を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 分離トラック再生の aria/title を短くし、音声トラック確認失敗の画面文言を `音声トラックを確認できませんでした` に統一。セッション本文取得失敗も短い表示へ変更。議事録テンプレート選択と議事録下書きカードの補助ラベルから目的文・件数列挙を外し、詳細は title または console に寄せた。
+- 判断: 録音後レビューでは、主導線は「どのトラックを開くか」「本文を検索/コピーするか」「議事録下書きを作るか」であり、低レベル例外やテンプレート目的の長い説明は常時読み上げ/表示に向かない。v2のミニマルなMac UIとして、画面上は状態だけを残した。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/routes/SessionDetail.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧文言検索の残存は `console.error` の診断文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:04:15 JST
+
+- 作業: `v2-status-copy-and-label-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな録音透明性に合わせ、メニューバー、常時REC、設定、確認用Controllerに残る長い説明・内部エラー詳細・英語見出しを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバーの `quiet capture` を `控えめ録音` に変更し、状態レールを番号+日本語ラベルへ整理。シェルエラーとController操作失敗は画面上では短くし、詳細は `console.error` に残した。常時RECインジケーターと設定画面の長い aria/title、Apple Speech 注意文、権限影響ラベルも短縮した。
+- 判断: v2の小さな常駐UIでは、録音状態・AI送信・次に開く場所だけが分かればよい。詳細な例外や長い説明は診断性を保つためログに寄せ、画面/支援技術向けの情報密度を下げた。
+- 検証: `npx --no-install prettier --check src/App.tsx src/components/RingLightWindow.tsx src/components/ControllerWindow.tsx src/components/PermissionBanner.tsx src/routes/SettingsView.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/App.tsx src/components/RingLightWindow.tsx src/components/ControllerWindow.tsx src/components/PermissionBanner.tsx src/routes/SettingsView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 07:01:28 JST
+
+- 作業: `v2-visible-color-token-cleanup`
+- 目的: `meet-jerky-desktop-v2.pen` のカラーパレットに合わせ、録音中/履歴/設定の可視UIに残る古い直値カラーを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 文字起こしエラー、メニューバーのフッター/空状態/初回起動サブアクション、設定タイトルバー/ブランドアイコン/音声チップ/検出ルールプレビュー、Controllerエラー状態の色指定をv2変数またはv2変数由来の `color-mix` に置換した。macOSのウィンドウ交通信号色はOS慣習として維持した。
+- 判断: 見た目の構造を増やさず、古い青灰/赤/オレンジの直値だけをv2トークンに寄せることで、現行Meet Jerkyのエッセンスを保ちながら画面全体の一貫性を上げられる。
+- 検証: `npx --no-install prettier --check src/App.css`、旧直値カラー検索、`git diff --check -- src/App.css`、`git diff --check -- AGENT_LOG.md src/App.css`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:57:47 JST
+
+- 作業: `v2-accessible-label-and-copy-error-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな録音中/履歴/設定UI方針に合わせ、長い補助ラベルとコピー失敗表示から過剰な説明・例外詳細を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 自分/相手側トラック境界、トラック別レビュー、翻訳ビュー、会議ノート、分離トラック再生、議事録下書き、検出ルール、AI議事録プロバイダーの aria-label を短縮。ライブ会議ノート/AI質問コピー失敗と macOS 設定を開く失敗は、画面上では短い文言にし、詳細は `console.error` または `title` に寄せた。
+- 判断: v2 の小さなサーフェスでは、補助ラベルにも「状態・件数・送信有無」だけがあれば十分。長い説明や入力メモ全文、例外詳細は認知負荷を上げるため、診断性を残しながら画面/支援技術向けの情報密度を落とした。
+- 検証: `npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/TranscriptDisplay.tsx src/routes/SessionDetail.tsx src/routes/SettingsView.tsx src/components/PermissionBanner.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx src/routes/SettingsView.tsx src/components/PermissionBanner.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧文言検索の残存は `console.error` の診断文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:52:54 JST
+
+- 作業: `v2-settings-and-model-error-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定/録音前UI方針に合わせ、設定保存、APIキー、マイク一覧、Whisperモデル一覧/ダウンロード、保存済み履歴操作のエラー表示から例外詳細を外す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定保存/読み込み、APIキー保存/削除、マイク一覧取得、Whisperモデル一覧取得/ダウンロード、保存済み履歴を開く失敗のユーザー可視文言を短い状態表示へ変更。詳細な例外メッセージは `console.error` または `title` に寄せた。
+- 判断: v2 の設定画面と録音前UIでは、ユーザーが必要とするのは「保存できない」「一覧を取得できない」「ダウンロードできない」という判断であり、例外詳細を本文に出すと密度が上がる。診断性は残しつつ、画面文言はMacアプリらしい短い表現へ寄せた。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx src/components/ModelSelector.tsx src/components/MicrophoneSection.tsx src/routes/TranscriptView.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/routes/SettingsView.tsx src/components/ModelSelector.tsx src/components/MicrophoneSection.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧文言検索の残存は `console.error` の診断文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:50:28 JST
+
+- 作業: `v2-live-and-start-error-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ会議ノート、Whisperモデル確認、録音開始/停止エラーに残る長い説明と内部詳細を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ会議ノートの `決定候補` / `ToDo候補` / `要点候補` を `決定事項` / `ToDo` / `要点` に整理。Whisperモデル確認失敗は画面上では `確認できません` に短縮し、詳細は title または console に寄せた。文字起こし停止、録音開始/停止、履歴保存、文字起こしコピー失敗のユーザー可視文言も短くした。
+- 判断: 録音中UIでは、推定であることよりも「要点・決定・ToDoが見える」「録音できない/保存できない」が即座に分かることが重要。低レベル例外や後片付け失敗の詳細は画面密度を上げるため、診断情報は console に残した。
+- 検証: `npx --no-install prettier --check src/components/ModelSelector.tsx src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptDisplay.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/components/ModelSelector.tsx src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptDisplay.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: 旧文言検索の残存は `console.error` の診断文のみ。Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:48:10 JST
+
+- 作業: `v2-permission-and-start-blocker-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルなMac UI方針に合わせ、権限バナーと録音/文字起こし開始ブロック理由に残る内部語・長文説明を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 権限バナーの `Gate check` / `Needs manual review` を日本語の短い状態表示へ置換し、権限取得失敗・許可案内・AI送信範囲の説明を短縮。録音/文字起こし開始不可理由、Apple Speech の片側トラック制約、入力待ちラベル、検出ルール説明、保存場所表示失敗、APIキー確認失敗も短いユーザー可視文言に整理した。
+- 判断: 録音前後のUIでは「何がブロックしているか」と「どこを許可/登録すべきか」が分かれば十分で、実装寄りの診断詳細や長い代替案はv2の密度に合わない。録音透明性は残しつつ、判断に必要な語だけに絞った。
+- 検証: `npx --no-install prettier --check src/components/PermissionBanner.tsx src/utils/meetingStartHelpers.ts src/utils/transcriptionSourceHelpers.ts src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/SettingsView.tsx src/routes/TranscriptView.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/components/PermissionBanner.tsx src/utils/meetingStartHelpers.ts src/utils/transcriptionSourceHelpers.ts src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/SettingsView.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:43:29 JST
+
+- 作業: `v2-review-and-api-status-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー/設定UI方針に合わせ、履歴詳細とAPIキー設定に残る詳細すぎる状態語・エラー文を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 履歴詳細のAI議事録状態から `端末内候補` を外し `端末内・外部送信なし` に統一。下書き保存、本文コピー、議事録指示/下書きコピー、トラック別文字起こしコピー、音声トラックを開く失敗表示は、画面上では短いエラー文にし、詳細は `console.error` に移した。外部APIキー設定の状態ラベルと確認失敗表示も `登録済み` / `確認できませんでした` の短い表現に整理した。
+- 判断: 録音後レビューでは、ユーザーが必要とするのは「生成できるか」「外部送信があるか」「コピー/保存に失敗したか」の判断であり、低レベルの例外詳細は画面密度を上げるだけになりやすい。診断性はログに残しつつ、v2のミニマルなレビュー導線に寄せた。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx src/routes/SettingsView.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/routes/SessionDetail.tsx src/routes/SettingsView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:40:40 JST
+
+- 作業: `v2-live-surface-accessible-label-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、会議検知バナーとライブ文字起こしウィンドウの補助ラベルから操作説明や内部状態の過剰な列挙を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 会議検知バナーの aria-label からドラッグ/Escape/自動非表示/エンジン列挙を外し、検知元・未録音・開始可能・送信状態に絞った。録音中 pill とライブ字幕のコンパクトREC/トラックラベルも、全トラック詳細列挙ではなく `visibleTrackSummary` 中心に短縮。ライブ字幕を閉じる/開く操作も短い文言に変更し、音声 drop 監視失敗の画面文言を `音声欠落を確認できませんでした` に統一した。
+- 判断: v2 の小さな録音中サーフェスでは、ショートカットや移動方法より「録音しているか」「どのトラックか」「AI送信があるか」が優先される。補助ラベルも主判断に合わせて短くすることで、Macらしい控えめなUIに寄せた。
+- 検証: `npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx`、旧文言検索、`git diff --check -- AGENT_LOG.md src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:36:25 JST
+
+- 作業: `v2-runtime-status-copy-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、録音中・通知・ライブ字幕に残る実装寄りのエラー/状態語を短くし、Macアプリらしい最小限の状態表示に寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 自分/相手側トラックの `サンプル破棄` 表示を `音声欠落` に変更。ライブ字幕のAIプロバイダー未設定を `AIオフ` に変更し、端末内AIの説明を短縮。会議検知バナー、ライブ字幕、文字起こし表示、録音画面のイベント受信/形式不正エラーは、画面上では `確認できませんでした` 系の短い文に整理し、詳細理由は `console.error` に移した。外部Realtimeの費用注意も `利用量に応じた費用` に統一した。
+- 判断: v2 の録音中UIでは、内部イベント名やペイロード形式ではなく、ユーザーが次に見るべき状態だけを伝えるほうが主目的に合う。録音の透明性と診断性を両立するため、画面文言は短くしつつ開発者向け詳細はログに残した。
+- 検証: `npx --no-install prettier --check src/routes/TranscriptView.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptDisplay.tsx src/components/MeetingDetectedBanner.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx`、`git diff --check -- ...`、`npm run build` 成功。旧文言検索ではユーザー可視文言の残存なし。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。コミットなし。
+
+## 2026-05-30 06:33:41 JST
+
+- 作業: `v2-model-and-external-risk-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、Whisperモデル取得と外部サービス注意書きに残る実装寄り・長文の画面表示を短くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ModelSelector` のユーザー可視エラーを `ダウンロード状況を確認できませんでした` / `ダウンロード結果を確認できませんでした` に短縮し、形式不正の詳細は `console.error` 側に移した。設定画面では外部Realtimeの費用注意を自然な表現にし、Apple Speech の片側トラック制約と API キー保存説明を短くした。
+- 判断: v2 のミニマルなMac UIでは、通常ユーザーにイベント通知や形式不正の詳細を読ませるより、次に何が不安定かだけを示すほうが理解しやすい。一方で診断性は落とさないため、詳細は開発ログへ残した。
+- 検証: `npm run prettier -- --check ...` は script 不在で失敗したため、`npx --no-install prettier --check src/components/ModelSelector.tsx src/routes/SettingsView.tsx` に切り替えて成功。`git diff --check -- src/components/ModelSelector.tsx src/routes/SettingsView.tsx AGENT_LOG.md`、`npm run build` 成功。課金操作・依存追加なし。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。依存追加なし。コミットなし。
+
+## 2026-05-30 06:30:47 JST
+
+- 作業: `v2-transcription-controls-state-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の録音前UI方針に合わせ、文字起こし操作レールの状態語を、内部的な安全/ソース確認表現からユーザーが判断しやすい録音準備・字幕・AI・保存の表現へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptionControls` の `RECソース` を `録音ソース` に変更し、REC状態を `確認済み/要録音` から `準備OK/要確認` に変更。AI補助説明を `送信範囲を確認` / `AIノート待機` から `確認して使う` / `録音後に表示` に整理。保存状態を `履歴化対象` / `このMacへ保存` から `履歴に保存` / `録音後に保存` に変更。`安全` カードは `開始` に変更し、表示ログクリアは `文字起こしをクリア` に変更した。
+- 判断: 録音開始前のUIでは、実装由来の「安全」や「RECソース」より、録音できるか、字幕が出るか、AI/保存がいつ使えるかを短く示すほうが v2 のミニマルで直感的な体験に合う。
+- 検証: `rg -n 'RECソース|安全|送信範囲|AIノート待機|履歴化対象|このMacへ保存|表示ログ|文字起こしをクリア|準備OK|要確認|録音ソース' src/components/TranscriptionControls.tsx` で意図した新文言のみ残存。`npx --no-install prettier --check src/components/TranscriptionControls.tsx`、`git diff --check -- src/components/TranscriptionControls.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:28:33 JST
+
+- 作業: `v2-session-list-entry-copy-minimal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴一覧の入口文言から機能列挙を減らし、履歴レビューと議事録作成の主導線を明確にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` の空状態 aria-label/title を、会議検知・REC・音声再生・補足指示・メモなどの列挙から、録音後に履歴レビューと議事録作成へ進める説明へ短縮。録音後レビューリンクの aria-label/title も、チャット形式・補足指示・手書きメモ・AI送信確認の列挙から、文字起こし、音声トラック、議事録作成を確認する表現へ整理した。
+- 判断: 履歴一覧は録音後UIの入口であり、全機能を説明するより「レビューを開く」判断を支える情報だけで十分。詳細機能は履歴詳細側で段階的に見せるほうが、v2のミニマルで直感的な設計に合う。
+- 検証: `rg -n 'REC表示|補足指示|手書きメモ|AI送信確認|チャット形式|録音後レビューを開く|文字起こし履歴はまだありません' src/routes/SessionList.tsx` で意図した短縮文言のみ残存。`npx --no-install prettier --check src/routes/SessionList.tsx`、`git diff --check -- src/routes/SessionList.tsx`、`npm run build` 成功。
+- 注意: Finder 表示と本文コピーは履歴行の実操作として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:26:59 JST
+
+- 作業: `v2-session-detail-status-wording`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴詳細の音声トラック/議事録下書き周辺に残る曖昧な状態語を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の音声トラック状態を `接続済み` / `未接続` から `再生可` / `未保存` に変更。AI議事録オフ状態を `未接続` ではなく `AIオフ` と表示。ユーザー可視の `ローカル議事録下書き` 表現を `議事録下書き` に短縮し、作成・コピー・プレビューの aria-label/title/copyStatus も同じ表現へ揃えた。
+- 判断: 録音後レビューでは、接続状態より「音声トラックを再生できるか」「AIを使うか」が主判断になる。`未接続` は未保存・AIオフ・設定未完了の区別が曖昧なため、v2のミニマルで直感的な状態語へ置き換えた。
+- 検証: `rg -n 'ローカル議事録|未接続|接続済み|AIオフ|再生可|未保存' src/routes/SessionDetail.tsx` で意図した状態語のみ残存。`npx --no-install prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:25:03 JST
+
+- 作業: `v2-accessible-label-density-reduction`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルなMac UI方針に合わせ、録音中/録音後の補助ラベルに詰め込まれていた機能一覧型の長文を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MicrophoneSection` と `SystemAudioSection` の取得境界 aria-label を、機能一覧ではなく音量・取得状態・AI未送信へ圧縮。`TranscriptDisplay` のトラック別レビュー aria-label をトラック件数とAI未送信に整理。`LiveCaptionWindow` のコンパクトRECピル aria-label から重複する文字起こし状態説明を削り、REC・トラック・AI未送信に絞った。`SessionDetail` の議事録下書き aria-label はテンプレート、文字起こし件数、メモ、音声未送信に整理し、不要になった `aiMinutesProviderLabels` を削除した。
+- 判断: 録音状態とAI送信有無の透明性は維持する必要があるが、スクリーンリーダー向けラベルに保存・履歴・音声・指示・メモ・議事録などの全導線を列挙すると、v2の小さなサーフェスでの理解を妨げる。状態確認に必要な情報だけを残すほうが、Macらしい控えめなUIに合う。
+- 検証: `npx --no-install prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx`、`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/TranscriptDisplay.tsx src/components/LiveCaptionWindow.tsx src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:21:30 JST
+
+- 作業: `v2-external-transcription-copy-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、外部文字起こしエンジンの説明から技術寄りの `API` / `クラウド` / `未接続` 表現を減らし、送信有無と確認に寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の文字起こしエンジン説明を `クラウドエンジン` から `外部サービス` に変更し、`OpenAI Realtime API` / `ElevenLabs Scribe v2 Realtime` を短いサービス名へ整理。外部エンジンの補足は `音声を外部サービスへ送信、送信前に確認` に統一した。`RingLightWindow` の常時RECインジケーター説明は `ライブウィンドウ` ではなく `字幕ウィンドウ` に変更。プレビュー履歴の `未接続状態` 表現も `オフを初期状態` / `送信前の確認` に変更した。
+- 判断: 外部送信の透明性は維持する必要があるが、設定画面の主判断は技術名や接続状態ではなく「端末内か、外部サービスへ送るか、送信前に確認されるか」。v2のミニマルなMac UIに合わせ、必要なリスク情報だけ残して読み替え負荷を下げた。
+- 検証: `rg -n 'クラウドエンジン|OpenAI Realtime API|ElevenLabs Scribe v2 Realtime|API キーが必要|外部送信あり|ライブウィンドウ|未接続状態' src/routes/SettingsView.tsx src/components/RingLightWindow.tsx src/utils/previewSessionData.ts` で該当なし。`npx --no-install prettier --check src/routes/SettingsView.tsx src/components/RingLightWindow.tsx src/utils/previewSessionData.ts`、`git diff --check -- src/routes/SettingsView.tsx src/components/RingLightWindow.tsx src/utils/previewSessionData.ts`、`npm run build` 成功。
+- 注意: `API キー` は外部サービス認証の設定項目として必要な箇所では維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:18:39 JST
+
+- 作業: `v2-ai-provider-settings-copy-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、AI議事録プロバイダーの文言を「接続状態」より「送信有無と確認」に寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の AI 議事録プロバイダーで、外部AIを `確認あり` / `生成時に内容を確認して送信` に統一。Ollama はモデル名を前面に出さず `ローカル・Ollama` / `端末内で生成・外部送信なし` に整理。AIオフは `オフ` / `録音と文字起こしは継続、AI生成だけ使いません` とし、概要カードも `使わない` / `AI生成オフ` へ変更した。文字起こしエンジンの外部送信表示も `外部API` から `外部サービス` に変更し、APIキー保存説明は `Keychain` を前面に出さず安全に保存される表現へ揃えた。
+- 判断: v2のミニマルな設定画面では、APIキー未設定などの実装都合より、録音・文字起こし・AI生成のどこで外部送信が起きるかを短く判断できることが重要。プロダクトコンセプトの安心感と送信透明性を優先し、課金や接続を示唆する表現を弱めた。
+- 検証: `rg -n "Keychain|外部 API|外部API|APIキー登録後|APIキーが必要・クラウド|端末内処理・API費用なし|未接続|端末内候補|llama3\\.1|生成時に外部送信を確認|badge: \\\"現在\\\"" src/routes/SettingsView.tsx` で該当なし。`npx --no-install prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:15:52 JST
+
+- 作業: `v2-live-caption-action-hierarchy-copy`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こしウィンドウで主目的の文字起こしと録音状態をより明確にし、AI質問は実際の挙動どおり送信ではなく確認待ちとして扱う。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ文字起こしのタブ表示を `統合` から `文字起こし` に変更。AIノートのトグル表示を `ON/OFF` から `オン/オフ` に変更。コンパクト表示の `AIなし` / `質問待機` / `AIローカル` を `AIオフ` / `確認待ち` / `端末内AI` に変更。AI質問の保持状態を `送信待ち` / `下書き` ではなく `確認待ち` として表示・aria-label・titleを揃えた。`ローカル要点` は `要点候補` に変更した。
+- 判断: 録音中UIの主目的は、録音中であること、リアルタイム文字起こし、必要時の翻訳/AIノートを迷わず確認すること。未送信の質問を `送信待ち` と表すと外部送信が起きる印象を与えるため、v2の透明性方針に合わせて `確認待ち` に寄せた。
+- 検証: `rg -n "統合|AIなし|質問待機|AIローカル|>ON<|>OFF<|送信待ち|送信前確認用|ローカル要点|下書き" src/components/LiveCaptionWindow.tsx` で該当なし。`npx prettier --check src/components/LiveCaptionWindow.tsx`、`git diff --check -- src/components/LiveCaptionWindow.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:13:49 JST
+
+- 作業: `v2-audio-track-copy-consistency`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中/録音後UI方針に合わせ、補助説明やスクリーンリーダー向け文言でも `音声ファイル` ではなく、ユーザーが操作する対象としての `音声トラック` に統一する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow`、`MicrophoneSection`、`SystemAudioSection`、`TranscriptDisplay`、`PermissionBanner`、`SessionList`、`previewSessionData` の補助文言を `音声トラック` / `保存名` / `自分と相手側` 中心に変更。録音中のRECコンパクト表示、権限影響、トラックレビュー、プレビュー履歴の説明でも、実装上のファイルやパスを前面に出さない表現へ揃えた。
+- 判断: ユーザー要求は「スピーカーのみ、マイクのみ、両方の再生」だが、UI上はファイル管理ではなくトラック確認として理解できるほうが v2 のミニマルで直感的な情報設計に合う。録音の透明性を損なわないため、AIへ送られない対象は `音声トラック未送信` として明示を維持した。
+- 検証: `rg -n '音声ファイル|録音ファイルパス|マイクとスピーカー|保存済みMarkdown|ファイル ' src/components src/routes src/utils --glob '!**/*.css'` で該当なし。`npx prettier --check src/routes/SessionList.tsx src/components/PermissionBanner.tsx src/components/TranscriptDisplay.tsx src/components/SystemAudioSection.tsx src/components/MicrophoneSection.tsx src/components/LiveCaptionWindow.tsx src/utils/previewSessionData.ts`、`git diff --check -- src/routes/SessionList.tsx src/components/PermissionBanner.tsx src/components/TranscriptDisplay.tsx src/components/SystemAudioSection.tsx src/components/MicrophoneSection.tsx src/components/LiveCaptionWindow.tsx src/utils/previewSessionData.ts`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:11:08 JST
+
+- 作業: `v2-history-audio-track-language`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴詳細/設定UI方針に合わせ、保存形式や実ファイル名を前面に出さず、ユーザーが理解する `履歴本文` と `音声トラック` を中心にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定画面の `音声ファイル再生` を `音声トラック再生` に変更し、説明から `保存済みMarkdown` と `mic/speaker/mix` を外して `自分` / `相手側` / `両方` の確認に整理。書き出し形式の主表示を `Markdown` から `履歴本文` に変更。履歴詳細の再生タブを `マイク` / `スピーカー` から `自分` / `相手側` に変更し、音声関連の説明を `音声ファイル` から `音声トラック` に変更。履歴検索の一致ラベルを `ファイル名` から `保存名` に変更した。
+- 判断: 実装上の保存形式やファイル構成は必要だが、v2の録音後レビューでは「どの発話/音声トラックを確認するか」が主目的。プロダクトコンセプト上の自分/相手側表現に寄せることで、検索・コピー・音声確認・議事録生成の流れがより直感的になる。
+- 検証: `rg -n "音声ファイル|保存済みMarkdown|Markdown|マイク \\$|スピーカー|mix音声|ファイル名" src/routes/SessionDetail.tsx src/routes/SettingsView.tsx src/utils/sessionListHelpers.tsx` でユーザー可視の残存なし、残りは実装関数名/型名のみ。`npx prettier --check src/routes/SettingsView.tsx src/routes/SessionDetail.tsx src/utils/sessionListHelpers.tsx`、`git diff --check -- src/routes/SettingsView.tsx src/routes/SessionDetail.tsx src/utils/sessionListHelpers.tsx`、`npm run build` 成功。
+- 注意: `VTT` / `SRT` / `JSON` は形式名として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:08:30 JST
+
+- 作業: `v2-history-copy-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、履歴画面と保存完了表示の主要文言からファイル管理感を減らし、文字起こし履歴を検索・確認する体験を前面に出す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` の検索説明/プレースホルダーを `ファイル名` から `保存名` に変更し、エラーや aria-label の `履歴ファイル操作` を `履歴操作` / `文字起こし履歴の操作` に整理。`TranscriptView` の保存完了表示を `履歴ファイルを保存しました` から `文字起こし履歴を保存しました` に変更し、Finder操作は `保存場所を Finder で表示` と表現した。
+- 判断: 録音後の主目的はファイル管理ではなく、履歴レビュー、検索、コピー、音声確認、議事録生成である。保存場所を開く機能は維持しつつ、主要ラベルを履歴中心に寄せるほうが v2 のミニマルで直感的な情報設計に合う。
+- 検証: `rg -n "履歴ファイル|保存済み履歴ファイル|ファイル操作|ファイル名" src/routes/SessionList.tsx src/routes/TranscriptView.tsx` で該当なし。`npx prettier --check src/routes/SessionList.tsx src/routes/TranscriptView.tsx`、`git diff --check -- src/routes/SessionList.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。
+- 注意: `Finder` と `macOS の既定アプリ` は実際の保存場所操作を表すため維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:06:56 JST
+
+- 作業: `v2-controller-surface-copy-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の確認用UIでも、開発者向けの「デバッグ」「送信」「窓」表現を前面に出さず、通知開始・メニューバー録音・録音中UIという体験単位で直感的に扱えるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` のタイトルを `v2確認パネル` に変更し、操作ラベルを `Zoom検知を再現`、`通知を表示`、`字幕を流す`、`録音開始を再現` など結果ベースの表記へ整理。確認用字幕/エラー文と録音開始元ラベルも `v2確認パネル` / `確認パネル` 表記に揃えた。
+- 判断: 検証用の画面でも v2 の実体験確認時にはユーザー可視になるため、内部イベント操作をそのまま見せるより、目的優先・行動階層優先のラベルに寄せるほうが Mac アプリらしい軽さと分かりやすさに合う。
+- 検証: `rg -n "デバッグ|コントローラー|送信|窓表示|窓非表示|バナー|Rust の debug|>[^<]*(送信|窓|バナー|デバッグ|コントローラー)[^<]*<" src/components/ControllerWindow.tsx src/utils/controllerActions.ts src/utils/meetingStartRequest.ts` でユーザー可視の内部語残存なし、残りは `送信確認` の文脈のみ。`npx prettier --check src/components/ControllerWindow.tsx src/utils/controllerActions.ts src/utils/meetingStartRequest.ts`、`git diff --check`、`npm run build` 成功。
+- 注意: 関数名の `emit` や ring-light の `soft` / `bright` / `off` は実装識別子・イベント値として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:03:22 JST
+
+- 作業: `v2-controller-action-label-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の検証導線でも、内部イベント名やモード名を前面に出さず、何を確認する操作かが直感的に分かる表示にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` の `検出 emit` / `表示要求 emit` / `録音開始要求 emit` を `...を送信` 表記へ変更し、リングライトの `soft` / `bright` / `off` 表示を `控えめに表示` / `強調表示` / `消灯` に変更。完了ステータス `OK:` を `完了:` に、説明文の `Rustコマンド/イベント` を `実際のアプリ経路` に変更した。
+- 判断: 検証用画面でも v2 の体験確認時にはユーザー可視となるため、内部実装語より操作結果ベースの日本語ラベルに寄せるほうが、Macアプリらしい軽量で直感的な確認導線になる。
+- 検証: `rg -n 'emit|soft|bright|off|OK:|Rustコマンド|>[^<]*(emit|soft|bright|off|OK)[^<]*<' src/components/ControllerWindow.tsx` で表示文字列の残存なし、残りは関数名/イベントモード値のみ。`npx --no-install prettier --check src/components/ControllerWindow.tsx`、`git diff --check -- src/components/ControllerWindow.tsx`、`npm run build` 成功。
+- 注意: 実装識別子とイベントモード値としての `emit` / `soft` / `bright` / `off` は維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:01:56 JST
+
+- 作業: `v2-controller-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の検証導線でも、v2 の日本語中心で直感的なUI方針から外れる英語見出しを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ControllerWindow` の `Detect prompt`、`v2 scenarios`、`meeting-prompt` / `live-caption` / `ring-light` 付きグループ名を、日本語の `検知通知`、`v2 シナリオ`、`会議検知通知`、`ライブ字幕`、`常時RECインジケーター` に変更。録音開始要求の表示元ラベル `Controller` を `検証コントローラー` に変更した。
+- 判断: 検証用ウィンドウでも v2 の通知開始、メニューバー開始、録音中UIを確認するためにユーザー可視となる。内部ウィンドウ名より、実際に確認する体験名で表すほうが目的優先・認知負荷低減に合う。
+- 検証: `rg -n 'v2 scenarios|Detect prompt|meeting-prompt|live-caption|ring-light|Controller' src/components/ControllerWindow.tsx src/utils/meetingStartRequest.ts` でユーザー可視文字列は残らず、識別子のみ残存。`npx --no-install prettier --check src/components/ControllerWindow.tsx src/utils/meetingStartRequest.ts`、`git diff --check -- src/components/ControllerWindow.tsx src/utils/meetingStartRequest.ts`、`npm run build` 成功。
+- 注意: 関数名 `ControllerWindow` / `markControllerMeetingStartRequest` は実装識別子として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 06:00:25 JST
+
+- 作業: `v2-menu-and-glossary-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音/設定UI方針に合わせ、ユーザー可視の短縮英語と用語サンプルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: メニューバー録音ポップオーバーのトラックアイコン `MIC` / `SYS` を `自分` / `相手` に変更し、2文字表示に合わせてアイコン幅を 22px から 28px に調整。設定画面の単語登録サンプル `roadmap` / `QBR` / `add` を `ロードマップ` / `四半期レビュー` / `追加` に変更した。
+- 判断: v2 ではマイク/システム音声の内部語より、プロダクトコンセプト上の `自分` / `相手側` のほうが直感的。用語登録サンプルも日本語UI内では日本語の会議語彙に寄せるほうが、設定画面の認知負荷を下げる。
+- 検証: `rg -n ">(?:MIC|SYS|roadmap|QBR|add)<|\\b(MIC|SYS)\\b" src/routes src/components --glob '!**/*.css'` で参照なし、`npx --no-install prettier --check src/App.css src/routes/SettingsView.tsx src/routes/TranscriptView.tsx`、`git diff --check -- src/App.css src/routes/SettingsView.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。
+- 注意: `URL`、`API`、`VTT/SRT/JSON`、`OpenAI` などの形式名・固有名は維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:59:10 JST
+
+- 作業: `v2-live-transcript-save-pill-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム文字起こしの発話メタ情報に残っていた英語の状態ピルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `TranscriptDisplay` の発話行メタ情報に表示していた `Save` ピルを `保存` に変更した。
+- 判断: 録音中ウィンドウは短い状態語が並ぶため、英語の `Save` は他の `自分` / `相手側` / `保存` / `履歴` 表記と混在して認知負荷になる。保存状態の意味は残し、v2 の日本語中心のミニマルUIへ揃えた。
+- 検証: `rg -n ">[^<]*\\bSave\\b[^<]*<|\\bSave\\b" src/components/TranscriptDisplay.tsx` で参照なし、`npx --no-install prettier --check src/components/TranscriptDisplay.tsx`、`git diff --check -- src/components/TranscriptDisplay.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:57:51 JST
+
+- 作業: `v2-whisper-model-label-clarity`
+- 目的: `meet-jerky-desktop-v2.pen` の設定/録音UI方針に合わせ、Whisper モデル選択をモデル名だけでなく速度・精度の判断ができる表記にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `modelSelectorHelpers` に既知の Whisper モデル名を `Tiny（最軽量）`、`Base（標準）`、`Small（軽量高精度）`、`Medium（高精度）`、`Large v3（最高精度）` として表示する変換を追加。録音画面の `ModelSelector`、設定画面の Whisper モデル選択、ブラウザプレビュー用モデル一覧を同じ表記へ揃えた。
+- 判断: モデル名は固有識別子として残しつつ、日本語の短い性格づけを付けることで、設定画面と録音前操作でユーザーが速度・精度のトレードオフを直感的に選べる。外部送信なしの境界表示やダウンロード状態は維持。
+- 検証: `rg -n 'label: "(Tiny|Base|Small|Medium|Large v3)"|displayName: "(Tiny|Base|Small|Medium|Large v3)"|model\\.displayName' src/components/ModelSelector.tsx src/routes/SettingsView.tsx src/utils/previewAppData.ts src/utils/modelSelectorHelpers.ts` で直接表示漏れなし、`npx --no-install prettier --check src/components/ModelSelector.tsx src/routes/SettingsView.tsx src/utils/previewAppData.ts src/utils/modelSelectorHelpers.ts`、`git diff --check -- src/components/ModelSelector.tsx src/routes/SettingsView.tsx src/utils/previewAppData.ts src/utils/modelSelectorHelpers.ts`、`npm run build` 成功。
+- 注意: `Whisper` と `Tiny/Base/Small/Medium/Large v3` はモデル名として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:56:29 JST
+
+- 作業: `v2-preview-session-notes-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴詳細UI方針に合わせ、プレビュー本文に残っていた英語の補足見出しと内部語を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `previewSessionData` の `## Notes` を `## 補足メモ` に、`v2 palette: paper / ink / amber / blue` を `v2 の紙色、墨色、アンバー、ブルー` に、`AI provider` と `UI 導線` を日本語UIの表記へ変更した。
+- 判断: プレビュー本文は履歴詳細でそのまま読まれるため、内部メモの英語表記は録音後レビューの没入感を損なう。固有名の `Meet Jerky v2` や `AI` は維持し、作業語彙だけを日本語へ寄せた。
+- 検証: `rg -n "## Notes|v2 palette|AI provider|UI 導線" src/utils/previewSessionData.ts` で参照なし、`npx --no-install prettier --check src/utils/previewSessionData.ts`、`git diff --check -- src/utils/previewSessionData.ts`、`npm run build` 成功。
+- 注意: `src/utils/previewSessionData.ts` は未追跡ファイルのため通常の `git diff` には表示されない。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:55:05 JST
+
+- 作業: `v2-preview-session-sample-title-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴UI方針に合わせ、プレビュー履歴リストに残っていた英語のサンプル会議名を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `previewSessionData` の `Weekly Sync - 2026-05-28 11:00` を `週次定例 - 2026-05-28 11:00` に、`Customer Demo - 2026-05-27 13:00` を `顧客デモ - 2026-05-27 13:00` に変更した。検索本文の見出しも同じ表記へ揃えた。
+- 判断: 履歴タイトルはユーザー可視の主要ラベルであり、v2 の日本語中心のミニマルUIでは英語のサンプル会議名がノイズになる。ファイルパスの英語スラッグは内部パスとして維持し、表示文言だけを対象にした。
+- 検証: `rg -n "Weekly Sync|Customer Demo" src/utils/previewSessionData.ts` で参照なし、`npx --no-install prettier --check src/utils/previewSessionData.ts`、`git diff --check -- src/utils/previewSessionData.ts`、`npm run build` 成功。
+- 注意: `src/utils/previewSessionData.ts` は未追跡ファイルのため通常の `git diff` には表示されない。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:53:02 JST
+
+- 作業: `v2-preview-session-title-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴UI方針に合わせ、ブラウザプレビュー時に表示され得るサンプル履歴タイトルの英語表記を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `previewSessionData` の `Product Review / Meet Jerky v2 - 2026-05-29 10:30` を `プロダクトレビュー / Meet Jerky v2 - 2026-05-29 10:30` に変更した。
+- 判断: プレビュー履歴は実装確認時にユーザー可視となるため、履歴ライブラリの日本語UIに合わせてサンプル会議名も自然な日本語へ寄せた。製品名 `Meet Jerky v2` は固有名として維持。
+- 検証: `rg -n "Product Review" src/utils/previewSessionData.ts` で参照なし、`npx --no-install prettier --check src/utils/previewSessionData.ts`、`git diff --check -- src/utils/previewSessionData.ts`、`npm run build` 成功。
+- 注意: `src/utils/previewSessionData.ts` は未追跡ファイルのため通常の `git diff` には表示されない。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:51:39 JST
+
+- 作業: `v2-settings-translation-language-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、設定画面の翻訳先に残っていた英語表記を録音中ウィンドウと揃える。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の言語候補とリアルタイム翻訳カードで `English` を `英語` に変更した。
+- 判断: 翻訳設定はユーザー可視の説明であり、プロバイダー名やモデル名ではない。ライブ字幕側と同じく日本語UIとして `英語` に統一するほうが認知負荷が低い。
+- 検証: `rg -n "English|翻訳先.*English|English翻訳" src/routes/SettingsView.tsx` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:50:25 JST
+
+- 作業: `v2-minutes-draft-heading-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録指示とローカル下書きに表示され得る内部語の見出しを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の議事録指示本文で `## Prompt` を `## 議事録テンプレート` に、ローカル議事録下書きで `Prompt:` を `議事録テンプレート:`、`## Source` を `## 元データ` に変更した。
+- 判断: ローカル下書きは画面上でプレビューされるため、英語の内部構造語よりも日本語の作業語彙へ揃えるほうが、履歴レビューと議事録作成の流れを直感的に保てる。
+- 検証: `rg -n "## Prompt|Prompt:|## Source|Source" src/routes/SessionDetail.tsx` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:49:13 JST
+
+- 作業: `v2-live-translation-target-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム翻訳の翻訳先説明に残っていた英語表記を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` の翻訳先ラベルで `English` を `英語` に変更した。短縮表示 `EN` は小さな切替ボタンの言語コードとして維持した。
+- 判断: 翻訳先のアクセシビリティ文言は日本語UIとして `英語` のほうが直感的。ボタン上の `EN` は限られた録音中ウィンドウで言語コードとして機能するため維持した。
+- 検証: `rg -n "English|翻訳先を English|English翻訳" src/components/LiveCaptionWindow.tsx` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx`、`git diff --check -- src/components/LiveCaptionWindow.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:48:03 JST
+
+- 作業: `v2-model-boundary-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こしモデル境界グリッドに残っていた英語の短縮ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ModelSelector` の `Engine` / `Model` / `Send` / `Lock` を `処理` / `モデル` / `送信` / `変更` に変更した。
+- 判断: 端末内処理、外部送信なし、録音中ロックの透明性は維持しつつ、英語短縮語を日本語化することで、設定画面の認知負荷を下げた。
+- 検証: `rg -n "label: \\\"(Engine|Model|Send|Lock)\\\"|>Engine<|>Model<|>Send<|>Lock<" src/components/ModelSelector.tsx` で参照なし、`npx --no-install prettier --check src/components/ModelSelector.tsx`、`git diff --check -- src/components/ModelSelector.tsx`、`npm run build` 成功。
+- 注意: `Whisper` はモデル名として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:46:55 JST
+
+- 作業: `v2-live-review-internal-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中/録音後UI方針に合わせ、ライブ字幕と履歴レビュー導線に残っていた `Mic` / `System` / `Prompt` 表記を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: ライブ字幕のトラック要約 `Mic + System` / `Mic only` / `System only` を `自分 + 相手側` / `自分のみ` / `相手側のみ` に変更。履歴レビュー導線の `Prompt` を `補足指示` に、議事録指示コピーの成功/失敗メッセージを `議事録指示` 表記へ変更した。
+- 判断: 録音中の状態表示は残すべきだが、Mic/System/Prompt は内部語として読み替えが必要になる。プロダクトコンセプト上の `自分` / `相手側` と、録音後ワークスペース上の `補足指示` / `議事録指示` に統一するほうが、v2のミニマルで直感的なUIに合う。
+- 検証: `rg -n "Promptをコピーしました|Promptをコピーできませんでした|Prompt、手書き|Mic \\+ System|Mic only|System only" src/routes/SessionDetail.tsx src/routes/SessionList.tsx src/utils/liveCaptionTrackHelpers.ts src/components/LiveCaptionWindow.tsx` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/routes/SessionList.tsx src/utils/liveCaptionTrackHelpers.ts`、`git diff --check -- src/routes/SessionDetail.tsx src/routes/SessionList.tsx src/utils/liveCaptionTrackHelpers.ts`、`npm run build` 成功。
+- 注意: 生成される議事録指示本文内の `Prompt` / `Source` 見出しはコピーされる構造化テキストであり、今回の可視UIラベル対象から外した。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:45:18 JST
+
+- 作業: `v2-model-selector-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、文字起こしモデル選択周辺に残っていた英語ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `ModelSelector` のモデル境界表示で `Local Whisper` を `端末内 Whisper` に、見出し `Transcription model` を `文字起こしモデル` に変更した。
+- 判断: `Whisper` はモデル名として残しつつ、`Local` と `Transcription model` は内部的・英語的な説明に寄るため、端末内処理と文字起こし対象が直感的に伝わる日本語へ寄せた。
+- 検証: `rg -n "Local Whisper|Transcription model" src/components/ModelSelector.tsx` で参照なし、`npx --no-install prettier --check src/components/ModelSelector.tsx`、`git diff --check -- src/components/ModelSelector.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:42:54 JST
+
+- 作業: `v2-settings-privacy-transcript-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、保存と送信範囲の説明に残っていた `Transcript` 表記を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` の保存と送信範囲カードで `録音 / Transcript / 議事録` を `録音 / 文字起こし / 議事録` に、`議事録生成時のTranscript` を `議事録生成時の文字起こし` に変更した。
+- 判断: 送信範囲の説明は安心感に関わるため残すべきだが、`Transcript` は内部語であり、日本語の `文字起こし` のほうが送信対象を直感的に理解できる。v2のミニマルな設定画面では、用語を増やさず機能範囲だけを明確にするほうが適切。
+- 検証: `rg -n "録音 / Transcript / 議事録|議事録生成時のTranscript" src/routes/SettingsView.tsx` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:41:17 JST
+
+- 作業: `v2-audio-source-short-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音UI方針に合わせ、録音ソース周辺に残っていた `Mic` / `System` / `Speaker` の可視短縮語を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MicrophoneSection` の境界グリッドで `Mic` を `自分` / `マイク` に変更。`SystemAudioSection` の境界グリッドで `System` / `Speaker` を `相手側` / `アプリ音` に変更。`PermissionBanner` の注意表示で `Mic 注意` / `System 注意` を `自分 注意` / `相手側 注意` に変更。`TranscriptView` の待機中録音説明 `Mic + System を分離` を `自分と相手側を分離` に変更した。
+- 判断: v2では録音境界とトラック分離は明確に残す必要があるが、短縮英語は小さなMac UIで意味を読み替える負荷になる。プロダクトコンセプト上の「自分」と「相手側」へ揃えることで、音声取得方針とUI表現を一致させた。
+- 検証: `rg -n "value: \"(Mic|System|Speaker)\"|Mic 注意|System 注意|Mic \\+ System を分離" src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx` で参照なし、`npx --no-install prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx`、`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/PermissionBanner.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。
+- 注意: `REC` とプロバイダー/モデル名としての `Whisper` / `OpenAI` は機能識別として維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:39:28 JST
+
+- 作業: `v2-recording-indicator-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中透明性方針に合わせ、会議検知通知と常時表示インジケーターに残る短縮英語/内部語を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 会議検知通知の録音状態ピルで `Mic + System` / `Mic ... / Sys ...` を `自分 + 相手側` / `自分 ... / 相手側 ...` に変更し、ピルの開くボタン `Live` を `字幕` に変更。リングライトの `Live ...` / `Liveを開く` / `Live文字起こし` を `字幕 ...` / `字幕を開く` / `リアルタイム文字起こし` に変更。履歴詳細の `Transcript` 見出しを `文字起こし` に変更した。
+- 判断: 録音中であることを忘れないための `REC` 表示は残す一方、Mic/Sys/Live/Transcript のような短縮英語は小さなMacウィンドウで意味解釈を増やす。トラック分離は `自分` と `相手側` の明示で維持し、v2のミニマルで直感的なUIに寄せた。
+- 検証: `rg -n "Mic \\+ System|Mic \\$|Mic |Sys |Live文字起こし|Live \\{|Liveを開く|>Live<|<h2>Transcript</h2>" src/components/MeetingDetectedBanner.tsx src/components/RingLightWindow.tsx src/routes/SessionDetail.tsx` で参照なし、`npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/components/RingLightWindow.tsx src/routes/SessionDetail.tsx`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/RingLightWindow.tsx src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: `REC` は録音状態の透明性を担う中核表示なので維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:37:46 JST
+
+- 作業: `v2-session-detail-minutes-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、履歴詳細の議事録作成エリアに残っていた英語/内部語の可視ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 分離トラック再生の `Audio` を `音声` に変更。議事録ワークスペースの `Promptコピー` / `Prompt補足` / `Promptテンプレート` / `Prompt補足指示` / `Transcript + Memo から作成` / `Promptで...作成` を、`指示をコピー` / `補足指示` / `議事録テンプレート` / `この録音だけの補足指示` / `文字起こしとメモから作成` / `...の指示で...作成` に変更した。
+- 判断: 履歴詳細では議事録作成とトラック再生が主目的であり、Prompt/Transcript/Audioの混在は内部処理を前面に出しすぎる。コピー、補足、テンプレート選択、ローカル下書き作成の機能は残し、ユーザーが作業内容を直感的に把握できる日本語へ寄せた。
+- 検証: `rg -n "Audio \\{|Promptコピー|Prompt補足|Promptテンプレート|Prompt補足指示|Promptとローカル|Transcript \\+ Memo|\\bPromptで" src/routes/SessionDetail.tsx` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: コピーされる議事録指示本文内のMarkdown見出しなど、生成物として意味を持つ内部構造は今回のUI可視ラベル対象から外した。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:36:01 JST
+
+- 作業: `v2-live-caption-ai-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノート/質問サーフェスの可視英語ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` の `AI notes` / `Local notes` / `Ask this meeting` を `AIノート` / `ローカル要点` / `会議に質問` に変更。検証用コントローラーの `Menu recording` / `Live workspace` も `メニューバー録音` / `録音中ワークスペース` に変更した。
+- 判断: 録音中ウィンドウは小さく、英語見出しを残すと視線移動と意味解釈が増える。AIオン/オフ、ローカル要点、質問下書きの機能は維持し、ユーザーが直感的に把握できる短い日本語ラベルへ寄せた。
+- 検証: `rg -n "AI notes|Local notes|Ask this meeting|Menu recording|Live workspace" src/components/LiveCaptionWindow.tsx src/components/ControllerWindow.tsx` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/components/ControllerWindow.tsx`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/components/ControllerWindow.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:34:32 JST
+
+- 作業: `v2-status-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルなMacアプリ方針に合わせ、設定・権限・録音開始・履歴空状態に残っていた英語/内部語の可視ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: 設定の相手側システム音声チップで `Screen` / `Source` / `Track` を `画面収録` / `音源` / `トラック` に変更。権限バナーの `Start` / `Tracks` / `Visible` / `Ask` を `開始` / `トラック` / `表示` / `確認` に変更。録音開始状態の字幕値 `Live` を `表示中` に変更。履歴空状態の `Review` / `Minutes` / `Live` を日本語説明へ置き換えた。
+- 判断: v2では録音状態・権限・トラック分離の透明性は維持する必要がある一方、英語の短縮語や内部工程語はユーザーの認知負荷になる。`REC` は録音明示のコア表示として維持し、それ以外を機能に即した日本語に寄せた。
+- 検証: `rg -n "<strong>(Screen|Source|Track)</strong>|label: \"(Start|Tracks|Visible|Ask)\"|\\? \"Live\"|ReviewとMinutes|Live文字起こしを確認|No recordings yet" src/routes/SettingsView.tsx src/components/PermissionBanner.tsx src/components/TranscriptionControls.tsx src/routes/SessionList.tsx` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/components/PermissionBanner.tsx src/components/TranscriptionControls.tsx src/routes/SessionList.tsx`、`git diff --check -- src/routes/SettingsView.tsx src/components/PermissionBanner.tsx src/components/TranscriptionControls.tsx src/routes/SessionList.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:32:49 JST
+
+- 作業: `v2-session-list-empty-kicker-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴UI方針に合わせ、録音履歴ゼロ状態から装飾的な英語ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` の空状態から `No recordings yet` キッカーを削除し、未使用になった `.session-list-empty-kicker` CSS を削除した。主文と補助文、aria-label/title は維持した。
+- 判断: 履歴ゼロ状態では「録音後に何が残るか」と「どう開始するか」だけが必要で、英語の装飾キッカーは理解にも操作にも寄与しない。状態説明は残し、視覚密度だけを下げるほうがv2のミニマルな段階開示に合う。
+- 検証: `rg -n "No recordings yet|session-list-empty-kicker" src/routes/SessionList.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:29:58 JST
+
+- 作業: `v2-audio-source-boundary-label-localization`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中/設定UI方針に合わせ、マイク・システム音声カードの境界グリッドから英語の内部工程ラベルを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `MicrophoneSection` と `SystemAudioSection` の境界グリッドで `Track` / `Input` / `Live` / `Save` / `Review` / `Audio` / `Prompt` / `Memo` / `Minutes` を `トラック` / `入力` / `字幕` / `保存` / `履歴` / `音声` / `指示` / `メモ` / `議事録` に変更。aria-label 内の列挙も同じ日本語ラベルへ統一した。
+- 判断: v2では録音状態の透明性を残しつつ、ユーザーが内部工程語を読み解く必要を減らす必要がある。境界グリッド自体は「どの範囲が録音・保存・AI外か」を示すため維持し、表示語彙だけをMacアプリとして自然な日本語へ寄せた。
+- 検証: `rg -n "label: \\\"(Track|Input|Live|Save|Review|Audio|Prompt|Memo|Minutes)\\\"|Track、Input|Live、Save|Review、Audio|Prompt、Memo|Minutes" src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx` で参照なし、`npx --no-install prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx`、`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx`、`npm run build` 成功。
+- 注意: `REC` は録音中インジケーターとしてプロダクト上の明示ラベルなので維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:27:44 JST
+
+- 作業: `v2-live-transcript-track-rail-simplification`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム文字起こしのトラック別レビューから重複見出しと英語表記を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptDisplay` のTrack rail見出しを削除し、`Mic track` / `System track` / `lines` を `自分` / `相手側` / `件` に変更。不要になった `.transcript-track-rail-head` CSS とモバイル調整を削除し、レールは2つのトラックカードだけで構成するようにした。
+- 判断: 録音中の主目的は最新の文字起こし確認であり、同じ情報を見出し・カード・カウントで重ねると小窓の視線が散る。トラック別コピー機能は維持しつつ、見た目上の説明を成立するカードだけに絞るほうがv2のミニマルな段階開示に合う。
+- 検証: `rg -n "transcript-track-rail-head|Track rail|Mic track|System track" src/components/TranscriptDisplay.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/TranscriptDisplay.tsx src/App.css`、`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css`、`npm run build` 成功。
+- 注意: `live-transcript-lines` は別UIのCSSクラスとして継続。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:25:56 JST
+
+- 作業: `v2-transcription-controls-state-rail-labels`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始UI方針に合わせ、文字起こし操作の状態レールから英語・技術語を減らして直感的な表示にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptionControls` の状態レールで `Live` を `字幕`、`Ask` を `AI`、`Source` を `音声`、`Save` を `保存`、`Guard` を `安全` に変更。保存件数も `lines` ではなく `件` に統一し、`ステルス動作なし` を `録音を明示` に変更した。
+- 判断: v2では主操作周辺の状態は残しつつ、ユーザーが意味を推測する英語・内部用語を減らす必要がある。録音状態の透明性は維持し、表示密度を増やさずに理解しやすくした。
+- 検証: `rg -n "label: \\\"(Live|Ask|Source|Save|Guard)\\\"|lines|ステルス動作なし" src/components/TranscriptionControls.tsx` で参照なし、`npx --no-install prettier --check src/components/TranscriptionControls.tsx`、`git diff --check -- src/components/TranscriptionControls.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:24:25 JST
+
+- 作業: `v2-live-transcript-copy-actions-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、リアルタイム文字起こしでコピー対象がない操作を表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptDisplay` で、本文コピーはコピー可能な発話がある時だけ表示し、Track rail のトラック別コピーも各トラックに発話がある時だけ表示するように変更。件数0時の無効コピー文言と関連CSS `.transcript-track-copy-btn:disabled` を削除した。
+- 判断: 録音中の小窓では文字起こし確認が主目的であり、件数0のトラックに無効コピー操作を置くと視線が分散する。件数表示で状態は伝わるため、操作は成立する時だけ出すほうがv2のミニマルな段階開示に合う。
+- 検証: `rg -n "コピーできる表示中の文字起こし本文|コピーできる文字起こしはありません|copyableSegmentsCount === 0|item\\.count === 0|transcript-track-copy-btn:disabled|disabled=\\{item\\.count === 0|disabled=\\{copyableSegmentsCount === 0" src/components/TranscriptDisplay.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/TranscriptDisplay.tsx src/App.css`、`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:22:28 JST
+
+- 作業: `v2-session-detail-audio-play-action-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、音声未接続時の実行できない再生操作を表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の分離トラック再生カードで、選択トラックの音声ファイルが存在する場合だけ `音声を開く` ボタンを表示するように変更。未接続時は既存の `Audio 未接続` ステータスとaria/titleの詳細説明に集約した。
+- 判断: 未保存の音声に対して `両方を再生` / `マイクだけ再生` / `スピーカーだけ再生` の無効ボタンを出すと、録音後レビューの主目的に対してノイズになる。状態は明示しつつ、成立する操作だけを出すほうがv2のミニマルな段階開示に合う。
+- 検証: `rg -n "selectedTrackSegmentCount|disabled=\\{!canPlaySelectedAudio\\}|aria-disabled=\\{!canPlaySelectedAudio\\}|両方を再生|マイクだけ再生|スピーカーだけ再生|playbackActionLabel|canPlaySelectedAudio" src/routes/SessionDetail.tsx`、`npx --no-install prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:19:45 JST
+
+- 作業: `v2-settings-titlebar-recording-pill-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、設定タイトルバーの常時表示ステータスを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` のタイトルバーから `録音中に表示されます` pill を削除し、関連CSS `.settings-recording-visibility-pill` / `.settings-recording-visibility-dot` を削除した。
+- 判断: 録音状態の透明性は録音中のREC pill、リングライト、ライブ字幕、メニュー側の状態表示で担保される。設定画面のタイトルバーに常時表示すると、設定カテゴリの主目的から視線が逸れるため、v2のミニマルなMac設定UIでは不要。
+- 検証: `rg -n "settings-recording-visibility|録音中に表示されます" src/routes/SettingsView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:18:07 JST
+
+- 作業: `v2-session-detail-handwritten-empty-status-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、手書きメモ未入力時の重複した任意ステータス表示を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の手書きメモ欄で、未入力時の `任意` pill を表示しないように変更。メモ入力後だけ `保存対象` pill と文字数/行数のaria/titleを表示する。
+- 判断: 手書きメモはテキストエリアの存在とプレースホルダーで任意入力だと分かる。未入力時のpillは行動や判断を増やさず視線を分散するため、入力済み状態だけを表示するほうがv2のミニマルな段階開示に合う。
+- 検証: `rg -n "手書きメモ入力: .*未入力|>任意<|session-detail-handwritten-status" src/routes/SessionDetail.tsx src/App.css`、`npx --no-install prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:16:44 JST
+
+- 作業: `v2-session-detail-transcript-copy-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、本文がない録音詳細で実行できないコピー操作を表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のTranscriptヘッダーで、セッション本文がある時だけ `全文をコピー` を表示するように変更。安全ガードとして本文なし時のエラー処理は維持した。
+- 判断: Transcript欄の主目的は本文確認と検索であり、本文がない状態のコピー操作は成立しない。空状態では `この録音にはまだ文字起こしの本文がありません。` に集約するほうが、v2の段階開示とミニマルな操作階層に合う。
+- 検証: `rg -n "hasSessionBody|コピーできるセッション本文|全文をコピー" src/routes/SessionDetail.tsx`、`npx --no-install prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: 本文なしコピーの防御的エラー文言は内部ガードとして残存。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:15:19 JST
+
+- 作業: `v2-live-notes-duplicate-preview-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートカード内の重複した最新発話プレビューを削り、リアルタイム会議ノート面に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のAIノートONカードから `プレビュー` ラベルと `最新発話:` 行を削除。要点候補を表示する `Local notes` とコピー操作は維持し、未使用になった変数とCSS `.live-notes-label` / `.live-notes-card p` を削除した。
+- 判断: 最新発話は左側のリアルタイム文字起こし本体に既に表示されており、AIノート側にも再掲すると録音中の小窓で視線が分散する。AIノート領域は会議ノート候補と質問に絞るほうがv2のミニマルな段階開示に合う。
+- 検証: `rg -n "live-notes-label|最新発話|latestNoteText|noteSpeaker|hasLiveNote|live-notes-card p" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:13:33 JST
+
+- 作業: `v2-menu-popover-footer-end-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー相当UI方針に合わせ、録音開始/終了導線を主ボタンへ集約してポップオーバー下部の重複操作を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptView` の通常メニューポップオーバーフッターから重複した `終了` ボタンを削除。録音開始/終了は既存の主ボタンに維持し、フッターは `自動検知が有効` の状態表示だけにした。未使用になった `meetingFooterEndLabel` も削除。
+- 判断: 記録操作はポップオーバー内で最も重要な主操作であり、同じ終了操作を下部に再掲するとv2のミニマルな操作階層に反する。録音中の透明性はREC pill、主ボタン、リングライト、ライブ字幕状態で維持される。
+- 検証: `npx --no-install prettier --check src/routes/TranscriptView.tsx`、`git diff --check -- src/routes/TranscriptView.tsx`、`rg -n "meetingFooterEndLabel|記録中のみ終了できます|<SettingsIcon|meeting-popover-footer" src/routes/TranscriptView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:10:52 JST
+
+- 作業: `v2-live-notes-disabled-question-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートOFF時の重複した質問カード表示をなくす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のAI質問カードは、AIノートON時または送信待ち質問がある時だけ表示するように変更。AIノートOFF時に表示していた `質問はオフ` カードと関連CSS `.live-notes-question-disabled` を削除した。
+- 判断: AIノートOFF状態はヘッダーのON/OFFトグルとコンパクトpillで十分に伝わる。録音中の小窓ではOFF説明カードを常時表示すると視線を分散するため、質問UIは実行可能または下書き確認が必要な時だけ表示するほうがv2のミニマルな操作階層に合う。
+- 検証: `rg -n "live-notes-question-disabled|質問はオフ|AIノートをオンにすると、会議内容への質問欄" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:08:47 JST
+
+- 作業: `v2-settings-api-key-unregistered-status-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、APIキー未登録時の重複ステータス表示を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `ExternalApiKeySection` で、APIキー状態pillは登録済み・確認中・確認不可・エラー時だけ表示するように変更。未登録時は入力欄のプレースホルダーとaria/titleに状態を残し、見た目上の `状態: 未登録` pill は出さないようにした。
+- 判断: 未登録状態は入力欄そのものが次の行動を示しており、別pillで常時表示するとAPIキー管理欄の視線が散る。登録済みや確認不可はユーザー判断に必要な状態なので表示を維持する。
+- 検証: `npx --no-install prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`rg -n "shouldShowApiKeyStatus|状態: \\{apiKeyStatusText\\}|STATUS_UNREGISTERED_LABEL|apiKeyStatusText" src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: `未登録` はaria/title用の内部ラベルとして残存。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:07:21 JST
+
+- 作業: `v2-session-detail-draft-status-progressive-display`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、議事録ワークスペース初期状態の重複ステータス表示を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の議事録ワークスペースで、`下書きなし` のステータスpillは表示せず、下書きありまたは保存エラー時だけステータスpillを表示するように変更。初期状態は既存の空状態 `下書きを作成するとここに表示` に集約した。あわせて同画面の未使用CSS（旧タブ、旧本文領域、無効ボタン、未使用見出し説明）を削除。
+- 判断: 未作成時の状態はローカル議事録カード内の空状態で十分に伝わる。見出し右側は `Promptコピー` / `Prompt補足` / 保存済み・エラーのような行動や変化に絞るほうが、v2の段階開示とミニマルな操作階層に合う。
+- 検証: `rg -n "session-detail-tabs|session-detail-tab|session-detail-body|session-detail-panel-link:disabled|session-detail-track-copy-button:disabled|session-detail-card-head p|session-detail-panel-head p" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: `下書きなし` は未表示時の内部ラベルとして残存。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:05:32 JST
+
+- 作業: `v2-meeting-prompt-compact-notification`
+- 目的: `meet-jerky-desktop-v2.pen` の録音開始導線方針に合わせ、会議検知通知を録音開始という主目的に集中したコンパクトなUIへ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `MeetingDetectedBanner` から装飾的なVideoアイコン枠を削除し、通知バナーの幅・高さ・角丸・余白を縮小。副操作の表示文言を `閉じる` に統一し、録音開始ボタンとアクセシビリティ説明は維持した。
+- 判断: 会議検知通知の主要目的は「検知を認識して録音を開始できること」。検知元や録音対象の詳細はaria/titleと既存の録音状態pillに残しており、常時表示はタイトルと主操作に絞るほうがv2のミニマルなMacアプリUIに合う。
+- 検証: `rg -n "meeting-detected-attention|Video|今回はしない|width: min\\(356px|height: 132px|width: 356px" src/components/MeetingDetectedBanner.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:02:47 JST
+
+- 作業: `v2-session-list-copy-action-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴一覧UI方針に合わせ、本文がない録音行で実行できないコピー操作を表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` の各録音行で、文字起こし本文がある時だけ `本文をコピー` ボタンを表示するように変更。本文なしの状態表示、録音後レビュー、Finder表示は維持した。不要になった「コピーできる文字起こし本文がありません」文言と `!hasBody` 無効条件を削除。
+- 判断: 履歴一覧の主目的は録音後レビューへ入ることと検索結果を認識すること。本文なしの行ではコピー操作が成立しないため、無効ボタンを出すより `本文なし` ステータスに任せるほうが、v2のミニマルな一覧として視線を保てる。
+- 検証: `rg -n "コピーできる文字起こし本文がありません|disabled=\\{isAnyActionPending \\|\\| !hasBody\\}|!hasBody" src/routes/SessionList.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 05:00:27 JST
+
+- 作業: `v2-live-notes-question-input-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートOFF時や質問文未入力時に操作できない質問入力UIを表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のAI質問欄で、AIノートON時だけ質問入力を表示し、質問文がある時だけ送信前確認用の下書き保存ボタンを表示するように変更。不要になった無効入力・無効送信ボタンの文言、`disabled` 属性、関連CSSを削除し、送信ボタンのCSSを単一ルールへ統合。
+- 判断: AIノートOFF状態はカード見出しの `質問はオフ` とON/OFFトグルで十分に伝わる。無効な入力欄を常時表示すると録音中の小窓で視線を分散するため、v2のミニマルなフローティングUIでは実行可能な時だけ入力・送信導線を出すほうが適切。
+- 検証: `rg -n "AIノートがオフのため質問入力|AIノートをオンにすると表示|disabled=\\{!aiNotesEnabled\\}|disabled=\\{!canQueueAiQuestion\\}|live-notes-question-input-row input:disabled|live-notes-question-input-row button:disabled|live-notes-question-input-row button:not\\(:disabled\\)" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:58:47 JST
+
+- 作業: `v2-session-detail-copy-actions-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、コピー対象がない二次操作を常時表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の音声トラック欄で、選択トラックに文字起こしがある時だけ `選択トラックをコピー` を表示するように変更。議事録ワークスペースでは、文字起こしセグメントがある時だけ `Promptコピー` を表示するように変更。不要になった無効状態文言と `disabled` / `aria-disabled` 属性を削除。
+- 判断: 録音後詳細の主目的は、本文確認・音声確認・議事録作成。コピー操作は対象が存在して初めて意味を持つ二次操作なので、空状態では状態表示と主要操作だけを残すほうがv2のミニマルな操作階層に合う。音声再生ボタンは音声資産の有無を示す主要状態も兼ねるため維持した。
+- 検証: `rg -n "コピーできるPrompt本文|コピーできる文字起こしはありません|disabled=\\{selectedTrackSegments\\.length === 0\\}|aria-disabled=\\{selectedTrackSegments\\.length === 0\\}|disabled=\\{transcriptSegmentCount === 0\\}|aria-disabled=\\{transcriptSegmentCount === 0\\}" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:57:13 JST
+
+- 作業: `v2-settings-disabled-actions-conditional-display`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、設定保存とAPIキー管理で実行できない操作ボタンを常時表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 設定フッターの `設定を保存` は未保存変更または保存中の時だけ表示するように変更し、`保存済み` の無効ボタン表示を削除。APIキー管理は、入力がある時だけ `キーを保存`、登録済みキーがある時だけ `キーを削除` を表示するように変更。状態は既存の登録ステータス表示とプレースホルダーに維持した。
+- 判断: 設定画面では状態確認と操作を分けるほうがMac設定画面として理解しやすい。`保存済み` や未入力時の `キーを保存`、未登録時の `キーを削除` は行動できない要素であり、v2のミニマルな操作階層では不要。
+- 検証: `rg -n "isEditableCategory|保存する設定変更はありません|保存済み|API キーを入力すると保存できます|削除できる .* API キーはありません|disabled=\\{!hasChanges|disabled=\\{!keyInput\\.trim\\(\\)|!keyInput\\.trim\\(\\) \\|\\| isApiKeyOperationPending|!hasKey \\|\\|" src/routes/SettingsView.tsx` で対象の不要表示なし（削除処理内の安全ガードのみ残存）、`npx --no-install prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:55:04 JST
+
+- 作業: `v2-live-caption-empty-copy-actions-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、翻訳ビューとAIノートでコピー対象がない時に操作できないボタンを表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` の翻訳ビューで文字起こし原文がある時だけ `原文をコピー` を表示するように変更。AIノートの `Local notes` も要点候補がある時だけ `コピー` を表示するように変更。不要になった `.live-transcript-translation-actions button:disabled` と `.live-notes-local-preview-head button:disabled` CSSを削除。
+- 判断: 翻訳先選択とAIノートON/OFFは録音中の主操作として維持する一方、コピー操作は内容がある時だけ意味を持つ二次操作。v2のミニマルなフローティングUIでは、空状態の無効ボタンより、状態文とプレビューを優先するほうが録音中の認知負荷を下げられる。
+- 検証: `rg -n "live-transcript-translation-actions button:disabled|live-notes-local-preview-head button:disabled|aria-disabled=\\{transcriptLines\\.length === 0\\}|disabled=\\{transcriptLines\\.length === 0\\}|aria-disabled=\\{localMeetingNotes\\.summary\\.length === 0\\}|disabled=\\{localMeetingNotes\\.summary\\.length === 0\\}" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: `copyVisibleTranscriptSource` の競合防止用ガード文言は維持。Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:53:28 JST
+
+- 作業: `v2-session-detail-minutes-disabled-actions-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、議事録ワークスペースで未入力・未生成時に操作できないボタンを常時表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `Prompt補足` 編集欄で補足指示がある時だけ `クリア` ボタンを表示するように変更。ローカル議事録下書きも、下書き生成後だけ `下書きをコピー` を表示するように変更。不要になった `.session-detail-template-instruction-clear:disabled` CSSと無効状態文言/属性を削除。
+- 判断: `Prompt補足` と `下書きをコピー` は機能として必要だが、空状態・未生成状態では行動できない。v2のミニマルなMacアプリ方針では、主要導線の `下書きを作成` と状態表示を優先し、二次操作は実行可能になった時だけ出すほうが理解しやすい。
+- 検証: `rg -n "クリアできるPrompt補足指示|コピーできるローカル議事録下書き|session-detail-template-instruction-clear:disabled|aria-disabled=\\{!templateInstruction\\.trim\\(\\)\\}|disabled=\\{!templateInstruction\\.trim\\(\\)\\}|aria-disabled=\\{!generatedMinutesDraft\\.trim\\(\\)\\}|disabled=\\{!generatedMinutesDraft\\.trim\\(\\)\\}" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:51:52 JST
+
+- 作業: `v2-session-detail-transcript-search-empty-clear-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、本文検索欄で未入力時に操作できないクリアボタンを表示しないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のトランスクリプト検索で、検索語がある時だけ `クリア` ボタンを表示するように変更。検索語なしでは3列、検索語ありでは4列に切り替えるCSSを追加し、不要になった disabled 文言/属性と `.session-detail-transcript-search button:disabled` CSSを削除。
+- 判断: 検索機能自体は録音後レビューの主機能だが、検索語未入力時の無効ボタンは行動できない要素であり、v2のミニマルな操作階層では不要。検索件数表示と入力欄は維持した。
+- 検証: `rg -n "クリアできる検索語|session-detail-transcript-search button:disabled|aria-disabled=\\{!transcriptSearchQuery\\}|disabled=\\{!transcriptSearchQuery\\}" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:26:54 JST
+
+- 作業: `v2-settings-detection-log-preview-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、会議検出設定を検出対象・ON/OFF・シグナル条件の操作に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` の会議検出カテゴリから右側のログ風 `判定プレビュー` カードを削除し、関連する `settings-detection-log-entry*` / `settings-detection-log-list` CSSを削除。検出対象サービス、通知ON/OFF、シグナル数、音声必須、条件プレビュー、注意文は左側の検出ルールカードに維持した。
+- 判断: 判定プレビューは左側の検出ルールカード内の条件プレビューと内容が重複し、設定変更の主導線を分散していた。v2では常時表示を操作と現在条件に絞るほうが、Mac設定画面として理解しやすい。
+- 検証: `rg -n "settings-detection-log-list|settings-detection-log-entry|settings-detection-log-entry-head|settings-detection-log-entry-title|settings-detection-log-entry-dot" src/routes/SettingsView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:23:50 JST
+
+- 作業: `v2-settings-ai-provider-subtitle-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、AI議事録設定をプロバイダー選択と状態表示に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` のAI議事録プロバイダーカードから、常時表示の説明文 `デフォルトはオフ...` を削除。現在値、送信条件、生成時確認の説明はカードの `aria-label` / `title` と各プロバイダー項目の `aria-label` / `title` に保持した。
+- 判断: 説明文は選択肢のラベル・バッジ・概要カードと重複し、設定項目の一覧性を下げていた。v2では設定画面は選択と状態確認を主役にし、補足説明は必要な文脈へ寄せる。
+- 検証: `rg -n "デフォルトはオフ|settings-ai-provider-card|生成実行時だけ送信確認" src/routes/SettingsView.tsx src/App.css`、`npx --no-install prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:22:12 JST
+
+- 作業: `v2-session-detail-header-copy-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後詳細UI方針に合わせ、履歴詳細ヘッダーを戻る・タイトル・保存メタ情報に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` ヘッダー右側の `内容をコピー` ボタンと関連CSSを削除。録音内容コピーはTranscriptパネルの `全文をコピー` に残し、履歴ファイルの書き出し/Finder表示はフッターに残した。
+- 判断: 同一画面内にヘッダーとTranscriptパネルでコピー導線が重複していた。録音後詳細の主目的はTranscript確認と議事録作成なので、コピー操作は本文の近くに置くほうが直感的で、ヘッダーはセッション識別に集中できる。
+- 検証: `rg -n "session-detail-header-actions|録音内容をコピー|>\\s*内容をコピー" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:20:25 JST
+
+- 作業: `v2-live-notes-outline-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中Live UI方針に合わせ、AIノート欄を最新発話・ローカルノート確認・質問に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のAIノートON表示から `要点` / `決定` / `ToDo` の3分割カウント行を削除し、関連する未使用型・関数・CSSを削除。AI設定、外部送信有無、抽出対象の説明はローカルノートプレビューの `aria-label` / `title` に統合した。
+- 判断: 3分割カウントは下部のローカルノートプレビューとコピー機能に対する補助情報で、録音中の小窓では視線を分散させる。v2では実際に読む/コピーするノートと質問入力を主役にする。
+- 検証: `rg -n "AI_NOTES_OUTLINE_ITEMS|live-notes-outline|LiveNoteSectionLabel|getLocalNoteSection" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:18:49 JST
+
+- 作業: `v2-live-notes-track-meter-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中Live UI方針に合わせ、AIノート欄をノートと質問の主目的へ集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のAIノート側から可視の自分/相手側トラックメーターを削除し、関連CSSを削除。トラック状態は通常Liveヘッダーのヘルス表示とAIノートasideの `aria-label` / `title` に残した。
+- 判断: AIノート欄では要点・質問入力が主目的で、トラック状態はヘッダーと録音インディケーターで確認できる。常時メーターを置くと小窓の密度が上がるため削除した。
+- 検証: `rg -n "live-transcript-meter" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:02:31 JST
+
+- 作業: `v2-live-caption-engine-pill-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ字幕のタブ列を文字起こし/翻訳切替と送信状態に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のタブ列から文字起こしエンジン名ピルを削除。外部送信有無のピルは残し、エンジン名と送信状態の詳細はウィンドウ全体の `aria-label` / `title` に保持。関連CSSを削除。
+- 判断: 録音中に常時視認すべき情報はREC状態、本文/翻訳切替、AIノート、外部送信有無。エンジン名は設定確認向けの補助情報で、タブ列に常時表示すると主操作を圧迫する。
+- 検証: `rg -n "live-transcript-engine-pill|engine-pill" src/App.css src/components/LiveCaptionWindow.tsx` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:00:56 JST
+
+- 作業: `v2-settings-sidebar-note-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、カテゴリ移動のサイドバーをナビゲーションに集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 設定サイドバー下部の常時表示ノート `ローカル優先で記録` を削除。AI送信境界の説明はAI議事録カテゴリのプロバイダー/生成前チェック、プライバシーカテゴリの保存と送信範囲に残した。
+- 判断: サイドバーの常時ノートは全カテゴリでAI送信境界を繰り返し、主目的であるカテゴリ移動を弱めていた。v2では注意事項は該当カテゴリで文脈付きに表示するほうがミニマルで理解しやすい。
+- 検証: `rg -n "settingsSidebarAiBoundaryNote|settings-sidebar-note" src/routes/SettingsView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:59:28 JST
+
+- 作業: `v2-session-list-result-strip-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴UI方針に合わせ、履歴一覧を「検索して対象を選ぶ」主導線に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 履歴一覧上部の `本文あり` / `自分` / `相手側` 集計ストリップを削除。検索欄、件数表示、各行の本文有無・トラック件数・レビュー導線・コピー/Finder操作は維持。未使用import、集計関数、関連CSSとモバイル上書きを削除。
+- 判断: 集計ストリップは各行のメタ情報と重複し、検索結果リストの前に補助指標を挟んでいた。v2では履歴画面の主目的を検索とレビュー開始に絞る。
+- 検証: `rg -n "session-list-result|FileText|\\bMic\\b|getTrackTotals|filteredTrackTotals|filteredBodyCount" src/routes/SessionList.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:57:33 JST
+
+- 作業: `v2-session-detail-track-preview-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後詳細UI方針に合わせ、上部の分離トラック再生カードを音声トラック操作に集中させ、文字起こし閲覧の主領域をチャット型Transcriptへ戻す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の分離トラック再生カードから直近文字起こしプレビューを削除。トラック選択、音声再生、Finder表示、選択トラック文字起こしコピー、トラック件数表示は維持。関連CSSを削除。
+- 判断: 直近プレビューは下部のLINE風Transcriptと内容が重複し、録音後詳細の焦点を分散していた。音声カードは再生/コピーの操作面に絞るほうが、v2のミニマルで直感的な構成に近い。
+- 検証: `rg -n "selectedTrackPreviewSegments|session-detail-track-preview" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:55:52 JST
+
+- 作業: `v2-meeting-prompt-track-chip-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな通知UI方針に合わせ、会議検知通知の録音開始判断に不要な補助チップを削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `MeetingDetectedBanner` から `Mic: 自分` / `System: 相手側` の表示チップを削除し、通知高さを縮小。2トラック録音の説明は開始ボタンと通知全体の `aria-label` / `title` に残し、録音対象の透明性は維持。
+- 検証: `rg -n "meeting-detected-track|Volume2|\\bMic,|, Mic\\b|from \\"lucide-react\\"" src/components/MeetingDetectedBanner.tsx src/App.css`、`npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:53:36 JST
+
+- 作業: `v2-settings-ai-template-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、AI議事録設定をプロバイダー選択と実行ガードレールに集中させ、録音後詳細側と重複する静的Prompt候補を削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 設定画面のAI議事録カテゴリから `議事録方針` カードを削除。Promptテンプレート選択は録音後の `SessionDetail` 議事録ワークスペースに集約し、設定画面ではAIプロバイダー選択と生成前チェックを維持。未使用アイコンimportと `settings-ai-template-*` CSSを削除。
+- 判断: Prompt候補は実際に議事録を作る録音詳細画面で選ぶほうが文脈に合う。設定画面に静的候補を常時表示すると、AIプロバイダー選択の主目的を弱める。
+- 検証: `rg -n "settings-ai-template|LayoutTemplate|ListChecks|\\bFlag\\b|\\bCheck\\b" src/routes/SettingsView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:51:39 JST
+
+- 作業: `v2-session-detail-template-preview-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後UI方針に合わせ、議事録ワークスペースをテンプレート選択・手書きメモ・下書き作成の主導線へ集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 議事録ワークスペースの常時表示 `生成方針` プレビューカードを削除。選択中テンプレートの目的とヒントはテンプレート行/各ボタンの `aria-label` / `title` に保持し、テンプレート選択機能とPrompt生成内容は維持。未使用CSSを削除。
+- 判断: 生成方針カードはテンプレート選択と下書き作成ボタンの間にある補助説明で、主操作を分断していた。v2方針では詳細説明は必要時に開示し、常時表示は操作と状態に絞る。
+- 検証: `rg -n "session-detail-template-preview" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:50:09 JST
+
+- 作業: `v2-live-notes-send-scope-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AI質問欄を下書き保存とコピーの主導線に絞り、送信範囲確認カードで視線を分断しない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: ライブ字幕ウィンドウのAI質問から `sendScopeOpen` 状態、送信範囲確認カード、下書き保持/破棄ボタン、関連CSSを削除。質問は下書き保存済みチップとコピー操作へ集約し、外部送信なしの説明は `aria-label` / `title` に保持。
+- 判断: この画面は実送信ではなく下書き保持なので、確認カードを表示すると操作の意味が過剰になる。外部送信の透明性はキュー表示とAI接続ピルで維持する。
+- 検証: `rg -n "sendScope|SendScope|send-scope|handleKeepAiQuestionQueued|handleDiscardAiQuestion|isAiSendScopeOpen" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:48:03 JST
+
+- 作業: `v2-menu-start-source-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、開始元/要求/インジケーターの説明カードを削り、録音開始ボタンとREC状態を主役にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: メニューバーポップオーバーから `menu-start-source-card` を削除。録音開始経路は主ボタン、会議検知カード、保留中通知、RECピルで伝わるため、同じ状態を3分割カードで再表示しない構成に整理。未使用CSSとモバイル上書きを削除。
+- 判断: メニューバーからの録音開始要件は主ボタンで維持し、開始要求の詳細は保留中通知とエラーメッセージで表示する。常時表示要件はRECピル/リング側に寄せる。
+- 検証: `rg -n "menuStart(Source|Request|Indicator)|menu-start-source" src/routes/TranscriptView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:45:16 JST
+
+- 作業: `v2-menu-recording-visibility-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、録音中の状態表示を必要最小限にして操作導線を主役にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: メニューバーポップオーバーから `menu-recording-visibility-card` を削除。録音状態の視認性は既存のRECピル、ライブトラック、字幕ウィンドウ導線、リングインジケーターで維持。未使用CSSを削除。
+- 判断: 録音中の常時表示要件はヘッダーRECピルとリングインジケーター側で満たし、メニューバー内の重複説明カードを減らすほうがMacアプリらしい密度になる。
+- 検証: `rg -n "menu-recording-visibility" src` で参照なし、`npx --no-install prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:42:39 JST
+
+- 作業: `v2-live-translation-note-header-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、翻訳ビューでも文字起こし本文を主役にし、補助的なエンジン説明を常時表示しない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: ライブ字幕の翻訳モードから `Translation preview` 見出しと `エンジン未設定` ピルを削除。可視要素は翻訳先選択と原文コピーに集約し、翻訳エンジン状態と外部送信なしの説明は `aria-label` / `title` に保持。未使用CSSを削除。
+- 検証: `rg -n "live-transcript-translation-note-head" src` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:41:11 JST
+
+- 作業: `v2-settings-audio-routing-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、音声設定をマイク選択・相手側音声状態・録音トラック対応に集中させ、重複する説明カードを減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 音声カテゴリから「トラックの流れ」カードを削除。自分/相手側の分離方針は既存の「録音トラック」カード、マイク選択、相手側システム音声カードの `aria-label` / `title` に残し、関連する未使用CSSを削除。
+- 検証: `rg -n "settings-audio-routing" src` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:39:50 JST
+
+- 作業: `v2-settings-transcription-correction-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、文字起こし設定を選択項目と状態に集中させ、補正フローの重複カードで密度を上げない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 文字起こし設定の「補正プレビュー」カードを削除し、登録語は単語チップへ集約。話者保持や後処理の詳細説明は録音後レビュー/Transcriptの実表示側に寄せ、設定画面は言語選択・登録語・エンジン選択を主役に整理。未使用CSSとモバイル用上書きを削除。
+- 検証: `rg -n "settings-transcription-correction" src` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:38:14 JST
+
+- 作業: `v2-session-detail-transcript-bubble-meta`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、TranscriptをLINE風の会話UIとして読みやすくし、本文の視線を分断する外部メタ情報を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 録音詳細Transcriptの時刻表示を吹き出し外から吹き出し内メタ行へ統合。話者と時刻を同一行にまとめ、自分発話はメタ順序を反転して右寄せの会話UIに馴染ませた。発話単位の `aria-label` は維持。
+- 検証: `npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:36:56 JST
+
+- 作業: `v2-meeting-prompt-ai-chip-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知方針に合わせ、録音開始前の判断に必要な情報だけを残して通知ウィンドウを軽くする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 会議検知通知の視覚要素からAI外部送信チップを削除し、Mic自分/System相手側の録音対象と開始/辞退操作へ集約。AI送信状態は `aria-label` / `title` に保持。通知サイズを 356x178 相当に圧縮し、2列トラック表示に整理。
+- 検証: `npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:23:12 JST
+
+- 作業: `v2-session-detail-heading-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、音声トラック確認と議事録作成の主操作を説明文で埋もれさせない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 録音詳細の分離トラック再生カードと議事録ワークスペース見出しから、タブ・ボタン・カード内容と重複する説明文を削除。ローカル議事録下書きの空状態文言も短縮し、Prompt選択、手書きメモ、下書き作成の導線は維持。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx`、`git diff --check -- src/routes/SessionDetail.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:21:55 JST
+
+- 作業: `v2-settings-privacy-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、Privacyカテゴリを状態・選択肢・操作に集中させ、説明文で画面を重くしない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: Privacy設定のデータ保持期間、ローカルデータ、保存と送信範囲、システム権限、診断送信カードから重複する視覚説明文を削除。保持期間選択、ローカル限定モード、ディスク使用量、保存/送信範囲グリッド、権限ボタン、診断送信スイッチは維持。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx`、`git diff --check -- src/routes/SettingsView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:20:36 JST
+
+- 作業: `v2-live-notes-off-state-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノートOFF時の表示を状態と操作だけに絞り、文字起こし領域の主役性を保つ。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: ライブ字幕ウィンドウでAIノートOFF時にプレビューカードを表示しないよう変更。ON時のみ最新発話、要点/決定/ToDo候補、ローカルノートコピーを表示し、OFF時はヘッダーのON/OFFトグルと無効化された質問欄だけで状態を示す。不要になった `live-notes-card-disabled` CSSを削除。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:19:03 JST
+
+- 作業: `v2-session-list-empty-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の履歴画面方針に合わせ、空状態を「録音開始」と「保存後レビュー」だけに集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 履歴一覧の空状態に表示していた Audio / Transcript / Prompt / Memo の詳細列挙を削除し、会議検知またはメニューバーから録音を開始する短い案内へ圧縮。録音後レビュー、音声、Prompt、手書きメモ、Minutes 作成の詳細情報は `aria-label` とレビュー詳細画面の導線に保持。
+- 検証: `npx prettier --check src/routes/SessionList.tsx`、`git diff --check -- src/routes/SessionList.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:18:13 JST
+
+- 作業: `v2-menu-setup-preflight-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー/初回セットアップ方針に合わせ、開始前画面を権限・開始経路・REC透明性に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 初回セットアップの長文説明を1文へ圧縮し、会議検知通知/メニューバー開始、REC常時表示、このMac保存の要点に整理。開始前チェックカードの重複説明文を削除し、2トラック開始、字幕/質問、履歴保存、AI送信状態は既存のグリッドと `aria-label` / `title` に保持。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx`、`git diff --check -- src/routes/TranscriptView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:15:48 JST
+
+- 作業: `v2-session-detail-send-scope-card-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録ワークスペース方針に合わせ、Prompt選択・手書きメモ・下書き作成の主導線を重複する安全カードで分断しない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 議事録ワークスペースの独立した送信範囲確認カードを削除。送信しない対象、AI設定、自動送信なし、Transcript/Prompt/Memoの対象情報はローカル議事録下書きカードの `aria-label` / `title` とステータスピルへ統合。未使用の `ShieldCheck` import と送信範囲カードCSSを削除。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:13:59 JST
+
+- 作業: `v2-menu-live-workspace-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音導線方針に合わせ、ポップオーバーを開始/終了、検知状態、REC状態、履歴/設定に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: メニューバーポップオーバーの `Live workspace` カードを削除。リアルタイム文字起こし、翻訳切替、AIノート、質問はライブ字幕ウィンドウ側の責務として残し、メニュー側は録音開始前チェック、録音中の常時表示、字幕ウィンドウ起動ボタンへ役割を整理。削除に伴い未使用 `FileText` import と関連CSSを除去。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:11:23 JST
+
+- 作業: `v2-session-detail-decorative-surface-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、聞き返し・Transcript確認・議事録作成の主導線を弱める装飾/重複状態表示を削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 分離トラックカードから装飾的な2本の波形プレビューを削除し、音声状態・トラック別件数・直近Transcript・再生/場所/コピー操作へ情報を集約。議事録ワークスペース末尾のAI未生成プレースホルダーを削除し、AI設定/送信範囲は既存のヘッダー状態と送信範囲確認カードへ集約。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:09:40 JST
+
+- 作業: `v2-live-caption-status-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、REC状態・文字起こし・翻訳切替・AIノート質問を主役にし、常時表示する補助情報を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: ライブ字幕タブ列の通常時 `保存済み` ピルを削除し、保存失敗時のみエラーピルを表示。翻訳ビューの長文説明を削除し、翻訳エンジン状態、翻訳先選択、原文コピー、外部送信なしの説明はヘッダー、操作、`aria-label` / `title` に保持。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:08:04 JST
+
+- 作業: `v2-settings-transcription-ai-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、文字起こし/AI議事録設定の安全情報を残しながら可視説明密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: リアルタイム翻訳カードの重複説明、AIプロバイダー行の説明文、生成前チェックの長文説明を削除。外部送信なし/確認制/プロバイダー説明は既存の状態グリッド、バッジ、`aria-label` / `title` に保持。プロバイダー選択、翻訳状態表示、生成前チェックは維持。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:05:24 JST
+
+- 作業: `v2-settings-audio-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、音声設定の主操作であるマイク入力・相手側音声権限・2トラック対応を読み取りやすくする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: Audioカテゴリの `相手側システム音声` と `録音トラック` から重複する長文説明を削除し、同じ内容を `aria-label` / `title` に保持。マイクデバイス選択、画面収録権限状態、Source/Trackチップ、2トラック対応表示、音声ルーティング補足は維持。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:03:35 JST
+
+- 作業: `v2-session-detail-audio-status-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、分離トラック再生の状態を短く表示し、Transcript / Audio / Minutes の主導線を埋もれさせない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 分離トラックカードの長い音声ファイル注意書きを削除し、ヘッダー内の `Audio 未接続/接続済み` ピルへ集約。詳細な状態説明は `aria-label` / `title` と再生ボタンの状態に維持。フッターの重複するAI準備中アクションを削除し、AIプレースホルダー文言を短縮。音声を開く、音声の場所、選択トラックコピー、Transcript検索、議事録ワークスペースは維持。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 03:01:28 JST
+
+- 作業: `v2-session-list-safety-density-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後履歴UI方針に合わせ、検索・コピー・レビュー導線を残したまま履歴一覧の説明密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 履歴一覧の長い安全説明ブロックを削除し、ヘッダー内の短い `保存済みのみ / AI確認制` ステータスへ集約。結果カードの高さと余白を圧縮し、空状態コピーを短くした。レビュー、本文コピー、既定アプリで開く、Finder表示、検索、アクセシブルな詳細説明は維持。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:58:12 JST
+
+- 作業: `v2-meeting-prompt-title-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知方針に合わせ、通知カードの主情報を「検知した会議」と「録音開始」に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 会議検知バナーの主タイトルを汎用文言から `Google Meet を検知` のような会議名ベースへ変更し、重複する詳細説明行を削除。詳細な検知元、エンジン、AI送信、2トラック録音の説明は既存の `aria-label` / `title` とチップ表示に維持。通知ウィンドウ高さを 244px から 214px に圧縮。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:56:08 JST
+
+- 作業: `v2-menu-start-source-compression`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音導線方針に合わせ、開始経路カードを録音開始・要求状態・RECインジケーターに集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: メニューバーの `Start source` カードから `AI送信` / `Save` / `Review` の重複項目を削除し、表示グリッドを6列から3列へ圧縮。アクセシブル名も開始元・要求状態・録音インジケーターに限定した。AI送信、保存、レビューの情報は既存の状態カード、開始前チェック、録音中表示、履歴セクションに残した。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:54:15 JST
+
+- 作業: `v2-live-notes-privacy-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノート/質問機能と送信透明性を残しながらサイドパネルの説明密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: AIノートの常時説明行を削除し、AI接続状態ピルに `外部なし` / `端末内` / `送信確認` の短い送信状態を集約。詳細な送信説明は既存の `aria-label` / `title` と質問送信前確認に維持。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:52:08 JST
+
+- 作業: `v2-session-detail-minutes-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな録音後レビュー方針に合わせ、議事録ワークスペースの機能を残したまま説明密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: Promptテンプレート、補足指示、AI送信範囲、手書きメモ、ローカル議事録下書きの各操作は維持し、重複する説明文と未使用CSSを削除。テンプレートの詳細方針は `title` に残し、ローカル下書き見出しを `Transcript + Memo から作成` に圧縮。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## Implementation update: align recording start entry points
+
+- 日時: 2026-05-29 15:54:14 JST
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx`, `src/routes/TranscriptView.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、会議検知通知とメニューバーの録音開始導線を、同じ情報設計で分かりやすくする。
+- 採用判断: ユーザー要望では、会議検知による通知ウィンドウから録音できること、メニューバーから録音できること、録音中インジケーターが残ることが明示されている。既存UIには開始ボタンはあったが、開始元の違いと「開始後もREC表示」「AI送信状態」の関係がメニューバー側で十分に見えなかった。録音機能の挙動は変えず、開始前の確認情報をv2のミニマルなカードに整理した。
+- 結果:
+  - メニューバーの待機状態に `Start options` カードを追加し、検知通知・Menu bar・REC表示・AI送信状態を同じ面で確認できるようにした。
+  - どちらの開始元でも録音対象が自分/相手側の2トラックであることを説明に明示した。
+  - 会議検知バナーのAI送信チップを、送信なしなら安全トーン、外部送信候補なら警告トーンに分けた。
+  - 会議検知バナーのシグナル行にもAI送信の安全状態を追加した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/` と `/?window=meeting-prompt` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 実ブラウザでの視覚確認、Tauri実機での通知ウィンドウからメインウィンドウへの開始要求、実録音開始までのエンドツーエンド確認は未完了。
+
+---
+
+## Implementation update: persist live caption view preferences
+
+- 日時: 2026-05-29 15:50:23 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音中のライブ字幕/翻訳表示とAIノートのオンオフを、より直感的で状態が残るUIにする。
+- 採用判断: ユーザー要望では、録音中にリアルタイム文字起こし、必要に応じた翻訳切り替え、AIノートのオンオフ、AI質問が必要とされている。既存UIは切り替え自体はあったが、ウィンドウを開き直すと表示状態が戻るため、録音中に使うミニマルUIとして操作の継続性が弱かった。外部AIや翻訳APIは追加せず、ローカルの表示設定保存だけに留めた。
+- 結果:
+  - ライブ字幕の表示モード（原文/翻訳プレビュー）とAIノートON/OFFを `localStorage` に保存するようにした。
+  - ライブ字幕ウィンドウを開き直したとき、前回の表示モードとAIノート設定を復元するようにした。
+  - 表示設定の保存状態を小さなステータスピルで示し、保存失敗時はAIノート領域にもエラーを表示するようにした。
+  - AIノートON時も、外部送信や実AI生成は行わず、質問は接続後送信用の下書きとして扱う説明を維持した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/?window=live-caption` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 翻訳エンジン、AIノート生成、AI質問送信のバックエンド接続は未実装。実ブラウザでのクリック操作とTauri実機での永続表示検証は未完了。
+
+---
+
+## Implementation update: persist post-meeting minutes workspace drafts
+
+- 日時: 2026-05-29 15:47:49 JST
+- 作業範囲: `src/routes/SessionDetail.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音後の議事録ワークスペースでテンプレート選択と手書きメモを再利用できるようにする。
+- 採用判断: ユーザー要望では、録音後に文字起こしと自分の手書き会議メモをもとに議事録生成できること、プロンプトテンプレートを選択できることが明示されている。既存UIは入力と選択はできたが、画面を離れると消える一時状態だったため、「会議後に整えて議事録化する」実用導線として不足していた。外部AI呼び出しや課金が発生する処理は追加せず、セッションパス単位のローカル下書き保存に限定した。
+- 結果:
+  - セッションパスをキーに、議事録テンプレートと手書きメモを `localStorage` に保存するようにした。
+  - 詳細画面を開いたとき、保存済み下書きを復元するようにした。
+  - 下書き保存時刻、保存エラー、保存対象の状態をミニマルなステータスとして議事録ワークスペースに表示した。
+  - 手書きメモ入力がある場合、入力ソースカードと送信範囲確認で「送信候補」として明示される状態を強めた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/sessions/%2FUsers%2Fwagomu%2FMeetJerky%2F2026-05-29-product-review.md` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 下書き保存は `localStorage` ベースで、Markdownファイルやアプリ設定ファイルにはまだ保存していない。AI議事録生成バックエンド、送信前確認の実処理、実ブラウザでの入力復元操作確認は未完了。
+
+---
+
+## Implementation update: persist AI minutes provider setting
+
+- 日時: 2026-05-29 15:44:14 JST
+- 作業範囲: `src-tauri/src/settings.rs`, `src/types/index.ts`, `src/utils/previewAppData.ts`, `src/routes/SettingsView.tsx`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、設定画面のAI議事録プロバイダー選択を実際のアプリ設定として保存できるようにする。
+- 採用判断: ユーザー要望では、議事録生成に使うAIプロバイダーを設定画面で決められることが明示されている。前回のUI状態だけの選択は「決めた」状態が保存されず、Macアプリらしい設定体験として弱い。外部API呼び出しや課金が発生する処理は追加せず、既定を `none` にして外部送信なしを維持したまま設定値だけを永続化対象にした。
+- 結果:
+  - `AppSettings` に `aiMinutesProvider` を追加し、既存設定ファイルでは `none` にデフォルトされるようにした。
+  - `AiMinutesProvider` の JSON 表現を `none`、`anthropic`、`openAI`、`ollama` としてテストで固定した。
+  - 設定画面のAIプロバイダー選択を `localSettings.aiMinutesProvider` に接続し、保存ボタン経由で永続化対象にした。
+  - ブラウザプレビュー設定にも `aiMinutesProvider: "none"` を追加し、プレビュー保存時に選択状態が即時反映されるようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `nix develop .. -c cargo test settings::` 成功。settings 関連 27 件すべて成功。
+  - `nix develop .. -c cargo fmt --check` 成功。
+  - `git diff --check -- src-tauri/src/settings.rs src/types/index.ts src/utils/previewAppData.ts src/routes/SettingsView.tsx AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/?window=settings&category=aiMinutes` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - AI議事録の実生成、APIキー連携、送信前確認のバックエンド処理は未接続。実ブラウザでのクリック操作スクリーンショット検証も未実施。
+
+---
+
+## Implementation update: make AI minutes provider selectable in settings
+
+- 日時: 2026-05-29 15:37:40 JST
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、設定画面でAI議事録プロバイダーを直感的に選べるようにする。
+- 採用判断: ユーザー要望では、設定画面で議事録のためのAIプロバイダーを決められることが明示されている。既存のAI議事録設定は候補リストとして表示されていたが、選択操作や概要への反映がなく、実際に「決める」UIとして弱かった。外部API接続や課金が発生する処理は追加せず、ローカルUI状態としてプロバイダー選択と送信範囲サマリーを反映した。
+- 結果:
+  - AI議事録プロバイダー候補を `none`、Anthropic、OpenAI、Ollama の選択式ラジオグループにした。
+  - 選択状態を設定概要、設定ワークフロー、キャプチャ境界、AIプロバイダーフローへ反映するようにした。
+  - 外部送信候補は警告トーン、ローカル候補は安全トーン、AI未使用はミュートトーンとして見分けられるようにした。
+  - 既定は「AI議事録を使わない」で、外部送信は発生しない状態を維持した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/?window=settings&category=aiMinutes` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - AI議事録プロバイダー選択はまだ永続化されない。APIキー保存、実AI生成、実ブラウザでのクリック操作確認は未完了。
+
+---
+
+## Implementation update: add local handwritten memo input to post-meeting workspace
+
+- 日時: 2026-05-29 15:33:49 JST
+- 作業範囲: `src/routes/SessionDetail.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音後の議事録生成導線で手書きメモを扱えるようにする。
+- 採用判断: ユーザー要望では、録音後にトランスクリプトと自分の手書き会議メモを組み合わせて議事録生成できることが明示されている。既存画面はテンプレート、送信範囲、手書きメモの説明はあるが、手書きメモを実際に入力して議事録生成コンテキストとして扱う UI がなかった。外部AIや画像取り込みは未接続のまま、ローカル入力として安全に扱う導線を追加した。
+- 結果:
+  - 録音詳細の手書きメモカードに、補足メモを貼り付けられる textarea を追加した。
+  - 入力済みの場合は文字数/行数を算出し、プロンプト構成、入力ソース、AI送信範囲確認に反映するようにした。
+  - 手書きメモはローカルUI状態のみで保持し、音声ファイルや外部AIへ勝手に送らない説明を維持した。
+  - v2 パレットに合わせた控えめな紙面風 textarea スタイルを追加した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/sessions/%2FUsers%2Fwagomu%2FMeetJerky%2F2026-05-29-product-review.md` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 手書きメモはまだ永続化されない。AI議事録生成バックエンド接続、画像/スキャン取り込み、実ブラウザでの入力操作確認は未完了。
+
+---
+
+## Implementation update: align persistent recording indicator preview
+
+- 日時: 2026-05-29 15:29:44 JST
+- 作業範囲: `src/utils/previewAppData.ts`, `src/components/LiveCaptionWindow.tsx`, `src/components/RingLightWindow.tsx`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音中の常時表示インジケーターとライブ字幕プレビューの状態を揃える。
+- 採用判断: v2 要件では「録音していることが UI 上で表示され続ける」ことが重要。`LiveCaptionWindow` は非Tauriプレビュー対応済みだったが、常時表示用の `RingLightWindow` は Tauri event 購読に依存しており、ブラウザプレビューで状態確認しづらかった。録音中の透明性を確認できるよう、共有プレビューステータスを追加して両画面で参照した。
+- 結果:
+  - `previewAppData` に `PREVIEW_LIVE_CAPTION_STATUS` を追加した。
+  - `LiveCaptionWindow` のプレビュー用録音状態を共有データ参照に差し替えた。
+  - `RingLightWindow` は非Tauri時に Tauri event を購読せず、共有プレビュー状態で `REC visible` を表示するようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/utils/previewAppData.ts src/components/LiveCaptionWindow.tsx src/components/RingLightWindow.tsx` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/?window=ring-light` と `/?window=live-caption` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - Playwright は未導入のため Node REPL でのスクリーンショット検証は実施できず。実ブラウザ上の視覚確認と Tauri 実機でのイベント連携確認は未完了。
+
+---
+
+## Implementation update: centralize browser preview data for v2 surfaces
+
+- 日時: 2026-05-29 15:26:58 JST
+- 作業範囲: `src/utils/previewAppData.ts`, `src/components/ModelSelector.tsx`, `src/routes/TranscriptView.tsx`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせたブラウザプレビューの表示データを、録音画面・設定・モデル選択で一貫させる。
+- 採用判断: 非Tauriプレビュー用のサンプル設定、音声デバイス、Whisperモデル、録音中サンプル発話が複数画面に分散すると、v2 UI確認時に画面ごとの状態がズレる。録音状態の透明性と設定導線の整合性を保つため、共有データに集約し、モデルダウンロード済み判定もプレビュー設定の選択モデルに合わせた。
+- 結果:
+  - `previewAppData` にプレビュー用データと `isPreviewModelDownloaded()` を集約した。
+  - `ModelSelector` の非Tauriモデル状態確認は、固定文字列ではなく共有プレビュー設定を参照するようにした。
+  - `TranscriptView` の非Tauriモデル状態確認も同じ判定に揃えた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/utils/previewAppData.ts src/components/ModelSelector.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/`、`/?window=settings&category=transcription`、`/?window=live-caption`、`/sessions` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 実ブラウザ上の視覚確認、Tauri実機での録音・設定保存・モデル状態確認は未完了。
+
+---
+
+## Implementation update: add browser preview path for settings surfaces
+
+- 日時: 2026-05-29 15:22:11 JST
+- 作業範囲: `src/routes/SettingsView.tsx`, `src/components/ModelSelector.tsx`, `src/components/SettingsWindowRoot.tsx`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせた設定画面を、Tauri外のViteブラウザプレビューでも確認できるようにする。
+- 採用判断: ユーザー要望には、マイク入力、検出ルール、文字起こしエンジン、AIプロバイダーを切り替える設定UIが含まれる。既存の設定画面は v2 の構成になっているが、Tauri外では `get_settings`、`list_audio_devices`、`list_models`、Keychain系コマンド、設定保存、イベント購読が失敗するため、ブラウザで見た目と操作導線を確認できなかった。Tauri実行時の本番経路は維持し、非Tauri実行時だけサンプルデータ/no-opを追加した。
+- 結果:
+  - 設定画面は非Tauri時に Whisper small、ローカル保存先、サンプルマイクデバイスを返すようにした。
+  - Whisper モデル一覧・モデル状態確認・ダウンロード操作は非Tauri時にサンプル表示/no-opへ分岐した。
+  - APIキー状態確認・保存・削除は非Tauri時に外部保存せず、UI上のトースト確認に留めた。
+  - 設定ウィンドウのカテゴリ切替イベント購読は非Tauri時に登録しないようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/SettingsWindowRoot.tsx src/components/ModelSelector.tsx src/routes/SettingsView.tsx AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/`、`/?window=settings&category=transcription`、`/?window=live-caption`、`/sessions` が HTML を返すことを `curl` で確認。
+  - Chrome headless のスクリーンショット取得は画像を生成せず、ログも出さずに残留したため停止。視覚確認は未完了。
+- 依存関係追加: なし
+- 残リスク:
+  - 実ブラウザ上での視覚確認、設定操作、Tauri実機での設定保存・Keychain・モデルDLの動作確認は未完了。
+
+---
+
+## Implementation update: add browser preview path for menubar recording surface
+
+- 日時: 2026-05-29 15:17:58 JST
+- 作業範囲: `src/routes/TranscriptView.tsx`, `src/hooks/usePermissions.ts`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせたメニューバー録音UIを、Tauri外のViteブラウザプレビューでも確認できるようにする。
+- 採用判断: 録音後・ライブ字幕・会議検知通知はプレビュー可能になったが、メインのメニューバー録音面は設定、権限、音声デバイス、イベント同期、ウィンドウ表示切替が Tauri に依存していた。v2 の主要要件である「メニューバーから録音できること」と「録音中表示の透明性」を継続確認するため、非Tauri実行時だけサンプル設定・権限・音声デバイス・録音トグルを追加した。
+- 結果:
+  - `usePermissions()` は非Tauri時にマイク/画面収録権限を `granted` として返すようにした。
+  - `TranscriptView` は非Tauri時にサンプル音声デバイス、Whisper small、ローカル保存先を返すようにした。
+  - 非Tauri時は Tauri event/listen/invoke によるエラーを出さないよう、録音開始要求、音声レベル、drop count、ライブ字幕同期、リングライト表示切替を no-op にした。
+  - メイン録音ボタンは非Tauri時にサンプル録音中状態へ切り替わり、停止時はプレビュー履歴パスを保存済みとして表示するようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/hooks/usePermissions.ts src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 実ブラウザ上でのクリック操作・スクリーンショット比較、Tauri実機での録音開始/停止とウィンドウ表示切替は未完了。
+
+---
+
+## Implementation update: add browser preview state for recording overlays
+
+- 日時: 2026-05-29 15:15:08 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/components/MeetingDetectedBanner.tsx`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせた録音中UIと会議検知通知を、Tauri外のViteブラウザプレビューでも確認できるようにする。
+- 採用判断: 履歴画面はブラウザプレビュー可能になったが、録音中のライブ字幕・AIノート・翻訳切替・会議検知通知は Tauri event / command がない環境では内容が埋まらなかった。v2 UI の主要面を継続的に確認するため、非Tauri実行時だけサンプル状態を注入し、Tauri内の本番 listen / invoke 経路は維持した。
+- 結果:
+  - `LiveCaptionWindow` は非Tauri時に、マイク/相手側のサンプル発話、Whisper、端末内処理、録音中ステータスを表示するようにした。
+  - `MeetingDetectedBanner` は非Tauri時に、Google Meet を検知した通知バナーを初期表示するようにした。
+  - 非Tauri時の閉じる/開始操作は no-op またはプレビュー状態更新に留め、Tauri command を呼ばないようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/components/MeetingDetectedBanner.tsx src/utils/browserRuntime.ts AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/?window=live-caption` と `/?window=meeting-prompt` が HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 実ブラウザ上のスクリーンショット比較、実クリック操作、Tauri本体ウィンドウ上での表示確認は未完了。
+
+---
+
+## Implementation update: add browser preview data for v2 session surfaces
+
+- 日時: 2026-05-29 15:12:07 JST
+- 作業範囲: `src/hooks/useSessionList.ts`, `src/hooks/useSessionContent.ts`, `src/utils/browserRuntime.ts`, `src/utils/previewSessionData.ts`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせた録音後UIを、Tauri外のViteブラウザプレビューでも確認できるようにする。
+- 採用判断: 履歴一覧と録音詳細は v2 UI の重要面だが、ブラウザプレビューでは Tauri `invoke` が使えず、実データがないため表示確認が不十分だった。Tauri実行時の実データ取得を変えず、非Tauri実行時だけサンプル履歴を返すことで、UI確認性だけを改善した。
+- 結果:
+  - 非Tauri実行時を判定する `isTauriRuntime()` を追加した。
+  - v2要件に沿ったサンプル会議履歴と Markdown 本文を追加し、マイク/スピーカーの分離発話、AI送信範囲、議事録テンプレート確認の UI が埋まるようにした。
+  - `useSessionList()` と `useSessionContent()` は、Tauri内では従来通り Rust command を呼び、ブラウザではプレビューデータを返すようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/hooks/useSessionList.ts src/hooks/useSessionContent.ts src/utils/browserRuntime.ts src/utils/previewSessionData.ts` 成功。
+  - `npm run dev -- --host 127.0.0.1` 起動後、`/sessions` と代表セッション詳細URLが HTML を返すことを `curl` で確認。
+- 依存関係追加: なし
+- 残リスク:
+  - 実ブラウザ上のスクリーンショット比較は未完了。前回 headless Chrome が応答しなかったため、今回は到達性とビルド確認に留めた。
+  - Tauri実機での履歴取得・Finder連携・既定アプリ起動は未再検証。
+
+---
+
+## Implementation update: make v2 UI surfaces reachable in browser preview
+
+- 日時: 2026-05-29 15:07:21 JST
+- 作業範囲: `src/main.tsx`, `src/routes/TranscriptView.tsx`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針へ合わせた実装を実画面で確認しやすくするため、Tauri外のViteブラウザプレビューで主要ウィンドウを描画できるようにする。
+- 採用判断: v2 UIの完成判定には、ビルドだけでなく実際の表示確認が必要。現状は `getCurrentWindow()` がTauri外で即時例外になり、Vite上で `?window=live-caption` や `?window=settings` を開いても確認できない構造だったため、Tauri実行時の挙動を保ったままブラウザプレビュー用のフォールバックを追加した。
+- 結果:
+  - `src/main.tsx` で Tauri runtime の `getCurrentWindow().label` 取得に失敗した場合、`main` を既定ラベルとして扱うようにした。
+  - Tauri外では `?window=meeting-prompt` / `?window=live-caption` / `?window=ring-light` / `?window=controller` / `?window=settings` で対象UIを選べるようにした。
+  - `TranscriptView` の設定ウィンドウ表示後の `currentWindow.hide()` を、Tauri外ではno-opになるようにした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/main.tsx src/routes/TranscriptView.tsx AGENT_LOG.md` 成功。
+  - `npm run dev -- --host 127.0.0.1` は起動成功。headless Chrome のスクリーンショット取得は環境側で応答せず中断したため、視覚確認は未完了。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のスクリーンショット比較、Tauri本体ウィンドウ上での表示確認、操作可能性の確認はまだ完了していない。
+
+---
+
+## Implementation update: add post-meeting playback scope review surface
+
+- 日時: 2026-05-29 15:00:30 JST
+- 作業範囲: `src/routes/SessionDetail.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音後詳細画面でマイクのみ、スピーカーのみ、両方、音声ファイル未接続の状態を一目で確認できるようにする。
+- 採用判断: ユーザー要望では、録音後にスピーカーのみ、マイクのみ、両方の音声トラックを確認・再生できることが明示されている。現状は切替タブと無効な再生ボタンだけで、どの範囲を確認しているかが弱かったため、音声ファイル連携前でもトラック別の確認範囲を明示する `Playback scope` 面を追加した。
+- 結果:
+  - 分離トラック再生カードに `Mic only` / `Speaker only` / `Both` / `Audio file` の状態グリッドを追加した。
+  - 選択中の再生範囲を active 表示し、対応する文字起こし件数を表示するようにした。
+  - `Audio file` は未接続として明示し、実ファイル再生が未接続であることを隠さないUIにした。
+  - v2 の paper / amber / line / mono typography に合わせてCSSを追加した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の音声ファイルパス保存、トラック別再生、波形同期は未実装。今回の変更は録音後UI上の再生範囲確認に限定している。
+
+---
+
+## Implementation update: add live AI question send-scope review surface
+
+- 日時: 2026-05-29 14:57:11 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音中AI質問の送信前に、文字起こし・質問・音声ファイル・AIプロバイダーの扱いを確認できる表示を追加する。
+- 採用判断: プロダクトコンセプトでは録音状態とAI送信有無の透明性が品質基準に含まれる。前回の質問下書きUIだけでは、ユーザーが「何がAIへ送られるのか」を確認する面が不足していたため、実送信は行わずに送信範囲確認だけをUIへ追加した。
+- 結果:
+  - 質問を送信待ちにした直後、`Transcript` / `Question` / `Audio` / `Provider` の送信範囲確認パネルを表示するようにした。
+  - `Audio` は未送信、`Provider` は未接続、現在は外部送信なしであることを明示した。
+  - 確認パネルから「待機に戻す」「破棄」を選べるようにし、AI未接続でも安全に質問導線を試せるようにした。
+  - パネルの色・境界・フォントを v2 の paper / amber / green / ink トークンへ合わせた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実AIプロバイダー接続、質問応答、実送信時の最終確認ダイアログ、実画面での視覚確認は未完了。
+
+---
+
+## Implementation update: make live AI meeting question UI draftable without external send
+
+- 日時: 2026-05-29 14:54:40 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx`, `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音中のAI会議ノートで会議内容について質問できる導線を、ミニマルかつ外部送信の透明性を保った形に近づける。
+- 採用判断: ユーザー要望では、録音中にリアルタイム会議ノートと、それに対して質問できる機能が欲しいと明示されている。既存UIはAIノートON/OFFと質問欄を表示していたが、AI ON時でも候補・入力・送信が常に無効で、質問導線として弱かった。実AI接続はまだないため、外部送信しない質問下書き/送信待ちUIとして安全に前進させた。
+- 結果:
+  - AIノートON時に質問候補を下書きへ反映できるようにした。
+  - 質問入力をAIノートON時だけ有効化し、送信ボタンで「AI接続後送信用」の待機状態を表示するようにした。
+  - 送信待ちカード、候補ボタン、入力フォーカス、送信可能状態を v2 の紙面/アンバー/グリーントークンで整えた。
+  - 実AI送信は行わず、aria-label/title で「外部送信なし」「AI接続後送信用の下書き」と明示した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAIプロバイダー接続、質問応答、送信範囲確認ダイアログは未実装。今回の変更は録音中UI上の安全な質問下書き導線に限定している。
+
+---
+
+## Implementation update: remove remaining direct legacy flow colors from recording surfaces
+
+- 日時: 2026-05-29 14:51:09 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、会議中録音フロー、AIノート送信範囲、会議検知開始フロー、履歴/設定/コントローラーの同型フローに残っていた旧固定色と直接フォント指定を v2 トークンへ寄せる。
+- 採用判断: ユーザー要望では、録音中であること、リアルタイム文字起こし、AIノート/質問、メニューバー録音、会議検知通知が一貫してミニマルに見えることが重要。これらのフロー部品に同じ旧グリーン/アンバー面と `SFMono` / `Inter` フォールバックが残っていたため、横断的に整理した。
+- 結果:
+  - ライブ録音フロー、ライブノート送信範囲、翻訳案内、リングライトバッジ、メニューバー初期表示、会議検知開始フローを `--es-*` / `--jerky-*` / `--font-*` 参照へ変更した。
+  - 設定の検出/音声/AIプロバイダー系フロー、履歴ライブラリ/出力レール、controller flow の ready/muted 状態色を v2 の green/amber/paper 系へ統一した。
+  - 旧固定色検索では、意図的なトークン定義 `--jerky-accent-soft: #fff7ed` と `--font-mono` の macOS フォールバック `"SF Mono"` だけが対象パターンとして残る状態にした。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `src/App.css` の広範な差分は既存の継続作業を含むため、完成判定には実際の画面表示確認と要求別の網羅監査がまだ必要。
+
+---
+
+## Implementation update: align settings window chrome and overview surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:47:40 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、設定ウィンドウの共通クローム、サイドバー、概要カード、ワークフロー、境界表示、セクション面を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望では、設定画面でマイク入力、検出ルール、文字起こしエンジン、AIプロバイダーを扱うことが明示されている。設定ウィンドウの基礎面に旧固定色と直接フォント指定が残ると、各設定パネルの整理後も全体の印象が v2 とズレるため、共通クロームを優先して整えた。
+- 結果:
+  - 設定ウィンドウ、タイトルバー、録音可視性ピル、サイドバー、メインペインの境界線・背景・文字色を `--es-*` / `--jerky-*` 参照へ変更した。
+  - 設定概要カード、ワークフロー、キャプチャ境界レール、セクション見出しで残っていた旧グレー/青/緑/アンバー系の固定色を v2 トークンへ置き換えた。
+  - 対象範囲のフォント指定を `var(--font-sans)` / `var(--font-mono)` に寄せ、Pencil v2 の Funnel Sans / IBM Plex Mono 前提に合わせた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `src/App.css` 全体には、今回の対象外のライブノート周辺、後続の設定ステータス面、末尾付近の共通表示に旧固定色/直接フォント指定がまだ残っている。
+
+---
+
+## Implementation update: align menubar preflight and visibility surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:44:03 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、メニューバー録音導線のプリフライト、録音可視性、履歴行、権限行を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望ではメニューバーから録音できることと、録音していることを忘れないための継続インジケーターが重要。メニューバーの開始前チェック、録音可視性、履歴アクセス、権限確認に旧固定色と直接フォント指定が残っていたため、録音導線の一貫性を優先して整理した。
+- 結果:
+  - キャプチャスコープ、プリフライト、録音可視性カードを `--es-*` / `--jerky-*` / `--font-*` 参照へ変更した。
+  - メニューバー履歴行、空状態、二次リンク、権限行、権限アイコンの旧グレー/青/緑/オレンジ固定色を v2 トークンへ置き換えた。
+  - 対象範囲の旧 `Inter` / `SFMono` 指定を `var(--font-sans)` / `var(--font-mono)` へ統一した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `src/App.css` 全体には、今回の対象外のメニューバー別セクションや周辺UIに旧固定色/直接フォント指定が残っている可能性がある。
+
+---
+
+## Implementation update: align session detail track and minutes surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:41:32 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音後の詳細画面で使う音声トラック確認、LINE風トランスクリプト、議事録生成、手書きメモ連携、AI送信範囲のUI面を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望では、録音後に履歴から音声トラックを確認し、チャットUI形式の文字起こしを見て、テンプレートや手書きメモを元に議事録生成できることが明示されている。録音詳細の該当ブロックに旧固定色と直接フォント指定が残っていたため、機能ロジックは変えずにトークン参照へ整理した。
+- 結果:
+  - 音声トラック再生カード、波形、トラック状態、トラックルート、トラックプレビューを `--es-*` / `--jerky-*` / `--font-*` 参照へ変更した。
+  - LINE風トランスクリプト、テンプレートプレビュー、プロンプトレシピ、AIプレースホルダー、素材ソース、議事録生成フローを v2 の紙面/アンバー/グリーントーンへ統一した。
+  - AI送信範囲、手書きメモ、出力フローで残っていた旧 `Inter` / `Geist` / `SFMono` 指定と旧グレー/オレンジ/グリーン固定色を除去した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `src/App.css` 全体には、メニューバーの一部や設定以外の周辺表示に旧固定色/直接フォント指定がまだ残っている可能性がある。今回の変更は録音後の詳細画面に限定した。
+
+---
+
+## Implementation update: align global recording controls and menubar surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:38:06 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、アプリ共通の録音操作、状態色、メニューバー録音導線、常時録音インジケーターを v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望では、会議検知通知とメニューバーの両方から録音できること、録音中インジケーターが表示され続けることが明示されている。前回までに画面単位の主要面は整えたが、共通変数とメニューバー/リングライト周辺に旧青・緑・赤・グレー・旧フォント指定が残り、体験の統一を弱めていたため、共通レイヤーから優先して整理した。
+- 結果:
+  - `:root` のナビ、コントロールボタン、メーター、音声ソース、権限、会議状態、コピー、録音一時停止ピルの変数を `--es-*` / `--jerky-*` 参照へ変更した。
+  - 録音/停止/文字起こし/キャプチャの共通ボタン色を v2 のグリーン/レッド/ブルー/アンバー系へ変更した。
+  - リングライトの録音インジケーター、会議検知ステータスピル、メニューバーの録音ポップオーバー、初回セットアップ/権限フローを v2 トークンと `var(--font-sans)` / `var(--font-mono)` へ寄せた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `src/App.css` には、履歴詳細や設定下部など今回の対象外に旧固定色/直接フォント指定がまだ残っている。今回の変更は共通変数、録音操作、メニューバー導線、常時インジケーターに限定した。
+
+---
+
+## Implementation update: align settings audio and AI surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:33:24 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、設定画面の音声入力/ルーティング、AIプロバイダー、プライバシー/権限、保存操作まわりの代表UI面を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望には、マイク入力切り替え、検出ルール、文字起こしエンジン、AIプロバイダーを設定できることが含まれる。検出/文字起こし設定は前回整えたため、今回は録音の透明性とAI送信範囲に直結する音声/AI/権限表示の旧固定色を優先して整理した。
+- 結果:
+  - 音声ルーティング矢印、フォーム入力、出力パス、プライバシー選択、権限バッジ、保存/未保存ステータスを `--es-*` / `--jerky-*` / `--font-*` 参照へ変更した。
+  - AIプロバイダー/AI実行履歴まわりで残っていた警告色・状態色・ミュート面を v2 のアンバー/グリーン/レッド/紙面トーンに統一した。
+  - 該当範囲の旧 `Inter` / `Segoe UI` フォント指定と、旧グレー/オレンジ/赤の固定色指定を代表面から除去した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `src/App.css` 全体には、今回の範囲外であるサイドバー、グローバルナビ、古い通知系などに旧固定色がまだ残っている可能性がある。
+
+---
+
+## Implementation update: align settings detection and transcription surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:28:06 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、設定画面の検出ルール/文字起こし設定の代表UI面を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望には、設定画面でマイク入力、検出ルール、文字起こしエンジン、AIプロバイダーを決められるUIが含まれる。前回までに録音中/録音後/通知は v2 トーンへ寄せたが、設定内の検出/文字起こし領域に旧固定色と直接フォント指定が残り、全体の一貫性が弱かった。今回は動作や選択肢は変えず、設定の代表面だけをトークン参照へ整理した。
+- 結果:
+  - 文字起こしエンジン選択、言語ラベル、辞書フロー、補正カード、翻訳グリッド、文字起こしプレビューを `--es-*` / `--jerky-*` / `--font-*` 参照へ変更した。
+  - 検出設定のサブタイトル、ステータスバッジ、サービスチップ、検出ルールプレビュー、安全フロー、ルール/ログ行、検出理由カードを v2 トークン参照へ変更した。
+  - `Funnel Sans` / `IBM Plex Mono` の直接指定を代表箇所で `var(--font-sans)` / `var(--font-mono)` に置き換えた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 設定画面全体には、サイドバー、概要カード、音声設定、AI設定などに旧固定色がまだ残っている。今回は検出/文字起こし設定の代表面に限定した。
+
+---
+
+## Implementation update: align meeting detection prompt with v2 tokens
+
+- 日時: 2026-05-29 14:25:40 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、会議検知通知と録音開始導線の主要UI面を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望では「会議の検知による通知ウィンドウから録音できること」が録音開始体験の入口であり、ここが旧固定色のままだと録音中UI/履歴UIとの一貫性が途切れる。機能ロジックや文言は維持し、通知バナー、検知シグナル、プリフライト、プライバシー表示、録音開始フロー、主要ボタンだけを v2 の紙面系トーンへ統一した。
+- 結果:
+  - 会議検知バナーの背景、境界、影、タイトル、詳細文を `--color-surface` / `--es-paper` / `--es-ink` / `--es-muted` / `--font-display` 参照へ変更した。
+  - マイク/システム音声/AI/エンジンのチップ、検知シグナル、プリフライト、プライバシーノートを v2 トークン参照へ変更した。
+  - `Detect → Tracks → Start` の録音開始フローで `Funnel Sans` / `IBM Plex Mono` の直接指定を `var(--font-sans)` / `var(--font-mono)` に置き換えた。
+  - 録音開始ボタンと閉じるボタンを `--jerky-accent` / `--color-surface` / `--es-ink` ベースへ変更した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 設定画面の細部には旧固定色や個別フォントスタックがまだ残っている。今回の変更は会議検知通知の主要面に限定した。
+
+---
+
+## Implementation update: align post-meeting library surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:23:43 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音後の履歴一覧と録音詳細の主要UI面を v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望の録音後UIは、履歴検索、コピー、音声トラック確認、チャット形式の文字起こし、議事録生成へ進む導線が中心。これらの主要面に旧固定色・個別フォントスタックが残ると、録音中UIと録音後UIの体験が分断されるため、履歴一覧/録音詳細の見出し、検索、結果カード、ライブラリフロー、出力レール、レビューカードを v2 トークン参照へ寄せた。
+- 結果:
+  - 履歴一覧ヘッダー、検索、透明性カード、集計カード、履歴行カードの背景/文字色を `--color-surface` / `--es-ink` / `--es-muted` へ変更した。
+  - `Session library` 系のフローと出力レールで、`Funnel Sans` / `IBM Plex Mono` の直接指定を `var(--font-sans)` / `var(--font-mono)` に置き換えた。
+  - 履歴行の再利用スコープ、次アクションフロー、能力チップを v2 の紙面系サーフェスへ寄せた。
+  - 録音詳細のファイル名、トラック/文字起こし/議事録パネル、レビュー経路カードを v2 トークン参照へ寄せた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 会議検知バナーや設定画面の細部には旧固定色がまだ残っている。今回の変更は録音後UIの主要面に限定した。
+
+---
+
+## Implementation update: align live recording surfaces with v2 tokens
+
+- 日時: 2026-05-29 14:20:39 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音中UIのコンパクトインジケーター、リアルタイム文字起こし、翻訳ノート、AIノート/質問レールを v2 の色・フォントトークンへ寄せる。
+- 採用判断: ユーザー要望の中心は録音中UIであり、録音状態の透明性、リアルタイム文字起こし、翻訳、AIノートが常時視認できること。前回までに機能レールは追加済みだったが、主要面に `#1d1d1f` / `#6e6e73` / `#ff6a00` / 個別フォントスタックが残り、v2.pen の `es-paper` / `es-ink` / `es-muted` / `es-amber` の一貫性が弱かったため、録音中UIを優先して整えた。
+- 結果:
+  - コンパクト録音ピルとライブ文字起こしパネルの境界、背景、影、テキスト色を v2 トークン参照に変更した。
+  - 録音中ステータス、ヘルスピル、タブ、表示モードフロー、翻訳ノート、発話行の色指定を `--es-*` / `--jerky-*` へ置き換えた。
+  - AIノートの接続状態、送信範囲、フロー、ノートカード、質問入力を v2 の紙面系サーフェスへ寄せた。
+  - `IBM Plex Mono` / `Funnel Sans` の直接フォントスタックを `var(--font-mono)` / `var(--font-sans)` に置き換え、v2.pen のフォント変数と実装の対応を強めた。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - CSS全体にはまだ旧固定色や個別フォントスタックが残っている。今回は録音中の主要UI面に限定し、履歴/設定の細部は次の作業対象として残した。
+
+---
+
+## Implementation update: apply v2 display typography to brand surfaces
+
+- 日時: 2026-05-29 14:17:53 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、旧来のアプリ見出し・設定ブランド・メニューバー見出し・録音詳細タイトルを v2 のブランド表現へ寄せる。
+- 採用判断: グローバルトークンと代表色の置換だけでは、ユーザーが最初に認識するブランド面に `font-weight` ベースの旧Mac風見出しが残り、v2.pen の `Anton` / `Funnel Sans` / 紙面色パレットの印象が弱かった。機能UIの密度は維持しつつ、見出しとブランドロゴだけに表示書体を適用してミニマルさと識別性を上げた。
+- 結果:
+  - アプリヘッダー、会議検知/メニューバーポップオーバー見出し、設定サイドバーのブランド名、録音詳細タイトルに `var(--font-display)` を適用した。
+  - アプリのキッカーを `var(--font-mono)` の uppercase 表現へ変更し、v2 の情報ラベル感に寄せた。
+  - 設定ウィンドウ背景を v2 の `--es-paper` / `--es-amber` ベースへ変更した。
+  - メニューバーの idle / recording ロゴ背景を `--es-ink` / `--jerky-accent` 参照へ変更した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - `Anton` / `Funnel Sans` / `IBM Plex Mono` のフォントファイルはまだ同梱していない。未インストール環境ではフォールバック表示になるため、配布時の見た目固定にはフォント同梱または明示的ロード方針が必要。
+
+---
+
+## Implementation update: replace legacy style literals with v2 tokens
+
+- 日時: 2026-05-29 14:14:15 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、代表UIに残っていた旧フォント/アクセント/本文色の直接指定を v2 デザイントークン参照へ置き換える。
+- 採用判断: 前回 `--es-*` と v2 フォントトークンを追加したが、実際のコンポーネントCSSには `Geist` / `Inter` や `#ff5c00` / `#10131a` / `#697080` の直接指定が多数残っていた。直接指定を減らすことで、Meet Jerky v2 の紙面系パレットとタイポグラフィを会議検知、設定、履歴、録音中UIへ横断的に効かせやすくした。
+- 結果:
+  - 代表的な `Geist` / `Inter` のフォントスタックを `var(--font-sans)` に置き換えた。
+  - `#ff5c00` を `var(--jerky-accent)`、`#10131a` を `var(--es-ink)`、`#697080` を `var(--es-muted)` に置き換えた。
+  - 一括置換時に v2 変数定義自身が再帰参照になった箇所を確認し、`--es-ink: #10131A` / `--es-muted: #697080` に戻した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `Anton`, `#F59E0B`, `#1167FF`, `#10131A`, `#697080`, `#F7F1E5`) を実装の参照元としてより広く反映した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - CSS全体にはまだ個別の色指定やフォールバックフォントが残っている。今回は代表的な旧指定の置換に留め、視覚差分が大きくなりすぎる全面置換は避けた。
+
+---
+
+## Implementation update: align global v2 design tokens
+
+- 日時: 2026-05-29 14:12:25 JST
+- 作業範囲: `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、個別コンポーネントだけでなく実装全体が v2 のフォント・色変数を参照できる状態にする。
+- 採用判断: これまで会議中、録音後、設定、メニューバーの各UIに v2 由来の紙面系レールを追加してきたが、グローバルCSS側の基準フォントと基本色が旧指定のままだった。Pencil MCP で取得した v2 変数をデザイントークンとして登録し、今後のUI追加も同じパレットとタイポグラフィに揃えやすくする。
+- 結果:
+  - `--es-amber` / `--es-blue` / `--es-dark` / `--es-green` / `--es-ink` / `--es-line` / `--es-muted` / `--es-paper` / `--es-red` を CSS カスタムプロパティとして追加した。
+  - `--font-sans` を `Funnel Sans` 優先、`--font-mono` を `IBM Plex Mono` 優先、`--font-display` を `Anton` 優先にした。
+  - 基本テキスト、背景、罫線、フォーカス、アクセント、音声状態、エラー色を v2 変数へ寄せた。
+  - `html` / `body` / `#root` の背景を固定色ではなく `--color-bg` / `--color-surface` 参照に変更した。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - フォントファイルは同梱していないため、未インストール環境では macOS 標準フォールバックになる。リモートフォント読み込みはデスクトップアプリの安定性とオフライン性を優先して追加していない。
+
+---
+
+## Implementation update: add session detail review path
+
+- 日時: 2026-05-29 14:10:17 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、チャット形式の文字起こし、分離トラック確認、議事録テンプレート、AI送信確認の関係を一目で追えるようにする。
+- 採用判断: プロダクトコンセプトの「履歴検索」「マイク音声とデスクトップ音声の別トラック取得」「AI議事録」と、ユーザー要望の「LINEのようなチャットUI」「音声トラックの確認」「プロンプトテンプレート」「AI利用はオンオフ/送信確認」に沿う。既存UIは各機能を持っていたが、録音後詳細で Transcript → Track → Minutes のレビュー順序が画面上で分断されていたため、横断導線を追加した。
+- 結果:
+  - 録音詳細に `Review path` レールを追加した。
+  - `Chat` / `Track` / `Minutes` / `AI` を並べ、チャット形式文字起こし件数、選択中トラック、議事録テンプレート、AI未接続/外部送信なしを表示した。
+  - 選択中トラックやテンプレート変更に合わせて表示内容が変わるようにした。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実音声トラック再生、AI議事録生成、手書きメモ取り込みは未接続。今回の変更は録音後詳細画面でのレビュー順序と送信境界の可視化に留めている。
+
+---
+
+## Implementation update: add menubar capture scope
+
+- 日時: 2026-05-29 14:07:33 JST
+- 作業範囲: `src/routes/TranscriptView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` のメニューバー録音 UI 方針に合わせ、手動録音開始前から録音範囲、文字起こし、履歴保存、AI送信確認の境界を分かりやすくする。
+- 採用判断: プロダクトコンセプトの「メニューバーからの録音」「マイク音声とデスクトップ音声の別トラック取得」「履歴保存」「安心感: AI送信有無を明確にする」に沿う。既存UIは状態カードと Start → Live → Save を持っていたが、録音開始前後で何が取得・保存され、何がAI送信されないかを横断的に確認しにくかったため、Capture scope を追加した。
+- 結果:
+  - メニューバーポップオーバーに `Capture scope` レールを追加した。
+  - `Tracks` / `Transcript` / `History` / `AI` を並べ、2系統トラック、文字起こしエンジン、ローカル履歴保存、AI送信確認の関係を表示した。
+  - 録音中、文字起こし中、保存済み履歴がある場合は各ピルの状態が変わるようにした。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - AI議事録生成や外部送信の実処理は既存の未接続/確認導線に依存する。今回の変更はメニューバーUI上の取得・保存・送信境界の可視化に留めている。
+
+---
+
+## Implementation update: add permission recording safety flow
+
+- 日時: 2026-05-29 14:04:45 JST
+- 作業範囲: `src/components/PermissionBanner.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音透明性方針に合わせ、権限不足時でも録音前に確認すべき範囲をミニマルに把握できるようにする。
+- 採用判断: プロダクトコンセプトの「安心感」「録音状態の透明性」「マイク音声とデスクトップ音声の別トラック取得」と、ユーザー要望の「録音していることがUI上でインディケーターとして表示され続けてほしい」に沿う。既存UIは権限説明が文章中心で、Mic / System / REC 表示の関係が瞬時に読み取りにくかったため、録音前チェックの短いフローを追加した。
+- 結果:
+  - 権限バナーに `Mic → System → REC` の safety flow を追加した。
+  - マイクと画面収録の状態を、要確認/許可済みとして短いピルで表示するようにした。
+  - `REC` は常時表示として扱い、録音中インジケーターを隠さないプロダクト方針を権限バナー内でも明示した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のmacOS権限状態は既存の `usePermissions` に依存する。今回の変更は権限状態の理解と録音表示方針の明示に留めている。
+
+---
+
+## Implementation update: add session library output scope
+
+- 日時: 2026-05-29 14:01:23 JST
+- 作業範囲: `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴一覧からコピー、トラック確認、AI議事録へ進む出力スコープを分かりやすくする。
+- 採用判断: プロダクトコンセプトの「履歴検索」「AI議事録」「マイク音声とデスクトップ音声の別トラック取得」と、ユーザー要望の「履歴の確認」「検索」「内容のコピー」「音声トラックの確認」に沿う。既存UIは Search → Filter → Open の流れと各行の操作を持っていたが、一覧全体としてコピー可能な本文、詳細で確認するトラック、AI送信確認の境界が見えにくかったため、Output scope を追加した。
+- 結果:
+  - 履歴一覧に `Output scope` レールを追加した。
+  - `Copy` では本文あり件数、`Tracks` では自分/相手側の件数、`AI` では送信前確認を表示した。
+  - 一覧で即コピーできる操作と、詳細でトラック/議事録テンプレートを確認する操作を分けて読めるようにした。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 音声ファイルの実トラック再生やAI議事録生成は詳細画面側の未接続状態に依存する。今回の変更は履歴一覧での出力スコープ理解に留めている。
+
+---
+
+## Implementation update: add live AI notes send scope
+
+- 日時: 2026-05-29 13:58:51 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の会議中 UI 方針に合わせ、AI会議ノート利用時の送信候補と未送信範囲をミニマルに可視化する。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」「リアルタイム文字起こし」「AI議事録」と、ユーザー要望の「リアルタイムの会議ノート機能」「AIを利用するため、オンオフできる」「録音していることが分かるインジケーター」に沿う。既存UIはAIノートON/OFFと発話→ノート→質問の流れを表示していたが、会議中に何がAI送信候補で何が送られないかを即座に確認しにくかったため、送信スコープを追加した。
+- 結果:
+  - AI notes 欄に `Transcript` / `Audio` / `Ask` の send scope を追加した。
+  - AIノートON時は Transcript を送信候補、Audio を未送信、Ask を未接続として表示した。
+  - AIノートOFF時は Transcript を Local、Audio を未送信、Ask を OFF と表示し、録音と文字起こしだけが継続する前提を明示した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - AI会議ノート生成と質問応答の実処理は未接続。今回の変更は会議中の送信スコープ理解とAI未接続時の安全表示に留めている。
+
+---
+
+## Implementation update: add settings capture boundary rail
+
+- 日時: 2026-05-29 13:56:52 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、マイク入力、文字起こしエンジン、AI議事録送信の境界をミニマルに見える化する。
+- 採用判断: プロダクトコンセプトの「マイク音声とデスクトップ音声の別トラック取得」「文字起こし精度」「録音状態の透明性」と、ユーザー要望の「マイク入力を切り替え」「文字起こしに使うエンジン」「議事録のためのAIプロバイダー」に沿う。既存の概要カードとワークフローは個別設定への導線として機能していたが、音声取得・文字起こし・AI送信の境界が横断的に見えにくかったため、Capture boundary を追加した。
+- 結果:
+  - 設定画面上部に `Capture boundary` レールを追加した。
+  - `Audio` / `Text` / `AI` の3ステップで、Mic + System、選択中エンジン、AI議事録の送信前確認を表示した。
+  - 外部リアルタイム文字起こしエンジン選択時は `Text` を warn トーンにし、送信境界が変わることを示すようにした。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - AIプロバイダーの実接続や外部送信の実行可否制御は既存の未接続状態に依存する。今回の変更は設定画面の状態理解と送信境界の可視化に留めている。
+
+---
+
+## Implementation update: add minutes prompt recipe preview
+
+- 日時: 2026-05-29 13:54:12 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴詳細からテンプレート、文字起こし、手書きメモを使って議事録生成する見通しを強化する。
+- 採用判断: プロダクトコンセプトの「履歴、検索、AI議事録、ToDo抽出」と、ユーザー要望の「プロンプトのテンプレートみたいなのも選択できる」「手書きの会議メモをもとに議事録の生成」に沿う。既存UIはテンプレート選択と送信範囲確認を持っていたが、選択したテンプレートがどの入力を使い、どの出力構成へ変換するかが一目で分かりにくかったため、Prompt recipe を追加した。
+- 結果:
+  - 議事録ワークスペースに `Prompt recipe` カードを追加した。
+  - `Transcript + Memo → テンプレート名` の構成、入力件数、手書きメモ待ち、出力セクションを表示した。
+  - 音声ファイルをAIへ送らず、文字起こしと追加メモを送信候補にする前提を明示した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - AI議事録生成、プロンプト保存、手書きメモ取り込みの実処理は未接続。現時点では生成前の材料整理と送信範囲確認のUIに留めている。
+
+---
+
+## Implementation update: add persistent recording scope to ring light
+
+- 日時: 2026-05-29 13:51:41 JST
+- 作業範囲: `src/components/RingLightWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、録音していることを忘れないための常時インジケーターをより直感的にする。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」と、ユーザー要望の「録音していることがUI上でインディケーターとして表示され続けてほしい」に沿う。既存 RingLight は REC visible と一文の状態表示を持っていたが、マイク・システム音声・AI送信のスコープを瞬時に判別しにくかったため、バッジ内に小さな状態チップを追加した。
+- 結果:
+  - RingLight の常時表示バッジに `Mic` / `Sys` / `AI` の状態スコープを追加した。
+  - 既存の `role="status"`、`aria-live`、イベント購読、タイトル/aria-label は維持し、視覚情報だけを拡張した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - RingLight は小型オーバーレイのため、実機のウィンドウサイズやノッチ/メニューバー配置での視認性は追加の目視確認が必要。
+
+---
+
+## Implementation update: add live recording capture flow
+
+- 日時: 2026-05-29 13:48:37 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、2トラック取得、原文/翻訳表示、AI質問の関係をミニマルに分かりやすくする。
+- 採用判断: プロダクトコンセプトの「リアルタイム文字起こし」「フローティングウィンドウ表示」と、ユーザー要望の「録音中はリアルタイムの文字起こし」「必要に応じてリアルタイム翻訳」「会議内容について質問できるノート」に沿う。既存UIは表示切替とAIノートを持っていたが、録音中の全体導線として Capture → View → Ask が分散していたため、最上部に最小フローを追加した。
+- 結果:
+  - ライブ字幕ウィンドウ上部に `Capture` → `View` → `Ask` の live recording flow を追加した。
+  - 表示中の2トラック取得状態、原文/翻訳ビュー、AI質問のON/OFF/未接続状態を一列で確認できるようにした。
+  - 小幅画面では1カラムに落とし、既存の字幕タブ、翻訳プレビュー、AIノートON/OFF、質問欄は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - リアルタイム翻訳、AIノート生成、質問応答の実処理は未接続。現時点では録音中UIの状態理解と安全な送信前提の明示に留めている。
+
+---
+
+## Implementation update: add meeting prompt start flow
+
+- 日時: 2026-05-29 13:46:37 JST
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の会議検知通知 UI 方針に合わせ、通知ウィンドウから録音開始した後の流れをミニマルに分かりやすくする。
+- 採用判断: プロダクトコンセプトの「会議検知」「通知」「録音状態の透明性」と、ユーザー要望の「会議の検知による通知ウィンドウから録音できること」「録音していることがUI上で表示され続けてほしい」に沿う。既存UIは検知シグナルと開始前チェックを表示していたが、開始ボタン押下後にメインウィンドウ表示と録音状態pillへ進む関係が弱かったため、Start → Main → REC の最小フローを追加した。
+- 結果:
+  - 会議検知通知に `Start` → `Main` → `REC` の start flow を追加した。
+  - 開始は手動、開始後にメインウィンドウを表示、録音状態は常時表示する流れを明示した。
+  - 小幅画面では1カラムに落とし、既存の検知シグナル、開始前チェック、プライバシー注記、開始/今回はしないボタンは維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の録音開始完了、メインウィンドウ表示、REC pill 表示の連鎖はイベント経路依存。現時点では通知UI上の状態遷移理解を強化した。
+
+---
+
+## Implementation update: add controller recording verification flow
+
+- 日時: 2026-05-29 13:44:40 JST
+- 作業範囲: `src/components/ControllerWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、デバッグコントローラーでも録音開始からライブ表示、履歴保存までの検証導線を分かりやすくする。
+- 採用判断: プロダクトコンセプトの「会議検知」「通知」「リアルタイム文字起こし」「履歴保存」と、ユーザー要望の「メニューバーからの録音」「録音中インジケーター」に沿う。コントローラーはデバッグ用途だが、本番経路の検知/開始/字幕/リングライトを発火するため、v2の状態遷移を見える化する価値がある。
+- 結果:
+  - デバッグコントローラーのヘッダー下に `Detect` → `Start` → `Live` → `Save` の recording verification flow を追加した。
+  - 会議検知通知、手動開始、ライブ字幕/リングライト、履歴保存の順に検証する前提を明示した。
+  - 小幅画面では1カラムに落とし、既存の各イベント発火ボタンとステータス表示は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/ControllerWindow.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - デバッグコントローラーは本番ユーザー向けUIではない。実際の保存完了イベントや履歴反映の自動検証までは未接続。
+
+---
+
+## Implementation update: add session library search flow
+
+- 日時: 2026-05-29 13:42:51 JST
+- 作業範囲: `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴一覧から検索、絞り込み、詳細確認へ進む導線を分かりやすくする。
+- 採用判断: プロダクトコンセプトの「履歴、検索、AI議事録」とユーザー要望の「履歴の確認ができ、検索ができたり、内容のコピーができたり」に沿う。既存UIは検索欄、結果サマリー、各行の再利用導線が存在していたが、一覧全体として Search → Filter → Open の流れが弱かったため、履歴ライブラリの最小フローを追加した。
+- 結果:
+  - 履歴一覧に `Search` → `Filter` → `Open` の library flow を追加した。
+  - 検索語の有無、絞り込み後の件数、詳細画面でのトラック確認/議事録テンプレート選択へ進む関係を明示した。
+  - 小幅画面では1カラムに落とし、既存の検索欄、結果サマリー、各行のコピー/詳細/Finder操作は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 検索インデックス永続化、音声ファイルメタデータ検索、AI議事録生成結果の一覧統合は未接続。現時点では履歴一覧の検索/再利用導線強化に留めている。
+
+---
+
+## Implementation update: add session detail output flow
+
+- 日時: 2026-05-29 13:41:08 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、内容コピー、書き出し、AI議事録の送信確認までの出口導線を分かりやすくする。
+- 採用判断: プロダクトコンセプトの「履歴、検索、AI議事録、ToDo抽出」とユーザー要望の「履歴確認、検索、内容コピー、音声トラック確認、議事録生成」に沿う。既存UIは各ボタンとワークスペースが存在していたが、録音詳細の下部操作が単なるボタン列で、コピー/書き出し/AI送信確認の関係が弱かったため、Copy → Export → AI の最小フローを追加した。
+- 結果:
+  - 録音詳細フッターに `Copy` → `Export` → `AI` の output flow を追加した。
+  - Transcript コピー、Markdown 書き出し、AI送信確認を分け、AI議事録は送信範囲確認後であることを明示した。
+  - 小幅画面では1カラムに落とし、既存のAI未接続、書き出し、Finder表示ボタンは維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の音声ファイル書き出し、AI議事録生成、送信前確認モーダルは未接続。現時点では録音後詳細画面の出口導線強化に留めている。
+
+---
+
+## Implementation update: add AI provider confirmation flow
+
+- 日時: 2026-05-29 13:39:23 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、AI議事録プロバイダー、テンプレート、送信確認の関係をミニマルに分かりやすくする。
+- 採用判断: プロダクトコンセプトの「AI議事録生成」と「安心感: AI送信有無を明確にする」に沿う。既存UIはプロバイダー一覧、テンプレート候補、生成前チェックが別カードで分かれており、選択後に何が外部送信へ進むかの全体像が弱かったため、Provider → Template → Confirm の最小フローを追加した。
+- 結果:
+  - AIプロバイダーカードに `Provider` → `Template` → `Confirm` の confirmation flow を追加した。
+  - 未接続プロバイダー、テンプレート候補、生成時確認を分け、外部送信は明示確認後だけであることを強調した。
+  - 小幅画面では1カラムに落とし、既存のプロバイダー一覧、テンプレート候補、生成前チェック、実行履歴は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAIプロバイダー接続、APIキー保存、テンプレート編集、送信前の差分確認モーダルは未接続。現時点では設定画面の理解導線強化に留めている。
+
+---
+
+## Implementation update: add audio input readiness flow
+
+- 日時: 2026-05-29 13:37:37 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、マイク入力切り替えと2トラック録音の関係をミニマルに分かりやすくする。
+- 採用判断: プロダクトコンセプトの「マイク音声とデスクトップ音声の別トラック取得」とユーザー要望の「マイク入力を切り替えられる設定UI」に沿う。既存UIはマイク選択と説明文が中心で、入力選択、権限、録音トラックの関係が見えにくかったため、Input → Permission → Record の最小フローを追加した。
+- 結果:
+  - 音声設定のマイク選択下に `Input` → `Permission` → `Record` の readiness flow を追加した。
+  - マイク権限状態に応じて許可済み/要確認を表示し、自分トラックへ接続されることを明示した。
+  - 相手側システム音声カードに Screen / Source / Track の状態チップを追加し、画面収録権限、会議アプリ音声、相手側トラックの関係を分けて表示した。
+  - 小幅画面では各フローを1カラムに落とし、既存のマイク選択、デバイス再取得、録音トラック説明は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のシステム音声ルーティング選択、テスト音、録音トラックの実入力レベル連動は未接続。現時点では設定画面の理解導線強化に留めている。
+
+---
+
+## Implementation update: add detection safety flow
+
+- 日時: 2026-05-29 13:35:29 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、会議検知ルールが録音開始に直結しないことをミニマルに明示する。
+- 採用判断: プロダクトコンセプトの「会議検知の網羅性と信頼性」と「録音状態の透明性」に沿う。既存UIは2/3シグナル一致と通知確認を説明していたが、候補化から手動開始までの安全な流れが視覚的に弱かったため、Signal → Audio → Notify の最小フローを追加した。
+- 結果:
+  - 検出ルールカードに `Signal` → `Audio` → `Notify` の safety flow を追加した。
+  - URL/アプリ、継続音声、通知での手動開始を分け、検知は候補化であり録音開始は明示操作であることを強調した。
+  - 小幅画面では縦積みに落とし、既存のルールタブ、判定プレビュー、判定ログは維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の検知ルール永続化、シグナル判定ロジック、通知表示との双方向同期は未接続。現時点では設定画面の透明性と理解導線の強化に留めている。
+
+---
+
+## Implementation update: add transcription dictionary flow
+
+- 日時: 2026-05-29 13:32:16 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、辞書登録と文字起こし補正がライブ字幕・履歴確認・議事録生成へつながる流れを分かりやすくする。
+- 採用判断: プロダクトコンセプトの「文字起こし精度、辞書登録、後処理補正」と「会議後の辞書補正」に沿う。既存UIは登録語と補正プレビューを表示していたが、辞書がどこへ反映されるかが弱かったため、Dictionary → Live → Review の最小フローを追加した。
+- 結果:
+  - 文字起こし設定の言語と単語登録カードに `Dictionary` → `Live` → `Review` の flow を追加した。
+  - 登録語がライブ字幕に反映され、履歴で確認し、議事録生成前に後処理する関係を明示した。
+  - 小幅画面では1カラムに落とし、既存の言語選択、登録語チップ、補正プレビューは維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の辞書登録永続化、リアルタイム補正、後処理補正の適用ロジックは未接続。現時点では設定画面の精度改善導線強化に留めている。
+
+---
+
+## Implementation update: add first-launch setup flow
+
+- 日時: 2026-05-29 13:30:35 JST
+- 作業範囲: `src/routes/TranscriptView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の初回セットアップ UI 方針に合わせ、権限許可から会議検知、録音開始までの流れを分かりやすくする。
+- 採用判断: プロダクトコンセプトの「アクセシビリティ、権限説明、録音状態の透明性」と、ユーザー要望の「会議検知による通知ウィンドウから録音できること」に沿う。既存UIは権限リスト中心で、許可後に何が起きるかが文章に寄っていたため、Permission → Detect → Record の最小フローを追加した。
+- 結果:
+  - 初回セットアップに `Permission` → `Detect` → `Record` の setup flow を追加した。
+  - 3権限を許可し、会議を検知し、通知またはメニューバーから手動開始する流れを明示した。
+  - 小幅画面では1カラムに落とし、既存の権限ボタン、後で、再確認、ローカル保存説明は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のmacOS権限ダイアログ遷移、拒否/許可後のリアルタイム再判定は実機未検証。現時点ではセットアップUIの導線強化に留めている。
+
+---
+
+## Implementation update: add menubar recording lifecycle flow
+
+- 日時: 2026-05-29 13:28:54 JST
+- 作業範囲: `src/routes/TranscriptView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` のメニューバー録音 UI 方針に合わせ、録音開始からライブ表示、保存までの流れを分かりやすくする。
+- 採用判断: ユーザー要望の「メニューバーからの録音」「録音中のインジケーター」「録音後の履歴確認」に沿う。既存UIは開始前チェック、録音中表示、保存後表示が別々に存在していたが、メニューバーから見た一連の流れが弱かったため、Start → Live → Save の最小フローを追加した。
+- 結果:
+  - メニューバーPopoverに `Start` → `Live` → `Save` の lifecycle flow を追加した。
+  - 待機中は手動開始、開始後ライブ表示、このMac保存を示し、録音中は Start/Live を強調するようにした。
+  - 小幅画面では1カラムに落とし、既存の開始前チェック、録音中常時表示、履歴リスト、保存後フローは維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実機上のメニューバーPopover高さ、各macOS表示スケールでの折り返しは未検証。現時点では実装とビルド検証に留めている。
+
+---
+
+## Implementation update: add live caption view flow
+
+- 日時: 2026-05-29 13:25:35 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、原文表示、翻訳、AIノートの状態をより直感的にする。
+- 採用判断: ユーザー要望の「録音中はリアルタイム文字起こし、必要に応じてリアルタイム翻訳、AIノートはオンオフできる」に沿う。既存UIはタブ、翻訳未接続ノート、AI notes カードが分散していたため、録音中に現在のビューと未接続状態を一目で把握できる最小フローを追加した。
+- 結果:
+  - ライブ字幕ウィンドウに `View` / `Translate` / `Notes` の view flow を追加した。
+  - 原文/翻訳プレビュー、翻訳未接続、AIノート ON/OFF を1行で確認できるようにした。
+  - AIノートOFF時は外部送信なし、ON時もAI接続後の明示確認が必要であることをアクセシビリティラベルに含めた。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のリアルタイム翻訳エンジン接続、AIノート生成、質問応答、外部送信確認モーダルは未接続。現時点では録音中ビューの状態可視化強化に留めている。
+
+---
+
+## Implementation update: add session list reuse scope
+
+- 日時: 2026-05-29 13:23:32 JST
+- 作業範囲: `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴一覧から検索・コピー・議事録化へ進む再利用範囲を分かりやすくする。
+- 採用判断: ユーザー要望の「録音後は履歴の確認、検索、内容のコピー、音声トラック確認、議事録生成ができる」に沿う。既存の next-action flow だけでは、このMacに保存された本文を再利用し、AI送信は生成時に確認するという保存/送信スコープが行単位で弱かったため、reuse scope を追加した。
+- 結果:
+  - 履歴一覧の各セッション行に `Source` / `Reuse` / `AI` の再利用スコープを追加した。
+  - `このMac`、`本文コピー`、`生成時確認` を表示し、コピーと議事録素材化の関係を明示した。
+  - 小幅画面では1カラムに落とし、既存の検索一致表示、詳細ボタン、コピー操作、Finder/既定アプリ操作は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAI議事録生成、送信範囲確認モーダル、音声トラック実ファイル再生は未接続。現時点では履歴一覧の録音後再利用導線強化に留めている。
+
+---
+
+## Implementation update: add AI minutes guardrail flow
+
+- 日時: 2026-05-29 13:21:51 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、AI議事録のプロバイダー選択、送信範囲確認、生成実行の関係を分かりやすくする。
+- 採用判断: ユーザー要望の「議事録のためのAIプロバイダーを決められるUI」と、プロダクトコンセプトの「AI送信有無を明確にする」に沿う。既存のプロバイダー一覧とテンプレート候補だけでは、設定しただけでは送信されず、生成時に送信範囲を確認するという順序が弱かったため、生成前チェックのフローを追加した。
+- 結果:
+  - AI議事録設定の右カラムに `Provider` → `Scope` → `Run` の guardrail flow を追加した。
+  - 未接続、生成時確認、明示操作の3状態を表示し、テンプレート選択だけでは外部送信されないことを明示した。
+  - 文字起こし、手書きメモ、音声ファイルを別々に確認する前提を補足した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAIプロバイダー選択保存、送信範囲確認モーダル、議事録生成実行は未接続。現時点では設定画面の安全な導線強化に留めている。
+
+---
+
+## Implementation update: add session detail track route
+
+- 日時: 2026-05-29 13:19:56 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、分離トラック確認から文字起こし、議事録生成までの導線を分かりやすくする。
+- 採用判断: ユーザー要望の「音声トラックはスピーカーのみ、マイクのみ、両方の再生ができ、トランスクリプトはチャットUIのように表示される」に沿う。音声ファイル再生は未接続だが、選択中トラックと文字起こし件数、議事録素材への流れを明示することで録音後詳細の理解を改善できると判断した。
+- 結果:
+  - 分離トラック再生カードに `Track` → `Transcript` → `Minutes` の route 表示を追加した。
+  - 選択中のマイク/スピーカー/両方、該当文字起こし件数、AI議事録生成時の送信確認を1行で確認できるようにした。
+  - 小幅画面では1カラムに落とし、既存のトラックタブ、文字起こしプレビュー、チャット風トランスクリプト表示は維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の音声ファイル再生、トラック別音声ファイルパスの保存、AI議事録生成は未接続。現時点では録音後詳細画面の導線強化に留めている。
+
+---
+
+## Implementation update: add persistent ring-light status badge
+
+- 日時: 2026-05-29 13:18:15 JST
+- 作業範囲: `src/components/RingLightWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、録音していることを忘れないための常時インジケーターを強化する。
+- 採用判断: ユーザー要望の「録音していることがUI上でインディケーターとして表示され続けてほしい」に沿う。既存のリングライトは画面端の光だけで状態の意味が読み取りにくかったため、邪魔にならない最小バッジで録音状態・Mic/System・AI送信状態を補足した。
+- 結果:
+  - リングライトウィンドウに `REC visible` バッジを追加した。
+  - `live-caption-status` を購読し、マイク、システム音声、AI送信状態を常時表示するようにした。
+  - `role="status"` と `aria-live="polite"` を付与し、視覚だけでなく支援技術にも録音状態を伝えるようにした。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/RingLightWindow.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実機でのリングライトウィンドウ位置、他アプリ上の視認性、複数ディスプレイ配置は未検証。現時点ではUI実装とビルド検証に留めている。
+
+---
+
+## Implementation update: add meeting detection signal row
+
+- 日時: 2026-05-29 13:16:21 JST
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の通知 UI 方針に合わせ、会議検知から録音開始までの判断材料をより直感的にする。
+- 採用判断: ユーザー要望の「会議の検知による通知ウィンドウから録音できること」と、プロダクトコンセプトの「録音・文字起こし中であること、保存範囲、AI送信有無を明確にする」に沿う。既存の通知は録音対象と開始前チェックを出していたが、検知元・確認後開始・開始後常時表示の流れが分かれて見えなかったため、最小シグナル行を追加した。
+- 結果:
+  - 会議検知バナーに `Detect` / `Review` / `Record` のシグナル行を追加した。
+  - 検知元、ユーザー確認後に開始すること、録音状態が開始後も常時表示されることを1行で確認できるようにした。
+  - 追加行で内容がクリップされないよう、会議検知プロンプトの高さを 278px に調整した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 検知信頼度の数値化やサービス別ルール編集との完全連動は未実装。現時点では通知ウィンドウ上の判断材料と透明性の改善に留めている。
+
+---
+
+## Implementation update: add post-recording save flow
+
+- 日時: 2026-05-29 13:14:26 JST
+- 作業範囲: `src/routes/TranscriptView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` のメニューバー録音 UI 方針に合わせ、録音停止後の保存状態と次アクションを分かりやすくする。
+- 採用判断: ユーザー要望の「録音後は履歴の確認、検索、内容のコピー、音声トラック確認ができる」と、プロダクトコンセプトの「録音状態の透明性」「AI送信有無を明確にする」に沿う。既存の保存完了メッセージだけでは、このMac保存・履歴確認・AI送信確認制の流れが読み取りにくかったため、最小ステップ表示を追加した。
+- 結果:
+  - メニューバーPopoverの保存完了ブロックに `保存` / `履歴` / `AI` の状態フローを追加した。
+  - `このMac`、`確認可`、`確認制` を表示し、保存後の次アクションとAI送信が自動ではないことを明示した。
+  - 小幅画面ではフローを1カラムに落とし、既存の `履歴で開く` / `Finder で表示` 操作を維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `#10B981`, `#10131A`, `#D8D2C4`, `#F7F1E5`) と整合する成功状態・暖色紙面系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。Vite の 500 kB 超過チャンク警告のみ継続。
+  - `git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の履歴検索、音声トラック再生、AI議事録生成の完全接続は別画面・別機能側の課題。現時点では録音直後の保存状態可視化に留めている。
+
+---
+
+## Implementation update: add live AI notes flow
+
+- 日時: 2026-05-29 13:11:32 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、AIノートと質問導線の状態をより直感的にする。
+- 採用判断: ユーザー要望の「録音中は質問するチャットがついているリアルタイム会議ノートを表示し、AI利用はオンオフできる」に沿う。既存のON/OFFと質問欄だけでは、発話からノート、質問までの流れと未接続時の送信有無が一目で分かりにくかったため、最小フローを追加した。
+- 結果:
+  - ライブ字幕ウィンドウの AI notes に `発話` / `ノート` / `質問` の flow strip を追加した。
+  - AIノートON時は発話表示・ノートプレビュー・質問未接続、OFF時はノート/質問OFFとして表示するようにした。
+  - AI未接続のまま、外部送信や質問送信は発生しない前提を維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `#F59E0B`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙色系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAIノート生成、質問応答、外部送信確認フローは未接続。現時点では v2 方針に沿った録音中UIの状態可視化に留めている。
+
+---
+
+## Implementation update: add minutes generation flow map
+
+- 日時: 2026-05-29 13:10:05 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、議事録テンプレート選択から送信確認、AI生成までの流れを直感的にする。
+- 採用判断: ユーザー要望の「プロンプトのテンプレートを選択し、文字起こしや手書きメモをもとに議事録生成したい」と、プロダクトコンセプトの「AI送信有無を明確にする」に沿う。既存の材料カードと送信範囲カードだけでは、テンプレート選択から生成までの順序が分断されて見えるため、生成フローを追加した。
+- 結果:
+  - 録音詳細の議事録ワークスペースに `Template` → `Scope` → `Generate` の flow map を追加した。
+  - 選択中テンプレート、送信前確認、AI未接続の状態を1行で表示した。
+  - AI未接続のまま、外部送信や生成は発生しない前提を維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙色系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAI議事録生成、テンプレート保存、外部送信確認モーダルは未接続。現時点では v2 方針に沿った録音後ワークスペースの導線強化に留めている。
+
+---
+
+## Implementation update: add session row next-action flow
+
+- 日時: 2026-05-29 13:08:31 JST
+- 作業範囲: `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴一覧から詳細確認・コピー・議事録テンプレートへ進む導線を分かりやすくする。
+- 採用判断: ユーザー要望の「録音後は履歴の確認、検索、内容のコピー、議事録生成ができる」に沿う。既存のボタンだけでは録音後の再利用フローが行単位で見えにくかったため、各録音行に次アクションの最小マップを追加した。
+- 結果:
+  - 履歴一覧の各セッション行に `確認` / `再利用` / `議事録` の next-action flow を追加した。
+  - `詳細`、`コピー`、`確認制` を小さな3分割表示にし、AI送信は生成時に確認する前提を維持した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `#F59E0B`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙色系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAI議事録生成、テンプレート選択の永続化、外部送信確認モーダルは未接続。現時点では v2 方針に沿った履歴一覧の導線強化に留めている。
+
+---
+
+## Implementation update: add audio track routing map
+
+- 日時: 2026-05-29 13:07:03 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、自分/相手側の別トラック取得を音声設定で直感的に理解できるようにする。
+- 採用判断: プロダクトコンセプトの「マイク音声とデスクトップ音声の別トラック取得」「相手側の複数参加者を完全分離することは別課題」に沿う。既存の音声設定は説明文中心で、Mic/System/Timeline の流れが一目で分からなかったため、トラックルーティングのミニマップを追加した。
+- 結果:
+  - 音声設定の `録音トラック` 下に `トラックの流れ` カードを追加した。
+  - `Mic 自分` → `System 相手側` → `Timeline 履歴へ統合` の流れを視覚化した。
+  - 相手側の個別話者分離は別課題で、まずは2トラック安定取得を優先することを明示した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `IBM Plex Mono`, `#F59E0B`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙色系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - システム音声ルーティングの実設定、ループバック選択、音声テストは未接続。現時点では v2 方針に沿った設定プレビューに留めている。
+
+---
+
+## Implementation update: add privacy save/send scope map
+
+- 日時: 2026-05-29 13:05:28 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、録音後に何がローカル保存され、何がAI送信候補になるかを分かりやすくする。
+- 採用判断: プロダクトコンセプトの「安心感: 録音・文字起こし中であること、保存範囲、AI送信有無を明確にする」「ステルス動作はしない」に沿う。保持期間と権限だけでは、録音後の保存/送信境界が一覧で分からないため、プライバシー画面に範囲マップを追加した。
+- 結果:
+  - プライバシー設定に `保存と送信範囲` カードを追加した。
+  - `このMac` / `送信候補` / `送信しない` の3項目で、録音・Transcript・議事録、議事録生成時のTranscript、音声トラック・手書きメモの扱いを分けて表示した。
+  - Pencil MCP で取得した v2 変数 (`Funnel Sans`, `#F59E0B`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙色系の既存CSSトークンを使った。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の削除処理、Finder表示、AI送信確認モーダルとの連動は未接続。現時点では v2 方針に沿った透明性のためのUIプレビューに留めている。
+
+---
+
+## Implementation update: add realtime translation settings card
+
+- 日時: 2026-05-29 13:03:59 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、録音中のリアルタイム翻訳がどの状態で使われるかを設定画面でも分かるようにする。
+- 採用判断: ユーザー要望の「リアルタイム文字起こしのウィンドウは必要に応じてリアルタイム翻訳に切り替える」と、プロダクトコンセプトの「AI送信有無を明確にする」に沿う。ライブ字幕側だけに翻訳タブがあると、翻訳先や外部送信有無が事前に分からないため、文字起こし設定に未接続プレビューを追加した。
+- 結果:
+  - 文字起こし設定の右カラムに `リアルタイム翻訳` カードを追加した。
+  - `原文` / `翻訳先` / `AI送信` の3項目で、原文保持、English 翻訳、現在は外部送信なしを明示した。
+  - 翻訳エンジン接続前は会議音声・文字起こしを翻訳目的で外部送信しないことを説明した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 翻訳エンジン接続、翻訳先言語の永続化、外部送信確認フローは未接続。現時点では v2 方針に沿った設定プレビューに留めている。
+
+---
+
+## Implementation update: add transcription correction preview
+
+- 日時: 2026-05-29 13:02:31 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、文字起こし精度・辞書補正の扱いをより直感的に見せる。
+- 採用判断: プロダクトコンセプトの「文字起こし精度、辞書登録、後処理補正」「AI送信有無を明確にする」に沿う。辞書登録だけでは補正の流れが見えないため、登録語・話者保持・会議後確認の3段階を外部送信なしのプレビューとして追加した。
+- 結果:
+  - 文字起こし設定の `言語と単語登録` に `補正プレビュー` カードを追加した。
+  - `登録語` / `話者` / `後処理` の3ステップで、精度向上の対象とタイミングを明示した。
+  - Pencil MCP で取得できた `meet-jerky-desktop-v2.pen` の変数 (`Funnel Sans`, `#F59E0B`, `#D8D2C4`, `#F7F1E5`) と整合する暖色・紙色系の既存CSSトークンに寄せた。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 辞書の永続化、補正処理、会議後の確認適用フローは未接続。Pencil MCP の `get_editor_state` は今回も OpenMeetSlot を返したが、`get_variables(filePath=meet-jerky-desktop-v2.pen)` では v2 変数を取得できた。
+
+---
+
+## Implementation update: clarify recording visibility in detection prompt
+
+- 日時: 2026-05-29 13:00:17 JST
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音開始前 UI 方針に合わせ、会議検知通知から録音する前に録音状態の表示継続が分かるようにする。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」「ステルス動作はしない」に沿う。通知バナーは高さ制約があるため、大きな説明文ではなく開始前チェックの1チップとして `表示 常時` を追加した。
+- 結果:
+  - 会議検知バナーの開始前チェックを `開始` / `取得` / `表示` / `AI` の4項目に整理した。
+  - `表示 常時` により、録音開始後も状態表示が残ることを録音前に明示した。
+  - `aria-label` / `title` にも録音状態の常時表示を反映した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の Tauri 会議検知プロンプト上での視覚確認は未実施。Pencil MCP は今回もアクティブエディタが OpenMeetSlot を指しており、`meet-jerky-desktop-v2.pen` の直接照合は未達。
+
+---
+
+## Implementation update: add settings workflow strip
+
+- 日時: 2026-05-29 12:57:15 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、検知から録音・履歴・AI確認までの流れを一目で理解できるようにする。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」「AI送信有無を明確にする」「ステルス動作はしない」に沿う。主要設定カードだけでは設定項目が分断されて見えるため、録音開始からAI送信確認までの安全なフローを明示した。
+- 結果:
+  - 設定画面の主要設定カード下に `検知` / `録音` / `履歴` / `AI` の workflow strip を追加した。
+  - 検知は通知で確認、録音は `Mic + System` 分離、履歴はこのMacに保存、AIは送信前に確認として表示した。
+  - 狭幅では workflow strip も2列に落ちるレスポンシブ指定を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の設定ウィンドウ上での視覚確認は未実施。Pencil MCP は今回もアクティブエディタが OpenMeetSlot を指しており、`meet-jerky-desktop-v2.pen` の直接照合は未達。
+
+---
+
+## Implementation update: add session transcript copy feedback
+
+- 日時: 2026-05-29 12:54:50 JST
+- 作業範囲: `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴一覧から内容コピーした後のフィードバックを明確にする。
+- 採用判断: プロダクトコンセプトの「会議後は履歴を検索・閲覧でき、内容を再利用できる」に沿う。コピー操作は既存機能として存在していたが、成功状態が見えず録音ライブラリとしての直感性が弱かったため、該当行だけに短時間の完了表示を追加した。
+- 結果:
+  - 履歴一覧の本文コピー成功後、対象行のボタンを約2.4秒 `コピー済み` 表示にする状態を追加した。
+  - `aria-label` / `title` / actions group の読み上げにもコピー完了状態を反映した。
+  - `コピー済み` ボタンに v2 の暖色アクセントを使った控えめな完了スタイルを追加した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実機クリップボード権限や Tauri WebView 上のコピー操作の視覚確認は未実施。Pencil MCP は今回もアクティブエディタが OpenMeetSlot を指しており、`meet-jerky-desktop-v2.pen` の直接照合は未達。
+
+---
+
+## Implementation update: add menubar recording visibility card
+
+- 日時: 2026-05-29 12:52:50 JST
+- 作業範囲: `src/routes/TranscriptView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、録音中であることを忘れないための常時表示導線を強化する。
+- 採用判断: プロダクトコンセプトの「録音・文字起こし中であること、保存範囲、AI送信有無を明確にする」「会議中のUIは邪魔にならず、状態が明確」に沿う。録音中だけ表示する小さな visibility card として、状態確認場所を明示した。
+- 結果:
+  - メニューバーポップオーバーの録音中状態に `録音中の表示` カードを追加した。
+  - `Menu bar` / `Caption` / `AI送信` の3項目で、経過時間・文字起こし状態・AI送信状態を確認できるようにした。
+  - 閉じても記録操作は継続し、録音状態はメニューと字幕ウィンドウで確認できることを明記した。
+  - v2 の暖色アクセントと控えめな半透明カードに合わせた CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の Tauri メニューバーウィンドウ上での視覚確認は未実施。Pencil MCP は今回もアクティブエディタが OpenMeetSlot を指しており、`meet-jerky-desktop-v2.pen` の直接照合は未達。
+
+---
+
+## Implementation update: add AI minutes send scope preview
+
+- 日時: 2026-05-29 12:50:54 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、AI議事録生成前に何を送信するか分かる UI を追加する。
+- 採用判断: プロダクトコンセプトの「AI送信有無を明確にする」「課金が必要なAPIやサービスには勝手に依存しない」に沿う。AI連携は未接続のまま、送信候補と未送信ソースを明示する確認ステップだけを追加した。
+- 結果:
+  - 録音詳細の議事録ワークスペースに `送信範囲の確認` カードを追加した。
+  - `Transcript {件数}` を送信候補、音声ファイルと手書きメモを未送信、選択テンプレートを確認対象として表示した。
+  - AI未接続ステータスを維持し、生成や外部送信は実行しないことを title/aria でも明示した。
+  - 狭幅表示では送信範囲グリッドも2列へ落ちるよう CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際のAI送信確認モーダル、AIプロバイダー連携、議事録生成処理は未接続。Pencil MCP は今回もアクティブエディタが OpenMeetSlot を指しており、`meet-jerky-desktop-v2.pen` の直接照合は未達。
+
+---
+
+## Implementation update: clarify detection rule preview
+
+- 日時: 2026-05-29 12:48:39 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、会議検出ルールをミニマルかつ透明性の高い表示にする。
+- 採用判断: プロダクトコンセプトの「会議検知の網羅性と信頼性」「録音状態の透明性」「ステルス動作はしない」に沿う。実データではないハードコード表示をライブログのように見せず、通知前の判定プレビューとして明示した。
+- 結果:
+  - 検出ルールカードに `2 / 3 シグナル一致` の判定プレビューを追加した。
+  - URLまたはアプリ、アクティブウィンドウ、継続音声の3シグナルを小さなステップとして表示した。
+  - `検出ログ` 表示を `判定プレビュー` に変更し、実ログではなく代表シグナルであることを明記した。
+  - 2シグナル以上一致しても自動録音せず、通知ウィンドウまたはメニューバーから明示操作で開始する説明に修正した。
+- 検証結果:
+  - `npm run build` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の検出ルール編集、永続化、実ログ表示は未接続。Pencil MCP は `meet-jerky-desktop-v2.pen` 指定でも OpenMeetSlot の状態を返すため、直接照合は未達。
+
+---
+
+## Implementation update: add live AI notes outline preview
+
+- 日時: 2026-05-29 12:46:35 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、AI 会議ノートが何を整理する UI なのかをより直感的にする。
+- 採用判断: プロダクトコンセプトの「会議中は邪魔にならず状態が明確」「AI 送信有無を明確にする」に沿う。AI は未接続のため、生成済み要約に見せず、要点・決定・ToDo の構造プレビューだけを表示する。
+- 結果:
+  - ライブ字幕ウィンドウの AI notes に `要点` / `決定` / `ToDo` の outline preview を追加した。
+  - `要点` は最新発話の保持状態、`決定` と `ToDo` は AI 接続後に抽出する状態として表示し、未接続のまま外部送信しない前提を維持した。
+  - v2 の暖色アクセントに合わせた小さな 3 分割カード CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - Pencil MCP は今回も `meet-jerky-desktop-v2.pen` 指定で OpenMeetSlot の top-level nodes を返したため、直接照合は未達。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の AI ノート生成、決定事項抽出、ToDo 抽出、外部送信確認フローは未接続。
+
+---
+
+## Implementation update: add meeting prompt preflight summary
+
+- 日時: 2026-05-29 12:43:13 JST
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の会議検知通知 UI 方針に合わせ、録音開始前に取得対象と AI 送信状態をより明確にする。
+- 採用判断: プロダクトコンセプトの「録音・文字起こし中であること、保存範囲、AI 送信有無を明確にする」「ステルス動作はしない」に沿う。開始前チェックを追加して、開始ボタンを押すまで録音しないことと取得対象を再確認できるようにした。
+- 結果:
+  - 会議検知バナーに `開始` / `取得` / `AI` の preflight summary を追加した。
+  - 開始は手動、取得対象は Mic+Sys、AI送信は現在の `aiTransmissionLabel` を表示するようにした。
+  - 既存バナーの高さを変えずに収まる小さな v2 風ステータスカードとして CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の Tauri meeting-prompt ウィンドウ上での視覚確認は未実施。Pencil MCP は `meet-jerky-desktop-v2.pen` の直接照合が不安定なため、コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add live translation disconnected preview
+
+- 日時: 2026-05-29 12:40:49 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、リアルタイム翻訳タブをより直感的にする。
+- 採用判断: プロダクトコンセプトの「リアルタイム文字起こし」「AI 送信有無を明確にする」に沿う。翻訳処理は未接続のため有効化せず、原文維持・翻訳先・外部送信なしを明示するプレビューに留めた。
+- 結果:
+  - ライブ字幕ウィンドウの `翻訳 EN` タブに、`Translation preview`、未接続ステータス、原文表示中、翻訳先 EN、送信なしの状態チップを追加した。
+  - 準備中の一文だけだった表示を、v2 のミニマルな状態カードへ変更した。
+  - 翻訳未接続プレビュー用 CSS を追加し、暖色アクセントと小さなチップで状態を表現した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 翻訳エンジン接続、リアルタイム翻訳処理、外部送信確認フローは未接続。Pencil MCP は `meet-jerky-desktop-v2.pen` の直接照合が不安定なため、コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add handwritten memo source preview
+
+- 日時: 2026-05-29 12:38:34 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、手書きメモをもとに議事録生成する導線を分かりやすくする。
+- 採用判断: プロダクトコンセプトの「会議後はAI連携によって議事録、決定事項、ToDoを整理できる」に沿う。手書きメモ取り込みは未接続のため、有効化せず、議事録ソースとしての役割だけを UI で明示した。
+- 結果:
+  - 録音詳細の手書きメモカードに、取り込み後に議事録へ反映する項目として `自分の補足` / `ホワイトボード写真` / `未発話の決定事項` のソースプレビューを追加した。
+  - `取り込みは未接続` ボタンを追加し、未接続状態を保ったまま今後の接続先を明示した。
+  - v2 の暖色アクセントとミニマルな dashed chip に合わせた CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 画像/テキストメモの実取り込み、OCR、AI送信確認フローは未接続。Pencil MCP は `meet-jerky-desktop-v2.pen` の直接照合が不安定なため、コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add menubar recording preflight card
+
+- 日時: 2026-05-29 12:35:54 JST
+- 作業範囲: `src/routes/TranscriptView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、メニューバーから手動録音を開始する前に取得対象と AI 送信状態を分かりやすくする。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」「マイク音声とデスクトップ音声の別トラック取得」「AI 送信有無を明確にする」に沿う。録音開始前に、取得対象と送信方針が確認できるようにした。
+- 結果:
+  - メニューバーポップオーバーの録音開始前状態に `開始前チェック` カードを追加した。
+  - 自分トラック、相手側トラック、AI送信状態を開始ボタン直前で表示し、開始後もメニューバーと字幕ウィンドウで録音状態を表示する説明を追加した。
+  - v2 の暖色アクセントとミニマルな確認カードに合わせた CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - Pencil MCP は `meet-jerky-desktop-v2.pen` の直接照合が不安定なため、コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add session library result summary
+
+- 日時: 2026-05-29 12:33:28 JST
+- 作業範囲: `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、履歴一覧で検索結果と録音再利用状態をより直感的に把握できるようにする。
+- 採用判断: プロダクトコンセプトの「会議後は履歴を検索・閲覧できる」「自分と相手側全体を別トラックとして安定して扱う」「AI 送信有無を明確にする」に沿う。
+- 結果:
+  - 履歴一覧に検索結果へ連動する summary strip を追加し、本文あり件数、自分トラック発話数、相手側トラック発話数、AI送信が確認制であることを表示した。
+  - summary strip は検索条件適用後の `filteredSessions` を集計するため、検索中でも現在見えている録音ライブラリの状態が分かる。
+  - v2 の暖色アクセント、淡いサーフェス、コンパクトなステータスカードに合わせた CSS を追加し、狭幅では2列へ落ちるようにした。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - Pencil MCP は `meet-jerky-desktop-v2.pen` の直接照合が不安定なため、コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add selected track transcript preview
+
+- 日時: 2026-05-29 12:31:03 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、マイクのみ・スピーカーのみ・両方の分離トラック確認をより直感的にする。
+- 採用判断: プロダクトコンセプトの「自分と相手側全体を別トラックとして安定して扱う」「会議後は履歴を検索・閲覧できる」に沿う。音声ファイル再生は未接続のため有効化せず、文字起こしプレビューで選択トラックの内容を確認できるようにした。
+- 結果:
+  - 録音詳細の分離トラックカードに、選択中トラックの直近文字起こしプレビューを追加した。
+  - `両方` では自分/相手側の発話、`マイク` では自分、`スピーカー` では相手側の発話だけを最大3件表示するようにした。
+  - v2 の暖色アクセントとミニマルなトラック状態表示に合わせた CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - 音声ファイルパス保存と実再生は未接続のため、再生ボタンは引き続き無効。Pencil MCP は `meet-jerky-desktop-v2.pen` 指定でも OpenMeetSlot のノードを返したため、直接照合は未達。
+
+---
+
+## Implementation update: add v2 settings overview strip
+
+- 日時: 2026-05-29 12:28:56 JST
+- 作業範囲: `src/routes/SettingsView.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の設定 UI 方針に合わせ、主要設定をミニマルに俯瞰できるようにする。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」「AI 送信有無を明確にする」「Mac らしさ」に沿う。設定カテゴリを深掘りしなくても、会議検出・マイク・文字起こし・AI議事録の現在値が分かるようにした。
+- 結果:
+  - 設定画面のメイン見出し直下に `会議検出` / `マイク` / `文字起こし` / `AI議事録` の overview strip を追加した。
+  - 各 overview card は該当カテゴリへ遷移でき、会議検出は「通知で確認」、AI議事録は「未接続」として外部送信状態を明示した。
+  - v2 の暖色アクセント、淡いサーフェス、コンパクトな Mac 設定パネル風の CSS を追加し、狭幅では2列へ落ちるようにした。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - Pencil MCP は `meet-jerky-desktop-v2.pen` 指定でも OpenMeetSlot のノードを返したため、直接照合は未達。コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add live AI notes question surface
+
+- 日時: 2026-05-29 12:26:09 JST
+- 作業範囲: `src/components/LiveCaptionWindow.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、AI ノートに対して会議内容を質問できる導線をより直感的にする。
+- 採用判断: プロダクトコンセプトの「会議中は邪魔にならず状態が明確」「AI 送信有無を明確にする」に沿う。AI チャットは未接続のため、質問候補と入力欄は表示するが実送信は有効化しない。
+- 結果:
+  - ライブ字幕ウィンドウの AI notes に `Ask this meeting` 面を追加し、決定事項・ToDo・未解決論点の質問候補を表示するようにした。
+  - 質問入力欄と送信ボタンを追加したが、AI チャット接続前は無効化し、送信範囲確認後に利用する説明を aria/title に入れた。
+  - v2 の暖色アクセントとミニマルなチップ/入力 UI に合わせた CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - Pencil MCP はアクティブエディタが別プロジェクトを指しており、`meet-jerky-desktop-v2.pen` の直接照合は今回も未達。コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: add minutes template intent preview
+
+- 日時: 2026-05-29 12:23:49 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の録音後 UI 方針に合わせ、議事録テンプレート選択を単なるチップではなく、生成方針が分かる直感的な UI にする。
+- 採用判断: プロダクトコンセプトの「AI 議事録」「決定事項と ToDo 抽出」に沿う。一方で AI 連携や外部送信は未接続のままにし、課金や外部 API 呼び出しに見える挙動は追加しない。
+- 結果:
+  - 録音詳細の議事録ワークスペースに、選択中テンプレートの目的・出力セクション・プロンプト方針を表示するプレビューを追加した。
+  - `週次定例` / `1on1` / `採用面接` / `顧客定例` のテンプレートごとに、生成される議事録の見通しを切り替えるようにした。
+  - v2 の暖色アクセントと淡いサーフェスに合わせたミニマルなテンプレートプレビュー CSS を追加した。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - Pencil MCP は今回も `meet-jerky-desktop-v2.pen` 指定で OpenMeetSlot のノードを返したため、直接照合は未達。コード側ではユーザー要件と既存 v2 設計ログを根拠に実装した。
+
+---
+
+## Implementation update: neutralize unconnected AI minutes actions
+
+- 日時: 2026-05-29 12:21:14 JST
+- 作業範囲: `src/routes/SessionDetail.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせ、録音後の議事録ワークスペースで未接続の AI 議事録生成が主 CTA に見えないようにする。
+- 採用判断: プロダクトコンセプトの「AI 送信有無を明確にする」「課金が必要な API やサービスには勝手に依存しない」に沿い、未接続機能を強い生成 CTA として見せず、状態表示として扱う。
+- 結果:
+  - 録音詳細のヘッダー/フッター AI 議事録ボタンを、オレンジの生成 CTA からニュートラルな `AI未接続` / `生成は未接続` 表示へ変更した。
+  - 議事録プレースホルダーに `AI未接続` ステータスを追加し、送信範囲確認後に生成できることを明示した。
+  - 未接続 AI 表示用の控えめな CSS を追加し、v2 のミニマルな状態表示に寄せた。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係追加: なし
+- 残リスク:
+  - Pencil MCP は引き続き対象 `meet-jerky-desktop-v2.pen` の直接検証が不安定なため、コード側では録音透明性と AI 外部送信明示を優先して整合を取った。
+
+---
+
+## Implementation update: align runtime UI with v2 recording/history surfaces
+
+- 日時: 2026-05-29 JST
+- 作業範囲: `src/components/MeetingDetectedBanner.tsx` / `src/components/LiveCaptionWindow.tsx` / `src/routes/TranscriptView.tsx` / `src/routes/SettingsView.tsx` / `src/routes/SessionDetail.tsx` / `src/routes/SessionList.tsx` / `src/App.css`
+- 指示内容: `meet-jerky-desktop-v2.pen` の UI 方針に合わせて実装する。Pencil MCP を使って参照し、現行のカラーパレットと Mac アプリらしいミニマルな質感を維持しながら、録音中 UI と録音後 UI を v2 に近づける。
+- 採用判断: プロダクトコンセプトの「録音状態の透明性」「リアルタイム文字起こし」「履歴検索・閲覧」「AI 議事録」「自分/相手側トラック分離」に沿う。バックエンドや課金が絡む AI/翻訳/音声再生は勝手に有効化せず、まず UI と操作面だけを実装した。
+- 結果:
+  - ライブ字幕ウィンドウに `文字起こし / 翻訳 EN` の切替 UI を追加。翻訳は未接続状態を明示し、既存文字起こし表示を維持する。
+  - ライブ字幕ウィンドウの右ペインを v2 の `AI meeting notes` 面に変更。AI ノート ON/OFF、プライバシー文言、最新発話ベースのノート表示、AIチャット接続後に質問できることが分かる導線を追加。
+  - ライブ字幕ウィンドウは録音開始中/文字起こし中の待機時も拡張サーフェスを表示し、録音中のインジケーター、翻訳切替、AI notes 導線が確認できるようにした。
+  - 会議検知通知に Mic/System/AI送信/文字起こしエンジンのチップを追加し、録音開始前に取得対象と外部送信状態が分かるようにした。
+  - 録音開始後に残る常時インジケーターを `録音と文字起こしを継続中` とトラック状態が読める pill に変更した。
+  - メニューバーポップオーバーに録音/字幕/AI送信のステータスデッキを追加し、手動録音開始前でも現在の状態と送信方針を確認できるようにした。
+  - 設定画面の検出設定を `自動開始` ではなく `通知で確認` として表示し、ステルス録音に見えない導線へ修正した。
+  - AI議事録設定のプロバイダー・実行履歴・利用額を未接続/未実行/外部送信なしの表示へ修正し、APIキー設定済みや課金済みに見えるダミー文言を削除した。
+  - プライバシー設定の診断送信とディスク使用量の表示を、未送信・履歴画面で確認という安全側の表現に変更した。
+  - 履歴一覧を v2 の録音ライブラリに寄せ、検索ラベル、履歴アイコン、AI送信確認の透明性ノートを追加。
+  - 録音詳細画面に分離トラック確認カードを追加。`両方 / マイク / スピーカー` の切替 UI、波形プレビュー、トラック別文字起こし件数、音声ファイル連携待ちの明示を配置。
+  - 録音詳細画面を `Transcript` と `議事録ワークスペース` の2カラムに変更。チャット型 transcript 表示、全文コピー、テンプレート選択、録音/トランスクリプト/手書きメモ source 表示、未接続状態を明示した手書きメモ追加カード、AI議事録生成プレースホルダを追加。
+  - v2 のオレンジアクセント、淡いボーダー、半透明白サーフェスを CSS 変数として追加し、主要操作ボタンと追加 UI へ適用。
+- Pencil MCP 確認:
+  - `get_editor_state(include_schema=true)` 実行済み。
+  - `meet-jerky-desktop-v2.pen` を `filePath` 指定して `batch_get` / `get_variables` したが、現時点では OpenMeetSlot のワイヤーフレーム内容が返った。直前に作成した v2 UI の内容とは一致しないため、今回の実装は `AGENT_LOG.md` に残っている v2 設計記録と既存実装を照合して行った。
+- 検証結果:
+  - `npm run build` 成功。
+  - `git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx src/routes/SessionDetail.tsx src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。
+  - Pencil MCP `snapshot_layout(filePath=meet-jerky-desktop-v2.pen, maxDepth=0)` は今回も OpenMeetSlot の top-level nodes を返したため、v2 ファイルの直接照合は未達。
+  - Playwright によるスクリーンショット検証を試みたが、この環境の Node REPL に `playwright` が存在せず実行できなかった。追加依存は入れていない。
+- 依存関係追加: なし
+- 残リスク:
+  - 実際の Tauri 複数ウィンドウでの視覚確認は未実施。
+  - 翻訳、AI議事録生成、トラック音声再生、手書きメモ取り込みは UI 導線のみで、外部送信や課金が絡む処理は実装していない。保存済み履歴は現状 Markdown 本文のみのため、音声再生はファイルパス保存の設計が必要。
+  - `meet-jerky-desktop-v2.pen` の Pencil MCP 読み取り結果が期待と違うため、デザインファイルの保存状態は別途確認が必要。
+
+---
+
+## Design update: meet-jerky-desktop-v2 minimal UI exploration
+
+- 日時: 2026-05-27 JST
+- 作業範囲: `meet-jerky-desktop-v2.pen` を新規作成し、録音中 UI / 録音後 UI / 設定 UI の v2 モックを追加
+- 指示内容: 現行 Meet Jerky の暖色パレット、半透明白サーフェス、Funnel Sans + Geist + Inter の空気感は維持しつつ、よりミニマルで直感的な macOS らしい UI に再設計する。残すべき機能は、会議検知通知からの録音開始、メニューバーからの録音開始、録音中インジケーターの常時表示、リアルタイム文字起こし/翻訳切替、AI オンオフ付き会議ノート/質問、履歴検索、トラック再生、チャット型 transcript、議事録テンプレート、手書きメモ取り込み、設定画面の主要項目整理。
+- 採用判断: プロダクトコンセプトの「会議中の邪魔にならない UI」「録音状態の透明性」「自分/相手側別トラック」「履歴/AI 議事録」「Mac らしさ」に沿う。現行色と質感は維持しつつ、画面の役割を `録音開始導線`、`録音中の常時見える状態`、`録音後の再利用` に分離した。
+- 結果:
+  - `V2 - Recording Flow` を追加。会議検知通知、メニューバーポップオーバー、常時表示インジケーター、字幕ウィンドウ、AI 会議ノート/質問ウィンドウを同一ボードで再構成。
+  - `V2 - History and Minutes` を追加。左に履歴検索/一覧、右にトラック再生、LINE 風 transcript、議事録テンプレート、手書きメモ取り込み、Markdown コピー/再生成をまとめた。
+  - `V2 - Settings Overview` を追加。一般/検知/音声/文字起こし/AI/プライバシーを一画面で俯瞰できる最小構成へ整理した。
+  - 元ファイル `meet-jerky-desktop.pen` は読み取り参照のみとし、v2 は別ファイル `meet-jerky-desktop-v2.pen` に分離した。
+- 検証結果:
+  - Pencil `batch_design` 実行成功。
+  - `snapshot_layout(parentId=FlpK7, problemsOnly=true)` で `V2 - Recording Flow` の layout problems なしを確認。
+  - `snapshot_layout(parentId=N3Ck4, problemsOnly=true)` で `V2 - History and Minutes` の layout problems なしを確認。
+  - `snapshot_layout(parentId=MBbSv, problemsOnly=true)` で `V2 - Settings Overview` の layout problems なしを確認。
+  - `get_screenshot(FlpK7)` / `get_screenshot(N3Ck4)` / `get_screenshot(MBbSv)` で、主要画面に重なり・崩れ・不可視テキストがないことを確認。
+- 依存関係追加: なし
+- 残リスク:
+  - `.pen` のため実装コードには未反映であり、実アプリの window behavior、スクロール、実データ件数での密度、アクセシビリティ挙動は未検証。
+  - リポジトリには既存の未コミット差分が多数あるため、本作業ではそれらを変更・整理していない。
+
+---
+
 ## Design update: collapsed recording pill state intent labels
 
 - 日時: 2026-05-21 JST
@@ -37717,3 +43156,2620 @@ event: ユーザー停止依頼により自律改善ループを停止。新し�
 依存関係追加の有無: なし
 失敗理由: なし
 次アクション: 実機で上下モニタ・Retina/非Retina混在・メニューバーアイコン複数回クリックを確認する。さらに安定化する場合は Tauri tray 生成自体も NSStatusItem/NSPopover に移行し、メイン窓ではなくネイティブ popover として表示する。
+
+[mjc / pencil-ui-parity-and-settings-window / 2026-05-27 21:44:17 JST]
+役割: 実装担当エージェント
+作業範囲: meet-jerky-desktop.pen / src/routes/SettingsView.tsx / src/routes/TranscriptView.tsx / src/components/SettingsWindowRoot.tsx / src/utils/settingsWindow.ts / src/main.tsx / src/App.css / src-tauri/src/lib.rs / src-tauri/capabilities/default.json / AGENT_LOG.md
+指示内容: Pencil と実UIが独立していないかを複数回に分けて確認しつつ、Mock4b-f をメニューバー本体とは別の独立ウィンドウとして実装する。
+結果: 1回目の確認では Pencil のトップレベルUIを実装へ対応付けし、`Mock 1 - States` は `TranscriptView`、`Mock 2 - Notch Notification` は `MeetingDetectedBanner`、`Mock 4 / 4b-f` は `SettingsView`、`Mock - Caption Window Variations` は `LiveCaptionWindow`、`Mock 2 - History Interaction Outcomes` は `SessionList` / `SessionDetail` に概ね対応していることを確認した。一方で `Intent Notes - Collapsed Recording Pill` に相当する単独UIは現実装ではリングライト＋字幕コンパクト表示へ分散しており、Pencil と完全一致ではなく設計ドリフトが残っていると判断した。実装では `settings` 専用 Tauri ウィンドウ、カテゴリ切替イベント、右クリックトレイメニューの設定ショートカット、メインポップオーバーから独立設定ウィンドウを開く導線を追加し、`SettingsView` を独立ウィンドウでも使えるよう調整した。2回目の確認では `meet-jerky-desktop.pen` の Mock4b-f が 820x560 の独立設定窓前提であることを再確認し、実装側も同寸法の独立設定ウィンドウへ `general` / `detection` / `audio` / `transcription` / `aiMinutes` / `privacy` を切り替え可能にして、少なくとも設定画面は Pencil と別系統に逸脱しない構成へ戻した。
+検証結果: `nix develop --command bun run build` 成功。`nix develop --command cargo fmt --manifest-path src-tauri/Cargo.toml` 成功。`nix develop --command cargo check --manifest-path src-tauri/Cargo.toml` 成功。`nix develop --command bunx tauri dev` でアプリ起動まで確認した。Computer Use プラグインの `get_app_state` は app-server 応答不全で利用できず、スクリーンショットベースの自動目視比較までは完了していない。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: トレイ右クリックの各設定ショートカット、メインポップオーバーの「環境設定」、設定ウィンドウ内のカテゴリ切替を実機で目視確認する。あわせて `Intent Notes - Collapsed Recording Pill` と現在の会議中表示（リングライト / 字幕コンパクトUI）の関係を整理し、Pencil を更新するか実UIを寄せるかを決める。
+ユーザー価値: 会議中の軽量メニューバーUIを維持したまま、Mock4b-f を独立した macOS 風設定ウィンドウとして扱える。Pencil と実UIのどこが揃っていてどこがドリフトしているかも追跡可能になる。
+非目標: 会議検知ロジック、音声分離、履歴詳細UI、ライブ字幕ウィンドウの全面再設計、Pencil 側の全面書き換えは今回行わない。
+
+[mjc / realtime-translation-panel-pencil / 2026-05-27 21:49:51 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop.pen / AGENT_LOG.md
+指示内容: `dYC3W` ノード内に、meet-jerky のリアルタイム翻訳パネルを Web App guide / Product Demo style / Carbon Frost / Basic Roundness / Soft Lift / Geist / Geist Mono 方針で作成する。他コンテナは変更しない。
+結果: `Realtime Translation Panel Container` 内のプレースホルダーを置き換え、コンパクトな会議コンテキスト、録音・遅延チップ、EN auto から日本語への言語制御、Mic/Desktop のトラック有効状態、MIC・自分と DESKTOP・相手側の別トラック翻訳カード、原文と日本語訳、入力レベルメーター、録音と AI 送信状態の透明性フッターを追加した。外側コンテナや他のモックは変更していない。
+検証結果: Pencil `snapshot_layout` で `dYC3W` にレイアウト問題なし。Pencil `get_screenshot` で目視確認し、主要要件であるマイク/デスクトップ分離、原文/日本語訳、言語制御、録音・遅延・AI送信の透明性、会議サービス文脈が表示されていることを確認した。フッター説明文がステータスピルに近すぎたため、説明側を固定幅・折り返しに修正した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 右側の会議ノート/Ask パネルと並べた状態で、密度、用語、録音透明性表現が左右で揃っているかを最終確認する。
+
+[mjc / realtime-translation-note-ask-ui-mock / 2026-05-27 22:02:00 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop.pen / AGENT_LOG.md
+指示内容: 別アプリ画像を参考に、meet-jerky向けのリアルタイム翻訳、リアルタイム会議ノート、会議内容をリアルタイムに確認できる UI Mock を作成する。
+結果: `Mock 5 - Realtime Translation Notes Ask` を追加し、左側をリアルタイム翻訳パネル領域、右側を会議ノートと会議内容質問パネルとして構成した。右側では進行中サマリー、決定事項、論点、ToDo、会議内質問、AI回答、参照時刻チップ、次に聞ける質問、入力欄、マイク/デスクトップ音声/AI送信状態の透明性レールを作成した。翻訳パネルは最大1名の追加デザイナーエージェントに分担した。
+検証結果: Pencil `snapshot_layout` で右側 `Meeting Intelligence Panel Container` にレイアウト問題なし。Pencil `get_screenshot` で右側パネルを目視確認し、クリップ、崩れ、主要テキストの不自然な重なりがないことを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 追加デザイナーが作成した翻訳パネルとの視覚整合を確認し、必要なら左右パネル間の密度・用語・録音透明性表現を揃える。
+
+[mjc / kanary-inspired-recording-ui-mock / 2026-05-27 21:54:12 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop.pen / AGENT_LOG.md
+指示内容: Kanary 風の録音履歴ウィンドウ、メニューバー常駐ポップオーバー、録音中/待機中メニューを meet-jerky の参考 UI としてモック化する。
+結果: `Mock 6 - Recording Library And Menu Bar Popover` を追加した。録音履歴ウィンドウ領域は追加デザイナーに分担し、このセッションではメニューバーポップオーバーの待機状態と録音中状態を作成した。待機状態には手動録音開始、Google Meet 検知、履歴/設定/更新/終了導線を配置し、録音中状態には Voice capture active、経過時間、Mic/Speaker 別メーター、Stop Recording、履歴/設定/更新/終了導線を配置した。下部には meet-jerky で採用すべきポイントとして、メニューバー即操作、Mic/Speaker 別表示、会議検知・録音状態・AI送信範囲の明示を整理した。
+検証結果: Pencil `snapshot_layout` で `Menu Bar Popover States Container` にレイアウト問題なし。Pencil `get_screenshot` でポップオーバー2状態を目視確認し、クリップ、崩れ、主要テキストの不自然な重なりがないことを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 追加デザイナー作成の録音履歴ウィンドウと、ポップオーバー側の用語・色・操作導線を揃える。実装側へ反映する場合は、既存のメニューバーポップオーバーと録音履歴画面の責務分離を先に整理する。
+
+[mjc / v2-native-unobtrusive-recording-flow / 2026-05-27 22:26:19 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `V2 - Recording Flow` をもっとネイティブアプリっぽく、ユーザーの邪魔をしない感じにする。
+結果: `V2 - Recording Flow` の入口系UIを、強いCTAや大きな常時表示を避ける方向へ再設計した。メニューバーポップオーバーは半透明の小さな macOS ユーティリティパネルとして、検知中会議、Mic/Desktop/AI 状態、録音開始、履歴、設定/入力/終了を整理した。Notch 通知は小さな検知バナーへ縮小し、閉じる操作と「後で」を明示した。録音中ピルは最小表示の `録音中 12:48` に変更し、クリックで詳細を開く前提の邪魔にならない状態表示へ寄せた。ライブ文字起こし/AIノートの2ウィンドウは追加デザイナーに分担し、任意で閉じられる補助パネルとしてのトーンへ寄せるよう依頼した。
+検証結果: Pencil `snapshot_layout` で `V2 - Recording Flow` にレイアウト問題なし。Pencil `get_screenshot` でフレーム全体を目視確認し、入口系UIにクリップ、崩れ、主要テキストの不自然な重なりがないことを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装へ反映する場合は、会議検知バナー、録音ピル、メニューバーポップオーバーを別コンポーネントとして責務分離し、会議中に常時表示するのは最小ピルだけに絞る。
+
+[mjc / v2-expanded-recording-pill-controls / 2026-05-27 22:37:47 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: 選択中の録音 pill に、一時停止/停止/再開、Transcript 表示、会議ノート表示のボタンを配置する方針で進める。
+結果: `V2 Minimal Recording Pill` を `V2 Expanded Recording Control Pill` として、クリック後の展開状態へ更新した。左に録音中ドットと経過時間、中央に一時停止と停止、右に字幕とノートの表示トグルを配置した。停止操作は誤操作対策が必要なため、確認ミニシート領域を追加し、追加デザイナーに停止確認マイクロシートの作成を分担した。展開 pill 内の小型メーターは幅不足でクリップしたため削除し、状態表示と操作の明瞭さを優先した。
+検証結果: Pencil `snapshot_layout` で `V2 Expanded Recording Control Pill` にレイアウト問題なし。Pencil `get_screenshot` で pill 単体を目視確認し、クリップ、崩れ、主要テキストの不自然な重なりがないことを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装時は通常 pill と展開 pill を同じコンポーネントの状態違いとして扱い、停止ボタンだけ確認ミニシートまたは長押しで誤操作を防ぐ。
+
+[mjc / recording-library-window-pencil / 2026-05-27 21:58:56 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop.pen / AGENT_LOG.md
+指示内容: `McxFh` ノード内に、macOS録音アプリに着想を得た meet-jerky の録音履歴/ライブラリウィンドウを Web App guide / Product Demo style / Warm Concrete / Basic Roundness / Soft Lift / Geist / Geist Mono 方針で作成する。他コンテナは変更しない。
+結果: `Recording Library Window Container` の仮テキストを置き換え、macOS風タイトルバー、左の録音セッション一覧、選択ミーティング詳細、Mic/Speaker 別の二段波形、Both/Mic/Speaker トラックフィルタ、Mic/desktop audio の透明性説明、トラックラベル付き transcript bubbles、AI minutes / Decisions / ToDo / Dictionary アクション、録音権限と AI upload の状態表示を追加した。編集対象は `McxFh` 内に限定した。
+検証結果: Pencil `snapshot_layout` で `McxFh` にレイアウト問題なし。Pencil `get_screenshot` で目視確認し、崩れ、クリップ、主要テキストの重なりがないこと、マイク音声とデスクトップ音声の別トラック表示、AI議事録導線、録音/AI送信の透明性が表示されていることを確認した。Lucide の存在しない `check-square` アイコン警告は `square-check` に差し替えて解消した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: メニューバーポップオーバー側と録音履歴ウィンドウ側の Mic/Speaker 表記、色、AI送信説明を並べて確認し、実装側へ反映する場合は既存履歴画面の情報設計と責務分離を先に整理する。
+
+[mjc / v2-utility-panel-restyle-pencil / 2026-05-27 22:37:00 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `j9dUU` / `L50ox` の V2 ライブ文字起こしウィンドウと AI 会議ノートウィンドウを、Web App guide / Product Demo style / Warm Concrete / Basic Roundness / Gentle Lift / Geist / Geist Mono 方針で、邪魔にならない macOS ネイティブ風ユーティリティパネルへリスタイルする。メニューポップオーバー、ノッチ通知、録音ピル、イントロ、フレーム背景は変更しない。
+結果: ライブ文字起こしウィンドウを半透明の Warm Concrete 面、Basic Roundness、Gentle Lift の控えめな影へ変更し、強いオレンジ面を削除した。録音透明性は小さなドットと `Recording is visible` 文言で維持し、Mic track / Desktop track の分離はフッターチップと自分/相手側バブルの控えめな色差で残した。AI 会議ノートウィンドウも同系統の補助パネルとして再構成し、`AI optional`、Local first、AI一時停止時も録音と文字起こしが続く説明、落ち着いた送信ボタンへ変更した。Pencil の一部 `Update` 操作でフレーム ID/子階層が再生成される挙動があったため、対象2ウィンドウのみ元の位置・サイズで完成フレームとして再構成した。
+検証結果: Pencil `snapshot_layout` でドキュメントにレイアウト問題なし。Pencil `get_screenshot` で新しいライブ文字起こしウィンドウ `jFqjs` と AI 会議ノートウィンドウ `JIrTo` を目視確認し、崩れ、クリップ、主要テキストの重なりがないこと、録音状態の透明性、自分/相手側および Mic/Desktop の分離、AI ノートの任意性が表示されていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: V2 フレーム全体でメニューポップオーバー、ノッチ通知、録音ピルと並べたときの密度差を最終確認し、実装へ反映する場合は会議中に常時表示する要素を録音ピルに限定し、2ウィンドウは任意表示の補助パネルとして扱う。
+
+[mjc / v2-stop-confirmation-micro-sheet / 2026-05-27 22:39:09 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `JkX7Q` ノード内に、展開録音ピルの下へ表示する macOS ネイティブ風の停止確認マイクロシートを、Web App guide / Product Demo style / Warm Concrete / Basic Roundness / Gentle Lift / Geist / Geist Mono 方針で作成する。他ノードは変更しない。
+結果: `V2 Stop Confirmation Micro Sheet Slot` を半透明 Warm Concrete の小型シートに更新し、停止アイコン、`Stop recording?`、`Transcript and notes are saved.`、`Cancel`、`Stop` アクションを配置した。停止操作だけを強調しつつ、キャンセルを並べて誤停止を防ぐ構成にした。
+検証結果: Pencil `snapshot_layout` で `JkX7Q` にレイアウト問題なし。Pencil `get_screenshot` で単体を目視確認し、崩れ、クリップ、テキスト重なりがなく、保存される対象と停止/キャンセルの行動が明確なことを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装時は停止ボタン押下後にこのマイクロシートを録音ピル直下へ短時間表示し、Stop は最終確定、Cancel は即時復帰として扱う。
+
+[mjc / v2-tangerine-recording-flow-accents / 2026-05-27 22:46:06 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `En1Ax` / `WFjqe` / `xylY4` / `JkX7Q` に、Web App guide / Product Demo style / Tangerine Orbit / Basic Roundness / Gentle Lift / Geist / Geist Mono 方針で、meet-jerky らしいオレンジ要素を控えめに追加する。
+結果: メニューバーポップオーバーには上端のタンジェリングロー、検知カード左レール、LIVE WATCH バッジ、auto-detected チップ、録音開始CTAのオレンジ化を追加した。検知バナーには上端グロー、検知パルス、録音開始ボタンのライブドットを追加した。展開録音ピルはライブ時間領域、録音ドット、区切り線、停止/字幕ボタンを温かいオレンジ寄りに調整した。停止確認シートは上端グロー、保存済みパルス、アイコンウェル、停止ボタンのオレンジ階調を整えた。
+検証結果: Pencil `snapshot_layout` で `En1Ax`、`WFjqe`、`xylY4`、`JkX7Q` それぞれにレイアウト問題なし。Pencil `get_screenshot` で `V2 - Recording Flow` 全体を目視確認し、対象4ノードの崩れ、クリップ、主要テキストの重なりがないこと、録音・検知・ライブ状態が控えめに目に入ることを確認した。全体 `snapshot_layout` では既存のライブ文字起こしウィンドウ側に完全クリップ要素が1件残っているが、今回の対象4ノード外であり本作業では変更していない。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装へ反映する場合は、アクセント色を `accent.primary` / `accent.secondary` に集約し、録音状態・検知状態・停止確認の3種類だけに使う運用ルールを決める。
+
+[mjc / v2-live-panels-orange-accent-pass / 2026-05-27 22:50:40 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `V2 - Recording Flow` の各ウィンドウに、macネイティブ感を保ったまま meet-jerky のオレンジ要素をもう少し追加する。
+結果: 追加デザイナーに左側のメニューバーポップオーバー、検知バナー、展開録音ピル、停止確認シートのアクセント追加を分担し、このセッションではライブ文字起こしウィンドウとAI会議ノートウィンドウを更新した。両ウィンドウ上端に細いオレンジアクセントを追加し、文字起こしタブ、録音可視性バー、自分側発話、Mic/Desktop track チップ、AI optional、Local first、LIVE NOTES、タグ、質問チップ、回答カード、送信ボタンを控えめなタンジェリン系に調整した。Pencil の `Update` 操作で一部子要素が再生成されたため、対象ラベルとチップを内容・フォント・サイズ込みで復元した。
+検証結果: Pencil `snapshot_layout` で `jFqjs` と `JIrTo` にレイアウト問題なし。Pencil `get_screenshot` で `V2 - Recording Flow` 全体を目視確認し、ライブ字幕・AIノート両ウィンドウに崩れ、クリップ、主要テキストの重なりがなく、オレンジが録音・AI補助・自分側発話の状態表現として自然に入っていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装へ反映する場合は、会議中の常時オレンジ表示を録音状態とユーザー操作可能な箇所に限定し、背景面には低彩度の半透明色だけを使う。
+
+[mjc / v2-orange-accent-rollback / 2026-05-27 22:54:32 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: 直前のオレンジ追加をロールバックし、差し色程度にオレンジを挿入する。
+結果: `V2 - Recording Flow` から、上端グロー、左レール、強いオレンジCTA、広いオレンジ面、過度なオレンジチップを削除またはニュートラルへ戻した。録音/検知状態の小さなドット、検知アイコン、録音可視性バーなど、状態理解に効く箇所だけにオレンジを残した。直前編集で潰れていたライブ文字起こし内の自分側発話バブルも復元した。
+検証結果: Pencil `snapshot_layout` で `FlpK7` にレイアウト問題なし。Pencil `get_screenshot` で `V2 - Recording Flow` 全体を目視確認し、崩れ、クリップ、主要テキストの重なりがなく、オレンジが差し色程度に抑えられていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実装へ反映する場合は、オレンジを「録音中」「検知中」「現在選択中」の3種類の状態表示に限定する。
+
+[mjc / v2-native-minimal-orange-accent / 2026-05-27 22:58:23 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: 差し色としてのオレンジは残しつつ、ネイティブアプリのようなミニマルで洗練されたUIに仕上げる。
+結果: 追加デザイナーに左側のメニューバーポップオーバー、検知バナー、録音コントロールピル、停止確認シートのミニマル化を分担し、このセッションではライブ文字起こしウィンドウとAI会議ノートウィンドウを調整した。ライブ文字起こしでは録音可視性バーとMic activeの小さなドットだけにオレンジを残し、フッターチップや質問候補の暖色面をニュートラルへ戻した。AI会議ノートではAI optionalの小さなドットだけを差し色にし、Privacy Bar、質問チップ、送信ボタンをmacOS風の控えめなニュートラル面へ整理した。
+検証結果: Pencil `snapshot_layout` で `jFqjs` と `JIrTo` にレイアウト問題なし。Pencil `get_screenshot` で両ウィンドウを目視確認し、崩れ、クリップ、主要テキストの重なりがなく、オレンジが状態表示の差し色としてだけ残っていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 左側担当分と並べて最終確認する場合も、オレンジ面を増やさず、状態ドット・選択中・録音中のみに限定する。
+
+[mjc / v2-settings-overview-native-tone-match / 2026-05-27 23:14:08 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `V2 - History and Minutes` と `V2 - Settings Overview` のUIやトンマナを `V2 - Recording Flow` に合わせる。
+結果: 追加デザイナーに `V2 - History and Minutes` を分担し、このセッションでは `V2 - Settings Overview` を担当した。設定画面の広いWarm背景・強いオレンジ面・グラデーション感を抑え、`V2 - Recording Flow` と同じグレー基調、半透明ウィンドウ、細い境界線、低い影、Geist / Geist Mono の構成へ置き換えた。設定サイドバー、タイトルバー、カード群、値チップをミニマルなmacOSネイティブ調に再構成し、オレンジは設定状態ドット・選択中ナビドット・有効値ドットの小さな差し色に限定した。
+検証結果: Pencil `snapshot_layout` で `V2 - Settings Overview` にレイアウト問題なし。Pencil `get_screenshot` で設定画面全体を目視確認し、崩れ、クリップ、主要テキストの重なりがなく、`V2 - Recording Flow` のトーンに合っていることを確認した。途中でPencil `Update` により設定トップフレームが空化したため、トップフレームごと復元してから再検証した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: `V2 - History and Minutes` の追加デザイナー成果と並べて最終確認する場合も、オレンジは状態ドットと選択中表示に限定する。
+
+[mjc / v2-left-recording-flow-native-minimal / 2026-05-27 23:04:15 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `En1Ax` / `WFjqe` / `xylY4` / `JkX7Q` の左側メニューバーポップオーバー、検知バナー、録音コントロールピル、停止確認シートを、Web App guide / Product Demo style / Minimal Ink / Basic Roundness / Gentle Lift / Geist / Geist Mono 方針で、macOSネイティブアプリのようにミニマルで洗練されたUIへ整える。オレンジは録音中・検知中など状態を示す小さな差し色だけに残す。
+結果: 4対象ノードの広いオレンジ面、強いグロー、装飾的な帯を削除し、半透明のニュートラル面、薄いヘアライン、控えめな影へ統一した。メニューバーポップオーバーは検知状態ドット、Mic/Desktop/Local Capture の状態行、黒い主CTA、ニュートラルな履歴導線へ再構成した。検知バナーは小さな検知ドットと簡潔な確認済みメタ情報に整理した。録音ピルは録音中ドットと経過時間のみをアクセントにし、各操作を小型ツールバー部品として調整した。停止確認シートはニュートラル面に戻し、破壊的操作は赤い小アイコンとテキストで示した。
+検証結果: Pencil `snapshot_layout` で `En1Ax`、`WFjqe`、`xylY4`、`JkX7Q` および `FlpK7` にレイアウト問題なし。Pencil `get_screenshot` で `V2 - Recording Flow` 全体を目視確認し、崩れ、クリップ、主要テキストの重なりがなく、オレンジが録音・検知状態の小さな差し色に限定されていることを確認した。
+依存関係追加の有無: なし
+失敗理由: Pencil `batch_design` の初回編集で `Update` に `type` を含めたため既存子階層参照が消え、バッチがロールバックされた。以後は `Update` から `type` を外し、既存直下セクションを `Replace` で差し替えて完了した。
+次アクション: 実装へ反映する場合は、オレンジの利用を録音中・検知中・現在選択中の小さな状態表示に限定し、CTAやパネル背景にはニュートラル面を使う。
+
+[mjc / v2-history-minutes-native-minimal / 2026-05-27 23:12:53 JST]
+役割: UIデザイン担当エージェント
+作業範囲: meet-jerky-desktop-v2.pen / AGENT_LOG.md
+指示内容: `N3Ck4` の `V2 - History and Minutes` を、`V2 - Recording Flow` と同じ macOS ネイティブ風のミニマルで洗練された UI トーンへ合わせる。Web App guide / Product Demo style / Minimal Ink / Basic Roundness / Gentle Lift / Geist / Geist Mono 方針を使い、Warm な広い背景や強いオレンジ面を抑え、半透明の白/グレー面、細い境界線、低い影へ統一する。
+結果: 背景を `V2 - Recording Flow` と同系のニュートラルグレーに変更し、イントロを Geist / Geist Mono の控えめな構成へ更新した。履歴ウィンドウ本体は半透明の白面、ヘアライン、低い二段影、macOS 風タイトルバー、左サイドバー、検索、フィルタ、会議リスト、別トラック確認、文字起こし、AI議事録生成カラムに再構成した。オレンジは状態ドット、選択中、Desktop track の小さなアクセントに限定し、広い暖色面や強いオレンジパネルは削除した。
+検証結果: Pencil `snapshot_layout` で `N3Ck4` にレイアウト問題なし。Pencil `get_screenshot` で `V2 - History and Minutes` 全体を目視確認し、崩れ、クリップ、主要テキストの重なりがなく、半透明の白/グレー面、細線、低い影、Geist/Geist Mono、限定的なオレンジアクセントに揃っていることを確認した。
+依存関係追加の有無: なし
+失敗理由: 初回 `batch_design` で `Update` に `type` を含めたうえで複数操作をまとめたところ、既存子階層参照が不安定になり `rxFDV` が見つからずロールバックされた。現構造を再読し、`Update` から `type` を外して小分けに適用して完了した。
+次アクション: 実装へ反映する場合は、履歴画面のオレンジ利用を録音中・検知中・現在選択中の小さな状態表示に限定し、履歴/議事録の主CTAはニュートラルまたは黒い Primary として扱う。
+
+[mjc / v2-ui-implementation-alignment / 2026-05-29 12:00:09 JST]
+役割: 実装担当エージェント
+作業範囲: src/components/MeetingDetectedBanner.tsx / src/components/LiveCaptionWindow.tsx / src/routes/TranscriptView.tsx / src/routes/SettingsView.tsx / src/routes/SessionDetail.tsx / src/routes/SessionList.tsx / src/App.css / AGENT_LOG.md
+指示内容: `meet-jerky-desktop-v2.pen` の UI 方針にあわせ、現行カラーパレットと Meet Jerky の録音透明性を保ちながら、macOS ネイティブ風のミニマルな実装へ寄せる。
+結果: 会議検知バナー、メニューバーポップオーバー、録音中字幕ウィンドウ、履歴一覧、セッション詳細、設定画面を v2 方針に合わせて調整した。オレンジは録音中、検知中、現在選択中、利用可能状態の小さな差し色に限定し、背景や CTA はニュートラル面を中心に整理した。録音中 UI には録音状態、マイク/システム音声、字幕/翻訳切替、AIノートON/OFF、AI質問導線を追加したが、未接続の翻訳・AIチャット・議事録生成は実行可能に見せず準備中または未接続と明示した。録音後 UI は履歴検索、コピー、分離トラック表示、LINE風の話者別トランスクリプト、議事録テンプレート、録音ファイル/トランスクリプト/手書きメモの利用可否カードを追加した。
+検証結果: `npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx src/routes/SettingsView.tsx src/routes/SessionDetail.tsx src/routes/SessionList.tsx src/App.css AGENT_LOG.md` 成功。Pencil MCP は `get_editor_state` が別リポジトリの `openmeetslot.pen` を指し、`meet-jerky-desktop-v2.pen` の直接再取得ができなかったため、既存の v2 Pencil 作業ログと実装差分を照合して反映した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil MCP のアクティブファイル参照が `meet-jerky-desktop-v2.pen` に戻ったら、実装画面との視覚差分を再確認する。
+
+[mjc / v2-minutes-source-transparency-pass / 2026-05-29 12:02:47 JST]
+役割: 実装担当エージェント
+作業範囲: src/routes/SessionDetail.tsx / src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、録音後の議事録ワークスペースが v2 の透明性方針に合っているか追加監査し、弱い箇所を補強する。
+結果: Pencil MCP は `filePath` に `meet-jerky-desktop-v2.pen` を指定しても別リポジトリの OpenMeetSlot ノードを返したため、直接の v2.pen 検証証跡としては採用しなかった。実装側では議事録ワークスペースの入力ソース表示に `AI議事録` と `AI送信: 生成時に確認` を追加し、録音ファイル、トランスクリプト、手書きメモ、AI送信の状態を同じ粒度で確認できるようにした。狭い幅ではソース状態カードを2列に落とし、macOS風の軽いカード表現を維持した。
+検証結果: `npm run build` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`rg` で `SessionDetail` のエラー表示 `className` と `LiveCaptionWindow` の listener error 更新箇所を確認し、重複属性や二重更新が実ファイルに存在しないことを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 直接の Pencil v2 参照が復旧したら、History and Minutes のAI送信/入力ソース状態と実装画面をスクリーンショットで照合する。
+
+[mjc / v2-live-ai-notes-truthfulness-pass / 2026-05-29 12:04:53 JST]
+役割: 実装担当エージェント
+作業範囲: src/components/LiveCaptionWindow.tsx / src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、録音中 AI ノート UI が v2 方針とプロダクト非目標に合っているか追加監査し、未接続機能を実行可能に見せないよう補正する。
+結果: ライブ文字起こしウィンドウの AI notes ヘッダーに `未接続` バッジを追加した。AIノート ON 時の説明を「AIノート欄を表示中。生成と外部送信はAI接続後に明示確認」とし、AI生成済みの論点に見えた `論点` ラベルを `プレビュー` に変更した。本文も `最新発話` として表示し、未接続のAI要約を偽装しない形にした。
+検証結果: `npm run build` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。`file AGENT_LOG.md` と `rg -a` で既存ログ中に制御文字を含む正規表現説明があり通常 `rg` では binary 扱いされることを確認したが、今回の変更では制御文字を追加していない。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、録音中 AI notes の `未接続` バッジ、ON/OFFトグル、外部送信ピルの視覚バランスをスクリーンショットで照合する。
+
+[mjc / v2-history-transcript-chat-bubbles / 2026-05-29 12:06:48 JST]
+役割: 実装担当エージェント
+作業範囲: src/routes/SessionDetail.tsx / src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、録音後のトランスクリプト表示が「LINEのようなチャットUI」という要求に十分寄っているか追加監査し、弱い箇所を補強する。
+結果: セッション詳細の文字起こし表示を横並びログ行から話者別チャットバブルへ変更した。`自分` は右寄せで Meet Jerky の淡いオレンジ面、`相手側` は左寄せの白面、その他の話者はニュートラル面として表示し、時刻はバブル外の小さなモノスペース表示にした。既存の話者・時刻・本文データ構造は変えず、履歴保存フォーマットにも影響しない。
+検証結果: `npm run build` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。差分で `getTranscriptBubbleClassName` と `.session-detail-transcript-row-self/other/unknown` が追加され、話者別バブル配置が反映されていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、History and Minutes のトランスクリプトカラムと実装のバブル密度、余白、話者色をスクリーンショットで照合する。
+
+[mjc / v2-history-entry-actions-pass / 2026-05-29 12:09:09 JST]
+役割: 実装担当エージェント
+作業範囲: src/routes/SessionList.tsx / src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、録音後フローの入口である履歴一覧が v2 の「履歴・検索・コピー・トラック確認・議事録ワークスペース」導線として十分か追加監査し、弱い箇所を補強する。
+結果: 履歴行に `本文をコピー` アクションを追加し、保存済み文字起こし本文を一覧から直接コピーできるようにした。既存の `詳細を開く`、既定アプリで開く、Finder表示に加えて、詳細画面で使える `チャットTranscript`、`分離トラック`、`議事録テンプレート` の小さな導線チップを追加した。pending 操作は `copy` を含めて排他制御し、他のファイル操作中に誤操作しないようにした。
+検証結果: `npm run build` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。差分で `handleCopyTranscript`、`SessionAction.kind = copy`、`.session-list-item-capabilities` が追加され、履歴一覧からコピーと詳細ワークスペース導線が見えることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、History and Minutes の履歴リスト行と実装の行密度、アクション数、チップの視覚バランスをスクリーンショットで照合する。
+
+[mjc / v2-settings-ai-template-truthfulness-pass / 2026-05-29 12:10:50 JST]
+役割: 実装担当エージェント
+作業範囲: src/routes/SettingsView.tsx / src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、設定画面の AI 議事録カテゴリが v2 のミニマルな透明性方針とプロダクト非目標に合っているか追加監査し、未接続状態と矛盾する表示を補正する。
+結果: AIプロバイダーが `AI議事録を使わない` の状態なのに、議事録テンプレートが ON/OFF スイッチとして見えていたため、テンプレート欄を `プロンプト候補だけを表示。AI接続までは外部送信しません。` に変更した。各テンプレートの右側表示もスイッチではなく `候補` / `未選択` のチップへ変更し、AI有効化済みや外部送信可能に見えないようにした。
+検証結果: `npm run build` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。差分で `.settings-ai-template-status` と文言変更が追加され、未接続時のテンプレート表示が候補扱いに変わっていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、Settings Overview の AI 議事録カテゴリと実装のテンプレートチップ、未接続バッジ、外部送信なし表示をスクリーンショットで照合する。
+
+[mjc / v2-menubar-recording-state-clarity / 2026-05-29 12:12:25 JST]
+役割: 実装担当エージェント
+作業範囲: src/routes/TranscriptView.tsx / AGENT_LOG.md
+指示内容: 継続ゴールに対して、メニューバー録音導線の常時インディケーターとAI送信状態が v2 の透明性方針に十分沿っているか追加監査し、弱い箇所を補強する。
+結果: メニューバーポップオーバーの状態カードで、録音中は `録音` カードの補足にマイク/システム音声の現在状態を表示するようにした。`AI送信` カードも録音中は `録音中のAI外部送信なし` または `録音中の送信状態を表示` として、待機中の `議事録生成時に確認` と区別した。これにより、録音中に「いま外部送信しているか」をメニューバーから読めるようにした。
+検証結果: `npm run build` 成功。`git diff --check -- src/routes/TranscriptView.tsx` 成功。差分で `menuRecordingDetail` と `menuAiTransmissionDetail` が追加され、録音中/待機中で状態カードの補足文言が切り替わることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、Recording Flow のメニューバーポップオーバーと実装の録音/字幕/AI送信カードの情報密度をスクリーンショットで照合する。
+
+[mjc / v2-meeting-detected-privacy-note / 2026-05-29 12:14:05 JST]
+役割: 実装担当エージェント
+作業範囲: src/components/MeetingDetectedBanner.tsx / src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、会議検知通知から録音開始する入口が v2 の透明性方針と「ステルス録音しない」非目標に十分沿っているか追加監査し、視覚的に弱い箇所を補強する。
+結果: 会議検知バナー内に `開始するまで録音しません` の小さなプライバシーノートを追加した。既存の Mic/System/AI/Engine チップに加えて、録音開始前であることを視覚的に示し、aria/title でも「開始を押すまで録音と文字起こしは始まらない」ことを明示した。
+検証結果: `npm run build` 成功。`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css` 成功。差分で `.meeting-detected-privacy-note` とバナー内の note が追加され、検知通知から録音開始する前の透明性表示が増えていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、Recording Flow の検知バナーと実装のプライバシーノート、チップ密度、CTA配置をスクリーンショットで照合する。
+
+[mjc / v2-meeting-detected-layout-fit-pass / 2026-05-29 12:15:51 JST]
+役割: 実装担当エージェント
+作業範囲: src/App.css / AGENT_LOG.md
+指示内容: 直前に会議検知バナーへプライバシーノートを追加したため、固定高ウィンドウ内でクリップしないか追加監査し、必要なレイアウト調整を行う。
+結果: `meeting-prompt` の Tauri ウィンドウ高が 280px で、バナーは top 30px に配置されるため、バナー高を 214px から 244px へ広げてもウィンドウ内に収まることを確認した。バナーの padding を 14px から 12px、gap を 12px から 10px に詰め、プライバシーノート、4つの状態チップ、CTA がクリップしにくい構成にした。
+検証結果: `npm run build` 成功。`git diff --check -- src/App.css src/components/MeetingDetectedBanner.tsx` 成功。`src-tauri/src/lib.rs` の `MEETING_PROMPT_HEIGHT = 280.0` と CSS の `top: 30px; height: 244px` を照合し、縦方向に 6px の余白が残ることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照が復旧したら、検知バナーの高さ変更が v2 の密度から外れていないかスクリーンショットで確認する。
+
+[mjc / v2-live-caption-narrow-layout-pass / 2026-05-29 12:17:42 JST]
+役割: 実装担当エージェント
+作業範囲: src/App.css / AGENT_LOG.md
+指示内容: 継続ゴールに対して、録音中ライブ字幕ウィンドウが v2 の「邪魔にならない最小UI」方針を小幅ウィンドウでも満たせるか追加監査し、字幕列がAIノートで圧迫される問題を補正する。
+結果: `.live-transcript-panel-window` の古い重複 width/height 指定を整理した。`max-width: 760px` 以下ではライブ字幕の本文と AI notes を横並びから縦積みに切り替え、AIノート側のメーターとプライバシー説明を隠してコンパクト化した。`max-width: 520px` の既存指定にあった右余白も 0 に戻し、小幅時に字幕本文が不自然に狭くならないようにした。
+検証結果: `npm run build` 成功。`git diff --check -- src/App.css` 成功。差分で `@media (max-width: 760px)` の縦積み指定と、古い `.live-transcript-panel-window` の重複寸法削除が反映されていることを確認した。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: Pencil v2 の直接参照または実機ウィンドウ確認が可能になったら、小幅時のライブ字幕/AI notes の視覚密度をスクリーンショットで確認する。
+
+[mjc / v2-detection-rules-settings / 2026-05-29 12:26:10 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/settings.rs / src/types/index.ts / src/utils/previewAppData.ts / src/routes/SettingsView.tsx / src/App.css / AGENT_LOG.md
+指示内容: v2.pen のUI方針に合わせ、設定画面の「検出ルール」を固定表示ではなく、Macアプリらしい最小UIで保存可能な設定として扱えるようにする。
+結果: `AppSettings` に `detectionRules` を追加し、検出のオン/オフ、必要シグナル数、音声必須、Meet/Zoom/Teams/URL の検出対象を保存できるようにした。設定画面の検出カテゴリはチップとトグルをボタン化し、判定プレビューと安全フローが現在の設定に追従するように更新した。旧設定ファイルでは `DetectionRules::default()` が補完される。
+検証結果: Pencil MCP で `meet-jerky-desktop-v2.pen` の変数を確認。`npm run build` 成功。`nix develop .. -c cargo fmt --check` 成功。`nix develop .. -c cargo test settings::` は 28 件成功。`git diff --check -- src-tauri/src/settings.rs src/types/index.ts src/utils/previewAppData.ts src/routes/SettingsView.tsx src/App.css` 成功。Vite dev で `/?window=settings&category=detection` のHTML配信を確認。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 実際の検出ランタイムが `detectionRules` を消費する処理は未接続。次は `app_detection` 側に設定を反映し、UIと実際の会議検知挙動を一致させる。
+
+[mjc / v2-detection-rules-runtime-filter / 2026-05-29 12:34:20 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/app_detection.rs / src-tauri/src/settings.rs / src/types/index.ts / src/utils/previewAppData.ts / src/routes/SettingsView.tsx / AGENT_LOG.md
+指示内容: v2 の設定UIで選択した会議検出ルールが、実際の会議検知通知と乖離しないようにランタイムへ接続する。
+結果: `DetectionRules` の対象サービスに FaceTime を追加し、設定画面にも FaceTime チップを追加した。`app_detection` は `SettingsStateHandle` から現在の `detectionRules` を読み、検出全体がオフの場合、または対象外サービスの場合に通知・イベント emit を行わないようにした。ネイティブアプリは Zoom / Teams / FaceTime、ブラウザ分類は Google Meet / Zoom / Teams / その他URL(Webex/Whereby/GoTo等) にマッピングした。
+検証結果: Pencil MCP で `meet-jerky-desktop-v2.pen` の変数を確認。`npm run build` 成功。`nix develop .. -c cargo fmt` 適用後、`nix develop .. -c cargo fmt --check` 成功。`nix develop .. -c cargo test app_detection::` は 164 件成功。`nix develop .. -c cargo test settings::` は 28 件成功。`git diff --check -- src-tauri/src/app_detection.rs src-tauri/src/settings.rs src/types/index.ts src/utils/previewAppData.ts src/routes/SettingsView.tsx AGENT_LOG.md` 成功。Vite dev で `/?window=settings&category=detection` のHTML配信を確認。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: `minimumSignalCount` と `requireAudioSignal` はまだ音声アクティビティシグナルが検知パイプラインへ入っていないため、保存のみ。次は音声状態を検知判定へ入力し、UIのシグナル条件と実挙動を完全一致させる。
+
+[mjc / v2-detection-signal-gates / 2026-05-29 12:42:05 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/app_detection.rs / src/routes/SettingsView.tsx / src/App.css / AGENT_LOG.md
+指示内容: v2 の検出ルールUIにある `minimumSignalCount` と `requireAudioSignal` が実際の通知条件と乖離しないようにする。
+結果: `app_detection` に検知シグナル種別を追加し、ネイティブアプリ / ブラウザURL / ウィンドウタイトル由来の候補を2シグナルとして数えるようにした。`minimumSignalCount` が3の場合、または `requireAudioSignal` が有効で音声シグナルがまだ無い場合は通知を抑制する安全側の判定にした。設定画面には、音声必須または3シグナル設定では音声シグナル接続まで通知が抑制されることを v2 パレットの小さな注記として表示した。
+検証結果: Pencil MCP で `meet-jerky-desktop-v2.pen` の変数を確認。`npm run build` 成功。`nix develop .. -c cargo fmt` 適用後、`nix develop .. -c cargo fmt --check` 成功。`nix develop .. -c cargo test app_detection::` は 165 件成功。`nix develop .. -c cargo test settings::` は 28 件成功。`git diff --check -- src-tauri/src/app_detection.rs src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。Vite dev で `/?window=settings&category=detection` のHTML配信を確認。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 録音前の音声アクティビティを検知パイプラインへ入力できるようにし、`has_audio_signal` を実測値で更新する。
+
+[mjc / v2-detection-audio-level-signal / 2026-05-29 12:49:40 JST]
+役割: 実装担当エージェント
+作業範囲: src-tauri/src/audio.rs / src-tauri/src/app_detection.rs / src/routes/SettingsView.tsx / AGENT_LOG.md
+指示内容: v2 の「音声必須」検出条件が、実測音声レベルを使える場合は実際に反映されるようにする。
+結果: `AudioStateHandle` に現在のマイク / システム音声 RMS レベル取得メソッドを追加した。`app_detection` は `AudioStateHandle` から既存キャプチャのレベルを読み、どちらかが `0.01` RMS を超える場合に音声シグナルありとして `minimumSignalCount` / `requireAudioSignal` 判定へ渡すようにした。設定画面の注記も「既存キャプチャの音声レベルが閾値を超えた場合だけ通知候補にする」という実挙動へ合わせた。
+検証結果: Pencil MCP で `meet-jerky-desktop-v2.pen` の変数を確認。`npm run build` 成功。`nix develop .. -c cargo fmt` 適用後、`nix develop .. -c cargo fmt --check` 成功。`nix develop .. -c cargo test app_detection::` は 166 件成功。`nix develop .. -c cargo test audio::` は 47 件成功。`nix develop .. -c cargo test settings::` は 28 件成功。`git diff --check -- src-tauri/src/audio.rs src-tauri/src/app_detection.rs src/routes/SettingsView.tsx AGENT_LOG.md` 成功。Vite dev で `/?window=settings&category=detection` のHTML配信を確認。
+依存関係追加の有無: なし
+失敗理由: なし
+次アクション: 会議検知専用の軽量な録音前音声監視を設計する場合は、権限・バッテリー・ステルス録音ではない透明性表示を先に固める。
+
+## [mjc / v2-clipboard-fallback / 2026-05-29 16:15:56 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音後UI方針に合わせ、履歴/詳細/リアルタイム文字起こしの「コピー」導線を見た目だけでなく WebView とブラウザプレビューの両方で動作しやすくする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/utils/clipboard.ts` を追加し、`navigator.clipboard.writeText` が使えない/失敗する環境では一時 textarea と `document.execCommand("copy")` にフォールバックする共通関数を実装。
+- 変更: `src/routes/SessionList.tsx`, `src/routes/SessionDetail.tsx`, `src/components/TranscriptDisplay.tsx` のコピー処理を `writeClipboardText` に差し替え。
+- 検証: `rg -n "navigator\\.clipboard|writeText\\(" src` で直接 Clipboard API 依存が共通ユーティリティ内だけになったことを確認。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告で、今回の変更起因の型/ビルド失敗ではない。
+- 検証: `git diff --check -- src/utils/clipboard.ts src/routes/SessionList.tsx src/routes/SessionDetail.tsx src/components/TranscriptDisplay.tsx` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-minutes-prompt-copy / 2026-05-29 16:18:24 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音後UI方針に合わせ、AI未接続でも議事録ワークスペースからテンプレート・文字起こし・手書きメモを明示的に再利用できる導線を追加する。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/routes/SessionDetail.tsx` に `buildMinutesPrompt` を追加。選択中の議事録テンプレート、出力セクション、プロンプト方針、保存済み文字起こし、手書きメモ、保存済みノート、制約を1つの議事録生成プロンプトとして構成する。
+- 変更: 録音詳細の `Prompt recipe` カードに「プロンプトをコピー」ボタンを追加。外部AIや課金APIは呼ばず、`writeClipboardText` でユーザーが明示的にコピーした内容だけを持ち出せるようにした。
+- 変更: `src/App.css` に `session-detail-prompt-recipe-actions` の v2 調整を追加。v2 の紙色/線/ミニマルな送信範囲説明に合わせた。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-detection-pill-open-live-caption / 2026-05-29 16:57:41 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、会議検知通知から録音開始した後に残る録音状態ピルを、状態表示だけでなくライブ文字起こしへ戻る導線としても機能させる。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/components/MeetingDetectedBanner.tsx` の録音状態ピルに「開く」ボタンを追加し、Tauri 実行時は `set_live_caption_window_visible(true)` でライブ文字起こしウィンドウを再表示できるようにした。
+- 変更: `src/App.css` に `meeting-detected-status-open` を追加。v2 の青アクセントを使った控えめなピル内ボタンにし、録音状態ピルを `pointer-events: auto` にして操作可能にした。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-settings-review-rail / 2026-05-29 16:54:30 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の設定UI方針に合わせ、マイク、検出、文字起こし、AI議事録の設定変更が録音体験へどう反映されるかを保存前に確認しやすくする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/routes/SettingsView.tsx` に `Settings review` レールを追加。保存状態、録音中インジケーター、Mic/Speaker 分離、AI送信状態を常時サマリー表示する。
+- 変更: `src/App.css` に `settings-commit-review-*` スタイルを追加。v2 の紙色・琥珀アクセント・ミニマルなMac設定画面に合わせ、モバイルでは4列から2列へ縮退するようにした。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-live-local-meeting-notes / 2026-05-29 16:48:31 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、AI notes を「最新発話だけ」ではなく、外部送信なしで確認できるリアルタイム会議ノートに近づける。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/components/LiveCaptionWindow.tsx` にローカル会議ノート抽出を追加。表示中の文字起こしから要点、決定候補、ToDo候補を抽出し、AI未接続でも会議ノートとして表示する。
+- 変更: ローカル会議ノートを Markdown 形式でコピーできるボタンを追加。コピー内容には AI外部送信なしでローカル抽出している注記を含める。
+- 変更: `src/App.css` に `live-notes-local-preview-*` スタイルを追加し、v2 の紙色、琥珀アクセント、ミニマルな計器盤調のUIに合わせた。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-session-track-audit / 2026-05-29 16:51:18 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音後UI方針に合わせ、スピーカーのみ / マイクのみ / 両方の確認状態を、再生ボタンの disabled 表示だけに依存せず明確にする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/routes/SessionDetail.tsx` に `Track audit` パネルを追加。選択中トラックごとに Audio file、Transcript、Scope、AI send の状態を表示し、音声ファイル未接続時も確認可能な範囲を明示する。
+- 変更: `src/App.css` に `session-detail-playback-audit-*` スタイルを追加。v2 の紙色、琥珀アクセント、控えめなMacアプリ調に合わせ、4列グリッドをモバイルでは2列へ縮退するようにした。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-live-translation-target-preference / 2026-05-29 16:43:53 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、リアルタイム翻訳ビューを EN 固定表示から、翻訳先を選べる保存済み設定に近づける。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/components/LiveCaptionWindow.tsx` の `LiveCaptionPreferences` に `translationTarget` を追加。既存 localStorage は翻訳先 EN として後方互換で読み取る。
+- 変更: 翻訳ビューに EN / JA / KO / ZH のターゲット選択を追加し、タブ表示、説明、ステータス行に反映する。現在も翻訳エンジン未接続のため外部送信は行わない。
+- 変更: `src/App.css` に `live-transcript-translation-target*` スタイルを追加し、v2 の紙色・琥珀ベースに青アクセントの選択状態を加えた。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-session-template-instruction / 2026-05-29 16:41:23 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音後UI方針に合わせ、無効状態だった「テンプレート編集」を、この録音だけの議事録テンプレート補足指示として実際に編集・保存・反映できるようにする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/routes/SessionDetail.tsx` の議事録ワークスペースで「テンプレート編集」ボタンを有効化し、セッション単位の補足指示入力を開閉できるようにした。
+- 変更: `MinutesWorkspaceDraft` に `templateInstruction` を追加し、補足指示を localStorage に保存・復元する。既存下書きは補足指示なしとして読み取れる。
+- 変更: 議事録プロンプトコピーとローカル議事録下書き生成に、補足指示を「この録音だけの補足指示」として反映するようにした。
+- 変更: `src/App.css` に `session-detail-template-instruction-*` スタイルを追加し、v2 の紙色UIに青アクセントの編集カードとして統合した。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-selected-track-transcript-copy / 2026-05-29 16:20:23 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音後レビュー方針に合わせ、マイク/スピーカー/両方のトラック切り替えを単なる表示ではなく、選択トラックの文字起こし再利用に接続する。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/routes/SessionDetail.tsx` に `formatTrackTranscript` と `handleCopySelectedTrackTranscript` を追加。選択中の `PlaybackTrack` に応じて、自分/相手側/両方の保存済み文字起こしだけをコピーできるようにした。
+- 変更: 分離トラックカードの再生ボタン横に「選択トラックをコピー」を追加。音声ファイル再生が未接続でも、トラック確認結果を議事録や外部メモへ持ち出せる。
+- 変更: `src/App.css` に `session-detail-track-actions` と `session-detail-track-copy-button` を追加し、v2 の控えめな青アクセントで既存の紙色UIに馴染ませた。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-live-ai-question-draft-persistence / 2026-05-29 16:25:08 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、AI未接続時の「会議内容への質問」を一時的な見た目ではなく、ローカルに保持される下書きとして扱えるようにする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/components/LiveCaptionWindow.tsx` に `meet-jerky:live-caption-ai-question` の localStorage 保存を追加。AI質問の入力中下書き、送信待ち質問、送信範囲レビューの開閉状態を復元する。
+- 変更: ライブ字幕リセット時にAI質問の下書きを消さないようにし、録音中ウィンドウの再描画やリセットでユーザーの質問が失われにくくした。
+- 変更: 送信待ち質問に「コピー」ボタンを追加。AIプロバイダー未接続でも、質問下書きを明示操作で持ち出せる。
+- 変更: `src/App.css` に送信待ち質問内のコピー操作スタイルを追加し、v2 の控えめな緑アクセントに合わせた。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-live-translation-source-copy / 2026-05-29 16:27:57 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、リアルタイム翻訳が未接続でも原文が保持され、ユーザーが明示的に再利用できる状態にする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/components/LiveCaptionWindow.tsx` の翻訳プレビューノートに「原文をコピー」ボタンを追加。表示中のコピー可能な文字起こし行を `[mm:ss] speaker: text` 形式でコピーする。
+- 変更: 翻訳未接続時のコピー結果を `translationCopyStatus` として同じノート内に表示し、外部送信なしで原文を持ち出せることを明確化した。
+- 変更: `src/App.css` に `live-transcript-translation-actions` を追加し、v2 の琥珀アクセントと紙色UIに合わせた。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-ring-light-open-live-caption / 2026-05-29 16:30:00 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、常駐RECインジケーターを録音状態の透明性だけでなく、録音中の文字起こし画面へ戻る導線としても機能させる。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/components/RingLightWindow.tsx` に「開く」ボタンを追加し、Tauri 実行時は `set_live_caption_window_visible(true)` でライブ文字起こしウィンドウを再表示できるようにした。
+- 変更: ブラウザプレビューでは副作用なしにし、Tauri API 呼び出しを避ける。
+- 変更: `src/App.css` に `ring-light-open-caption` を追加し、常駐RECバッジ内の控えめな青アクセントボタンとして調整。バッジに `pointer-events: auto` を追加して操作可能にした。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-meeting-start-request-source / 2026-05-29 16:34:19 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音状態透明性の方針に合わせ、検知通知からメニューバー録音へ渡る開始要求の出どころを失わないようにする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/utils/meetingStartRequest.ts` の pending request を timestamp だけでなく `source` / `sourceLabel` を持つ JSON 形式に拡張。旧 timestamp 形式も読み取れるようにして既存状態との互換性を維持した。
+- 変更: `src/components/MeetingDetectedBanner.tsx` では開始要求を `検知通知` として保存するようにし、`src/utils/controllerActions.ts` では `Controller` として保存するようにした。
+- 変更: `src/App.tsx` のイベント受信側では既存 pending request がない場合だけ補完保存するようにし、検知通知などの開始元メタ情報を `unknown` で上書きしないようにした。
+- 変更: `src/routes/TranscriptView.tsx` の pending 表示を開始要求元付きにし、「検知通知から録音開始要求を受信済み」のようにユーザーが開始経路を確認できるようにした。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/utils/meetingStartRequest.ts src/components/MeetingDetectedBanner.tsx src/utils/controllerActions.ts src/routes/TranscriptView.tsx src/App.tsx AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-local-minutes-draft / 2026-05-29 16:38:31 JST]
+
+- 目的: meet-jerky-desktop-v2.pen の録音後UI方針に合わせ、AI未接続でも「文字起こし + 手書きメモ + テンプレート」から議事録下書きを作成・確認・コピーできるようにする。
+- Pencil MCP: `get_editor_state(include_schema:true)` と `get_variables(filePath:"/Users/wagomu/dev/github.com/staticWagomU/meet-jerky/desktop/meet-jerky-desktop-v2.pen")` を確認。v2 変数は `es-paper`, `es-dark`, `es-blue`, `es-amber`, `Funnel Sans`, `Anton`, `IBM Plex Mono`。
+- 変更: `src/routes/SessionDetail.tsx` にローカル議事録下書き生成を追加。保存済み文字起こし、手書きメモ、選択テンプレートのセクション構成から Markdown 下書きを作成する。AI外部送信は行わない。
+- 変更: 議事録ワークスペースの localStorage 下書きに `generatedMinutesDraft` を追加し、生成済み下書きもセッション単位で復元できるようにした。
+- 変更: `src/App.css` に `session-detail-local-minutes-*` スタイルを追加し、v2 の紙色・青アクセント・控えめなMacアプリ調に合わせた下書きカード、操作ボタン、プレビューを追加した。
+- 検証: `npm run build` 成功。Vite の 500 kB chunk warning は既存のバンドルサイズ警告。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md` 成功。
+- 依存関係: 追加なし。課金操作なし。
+
+## [mjc / v2-session-list-review-path / 2026-05-29 17:03:07 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Product Data Grid/Web App guideline を確認。
+- src/routes/SessionList.tsx: 各履歴行に録音後レビュー経路（Review / Track / Minutes）を追加し、チャットTranscript・分離トラック・議事録テンプレートへ進む目的を一覧上で可視化。
+- src/App.css: レビュー経路を v2 の薄い計器盤トーンに合わせた小型グリッドとして追加し、モバイルでは 1 カラムに折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-live-ai-guardrail / 2026-05-29 17:08:31 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）を確認し、録音中UIのAI欄を点検。
+- src/components/LiveCaptionWindow.tsx: AI notes パネルに Mode / Send / Ask の常時表示ガードレールを追加し、AIオン/オフ、質問待機、外部送信なし、音声未送信を録音中に一目で確認できるようにした。
+- src/App.css: ガードレールを v2 の薄い計器盤トーンに合わせた小型グリッドとして追加し、狭幅では1カラム化。
+- 検証: npm run build 成功。git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-menu-start-source-rail / 2026-05-29 17:11:36 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）を確認し、メニューバー録音UIを点検。
+- src/routes/TranscriptView.tsx: メニューバーポップオーバーに Start source レールを追加し、開始元（Menu bar / 検知通知 / 録音中）、要求状態、録音インジケーター継続を常時確認できるようにした。
+- src/App.css: Start source レールを v2 の薄い計器盤トーンに合わせて追加し、狭幅では1カラム化。
+- 検証: npm run build 成功。git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-session-detail-evidence-rail / 2026-05-29 17:15:47 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、録音後詳細UIを点検。
+- src/routes/SessionDetail.tsx: 議事録ワークスペースに Evidence rail を追加し、選択中トラック監査、統合Transcript、手書きメモ、出力状態の関係を録音後レビュー内で明示。
+- src/App.css: Evidence rail を v2 の薄い計器盤トーンに合わせて追加し、狭幅では2カラムへ落とす。
+- 検証: npm run build 成功。git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-settings-runtime-route / 2026-05-29 17:19:10 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、設定画面の既存サマリーを点検。
+- src/routes/SettingsView.tsx: Prompt / Live / History / Minutes の Runtime route を追加し、検知通知、録音中文字起こし、分離トラック履歴、AI議事録設定がどの実行時UIに反映されるかを保存前に確認できるようにした。
+- src/App.css: Runtime route を v2 の薄い計器盤トーンに合わせて追加し、狭幅では1カラム見出し + 2カラム項目に折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-permission-gate-panel / 2026-05-29 17:21:10 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、録音前の権限UIを点検。
+- src/components/PermissionBanner.tsx: 権限警告に Gate check ヘッダー、解決状態ピル、Start / Tracks / Visible の影響グリッドを追加し、録音開始前に何が制限されるかを直感的に把握できるようにした。
+- src/App.css: PermissionBanner を v2 の薄い計器盤トーンに合わせて調整し、狭幅ではヘッダーと影響グリッドを縦方向に折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-model-selector-boundary / 2026-05-29 17:24:12 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、Whisper モデル選択UIを点検。
+- src/components/ModelSelector.tsx: Transcription model ヘッダーと Engine / Model / Send / Lock の境界グリッドを追加し、ローカル処理、選択モデル、サイズ、外部送信なし、録音中ロックを録音前に確認できるようにした。
+- src/App.css: ModelSelector を v2 の薄い計器盤トーンに更新し、狭幅では選択欄と境界グリッドを1カラムに折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/components/ModelSelector.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-transcript-track-rail / 2026-05-29 17:26:53 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、TranscriptDisplay の録音中ログUIを点検。
+- src/components/TranscriptDisplay.tsx: Track rail を追加し、自分/Mic と相手側/System の件数を常時表示。各トラック単位で本文をコピーできる導線を追加した。
+- src/App.css: Track rail を v2 の薄い計器盤トーンに合わせて追加し、狭幅では1カラムに折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-transcription-state-rail / 2026-05-29 17:28:58 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、文字起こし操作UIを点検。
+- src/components/TranscriptionControls.tsx: Mode / Source / Log / Guard の状態レールを追加し、開始/停止状態、音声ソース状態、ログ件数、開始可否を操作前に確認できるようにした。
+- src/App.css: 状態レールを v2 の薄い計器盤トーンに合わせて追加し、狭幅では1カラムに折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/components/TranscriptionControls.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-audio-source-boundary-grid / 2026-05-29 17:31:17 JST]
+- meet-jerky-desktop-v2.pen の変数（Funnel Sans / Anton / IBM Plex Mono、paper/amber/blue）と Pencil Code/Web App guideline を確認し、マイク/システム音声入力UIを点検。
+- src/components/MicrophoneSection.tsx: 自分トラックに Track / Input / Device / Save の境界グリッドを追加し、入力状態、デバイス固定、保存先を録音前から確認できるようにした。
+- src/components/SystemAudioSection.tsx: 相手側トラックに Track / Input / Scope / Save の境界グリッドを追加し、デスクトップ/アプリ音声の取得範囲と保存先を明示。
+- src/App.css: 音声ソース境界グリッドを v2 の薄い計器盤トーンに合わせて追加し、狭幅では1カラムに折りたたむ。
+- 検証: npm run build 成功。git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加: なし。課金操作: なし。
+
+## [mjc / v2-app-shell-lifecycle-strip / 2026-05-29 17:35:05 JST]
+- v2.pen の Funnel Sans / Anton / IBM Plex Mono と paper/amber/blue トークンに合わせ、メイン App シェルへ録音ワークフローのライフサイクルストリップを追加。
+- 会議検知、録音、Live 字幕/AI、履歴レビューを 4 段階で常時認識できる薄い Mac 計器盤風 UI とし、既存の録音制御・履歴表示ロジックには触れない方針で実装。
+- 検証: npm run build 成功。既存の Vite chunk size warning のみ。git diff --check 成功。Vite dev server の HTML 応答を curl で確認。Browser MCP は利用可能ツールとして公開されなかったためスクリーンショット検証は未実施。
+- 依存関係追加なし。課金操作なし。
+
+## [mjc / v2-session-list-playback-scope / 2026-05-29 17:37:50 JST]
+- v2.pen の paper/amber/blue と Funnel Sans / Anton / IBM Plex Mono 方針に合わせ、履歴一覧へ Playback scope レールを追加。
+- 録音後レビュー入口で、詳細画面に進む前から Mic only / Speaker only / Both のトラック確認スコープを認識できるようにした。
+- 各履歴行にも Playback スコープを追加し、自分トラック数、相手側トラック数、統合レビューの導線を表示。本文なし行は待機状態として表示。
+- 検証: npm run build 成功。既存の Vite chunk size warning のみ。git diff --check 成功。
+- 依存関係追加なし。課金操作なし。
+
+## [mjc / v2-menu-live-workspace-rail / 2026-05-29 17:42:03 JST]
+- v2.pen の paper/blue/amber と Funnel Sans / IBM Plex Mono 方針に合わせ、メニューバー録音面へ Live workspace レールを追加。
+- 録音開始前から、録音中に使える Transcript / Translate / AI notes / Question の導線を表示し、AI機能はオンにするまで外部送信しないことを明示。
+- モバイル幅では Live workspace グリッドを 2 列に落とし、既存のメニューバー小窓内で情報密度を維持。
+- 検証: npm run build 成功。既存の Vite chunk size warning のみ。git diff --check 成功。
+- 依存関係追加なし。課金操作なし。
+
+## [mjc / v2-meeting-detected-live-workspace / 2026-05-29 17:45:46 JST]
+- Pencil MCP: meet-jerky-desktop-v2.pen variables and Code/Web App guidelines rechecked.
+- Changed MeetingDetectedBanner preflight row into a compact Live workspace row: Text, Trans, Notes, Ask.
+- Preserved the fixed 560x280 meeting prompt footprint by replacing the row instead of adding new height.
+- Verification: npm run build passed; git diff --check passed for src/components/MeetingDetectedBanner.tsx, src/App.css, AGENT_LOG.md.
+
+## [mjc / v2-menu-bar-direct-recording / 2026-05-29 17:49:25 JST]
+- Pencil MCP: meet-jerky-desktop-v2.pen variables and Code/Web App guidelines rechecked before implementation.
+- Added tray menu items for direct menu-bar recording start and opening the live caption window.
+- Emitted meet-jerky-start-recording-requested from the tray with source=menu-bar/sourceLabel=メニューバー, and preserved that source in pending start request storage.
+- Verification: npm run build passed; nix develop .. -c cargo check passed; cargo fmt --check passed; prettier --check passed for touched TS files; git diff --check passed.
+- Dependency impact: no project dependency added. npx prettier was used as a transient formatter only. Paid operations: none.
+
+## [mjc / v2-settings-menu-route / 2026-05-29 17:52:03 JST]
+- Pencil MCP: meet-jerky-desktop-v2.pen variables and Code/Web App guidelines rechecked before implementation.
+- Reviewed SessionDetail audio-track surface and current markdown storage contract; audio file paths are not saved yet, so the existing disabled playback state matches the data model.
+- Updated Settings runtime route to explicitly show the new Menu route: menu-bar manual recording start remains available alongside meeting-detection prompts.
+- Adjusted the runtime route grid from 4 to 5 columns so Prompt/Menu/Live/History/Minutes stay visible in the v2 compact rail.
+- Verification: npm run build passed; prettier --check passed for src/routes/SettingsView.tsx; git diff --check passed for src/routes/SettingsView.tsx, src/App.css, AGENT_LOG.md.
+- Dependency impact: no project dependency added. Paid operations: none.
+
+## [mjc / v2-start-request-source-feedback / 2026-05-29 17:54:00 JST]
+- Pencil MCP: meet-jerky-desktop-v2.pen variables and Code/Web App guidelines rechecked before implementation.
+- Verified TranscriptView consumes MEETING_START_REQUEST_EVENT and auto-runs handleToggleMeeting once settings/permissions are ready.
+- Updated blocked start-request feedback to preserve the request source label, so menu-bar and detection-prompt starts remain distinguishable when setup is incomplete.
+- Verification: npm run build passed; prettier --check passed for src/routes/TranscriptView.tsx; git diff --check passed for src/routes/TranscriptView.tsx and AGENT_LOG.md.
+- Dependency impact: no project dependency added. Paid operations: none.
+
+## [mjc / v2-session-detail-audio-contract / 2026-05-29 17:58:25 JST]
+- Pencil MCP: get_editor_state(include_schema:true), v2 get_variables, Code/Web App guidelines を確認。v2 変数は es-paper/es-ink/es-blue/es-amber/Funnel Sans/Anton/IBM Plex Mono。
+- 録音後詳細画面に Audio contract レールを追加。Mic/Speaker/Mix の音声ファイル保存状態を明示し、現状は文字起こしのみ確認可能であることを UI 上で正直に表示。
+- CSS を v2 パレットに沿って追加し、900px 以下では audio contract grid も 2 カラムへ縮退。
+- 検証: npm run build 成功（Vite chunk size warning のみ）。npx prettier --check src/routes/SessionDetail.tsx src/App.css 成功。git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md 成功。
+
+## [mjc / v2-session-list-audio-transparency / 2026-05-29 18:01:10 JST]
+- Pencil MCP: get_editor_state(include_schema:true), v2 get_variables, Code/Web App guidelines を確認。v2 変数とWeb Appの状態可視化原則に沿って作業。
+- 履歴一覧で「Playback」と読める表示を、トラック文字起こし確認スコープとして明確化。保存済み文字起こしのみ表示、音声ファイル未接続、AI送信は生成時確認であることを一覧の透明性ノート/サマリー/各行に反映。
+- SessionList に Audio file 未接続カードを追加し、CSS は v2 の es-blue/es-paper/line を使った控えめな未接続表示へ調整。
+- 検証: npm run build 成功（Vite chunk size warning のみ）。npx prettier --check src/routes/SessionList.tsx src/App.css 成功。git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md 成功。
+
+## [mjc / v2-live-caption-safety-rail / 2026-05-29 18:04:17 JST]
+- Pencil MCP: get_editor_state(include_schema:true), v2 get_variables, Code/Web App guidelines を確認。v2 の状態可視化/透明性方針に沿って録音中UIを改善。
+- LiveCaptionWindow に Live safety レールを追加。REC状態、表示モード、翻訳接続状態、AI送信状態、音声ファイル送信有無を録音中ウィンドウ上部に常時表示。
+- CSS は v2 の es-blue/es-amber/es-green/es-paper を使い、760px 以下では2カラムへ縮退。録音中であることと外部送信範囲を見失わない構成にした。
+- 検証: npm run build 成功（Vite chunk size warning のみ）。npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css 成功。git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md 成功。
+
+## 2026-05-29 18:08:37 JST - v2-settings-transcription-output-contract
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、v2の紙色・濃紺・緑アクセントを前提に設定画面を調整。
+- SettingsView の文字起こし「出力とタイミング」で、停止時の文字起こし保存をONとして明示し、音声ファイル再生は未接続として分離表示。
+- 録音後の出力契約として Live / Save / Audio の小さなフローを追加し、保存済みテキストと未接続音声の状態差を直感的に把握できるようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:13:16 JST - v2-session-audio-assets-contract
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、v2のミニマルな状態表示方針に合わせて録音後の音声トラック契約を実データに接続。
+- Tauriコマンド get_session_audio_assets_cmd を追加し、保存済みMarkdownと同じディレクトリ内の <session>.mic.wav / <session>.speaker.wav / <session>.mix.wav の有無を安全に確認できるようにした。
+- SessionDetail は音声ファイル状態を「確認中 / 接続済み / 未接続 / 確認失敗」として表示し、存在する音声ファイルだけ openPath で開けるようにした。音声がない場合は従来どおり文字起こしトラック確認に留める。
+- ブラウザプレビュー用 useSessionAudioAssets を追加し、プレビューでは音声未接続として一貫表示。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/hooks/useSessionAudioAssets.ts 成功。npm run build 成功（Viteの既存chunk size warningのみ）。nix develop .. -c cargo fmt --check 成功。nix develop .. -c cargo check 成功。nix develop .. -c cargo test session_audio_assets 成功。git diff --check 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:15:53 JST - v2-live-ai-notes-control-summary
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音中UIのAIノート状態をv2のミニマルな状態表示へ寄せた。
+- LiveCaptionWindow の AI notes 欄に Notes / Question / Send / Audio の制御サマリーを追加。AIノートONでも外部送信はなく、質問は下書き/送信前確認に留まること、音声はAIへ送信しないことを常時表示する。
+- モバイル幅では2列に落とし、録音中の字幕・ノートの主導線を崩さないようにした。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:18:53 JST - v2-session-list-audio-state-handoff
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、履歴一覧の音声ファイル状態表示を詳細画面の実ファイル確認契約に合わせて修正。
+- 前回追加した音声サイドカー確認により、一覧で一律「音声ファイル未接続」と断定するのは不正確になったため、「詳細で接続状態を確認」「詳細確認」に統一した。
+- 一覧は検索・本文コピー・詳細遷移に責務を絞り、音声ファイルの接続済み/未接続判定はSessionDetailに委譲する表示へ調整。
+- 検証: npx prettier --check src/routes/SessionList.tsx 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:23:03 JST - v2-settings-ai-send-scope-contract
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、設定画面のAI議事録ガードレールをv2の状態可視化方針に合わせて修正。
+- AIプロバイダーが選択可能になっている一方で、生成前チェックが「未接続」固定だった不整合を解消。Provider / Transcript / Memo / Audio の送信範囲を、選択中プロバイダーに応じて動的に表示するようにした。
+- 音声ファイルはAI議事録へ送信しない、手書きメモは生成時に明示選択、外部プロバイダーは生成時確認という契約を設定画面上で明示。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:29:15 JST - v2-session-detail-ai-audio-contract
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音後詳細の議事録ワークスペースをv2の状態可視化方針に合わせて継続改善。
+- SessionDetail が get_settings を読み、AI議事録プロバイダーの状態を履歴詳細にも反映するようにした。Review path / Track audit / 送信範囲カード / AIプレースホルダーの「AI未接続」固定表示を、未接続・ローカル・外部確認制・確認失敗の状態表示に変更。
+- 議事録生成の入力ソース表示で、録音ファイルを一律未接続と断定せず、既存の音声サイドカー確認結果に基づいて接続済み/未接続/確認中/確認失敗を表示するようにした。
+- AI送信範囲カードを Provider / Transcript / Audio / Memo / 実行条件の5項目に拡張し、音声ファイルは存在してもAIへ送らない契約を明示。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:31:40 JST - v2-ring-light-persistent-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音中の持続インジケーターをv2の透明性方針に合わせて改善。
+- RingLightWindow の主表示を「REC 常時表示」に変更し、エンジン名・文字起こし状態・AI送信状態を短く読めるコピーに整理。
+- 常時表示バッジに Live / Mic / Sys / AI の4チップを追加。文字起こしエラー、録音中、有効/未確定、外部送信/端末内の状態を色調で区別し、録音中であることと送信範囲を忘れにくくした。
+- モバイル幅ではバッジを折り返し、4チップを2列にして常時表示の読み取りを維持。
+- 検証: npx prettier --check src/components/RingLightWindow.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:35:26 JST - v2-live-caption-ai-provider-state
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音中AIノートの固定状態表示をv2の透明性方針に合わせて修正。
+- LiveCaptionWindow が get_settings を読み、AI議事録プロバイダーの状態を録音中UIにも反映するようにした。ブラウザプレビューでは PREVIEW_APP_SETTINGS を使う。
+- AI notes の接続ピル、プライバシー文、制御サマリー、ガードレール、フロー、質問欄、送信範囲確認カードから「AI未接続」固定表示を外し、未接続・ローカル・外部確認制・確認失敗の状態に追従させた。
+- AI質問の送信範囲確認で Provider に現在のプロバイダー名を表示し、Transcript/Question は送信候補、Audio は未送信という契約を維持。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:37:39 JST - v2-settings-audio-detail-handoff
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、設定画面の録音後出力契約を履歴詳細の実装状態に合わせて修正。
+- SettingsView の「音声ファイル再生」を一律「未接続」と断定する表示から「詳細確認」に変更。保存済みMarkdownと同じ場所の mic / speaker / mix サイドカー音声を履歴詳細で確認する契約に合わせた。
+- 文字起こし出力フローの Audio も「詳細確認」に変更し、録音後詳細画面に責務を委譲する表示へ整理。
+- 検証: npx prettier --check src/routes/SettingsView.tsx 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/routes/SettingsView.tsx AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:41:51 JST - v2-realtime-translation-contract
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音中/設定画面のリアルタイム翻訳表示をv2の透明性方針に合わせて修正。
+- LiveCaptionWindow の翻訳ステータスを「未接続」固定から「エンジン未設定 / 外部送信なし」へ変更。翻訳プレビュー中も原文保持、翻訳先、エンジン未設定、送信なしを常時表示するようにした。
+- SettingsView のリアルタイム翻訳カードに「エンジン」項目を追加し、録音中ウィンドウで切り替え可能だが、エンジン設定までは翻訳目的の外部送信を行わない契約を明示。
+- CSS は翻訳設定グリッドを4項目に対応。モバイル幅では従来どおり1カラムへ縮退。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/routes/SettingsView.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/components/LiveCaptionWindow.tsx src/routes/SettingsView.tsx src/App.css 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:44:12 JST - v2-live-ask-flow-state
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音中フローのAI質問状態をv2の透明性方針に合わせて修正。
+- LiveCaptionWindow の Capture → View → Ask フローで、AIノートON時に Ask が「未接続」固定になる不整合を解消。AI設定に応じて「保持 / ローカル / 外部確認制 / 確認中 / 確認失敗」を表示するようにした。
+- 外部AIプロバイダーは amber の確認制、ローカルプロバイダーは green の ready 表示、未接続時は下書き保持として扱い、質問がすぐ外部送信されるように見えない表示にした。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/components/LiveCaptionWindow.tsx AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:47:05 JST - v2-session-audio-sidecar-clarity
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、録音後詳細の音声トラック再生UIをv2の状態透明性方針に合わせて修正。
+- SessionDetail の Audio contract で、mic / speaker / mix の各サイドカーについて接続状態だけでなく期待ファイル名も表示するようにした。どの録音ファイルが未保存か、履歴詳細から判断しやすくした。
+- 接続済みの音声サイドカーは green の ready 表示に変更し、未保存トラックとの差を小さな状態チップ内で区別できるようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:49:17 JST - v2-recording-pill-ai-transparency
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数と Code/Web App ガイドを確認し、会議検知から録音開始後に残る常時表示ピルをv2の透明性方針に合わせて修正。
+- MeetingDetectedBanner の録音状態ピルに AI 送信状態チップを追加。録音中にライブ字幕ウィンドウを開かなくても「AIなし」または要確認状態が見えるようにした。
+- CSS はピル幅を調整し、AIなしは green、要確認は red の小さな状態チップとして表示。録音中であること、取得トラック、AI送信状態を同じインジケーター内に集約した。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css 成功。npm run build 成功（Viteの既存chunk size warningのみ）。git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md 成功。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:52:40 JST - v2-menu-start-source-ai-visibility
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とガイドラインを再確認し、メニューバー録音導線のStart sourceカードにAI送信状態を視覚表示する4項目目を追加。
+- AI送信なしはgreen系、確認不能/外部送信可能性ありはamber系で表示し、録音開始前後の透明性を高めた。
+- 検証: npx prettier --write/check src/routes/TranscriptView.tsx src/App.css、npm run build、git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+
+## 2026-05-29 18:54:41 JST - v2-session-ai-send-scope-visibility
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音後詳細画面のAI送信範囲カードをv2の透明性方針に合わせて補強。
+- AI議事録Provider/実行条件/送信候補/未送信項目を、外部確認制はamber、端末内または外部送信なしはgreen、設定確認失敗はredで視覚的に区別するようにした。
+- 音声ファイルは未送信、Transcriptと手書きメモは送信候補として、生成前のスコープ確認が視覚的に分かる構成へ更新。
+- 検証: npx prettier --write/check src/routes/SessionDetail.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:57:05 JST - v2-settings-ai-safe-state
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、設定画面のAI議事録オフ/外部送信なし状態をv2の透明性方針に合わせて補強。
+- AI議事録Providerがnoneのとき、Providerフロー、生成前チェック、送信範囲カード、プロバイダーバッジをsafe toneで表示し、外部送信なしをgreen系で明確化。
+- 外部AIはwarn、ローカル/外部送信なしはsafe/readyとして視覚的に分離し、録音前にAI送信状態を誤解しにくくした。
+- 検証: npx prettier --write/check src/routes/SettingsView.tsx src/App.css、npm run build、git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 18:59:03 JST - v2-session-list-minutes-scope
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音後履歴一覧のOutput scopeをv2の録音後ワークフローに合わせて補強。
+- 履歴一覧の出力レールにMinutesを独立追加し、コピー/トラック/AI/議事録/音声確認を一目で分けて確認できるようにした。
+- 各履歴カードの再利用範囲にもMinutesを追加し、詳細画面で議事録テンプレート選択へ進めることを明示。
+- 検証: npx prettier --write/check src/routes/SessionList.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:01:21 JST - v2-live-notes-provider-scope
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音中LiveCaptionWindowのAIノート送信スコープをv2の透明性方針に合わせて補強。
+- AIノート送信スコープにProviderを追加し、Transcript/Audio/Askと同じレール上でAI設定の扱いを確認できるようにした。
+- 外部AIプロバイダーはamber系、ローカル/外部送信なしはgreen系で表示し、質問送信前に外部送信可能性を見落としにくくした。
+- 検証: npx prettier --write/check src/components/LiveCaptionWindow.tsx src/App.css、npm run build、git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:04:20 JST - v2-ring-light-caption-access
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、常時RECインジケーターの録音中導線をv2方針に合わせて補強。
+- RingLightWindowの状態レールにCaptionを追加し、録音状態/Mic/Sys/AI送信状態と同じスキャン面からライブ文字起こしを開けることを明示。
+- aria-label/titleにも字幕ウィンドウを開ける状態を含め、録音中であることと復帰導線の透明性を高めた。
+- 検証: npx prettier --check src/components/RingLightWindow.tsx src/App.css、npm run build、git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:06:18 JST - v2-meeting-prompt-preflight
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、会議検知通知の開始前チェックをv2の状態レール表現に合わせて補強。
+- 「開始するまで録音しません」の文章ピルを、Rec未開始/Start手動/Caption開始後/Save履歴化の4項目Preflightレールに置き換えた。
+- Rec未開始はamber系、Save履歴化はgreen系で表示し、録音開始前の安心感と録音後の履歴化を同じスキャン面で確認できるようにした。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css、npm run build、git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:08:13 JST - v2-session-minutes-audio-evidence
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音後詳細のEvidence railをv2の録音後ワークフローに合わせて補強。
+- 議事録生成前の確認材料にAudioを独立追加し、選択中トラックの音声ファイル状態を見せつつ、音声は再生確認のみでAIへ送信しないことを明示。
+- Evidence railを5項目グリッドへ調整し、Audioが接続済みの場合はgreen系、未接続時はmutedで表示するようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:27:01 JST - v2-menu-rec-indicator-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、メニューバー録音の常時インジケーター導線をv2の録音透明性方針に合わせて補強。
+- メニューバー録音フローをStart/REC/Live/Saveの4段階にし、RECインジケーターが開始後に常時表示されることをLive表示とは別に確認できるようにした。
+- 録音中の表示カードにRingを追加し、メニューバー、リングインジケーター、字幕ウィンドウ、AI送信状態が並んで見えるようにした。
+- 検証: npx prettier --check src/routes/TranscriptView.tsx src/App.css、npm run build、git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:29:00 JST - v2-live-caption-rec-primary
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音中Live Captionの最上段インジケーターをv2の録音透明性方針に合わせて補強。
+- ライブ字幕ウィンドウ上部の赤い状態ピルを「文字起こし」から「REC」に変更し、録音中であることを最初に認識できる表示へ寄せた。
+- ヘルスピルのaria-label/titleに「録音状態は常時表示中」を追加し、閉じても録音操作は継続する既存の説明と合わせて状態の透明性を高めた。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css、npm run build、git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:10:12 JST - v2-settings-detection-rec-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、設定画面の会議検知安全フローをv2の録音透明性方針に合わせて補強。
+- 検知ルールの安全フローをSignal/Audio/Notify/RECの4段階にし、通知で手動開始した後もREC常時表示が続くことを設定画面から確認できるようにした。
+- 検出対象サービス未選択、または会議検出オフの場合は該当ステップをmuted表示にし、現在設定と表示状態が食い違わないようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css、npm run build、git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:12:31 JST - v2-live-caption-translation-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音中LiveCaptionWindowの上部フローをv2の録音中ワークスペース方針に合わせて補強。
+- 録音中フローをCapture/View/Translate/Askの4段階にし、原文表示とリアルタイム翻訳プレビューの状態をメインの読み順に含めた。
+- 翻訳モード時はTranslateステップをgreen系で表示し、通常の原文モードでは中立表示にして、切り替え状態を最小情報で判別できるようにした。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css、npm run build、git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:15:26 JST - v2-session-list-audio-review-path
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、履歴一覧カードの録音後導線をv2の出力スコープ方針に合わせて補強。
+- 各履歴カードの次アクションを確認/再利用/音声/議事録の4項目にし、音声再生確認が詳細画面で行えることを一覧から判別できるようにした。
+- レビュー経路にAudioを追加し、Mic/Speaker/Bothの再生確認へ進む導線をTrackとMinutesの間に明示した。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:17:13 JST - v2-permission-save-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音開始前の権限バナーをv2の状態レール方針に合わせて補強。
+- 録音開始への影響をStart/Tracks/Visible/Saveの4項目にし、録音前から終了後の履歴確認までの流れを明示した。
+- 録音前チェックの安全フローにSaveを追加し、Mic/System/REC/Saveの順で権限、録音表示、履歴化を一目で確認できるようにした。
+- 検証: npx prettier --check src/components/PermissionBanner.tsx src/App.css、npm run build、git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:19:26 JST - v2-live-ai-send-scope-auto
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音中Live CaptionのAI質問送信範囲確認をv2の透明性方針に合わせて補強。
+- 送信範囲確認カードにAutoを追加し、この画面ではAIへ自動送信せず下書き保持とコピーだけを行うことを明示した。
+- Audioをsafe表示に切り替え、音声ファイルは未送信であることをTranscript/Questionの送信候補と視覚的に分離した。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css、npm run build、git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:21:18 JST - v2-menu-preflight-rec-save
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、メニューバー録音開始前チェックをv2の状態可視化方針に合わせて補強。
+- 開始前チェックにREC表示と保存を追加し、録音開始後もメニューバー/字幕ウィンドウで状態が継続表示され、終了時にこのMacの履歴へ保存されることを明示した。
+- aria-label/titleもMic/System/REC/Save/AI送信を含む形に更新し、開始前の認知負荷を下げた。
+- 検証: npx prettier --check src/routes/TranscriptView.tsx、npm run build、git diff --check -- src/routes/TranscriptView.tsx AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:24:39 JST - v2-session-detail-output-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音後詳細フッターの出力フローをv2の録音後レビュー導線に合わせて補強。
+- 出力フローをCopy/Audio/Minutes/AIの4段階にし、文字起こしコピー、選択中音声トラック確認、議事録下書き状態、AI送信確認を一つのスキャン面で確認できるようにした。
+- Minutesステップはローカル下書き作成後にready表示へ変わるようにし、作成済み状態をフッターからも認識できるようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:31:44 JST - v2-session-list-output-order
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、履歴一覧の録音後出力レールを詳細画面の出力順と揃えた。
+- Output scopeをCopy/Tracks/Audio/Minutes/AIの順に並べ、音声確認と議事録生成のあとにAI送信確認が来ることを視覚的に明示した。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:33:33 JST - v2-ring-light-save-scope
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音中の常駐RECインディケーターをv2の透明性方針に合わせて補強。
+- RingLightWindowの状態スコープにSaveを追加し、録音中でも保存先がこのMacであることを常時確認できるようにした。
+- バッジ内の要約文とaria-label/titleにも保存先を含め、視覚表示とアクセシビリティの両方で録音・保存状態の認知負荷を下げた。
+- 6項目化に合わせてリングライトバッジの最大幅とスコープグリッド幅を調整した。
+- 検証: npx prettier --check src/components/RingLightWindow.tsx src/App.css、npm run build、git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:35:32 JST - v2-meeting-prompt-save-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、会議検知通知から録音開始する前後の状態フローをv2の透明性方針に合わせて補強。
+- 通知内の開始後フローをStart/Main/REC/Saveの4段階にし、録音状態の常時表示だけでなく終了後にこのMacへ履歴保存されることを開始前に確認できるようにした。
+- aria-label/titleも保存先を含む形に更新し、通知ウィンドウからの録音開始時に保存範囲を推測しなくてよい状態にした。
+- 4段階化に合わせてmeeting-detected-start-flowのグリッドとSave用のsafe表示を追加した。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css、npm run build、git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:37:42 JST - v2-session-detail-review-audio
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音後詳細のReview pathをv2の録音後レビュー導線に合わせて補強。
+- Review pathをTranscript/Track/Audio/Minutes/AIの5項目にし、音声トラック再生確認を議事録生成前の主導線へ含めた。
+- Audio項目は選択中トラックの音声ファイル状態を表示し、再生確認のみでAI送信対象ではないことを詳細側の既存ガードレールと一貫させた。
+- 5項目化に合わせてReview pathグリッドを更新し、Audio用のsafe表示を追加した。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:40:18 JST - v2-settings-runtime-ring-route
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、設定画面のRuntime routeをv2の録音透明性方針に合わせて補強。
+- Prompt/Menu/Live/History/Minutesの導線にRingを追加し、録音中はRECインジケーターが常時表示されることを設定レビュー上でも確認できるようにした。
+- aria-labelにもRing/REC常時表示を含め、視覚表示とアクセシビリティの両方で録音状態の保証位置を明示した。
+- 6項目化に合わせてsettings-runtime-route-gridを更新した。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css、npm run build、git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:47:26 JST - v2-live-recording-rec-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、ライブ録音画面の上部フローをv2の録音透明性方針に合わせて補強。
+- 録音中フローをCapture/REC/View/Translate/Askの5段階にし、ライブ画面でもRECインジケーターが常時表示されることを主導線として確認できるようにした。
+- aria-label/titleにもREC常時表示を含め、視覚表示とアクセシビリティの両方で録音状態を推測不要にした。
+- 5段階化に合わせてlive-recording-flowのグリッドを更新し、REC用のhot表示を追加した。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css、npm run build、git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:53:18 JST - v2-session-detail-track-audio-route
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、録音後詳細の分離トラック確認フローをv2のレビュー導線に合わせて補強。
+- Track/Transcript/Minutesだった確認フローにAudioを追加し、選択トラックの音声ファイル確認を議事録生成前の主導線へ含めた。
+- Audio項目は音声ファイル状態を表示し、再生確認のみでAI議事録の送信対象ではないことをaria-label/titleと視覚表示で明示した。
+- 4段階化に合わせてsession-detail-track-routeのグリッドを更新し、Audio用のsafe表示を追加した。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:00:54 JST - v2-menu-setup-rec-save-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、初回セットアップの開始前フローをv2の録音透明性方針に合わせて補強。
+- セットアップフローをPermission/Detect/Start/REC/Saveの5段階にし、権限許可後に通知またはメニューバーから開始し、開始後はREC表示を維持し、終了時にこのMacへ保存されることを開始前に確認できるようにした。
+- セットアップ説明文とaria-labelにもREC常時表示とローカル保存を含め、初回利用時の録音状態と保存範囲を推測不要にした。
+- 5段階化に合わせてmenu-setup-flowのグリッドを更新し、REC用のhot表示とSave用のsafe表示を追加した。
+- 検証: npx prettier --check src/routes/TranscriptView.tsx src/App.css、npm run build、git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:08:32 JST - v2-session-list-row-ai-review-path
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、履歴一覧の各行レビュー経路をv2の録音後レビュー導線に合わせて補強。
+- 行単位のReview/Track/Audio/Minutes経路にAIを追加し、AI送信は議事録生成時に確認することを一覧カード上でも確認できるようにした。
+- aria-label/titleにもAI送信確認を含め、一覧全体のOutput scopeと各行のレビュー経路の意味を揃えた。
+- 5項目化に合わせてsession-list-item-review-pathのグリッドを更新し、AI用の控えめな表示を追加した。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:15:49 JST - v2-settings-detection-save-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイドを再確認し、設定画面の会議検知安全フローをv2の録音透明性方針に合わせて補強。
+- Signal/Audio/Notify/RECの流れにSaveを追加し、検知通知から手動開始した録音も終了時にこのMacへ保存されることを設定画面上で確認できるようにした。
+- aria-labelにも終了時のローカル保存を含め、検出ルール設定が録音後の保存範囲までどうつながるかを推測不要にした。
+- Save用のsafe表示を追加し、REC常時表示とは別のローカル保存ステップとして読めるようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css、npm run build、git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:24:00 JST - v2-live-notes-send-confirm-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数とCode/Web Appガイド、layout problemsなしを再確認し、録音中AIノートの送信確認導線をv2の状態明示方針に合わせて補強した。
+- LiveCaptionWindowのAIノートフローを発話/ノート/質問/送信確認の4段にし、外部AIは確認制、ローカルはローカル、未接続はなし、下書き保持時は待機として表示するようにした。
+- aria-label/titleにも送信確認状態を含め、音声ファイル未送信・自動送信なしの既存ガードレールと矛盾しないようにした。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css、npm run build、git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:54:19 JST - v2-session-detail-ai-auto-send-scope
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数、Code/Web Appガイド、layout problemsなしを再確認し、録音後のAI議事録生成前確認をv2の透明性方針に合わせて補強した。
+- SessionDetailの送信範囲カードにAuto/自動送信なしを追加し、トランスクリプトと手書きメモは送信候補、音声ファイルと自動送信は対象外であることを同じグリッド内で確認できるようにした。
+- aria-label/titleにも自動送信なしを含め、外部AIプロバイダー設定時も実行前確認が必要な状態として読み上げられるようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:56:07 JST - v2-settings-ai-auto-send-scope
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数、Code/Web Appガイド、layout problemsなしを再確認し、設定画面のAI議事録ガードレールをv2の透明性方針に合わせて補強した。
+- SettingsViewのAI送信範囲グリッドにAuto/自動送信なしを追加し、Provider/Transcript/Memo/Audioと同じ場所で自動送信が発生しないことを確認できるようにした。
+- aria-label/titleにも自動送信なしと議事録生成画面での明示確認を含め、設定時点で外部送信の条件を読み取れるようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css、npm run build、git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:58:13 JST - v2-controller-rec-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数、Code/Web Appガイド、layout problemsなしを再確認し、デバッグコントローラーの録音UI検証フローをv2の透明性方針に合わせて補強した。
+- ControllerWindowの検証フローをDetect/Start/REC/Live/Saveの5段にし、REC常時表示を独立した赤系ステップとして確認できるようにした。
+- aria-label/titleにもREC常時表示を含め、通知開始・メニュー開始からライブ字幕/リングライト、履歴保存までの確認順を読み上げでも追えるようにした。
+- 検証: npx prettier --check src/components/ControllerWindow.tsx src/App.css、npm run build、git diff --check -- src/components/ControllerWindow.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 19:59:57 JST - v2-session-list-library-output-flow
+
+- Pencil MCPでmeet-jerky-desktop-v2.penの変数、Code/Web Appガイド、layout problemsなしを再確認し、履歴一覧の利用フローをv2の録音後UI方針に合わせて補強した。
+- SessionListのライブラリフローをSearch/Copy/Audio/Minutes/AIの5段にし、検索後に本文コピー、詳細で音声確認、議事録テンプレート、AI送信前確認へ進む順序を一覧上でも確認できるようにした。
+- aria-label/titleにも検索件数、本文コピー、音声確認、議事録テンプレート、AI送信前確認を含め、出力レールと同じ意味が読み上げでも伝わるようにした。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css、npm run build、git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run buildはViteのchunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 v2-meeting-prompt-live-save-flow
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・ガイドライン・レイアウト問題なしを再確認。
+- 検知通知ウィンドウの録音開始後フローを Start → Main → REC → Live → Save に更新し、ライブ字幕/ノートへの遷移を録音導線内で明示。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css / npm run build / git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+
+## 2026-05-29 v2-session-detail-minutes-input-flow
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細の議事録 evidence rail にテンプレートを追加し、文字起こし・手書きメモ・テンプレート・音声未送信・出力状態の関係を明示。
+- 議事録生成フローを Inputs → Template → Scope → Generate に更新し、録音後にどの素材を確認してから生成するかをv2方針に合わせて簡潔に表示。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+
+## 2026-05-29 v2-settings-runtime-workflow
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面の主要ワークフローを Detect → Start → REC → Live → Save → Minutes に更新し、検知・手動開始・録音中表示・ライブ字幕・履歴保存・議事録設定の影響範囲を一列で確認できるようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+
+## 2026-05-29 v2-session-list-transcript-track-flow
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 履歴一覧のライブラリフローを Search → Transcript → Track → Audio → Minutes → AI に更新し、詳細画面と同じ録音後レビュー語彙に揃えた。
+- 出力スコープに Transcript と Copy を分けて表示し、チャット形式文字起こし・一覧コピー・分離トラック・音声確認・議事録・AI送信確認の関係を明示。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+
+## 2026-05-29 v2-live-caption-notes-send-flow
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- ライブ字幕ウィンドウの録音中フローを Capture → REC → View → Translate → Notes → Ask → Send に更新し、録音中にAIノートON/OFFと送信確認状態を上段で常時確認できるようにした。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css / npm run build / git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+
+## 2026-05-29 20:12:09 JST - v2-ring-light-runtime-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 常時RECインジケーターのスコープを REC / Live / Mic / Sys / Notes / Send / Save に更新し、録音中であること、ライブ字幕、AIノート、外部送信確認、ローカル保存が一目で分かるようにした。
+- リングライトのaria-label/titleとサブコピーにもLive/Notes/Sendを含め、録音を忘れないための常時表示とAI送信透明性を読み上げでも確認できるようにした。
+- 検証: npx prettier --check src/components/RingLightWindow.tsx src/App.css / npm run build / git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:13:54 JST - v2-audio-source-rec-live-contract
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- マイク/システム音声カードの取得境界を Track / Input / REC / Live / Save に統一し、録音開始前から別トラック取得、常時録音表示、ライブ文字起こし、履歴保存の流れが同じ語彙で分かるようにした。
+- マイク側のデバイス変更やシステム音声側の取得スコープは既存の選択UI/説明文に残し、境界グリッドは録音時に継続表示される状態だけへ絞った。
+- 検証: npx prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css / npm run build / git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:15:58 JST - v2-transcription-rec-live-save-rail
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 文字起こし操作の状態レールを REC / Live / Source / Save / Guard に再構成し、音声ソース確認、リアルタイム表示、履歴化対象、開始ガードを録音中UIの同じ語彙で確認できるようにした。
+- 表示ログ件数は Save ステップへ統合し、ログクリア操作が録音や保存済み履歴に影響しない既存説明は維持した。
+- 検証: npx prettier --check src/components/TranscriptionControls.tsx src/App.css / npm run build / git diff --check -- src/components/TranscriptionControls.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:18:50 JST - v2-transcript-chat-bubbles
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- ライブ/メイン文字起こし表示の発話行をチャット吹き出しに寄せ、自分トラックは右寄せ、相手側トラックは左寄せで視線移動しやすくした。
+- 各発話のメタ情報を時刻・話者・Saveに整理し、表示ログが終了時に履歴化される文脈を発話単位でも確認できるようにした。
+- v2の紙/インク/アンバー系パレットに合わせ、文字起こし領域に控えめな紙面背景とトラック色のアクセントを追加した。
+- 検証: npx prettier --check src/components/TranscriptDisplay.tsx src/App.css / npm run build / git diff --check -- src/components/TranscriptDisplay.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:20:50 JST - v2-local-minutes-readiness-rail
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細のローカル議事録カードに Transcript / Memo / Template / Send の生成前チェックレールを追加し、下書き作成ボタンの直前で使う材料と外部送信なしを確認できるようにした。
+- 手書きメモは任意入力として表示しつつ、入力済みなら追加済みとして強調し、テンプレート選択とこのMac内生成の関係をv2の最小チェックUIに揃えた。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:38:55 JST - v2-settings-ai-boundary-note
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面サイドバーの安全メモをAI議事録プロバイダーの現在値に追従させ、未接続・外部プロバイダー・ローカルプロバイダーで送信境界の文言がズレないようにした。
+- 外部プロバイダー選択時は「生成時に送信範囲を確認」、ローカル候補では「外部送信なし」、未接続では「AI送信オフ」と表示する。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:40:47 JST - v2-meeting-preflight-live
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 会議検知通知の開始前チェックに `Live 字幕/質問` を追加し、録音開始後にライブ字幕・翻訳切替・質問導線へ進めることを開始直前にも示した。
+- 既存の Rec / Start / Tracks / AI / Save 境界は維持し、録音未開始・手動開始・2トラック録音・AI送信確認・このMac保存の透明性を崩さないようにした。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css / npm run build / git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:35:15 JST - v2-ring-light-ask-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 常時表示の `RingLightWindow` に `Ask` スコープを追加し、録音中インジケーターからライブノートへの質問機能が待機中か、外部送信前確認の対象かを読めるようにした。
+- REC / Live / Mic / Sys / Notes / Ask / Send / Save の8項目に揃え、ARIAラベルとタイトルにもAIノートと質問の送信境界を反映した。
+- 検証: npx prettier --write src/components/RingLightWindow.tsx src/App.css / npx prettier --check src/components/RingLightWindow.tsx src/App.css / npm run build / git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:37:08 JST - v2-selected-audio-reveal
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細の分離トラック再生に `音声の場所` 操作を追加し、選択中の mic / speaker / both 音声ファイルを Finder で確認できるようにした。
+- `音声を開く` は再生確認、`音声の場所` は保存ファイル確認、`選択トラックをコピー` は文字起こし確認として役割を分け、音声ファイルはAIへ送信しない既存境界を維持した。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:21:46 JST - v2-meeting-preflight-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 会議検知バナーの開始前チェックを Rec / Start / Tracks / AI / Save に再構成し、録音未開始、手動開始、Mic + System の2トラック録音、AI外部送信境界、このMac保存を主ボタン前に集約した。
+- 既存の Live workspace と開始後フローは維持し、preflight は開始前に判断する最小スコープだけを表示する役割へ絞った。狭幅では縦積みにして読み切れるようにした。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css / npm run build / git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:23:52 JST - v2-library-candidate-state
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 履歴一覧の `Library handoff` を先頭候補の状態表示に更新し、Transcript本文有無、自分/相手側トラック件数、音声確認、議事録テンプレート、AI確認制を候補単位で表示するようにした。
+- 一覧全体の Output scope は維持し、Handoff は「この候補をレビューしてよいか」を判断する最小ステータスとして分離した。狭幅では handoff と候補状態グリッドを縦積みにした。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionList.tsx src/App.css。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:25:59 JST - v2-local-minutes-execute-strip
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細のローカル議事録カードに `Generate` 実行サマリーを追加し、下書き作成ボタン直前で Transcript / Memo / Template / Audio送信なし / Local の実行内容を確認できるようにした。
+- 既存の readiness / boundary レールは詳細確認として維持し、追加した strip はクリック直前の最小確認に限定した。狭幅では縦積みにして読み切れるようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:28:56 JST - v2-live-ask-scope-strip
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- ライブ字幕ウィンドウの質問入力欄直前に `Ask scope` ストリップを追加し、Transcript / Question / Provider / Audio / Auto の扱いを入力前に確認できるようにした。
+- 既存の送信範囲確認は質問をキューした後の詳細確認として維持し、Ask scope は録音中に迷わないための最小ステータスに限定した。AIノートOFF時も外部送信なしが読める。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css / npm run build / git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:32:03 JST - v2-settings-commit-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面の保存エリアに `Commit scope` を追加し、保存直前に Prompt / Live / Notes / Minutes / Privacy の適用タイミングと送信境界を確認できるようにした。
+- 既存の Apply は保存後の反映先、Commit scope は保存ボタン直前の影響範囲として役割を分けた。音声はAIへ送信しないことも明示した。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:22:45 JST - v2-detection-start-safety-flow
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面の会議検知安全フローを Signal → Audio → Notify → Start → REC → Save に更新し、検知通知と実際の録音開始を分けて確認できるようにした。
+- Startステップでは検知有効時は「通知 / Menu」、検知停止時は「Menuのみ」と表示し、自動録音ではなく明示操作で開始する透明性を強めた。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:26:03 JST - v2-session-review-send-boundary
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後レビュー導線に送信境界を追加し、Transcript / Memo は議事録入力、Audio は再生確認のみ、AI は設定に応じた確認制であることを Review path 直下に常時表示した。
+- 音声ファイルがAIへ送信されないことを SessionDetail の aria-label とUI上の `Do not send / Audio` ステップで明示し、v2のミニマルな安全確認フローに寄せた。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:27:52 JST - v2-live-caption-compact-rec-rail
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- ライブ文字起こしの待機時コンパクト表示に `REC`、取得トラック、`AIなし` のミニレールを追加し、展開前でも録音中であることとAI/音声送信状態を読めるようにした。
+- aria-label/title でも `REC`、音声トラック状態、AI送信なし、音声ファイル未送信を明示し、録音透明性とアクセシビリティを補強した。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css / npm run build / git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:29:41 JST - v2-menu-start-save-boundary
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- メニューバー録音の `Start source` レールに `Save / このMac` を追加し、開始元、要求状態、RECインジケーター、AI送信、保存先を一列で確認できるようにした。
+- aria-label でも保存先がこのMacであることを明示し、通知起点とメニューバー起点のどちらでも開始前に録音透明性と保存境界を確認できるようにした。
+- 検証: npx prettier --check src/routes/TranscriptView.tsx src/App.css / npm run build / git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:31:40 JST - v2-settings-ai-live-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面のAI送信範囲に `Live notes` と `Question` を追加し、録音中AIノートは手動ON、質問は送信前確認用の下書きとして扱うことを明示した。
+- AI送信範囲レールを可変グリッドに変更し、Provider / Transcript / Memo / Live notes / Question / Audio / Auto の境界が狭い設定ウィンドウでも崩れにくいようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:35:20 JST - v2-session-list-review-primary
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 履歴一覧の各行アクションを `レビューを開く` を主ボタンにする構成へ変更し、チャット文字起こし、分離トラック、音声確認、議事録テンプレートへ進む録音後の主導線を明確化した。
+- 本文コピー、既定アプリで開く、Finder表示は二次アクションとしてまとめ、v2のミニマルな行動階層に合わせた。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:39:08 JST - v2-meeting-prompt-rec-scope
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 会議検知から録音開始した後に残る録音状態pillへ `Live / Notes / Ask / Save` のミニレールを追加し、常時REC表示からライブ文字起こし、AIノート/質問、保存先まで確認できるようにした。
+- 会議検知バナーの主ボタン文言を `録音を開始` に変更し、通知ウィンドウから録音開始できることをより明示した。
+- 検証: npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css / npm run build / git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:43:14 JST - v2-settings-runtime-notes-ask
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面の `Runtime route` に `Notes` と `Ask` を追加し、録音中AIノートと質問がLive窓で扱われ、外部プロバイダー設定時は送信確認が必要であることを設定レビュー上でも確認できるようにした。
+- Runtime route のグリッドを8項目へ拡張し、Prompt / Menu / Live / Notes / Ask / Ring / History / Minutes の実行時反映先を同じ密度で表示するようにした。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:47:36 JST - v2-local-minutes-boundary
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細のローカル議事録下書きカードに実行境界レールを追加し、下書き作成直前に Transcript と Memo を使い、Audio は送らず、AI は設定に応じて確認することを短く確認できるようにした。
+- 既存の送信範囲カードは維持しつつ、実際に下書きを作成する操作の近くへ同じ境界を再掲し、v2の最小で迷わない行動階層に寄せた。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:48:42 JST - v2-live-focus-rail
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- ライブ文字起こし本文の直前に `Live focus` レールを追加し、表示中のText、Translate、Notes、Ask、Send境界を同じ視線上で確認できるようにした。
+- `Live safety` は録音透明性、`Live focus` は現在操作する対象として役割を分け、AI質問が確認待ちのときはSendを警告トーンで表示し、音声ファイル未送信も明示した。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css / npm run build / git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:49:16 JST - v2-session-review-workbench
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音詳細ヘッダー直下に `Review workbench` レールを追加し、Copy / Audio / Template / Memo / AI の現在状態をレビュー開始前に確認できるようにした。
+- 既存の Review path は手順、Review workbench は今できる操作という役割に分け、音声は再生確認のみでAIへ送信しないことを aria-label とUIで明示した。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:51:50 JST - v2-settings-config-handoff
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面に `Config handoff` レールを追加し、Detection / Transcription / AI notes / Review / Minutes の設定が録音前・録音中・録音後のどのUI契約へ反映されるかを確認できるようにした。
+- 既存の `Runtime route` は反映先一覧として維持し、`Config handoff` は設定カテゴリから実行時UIへの引き渡し境界として分離した。AIノートと議事録は外部送信確認または外部送信なしの状態を短く表示する。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:55:28 JST - v2-menu-handoff-rail
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- メニューバー録音画面に `Menu handoff` レールを追加し、開始元、開始要求、REC表示、Live表示、History保存への引き渡し状態を同じ行動階層で確認できるようにした。
+- 既存の Start source は開始元詳細、Capture scope は取得/保存/AI境界、Menu handoff はメニューバー操作から録音中/録音後UIへの接続として役割分担した。
+- 検証: npx prettier --check src/routes/TranscriptView.tsx src/App.css / npm run build / git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:57:55 JST - v2-controller-scenario-rail
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- デバッグコントローラーに `Scenario rail` を追加し、通知から開始、メニューバー開始、録音中UIの3つを本番経路の組み合わせでまとめて発火できるようにした。
+- 個別ボタンは残しつつ、v2で揃えてきた Detect / Start / REC / Live / Save の体験単位で検証できる導線を追加した。サンプル状態ではAI送信なし、音声は送信しないこともレール上に明示した。
+- 検証: npx prettier --check src/components/ControllerWindow.tsx src/App.css / npm run build / git diff --check -- src/components/ControllerWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 20:59:58 JST - v2-review-action-strip
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細の `Review workbench` に主要操作列を追加し、全文コピー、選択トラックコピー、選択トラック音声確認、ローカル議事録下書き作成をレビュー開始地点から実行できるようにした。
+- 状態レールは確認、追加したアクション列は実行という役割に分けた。音声確認は再生のみでAIへ送信しないことを aria-label と title に明示した。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:02:27 JST - v2-library-handoff
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 履歴一覧に `Library handoff` を追加し、検索結果の先頭候補から録音後レビューを開く主導線を明確にした。
+- Handoff 内で Review / Copy / Audio / Minutes の後続操作を同じ行にまとめ、一覧は入口、詳細はチャット形式文字起こし・分離トラック・音声確認・議事録テンプレートの作業面という役割を明示した。
+- 検証: npx prettier --check src/routes/SessionList.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:05:08 JST - v2-settings-apply-strip
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面の保存エリアに `Apply` ストリップを追加し、保存状態と Prompt / Live / History / Minutes への反映先を保存ボタン直前で確認できるようにした。
+- 既存の Config handoff / Runtime route は全体契約として維持し、Apply は保存直前の最小確認として分離した。検知通知、ライブ字幕、履歴レビュー、議事録プロバイダーが現在値で短く表示される。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:08:58 JST - v2-live-mode-strip
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- ライブ字幕ウィンドウに `Now` モードストリップを追加し、現在の表示、AIノート、質問状態、送信境界をタブ直下で一目確認できるようにした。
+- 既存の Live safety / Live focus は詳細な透明性レールとして維持し、Now は録音中に迷わないための最小ステータス行として分離した。音声ファイルをAIへ送信しない境界も aria-label に明示した。
+- 検証: npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css / npm run build / git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:12:37 JST - v2-detail-transcript-search
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細の Transcript パネルに本文検索を追加し、本文・話者・時刻でLINE風の発話表示を絞り込めるようにした。
+- 検索結果件数、クリア操作、該当なしの空状態を明示し、v2のミニマルなレビュー作業台から履歴本文確認へ自然につながるようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:15:48 JST - v2-settings-category-impact
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 設定画面のカテゴリ見出し直下に `Affects` ピルを追加し、現在開いている設定カテゴリが Prompt / Menu / Live caption / Tracks / Minutes / Privacy boundary のどこへ反映されるかを即読できるようにした。
+- 既存の Config handoff / Runtime route / Apply は全体契約として維持し、Affects はカテゴリ単位の最小説明に限定した。
+- 検証: npx prettier --check src/routes/SettingsView.tsx src/App.css / npm run build / git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+
+## 2026-05-29 21:18:18 JST - v2-review-now-strip
+
+- Pencil MCPで meet-jerky-desktop-v2.pen の変数・Code/Web Appガイド・レイアウト問題なしを再確認。
+- 録音後詳細の `Review workbench` に `Now` ストリップを追加し、検索絞り込み、選択トラック、音声確認、議事録下書きの現在状態を一行で確認できるようにした。
+- Transcript 内検索やトラック切替の状態をレビュー作業台にも反映し、コピー・音声確認・議事録下書き作成の主操作へ迷わず戻れるようにした。
+- 検証: npx prettier --check src/routes/SessionDetail.tsx src/App.css / npm run build / git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md。npm run build は Vite の既存chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:43:44 JST - v2-menu-preflight-live
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト問題を再確認し、現行のMeet JerkyカラーパレットとMacアプリらしいミニマルな開始前確認の整合を見た。
+- メニューバー録音の開始前チェックに `Live: 字幕/質問` を追加し、検知通知からの開始と同じく、開始後にライブ字幕・質問導線へ進めることを録音直前に確認できるようにした。
+- 既存の自分/相手側トラック、REC常時表示、AI送信境界、終了時のローカル保存表示は維持した。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:45:25 JST - v2-shell-lifecycle-ask-save
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数は `es-paper` / `es-ink` / `es-amber` / `es-blue` / `es-green` / `es-red` と Funnel Sans / Anton / IBM Plex Mono を継続利用。
+- メインシェルのワークフローを `Detect / Record / Live / Ask / Save / Review` に拡張し、録音中AIノート・質問の範囲確認と、保存先がこのMacであることを常時見える入口情報にした。
+- メニューバー幅に合わせてライフサイクル表示を2行×3列へ変更し、REC、Ask、Saveの境界をv2パレットの控えめなボーダーで区別した。
+- 検証: `npx prettier --check src/App.tsx src/App.css`、`npm run build`、`git diff --check -- src/App.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:46:53 JST - v2-transcription-ask-rail
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数と既存のMeet Jerkyパレットを維持。
+- 録音中主画面の `TranscriptionControls` 状態レールに `Ask` を追加し、リアルタイム文字起こしからAIノート/質問へ進めること、質問利用時は送信範囲確認が必要なことを常時表示にした。
+- 状態レールを5列から2行×3列へ変更し、狭いMacメニューバーウィンドウでも `REC / Live / Ask / Source / Save / Guard` が読める密度に調整した。
+- 検証: `npx prettier --check src/components/TranscriptionControls.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/TranscriptionControls.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:48:46 JST - v2-permission-live-ask-gate
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 権限バナーの録音前チェックに `Live` と `Ask` を追加し、権限確認済みトラックだけをライブ字幕へ流すこと、AIノート/質問は送信範囲確認後に使うことを録音前から明示した。
+- 録音開始への影響グリッドも `Start / Tracks / Visible / Live / Ask / Save` に拡張し、権限不足が録音中UIと履歴保存へどう影響するかを一貫して読めるようにした。
+- 検証: `npx prettier --check src/components/PermissionBanner.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/PermissionBanner.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:50:13 JST - v2-session-row-ai-scope
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 履歴一覧の各録音行に `音声再生` と `AI送信確認` の能力チップを追加し、録音後レビューでチャットTranscript、分離トラック、音声再生、議事録テンプレート、AI送信確認へ進むことを行単位で見えるようにした。
+- レビュー範囲の表示を `Transcript / Tracks / Audio / Minutes / AI確認` に更新し、録音後ワークフローの最後がAI送信前確認であることを明示した。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:52:05 JST - v2-settings-audio-review-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 設定画面の `Config handoff` に `Audio review` を追加し、設定変更が履歴詳細の Mic / Speaker / Both 再生確認にも反映されることを明示した。
+- 保存直前の適用範囲と `Apply` 表示に `Audio` を追加し、検知通知、ライブ字幕、履歴レビュー、音声レビュー、議事録までが保存後にどうつながるかを一列で確認できるようにした。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 22:03:00 JST - v2-detection-prompt-ask-flow
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 会議検知通知の録音開始後フローを `Start / Main / REC / Live / Ask / Save` に拡張し、検知通知から開始する時点でライブ字幕、AIノート、会議内容への質問、履歴保存まで進むことを明示した。
+- `Live` ステップを `字幕/ノート` に更新し、質問は送信範囲確認を伴う別ステップとして表示した。録音開始が手動であること、REC常時表示、保存先がこのMacであることは維持。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:55:39 JST - v2-live-caption-save-rail
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- ライブ字幕ウィンドウの録音中フローを `Capture / REC / View / Translate / Notes / Ask / Send / Save` に拡張し、録音中から終了後の履歴確認までが同じ導線で読めるようにした。
+- `Now` ストリップと `Live focus` レールにも `Save / History` を追加し、字幕・翻訳・AIノート/質問・送信確認・履歴保存の状態を常時表示にした。音声ファイルをAI送信しない境界は維持。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 21:57:57 JST - v2-session-detail-search-chat-workbench
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音後レビュー作業台に `Search` と `Chat` を追加し、履歴詳細を開いた直後に検索、LINE風Transcript、コピー、音声確認、テンプレート議事録、AI送信確認までの全体像が読めるようにした。
+- 主要操作に検索欄へフォーカスする `検索` ボタンを追加し、録音後レビューの最初の行動を「探す→読む→聴く→作る」に寄せた。音声ファイルはAI送信外という境界は維持。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 22:00:56 JST - v2-settings-commit-review-preflight
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 設定画面の `Settings review` に `Input / Detection / Engine / Review` を追加し、保存前にマイク入力、検知通知またはメニューバー開始、文字起こしエンジン、履歴レビューへの反映を一列で確認できるようにした。
+- 保存前レビューの読み上げ説明も拡張し、録音中インジケーター、トラック分離、AI議事録の送信境界、履歴レビューへの反映が同じ確認単位に入るようにした。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係追加なし。課金操作なし。
+## 2026-05-29 22:05:48 JST - v2-ringlight-live-review-route
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、録音中の常時表示UIをv2方針に沿って点検した。
+- リングライトの操作ボタンを `Liveを開く` に明確化し、Live文字起こし・AIノート・質問へ戻れる入口であることをaria/titleにも反映した。
+- `Save` の表示を `履歴へ` に変更し、録音後にこのMacの履歴でレビューできることを常時インジケーター上でも明示した。
+- 検証: `npx prettier --check src/components/RingLightWindow.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/RingLightWindow.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:07:39 JST - v2-audio-source-review-route
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、v2のミニマルな状態表示とプロダクト方針に沿って録音前の音声ソースUIを点検した。
+- マイク入力とシステム音声の取得境界に `Review` ステップを追加し、保存後に履歴で自分トラック/相手側トラックを確認できることを録音前から明示した。
+- `audio-source-boundary-grid` を6列に拡張し、Track / Input / REC / Live / Save / Review の一貫した流れに整理した。
+- 検証: `npx prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:09:46 JST - v2-review-workbench-prompt-copy
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、履歴詳細から議事録生成へ進む導線をv2方針に沿って点検した。
+- 録音後レビュー作業台の `Now` 状態に `Prompt` を追加し、議事録生成前にプロンプトをコピーして送信範囲を確認できることを明示した。
+- レビュー主要操作に `Promptコピー` を追加し、詳細下部の議事録ワークスペースまで移動しなくても、文字起こし・メモ・テンプレートに基づくプロンプトを手動で確認できるようにした。音声ファイルはAIへ送信しない前提を維持。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:11:41 JST - v2-session-list-empty-onboarding
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、履歴ライブラリの空状態がv2の録音からレビューまでの導線を説明できているか点検した。
+- 履歴0件の空状態を一文だけの表示から、`Detect / Record / Live / Save / Review` の最小フロー付きオンボーディング表示に変更した。
+- 会議検知またはメニューバー録音、REC常時表示、Live文字起こし、このMac保存、履歴レビューという流れを空状態でも明示した。モバイルではフローを1列に落とす。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:13:35 JST - v2-settings-ai-review-guardrail
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、AI議事録設定がライブノート/質問/履歴詳細/議事録生成へどう反映されるかを点検した。
+- AI議事録の送信範囲に `History / Review` を追加し、履歴詳細でプロンプトと送信候補を確認してから生成する流れを明示した。
+- 生成前チェックのガードレールを `Provider → Review → Scope → Run` に変更し、プロバイダー選択後に履歴レビューを挟むv2導線へ整理した。音声ファイルはAIへ送信しない前提を維持。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:17:26 JST - v2-live-caption-review-state
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、録音中Live UIの保存後レビュー導線を点検した。
+- Live字幕ウィンドウの録音中フローを `Save → Review` まで拡張し、録音中から終了後に履歴で検索/コピーできることを明示した。
+- `Now` ストリップと `Live focus` レールにも `Review` を追加し、字幕・翻訳・AIノート/質問・送信境界・履歴レビューの状態が同じ視線移動で読めるようにした。音声ファイルをAIへ送信しない境界は維持。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:19:35 JST - v2-session-detail-search-copy-path
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、録音後レビュー導線が検索/コピーを主要行動として扱えているかを点検した。
+- 履歴詳細の `Review path` に `Search` と `Copy` を追加し、`Search → Chat → Copy → Audio → Minutes → AI` として録音後の主行動を一列で読めるようにした。
+- レビュー導線のaria説明にも検索状態、全文/選択トラックコピー、音声は再生確認のみでAI送信しない境界を反映した。v2のミニマルな状態レール構造は維持。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:21:42 JST - v2-settings-apply-review-scope
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数・ガイドライン・レイアウト検査を再確認し、設定保存前の反映範囲がv2の状態レールとして破綻していないか点検した。
+- `Commit scope` に `Review / History` を追加し、保存した設定が履歴詳細の検索・コピー・トラック確認にも反映されることを明示した。
+- `Apply` と `Commit scope` のグリッド列数を表示項目数に合わせ、ミニマルな一列レールとして折り返しにくい構造へ補正した。音声ファイルをAIへ送信しない境界は維持。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:25:57 JST - v2-menu-recording-review-path
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- メニューバー録音のライフサイクルを `Start → REC → Live → Save → Review` に拡張し、検知通知を経由しない手動開始でも保存後に履歴レビューへ進む導線を明示した。
+- `Menu handoff` と `Start source` に `Review` を追加し、録音後に検索/コピーできることをメニュー内で確認できるようにした。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:28:09 JST - v2-library-handoff-search-copy
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 履歴一覧の `Library handoff` に `Search` と `Copy` を追加し、一覧から詳細レビューへ入る前に検索状態、本文有無、コピー可否、トラック、音声、議事録、AI送信確認を一列で読めるようにした。
+- handoffグリッドを7列に拡張し、中央レール幅を広げてミニマルな状態表示を保ったまま情報が詰まりすぎないようにした。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:30:24 JST - v2-minutes-prompt-boundary-rail
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音後詳細の `Prompt recipe` に `Audio` と `AI` を追加し、プロンプトコピー直前でも音声ファイルは未送信、AI設定は現在の接続状態という境界を状態レールで確認できるようにした。
+- `Prompt recipe` グリッドを6列に拡張し、Transcript / Memo / Output / Override / Audio / AI の入力・出力・送信範囲を一列で読めるようにした。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`npm run build`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:33:10 JST - v2-detection-prompt-review-path
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 会議検知通知の録音開始フローを `Start → Main → REC → Live → Ask → Save → Review` に拡張し、通知起点でも保存後に履歴レビューへ進む流れを明示した。
+- 録音中ピルのスコープと開始前チェックにも `Review` を追加し、Live/質問/保存/履歴確認の継続導線を同じ状態レールで読めるようにした。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css AGENT_LOG.md`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:38:22 JST - v2-menu-ask-review-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- メニューバー録音のライフサイクルを `Start → REC → Live → Ask → Save → Review` に拡張し、通知開始と同じく質問・保存・履歴レビューまでの状態を一続きで読めるようにした。
+- メニューバー開始前カード、録音中ワークスペース、handoff railに `Ask` / `Save` / `Review` を追加し、停止後にこのMac保存、履歴で検索・コピー・音声確認・議事録化へ進む契約を明示した。
+- デバッグコントローラーのv2検証フローも `Ask` と `Review` を含む流れへ更新した。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/components/ControllerWindow.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/components/ControllerWindow.tsx src/App.css AGENT_LOG.md`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:42:55 JST - v2-library-prompt-memo-route
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 履歴ライブラリのフローを `Search → Transcript → Track → Audio → Prompt → Memo → AI` に拡張し、録音後に議事録プロンプトと手書きメモ追加へ進めることを一覧上で明示した。
+- 先頭候補のhandoff、出力スコープ、各履歴行の再利用範囲、次アクション、レビュー経路に `Memo` / `Prompt` を追加し、詳細画面へ入る前から議事録生成の入力境界を確認できるようにした。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css AGENT_LOG.md`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:45:25 JST - v2-settings-ask-review-minutes-route
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 設定画面の主要フローを `Detect → Start → REC → Live → Ask → Save → Review → Minutes` に拡張し、録音中の質問と録音後レビューまで設定反映先として読めるようにした。
+- 保存前の設定レビューに `Prompt` と `Memo` を追加し、AI議事録設定が履歴詳細のプロンプトテンプレートと手書きメモ入力にどう反映されるかを明示した。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css AGENT_LOG.md`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:48:32 JST - v2-live-flow-grid-alignment
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- Live字幕ウィンドウの録音中フローが `Capture → REC → View → Translate → Notes → Ask → Send → Save → Review` の9ステップに増えている一方、CSS gridが8ステップ分の列定義のままだったため、表示要素数に合わせて補正した。
+- 録音中の透明性レール、翻訳/AIノート/質問/送信確認/履歴レビューの導線は既存構造を維持し、レイアウト崩れだけを最小変更で直した。
+- 検証: `npx prettier --check src/App.css`、`git diff --check -- src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:51:02 JST - v2-review-path-prompt-memo
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音後詳細の `Review path` を `Search → Chat → Track → Copy → Audio → Prompt → Memo → Minutes → AI` に拡張し、検索/チャットUI/分離トラック/コピー/音声確認からプロンプトテンプレートと手書きメモ経由で議事録生成へ進む導線を一列で読めるようにした。
+- `Prompt` / `Memo` / `Minutes` の状態値を実際のテンプレート、手書きメモ有無、下書き作成状態へ接続し、音声ファイルは再生確認のみでAIへ送信しない境界を維持した。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:54:29 JST - v2-start-path-minutes-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 会議検知通知の録音中pill、開始前チェック、開始後フローに `Minutes` を追加し、録音開始前から `Save → Review → Prompt/Memo → Minutes` へ進む終端を明示した。
+- メニューバー録音の lifecycle と handoff にも `Minutes` を追加し、通知開始と手動開始のどちらでも録音後レビューからプロンプトテンプレート/手書きメモを使う議事録作成へ進めることを同じ状態レールで読めるようにした。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 22:57:55 JST - v2-settings-prompt-memo-minutes-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 設定画面の `Config handoff` に `Prompt` と `Memo` を追加し、プロンプトテンプレートと手書きメモが履歴詳細の議事録生成へ反映される契約を明示した。
+- `Settings review` に `Minutes` を追加し、保存前レビューで Prompt / Memo / AI境界を含む議事録生成まで確認できるようにした。追加項目に合わせてhandoff/reviewのグリッド列数も補正。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:00:27 JST - v2-review-workbench-minutes-state
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音後詳細の `Review workbench` が `Minutes` を見出しに含む一方、状態カードに議事録下書き状態が出ていなかったため、`Minutes` カードを追加した。
+- `Minutes` カードはローカル議事録下書きの有無を `Draft / 未作成` として表示し、未作成時は現在のテンプレート名を出す。追加に合わせてworkbenchグリッドを8列へ補正。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:03:08 JST - v2-compact-rec-ai-boundary
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- ライブ字幕のコンパクトREC表示で、AI状態が常に `AIなし` 固定になっていたため、AIノートOFF、質問待機、外部確認制、ローカルAI、AIノート表示を短い状態ラベルへ接続した。
+- コンパクトRECピルのアクセシビリティ文言にもAIノート状態、AI送信境界、音声ファイル未送信を含め、v2の「録音中に状態が分かり続ける」方針へ寄せた。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:05:12 JST - v2-menu-capture-review-minutes
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- メニューバー録音の `Capture scope` が Tracks / Transcript / History / AI で止まっていたため、`Review` と `Minutes` を追加した。
+- 手動開始でも、保存後に履歴で検索/コピーし、Prompt/Memoを使って議事録作成へ進めることを開始前のスコープで確認できるようにした。追加項目に合わせてグリッドを3列に補正。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:08:15 JST - v2-session-row-review-search-copy
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音後の履歴一覧と詳細の導線を比較し、各履歴行の `Review path` だけ `Search` と `Copy` が抜けていたため、一覧行にも検索状態とコピー可否を追加した。
+- 各履歴行のReview pathを `Search → Review → Track → Copy → Audio → Minutes → Memo → AI` の8項目に揃え、詳細画面の `Search → Chat → Track → Copy → Audio → Prompt → Memo → Minutes → AI` と同じ認知順序で読めるようにした。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:10:02 JST - v2-ring-light-review-minutes
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 常時REC表示のRingLightが `Save 履歴へ` で止まっていたため、表示スコープに `Review` と `Minutes` を追加した。
+- 録音中でも、保存後に履歴検索/確認へ進み、議事録下書きまたはAI送信確認へ進むことを常時インディケーター上で把握できるようにした。追加項目に合わせてRingLightのスコープグリッドを10列へ補正。
+- 検証: `npx prettier --check src/components/RingLightWindow.tsx src/App.css`、`git diff --check -- src/components/RingLightWindow.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:12:14 JST - v2-setup-save-review-minutes
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 初回セットアップの説明とフローが `Save` で止まっていたため、`Review` と `Minutes` を追加し、権限許可後に録音、保存、履歴レビュー、議事録作成まで進むことを開始前から読めるようにした。
+- 保存直後の `meeting-saved-path-flow` も `保存 → Review → Minutes → AI` に更新し、保存後に検索/コピー、Prompt/Memo、AI送信確認へ進む導線を小さな状態表示でも明示した。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:14:54 JST - v2-empty-state-minutes-onboarding
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 履歴が空の初回オンボーディングが `Review` で止まっていたため、保存後に `Prompt/Memo` を選び `Minutes` 作成へ進む説明に更新した。
+- 空状態のフロー表示へ `Minutes / 議事録` を追加し、Detect、Record、Live、Save、Review、Minutesを同じ密度で読めるように6列へ補正した。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:16:53 JST - v2-controller-minutes-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 検証用の `ControllerWindow` が録音UIシナリオを `Review` までしか表現していなかったため、`Minutes` と `Prompt/Memo` を明示する導線に更新した。
+- Controllerの上部フローを Detect、Start、REC、Live、Ask、Save、Review、Minutes へ拡張し、シナリオレールの説明にも保存後の履歴レビュー、Prompt/Memo、議事録作成を追加した。
+- 追加ステップに合わせて `controller-flow` と `controller-scenario-scope` のグリッドを補正した。
+- 検証: `npx prettier --check src/components/ControllerWindow.tsx src/App.css`、`git diff --check -- src/components/ControllerWindow.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:18:39 JST - v2-audio-source-minutes-boundary
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- マイク/システム音声の取得境界が `Save` と `Review` で止まっていたため、両トラックに `Minutes` を追加した。
+- 議事録作成には文字起こしを使い、音声ファイルはAIへ送信しないことを各トラックの境界表示とアクセシビリティ文言に追加した。
+- 追加ステップに合わせて `audio-source-boundary-grid` を7列へ補正した。
+- 検証: `npx prettier --check src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css`、`git diff --check -- src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:20:32 JST - v2-transcript-copy-review-minutes-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音中の文字起こし `Track rail` がトラック別コピーに閉じていたため、`Copy → Review → Minutes` の小さなハンドオフ表示を追加した。
+- 文字起こし本文が保存後の検索/確認と議事録作成の入力になること、議事録には本文と手書きメモを使い、音声ファイルはAIへ送信しないことをアクセシビリティ文言にも追加した。
+- 追加表示に合わせて `transcript-track-rail` を3ゾーン構成へ補正し、ハンドオフ項目用の最小限のv2スタイルを追加した。
+- 狭幅では `transcript-track-handoff` も1列へ落とし、モバイル時にCopy、Review、Minutesの状態表示が潰れないようにした。
+- 検証: `npx prettier --check src/components/TranscriptDisplay.tsx src/App.css`、`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:23:05 JST - v2-permission-review-minutes-contract
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 権限バナーの録音前チェックが `Save` で止まっていたため、`Review` と `Minutes` を追加した。
+- 録音前から、保存後に履歴で検索/コピー/音声トラック確認へ進み、議事録作成には文字起こし本文と手書きメモを使うことを明示した。
+- 議事録作成時に音声ファイルはAIへ送信しないことを、Impact gridとSafety flowのアクセシビリティ文言へ追加した。
+- 追加項目に合わせて `permission-banner-impact-grid` を4列へ補正した。
+- 検証: `npx prettier --check src/components/PermissionBanner.tsx src/App.css`、`git diff --check -- src/components/PermissionBanner.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:25:32 JST - v2-live-caption-minutes-handoff
+
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音中の `LiveCaptionWindow` で一部のタイトル/補助文言と表示レールが `Save → Review` で止まっていたため、`Minutes` を追加した。
+- 録音中フローを `Capture → REC → View → Translate → Notes → Ask → Send → Save → Review → Minutes` に揃えた。
+- モードストリップとフォーカスレールにも `Minutes / Prompt/Memo` を追加し、終了後に履歴レビューから議事録作成へ進むことを録音中画面で確認できるようにした。
+- アクセシビリティ文言に、Prompt/Memoを使う議事録作成と音声ファイル未送信の境界を追加した。
+- 追加項目に合わせて `live-recording-flow`、`live-transcript-mode-strip`、`live-transcript-focus-rail` のグリッドを補正した。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:28:28 JST - v2-transcription-controls-review-minutes
+
+- 作業前に `AGENTS.md`、`docs/product-concept.md`、frontend-design skill を再確認し、録音状態の透明性、保存後レビュー、AI議事録導線から外れていないか確認した。
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音/文字起こし操作面の `TranscriptionControls` が `Save` と `Guard` で止まっていたため、`Review` と `Minutes` を状態レールに追加した。
+- 文字起こし開始/停止の近くで、保存後に履歴検索・コピーへ進み、Prompt/Memoを使う議事録作成へ接続することを明示した。
+- 議事録作成は文字起こし本文と手書きメモを使い、音声ファイルはAIへ送信しない境界を aria/title 文言に追加した。
+- 追加項目に合わせて `transcription-state-rail` を4列構成に補正した。モバイルでは既存の1列化を維持。
+- 検証: `npx prettier --check src/components/TranscriptionControls.tsx src/App.css`、`git diff --check -- src/components/TranscriptionControls.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:30:27 JST - v2-session-list-copy-handoff
+
+- 作業前に `AGENTS.md`、`docs/product-concept.md`、frontend-design skill を再確認し、録音後の履歴検索、コピー、音声確認、AI議事録導線から外れていないか確認した。
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 履歴一覧の行アクションには本文コピーが存在する一方、上部の `Library flow` が `Search → Transcript → Track → Audio...` でコピーを主導線として示していなかったため、`Copy` を追加した。
+- 履歴一覧サマリーにもコピー可能件数を追加し、保存済み本文を一覧からコピーできることを検索結果の集計面で確認できるようにした。
+- ライブラリ導線を `Search → Transcript → Copy → Track → Audio → Minutes → Memo → AI` に揃え、録音後の検索・コピー・音声確認・Prompt/Memo議事録作成の連続性を強めた。
+- 追加項目に合わせて `session-list-library-flow` のグリッド列を補正し、v2の紙色/緑/青/琥珀パレット内でコピー状態カードを追加した。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:32:47 JST - v2-session-detail-workbench-complete-path
+
+- 作業前に `AGENTS.md`、`docs/product-concept.md`、frontend-design skill を再確認し、録音後詳細のレビュー、音声確認、Prompt/Memo議事録、AI送信境界から外れていないか確認した。
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音後詳細の `Review workbench` 見出しが `Search / Chat / Audio / Minutes / AI` に省略され、実際の主導線にある Track、Copy、Prompt、Memo が見えにくかったため、`Search / Chat / Track / Copy / Audio / Prompt / Memo / Minutes / AI` に揃えた。
+- `Review workbench` の状態グリッドに `Track` を追加し、選択中トラックと件数を最上段で確認できるようにした。
+- `Now` レールに `Chat`、`Copy`、`Memo`、`AI` を追加し、検索、LINE風Transcript、トラック、コピー、音声、メモ、議事録、AI送信境界の現在状態を同じ面で確認できるようにした。
+- 追加項目に合わせて `session-detail-review-workbench-grid` と `session-detail-review-now` のグリッド列を補正した。モバイルでは既存の1列/2列化を維持。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:35:28 JST - v2-live-caption-translate-now
+
+- 作業前に `AGENTS.md`、`docs/product-concept.md`、frontend-design skill を再確認し、録音中の透明性、リアルタイム翻訳、AIノート/質問、送信境界から外れていないか確認した。
+- Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題を再確認した。v2変数とMeet Jerkyの既存パレットを維持。
+- 録音中の `Live focus` には `Translate` が表示されていた一方、直上の `Now` ストリップでは翻訳状態が `View` に吸収されていたため、`Translate` を独立項目として追加した。
+- `Now` ストリップで翻訳がOFFか、どの言語プレビューかを常時確認できるようにし、リアルタイム翻訳のオン/オフ状態を記憶に頼らず認識できるようにした。
+- アクセシビリティ文言と title に翻訳状態を追加し、音声ファイル未送信、AI送信境界、履歴Review/Minutes導線は維持した。
+- 追加項目に合わせて `live-transcript-mode-strip` のグリッド列を補正した。モバイルでは既存の1列化を維持。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`。`npm run build` は成功し、既存のVite chunk size warningのみ。
+- 依存関係の追加なし。課金操作なし。
+## 2026-05-29 23:38:44 JST - v2-settings-runtime-review-audio
+
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな導線に合わせ、設定画面で録音後の検索・コピー・音声トラック再生の反映先を明確化する。
+- 変更: `SettingsView` の Runtime route で録音後の `History` を `Search / Copy` として明示し、`Audio` を追加して `Mic / Speaker / Both` 再生の反映先を独立表示した。ARIA文言も検索・コピー・Mic/Speaker/Both再生へ更新した。
+- 変更: `src/App.css` の `.settings-runtime-route-grid` を9列へ更新し、追加した `Audio` 項目が既存のコンパクトなv2設定導線内に収まるよう調整した。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存のViteチャンクサイズ警告のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:40:46 JST - v2-live-caption-review-audio-handoff
+
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、LiveCaptionWindow から録音後レビューへの導線をより直感的にする。
+- 変更: `LiveCaptionWindow` の `Live focus` に `Audio` を追加し、終了後に Mic/Speaker/Both の音声確認へ進めることを録音中から明示した。
+- 変更: `Now` レールの `Review` を `Search/Copy` に具体化し、`Audio` を追加して録音後の検索・コピー・音声確認・Prompt/Memo議事録作成の流れを分離した。
+- 変更: `src/App.css` の `live-transcript-mode-strip` と `live-transcript-focus-rail` を9項目レイアウトへ調整した。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存のViteチャンクサイズ警告のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:43:12 JST - v2-start-entry-review-audio-minutes
+
+- 目的: `meet-jerky-desktop-v2.pen` の入口UI方針に合わせ、会議検知通知とメニューバー開始の録音前導線を同じ状態語彙へ揃える。
+- 変更: `MeetingDetectedBanner` の録音中スコープ、開始前チェック、開始後フローに `Audio` を追加し、終了後に Mic/Speaker/Both 音声確認へ進めることを検知通知側でも明示した。
+- 変更: `MeetingDetectedBanner` の `Review` 表示を `履歴確認` から `検索/コピー` へ具体化し、保存後レビューの操作内容をv2のミニマルなレール上で判断できるようにした。
+- 変更: `TranscriptView` の `Start options` に `Audio` と `Minutes` を追加し、メニューバー開始でも検知通知と同じ `Review → Audio → Minutes` の録音後導線を表示した。
+- 変更: `src/App.css` の該当グリッド列数を調整し、追加項目を既存のコンパクトなカード密度内に収めた。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存のViteチャンクサイズ警告のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:45:31 JST - v2-session-detail-review-prompt-boundary
+
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、履歴詳細の状態レールと送信境界を同じ順序へ揃える。
+- 変更: `SessionDetail` の `Now` レールを `Search → Chat → Track → Copy → Audio → Prompt → Memo → Minutes → AI` の順に統一した。
+- 変更: 録音後レビューの送信境界に `Prompt` を追加し、トランスクリプト、プロンプトテンプレート、手書きメモが議事録入力候補で、音声ファイルはAIへ送信しないことを明示した。
+- 変更: `src/App.css` の `.session-detail-review-transmission` を5列へ調整した。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存のViteチャンクサイズ警告のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:49:53 JST v2-session-list-prompt-minutes-alignment
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな録音後レビュー導線に合わせ、履歴一覧で混在していたプロンプト選択と議事録生成を分離する。
+- 変更: `SessionList` の候補ハンドオフ、ライブラリフロー、出力スコープ、各行の再利用範囲・次アクション・レビュー経路を `Prompt → Memo → Minutes → AI` の順に統一した。
+- 変更: `App.css` の履歴一覧グリッド列数と `Prompt` / `Minutes` 用の控えめな状態スタイルを更新した。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:16:48 JST v2-meeting-prompt-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen の検知通知UI方針に合わせ、録音開始判断を圧迫していた開始前/録音中の重複スコープ表示を削る。
+- 変更: `MeetingDetectedBanner` から録音中Pillの9項目 `recordingPillScopeItems` と表示ブロックを削除し、PillはREC状態、トラック、AI送信状態、Live表示ボタンに絞った。
+- 変更: 検知通知から6項目の `meetingDetectedPreflightItems` と表示ブロックを削除し、検知内容、録音対象、AI送信状態、開始操作に情報を集約した。
+- 変更: `App.css` から削除した `meeting-detected-status-scope` と `meeting-detected-preflight` のスタイル、レスポンシブ参照を削除した。
+- 検証: `rg -n "recordingPillScopeItems|meetingDetectedPreflightItems|meeting-detected-status-scope|meeting-detected-preflight" src/components/MeetingDetectedBanner.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:14:19 JST v2-live-notes-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、常時表示されるAIノート領域の重複した安全/送信スコープ表示を削り、必要時だけ送信範囲を確認する構造にする。
+- 変更: `LiveCaptionWindow` から常時表示の `live-notes-guardrail`、`live-notes-scope`、`live-notes-flow`、`live-notes-ask-scope` と対応する未使用定数を削除した。
+- 変更: 通常時のAI状態は既存の `live-notes-control-summary` に集約し、質問下書きがある場合のみ `live-notes-send-scope-review` で送信範囲を表示する構造を残した。
+- 変更: `App.css` から削除したAIノートレールのスタイルとレスポンシブ参照を削除した。
+- 検証: `rg -n "aiSendConfirmationFlowValue|aiProviderScopeClassName|aiNotesFlowLabel|aiGuardrail|aiAskScopeItems|live-notes-(guardrail|scope|flow|ask-scope)" src/components/LiveCaptionWindow.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:10:21 JST v2-menu-popover-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のメニューバー録音UI方針に合わせ、メニューポップオーバーで開始/終了操作と状態確認を圧迫していた重複フローを削る。
+- 変更: `TranscriptView` から初回セットアップの10ステップ `menu-setup-flow`、録音中の10ステップ `menu-lifecycle-flow`、11項目の `menuHandoffScope` / `menu-handoff` を削除した。
+- 変更: 開始元、REC表示、AI送信、保存/レビュー状態は既存の状態カード、`Start source`、`Start options`、`Capture scope` に集約した。
+- 変更: `App.css` から削除したメニューフロー/ハンドオフのスタイルとレスポンシブ参照を削除した。
+- 検証: `rg -n "menuHandoffScope|menu-handoff|menu-lifecycle-flow|menu-setup-flow" src/routes/TranscriptView.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:07:02 JST v2-controller-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな検証UI方針に合わせ、デバッグコントローラーで長い録音工程表が主要シナリオ操作を圧迫しないようにする。
+- 変更: `ControllerWindow` から 11 ステップの `controller-flow` を削除し、通知開始・メニューバー開始・録音中UIの3つのシナリオカードに集約した。
+- 変更: シナリオ説明文を短縮し、実行される本番経路と確認対象が一読できる文言にした。
+- 変更: `App.css` から `controller-flow` と `controller-scenario-scope` のスタイル、レスポンシブ参照を削除した。
+- 検証: `rg -n "controller-flow|controller-scenario-scope" src/components/ControllerWindow.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/components/ControllerWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/ControllerWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:04:45 JST v2-settings-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな設定UI方針に合わせ、設定画面で重複していた録音フロー/実行時反映/保存範囲の説明を削り、概要カードとキャプチャ境界に情報を集約する。
+- 変更: `SettingsView` から `settingsWorkflowSteps`、`settingsRuntimeRouteItems`、`settingsApplyScopeItems` と対応する表示ブロックを削除した。
+- 変更: AI議事録プロバイダー内の Provider → Prompt → Confirm の再掲フローを削除し、プロバイダー選択、ガードレール、送信範囲の表示に一本化した。
+- 変更: `App.css` から削除した設定フロー、Runtime route、Commit scope、AI provider flow のスタイルとレスポンシブ参照を削除した。
+- 検証: `rg -n "settingsWorkflowSteps|settingsRuntimeRouteItems|settingsApplyScopeItems|settings-workflow|settings-runtime-route|settings-apply-scope|settings-ai-provider-flow" src/routes/SettingsView.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:48:04 JST v2-live-caption-rail-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、ライブ文字起こしウィンドウの過剰な導線表示を減らす。
+- 変更: `LiveCaptionWindow` から長い `live-recording-flow`、`live-transcript-transparency-rail`、`live-transcript-focus-rail` を削除し、録音中の主情報をヘッダーと `Now` ストリップへ集約した。
+- 変更: `Now` ストリップの aria/title から録音後導線の長文列挙を削除し、表示・翻訳・AIノート・質問・送信境界に絞った。
+- 変更: 削除したレールに対応する `App.css` の未使用スタイルとモバイルメディアクエリ参照を削除した。
+- 検証: Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題なしを確認。
+- 検証: `rg -n "liveViewFlowLabel|aiAskFlow|liveTransparencyItems|liveFocusItems|live-recording-flow|live-transcript-transparency|live-transcript-focus|ShieldCheck" src/components/LiveCaptionWindow.tsx src/App.css` で残存なし。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:41:38 JST v2-settings-top-rail-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな画面構成に合わせ、設定画面上部で重複していた安全説明レールを減らす。
+- 変更: `SettingsView` 上部から `Config handoff` と `Settings review` の2レールを削除し、`Capture boundary` と `Runtime route` に主情報を集約した。
+- 変更: 削除したレールに対応する `settings-config-handoff*` と `settings-commit-review*` のCSSを削除し、モバイル向けメディアクエリの参照も整理した。
+- 検証: Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題なしを確認。
+- 検証: `rg -n "settingsConfigHandoffItems|settingsCommitReviewItems|settings-config-handoff|settings-commit-review" src/routes/SettingsView.tsx src/App.css` で残存なし。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:53:32 JST v2-minimal-flow-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな情報密度に合わせ、会議検知通知と履歴一覧で重複していた長いフロー表示を削る。
+- 変更: `MeetingDetectedBanner` の開始前チェックを 6 チップに圧縮し、別途表示していた長い `Start → Main → REC → ... → Minutes` フローを削除した。詳細な録音後導線は aria/title に残した。
+- 変更: `SessionList` の履歴ライブラリフローと出力スコープレールを削除し、先頭候補レビューのハンドオフを `Transcript`、`Tracks`、`Prompt + Memo`、`Minutes` の4項目に圧縮した。
+- 変更: `App.css` から削除したフロー用スタイルとレスポンシブ指定を整理し、残したハンドオフ/開始前チェックの列数を低密度表示に合わせた。
+- 検証: Pencil MCP で `meet-jerky-desktop-v2.pen` の variables/guidelines/layout を確認。レイアウト問題なし。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 検証: `rg -n "session-list-library-flow|session-list-output-rail|meeting-detected-start-flow|firstReviewHandoffItems" src/routes/SessionList.tsx src/components/MeetingDetectedBanner.tsx src/App.css` で該当なし。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:59:16 JST v2-session-detail-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな録音後レビュー方針に合わせ、履歴詳細で重複していた状態レールとフロー表示を削る。
+- 変更: `SessionDetail` から `Review now`、`Review path`、送信境界レール、トラック確認フロー、トラック監査レール、フッターの出力フローを削除した。
+- 変更: 録音後詳細の可視状態は `Review workbench`、分離トラック再生、議事録ワークスペース、AI送信範囲確認に集約した。音声ファイルをAIへ送信しない説明は aria/title と送信範囲カードに残した。
+- 変更: `App.css` から削除した詳細レール/フロー用スタイルとレスポンシブ指定を整理した。
+- 検証: Pencil MCP で `meet-jerky-desktop-v2.pen` の variables/guidelines/layout を確認。レイアウト問題なし。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。
+- 検証: `rg -n "reviewPathItems|reviewTransmissionItems|reviewNowItems|playbackAuditItems|selectedTrackAuditLabel|session-detail-review-now|session-detail-review-path|session-detail-review-transmission|session-detail-track-route|session-detail-playback-audit|session-detail-output-flow" src/routes/SessionDetail.tsx src/App.css` で該当なし。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:38:40 JST v2-session-detail-minimal-minutes-flow
+
+- 目的: meet-jerky-desktop-v2.pen の「主目的を絞る」方針に合わせ、録音後レビューの議事録ワークスペースから重複した説明レールを減らす。
+- 変更: `SessionDetail` の `Evidence rail`、入力ソースステータス、議事録生成フロー、ローカル下書きの重複チェック/境界レールを削除し、Prompt recipe、送信範囲確認、手書きメモ、ローカル生成に整理した。
+- 変更: 手書きメモとローカル下書きの説明文を短くし、`Transcript / Prompt / Memo / Audio / AI` の区分がカード内で重複しすぎないようにした。
+- 検証: Pencil MCPで `meet-jerky-desktop-v2.pen` の変数、Code/Web Appガイド、レイアウト問題なしを確認。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx` 成功。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx` 成功。
+- 検証: `rg -n "handwrittenSourceStatusClassName|minutesEvidenceItems|localMinutesReadinessItems|localMinutesBoundaryItems" src/routes/SessionDetail.tsx` で残存なし。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:02:44 JST v2-menu-start-prompt-memo-minutes
+
+- 目的: meet-jerky-desktop-v2.pen の録音開始入口に合わせ、メニューバーからの録音導線でも録音後レビューまでの流れを同じ語彙で扱えるようにする。
+- 変更: `TranscriptView` のメニュー録音スコープ、初期セットアップ、録音ライフサイクル、ハンドオフ、開始オプションを `Review → Audio → Prompt → Memo → Minutes` の順に更新した。
+- 変更: `Prompt/Memo` に圧縮されていた議事録準備を `Prompt`、`Memo`、`Minutes` に分離し、Mic/Speaker/Both の音声確認を `Audio` として明示した。
+- 変更: `App.css` のメニューセットアップフロー、録音ライフサイクル、ハンドオフ、開始オプションの列数を追加ステップに合わせて更新した。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:51:52 JST v2-live-recording-flow-audio-step
+
+- 目的: meet-jerky-desktop-v2.pen の録音後レビュー方針に合わせ、録音中の主要フローから音声確認導線が抜けないようにする。
+- 変更: `LiveCaptionWindow` の録音中フローを `Save → Review → Audio → Minutes` に更新し、終了後に Mic/Speaker/Both の音声確認へ進めることを aria/title でも明示した。
+- 変更: `App.css` の `live-recording-flow` グリッド列を `Audio` ステップ追加に合わせて拡張した。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:54:32 JST v2-settings-workflow-review-audio-minutes
+
+- 目的: meet-jerky-desktop-v2.pen の録音後レビュー導線に合わせ、設定画面から録音後の検索・音声確認・議事録生成までの流れを分離して見せる。
+- 変更: `SettingsView` の設定フローを `Save → Review → Audio → Prompt → Memo → Minutes` に更新し、履歴検索/コピー、Mic/Speaker/Both音声確認、プロンプト、手書きメモ、AI議事録生成を別ステップとして明示した。
+- 変更: `SettingsView` の保存前レビュー項目を `Review → Audio → Prompt → Memo → Minutes` の順に揃え、音声ファイルはAI送信対象外であることを明示した。
+- 変更: `App.css` の `settings-workflow-strip` グリッド列数をステップ追加に合わせて更新した。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:30:53 JST v2-visible-template-vocabulary-cleanup
+
+- 目的: meet-jerky-desktop-v2.pen の `Prompt → Memo → Minutes` 導線に合わせ、主要UIに残っていた可視 `Template` / `テンプレート` 語彙を整理する。
+- 変更: `MeetingDetectedBanner`、`LiveCaptionWindow`、`TranscriptionControls`、`TranscriptDisplay`、`TranscriptView`、`SessionList` の録音開始・録音中・履歴レビュー導線で、可視 `Template` を `Prompt` / `方針` に更新した。
+- 変更: 通知開始、メニューバー録音、ライブ表示、履歴一覧の aria/title 文言で `プロンプトテンプレート` や `プロンプト選択` を `Prompt` 主語へ統一した。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx src/routes/TranscriptView.tsx src/routes/SessionList.tsx` 成功。
+- 検証: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/components/LiveCaptionWindow.tsx src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx src/routes/TranscriptView.tsx src/routes/SessionList.tsx` 成功。
+- 検証: `rg -n "Template|テンプレート|プロンプトテンプレート|プロンプト選択" src/components src/routes src/App.tsx -g '*.tsx'` で可視UI由来の残存なし。残りは `SessionDetail` の内部型/変数名と `LayoutTemplate` アイコン名のみ。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:34:23 JST v2-prompt-copy-label-minimalism
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな状態表示に合わせ、録音中/履歴レビューで `議事録プロンプト` など説明が重い表現を短い `Prompt` / `方針` に揃える。
+- 変更: `SessionDetail` のコピー成功/失敗メッセージ、レビュー操作、Prompt構成、Promptコピーの aria/title/ボタン文言を短縮した。
+- 変更: `SessionList`、`SettingsView`、`LiveCaptionWindow`、`TranscriptView`、`TranscriptionControls`、`TranscriptDisplay`、`ControllerWindow` の `議事録Prompt` / `プロンプト選択` / `Promptはテンプレ` 表現を `Prompt` / `方針` に統一した。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/routes/SessionDetail.tsx src/components/ControllerWindow.tsx src/routes/SettingsView.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx` 成功。
+- 検証: `git diff --check -- src/routes/SessionList.tsx src/routes/SessionDetail.tsx src/components/ControllerWindow.tsx src/routes/SettingsView.tsx src/components/LiveCaptionWindow.tsx src/routes/TranscriptView.tsx src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx` 成功。
+- 検証: `rg -n "議事録プロンプト|プロンプト方針|プロンプト構成|プロンプトをコピー|プロンプトは|Promptはテンプレ|議事録Prompt" src/components src/routes src/App.tsx -g '*.tsx'` で該当なし。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:45:12 JST v2-app-shell-status-minimalism
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな常設状態表示に合わせ、メニューバーシェル上部の10ステップ常時表示を削減する。
+- 変更: `App` の常設ヘッダーを `Detect / REC / AI / History` の4状態に圧縮し、録音後の詳細作業は各画面側に委譲した。
+- 変更: `App.css` の `app-shell-lifecycle` 系を `app-shell-status` 系へ置き換え、丸みのある軽いステータスバーとして再設計した。
+- 検証: `rg -n "APP_LIFECYCLE_ITEMS|app-shell-lifecycle|app-shell-status" src/App.tsx src/App.css` で旧識別子なし、新識別子のみ。
+- 検証: `npx prettier --check src/App.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/App.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:52:06 JST v2-ring-light-minimal-rec-indicator
+
+- 目的: meet-jerky-desktop-v2.pen の常時録音インジケーター方針に合わせ、録音中の邪魔にならない表示へ戻す。
+- 変更: `RingLightWindow` の13項目スコープ表示を削除し、REC常時表示、Live状態、AI送信状態、Liveを開く操作だけを残した。
+- 変更: `App.css` の `ring-light-badge-scope` 系スタイルを削除し、AI送信状態用の小さな `ring-light-badge-meta` 表示へ置き換えた。
+- 検証: `rg -n "ringLightScopeItems|ring-light-badge-scope|ring-light-badge-meta" src/components/RingLightWindow.tsx src/App.css` で旧識別子なし、新識別子のみ。
+- 検証: `npx prettier --check src/components/RingLightWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/RingLightWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:02:31 JST v2-menu-start-density-reduction
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルなメニューバー録音導線に合わせ、録音開始前の重複した説明レールを削減する。
+- 変更: `TranscriptView` の `Start options` 10項目グリッドと `Capture scope` 9項目グリッドを削除し、開始前チェックへ「自分/相手側/AI送信/REC/保存」の必須状態だけを残した。
+- 変更: `App.css` の `menu-start-options` 系と `menu-capture-scope` 系スタイル、レスポンシブ参照を削除した。
+- 検証: `rg -n "menuCaptureScope|menu-start-options|menu-capture-scope|\\bSearch\\b" src/routes/TranscriptView.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:11:44 JST v2-live-caption-now-rail-minimalism
+
+- 目的: meet-jerky-desktop-v2.pen の録音中UI方針に合わせ、ライブ字幕ウィンドウの常時表示レールを録音中の直接操作だけに絞る。
+- 変更: `LiveCaptionWindow` の AIノート制御サマリーを `Notes` / `Send` の2項目に圧縮し、質問状態は質問欄へ委譲した。
+- 変更: `LiveCaptionWindow` の `Now` レールから録音後の `Save / Review / Audio / Prompt / Memo / Minutes` を削除し、`View / Translate / Notes / Ask / Send` の現在操作だけを残した。
+- 変更: `App.css` の `live-notes-control-summary` と `live-transcript-mode-strip` の列数を新しい項目数に合わせて調整した。
+- 検証: `rg -n "label: \"Save\"|label: \"Review\"|label: \"Audio\"|label: \"Prompt\"|label: \"Memo\"|label: \"Minutes\"|repeat\\(11" src/components/LiveCaptionWindow.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:22:18 JST v2-session-list-minimal-review-entry
+
+- 目的: meet-jerky-desktop-v2.pen の履歴レビュー方針に合わせ、履歴一覧を検索・選択・詳細遷移の入口に絞り、詳細画面で扱う作業レールの常時表示を減らす。
+- 変更: `SessionList` の先頭候補 `Library handoff`、全体 `Track scope`、各行の `capabilities`、`reuse scope`、`next flow`、`playback scope` を削除した。
+- 変更: 一覧サマリーから音声Fileカードを削除し、音声確認は詳細画面側へ委譲した。
+- 変更: `App.css` の削除済み履歴一覧レール用スタイルとレスポンシブ参照を削除した。
+- 検証: `rg -n "firstReview|session-list-review-handoff|session-list-playback-scope|session-list-item-capabilities|session-list-item-reuse-scope|session-list-item-next-flow|session-list-item-playback-scope|FileAudio|Volume2" src/routes/SessionList.tsx src/App.css` で該当なし。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:26:38 JST v2-shell-prompt-vocabulary-alignment
+
+- 目的: meet-jerky-desktop-v2.pen の録音後レビュー導線を、メニューバー入口、設定、トラック境界、コントローラーで一貫して読めるようにする。
+- 変更: `App` のメニューバーシェル上部フローに `Audio`、`Prompt`、`Memo`、`Minutes` を追加し、履歴後の作業が検索/コピーで終わらないことを明示した。
+- 変更: `MicrophoneSection`、`SystemAudioSection`、`ControllerWindow`、`SettingsView` の可視 `Template` 表記を `Prompt` / `方針` 中心へ更新した。
+- 変更: `App.css` のメニューバーシェルフローを10ステップ表示に合わせて調整した。
+- 検証: `npx prettier --check src/App.tsx src/App.css src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/ControllerWindow.tsx src/routes/SettingsView.tsx` 成功。
+- 検証: `git diff --check -- src/App.tsx src/App.css src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/components/ControllerWindow.tsx src/routes/SettingsView.tsx` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:23:25 JST v2-session-detail-prompt-label-alignment
+
+- 目的: meet-jerky-desktop-v2.pen の録音後レビューUIに合わせ、履歴詳細の議事録生成エリアで `Template` が主概念に見える箇所を `Prompt` 中心に揃える。
+- 変更: `SessionDetail` の議事録ワークスペース、Prompt補足、Prompt recipe、AI送信範囲、ローカル議事録下書き、AIプレースホルダーの可視文言と aria/title を `Prompt` 主語に更新した。
+- 変更: コピーされる議事録生成Promptとローカル下書きのソース表記も `Template` ではなく `Prompt` として出力するようにした。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx` 成功。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:18:51 JST v2-rec-indicator-review-scope
+
+- 目的: meet-jerky-desktop-v2.pen の録音中インジケーター方針に合わせ、REC常時表示から録音後レビュー導線を忘れにくくする。
+- 変更: `RingLightWindow` のスコープに `Audio`、`Prompt`、`Memo` を追加し、`Review → Audio → Prompt → Memo → Minutes` が常時表示の小さな状態面でも確認できるようにした。
+- 変更: `ControllerWindow` の検知通知・メニューバー開始・録音中UIシナリオ説明を、録音後レビューから `Audio → Prompt → Memo → Minutes` へ進む流れに合わせた。
+- 変更: `App.css` の `ring-light-badge-scope` を追加ステップに合わせて調整し、コンパクト表示の密度を保つため余白を少し詰めた。
+- 検証: `npx prettier --check src/components/RingLightWindow.tsx src/components/ControllerWindow.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/RingLightWindow.tsx src/components/ControllerWindow.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-29 23:57:15 JST v2-meeting-prompt-prompt-memo-minutes
+
+- 目的: meet-jerky-desktop-v2.pen の録音開始入口に合わせ、会議検知通知から録音後レビューまでの語彙を `Review → Audio → Prompt → Memo → Minutes` に揃える。
+- 変更: `MeetingDetectedBanner` の録音中スコープ、開始前チェック、開始後フローで `Prompt` と `Memo` を `Minutes` から分離した。
+- 変更: 検知通知の aria/title 文言を、履歴レビュー、Mic/Speaker/Both音声確認、プロンプト選択、手書きメモ追加、議事録生成の順に更新した。
+- 変更: `App.css` の `meeting-detected-status-scope`、`meeting-detected-preflight`、`meeting-detected-start-flow` の列数を追加ステップに合わせて更新した。
+- 検証: `npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:09:02 JST v2-live-review-vocabulary-unification
+
+- 目的: meet-jerky-desktop-v2.pen のミニマルな録音後レビュー導線に合わせ、録音中UI、履歴入口、録音コントロールで残っていた `Prompt/Memo` 圧縮を解消する。
+- 変更: `LiveCaptionWindow` の録音中フロー、Now、Live focus を `Review → Audio → Prompt → Memo → Minutes` に更新し、プロンプトテンプレート、手書きメモ、議事録生成を別ステップとして明示した。
+- 変更: `ControllerWindow`、`SessionList`、`TranscriptView`、`TranscriptionControls`、`TranscriptDisplay`、`MicrophoneSection`、`SystemAudioSection`、`RingLightWindow` の録音後ハンドオフ文言を同じ語彙に揃えた。
+- 変更: `App.css` のライブ録音フロー、ライブ表示レール、履歴空状態、保存後フロー、トラック境界、コントローラーフローの列数を追加ステップに合わせて更新した。
+- 検証: `npx prettier --check src/components/LiveCaptionWindow.tsx src/components/ControllerWindow.tsx src/components/RingLightWindow.tsx src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/SessionList.tsx src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/components/LiveCaptionWindow.tsx src/components/ControllerWindow.tsx src/components/RingLightWindow.tsx src/components/TranscriptionControls.tsx src/components/TranscriptDisplay.tsx src/components/MicrophoneSection.tsx src/components/SystemAudioSection.tsx src/routes/SessionList.tsx src/routes/SettingsView.tsx src/routes/TranscriptView.tsx src/App.css` 成功。
+- 検証: `rg -n "Prompt/Memo|Prompt / Memo|MinutesはPrompt|Copy → Review → Minutes" src/components src/routes -g '*.tsx'` で圧縮表現なし。区切り表示としての `Prompt / Memo` は該当なし。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:12:35 JST v2-session-detail-prompt-memo-boundary
+
+- 目的: meet-jerky-desktop-v2.pen の録音後レビュー方針に合わせ、履歴詳細で Prompt、Memo、Minutes、AI送信境界を同じ単位で認識できるようにする。
+- 変更: `SessionDetail` のレビュー作業台、Evidence rail、議事録生成フロー、入力ソース、AI送信範囲、ローカル議事録境界で `Template` 表記を `Prompt` に寄せ、手書きメモを独立ステップとして明示した。
+- 変更: AI送信範囲に `Prompt` を送信候補として追加し、`Audio` は未送信、`Memo` は任意の送信候補として見えるようにした。
+- 変更: `App.css` の履歴詳細の入力ソース、AI送信範囲、ローカル議事録境界、議事録生成フローの列数を追加ステップに合わせて更新した。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 00:16:40 JST v2-settings-detect-prompt-separation
+
+- 目的: meet-jerky-desktop-v2.pen のUI語彙に合わせ、設定画面で検知通知の `Prompt` と議事録生成用 `Prompt` が混同されないようにする。
+- 変更: `SettingsView` の Config handoff、Settings review、Runtime route、Apply strip、Commit scope で検知通知を `Detect` / `通知` とし、議事録用の `Prompt` / `Memo` / `Minutes` と分離した。
+- 変更: Runtime route と Apply 系レールに `Review → Audio → Prompt → Memo → Minutes` の順序を明示し、設定保存後にどの実行時UIへ反映されるかを揃えた。
+- 変更: `App.css` の Runtime route、Apply strip、Commit scope の列数を追加ステップに合わせて更新した。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。
+- 検証: `npm run build` 成功。既存の Vite chunk size warning のみ。
+- 依存関係: 追加なし。
+## 2026-05-30 01:34:29 JST
+
+- 作業: `v2-session-detail-playback-scope-minimalism`
+- 目的: `meet-jerky-desktop-v2.pen` の最小で直感的な方向性に合わせ、履歴詳細の分離トラック領域から重複した説明カードを削減する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `session-detail-playback-scope` JSX と対応 CSS を削除。マイク/スピーカー/両方のタブ、件数ステータス、音声保存契約、選択トラックプレビュー、コピー/再生操作は維持。
+- 検証: `rg -n "session-detail-playback-scope" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:38:24 JST
+
+- 作業: `v2-session-detail-audio-contract-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、セッション詳細の音声保存契約説明を削って音声トラック切替/再生に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `session-detail-audio-contract` と関連CSS/未使用定数を削除。Mic/Speaker/Bothのトラック切替、件数表示、選択トラックプレビュー、再生/コピー操作は維持。
+- 検証: 対象クラス/未使用識別子残存 `rg`、`npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:40:20 JST
+
+- 作業: `v2-session-list-summary-compression`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな履歴レビュー方針に合わせ、履歴一覧上部の重複サマリーを削って検索/レビュー/コピー導線を目立たせる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 履歴一覧のサマリーを「本文あり」「自分」「相手側」の3指標へ圧縮。`コピー可` と `AI送信` の重複カード、および関連アイコン/CSSを削除。行単位の本文コピー、レビュー、既定アプリ/Finder操作は維持。
+- 検証: 対象クラス/未使用アイコン残存 `rg`、`npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:42:03 JST
+
+- 作業: `v2-meeting-detected-banner-chip-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の会議検知通知方針に合わせ、通知ウィンドウの録音開始導線を残しながら状態チップを減らして視覚密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 会議検知バナーの状態表示を Mic/System/AI の3チップに圧縮し、エンジン表示チップと関連CSS/importを削除。文字起こしエンジンとAI送信状態はARIA/タイトル説明に維持。録音開始、今回はしない、録音中ピル、Live表示導線は維持。
+- 検証: 対象クラス/未使用import残存 `rg`、`npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:43:34 JST
+
+- 作業: `v2-settings-overview-card-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、設定画面上部の概要カードを現在値中心のミニマルなショートカットへ圧縮する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 設定概要カードの視覚表示から補足文を削除し、カテゴリ名と現在値だけを表示。補足詳細は `aria-label` / `title` に残し、会議検出・マイク・文字起こし・AI議事録へのショートカット機能は維持。カード高さと余白を圧縮。
+- 検証: 対象CSS残存 `rg`、`npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:45:48 JST
+
+- 作業: `v2-live-notes-control-summary-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、AIノート欄の重複した制御サマリーを削って、文字起こし・ノート・質問入力の主導線を見やすくする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` から `Notes/Send` の小カードサマリーと関連CSS/未使用変数を削除。AIノートON/OFF、接続状態、プライバシー文、トラックメーター、ローカルノート、質問下書き、送信範囲確認は維持。
+- 検証: 対象識別子/CSS残存 `rg`、`npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:47:24 JST
+
+- 作業: `v2-live-translation-status-row-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ翻訳モードの重複ステータスチップを削って原文/翻訳切替とコピー操作に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` の翻訳プレビューから `原文/翻訳先/Engine/送信` のステータス行と関連CSSを削除。翻訳先切替、エンジン未設定表示、外部送信なし説明、原文コピー、コピー完了ステータスは維持。
+- 検証: 対象クラス残存 `rg`、`npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 02:49:20 JST
+
+- 作業: `v2-menu-live-workspace-compression`
+- 目的: `meet-jerky-desktop-v2.pen` のメニューバー録音UI方針に合わせ、録音中ワークスペースの重複した保存/履歴表示と説明文を削ってライブ操作に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: メニュー内 `Live workspace` を `Transcript`、`Translate`、`AI notes`、`Question` の4項目に圧縮。`Save` / `Review` と説明文は削除し、保存/履歴状態は開始ソース・履歴セクション側に集約。
+- 検証: 対象CSS/グリッド指定確認 `rg`、`npx prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:37:41 JST
+
+- 作業: `v2-session-detail-prompt-recipe-minimalism`
+- 目的: `meet-jerky-desktop-v2.pen` の段階開示・最小 UI 方針に合わせ、履歴詳細の議事録生成領域から `Prompt recipe` の重複説明カードを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `session-detail-prompt-recipe-*` JSX/CSS を削除。`Promptコピー` は議事録パネルのヘッダー操作へ移動し、テンプレート選択、Prompt補足、手書きメモ、ローカル下書き生成、AI送信範囲確認は維持。
+- 検証: `rg -n "session-detail-prompt-recipe" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:39:33 JST
+
+- 作業: `v2-live-notes-send-scope-minimalism`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、AI質問の送信範囲確認を邪魔にならない低密度表示へ圧縮する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` の `live-notes-send-scope-grid` と送信候補5項目カードを削除。送信透明性は本文に集約し、Transcript/質問だけが候補、音声未送信、自動送信なし、Provider/送信モードを残した。
+- 検証: `rg -n "live-notes-send-scope-(grid|item)" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし。`npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:43:11 JST
+
+- 作業: `v2-session-detail-review-workbench-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の1画面1主目的・段階開示方針に合わせ、履歴詳細の冒頭にあった全機能一覧型 `Review workbench` を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `reviewWorkbenchItems`、`session-detail-review-workbench`、`session-detail-review-actions` を削除。検索、全文コピー、選択トラックコピー、音声確認、Promptコピー、ローカル議事録下書き作成は、既存の Transcript / Track / Minutes 各セクション内の操作として維持。
+- 検証: `rg -n "reviewWorkbenchItems|session-detail-review|selectedTrackSourceLabel|handleFocusTranscriptSearch|NotebookPen" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:45:49 JST
+
+- 作業: `v2-local-minutes-execute-grid-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の段階開示・低密度 UI 方針に合わせ、履歴詳細のローカル議事録生成カードから実行内容グリッドを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `localMinutesExecutionItems` と `session-detail-local-minutes-execute` JSX を削除。`session-detail-local-minutes-check` / `boundary` / `execute` 系の未使用 CSS も削除。テンプレート、手書きメモ、下書き作成、下書きコピー、ローカル/外部送信なしの説明は維持。
+- 検証: `rg -n "localMinutesExecutionItems|session-detail-local-minutes-(check|boundary|execute)" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:49:50 JST
+
+- 作業: `v2-dead-minutes-evidence-css-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマル UI 方針に合わせ、履歴詳細の議事録 evidence / source status / flow 系で JSX 参照がない説明用 CSS を削除して UI 実装の密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `session-detail-source-status-*`、`session-detail-minutes-evidence-*`、`session-detail-minutes-flow*` の未使用 CSS とレスポンシブ指定を削除。議事録テンプレート、手書きメモ、下書き生成、コピー導線には変更なし。
+- 検証: `rg -n "session-detail-(source-status|minutes-evidence|minutes-flow)" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/App.css src/routes/SessionDetail.tsx` 成功。`git diff --check -- src/App.css src/routes/SessionDetail.tsx` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:51:49 JST
+
+- 作業: `v2-transcript-handoff-rail-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の1画面1主目的・段階開示方針に合わせ、録音中/履歴で使う文字起こし表示から説明用の `Copy → Review → Audio → Prompt → Memo → Minutes` ハンドオフ列を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptDisplay` の `transcriptHandoffItems` と `transcript-track-handoff` JSX を削除。対応 CSS とモバイル指定も削除。トラック別件数、Mic/System コピー、本文コピー、録音状態、履歴・音声・議事録の実操作導線は維持。
+- 検証: `rg -n "transcriptHandoffItems|transcript-track-handoff" src/components/TranscriptDisplay.tsx src/App.css` で参照なし。`npx prettier --check src/components/TranscriptDisplay.tsx src/App.css` 成功。`git diff --check -- src/components/TranscriptDisplay.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:53:57 JST
+
+- 作業: `v2-ai-send-scope-summary-minimalism`
+- 目的: `meet-jerky-desktop-v2.pen` の段階開示・低密度 UI 方針に合わせ、履歴詳細の AI 議事録送信範囲確認を7枚カードから短いサマリー表示へ圧縮する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `aiMinutesProviderScopeClassName` と `session-detail-ai-send-scope-grid/item` JSX を削除。送信候補、送信しない音声ファイル、Provider、確認方式、自動送信なしは `session-detail-ai-send-scope-summary` に集約。対応 CSS とモバイル指定も削除。
+- 検証: `rg -n "aiMinutesProviderScopeClassName|session-detail-ai-send-scope-(grid|item)" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:55:35 JST
+
+- 作業: `v2-handwritten-source-preview-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の直感性・制約優先方針に合わせ、履歴詳細の手書きメモ欄から実機能に見えやすい説明チップを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の `session-detail-handwritten-source-preview` JSX を削除し、`自分の補足 / ホワイトボード写真 / 未発話の決定事項` のチップを撤去。対応 CSS も削除。手書きメモ入力、保存対象ステータス、クリア操作、議事録生成への反映は維持。
+- 検証: `rg -n "session-detail-handwritten-source-preview|ホワイトボード写真|未発話の決定事項" src/routes/SessionDetail.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionDetail.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionDetail.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 01:58:12 JST
+
+- 作業: `v2-settings-ai-send-scope-grid-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の段階開示・低密度 UI 方針に合わせ、設定画面の AI 議事録カードから Guardrail と重複する送信範囲カード群を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` の `aiMinutesSendScopeItems` と `settings-ai-send-scope` JSX を削除。対応 CSS とレスポンシブ指定も削除。Provider → Scope → Run の Guardrail、生成時確認、自動送信なし、音声ファイルを送らない説明は維持。
+- 検証: `rg -n "aiMinutesSendScopeItems|settings-ai-send-scope" src/routes/SettingsView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:00:10 JST
+
+- 作業: `v2-settings-category-impact-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の主目的優先・低密度 UI 方針に合わせ、設定カテゴリ見出し直下の補助メタ情報 `Affects` ピルを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` の `activeCategoryImpact` と `settings-category-impact` JSX を削除。対応 CSS とレスポンシブ指定も削除。設定概要カード、各カテゴリ内の状態表示、未保存表示、保存操作は維持。
+- 検証: `rg -n "settings-category-impact|activeCategoryImpact|Affects" src/routes/SettingsView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:01:47 JST
+
+- 作業: `v2-live-notes-send-scope-summary`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、AI質問の送信範囲確認を長い説明文から短いスコープ要約へ圧縮する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` の送信範囲確認本文を `候補: Transcript / 質問`、`送らない: 音声`、Provider/送信状態の3ピル表示に変更。下書き保持、破棄、送信前確認、自動送信なしの aria/title は維持。
+- 検証: `rg -n "live-notes-send-scope-summary|Transcript と質問だけ|Provider:" src/components/LiveCaptionWindow.tsx src/App.css` で新クラスのみ確認し旧説明文なし。`npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css` 成功。`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:03:46 JST
+
+- 作業: `v2-session-list-actions-scope-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の直感性・低密度 UI 方針に合わせ、履歴一覧アイテム右側の重複したレビュー範囲説明ピルを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` の `session-list-item-actions-scope` JSX と対応 CSS を削除。`レビューを開く`、コピー、Finder表示、左側のレビュー経路、詳細画面の検索/コピー/音声/Prompt/Memo/Minutes/AI送信確認導線は維持。
+- 検証: `rg -n "session-list-item-actions-scope|Transcript / Tracks / Audio / Prompt / Memo / Minutes / AI確認" src/routes/SessionList.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionList.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:07:03 JST
+
+- 作業: `v2-settings-boundary-rail-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の Purpose First / Progressive Disclosure / Constraint Over Decoration 方針に合わせ、設定画面上部の重複したキャプチャ境界レールを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` の `settingsCaptureBoundarySteps` と `settings-boundary-rail` JSX を削除。対応 CSS とレスポンシブ指定も削除。4枚の概要カード、カテゴリ別設定、権限・AI送信範囲・音声/文字起こし設定の詳細表示は維持。
+- 検証: `rg -n "settingsCaptureBoundarySteps|settings-boundary-rail" src/routes/SettingsView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:08:39 JST
+
+- 作業: `v2-session-list-review-path-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の主目的優先・低密度 UI 方針に合わせ、履歴一覧アイテム内の9分割レビュー経路表示を削除し、録音後機能を詳細画面に集約する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` の `trackReviewSummary`、`reviewPathLabel`、`audioReviewLabel` と `session-list-item-review-path` JSX を削除。対応 CSS とモバイル指定も削除。検索一致、トラック件数、主レビュー導線、コピー、Finder表示、詳細画面の音声/Prompt/Memo/Minutes/AI確認機能は維持。
+- 検証: `rg -n "trackReviewSummary|reviewPathLabel|audioReviewLabel|session-list-item-review-path" src/routes/SessionList.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionList.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:10:23 JST
+
+- 作業: `v2-settings-transcription-preview-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の Purpose First / Constraint Over Decoration 方針に合わせ、文字起こし設定内の静的なライブサンプルカードを削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` の `settings-transcription-preview-card` JSX を削除。対応 CSS も削除。文字起こしエンジン選択、辞書、出力タイミング、リアルタイム翻訳設定、録音後の履歴詳細プレビューは維持。
+- 検証: `rg -n "settings-transcription-preview|ライブプレビュー|FY26 OKRのドラフト|meet-jerkyの文字起こし" src/routes/SettingsView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:12:39 JST
+
+- 作業: `v2-settings-transcription-flow-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の Purpose First / Progressive Disclosure / Constraint Over Decoration 方針に合わせ、文字起こし設定内の重複した説明フロー帯を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` から `settings-transcription-dictionary-flow` と `settings-transcription-output-flow` JSX を削除。対応 CSS、ステップ、矢印、レスポンシブ指定を削除。言語選択、単語登録チップ、補正カード、ライブ字幕ON、話者分離、自動保存、音声ファイル詳細確認、書き出し形式の表示は維持。
+- 検証: `rg -n "settings-transcription-(dictionary-flow|dictionary-step|dictionary-arrow|output-flow|output-step)|辞書補正の反映先|録音後の出力契約" src/routes/SettingsView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:15:45 JST
+
+- 作業: `v2-settings-audio-flow-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の Purpose First / Density Intentionality / Constraint Over Decoration 方針に合わせ、音声設定内の重複した説明フロー帯を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` から `settings-audio-source-flow` と `settings-audio-routing-flow` JSX を削除。対応 CSS、矢印、ステップ、レスポンシブ指定を削除。マイク選択、デバイス再取得、権限エラー、相手側システム音声状態、録音トラック表示、2トラック安定取得の注記は維持。
+- 検証: `rg -n "settings-audio-(source-flow|source-step|source-arrow|routing-flow|routing-arrow)|マイク入力の確認フロー" src/routes/SettingsView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SettingsView.tsx src/App.css` 成功。`git diff --check -- src/routes/SettingsView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:18:23 JST
+
+- 作業: `v2-meeting-saved-path-flow-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の Purpose First / Action Hierarchy / Constraint Over Decoration 方針に合わせ、録音停止後の保存通知から重複した説明チップ列を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptView` の `meeting-saved-path-flow` JSX を削除。対応 CSS とモバイル指定を削除。保存済みファイル名、保存完了 status、履歴で開く、Finder表示、エラー表示、履歴詳細側の検索/コピー/音声/Prompt/Memo/Minutes/AI確認導線は維持。
+- 検証: `rg -n "meeting-saved-path-flow|保存後の状態" src/routes/TranscriptView.tsx src/App.css` で参照なし。`npx prettier --check src/routes/TranscriptView.tsx src/App.css` 成功。`git diff --check -- src/routes/TranscriptView.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:20:24 JST
+
+- 作業: `v2-session-list-empty-flow-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の Purpose First / Density Intentionality / Constraint Over Decoration 方針に合わせ、履歴一覧の初回空状態から重複した録音フローチップ列を削除する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` の `session-list-empty-flow` JSX を削除。対応 CSS とモバイル指定を削除。空状態のキッカー、主説明、録音開始から保存後レビューへ進む説明、検索ゼロ件時のクリア導線は維持。
+- 検証: `rg -n "session-list-empty-flow|最初の録音フロー" src/routes/SessionList.tsx src/App.css` で参照なし。`npx prettier --check src/routes/SessionList.tsx src/App.css` 成功。`git diff --check -- src/routes/SessionList.tsx src/App.css` 成功。`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:25:37 JST
+
+- 作業: `v2-settings-safety-flow-dedup`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルで直感的な設定 UI 方針に合わせ、検知・権限・AI の安全説明で重複していたフローチップ表示を削減する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 権限バナーの safety flow、検知設定の safety flow、AI 生成前チェックの guardrail flow を削除。録音透明性・送信範囲・AI実行条件は本文、ステータスバッジ、影響グリッド、`aria-label` に残した。未使用の CSS と未使用定数を削除。
+- 検証: `npx prettier --check src/components/PermissionBanner.tsx src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/components/PermissionBanner.tsx src/routes/SettingsView.tsx src/App.css`、対象クラス残存 `rg`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:27:12 JST
+
+- 作業: `v2-permission-impact-grid-compression`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな情報設計に合わせ、録音前の権限バナーで過密だった影響グリッドを要点だけに圧縮する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 権限バナーの影響項目を `Start`、`Tracks`、`Visible`、`Ask` の 4 点へ整理。ライブ字幕、保存、履歴、議事録の詳細説明は各機能画面へ委ね、録音透明性とAI送信範囲の注意は維持。
+- 検証: `npx prettier --check src/components/PermissionBanner.tsx src/App.css`、`git diff --check -- src/components/PermissionBanner.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:29:00 JST
+
+- 作業: `v2-settings-apply-strip-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の「目的を絞ったミニマルな操作面」に合わせ、設定保存フッターから横断的な機能説明を取り除く。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `settings-apply-strip` と `settings-apply-zone` を削除し、保存フッターを未保存ステータスと保存ボタンだけに整理。検知、字幕、履歴、音声、Prompt、Memo、議事録の説明は各設定カテゴリ内へ分離したまま維持。
+- 検証: 対象クラス残存 `rg`、`npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:30:59 JST
+
+- 作業: `v2-meeting-prompt-density-reduction`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルな会議検知通知に合わせ、録音開始前ウィンドウの説明密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `MeetingDetectedBanner` から検知シグナルの4項目グリッドと録音中ワークスペースの4項目グリッドを削除。会議名/詳細、Mic/System/AI/エンジンの状態、録音開始/閉じる操作は維持し、開始判断に集中する構成へ整理。
+- 検証: 対象クラス残存 `rg`、`npx prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 02:33:55 JST
+
+- 作業: `v2-live-caption-mode-strip-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中 UI 方針に合わせ、ライブ字幕ウィンドウの重複した状態ストリップを削除して表示密度を下げる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` から `live-transcript-mode-strip` と関連定数/CSSを削除。原文/翻訳タブ、エンジン/送信状態、保存状態、AIノート操作は維持し、録音中の主要操作に集中する構成へ整理。
+- 検証: 対象クラス残存 `rg`、`npx prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build`。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:25:42 JST
+
+- 作業: `v2-settings-detection-copy-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の検出設定方針に合わせ、判定条件と明示開始の透明性を残しながら、会議検出カテゴリの重複説明を削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 検出ルールの判定プレビューから自動録音なし/通知開始の本文説明を削除し、同情報を `aria-label` / `title` に統合。判定プレビュー見出しの重複サブタイトルと、同じ内容を説明していた判定理由カードを削除。不要になった `settings-detection-reason*` CSSを削除。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:27:13 JST
+
+- 作業: `v2-settings-menu-copy-density-reduction`
+- 目的: `meet-jerky-desktop-v2.pen` のMacらしいミニマル方針に合わせ、機能に直結しない可視説明と未実装カードを削り、録音状態の透明性は維持する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: 設定の音声カテゴリから、現時点で操作できない将来項目「音声品質」カードを削除。メニューバー録音中カードから重複する説明文を削除し、録音継続・状態確認情報は既存の `aria-label` / `title` とステータスグリッドに集約。
+- 検証: `npx prettier --check src/routes/SettingsView.tsx src/routes/TranscriptView.tsx`、`git diff --check -- src/routes/SettingsView.tsx src/routes/TranscriptView.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:28:24 JST
+
+- 作業: `v2-transcription-state-rail-focus`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、文字起こし操作レールを録音中に判断すべき状態へ絞り、録音後ワークスペース向けの情報を混在させない。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptionControls` の可視状態レールから `Review`、`Audio`、`Prompt`、`Memo`、`Minutes` を削除。録音中の主UIでは `REC`、`Live`、`Ask`、`Source`、`Save`、`Guard` に限定し、履歴検索・音声再生・Prompt・手書きメモ・議事録生成は録音後ワークスペース側の役割として分離。
+- 検証: `npx prettier --check src/components/TranscriptionControls.tsx`、`git diff --check -- src/components/TranscriptionControls.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:29:50 JST
+
+- 作業: `v2-session-list-header-focus`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ワークスペース方針に合わせ、履歴一覧ヘッダーを検索・選択の主目的へ寄せ、AI送信確認の説明を詳細ワークスペース側へ集約する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` のヘッダーから常時表示の `保存済みのみ / AI確認制` ピルを削除。対応する `.session-list-safety-pill` CSSも削除。履歴一覧は件数・検索・録音カードに集中し、AI送信確認は詳細画面の議事録生成ガードに委譲。
+- 検証: `npx prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:31:04 JST
+
+- 作業: `v2-session-detail-template-preview-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ワークスペース方針に合わせ、議事録生成の主操作を邪魔する補助チップを削り、テンプレート選択と下書き作成へ視線を寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の生成方針カードから `selectedTemplateSpec.sections` の可視チップ列を削除。Prompt生成ロジック用のテンプレート情報は保持し、UI上はテンプレート名、生成ゴール、下書き作成アクションを優先。不要になった `.session-detail-template-section-row*` CSS を削除。
+- 検証: `npx prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:32:58 JST
+
+- 作業: `v2-settings-ai-minutes-runs-placeholder-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、AI議事録設定をプロバイダー選択・Prompt方針・生成前チェックに集中させ、0件の静的実行履歴プレースホルダーを削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` の AI議事録カテゴリから `最近の実行履歴` カードを削除。対応する `settings-ai-runs*` / `settings-ai-run*` CSS と未使用 `History` import を削除。実行結果の文脈は録音詳細ワークスペース側へ分離。
+- 検証: 初回 `npm run build` は未使用 `History` import で失敗。修正後、`npx prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 03:34:33 JST
+
+- 作業: `v2-ring-light-visible-state-compression`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、常時表示リングを「録音中であることを忘れない」ための最小表示へ寄せる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `RingLightWindow` の可視表示から AI送信ピルとエンジン名を削除し、`REC 常時表示`、`Live` 状態、ライブウィンドウ起動に絞った。AI送信・マイク・システム音声状態は `aria-label` / `title` に残し、透明性は維持。不要になった `ring-light-badge-meta*` CSS と `getVisibleTransmissionLabel` import を削除。
+- 検証: `npx prettier --check src/components/RingLightWindow.tsx src/App.css`、`git diff --check -- src/components/RingLightWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:16:09 JST
+
+- 作業: `v2-live-caption-tab-transmission-pill-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中Live UI方針に合わせ、字幕タブ行を表示切替の主目的へ集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` の通常表示タブ行から送信状態ピルを削除し、未使用になった送信ラベル計算と関連CSSを削除。
+- 判断: 送信状態はウィンドウ全体のARIA、AIノート側の接続ピル、質問送信前確認の文脈で確認できる。字幕タブ行では「統合 / 翻訳」切替を主役にして、録音中の視覚密度を下げる。
+- 検証: `rg -n "live-transcript-privacy-pill|liveCaptionTransmission(Label|AriaLabel)|getVisibleTransmissionLabel" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:14:14 JST
+
+- 作業: `v2-live-caption-compact-track-chip-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、待機中のコンパクトLive字幕表示をREC状態と字幕状態へ集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のコンパクト待機ピルから可視のトラック要約チップを削除し、関連CSSを削除。トラック状態はコンパクトピルの `aria-label` と通常Liveウィンドウのヘルス表示で維持。
+- 判断: コンパクト表示は録音中であることを忘れないための小窓であり、REC、字幕待機状態、AI状態を優先する。自分/相手側トラックの詳細は通常Live画面で確認できるため、待機小窓では視覚密度を下げた。
+- 検証: `rg -n "live-caption-compact-track" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:12:45 JST
+
+- 作業: `v2-settings-ai-guardrail-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定画面方針に合わせ、AI議事録設定をプロバイダー選択の主目的へ集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` のAI議事録カテゴリから可視の `生成前チェック` ガードレールカードを削除し、未使用変数と関連CSSを削除。AI議事録グリッドはプロバイダー選択カード単体に調整。
+- 判断: プロバイダー選択カード内に「生成を実行したときだけ送信」と表示しており、プライバシー設定にも保存と送信範囲がある。右側カードは同じ制約を再掲して設定画面の目的を分散するため削除した。
+- 検証: `rg -n "settings-ai-guardrail|AI議事録の実行ガードレール|Promptを選んでも|aiMinutesGuardrailProviderLabel" src/routes/SettingsView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:11:00 JST
+
+- 作業: `v2-session-detail-minutes-empty-state-minimize`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、議事録下書きワークスペースの空状態を軽くし、下書き作成後の内容確認を主役にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のローカル議事録下書き空状態文言を短縮し、枠付きボックス表示をインラインの軽いステータス表示へ変更。
+- 判断: 空状態は必要だが、下書き未作成の段階で大きな枠を常時表示すると「下書きを作成」ボタンより視覚的に目立つ。生成前は控えめにし、生成後のプレビューだけを明確な領域として表示する。
+- 検証: `rg -n "下書きはまだありません|session-detail-local-minutes-empty" src/routes/SessionDetail.tsx src/App.css`、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:09:36 JST
+
+- 作業: `v2-session-detail-track-count-cards-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、分離トラック再生領域を再生とコピーの主操作へ集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の分離トラック再生から `マイク / スピーカー / 不明` の件数カードを削除し、関連CSSを削除。件数情報はセクションの `aria-label` / `title` に残した。
+- 判断: 録音後レビューでは本文タイムラインと選択トラックコピーで件数の意味が分かるため、再生領域にカードとして常時表示すると主操作を押し下げる。再生タブ、音声を開く、Finder表示、選択トラックコピーを優先した。
+- 検証: `rg -n "session-detail-track-status|分離トラックの文字起こし状態" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:08:04 JST
+
+- 作業: `v2-session-detail-disabled-ai-action-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビュー方針に合わせ、ヘッダーの主操作を実行可能な操作へ絞る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` ヘッダーから無効なAI議事録ボタンを削除し、未使用になった `Sparkles` import と `session-detail-ai-disabled-action` CSSを削除。
+- 判断: 録音後レビューのAI状態は議事録ワークスペース内のステータスで確認できる。ヘッダーに実行不能なボタンを置くと、ユーザーが押せる操作と準備中表示を混同するため、操作階層を「内容をコピー」と「下書きを作成」に整理した。
+- 検証: `rg -n "Sparkles|session-detail-ai-disabled-action" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:06:39 JST
+
+- 作業: `v2-menu-preflight-card-removal`
+- 目的: `meet-jerky-desktop-v2.pen` のミニマルなメニューバー録音導線に合わせ、録音開始ポップオーバーの重複した開始前チェック表示を削る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `TranscriptView` のメニューポップオーバーから可視の `開始前チェック` カードを削除し、関連CSSを削除。録音可否は既存の状態カード、開始ボタンの disabled、ブロック理由、`aria-label` / `title` で維持。
+- 判断: メニューバー録音は短時間で開始/終了する小さな面であり、録音・字幕・AI送信カードと5項目チェックの併存は同じ情報を再掲して主操作を弱める。詳細は必要時に支援技術やブロック理由で伝える。
+- 検証: `rg -n "menu-preflight|開始前チェック" src/routes/TranscriptView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/TranscriptView.tsx src/App.css`、`git diff --check -- src/routes/TranscriptView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+
+## 2026-05-30 04:04:58 JST
+
+- 作業: `v2-ring-light-rec-label-minimize`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中インディケーター方針に合わせ、常時表示リングライトをREC状態に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `RingLightWindow` の視覚ラベル `REC 常時表示` を `REC` に短縮。録音中であること、Live文字起こし状態、トラック状態、AI送信状態、Liveウィンドウを開く導線は `aria-label` / `title` と既存UIで維持。
+- 判断: 常時インディケーターは「忘れない」ためのREC表示が主目的で、説明文を可視ラベルに含めると小窓の密度が上がる。説明はアクセシビリティ属性に残す。
+- 検証: `rg -n "REC 常時表示" src/components/RingLightWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/RingLightWindow.tsx`、`git diff --check -- src/components/RingLightWindow.tsx`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:29:15 JST
+
+- 作業: `v2-session-detail-handwritten-label-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録UI方針に合わせ、手書きメモ欄を入力目的と操作に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の手書きメモ欄から、見出しと重複していた可視ラベル `手書きメモ / 補足メモ` を削除し、関連CSSを削除。入力目的はカード見出し、placeholder、textarea の `aria-label` に残した。
+- 判断: 議事録ワークスペースではテンプレート選択、メモ入力、下書き作成が主導線。入力欄直前に重複ラベルを置くと密度が上がるため、既存見出しとアクセシブルラベルに集約した。
+- 検証: `rg -n "手書きメモ / 補足メモ|session-detail-handwritten-field span" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:30:43 JST
+
+- 作業: `v2-session-list-file-pill-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後履歴UI方針に合わせ、履歴一覧をセッション名・日時・本文/トラック状態・主要操作に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` の各履歴行から保存ファイル名の常時表示ピルを削除し、関連CSS `.session-list-item-file` を削除。ファイル名は行全体の `aria-label` / `title` と既定アプリ/Finder操作の文脈に残した。
+- 判断: 履歴一覧の主目的は目的の録音を見つけてレビューを開くこと。保存ファイル名は詳細/操作補助情報であり、常時表示するとv2のミニマルな録音ライブラリに対して技術的ノイズになるため、アクセシブルな補助情報へ退避した。
+- 検証: `rg -n "session-list-item-file|保存ファイル" src/routes/SessionList.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:32:12 JST
+
+- 作業: `v2-live-caption-close-action-consolidation`
+- 目的: `meet-jerky-desktop-v2.pen` の録音中UI方針に合わせ、ライブ文字起こしウィンドウのヘッダー操作を録音状態・文字起こし・AIノートに集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `LiveCaptionWindow` のヘッダーから、アイコンの最小化ボタンと重複していた可視テキストボタン `閉じる` を削除し、関連CSS `.live-transcript-end-preview-btn` を削除。閉じる操作の説明、Escapeショートカット、録音操作に影響しない旨はアイコンボタンの `aria-label` / `title` に残した。
+- 判断: 録音中UIの主目的は録音状態の透明性、リアルタイム文字起こし、必要時のAIノート。閉じる操作は補助操作であり、同じ操作を2つ常時表示するとMacらしいミニマルさと行動階層を損なうため、1操作1表示に集約した。
+- 検証: `rg -n "live-transcript-end-preview-btn|>\\s*閉じる\\s*<" src/components/LiveCaptionWindow.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/LiveCaptionWindow.tsx src/App.css`、`git diff --check -- src/components/LiveCaptionWindow.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:33:36 JST
+
+- 作業: `v2-meeting-prompt-ribbon-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の通知/録音開始UI方針に合わせ、会議検知バナーを検知内容と録音開始CTAに集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `MeetingDetectedBanner` から装飾用の `meeting-detected-ribbon` 要素を削除し、関連CSSとエラー時リボン上書きを削除。
+- 判断: 会議検知通知の主目的は「会議を検知したことを理解し、録音開始するか判断すること」。リボンは状態・操作・理解を増やさず、v2のMacらしい軽量さに対して装飾ノイズになるため削除した。検知タイトル、アイコン、録音開始/今回はしない操作、aria説明は維持した。
+- 検証: `rg -n "meeting-detected-ribbon" src/components/MeetingDetectedBanner.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/components/MeetingDetectedBanner.tsx src/App.css`、`git diff --check -- src/components/MeetingDetectedBanner.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:35:06 JST
+
+- 作業: `v2-session-detail-file-meta-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後詳細UI方針に合わせ、詳細ヘッダーを録音名と日時に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のヘッダーから保存ファイル名の可視表示を削除し、関連CSS `.session-detail-file` を削除。ファイル操作は下部の書き出し/Finder導線と内部エラー文脈に残した。
+- 判断: 録音後詳細の主目的は、文字起こし確認、音声トラック確認、議事録作成。保存ファイル名は操作補助情報であり、ヘッダーに常時表示するとv2のミニマルなレビュー画面に技術的ノイズを増やすため削除した。
+- 検証: `rg -n "session-detail-file|保存ファイル" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:36:38 JST
+
+- 作業: `v2-settings-titlebar-subtitle-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の設定UI方針に合わせ、タイトルバーをウィンドウ識別に集中させ、説明はカテゴリ見出しへ集約する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SettingsView` のタイトルバーから常時表示の説明文 `録音・検出・AI処理の透明性を管理します。` を削除し、関連CSS `.settings-titlebar-subtitle` を削除。
+- 判断: 設定画面では各カテゴリの見出しと説明が主コンテキストを提供している。タイトルバーにも全体説明を置くと、v2のMacらしい軽量な設定ウィンドウに対して重複した説明になるため削除した。録音中表示の透明性pillとカテゴリ別説明は維持した。
+- 検証: `rg -n "settings-titlebar-subtitle|録音・検出・AI処理の透明性を管理します" src/routes/SettingsView.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SettingsView.tsx src/App.css`、`git diff --check -- src/routes/SettingsView.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:39:12 JST
+
+- 作業: `v2-session-detail-raw-file-open-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、下部アクションをレビュー・コピー・音声確認・議事録生成の主導線に近い操作へ絞る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のフッターから履歴ファイルを既定アプリで開く `書き出し` ボタンと未使用になった `handleOpenFile` を削除。ファイル位置確認の `Finder で表示`、全文コピー、選択トラックコピー、Prompt/下書きコピーは維持した。
+- 判断: 録音後詳細の主目的はアプリ内での履歴レビュー、音声トラック確認、議事録生成。既定アプリで生ファイルを開く操作は二次的で、常時表示するとv2のミニマルなレビュー画面で行動階層を弱めるため削除した。
+- 検証: `rg -n "handleOpenFile|履歴ファイルを既定アプリで開く|書き出し" src/routes/SessionDetail.tsx` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:41:06 JST
+
+- 作業: `v2-session-list-raw-file-open-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後ライブラリUI方針に合わせ、履歴一覧の主導線を「レビューを開く」に集約し、二次的な生ファイル操作を減らす。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionList` から macOS 既定アプリで履歴ファイルを開く処理、`openPath` import、`open` pending action、行アクションの `既定アプリで開く` ボタンを削除。録音後レビュー、本文コピー、Finder 表示は維持した。
+- 判断: 履歴一覧の主目的は録音を検索してアプリ内レビューへ進むこと。生ファイルを既定アプリで開く操作は詳細レビュー・議事録生成・音声確認の流れから外れ、v2のミニマルな行動階層を弱めるため常時表示から削除した。
+- 検証: `rg -n "openPath|handleOpenFile|onOpenFile|既定アプリ|isOpeningThisFile|kind: \"open\"|別履歴を開いて" src/routes/SessionList.tsx` で参照なし、`npx --no-install prettier --check src/routes/SessionList.tsx src/App.css`、`git diff --check -- src/routes/SessionList.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:42:26 JST
+
+- 作業: `v2-session-detail-audio-location-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後詳細UI方針に合わせ、分離トラックカードの主操作を音声確認と文字起こしコピーに絞る。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の分離トラック再生カードから `音声の場所` ボタンと `handleRevealSelectedAudio` を削除。選択トラックの音声を開く操作、選択トラック文字起こしコピー、詳細フッターの履歴ファイル `Finder で表示` は維持した。
+- 判断: ユーザー要件の中心はスピーカー/マイク/両方の音声確認とトランスクリプト活用。音声ファイル位置確認は二次的なファイル管理操作であり、カード内に常時表示するとv2の主操作階層を弱めるため削除した。
+- 検証: `rg -n "handleRevealSelectedAudio|音声の場所|音声ファイルを Finder で表示|音声ファイルの場所" src/routes/SessionDetail.tsx` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:44:08 JST
+
+- 作業: `v2-session-detail-footer-finder-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後レビューUI方針に合わせ、詳細画面の主目的を履歴レビュー、音声確認、トランスクリプト活用、議事録作成に集中させる。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` 下部に単独で残っていた `Finder で表示` フッター、`handleRevealInFolder`、`revealItemInDir` import、`FolderOpen` import、`.session-detail-actions` CSSを削除。履歴一覧側のFinder表示、詳細内の全文コピー、選択トラック再生/コピー、Prompt/下書きコピーは維持した。
+- 判断: 録音後詳細の主目的はアプリ内でのレビューと議事録化。生ファイル位置を詳細フッターに常時表示する操作は二次的で、v2のミニマルな行動階層を弱めるため削除した。
+- 検証: `rg -n "handleRevealInFolder|session-detail-actions|履歴ファイルを Finder|Finder で表示|FolderOpen|revealItemInDir" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:45:46 JST
+
+- 作業: `v2-session-detail-local-minutes-label-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録UI方針に合わせ、議事録カードの重複ラベルを減らし、主文言と状態表示だけで理解できる構成にする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のローカル議事録カードから英字補助ラベル `Local minutes` を削除。AI接続状態ピルのスタイルを `.session-detail-local-minutes-status` に限定し、`Transcript + Memo から作成`、下書き作成/コピー、送信有無の aria/title 情報は維持した。
+- 判断: 録音後詳細では議事録作成の主導線が明確であれば十分。英字の補助ラベルは見た目の情報量を増やす一方、機能理解には寄与が小さいため削除した。
+- 検証: `rg -n "Local minutes|session-detail-local-minutes-head span" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:47:16 JST
+
+- 作業: `v2-session-detail-prompt-override-label-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録UI方針に合わせ、Prompt補足カードの重複ラベルを減らし、必要な説明だけを残す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` のPrompt補足カードから英字補助ラベル `Prompt override` を削除。見出し `この録音だけに反映`、補足指示入力、反映状態、クリア操作は維持し、不要になった `.session-detail-template-instruction-head span` CSSも削除した。
+- 判断: 開閉ボタンとカード見出しで用途は十分伝わる。英字ラベルは同じ意味を重ねるだけで、v2のミニマルな議事録編集フローでは視覚ノイズになるため削除した。
+- 検証: `rg -n "Prompt override|session-detail-template-instruction-head span" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+## 2026-05-30 04:48:56 JST
+
+- 作業: `v2-session-detail-handwritten-empty-button-removal`
+- 目的: `meet-jerky-desktop-v2.pen` の録音後議事録UI方針に合わせ、手書きメモ欄の未入力時に操作できないボタンを表示しないようにし、必要な時だけ操作を出す。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout。
+- 変更: `SessionDetail` の手書きメモ欄で、メモ未入力時に表示していた disabled の `メモ未入力` ボタンを削除し、メモ入力がある時だけ `メモをクリア` ボタンを表示するように変更。不要になった `.session-detail-handwritten-import:disabled` CSSも削除した。
+- 判断: 未入力状態はヘッダーの `任意` ピルと空の入力欄で十分伝わる。操作できないボタンを常時表示するとv2のミニマルな行動階層を弱めるため、必要時だけ表示する形にした。
+- 検証: `rg -n "メモ未入力|クリアできる手書きメモ|session-detail-handwritten-import:disabled|aria-disabled=\\{!hasHandwrittenMemo\\}" src/routes/SessionDetail.tsx src/App.css` で参照なし、`npx --no-install prettier --check src/routes/SessionDetail.tsx src/App.css`、`git diff --check -- src/routes/SessionDetail.tsx src/App.css`、`npm run build` 成功。
+- 注意: Vite の 500 kB chunk-size 警告は既存の警告として継続。課金操作・依存追加なし。
+# 2026-05-30 09:51:28 JST - v2-meeting-detected-start-action
+
+- 目的: Pencil v2 の会議検知通知方針に合わせ、通知から録音開始する主操作が「何を開始し、どこへ進むか」を短く理解できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MeetingDetectedBanner` の録音開始ボタン表示を `録音` から `録音開始` に変更した。`aria-label` / `title` には録音開始後に録音画面を開くことを含めた。
+- 判断: 通知ウィンドウでは説明を増やせないため、主ボタンの動詞を明確にする方が v2 のミニマルで直感的なUIに合う。録音状態の透明性を損なわず、押下後の遷移も読める。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:50:03 JST - v2-settings-translation-original-only
+
+- 目的: Pencil v2 の設定UI方針に合わせ、リアルタイム翻訳が未接続の状態でも録音中に何が表示・保存されるかを短く理解できるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SettingsView` のリアルタイム翻訳カードで、見出しバッジと翻訳先を `未接続` / `未選択` から `原文のみ` に変更し、aria/title でも `現在は原文のみ保持、外部送信なし` と明示した。
+- 判断: `未接続` だけでは、録音中に字幕が出ないのか、翻訳だけ未接続なのかが分かりにくい。ユーザー要件の「必要に応じて翻訳へ切り替え」に対して、現時点は原文保持であることを表示する方が正直でミニマル。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:48:25 JST - v2-session-list-review-entry-labels
+
+- 目的: Pencil v2 の録音後レビュー方針に合わせ、履歴一覧から録音後詳細へ進む主導線が音声、本文、議事録を扱うことを短いラベルで明示する。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionList` のヘッダーチップを `レビュー: 音声 / 本文 / 議事録` に変更し、aria 用の説明も `チャット文字起こし本文` を含む表現にした。
+- 変更: 履歴行の保存場所表示ボタンを `Finder` から `保存場所` に変更し、操作対象を初見で分かりやすくした。
+- 判断: ユーザー要件では録音後に履歴、検索、コピー、音声トラック、チャット風文字起こし、議事録生成が主価値になる。ヘッダーの見える語彙から `本文` が抜けると、録音後レビューの中心が議事録だけに寄って見えるため修正した。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:46:30 JST - v2-notes-minutes-state-language
+
+- 目的: Pencil v2 の録音中ノート/録音後議事録方針に合わせ、`AI` という広い状態語が録音中ノート、質問保留、議事録生成を混同させないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `LiveCaptionWindow` のノート接続ピルの aria を `AI接続` から `ノート接続` に変更し、オフ状態を `ノートオフ`、設定取得失敗を `議事録設定を確認できませんでした` に変更した。
+- 変更: `SessionDetail` の議事録状態を `AIオフ` から `生成オフ`、設定取得失敗を `議事録設定を確認できませんでした` に変更し、説明文も `議事録生成はオフ` に寄せた。
+- 判断: 機能カテゴリとしての `AI議事録` は残してよいが、状態ピルではユーザーが実行単位を理解できる `ノート` / `議事録生成` の語彙が適切。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:44:53 JST - v2-session-detail-copy-and-timeline-labels
+
+- 目的: Pencil v2 の録音後レビュー方針に合わせ、文字起こし履歴のコピー操作と LINE 風タイムラインの意味が初見でも分かるようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `SessionDetail` の文字起こしパネルの `全文` ボタンを `全文コピー` に変更し、aria/title と完了メッセージも全文コピーであることを明示した。
+- 変更: `TranscriptTimeline` のリストに、全件数または検索結果件数、自分/相手側の左右配置を含む `aria-label` を追加した。
+- 判断: 録音後画面では閲覧、検索、コピー、音声再生が同居するため、短すぎる `全文` は操作の種類が読みにくい。見た目の密度を増やさず動詞と読み上げ情報だけを補う方が v2 のミニマルUIに合う。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:43:27 JST - v2-recording-pill-send-and-playback-labels
+
+- 目的: Pencil v2 の常時状態表示と設定UI方針に合わせ、短いラベルでも送信範囲と録音後の音声再生導線が誤読されないようにする。
+- 参照: `AGENTS.md`、`docs/product-concept.md`、`frontend-design` skill、Pencil MCP `meet-jerky-desktop-v2.pen` variables/guidelines/layout、Pencil Code/Web App guide。
+- 変更: `MeetingDetectedBanner` の録音中ピルで `getVisibleTransmissionLabel` / `getTransmissionStatusAriaLabel` を使い、リングライトと同じ `端末内` / `外部送信なし、端末内で処理` の語彙に統一した。
+- 変更: `SettingsView` の `音声トラック再生` を `詳細確認` から `履歴で再生` に変更し、録音後の履歴詳細で再生する導線だと分かるようにした。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:42:12 JST - v2-ring-light-transmission-label
+
+- 目的: Pencil v2 の常時RECインディケーター方針に合わせ、短い送信ピルが `送信 なし` のように読める曖昧さを避ける。
+- 変更: `RingLightWindow` で既存の `getVisibleTransmissionLabel` / `getTransmissionStatusAriaLabel` を使い、非外部送信時の可視ラベルを `端末内`、aria/title を `外部送信なし、端末内で処理` に統一した。
+- 判断: 常時表示UIでは説明を増やせないため、ヘルパーへ寄せてライブ字幕側と同じ送信語彙に揃える方が安全。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+
+# 2026-05-30 09:41:18 JST - v2-purpose-labels-for-notes-minutes
+
+- 目的: Pencil v2 のミニマルな操作意図に合わせ、録音中/録音前 UI の技術寄りラベルを目的ベースへ寄せる。
+- 変更: `TranscriptionControls` の状態レールで `AI` を `ノート` に変更し、aria/title の状態文言を `ノートと質問` として明確化。
+- 変更: `PermissionBanner` の影響表示で `AI` を `議事録` に変更し、送信確認が議事録生成時の話であることを明示。
+- 検証: これから `git diff --check` と `npm run build` を実行する。
+- 依存関係: 追加なし。
+# 2026-05-30 v2-loading-label-consistency
+
+- `meet-jerky-desktop-v2.pen` を Pencil MCP で確認し、配色変数とガイドライン、レイアウト問題なしを再確認した。
+- 履歴一覧・履歴詳細のローディング表示を `読み込み中…` に統一した。
+- 共通の確認中ラベルを `確認中…` に変更し、v2 の静かな日本語 UI に合わせて ASCII 三点リーダーを排除した。
+- 検証: `rg -n "\"[^\"]*\\.\\.\\.\"|>[^<]*\\.\\.\\.[^<]*<|読込中|確認中\\.\\.\\." src/App.tsx src/routes src/components src/utils -g '!*.test.*'` は API キー placeholder と検索抜粋の内部整形のみ。
+- 検証: `git diff --check` 成功。
+- 検証: `npm run build` 成功。Vite の 500kB 超過警告のみ既存同等。
+- 依存関係追加なし。課金操作なし。
+# 2026-05-30 v2-saved-history-action-labels
+
+- `meet-jerky-desktop-v2.pen` を Pencil MCP で確認し、配色変数、Code/Web App ガイド、レイアウト問題なしを再確認した。
+- 録音後の保存済み履歴操作で `外部で開く` / `Finder` の短すぎる表示を、`既定アプリ` / `保存場所` に変更した。
+- 最近の履歴リンクの aria を `録音詳細を開く` から `レビューを開く` に揃えた。
+- 音声トラック再生の `外部で開く` を `音声を開く` に変更し、操作対象を先に読めるようにした。
+- 検証: `rg -n "外部で開く|Finder\"|>Finder<|録音詳細を開く|既定アプリ|保存場所|音声を開く|v2-saved-history-action-labels" src/routes/TranscriptView.tsx src/routes/SessionDetail.tsx AGENT_LOG.md` で対象表示の置換を確認。`Finder` は macOS の保存場所表示説明・過去ログのみ。
+- 検証: `git diff --check` 成功。
+- 検証: `npm run build` 成功。Vite の 500kB 超過警告のみ既存同等。
+- 依存関係追加なし。課金操作なし。
+# 2026-05-30 v2-live-caption-copy-labels
+
+- `meet-jerky-desktop-v2.pen` を Pencil MCP で確認し、配色変数、Code/Web App ガイド、レイアウト問題なしを再確認した。
+- ライブ字幕ウィンドウ内の複数の `コピー` ボタンを、`原文コピー`、`ノートコピー`、`質問コピー` に変更した。
+- 判断: 録音中は字幕・翻訳・ノート・質問が同時に表示されるため、短すぎる `コピー` は対象を推測させる。ボタン数や動作は変えず、対象名だけを足して v2 のミニマルさと直感性を両立する。
+- 検証: `rg -n ">\\s*コピー\\s*<|原文コピー|ノートコピー|質問コピー|v2-live-caption-copy-labels" src/components/LiveCaptionWindow.tsx AGENT_LOG.md` でライブ字幕内の対象なしコピー表示が残っていないことを確認。
+- 検証: `git diff --check` 成功。
+- 検証: `npm run build` 成功。Vite の 500kB 超過警告のみ既存同等。
+- 依存関係追加なし。課金操作なし。
+# 2026-05-30 v2-history-copy-label
+
+- `meet-jerky-desktop-v2.pen` を Pencil MCP で確認し、配色変数、Code/Web App ガイド、レイアウト問題なしを再確認した。
+- 履歴一覧の行アクションで、通常時の `コピー` ボタンを `本文コピー` に変更した。
+- 判断: 録音後の履歴一覧ではレビュー、保存場所表示、本文コピーが並ぶため、対象なしの `コピー` は推測を要求する。aria/title は既に本文コピーの説明を持つため、可視ラベルも同じ意味に揃えた。
+- 検証: `rg -n ">\\s*コピー\\s*<|\\? \"コピー\"|: \"コピー\"|本文コピー|原文コピー|ノートコピー|質問コピー|v2-history-copy-label" src/App.tsx src/routes src/components AGENT_LOG.md -g '!*.test.*'` で対象なしコピー表示が残っていないことを確認。
+- 検証: `git diff --check` 成功。
+- 検証: `npm run build` 成功。Vite の 500kB 超過警告のみ既存同等。
+- 依存関係追加なし。課金操作なし。
+# 2026-05-30 v2-caption-open-label
+
+- `meet-jerky-desktop-v2.pen` を Pencil MCP で確認し、配色変数、Code/Web App ガイド、レイアウト問題なしを再確認した。
+- RECインジケーターと会議検知通知の `字幕表示` ボタンを `字幕を表示` に変更した。
+- 判断: 録音中の小さな UI では短さが重要だが、名詞連結の `字幕表示` は操作としてやや硬い。aria/title の `ライブ文字起こしを表示` と意味を揃え、可視ラベルは短く自然な動詞にした。
+- 検証: `rg -n "字幕表示|字幕を表示|ライブ文字起こしを表示|v2-caption-open-label" src/components/RingLightWindow.tsx src/components/MeetingDetectedBanner.tsx AGENT_LOG.md` で対象箇所の置換を確認。
+- 検証: `git diff --check` 成功。
+- 検証: `npm run build` 成功。Vite の 500kB 超過警告のみ既存同等。
+- 依存関係追加なし。課金操作なし。
+# 2026-05-30 v2-translation-disconnected-state
+
+- `meet-jerky-desktop-v2.pen` を Pencil MCP で確認し、配色変数、Code/Web App ガイド、レイアウト問題なしを再確認した。
+- 設定画面のリアルタイム翻訳状態を `準備中` から `未接続` に変更し、補足文も `翻訳未接続。録音中は原文のみ表示します。` に変更した。
+- ライブ字幕の翻訳ビュー状態を `翻訳準備中 · 原文保持` から `翻訳未接続 · 原文表示` に変更し、行内プレビューも `原文表示中` に変更した。
+- 判断: `準備中` は将来動く印象が強く、録音中にユーザーが実際に見る状態としては曖昧。`未接続` と `原文表示` を併記すると、翻訳が外部送信されず原文だけ表示される現在状態がより明確になる。
+- 検証: `rg -n "翻訳準備中|翻訳エンジン準備中|準備中|翻訳未接続|原文表示中|v2-translation-disconnected-state" src/routes/SettingsView.tsx src/components/LiveCaptionWindow.tsx AGENT_LOG.md` で対象箇所の置換を確認。`準備中` は過去ログのみ。
+- 検証: `git diff --check` 成功。
+- 検証: `npm run build` 成功。Vite の 500kB 超過警告のみ既存同等。
+- 依存関係追加なし。課金操作なし。
+# 2026-05-30 12:20:13 JST v2-compact-transmission-and-confirm-labels
+
+- Pencil MCP で `meet-jerky-desktop-v2.pen` の変数とレイアウト状態を再確認した。`es-paper` / `es-ink` / `es-amber` / `es-green` と Funnel Sans / Anton / IBM Plex Mono の既存 v2 トークンを前提に、コード側の表現ゆれだけを調整する方針とした。
+- `PermissionBanner` の影響カードで、AI議事録が「外部送信なし」と読める表示を「選択だけ送信なし / 利用時に確認」に変更した。プロバイダー選択時点では送信しないが、利用時確認が必要という境界を明確にするため。
+- `LiveCaptionWindow` のコンパクト録音インジケーターに、リアルタイム文字起こしの送信状態を `端末内` / `外部送信` として常時表示するようにした。aria/title だけでなく視覚上も録音中の送信状態を確認できるようにするため。
+- `SettingsView` の外部AI議事録プロバイダーのバッジと説明を `利用時確認` に統一した。単なる「確認あり」より、送信が発生しうるタイミングを明確にするため。
+- `TranscriptView` のメニューバー状態文言を `Realtime 外部送信中` に変更した。音声そのものを送る可能性がある状態を短く明示するため。
+- 依存関係の追加なし。課金操作なし。`rg` で古い確認文言の残りを確認し、`git diff --check` と `npm run build` を実行した。ビルドは成功し、既存の Vite 500kB 超チャンク警告のみ。
+# 2026-05-30 12:22:33 JST v2-ai-use-time-label-unification
+
+- Pencil MCP で `meet-jerky-desktop-v2.pen` の変数とレイアウト状態を再確認した。v2 の紙色パレットと低ノイズな状態表示を前提に、録音中・録音後の AI 送信境界ラベルを調査した。
+- `LiveCaptionWindow` の AI ノート関連ラベルを `外部確認制` / `コピー確認` / `送信前確認` から `利用時確認` に統一した。質問コピーそのものが外部送信であるかのような誤読を避け、AI 利用時に確認するという状態を一貫させるため。
+- `SessionDetail` の録音後議事録ラベルも `利用時確認` に統一した。録音後レビュー画面で、音声トラックは送らず、文字起こしと手書きメモを利用時に確認する境界を明確にするため。
+- 依存関係の追加なし。課金操作なし。`rg` で `外部確認制` / `送信前確認` / `コピー確認` / `質問コピー後` などの対象旧語が `src` に残っていないことを確認し、`git diff --check` と `npm run build` を実行した。ビルドは成功し、既存の Vite 500kB 超チャンク警告のみ。
+# 2026-05-30 12:24:39 JST v2-session-minutes-prompt-draft-labels
+
+- Pencil MCP で `meet-jerky-desktop-v2.pen` の変数とレイアウト状態を再確認した。v2 の低ノイズな状態表示と、ユーザー要件の「プロンプトテンプレートから議事録生成」導線を前提に、録音後レビューの議事録パネルを点検した。
+- `SessionDetail` の外部AI議事録導線を `指示コピー` から `プロンプトコピー` に変更した。テンプレートから作るものがプロンプトであることを、操作ラベルだけで認識しやすくするため。
+- 外部AI設定時の `送信前下書き` を `確認下書き` に変更した。アプリ内で送信するような印象を弱め、利用時確認の語彙と合わせるため。
+- 依存関係の追加なし。課金操作なし。`rg` で `指示コピー` / `送信前下書き` / `送信前確認` / `確認用下書き` の対象旧語が実装ファイルに残っていないことを確認し、`git diff --check` と `npm run build` を実行した。ビルドは成功し、既存の Vite 500kB 超チャンク警告のみ。
+# 2026-05-30 12:26:35 JST v2-menu-saved-history-external-app-label
+
+- Pencil MCP で `meet-jerky-desktop-v2.pen` の変数とレイアウト状態を再確認した。v2 の低ノイズな操作語彙と録音後レビュー画面の既存表現に合わせ、メニューバーの保存後アクションを点検した。
+- `TranscriptView` の保存済み履歴アクションで `既定アプリ` / `macOS の既定アプリ` を `外部アプリ` に変更した。録音後レビューの音声トラック操作と語彙を揃え、短いボタンラベルだけでもアプリ外で開く操作だと分かるようにするため。
+- 依存関係の追加なし。課金操作なし。`rg` で `既定アプリ` / `macOS の既定アプリ` が `TranscriptView` から消え、`外部アプリ` 表記に揃ったことを確認し、`git diff --check` と `npm run build` を実行した。ビルドは成功し、既存の Vite 500kB 超チャンク警告のみ。
+# 2026-05-30 12:28:51 JST v2-ai-off-and-external-none-labels
+
+- Pencil MCP で `meet-jerky-desktop-v2.pen` の変数とレイアウト状態を再確認した。v2 の「状態が一目で分かる」方針に合わせ、`生成なし` / `送信なし` など対象が曖昧な短縮ラベルを調査した。
+- `SettingsView` の AI 議事録なし設定を `AI議事録オフ` / `AIオフ` に統一した。録音や文字起こしまで止まるような誤読を避け、オフ対象を AI 議事録に限定して示すため。
+- `SessionDetail` の録音後議事録状態も `AIオフ` / `AI議事録オフ・外部送信なし` に変更した。録音後レビューで、音声トラックや文字起こしは利用できるが AI 議事録だけがオフであることを明確にするため。
+- `LiveCaptionWindow` の AI ノート接続ピルで `送信なし` を `外部送信なし` に変更した。何を送らないのかを短い表示でも明確にするため。
+- 依存関係の追加なし。課金操作なし。`rg` で `AI生成なし` / `生成なし` / `送信なし` の残りを確認し、文脈上明確な `生成方式` / `端末内生成` 以外の曖昧な可視状態が `AI議事録オフ` / `AIオフ` / `外部送信なし` に置き換わったことを確認した。`git diff --check` と `npm run build` を実行し、ビルドは成功。既存の Vite 500kB 超チャンク警告のみ。

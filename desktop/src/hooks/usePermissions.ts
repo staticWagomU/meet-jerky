@@ -1,15 +1,23 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useQuery } from "@tanstack/react-query";
+import { isTauriRuntime } from "../utils/browserRuntime";
 
 export function usePermissions() {
+  const shouldUsePreviewData = !isTauriRuntime();
   const {
     data: micPermission,
     error: micPermissionError,
     isFetching: isFetchingMicPermission,
     refetch: refetchMic,
   } = useQuery<string, unknown>({
-    queryKey: ["microphonePermission"],
-    queryFn: () => invoke<string>("check_microphone_permission"),
+    queryKey: [
+      "microphonePermission",
+      shouldUsePreviewData ? "browser-preview" : "tauri",
+    ],
+    queryFn: () =>
+      shouldUsePreviewData
+        ? Promise.resolve("granted")
+        : invoke<string>("check_microphone_permission"),
   });
 
   const {
@@ -18,8 +26,14 @@ export function usePermissions() {
     isFetching: isFetchingScreenPermission,
     refetch: refetchScreen,
   } = useQuery<string, unknown>({
-    queryKey: ["screenRecordingPermission"],
-    queryFn: () => invoke<string>("check_screen_recording_permission"),
+    queryKey: [
+      "screenRecordingPermission",
+      shouldUsePreviewData ? "browser-preview" : "tauri",
+    ],
+    queryFn: () =>
+      shouldUsePreviewData
+        ? Promise.resolve("granted")
+        : invoke<string>("check_screen_recording_permission"),
   });
 
   const refetchAll = () => {

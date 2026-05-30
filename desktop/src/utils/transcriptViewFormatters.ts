@@ -1,9 +1,7 @@
-import { toErrorMessage } from "./errorMessage";
-
 export const SESSION_DATETIME_UNKNOWN_LABEL = "日時不明";
 
-export function formatOperationError(prefix: string, e: unknown): string {
-  return `${prefix} ${toErrorMessage(e)}`;
+export function formatOperationError(prefix: string, _e: unknown): string {
+  return prefix;
 }
 
 export function getFileName(path: string): string {

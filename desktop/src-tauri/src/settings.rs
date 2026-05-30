@@ -35,6 +35,68 @@ pub enum TranscriptionEngineType {
     ElevenLabsRealtime,
 }
 
+/// AI 議事録生成に使うプロバイダー。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum AiMinutesProvider {
+    /// AI 議事録を使わない
+    None,
+    /// Anthropic Claude
+    Anthropic,
+    /// OpenAI
+    OpenAI,
+    /// ローカル Ollama
+    Ollama,
+}
+
+impl Default for AiMinutesProvider {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+/// 会議検出で対象にするサービスまたはシグナル群。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum MeetingDetectionService {
+    GoogleMeet,
+    Zoom,
+    Teams,
+    FaceTime,
+    BrowserUrls,
+}
+
+/// 会議検出の判定ルール。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DetectionRules {
+    /// 会議検出を有効にする。
+    pub enabled: bool,
+    /// 通知前に必要な一致シグナル数。
+    pub minimum_signal_count: u8,
+    /// 継続音声を必須シグナルとして扱う。
+    pub require_audio_signal: bool,
+    /// 検出対象サービス。
+    pub enabled_services: Vec<MeetingDetectionService>,
+}
+
+impl Default for DetectionRules {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            minimum_signal_count: 2,
+            require_audio_signal: false,
+            enabled_services: vec![
+                MeetingDetectionService::GoogleMeet,
+                MeetingDetectionService::Zoom,
+                MeetingDetectionService::Teams,
+                MeetingDetectionService::FaceTime,
+                MeetingDetectionService::BrowserUrls,
+            ],
+        }
+    }
+}
+
 impl TranscriptionEngineType {
     /// 過去の設定ファイル値を含めて、文字列から enum に変換する。
     /// 未知の値は `Whisper` にフォールバックする。
@@ -72,6 +134,12 @@ pub struct AppSettings {
     /// 出力ディレクトリ (None = デフォルトディレクトリ)
     pub output_directory: Option<String>,
 
+    /// AI 議事録生成に使うプロバイダー
+    pub ai_minutes_provider: AiMinutesProvider,
+
+    /// 会議検出の判定ルール
+    pub detection_rules: DetectionRules,
+
     /// 旧クラウド設定互換用の API キー。現在の Realtime API キーは Keychain に保存する。
     #[serde(default)]
     pub api_key: Option<String>,
@@ -85,6 +153,8 @@ impl Default for AppSettings {
             microphone_device_id: None,
             language: "auto".to_string(),
             output_directory: None,
+            ai_minutes_provider: AiMinutesProvider::None,
+            detection_rules: DetectionRules::default(),
             api_key: None,
         }
     }
@@ -175,6 +245,8 @@ mod tests {
         assert!(settings.microphone_device_id.is_none());
         assert_eq!(settings.language, "auto");
         assert!(settings.output_directory.is_none());
+        assert_eq!(settings.ai_minutes_provider, AiMinutesProvider::None);
+        assert_eq!(settings.detection_rules, DetectionRules::default());
     }
 
     #[test]
@@ -202,6 +274,8 @@ mod tests {
         assert!(json.contains("whisperModel"));
         assert!(json.contains("microphoneDeviceId"));
         assert!(json.contains("outputDirectory"));
+        assert!(json.contains("aiMinutesProvider"));
+        assert!(json.contains("detectionRules"));
         // snake_case が含まれないことを確認
         assert!(!json.contains("transcription_engine"));
         assert!(!json.contains("whisper_model"));
@@ -226,6 +300,7 @@ mod tests {
         assert_eq!(settings.microphone_device_id, Some("device-1".to_string()));
         assert_eq!(settings.language, "ja");
         assert_eq!(settings.output_directory, Some("/tmp/output".to_string()));
+        assert_eq!(settings.ai_minutes_provider, AiMinutesProvider::None);
     }
 
     #[test]
@@ -245,6 +320,7 @@ mod tests {
         );
         assert!(settings.microphone_device_id.is_none());
         assert!(settings.output_directory.is_none());
+        assert_eq!(settings.ai_minutes_provider, AiMinutesProvider::None);
     }
 
     #[test]
@@ -299,6 +375,8 @@ mod tests {
             microphone_device_id: Some("test-device".to_string()),
             language: "ja".to_string(),
             output_directory: Some("/tmp/test".to_string()),
+            ai_minutes_provider: AiMinutesProvider::OpenAI,
+            detection_rules: DetectionRules::default(),
             api_key: None,
         };
 
@@ -316,6 +394,8 @@ mod tests {
         assert_eq!(loaded.microphone_device_id, Some("test-device".to_string()));
         assert_eq!(loaded.language, "ja");
         assert_eq!(loaded.output_directory, Some("/tmp/test".to_string()));
+        assert_eq!(loaded.ai_minutes_provider, AiMinutesProvider::OpenAI);
+        assert_eq!(loaded.detection_rules, DetectionRules::default());
 
         // クリーンアップ
         let _ = std::fs::remove_dir_all(&tmp_dir);
@@ -353,6 +433,50 @@ mod tests {
     }
 
     #[test]
+    fn test_ai_minutes_provider_serialization() {
+        assert_eq!(
+            serde_json::to_string(&AiMinutesProvider::None).unwrap(),
+            "\"none\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AiMinutesProvider::Anthropic).unwrap(),
+            "\"anthropic\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AiMinutesProvider::OpenAI).unwrap(),
+            "\"openAI\""
+        );
+        assert_eq!(
+            serde_json::to_string(&AiMinutesProvider::Ollama).unwrap(),
+            "\"ollama\""
+        );
+    }
+
+    #[test]
+    fn test_detection_rules_serialization() {
+        let rules = DetectionRules {
+            enabled: true,
+            minimum_signal_count: 3,
+            require_audio_signal: true,
+            enabled_services: vec![
+                MeetingDetectionService::GoogleMeet,
+                MeetingDetectionService::BrowserUrls,
+            ],
+        };
+        let value = serde_json::to_value(&rules).unwrap();
+        assert_eq!(value["enabled"], serde_json::json!(true));
+        assert_eq!(value["minimumSignalCount"], serde_json::json!(3));
+        assert_eq!(value["requireAudioSignal"], serde_json::json!(true));
+        assert_eq!(
+            value["enabledServices"],
+            serde_json::json!(["googleMeet", "browserUrls"])
+        );
+
+        let restored: DetectionRules = serde_json::from_value(value).unwrap();
+        assert_eq!(restored, rules);
+    }
+
+    #[test]
     fn test_settings_state_handle_new() {
         // SettingsStateHandle::new() が AppSettings::load() を呼ぶことを確認
         // (設定ファイルがない場合はデフォルト値)
@@ -379,6 +503,8 @@ mod tests {
         assert!(settings.microphone_device_id.is_none());
         assert_eq!(settings.language, "auto");
         assert!(settings.output_directory.is_none());
+        assert_eq!(settings.ai_minutes_provider, AiMinutesProvider::None);
+        assert_eq!(settings.detection_rules, DetectionRules::default());
     }
 
     #[test]
@@ -401,6 +527,8 @@ mod tests {
         );
         assert_eq!(settings.whisper_model, "small");
         assert_eq!(settings.language, "auto");
+        assert_eq!(settings.ai_minutes_provider, AiMinutesProvider::None);
+        assert_eq!(settings.detection_rules, DetectionRules::default());
     }
 
     #[test]
@@ -434,6 +562,8 @@ mod tests {
         }"#;
         let settings: AppSettings = serde_json::from_str(json).unwrap();
         assert!(settings.api_key.is_none());
+        assert_eq!(settings.ai_minutes_provider, AiMinutesProvider::None);
+        assert_eq!(settings.detection_rules, DetectionRules::default());
     }
 
     #[test]
@@ -653,13 +783,20 @@ mod tests {
     }
 
     #[test]
-    fn app_settings_debug_output_contains_struct_name_and_all_six_field_names() {
+    fn app_settings_debug_output_contains_struct_name_and_all_eight_field_names() {
         let settings = AppSettings {
             transcription_engine: TranscriptionEngineType::AppleSpeech,
             whisper_model: "base".to_string(),
             microphone_device_id: Some("dev-mic-001".to_string()),
             language: "ja".to_string(),
             output_directory: Some("/tmp/out".to_string()),
+            ai_minutes_provider: AiMinutesProvider::Anthropic,
+            detection_rules: DetectionRules {
+                enabled: true,
+                minimum_signal_count: 3,
+                require_audio_signal: true,
+                enabled_services: vec![MeetingDetectionService::GoogleMeet],
+            },
             api_key: Some("sk-test-001".to_string()),
         };
         let debug = format!("{settings:?}");
@@ -678,8 +815,18 @@ mod tests {
             debug.contains("output_directory"),
             "field 名 output_directory"
         );
+        assert!(
+            debug.contains("ai_minutes_provider"),
+            "field 名 ai_minutes_provider"
+        );
+        assert!(
+            debug.contains("detection_rules"),
+            "field 名 detection_rules"
+        );
         assert!(debug.contains("api_key"), "field 名 api_key");
         assert!(debug.contains("AppleSpeech"), "値 AppleSpeech");
+        assert!(debug.contains("Anthropic"), "値 Anthropic");
+        assert!(debug.contains("GoogleMeet"), "値 GoogleMeet");
         assert!(debug.contains("base"), "値 base");
         assert!(debug.contains("dev-mic-001"), "値 dev-mic-001");
         assert!(debug.contains("ja"), "値 ja");
@@ -695,6 +842,8 @@ mod tests {
             microphone_device_id: Some("mic-A".to_string()),
             language: "auto".to_string(),
             output_directory: None,
+            ai_minutes_provider: AiMinutesProvider::None,
+            detection_rules: DetectionRules::default(),
             api_key: Some("k1".to_string()),
         };
         let mut cloned = original.clone();
@@ -703,7 +852,19 @@ mod tests {
         cloned.microphone_device_id = Some("mic-B".to_string());
         cloned.language = "en".to_string();
         cloned.output_directory = Some("/var/log".to_string());
+        cloned.ai_minutes_provider = AiMinutesProvider::Ollama;
+        cloned.detection_rules.minimum_signal_count = 3;
         cloned.api_key = None;
+        assert_eq!(
+            original.ai_minutes_provider,
+            AiMinutesProvider::None,
+            "original: AI 議事録 provider None 維持"
+        );
+        assert_eq!(
+            cloned.ai_minutes_provider,
+            AiMinutesProvider::Ollama,
+            "clone: AI 議事録 provider Ollama に変更"
+        );
         let original_debug = format!("{original:?}");
         assert!(original_debug.contains("Whisper"), "original: Whisper 維持");
         assert!(
@@ -730,6 +891,10 @@ mod tests {
             "original: output_directory None 維持"
         );
         assert!(
+            original_debug.contains("minimum_signal_count: 2"),
+            "original: detection_rules 維持"
+        );
+        assert!(
             !original_debug.contains("\"/var/log\""),
             "original: /var/log 混入なし"
         );
@@ -740,18 +905,28 @@ mod tests {
     }
 
     #[test]
-    fn app_settings_serde_serialize_uses_camel_case_for_all_six_fields() {
+    fn app_settings_serde_serialize_uses_camel_case_for_all_eight_fields() {
         let settings = AppSettings {
             transcription_engine: TranscriptionEngineType::ElevenLabsRealtime,
             whisper_model: "tiny".to_string(),
             microphone_device_id: Some("device-X".to_string()),
             language: "ja".to_string(),
             output_directory: Some("/home/u/out".to_string()),
+            ai_minutes_provider: AiMinutesProvider::Ollama,
+            detection_rules: DetectionRules {
+                enabled: true,
+                minimum_signal_count: 3,
+                require_audio_signal: true,
+                enabled_services: vec![
+                    MeetingDetectionService::GoogleMeet,
+                    MeetingDetectionService::Zoom,
+                ],
+            },
             api_key: Some("eleven-key".to_string()),
         };
         let json = serde_json::to_value(&settings).expect("serialize ok");
         let obj = json.as_object().expect("object");
-        assert_eq!(obj.len(), 6, "field 数厳密 = 6");
+        assert_eq!(obj.len(), 8, "field 数厳密 = 8");
         assert!(
             obj.contains_key("transcriptionEngine"),
             "camelCase key transcriptionEngine"
@@ -769,11 +944,21 @@ mod tests {
             obj.contains_key("outputDirectory"),
             "camelCase key outputDirectory"
         );
+        assert!(
+            obj.contains_key("aiMinutesProvider"),
+            "camelCase key aiMinutesProvider"
+        );
+        assert!(
+            obj.contains_key("detectionRules"),
+            "camelCase key detectionRules"
+        );
         assert!(obj.contains_key("apiKey"), "camelCase key apiKey");
         assert!(!obj.contains_key("transcription_engine"), "snake_case 不在");
         assert!(!obj.contains_key("whisper_model"), "snake_case 不在");
         assert!(!obj.contains_key("microphone_device_id"), "snake_case 不在");
         assert!(!obj.contains_key("output_directory"), "snake_case 不在");
+        assert!(!obj.contains_key("ai_minutes_provider"), "snake_case 不在");
+        assert!(!obj.contains_key("detection_rules"), "snake_case 不在");
         assert!(!obj.contains_key("api_key"), "snake_case 不在");
         assert_eq!(
             obj["transcriptionEngine"],
@@ -795,6 +980,16 @@ mod tests {
             obj["outputDirectory"],
             serde_json::json!("/home/u/out"),
             "outputDirectory 値"
+        );
+        assert_eq!(
+            obj["aiMinutesProvider"],
+            serde_json::json!("ollama"),
+            "aiMinutesProvider 値"
+        );
+        assert_eq!(
+            obj["detectionRules"]["minimumSignalCount"],
+            serde_json::json!(3),
+            "detectionRules nested camelCase 値"
         );
         assert_eq!(obj["apiKey"], serde_json::json!("eleven-key"), "apiKey 値");
     }

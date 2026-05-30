@@ -6,6 +6,7 @@ import type { ModelInfo } from "../types";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
   getModelDisplayName,
+  getWhisperModelLabel,
   sanitizeProgress,
 } from "../utils/modelSelectorHelpers";
 import {
@@ -16,7 +17,11 @@ import {
   MODEL_DOWNLOAD_ERROR_EVENT,
   MODEL_DOWNLOAD_PROGRESS_EVENT,
 } from "../utils/modelDownloadPayload";
-import { STATUS_CHECKING_WITH_DOTS_LABEL } from "../utils/statusLabels";
+import { isTauriRuntime } from "../utils/browserRuntime";
+import {
+  isPreviewModelDownloaded,
+  PREVIEW_MODELS,
+} from "../utils/previewAppData";
 
 interface ModelSelectorProps {
   selectedModel: string;
@@ -29,6 +34,7 @@ export function ModelSelector({
   onSelectModel,
   disabled,
 }: ModelSelectorProps) {
+  const isBrowserPreview = !isTauriRuntime();
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -61,22 +67,34 @@ export function ModelSelector({
     isFetching: isFetchingModels,
     refetch: refetchModels,
   } = useQuery<ModelInfo[]>({
-    queryKey: ["models"],
-    queryFn: () => invoke<ModelInfo[]>("list_models"),
+    queryKey: ["models", isBrowserPreview ? "browser-preview" : "tauri"],
+    queryFn: () =>
+      isBrowserPreview
+        ? Promise.resolve(PREVIEW_MODELS)
+        : invoke<ModelInfo[]>("list_models"),
   });
   const selectedModelLabel = getModelDisplayName(models, selectedModel);
   const downloadingModelLabel = getModelDisplayName(models, downloadingModel);
   const selectedModelStatusLabel = selectedModelLabel ?? "未選択";
+  const selectedModelInfo = models?.find(
+    (model) => model.name === selectedModel,
+  );
+  const selectedModelSizeLabel = selectedModelInfo
+    ? `${selectedModelInfo.sizeMb}MB`
+    : "サイズ未確認";
   const modelSelectAriaLabel = modelsError
-    ? "Whisper モデル一覧の取得に失敗したため選択できません"
+    ? "モデル一覧を取得できません"
     : downloadingModel
-      ? `${downloadingModelLabel} をダウンロード中のため Whisper モデルを選択できません。現在の選択: ${selectedModelStatusLabel}`
+      ? `ダウンロード中。選択中 ${selectedModelStatusLabel}`
       : disabled
-        ? `文字起こし中のため Whisper モデルを選択できません。現在の選択: ${selectedModelStatusLabel}`
-        : `Whisper モデルを選択。現在の選択: ${selectedModelStatusLabel}`;
+        ? `録音中。選択中 ${selectedModelStatusLabel}`
+        : `モデル選択。現在 ${selectedModelStatusLabel}`;
 
   // Listen for download progress events
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     let disposed = false;
     const unlistenPromise = listen<unknown>(
       MODEL_DOWNLOAD_PROGRESS_EVENT,
@@ -86,9 +104,11 @@ export function ModelSelector({
         }
         const payload = event.payload;
         if (!isDownloadProgressPayload(payload)) {
-          setProgressListenerError(
-            `Whisper モデルのダウンロード進捗通知の形式が不正です。（理由: ${getDownloadProgressPayloadIssue(payload)}）`,
+          console.error(
+            "Whisper モデルのダウンロード進捗通知の形式が不正です:",
+            getDownloadProgressPayloadIssue(payload),
           );
+          setProgressListenerError("ダウンロード状況を確認できませんでした");
           return;
         }
         setProgressListenerError(null);
@@ -123,9 +143,7 @@ export function ModelSelector({
             "Whisper モデルのダウンロード進捗通知の受信開始に失敗しました:",
             msg,
           );
-          setProgressListenerError(
-            `Whisper モデルのダウンロード進捗通知の受信開始に失敗しました: ${msg}`,
-          );
+          setProgressListenerError("ダウンロード状況を確認できませんでした");
         }
         return null;
       });
@@ -141,12 +159,15 @@ export function ModelSelector({
           );
         });
     };
-  }, [queryClient]);
+  }, [isBrowserPreview, queryClient]);
 
   // Listen for download error events emitted by the backend.
   // `invoke` の catch でも同じ文字列は拾えるが、長時間 DL 中の切断などは
   // Tauri 側の Err を先に emit で受け取った方が UI 反映が早い。
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     let disposed = false;
     const unlistenPromise = listen<unknown>(
       MODEL_DOWNLOAD_ERROR_EVENT,
@@ -156,8 +177,12 @@ export function ModelSelector({
         }
         const payload = event.payload;
         if (!isDownloadErrorPayload(payload)) {
+          console.error(
+            "Whisper モデルのダウンロードエラー通知の形式が不正です:",
+            getDownloadErrorPayloadIssue(payload),
+          );
           setDownloadErrorListenerError(
-            `Whisper モデルのダウンロードエラー通知の形式が不正です。（理由: ${getDownloadErrorPayloadIssue(payload)}）`,
+            "ダウンロード結果を確認できませんでした",
           );
           return;
         }
@@ -187,7 +212,7 @@ export function ModelSelector({
             msg,
           );
           setDownloadErrorListenerError(
-            `Whisper モデルのダウンロードエラー通知の受信開始に失敗しました: ${msg}`,
+            "ダウンロード結果を確認できませんでした",
           );
         }
         return null;
@@ -204,7 +229,7 @@ export function ModelSelector({
           );
         });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   const handleDownload = async (modelName: string) => {
     if (downloadingModelRef.current) {
@@ -215,6 +240,20 @@ export function ModelSelector({
     setDownloadProgress(0);
     setDownloadError(null);
     setDownloadErrorModel(null);
+    if (isBrowserPreview) {
+      window.setTimeout(() => {
+        downloadingModelRef.current = null;
+        if (!isMountedRef.current) {
+          return;
+        }
+        setDownloadingModel(null);
+        setDownloadProgress(0);
+        queryClient.invalidateQueries({
+          queryKey: ["modelDownloaded", modelName],
+        });
+      }, 180);
+      return;
+    }
     try {
       await invoke("download_model", { modelName });
       downloadingModelRef.current = null;
@@ -242,13 +281,33 @@ export function ModelSelector({
   };
   const modelsErrorMessage = modelsError ? toErrorMessage(modelsError) : "";
   const modelSelectorLabel = [
-    `Whisper モデル選択: ${selectedModelStatusLabel}`,
-    isFetchingModels ? "Whisper モデル一覧を取得中" : null,
+    `モデル: ${selectedModelStatusLabel}`,
+    isFetchingModels ? "一覧取得中" : null,
     downloadingModel ? `${downloadingModelLabel} をダウンロード中` : null,
-    modelsError ? `Whisper モデル一覧エラー: ${modelsErrorMessage}` : null,
+    modelsError ? "一覧取得不可" : null,
   ]
     .filter(Boolean)
     .join("、");
+  const modelBoundaryItems = [
+    {
+      label: "モデル",
+      value: selectedModelStatusLabel,
+      detail: selectedModelSizeLabel,
+      tone: selectedModelInfo ? "ready" : "muted",
+    },
+    {
+      label: "処理",
+      value: "端末内",
+      detail: "Whisper",
+      tone: "ready",
+    },
+    {
+      label: "音声外部送信",
+      value: "外部送信なし",
+      detail: "音声トラック",
+      tone: "ready",
+    },
+  ] as const;
 
   return (
     <div
@@ -257,28 +316,50 @@ export function ModelSelector({
       aria-label={modelSelectorLabel}
       title={modelSelectorLabel}
     >
-      <label htmlFor="model-select" className="model-select-label">
-        Whisper モデル:
-      </label>
-      <select
-        id="model-select"
-        value={selectedModel}
-        onChange={(e) => onSelectModel(e.target.value)}
-        disabled={disabled || downloadingModel !== null || Boolean(modelsError)}
-        className="model-select"
-        aria-label={modelSelectAriaLabel}
-        title={modelSelectAriaLabel}
+      <div className="model-selector-header">
+        <div className="model-selector-heading">
+          <span>文字起こしモデル</span>
+          <label htmlFor="model-select" className="model-select-label">
+            Whisper モデル
+          </label>
+        </div>
+        <select
+          id="model-select"
+          value={selectedModel}
+          onChange={(e) => onSelectModel(e.target.value)}
+          disabled={
+            disabled || downloadingModel !== null || Boolean(modelsError)
+          }
+          className="model-select"
+          aria-label={modelSelectAriaLabel}
+          title={modelSelectAriaLabel}
+        >
+          {models?.map((model) => (
+            <ModelOption key={model.name} model={model} />
+          ))}
+        </select>
+      </div>
+      <div
+        className="model-boundary-grid"
+        aria-label={`モデル ${selectedModelStatusLabel}、端末内、音声は外部送信しません`}
       >
-        {models?.map((model) => (
-          <ModelOption key={model.name} model={model} />
+        {modelBoundaryItems.map((item) => (
+          <span
+            key={item.label}
+            className={`model-boundary-item model-boundary-item-${item.tone}`}
+          >
+            <strong>{item.label}</strong>
+            <small>{item.value}</small>
+            <em>{item.detail}</em>
+          </span>
         ))}
-      </select>
+      </div>
       {progressListenerError && (
         <span
           className="download-error"
           role="alert"
-          aria-label={`Whisper モデルのダウンロード進捗受信エラー: ${progressListenerError}`}
-          title={`Whisper モデルのダウンロード進捗受信エラー: ${progressListenerError}`}
+          aria-label={`モデル取得エラー: ${progressListenerError}`}
+          title={`モデル取得エラー: ${progressListenerError}`}
         >
           {progressListenerError}
         </span>
@@ -287,8 +368,8 @@ export function ModelSelector({
         <span
           className="download-error"
           role="alert"
-          aria-label={`Whisper モデルのダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
-          title={`Whisper モデルのダウンロードエラー受信エラー: ${downloadErrorListenerError}`}
+          aria-label={`モデル取得エラー: ${downloadErrorListenerError}`}
+          title={`モデル取得エラー: ${downloadErrorListenerError}`}
         >
           {downloadErrorListenerError}
         </span>
@@ -298,10 +379,10 @@ export function ModelSelector({
           <span
             className="download-error"
             role="alert"
-            aria-label={`Whisper モデル一覧エラー: ${modelsErrorMessage}`}
-            title={`Whisper モデル一覧エラー: ${modelsErrorMessage}`}
+            aria-label="Whisper モデル一覧を取得できません"
+            title={modelsErrorMessage}
           >
-            Whisper モデル一覧の取得に失敗しました: {modelsErrorMessage}
+            モデル一覧を取得できません。
           </span>
           <button
             type="button"
@@ -309,17 +390,13 @@ export function ModelSelector({
             onClick={() => refetchModels()}
             disabled={isFetchingModels}
             aria-label={
-              isFetchingModels
-                ? "Whisper モデル一覧を取得中"
-                : "Whisper モデル一覧を再取得"
+              isFetchingModels ? "モデル一覧を取得中" : "モデル一覧を再取得"
             }
             title={
-              isFetchingModels
-                ? "Whisper モデル一覧を取得中"
-                : "Whisper モデル一覧を再取得"
+              isFetchingModels ? "モデル一覧を取得中" : "モデル一覧を再取得"
             }
           >
-            {isFetchingModels ? "取得中..." : "モデル一覧を再取得"}
+            {isFetchingModels ? "モデル一覧取得中…" : "モデル一覧再取得"}
           </button>
         </div>
       ) : (
@@ -343,7 +420,7 @@ export function ModelSelector({
 function ModelOption({ model }: { model: ModelInfo }) {
   return (
     <option value={model.name}>
-      {model.displayName} ({model.sizeMb}MB)
+      {getWhisperModelLabel(model)} ({model.sizeMb}MB)
     </option>
   );
 }
@@ -369,15 +446,22 @@ function DownloadStatus({
   disabled,
   onDownload,
 }: DownloadStatusProps) {
+  const isBrowserPreview = !isTauriRuntime();
   const {
     data: isDownloaded,
     error: isDownloadedError,
     isFetching: isFetchingDownloaded,
     refetch: refetchDownloaded,
   } = useQuery<boolean>({
-    queryKey: ["modelDownloaded", selectedModel],
+    queryKey: [
+      "modelDownloaded",
+      selectedModel,
+      isBrowserPreview ? "browser-preview" : "tauri",
+    ],
     queryFn: () =>
-      invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
+      isBrowserPreview
+        ? Promise.resolve(isPreviewModelDownloaded(selectedModel))
+        : invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
     enabled: !!selectedModel,
   });
 
@@ -387,8 +471,10 @@ function DownloadStatus({
   const downloadingLabel = downloadingModelLabel ?? downloadingModel;
 
   if (downloadingModel === selectedModel) {
-    const progressPercent = Math.round(sanitizeProgress(downloadProgress) * 100);
-    const progressLabel = `${selectedLabel} Whisper モデルのダウンロード進捗`;
+    const progressPercent = Math.round(
+      sanitizeProgress(downloadProgress) * 100,
+    );
+    const progressLabel = `${selectedLabel} ダウンロード`;
     return (
       <div className="download-progress-wrapper">
         <div
@@ -412,7 +498,7 @@ function DownloadStatus({
   }
 
   if (isDownloaded) {
-    const readyLabel = `${selectedLabel} Whisper モデルは準備完了`;
+    const readyLabel = `${selectedLabel} 準備完了`;
     return (
       <span
         className="model-status-ready"
@@ -429,19 +515,19 @@ function DownloadStatus({
 
   if (isDownloadedError) {
     const downloadedErrorMessage = toErrorMessage(isDownloadedError);
-    const downloadedErrorLabel = `${selectedLabel} Whisper モデルの状態確認エラー: ${downloadedErrorMessage}`;
+    const downloadedErrorLabel = `${selectedLabel} を確認できません`;
     const refetchDownloadedLabel = isFetchingDownloaded
-      ? `${selectedLabel} の Whisper モデルの状態を確認中`
-      : `${selectedLabel} の Whisper モデルの状態を再確認`;
+      ? `${selectedLabel} を確認中`
+      : `${selectedLabel} を再確認`;
     return (
       <div className="download-status-wrapper">
         <span
           className="download-error"
           role="alert"
           aria-label={downloadedErrorLabel}
-          title={downloadedErrorLabel}
+          title={downloadedErrorMessage}
         >
-          Whisper モデルの状態確認に失敗しました: {downloadedErrorMessage}
+          モデルを確認できません。
         </span>
         <button
           type="button"
@@ -451,16 +537,16 @@ function DownloadStatus({
           onClick={() => refetchDownloaded()}
           disabled={isFetchingDownloaded}
         >
-          {isFetchingDownloaded ? STATUS_CHECKING_WITH_DOTS_LABEL : "状態を再確認"}
+          {isFetchingDownloaded ? "モデル確認中…" : "モデル再確認"}
         </button>
       </div>
     );
   }
 
   const downloadButtonLabel = isFetchingDownloaded
-    ? `${selectedLabel} の Whisper モデルの状態を確認中`
+    ? `${selectedLabel} を確認中`
     : downloadingModel
-      ? `${downloadingLabel} をダウンロード中のため ${selectedLabel} はダウンロード待ち`
+      ? `${downloadingLabel} をダウンロード中`
       : `${selectedLabel} をダウンロード`;
 
   return (
@@ -474,19 +560,19 @@ function DownloadStatus({
         disabled={disabled || downloadingModel !== null || isFetchingDownloaded}
       >
         {isFetchingDownloaded
-          ? STATUS_CHECKING_WITH_DOTS_LABEL
+          ? "モデル確認中…"
           : downloadingModel
-            ? "ダウンロード待ち"
-            : "ダウンロード"}
+            ? "モデル待機"
+            : "モデルダウンロード"}
       </button>
       {downloadError && (
         <span
           className="download-error"
           role="alert"
-          aria-label={`${selectedLabel} Whisper モデルのダウンロードエラー: ${downloadError}`}
-          title={`${selectedLabel} Whisper モデルのダウンロードエラー: ${downloadError}`}
+          aria-label={`${selectedLabel} をダウンロードできません`}
+          title={downloadError}
         >
-          {downloadError}
+          ダウンロードできません。
         </span>
       )}
     </div>

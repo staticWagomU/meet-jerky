@@ -15,16 +15,16 @@ export function getMeetingStartBlockedReason(
 ): string | null {
   if (isMeetingActive) return null;
   if (settingsError) {
-    return "文字起こし設定を取得できません。設定画面または再読み込みで状態を確認してください。";
+    return "文字起こし設定を確認できません。";
   }
   if (isSettingsLoading) {
     return "文字起こし設定を確認中です。";
   }
   if (modelDownloadedError) {
-    return "Whisper モデルの状態を確認できません。設定画面でモデル状態を確認してください。";
+    return "Whisper モデルを確認できません。";
   }
   if (externalApiKeyError && externalApiProvider) {
-    return `${externalApiProvider} API キーの状態を確認できません。設定画面で API キー状態を再確認してください。`;
+    return `${externalApiProvider} API キーを確認できません。`;
   }
   if (transcriptionEngine === "appleSpeech") {
     return APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON;
@@ -33,7 +33,7 @@ export function getMeetingStartBlockedReason(
     return `${externalApiProvider} API キーの状態を確認中です。`;
   }
   if (externalApiProvider && !hasExternalApiKey) {
-    return `記録を開始するには、${externalApiProvider} Realtime の API キーを設定画面で登録してください。`;
+    return `${externalApiProvider} API キーを登録してください。`;
   }
   if (!requiresLocalModel) return null;
   if (isModelDownloaded === undefined) {

@@ -8,23 +8,53 @@ import { queryClient } from "./lib/queryClient";
 import { MeetingDetectedBanner } from "./components/MeetingDetectedBanner";
 import { LiveCaptionWindow } from "./components/LiveCaptionWindow";
 import { RingLightWindow } from "./components/RingLightWindow";
+import { ControllerWindow } from "./components/ControllerWindow";
+import { SettingsWindowRoot } from "./components/SettingsWindowRoot";
+import "@fontsource/geist/latin-400.css";
+import "@fontsource/geist/latin-500.css";
+import "@fontsource/geist/latin-600.css";
+import "@fontsource/geist/latin-700.css";
+import "@fontsource/inter/latin-400.css";
+import "@fontsource/inter/latin-600.css";
+import "@fontsource/inter/latin-700.css";
+import "@fontsource/funnel-sans/latin-400.css";
+import "@fontsource/funnel-sans/latin-500.css";
+import "@fontsource/funnel-sans/latin-600.css";
+import "@fontsource/funnel-sans/latin-700.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "@fontsource/ibm-plex-mono/latin-500.css";
+import "@fontsource/ibm-plex-mono/latin-600.css";
 import "./App.css";
 
-const currentWindowLabel = getCurrentWindow().label;
+function readCurrentWindowLabel(): { isTauriRuntime: boolean; label: string } {
+  try {
+    return { isTauriRuntime: true, label: getCurrentWindow().label };
+  } catch {
+    return { isTauriRuntime: false, label: "main" };
+  }
+}
+
+const currentWindow = readCurrentWindowLabel();
 const urlWindowLabel = new URLSearchParams(window.location.search).get("window");
-const windowLabel = urlWindowLabel === currentWindowLabel ? urlWindowLabel : currentWindowLabel;
+const windowLabel = currentWindow.isTauriRuntime
+  ? currentWindow.label
+  : urlWindowLabel ?? currentWindow.label;
 document.documentElement.dataset.window = windowLabel;
 document.body.dataset.window = windowLabel;
 
 const root =
-  currentWindowLabel === "meeting-prompt" ? (
+  windowLabel === "meeting-prompt" ? (
     <div className="overlay-window meeting-prompt-window">
       <MeetingDetectedBanner />
     </div>
-  ) : currentWindowLabel === "live-caption" ? (
+  ) : windowLabel === "live-caption" ? (
     <LiveCaptionWindow />
-  ) : currentWindowLabel === "ring-light" ? (
+  ) : windowLabel === "ring-light" ? (
     <RingLightWindow />
+  ) : windowLabel === "controller" ? (
+    <ControllerWindow />
+  ) : windowLabel === "settings" ? (
+    <SettingsWindowRoot />
   ) : (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

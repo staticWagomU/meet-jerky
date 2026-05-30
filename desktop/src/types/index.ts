@@ -58,12 +58,30 @@ export type TranscriptionEngineType =
   | "openAIRealtime"
   | "elevenLabsRealtime";
 
+export type AiMinutesProvider = "none" | "anthropic" | "openAI" | "ollama";
+
+export type MeetingDetectionService =
+  | "googleMeet"
+  | "zoom"
+  | "teams"
+  | "faceTime"
+  | "browserUrls";
+
+export interface DetectionRules {
+  enabled: boolean;
+  minimumSignalCount: number;
+  requireAudioSignal: boolean;
+  enabledServices: MeetingDetectionService[];
+}
+
 export interface AppSettings {
   transcriptionEngine: TranscriptionEngineType;
   whisperModel: string;
   microphoneDeviceId: string | null;
   language: string;
   outputDirectory: string | null;
+  aiMinutesProvider: AiMinutesProvider;
+  detectionRules: DetectionRules;
   apiKey?: string;
 }
 

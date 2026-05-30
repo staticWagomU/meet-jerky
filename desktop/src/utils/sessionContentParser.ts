@@ -1,5 +1,5 @@
 /**
- * 保存済みセッション Markdown の本文を Mock 2C - Recording Detail で扱える
+ * 保存済みセッション Markdown の文字起こしを録音詳細で扱える
  * 構造化データに変換する。フォーマットの仕様:
  *   - 1行目: `# {title} - YYYY-MM-DD HH:MM`
  *   - 発話行: `**[HH:MM:SS] {speaker}:** {text}`

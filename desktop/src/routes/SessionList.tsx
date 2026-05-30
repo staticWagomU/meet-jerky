@@ -7,7 +7,8 @@ import {
   type KeyboardEvent,
 } from "react";
 import { Link } from "@tanstack/react-router";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { History, Search } from "lucide-react";
 import { useSessionList, type SessionSummary } from "../hooks/useSessionList";
 import {
   OTHER_TRACK_DEVICE_LABEL,
@@ -28,23 +29,26 @@ import {
   getCompactSessionTitle,
   getFileName,
 } from "../utils/transcriptViewFormatters";
+import { writeClipboardText } from "../utils/clipboard";
 
 type SessionAction =
-  | { kind: "open"; path: string }
   | { kind: "reveal"; path: string }
+  | { kind: "copy"; path: string }
   | null;
 
 const EMPTY_SESSIONS: SessionSummary[] = [];
 
 /**
  * 保存済み文字起こし履歴の一覧画面。
- * 各行から「履歴を開く」「Finder で表示」で macOS のデフォルトアプリ / Finder に
- * 解決させる。
+ * 各行から録音後レビュー、文字起こしコピー、保存場所表示に進める。
  */
 export function SessionList() {
   const { data, isLoading, isFetching, error, refetch } = useSessionList();
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<SessionAction>(null);
+  const [copiedSessionPath, setCopiedSessionPath] = useState<string | null>(
+    null,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const pendingActionRef = useRef<SessionAction>(null);
   const isMountedRef = useRef(true);
@@ -55,35 +59,17 @@ export function SessionList() {
     };
   }, []);
 
-  const handleOpenFile = useCallback(async (path: string) => {
-    if (pendingActionRef.current) {
+  useEffect(() => {
+    if (!copiedSessionPath) {
       return;
     }
-    const nextAction = { kind: "open" as const, path };
-    pendingActionRef.current = nextAction;
-    setPendingAction(nextAction);
-    setActionError(null);
-    try {
-      await openPath(path);
-      if (!isMountedRef.current) {
-        return;
-      }
-      setActionError(null);
-    } catch (e) {
-      console.error("履歴ファイルを開けませんでした:", e);
-      if (!isMountedRef.current) {
-        return;
-      }
-      setActionError(
-        `履歴ファイルを開けませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
-      );
-    } finally {
-      pendingActionRef.current = null;
+    const timeoutId = window.setTimeout(() => {
       if (isMountedRef.current) {
-        setPendingAction(null);
+        setCopiedSessionPath(null);
       }
-    }
-  }, []);
+    }, 2400);
+    return () => window.clearTimeout(timeoutId);
+  }, [copiedSessionPath]);
 
   const handleRevealInFolder = useCallback(async (path: string) => {
     if (pendingActionRef.current) {
@@ -100,13 +86,11 @@ export function SessionList() {
       }
       setActionError(null);
     } catch (e) {
-      console.error("Finder で表示できませんでした:", e);
+      console.error("保存場所を表示できませんでした:", toErrorMessage(e));
       if (!isMountedRef.current) {
         return;
       }
-      setActionError(
-        `履歴ファイルを Finder で表示できませんでした (${getFileName(path)}): ${toErrorMessage(e)}`,
-      );
+      setActionError("保存場所を表示できませんでした");
     } finally {
       pendingActionRef.current = null;
       if (isMountedRef.current) {
@@ -114,6 +98,38 @@ export function SessionList() {
       }
     }
   }, []);
+
+  const handleCopyTranscript = useCallback(
+    async (path: string, body: string) => {
+      if (pendingActionRef.current) {
+        return;
+      }
+      const nextAction = { kind: "copy" as const, path };
+      pendingActionRef.current = nextAction;
+      setPendingAction(nextAction);
+      setActionError(null);
+      try {
+        await writeClipboardText(body);
+        if (!isMountedRef.current) {
+          return;
+        }
+        setActionError(null);
+        setCopiedSessionPath(path);
+      } catch (e) {
+        console.error("文字起こしをコピーできませんでした:", toErrorMessage(e));
+        if (!isMountedRef.current) {
+          return;
+        }
+        setActionError("文字起こしをコピーできませんでした");
+      } finally {
+        pendingActionRef.current = null;
+        if (isMountedRef.current) {
+          setPendingAction(null);
+        }
+      }
+    },
+    [],
+  );
 
   const clearSearch = useCallback(() => {
     setSearchQuery("");
@@ -132,6 +148,23 @@ export function SessionList() {
 
   const sessions = data ?? EMPTY_SESSIONS;
   const trimmedSearchQuery = searchQuery.trim();
+  const libraryStats = useMemo(() => {
+    let sessionsWithBody = 0;
+    let sessionsWithSeparatedTracks = 0;
+
+    for (const session of sessions) {
+      if (!hasTranscriptBody(session.searchText)) {
+        continue;
+      }
+      sessionsWithBody += 1;
+      const trackCounts = getTranscriptTrackCounts(session.searchText);
+      if (trackCounts.self > 0 && trackCounts.other > 0) {
+        sessionsWithSeparatedTracks += 1;
+      }
+    }
+
+    return { sessionsWithBody, sessionsWithSeparatedTracks };
+  }, [sessions]);
   const filteredSessions = useMemo(
     () =>
       sessions.filter((session) =>
@@ -143,7 +176,6 @@ export function SessionList() {
       ),
     [sessions, trimmedSearchQuery],
   );
-
   if (isLoading) {
     const loadingLabel = "文字起こし履歴一覧を読み込み中";
     return (
@@ -156,14 +188,14 @@ export function SessionList() {
         aria-label={loadingLabel}
         title={loadingLabel}
       >
-        読み込み中...
+        履歴読み込み中…
       </div>
     );
   }
 
   if (error) {
     const errorMessage = toErrorMessage(error);
-    const errorLabel = `文字起こし履歴一覧エラー: ${errorMessage}`;
+    const errorLabel = "履歴を読み込めませんでした";
     const retryErrorLabel = isFetching
       ? "文字起こし履歴一覧を読み込み中"
       : "文字起こし履歴一覧を再読み込み";
@@ -173,9 +205,9 @@ export function SessionList() {
           className="session-list-error"
           role="alert"
           aria-label={errorLabel}
-          title={errorLabel}
+          title={errorMessage}
         >
-          文字起こし履歴一覧の取得に失敗しました: {errorMessage}
+          履歴を読み込めませんでした。
         </p>
         <button
           type="button"
@@ -185,7 +217,7 @@ export function SessionList() {
           aria-label={retryErrorLabel}
           title={retryErrorLabel}
         >
-          {isFetching ? "読み込み中..." : "履歴を再読み込み"}
+          {isFetching ? "履歴読み込み中…" : "履歴更新"}
         </button>
       </div>
     );
@@ -201,10 +233,49 @@ export function SessionList() {
     : trimmedSearchQuery
       ? `保存済み ${sessions.length} 件中 ${filteredSessions.length} 件を表示`
       : `保存済み ${sessions.length} 件`;
-  const sessionSearchLabel =
-    "文字起こし履歴を検索。タイトル、本文、日時、ファイル名、トラック種別を複数語で検索できます";
+  const libraryBodyCountLabel = `文字起こしあり ${libraryStats.sessionsWithBody} 件`;
+  const librarySeparatedTracksLabel = `マイク+スピーカートラック ${libraryStats.sessionsWithSeparatedTracks} 件`;
+  const libraryCopyScopeLabel = "コピー対象は文字起こし";
+  const libraryReviewScopeLabel =
+    "録音レビューでマイク/スピーカー音声、チャット文字起こし、議事録を確認";
+  const libraryAiScopeLabel =
+    "AI議事録は録音レビュー内で確認。音声トラックはAI送信しません";
+  const libraryActionFlow = [
+    {
+      label: "検索",
+      value: trimmedSearchQuery
+        ? `${filteredSessions.length}/${sessions.length}件`
+        : `${sessions.length}件`,
+      tone: "accent",
+    },
+    {
+      label: "コピー",
+      value: libraryStats.sessionsWithBody > 0 ? "文字起こし" : "待機",
+      tone: libraryStats.sessionsWithBody > 0 ? "neutral" : "muted",
+    },
+    {
+      label: "音声",
+      value:
+        libraryStats.sessionsWithSeparatedTracks > 0
+          ? "マイク/スピーカー"
+          : "レビュー内確認",
+      tone: libraryStats.sessionsWithSeparatedTracks > 0 ? "safe" : "neutral",
+    },
+    {
+      label: "議事録",
+      value: "レビュー内",
+      tone: "warn",
+    },
+  ] as const;
+  const libraryActionFlowLabel = [
+    "録音後アクション",
+    "履歴検索、文字起こしコピー、音声トラック確認、議事録ワークスペースへ進めます",
+    "音声トラックはAI送信しません",
+    ...libraryActionFlow.map((item) => `${item.label}: ${item.value}`),
+  ].join("。");
+  const sessionSearchLabel = "履歴を検索";
   const sessionSearchInputLabel = trimmedSearchQuery
-    ? `${sessionSearchLabel}。現在の検索語 ${searchQueryLabel}。Escape キーでクリアできます`
+    ? `${sessionSearchLabel}: ${searchQueryLabel}`
     : sessionSearchLabel;
   const clearSearchLabel = searchQuery
     ? trimmedSearchQuery
@@ -214,12 +285,16 @@ export function SessionList() {
   const sessionListLabel = [
     "文字起こし履歴",
     sessionCountLabel,
+    libraryBodyCountLabel,
+    librarySeparatedTracksLabel,
+    libraryCopyScopeLabel,
+    libraryReviewScopeLabel,
+    libraryAiScopeLabel,
     trimmedSearchQuery ? `検索語 ${searchQueryLabel}` : null,
-    pendingAction ? "履歴ファイル操作中" : null,
+    pendingAction ? "履歴操作中" : null,
   ]
     .filter(Boolean)
     .join("、");
-
   return (
     <div
       className="session-list"
@@ -229,20 +304,71 @@ export function SessionList() {
     >
       <div className="session-list-header">
         <div className="session-list-heading">
-          <h2 className="session-list-title">文字起こし履歴</h2>
-          <span
-            className="session-list-count"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            aria-label={sessionCountLabel}
-            title={sessionCountLabel}
-          >
-            {trimmedSearchQuery
-              ? `${filteredSessions.length}/${sessions.length} 件`
-              : `${sessions.length} 件`}
-            {isFetching ? "、更新中" : ""}
-          </span>
+          <span className="session-list-kicker">録音ライブラリ</span>
+          <h2 className="session-list-title">
+            <History size={16} aria-hidden="true" />
+            履歴ライブラリ
+          </h2>
+          <div className="session-list-header-meta">
+            <span
+              className="session-list-count"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={sessionCountLabel}
+              title={sessionCountLabel}
+            >
+              {trimmedSearchQuery
+                ? `${filteredSessions.length}/${sessions.length} 件`
+                : `${sessions.length} 件`}
+              {isFetching ? "、更新中" : ""}
+            </span>
+            {sessions.length > 0 && (
+              <span
+                className="session-list-header-chip"
+                aria-label={libraryBodyCountLabel}
+                title={libraryBodyCountLabel}
+              >
+                文字起こし {libraryStats.sessionsWithBody}
+              </span>
+            )}
+            {sessions.length > 0 && (
+              <span
+                className="session-list-header-chip session-list-header-chip-tracks"
+                aria-label={librarySeparatedTracksLabel}
+                title={librarySeparatedTracksLabel}
+              >
+                マイク+スピーカー {libraryStats.sessionsWithSeparatedTracks}
+              </span>
+            )}
+            {sessions.length > 0 && (
+              <span
+                className="session-list-header-chip session-list-header-chip-copy"
+                aria-label={libraryCopyScopeLabel}
+                title={libraryCopyScopeLabel}
+              >
+                コピー: 文字起こし
+              </span>
+            )}
+            {sessions.length > 0 && (
+              <span
+                className="session-list-header-chip session-list-header-chip-review"
+                aria-label={libraryReviewScopeLabel}
+                title={libraryReviewScopeLabel}
+              >
+                レビュー: 音声 / チャット / 議事録
+              </span>
+            )}
+            {sessions.length > 0 && (
+              <span
+                className="session-list-header-chip session-list-header-chip-ai"
+                aria-label={libraryAiScopeLabel}
+                title={libraryAiScopeLabel}
+              >
+                AI: レビュー内確認
+              </span>
+            )}
+          </div>
         </div>
         <button
           type="button"
@@ -252,20 +378,42 @@ export function SessionList() {
           aria-label={reloadSessionsLabel}
           title={reloadSessionsLabel}
         >
-          {isFetching ? "読み込み中..." : "履歴を再読み込み"}
+          {isFetching ? "履歴読み込み中…" : "履歴更新"}
         </button>
       </div>
 
       {sessions.length > 0 && (
+        <div
+          className="session-list-action-flow"
+          role="status"
+          aria-label={libraryActionFlowLabel}
+          title={libraryActionFlowLabel}
+        >
+          {libraryActionFlow.map((item) => (
+            <span
+              key={`${item.label}-${item.value}`}
+              className={`session-list-action-chip session-list-action-chip-${item.tone}`}
+            >
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {sessions.length > 0 && (
         <label className="session-list-search">
-          <span>{sessionSearchLabel}</span>
+          <span className="session-list-search-label">
+            <Search size={14} aria-hidden="true" />
+            履歴検索
+          </span>
           <span className="session-list-search-row">
             <input
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={handleSearchKeyDown}
-              placeholder="タイトル、本文、日時、ファイル名、自分/相手側で検索"
+              placeholder="タイトル、文字起こし、自分/相手側"
               aria-label={sessionSearchInputLabel}
               title={sessionSearchInputLabel}
             />
@@ -278,7 +426,7 @@ export function SessionList() {
                 title={clearSearchLabel}
                 aria-keyshortcuts="Escape"
               >
-                クリア
+                検索クリア
               </button>
             )}
           </span>
@@ -289,43 +437,52 @@ export function SessionList() {
         <div
           className="session-list-error"
           role="alert"
-          aria-label={`文字起こし履歴ファイル操作エラー: ${actionError}`}
-          title={`文字起こし履歴ファイル操作エラー: ${actionError}`}
+          aria-label={actionError}
+          title={actionError}
         >
           <span>{actionError}</span>
           <button
             type="button"
             className="control-btn control-btn-clear"
             onClick={() => setActionError(null)}
-            aria-label="文字起こし履歴ファイル操作エラーを閉じる"
-            title="文字起こし履歴ファイル操作エラーを閉じる"
+            aria-label="履歴エラーを閉じる"
+            title="履歴エラーを閉じる"
           >
-            閉じる
+            履歴エラーを閉じる
           </button>
         </div>
       )}
 
       {sessions.length === 0 ? (
-        <p
-          className="session-list-empty"
+        <div
+          className="session-list-empty session-list-empty-onboarding"
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label="保存された文字起こし履歴はまだありません。記録を終了すると、ここに表示されます"
-          title="保存された文字起こし履歴はまだありません。記録を終了すると、ここに表示されます"
+          aria-label="履歴はまだありません。会議検知通知またはメニューバー録音から開始すると、録音後レビューでマイク/スピーカー音声、チャット文字起こし、議事録を確認できます。"
+          title="履歴はまだありません。会議検知通知またはメニューバー録音から開始します。"
         >
-          記録を終了すると、保存された文字起こし履歴がここに表示されます
-        </p>
+          <strong>履歴はまだありません</strong>
+          <small>検知またはメニューバーから録音します。</small>
+          <span
+            className="session-list-empty-routes"
+            role="list"
+            aria-label="録音開始経路。会議検知通知、またはメニューバー録音。"
+          >
+            <span role="listitem">会議検知通知</span>
+            <span role="listitem">メニューバー録音</span>
+          </span>
+        </div>
       ) : filteredSessions.length === 0 ? (
         <div
           className="session-list-empty session-list-empty-actionable"
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          aria-label={`検索条件 ${searchQueryLabel} に一致する文字起こし履歴はありません`}
-          title={`検索条件 ${searchQueryLabel} に一致する文字起こし履歴はありません`}
+          aria-label={`一致なし: ${searchQueryLabel}`}
+          title={`一致なし: ${searchQueryLabel}`}
         >
-          <span>検索条件に一致する文字起こし履歴はありません</span>
+          <span>一致する履歴はありません</span>
           <button
             type="button"
             className="control-btn control-btn-clear"
@@ -334,7 +491,7 @@ export function SessionList() {
             title={clearSearchLabel}
             aria-keyshortcuts="Escape"
           >
-            検索をクリア
+            検索クリア
           </button>
         </div>
       ) : (
@@ -345,8 +502,9 @@ export function SessionList() {
               session={session}
               searchQuery={trimmedSearchQuery}
               pendingAction={pendingAction}
-              onOpenFile={handleOpenFile}
+              copiedSessionPath={copiedSessionPath}
               onRevealInFolder={handleRevealInFolder}
+              onCopyTranscript={handleCopyTranscript}
             />
           ))}
         </ul>
@@ -359,16 +517,18 @@ interface SessionRowProps {
   session: SessionSummary;
   searchQuery: string;
   pendingAction: SessionAction;
-  onOpenFile: (path: string) => void;
+  copiedSessionPath: string | null;
   onRevealInFolder: (path: string) => void;
+  onCopyTranscript: (path: string, body: string) => void;
 }
 
 function SessionRow({
   session,
   searchQuery,
   pendingAction,
-  onOpenFile,
+  copiedSessionPath,
   onRevealInFolder,
+  onCopyTranscript,
 }: SessionRowProps) {
   // 秒 → ミリ秒に変換してローカルタイムでフォーマット。
   // タイムゾーンはユーザーの OS 設定に従うため、JST ハードコード（バックエンド表示用）とは独立。
@@ -383,10 +543,14 @@ function SessionRow({
     searchQuery,
   );
   const searchMatchLabelText =
-    searchMatchLabels.length > 0 ? `一致: ${searchMatchLabels.join("、")}` : null;
+    searchMatchLabels.length > 0
+      ? `一致: ${searchMatchLabels.join("、")}`
+      : null;
   const hasBody = hasTranscriptBody(session.searchText);
   const trackCounts = getTranscriptTrackCounts(session.searchText);
-  const transcriptBodyLabel = hasBody ? "文字起こし本文あり" : "文字起こし本文なし";
+  const transcriptBodyLabel = hasBody
+    ? "文字起こしあり"
+    : "文字起こしなし";
   const trackCountsLabel = hasBody
     ? [
         `${SELF_TRACK_DEVICE_LABEL} ${trackCounts.self} 件`,
@@ -398,42 +562,95 @@ function SessionRow({
         .filter(Boolean)
         .join("、")
     : null;
+  const hasSeparatedTracks = trackCounts.self > 0 && trackCounts.other > 0;
+  const sessionReviewFlow = [
+    {
+      label: "文字起こし",
+      value: hasBody ? "コピー可" : "なし",
+      tone: hasBody ? "accent" : "muted",
+    },
+    {
+      label: "トラック",
+      value: hasSeparatedTracks
+        ? "マイク/スピーカー"
+        : hasBody
+          ? "片側/不明"
+          : "確認待ち",
+      tone: hasSeparatedTracks ? "safe" : hasBody ? "warn" : "muted",
+    },
+    {
+      label: "レビュー",
+      value: "音声/議事録",
+      tone: "accent",
+    },
+    {
+      label: "送信",
+      value: "音声なし",
+      tone: "safe",
+    },
+  ] as const;
+  const sessionReviewFlowLabel = [
+    `録音後レビュー導線: ${displayTitle}`,
+    hasBody ? "文字起こしをコピーできます" : "文字起こしは未保存です",
+    hasSeparatedTracks
+      ? "マイクとスピーカーの文字起こしがあります"
+      : "トラック分離は詳細で確認します",
+    "録音レビューで音声トラック、チャット文字起こし、議事録ワークスペースを開きます",
+    "音声トラックはAI送信しません",
+  ].join("。");
   const isAnyActionPending = pendingAction !== null;
-  const isOpeningThisFile =
-    pendingAction?.kind === "open" && pendingAction.path === session.path;
   const isRevealingThisFile =
     pendingAction?.kind === "reveal" && pendingAction.path === session.path;
+  const isCopyingThisFile =
+    pendingAction?.kind === "copy" && pendingAction.path === session.path;
+  const isCopiedThisFile = copiedSessionPath === session.path;
   const isWaitingForOtherAction =
-    isAnyActionPending && !isOpeningThisFile && !isRevealingThisFile;
+    isAnyActionPending && !isRevealingThisFile && !isCopyingThisFile;
   const otherActionLabel =
-    pendingAction?.kind === "open"
-      ? "他の履歴ファイルを macOS の既定アプリで開いています"
-      : pendingAction?.kind === "reveal"
-        ? "他の履歴ファイルを Finder で表示しています"
+    pendingAction?.kind === "reveal"
+      ? "他の保存場所を表示中"
+      : pendingAction?.kind === "copy"
+        ? "他の文字起こしをコピー中"
         : "他のセッション操作を処理中";
   const otherActionButtonText =
-    pendingAction?.kind === "open"
-      ? "別履歴を開いています"
-      : pendingAction?.kind === "reveal"
-        ? "別履歴を表示中"
+    pendingAction?.kind === "reveal"
+      ? "別保存場所を表示中"
+      : pendingAction?.kind === "copy"
+        ? "別文字起こしをコピー中"
         : "他の処理中";
-  const openFileLabel = isOpeningThisFile
-    ? `履歴ファイルを macOS の既定アプリで開いています: ${displayTitle}`
-    : isWaitingForOtherAction
-      ? `${otherActionLabel}: ${displayTitle}`
-      : `履歴ファイルを macOS の既定アプリで開く: ${displayTitle}`;
   const revealFileLabel = isRevealingThisFile
-    ? `履歴ファイルを Finder で表示しています: ${displayTitle}`
+    ? `保存場所を表示中: ${displayTitle}`
     : isWaitingForOtherAction
       ? `${otherActionLabel}: ${displayTitle}`
-      : `履歴ファイルを Finder で表示: ${displayTitle}`;
-  const sessionActionsLabel = isOpeningThisFile
-    ? `セッション操作: ${displayTitle}、履歴ファイルを macOS の既定アプリで開いています`
-    : isRevealingThisFile
-      ? `セッション操作: ${displayTitle}、履歴ファイルを Finder で表示しています`
+      : `保存場所を表示: ${displayTitle}`;
+  const copyTranscriptLabel = isCopyingThisFile
+    ? `文字起こしをコピー中: ${displayTitle}`
+    : isCopiedThisFile
+      ? `文字起こしをコピー済み: ${displayTitle}`
       : isWaitingForOtherAction
-        ? `セッション操作: ${displayTitle}、${otherActionLabel}`
-        : `セッション操作: ${displayTitle}`;
+        ? `${otherActionLabel}: ${displayTitle}`
+        : `文字起こしをコピー: ${displayTitle}`;
+  const reviewSessionLabel = [
+    `録音レビューを開く: ${displayTitle}`,
+    searchQuery ? "検索結果ではなく録音全体を開きます" : null,
+    "マイク/スピーカー音声",
+    "チャット文字起こし",
+    "文字起こしコピー",
+    "議事録ワークスペース",
+    "AI議事録はレビュー内で確認",
+    "音声トラックはAI送信しません",
+  ]
+    .filter(Boolean)
+    .join("。");
+  const sessionActionsLabel = isRevealingThisFile
+    ? `操作: ${displayTitle}、保存場所を表示中`
+    : isCopyingThisFile
+      ? `操作: ${displayTitle}、文字起こしをコピー中`
+      : isCopiedThisFile
+        ? `操作: ${displayTitle}、文字起こしをコピー済み`
+        : isWaitingForOtherAction
+          ? `操作: ${displayTitle}、${otherActionLabel}`
+          : `操作: ${displayTitle}`;
 
   return (
     <li
@@ -443,9 +660,9 @@ function SessionRow({
         `開始 ${startedAtLabel}`,
         transcriptBodyLabel,
         trackCountsLabel,
-        `ファイル ${fileName}`,
+        `保存名 ${fileName}`,
         searchMatchLabelText,
-        searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
+        searchExcerpt ? `文字起こし一致 ${searchExcerpt}` : null,
       ]
         .filter(Boolean)
         .join("、")}
@@ -454,9 +671,9 @@ function SessionRow({
         `開始 ${startedAtLabel}`,
         transcriptBodyLabel,
         trackCountsLabel,
-        `ファイル ${fileName}`,
+        `保存名 ${fileName}`,
         searchMatchLabelText,
-        searchExcerpt ? `本文一致 ${searchExcerpt}` : null,
+        searchExcerpt ? `文字起こし一致 ${searchExcerpt}` : null,
       ]
         .filter(Boolean)
         .join("、")}
@@ -476,7 +693,7 @@ function SessionRow({
             aria-label={transcriptBodyLabel}
             title={transcriptBodyLabel}
           >
-            {hasBody ? "本文あり" : "本文なし"}
+            {hasBody ? "文字起こしあり" : "文字起こしなし"}
           </span>
           {hasBody && (
             <>
@@ -485,14 +702,14 @@ function SessionRow({
                 aria-label={`${SELF_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.self} 件`}
                 title={`${SELF_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.self} 件`}
               >
-                自分 {trackCounts.self}
+                マイク {trackCounts.self}
               </span>
               <span
                 className="session-list-item-track-count session-list-item-track-count-other"
                 aria-label={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.other} 件`}
                 title={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし ${trackCounts.other} 件`}
               >
-                相手側 {trackCounts.other}
+                スピーカー {trackCounts.other}
               </span>
               {trackCounts.unknown > 0 && (
                 <span
@@ -505,13 +722,6 @@ function SessionRow({
               )}
             </>
           )}
-          <span
-            className="session-list-item-file"
-            aria-label={`保存ファイル ${fileName}`}
-            title={`保存ファイル ${fileName}`}
-          >
-            {fileName}
-          </span>
           {searchMatchLabelText && (
             <span
               className="session-list-item-match-reason"
@@ -522,11 +732,27 @@ function SessionRow({
             </span>
           )}
         </div>
+        <div
+          className="session-list-item-flow"
+          role="status"
+          aria-label={sessionReviewFlowLabel}
+          title={sessionReviewFlowLabel}
+        >
+          {sessionReviewFlow.map((item) => (
+            <span
+              key={`${item.label}-${item.value}`}
+              className={`session-list-item-flow-chip session-list-item-flow-chip-${item.tone}`}
+            >
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </span>
+          ))}
+        </div>
         {searchExcerpt && (
           <div
             className="session-list-item-excerpt"
-            aria-label={`本文一致: ${searchExcerpt}`}
-            title={`本文一致: ${searchExcerpt}`}
+            aria-label={`文字起こし一致: ${searchExcerpt}`}
+            title={`文字起こし一致: ${searchExcerpt}`}
           >
             {renderHighlightedSearchExcerpt(searchExcerpt, searchQuery)}
           </div>
@@ -535,47 +761,57 @@ function SessionRow({
       <div
         className="session-list-item-actions"
         role="group"
-        aria-busy={isOpeningThisFile || isRevealingThisFile}
+        aria-busy={isRevealingThisFile || isCopyingThisFile}
         aria-label={sessionActionsLabel}
         title={sessionActionsLabel}
       >
         <Link
           to="/sessions/$encodedPath"
           params={{ encodedPath: encodeURIComponent(session.path) }}
-          className="control-btn control-btn-transcribe control-btn-detail"
-          aria-label={`録音詳細を開く: ${displayTitle}`}
-          title={`録音詳細を開く: ${displayTitle}`}
+          className="control-btn control-btn-transcribe control-btn-detail session-list-review-primary"
+          aria-label={reviewSessionLabel}
+          title={reviewSessionLabel}
         >
-          詳細を開く
+          録音レビュー
         </Link>
-        <button
-          type="button"
-          className="control-btn control-btn-clear"
-          aria-label={openFileLabel}
-          title={openFileLabel}
-          onClick={() => onOpenFile(session.path)}
-          disabled={isAnyActionPending}
-        >
-          {isOpeningThisFile
-            ? "開いています..."
-            : isWaitingForOtherAction
-              ? otherActionButtonText
-              : "既定アプリで開く"}
-        </button>
-        <button
-          type="button"
-          className="control-btn control-btn-clear"
-          aria-label={revealFileLabel}
-          title={revealFileLabel}
-          onClick={() => onRevealInFolder(session.path)}
-          disabled={isAnyActionPending}
-        >
-          {isRevealingThisFile
-            ? "表示中..."
-            : isWaitingForOtherAction
-              ? otherActionButtonText
-              : "Finder で表示"}
-        </button>
+        <div className="session-list-item-secondary-actions">
+          {hasBody && (
+            <button
+              type="button"
+              className={
+                isCopiedThisFile
+                  ? "control-btn control-btn-clear session-list-copy-done"
+                  : "control-btn control-btn-clear"
+              }
+              aria-label={copyTranscriptLabel}
+              title={copyTranscriptLabel}
+              onClick={() => onCopyTranscript(session.path, session.searchText)}
+              disabled={isAnyActionPending}
+            >
+              {isCopyingThisFile
+                ? "文字起こしコピー中…"
+                : isCopiedThisFile
+                  ? "文字起こしコピー済み"
+                  : isWaitingForOtherAction
+                    ? otherActionButtonText
+                    : "文字起こしコピー"}
+            </button>
+          )}
+          <button
+            type="button"
+            className="control-btn control-btn-clear"
+            aria-label={revealFileLabel}
+            title={revealFileLabel}
+            onClick={() => onRevealInFolder(session.path)}
+            disabled={isAnyActionPending}
+          >
+            {isRevealingThisFile
+              ? "保存場所表示中…"
+              : isWaitingForOtherAction
+                ? otherActionButtonText
+                : "保存場所表示"}
+          </button>
+        </div>
       </div>
     </li>
   );

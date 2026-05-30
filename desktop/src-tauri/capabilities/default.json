@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main", "meeting-prompt", "live-caption", "ring-light"],
+  "windows": ["main", "settings", "meeting-prompt", "live-caption", "ring-light", "controller"],
   "permissions": [
     "core:default",
     "core:window:allow-hide",

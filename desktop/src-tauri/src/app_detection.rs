@@ -23,12 +23,14 @@ use std::time::{Duration, Instant};
 
 use parking_lot::Mutex;
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::app_detection_inactive_decision::{
     should_notify_meeting_inactive, should_warn_polling_stall,
 };
 use crate::app_detection_notification::{show_inactive_notification, show_notification};
+use crate::audio::AudioStateHandle;
+use crate::settings::{DetectionRules, MeetingDetectionService, SettingsStateHandle};
 
 // 以下の定数・関数は macOS の Swift bridge から呼ばれる。
 // Linux 等のビルドで dead_code 警告にならないように cfg_attr で抑制する。
@@ -128,6 +130,14 @@ struct DetectionState {
 static STATE: OnceLock<DetectionState> = OnceLock::new();
 
 const MEETING_APP_DETECTED_EVENT: &str = "meeting-app-detected";
+const DETECTION_AUDIO_SIGNAL_THRESHOLD_RMS: f32 = 0.01;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DetectionSignalSource {
+    NativeApp,
+    BrowserUrl,
+    WindowTitle,
+}
 
 /// 検知を開始する。アプリ起動時に 1 度だけ呼ぶ。
 ///
@@ -169,6 +179,11 @@ pub(crate) fn handle_detection(bundle_id: &str, app_name: &str, window_center: O
         Some(s) => s,
         None => return,
     };
+    let rules = current_detection_rules(state);
+    let audio_signal = current_detection_audio_signal(state);
+    if !native_app_allowed_by_detection_rules(bundle_id, app_name, &rules, audio_signal) {
+        return;
+    }
     *state.latest_window_center.lock() = window_center;
 
     let now = Instant::now();
@@ -369,13 +384,13 @@ pub(crate) fn handle_browser_url_detection(
     // URL ベースの分類を優先し、失敗した場合のみウィンドウタイトルをフォールバックとして試みる。
     // throttle_key はソース (browser / window-title) を区別するためプレフィックスを変える。
     // これにより URL 由来と window title 由来の検知が互いのスロットリングに干渉しない。
-    let (classification, throttle_key) = if let Some(c) = classify_meeting_url(url) {
+    let (classification, throttle_key, signal_source) = if let Some(c) = classify_meeting_url(url) {
         let key = format!("browser:{bundle_id}:{}:{}", c.service, c.host);
-        (c, key)
+        (c, key, DetectionSignalSource::BrowserUrl)
     } else if let Some(c) = classify_meeting_window_title(window_title) {
         // window title 由来: host は空文字。URL ベースと throttle_key を区別する。
         let key = format!("window-title:{bundle_id}:{}", c.service);
-        (c, key)
+        (c, key, DetectionSignalSource::WindowTitle)
     } else {
         return;
     };
@@ -384,6 +399,16 @@ pub(crate) fn handle_browser_url_detection(
         Some(s) => s,
         None => return,
     };
+    let rules = current_detection_rules(state);
+    let audio_signal = current_detection_audio_signal(state);
+    if !classification_allowed_by_detection_rules(
+        &classification,
+        &rules,
+        signal_source,
+        audio_signal,
+    ) {
+        return;
+    }
     *state.latest_window_center.lock() = window_center;
 
     // `should_notify_meeting_inactive` 用に epoch secs ベースの最終検知時刻を更新する
@@ -417,6 +442,108 @@ pub(crate) fn handle_browser_url_detection(
     }
 }
 
+fn current_detection_rules(state: &DetectionState) -> DetectionRules {
+    state
+        .app_handle
+        .try_state::<SettingsStateHandle>()
+        .map(|settings| settings.0.lock().detection_rules.clone())
+        .unwrap_or_default()
+}
+
+fn current_detection_audio_signal(state: &DetectionState) -> bool {
+    state
+        .app_handle
+        .try_state::<AudioStateHandle>()
+        .map(|audio| {
+            let mic_level = audio.current_microphone_level().unwrap_or(0.0);
+            let system_level = audio.current_system_audio_level().unwrap_or(0.0);
+            has_audio_signal(
+                mic_level,
+                system_level,
+                DETECTION_AUDIO_SIGNAL_THRESHOLD_RMS,
+            )
+        })
+        .unwrap_or(false)
+}
+
+fn has_audio_signal(microphone_level: f32, system_audio_level: f32, threshold: f32) -> bool {
+    let threshold = threshold.max(0.0);
+    microphone_level.is_finite() && microphone_level > threshold
+        || system_audio_level.is_finite() && system_audio_level > threshold
+}
+
+fn detection_service_enabled(rules: &DetectionRules, service: MeetingDetectionService) -> bool {
+    rules.enabled && rules.enabled_services.contains(&service)
+}
+
+fn rules_allow_detection_signals(
+    rules: &DetectionRules,
+    signal_source: DetectionSignalSource,
+    has_audio_signal: bool,
+) -> bool {
+    if !rules.enabled {
+        return false;
+    }
+    if rules.require_audio_signal && !has_audio_signal {
+        return false;
+    }
+    let signal_count = detection_signal_count(signal_source, has_audio_signal);
+    signal_count >= rules.minimum_signal_count.max(1)
+}
+
+fn detection_signal_count(signal_source: DetectionSignalSource, has_audio_signal: bool) -> u8 {
+    let base_count = match signal_source {
+        DetectionSignalSource::NativeApp => 2,
+        DetectionSignalSource::BrowserUrl => 2,
+        DetectionSignalSource::WindowTitle => 2,
+    };
+    base_count + u8::from(has_audio_signal)
+}
+
+fn native_app_allowed_by_detection_rules(
+    bundle_id: &str,
+    app_name: &str,
+    rules: &DetectionRules,
+    has_audio_signal: bool,
+) -> bool {
+    if !rules_allow_detection_signals(rules, DetectionSignalSource::NativeApp, has_audio_signal) {
+        return false;
+    }
+    let bundle_id = bundle_id.to_ascii_lowercase();
+    let app_name = app_name.to_ascii_lowercase();
+    if bundle_id == "us.zoom.xos" || app_name.contains("zoom") {
+        return detection_service_enabled(rules, MeetingDetectionService::Zoom);
+    }
+    if bundle_id == "com.microsoft.teams"
+        || bundle_id == "com.microsoft.teams2"
+        || app_name.contains("teams")
+    {
+        return detection_service_enabled(rules, MeetingDetectionService::Teams);
+    }
+    if bundle_id == "com.apple.facetime" || app_name.contains("facetime") {
+        return detection_service_enabled(rules, MeetingDetectionService::FaceTime);
+    }
+    !rules.enabled_services.is_empty()
+}
+
+fn classification_allowed_by_detection_rules(
+    classification: &MeetingUrlClassification,
+    rules: &DetectionRules,
+    signal_source: DetectionSignalSource,
+    has_audio_signal: bool,
+) -> bool {
+    if !rules_allow_detection_signals(rules, signal_source, has_audio_signal) {
+        return false;
+    }
+    let service = match classification.service.as_str() {
+        "Google Meet" => MeetingDetectionService::GoogleMeet,
+        "Zoom" => MeetingDetectionService::Zoom,
+        "Microsoft Teams" => MeetingDetectionService::Teams,
+        _ => MeetingDetectionService::BrowserUrls,
+    };
+    detection_service_enabled(rules, service)
+}
+
 #[tauri::command]
 pub fn take_latest_meeting_detection() -> Option<MeetingAppDetectedPayload> {
     STATE
@@ -428,6 +555,36 @@ pub(crate) fn latest_meeting_window_center() -> Option<(f64, f64)> {
     STATE
         .get()
         .and_then(|state| *state.latest_window_center.lock())
+}
+
+/// デバッグ用コントローラー窓向けのサンプル検出 payload を構築する。
+/// 本番 `handle_detection` と同じ enum バリアントを返し、frontend バリデータ
+/// (`meetingDetection.ts`) を通る形を CI でも固定できるよう関数を分離する。
+#[cfg(debug_assertions)]
+pub(crate) fn debug_sample_detection_payload(kind: &str) -> MeetingAppDetectedPayload {
+    match kind {
+        "browser" => MeetingAppDetectedPayload::Browser {
+            bundle_id: "com.google.Chrome".to_string(),
+            app_name: "Google Chrome".to_string(),
+            service: "Google Meet".to_string(),
+            url_host: "meet.google.com".to_string(),
+            browser_name: "Google Chrome".to_string(),
+        },
+        _ => MeetingAppDetectedPayload::App {
+            bundle_id: "us.zoom.xos".to_string(),
+            app_name: "zoom.us".to_string(),
+        },
+    }
+}
+
+/// コントローラー窓から本番と同じ検出イベントを発火する debug 専用コマンド。
+/// throttle / OS 通知は通さず常に emit し、`MEETING_APP_DETECTED_EVENT` 経路だけを再現する。
+#[cfg(debug_assertions)]
+#[tauri::command]
+pub fn debug_emit_meeting_detected(app: AppHandle, kind: String) -> Result<(), String> {
+    let payload = debug_sample_detection_payload(&kind);
+    app.emit(MEETING_APP_DETECTED_EVENT, &payload)
+        .map_err(|e| format!("検出イベントの emit に失敗しました: {e}"))
 }
 
 // parse_throttle_key_to_display_name は app_detection_throttle_key に移動。
@@ -446,6 +603,41 @@ mod tests {
     use crate::app_detection_goto::is_goto_app_meeting_url;
     use crate::app_detection_url_helpers::ParsedUrlParts;
 
+    #[cfg(debug_assertions)]
+    #[test]
+    fn debug_sample_detection_payload_app_variant_matches_production_shape() {
+        // app kind は bundleId/appName のみの App バリアント (frontend の app payload 契約)
+        match debug_sample_detection_payload("app") {
+            MeetingAppDetectedPayload::App {
+                bundle_id,
+                app_name,
+            } => {
+                assert_eq!(bundle_id, "us.zoom.xos");
+                assert_eq!(app_name, "zoom.us");
+            }
+            _ => panic!("app kind should yield the App variant"),
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn debug_sample_detection_payload_browser_variant_uses_host_only_url() {
+        // frontend の isHostOnlyString を通すため urlHost は host のみ (path/scheme 無し)
+        match debug_sample_detection_payload("browser") {
+            MeetingAppDetectedPayload::Browser {
+                service, url_host, ..
+            } => {
+                assert_eq!(service, "Google Meet");
+                assert_eq!(url_host, "meet.google.com");
+                assert!(
+                    !url_host.contains('/') && !url_host.contains(':'),
+                    "urlHost に path/scheme を含めない: {url_host}"
+                );
+            }
+            _ => panic!("browser kind should yield the Browser variant"),
+        }
+    }
+
     #[test]
     fn watched_bundle_ids_includes_native_meeting_apps() {
         // 監視対象が抜け落ちないように回帰防止する
@@ -462,6 +654,127 @@ mod tests {
             ids.contains(&"com.apple.FaceTime"),
             "FaceTime Bundle ID が抜けています"
         );
+    }
+
+    #[test]
+    fn native_app_detection_respects_detection_service_settings() {
+        let mut rules = DetectionRules {
+            enabled: true,
+            minimum_signal_count: 2,
+            require_audio_signal: false,
+            enabled_services: vec![MeetingDetectionService::Zoom],
+        };
+
+        assert!(native_app_allowed_by_detection_rules(
+            "us.zoom.xos",
+            "Zoom",
+            &rules,
+            false,
+        ));
+        assert!(!native_app_allowed_by_detection_rules(
+            "com.microsoft.teams2",
+            "Microsoft Teams",
+            &rules,
+            false,
+        ));
+
+        rules.enabled = false;
+        assert!(!native_app_allowed_by_detection_rules(
+            "us.zoom.xos",
+            "Zoom",
+            &rules,
+            false,
+        ));
+    }
+
+    #[test]
+    fn browser_classification_detection_respects_detection_service_settings() {
+        let rules = DetectionRules {
+            enabled: true,
+            minimum_signal_count: 2,
+            require_audio_signal: false,
+            enabled_services: vec![
+                MeetingDetectionService::GoogleMeet,
+                MeetingDetectionService::BrowserUrls,
+            ],
+        };
+
+        assert!(classification_allowed_by_detection_rules(
+            &MeetingUrlClassification {
+                service: "Google Meet".to_string(),
+                host: "meet.google.com".to_string(),
+            },
+            &rules,
+            DetectionSignalSource::BrowserUrl,
+            false,
+        ));
+        assert!(!classification_allowed_by_detection_rules(
+            &MeetingUrlClassification {
+                service: "Zoom".to_string(),
+                host: "zoom.us".to_string(),
+            },
+            &rules,
+            DetectionSignalSource::BrowserUrl,
+            false,
+        ));
+        assert!(classification_allowed_by_detection_rules(
+            &MeetingUrlClassification {
+                service: "Webex".to_string(),
+                host: "webex.com".to_string(),
+            },
+            &rules,
+            DetectionSignalSource::BrowserUrl,
+            false,
+        ));
+    }
+
+    #[test]
+    fn audio_signal_uses_any_finite_source_above_threshold() {
+        assert!(!has_audio_signal(0.0, 0.0, 0.01));
+        assert!(!has_audio_signal(f32::NAN, f32::INFINITY, 0.01));
+        assert!(has_audio_signal(0.011, 0.0, 0.01));
+        assert!(has_audio_signal(0.0, 0.011, 0.01));
+        assert!(!has_audio_signal(0.01, 0.01, 0.01));
+    }
+
+    #[test]
+    fn detection_signal_rules_apply_minimum_count_and_audio_requirement() {
+        let mut rules = DetectionRules {
+            enabled: true,
+            minimum_signal_count: 2,
+            require_audio_signal: false,
+            enabled_services: vec![MeetingDetectionService::Zoom],
+        };
+
+        assert!(rules_allow_detection_signals(
+            &rules,
+            DetectionSignalSource::NativeApp,
+            false
+        ));
+
+        rules.minimum_signal_count = 3;
+        assert!(!rules_allow_detection_signals(
+            &rules,
+            DetectionSignalSource::NativeApp,
+            false
+        ));
+        assert!(rules_allow_detection_signals(
+            &rules,
+            DetectionSignalSource::NativeApp,
+            true
+        ));
+
+        rules.require_audio_signal = true;
+        assert!(!rules_allow_detection_signals(
+            &rules,
+            DetectionSignalSource::BrowserUrl,
+            false
+        ));
+        assert!(rules_allow_detection_signals(
+            &rules,
+            DetectionSignalSource::BrowserUrl,
+            true
+        ));
     }
 
     #[test]

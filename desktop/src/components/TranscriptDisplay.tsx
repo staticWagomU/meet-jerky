@@ -26,6 +26,7 @@ import {
   TRANSCRIPTION_ERROR_EVENT,
   TRANSCRIPTION_RESULT_EVENT,
 } from "../utils/transcriptionEvents";
+import { writeClipboardText } from "../utils/clipboard";
 
 interface TranscriptDisplayProps {
   segments: TranscriptSegment[];
@@ -48,6 +49,9 @@ export function TranscriptDisplay({
   );
   const previousSegmentsRef = useRef(segments);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [copyFeedbackScope, setCopyFeedbackScope] = useState<
+    "all" | "self" | "other" | null
+  >(null);
   const [resultListenerError, setResultListenerError] = useState<string | null>(
     null,
   );
@@ -70,9 +74,8 @@ export function TranscriptDisplay({
         const payload = event.payload;
         if (!isTranscriptSegmentPayload(payload)) {
           const issue = getTranscriptSegmentPayloadIssue(payload);
-          setResultListenerError(
-            `文字起こし結果の形式が不正です。（理由: ${issue}）`,
-          );
+          console.error("文字起こし結果の形式が不正です:", issue);
+          setResultListenerError("文字起こし結果を表示できませんでした");
           return;
         }
         setResultListenerError(null);
@@ -89,9 +92,7 @@ export function TranscriptDisplay({
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("文字起こし結果の受信開始に失敗しました:", msg);
-          setResultListenerError(
-            `文字起こし結果の受信開始に失敗しました: ${msg}`,
-          );
+          setResultListenerError("文字起こし結果を表示できませんでした");
         }
         return null;
       });
@@ -101,7 +102,10 @@ export function TranscriptDisplay({
       unlistenPromise
         .then((unlisten) => unlisten?.())
         .catch((e) => {
-          console.error("文字起こし結果の受信解除に失敗しました:", toErrorMessage(e));
+          console.error(
+            "文字起こし結果の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
   }, [onNewSegment]);
@@ -118,9 +122,8 @@ export function TranscriptDisplay({
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
           const issue = getTranscriptionErrorPayloadIssue(payload);
-          setErrorListenerError(
-            `文字起こしエラー通知の形式が不正です。（理由: ${issue}）`,
-          );
+          console.error("文字起こしエラー通知の形式が不正です:", issue);
+          setErrorListenerError("文字起こしエラーを確認できませんでした");
           return;
         }
         setErrorListenerError(null);
@@ -144,9 +147,7 @@ export function TranscriptDisplay({
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("文字起こしエラー通知の受信開始に失敗しました:", msg);
-          setErrorListenerError(
-            `文字起こしエラー通知の受信開始に失敗しました: ${msg}`,
-          );
+          setErrorListenerError("文字起こしエラーを確認できませんでした");
         }
         return null;
       });
@@ -181,19 +182,24 @@ export function TranscriptDisplay({
     };
   }, []);
 
+  const clearCopyFeedback = useCallback(() => {
+    setCopyFeedback(false);
+    setCopyFeedbackScope(null);
+    if (copyFeedbackTimeoutRef.current) {
+      clearTimeout(copyFeedbackTimeoutRef.current);
+      copyFeedbackTimeoutRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (previousSegmentsRef.current === segments) {
       return;
     }
     previousSegmentsRef.current = segments;
     if (copyFeedback) {
-      setCopyFeedback(false);
-      if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current);
-        copyFeedbackTimeoutRef.current = null;
-      }
+      clearCopyFeedback();
     }
-  }, [segments, copyFeedback]);
+  }, [segments, copyFeedback, clearCopyFeedback]);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
@@ -220,62 +226,92 @@ export function TranscriptDisplay({
     setAutoScroll(true);
   }, []);
 
+  const formatTranscriptSegments = useCallback(
+    (targetSegments: TranscriptSegment[]) =>
+      targetSegments
+        .filter((seg) => !isTranscriptErrorSegment(seg))
+        .map((seg) => {
+          const time = `[${formatSegmentTimestamp(seg.startMs)}]`;
+          const speakerLabel = getSpeakerLabel(seg);
+          const speaker = speakerLabel ? `${speakerLabel}: ` : "";
+          return `${time} ${speaker}${seg.text}`;
+        })
+        .join("\n"),
+    [],
+  );
+
+  const copyTranscriptText = useCallback(
+    async (text: string, scope: "all" | "self" | "other") => {
+      try {
+        setIsCopying(true);
+        setCopyError(null);
+        await writeClipboardText(text);
+        if (!isMountedRef.current) {
+          return;
+        }
+        setCopyError(null);
+        setCopyFeedback(true);
+        setCopyFeedbackScope(scope);
+        if (copyFeedbackTimeoutRef.current) {
+          clearTimeout(copyFeedbackTimeoutRef.current);
+        }
+        copyFeedbackTimeoutRef.current = setTimeout(() => {
+          if (!isMountedRef.current) {
+            return;
+          }
+          setCopyFeedback(false);
+          setCopyFeedbackScope(null);
+          copyFeedbackTimeoutRef.current = null;
+        }, 2000);
+      } catch (e) {
+        console.error("文字起こしのコピーに失敗しました:", e);
+        if (!isMountedRef.current) {
+          return;
+        }
+        setCopyFeedback(false);
+        setCopyFeedbackScope(null);
+        setCopyError("文字起こしをコピーできませんでした");
+      } finally {
+        isCopyingRef.current = false;
+        if (isMountedRef.current) {
+          setIsCopying(false);
+        }
+      }
+    },
+    [],
+  );
+
   const handleCopyAll = useCallback(async () => {
     if (isCopying || isCopyingRef.current) {
       return;
     }
     isCopyingRef.current = true;
-    const text = segments
-      .filter((seg) => !isTranscriptErrorSegment(seg))
-      .map((seg) => {
-        const time = `[${formatSegmentTimestamp(seg.startMs)}]`;
-        const speakerLabel = getSpeakerLabel(seg);
-        const speaker = speakerLabel ? `${speakerLabel}: ` : "";
-        return `${time} ${speaker}${seg.text}`;
-      })
-      .join("\n");
+    await copyTranscriptText(formatTranscriptSegments(segments), "all");
+  }, [copyTranscriptText, formatTranscriptSegments, isCopying, segments]);
 
-    try {
-      setIsCopying(true);
-      setCopyError(null);
-      await navigator.clipboard.writeText(text);
-      if (!isMountedRef.current) {
+  const handleCopyTrack = useCallback(
+    async (speakerKind: "self" | "other") => {
+      if (isCopying || isCopyingRef.current) {
         return;
       }
-      setCopyError(null);
-      setCopyFeedback(true);
-      if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current);
-      }
-      copyFeedbackTimeoutRef.current = setTimeout(() => {
-        if (!isMountedRef.current) {
-          return;
-        }
-        setCopyFeedback(false);
-        copyFeedbackTimeoutRef.current = null;
-      }, 2000);
-    } catch (e) {
-      console.error("文字起こし本文のコピーに失敗しました:", e);
-      if (!isMountedRef.current) {
-        return;
-      }
-      setCopyFeedback(false);
-      setCopyError(
-        `文字起こし本文のコピーに失敗しました: ${toErrorMessage(e)}`,
+      isCopyingRef.current = true;
+      const trackSegments = segments.filter(
+        (seg) =>
+          !isTranscriptErrorSegment(seg) && getSpeakerKind(seg) === speakerKind,
       );
-    } finally {
-      isCopyingRef.current = false;
-      if (isMountedRef.current) {
-        setIsCopying(false);
-      }
-    }
-  }, [isCopying, segments]);
+      await copyTranscriptText(
+        formatTranscriptSegments(trackSegments),
+        speakerKind,
+      );
+    },
+    [copyTranscriptText, formatTranscriptSegments, isCopying, segments],
+  );
 
   const transcriptLogLabel =
     segments.length > 0
-      ? `文字起こしログ ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`
-      : `文字起こしログは空です。文字起こしを開始すると、${SELF_TRACK_DEVICE_LABEL}と${OTHER_TRACK_DEVICE_LABEL}の発話がここに流れます`;
-  const transcriptCountsLabel = `文字起こし ${segments.length} 件、自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、ソース不明 ${segmentCounts.unknown} 件、エラー ${segmentCounts.errors} 件`;
+      ? `文字起こし ${segments.length} 件。自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件。`
+      : `文字起こしはまだありません。`;
+  const transcriptCountsLabel = `文字起こし ${segments.length} 件。自分 ${segmentCounts.self}、相手側 ${segmentCounts.other}。`;
   const transcriptWrapperLabel = [
     transcriptCountsLabel,
     isCopying ? "コピー中" : null,
@@ -283,14 +319,27 @@ export function TranscriptDisplay({
   ]
     .filter(Boolean)
     .join("、");
-  const copyButtonLabel =
-    copyableSegmentsCount === 0
-      ? "コピーできる表示中の文字起こし本文はありません"
-      : isCopying
-        ? `表示中の文字起こし本文 ${copyableSegmentsCount} 件をクリップボードへコピー中`
-        : copyFeedback
-          ? `表示中の文字起こし本文 ${copyableSegmentsCount} 件をクリップボードへコピー済み`
-          : `表示中の文字起こし本文 ${copyableSegmentsCount} 件をクリップボードへコピー。録音、文字起こし、保存済み履歴には影響しません`;
+  const copyButtonLabel = isCopying
+    ? `文字起こし ${copyableSegmentsCount} 件をコピー中`
+    : copyFeedback && copyFeedbackScope === "all"
+      ? `文字起こし ${copyableSegmentsCount} 件をコピー済み`
+      : `文字起こし ${copyableSegmentsCount} 件をコピー`;
+  const trackReviewItems = [
+    {
+      key: "self",
+      label: "自分",
+      value: `${segmentCounts.self}件`,
+      detail: SELF_TRACK_DEVICE_LABEL,
+      count: segmentCounts.self,
+    },
+    {
+      key: "other",
+      label: "相手側",
+      value: `${segmentCounts.other}件`,
+      detail: OTHER_TRACK_DEVICE_LABEL,
+      count: segmentCounts.other,
+    },
+  ] as const;
   return (
     <div
       className="transcript-display-wrapper"
@@ -307,66 +356,68 @@ export function TranscriptDisplay({
           >
             <span
               className="transcript-segment-count"
-              aria-label={`文字起こし総件数: ${segments.length} 件`}
-              title={`文字起こし総件数: ${segments.length} 件`}
+              aria-label={`文字起こし ${segments.length} 件`}
+              title={`文字起こし ${segments.length} 件`}
             >
               {segments.length} 件
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-self"
-              aria-label={`${SELF_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.self} 件`}
-              title={`${SELF_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.self} 件`}
+              aria-label={`${SELF_TRACK_DEVICE_LABEL}: ${segmentCounts.self} 件`}
+              title={`${SELF_TRACK_DEVICE_LABEL}: ${segmentCounts.self} 件`}
             >
               自分 {segmentCounts.self}
             </span>
             <span
               className="transcript-count-pill transcript-count-pill-other"
-              aria-label={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.other} 件`}
-              title={`${OTHER_TRACK_DEVICE_LABEL}の文字起こし: ${segmentCounts.other} 件`}
+              aria-label={`${OTHER_TRACK_DEVICE_LABEL}: ${segmentCounts.other} 件`}
+              title={`${OTHER_TRACK_DEVICE_LABEL}: ${segmentCounts.other} 件`}
             >
               相手側 {segmentCounts.other}
             </span>
             {segmentCounts.unknown > 0 && (
               <span
                 className="transcript-count-pill transcript-count-pill-unknown"
-                aria-label={`音声ソース不明の文字起こし: ${segmentCounts.unknown} 件`}
-                title={`音声ソース不明の文字起こし: ${segmentCounts.unknown} 件`}
+                aria-label={`不明: ${segmentCounts.unknown} 件`}
+                title={`不明: ${segmentCounts.unknown} 件`}
               >
-                ソース不明 {segmentCounts.unknown}
+                不明 {segmentCounts.unknown}
               </span>
             )}
             {segmentCounts.errors > 0 && (
               <span
                 className="transcript-count-pill transcript-count-pill-error"
-                aria-label={`文字起こしエラー: ${segmentCounts.errors} 件`}
-                title={`文字起こしエラー: ${segmentCounts.errors} 件`}
+                aria-label={`エラー: ${segmentCounts.errors} 件`}
+                title={`エラー: ${segmentCounts.errors} 件`}
               >
                 エラー {segmentCounts.errors}
               </span>
             )}
           </div>
           <div className="transcript-toolbar-actions">
-            <button
-              type="button"
-              className="copy-btn"
-              aria-label={copyButtonLabel}
-              aria-live="polite"
-              aria-atomic="true"
-              title={copyButtonLabel}
-              onClick={handleCopyAll}
-              disabled={copyableSegmentsCount === 0 || isCopying}
-            >
-              {isCopying
-                ? "コピー中..."
-                : copyFeedback
-                  ? "コピー済み"
-                  : "本文をコピー"}
-            </button>
+            {copyableSegmentsCount > 0 ? (
+              <button
+                type="button"
+                className="copy-btn"
+                aria-label={copyButtonLabel}
+                aria-live="polite"
+                aria-atomic="true"
+                title={copyButtonLabel}
+                onClick={handleCopyAll}
+                disabled={isCopying}
+              >
+                {isCopying
+                  ? "文字起こしコピー中…"
+                  : copyFeedback && copyFeedbackScope === "all"
+                    ? "文字起こしコピー済み"
+                    : "文字起こしコピー"}
+              </button>
+            ) : null}
             {isPaused && (
               <div
                 className="transcript-pause-pill"
-                aria-label="最新追従は一時停止中"
-                title="最新追従は一時停止中"
+                aria-label="録音中の文字起こし最新追従は一時停止中です。最新の発話へ戻れます。"
+                title="録音中の文字起こし最新追従は一時停止中です。最新の発話へ戻れます。"
               >
                 <Pause aria-hidden="true" size={11} strokeWidth={2.4} />
                 <span className="transcript-pause-pill-label">一時停止中</span>
@@ -380,8 +431,8 @@ export function TranscriptDisplay({
                 <button
                   type="button"
                   className="transcript-pause-pill-resume"
-                  aria-label="文字起こしログの最新追従を再開"
-                  title="文字起こしログの最新追従を再開"
+                  aria-label="最新の文字起こしへ戻る"
+                  title="最新の文字起こしへ戻る"
                   onClick={handleScrollToLatest}
                 >
                   <Play aria-hidden="true" size={9} strokeWidth={2.5} />
@@ -392,22 +443,61 @@ export function TranscriptDisplay({
           </div>
         </div>
       )}
+      {segments.length > 0 && (
+        <div
+          className="transcript-track-rail"
+          aria-label={`トラック別。自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件。音声トラックの外部送信なし。`}
+          title={`トラック別: 自分 ${segmentCounts.self} 件、相手側 ${segmentCounts.other} 件、音声トラック外部送信なし`}
+        >
+          <div className="transcript-track-rail-grid">
+            {trackReviewItems.map((item) => {
+              const scope = item.key;
+              const copied = copyFeedbackScope === scope;
+              const copyTrackLabel = copied
+                ? `${item.label} ${item.count} 件をコピー済み`
+                : `${item.label} ${item.count} 件をコピー`;
+              return (
+                <span
+                  key={item.key}
+                  className={`transcript-track-rail-item transcript-track-rail-item-${item.key}`}
+                >
+                  <strong>{item.label}</strong>
+                  <small>{item.value}</small>
+                  <em>{item.detail}</em>
+                  {item.count > 0 ? (
+                    <button
+                      type="button"
+                      className="transcript-track-copy-btn"
+                      onClick={() => handleCopyTrack(scope)}
+                      disabled={isCopying}
+                      aria-label={copyTrackLabel}
+                      title={copyTrackLabel}
+                    >
+                      {copied ? "文字起こしコピー済み" : "文字起こしコピー"}
+                    </button>
+                  ) : null}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {copyError && (
         <div
           className="transcript-inline-error transcript-inline-error-dismissible"
           role="alert"
-          aria-label={`文字起こし本文コピーエラー: ${copyError}`}
-          title={`文字起こし本文コピーエラー: ${copyError}`}
+          aria-label={`コピーエラー: ${copyError}`}
+          title={`コピーエラー: ${copyError}`}
         >
           <span>{copyError}</span>
           <button
             type="button"
             className="control-btn control-btn-clear"
             onClick={() => setCopyError(null)}
-            aria-label="文字起こし本文コピーエラーを閉じる"
-            title="文字起こし本文コピーエラーを閉じる"
+            aria-label="コピーエラーを閉じる"
+            title="コピーエラーを閉じる"
           >
-            閉じる
+            コピーエラーを閉じる
           </button>
         </div>
       )}
@@ -415,8 +505,8 @@ export function TranscriptDisplay({
         <div
           className="transcript-inline-error"
           role="alert"
-          aria-label={`文字起こし結果受信エラー: ${resultListenerError}`}
-          title={`文字起こし結果受信エラー: ${resultListenerError}`}
+          aria-label={`受信エラー: ${resultListenerError}`}
+          title={`受信エラー: ${resultListenerError}`}
         >
           {resultListenerError}
         </div>
@@ -425,8 +515,8 @@ export function TranscriptDisplay({
         <div
           className="transcript-inline-error"
           role="alert"
-          aria-label={`文字起こしエラー受信エラー: ${errorListenerError}`}
-          title={`文字起こしエラー受信エラー: ${errorListenerError}`}
+          aria-label={`エラー通知: ${errorListenerError}`}
+          title={`エラー通知: ${errorListenerError}`}
         >
           {errorListenerError}
         </div>
@@ -448,7 +538,7 @@ export function TranscriptDisplay({
             aria-label={transcriptLogLabel}
             title={transcriptLogLabel}
           >
-            文字起こしを開始すると、自分/相手側トラックの発話がここに流れます
+            文字起こしはここに表示されます
           </div>
         ) : (
           segments.map((seg, i) => {
@@ -479,15 +569,20 @@ export function TranscriptDisplay({
                 title={segmentAriaLabel}
               >
                 {!isErrorSegment && (
-                  <span className="transcript-timestamp">
-                    [{formatSegmentTimestamp(seg.startMs)}]
-                  </span>
-                )}
-                {speakerLabel && (
-                  <span
-                    className={`transcript-speaker-label${speakerLabelClass}`}
-                  >
-                    {speakerLabel}:
+                  <span className="transcript-segment-meta">
+                    <span className="transcript-timestamp">
+                      [{formatSegmentTimestamp(seg.startMs)}]
+                    </span>
+                    {speakerLabel && (
+                      <span
+                        className={`transcript-speaker-label${speakerLabelClass}`}
+                      >
+                        {speakerLabel}
+                      </span>
+                    )}
+                    <span className="transcript-segment-save-pill">
+                      保存済み
+                    </span>
                   </span>
                 )}
                 <span className="transcript-text">{seg.text}</span>

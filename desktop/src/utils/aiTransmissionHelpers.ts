@@ -1,5 +1,8 @@
 import type { TranscriptionEngineType } from "../types";
-import { isExternalTransmissionLabel } from "./liveCaptionStatus";
+import {
+  isExternalTransmissionLabel,
+  LOCAL_AUDIO_TRANSMISSION_LABEL,
+} from "./liveCaptionStatus";
 import { STATUS_CHECKING_LABEL, STATUS_UNCHECKABLE_LABEL } from "./statusLabels";
 
 export function getAiTransmissionStatusLabel(
@@ -14,7 +17,7 @@ export function getAiTransmissionStatusLabel(
   if (engine === "elevenLabsRealtime") {
     return "送信先 ElevenLabs";
   }
-  return "なし";
+  return LOCAL_AUDIO_TRANSMISSION_LABEL;
 }
 
 export function getAiTransmissionStatusPillClass(statusLabel: string): string {
@@ -24,7 +27,7 @@ export function getAiTransmissionStatusPillClass(statusLabel: string): string {
   if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
     return "meeting-status-pill-error";
   }
-  if (statusLabel === "なし") {
+  if (statusLabel === "なし" || statusLabel === LOCAL_AUDIO_TRANSMISSION_LABEL) {
     return "meeting-status-pill-idle";
   }
   return "meeting-status-pill-neutral";
@@ -32,10 +35,10 @@ export function getAiTransmissionStatusPillClass(statusLabel: string): string {
 
 export function getAiTransmissionStatusAriaLabel(statusLabel: string): string {
   if (statusLabel === STATUS_UNCHECKABLE_LABEL) {
-    return "外部送信状態を確認できません";
+    return "音声外部送信状態を確認できません";
   }
-  if (statusLabel === "なし") {
-    return "外部送信なし、端末内で処理";
+  if (statusLabel === "なし" || statusLabel === LOCAL_AUDIO_TRANSMISSION_LABEL) {
+    return "音声外部送信なし、端末内で処理";
   }
-  return `外部送信: ${statusLabel}`;
+  return `音声外部送信: ${statusLabel}`;
 }

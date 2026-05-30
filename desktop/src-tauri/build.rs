@@ -43,7 +43,13 @@ fn build_swift_bridges() {
         Ok(other) => panic!("Unsupported macOS arch: {other}"),
         Err(e) => panic!("CARGO_CFG_TARGET_ARCH not set: {e}"),
     };
-    let swift_target = format!("{arch}-apple-macos26.0");
+    // 配備ターゲットは Cargo ビルド全体（C 依存・最終リンク）と一致させる。
+    // SDK は SDKROOT 由来の新しいもの（macOS 26）を使うため、SpeechAnalyzer 等の
+    // 新 API は @available ガードで参照でき、配備ターゲットは低く保てる。
+    // 不一致（旧: 配備 26.0 固定 vs リンク 14.0）が Swift overlay の未解決を招いていた。
+    let deployment_target =
+        std::env::var("MACOSX_DEPLOYMENT_TARGET").unwrap_or_else(|_| "14.0".to_string());
+    let swift_target = format!("{arch}-apple-macos{deployment_target}");
 
     let lib_name = "meet_jerky_swift";
     let lib_path = out_dir.join(format!("lib{lib_name}.a"));

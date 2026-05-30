@@ -39,15 +39,44 @@ export function SystemAudioSection({
   const isWaitingForOtherOperation = isControlDisabled && !isOperationPending;
   const systemAudioStateDescription = `${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioStateText}`;
   const systemAudioButtonLabel = isOperationPending
-    ? `${OTHER_TRACK_DEVICE_LABEL}取得を切替中`
+    ? `${OTHER_TRACK_DEVICE_LABEL}を切替中`
     : isControlDisabled
-      ? "他の音声または文字起こし操作を待機中"
-    : isSystemAudioRecording
-      ? `${OTHER_TRACK_DEVICE_LABEL}取得を停止。停止すると相手側の発話は文字起こしされません`
-      : `${OTHER_TRACK_DEVICE_LABEL}取得を開始。相手側の発話を文字起こしします`;
-  const systemAudioInputWaitingLabel =
-    `${OTHER_TRACK_DEVICE_LABEL}: 入力待ち。音量 0%。会議アプリの音声出力、システム音量、macOS の画面収録権限を確認してください`;
+      ? "他の操作を待機中"
+      : isSystemAudioRecording
+        ? `${OTHER_TRACK_DEVICE_LABEL}を停止`
+        : `${OTHER_TRACK_DEVICE_LABEL}を取得`;
+  const systemAudioInputWaitingLabel = `${OTHER_TRACK_DEVICE_LABEL}: 入力待ち。会議音声と画面収録権限を確認`;
   const systemAudioSectionLabel = `${systemAudioStateDescription}${isSystemAudioInputWaiting ? `、${systemAudioInputWaitingLabel}` : ""}、音量 ${systemAudioLevelPercent}%`;
+  const systemAudioBoundaryItems = [
+    {
+      label: "トラック",
+      value: "相手側",
+      detail: OTHER_TRACK_DEVICE_LABEL,
+      tone: "ready",
+    },
+    {
+      label: "入力",
+      value: `${systemAudioLevelPercent}%`,
+      detail: isSystemAudioInputWaiting ? "入力待ち" : "レベル",
+      tone: isSystemAudioInputWaiting
+        ? "warn"
+        : isSystemAudioRecording
+          ? "ready"
+          : "muted",
+    },
+    {
+      label: "相手側音声",
+      value: isSystemAudioRecording ? "取得中" : "取得待機",
+      detail: "文字起こし対象",
+      tone: isSystemAudioRecording ? "ready" : "muted",
+    },
+    {
+      label: "音声外部送信",
+      value: "外部送信なし",
+      detail: "音声トラック",
+      tone: "ready",
+    },
+  ] as const;
 
   return (
     <div
@@ -94,12 +123,28 @@ export function SystemAudioSection({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label={`${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioDropCountTotal} サンプル破棄`}
-            title={`${OTHER_TRACK_DEVICE_LABEL}: ${systemAudioDropCountTotal} サンプル破棄`}
+            aria-label={`${OTHER_TRACK_DEVICE_LABEL}: 音声欠落 ${systemAudioDropCountTotal} 件`}
+            title={`${OTHER_TRACK_DEVICE_LABEL}: 音声欠落 ${systemAudioDropCountTotal} 件`}
           >
-            破棄 {systemAudioDropCountTotal}
+            欠落 {systemAudioDropCountTotal}
           </span>
         )}
+      </div>
+      <div
+        className="audio-source-boundary-grid"
+        aria-label={`${OTHER_TRACK_DEVICE_LABEL}: ${isSystemAudioRecording ? "取得中" : "未取得"}、音量 ${systemAudioLevelPercent}%、音声は外部送信しません`}
+        title={`${OTHER_TRACK_DEVICE_LABEL}の取得境界`}
+      >
+        {systemAudioBoundaryItems.map((item) => (
+          <span
+            key={item.label}
+            className={`audio-source-boundary-item audio-source-boundary-item-${item.tone}`}
+          >
+            <strong>{item.label}</strong>
+            <small>{item.value}</small>
+            <em>{item.detail}</em>
+          </span>
+        ))}
       </div>
       <div className="controls-row">
         <button
@@ -115,12 +160,12 @@ export function SystemAudioSection({
             aria-hidden="true"
           />
           {isOperationPending
-            ? "取得を切替中..."
+            ? "取得を切替中…"
             : isWaitingForOtherOperation
               ? "他操作待ち"
-            : isSystemAudioRecording
-              ? "相手側音声の取得を停止"
-              : "相手側音声の取得を開始"}
+              : isSystemAudioRecording
+                ? "相手側音声の取得を停止"
+                : "相手側音声の取得を開始"}
         </button>
       </div>
       <div className="level-meter-row">
@@ -135,8 +180,7 @@ export function SystemAudioSection({
       </div>
       {!isCompact && (
         <div className="audio-source-note">
-          {OTHER_TRACK_DEVICE_LABEL}はデスクトップ/アプリ音声から取得します。macOS
-          の画面収録が未許可の場合、相手側の発話は記録されません。
+          {OTHER_TRACK_DEVICE_LABEL}はデスクトップ/アプリ音声から取得します。
         </div>
       )}
     </div>

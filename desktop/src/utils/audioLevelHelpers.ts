@@ -16,15 +16,9 @@ export function getPopoverLevelBars(level: number): [number, number, number] {
 
 export function getLevelColor(level: number): string {
   if (level < 0.5) {
-    const ratio = level / 0.5;
-    const r = Math.round(76 + (234 - 76) * ratio);
-    const g = Math.round(175 + (179 - 175) * ratio);
-    const b = Math.round(80 + (8 - 80) * ratio);
-    return `rgb(${r}, ${g}, ${b})`;
+    const greenRatio = Math.round((1 - level / 0.5) * 100);
+    return `color-mix(in srgb, var(--es-green) ${greenRatio}%, var(--es-amber))`;
   }
-  const ratio = (level - 0.5) / 0.5;
-  const r = Math.round(234 + (220 - 234) * ratio);
-  const g = Math.round(179 + (38 - 179) * ratio);
-  const b = Math.round(8 + (38 - 8) * ratio);
-  return `rgb(${r}, ${g}, ${b})`;
+  const amberRatio = Math.round((1 - (level - 0.5) / 0.5) * 100);
+  return `color-mix(in srgb, var(--es-amber) ${amberRatio}%, var(--es-red))`;
 }

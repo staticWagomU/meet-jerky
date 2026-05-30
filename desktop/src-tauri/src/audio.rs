@@ -473,6 +473,18 @@ impl AudioStateHandle {
             .as_ref()
             .is_some_and(|sys| sys.has_consumer())
     }
+
+    /// マイクの現在の RMS レベルを取得する。
+    pub fn current_microphone_level(&self) -> Option<f32> {
+        let inner = self.0.lock();
+        inner.microphone.as_ref().map(|mic| mic.current_level())
+    }
+
+    /// システム音声の現在の RMS レベルを取得する。
+    pub fn current_system_audio_level(&self) -> Option<f32> {
+        let inner = self.0.lock();
+        inner.system_audio.as_ref().map(|sys| sys.current_level())
+    }
 }
 
 /// 利用可能な入力デバイスを列挙する

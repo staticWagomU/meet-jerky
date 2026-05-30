@@ -64,7 +64,9 @@ export function getTrackCaptureState(label: string): TrackCaptureState {
   return "inactive";
 }
 
-export function getVisibleTrackSummary(status: LiveCaptionStatusPayload): string {
+export function getVisibleTrackSummary(
+  status: LiveCaptionStatusPayload,
+): string {
   const microphoneState = getTrackCaptureState(status.microphoneTrackLabel);
   const systemAudioState = getTrackCaptureState(status.systemAudioTrackLabel);
 
@@ -72,13 +74,13 @@ export function getVisibleTrackSummary(status: LiveCaptionStatusPayload): string
     return "切替中";
   }
   if (microphoneState === "active" && systemAudioState === "active") {
-    return "Mic + System";
+    return "自分 + 相手側";
   }
   if (microphoneState === "active") {
-    return "Mic only";
+    return "自分のみ";
   }
   if (systemAudioState === "active") {
-    return "System only";
+    return "相手側のみ";
   }
   return "未取得";
 }

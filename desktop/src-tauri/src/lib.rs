@@ -38,6 +38,7 @@ mod realtime_ws_helpers;
 mod secret_store;
 mod secret_store_commands;
 mod session;
+mod session_audio_assets;
 mod session_commands;
 mod session_commands_helpers;
 mod session_commands_list;
@@ -75,7 +76,7 @@ mod transcription_worker_loop;
 
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem},
+    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
     utils::config::Color,
     Emitter, LogicalPosition, LogicalSize, Manager, Monitor, PhysicalPosition, PhysicalSize,
@@ -83,9 +84,20 @@ use tauri::{
 };
 
 const MAIN_WINDOW_LABEL: &str = "main";
+const SETTINGS_WINDOW_LABEL: &str = "settings";
 const MEETING_PROMPT_WINDOW_LABEL: &str = "meeting-prompt";
 const LIVE_CAPTION_WINDOW_LABEL: &str = "live-caption";
 const RING_LIGHT_WINDOW_LABEL: &str = "ring-light";
+const SETTINGS_WINDOW_REQUEST_EVENT: &str = "meet-jerky-open-settings-category";
+const MEETING_START_REQUEST_EVENT: &str = "meet-jerky-start-recording-requested";
+#[cfg(debug_assertions)]
+const CONTROLLER_WINDOW_LABEL: &str = "controller";
+#[cfg(debug_assertions)]
+const CONTROLLER_WIDTH: f64 = 460.0;
+#[cfg(debug_assertions)]
+const CONTROLLER_HEIGHT: f64 = 720.0;
+const SETTINGS_WINDOW_WIDTH: f64 = 820.0;
+const SETTINGS_WINDOW_HEIGHT: f64 = 560.0;
 const MEETING_PROMPT_WIDTH: f64 = 560.0;
 const MEETING_PROMPT_HEIGHT: f64 = 280.0;
 const MAIN_WINDOW_WIDTH: f64 = 328.0;
@@ -106,16 +118,70 @@ pub(crate) fn install_rustls_crypto_provider() {
 }
 
 fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let show_item = MenuItem::with_id(app, "show", "表示", true, None::<&str>)?;
+    let show_item = MenuItem::with_id(app, "show", "録音パネルを表示", true, None::<&str>)?;
+    let start_recording_item =
+        MenuItem::with_id(app, "start-recording", "録音を開始", true, None::<&str>)?;
+    let live_caption_item = MenuItem::with_id(
+        app,
+        "live-caption",
+        "ライブ文字起こしを表示",
+        true,
+        None::<&str>,
+    )?;
+    let open_settings_item = MenuItem::with_id(
+        app,
+        "settings-general",
+        "設定を開く",
+        true,
+        None::<&str>,
+    )?;
+    let settings_detection_item =
+        MenuItem::with_id(app, "settings-detection", "検出", true, None::<&str>)?;
+    let settings_audio_item = MenuItem::with_id(app, "settings-audio", "音声", true, None::<&str>)?;
+    let settings_transcription_item = MenuItem::with_id(
+        app,
+        "settings-transcription",
+        "文字起こし",
+        true,
+        None::<&str>,
+    )?;
+    let settings_ai_minutes_item =
+        MenuItem::with_id(app, "settings-ai-minutes", "AI議事録", true, None::<&str>)?;
+    let settings_privacy_item =
+        MenuItem::with_id(app, "settings-privacy", "プライバシー", true, None::<&str>)?;
+    let settings_submenu = Submenu::with_items(
+        app,
+        "設定ショートカット",
+        true,
+        &[
+            &settings_detection_item,
+            &settings_audio_item,
+            &settings_transcription_item,
+            &settings_ai_minutes_item,
+            &settings_privacy_item,
+        ],
+    )?;
     let quit_item = MenuItem::with_id(app, "quit", "終了", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &show_item,
+            &start_recording_item,
+            &live_caption_item,
+            &PredefinedMenuItem::separator(app)?,
+            &open_settings_item,
+            &settings_submenu,
+            &PredefinedMenuItem::separator(app)?,
+            &quit_item,
+        ],
+    )?;
 
     let icon = Image::from_path("icons/32x32.png")?;
 
     TrayIconBuilder::new()
         .icon(icon)
         .icon_as_template(true)
-        .tooltip("meet-jerky")
+        .tooltip("Meet Jerky")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app_handle, event| match event.id.as_ref() {
@@ -125,6 +191,41 @@ fn setup_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     let _ = window.show();
                     let _ = window.set_focus();
                 }
+            }
+            "start-recording" => {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    position_main_window_under_menu_bar(app_handle, &window);
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+                let _ = app_handle.emit(
+                    MEETING_START_REQUEST_EVENT,
+                    serde_json::json!({
+                        "source": "menu-bar",
+                        "sourceLabel": "メニューバー"
+                    }),
+                );
+            }
+            "live-caption" => {
+                let _ = set_live_caption_window_visible(app_handle.clone(), true);
+            }
+            "settings-general" => {
+                let _ = show_settings_window(app_handle.clone(), Some("general".to_string()));
+            }
+            "settings-detection" => {
+                let _ = show_settings_window(app_handle.clone(), Some("detection".to_string()));
+            }
+            "settings-audio" => {
+                let _ = show_settings_window(app_handle.clone(), Some("audio".to_string()));
+            }
+            "settings-transcription" => {
+                let _ = show_settings_window(app_handle.clone(), Some("transcription".to_string()));
+            }
+            "settings-ai-minutes" => {
+                let _ = show_settings_window(app_handle.clone(), Some("aiMinutes".to_string()));
+            }
+            "settings-privacy" => {
+                let _ = show_settings_window(app_handle.clone(), Some("privacy".to_string()));
             }
             "quit" => {
                 app_handle.exit(0);
@@ -161,7 +262,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
         MEETING_PROMPT_WINDOW_LABEL,
         WebviewUrl::App("index.html?window=meeting-prompt".into()),
     )
-    .title("meet-jerky recording prompt")
+    .title("Meet Jerky Recording")
     .inner_size(MEETING_PROMPT_WIDTH, MEETING_PROMPT_HEIGHT)
     .decorations(false)
     .resizable(false)
@@ -179,7 +280,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
         LIVE_CAPTION_WINDOW_LABEL,
         WebviewUrl::App("index.html?window=live-caption".into()),
     )
-    .title("meet-jerky live caption")
+    .title("Meet Jerky Live Caption")
     .inner_size(LIVE_CAPTION_WIDTH, LIVE_CAPTION_HEIGHT)
     .decorations(false)
     .resizable(false)
@@ -197,7 +298,7 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
         RING_LIGHT_WINDOW_LABEL,
         WebviewUrl::App("index.html?window=ring-light".into()),
     )
-    .title("meet-jerky ring light")
+    .title("Meet Jerky Recording Indicator")
     .inner_size(RING_LIGHT_FALLBACK_WIDTH, RING_LIGHT_FALLBACK_HEIGHT)
     .decorations(false)
     .resizable(false)
@@ -214,6 +315,75 @@ fn setup_overlay_windows(app: &mut tauri::App) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+fn setup_settings_window(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    WebviewWindowBuilder::new(
+        app,
+        SETTINGS_WINDOW_LABEL,
+        WebviewUrl::App("index.html?window=settings&category=general".into()),
+    )
+    .title("Meet Jerky Settings")
+    .inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+    .min_inner_size(SETTINGS_WINDOW_WIDTH, SETTINGS_WINDOW_HEIGHT)
+    .center()
+    .decorations(false)
+    .resizable(true)
+    .visible(false)
+    .skip_taskbar(true)
+    .build()?;
+
+    Ok(())
+}
+
+/// デバッグ用コントローラー窓を生成する。dev ビルド限定で、起動時に中央へ可視表示する。
+/// 各オーバーレイUIを本番経路で任意に発火させて単体検証するためのハーネス。
+#[cfg(debug_assertions)]
+fn setup_controller_window(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    WebviewWindowBuilder::new(
+        app,
+        CONTROLLER_WINDOW_LABEL,
+        WebviewUrl::App("index.html?window=controller".into()),
+    )
+    .title("Meet Jerky Controller (Debug)")
+    .inner_size(CONTROLLER_WIDTH, CONTROLLER_HEIGHT)
+    .center()
+    .resizable(true)
+    .always_on_top(true)
+    .visible(true)
+    .build()?;
+
+    Ok(())
+}
+
+/// MEETJERKY_DEBUG_AUTOSHOW で指定したオーバーレイ窓を、起動直後に本番経路で自動表示する。
+/// クリック不要で配置ロジックを発火させ、ログ＋外部オラクルで自走検証するためのフック。
+#[cfg(debug_assertions)]
+fn spawn_debug_autoshow(app: &tauri::App) {
+    let Ok(target) = std::env::var("MEETJERKY_DEBUG_AUTOSHOW") else {
+        return;
+    };
+    let handle = app.handle().clone();
+    std::thread::spawn(move || {
+        // webview とネイティブ窓が生成され切るのを待ってから発火する。
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let dispatch = handle.clone();
+        let _ = handle.run_on_main_thread(move || {
+            let res = match target.as_str() {
+                "live-caption" => set_live_caption_window_visible(dispatch.clone(), true),
+                "meeting-prompt" => set_meeting_prompt_window_visible(dispatch.clone(), true),
+                "ring-light" => set_ring_light_visible(dispatch.clone(), true),
+                other => {
+                    eprintln!("[autoshow] 未知のターゲット: {other}");
+                    Ok(())
+                }
+            };
+            match res {
+                Ok(()) => eprintln!("[autoshow] done target={target}"),
+                Err(e) => eprintln!("[autoshow] failed target={target}: {e}"),
+            }
+        });
+    });
+}
+
 fn current_monitor_or_primary(app: &tauri::AppHandle) -> tauri::Result<Option<Monitor>> {
     if let Ok(cursor_position) = app.cursor_position() {
         if let Some(monitor) = app.monitor_from_point(cursor_position.x, cursor_position.y)? {
@@ -225,6 +395,11 @@ fn current_monitor_or_primary(app: &tauri::AppHandle) -> tauri::Result<Option<Mo
 }
 
 fn meeting_monitor_or_current_or_primary(app: &tauri::AppHandle) -> tauri::Result<Option<Monitor>> {
+    // デバッグ: scale 2.0 の主モニタ等、狙ったモニタで配置を検証するための強制指定。
+    #[cfg(debug_assertions)]
+    if std::env::var("MEETJERKY_DEBUG_FORCE_PRIMARY").is_ok() {
+        return app.primary_monitor();
+    }
     if let Some((x, y)) = app_detection::latest_meeting_window_center() {
         if let Some(monitor) = app.monitor_from_point(x, y)? {
             return Ok(Some(monitor));
@@ -381,6 +556,17 @@ fn position_window_bottom_center(
     let _ = window.set_position(LogicalPosition::new(x, y));
 }
 
+fn normalize_settings_category(category: Option<&str>) -> &'static str {
+    match category {
+        Some("detection") => "detection",
+        Some("audio") => "audio",
+        Some("transcription") => "transcription",
+        Some("aiMinutes") => "aiMinutes",
+        Some("privacy") => "privacy",
+        _ => "general",
+    }
+}
+
 #[tauri::command]
 fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
     let Some(window) = app.get_webview_window(MEETING_PROMPT_WINDOW_LABEL) else {
@@ -401,6 +587,24 @@ fn set_meeting_prompt_window_visible(app: tauri::AppHandle, visible: bool) -> Re
             .hide()
             .map_err(|e| format!("会議検知通知ウィンドウを隠せません: {e}"))?;
     }
+    Ok(())
+}
+
+#[tauri::command]
+fn show_settings_window(app: tauri::AppHandle, category: Option<String>) -> Result<(), String> {
+    let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) else {
+        return Err("設定ウィンドウが見つかりません".to_string());
+    };
+    let category = normalize_settings_category(category.as_deref());
+    window
+        .show()
+        .map_err(|e| format!("設定ウィンドウを表示できません: {e}"))?;
+    window
+        .set_focus()
+        .map_err(|e| format!("設定ウィンドウにフォーカスできません: {e}"))?;
+    window
+        .emit(SETTINGS_WINDOW_REQUEST_EVENT, category)
+        .map_err(|e| format!("設定カテゴリを切り替えられません: {e}"))?;
     Ok(())
 }
 
@@ -522,15 +726,24 @@ pub fn run() {
             session_commands::discard_session,
             session_commands_list::list_session_summaries_cmd,
             session_commands_read::read_session_content_cmd,
+            session_audio_assets::get_session_audio_assets_cmd,
             app_detection::take_latest_meeting_detection,
+            show_settings_window,
             show_main_window,
             set_meeting_prompt_window_visible,
             set_live_caption_window_visible,
             set_ring_light_visible,
+            #[cfg(debug_assertions)]
+            app_detection::debug_emit_meeting_detected,
         ])
         .setup(|app| {
             setup_tray(app)?;
+            setup_settings_window(app)?;
             setup_overlay_windows(app)?;
+            #[cfg(debug_assertions)]
+            setup_controller_window(app)?;
+            #[cfg(debug_assertions)]
+            spawn_debug_autoshow(app);
             // 会議アプリの起動検知を開始する。macOS 以外では noop。
             app_detection::start(app.handle().clone());
             Ok(())

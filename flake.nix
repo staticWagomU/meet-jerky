@@ -42,6 +42,70 @@
         };
 
         # ─────────────────────────────────────────────
+        # swift ツールチェイン shim（macOS）
+        #
+        # 問題: このビルドは2つのツールチェインが SDK を奪い合う。
+        #   - Nix の cc/clang/ld ラッパー（ring・whisper の C、rustc の最終リンク）は
+        #     SDKROOT/DEVELOPER_DIR が「Nix値か未設定」でないと壊れる（純粋性のため
+        #     非 /nix の sysroot を無視し、フレームワーク・libSystem・SDK ヘッダーを
+        #     見失う）。
+        #   - swift（screencapturekit の SwiftPM・自前ブリッジ）は system swiftc
+        #     (6.3.x) を使い、Nix の apple-sdk_15 (Swift 6.1.2) では SwiftShims 不一致
+        #     で壊れる。system SDK (CLT/Xcode) が必須。
+        # この2つは同一ビルドで env を共有するため、1組の SDKROOT/DEVELOPER_DIR では
+        # 両立できない。
+        #
+        # 解決策: global env は Nix 既定のまま（SDKROOT=Nix）にして Nix 側を満たし、
+        # swift / swiftc / xcrun だけ PATH に shim を前置して system SDK へ向ける。
+        # screencapturekit は `swift`/`xcrun` を PATH 経由で呼ぶため shim で捕捉でき、
+        # SwiftPM が spawn する swiftc も shim が export した SDKROOT を継承する。
+        # ─────────────────────────────────────────────
+        systemDevDir = ''
+          if [ -d /Applications/Xcode.app/Contents/Developer ]; then
+            DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+          else
+            DEVELOPER_DIR=/Library/Developer/CommandLineTools
+          fi
+          export DEVELOPER_DIR
+        '';
+        mkSwiftShim = tool:
+          pkgs.writeShellScriptBin tool ''
+            ${systemDevDir}
+            export SDKROOT="$(/usr/bin/xcrun --sdk macosx --show-sdk-path 2>/dev/null)"
+            exec "$DEVELOPER_DIR/usr/bin/${tool}" "$@"
+          '';
+        xcrunShim = pkgs.writeShellScriptBin "xcrun" ''
+          ${systemDevDir}
+          unset SDKROOT
+          exec /usr/bin/xcrun "$@"
+        '';
+        swiftToolchainShims = [
+          (mkSwiftShim "swift")
+          (mkSwiftShim "swiftc")
+          xcrunShim
+        ];
+
+        # ─────────────────────────────────────────────
+        # rustc 最終リンク専用ラッパー（macOS）
+        #
+        # このバイナリは自前ブリッジ + screencapturekit の Swift を多用し、
+        # macOS 26 の Speech/AVFoundation/ScreenCaptureKit 等を参照する。
+        # Nix の ld は Swift の auto-link（.o の LC_LINKER_OPTION）を解決できず、
+        # 検索パスと .tbd を与えても swiftCore/overlay/framework がリンクされず
+        # 大量の未定義シンボルになる。
+        #
+        # 解決策: 最終リンクだけ Apple の system cc(ld64) を SDKROOT=CLT で使う。
+        # macOS 26 SDK の framework・swift overlay・libSystem が一貫解決される。
+        # コンパイルは Nix のまま（global SDKROOT=Nix）で、Nix の rlib は system
+        # libSystem と ABI 互換なので問題なくリンクできる。
+        # ─────────────────────────────────────────────
+        rustcLinkWrapper = pkgs.writeShellScript "rustc-link-wrapper" ''
+          ${systemDevDir}
+          export SDKROOT="$(/usr/bin/xcrun --sdk macosx --show-sdk-path 2>/dev/null)"
+          exec /usr/bin/cc "$@"
+        '';
+
+        # ─────────────────────────────────────────────
         # macOS 固有の依存関係
         #
         # 新しい nixpkgs では個別のフレームワークパッケージ
@@ -95,20 +159,14 @@
             ${pkgs.lib.optionalString isDarwin ''
               export BINDGEN_EXTRA_CLANG_ARGS="-isysroot ${pkgs.apple-sdk_15.sdkroot}"
 
-              # screencapturekit クレートの Swift ブリッジビルドには
-              # Xcode の Swift ツールチェインと一致する SDK が必要。
-              # nix は DEVELOPER_DIR と SDKROOT を apple-sdk_15 に設定するが、
-              # これは Swift 6.1.2 でビルドされており Xcode の Swift 6.2 と
-              # 互換性がないため、Xcode のパスに上書きする。
-              if [ -d "/Applications/Xcode.app/Contents/Developer" ]; then
-                export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
-                export SDKROOT="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-                # Swift ランタイムライブラリへのリンクパスを追加
-                # screencapturekit クレートの Swift ブリッジが Swift の
-                # Dispatch, Foundation 等のシンボルを必要とする
-                export NIX_LDFLAGS="$NIX_LDFLAGS -L/usr/lib/swift"
-                export LIBRARY_PATH="/usr/lib/swift:''${LIBRARY_PATH:-}"
-              fi
+              # SDKROOT/DEVELOPER_DIR は Nix 既定（apple-sdk_15）のまま触らない。
+              # Nix の cc/clang はこの値（または未設定）でないと C コンパイルが壊れるため。
+              # swift コンパイルは下の PATH shim が system SDK へ振り分け、
+              # 最終リンクは下の CARGO_..._LINKER ラッパーが system cc を使う。
+              export PATH="${pkgs.lib.makeBinPath swiftToolchainShims}:$PATH"
+
+              # rustc の最終リンクを system cc(ld64) に委譲する（Swift auto-link 解決のため）。
+              export CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER="${rustcLinkWrapper}"
             ''}
 
             echo "──────────────────────────────────────"

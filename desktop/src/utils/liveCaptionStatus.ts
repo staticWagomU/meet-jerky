@@ -8,6 +8,7 @@ const EXTERNAL_TRANSMISSION_LABELS = new Set([
   "送信先 OpenAI",
   "送信先 ElevenLabs",
 ]);
+export const LOCAL_AUDIO_TRANSMISSION_LABEL = "外部送信なし";
 const MAX_STATUS_LABEL_LENGTH = 80;
 
 function toValidStatusLabel(value: unknown): string | null {
@@ -206,10 +207,13 @@ export function getVisibleTransmissionLabel(
   status: LiveCaptionStatusPayload,
 ): string {
   if (status.isExternalTransmission) {
-    return "外部送信";
+    return "音声外部送信";
   }
-  if (status.aiTransmissionLabel === "なし") {
-    return "端末内";
+  if (
+    status.aiTransmissionLabel === "なし" ||
+    status.aiTransmissionLabel === LOCAL_AUDIO_TRANSMISSION_LABEL
+  ) {
+    return "音声外部送信なし";
   }
   return status.aiTransmissionLabel;
 }
@@ -218,9 +222,9 @@ export function getTransmissionStatusAriaLabel(
   status: LiveCaptionStatusPayload,
 ): string {
   if (status.isExternalTransmission) {
-    return `外部送信: ${status.aiTransmissionLabel}`;
+    return `音声外部送信: ${status.aiTransmissionLabel}`;
   }
-  return "外部送信なし、端末内で処理";
+  return "音声外部送信なし、端末内で処理";
 }
 
 export function isExternalTransmissionLabel(label: string): boolean {
@@ -255,7 +259,7 @@ export function buildLiveCaptionStatusFromEngine(
   if (engine === "appleSpeech") {
     return {
       engineLabel: "Apple Speech",
-      aiTransmissionLabel: "なし",
+      aiTransmissionLabel: LOCAL_AUDIO_TRANSMISSION_LABEL,
       isExternalTransmission: false,
       transcriptionStatusLabel:
         DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,
@@ -266,7 +270,7 @@ export function buildLiveCaptionStatusFromEngine(
   if (engine === "whisper") {
     return {
       engineLabel: "Whisper",
-      aiTransmissionLabel: "なし",
+      aiTransmissionLabel: LOCAL_AUDIO_TRANSMISSION_LABEL,
       isExternalTransmission: false,
       transcriptionStatusLabel:
         DEFAULT_LIVE_CAPTION_STATUS.transcriptionStatusLabel,

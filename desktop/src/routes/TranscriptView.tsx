@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openPath, openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -16,11 +17,7 @@ import {
   Target,
   Volume2,
 } from "lucide-react";
-import type {
-  AppSettings,
-  AudioDevice,
-  TranscriptSegment,
-} from "../types";
+import type { AppSettings, AudioDevice, TranscriptSegment } from "../types";
 import { MicrophoneSection } from "../components/MicrophoneSection";
 import { SystemAudioSection } from "../components/SystemAudioSection";
 import { TranscriptionControls } from "../components/TranscriptionControls";
@@ -34,8 +31,9 @@ import { usePermissions } from "../hooks/usePermissions";
 import { useSessionList } from "../hooks/useSessionList";
 import {
   clearPendingMeetingStartRequest,
-  hasPendingMeetingStartRequest as readPendingMeetingStartRequest,
   MEETING_START_REQUEST_EVENT,
+  readPendingMeetingStartRequest,
+  type PendingMeetingStartRequest,
 } from "../utils/meetingStartRequest";
 import { toErrorMessage } from "../utils/errorMessage";
 import {
@@ -58,7 +56,10 @@ import {
   AUDIO_LEVEL_EVENT,
   SYSTEM_AUDIO_FORMAT_WARNING_EVENT,
 } from "../utils/audioEvents";
-import { getPopoverLevelBars, sanitizeAudioLevel } from "../utils/audioLevelHelpers";
+import {
+  getPopoverLevelBars,
+  sanitizeAudioLevel,
+} from "../utils/audioLevelHelpers";
 import {
   getAudioSourceNotice,
   getAudioSourceStatusAriaText,
@@ -75,9 +76,21 @@ import {
   getExternalApiKeyStatusLabel,
   getExternalApiKeyStatusPillClass,
 } from "../utils/externalApiKeyHelpers";
-import { getPermissionStatusLabel, getPermissionRowClassName } from "../utils/permissionStatusHelpers";
-import { STATUS_CHECKING_LABEL, STATUS_ENDING_LABEL, STATUS_RECORDING_LABEL, STATUS_STARTING_LABEL, STATUS_UNCHECKABLE_LABEL } from "../utils/statusLabels";
-import { getMicTrackStatusAriaLabel, getSystemAudioTrackStatusAriaLabel } from "../utils/trackStatusAriaLabels";
+import {
+  getPermissionStatusLabel,
+  getPermissionRowClassName,
+} from "../utils/permissionStatusHelpers";
+import {
+  STATUS_CHECKING_LABEL,
+  STATUS_ENDING_LABEL,
+  STATUS_RECORDING_LABEL,
+  STATUS_STARTING_LABEL,
+  STATUS_UNCHECKABLE_LABEL,
+} from "../utils/statusLabels";
+import {
+  getMicTrackStatusAriaLabel,
+  getSystemAudioTrackStatusAriaLabel,
+} from "../utils/trackStatusAriaLabels";
 import {
   getAiTransmissionStatusAriaLabel,
   getAiTransmissionStatusLabel,
@@ -90,6 +103,7 @@ import {
 import {
   buildLiveCaptionStatusFromLabels,
   LIVE_CAPTION_STATUS_EVENT,
+  LOCAL_AUDIO_TRANSMISSION_LABEL,
   writeStoredLiveCaptionStatus,
 } from "../utils/liveCaptionStatus";
 import { RING_LIGHT_MODE_EVENT } from "../utils/ringLight";
@@ -120,16 +134,25 @@ import {
   getTranscriptionStartBlockedReason,
 } from "../utils/transcriptionSourceHelpers";
 import { getMeetingStartBlockedReason } from "../utils/meetingStartHelpers";
+import { showSettingsWindow } from "../utils/settingsWindow";
+import { isTauriRuntime } from "../utils/browserRuntime";
+import { PREVIEW_SESSION_PATH } from "../utils/previewSessionData";
+import {
+  isPreviewModelDownloaded,
+  PREVIEW_APP_SETTINGS,
+  PREVIEW_AUDIO_DEVICES,
+  PREVIEW_TRANSCRIPT_SEGMENTS,
+} from "../utils/previewAppData";
 
-const MIC_RECORDING_ERROR_PREFIX = "マイク録音操作に失敗しました:";
-const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声の取得操作に失敗しました:";
-const TRANSCRIPTION_ERROR_PREFIX = "文字起こし操作に失敗しました:";
+const MIC_RECORDING_ERROR_PREFIX = "マイク録音を開始できませんでした";
+const SYSTEM_AUDIO_ERROR_PREFIX = "相手側音声を取得できませんでした";
+const TRANSCRIPTION_ERROR_PREFIX = "文字起こしを開始できませんでした";
 const LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX =
-  "ライブ字幕ステータスの保存に失敗しました:";
+  "ライブ文字起こしの状態を保存できませんでした";
 const LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX =
-  "ライブ字幕ステータスの同期に失敗しました:";
+  "ライブ文字起こしの状態を同期できませんでした";
 const TRANSCRIPTION_START_ATTEMPTED_TRACK_STATUS_NOTICE =
-  "録音トラックの状態は上部の自分/相手側ステータスで確認してください。";
+  "録音トラックの状態は上部に表示されます。";
 const TRANSCRIPTION_NOT_RUNNING_MESSAGE = "文字起こしは実行されていません";
 const MEETING_START_BLOCKED_REASON_ID = "meeting-start-blocked-reason";
 const SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX =
@@ -179,6 +202,14 @@ function getUnknownAudioSourceLabel(value: unknown): string | null {
 }
 
 export function TranscriptView() {
+  const isBrowserPreview = !isTauriRuntime();
+  const currentWindow = useMemo(() => {
+    try {
+      return getCurrentWindow();
+    } catch {
+      return null;
+    }
+  }, []);
   const queryClient = useQueryClient();
   const [isMicRecording, setIsMicRecording] = useState(false);
   const [isSystemAudioRecording, setIsSystemAudioRecording] = useState(false);
@@ -226,8 +257,8 @@ export function TranscriptView() {
   const [systemAudioFormatWarning, setSystemAudioFormatWarning] = useState<
     string | null
   >(null);
-  const [hasPendingMeetingStartRequest, setHasPendingMeetingStartRequest] =
-    useState(false);
+  const [pendingMeetingStartRequest, setPendingMeetingStartRequest] =
+    useState<PendingMeetingStartRequest | null>(null);
   const [permissionSettingsOpenError, setPermissionSettingsOpenError] =
     useState<string | null>(null);
   const [hasSkippedFirstLaunch, setHasSkippedFirstLaunch] = useState(false);
@@ -255,13 +286,19 @@ export function TranscriptView() {
     isFetching: isFetchingDevices,
     refetch: refetchDevices,
   } = useQuery<AudioDevice[]>({
-    queryKey: ["audioDevices"],
-    queryFn: () => invoke<AudioDevice[]>("list_audio_devices"),
+    queryKey: ["audioDevices", isBrowserPreview ? "browser-preview" : "tauri"],
+    queryFn: () =>
+      isBrowserPreview
+        ? Promise.resolve(PREVIEW_AUDIO_DEVICES)
+        : invoke<AudioDevice[]>("list_audio_devices"),
   });
 
   const { data: settings, error: settingsError } = useQuery<AppSettings>({
-    queryKey: ["settings"],
-    queryFn: () => invoke<AppSettings>("get_settings"),
+    queryKey: ["settings", isBrowserPreview ? "browser-preview" : "tauri"],
+    queryFn: () =>
+      isBrowserPreview
+        ? Promise.resolve(PREVIEW_APP_SETTINGS)
+        : invoke<AppSettings>("get_settings"),
   });
 
   useEffect(() => {
@@ -273,19 +310,23 @@ export function TranscriptView() {
   }, [settings?.whisperModel]);
 
   useEffect(() => {
-    if (readPendingMeetingStartRequest()) {
-      setHasPendingMeetingStartRequest(true);
+    if (isBrowserPreview) {
+      return;
+    }
+    const pendingRequest = readPendingMeetingStartRequest();
+    if (pendingRequest) {
+      setPendingMeetingStartRequest(pendingRequest);
     }
     let disposed = false;
     const unlistenPromise = listen(MEETING_START_REQUEST_EVENT, () => {
       if (!disposed) {
-        setHasPendingMeetingStartRequest(true);
+        setPendingMeetingStartRequest(readPendingMeetingStartRequest());
       }
     }).catch((e) => {
       if (!disposed) {
         const msg = toErrorMessage(e);
         console.error("録音開始要求の受信開始に失敗しました:", msg);
-        setMeetingError(`録音開始要求の受信開始に失敗しました: ${msg}`);
+        setMeetingError("録音開始要求を確認できませんでした");
       }
       return null;
     });
@@ -295,12 +336,18 @@ export function TranscriptView() {
       unlistenPromise
         .then((unlisten) => unlisten?.())
         .catch((e) => {
-          console.error("録音開始要求の受信解除に失敗しました:", toErrorMessage(e));
+          console.error(
+            "録音開始要求の受信解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     let disposed = false;
     const unlistenPromise = listen<unknown>(
       TRANSCRIPTION_ERROR_EVENT,
@@ -314,9 +361,8 @@ export function TranscriptView() {
         const payload = event.payload;
         if (!isTranscriptionErrorPayload(payload)) {
           const issue = getTranscriptionErrorPayloadIssue(payload);
-          setMeetingError(
-            `文字起こしは停止しましたが、エラー通知の形式が不正です。（理由: ${issue}）`,
-          );
+          console.error("文字起こしエラー通知の形式が不正です:", issue);
+          setMeetingError("文字起こしが停止しました。");
           return;
         }
         const trackLabel =
@@ -337,9 +383,7 @@ export function TranscriptView() {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("文字起こしエラー通知の受信開始に失敗しました:", msg);
-          setMeetingError(
-            `文字起こしエラー通知の受信開始に失敗しました: ${msg}`,
-          );
+          setMeetingError("文字起こしエラーを確認できませんでした");
         }
         return null;
       });
@@ -355,7 +399,7 @@ export function TranscriptView() {
           );
         });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   const requiresLocalModel = getRequiresLocalModel(
     settings?.transcriptionEngine,
@@ -369,32 +413,54 @@ export function TranscriptView() {
   // Check if selected model is downloaded
   const { data: isModelDownloaded, error: modelDownloadedError } =
     useQuery<boolean>({
-      queryKey: ["modelDownloaded", selectedModel],
+      queryKey: [
+        "modelDownloaded",
+        selectedModel,
+        isBrowserPreview ? "browser-preview" : "tauri",
+      ],
       queryFn: () =>
-        invoke<boolean>("is_model_downloaded", { modelName: selectedModel }),
+        isBrowserPreview
+          ? Promise.resolve(isPreviewModelDownloaded(selectedModel))
+          : invoke<boolean>("is_model_downloaded", {
+              modelName: selectedModel,
+            }),
       enabled: requiresLocalModel && !!selectedModel,
     });
 
-  const {
-    data: hasOpenAIApiKey,
-    error: openAIApiKeyError,
-  } = useQuery<boolean>({
-    queryKey: ["openaiApiKey", "has"],
-    queryFn: () => invoke<boolean>("has_openai_api_key"),
-    enabled: requiresOpenAIApiKey,
-  });
+  const { data: hasOpenAIApiKey, error: openAIApiKeyError } = useQuery<boolean>(
+    {
+      queryKey: [
+        "openaiApiKey",
+        "has",
+        isBrowserPreview ? "browser-preview" : "tauri",
+      ],
+      queryFn: () =>
+        isBrowserPreview
+          ? Promise.resolve(false)
+          : invoke<boolean>("has_openai_api_key"),
+      enabled: requiresOpenAIApiKey,
+    },
+  );
 
-  const {
-    data: hasElevenLabsApiKey,
-    error: elevenLabsApiKeyError,
-  } = useQuery<boolean>({
-    queryKey: ["elevenlabsApiKey", "has"],
-    queryFn: () => invoke<boolean>("has_elevenlabs_api_key"),
-    enabled: requiresElevenLabsApiKey,
-  });
+  const { data: hasElevenLabsApiKey, error: elevenLabsApiKeyError } =
+    useQuery<boolean>({
+      queryKey: [
+        "elevenlabsApiKey",
+        "has",
+        isBrowserPreview ? "browser-preview" : "tauri",
+      ],
+      queryFn: () =>
+        isBrowserPreview
+          ? Promise.resolve(false)
+          : invoke<boolean>("has_elevenlabs_api_key"),
+      enabled: requiresElevenLabsApiKey,
+    });
 
   // Route audio-level events by source
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     let disposed = false;
     const unlistenPromise = listen<unknown>(AUDIO_LEVEL_EVENT, (event) => {
       if (disposed) {
@@ -404,14 +470,18 @@ export function TranscriptView() {
       if (!isAudioLevelPayload(payload)) {
         const unknownSourceLabel = getUnknownAudioSourceLabel(payload);
         if (unknownSourceLabel !== null) {
-          setAudioLevelListenerError(
-            `音声レベル通知の未知の音声ソースです: ${unknownSourceLabel}`,
+          console.error(
+            "音声レベル通知の未知の音声ソースです:",
+            unknownSourceLabel,
           );
+          setAudioLevelListenerError("音声レベルを確認できませんでした");
           return;
         }
-        setAudioLevelListenerError(
-          `音声レベル通知の形式が不正です。（理由: ${getAudioLevelPayloadIssue(payload)}）`,
+        console.error(
+          "音声レベル通知の形式が不正です:",
+          getAudioLevelPayloadIssue(payload),
         );
+        setAudioLevelListenerError("音声レベルを確認できませんでした");
         return;
       }
       setAudioLevelListenerError(null);
@@ -432,9 +502,7 @@ export function TranscriptView() {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("音声レベル監視の開始に失敗しました:", msg);
-          setAudioLevelListenerError(
-            `音声レベル監視の開始に失敗しました: ${msg}`,
-          );
+          setAudioLevelListenerError("音声レベルを確認できませんでした");
         }
         return null;
       });
@@ -444,13 +512,19 @@ export function TranscriptView() {
       unlistenPromise
         .then((unlisten) => unlisten?.())
         .catch((e) => {
-          console.error("音声レベル監視の解除に失敗しました:", toErrorMessage(e));
+          console.error(
+            "音声レベル監視の解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   // Route audio-drop-count events by source (cumulative)
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     let disposed = false;
     const unlistenPromise = listen<unknown>(AUDIO_DROP_COUNT_EVENT, (event) => {
       if (disposed) {
@@ -460,14 +534,18 @@ export function TranscriptView() {
       if (!isAudioDropCountPayload(payload)) {
         const unknownSourceLabel = getUnknownAudioSourceLabel(payload);
         if (unknownSourceLabel !== null) {
-          setAudioDropCountListenerError(
-            `音声 drop 通知の未知の音声ソースです: ${unknownSourceLabel}`,
+          console.error(
+            "音声欠落通知の未知の音声ソースです:",
+            unknownSourceLabel,
           );
+          setAudioDropCountListenerError("音声欠落を確認できませんでした");
           return;
         }
-        setAudioDropCountListenerError(
-          `音声 drop 通知の形式が不正です。（理由: ${getAudioDropCountPayloadIssue(payload)}）`,
+        console.error(
+          "音声欠落通知の形式が不正です:",
+          getAudioDropCountPayloadIssue(payload),
         );
+        setAudioDropCountListenerError("音声欠落を確認できませんでした");
         return;
       }
       setAudioDropCountListenerError(null);
@@ -490,9 +568,7 @@ export function TranscriptView() {
         if (!disposed) {
           const msg = toErrorMessage(e);
           console.error("音声 drop 監視の開始に失敗しました:", msg);
-          setAudioDropCountListenerError(
-            `音声 drop 監視の開始に失敗しました: ${msg}`,
-          );
+          setAudioDropCountListenerError("音声欠落を確認できませんでした");
         }
         return null;
       });
@@ -502,12 +578,18 @@ export function TranscriptView() {
       unlistenPromise
         .then((unlisten) => unlisten?.())
         .catch((e) => {
-          console.error("音声 drop 監視の解除に失敗しました:", toErrorMessage(e));
+          console.error(
+            "音声 drop 監視の解除に失敗しました:",
+            toErrorMessage(e),
+          );
         });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     let disposed = false;
     const unlistenPromise = listen<unknown>(
       SYSTEM_AUDIO_FORMAT_WARNING_EVENT,
@@ -523,7 +605,9 @@ export function TranscriptView() {
       .then((unlisten) => {
         if (!disposed) {
           setSystemAudioFormatWarning((current) =>
-            current?.startsWith(SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX)
+            current?.startsWith(
+              SYSTEM_AUDIO_FORMAT_WARNING_LISTENER_ERROR_PREFIX,
+            )
               ? null
               : current,
           );
@@ -552,7 +636,7 @@ export function TranscriptView() {
           );
         });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   const clearSystemAudioCaptureState = useCallback(() => {
     setIsSystemAudioRecording(false);
@@ -595,8 +679,8 @@ export function TranscriptView() {
       await openPath(lastSavedPath);
     } catch (e) {
       const msg = toErrorMessage(e);
-      console.error("保存済み履歴ファイルを開けませんでした:", msg);
-      setSavedFileActionError(`保存済み履歴ファイルを開けませんでした: ${msg}`);
+      console.error("保存済み履歴を開けませんでした:", msg);
+      setSavedFileActionError("保存済み履歴を開けませんでした");
     } finally {
       setSavedFileActionPending(null);
     }
@@ -612,10 +696,8 @@ export function TranscriptView() {
       await revealItemInDir(lastSavedPath);
     } catch (e) {
       const msg = toErrorMessage(e);
-      console.error("保存済み履歴ファイルを Finder で表示できませんでした:", msg);
-      setSavedFileActionError(
-        `保存済み履歴ファイルを Finder で表示できませんでした: ${msg}`,
-      );
+      console.error("保存場所を表示できませんでした:", msg);
+      setSavedFileActionError("保存場所を表示できませんでした");
     } finally {
       setSavedFileActionPending(null);
     }
@@ -623,6 +705,42 @@ export function TranscriptView() {
 
   const handleToggleMeeting = useCallback(async () => {
     if (isMeetingOperationPending || audioOperationPendingRef.current) {
+      return;
+    }
+    if (isBrowserPreview) {
+      audioOperationPendingRef.current = true;
+      setIsMeetingOperationPending(true);
+      window.setTimeout(() => {
+        if (isMeetingActive) {
+          setIsMeetingActive(false);
+          setIsMicRecording(false);
+          clearSystemAudioCaptureState();
+          setIsTranscribing(false);
+          setHasTranscriptionErrorStopped(false);
+          setMeetingStartTime(null);
+          setElapsedTime(0);
+          setMicLevel(0);
+          setLastSavedPath(PREVIEW_SESSION_PATH);
+          setMeetingError(null);
+        } else {
+          const now = Date.now() - 125000;
+          setLastSavedPath(null);
+          setSavedFileActionError(null);
+          setMeetingError(null);
+          setHasTranscriptionErrorStopped(false);
+          setIsMicRecording(true);
+          setIsSystemAudioRecording(true);
+          setIsTranscribing(true);
+          setIsMeetingActive(true);
+          setMeetingStartTime(now);
+          setElapsedTime(Date.now() - now);
+          setMicLevel(0.72);
+          setSystemAudioLevel(0.58);
+          setSegments(PREVIEW_TRANSCRIPT_SEGMENTS);
+        }
+        audioOperationPendingRef.current = false;
+        setIsMeetingOperationPending(false);
+      }, 180);
       return;
     }
     audioOperationPendingRef.current = true;
@@ -652,7 +770,7 @@ export function TranscriptView() {
         } catch (e) {
           const msg = toErrorMessage(e);
           console.error("記録停止に失敗しました:", msg);
-          setMeetingError(`記録停止に失敗しました: ${msg}`);
+          setMeetingError("記録を停止できませんでした");
           return;
         }
 
@@ -665,16 +783,14 @@ export function TranscriptView() {
         } catch (e) {
           const msg = toErrorMessage(e);
           console.error("セッション保存に失敗しました:", msg);
-          setMeetingError(`セッション保存に失敗しました: ${msg}`);
+          setMeetingError("文字起こし履歴を保存できませんでした");
         }
         return;
       }
 
       // START: session 開始 → mic → system audio → transcription
       if (settings?.transcriptionEngine === "appleSpeech") {
-        setMeetingError(
-          `記録開始に失敗しました: ${APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON}`,
-        );
+        setMeetingError(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
         return;
       }
       setLastSavedPath(null);
@@ -695,7 +811,7 @@ export function TranscriptView() {
       } catch (e) {
         const msg = toErrorMessage(e);
         console.error("セッション開始に失敗しました:", msg);
-        setMeetingError(`セッション開始に失敗しました: ${msg}`);
+        setMeetingError("記録を開始できませんでした");
         // session 開始失敗時は録音を開始しない (rollback 不要)
         return;
       }
@@ -741,10 +857,7 @@ export function TranscriptView() {
           await invoke("stop_transcription").catch((rollbackError) => {
             const rollbackMsg = toErrorMessage(rollbackError);
             rollbackErrors.push(`文字起こし停止: ${rollbackMsg}`);
-            console.error(
-              "文字起こしロールバックに失敗しました:",
-              rollbackMsg,
-            );
+            console.error("文字起こしロールバックに失敗しました:", rollbackMsg);
           });
         }
         if (systemAudioStarted) {
@@ -779,10 +892,7 @@ export function TranscriptView() {
           await discardSession().catch((rollbackError) => {
             const rollbackMsg = toErrorMessage(rollbackError);
             rollbackErrors.push(`セッション破棄: ${rollbackMsg}`);
-            console.error(
-              "セッション破棄に失敗しました:",
-              rollbackMsg,
-            );
+            console.error("セッション破棄に失敗しました:", rollbackMsg);
           });
         }
         setIsTranscribing(false);
@@ -793,13 +903,13 @@ export function TranscriptView() {
         setIsMeetingActive(false);
         setMeetingStartTime(null);
         setElapsedTime(0);
-        const rollbackErrorSummary =
-          rollbackErrors.length > 0
-            ? `。後片付けにも失敗しました: ${rollbackErrors.join(" / ")}`
-            : "";
-        setMeetingError(
-          `記録開始に失敗しました: ${msg}${rollbackErrorSummary}`,
-        );
+        if (rollbackErrors.length > 0) {
+          console.error(
+            "記録開始失敗後の後片付けにも失敗しました:",
+            rollbackErrors,
+          );
+        }
+        setMeetingError("記録を開始できませんでした");
       }
     } finally {
       audioOperationPendingRef.current = false;
@@ -807,6 +917,7 @@ export function TranscriptView() {
     }
   }, [
     isMeetingOperationPending,
+    isBrowserPreview,
     isMeetingActive,
     isTranscribing,
     isMicRecording,
@@ -938,7 +1049,10 @@ export function TranscriptView() {
           throw new Error(APPLE_SPEECH_DUAL_SOURCE_BLOCKED_REASON);
         }
         if (isTranscribing) {
-          await restartTranscriptionForAudioSources(true, isSystemAudioRecording);
+          await restartTranscriptionForAudioSources(
+            true,
+            isSystemAudioRecording,
+          );
         } else {
           await startMicCapture();
         }
@@ -1145,19 +1259,25 @@ export function TranscriptView() {
   }, []);
 
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     return () => {
       void invoke("set_live_caption_window_visible", { visible: false }).catch(
         (e) => {
           console.error(
-            "ライブ字幕ウィンドウの非表示に失敗しました:",
+            "ライブ文字起こしウィンドウの非表示に失敗しました:",
             toErrorMessage(e),
           );
         },
       );
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     return () => {
       ringLightDesiredVisibilityRef.current = false;
       ringLightVisibilityRequestIdRef.current += 1;
@@ -1168,7 +1288,7 @@ export function TranscriptView() {
         );
       });
     };
-  }, []);
+  }, [isBrowserPreview]);
 
   const modelDownloadedErrorForUi = requiresLocalModel
     ? modelDownloadedError
@@ -1229,11 +1349,13 @@ export function TranscriptView() {
   const isAudioSourceOperationLocked =
     isAudioSourceOperationPending || audioOperationPendingRef.current;
   const shouldShowPendingMeetingStartNotice =
-    hasPendingMeetingStartRequest &&
+    Boolean(pendingMeetingStartRequest) &&
     !isMeetingActive &&
     (isAudioSourceOperationLocked ||
       (settings === undefined && !settingsError) ||
       Boolean(meetingStartBlockedReason?.includes(STATUS_CHECKING_LABEL)));
+  const pendingMeetingStartSourceLabel =
+    pendingMeetingStartRequest?.sourceLabel ?? "開始要求";
   const isAudioCaptureOperationPending =
     isMicOperationPending ||
     isSystemAudioOperationPending ||
@@ -1317,12 +1439,24 @@ export function TranscriptView() {
   );
   const externalRealtimeRiskNotice = externalApiProvider
     ? isMeetingActive || isTranscribing
-      ? `${externalApiProvider} Realtime へ音声を送信中です。プロバイダ側の利用量課金が発生する可能性があります。`
+      ? `${externalApiProvider} Realtime へ音声を送信中です。利用量に応じた費用が発生する場合があります。`
       : null
     : null;
+  const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const aiTransmissionStatusLabel = settingsError
     ? STATUS_UNCHECKABLE_LABEL
     : getAiTransmissionStatusLabel(settings?.transcriptionEngine);
+  const isLocalAudioTransmission =
+    aiTransmissionStatusLabel === "なし" ||
+    aiTransmissionStatusLabel === LOCAL_AUDIO_TRANSMISSION_LABEL;
+  const aiTransmissionStatusDisplayLabel =
+    isLocalAudioTransmission
+      ? "外部送信なし"
+      : aiTransmissionStatusLabel.replace(/^送信先\s+/, "");
+  const audioTransmissionStatusPillLabel =
+    isLocalAudioTransmission
+      ? "音声外部送信なし"
+      : `音声外部送信 ${aiTransmissionStatusDisplayLabel}`;
   const engineStatusLabel = settingsError
     ? STATUS_UNCHECKABLE_LABEL
     : getEngineStatusLabel(settings?.transcriptionEngine, {
@@ -1339,7 +1473,7 @@ export function TranscriptView() {
       ? "文字起こし中"
       : hasTranscriptionErrorStopped
         ? "エラー停止"
-      : "停止中";
+        : "停止中";
 
   useEffect(() => {
     const liveCaptionStatus = buildLiveCaptionStatusFromLabels(
@@ -1355,9 +1489,8 @@ export function TranscriptView() {
       liveCaptionStatus,
       (e) => {
         const msg = toErrorMessage(e);
-        const errorMessage = `${LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX} ${msg}`;
-        console.error(errorMessage);
-        setMeetingError(errorMessage);
+        console.error(`${LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX}:`, msg);
+        setMeetingError(LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX);
       },
     );
     if (didStoreLiveCaptionStatus) {
@@ -1367,6 +1500,9 @@ export function TranscriptView() {
           LIVE_CAPTION_STATUS_SAVE_ERROR_PREFIX,
         ),
       );
+    }
+    if (isBrowserPreview) {
+      return;
     }
     void emit(LIVE_CAPTION_STATUS_EVENT, liveCaptionStatus)
       .then(() => {
@@ -1379,9 +1515,8 @@ export function TranscriptView() {
       })
       .catch((e) => {
         const msg = toErrorMessage(e);
-        const errorMessage = `${LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX} ${msg}`;
-        console.error(errorMessage);
-        setMeetingError(errorMessage);
+        console.error(`${LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX}:`, msg);
+        setMeetingError(LIVE_CAPTION_STATUS_SYNC_ERROR_PREFIX);
       });
   }, [
     aiTransmissionStatusLabel,
@@ -1389,20 +1524,26 @@ export function TranscriptView() {
     micTrackStatusLabel,
     systemAudioTrackStatusLabel,
     transcriptionStatusLabel,
+    isBrowserPreview,
   ]);
 
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     void invoke("set_live_caption_window_visible", {
       visible: isRecordingOrTranscriptionVisible,
     }).catch((e) => {
       const msg = toErrorMessage(e);
-      const errorMessage = `ライブ字幕ウィンドウの表示切替に失敗しました: ${msg}`;
-      console.error(errorMessage);
-      setMeetingError(errorMessage);
+      console.error("ライブ文字起こしウィンドウの表示切替に失敗しました:", msg);
+      setMeetingError("ライブ文字起こしウィンドウを更新できませんでした");
     });
-  }, [isRecordingOrTranscriptionVisible]);
+  }, [isBrowserPreview, isRecordingOrTranscriptionVisible]);
 
   useEffect(() => {
+    if (isBrowserPreview) {
+      return;
+    }
     const shouldShowRingLight = isRecordingOrTranscriptionVisible;
     ringLightDesiredVisibilityRef.current = shouldShowRingLight;
     const requestId = ringLightVisibilityRequestIdRef.current + 1;
@@ -1416,8 +1557,9 @@ export function TranscriptView() {
             await emit(RING_LIGHT_MODE_EVENT, { mode: "soft" });
           } catch (modeSyncError) {
             const msg = toErrorMessage(modeSyncError);
-            const errorMessage = `録音状態リングライトの表示モード同期に失敗しました: ${msg}`;
-            console.error(errorMessage);
+            const errorMessage =
+              "録音状態リングライトの表示モードを同期できませんでした";
+            console.error(`${errorMessage}:`, msg);
             if (isCurrentRequest()) {
               setMeetingError(errorMessage);
             }
@@ -1445,16 +1587,16 @@ export function TranscriptView() {
       } catch (e) {
         const msg = toErrorMessage(e);
         const errorMessage = shouldShowRingLight
-          ? `録音状態リングライトを表示できませんでした: ${msg}`
-          : `録音状態リングライトを隠せませんでした: ${msg}`;
-        console.error(errorMessage);
+          ? "録音状態リングライトを表示できませんでした"
+          : "録音状態リングライトを隠せませんでした";
+        console.error(`${errorMessage}:`, msg);
         if (!isCurrentRequest()) {
           return;
         }
         setMeetingError(errorMessage);
       }
     })();
-  }, [isRecordingOrTranscriptionVisible]);
+  }, [isBrowserPreview, isRecordingOrTranscriptionVisible]);
 
   const externalApiKeyStatusLabel = getExternalApiKeyStatusLabel(
     externalApiProvider,
@@ -1490,7 +1632,7 @@ export function TranscriptView() {
       ? "meeting-status-pill-active"
       : hasTranscriptionErrorStopped
         ? "meeting-status-pill-error"
-      : "meeting-status-pill-idle";
+        : "meeting-status-pill-idle";
   const canShowLiveCaptionWindow = isRecordingOrTranscriptionVisible;
   const showLiveCaptionWindowLabel = canShowLiveCaptionWindow
     ? "ライブ文字起こしウィンドウを表示または前面に戻す"
@@ -1520,7 +1662,7 @@ export function TranscriptView() {
       ? "録音と文字起こしの記録を終了"
       : !canStartMeeting && meetingStartBlockedReason
         ? `録音と文字起こしの記録を開始できません: ${meetingStartBlockedReason}`
-      : "録音と文字起こしの記録を開始";
+        : "録音と文字起こしの記録を開始";
   const transcriptViewLabel = `${meetingStatusAriaLabel}、文字起こしログ ${segments.length} 件`;
   const meetingPopoverTitle = isMeetingOperationPending
     ? isMeetingActive
@@ -1528,25 +1670,44 @@ export function TranscriptView() {
       : STATUS_STARTING_LABEL
     : isMeetingActive
       ? "記録中"
-      : "待機中";
+      : "記録待機";
   const meetingPopoverSubtitle =
     isMeetingActive && meetingStartTime
       ? `経過 ${formatElapsedTime(elapsedTime)}`
       : "記録準備";
-  const meetingDetectionCardTitle = isMeetingActive
-    ? "録音と文字起こしを記録中"
-    : "会議検知と手動開始に対応";
+  const meetingDetectionCardTitle = isMeetingActive ? "記録中" : "検知待ち";
   const meetingDetectionCardDetail = isMeetingActive
-    ? "マイクとシステム音声の状態を表示中"
-    : "ブラウザ URL / アプリ検知に対応。録音は開始操作後のみ";
+    ? "マイク / 相手側トラックを表示"
+    : "通知または手動で開始";
+  const menuDetectionFooterLabel = settingsError
+    ? "自動検知 状態不明"
+    : settings === undefined
+      ? "自動検知 確認中"
+      : settings.detectionRules.enabled
+        ? `自動検知 オン · ${settings.detectionRules.minimumSignalCount}シグナル${
+            settings.detectionRules.requireAudioSignal ? " + 音声" : ""
+          }`
+        : "自動検知 オフ";
+  const menuAiTransmissionDetail = isMeetingActive
+    ? isLocalAudioTransmission
+      ? "文字起こしは端末内"
+      : "Realtime 外部送信中"
+    : isLocalAudioTransmission
+      ? "音声外部送信なし"
+      : "録音時に音声外部送信";
+  const menuStartBoundaryLabel = isMeetingActive
+    ? "録音中はREC表示、ライブ文字起こし、翻訳切替、AIノートと質問準備を確認できます。質問はここでは未送信です。"
+    : "メニューバー録音の開始後はREC表示、ライブ文字起こし、翻訳切替、AIノートと質問準備を表示します。質問はここでは未送信です。";
+  const menuRecordingDetail = isMeetingActive
+    ? `${micTrackStatusLabel} / ${systemAudioTrackStatusLabel}`
+    : pendingMeetingStartRequest
+      ? `${pendingMeetingStartSourceLabel}から開始要求`
+      : "自分 + 相手側を別トラック";
   const meetingPopoverRecordingLabel = isMeetingOperationPending
     ? isMeetingActive
       ? STATUS_ENDING_LABEL
       : STATUS_STARTING_LABEL
     : meetingRecordingStatusLabel;
-  const meetingFooterEndLabel = isMeetingActive
-    ? meetingButtonLabel
-    : "記録中のみ終了できます";
   const micPopoverSubtitle = isMicSourceOperationPending
     ? "自分の音声 · 切替中"
     : isMicRecording
@@ -1563,28 +1724,29 @@ export function TranscriptView() {
       : "相手側全体 · 未取得";
   const micPopoverBars = getPopoverLevelBars(micLevel);
   const systemAudioPopoverBars = getPopoverLevelBars(systemAudioLevel);
-  const lastSavedFileName = lastSavedPath ? getFileName(lastSavedPath) : null;
   const lastSavedOpenLabel = lastSavedFileName
     ? savedFileActionPending === "open"
-      ? `保存済み履歴ファイルを macOS の既定アプリで開いています: ${lastSavedFileName}`
+      ? `保存済み履歴を外部アプリで開いています: ${lastSavedFileName}`
       : savedFileActionPending === "reveal"
-        ? `保存済み履歴ファイルを Finder で表示中のため macOS の既定アプリで開けません: ${lastSavedFileName}`
-        : `保存済み履歴ファイルを macOS の既定アプリで開く: ${lastSavedFileName}`
-    : "保存済み履歴ファイルを macOS の既定アプリで開く";
+        ? `保存場所を表示中のため外部アプリで開けません: ${lastSavedFileName}`
+        : `保存済み履歴を外部アプリで開く: ${lastSavedFileName}`
+    : "保存済み履歴を外部アプリで開く";
   const lastSavedRevealLabel = lastSavedFileName
     ? savedFileActionPending === "reveal"
-      ? `保存済み履歴ファイルを Finder で表示しています: ${lastSavedFileName}`
+      ? `保存場所を表示しています: ${lastSavedFileName}`
       : savedFileActionPending === "open"
-        ? `保存済み履歴ファイルを開いているため Finder で表示できません: ${lastSavedFileName}`
-        : `保存済み履歴ファイルを Finder で表示: ${lastSavedFileName}`
-    : "保存済み履歴ファイルを Finder で表示";
+        ? `保存済み履歴を開いているため保存場所を表示できません: ${lastSavedFileName}`
+        : `保存場所を表示: ${lastSavedFileName}`
+    : "保存場所を表示";
   const lastSavedActionsLabel = lastSavedFileName
-    ? `保存済み履歴ファイル操作: ${lastSavedFileName}、macOS の既定アプリで開く、または Finder で表示`
-    : "保存済み履歴ファイル操作";
+    ? `保存済み履歴の操作: ${lastSavedFileName}、このMacに保存済み、履歴で確認可能、AI議事録の外部送信は手動コピー時に確認、外部アプリで開く、または保存場所を表示`
+    : "保存済み履歴の操作";
   const modelDownloadedErrorMessage = modelDownloadedErrorForUi
     ? toErrorMessage(modelDownloadedErrorForUi)
     : "";
-  const settingsErrorMessage = settingsError ? toErrorMessage(settingsError) : "";
+  const settingsErrorMessage = settingsError
+    ? toErrorMessage(settingsError)
+    : "";
   const externalApiKeyErrorMessage = externalApiKeyErrorForUi
     ? toErrorMessage(externalApiKeyErrorForUi)
     : "";
@@ -1610,7 +1772,7 @@ export function TranscriptView() {
       Boolean(screenPermissionError));
   const permissionSetupLabel = isCheckingPermissions
     ? "権限状態を確認中"
-    : `はじめての方へ ・ ${grantedPermissionCount} / 3 許可済み`;
+    : `権限設定 ・ ${grantedPermissionCount} / 3`;
   const firstLaunchSummaryLabel = [
     permissionSetupLabel,
     `${SELF_TRACK_DEVICE_LABEL}: ${micPermissionStatusLabel}`,
@@ -1620,6 +1782,9 @@ export function TranscriptView() {
   ]
     .filter(Boolean)
     .join("、");
+  const menuStorageDetail = lastSavedFileName
+    ? `直近 ${lastSavedFileName}`
+    : "履歴で確認";
   const sortedRecentSessions = [...(recentSessions ?? [])]
     .sort((a, b) => b.startedAtSecs - a.startedAtSecs)
     .slice(0, 2);
@@ -1634,12 +1799,18 @@ export function TranscriptView() {
     if (!canShowLiveCaptionWindow) {
       return;
     }
-    void invoke("set_live_caption_window_visible", { visible: true }).catch((e) => {
-      const msg = toErrorMessage(e);
-      console.error("ライブ文字起こしウィンドウを表示できませんでした:", msg);
-      setMeetingError(`ライブ文字起こしウィンドウを表示できませんでした: ${msg}`);
-    });
-  }, [canShowLiveCaptionWindow]);
+    if (isBrowserPreview) {
+      setMeetingError(null);
+      return;
+    }
+    void invoke("set_live_caption_window_visible", { visible: true }).catch(
+      (e) => {
+        const msg = toErrorMessage(e);
+        console.error("ライブ文字起こしウィンドウを表示できませんでした:", msg);
+        setMeetingError("ライブ文字起こしウィンドウを表示できませんでした");
+      },
+    );
+  }, [canShowLiveCaptionWindow, isBrowserPreview]);
   const handleOpenFirstLaunchPermissions = useCallback(() => {
     setPermissionSettingsOpenError(null);
     const targetUrl =
@@ -1668,13 +1839,21 @@ export function TranscriptView() {
     });
   }, []);
 
+  const handleOpenSettingsWindow = useCallback(() => {
+    void showSettingsWindow("general")
+      .then(() => currentWindow?.hide())
+      .catch((e) => {
+        console.error("設定ウィンドウを開けませんでした:", toErrorMessage(e));
+      });
+  }, [currentWindow]);
+
   useEffect(() => {
-    if (!hasPendingMeetingStartRequest) {
+    if (!pendingMeetingStartRequest) {
       return;
     }
     if (isMeetingActive) {
       clearPendingMeetingStartRequest();
-      setHasPendingMeetingStartRequest(false);
+      setPendingMeetingStartRequest(null);
       return;
     }
     if (
@@ -1686,12 +1865,12 @@ export function TranscriptView() {
       return;
     }
     clearPendingMeetingStartRequest();
-    setHasPendingMeetingStartRequest(false);
+    setPendingMeetingStartRequest(null);
     if (!canStartMeeting) {
       setMeetingError(
         meetingStartBlockedReason
-          ? `録音開始前に確認してください: ${meetingStartBlockedReason}`
-          : "録音と文字起こしを開始できません。設定と権限状態を確認してください。",
+          ? `${pendingMeetingStartSourceLabel}から開始できません: ${meetingStartBlockedReason}`
+          : `${pendingMeetingStartSourceLabel}から開始できません。設定と権限を確認してください。`,
       );
       return;
     }
@@ -1699,10 +1878,10 @@ export function TranscriptView() {
   }, [
     canStartMeeting,
     handleToggleMeeting,
-    hasPendingMeetingStartRequest,
     isAudioSourceOperationPending,
     isMeetingActive,
     meetingStartBlockedReason,
+    pendingMeetingStartRequest,
     settings,
     settingsError,
   ]);
@@ -1731,20 +1910,21 @@ export function TranscriptView() {
               </div>
               <div className="meeting-popover-heading">
                 <h2>Meet Jerky</h2>
-                <p>自動会議録音アプリ</p>
+                <p>会議録音を忘れない</p>
               </div>
-              <span className="menu-welcome-pill">ようこそ</span>
+              <span className="menu-welcome-pill">権限設定</span>
             </div>
 
             <section className="meeting-popover-detected menu-setup-hero">
               <span>{permissionSetupLabel}</span>
-              <strong>セットアップを完了しましょう</strong>
-              <p>
-                3つの権限を許可すると、会議検知後に通知やバナーから記録開始を確認・操作できます。
-              </p>
+              <strong>録音前の確認</strong>
+              <p>通知とメニューバー録音に必要な権限を確認します。</p>
             </section>
 
-            <div className="menu-permission-list" aria-label="必要な権限">
+            <div
+              className="menu-permission-list"
+              aria-label="通知とメニューバー録音に必要な権限。マイクは自分トラック、画面収録とシステム音声は相手側トラック、ブラウザ監視は会議検知に使います。"
+            >
               <div
                 className={getPermissionRowClassName(
                   micPermission,
@@ -1756,7 +1936,7 @@ export function TranscriptView() {
                 </span>
                 <span className="menu-permission-copy">
                   <strong>マイク</strong>
-                  <span>あなたの音声を録音</span>
+                  <span>自分トラック</span>
                 </span>
                 <button
                   type="button"
@@ -1771,7 +1951,9 @@ export function TranscriptView() {
                   aria-label={OPEN_MICROPHONE_PRIVACY_LABEL}
                   title={OPEN_MICROPHONE_PRIVACY_LABEL}
                 >
-                  {micPermissionStatusLabel === "許可済み" ? "済み" : "許可"}
+                  {micPermissionStatusLabel === "許可済み"
+                    ? "マイク許可済み"
+                    : "マイク設定"}
                 </button>
               </div>
               <div
@@ -1785,7 +1967,7 @@ export function TranscriptView() {
                 </span>
                 <span className="menu-permission-copy">
                   <strong>システム音声</strong>
-                  <span>通話相手の声を録音</span>
+                  <span>相手側トラック</span>
                 </span>
                 <button
                   type="button"
@@ -1802,7 +1984,9 @@ export function TranscriptView() {
                   aria-label={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
                   title={OPEN_SCREEN_RECORDING_PRIVACY_LABEL}
                 >
-                  {screenPermissionStatusLabel === "許可済み" ? "済み" : "許可"}
+                  {screenPermissionStatusLabel === "許可済み"
+                    ? "画面収録許可済み"
+                    : "画面収録設定"}
                 </button>
               </div>
               <div className="menu-permission-row">
@@ -1810,8 +1994,8 @@ export function TranscriptView() {
                   <Globe size={16} aria-hidden="true" />
                 </span>
                 <span className="menu-permission-copy">
-                  <strong>ブラウザ監視（任意）</strong>
-                  <span>Chrome の URL から Meet を自動検知</span>
+                  <strong>ブラウザ監視</strong>
+                  <span>Meet 検知（任意）</span>
                 </span>
                 <button
                   type="button"
@@ -1819,7 +2003,7 @@ export function TranscriptView() {
                   aria-label={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
                   title={OPEN_ACCESSIBILITY_PRIVACY_LABEL}
                 >
-                  許可
+                  監視設定
                 </button>
               </div>
             </div>
@@ -1832,22 +2016,22 @@ export function TranscriptView() {
                 disabled={isCheckingPermissions}
               >
                 <Check size={14} aria-hidden="true" />
-                すべて許可する
+                権限設定を開く
               </button>
               <button
                 type="button"
                 className="meeting-popover-secondary-action menu-secondary-link"
                 onClick={() => setHasSkippedFirstLaunch(true)}
               >
-                後で
+                後で設定
               </button>
             </div>
 
             <div className="meeting-popover-footer">
               <ShieldCheck size={14} aria-hidden="true" />
-              <span>録音はこのMacにのみ保存されます</span>
+              <span>このMacに保存</span>
               <button type="button" onClick={refetchPermissions}>
-                再確認
+                権限再確認
               </button>
             </div>
             {permissionSettingsOpenError && (
@@ -1875,7 +2059,7 @@ export function TranscriptView() {
               </div>
               <div className="meeting-popover-heading">
                 <h2>Meet Jerky</h2>
-                <p>{isMeetingActive ? meetingPopoverSubtitle : "会議の自動録音をスタンバイ"}</p>
+                <p>{isMeetingActive ? meetingPopoverSubtitle : "記録待機"}</p>
               </div>
               <span
                 className={`meeting-popover-rec-pill ${meetingRecordingStatusClass}`}
@@ -1896,18 +2080,63 @@ export function TranscriptView() {
                 <Target size={20} />
               </span>
               <strong>
-                {isMeetingActive
-                  ? meetingDetectionCardTitle
-                  : "現在検知中のミーティングはありません"}
+                {isMeetingActive ? meetingDetectionCardTitle : "会議は未検知"}
               </strong>
               <p>
                 {isMeetingActive
                   ? meetingDetectionCardDetail
-                  : "検知後に通知・バナーから記録開始できます"}
+                  : "通知またはメニューバーで録音開始"}
               </p>
             </section>
 
-            <section className="menu-history-section" aria-label={recentRecordingsLabel}>
+            <section
+              className="menu-state-deck"
+              aria-label={
+                isMeetingActive
+                  ? "録音中の状態"
+                  : "録音開始前に確認する状態"
+              }
+            >
+              <div className="menu-state-card menu-state-card-primary">
+                <span>録音</span>
+                <strong>
+                  {isMeetingActive ? meetingPopoverSubtitle : "メニューバー開始可"}
+                </strong>
+                <small>{menuRecordingDetail}</small>
+              </div>
+              <div className="menu-state-card">
+                <span>文字起こし</span>
+                <strong>{transcriptionStatusLabel}</strong>
+                <small>{engineStatusDisplayLabel}</small>
+              </div>
+              <div className="menu-state-card">
+                <span>音声外部送信</span>
+                <strong>{aiTransmissionStatusDisplayLabel}</strong>
+                <small>{menuAiTransmissionDetail}</small>
+              </div>
+              <div className="menu-state-card menu-state-card-save">
+                <span>保存先</span>
+                <strong>このMac</strong>
+                <small>{menuStorageDetail}</small>
+              </div>
+            </section>
+
+            <section
+              className="menu-start-boundary"
+              aria-label={menuStartBoundaryLabel}
+              title={menuStartBoundaryLabel}
+            >
+              <span>開始後</span>
+              <strong>REC常時表示</strong>
+              <strong>ライブ文字起こし</strong>
+              <strong>翻訳切替</strong>
+              <strong>AIノート・質問未送信</strong>
+            </section>
+
+            <section
+              className="menu-history-section"
+              aria-label={recentRecordingsLabel}
+            >
               <span>{recentRecordingsLabel}</span>
               <div className="menu-history-list">
                 {sortedRecentSessions.map((session) => (
@@ -1917,7 +2146,7 @@ export function TranscriptView() {
                     params={{ encodedPath: encodeURIComponent(session.path) }}
                     className="menu-history-row"
                     title={getFileName(session.path)}
-                    aria-label={`録音詳細を開く: ${getCompactSessionTitle(session.title)}`}
+                    aria-label={`レビューを開く: ${getCompactSessionTitle(session.title)}`}
                   >
                     <span aria-hidden="true" />
                     <strong>{getCompactSessionTitle(session.title)}</strong>
@@ -1941,7 +2170,8 @@ export function TranscriptView() {
               }`}
               onClick={handleToggleMeeting}
               disabled={
-                isMeetingOperationPending || (!canStartMeeting && !isMeetingActive)
+                isMeetingOperationPending ||
+                (!canStartMeeting && !isMeetingActive)
               }
               aria-label={meetingButtonLabel}
               title={meetingButtonLabel}
@@ -1954,22 +2184,26 @@ export function TranscriptView() {
               <CircleDot size={15} aria-hidden="true" />
               {isMeetingOperationPending
                 ? isMeetingActive
-                  ? "終了中..."
-                  : "開始中..."
+                  ? "録音終了中…"
+                  : "録音開始中…"
                 : isMeetingActive
-                  ? "録音を終了"
-                  : "手動で録音を開始"}
+                  ? "録音終了"
+                  : "録音開始"}
             </button>
 
             <div className="menu-secondary-links">
               <Link to="/sessions">
                 <History size={14} aria-hidden="true" />
-                履歴を開く
+                履歴
               </Link>
-              <Link to="/settings">
+              <button
+                type="button"
+                className="menu-secondary-link"
+                onClick={handleOpenSettingsWindow}
+              >
                 <SlidersHorizontal size={14} aria-hidden="true" />
-                環境設定
-              </Link>
+                設定
+              </button>
             </div>
 
             <div
@@ -1981,7 +2215,7 @@ export function TranscriptView() {
                 aria-label={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
                 title={getMicTrackStatusAriaLabel(micTrackStatusLabel)}
               >
-                <span className="meeting-popover-track-icon">MIC</span>
+                <span className="meeting-popover-track-icon">自分</span>
                 <span className="meeting-popover-track-copy">
                   <strong>マイク入力</strong>
                   <span>{micPopoverSubtitle}</span>
@@ -2004,7 +2238,7 @@ export function TranscriptView() {
                   systemAudioTrackStatusLabel,
                 )}
               >
-                <span className="meeting-popover-track-icon">SYS</span>
+                <span className="meeting-popover-track-icon">相手</span>
                 <span className="meeting-popover-track-copy">
                   <strong>システム音声</strong>
                   <span>{systemAudioPopoverSubtitle}</span>
@@ -2026,22 +2260,13 @@ export function TranscriptView() {
                 onClick={handleShowLiveCaptionWindow}
                 disabled={!canShowLiveCaptionWindow}
               >
-                字幕ウィンドウ
+                文字起こしを表示
               </button>
             </div>
 
             <div className="meeting-popover-footer">
               <SettingsIcon size={14} aria-hidden="true" />
-              <span>自動検知が有効</span>
-              <button
-                type="button"
-                onClick={handleToggleMeeting}
-                disabled={!isMeetingActive || isMeetingOperationPending}
-                aria-label={meetingFooterEndLabel}
-                title={meetingFooterEndLabel}
-              >
-                終了
-              </button>
+              <span>{menuDetectionFooterLabel}</span>
             </div>
           </div>
         )}
@@ -2082,7 +2307,7 @@ export function TranscriptView() {
             )}
             title={getAiTransmissionStatusAriaLabel(aiTransmissionStatusLabel)}
           >
-            外部送信 {aiTransmissionStatusLabel}
+            {audioTransmissionStatusPillLabel}
           </span>
           {shouldShowExternalApiKeyStatus &&
             externalApiKeyStatusLabel &&
@@ -2126,10 +2351,11 @@ export function TranscriptView() {
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            aria-label="録音開始要求を受信済みです。設定と権限状態を確認中です。"
-            title="録音開始要求を受信済みです。設定と権限状態を確認中です。"
+            aria-label={`${pendingMeetingStartSourceLabel}から録音開始要求を受信済みです。設定と権限状態を確認中です。`}
+            title={`${pendingMeetingStartSourceLabel}から録音開始要求を受信済みです。設定と権限状態を確認中です。`}
           >
-            録音開始要求を受信済みです。設定と権限状態を確認中です。
+            {pendingMeetingStartSourceLabel}
+            から録音開始要求を受信済みです。設定と権限状態を確認中です。
           </p>
         )}
         {meetingError && (
@@ -2155,31 +2381,30 @@ export function TranscriptView() {
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`Whisper モデルの状態確認エラー: ${modelDownloadedErrorMessage}`}
-            title={`Whisper モデルの状態確認エラー: ${modelDownloadedErrorMessage}`}
+            aria-label="Whisper モデルを確認できません"
+            title={modelDownloadedErrorMessage}
           >
-            Whisper モデルの状態確認に失敗しました: {modelDownloadedErrorMessage}
+            Whisper モデルを確認できません。
           </p>
         )}
         {settingsError && (
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`文字起こし設定エラー: ${settingsErrorMessage}`}
-            title={`文字起こし設定エラー: ${settingsErrorMessage}`}
+            aria-label="文字起こし設定を確認できません"
+            title={settingsErrorMessage}
           >
-            文字起こし設定の取得に失敗しました: {settingsErrorMessage}
+            文字起こし設定を確認できません。
           </p>
         )}
         {externalApiKeyErrorForUi && externalApiProvider && (
           <p
             className="meeting-error meeting-alert"
             role="alert"
-            aria-label={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
-            title={`${externalApiProvider} API キーの状態確認エラー: ${externalApiKeyErrorMessage}`}
+            aria-label={`${externalApiProvider} API キーを確認できません`}
+            title={externalApiKeyErrorMessage}
           >
-            {externalApiProvider} API キーの状態確認に失敗しました:{" "}
-            {externalApiKeyErrorMessage}
+            {externalApiProvider} API キーを確認できません。
           </p>
         )}
         {meetingStartBlockedReason && (
@@ -2226,10 +2451,10 @@ export function TranscriptView() {
               role="status"
               aria-live="polite"
               aria-atomic="true"
-              aria-label={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
-              title={`文字起こし履歴ファイルを保存しました: ${lastSavedFileName}`}
+              aria-label={`保存しました: ${lastSavedFileName}`}
+              title={`保存しました: ${lastSavedFileName}`}
             >
-              履歴ファイルを保存しました: {lastSavedFileName}
+              保存しました: {lastSavedFileName}
             </span>
             <span className="meeting-saved-path-actions">
               <button
@@ -2242,7 +2467,9 @@ export function TranscriptView() {
                 aria-label={lastSavedOpenLabel}
                 title={lastSavedOpenLabel}
               >
-                {savedFileActionPending === "open" ? "開いています..." : "履歴で開く"}
+                {savedFileActionPending === "open"
+                  ? "外部アプリ起動中…"
+                  : "履歴を外部アプリで開く"}
               </button>
               <button
                 type="button"
@@ -2255,8 +2482,8 @@ export function TranscriptView() {
                 title={lastSavedRevealLabel}
               >
                 {savedFileActionPending === "reveal"
-                  ? "表示中..."
-                  : "Finder で表示"}
+                  ? "保存場所表示中…"
+                  : "保存場所表示"}
               </button>
             </span>
           </div>
@@ -2265,16 +2492,16 @@ export function TranscriptView() {
           <div
             className="meeting-error meeting-alert meeting-error-dismissible"
             role="alert"
-            aria-label={`保存済み履歴ファイル操作エラー: ${savedFileActionError}`}
-            title={`保存済み履歴ファイル操作エラー: ${savedFileActionError}`}
+            aria-label={`保存済み履歴の操作エラー: ${savedFileActionError}`}
+            title={`保存済み履歴の操作エラー: ${savedFileActionError}`}
           >
             <span>{savedFileActionError}</span>
             <button
               type="button"
               className="control-btn control-btn-clear"
               onClick={() => setSavedFileActionError(null)}
-              aria-label="保存済み履歴ファイル操作エラーを閉じる"
-              title="保存済み履歴ファイル操作エラーを閉じる"
+              aria-label="保存済み履歴の操作エラーを閉じる"
+              title="保存済み履歴の操作エラーを閉じる"
             >
               閉じる
             </button>
