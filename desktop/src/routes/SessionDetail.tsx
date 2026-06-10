@@ -713,6 +713,13 @@ export function SessionDetail() {
     `選択中 ${selectedTrackLabel}`,
     "マイクのみ、スピーカーのみ、両方を選択可能",
   ].join("。");
+  const trackPanelMetaLabel = [
+    "別トラック確認",
+    `マイク ${transcriptTrackCounts.self} 発話`,
+    `スピーカー ${transcriptTrackCounts.other} 発話`,
+    `${selectedTrackLabel}を再生対象に選択中`,
+    "音声トラックはAI外部送信せず再生確認だけに使います",
+  ].join("。");
   const playbackModeFlow = [
     {
       label: "両方",
@@ -1334,6 +1341,13 @@ export function SessionDetail() {
         <div className="session-detail-card-head">
           <div>
             <h2>音声トラック</h2>
+            <p
+              className="session-detail-track-meta"
+              aria-label={trackPanelMetaLabel}
+              title={trackPanelMetaLabel}
+            >
+              別トラック確認 · mic + speaker preserved · AI外部送信なし
+            </p>
           </div>
           <div className="session-detail-track-head-actions">
             <span
