@@ -1,5 +1,5 @@
 {
-  "version": "2.11",
+  "version": "2.13",
   "children": [
     {
       "type": "frame",
@@ -12,10 +12,9 @@
       "height": 1120,
       "fill": "#ECEDEDFF",
       "cornerRadius": 24,
-      "stroke": {
-        "thickness": 1,
-        "fill": "#DAD7D2FF"
-      },
+      "stroke": "#DAD7D2FF",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
       "layout": "none",
       "children": [
         {
@@ -64,10 +63,9 @@
               "name": "Section Kicker",
               "fill": "#FFF3EC",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#FFDCC8"
-              },
+              "stroke": "#FFDCC8",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 6,
               "padding": [
                 6,
@@ -116,7 +114,8 @@
               "width": "fill_container",
               "content": "会議検知と録音状態は常に透明にしつつ、開始確認・ライブ表示・AIノートは必要な瞬間だけ静かに現れる。強いCTAや大きな常時表示を避け、メニューバー常駐アプリらしい控えめな密度に調整。",
               "fontFamily": "Geist",
-              "fontSize": 14
+              "fontSize": 14,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -173,10 +172,9 @@
           "height": 404,
           "fill": "#FBFBFBEF",
           "cornerRadius": 14,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#E5E5E5FF"
-          },
+          "stroke": "#E5E5E5FF",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -257,13 +255,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "fAxgq",
                       "name": "Menu Icon",
                       "width": 14,
                       "height": 14,
-                      "iconFontName": "radio",
-                      "iconFontFamily": "lucide",
+                      "icon": "radio",
+                      "library": "lucide",
                       "fill": "#1A1A1AFF"
                     },
                     {
@@ -284,10 +282,9 @@
                   "name": "Ready Status",
                   "fill": "#F5F5F5FF",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     4,
@@ -324,10 +321,9 @@
               "width": "fill_container",
               "fill": "#FFFFFFFF",
               "cornerRadius": 12,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#E5E5E5FF"
-              },
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "layout": "vertical",
               "gap": 8,
               "padding": 11,
@@ -389,10 +385,9 @@
                   "width": "fill_container",
                   "fill": "#F7F7F7FF",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E9E9E9FF"
-                  },
+                  "stroke": "#E9E9E9FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 9,
                   "padding": [
                     8,
@@ -401,13 +396,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "RxxSx",
                       "name": "Microphone Icon",
                       "width": 13,
                       "height": 13,
-                      "iconFontName": "mic",
-                      "iconFontFamily": "lucide",
+                      "icon": "mic",
+                      "library": "lucide",
                       "fill": "#2D7FB8FF"
                     },
                     {
@@ -449,10 +444,9 @@
                   "width": "fill_container",
                   "fill": "#F7F7F7FF",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E9E9E9FF"
-                  },
+                  "stroke": "#E9E9E9FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 9,
                   "padding": [
                     8,
@@ -461,13 +455,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "WDLFh",
                       "name": "Desktop Audio Icon",
                       "width": 13,
                       "height": 13,
-                      "iconFontName": "volume-2",
-                      "iconFontFamily": "lucide",
+                      "icon": "volume-2",
+                      "library": "lucide",
                       "fill": "#666666FF"
                     },
                     {
@@ -509,10 +503,9 @@
                   "width": "fill_container",
                   "fill": "#F7F7F7FF",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E9E9E9FF"
-                  },
+                  "stroke": "#E9E9E9FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 9,
                   "padding": [
                     8,
@@ -521,13 +514,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "vawiD",
                       "name": "Local Capture Icon",
                       "width": 13,
                       "height": 13,
-                      "iconFontName": "shield-check",
-                      "iconFontFamily": "lucide",
+                      "icon": "shield-check",
+                      "library": "lucide",
                       "fill": "#229C5AFF"
                     },
                     {
@@ -585,13 +578,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "r6fII6",
                       "name": "Start Icon",
                       "width": 13,
                       "height": 13,
-                      "iconFontName": "circle-dot",
-                      "iconFontFamily": "lucide",
+                      "icon": "circle-dot",
+                      "library": "lucide",
                       "fill": "#FFFFFFFF"
                     },
                     {
@@ -614,22 +607,21 @@
                   "height": 34,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 7,
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "JOcw9",
                       "name": "History Icon",
                       "width": 13,
                       "height": 13,
-                      "iconFontName": "folder-open",
-                      "iconFontFamily": "lucide",
+                      "icon": "folder-open",
+                      "library": "lucide",
                       "fill": "#666666FF"
                     },
                     {
@@ -668,13 +660,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "NQYue",
                       "name": "設定 Footer Icon",
                       "width": 12,
                       "height": 12,
-                      "iconFontName": "settings",
-                      "iconFontFamily": "lucide",
+                      "icon": "settings",
+                      "library": "lucide",
                       "fill": "#777777FF"
                     },
                     {
@@ -703,13 +695,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "VPh8I",
                       "name": "入力 Footer Icon",
                       "width": 12,
                       "height": 12,
-                      "iconFontName": "sliders-horizontal",
-                      "iconFontFamily": "lucide",
+                      "icon": "sliders-horizontal",
+                      "library": "lucide",
                       "fill": "#777777FF"
                     },
                     {
@@ -738,13 +730,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "BrFVN",
                       "name": "終了 Footer Icon",
                       "width": 12,
                       "height": 12,
-                      "iconFontName": "power",
-                      "iconFontFamily": "lucide",
+                      "icon": "power",
+                      "library": "lucide",
                       "fill": "#B83B00FF"
                     },
                     {
@@ -774,10 +766,9 @@
           "height": 108,
           "fill": "#FBFBFBEF",
           "cornerRadius": 14,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#E5E5E5FF"
-          },
+          "stroke": "#E5E5E5FF",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -824,10 +815,9 @@
                   "height": 26,
                   "fill": "#F5F5F5FF",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
@@ -872,13 +862,13 @@
                   ]
                 },
                 {
-                  "type": "icon_font",
+                  "type": "icon",
                   "id": "BWsel",
                   "name": "Dismiss Detection",
                   "width": 14,
                   "height": 14,
-                  "iconFontName": "x",
-                  "iconFontFamily": "lucide",
+                  "icon": "x",
+                  "library": "lucide",
                   "fill": "#999999FF"
                 }
               ]
@@ -903,13 +893,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "AJ9yX",
                       "name": "Banner Start Icon",
                       "width": 12,
                       "height": 12,
-                      "iconFontName": "circle-dot",
-                      "iconFontFamily": "lucide",
+                      "icon": "circle-dot",
+                      "library": "lucide",
                       "fill": "#FFFFFFFF"
                     },
                     {
@@ -932,10 +922,9 @@
                   "height": 32,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
@@ -966,10 +955,9 @@
           "height": 40,
           "fill": "#FBFBFBEF",
           "cornerRadius": 999,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#E5E5E5FF"
-          },
+          "stroke": "#E5E5E5FF",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -1047,10 +1035,9 @@
               "height": 28,
               "fill": "#F5F5F5FF",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#E5E5E5FF"
-              },
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 5,
               "padding": [
                 0,
@@ -1060,13 +1047,13 @@
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
+                  "type": "icon",
                   "id": "gXbZq",
                   "name": "Pause Recording Icon",
                   "width": 12,
                   "height": 12,
-                  "iconFontName": "pause",
-                  "iconFontFamily": "lucide",
+                  "icon": "pause",
+                  "library": "lucide",
                   "fill": "#333333FF"
                 },
                 {
@@ -1088,10 +1075,9 @@
               "height": 28,
               "fill": "#FFFFFFFF",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#E5E5E5FF"
-              },
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 5,
               "padding": [
                 0,
@@ -1101,13 +1087,13 @@
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
+                  "type": "icon",
                   "id": "KloSq",
                   "name": "Stop Recording Icon",
                   "width": 11,
                   "height": 11,
-                  "iconFontName": "square",
-                  "iconFontFamily": "lucide",
+                  "icon": "square",
+                  "library": "lucide",
                   "fill": "#D33535FF"
                 },
                 {
@@ -1137,10 +1123,9 @@
               "height": 28,
               "fill": "#FFFFFFFF",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#E5E5E5FF"
-              },
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 5,
               "padding": [
                 0,
@@ -1150,13 +1135,13 @@
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
+                  "type": "icon",
                   "id": "iOQpO",
                   "name": "Transcript Toggle Icon",
                   "width": 12,
                   "height": 12,
-                  "iconFontName": "file-text",
-                  "iconFontFamily": "lucide",
+                  "icon": "file-text",
+                  "library": "lucide",
                   "fill": "#666666FF"
                 },
                 {
@@ -1178,10 +1163,9 @@
               "height": 28,
               "fill": "#FFFFFFFF",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#E5E5E5FF"
-              },
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 5,
               "padding": [
                 0,
@@ -1191,13 +1175,13 @@
               "alignItems": "center",
               "children": [
                 {
-                  "type": "icon_font",
+                  "type": "icon",
                   "id": "V4B9jn",
                   "name": "Notes Toggle Icon",
                   "width": 12,
                   "height": 12,
-                  "iconFontName": "list-todo",
-                  "iconFontFamily": "lucide",
+                  "icon": "list-todo",
+                  "library": "lucide",
                   "fill": "#666666FF"
                 },
                 {
@@ -1225,10 +1209,9 @@
           "height": 860,
           "fill": "#E8E9EBE8",
           "cornerRadius": 14,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#D2D2D0AA"
-          },
+          "stroke": "#D2D2D0AA",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -1336,10 +1319,9 @@
               "height": 28,
               "fill": "#FFFFFF72",
               "cornerRadius": 8,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D8D6D1AA"
-              },
+              "stroke": "#D8D6D1AA",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "justifyContent": "center",
               "alignItems": "center",
               "children": [
@@ -1365,10 +1347,9 @@
               "height": 36,
               "fill": "#DDDCD7B8",
               "cornerRadius": 9,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D1D0CBAA"
-              },
+              "stroke": "#D1D0CBAA",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 3,
               "padding": 3,
               "children": [
@@ -1380,10 +1361,9 @@
                   "height": 30,
                   "fill": "#F8F7F4",
                   "cornerRadius": 7,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D8D6D1"
-                  },
+                  "stroke": "#D8D6D1",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
@@ -1434,10 +1414,9 @@
               "height": 38,
               "fill": "#F8F7F4CC",
               "cornerRadius": 8,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D8D6D1"
-              },
+              "stroke": "#D8D6D1",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 8,
               "padding": [
                 0,
@@ -1492,10 +1471,9 @@
                       "width": 340,
                       "fill": "#F8F7F4",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 6,
                       "padding": 11,
@@ -1577,10 +1555,9 @@
                       "width": 280,
                       "fill": "#EEEAE2",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D3C8BC"
-                      },
+                      "stroke": "#D3C8BC",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 6,
                       "padding": 11,
@@ -1646,10 +1623,9 @@
                       "width": 340,
                       "fill": "#F8F7F4",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 6,
                       "padding": 11,
@@ -1731,10 +1707,9 @@
                       "width": 280,
                       "fill": "#EEEAE2",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D3C8BC"
-                      },
+                      "stroke": "#D3C8BC",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 6,
                       "padding": 11,
@@ -1800,10 +1775,9 @@
                       "width": 340,
                       "fill": "#F8F7F4",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 6,
                       "padding": 11,
@@ -1883,10 +1857,9 @@
                   "height": 32,
                   "fill": "#F8F7F4CC",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D8D6D1"
-                  },
+                  "stroke": "#D8D6D1",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     0,
@@ -1921,10 +1894,9 @@
                   "height": 32,
                   "fill": "#F8F7F4CC",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D8D6D1"
-                  },
+                  "stroke": "#D8D6D1",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     0,
@@ -1951,10 +1923,9 @@
                   "height": 32,
                   "fill": "#FFFFFFCC",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D8D6D1"
-                  },
+                  "stroke": "#D8D6D1",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     0,
@@ -1989,10 +1960,9 @@
           "height": 860,
           "fill": "#E8E9EBE8",
           "cornerRadius": 14,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#D2D2D0AA"
-          },
+          "stroke": "#D2D2D0AA",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -2104,10 +2074,9 @@
                   "name": "AI Optional Switch",
                   "fill": "#F5F1ECDD",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D7CEC6"
-                  },
+                  "stroke": "#D7CEC6",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 7,
                   "padding": [
                     6,
@@ -2147,10 +2116,9 @@
               "height": 40,
               "fill": "#F8F7F4CC",
               "cornerRadius": 8,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D8D6D1"
-              },
+              "stroke": "#D8D6D1",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 8,
               "padding": [
                 0,
@@ -2192,10 +2160,9 @@
               "height": 364,
               "fill": "#F8F7F4",
               "cornerRadius": 10,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D8D6D1"
-              },
+              "stroke": "#D8D6D1",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "layout": "vertical",
               "gap": 13,
               "padding": 16,
@@ -2223,10 +2190,9 @@
                       "name": "Decision Row Tag",
                       "fill": "#EEEAE2",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "padding": [
                         4,
                         8
@@ -2284,10 +2250,9 @@
                       "name": "Question Row Tag",
                       "fill": "#EEEAE2",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "padding": [
                         4,
                         8
@@ -2345,10 +2310,9 @@
                       "name": "Action Row Tag",
                       "fill": "#EEEAE2",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "padding": [
                         4,
                         8
@@ -2406,10 +2370,9 @@
                       "name": "Risk Row Tag",
                       "fill": "#EEEAE2",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "padding": [
                         4,
                         8
@@ -2466,10 +2429,9 @@
               "height": 210,
               "fill": "#F8F7F4",
               "cornerRadius": 10,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D8D6D1"
-              },
+              "stroke": "#D8D6D1",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "layout": "vertical",
               "gap": 12,
               "padding": 16,
@@ -2509,10 +2471,9 @@
                       "name": "次のアクションは?",
                       "fill": "#FFFFFF80",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "gap": 6,
                       "padding": [
                         8,
@@ -2538,10 +2499,9 @@
                       "name": "誰が担当?",
                       "fill": "#FFFFFF80",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "gap": 6,
                       "padding": [
                         8,
@@ -2567,10 +2527,9 @@
                       "name": "懸念点だけ見せて",
                       "fill": "#FFFFFF80",
                       "cornerRadius": 999,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#D8D6D1"
-                      },
+                      "stroke": "#D8D6D1",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "gap": 6,
                       "padding": [
                         8,
@@ -2599,10 +2558,9 @@
                   "width": "fill_container",
                   "fill": "#EEEAE2",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#D8D6D1"
-                  },
+                  "stroke": "#D8D6D1",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "layout": "vertical",
                   "gap": 8,
                   "padding": 12,
@@ -2644,10 +2602,9 @@
               "height": 62,
               "fill": "#F8F7F4CC",
               "cornerRadius": 10,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#D8D6D1"
-              },
+              "stroke": "#D8D6D1",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 10,
               "padding": [
                 0,
@@ -2705,11 +2662,9 @@
           "height": 98,
           "fill": "#FBFBFBEF",
           "cornerRadius": 12,
-          "stroke": {
-            "align": "inside",
-            "thickness": 1,
-            "fill": "#E5E5E5FF"
-          },
+          "stroke": "#E5E5E5FF",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -2760,21 +2715,20 @@
                   "height": 24,
                   "fill": "#F5F5F5FF",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "justifyContent": "center",
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "RJ0n5",
                       "name": "Stop Square Icon",
                       "width": 10,
                       "height": 10,
-                      "iconFontName": "square",
-                      "iconFontFamily": "lucide",
+                      "icon": "square",
+                      "library": "lucide",
                       "fill": "#D33535FF"
                     }
                   ]
@@ -2830,11 +2784,9 @@
                   "height": 30,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     7,
@@ -2862,11 +2814,9 @@
                   "height": 30,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#F0C7C7FF"
-                  },
+                  "stroke": "#F0C7C7FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     7,
@@ -2876,13 +2826,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "U1BMv",
                       "name": "Confirm Stop Icon",
                       "width": 9,
                       "height": 9,
-                      "iconFontName": "square",
-                      "iconFontFamily": "lucide",
+                      "icon": "square",
+                      "library": "lucide",
                       "fill": "#D33535FF"
                     },
                     {
@@ -2914,10 +2864,9 @@
       "height": 1040,
       "fill": "#ECEDEDFF",
       "cornerRadius": 24,
-      "stroke": {
-        "thickness": 1,
-        "fill": "#DAD7D2FF"
-      },
+      "stroke": "#DAD7D2FF",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
       "layout": "none",
       "children": [
         {
@@ -2966,10 +2915,9 @@
               "name": "Section Kicker",
               "fill": "#FFFFFFB8",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#E5E5E5FF"
-              },
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 6,
               "padding": [
                 6,
@@ -3035,10 +2983,9 @@
           "height": 860,
           "fill": "#FBFBFBEF",
           "cornerRadius": 14,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#E5E5E5FF"
-          },
+          "stroke": "#E5E5E5FF",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -3076,12 +3023,11 @@
               "width": 1480,
               "height": 56,
               "fill": "#FBFBFBE8",
-              "stroke": {
-                "thickness": {
-                  "bottom": 1
-                },
-                "fill": "#E5E5E5FF"
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": {
+                "bottom": 1
               },
+              "strokeAlignment": "inner",
               "gap": 14,
               "padding": [
                 0,
@@ -3159,10 +3105,9 @@
                   "name": "Sync Status Pill",
                   "fill": "#F5F5F5FF",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     5,
@@ -3197,10 +3142,9 @@
                   "height": 34,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 7,
                   "padding": [
                     0,
@@ -3210,13 +3154,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "kNNTl",
                       "name": "Open Export Button Icon",
                       "width": 13,
                       "height": 13,
-                      "iconFontName": "download",
-                      "iconFontFamily": "lucide",
+                      "icon": "download",
+                      "library": "lucide",
                       "fill": "#555555FF"
                     },
                     {
@@ -3242,12 +3186,11 @@
               "width": 292,
               "height": 804,
               "fill": "#F5F5F5D8",
-              "stroke": {
-                "thickness": {
-                  "right": 1
-                },
-                "fill": "#E5E5E5FF"
+              "stroke": "#E5E5E5FF",
+              "strokeWidth": {
+                "right": 1
               },
+              "strokeAlignment": "inner",
               "layout": "vertical",
               "gap": 12,
               "padding": [
@@ -3277,13 +3220,13 @@
                       "alignItems": "center",
                       "children": [
                         {
-                          "type": "icon_font",
+                          "type": "icon",
                           "id": "zdyqx",
                           "name": "History App Icon Glyph",
                           "width": 14,
                           "height": 14,
-                          "iconFontName": "captions",
-                          "iconFontFamily": "lucide",
+                          "icon": "captions",
+                          "library": "lucide",
                           "fill": "#FFFFFFFF"
                         }
                       ]
@@ -3328,10 +3271,9 @@
                   "height": 38,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 8,
                   "padding": [
                     0,
@@ -3340,13 +3282,13 @@
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon_font",
+                      "type": "icon",
                       "id": "rP20y",
                       "name": "Search Icon",
                       "width": 14,
                       "height": 14,
-                      "iconFontName": "search",
-                      "iconFontFamily": "lucide",
+                      "icon": "search",
+                      "library": "lucide",
                       "fill": "#777777FF"
                     },
                     {
@@ -3369,10 +3311,9 @@
                   "height": 34,
                   "fill": "#E9E9E9B8",
                   "cornerRadius": 9,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E0E0E0FF"
-                  },
+                  "stroke": "#E0E0E0FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 3,
                   "padding": 3,
                   "children": [
@@ -3384,10 +3325,9 @@
                       "height": 28,
                       "fill": "#FFFFFFFF",
                       "cornerRadius": 7,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E3E3E3FF"
-                      },
+                      "stroke": "#E3E3E3FF",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "justifyContent": "center",
                       "alignItems": "center",
                       "children": [
@@ -3496,10 +3436,9 @@
                       "width": "fill_container",
                       "fill": "#FFFFFFFF",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5FF"
-                      },
+                      "stroke": "#E5E5E5FF",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 7,
                       "padding": 12,
@@ -3762,10 +3701,9 @@
                   "width": "fill_container",
                   "fill": "#FFFFFFA8",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "layout": "vertical",
                   "gap": 5,
                   "padding": 12,
@@ -3922,10 +3860,9 @@
                           "height": 34,
                           "fill": "#FFFFFFFF",
                           "cornerRadius": 8,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#E5E5E5FF"
-                          },
+                          "stroke": "#E5E5E5FF",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
                           "gap": 7,
                           "padding": [
                             0,
@@ -3935,13 +3872,13 @@
                           "alignItems": "center",
                           "children": [
                             {
-                              "type": "icon_font",
+                              "type": "icon",
                               "id": "QQO19",
                               "name": "Copy Transcript Button Icon",
                               "width": 13,
                               "height": 13,
-                              "iconFontName": "copy",
-                              "iconFontFamily": "lucide",
+                              "icon": "copy",
+                              "library": "lucide",
                               "fill": "#555555FF"
                             },
                             {
@@ -3972,13 +3909,13 @@
                           "alignItems": "center",
                           "children": [
                             {
-                              "type": "icon_font",
+                              "type": "icon",
                               "id": "Q2VcO",
                               "name": "Generate Minutes Button Icon",
                               "width": 13,
                               "height": 13,
-                              "iconFontName": "sparkles",
-                              "iconFontFamily": "lucide",
+                              "icon": "sparkles",
+                              "library": "lucide",
                               "fill": "#FFFFFFFF"
                             },
                             {
@@ -4004,10 +3941,9 @@
                   "width": "fill_container",
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5FF"
-                  },
+                  "stroke": "#E5E5E5FF",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "layout": "vertical",
                   "gap": 12,
                   "padding": 14,
@@ -4057,10 +3993,9 @@
                           "height": 30,
                           "fill": "#F5F5F5FF",
                           "cornerRadius": 8,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#E5E5E5FF"
-                          },
+                          "stroke": "#E5E5E5FF",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
                           "gap": 3,
                           "padding": 3,
                           "children": [
@@ -4129,10 +4064,9 @@
                           "height": 58,
                           "fill": "#F7F7F7FF",
                           "cornerRadius": 10,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#E9E9E9FF"
-                          },
+                          "stroke": "#E9E9E9FF",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
                           "gap": 12,
                           "padding": [
                             0,
@@ -4148,21 +4082,20 @@
                               "height": 28,
                               "fill": "#FFFFFFFF",
                               "cornerRadius": 999,
-                              "stroke": {
-                                "thickness": 1,
-                                "fill": "#E5E5E5FF"
-                              },
+                              "stroke": "#E5E5E5FF",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner",
                               "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "icon_font",
+                                  "type": "icon",
                                   "id": "VTZko",
                                   "name": "Mic Track Icon",
                                   "width": 13,
                                   "height": 13,
-                                  "iconFontName": "mic",
-                                  "iconFontFamily": "lucide",
+                                  "icon": "mic",
+                                  "library": "lucide",
                                   "fill": "#1A1A1AFF"
                                 }
                               ]
@@ -4344,10 +4277,9 @@
                           "height": 58,
                           "fill": "#F7F7F7FF",
                           "cornerRadius": 10,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#E9E9E9FF"
-                          },
+                          "stroke": "#E9E9E9FF",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
                           "gap": 12,
                           "padding": [
                             0,
@@ -4363,21 +4295,20 @@
                               "height": 28,
                               "fill": "#FFFFFFFF",
                               "cornerRadius": 999,
-                              "stroke": {
-                                "thickness": 1,
-                                "fill": "#E5E5E5FF"
-                              },
+                              "stroke": "#E5E5E5FF",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner",
                               "justifyContent": "center",
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "icon_font",
+                                  "type": "icon",
                                   "id": "jabcb",
                                   "name": "Desktop Track Icon",
                                   "width": 13,
                                   "height": 13,
-                                  "iconFontName": "monitor-speaker",
-                                  "iconFontFamily": "lucide",
+                                  "icon": "monitor-speaker",
+                                  "library": "lucide",
                                   "fill": "#FF5C00FF"
                                 }
                               ]
@@ -4571,10 +4502,9 @@
                       "height": "fill_container",
                       "fill": "#FFFFFFFF",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5FF"
-                      },
+                      "stroke": "#E5E5E5FF",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 12,
                       "padding": 14,
@@ -4610,10 +4540,9 @@
                                   "height": 34,
                                   "fill": "#FFFFFFFF",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5FF"
-                                  },
+                                  "stroke": "#E5E5E5FF",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 7,
                                   "padding": [
                                     0,
@@ -4623,13 +4552,13 @@
                                   "alignItems": "center",
                                   "children": [
                                     {
-                                      "type": "icon_font",
+                                      "type": "icon",
                                       "id": "PdAfZ",
                                       "name": "Find Speaker Button Icon",
                                       "width": 13,
                                       "height": 13,
-                                      "iconFontName": "user-round",
-                                      "iconFontFamily": "lucide",
+                                      "icon": "user-round",
+                                      "library": "lucide",
                                       "fill": "#555555FF"
                                     },
                                     {
@@ -4651,10 +4580,9 @@
                                   "height": 34,
                                   "fill": "#FFFFFFFF",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5FF"
-                                  },
+                                  "stroke": "#E5E5E5FF",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 7,
                                   "padding": [
                                     0,
@@ -4664,13 +4592,13 @@
                                   "alignItems": "center",
                                   "children": [
                                     {
-                                      "type": "icon_font",
+                                      "type": "icon",
                                       "id": "rPQU0",
                                       "name": "Open Dictionary Button Icon",
                                       "width": 13,
                                       "height": 13,
-                                      "iconFontName": "book-open",
-                                      "iconFontFamily": "lucide",
+                                      "icon": "book-open",
+                                      "library": "lucide",
                                       "fill": "#555555FF"
                                     },
                                     {
@@ -4697,10 +4625,9 @@
                           "height": 38,
                           "fill": "#F7F7F7FF",
                           "cornerRadius": 8,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#E9E9E9FF"
-                          },
+                          "stroke": "#E9E9E9FF",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
                           "gap": 8,
                           "padding": [
                             0,
@@ -5100,10 +5027,9 @@
                       "height": "fill_container",
                       "fill": "#FFFFFFFF",
                       "cornerRadius": 10,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5FF"
-                      },
+                      "stroke": "#E5E5E5FF",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 13,
                       "padding": 14,
@@ -5153,10 +5079,9 @@
                               "height": 30,
                               "fill": "#F5F5F5FF",
                               "cornerRadius": 8,
-                              "stroke": {
-                                "thickness": 1,
-                                "fill": "#E5E5E5FF"
-                              },
+                              "stroke": "#E5E5E5FF",
+                              "strokeWidth": 1,
+                              "strokeAlignment": "inner",
                               "gap": 6,
                               "padding": [
                                 0,
@@ -5175,13 +5100,13 @@
                                   "fontWeight": "650"
                                 },
                                 {
-                                  "type": "icon_font",
+                                  "type": "icon",
                                   "id": "Y3IqM",
                                   "name": "Template Chevron",
                                   "width": 12,
                                   "height": 12,
-                                  "iconFontName": "chevron-down",
-                                  "iconFontFamily": "lucide",
+                                  "icon": "chevron-down",
+                                  "library": "lucide",
                                   "fill": "#777777FF"
                                 }
                               ]
@@ -5201,12 +5126,11 @@
                               "id": "SGYyg",
                               "name": "Minute Summary",
                               "width": "fill_container",
-                              "stroke": {
-                                "thickness": {
-                                  "bottom": 1
-                                },
-                                "fill": "#EDEDEDFF"
+                              "stroke": "#EDEDEDFF",
+                              "strokeWidth": {
+                                "bottom": 1
                               },
+                              "strokeAlignment": "inner",
                               "layout": "vertical",
                               "gap": 6,
                               "padding": [
@@ -5246,12 +5170,11 @@
                               "id": "maA64",
                               "name": "Minute Decisions",
                               "width": "fill_container",
-                              "stroke": {
-                                "thickness": {
-                                  "bottom": 1
-                                },
-                                "fill": "#EDEDEDFF"
+                              "stroke": "#EDEDEDFF",
+                              "strokeWidth": {
+                                "bottom": 1
                               },
+                              "strokeAlignment": "inner",
                               "layout": "vertical",
                               "gap": 6,
                               "padding": [
@@ -5291,12 +5214,11 @@
                               "id": "t8CuId",
                               "name": "Minute Todos",
                               "width": "fill_container",
-                              "stroke": {
-                                "thickness": {
-                                  "bottom": 1
-                                },
-                                "fill": "#EDEDEDFF"
+                              "stroke": "#EDEDEDFF",
+                              "strokeWidth": {
+                                "bottom": 1
                               },
+                              "strokeAlignment": "inner",
                               "layout": "vertical",
                               "gap": 6,
                               "padding": [
@@ -5336,12 +5258,11 @@
                               "id": "le9JK",
                               "name": "Minute Risks",
                               "width": "fill_container",
-                              "stroke": {
-                                "thickness": {
-                                  "bottom": 1
-                                },
-                                "fill": "#EDEDEDFF"
+                              "stroke": "#EDEDEDFF",
+                              "strokeWidth": {
+                                "bottom": 1
                               },
+                              "strokeAlignment": "inner",
                               "layout": "vertical",
                               "gap": 6,
                               "padding": [
@@ -5386,10 +5307,9 @@
                           "height": 54,
                           "fill": "#F7F7F7FF",
                           "cornerRadius": 9,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "#E9E9E9FF"
-                          },
+                          "stroke": "#E9E9E9FF",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
                           "gap": 10,
                           "padding": [
                             0,
@@ -5398,13 +5318,13 @@
                           "alignItems": "center",
                           "children": [
                             {
-                              "type": "icon_font",
+                              "type": "icon",
                               "id": "j3N9Sa",
                               "name": "Ask Icon",
                               "width": 14,
                               "height": 14,
-                              "iconFontName": "message-circle",
-                              "iconFontFamily": "lucide",
+                              "icon": "message-circle",
+                              "library": "lucide",
                               "fill": "#777777FF"
                             },
                             {
@@ -5431,13 +5351,13 @@
                               "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "icon_font",
+                                  "type": "icon",
                                   "id": "BabIw",
                                   "name": "Ask Send Icon",
                                   "width": 14,
                                   "height": 14,
-                                  "iconFontName": "arrow-up",
-                                  "iconFontFamily": "lucide",
+                                  "icon": "arrow-up",
+                                  "library": "lucide",
                                   "fill": "#FFFFFFFF"
                                 }
                               ]
@@ -5465,10 +5385,9 @@
       "height": 1280,
       "fill": "#ECEDEDFF",
       "cornerRadius": 24,
-      "stroke": {
-        "thickness": 1,
-        "fill": "#DAD7D2FF"
-      },
+      "stroke": "#DAD7D2FF",
+      "strokeWidth": 1,
+      "strokeAlignment": "inner",
       "layout": "none",
       "children": [
         {
@@ -5487,10 +5406,9 @@
               "name": "Settings Kicker",
               "fill": "#FFF3EC",
               "cornerRadius": 999,
-              "stroke": {
-                "thickness": 1,
-                "fill": "#FFDCC8"
-              },
+              "stroke": "#FFDCC8",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
               "gap": 6,
               "padding": [
                 6,
@@ -5555,10 +5473,9 @@
           "height": 1136,
           "fill": "#E8E9EBE8",
           "cornerRadius": 18,
-          "stroke": {
-            "thickness": 1,
-            "fill": "#D2D2D0AA"
-          },
+          "stroke": "#D2D2D0AA",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
           "effect": [
             {
               "type": "background_blur",
@@ -5673,10 +5590,9 @@
                   "name": "Settings Status",
                   "fill": "#F5F5F5",
                   "cornerRadius": 999,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5"
-                  },
+                  "stroke": "#E5E5E5",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 6,
                   "padding": [
                     5,
@@ -5715,12 +5631,11 @@
               "width": 226,
               "height": 1080,
               "fill": "#F5F5F6CC",
-              "stroke": {
-                "thickness": {
-                  "right": 1
-                },
-                "fill": "#E6E6E8"
+              "stroke": "#E6E6E8",
+              "strokeWidth": {
+                "right": 1
               },
+              "strokeAlignment": "inner",
               "layout": "vertical",
               "gap": 8,
               "padding": [
@@ -5802,10 +5717,9 @@
                   "height": 34,
                   "fill": "#FFFFFFFF",
                   "cornerRadius": 8,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5"
-                  },
+                  "stroke": "#E5E5E5",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "gap": 9,
                   "padding": [
                     0,
@@ -6015,10 +5929,9 @@
                   "width": "fill_container",
                   "fill": "#FFFFFF80",
                   "cornerRadius": 10,
-                  "stroke": {
-                    "thickness": 1,
-                    "fill": "#E5E5E5"
-                  },
+                  "stroke": "#E5E5E5",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
                   "layout": "vertical",
                   "gap": 4,
                   "padding": 10,
@@ -6114,10 +6027,9 @@
                       "width": "fill_container",
                       "fill": "#FFFFFF",
                       "cornerRadius": 12,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5"
-                      },
+                      "stroke": "#E5E5E5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 10,
                       "padding": 14,
@@ -6210,10 +6122,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6292,10 +6203,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6374,10 +6284,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6419,10 +6328,9 @@
                       "width": "fill_container",
                       "fill": "#FFFFFF",
                       "cornerRadius": 12,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5"
-                      },
+                      "stroke": "#E5E5E5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 10,
                       "padding": 14,
@@ -6515,10 +6423,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6597,10 +6504,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6679,10 +6585,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6724,10 +6629,9 @@
                       "width": "fill_container",
                       "fill": "#FFFFFF",
                       "cornerRadius": 12,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5"
-                      },
+                      "stroke": "#E5E5E5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 10,
                       "padding": 14,
@@ -6820,10 +6724,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6902,10 +6805,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -6947,10 +6849,9 @@
                       "width": "fill_container",
                       "fill": "#FFFFFF",
                       "cornerRadius": 12,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5"
-                      },
+                      "stroke": "#E5E5E5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 10,
                       "padding": 14,
@@ -7043,10 +6944,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -7125,10 +7025,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -7207,10 +7106,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -7252,10 +7150,9 @@
                       "width": "fill_container",
                       "fill": "#FFFFFF",
                       "cornerRadius": 12,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "#E5E5E5"
-                      },
+                      "stroke": "#E5E5E5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
                       "layout": "vertical",
                       "gap": 10,
                       "padding": 14,
@@ -7348,10 +7245,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
@@ -7430,10 +7326,9 @@
                                   "height": 30,
                                   "fill": "#F8F7F4",
                                   "cornerRadius": 8,
-                                  "stroke": {
-                                    "thickness": 1,
-                                    "fill": "#E5E5E5"
-                                  },
+                                  "stroke": "#E5E5E5",
+                                  "strokeWidth": 1,
+                                  "strokeAlignment": "inner",
                                   "gap": 6,
                                   "padding": [
                                     0,
