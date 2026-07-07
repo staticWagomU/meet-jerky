@@ -1,28 +1,20 @@
 import "./style.css";
-import { summarizeTranscript } from "@/utils/ai-client";
-import { authenticate, getAuthToken } from "@/utils/google-auth";
 import {
-	batchUpdateDocument,
-	createDocument,
-	DocsApiError,
-	writeDocumentContent,
-} from "@/utils/google-docs";
+	type ChatMessage,
+	chatAboutTranscript,
+	summarizeTranscript,
+} from "@/utils/ai-client";
 import {
-	buildExportFilename,
 	computeTranscriptDiffs,
 	escapeHtml,
 	extractParticipants,
 	formatDate,
 	formatRawTranscriptAsText,
-	formatSessionAsJson,
-	formatSessionAsMarkdown,
 	formatTimeOnly,
 	formatTranscriptAsText,
 	getSessionDisplayTitle,
 } from "@/utils/helpers";
-import { showNotification } from "@/utils/notification";
 import { loadSettings } from "@/utils/settings";
-import { generateMinutes } from "@/utils/template";
 import type { MeetingSession } from "@/utils/types";
 
 interface SessionSummary {
@@ -42,6 +34,7 @@ const ONBOARDING_KEY = "onboarding-completed";
 
 // このUIはpopupとサイドパネルで共有する。出力HTML名で実行文脈を判別し、
 // サイドパネル内では「サイドパネルで開く」ボタンを出さない。
+// AI機能（要約・チャット）はサイドパネル文脈でのみ表示する。
 const IS_SIDE_PANEL = location.pathname.includes("sidepanel");
 // sidePanel.open は Chrome のみ。未対応ブラウザ(Firefox等)ではボタンを隠す。
 const CAN_OPEN_SIDE_PANEL = typeof browser.sidePanel?.open === "function";
@@ -152,24 +145,6 @@ function startInlineEdit(
 	input.addEventListener("click", (e) => e.stopPropagation());
 }
 
-// --- Download helper ---
-
-function downloadFile(
-	content: string,
-	filename: string,
-	mimeType: string,
-): void {
-	const blob = new Blob([content], { type: mimeType });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
-}
-
 // --- Temporary button state helper ---
 
 function showTemporaryButtonState(
@@ -210,7 +185,7 @@ function renderOnboarding(): void {
         </div>
         <div class="onboarding-point">
           <span class="onboarding-point-icon">&#128274;</span>
-          <span>記録データはお使いのブラウザ内にのみ保存され、外部に送信されることはありません</span>
+          <span>記録データはお使いのブラウザ内にのみ保存されます（AI機能を使用した場合のみOpenAIに送信されます）</span>
         </div>
         <div class="onboarding-point">
           <span class="onboarding-point-icon">&#9888;&#65039;</span>
@@ -421,6 +396,34 @@ function buildTranscriptHtml(session: MeetingSession): {
 	return { html, participants, speakerColors };
 }
 
+// AI要約・メモ・チャットはサイドパネル文脈でのみ表示する
+function buildAiSectionHtml(): string {
+	return `
+    <div class="ai-section">
+      <div class="ai-section-header">
+        <span class="ai-section-title">✨ AI</span>
+        <button class="action-btn ai-btn" id="ai-summary-btn" title="AIで要約を生成">AI要約</button>
+      </div>
+      <textarea class="ai-memo-input" id="ai-memo-input" placeholder="メモを入力（任意）：要約に反映したい補足情報など" rows="2"></textarea>
+      <div class="ai-summary-result" style="display:none">
+        <div class="ai-summary-header">
+          <span class="ai-summary-title">AI要約</span>
+          <button class="ai-summary-copy">コピー</button>
+          <button class="ai-summary-close">&#10005;</button>
+        </div>
+        <div class="ai-summary-content"></div>
+      </div>
+      <div class="ai-chat">
+        <div class="ai-chat-messages" id="ai-chat-messages"></div>
+        <div class="ai-chat-input-row">
+          <textarea class="ai-chat-input" id="ai-chat-input" placeholder="文字起こしについて質問（Enterで送信）" rows="2"></textarea>
+          <button class="action-btn ai-btn" id="ai-chat-send">送信</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function buildDetailPageHtml(
 	session: MeetingSession,
 	transcriptHtml: string,
@@ -448,35 +451,9 @@ function buildDetailPageHtml(
 				.join("")}
     </div>
     <div class="toolbar">
-      <div class="toolbar-formats">
-        <button class="format-btn" id="export-md" title="Markdownでエクスポート">MD</button>
-        <button class="format-btn" id="export-json" title="JSONでエクスポート">JSON</button>
-        <button class="format-btn" id="export-txt" title="テキストでエクスポート">TXT</button>
-        <button class="format-btn" id="export-raw" title="生の字幕ログをエクスポート">RAW</button>
-        <div class="minutes-export-wrapper">
-          <button class="format-btn minutes-btn" id="minutes-toggle" title="議事録をエクスポート">議事録</button>
-          <div class="minutes-export-menu" id="minutes-export-menu">
-            <button class="minutes-menu-item" id="minutes-export-md">MDファイル</button>
-            <button class="minutes-menu-item" id="minutes-export-docs">Google Docs</button>
-          </div>
-        </div>
-      </div>
-      <div class="toolbar-actions">
-        <button class="action-btn ai-btn" id="ai-summary-btn" title="AIで要約を生成">AI要約</button>
-        <button class="action-btn copy-btn" id="copy-button">全文コピー</button>
-      </div>
+      <button class="action-btn copy-btn" id="copy-button">全文コピー</button>
     </div>
-    <div class="ai-memo-section">
-      <textarea class="ai-memo-input" id="ai-memo-input" placeholder="メモを入力（任意）：会議中に気づいたこと、補足情報など" rows="3"></textarea>
-    </div>
-    <div class="ai-summary-result" style="display:none">
-      <div class="ai-summary-header">
-        <span class="ai-summary-title">AI要約</span>
-        <button class="ai-summary-copy">コピー</button>
-        <button class="ai-summary-close">&#10005;</button>
-      </div>
-      <div class="ai-summary-content"></div>
-    </div>
+    ${IS_SIDE_PANEL ? buildAiSectionHtml() : ""}
     <div class="transcript-list">${transcriptHtml}</div>
     </div>
   `;
@@ -526,180 +503,28 @@ function renderTranscriptDetail(session: MeetingSession): void {
 			);
 		});
 
-	attachExportHandlers(session);
-}
+	attachCopyHandler(session);
 
-// --- Shared minutes content builder ---
-
-async function buildMinutesContent(session: MeetingSession): Promise<string> {
-	const settings = await loadSettings();
-	const minutes = generateMinutes(session, settings.template.minutesTemplate);
-
-	let content = "";
-
-	// Include AI summary if it exists in the popup
-	const summaryText =
-		document.querySelector(".ai-summary-content")?.textContent ?? "";
-	if (summaryText) {
-		content += "## AI 要約\n\n";
-		content += `${summaryText}\n\n---\n\n`;
-	}
-
-	content += minutes;
-	return content;
-}
-
-// --- Google Docs export handler ---
-
-async function handleDocsExport(
-	session: MeetingSession,
-	docsBtn: HTMLButtonElement,
-): Promise<void> {
-	let token = await getAuthToken();
-	if (!token) {
-		try {
-			token = await authenticate();
-		} catch {
-			showTemporaryButtonState(
-				docsBtn,
-				"要ログイン",
-				"export-error",
-				2000,
-				"Google Docs",
-			);
-			if (
-				confirm(
-					"Googleアカウントでのログインが必要です。設定画面を開きますか？",
-				)
-			) {
-				browser.runtime.openOptionsPage();
-			}
-			return;
-		}
-	}
-
-	try {
-		docsBtn.disabled = true;
-		docsBtn.textContent = "作成中...";
-		docsBtn.classList.add("export-docs-loading");
-
-		const title = getSessionDisplayTitle(session);
-		const summaryText =
-			document.querySelector(".ai-summary-content")?.textContent ?? "";
-		const settings = await loadSettings();
-		const minutes = generateMinutes(
-			session,
-			settings.template.minutesTemplate,
-		);
-
-		const exportToDocs = async (authToken: string) => {
-			const { documentId, documentUrl, defaultTabId } =
-				await createDocument(authToken, `${title} - 議事録`);
-
-			if (summaryText && defaultTabId) {
-				// Tabbed export: 要約タブ + 文字起こしタブ
-				const response = await batchUpdateDocument(
-					authToken,
-					documentId,
-					[
-						{
-							updateDocumentTabProperties: {
-								tabProperties: {
-									tabId: defaultTabId,
-									title: "要約",
-								},
-								fields: "title",
-							},
-						},
-						{
-							insertText: {
-								location: {
-									index: 1,
-									tabId: defaultTabId,
-								},
-								text: `## AI 要約\n\n${summaryText}`,
-							},
-						},
-						{
-							addDocumentTab: {
-								tabProperties: { title: "文字起こし" },
-							},
-						},
-					],
-				);
-
-				const transcriptTabId = response.replies
-					.map((r) => r.addDocumentTab?.tabProperties?.tabId)
-					.find((id) => id);
-
-				if (transcriptTabId) {
-					await writeDocumentContent(
-						authToken,
-						documentId,
-						minutes,
-						transcriptTabId,
-					);
-				}
-			} else {
-				// Single tab: combine summary + minutes
-				let content = "";
-				if (summaryText) {
-					content += `## AI 要約\n\n${summaryText}\n\n---\n\n`;
-				}
-				content += minutes;
-				await writeDocumentContent(authToken, documentId, content);
-			}
-
-			return documentUrl;
-		};
-
-		let documentUrl: string;
-		try {
-			documentUrl = await exportToDocs(token);
-		} catch (err) {
-			if (err instanceof DocsApiError && err.status === 401) {
-				token = await authenticate();
-				documentUrl = await exportToDocs(token);
-			} else {
-				throw err;
-			}
-		}
-
-		window.open(documentUrl, "_blank");
-
-		docsBtn.classList.remove("export-docs-loading");
-		docsBtn.classList.add("export-docs-success");
-		docsBtn.disabled = false;
-		docsBtn.textContent = "✓ 作成完了";
-
-		showNotification("Google Docsに議事録を作成しました", "success");
-
-		setTimeout(() => {
-			docsBtn.textContent = "Google Docs";
-			docsBtn.classList.remove("export-docs-success");
-		}, 5000);
-	} catch (err) {
-		console.error("Docs export error:", err);
-		docsBtn.disabled = false;
-		docsBtn.classList.remove("export-docs-loading");
-		showTemporaryButtonState(
-			docsBtn,
-			"エラー",
-			"export-error",
-			3000,
-			"Google Docs",
-		);
+	if (IS_SIDE_PANEL) {
+		attachAiHandlers(session);
 	}
 }
 
-// --- Export handlers ---
+// --- Copy handler ---
 
-function attachExportHandlers(session: MeetingSession): void {
-	// Copy button
+/**
+ * Copy the raw caption log to the clipboard. Sessions recorded before
+ * rawTranscript existed fall back to the deduplicated transcript.
+ */
+function attachCopyHandler(session: MeetingSession): void {
 	document
 		.getElementById("copy-button")
 		?.addEventListener("click", async () => {
-			const text = formatTranscriptAsText(session.transcript);
+			const raw = session.rawTranscript ?? [];
+			const text =
+				raw.length > 0
+					? formatRawTranscriptAsText(raw)
+					: formatTranscriptAsText(session.transcript);
 			try {
 				await navigator.clipboard.writeText(text);
 				const copyBtn = document.getElementById(
@@ -719,150 +544,82 @@ function attachExportHandlers(session: MeetingSession): void {
 				alert("コピーに失敗しました");
 			}
 		});
+}
 
-	// Export buttons
-	document.getElementById("export-md")?.addEventListener("click", () => {
-		const md = formatSessionAsMarkdown(session);
-		const filename = buildExportFilename(session, "md");
-		downloadFile(md, filename, "text/markdown");
-	});
+// --- AI handlers (side panel only) ---
 
-	document.getElementById("export-json")?.addEventListener("click", () => {
-		const json = formatSessionAsJson(session);
-		const filename = buildExportFilename(session, "json");
-		downloadFile(json, filename, "application/json");
-	});
+async function confirmApiKeySetup(): Promise<boolean> {
+	const settings = await loadSettings();
+	if (settings.ai.apiKey) return true;
 
-	document.getElementById("export-txt")?.addEventListener("click", () => {
-		const txt = formatTranscriptAsText(session.transcript);
-		const filename = buildExportFilename(session, "txt");
-		downloadFile(txt, filename, "text/plain");
-	});
+	if (confirm("APIキーが設定されていません。設定画面を開きますか？")) {
+		browser.runtime.openOptionsPage();
+	}
+	return false;
+}
 
-	document.getElementById("export-raw")?.addEventListener("click", () => {
-		const raw = formatRawTranscriptAsText(session.rawTranscript ?? []);
-		const filename = buildExportFilename(session, "txt", "raw");
-		downloadFile(raw, filename, "text/plain");
-	});
+function attachAiHandlers(session: MeetingSession): void {
+	attachSummaryHandlers(session);
+	attachChatHandlers(session);
+}
 
-	// Minutes dropdown toggle
-	const minutesToggle = document.getElementById("minutes-toggle");
-	const minutesMenu = document.getElementById("minutes-export-menu");
-
-	minutesToggle?.addEventListener("click", (e) => {
-		e.stopPropagation();
-		minutesMenu?.classList.toggle("open");
-	});
-
-	// Close menu on outside click
-	document.addEventListener("click", () => {
-		minutesMenu?.classList.remove("open");
-	});
-
-	minutesMenu?.addEventListener("click", (e) => {
-		e.stopPropagation();
-	});
-
-	// Minutes → MD file
-	document
-		.getElementById("minutes-export-md")
-		?.addEventListener("click", async () => {
-			minutesMenu?.classList.remove("open");
-			const content = await buildMinutesContent(session);
-			const filename = buildExportFilename(session, "md", "minutes");
-			downloadFile(content, filename, "text/markdown");
-		});
-
-	// Minutes → Google Docs
-	document
-		.getElementById("minutes-export-docs")
-		?.addEventListener("click", () => {
-			minutesMenu?.classList.remove("open");
-			const docsBtn = document.getElementById(
-				"minutes-export-docs",
-			) as HTMLButtonElement;
-			handleDocsExport(session, docsBtn);
-		});
-
-	// AI Summary button
+function attachSummaryHandlers(session: MeetingSession): void {
 	const aiBtn = document.getElementById(
 		"ai-summary-btn",
 	) as HTMLButtonElement | null;
-	if (aiBtn) {
-		aiBtn.addEventListener("click", async () => {
-			const settings = await loadSettings();
 
-			if (!settings.ai.apiKey) {
-				if (confirm("APIキーが設定されていません。設定画面を開きますか？")) {
-					browser.runtime.openOptionsPage();
-				}
-				return;
+	aiBtn?.addEventListener("click", async () => {
+		if (!(await confirmApiKeySetup())) return;
+		const settings = await loadSettings();
+
+		aiBtn.textContent = "生成中...";
+		aiBtn.classList.add("loading");
+		aiBtn.disabled = true;
+
+		const resultContainer = document.querySelector(
+			".ai-summary-result",
+		) as HTMLElement | null;
+		const contentEl = document.querySelector(
+			".ai-summary-content",
+		) as HTMLElement | null;
+
+		try {
+			const transcriptText = formatTranscriptAsText(session.transcript);
+			const memoInput = document.getElementById(
+				"ai-memo-input",
+			) as HTMLTextAreaElement | null;
+			const memo = memoInput?.value.trim() || "";
+			const result = await summarizeTranscript(
+				settings.ai.apiKey,
+				settings.ai.customPrompt,
+				transcriptText,
+				settings.ai.model,
+				memo,
+			);
+
+			if (resultContainer && contentEl) {
+				contentEl.textContent = result;
+				resultContainer.style.display = "block";
 			}
 
-			aiBtn.textContent = "生成中...";
-			aiBtn.classList.add("loading");
-			aiBtn.disabled = true;
+			aiBtn.classList.remove("loading");
+			showTemporaryButtonState(aiBtn, "生成完了", "success", 2000, "AI要約", () => {
+				aiBtn.disabled = false;
+			});
+		} catch (err) {
+			aiBtn.classList.remove("loading");
+			console.error("AI summary error:", err);
 
-			const resultContainer = document.querySelector(
-				".ai-summary-result",
-			) as HTMLElement | null;
-			const contentEl = document.querySelector(
-				".ai-summary-content",
-			) as HTMLElement | null;
-
-			try {
-				const transcriptText = formatTranscriptAsText(session.transcript);
-				const memoInput = document.getElementById(
-					"ai-memo-input",
-				) as HTMLTextAreaElement | null;
-				const memo = memoInput?.value.trim() || "";
-				const result = await summarizeTranscript(
-					settings.ai.provider,
-					settings.ai.apiKey,
-					settings.template.customPrompt,
-					transcriptText,
-					settings.ai.model,
-					memo,
-				);
-
-				if (resultContainer && contentEl) {
-					contentEl.textContent = result;
-					resultContainer.style.display = "block";
-				}
-
-				aiBtn.classList.remove("loading");
-				showTemporaryButtonState(
-					aiBtn,
-					"生成完了",
-					"success",
-					2000,
-					"AI要約",
-					() => {
-						aiBtn.disabled = false;
-					},
-				);
-			} catch (err) {
-				aiBtn.classList.remove("loading");
-				console.error("AI summary error:", err);
-
-				if (resultContainer && contentEl) {
-					contentEl.textContent = `エラー: ${err instanceof Error ? err.message : String(err)}`;
-					resultContainer.style.display = "block";
-				}
-
-				showTemporaryButtonState(
-					aiBtn,
-					"エラー",
-					"error",
-					3000,
-					"AI要約",
-					() => {
-						aiBtn.disabled = false;
-					},
-				);
+			if (resultContainer && contentEl) {
+				contentEl.textContent = `エラー: ${err instanceof Error ? err.message : String(err)}`;
+				resultContainer.style.display = "block";
 			}
-		});
-	}
+
+			showTemporaryButtonState(aiBtn, "エラー", "error", 3000, "AI要約", () => {
+				aiBtn.disabled = false;
+			});
+		}
+	});
 
 	// AI Summary copy button
 	document
@@ -891,6 +648,85 @@ function attachExportHandlers(session: MeetingSession): void {
 		) as HTMLElement | null;
 		if (resultContainer) {
 			resultContainer.style.display = "none";
+		}
+	});
+}
+
+function attachChatHandlers(session: MeetingSession): void {
+	const messagesEl = document.getElementById("ai-chat-messages");
+	const input = document.getElementById(
+		"ai-chat-input",
+	) as HTMLTextAreaElement | null;
+	const sendBtn = document.getElementById(
+		"ai-chat-send",
+	) as HTMLButtonElement | null;
+	if (!messagesEl || !input || !sendBtn) return;
+
+	// 会話履歴は詳細画面を表示している間だけ保持する（永続化しない）
+	const history: ChatMessage[] = [];
+	let pending = false;
+
+	const renderMessages = (options?: { thinking?: boolean; error?: string }) => {
+		const bubbles = history
+			.map(
+				(m) => `
+        <div class="ai-chat-message ai-chat-${m.role}">
+          ${escapeHtml(m.content)}
+        </div>
+      `,
+			)
+			.join("");
+		const thinking = options?.thinking
+			? `<div class="ai-chat-message ai-chat-assistant ai-chat-thinking">考え中...</div>`
+			: "";
+		const error = options?.error
+			? `<div class="ai-chat-message ai-chat-error">${escapeHtml(options.error)}</div>`
+			: "";
+		messagesEl.innerHTML = bubbles + thinking + error;
+		messagesEl.scrollTop = messagesEl.scrollHeight;
+	};
+
+	const send = async () => {
+		if (pending) return;
+		const question = input.value.trim();
+		if (!question) return;
+		if (!(await confirmApiKeySetup())) return;
+
+		const settings = await loadSettings();
+		pending = true;
+		sendBtn.disabled = true;
+		input.value = "";
+
+		history.push({ role: "user", content: question });
+		renderMessages({ thinking: true });
+
+		try {
+			const transcriptText = formatTranscriptAsText(session.transcript);
+			const answer = await chatAboutTranscript(
+				settings.ai.apiKey,
+				settings.ai.model,
+				transcriptText,
+				history,
+			);
+			history.push({ role: "assistant", content: answer });
+			renderMessages();
+		} catch (err) {
+			console.error("AI chat error:", err);
+			renderMessages({
+				error: `エラー: ${err instanceof Error ? err.message : String(err)}`,
+			});
+		} finally {
+			pending = false;
+			sendBtn.disabled = false;
+			input.focus();
+		}
+	};
+
+	sendBtn.addEventListener("click", send);
+	input.addEventListener("keydown", (e) => {
+		if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+			e.preventDefault();
+			send();
 		}
 	});
 }

@@ -1,10 +1,4 @@
-import type { AIProvider } from "./types";
-
-export const DEFAULT_MODELS: Record<AIProvider, string> = {
-	openai: "gpt-4o-mini",
-	anthropic: "claude-sonnet-4-5-20250514",
-	gemini: "gemini-2.5-flash",
-};
+export const DEFAULT_MODEL = "gpt-4o-mini";
 
 export const DEFAULT_CUSTOM_PROMPT = `以下のミーティングの文字起こしを分析し、次の形式で出力してください：
 
@@ -17,6 +11,15 @@ export const DEFAULT_CUSTOM_PROMPT = `以下のミーティングの文字起こ
 ## TODO
 - アクションアイテムを記載（担当者がわかれば併記）`;
 
+const CHAT_SYSTEM_PROMPT = `あなたは会議の文字起こしについて質問に答えるアシスタントです。
+以下の文字起こしの内容を踏まえて、日本語で簡潔かつ正確に回答してください。
+文字起こしから判断できないことは、推測せずその旨を伝えてください。`;
+
+export interface ChatMessage {
+	role: "user" | "assistant";
+	content: string;
+}
+
 export function buildUserContent(
 	transcriptText: string,
 	memo?: string,
@@ -25,8 +28,37 @@ export function buildUserContent(
 	return `${transcriptText}\n\n---\n\nユーザーメモ:\n${memo}`;
 }
 
+interface OpenAIRequestMessage {
+	role: "system" | "user" | "assistant";
+	content: string;
+}
+
+async function callOpenAI(
+	apiKey: string,
+	model: string,
+	messages: OpenAIRequestMessage[],
+): Promise<string> {
+	const response = await fetch("https://api.openai.com/v1/chat/completions", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${apiKey}`,
+		},
+		body: JSON.stringify({ model, messages }),
+	});
+	if (!response.ok) {
+		const text = await response.text();
+		throw new Error(`OpenAI API error (${response.status}): ${text}`);
+	}
+	const data = await response.json();
+	const text = data.choices?.[0]?.message?.content;
+	if (!text) {
+		throw new Error("OpenAI: レスポンスが不正です");
+	}
+	return text;
+}
+
 export async function summarizeTranscript(
-	provider: AIProvider,
 	apiKey: string,
 	prompt: string,
 	transcriptText: string,
@@ -37,120 +69,36 @@ export async function summarizeTranscript(
 		throw new Error("APIキーが設定されていません");
 	}
 	const effectivePrompt = prompt || DEFAULT_CUSTOM_PROMPT;
-	const effectiveModel = model || DEFAULT_MODELS[provider];
+	const effectiveModel = model || DEFAULT_MODEL;
 	const userContent = buildUserContent(transcriptText, memo);
 
-	switch (provider) {
-		case "openai":
-			return callOpenAI(apiKey, effectivePrompt, userContent, effectiveModel);
-		case "anthropic":
-			return callAnthropic(
-				apiKey,
-				effectivePrompt,
-				userContent,
-				effectiveModel,
-			);
-		case "gemini":
-			return callGemini(apiKey, effectivePrompt, userContent, effectiveModel);
-	}
+	return callOpenAI(apiKey, effectiveModel, [
+		{ role: "system", content: effectivePrompt },
+		{ role: "user", content: userContent },
+	]);
 }
 
-interface ProviderConfig {
-	url: string;
-	headers: Record<string, string>;
-	body: Record<string, unknown>;
-	extractText: (data: unknown) => string | undefined;
-	errorPrefix: string;
-}
-
-async function callProvider(config: ProviderConfig): Promise<string> {
-	const response = await fetch(config.url, {
-		method: "POST",
-		headers: config.headers,
-		body: JSON.stringify(config.body),
-	});
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(
-			`${config.errorPrefix} API error (${response.status}): ${text}`,
-		);
-	}
-	const data = await response.json();
-	const text = config.extractText(data);
-	if (!text) {
-		throw new Error(`${config.errorPrefix}: レスポンスが不正です`);
-	}
-	return text;
-}
-
-async function callOpenAI(
+/**
+ * Ask questions about a transcript in a multi-turn chat.
+ * The transcript is embedded in the system prompt; `messages` is the
+ * user/assistant conversation history including the latest user question.
+ */
+export async function chatAboutTranscript(
 	apiKey: string,
-	prompt: string,
-	transcript: string,
 	model: string,
+	transcriptText: string,
+	messages: ChatMessage[],
 ): Promise<string> {
-	return callProvider({
-		url: "https://api.openai.com/v1/chat/completions",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${apiKey}`,
-		},
-		body: {
-			model,
-			messages: [
-				{ role: "system", content: prompt },
-				{ role: "user", content: transcript },
-			],
-		},
-		// biome-ignore lint/suspicious/noExplicitAny: provider-specific JSON response
-		extractText: (data: any) => data.choices?.[0]?.message?.content,
-		errorPrefix: "OpenAI",
-	});
-}
+	if (!apiKey) {
+		throw new Error("APIキーが設定されていません");
+	}
+	const effectiveModel = model || DEFAULT_MODEL;
 
-async function callAnthropic(
-	apiKey: string,
-	prompt: string,
-	transcript: string,
-	model: string,
-): Promise<string> {
-	return callProvider({
-		url: "https://api.anthropic.com/v1/messages",
-		headers: {
-			"Content-Type": "application/json",
-			"x-api-key": apiKey,
-			"anthropic-version": "2023-06-01",
-			"anthropic-dangerous-direct-browser-access": "true",
+	return callOpenAI(apiKey, effectiveModel, [
+		{
+			role: "system",
+			content: `${CHAT_SYSTEM_PROMPT}\n\n[文字起こし]\n${transcriptText}`,
 		},
-		body: {
-			model,
-			max_tokens: 4096,
-			system: prompt,
-			messages: [{ role: "user", content: transcript }],
-		},
-		// biome-ignore lint/suspicious/noExplicitAny: provider-specific JSON response
-		extractText: (data: any) => data.content?.[0]?.text,
-		errorPrefix: "Anthropic",
-	});
-}
-
-async function callGemini(
-	apiKey: string,
-	prompt: string,
-	transcript: string,
-	model: string,
-): Promise<string> {
-	return callProvider({
-		url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: {
-			systemInstruction: { parts: [{ text: prompt }] },
-			contents: [{ parts: [{ text: transcript }] }],
-		},
-		// biome-ignore lint/suspicious/noExplicitAny: provider-specific JSON response
-		extractText: (data: any) => data.candidates?.[0]?.content?.parts?.[0]?.text,
-		errorPrefix: "Gemini",
-	});
+		...messages,
+	]);
 }

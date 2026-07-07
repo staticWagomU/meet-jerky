@@ -1,14 +1,8 @@
 import "./style.css";
-import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODELS } from "@/utils/ai-client";
-import { authenticate, getAuthToken, revokeToken } from "@/utils/google-auth";
+import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODEL } from "@/utils/ai-client";
 import { showNotification } from "@/utils/notification";
 import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
-import {
-	DEFAULT_MINUTES_TEMPLATE,
-	expandTemplate,
-	type TemplateContext,
-} from "@/utils/template";
-import type { AIProvider, UserSettings } from "@/utils/types";
+import type { UserSettings } from "@/utils/types";
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
 if (!appElement) throw new Error("#app element not found");
@@ -30,12 +24,6 @@ function render(): void {
 
 	// Session management card
 	app.appendChild(buildRetentionCard());
-
-	// Google integration card
-	app.appendChild(buildGoogleCard());
-
-	// Template editing card
-	app.appendChild(buildTemplateCard());
 
 	// AI integration card
 	app.appendChild(buildAICard());
@@ -159,132 +147,6 @@ function buildRetentionCard(): HTMLDivElement {
 	return card;
 }
 
-function buildGoogleCard(): HTMLDivElement {
-	const card = document.createElement("div");
-	card.className = "card";
-
-	const titleEl = document.createElement("div");
-	titleEl.className = "card-title";
-	titleEl.innerHTML = "&#128279; Google 連携";
-	card.appendChild(titleEl);
-
-	const statusRow = document.createElement("div");
-	statusRow.className = "google-status-row";
-	statusRow.id = "google-status-row";
-
-	const statusIndicator = document.createElement("span");
-	statusIndicator.className = "google-status";
-	statusIndicator.id = "google-status";
-	statusIndicator.textContent = "確認中...";
-	statusRow.appendChild(statusIndicator);
-	card.appendChild(statusRow);
-
-	const actionsRow = document.createElement("div");
-	actionsRow.className = "google-actions";
-
-	const loginBtn = document.createElement("button");
-	loginBtn.className = "google-login-button";
-	loginBtn.id = "google-login-btn";
-	loginBtn.textContent = "Google アカウントでログイン";
-	loginBtn.style.display = "none";
-	actionsRow.appendChild(loginBtn);
-
-	const logoutBtn = document.createElement("button");
-	logoutBtn.className = "google-logout-button";
-	logoutBtn.id = "google-logout-btn";
-	logoutBtn.textContent = "連携解除";
-	logoutBtn.style.display = "none";
-	actionsRow.appendChild(logoutBtn);
-
-	card.appendChild(actionsRow);
-
-	// Check auth status and update UI
-	checkAndUpdateGoogleStatus();
-
-	loginBtn.addEventListener("click", async () => {
-		try {
-			loginBtn.disabled = true;
-			loginBtn.textContent = "認証中...";
-			await authenticate();
-			currentSettings.google.authenticated = true;
-			await saveSettings(currentSettings);
-			updateGoogleStatusUI(true);
-			showNotification("Google アカウントを連携しました", "info");
-		} catch (err) {
-			const msg = err instanceof Error ? err.message : String(err);
-			console.error("Google OAuth error:", msg);
-			showNotification(`Google 認証に失敗しました: ${msg}`, "error");
-			loginBtn.disabled = false;
-			loginBtn.textContent = "Google アカウントでログイン";
-		}
-	});
-
-	logoutBtn.addEventListener("click", async () => {
-		try {
-			logoutBtn.disabled = true;
-			logoutBtn.textContent = "解除中...";
-			const token = await getAuthToken();
-			if (token) {
-				await revokeToken(token);
-			}
-			currentSettings.google.authenticated = false;
-			await saveSettings(currentSettings);
-			updateGoogleStatusUI(false);
-			showNotification("Google 連携を解除しました", "info");
-		} catch (err) {
-			const msg = err instanceof Error ? err.message : String(err);
-			console.error("Google logout error:", msg);
-			showNotification(`Google 連携の解除に失敗しました: ${msg}`, "error");
-			logoutBtn.disabled = false;
-			logoutBtn.textContent = "連携解除";
-		}
-	});
-
-	return card;
-}
-
-async function checkAndUpdateGoogleStatus(): Promise<void> {
-	const token = await getAuthToken();
-	const isAuthenticated = token !== null;
-	if (isAuthenticated !== currentSettings.google.authenticated) {
-		currentSettings.google.authenticated = isAuthenticated;
-		await saveSettings(currentSettings);
-	}
-	updateGoogleStatusUI(isAuthenticated);
-}
-
-function updateGoogleStatusUI(authenticated: boolean): void {
-	const statusEl = document.getElementById("google-status");
-	const loginBtn = document.getElementById(
-		"google-login-btn",
-	) as HTMLButtonElement | null;
-	const logoutBtn = document.getElementById(
-		"google-logout-btn",
-	) as HTMLButtonElement | null;
-
-	if (statusEl) {
-		if (authenticated) {
-			statusEl.textContent = "接続済み";
-			statusEl.className = "google-status google-status-connected";
-		} else {
-			statusEl.textContent = "未接続";
-			statusEl.className = "google-status google-status-disconnected";
-		}
-	}
-
-	if (loginBtn) {
-		loginBtn.style.display = authenticated ? "none" : "inline-flex";
-		loginBtn.disabled = false;
-		loginBtn.textContent = "Google アカウントでログイン";
-	}
-
-	if (logoutBtn) {
-		logoutBtn.style.display = authenticated ? "inline-flex" : "none";
-		logoutBtn.disabled = false;
-		logoutBtn.textContent = "連携解除";
-	}
-}
-
 interface RadioItemResult {
 	wrapper: HTMLLabelElement;
 	radio: HTMLInputElement;
@@ -362,236 +224,22 @@ function buildNumberInput(
 	return { wrapper, input, suffix };
 }
 
-function buildSampleContext(): TemplateContext {
-	return {
-		title: "週次定例ミーティング",
-		code: "abc-defg-hij",
-		date: "2026年4月14日",
-		startTime: "10:00",
-		endTime: "11:30",
-		duration: "1時間30分",
-		participants: "田中太郎, 鈴木花子, 佐藤一郎",
-		participantCount: "3",
-		transcriptCount: "42",
-		transcript:
-			"**田中太郎** (10:00:15)\nそれでは定例を始めます。\n\n**鈴木花子** (10:01:02)\n今週の進捗を報告します。",
-	};
-}
-
-const TEMPLATE_VARIABLES: { name: string; description: string }[] = [
-	{ name: "title", description: "会議タイトル" },
-	{ name: "code", description: "Meet コード" },
-	{ name: "date", description: "開始日（YYYY年MM月DD日）" },
-	{ name: "startTime", description: "開始時刻（HH:MM）" },
-	{ name: "endTime", description: "終了時刻（HH:MM）" },
-	{ name: "duration", description: "所要時間" },
-	{ name: "participants", description: "参加者（カンマ区切り）" },
-	{ name: "participantCount", description: "参加者数" },
-	{ name: "transcriptCount", description: "発言ブロック数" },
-	{ name: "transcript", description: "書き起こし本文" },
-];
-
-function buildTemplateCard(): HTMLDivElement {
-	const card = document.createElement("div");
-	card.className = "card";
-
-	const title = document.createElement("div");
-	title.className = "card-title";
-	title.textContent = "テンプレート設定";
-	card.appendChild(title);
-
-	// Description
-	const desc = document.createElement("div");
-	desc.className = "form-label";
-	desc.textContent =
-		"議事録エクスポート時に使用するテンプレートを編集できます。";
-	card.appendChild(desc);
-
-	// Variable reference
-	const varsSection = document.createElement("div");
-	varsSection.className = "template-variables";
-
-	const varsTitle = document.createElement("div");
-	varsTitle.className = "form-label";
-	varsTitle.textContent = "利用可能な変数:";
-	varsSection.appendChild(varsTitle);
-
-	const varsList = document.createElement("ul");
-	varsList.className = "template-variables-list";
-	for (const v of TEMPLATE_VARIABLES) {
-		const li = document.createElement("li");
-		const code = document.createElement("code");
-		code.textContent = `{{${v.name}}}`;
-		li.appendChild(code);
-		li.appendChild(document.createTextNode(` — ${v.description}`));
-		varsList.appendChild(li);
-	}
-	varsSection.appendChild(varsList);
-	card.appendChild(varsSection);
-
-	// Textarea
-	const formGroup = document.createElement("div");
-	formGroup.className = "form-group";
-
-	const textarea = document.createElement("textarea");
-	textarea.className = "template-textarea";
-	textarea.rows = 15;
-	textarea.value = currentSettings.template.minutesTemplate;
-	textarea.addEventListener("input", () => {
-		currentSettings.template.minutesTemplate = textarea.value;
-	});
-	formGroup.appendChild(textarea);
-	card.appendChild(formGroup);
-
-	// Actions row
-	const actions = document.createElement("div");
-	actions.className = "template-actions";
-
-	const resetBtn = document.createElement("button");
-	resetBtn.className = "template-action-button";
-	resetBtn.textContent = "デフォルトに戻す";
-	resetBtn.addEventListener("click", () => {
-		textarea.value = DEFAULT_MINUTES_TEMPLATE;
-		currentSettings.template.minutesTemplate = DEFAULT_MINUTES_TEMPLATE;
-	});
-	actions.appendChild(resetBtn);
-
-	const previewBtn = document.createElement("button");
-	previewBtn.className = "template-action-button";
-	previewBtn.textContent = "プレビュー";
-	previewBtn.addEventListener("click", () => {
-		const previewArea = card.querySelector(
-			".template-preview",
-		) as HTMLElement | null;
-		if (previewArea) {
-			if (previewArea.style.display === "none") {
-				const context = buildSampleContext();
-				const result = expandTemplate(textarea.value, context);
-				previewArea.textContent = result;
-				previewArea.style.display = "block";
-				previewBtn.textContent = "プレビューを閉じる";
-			} else {
-				previewArea.style.display = "none";
-				previewBtn.textContent = "プレビュー";
-			}
-		}
-	});
-	actions.appendChild(previewBtn);
-
-	card.appendChild(actions);
-
-	// Preview area (hidden by default)
-	const preview = document.createElement("pre");
-	preview.className = "template-preview";
-	preview.style.display = "none";
-	card.appendChild(preview);
-
-	return card;
-}
-
 function buildAICard(): HTMLDivElement {
 	const card = document.createElement("div");
 	card.className = "card";
 
 	const title = document.createElement("div");
 	title.className = "card-title";
-	title.textContent = "✨ AI連携";
+	title.textContent = "✨ AI連携 (OpenAI)";
 	card.appendChild(title);
 
-	// Section 1: Provider selection
-	const providerGroup = document.createElement("div");
-	providerGroup.className = "form-group";
+	const cardDesc = document.createElement("div");
+	cardDesc.className = "help-text";
+	cardDesc.textContent =
+		"サイドパネルのAI要約・チャット機能で使用します。使用時のみ文字起こしがOpenAIに送信されます。";
+	card.appendChild(cardDesc);
 
-	const providerLabel = document.createElement("div");
-	providerLabel.className = "form-label";
-	providerLabel.textContent = "プロバイダ選択";
-	providerGroup.appendChild(providerLabel);
-
-	const radioGroup = document.createElement("div");
-	radioGroup.className = "radio-group";
-
-	const openaiItem = buildRadioItem(
-		"ai-provider",
-		"openai",
-		"OpenAI (GPT-4o mini)",
-		"OpenAIのGPT-4o miniモデルを使用します",
-		currentSettings.ai.provider === "openai",
-	);
-	radioGroup.appendChild(openaiItem.wrapper);
-
-	const anthropicItem = buildRadioItem(
-		"ai-provider",
-		"anthropic",
-		"Anthropic (Claude)",
-		"AnthropicのClaudeモデルを使用します",
-		currentSettings.ai.provider === "anthropic",
-	);
-	radioGroup.appendChild(anthropicItem.wrapper);
-
-	const geminiItem = buildRadioItem(
-		"ai-provider",
-		"gemini",
-		"Google Gemini (Flash)",
-		"Google GeminiのFlashモデルを使用します",
-		currentSettings.ai.provider === "gemini",
-	);
-	radioGroup.appendChild(geminiItem.wrapper);
-
-	const allItems = [openaiItem, anthropicItem, geminiItem];
-	const providerValues: AIProvider[] = ["openai", "anthropic", "gemini"];
-
-	for (let i = 0; i < allItems.length; i++) {
-		const item = allItems[i];
-		const providerValue = providerValues[i];
-		item.radio.addEventListener("change", () => {
-			if (item.radio.checked) {
-				currentSettings.ai.provider = providerValue;
-				currentSettings.ai.model = DEFAULT_MODELS[providerValue];
-				const modelInput =
-					card.querySelector<HTMLInputElement>("#ai-model-input");
-				if (modelInput) {
-					modelInput.value = DEFAULT_MODELS[providerValue];
-				}
-				for (const other of allItems) {
-					other.wrapper.classList.remove("selected");
-				}
-				item.wrapper.classList.add("selected");
-			}
-		});
-	}
-
-	providerGroup.appendChild(radioGroup);
-	card.appendChild(providerGroup);
-
-	// Section 2: Model name
-	const modelGroup = document.createElement("div");
-	modelGroup.className = "form-group";
-
-	const modelLabel = document.createElement("div");
-	modelLabel.className = "form-label";
-	modelLabel.textContent = "モデル名";
-	modelGroup.appendChild(modelLabel);
-
-	const modelInput = document.createElement("input");
-	modelInput.type = "text";
-	modelInput.id = "ai-model-input";
-	modelInput.className = "api-key-input";
-	modelInput.placeholder = "例: gemini-2.5-flash, gpt-4o-mini";
-	modelInput.value = currentSettings.ai.model;
-	modelInput.addEventListener("input", () => {
-		currentSettings.ai.model = modelInput.value;
-	});
-	modelGroup.appendChild(modelInput);
-
-	const modelHelp = document.createElement("div");
-	modelHelp.className = "help-text";
-	modelHelp.textContent =
-		"使用するモデル名を指定できます。プロバイダ切替時はデフォルト値に戻ります。";
-	modelGroup.appendChild(modelHelp);
-
-	card.appendChild(modelGroup);
-
-	// Section 3: API Key
+	// Section 1: API Key
 	const apiKeyGroup = document.createElement("div");
 	apiKeyGroup.className = "form-group";
 
@@ -606,7 +254,7 @@ function buildAICard(): HTMLDivElement {
 	const apiKeyInput = document.createElement("input");
 	apiKeyInput.type = "password";
 	apiKeyInput.className = "api-key-input";
-	apiKeyInput.placeholder = "sk-... / sk-ant-... / AIza...";
+	apiKeyInput.placeholder = "sk-...";
 	apiKeyInput.value = currentSettings.ai.apiKey;
 	apiKeyInput.addEventListener("input", () => {
 		currentSettings.ai.apiKey = apiKeyInput.value;
@@ -633,78 +281,75 @@ function buildAICard(): HTMLDivElement {
 	const apiKeyHelp = document.createElement("div");
 	apiKeyHelp.className = "help-text";
 	apiKeyHelp.textContent =
-		"選択したプロバイダのAPIキーを入力してください。キーはローカルに保存され、外部に送信されません。";
+		"OpenAIのAPIキーを入力してください。キーはローカルに保存されます。";
 	apiKeyGroup.appendChild(apiKeyHelp);
 
 	card.appendChild(apiKeyGroup);
 
-	// Section 4: Custom Prompt
+	// Section 2: Model name
+	const modelGroup = document.createElement("div");
+	modelGroup.className = "form-group";
+
+	const modelLabel = document.createElement("div");
+	modelLabel.className = "form-label";
+	modelLabel.textContent = "モデル名";
+	modelGroup.appendChild(modelLabel);
+
+	const modelInput = document.createElement("input");
+	modelInput.type = "text";
+	modelInput.id = "ai-model-input";
+	modelInput.className = "api-key-input";
+	modelInput.placeholder = `例: ${DEFAULT_MODEL}`;
+	modelInput.value = currentSettings.ai.model;
+	modelInput.addEventListener("input", () => {
+		currentSettings.ai.model = modelInput.value;
+	});
+	modelGroup.appendChild(modelInput);
+
+	const modelHelp = document.createElement("div");
+	modelHelp.className = "help-text";
+	modelHelp.textContent = `使用するOpenAIのモデル名を指定できます（空欄時は ${DEFAULT_MODEL}）。`;
+	modelGroup.appendChild(modelHelp);
+
+	card.appendChild(modelGroup);
+
+	// Section 3: Summary prompt
 	const promptGroup = document.createElement("div");
 	promptGroup.className = "form-group";
 
 	const promptLabel = document.createElement("div");
 	promptLabel.className = "form-label";
-	promptLabel.textContent = "カスタムプロンプト";
+	promptLabel.textContent = "要約プロンプト";
 	promptGroup.appendChild(promptLabel);
 
 	const promptTextarea = document.createElement("textarea");
 	promptTextarea.className = "prompt-textarea";
 	promptTextarea.rows = 10;
-	promptTextarea.value = currentSettings.template.customPrompt;
+	promptTextarea.value = currentSettings.ai.customPrompt;
 	promptTextarea.addEventListener("input", () => {
-		currentSettings.template.customPrompt = promptTextarea.value;
+		currentSettings.ai.customPrompt = promptTextarea.value;
 	});
 	promptGroup.appendChild(promptTextarea);
 
-	// Prompt actions
 	const promptActions = document.createElement("div");
 	promptActions.className = "prompt-actions";
 
-	const previewBtn = document.createElement("button");
-	previewBtn.type = "button";
-	previewBtn.className = "template-action-button";
-	previewBtn.textContent = "プレビュー";
-	previewBtn.addEventListener("click", () => {
-		const previewArea = card.querySelector(
-			".prompt-preview",
-		) as HTMLElement | null;
-		if (previewArea) {
-			if (previewArea.style.display === "none") {
-				const sampleTranscript =
-					"田中: 今日の議題について確認しましょう。\n鈴木: はい、プロジェクトの進捗報告をお願いします。\n田中: 了解です。まず開発チームの状況からお伝えします。";
-				previewArea.textContent = `[システムプロンプト]\n${promptTextarea.value}\n\n[文字起こし（サンプル）]\n${sampleTranscript}`;
-				previewArea.style.display = "block";
-				previewBtn.textContent = "プレビューを閉じる";
-			} else {
-				previewArea.style.display = "none";
-				previewBtn.textContent = "プレビュー";
-			}
-		}
-	});
-	promptActions.appendChild(previewBtn);
-
 	const resetBtn = document.createElement("button");
 	resetBtn.type = "button";
-	resetBtn.className = "template-action-button";
+	resetBtn.className = "prompt-action-button";
 	resetBtn.textContent = "リセット";
 	resetBtn.addEventListener("click", () => {
 		promptTextarea.value = DEFAULT_CUSTOM_PROMPT;
-		currentSettings.template.customPrompt = DEFAULT_CUSTOM_PROMPT;
+		currentSettings.ai.customPrompt = DEFAULT_CUSTOM_PROMPT;
 	});
 	promptActions.appendChild(resetBtn);
 
 	promptGroup.appendChild(promptActions);
 
-	// Preview area (hidden by default)
-	const preview = document.createElement("pre");
-	preview.className = "prompt-preview";
-	preview.style.display = "none";
-	promptGroup.appendChild(preview);
-
 	const promptHelp = document.createElement("div");
 	promptHelp.className = "help-text";
 	promptHelp.textContent =
-		"AIに送信される指示プロンプトです。文字起こしテキストは自動的に追加されます。";
+		"AI要約の生成時に送信される指示プロンプトです。文字起こしテキストは自動的に追加されます。";
 	promptGroup.appendChild(promptHelp);
 
 	card.appendChild(promptGroup);

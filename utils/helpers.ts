@@ -1,9 +1,4 @@
-import type {
-	CaptionData,
-	MeetingSession,
-	RawCaptionEntry,
-	TranscriptBlock,
-} from "./types";
+import type { CaptionData, RawCaptionEntry, TranscriptBlock } from "./types";
 
 /** System messages to filter out */
 const SYSTEM_MESSAGE_PATTERNS = [
@@ -102,13 +97,6 @@ export function escapeHtml(text: string): string {
 }
 
 /**
- * Format a meeting session as a JSON string for export.
- */
-export function formatSessionAsJson(session: MeetingSession): string {
-	return JSON.stringify(session, null, 2);
-}
-
-/**
  * Get the display title for a session: meetingTitle if available, otherwise meetingCode.
  */
 export function getSessionDisplayTitle(session: {
@@ -116,58 +104,6 @@ export function getSessionDisplayTitle(session: {
 	meetingCode: string;
 }): string {
 	return session.meetingTitle || session.meetingCode;
-}
-
-/**
- * Build an export filename from a session's title/code and start date.
- * Example: "MyMeeting_2026-04-03.md", "abc-defg-hij_2026-04-03_raw.txt"
- */
-export function buildExportFilename(
-	session: {
-		meetingTitle: string;
-		meetingCode: string;
-		startTimestamp: string;
-	},
-	extension: string,
-	suffix?: string,
-): string {
-	const base = getSessionDisplayTitle(session);
-	const date = session.startTimestamp.split("T")[0];
-	const suffixPart = suffix ? `_${suffix}` : "";
-	return `${base}_${date}${suffixPart}.${extension}`;
-}
-
-/**
- * Format a meeting session as Markdown for export.
- */
-export function formatSessionAsMarkdown(
-	session: MeetingSession,
-	formatTimeFn: (iso: string) => string = formatTimeOnly,
-): string {
-	const participants = extractParticipants(session.transcript);
-	const diffed = computeTranscriptDiffs(session.transcript);
-
-	const header =
-		`# ${getSessionDisplayTitle(session)}\n\n` +
-		`- **会議コード**: ${session.meetingCode}\n` +
-		`- **開始**: ${formatDate(session.startTimestamp)}\n` +
-		(session.endTimestamp
-			? `- **終了**: ${formatDate(session.endTimestamp)}\n`
-			: "") +
-		`- **発言数**: ${session.transcript.length}\n` +
-		(participants.length > 0
-			? `- **参加者**: ${participants.join(", ")}\n`
-			: "") +
-		`\n---\n\n`;
-
-	const body = diffed
-		.map((block) => {
-			const time = formatTimeFn(block.timestamp);
-			return `**${block.personName}** (${time})\n\n${block.transcriptText}`;
-		})
-		.join("\n\n---\n\n");
-
-	return header + body;
 }
 
 /** Ratio of LCP length to shorter text length above which the shorter entry

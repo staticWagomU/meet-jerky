@@ -26,19 +26,15 @@ export interface MeetingSession {
 	rawTranscript: RawCaptionEntry[];
 }
 
-export type AIProvider = "openai" | "anthropic" | "gemini";
-
 export interface UserSettings {
 	retention: {
 		mode: "count" | "days";
 		maxCount: number;
 		maxDays: number;
 	};
-	google: { authenticated: boolean };
-	template: { minutesTemplate: string; customPrompt: string };
 	ai: {
-		provider: AIProvider;
 		apiKey: string;
 		model: string;
+		customPrompt: string;
 	};
 }

@@ -1,5 +1,4 @@
-import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODELS } from "./ai-client";
-import { DEFAULT_MINUTES_TEMPLATE } from "./template";
+import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODEL } from "./ai-client";
 import type { UserSettings } from "./types";
 
 export const SETTINGS_STORAGE_KEY = "user-settings";
@@ -10,15 +9,10 @@ export const DEFAULT_SETTINGS: UserSettings = {
 		maxCount: 10,
 		maxDays: 30,
 	},
-	google: { authenticated: false },
-	template: {
-		minutesTemplate: DEFAULT_MINUTES_TEMPLATE,
-		customPrompt: DEFAULT_CUSTOM_PROMPT,
-	},
 	ai: {
-		provider: "anthropic",
 		apiKey: "",
-		model: DEFAULT_MODELS.anthropic,
+		model: DEFAULT_MODEL,
+		customPrompt: DEFAULT_CUSTOM_PROMPT,
 	},
 };
 
@@ -26,6 +20,13 @@ export const DEFAULT_SETTINGS: UserSettings = {
 type DeepPartial<T> = {
 	[K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
 };
+
+/** Shape of settings persisted by older versions (multi-provider AI,
+ *  Google integration, minutes template). Used only for migration. */
+interface LegacyStoredSettings {
+	ai?: { provider?: string; apiKey?: string; model?: string };
+	template?: { customPrompt?: string };
+}
 
 /**
  * Deep merge a partial settings object with defaults.
@@ -66,19 +67,42 @@ export function mergeSettings(
 }
 
 /**
+ * Migrate settings persisted by older versions in place on the stored object:
+ * - AI provider was multi-provider (openai/anthropic/gemini). Non-OpenAI
+ *   API keys and model names are useless now, so reset them to defaults.
+ * - The AI summary prompt lived under `template.customPrompt`.
+ */
+function migrateLegacySettings(
+	stored: DeepPartial<UserSettings> & LegacyStoredSettings,
+): DeepPartial<UserSettings> {
+	const ai = { ...stored.ai };
+
+	if (ai.provider !== undefined && ai.provider !== "openai") {
+		delete ai.apiKey;
+		delete ai.model;
+	}
+
+	if (ai.customPrompt === undefined && stored.template?.customPrompt) {
+		ai.customPrompt = stored.template.customPrompt;
+	}
+
+	return { ...stored, ai };
+}
+
+/**
  * Load user settings from browser.storage.local, merging with defaults.
  */
 export async function loadSettings(): Promise<UserSettings> {
 	const result = await browser.storage.local.get(SETTINGS_STORAGE_KEY);
 	const stored = result[SETTINGS_STORAGE_KEY] as
-		| DeepPartial<UserSettings>
+		| (DeepPartial<UserSettings> & LegacyStoredSettings)
 		| undefined;
 
 	if (!stored) {
 		return { ...DEFAULT_SETTINGS };
 	}
 
-	return mergeSettings(stored, DEFAULT_SETTINGS);
+	return mergeSettings(migrateLegacySettings(stored), DEFAULT_SETTINGS);
 }
 
 /**
