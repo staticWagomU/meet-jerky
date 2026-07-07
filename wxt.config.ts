@@ -5,7 +5,7 @@ export default defineConfig({
 	manifest: {
 		name: "ミートジャーキー",
 		description: "Google Meetの文字起こしを自動取得・保存するChrome拡張機能",
-		permissions: ["storage", "alarms", "identity"],
+		permissions: ["storage", "alarms", "identity", "sidePanel"],
 		oauth2: {
 			// Set VITE_GOOGLE_OAUTH_CLIENT_ID in .env or replace with your Client ID
 			client_id:

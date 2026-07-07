@@ -40,6 +40,13 @@ const app = appElement;
 
 const ONBOARDING_KEY = "onboarding-completed";
 
+// このUIはpopupとサイドパネルで共有する。出力HTML名で実行文脈を判別し、
+// サイドパネル内では「サイドパネルで開く」ボタンを出さない。
+const IS_SIDE_PANEL = location.pathname.includes("sidepanel");
+// sidePanel.open は Chrome のみ。未対応ブラウザ(Firefox等)ではボタンを隠す。
+const CAN_OPEN_SIDE_PANEL = typeof browser.sidePanel?.open === "function";
+const SHOW_SIDE_PANEL_BUTTON = !IS_SIDE_PANEL && CAN_OPEN_SIDE_PANEL;
+
 // --- Message helpers ---
 
 async function sendMsg<T>(
@@ -231,10 +238,14 @@ function renderLoading(): void {
 }
 
 function renderSessionList(sessions: SessionSummary[]): void {
+	const sidePanelButton = SHOW_SIDE_PANEL_BUTTON
+		? `<button id="open-side-panel" class="settings-link" title="サイドパネルで開く">&#9707;</button>`
+		: "";
 	const header = `
     <div class="header">
       <div class="header-icon">MJ</div>
       <div class="header-title">ミートジャーキー</div>
+      ${sidePanelButton}
       <button id="settings-link" class="settings-link" title="設定">&#9881;</button>
     </div>
   `;
@@ -338,6 +349,22 @@ function renderSessionList(sessions: SessionSummary[]): void {
 	document.getElementById("settings-link")?.addEventListener("click", () => {
 		browser.runtime.openOptionsPage();
 	});
+
+	document
+		.getElementById("open-side-panel")
+		?.addEventListener("click", async () => {
+			// sidePanel.open はユーザー操作起点でしか呼べないため、
+			// background経由にせずクリックハンドラ内で完結させる。
+			try {
+				const win = await browser.windows.getCurrent();
+				if (win.id != null) {
+					await browser.sidePanel.open({ windowId: win.id });
+					window.close();
+				}
+			} catch (error) {
+				console.error("サイドパネルを開けませんでした", error);
+			}
+		});
 }
 
 // --- Transcript detail sub-functions ---
