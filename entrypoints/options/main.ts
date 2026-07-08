@@ -1,7 +1,13 @@
 import "./style.css";
 import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODEL } from "@/utils/ai-client";
+import { formatBytes } from "@/utils/helpers";
 import { showNotification } from "@/utils/notification";
-import { DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/utils/settings";
+import {
+	DEFAULT_SETTINGS,
+	getEmbeddedApiKey,
+	loadSettings,
+	saveSettings,
+} from "@/utils/settings";
 import type { UserSettings } from "@/utils/types";
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
@@ -144,7 +150,33 @@ function buildRetentionCard(): HTMLDivElement {
 	formGroup.appendChild(radioGroup);
 	card.appendChild(formGroup);
 
+	// Storage usage (filled asynchronously after render)
+	const usageEl = document.createElement("div");
+	usageEl.className = "help-text";
+	card.appendChild(usageEl);
+	renderStorageUsage(usageEl);
+
 	return card;
+}
+
+async function renderStorageUsage(el: HTMLElement): Promise<void> {
+	// navigator.storage.estimate は拡張ページでも利用可能だが、
+	// 非対応環境では単に何も表示しない
+	if (typeof navigator.storage?.estimate !== "function") return;
+
+	try {
+		const { usage, quota } = await navigator.storage.estimate();
+		if (usage == null) return;
+
+		if (quota) {
+			const percent = ((usage / quota) * 100).toFixed(1);
+			el.textContent = `ストレージ使用量: ${formatBytes(usage)} / ${formatBytes(quota)}（${percent}%）`;
+		} else {
+			el.textContent = `ストレージ使用量: ${formatBytes(usage)}`;
+		}
+	} catch {
+		// 計測失敗時は何も表示しない
+	}
 }
 
 interface RadioItemResult {
@@ -255,7 +287,17 @@ function buildAICard(): HTMLDivElement {
 	apiKeyInput.type = "password";
 	apiKeyInput.className = "api-key-input";
 	apiKeyInput.placeholder = "sk-...";
-	apiKeyInput.value = currentSettings.ai.apiKey;
+	// ビルド時埋め込みキーはユーザーキーとして表示・保存しない。
+	// 入力欄を空のままにしておけば埋め込みキーへのフォールバックが維持される。
+	const embeddedKey = getEmbeddedApiKey();
+	const usingEmbeddedKey =
+		embeddedKey !== "" && currentSettings.ai.apiKey === embeddedKey;
+	if (usingEmbeddedKey) {
+		currentSettings.ai.apiKey = "";
+		apiKeyInput.placeholder = "ビルド埋め込みキーを使用中（入力で上書き）";
+	} else {
+		apiKeyInput.value = currentSettings.ai.apiKey;
+	}
 	apiKeyInput.addEventListener("input", () => {
 		currentSettings.ai.apiKey = apiKeyInput.value;
 	});
