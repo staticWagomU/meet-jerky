@@ -6,6 +6,7 @@ import {
 	extractMeetingCodeFromPath,
 	extractParticipants,
 	formatBytes,
+	formatSessionCopyText,
 	formatTranscriptAsText,
 	isSystemMessage,
 	trimAccumulatedPrefix,
@@ -208,6 +209,55 @@ describe("formatTranscriptAsText", () => {
 
 	it("returns empty string for empty transcript", () => {
 		expect(formatTranscriptAsText([])).toBe("");
+	});
+});
+
+describe("formatSessionCopyText", () => {
+	const mockFormatTime = (iso: string) => {
+		const d = new Date(iso);
+		return `${d.getUTCHours().toString().padStart(2, "0")}:${d.getUTCMinutes().toString().padStart(2, "0")}`;
+	};
+
+	it("prefers the deduplicated transcript even when raw entries exist", () => {
+		const transcript = [
+			{
+				personName: "Alice",
+				timestamp: "2026-04-03T14:30:00Z",
+				transcriptText: "おはようございます。",
+			},
+		];
+		const rawTranscript = [
+			{
+				personName: "Alice",
+				timestamp: "2026-04-03T14:30:00Z",
+				text: "おはようござい。",
+			},
+			{
+				personName: "Alice",
+				timestamp: "2026-04-03T14:30:01Z",
+				text: "おはようございます。",
+			},
+		];
+		expect(
+			formatSessionCopyText(transcript, rawTranscript, mockFormatTime),
+		).toBe("参加者: Alice\n\nAlice (14:30)\nおはようございます。");
+	});
+
+	it("falls back to the raw log when the transcript is empty", () => {
+		const rawTranscript = [
+			{
+				personName: "Alice",
+				timestamp: "2026-04-03T14:30:00Z",
+				text: "おはようございます。",
+			},
+		];
+		expect(formatSessionCopyText([], rawTranscript, mockFormatTime)).toBe(
+			"[14:30] Alice: おはようございます。",
+		);
+	});
+
+	it("returns empty string when both are empty", () => {
+		expect(formatSessionCopyText([], [], mockFormatTime)).toBe("");
 	});
 });
 

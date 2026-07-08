@@ -10,7 +10,7 @@ import {
 	escapeHtml,
 	extractParticipants,
 	formatDate,
-	formatRawTranscriptAsText,
+	formatSessionCopyText,
 	formatTimeOnly,
 	formatTranscriptAsText,
 	getSessionDisplayTitle,
@@ -663,18 +663,17 @@ function renderTranscriptDetail(session: MeetingSession): void {
 // --- Copy handler ---
 
 /**
- * Copy the raw caption log to the clipboard. Sessions recorded before
- * rawTranscript existed fall back to the deduplicated transcript.
+ * Copy the deduplicated transcript to the clipboard. Sessions with no
+ * committed blocks (e.g. manual-capture only) fall back to the raw log.
  */
 function attachCopyHandler(session: MeetingSession): void {
 	document
 		.getElementById("copy-button")
 		?.addEventListener("click", async () => {
-			const raw = session.rawTranscript ?? [];
-			const text =
-				raw.length > 0
-					? formatRawTranscriptAsText(raw)
-					: formatTranscriptAsText(session.transcript);
+			const text = formatSessionCopyText(
+				session.transcript,
+				session.rawTranscript ?? [],
+			);
 			try {
 				await navigator.clipboard.writeText(text);
 				const copyBtn = document.getElementById(

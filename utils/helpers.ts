@@ -276,6 +276,26 @@ export function formatRawTranscriptAsText(
 }
 
 /**
+ * Build the clipboard text for a session copy action.
+ * Uses the deduplicated transcript; the raw caption log contains one entry
+ * per DOM mutation (intermediate snapshots of the same utterance), so it is
+ * only used as a fallback when no blocks were ever committed.
+ */
+export function formatSessionCopyText(
+	transcript: TranscriptBlock[],
+	rawTranscript: RawCaptionEntry[],
+	formatTimeFn: (iso: string) => string = formatTimeOnly,
+): string {
+	if (transcript.length > 0) {
+		return formatTranscriptAsText(transcript, formatTimeFn);
+	}
+	if (rawTranscript.length > 0) {
+		return formatRawTranscriptAsText(rawTranscript, formatTimeFn);
+	}
+	return "";
+}
+
+/**
  * Check whether new DOM text is an accumulated version of already-committed text.
  * Returns `{ text, skip }` where `text` is the portion to process and `skip`
  * indicates the entry should be skipped entirely (exact re-observation).
