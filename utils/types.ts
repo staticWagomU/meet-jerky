@@ -16,6 +16,13 @@ export interface RawCaptionEntry {
 	text: string;
 }
 
+/** AI-generated summary cached on the session to avoid re-billing. */
+export interface AiSummary {
+	text: string;
+	model: string;
+	generatedAt: string;
+}
+
 export interface MeetingSession {
 	sessionId: string;
 	meetingCode: string;
@@ -24,6 +31,9 @@ export interface MeetingSession {
 	endTimestamp: string;
 	transcript: TranscriptBlock[];
 	rawTranscript: RawCaptionEntry[];
+	/** Pinned sessions are exempt from all retention cleanup. */
+	pinned?: boolean;
+	aiSummary?: AiSummary;
 }
 
 export interface UserSettings {

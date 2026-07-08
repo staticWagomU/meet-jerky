@@ -32,7 +32,6 @@ const CAPTION_RETRY_INTERVAL_MS = 1_500;
 const CAPTION_MAX_RETRIES = 20;
 const IDLE_COMMIT_MS = 2_000;
 const FLUSH_INTERVAL_MS = 10_000;
-const FLUSH_THRESHOLD = 10;
 const CAPTION_REGION_TIMEOUT_MS = 30_000;
 const REJOIN_GRACE_PERIOD_MS = 120_000; // 2 minutes grace period for rejoin
 const KEEPALIVE_INTERVAL_MS = 25_000; // Keep service worker alive
@@ -236,9 +235,11 @@ function commitCurrentBlock(): void {
 	pendingBlocks.push(block);
 	currentBlock = null;
 
-	if (pendingBlocks.length >= FLUSH_THRESHOLD) {
-		flushPendingBlocks();
-	}
+	// Flush immediately after every commit so the side panel can render
+	// new utterances in near-realtime (a commit happens ~2s after speech
+	// pauses). The periodic FLUSH_INTERVAL timer remains as a safety net
+	// for raw entries that accumulate without producing a commit.
+	flushPendingBlocks();
 }
 
 function resetIdleTimer(): void {

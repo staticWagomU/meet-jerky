@@ -1,4 +1,4 @@
-import type { RawCaptionEntry, TranscriptBlock } from "./types";
+import type { AiSummary, RawCaptionEntry, TranscriptBlock } from "./types";
 
 export type MessageType =
 	| "MEETING_STARTED"
@@ -8,7 +8,10 @@ export type MessageType =
 	| "GET_TRANSCRIPT"
 	| "DELETE_SESSION"
 	| "UPDATE_SESSION_TITLE"
-	| "KEEPALIVE";
+	| "UPDATE_SESSION_PIN"
+	| "UPDATE_SESSION_SUMMARY"
+	| "KEEPALIVE"
+	| "SESSIONS_CHANGED";
 
 export interface MeetingStartedMessage {
 	type: "MEETING_STARTED";
@@ -62,8 +65,33 @@ export interface UpdateSessionTitleMessage {
 	};
 }
 
+export interface UpdateSessionPinMessage {
+	type: "UPDATE_SESSION_PIN";
+	payload: {
+		sessionId: string;
+		pinned: boolean;
+	};
+}
+
+export interface UpdateSessionSummaryMessage {
+	type: "UPDATE_SESSION_SUMMARY";
+	payload: {
+		sessionId: string;
+		aiSummary: AiSummary;
+	};
+}
+
 export interface KeepaliveMessage {
 	type: "KEEPALIVE";
+}
+
+/** Broadcast from background to extension pages (popup / side panel)
+ *  whenever session data changes, so open views can refresh live. */
+export interface SessionsChangedMessage {
+	type: "SESSIONS_CHANGED";
+	payload: {
+		sessionId: string;
+	};
 }
 
 export type ExtensionMessage =
@@ -74,4 +102,7 @@ export type ExtensionMessage =
 	| GetTranscriptMessage
 	| DeleteSessionMessage
 	| UpdateSessionTitleMessage
-	| KeepaliveMessage;
+	| UpdateSessionPinMessage
+	| UpdateSessionSummaryMessage
+	| KeepaliveMessage
+	| SessionsChangedMessage;

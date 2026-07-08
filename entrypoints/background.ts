@@ -27,6 +27,8 @@ async function saveSession(session: MeetingSession): Promise<void> {
 		meetingTitle: session.meetingTitle,
 		startTimestamp: session.startTimestamp,
 		endTimestamp: session.endTimestamp,
+		// retention はインデックスのみを読むため、除外判定に必要な pinned を複製する
+		pinned: session.pinned ?? false,
 	};
 
 	const existingIdx = index.findIndex((e) => e.sessionId === session.sessionId);
@@ -51,9 +53,28 @@ async function deleteSessionFromStorage(sessionId: string): Promise<void> {
 	await saveSessionIndex(filtered);
 }
 
+/**
+ * Notify open extension pages (popup / side panel) that session data changed.
+ * Fire-and-forget: rejects when no page is listening, which is the normal case.
+ */
+function broadcastSessionsChanged(sessionId: string): void {
+	browser.runtime
+		.sendMessage({ type: "SESSIONS_CHANGED", payload: { sessionId } })
+		.catch(() => {});
+}
+
 // --- Retention dependency wiring ---
 
-const retentionDeps = { loadSessionIndex, deleteSessionFromStorage };
+async function getTranscriptCount(sessionId: string): Promise<number | null> {
+	const session = await loadSession(sessionId);
+	return session ? session.transcript.length : null;
+}
+
+const retentionDeps = {
+	loadSessionIndex,
+	deleteSessionFromStorage,
+	getTranscriptCount,
+};
 
 // --- In-memory state ---
 
@@ -183,6 +204,7 @@ export default defineBackground(() => {
 						// Persist immediately so the session exists in storage
 						// even if no TRANSCRIPT_UPDATE arrives before the worker dies
 						await saveSession(session);
+						broadcastSessionsChanged(sessionId);
 
 						// Set up periodic persistence alarm (every 1 minute)
 						await browser.alarms.create(`persist-${sessionId}`, {
@@ -223,6 +245,7 @@ export default defineBackground(() => {
 						// Persist to storage on every update so data survives
 						// even if MEETING_ENDED never arrives
 						await saveSession(session);
+						broadcastSessionsChanged(sessionId);
 						return { success: true };
 					}
 
@@ -231,6 +254,7 @@ export default defineBackground(() => {
 						endedSessions.add(sessionId);
 						await ensureSessionInBuffer(sessionId, sender.tab?.id ?? undefined);
 						await flushAndEndSession(sessionId);
+						broadcastSessionsChanged(sessionId);
 						return { success: true };
 					}
 
@@ -250,7 +274,9 @@ export default defineBackground(() => {
 								if (!session) {
 									return { ...entry, transcriptCount: 0 };
 								}
-								const { transcript, rawTranscript, ...metadata } = session;
+								// 一覧には要約本文を載せない（詳細取得時のみ返す）
+								const { transcript, rawTranscript, aiSummary, ...metadata } =
+									session;
 								return { ...metadata, transcriptCount: transcript.length };
 							}),
 						);
@@ -274,6 +300,7 @@ export default defineBackground(() => {
 						endedSessions.add(sessionId); // Prevent re-creation from late updates
 
 						await deleteSessionFromStorage(sessionId);
+						broadcastSessionsChanged(sessionId);
 						return { success: true };
 					}
 
@@ -293,6 +320,45 @@ export default defineBackground(() => {
 						}
 						stored.meetingTitle = meetingTitle;
 						await saveSession(stored);
+						broadcastSessionsChanged(sessionId);
+
+						return { success: true };
+					}
+
+					case "UPDATE_SESSION_PIN": {
+						const { sessionId, pinned } = message.payload;
+
+						const buffered = sessionBuffer.get(sessionId);
+						if (buffered) {
+							buffered.pinned = pinned;
+						}
+
+						const stored = await loadSession(sessionId);
+						if (!stored) {
+							return { success: false, error: "Session not found" };
+						}
+						stored.pinned = pinned;
+						await saveSession(stored);
+						broadcastSessionsChanged(sessionId);
+
+						return { success: true };
+					}
+
+					case "UPDATE_SESSION_SUMMARY": {
+						const { sessionId, aiSummary } = message.payload;
+
+						const buffered = sessionBuffer.get(sessionId);
+						if (buffered) {
+							buffered.aiSummary = aiSummary;
+						}
+
+						const stored = await loadSession(sessionId);
+						if (!stored) {
+							return { success: false, error: "Session not found" };
+						}
+						stored.aiSummary = aiSummary;
+						await saveSession(stored);
+						broadcastSessionsChanged(sessionId);
 
 						return { success: true };
 					}
