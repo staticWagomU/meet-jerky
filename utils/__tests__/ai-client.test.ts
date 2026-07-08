@@ -118,7 +118,12 @@ describe("summarizeTranscript", () => {
 		mockFetch.mockResolvedValue(mockErrorResponse(401, "Unauthorized"));
 
 		await expect(
-			summarizeTranscript("sk-bad-key", "プロンプト", "文字起こし", "gpt-4o-mini"),
+			summarizeTranscript(
+				"sk-bad-key",
+				"プロンプト",
+				"文字起こし",
+				"gpt-4o-mini",
+			),
 		).rejects.toThrowError("OpenAI API error (401): Unauthorized");
 	});
 
@@ -189,9 +194,12 @@ describe("chatAboutTranscript", () => {
 	it("システムプロンプトに文字起こしが含まれる", async () => {
 		mockFetch.mockResolvedValue(mockOpenAIResponse("回答"));
 
-		await chatAboutTranscript("sk-test", "gpt-4o-mini", "田中: おはようございます", [
-			{ role: "user", content: "誰が挨拶しましたか？" },
-		]);
+		await chatAboutTranscript(
+			"sk-test",
+			"gpt-4o-mini",
+			"田中: おはようございます",
+			[{ role: "user", content: "誰が挨拶しましたか？" }],
+		);
 
 		const body = lastRequestBody();
 		expect(body.messages[0].role).toBe("system");
