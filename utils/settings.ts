@@ -5,9 +5,9 @@ export const SETTINGS_STORAGE_KEY = "user-settings";
 
 export const DEFAULT_SETTINGS: UserSettings = {
 	retention: {
-		mode: "count",
+		mode: "days",
 		maxCount: 10,
-		maxDays: 30,
+		maxDays: 10,
 	},
 	ai: {
 		apiKey: "",
@@ -90,6 +90,23 @@ function migrateLegacySettings(
 }
 
 /**
+ * OpenAI API key baked into the bundle at build time via `.env`
+ * (`WXT_OPENAI_API_KEY`). Used only as a fallback when the user has not
+ * entered a key in the options page. Read lazily so tests can stub it.
+ */
+export function getEmbeddedApiKey(): string {
+	return (import.meta.env.WXT_OPENAI_API_KEY as string | undefined) ?? "";
+}
+
+/** Fill in the embedded API key when the user hasn't set one. */
+function withEmbeddedApiKeyFallback(settings: UserSettings): UserSettings {
+	if (settings.ai.apiKey) return settings;
+	const embedded = getEmbeddedApiKey();
+	if (!embedded) return settings;
+	return { ...settings, ai: { ...settings.ai, apiKey: embedded } };
+}
+
+/**
  * Load user settings from browser.storage.local, merging with defaults.
  */
 export async function loadSettings(): Promise<UserSettings> {
@@ -99,10 +116,12 @@ export async function loadSettings(): Promise<UserSettings> {
 		| undefined;
 
 	if (!stored) {
-		return { ...DEFAULT_SETTINGS };
+		return withEmbeddedApiKeyFallback({ ...DEFAULT_SETTINGS });
 	}
 
-	return mergeSettings(migrateLegacySettings(stored), DEFAULT_SETTINGS);
+	return withEmbeddedApiKeyFallback(
+		mergeSettings(migrateLegacySettings(stored), DEFAULT_SETTINGS),
+	);
 }
 
 /**

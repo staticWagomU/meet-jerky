@@ -26,13 +26,14 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
 });
 
 describe("DEFAULT_SETTINGS", () => {
 	it("has correct default values", () => {
-		expect(DEFAULT_SETTINGS.retention.mode).toBe("count");
+		expect(DEFAULT_SETTINGS.retention.mode).toBe("days");
 		expect(DEFAULT_SETTINGS.retention.maxCount).toBe(10);
-		expect(DEFAULT_SETTINGS.retention.maxDays).toBe(30);
+		expect(DEFAULT_SETTINGS.retention.maxDays).toBe(10);
 		expect(DEFAULT_SETTINGS.ai.apiKey).toBe("");
 		expect(DEFAULT_SETTINGS.ai.model).toBe(DEFAULT_MODEL);
 		expect(DEFAULT_SETTINGS.ai.customPrompt).toBe(DEFAULT_CUSTOM_PROMPT);
@@ -47,12 +48,12 @@ describe("mergeSettings", () => {
 
 	it("overrides only retention.mode while keeping other fields as defaults", () => {
 		const result = mergeSettings(
-			{ retention: { mode: "days" } },
+			{ retention: { mode: "count" } },
 			DEFAULT_SETTINGS,
 		);
-		expect(result.retention.mode).toBe("days");
+		expect(result.retention.mode).toBe("count");
 		expect(result.retention.maxCount).toBe(10);
-		expect(result.retention.maxDays).toBe(30);
+		expect(result.retention.maxDays).toBe(10);
 		expect(result.ai).toEqual(DEFAULT_SETTINGS.ai);
 	});
 
@@ -70,7 +71,7 @@ describe("mergeSettings", () => {
 
 	it("ignores unknown keys in nested objects", () => {
 		const partial = {
-			retention: { mode: "count" as const, unknown: "value" },
+			retention: { mode: "days" as const, unknown: "value" },
 		};
 		const result = mergeSettings(
 			partial as Parameters<typeof mergeSettings>[0],
@@ -92,7 +93,9 @@ describe("mergeSettings", () => {
 			DEFAULT_SETTINGS,
 		);
 		expect(result).toEqual(DEFAULT_SETTINGS);
-		expect((result as unknown as Record<string, unknown>).google).toBeUndefined();
+		expect(
+			(result as unknown as Record<string, unknown>).google,
+		).toBeUndefined();
 		expect(
 			(result as unknown as Record<string, unknown>).template,
 		).toBeUndefined();
@@ -120,11 +123,11 @@ describe("loadSettings", () => {
 	it("merges stored partial settings with defaults", async () => {
 		mockGet.mockResolvedValue({
 			[SETTINGS_STORAGE_KEY]: {
-				retention: { mode: "days" },
+				retention: { mode: "count" },
 			},
 		});
 		const result = await loadSettings();
-		expect(result.retention.mode).toBe("days");
+		expect(result.retention.mode).toBe("count");
 		expect(result.retention.maxCount).toBe(10);
 		expect(result.ai).toEqual(DEFAULT_SETTINGS.ai);
 	});
@@ -191,6 +194,30 @@ describe("loadSettingsのレガシー設定移行", () => {
 		});
 		const result = await loadSettings();
 		expect(result.ai.customPrompt).toBe("新形式プロンプト");
+	});
+});
+
+describe("loadSettingsのビルド時埋め込みAPIキー", () => {
+	it("ユーザー設定のapiKeyが空のとき、埋め込みキーにフォールバックする", async () => {
+		vi.stubEnv("WXT_OPENAI_API_KEY", "sk-embedded");
+		mockGet.mockResolvedValue({});
+		const result = await loadSettings();
+		expect(result.ai.apiKey).toBe("sk-embedded");
+	});
+
+	it("ユーザーが設定したapiKeyは埋め込みキーより優先される", async () => {
+		vi.stubEnv("WXT_OPENAI_API_KEY", "sk-embedded");
+		mockGet.mockResolvedValue({
+			[SETTINGS_STORAGE_KEY]: { ai: { apiKey: "sk-user" } },
+		});
+		const result = await loadSettings();
+		expect(result.ai.apiKey).toBe("sk-user");
+	});
+
+	it("埋め込みキーが無い場合はapiKeyは空文字のまま", async () => {
+		mockGet.mockResolvedValue({});
+		const result = await loadSettings();
+		expect(result.ai.apiKey).toBe("");
 	});
 });
 
