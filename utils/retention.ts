@@ -6,6 +6,8 @@ export interface SessionIndexEntry {
 	meetingTitle: string;
 	startTimestamp: string;
 	endTimestamp: string;
+	/** Pinned sessions are exempt from all retention cleanup. */
+	pinned?: boolean;
 }
 
 /** Storage operations required by retention functions. */
@@ -14,18 +16,26 @@ export interface RetentionDeps {
 	deleteSessionFromStorage: (sessionId: string) => Promise<void>;
 }
 
+/** Deps for the full retention policy, including empty-session cleanup. */
+export interface RetentionPolicyDeps extends RetentionDeps {
+	/** Transcript block count for a stored session, or null if not found. */
+	getTranscriptCount: (sessionId: string) => Promise<number | null>;
+}
+
 /**
- * Delete oldest sessions so that at most `maxSessions` remain.
+ * Delete oldest unpinned sessions so that at most `maxSessions` remain.
+ * Pinned sessions are never deleted and do not count toward the limit.
  */
 export async function enforceSessionLimit(
 	maxSessions: number,
 	deps: RetentionDeps,
 ): Promise<void> {
 	const index = await deps.loadSessionIndex();
-	if (index.length <= maxSessions) return;
+	const unpinned = index.filter((entry) => !entry.pinned);
+	if (unpinned.length <= maxSessions) return;
 
 	// Sort by startTimestamp ascending (oldest first)
-	const sorted = [...index].sort(
+	const sorted = [...unpinned].sort(
 		(a, b) =>
 			new Date(a.startTimestamp).getTime() -
 			new Date(b.startTimestamp).getTime(),
@@ -38,7 +48,7 @@ export async function enforceSessionLimit(
 }
 
 /**
- * Delete sessions older than `maxDays` days.
+ * Delete unpinned sessions older than `maxDays` days.
  */
 export async function enforceRetentionByDays(
 	maxDays: number,
@@ -49,6 +59,7 @@ export async function enforceRetentionByDays(
 	const cutoff = maxDays * 24 * 60 * 60 * 1000;
 
 	for (const entry of index) {
+		if (entry.pinned) continue;
 		const age = now - new Date(entry.startTimestamp).getTime();
 		if (age > cutoff) {
 			await deps.deleteSessionFromStorage(entry.sessionId);
@@ -57,11 +68,34 @@ export async function enforceRetentionByDays(
 }
 
 /**
+ * Delete ended sessions (endTimestamp set) that have no transcript.
+ * Sessions missing from storage are also removed to clean up the index.
+ * Active sessions (empty endTimestamp) are never touched.
+ */
+export async function deleteEmptyEndedSessions(
+	deps: RetentionPolicyDeps,
+): Promise<void> {
+	const index = await deps.loadSessionIndex();
+
+	for (const entry of index) {
+		if (!entry.endTimestamp || entry.pinned) continue;
+
+		const count = await deps.getTranscriptCount(entry.sessionId);
+		if (count === null || count === 0) {
+			await deps.deleteSessionFromStorage(entry.sessionId);
+		}
+	}
+}
+
+/**
  * Apply retention policy based on user settings.
+ * Empty ended sessions are always cleaned up first, regardless of mode.
  */
 export async function enforceRetentionPolicy(
-	deps: RetentionDeps,
+	deps: RetentionPolicyDeps,
 ): Promise<void> {
+	await deleteEmptyEndedSessions(deps);
+
 	const settings = await loadSettings();
 	if (settings.retention.mode === "count") {
 		await enforceSessionLimit(settings.retention.maxCount, deps);
