@@ -5,6 +5,7 @@ import {
 	escapeHtml,
 	extractMeetingCodeFromPath,
 	extractParticipants,
+	formatBytes,
 	formatTranscriptAsText,
 	isSystemMessage,
 	trimAccumulatedPrefix,
@@ -307,7 +308,7 @@ describe("computeTranscriptDiffs", () => {
 		expect(computeTranscriptDiffs([])).toEqual([]);
 	});
 
-	it("resets diff tracking after speaker change", () => {
+	it("absorbs interleaved same-speaker accumulation and keeps full text", () => {
 		const blocks = [
 			{
 				personName: "Alice",
@@ -326,7 +327,11 @@ describe("computeTranscriptDiffs", () => {
 			},
 		];
 		const result = computeTranscriptDiffs(blocks);
-		expect(result[2].transcriptText).toBe("Hello again");
+		// Alice's first fragment is absorbed by her later accumulated entry;
+		// the surviving entry keeps its full text (no cross-speaker diffing)
+		expect(result).toHaveLength(2);
+		expect(result[0].transcriptText).toBe("Hi");
+		expect(result[1].transcriptText).toBe("Hello again");
 	});
 });
 
@@ -472,16 +477,38 @@ describe("computeTranscriptDiffs — absorption", () => {
 		expect(result[1].transcriptText).toBe("Hello world");
 	});
 
-	it("does not absorb across non-consecutive same-speaker groups", () => {
+	it("absorbs accumulated text across another speaker's interjection", () => {
+		// A・Bの字幕が同時表示されるとコミット順が交互になるため、
+		// 別話者を1件挟んだ同一話者の蓄積テキストも吸収する
 		const blocks = [
-			{ personName: "A", timestamp: t, transcriptText: "Hello" },
-			{ personName: "B", timestamp: t, transcriptText: "Interjection" },
-			{ personName: "A", timestamp: t, transcriptText: "Hello world" },
+			{ personName: "A", timestamp: t, transcriptText: "画面注意します。" },
+			{ personName: "B", timestamp: t, transcriptText: "はい。" },
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "画面注意します。 早速ノートブックを開きます。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(2);
+		expect(result[0].transcriptText).toBe("はい。");
+		expect(result[1].transcriptText).toBe(
+			"画面注意します。 早速ノートブックを開きます。",
+		);
+	});
+
+	it("keeps genuinely different same-speaker content across interjections", () => {
+		const blocks = [
+			{ personName: "A", timestamp: t, transcriptText: "最初の話題について。" },
+			{ personName: "B", timestamp: t, transcriptText: "なるほど。" },
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "全く別の話題に移ります。",
+			},
 		];
 		const result = computeTranscriptDiffs(blocks);
 		expect(result).toHaveLength(3);
-		expect(result[0].transcriptText).toBe("Hello");
-		expect(result[2].transcriptText).toBe("Hello world");
 	});
 
 	it("keeps entries that are genuinely different content from same speaker", () => {
@@ -512,6 +539,49 @@ describe("computeTranscriptDiffs — absorption", () => {
 		// Only [2] remains
 		expect(result).toHaveLength(1);
 		expect(result[0].transcriptText).toBe("Hello world and more");
+	});
+});
+
+// ─── computeTranscriptDiffs: 末尾オーバーラップ除去テスト ────────────────────
+
+describe("computeTranscriptDiffs — suffix overlap", () => {
+	const t = "2026-04-03T14:30:00Z";
+
+	it("strips the overlap when an entry starts with the previous entry's tail", () => {
+		// Meetの字幕ウィンドウがスライドし、前ブロック末尾と次ブロック先頭が重なるケース
+		const blocks = [
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "今日の議題は採用状況についてです。",
+			},
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "採用状況についてです。まず一次面接の通過率ですが。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(2);
+		expect(result[1].transcriptText).toBe("まず一次面接の通過率ですが。");
+	});
+
+	it("does not strip short coincidental overlaps", () => {
+		const blocks = [
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "承知しました了解です。",
+			},
+			{
+				personName: "A",
+				timestamp: t,
+				transcriptText: "です。という返事をもらいました。",
+			},
+		];
+		const result = computeTranscriptDiffs(blocks);
+		expect(result).toHaveLength(2);
+		expect(result[1].transcriptText).toBe("です。という返事をもらいました。");
 	});
 });
 
@@ -562,5 +632,59 @@ describe("trimAccumulatedPrefix", () => {
 			text: "そして続きがここにあります。",
 			skip: false,
 		});
+	});
+
+	it("strips prefix when trailing punctuation of committed text was revised", () => {
+		// 音声認識が「〜です。」を「〜ですね。」に修正して蓄積を続けるケース
+		const result = trimAccumulatedPrefix(
+			"大阪の方ですね。昨日オファーを出しました。",
+			"大阪の方です。",
+		);
+		expect(result).toEqual({
+			text: "ね。昨日オファーを出しました。",
+			skip: false,
+		});
+	});
+
+	it("strips via LCP when recognition revised the tail of committed text", () => {
+		// 語尾の1〜2文字が置き換わっても、共通プレフィックスが80%以上なら蓄積とみなす
+		const result = trimAccumulatedPrefix(
+			"本日の進捗を共有しますよ、まず最初に",
+			"本日の進捗を共有しますね",
+		);
+		expect(result).toEqual({ text: "よ、まず最初に", skip: false });
+	});
+
+	it("does not strip unrelated text even when longer", () => {
+		const result = trimAccumulatedPrefix(
+			"まったく別の長い話をしています",
+			"全然違う話",
+		);
+		expect(result).toEqual({
+			text: "まったく別の長い話をしています",
+			skip: false,
+		});
+	});
+});
+
+describe("formatBytes", () => {
+	it("0バイトは '0 B' になる", () => {
+		expect(formatBytes(0)).toBe("0 B");
+	});
+
+	it("1KB未満はバイト単位で表示される", () => {
+		expect(formatBytes(512)).toBe("512 B");
+	});
+
+	it("KB単位に変換される", () => {
+		expect(formatBytes(2048)).toBe("2.0 KB");
+	});
+
+	it("MB単位に変換され、小数第1位まで表示される", () => {
+		expect(formatBytes(12.3 * 1024 * 1024)).toBe("12.3 MB");
+	});
+
+	it("GB単位に変換される", () => {
+		expect(formatBytes(1.5 * 1024 * 1024 * 1024)).toBe("1.5 GB");
 	});
 });

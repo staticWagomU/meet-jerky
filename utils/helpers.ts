@@ -129,21 +129,37 @@ function stripTrailingPunctuation(text: string): string {
 	return text.replace(/[。、！？!?,.\s]+$/g, "");
 }
 
+/** How many later same-speaker entries to inspect for absorption.
+ *  Multiple simultaneous caption blocks interleave speakers in commit order,
+ *  so absorption must look past other speakers' entries. */
+const ABSORPTION_LOOKAHEAD = 6;
+
 /**
- * Within a consecutive same-speaker group, remove entries whose text is
- * absorbed by a later entry (exact duplicate, substring, or LCP ≥ 80%).
+ * Remove entries whose text is absorbed by a later same-speaker entry
+ * (exact duplicate, substring, or LCP ≥ 80%). Looks ahead up to
+ * ABSORPTION_LOOKAHEAD same-speaker entries, skipping other speakers'
+ * interjections in between.
  */
-function filterAbsorbedInGroup(group: TranscriptBlock[]): TranscriptBlock[] {
+function removeAbsorbedEntries(
+	transcript: TranscriptBlock[],
+): TranscriptBlock[] {
 	const dominated = new Set<number>();
 
-	for (let i = 0; i < group.length; i++) {
+	for (let i = 0; i < transcript.length; i++) {
 		if (dominated.has(i)) continue;
-		const textI = group[i].transcriptText;
+		const { personName } = transcript[i];
+		const textI = transcript[i].transcriptText;
 		const normI = stripTrailingPunctuation(textI);
+		let candidates = 0;
 
-		for (let j = i + 1; j < group.length; j++) {
-			if (dominated.has(j)) continue;
-			const textJ = group[j].transcriptText;
+		for (
+			let j = i + 1;
+			j < transcript.length && candidates < ABSORPTION_LOOKAHEAD;
+			j++
+		) {
+			if (transcript[j].personName !== personName) continue;
+			candidates++;
+			const textJ = transcript[j].transcriptText;
 
 			// Exact duplicate or substring match (also try with stripped punctuation)
 			if (textJ.includes(textI) || (normI && textJ.includes(normI))) {
@@ -163,44 +179,31 @@ function filterAbsorbedInGroup(group: TranscriptBlock[]): TranscriptBlock[] {
 		}
 	}
 
-	return group.filter((_, idx) => !dominated.has(idx));
+	return transcript.filter((_, idx) => !dominated.has(idx));
 }
 
+/** Minimum characters for a suffix/prefix overlap to be treated as the same
+ *  utterance rather than a coincidental repetition. */
+const MIN_SUFFIX_OVERLAP_CHARS = 8;
+
 /**
- * Remove entries that are absorbed by later same-speaker entries within
- * consecutive same-speaker groups.
+ * Length of the longest suffix of `prev` that is also a prefix of `next`,
+ * or 0 when the overlap is shorter than MIN_SUFFIX_OVERLAP_CHARS.
+ * Detects Google Meet's sliding caption window, where the tail of the
+ * previous snapshot reappears at the head of the next one.
  */
-function removeAbsorbedEntries(
-	transcript: TranscriptBlock[],
-): TranscriptBlock[] {
-	const result: TranscriptBlock[] = [];
-	let i = 0;
-
-	while (i < transcript.length) {
-		let groupEnd = i;
-		while (
-			groupEnd + 1 < transcript.length &&
-			transcript[groupEnd + 1].personName === transcript[i].personName
-		) {
-			groupEnd++;
-		}
-
-		if (groupEnd === i) {
-			result.push(transcript[i]);
-		} else {
-			const group = transcript.slice(i, groupEnd + 1);
-			result.push(...filterAbsorbedInGroup(group));
-		}
-
-		i = groupEnd + 1;
+function longestSuffixPrefixOverlap(prev: string, next: string): number {
+	const max = Math.min(prev.length, next.length);
+	for (let len = max; len >= MIN_SUFFIX_OVERLAP_CHARS; len--) {
+		if (next.startsWith(prev.slice(prev.length - len))) return len;
 	}
-
-	return result;
+	return 0;
 }
 
 /**
  * Compute transcript diffs: first remove entries absorbed by later
- * same-speaker entries, then strip accumulated prefixes from the remainder.
+ * same-speaker entries, then strip accumulated prefixes and suffix
+ * overlaps from the remainder.
  */
 export function computeTranscriptDiffs(
 	transcript: TranscriptBlock[],
@@ -210,17 +213,29 @@ export function computeTranscriptDiffs(
 	// Pass 1: Remove absorbed entries within same-speaker groups
 	const filtered = removeAbsorbedEntries(transcript);
 
-	// Pass 2: Strip prefix diffs from consecutive same-speaker entries
+	// Pass 2: Strip prefix diffs and suffix overlaps from consecutive
+	// same-speaker entries
 	return filtered.map((block, index) => {
 		if (index === 0) return block;
 		const prev = filtered[index - 1];
-		if (
-			prev.personName === block.personName &&
-			block.transcriptText.startsWith(prev.transcriptText)
-		) {
+		if (prev.personName !== block.personName) return block;
+
+		if (block.transcriptText.startsWith(prev.transcriptText)) {
 			const diffText = block.transcriptText
 				.substring(prev.transcriptText.length)
 				.trim();
+			if (diffText) {
+				return { ...block, transcriptText: diffText };
+			}
+			return block;
+		}
+
+		const overlap = longestSuffixPrefixOverlap(
+			prev.transcriptText,
+			block.transcriptText,
+		);
+		if (overlap > 0) {
+			const diffText = block.transcriptText.substring(overlap).trim();
 			if (diffText) {
 				return { ...block, transcriptText: diffText };
 			}
@@ -276,6 +291,28 @@ export function trimAccumulatedPrefix(
 		if (!newPart) return { text: newText, skip: true };
 		return { text: newPart, skip: false };
 	}
+
+	// Fuzzy match: speech recognition may revise the tail of the committed
+	// text ("〜です。" → "〜ですね。") while continuing to accumulate.
+	// Retry with trailing punctuation stripped from the committed text.
+	const stripped = stripTrailingPunctuation(lastDomText);
+	if (stripped && stripped !== lastDomText && newText.startsWith(stripped)) {
+		const newPart = newText.substring(stripped.length).trim();
+		if (!newPart) return { text: newText, skip: true };
+		return { text: newPart, skip: false };
+	}
+
+	// LCP-based match: when the new text is longer and shares ≥80% prefix
+	// with the committed text, treat the common part as already committed.
+	if (newText.length > lastDomText.length) {
+		const lcp = longestCommonPrefixLength(newText, lastDomText);
+		if (lcp >= lastDomText.length * LCP_ABSORPTION_RATIO) {
+			const newPart = newText.substring(lcp).trim();
+			if (!newPart) return { text: newText, skip: true };
+			return { text: newPart, skip: false };
+		}
+	}
+
 	return { text: newText, skip: false };
 }
 
@@ -333,4 +370,21 @@ export function determineCaptionAction(
 			text: newData.text,
 		},
 	};
+}
+
+/**
+ * Format a byte count as a human-readable string (e.g. "12.3 MB").
+ * Bytes are shown as integers; larger units with one decimal place.
+ */
+export function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${Math.round(bytes)} B`;
+
+	const units = ["KB", "MB", "GB", "TB"];
+	let value = bytes;
+	let unitIndex = -1;
+	while (value >= 1024 && unitIndex < units.length - 1) {
+		value /= 1024;
+		unitIndex++;
+	}
+	return `${value.toFixed(1)} ${units[unitIndex]}`;
 }
