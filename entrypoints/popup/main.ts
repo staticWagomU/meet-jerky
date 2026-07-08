@@ -2,6 +2,7 @@ import "./style.css";
 import {
 	type ChatMessage,
 	chatAboutTranscript,
+	DEFAULT_MODEL,
 	summarizeTranscript,
 } from "@/utils/ai-client";
 import {
@@ -15,7 +16,7 @@ import {
 	getSessionDisplayTitle,
 } from "@/utils/helpers";
 import { loadSettings } from "@/utils/settings";
-import type { MeetingSession } from "@/utils/types";
+import type { AiSummary, MeetingSession } from "@/utils/types";
 
 interface SessionSummary {
 	sessionId: string;
@@ -24,6 +25,7 @@ interface SessionSummary {
 	startTimestamp: string;
 	endTimestamp: string;
 	transcriptCount: number;
+	pinned?: boolean;
 }
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
@@ -71,6 +73,103 @@ async function updateSessionTitle(
 	meetingTitle: string,
 ): Promise<{ success: boolean }> {
 	return sendMsg("UPDATE_SESSION_TITLE", { sessionId, meetingTitle });
+}
+
+async function updateSessionPin(
+	sessionId: string,
+	pinned: boolean,
+): Promise<{ success: boolean }> {
+	return sendMsg("UPDATE_SESSION_PIN", { sessionId, pinned });
+}
+
+async function updateSessionSummary(
+	sessionId: string,
+	aiSummary: AiSummary,
+): Promise<{ success: boolean }> {
+	return sendMsg("UPDATE_SESSION_SUMMARY", { sessionId, aiSummary });
+}
+
+// --- Live refresh (SESSIONS_CHANGED broadcast) ---
+
+// backgroundがセッションデータを保存するたびにSESSIONS_CHANGEDを
+// ブロードキャストする。表示中のビューだけを差分更新し、
+// チャット履歴やメモ入力などのUI状態は保持する。
+
+type ViewState =
+	| { view: "onboarding" }
+	| { view: "list" }
+	| { view: "detail"; session: MeetingSession };
+
+let currentViewState: ViewState = { view: "list" };
+
+const REFRESH_DEBOUNCE_MS = 300;
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+browser.runtime.onMessage.addListener(
+	(message: { type?: string; payload?: { sessionId?: string } }) => {
+		if (message?.type !== "SESSIONS_CHANGED") return;
+		if (refreshTimer !== null) clearTimeout(refreshTimer);
+		refreshTimer = setTimeout(() => {
+			refreshTimer = null;
+			refreshCurrentView(message.payload?.sessionId).catch((e) => {
+				console.warn("Live refresh failed:", e);
+			});
+		}, REFRESH_DEBOUNCE_MS);
+	},
+);
+
+async function refreshCurrentView(changedSessionId?: string): Promise<void> {
+	// タイトル編集中の再描画は入力を破壊するためスキップ
+	if (document.querySelector(".edit-title-input")) return;
+
+	if (currentViewState.view === "detail") {
+		const session = currentViewState.session;
+		if (changedSessionId && changedSessionId !== session.sessionId) return;
+
+		const response = await getTranscript(session.sessionId);
+		if (!response.session) return;
+
+		// AIチャット等のハンドラは同一sessionオブジェクトをクロージャで
+		// 参照しているため、置き換えではなくフィールドを上書きする
+		session.transcript = response.session.transcript;
+		session.rawTranscript = response.session.rawTranscript;
+		session.endTimestamp = response.session.endTimestamp;
+		session.meetingTitle = response.session.meetingTitle;
+		session.pinned = response.session.pinned;
+		session.aiSummary = response.session.aiSummary;
+		updateTranscriptView(session);
+	} else if (currentViewState.view === "list") {
+		const response = await getSessions();
+		renderSessionList(response.sessions);
+	}
+}
+
+/** Re-render only the transcript list and participants inside the detail
+ *  view, preserving AI section state. Auto-scrolls when already at bottom. */
+function updateTranscriptView(session: MeetingSession): void {
+	const listEl = document.querySelector(".transcript-list");
+	if (!listEl) return;
+
+	const { html, participants, speakerColors } = buildTranscriptHtml(session);
+
+	const participantsEl = document.querySelector(".participants");
+	if (participantsEl) {
+		participantsEl.innerHTML = buildParticipantsHtml(
+			participants,
+			speakerColors,
+		);
+	}
+
+	const scrollEl = document.querySelector(".detail-content");
+	const nearBottom = scrollEl
+		? scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 48
+		: false;
+
+	listEl.innerHTML = html;
+
+	if (scrollEl && nearBottom) {
+		scrollEl.scrollTop = scrollEl.scrollHeight;
+	}
 }
 
 // --- Inline title edit ---
@@ -171,6 +270,7 @@ function showTemporaryButtonState(
 // --- Onboarding ---
 
 function renderOnboarding(): void {
+	currentViewState = { view: "onboarding" };
 	app.innerHTML = `
     <div class="onboarding">
       <div class="onboarding-icon">MJ</div>
@@ -213,6 +313,7 @@ function renderLoading(): void {
 }
 
 function renderSessionList(sessions: SessionSummary[]): void {
+	currentViewState = { view: "list" };
 	const sidePanelButton = SHOW_SIDE_PANEL_BUTTON
 		? `<button id="open-side-panel" class="settings-link" title="サイドパネルで開く">&#9707;</button>`
 		: "";
@@ -249,6 +350,7 @@ function renderSessionList(sessions: SessionSummary[]): void {
           <span class="session-count">${session.transcriptCount}件の発言</span>
         </div>
       </div>
+      <button class="pin-button${session.pinned ? " pinned" : ""}" data-pin-id="${escapeHtml(session.sessionId)}" data-pinned="${session.pinned ? "1" : ""}" title="${session.pinned ? "ピン留めを解除" : "ピン留め（自動削除の対象外にする）"}">&#128204;</button>
       <button class="delete-button" data-delete-id="${escapeHtml(session.sessionId)}" title="削除">削除</button>
     </div>
   `,
@@ -264,10 +366,11 @@ function renderSessionList(sessions: SessionSummary[]): void {
 		document.querySelectorAll(".session-item").forEach((item) => {
 			item.addEventListener("click", (e) => {
 				const target = e.target as HTMLElement;
-				// Don't navigate when clicking the delete or edit button
+				// Don't navigate when clicking the delete, edit, or pin button
 				if (
 					target.closest(".delete-button") ||
-					target.closest(".edit-title-button")
+					target.closest(".edit-title-button") ||
+					target.closest(".pin-button")
 				)
 					return;
 
@@ -302,6 +405,19 @@ function renderSessionList(sessions: SessionSummary[]): void {
 						renderSessionList(response.sessions);
 					},
 				);
+			});
+		});
+
+		document.querySelectorAll(".pin-button").forEach((btn) => {
+			btn.addEventListener("click", async (e) => {
+				e.stopPropagation();
+				const el = btn as HTMLElement;
+				const sessionId = el.dataset.pinId;
+				if (!sessionId) return;
+
+				await updateSessionPin(sessionId, el.dataset.pinned !== "1");
+				const response = await getSessions();
+				renderSessionList(response.sessions);
 			});
 		});
 
@@ -396,28 +512,51 @@ function buildTranscriptHtml(session: MeetingSession): {
 	return { html, participants, speakerColors };
 }
 
+function buildParticipantsHtml(
+	participants: string[],
+	speakerColors: Map<string, number>,
+): string {
+	return `
+      <span class="participants-label">参加者:</span>
+      ${participants
+				.map((name) => {
+					const colorClass = `speaker-color-${speakerColors.get(name) ?? 0}`;
+					return `<span class="participant-tag ${colorClass}">${escapeHtml(name)}</span>`;
+				})
+				.join("")}
+    `;
+}
+
+/** Label for the summary button, reflecting whether a cached summary exists. */
+function summaryButtonLabel(session: MeetingSession): string {
+	return session.aiSummary ? "要約を再生成" : "要約を生成";
+}
+
 // AI要約・メモ・チャットはサイドパネル文脈でのみ表示する
-function buildAiSectionHtml(): string {
+// 保存済みの要約（aiSummary）があれば再生成せずに復元表示する
+function buildAiSectionHtml(session: MeetingSession): string {
+	const cached = session.aiSummary;
 	return `
     <div class="ai-section">
       <div class="ai-section-header">
-        <span class="ai-section-title">✨ AI</span>
-        <button class="action-btn ai-btn" id="ai-summary-btn" title="AIで要約を生成">AI要約</button>
+        <span class="ai-section-title">AI</span>
+        <button class="ai-btn ai-btn-primary" id="ai-summary-btn" title="文字起こしから要約を生成">${summaryButtonLabel(session)}</button>
       </div>
-      <textarea class="ai-memo-input" id="ai-memo-input" placeholder="メモを入力（任意）：要約に反映したい補足情報など" rows="2"></textarea>
-      <div class="ai-summary-result" style="display:none">
+      <textarea class="ai-memo-input" id="ai-memo-input" placeholder="補足メモ — 要約に反映されます" rows="1"></textarea>
+      <div class="ai-summary-result" style="display:${cached ? "block" : "none"}">
         <div class="ai-summary-header">
-          <span class="ai-summary-title">AI要約</span>
+          <span class="ai-summary-title">要約</span>
+          <span class="ai-summary-meta">${cached ? escapeHtml(formatDate(cached.generatedAt)) : ""}</span>
           <button class="ai-summary-copy">コピー</button>
-          <button class="ai-summary-close">&#10005;</button>
+          <button class="ai-summary-close" title="閉じる">&#10005;</button>
         </div>
-        <div class="ai-summary-content"></div>
+        <div class="ai-summary-content">${cached ? escapeHtml(cached.text) : ""}</div>
       </div>
       <div class="ai-chat">
         <div class="ai-chat-messages" id="ai-chat-messages"></div>
         <div class="ai-chat-input-row">
-          <textarea class="ai-chat-input" id="ai-chat-input" placeholder="文字起こしについて質問（Enterで送信）" rows="2"></textarea>
-          <button class="action-btn ai-btn" id="ai-chat-send">送信</button>
+          <textarea class="ai-chat-input" id="ai-chat-input" placeholder="この会議について質問…" rows="1"></textarea>
+          <button class="ai-btn ai-send-btn" id="ai-chat-send" title="送信（Enter）">&#8593;</button>
         </div>
       </div>
     </div>
@@ -435,31 +574,26 @@ function buildDetailPageHtml(
       <button class="back-button" id="back-button">&larr; セッション一覧</button>
       <div class="detail-title-row">
         <span class="detail-title" id="detail-title">${escapeHtml(getSessionDisplayTitle(session))}</span>
+        ${session.endTimestamp === "" ? '<span class="recording-badge"><span class="recording-dot"></span>記録中</span>' : ""}
         <button class="edit-title-button" id="edit-detail-title" title="タイトルを編集">&#9998;</button>
+        <button class="pin-button${session.pinned ? " pinned" : ""}" id="detail-pin-button" title="${session.pinned ? "ピン留めを解除" : "ピン留め（自動削除の対象外にする）"}">&#128204;</button>
       </div>
       <div class="detail-meta">${formatDate(session.startTimestamp)}</div>
       ${session.meetingCode ? `<div class="detail-code">${escapeHtml(session.meetingCode)}</div>` : ""}
     </div>
     <div class="detail-content">
-    <div class="participants">
-      <span class="participants-label">参加者:</span>
-      ${participants
-				.map((name) => {
-					const colorClass = `speaker-color-${speakerColors.get(name) ?? 0}`;
-					return `<span class="participant-tag ${colorClass}">${escapeHtml(name)}</span>`;
-				})
-				.join("")}
-    </div>
+    <div class="participants">${buildParticipantsHtml(participants, speakerColors)}</div>
     <div class="toolbar">
       <button class="action-btn copy-btn" id="copy-button">全文コピー</button>
     </div>
-    ${IS_SIDE_PANEL ? buildAiSectionHtml() : ""}
+    ${IS_SIDE_PANEL ? buildAiSectionHtml(session) : ""}
     <div class="transcript-list">${transcriptHtml}</div>
     </div>
   `;
 }
 
 function renderTranscriptDetail(session: MeetingSession): void {
+	currentViewState = { view: "detail", session };
 	const {
 		html: transcriptHtml,
 		participants,
@@ -500,6 +634,22 @@ function renderTranscriptDetail(session: MeetingSession): void {
 					const response = await getTranscript(session.sessionId);
 					renderTranscriptDetail(response.session);
 				},
+			);
+		});
+
+	// Pin toggle
+	document
+		.getElementById("detail-pin-button")
+		?.addEventListener("click", async () => {
+			const next = !session.pinned;
+			await updateSessionPin(session.sessionId, next);
+			session.pinned = next;
+
+			const btn = document.getElementById("detail-pin-button");
+			btn?.classList.toggle("pinned", next);
+			btn?.setAttribute(
+				"title",
+				next ? "ピン留めを解除" : "ピン留め（自動削除の対象外にする）",
 			);
 		});
 
@@ -572,7 +722,7 @@ function attachSummaryHandlers(session: MeetingSession): void {
 		if (!(await confirmApiKeySetup())) return;
 		const settings = await loadSettings();
 
-		aiBtn.textContent = "生成中...";
+		aiBtn.textContent = "生成中…";
 		aiBtn.classList.add("loading");
 		aiBtn.disabled = true;
 
@@ -597,15 +747,37 @@ function attachSummaryHandlers(session: MeetingSession): void {
 				memo,
 			);
 
+			// 生成した要約をセッションに保存し、次回以降はAPIを叩かず復元する
+			const aiSummary = {
+				text: result,
+				model: settings.ai.model || DEFAULT_MODEL,
+				generatedAt: new Date().toISOString(),
+			};
+			session.aiSummary = aiSummary;
+			updateSessionSummary(session.sessionId, aiSummary).catch((e) => {
+				console.warn("Failed to persist AI summary:", e);
+			});
+
 			if (resultContainer && contentEl) {
 				contentEl.textContent = result;
 				resultContainer.style.display = "block";
 			}
+			const metaEl = document.querySelector(".ai-summary-meta");
+			if (metaEl) {
+				metaEl.textContent = formatDate(aiSummary.generatedAt);
+			}
 
 			aiBtn.classList.remove("loading");
-			showTemporaryButtonState(aiBtn, "生成完了", "success", 2000, "AI要約", () => {
-				aiBtn.disabled = false;
-			});
+			showTemporaryButtonState(
+				aiBtn,
+				"完了",
+				"success",
+				2000,
+				summaryButtonLabel(session),
+				() => {
+					aiBtn.disabled = false;
+				},
+			);
 		} catch (err) {
 			aiBtn.classList.remove("loading");
 			console.error("AI summary error:", err);
@@ -615,9 +787,16 @@ function attachSummaryHandlers(session: MeetingSession): void {
 				resultContainer.style.display = "block";
 			}
 
-			showTemporaryButtonState(aiBtn, "エラー", "error", 3000, "AI要約", () => {
-				aiBtn.disabled = false;
-			});
+			showTemporaryButtonState(
+				aiBtn,
+				"エラー",
+				"error",
+				3000,
+				summaryButtonLabel(session),
+				() => {
+					aiBtn.disabled = false;
+				},
+			);
 		}
 	});
 
@@ -677,7 +856,7 @@ function attachChatHandlers(session: MeetingSession): void {
 			)
 			.join("");
 		const thinking = options?.thinking
-			? `<div class="ai-chat-message ai-chat-assistant ai-chat-thinking">考え中...</div>`
+			? `<div class="ai-chat-message ai-chat-assistant ai-chat-thinking"><span class="ai-thinking-dot"></span><span class="ai-thinking-dot"></span><span class="ai-thinking-dot"></span></div>`
 			: "";
 		const error = options?.error
 			? `<div class="ai-chat-message ai-chat-error">${escapeHtml(options.error)}</div>`
