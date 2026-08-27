@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ミートジャーキー 導入と使い方</title>
+  <style>
+    :root {
+      color-scheme: light;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+      --ink: #4a3b34;
+      --muted: #93817a;
+      --heading: #2c1a14;
+      --line: #f3e2dc;
+      --panel: #fdf6f3;
+      --panel-strong: #fbeae4;
+      --brand-deep: #a8341f;
+      --brand-red: #c2412c;
+      --brand-orange: #d4503a;
+      --brand-amber: #e8944a;
+      --accent: var(--brand-orange);
+      --accent-ink: #a8341f;
+      --accent-glow: rgba(196, 65, 44, 0.26);
+      --grad: linear-gradient(135deg, var(--brand-deep) 0%, var(--brand-orange) 55%, var(--brand-amber) 100%);
+      --ok: #1d6b3e;
+      --warn: #8a5b00;
+      --danger: #9b2c2c;
+      --paper: #ffffff;
+    }
+
+    @page {
+      size: A4;
+      margin: 14mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--panel);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      line-height: 1.75;
+    }
+
+    a {
+      color: var(--accent-ink);
+    }
+
+    .page {
+      max-width: 1040px;
+      margin: 0 auto;
+      background: var(--paper);
+      min-height: 100vh;
+      box-shadow: 0 1px 2px rgba(168, 52, 31, 0.05), 0 8px 24px rgba(196, 65, 44, 0.12);
+    }
+
+    header {
+      padding: 40px 48px 28px;
+      background: var(--grad);
+      color: #ffffff;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    header p {
+      max-width: 720px;
+      margin: 12px 0 0;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 1.08rem;
+    }
+
+    header code {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.25;
+      text-shadow: 0 1px 2px rgba(120, 34, 18, 0.28);
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--line);
+      color: var(--heading);
+      font-size: 1.55rem;
+      line-height: 1.4;
+    }
+
+    h3 {
+      margin: 24px 0 8px;
+      color: var(--heading);
+      font-size: 1.18rem;
+      line-height: 1.45;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 16px;
+      padding-left: 1.4rem;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    main {
+      padding: 34px 48px 48px;
+    }
+
+    section {
+      margin-top: 44px;
+    }
+
+    section:first-child {
+      margin-top: 0;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      padding: 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .summary strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--accent-ink);
+    }
+
+    .summary span {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .toc {
+      margin-top: 24px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .toc h2 {
+      margin: 0 0 8px;
+      padding: 0;
+      border: 0;
+      font-size: 1.05rem;
+    }
+
+    .toc ol {
+      margin-bottom: 0;
+      columns: 2;
+      column-gap: 42px;
+    }
+
+    .note,
+    .warning,
+    .danger,
+    .ok {
+      margin: 16px 0;
+      padding: 14px 16px;
+      border-left: 5px solid;
+      background: var(--panel);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .note {
+      border-color: var(--accent);
+    }
+
+    .warning {
+      border-color: var(--warn);
+      background: #fff6df;
+    }
+
+    .danger {
+      border-color: var(--danger);
+      background: #fff1f1;
+    }
+
+    .ok {
+      border-color: var(--ok);
+      background: #eef8f1;
+    }
+
+    .mustread {
+      margin: 20px 0;
+      padding: 20px 22px;
+      border: 2px solid var(--danger);
+      border-radius: 10px;
+      background: #fff1f1;
+    }
+
+    .mustread h3 {
+      margin: 0 0 10px;
+      color: var(--danger);
+      font-size: 1.25rem;
+    }
+
+    .mustread p:last-child {
+      margin-bottom: 0;
+    }
+
+    .steps {
+      counter-reset: step;
+      display: grid;
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .step {
+      counter-increment: step;
+      position: relative;
+      padding: 16px 16px 16px 58px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(168, 52, 31, 0.05), 0 8px 24px rgba(196, 65, 44, 0.08);
+    }
+
+    .step::before {
+      content: counter(step);
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--grad);
+      color: #ffffff;
+      font-weight: 700;
+      line-height: 1;
+      box-shadow: 0 3px 10px var(--accent-glow);
+    }
+
+    .step h3 {
+      margin-top: 0;
+    }
+
+    .step p:last-child {
+      margin-bottom: 0;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 1px 2px rgba(168, 52, 31, 0.05), 0 8px 24px rgba(196, 65, 44, 0.08);
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .card p:last-child,
+    .card ul:last-child {
+      margin-bottom: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 20px;
+      font-size: 0.96rem;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: var(--panel-strong);
+      font-weight: 700;
+      color: var(--heading);
+    }
+
+    code {
+      padding: 0.12em 0.28em;
+      border-radius: 4px;
+      background: var(--panel-strong);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.94em;
+      word-break: break-all;
+    }
+
+    .path {
+      display: block;
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background: var(--panel-strong);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92rem;
+      word-break: break-all;
+    }
+
+    .os-label {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: var(--grad);
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .footer {
+      margin-top: 48px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 760px) {
+      .page {
+        box-shadow: none;
+      }
+
+      header,
+      main {
+        padding-left: 22px;
+        padding-right: 22px;
+      }
+
+      .summary,
+      .two-column {
+        grid-template-columns: 1fr;
+      }
+
+      .toc ol {
+        columns: 1;
+      }
+
+      .step {
+        padding-left: 16px;
+        padding-top: 56px;
+      }
+    }
+
+    @media print {
+      html {
+        scroll-behavior: auto;
+      }
+
+      body {
+        background: #ffffff;
+        font-size: 10.5pt;
+        line-height: 1.62;
+      }
+
+      .page {
+        max-width: none;
+        min-height: auto;
+        box-shadow: none;
+      }
+
+      header {
+        margin-bottom: 9mm;
+        padding: 16mm 14mm 12mm;
+        background: var(--grad);
+        color: #ffffff;
+        box-shadow: none;
+      }
+
+      header p {
+        max-width: 170mm;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 11pt;
+      }
+
+      h1 {
+        color: #ffffff;
+        font-size: 25pt;
+        text-shadow: none;
+      }
+
+      h2 {
+        margin-bottom: 4mm;
+        padding-bottom: 2mm;
+        font-size: 15pt;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      h3 {
+        margin-top: 5mm;
+        font-size: 11.5pt;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+
+      main {
+        padding: 0;
+      }
+
+      section {
+        margin-top: 9mm;
+      }
+
+      #load,
+      #manners,
+      #trouble {
+        break-before: page;
+        page-break-before: always;
+      }
+
+      .summary,
+      .toc,
+      .note,
+      .warning,
+      .danger,
+      .ok,
+      .mustread,
+      .step,
+      .card,
+      table {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .summary,
+      .toc,
+      .step,
+      .card {
+        box-shadow: none;
+      }
+
+      .summary {
+        padding: 11pt;
+      }
+
+      .toc {
+        margin-top: 7mm;
+      }
+
+      .step {
+        padding: 11pt 11pt 11pt 40pt;
+      }
+
+      .step::before {
+        top: 12pt;
+        left: 11pt;
+        width: 22pt;
+        height: 22pt;
+        box-shadow: none;
+      }
+
+      .card {
+        margin-bottom: 4mm;
+        padding: 12pt;
+      }
+
+      th,
+      td {
+        padding: 7pt 8pt;
+      }
+
+      a {
+        color: var(--accent-ink);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .footer {
+        margin-top: 9mm;
+        color: var(--muted);
+      }
+
+      p,
+      li {
+        orphans: 2;
+        widows: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>ミートジャーキー 導入と使い方</h1>
+      <p>Google Drive で共有された zip ファイルを Google Chrome に入れて、Google Meet の字幕を自動で記録するための手順です。パソコンにくわしくない方でも、上から順に進めれば設定できます。</p>
+    </header>
+
+    <main>
+      <section id="first-read">
+        <h2>最初にここだけ確認してください</h2>
+        <div class="summary" aria-label="このガイドの要点">
+          <div>
+            <strong>必要なもの</strong>
+            <span>Google Chrome（Windows / Mac のどちらでも可）</span>
+          </div>
+          <div>
+            <strong>所要時間</strong>
+            <span>初回の設定は10分ほどです</span>
+          </div>
+          <div>
+            <strong>読む範囲</strong>
+            <span>初回は「1」から「4」まで、普段は「5」以降を見ます</span>
+          </div>
+        </div>
+
+        <div class="mustread">
+          <h3>いちばん大事なお願い：フォルダを消さない・動かさない</h3>
+          <p>この拡張機能は、アプリのようにパソコンへインストールされるものではありません。<strong>解凍してできたフォルダそのものを、Chrome が毎回読みに行きます。</strong></p>
+          <p>そのため、次のことをすると<strong>拡張機能が動かなくなり、それまでに記録した文字起こしも見られなくなります</strong>。</p>
+          <ul>
+            <li>フォルダを削除する（「ダウンロード」フォルダの整理で消してしまう事故がいちばん多いです）</li>
+            <li>フォルダを別の場所に移動する</li>
+            <li>フォルダの名前を変える</li>
+          </ul>
+          <p><strong>だから、Chrome に読み込ませる前に、フォルダを「ずっと置いておける場所」へ移してください。</strong>手順は「2. 解凍して、安全な場所に移す」で説明します。</p>
+        </div>
+
+        <div class="warning">
+          <p><strong>この拡張機能は、会議の発言内容と参加者名を記録します。</strong></p>
+          <p>会議の参加者に、記録していることを必ず事前にお伝えください。詳しくは「7. 会議参加者へのお願い」を読んでください。</p>
+        </div>
+
+        <nav class="toc" aria-label="目次">
+          <h2>目次</h2>
+          <ol>
+            <li><a href="#download">Google Drive からダウンロードする</a></li>
+            <li><a href="#unzip">解凍して、安全な場所に移す</a></li>
+            <li><a href="#load">Chrome に読み込む</a></li>
+            <li><a href="#pin">ツールバーに表示させる</a></li>
+            <li><a href="#record">会議を記録する</a></li>
+            <li><a href="#read">記録を見る・コピーする</a></li>
+            <li><a href="#autosave">退出したら自動でファイルに保存する</a></li>
+            <li><a href="#manners">会議参加者へのお願い</a></li>
+            <li><a href="#update">新しい版が配られたとき</a></li>
+            <li><a href="#trouble">困ったとき</a></li>
+            <li><a href="#terms">用語</a></li>
+          </ol>
+        </nav>
+      </section>
+
+      <section id="download">
+        <h2>1. Google Drive からダウンロードする</h2>
+        <p>配布担当者から共有された Google Drive のフォルダ、または共有リンクを開きます。</p>
+        <div class="steps">
+          <div class="step">
+            <h3>zip ファイルを探します</h3>
+            <p><code>meet-jerky-0.0.0-chrome.zip</code> のような名前のファイルです。真ん中の数字は版によって変わります。</p>
+          </div>
+          <div class="step">
+            <h3>ダウンロードします</h3>
+            <p>ファイルを右クリックして「ダウンロード」を選びます。画面右上のダウンロードボタンからでも構いません。</p>
+          </div>
+          <div class="step">
+            <h3>ダウンロードが終わるまで待ちます</h3>
+            <p>通常は「ダウンロード」フォルダに保存されます。</p>
+          </div>
+        </div>
+        <div class="note">
+          <p>Google Drive で「プレビューできません」と表示されても問題ありません。中身を見るのではなく、パソコンにダウンロードして使います。</p>
+        </div>
+      </section>
+
+      <section id="unzip">
+        <h2>2. 解凍して、安全な場所に移す</h2>
+        <p>ここがこのガイドでいちばん大事な章です。<strong>「ダウンロード」フォルダに置いたまま使わないでください。</strong></p>
+
+        <div class="danger">
+          <p><strong>なぜ移すのか</strong></p>
+          <p>Chrome は、読み込んだフォルダの場所を覚えていて、起動のたびにそこを見に行きます。フォルダが消えていたり、場所が変わっていたりすると、Chrome は「別のもの」または「無くなったもの」と判断します。「ダウンロード」フォルダは、パソコンの整理やブラウザの掃除で中身が消えやすい場所なので、置き場所として向きません。</p>
+        </div>
+
+        <div class="two-column">
+          <div class="card">
+            <span class="os-label">Windows</span>
+            <h3>解凍する</h3>
+            <p>エクスプローラーで「ダウンロード」を開き、zip ファイルを右クリックして「<strong>すべて展開</strong>」を選び、「展開」を押します。</p>
+            <h3>置き場所を作って移す</h3>
+            <p>「ドキュメント」の中に <code>chrome-extensions</code> という名前のフォルダを新しく作り、解凍でできたフォルダをその中へドラッグして移動します。</p>
+            <span class="path">ドキュメント\chrome-extensions\meet-jerky-0.0.0-chrome</span>
+          </div>
+          <div class="card">
+            <span class="os-label">Mac</span>
+            <h3>解凍する</h3>
+            <p>Finder で「ダウンロード」を開き、zip ファイルを<strong>ダブルクリック</strong>します。同じ場所にフォルダができます。</p>
+            <h3>置き場所を作って移す</h3>
+            <p>「書類」の中に <code>chrome-extensions</code> という名前のフォルダを新しく作り、解凍でできたフォルダをその中へドラッグして移動します。</p>
+            <span class="path">書類/chrome-extensions/meet-jerky-0.0.0-chrome</span>
+          </div>
+        </div>
+
+        <div class="note">
+          <p><strong>フォルダの中身を確認してください。</strong>移したフォルダを開くと、<code>manifest.json</code> というファイルと、<code>icon</code> などのフォルダが入っています。この <code>manifest.json</code> が直接見えている階層が、次の手順で選ぶフォルダです。</p>
+          <p>もしフォルダを開いたときに、中にもう1つ同じ名前のフォルダしか入っていない場合は、その内側のフォルダが正解です。</p>
+        </div>
+
+        <div class="ok">
+          <p>移し終わったら、「ダウンロード」フォルダに残っている zip ファイルは削除して構いません。使うのは、移動させたあとのフォルダだけです。</p>
+        </div>
+      </section>
+
+      <section id="load">
+        <h2>3. Chrome に読み込む</h2>
+        <p>Google Chrome を開いて操作します。Edge や Safari ではなく、必ず Chrome を使ってください。</p>
+
+        <div class="steps">
+          <div class="step">
+            <h3>拡張機能の管理画面を開きます</h3>
+            <p>Chrome のアドレスバー（URL を入力する欄）に <code>chrome://extensions</code> と入力して Enter キーを押します。</p>
+            <p>画面右上の「⋮」（点が縦に3つ）から「拡張機能」→「拡張機能を管理」でも開けます。</p>
+          </div>
+          <div class="step">
+            <h3>「デベロッパー モード」をオンにします</h3>
+            <p>画面の<strong>右上</strong>にあるスイッチです。オンにすると、画面の左上にボタンが3つ増えます。</p>
+          </div>
+          <div class="step">
+            <h3>「パッケージ化されていない拡張機能を読み込む」を押します</h3>
+            <p>増えたボタンのうち、いちばん左のものです。フォルダを選ぶ画面が開きます。</p>
+          </div>
+          <div class="step">
+            <h3>手順2で移動させたフォルダを選びます</h3>
+            <p><code>manifest.json</code> が入っているフォルダを選んで、「フォルダーの選択」（Mac では「選択」）を押します。</p>
+            <p>zip ファイルそのものではなく、<strong>解凍してできたフォルダ</strong>を選ぶ点に注意してください。</p>
+          </div>
+          <div class="step">
+            <h3>「ミートジャーキー」が一覧に出れば成功です</h3>
+            <p>カードが表示され、スイッチがオン（青色）になっていれば読み込み完了です。</p>
+          </div>
+        </div>
+
+        <div class="warning">
+          <p><strong>Chrome を起動するたびに「デベロッパー モードの拡張機能を無効にする」という確認が出ることがあります。</strong></p>
+          <p>これは故障ではありません。この画面が出たら「キャンセル」を押すか、×で閉じてください。「無効にする」を押すと、記録が行われなくなります。</p>
+        </div>
+      </section>
+
+      <section id="pin">
+        <h2>4. ツールバーに表示させる</h2>
+        <p>毎回使いやすいように、Chrome の右上に固定します。</p>
+        <div class="steps">
+          <div class="step">
+            <h3>パズルのピースのアイコンを押します</h3>
+            <p>Chrome 右上、アドレスバーの右隣にあります。入っている拡張機能の一覧が出ます。</p>
+          </div>
+          <div class="step">
+            <h3>「ミートジャーキー」の横のピンを押します</h3>
+            <p>ピンの絵が青くなれば固定完了です。ツールバーにアイコンが並びます。</p>
+          </div>
+          <div class="step">
+            <h3>最初の1回だけ、説明画面が出ます</h3>
+            <p>アイコンを押すと、何を記録するかの説明が表示されます。内容を読んで「<strong>理解しました</strong>」を押してください。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="record">
+        <h2>5. 会議を記録する</h2>
+        <p>特別な操作は要りません。Google Meet の会議に入れば、自動で記録が始まります。</p>
+
+        <div class="steps">
+          <div class="step">
+            <h3>いつもどおり Google Meet の会議に参加します</h3>
+            <p>参加すると、字幕が自動的にオンになります。字幕が画面下に出はじめれば準備完了です。</p>
+          </div>
+          <div class="step">
+            <h3>画面の右下にある小さな表示を確認します</h3>
+            <p>「RAW: 0」のような黒い帯が出ます。左の丸が<strong>緑</strong>なら記録中、<strong>赤</strong>なら記録できていない状態です。数字は取り込んだ字幕の件数で、話が進むと増えていきます。</p>
+          </div>
+          <div class="step">
+            <h3>字幕はオンのままにします</h3>
+            <p>字幕をオフにすると記録が止まります。オフにしようとすると確認のメッセージが出るので、記録を続けたいときは「キャンセル」を押してください。</p>
+          </div>
+          <div class="step">
+            <h3>会議を退出します</h3>
+            <p>退出ボタンを押す、タブを閉じる、どちらでも記録は自動で保存されます。</p>
+          </div>
+        </div>
+
+        <div class="note">
+          <p><strong>会議中に一度退出してしまっても大丈夫です。</strong>2分以内に同じ会議へ戻れば、同じ記録の続きとして扱われます。</p>
+        </div>
+
+        <div class="warning">
+          <p><strong>字幕が出ない・赤いままのとき</strong></p>
+          <p>会議の主催者が字幕を使えない設定にしている可能性があります。その場合は記録できません。また、字幕の言語設定が会議の言語と合っていないと、うまく文字にならないことがあります。</p>
+        </div>
+      </section>
+
+      <section id="read">
+        <h2>6. 記録を見る・コピーする</h2>
+        <p>ツールバーのミートジャーキーのアイコンを押すと、これまでの会議の一覧が出ます。</p>
+
+        <div class="steps">
+          <div class="step">
+            <h3>見たい会議を選びます</h3>
+            <p>会議名と日時が並んでいます。押すと、その会議の文字起こしが開きます。</p>
+          </div>
+          <div class="step">
+            <h3>「全文コピー」を押します</h3>
+            <p>文字起こし全体がコピーされます。あとはメールや議事録のファイルに貼り付けてください。</p>
+          </div>
+          <div class="step">
+            <h3>必要に応じて名前を変えたり、削除したりします</h3>
+            <p>鉛筆のボタンで会議名を変更、ゴミ箱の代わりの「削除」ボタンで記録を削除できます。</p>
+          </div>
+        </div>
+
+        <h3>記録は自動で消えます</h3>
+        <p>保存された会議は、<strong>10日を過ぎると自動的に削除されます</strong>（初期設定の場合）。ずっと残しておきたい会議は、<strong>ピン留め（画鋲のボタン）</strong>を押してください。ピン留めした会議は自動削除の対象外になります。</p>
+        <p>日数を変えたい場合は、次章と同じ設定画面で「セッション管理」から変更できます。</p>
+
+        <div class="note">
+          <p><strong>AI要約について</strong></p>
+          <p>画面に「AI要約」のボタンがありますが、これは配布担当者が AI の利用設定を行っている場合のみ使えます。押すと、その会議の文字起こしが OpenAI（社外のサービス）に送信されます。案内がない場合は使わないでください。</p>
+        </div>
+      </section>
+
+      <section id="autosave">
+        <h2>7. 退出したら自動でファイルに保存する</h2>
+        <p>毎回コピーして貼り付けるのが手間なときは、会議から退出した時点で自動的にファイルとして保存できます。初期設定では<strong>オフ</strong>なので、使いたい方だけ設定してください。</p>
+
+        <div class="steps">
+          <div class="step">
+            <h3>設定画面を開きます</h3>
+            <p>ツールバーのミートジャーキーのアイコンを押し、右上の歯車のボタンを押します。</p>
+          </div>
+          <div class="step">
+            <h3>「自動ダウンロード」の欄を探します</h3>
+            <p>「会議退出時に自動ダウンロードする」にチェックを入れます。</p>
+          </div>
+          <div class="step">
+            <h3>保存形式を選びます</h3>
+            <p>迷ったら「テキスト (.txt)」で構いません。用途に応じて Markdown や JSON も選べます。</p>
+          </div>
+          <div class="step">
+            <h3>保存先フォルダを決めます</h3>
+            <p>初期値は <code>meet-jerky</code> です。この名前のフォルダが、ブラウザのダウンロードフォルダの中に作られ、そこに保存されます。</p>
+          </div>
+          <div class="step">
+            <h3>「設定を保存」を押します</h3>
+            <p>次の会議から、退出したときに自動でファイルが作られます。</p>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>使う場面</th>
+              <th>注意点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>保存形式</td>
+              <td>テキストは貼り付け用、Markdown は見出し付きの議事録用、JSON は他のシステムに取り込む用</td>
+              <td>迷ったらテキストで問題ありません。</td>
+            </tr>
+            <tr>
+              <td>保存先フォルダ</td>
+              <td>会議の記録を1か所にまとめたいとき</td>
+              <td>ブラウザのダウンロードフォルダの中だけを指定できます。それ以外の場所には保存できません。</td>
+            </tr>
+            <tr>
+              <td>保存のたびに保存先を選ぶ</td>
+              <td>会議ごとに置き場所を変えたいとき</td>
+              <td>オンにすると、退出のたびに保存先を尋ねる画面が出ます。自動ではなくなります。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <p>ダウンロードフォルダ以外の場所に保存したい場合は、Chrome 側の設定でダウンロード先そのものを変更してください。拡張機能から指定できるのは、そのフォルダの中までです。</p>
+          <p>字幕が1件も記録できなかった会議は、ファイルは作られません。</p>
+        </div>
+      </section>
+
+      <section id="manners">
+        <h2>8. 会議参加者へのお願い</h2>
+        <p>この拡張機能は、参加者の発言内容と氏名を記録します。使い方を誤ると、信頼関係の問題になります。</p>
+
+        <div class="danger">
+          <p><strong>会議の冒頭で、記録していることを必ず伝えてください。</strong></p>
+          <p>「議事録作成のために字幕を記録しています」と一言添えるだけで構いません。参加者が知らないまま記録することは避けてください。</p>
+        </div>
+
+        <div class="two-column">
+          <div class="card">
+            <h3>適切な使い方</h3>
+            <ul>
+              <li>自分の振り返りのための議事録作成</li>
+              <li>チームで合意のうえでの会議記録</li>
+              <li>聞き取りに不安のある方が、会議の内容をあとから確認する</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>してはいけない使い方</h3>
+            <ul>
+              <li>参加者に無断で発言を記録する</li>
+              <li>記録したデータを無断で共有・公開する</li>
+              <li>特定の人の発言を監視する目的で使う</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>データの取り扱い</h3>
+        <ul>
+          <li>記録したデータは、お使いのパソコンの Chrome の中だけに保存されます</li>
+          <li>通常の記録・閲覧では、社外にデータが送られることはありません</li>
+          <li>AI要約の機能を使ったときだけ、その会議の文字起こしが OpenAI に送信されます</li>
+          <li>コピーしたテキストや保存したファイルの管理・共有は、使う人の責任で行ってください</li>
+        </ul>
+      </section>
+
+      <section id="update">
+        <h2>9. 新しい版が配られたとき</h2>
+        <p>改善版の zip が配布されたら、次の手順で入れ替えます。<strong>フォルダの場所は変えないでください。</strong></p>
+        <div class="steps">
+          <div class="step">
+            <h3>新しい zip をダウンロードして解凍します</h3>
+            <p>手順1・2と同じです。</p>
+          </div>
+          <div class="step">
+            <h3>今使っているフォルダの中身を、新しい中身に入れ替えます</h3>
+            <p>手順2で作った <code>chrome-extensions</code> の中の、<strong>同じ場所・同じフォルダ名</strong>のまま中身だけを差し替えます。フォルダごと別の場所に置くと、Chrome は別の拡張機能として扱い、それまでの記録が見られなくなります。</p>
+          </div>
+          <div class="step">
+            <h3>Chrome で再読み込みします</h3>
+            <p><code>chrome://extensions</code> を開き、ミートジャーキーのカードにある更新（回転する矢印）のボタンを押します。</p>
+          </div>
+        </div>
+        <div class="note">
+          <p>フォルダ名が版によって変わる場合（<code>meet-jerky-0.0.1-chrome</code> など）は、名前を今までと同じものに変えてから差し替えるか、判断に迷ったら配布担当者に確認してください。</p>
+        </div>
+      </section>
+
+      <section id="trouble">
+        <h2>10. 困ったとき</h2>
+
+        <div class="card">
+          <h3>拡張機能が一覧から消えた／エラーと表示される</h3>
+          <p>読み込んだフォルダを移動・削除・名前変更していないか確認してください。いちばん多い原因です。フォルダを元の場所に戻せば直ります。フォルダごと消してしまった場合は、手順1からやり直してください（過去の記録は戻りません）。</p>
+        </div>
+        <div class="card">
+          <h3>過去に記録した会議が全部消えている</h3>
+          <p>フォルダを別の場所に移してから読み込み直すと、Chrome は「別の拡張機能」として扱うため、以前の記録が見えなくなります。元のフォルダがまだ残っていれば、元の場所に戻して読み込み直すと復帰します。</p>
+        </div>
+        <div class="card">
+          <h3>会議中に右下の丸が赤いまま／数字が増えない</h3>
+          <p>字幕がオフになっていないか確認してください。字幕ボタン（吹き出しに CC のマーク）を押してオンにします。主催者が字幕を禁止している会議では記録できません。</p>
+        </div>
+        <div class="card">
+          <h3>Chrome を起動するたびに警告が出る</h3>
+          <p>「デベロッパー モードの拡張機能を無効にする」という確認です。「キャンセル」または×で閉じてください。この方法で配っている拡張機能では通常の動作です。</p>
+        </div>
+        <div class="card">
+          <h3>自動ダウンロードでファイルが作られない</h3>
+          <p>設定画面で「会議退出時に自動ダウンロードする」がオンになっているか確認してください。字幕が1件も記録できなかった会議では、ファイルは作られません。</p>
+        </div>
+        <div class="card">
+          <h3>会議名が「abc-defg-hij」のような文字になっている</h3>
+          <p>会議に名前が付いていない場合、会議コードがそのまま表示されます。記録画面の鉛筆ボタンから、分かりやすい名前に変更できます。</p>
+        </div>
+
+        <div class="danger">
+          <p><strong>このガイドに載っていない画面が出た場合は、操作せずに配布担当者または情報システム担当に相談してください。</strong></p>
+        </div>
+      </section>
+
+      <section id="terms">
+        <h2>11. 用語</h2>
+        <table>
+          <tbody>
+            <tr>
+              <th>拡張機能</th>
+              <td>Chrome に機能を追加する小さなプログラムです。ミートジャーキーもその1つです。</td>
+            </tr>
+            <tr>
+              <th>zip</th>
+              <td>複数のファイルを1つにまとめた形式です。使う前に「解凍」して、元のフォルダに戻す必要があります。</td>
+            </tr>
+            <tr>
+              <th>解凍（展開）</th>
+              <td>zip ファイルから中身のフォルダを取り出すことです。Windows は右クリックから「すべて展開」、Mac はダブルクリックで行えます。</td>
+            </tr>
+            <tr>
+              <th>デベロッパー モード</th>
+              <td>Chrome の拡張機能画面にあるスイッチです。社内で作った拡張機能を読み込むために必要です。</td>
+            </tr>
+            <tr>
+              <th>manifest.json</th>
+              <td>拡張機能の中身を Chrome に伝えるファイルです。このファイルが直接入っているフォルダを、Chrome に読み込ませます。</td>
+            </tr>
+            <tr>
+              <th>字幕（キャプション）</th>
+              <td>Google Meet が発言を文字にして画面に出す機能です。ミートジャーキーは、この文字を読み取って記録します。</td>
+            </tr>
+            <tr>
+              <th>セッション</th>
+              <td>この拡張機能では、1回の会議の記録のことを指します。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="footer">
+        <p>この資料は、配布する zip ファイルと一緒に Google Drive へ置いて使う想定です。手順どおりに進めても解決しない場合は、配布担当者または情報システム担当に相談してください。</p>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
