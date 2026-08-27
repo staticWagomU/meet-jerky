@@ -1,5 +1,9 @@
 import "./style.css";
 import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODEL } from "@/utils/ai-client";
+import {
+	DEFAULT_DOWNLOAD_SUBFOLDER,
+	sanitizeSubfolder,
+} from "@/utils/download";
 import { formatBytes } from "@/utils/helpers";
 import { showNotification } from "@/utils/notification";
 import {
@@ -8,7 +12,7 @@ import {
 	loadSettings,
 	saveSettings,
 } from "@/utils/settings";
-import type { UserSettings } from "@/utils/types";
+import type { DownloadFormat, UserSettings } from "@/utils/types";
 
 const appElement = document.querySelector<HTMLDivElement>("#app");
 if (!appElement) throw new Error("#app element not found");
@@ -30,6 +34,9 @@ function render(): void {
 
 	// Session management card
 	app.appendChild(buildRetentionCard());
+
+	// Auto download card
+	app.appendChild(buildAutoDownloadCard());
 
 	// AI integration card
 	app.appendChild(buildAICard());
@@ -256,6 +263,167 @@ function buildNumberInput(
 	return { wrapper, input, suffix };
 }
 
+interface CheckboxItemResult {
+	wrapper: HTMLLabelElement;
+	checkbox: HTMLInputElement;
+}
+
+function buildCheckboxItem(
+	labelText: string,
+	description: string,
+	checked: boolean,
+): CheckboxItemResult {
+	const wrapper = document.createElement("label");
+	wrapper.className = `radio-item${checked ? " selected" : ""}`;
+
+	const checkbox = document.createElement("input");
+	checkbox.type = "checkbox";
+	checkbox.checked = checked;
+
+	const content = document.createElement("div");
+	content.className = "radio-item-content";
+
+	const labelEl = document.createElement("div");
+	labelEl.className = "radio-item-label";
+	labelEl.textContent = labelText;
+
+	const desc = document.createElement("div");
+	desc.className = "radio-item-description";
+	desc.textContent = description;
+
+	content.appendChild(labelEl);
+	content.appendChild(desc);
+
+	wrapper.appendChild(checkbox);
+	wrapper.appendChild(content);
+
+	// 選択状態のハイライトはラジオと同じ見た目に揃える
+	checkbox.addEventListener("change", () => {
+		wrapper.classList.toggle("selected", checkbox.checked);
+	});
+
+	return { wrapper, checkbox };
+}
+
+const DOWNLOAD_FORMAT_LABELS: Record<DownloadFormat, string> = {
+	txt: "テキスト (.txt)",
+	md: "Markdown (.md)",
+	json: "JSON (.json)",
+};
+
+function buildAutoDownloadCard(): HTMLDivElement {
+	const card = document.createElement("div");
+	card.className = "card";
+
+	const title = document.createElement("div");
+	title.className = "card-title";
+	title.textContent = "⬇ 自動ダウンロード";
+	card.appendChild(title);
+
+	const cardDesc = document.createElement("div");
+	cardDesc.className = "help-text";
+	cardDesc.textContent =
+		"会議から退出したときに、その会議の文字起こしをファイルとして保存します。文字起こしが1件も無いセッションは保存されません。";
+	card.appendChild(cardDesc);
+
+	// Enable toggle
+	const toggleGroup = document.createElement("div");
+	toggleGroup.className = "form-group";
+
+	const toggle = buildCheckboxItem(
+		"会議退出時に自動ダウンロードする",
+		"退出・タブを閉じた時点で文字起こしを書き出します",
+		currentSettings.autoDownload.enabled,
+	);
+	toggleGroup.appendChild(toggle.wrapper);
+	card.appendChild(toggleGroup);
+
+	// Format
+	const formatGroup = document.createElement("div");
+	formatGroup.className = "form-group";
+
+	const formatLabel = document.createElement("div");
+	formatLabel.className = "form-label";
+	formatLabel.textContent = "保存形式";
+	formatGroup.appendChild(formatLabel);
+
+	const formatSelect = document.createElement("select");
+	formatSelect.className = "select-input";
+	for (const format of ["txt", "md", "json"] as DownloadFormat[]) {
+		const option = document.createElement("option");
+		option.value = format;
+		option.textContent = DOWNLOAD_FORMAT_LABELS[format];
+		option.selected = currentSettings.autoDownload.format === format;
+		formatSelect.appendChild(option);
+	}
+	formatSelect.addEventListener("change", () => {
+		currentSettings.autoDownload.format = formatSelect.value as DownloadFormat;
+	});
+	formatGroup.appendChild(formatSelect);
+	card.appendChild(formatGroup);
+
+	// Subfolder
+	const folderGroup = document.createElement("div");
+	folderGroup.className = "form-group";
+
+	const folderLabel = document.createElement("div");
+	folderLabel.className = "form-label";
+	folderLabel.textContent = "保存先フォルダ";
+	folderGroup.appendChild(folderLabel);
+
+	const folderInput = document.createElement("input");
+	folderInput.type = "text";
+	folderInput.id = "auto-download-subfolder";
+	folderInput.className = "api-key-input";
+	folderInput.placeholder = DEFAULT_DOWNLOAD_SUBFOLDER;
+	folderInput.value = currentSettings.autoDownload.subfolder;
+	folderInput.addEventListener("input", () => {
+		currentSettings.autoDownload.subfolder = folderInput.value;
+	});
+	folderGroup.appendChild(folderInput);
+
+	const folderHelp = document.createElement("div");
+	folderHelp.className = "help-text";
+	folderHelp.textContent =
+		"ブラウザのダウンロードフォルダからの相対パスです（例: meet-jerky/2026）。空欄ならダウンロードフォルダ直下に保存します。拡張機能はダウンロードフォルダの外には保存できないため、別の場所に保存したい場合はブラウザの設定でダウンロード先を変更してください。";
+	folderGroup.appendChild(folderHelp);
+	card.appendChild(folderGroup);
+
+	// Save-as toggle
+	const saveAsGroup = document.createElement("div");
+	saveAsGroup.className = "form-group";
+
+	const saveAs = buildCheckboxItem(
+		"保存のたびに保存先を選ぶ",
+		"ブラウザの保存ダイアログを表示します（オフなら確認なしで保存）",
+		currentSettings.autoDownload.saveAs,
+	);
+	saveAs.checkbox.addEventListener("change", () => {
+		currentSettings.autoDownload.saveAs = saveAs.checkbox.checked;
+	});
+	saveAsGroup.appendChild(saveAs.wrapper);
+	card.appendChild(saveAsGroup);
+
+	// 無効時は詳細設定を触れないようにする
+	const detailInputs = [formatSelect, folderInput, saveAs.checkbox];
+	const syncDetailState = () => {
+		const enabled = toggle.checkbox.checked;
+		for (const input of detailInputs) {
+			input.disabled = !enabled;
+		}
+		saveAs.wrapper.style.opacity = enabled ? "1" : "0.5";
+		formatGroup.style.opacity = enabled ? "1" : "0.5";
+		folderGroup.style.opacity = enabled ? "1" : "0.5";
+	};
+	toggle.checkbox.addEventListener("change", () => {
+		currentSettings.autoDownload.enabled = toggle.checkbox.checked;
+		syncDetailState();
+	});
+	syncDetailState();
+
+	return card;
+}
+
 function buildAICard(): HTMLDivElement {
 	const card = document.createElement("div");
 	card.className = "card";
@@ -421,6 +589,17 @@ async function handleSave(): Promise<void> {
 			return;
 		}
 		currentSettings.retention.maxDays = value;
+	}
+
+	// 保存先はダウンロードAPIが受け付ける相対パスに正規化し、
+	// 実際に使われる値をそのまま入力欄へ反映する
+	const folderInput = document.querySelector<HTMLInputElement>(
+		"#auto-download-subfolder",
+	);
+	if (folderInput) {
+		const normalized = sanitizeSubfolder(folderInput.value);
+		currentSettings.autoDownload.subfolder = normalized;
+		folderInput.value = normalized;
 	}
 
 	try {

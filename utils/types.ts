@@ -34,6 +34,21 @@ export interface MeetingSession {
 	/** Pinned sessions are exempt from all retention cleanup. */
 	pinned?: boolean;
 	aiSummary?: AiSummary;
+	/** Set once the meeting-end auto download succeeded, so a second
+	 *  MEETING_ENDED (or a tab close after leaving) does not re-download. */
+	autoDownloadedAt?: string;
+}
+
+/** File format for the transcript file written on meeting end. */
+export type DownloadFormat = "txt" | "md" | "json";
+
+export interface AutoDownloadSettings {
+	enabled: boolean;
+	format: DownloadFormat;
+	/** Path relative to the browser download folder. Empty = folder root. */
+	subfolder: string;
+	/** Show the browser's save dialog instead of saving silently. */
+	saveAs: boolean;
 }
 
 export interface UserSettings {
@@ -47,4 +62,5 @@ export interface UserSettings {
 		model: string;
 		customPrompt: string;
 	};
+	autoDownload: AutoDownloadSettings;
 }

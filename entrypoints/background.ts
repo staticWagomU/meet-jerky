@@ -1,8 +1,9 @@
+import { buildSessionDownload } from "@/utils/download";
 import { idbDeleteSession, idbLoadSession, idbSaveSession } from "@/utils/idb";
 import type { ExtensionMessage } from "@/utils/messaging";
 import type { SessionIndexEntry } from "@/utils/retention";
 import { enforceRetentionPolicy } from "@/utils/retention";
-import { SETTINGS_STORAGE_KEY } from "@/utils/settings";
+import { loadSettings, SETTINGS_STORAGE_KEY } from "@/utils/settings";
 import type { MeetingSession } from "@/utils/types";
 
 // --- Storage helpers ---
@@ -94,6 +95,36 @@ function removeTabMapping(sessionId: string): void {
 	}
 }
 
+// --- Auto download on meeting end ---
+
+/**
+ * Write the transcript to the download folder when the user enabled
+ * auto download. Marks the session so a later MEETING_ENDED or tab-close
+ * for the same meeting does not produce a second file.
+ *
+ * Mutates `session` instead of persisting itself — the caller saves right
+ * after, so the flag rides along in that same write.
+ */
+async function autoDownloadTranscript(session: MeetingSession): Promise<void> {
+	try {
+		const settings = await loadSettings();
+		const download = buildSessionDownload(session, settings.autoDownload);
+		if (!download) return;
+
+		await browser.downloads.download({
+			url: download.url,
+			filename: download.filename,
+			saveAs: settings.autoDownload.saveAs,
+			conflictAction: "uniquify",
+		});
+
+		session.autoDownloadedAt = new Date().toISOString();
+	} catch (e) {
+		// ダウンロード失敗でセッション保存を巻き添えにしない
+		console.warn("[MJ] Auto download failed:", e);
+	}
+}
+
 // --- Helper to flush and end a session ---
 
 async function flushAndEndSession(sessionId: string): Promise<void> {
@@ -101,6 +132,7 @@ async function flushAndEndSession(sessionId: string): Promise<void> {
 	if (!session) return;
 
 	session.endTimestamp = new Date().toISOString();
+	await autoDownloadTranscript(session);
 	await saveSession(session);
 	await browser.alarms.clear(`persist-${sessionId}`);
 	sessionBuffer.delete(sessionId);

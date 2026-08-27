@@ -1,4 +1,5 @@
 import { DEFAULT_CUSTOM_PROMPT, DEFAULT_MODEL } from "./ai-client";
+import { DEFAULT_DOWNLOAD_SUBFOLDER } from "./download";
 import type { UserSettings } from "./types";
 
 export const SETTINGS_STORAGE_KEY = "user-settings";
@@ -13,6 +14,13 @@ export const DEFAULT_SETTINGS: UserSettings = {
 		apiKey: "",
 		model: DEFAULT_MODEL,
 		customPrompt: DEFAULT_CUSTOM_PROMPT,
+	},
+	// 自動ダウンロードは意図しないファイル生成を避けるため既定で無効
+	autoDownload: {
+		enabled: false,
+		format: "txt",
+		subfolder: DEFAULT_DOWNLOAD_SUBFOLDER,
+		saveAs: false,
 	},
 };
 
