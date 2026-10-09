@@ -218,3 +218,102 @@ describe("extractAllCaptionData", () => {
 		]);
 	});
 });
+
+describe("self speaker name", () => {
+	const avatar = "https://lh3.googleusercontent.com/a/test-profile";
+
+	beforeEach(() => {
+		document.body.innerHTML = "";
+	});
+
+	function addParticipant(id: string, name: string, listItem = false): void {
+		const participant = document.createElement("div");
+		participant.setAttribute("data-participant-id", id);
+		if (listItem) {
+			participant.setAttribute("role", "listitem");
+			participant.setAttribute("aria-label", name);
+		} else {
+			const label = document.createElement("span");
+			label.className = "notranslate";
+			label.textContent = name;
+			participant.appendChild(label);
+		}
+		const img = document.createElement("img");
+		img.src = `${avatar}=s50-p-k-no-mo?theming`;
+		participant.appendChild(img);
+		document.body.appendChild(participant);
+	}
+
+	function selfRegion(label = "あなた"): HTMLElement {
+		const region = document.createElement("div");
+		const block = buildCaptionBlock(label, "あなたの意見を聞かせてください");
+		const img = block.querySelector("img");
+		if (img) img.src = `${avatar}=s192-c-mo`;
+		region.appendChild(block);
+		return region;
+	}
+
+	it.each([
+		"あなた",
+		"You",
+	])("resolves %s for automatic and manual capture", (label) => {
+		addParticipant("self", "田中太郎");
+		const region = selfRegion(label);
+		const expected = {
+			personName: "田中太郎",
+			text: "あなたの意見を聞かせてください",
+		};
+		expect(extractCaptionData(region)).toEqual(expected);
+		expect(extractAllCaptionData(region)).toEqual([expected]);
+	});
+
+	it("uses the participant list name even without a self tile", () => {
+		addParticipant("self", "田中太郎", true);
+		expect(extractCaptionData(selfRegion())?.personName).toBe("田中太郎");
+	});
+
+	it("treats the same participant in a tile and list as one match", () => {
+		addParticipant("self", "田中太郎");
+		addParticipant("self", "田中太郎", true);
+		expect(extractCaptionData(selfRegion())?.personName).toBe("田中太郎");
+	});
+
+	it("keeps the label if multiple participants share an avatar", () => {
+		addParticipant("self", "田中太郎");
+		addParticipant("other", "佐藤花子");
+		expect(extractCaptionData(selfRegion())?.personName).toBe("あなた");
+	});
+
+	it.each([
+		"",
+		"あなた",
+		"You",
+	])("keeps the label when the participant name is %j", (name) => {
+		addParticipant("self", name);
+		expect(extractCaptionData(selfRegion())?.personName).toBe("あなた");
+	});
+
+	it("keeps the label without a matching avatar", () => {
+		addParticipant("self", "田中太郎");
+		const region = selfRegion();
+		region
+			.querySelector("img")
+			?.setAttribute("src", "https://lh3.googleusercontent.com/a/other=s192");
+		expect(extractCaptionData(region)?.personName).toBe("あなた");
+	});
+
+	it("keeps the label when the caption has no image", () => {
+		addParticipant("self", "田中太郎");
+		const region = selfRegion();
+		region.querySelector("img")?.remove();
+		expect(extractCaptionData(region)?.personName).toBe("あなた");
+	});
+
+	it("preserves other speakers and their caption text", () => {
+		addParticipant("self", "田中太郎");
+		expect(extractCaptionData(selfRegion("佐藤花子"))).toEqual({
+			personName: "佐藤花子",
+			text: "あなたの意見を聞かせてください",
+		});
+	});
+});

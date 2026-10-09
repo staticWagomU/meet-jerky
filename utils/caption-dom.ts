@@ -6,6 +6,36 @@
 
 import type { CaptionData } from "./types";
 
+function findSelfName(block: HTMLElement): string {
+	// Meet uses different image sizes for captions, tiles, and the participant list.
+	const avatar = block
+		.querySelector("img")
+		?.getAttribute("src")
+		?.split(/[=?]/)[0];
+	if (!avatar) return "";
+
+	const matches = new Map<string, string>();
+	for (const participant of block.ownerDocument.querySelectorAll(
+		"[data-participant-id]",
+	)) {
+		const hasAvatar = Array.from(participant.querySelectorAll("img")).some(
+			(img) => img.getAttribute("src")?.split(/[=?]/)[0] === avatar,
+		);
+		if (!hasAvatar) continue;
+
+		const name = (
+			participant.getAttribute("aria-label") ||
+			participant.querySelector(".notranslate")?.textContent ||
+			""
+		).trim();
+		if (!name || name === "あなた" || name === "You") return "";
+		matches.set(participant.getAttribute("data-participant-id") || "", name);
+	}
+
+	// shortcut: requires a named participant in the DOM; add another source if Meet removes it.
+	return matches.size === 1 ? [...matches.values()][0] : "";
+}
+
 /**
  * Check if an element is a UI control (button, scroll indicator, etc.)
  * rather than a caption text block.
@@ -50,6 +80,10 @@ function extractBlockData(block: HTMLElement): CaptionData | null {
 	}
 
 	if (!captionText) return null;
+
+	if (personName === "あなた" || personName === "You") {
+		personName = findSelfName(block) || personName;
+	}
 
 	return { personName, text: captionText };
 }
